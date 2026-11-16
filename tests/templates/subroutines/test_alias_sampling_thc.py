@@ -62,7 +62,7 @@ def _static_coeffs(zeta, t_ell):
     )
 
 
-def _reconstruct_distribution(M, N, zeta, t_ell, aleph):  # pylint: disable=too-many-arguments
+def _reconstruct_distribution(M, N, zeta, t_ell, aleph):
     """Exact distribution over |mu>|nu> prepared by ``AliasSamplingTHC``.
 
     This is the THC analogue of ``_reconstruct_amplitudes`` in

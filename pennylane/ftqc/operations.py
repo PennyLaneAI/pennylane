@@ -60,7 +60,6 @@ class RotXZX(Operation):
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
 
-    # pylint: disable = too-many-arguments, too-many-positional-arguments
     def __init__(self, phi, theta, omega, wires):
         super().__init__(phi, theta, omega, wires=wires)
 

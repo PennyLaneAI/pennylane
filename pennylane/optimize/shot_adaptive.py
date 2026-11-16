@@ -13,9 +13,6 @@
 # limitations under the License.
 """Shot adaptive optimizer"""
 
-# pylint: disable=too-many-instance-attributes,too-many-arguments
-
-
 from copy import copy
 
 import numpy as np
@@ -31,6 +28,7 @@ from pennylane.workflow import QNode, construct_tape, set_shots
 from .gradient_descent import GradientDescentOptimizer
 
 
+# pylint: disable-next=too-many-instance-attributes
 class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     r"""Optimizer where the shot rate is adaptively calculated using the variances of the
     parameter-shift gradient.
@@ -184,7 +182,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
           <https://quantum-journal.org/papers/q-2020-05-11-263/>`__ (2020).
     """
 
-    # pylint: disable = too-many-positional-arguments
     def __init__(self, min_shots, term_sampling=None, mu=0.99, b=1e-6, stepsize=0.07):
         self.term_sampling = term_sampling
         self.trainable_args = set()
@@ -257,7 +254,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                 qs = make_qscript(base_func)(*qnode_args, **qnode_kwargs)
                 for op in qs.operations:
                     apply(op)
-                return measurements.expval(o)  # pylint:disable=cell-var-from-loop
+                return measurements.expval(o)  # pylint: disable=cell-var-from-loop
 
             new_shots = 1 if s == 1 else [(1, int(s))]
 

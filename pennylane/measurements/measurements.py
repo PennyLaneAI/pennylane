@@ -15,4 +15,5 @@
 Previous location of pennylane.core.measurements
 """
 
-from pennylane.core.measurements import *  # pylint: disable=wildcard-import, unused-import, unused-wildcard-import # tach-ignore
+# pylint: disable-next=wildcard-import,unused-wildcard-import
+from pennylane.core.measurements import *  # tach-ignore

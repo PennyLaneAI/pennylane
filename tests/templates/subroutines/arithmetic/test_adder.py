@@ -112,9 +112,7 @@ class TestAdder:
             ),
         ],
     )
-    def test_operation_result(
-        self, k, x_wires, mod, work_wires, x
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_result(self, k, x_wires, mod, work_wires, x):
         """Test the correctness of the PhaseAdder template output."""
         dev = qp.device("default.qubit")
 
@@ -129,7 +127,6 @@ class TestAdder:
         if mod is None:
             mod = 2 ** len(x_wires)
 
-        # pylint: disable=bad-reversed-sequence
         out = list(circuit(x)[0, :])
         result = sum(bit * (2**i) for i, bit in enumerate(reversed(out)))
         assert np.allclose(result, (x + k) % mod)
@@ -153,9 +150,7 @@ class TestAdder:
             ),
         ],
     )
-    def test_operation_and_test_wires_error(
-        self, k, x_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_and_test_wires_error(self, k, x_wires, mod, work_wires, msg_match):
         """Test that proper errors are raised"""
 
         with pytest.raises(ValueError, match=msg_match):
@@ -191,9 +186,7 @@ class TestAdder:
             ),
         ],
     )
-    def test_types_error(
-        self, k, x_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_types_error(self, k, x_wires, mod, work_wires, msg_match):
         """Test errors are raised"""
         with pytest.raises(ValueError, match=msg_match):
             qp.Adder(k, x_wires, mod, work_wires)
@@ -307,6 +300,5 @@ class TestAdder:
             qp.Adder(k, x_wires, mod, work_wires)
             return qp.sample(wires=x_wires)
 
-        # pylint: disable=bad-reversed-sequence
         result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :])))
         assert jax.numpy.allclose(result, (x + k) % mod)

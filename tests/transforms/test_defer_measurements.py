@@ -17,8 +17,6 @@ Tests for the transform implementing the deferred measurement principle.
 
 import math
 import re
-
-# pylint: disable=too-few-public-methods, too-many-arguments
 from functools import partial
 
 import pytest
@@ -382,7 +380,7 @@ class TestQNode:
     @pytest.mark.parametrize("reduce_postselected", [None, True, False])
     @pytest.mark.parametrize("shots", [None, 1000])
     @pytest.mark.parametrize("phi", np.linspace(np.pi / 2, 7 * np.pi / 2, 6))
-    def test_some_postselection_qnode(
+    def test_some_postselection_qnode(  # pylint: disable=too-many-arguments
         self, phi, shots, reduce_postselected, tol, tol_stochastic, seed
     ):
         """Test that a qnode with some mid-circuit measurements with postselection
@@ -432,7 +430,7 @@ class TestQNode:
     @pytest.mark.parametrize("shots", [None, 1000])
     @pytest.mark.parametrize("phi", np.linspace(np.pi / 4, 4 * np.pi, 4))
     @pytest.mark.parametrize("theta", np.linspace(np.pi / 3, 3 * np.pi, 4))
-    def test_all_postselection_qnode(
+    def test_all_postselection_qnode(  # pylint: disable=too-many-arguments
         self, phi, theta, shots, reduce_postselected, tol, tol_stochastic
     ):
         """Test that a qnode with all mid-circuit measurements with postselection
@@ -661,7 +659,6 @@ class TestQNode:
     def test_measure_with_tensor_obs(self, mid_measure_wire, tp_wires):
         """Test that the defer_measurements transform works well even with
         tensor observables in the tape."""
-        # pylint: disable=protected-access
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.measure(mid_measure_wire)

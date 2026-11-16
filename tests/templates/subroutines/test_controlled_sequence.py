@@ -22,8 +22,6 @@ import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.wires import Wires
 
-# pylint: disable=unidiomatic-typecheck, cell-var-from-loop
-
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
@@ -131,47 +129,68 @@ class TestMethods:
         assert op.base.wires == Wires([0, 1])
         assert op.control == Wires([2, 3])
 
-    def test_decomposition(self):
+    @pytest.mark.parametrize("control", [[], [0], [0, 1, 2]])
+    def test_decomposition(self, control):
         """Test the returned and queued operations from the registered decomposition."""
-        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])
+        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=control)
 
         with qp.queuing.AnnotatedQueue() as queue:
             decomp = op.decomposition()
         expected_decomp = [
-            qp.ops.ControlledOp2(qp.RX(0.25, wires=[3]), wire) for wire in [0] * 4 + [1] * 2 + [2]
+            qp.ctrl(qp.RX(0.25 * 2 ** (len(control) - 1 - j), wires=3), control=wire)
+            for j, wire in enumerate(control)
         ]
 
         queued_ops = queue.queue
         for operations in (decomp, queued_ops):
+            assert len(operations) == len(expected_decomp)
             for actual, expected in zip(operations, expected_decomp):
                 qp.assert_equal(actual, expected)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("control", [[], 0, [0, 1], [0, 1, 2]])
-    def test_decomposition_new(self, control):
-        """Test that the operator is decomposable."""
-        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=control)
+    @pytest.mark.parametrize(
+        "base",
+        [
+            qp.RX(0.25, wires=3),
+            qp.X(3),
+            qp.Hadamard(3),
+            qp.CNOT([3, 4]),
+            qp.prod(qp.RX(0.25, wires=3), qp.RY(0.5, wires=4)),
+        ],
+    )
+    def test_decomposition_new(self, control, base):
+        """Test decomposition resources and matrices for different power simplifications."""
+        op = qp.ControlledSequence(base, control=control)
         qp.testing.assert_decomposable(op)
 
     @pytest.mark.capture
-    def test_nested_loop_capture(self):
-        """Test that both loops remain structured during capture."""
+    @pytest.mark.parametrize("control", [[0], [0, 1, 2]])
+    def test_power_capture(self, control):
+        """Test that capture simplifies static powers without structured loops."""
         import jax
 
         rule = qp.list_decomps(qp.ControlledSequence)[0]
 
         def circuit():
-            rule(base=qp.RX(0.25, wires=3), control=[0, 1, 2])
+            rule(base=qp.RX(0.25, wires=3), control=control)
 
         plxpr = jax.make_jaxpr(circuit)()
-        outer_loops = [eqn for eqn in plxpr.jaxpr.eqns if eqn.primitive.name == "for_loop"]
-        assert len(outer_loops) == 1
-        inner_loops = [
-            eqn
-            for eqn in outer_loops[0].params["jaxpr_body_fn"].eqns
-            if eqn.primitive.name == "for_loop"
+        assert all(eqn.primitive.name != "for_loop" for eqn in plxpr.jaxpr.eqns)
+        operations = []
+
+        class CollectOps(qp.capture.PlxprInterpreter):  # pylint: disable=too-few-public-methods
+            def interpret_operation(self, op):
+                operations.append(op)
+
+        CollectOps().eval(plxpr.jaxpr, plxpr.consts)
+        expected = [
+            qp.ctrl(qp.RX(0.25 * 2 ** (len(control) - 1 - j), wires=3), control=wire)
+            for j, wire in enumerate(control)
         ]
-        assert len(inner_loops) == 1
+        assert len(operations) == len(expected)
+        for actual, expected_op in zip(operations, expected):
+            qp.assert_equal(actual, expected_op)
 
 
 class TestIntegration:

@@ -15,9 +15,9 @@
 Test base Resource class and its associated methods
 """
 
-import dataclasses
+# pylint: disable=protected-access
 
-# pylint: disable=unnecessary-dunder-call,protected-access,disallowed-name
+import dataclasses
 import textwrap
 from dataclasses import FrozenInstanceError
 
@@ -27,6 +27,7 @@ import pennylane as qp
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
 from pennylane.resource.expression import Expression
+from pennylane.resource.extension import _RESOURCE_EXTENSIONS, weighted_sum
 from pennylane.resource.resource import (
     CircuitSpecs,
     PBCSpecsResources,
@@ -237,8 +238,9 @@ class TestBaseResourcesExtension:
     class DummyResources(Resources):
         """Dummy class to test automatic subclass field handling"""
 
+        # pylint: disable-next=disallowed-name
         foo: int = dataclasses.field(default=5, metadata={"display_name": "My field"})
-        bar: dict = dataclasses.field(
+        bar: dict = dataclasses.field(  # pylint: disable=disallowed-name
             default_factory=lambda: {"a": 1, "b": 2}, metadata={"display_name": "My dict field"}
         )
 
@@ -858,6 +860,146 @@ class TestSpecsResources:
         assert s.to_dict() == expected
 
 
+class TestResourceExtensionDisplay:
+    """Test registered extension fields alongside the standard resource display."""
+
+    @pytest.fixture(scope="class")
+    @classmethod
+    def example_specs(cls):
+        """Complete reports with registered and unregistered extension data."""
+        original = _RESOURCE_EXTENSIONS.copy()
+        qp.resource.register_resource_extension(
+            "example_count", aggregate=weighted_sum, display_name="Example resources"
+        )
+        yield CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={0: "before", 1: "after"},
+            resources={
+                n: SpecsResources(
+                    counts={"Hadamard": 2, "CNOT": 3},
+                    measurement_processes={"expval(PauliZ)": 2},
+                    num_wires=2,
+                    circuit_depth=3,
+                    extra={
+                        "example_count": {
+                            "count": str(n) if n == 0 else n,
+                            "unavailable_count": None,
+                        },
+                        "unknown": {"hidden_count": 7},
+                    },
+                )
+                for n in range(2)
+            },
+        )
+        _RESOURCE_EXTENSIONS.clear()
+        _RESOURCE_EXTENSIONS.update(original)
+
+    def test_str(self, example_specs):
+        """Registered fields appear under their heading; unregistered fields stay hidden."""
+        expected = textwrap.dedent("""\
+            Quantum operations:
+            - Total: 5
+              - Hadamard: 2
+              - CNOT: 3
+            Measurement processes:
+            - expval(PauliZ): 2
+            Total wires: 2
+            Circuit Depth: 3
+            Example resources:
+            - count: 1
+            - unavailable_count: Not computed
+        """).strip()
+
+        assert str(example_specs.resources[1]) == expected
+
+    def test_ipython_display(self, example_specs):
+        """Registered fields appear in the Markdown table with the standard fields."""
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Quantum operations:** | |
+            | *Total* | 5 |
+            | Hadamard | 2 |
+            | CNOT | 3 |
+            | **Measurement processes:** | |
+            | expval(PauliZ) | 2 |
+            | **Total wires** | 2 |
+            | **Circuit depth** | 3 |
+            | **Example resources** | |
+            | count | 1 |
+            | unavailable_count | Not computed |
+        """).strip()
+
+        assert example_specs.resources[1]._repr_markdown_().strip() == expected
+
+    def test_circuit_specs_str(self, example_specs):
+        """Extension values align with their resource columns in the text table."""
+        expected = textwrap.dedent("""\
+            Device: default.qubit
+            Device wires: 5
+            Shots: Shots(total=1000)
+            Levels:
+            - 0: before
+            - 1: after
+
+            ↓Metric         Level→ |  0 |  1
+            --------------------------------
+            Quantum operations:    |
+            - Total                |  5 |  5
+              - Hadamard           |  2 |  2
+              - CNOT               |  3 |  3
+            Measurement processes: |
+            - expval(PauliZ)       |  2 |  2
+            Total wires            |  2 |  2
+            Circuit depth          |  3 |  3
+            Example resources:     |
+            - count                |  0 |  1
+            - unavailable_count    |  - |  -
+        """).strip()
+
+        assert str(example_specs) == expected
+
+    def test_circuit_specs_md(self, example_specs):
+        """Extension values align with their resource columns in the Markdown table."""
+        expected = textwrap.dedent("""\
+            <details open>
+            <summary>Circuit Specs</summary>
+
+            | Metric | Value |
+            | :--- | ---: |
+            | **Device** | default.qubit |
+            | **Device wires** | 5 |
+            | **Shots** | Shots(total=1000) |
+            | **Levels** | |
+            | 0 | before |
+            | 1 | after |
+
+            </details>
+            <details open>
+            <summary>Resources</summary>
+
+            | ↓Metric / Level→ | 0 | 1 |
+            | :--- | ---: | ---: |
+            | **Quantum operations** |  |  |
+            | *Total* | 5 | 5 |
+            | Hadamard | 2 | 2 |
+            | CNOT | 3 | 3 |
+            | **Measurement processes** |  |  |
+            | expval(PauliZ) | 2 | 2 |
+            | **Total wires** | 2 | 2 |
+            | **Circuit depth** | 3 | 3 |
+            | **Example resources** |  |  |
+            | count | 0 | 1 |
+            | unavailable_count | N/A | N/A |
+
+            </details>
+        """).strip()
+
+        assert example_specs._repr_markdown_() == expected
+
+
 class TestPBCSpecsResources:
     """Separate class for testing PBC depth counting since it will be refactor soon."""
 
@@ -872,7 +1014,6 @@ class TestPBCSpecsResources:
         )
 
     def test_pbc_depths_required(self):
-        # pylint: disable=missing-kwoa
         with pytest.raises(
             TypeError,
             match="missing 2 required keyword-only arguments: 'any_commuting_depth' and 'qubit_disjoint_depth'",

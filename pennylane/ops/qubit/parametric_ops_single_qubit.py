@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-arguments
 """
 This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
 
 # pylint: disable=arguments-differ
+
 
 import functools
 import math as builtin_math
@@ -32,6 +32,7 @@ import pennylane as qp
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
+    register_condition,
     register_resources,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -132,8 +133,7 @@ class RX(Operator2):
 
     @property
     @override
-    # pylint: disable-next=missing-function-docstring
-    def basis(self) -> Literal["X", "Y", "Z", None]:
+    def basis(self) -> Literal["X", "Y", "Z", None]:  # pylint: disable=missing-function-docstring
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
@@ -146,7 +146,7 @@ class RX(Operator2):
 
     @staticmethod
     @override
-    # pylint: disable-next=arguments-differ,unused-argument
+    # pylint: disable-next=unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -368,8 +368,7 @@ class RY(Operator2):
 
     @property
     @override
-    # pylint: disable-next=missing-function-docstring
-    def basis(self) -> Literal["X", "Y", "Z", None]:
+    def basis(self) -> Literal["X", "Y", "Z", None]:  # pylint: disable=missing-function-docstring
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
@@ -382,7 +381,7 @@ class RY(Operator2):
 
     @staticmethod
     @override
-    # pylint: disable-next=arguments-differ,unused-argument
+    # pylint: disable-next=unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -637,7 +636,7 @@ class RZ(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable=arguments-differ, unused-argument
+    # pylint: disable-next=unused-argument
     def compute_matrix(phi: TensorLike, wires=None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -668,17 +667,14 @@ class RZ(Operator2):
         return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(2, like=diags), diags)
 
     @staticmethod
-    # pylint: disable=arguments-differ, unused-argument
-    def compute_sparse_matrix(phi, wires=None, format="csr"):
+    def compute_sparse_matrix(phi, wires=None, format="csr"):  # pylint: disable=unused-argument
         return sp.sparse.csr_matrix(
             [[np.exp(-1j * phi / 2), 0], [0, np.exp(1j * phi / 2)]]
         ).asformat(format)
 
     @staticmethod
-    # pylint: disable=arguments-differ, unused-argument
-    def compute_eigvals(
-        phi: TensorLike, wires=None
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_eigvals(phi: TensorLike, wires=None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -726,8 +722,7 @@ class RZ(Operator2):
         return RZ(phi, wires=self.wires)
 
 
-# pylint: disable=unused-argument
-def _rz_to_ps_resources(phi, wires):
+def _rz_to_ps_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.PhaseShift: 1, qp.GlobalPhase: 1}
 
 
@@ -737,8 +732,7 @@ def _rz_to_ps(phi, wires: WiresLike):
     qp.GlobalPhase(phi / 2)
 
 
-# pylint: disable=unused-argument
-def _rz_to_rot_resources(phi, wires):
+def _rz_to_rot_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.Rot: 1}
 
 
@@ -747,8 +741,7 @@ def _rz_to_rot(phi, wires: WiresLike):
     qp.Rot(0, 0, phi, wires=wires)
 
 
-# pylint: disable=unused-argument
-def _rz_to_ry_rx_resources(phi, wires):
+def _rz_to_ry_rx_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.RY: 2, qp.RX: 1}
 
 
@@ -759,8 +752,7 @@ def _rz_to_ry_rx(phi, wires: WiresLike):
     qp.RY(-np.pi / 2, wires=wires)
 
 
-# pylint: disable=unused-argument
-def _rz_to_rx_cliff_resources(phi, wires):
+def _rz_to_rx_cliff_resources(phi, wires):  # pylint: disable=unused-argument
     resources = {_change_op_basis_abstract(qp.Hadamard, qp.RX, qp.Hadamard): 1}
     return resources
 
@@ -770,8 +762,7 @@ def _rz_to_rx_cliff(phi, wires: WiresLike):
     qp.change_op_basis(qp.Hadamard(wires), qp.RX(phi, wires), qp.Hadamard(wires))
 
 
-# pylint: disable=unused-argument
-def _rz_to_ry_cliff_resources(phi, wires):
+def _rz_to_ry_cliff_resources(phi, wires):  # pylint: disable=unused-argument
     resources = {
         _change_op_basis_abstract(
             prod(qp.S(Wire[1]), qp.H(Wire[1])),
@@ -796,7 +787,7 @@ def _rz_to_ry_cliff(phi, wires: WiresLike):
     qp.change_op_basis(_compute, qp.RY(phi, wires), _uncompute)
 
 
-def _rz_to_ppr_resources(phi, wires):
+def _rz_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1}
 
 
@@ -810,6 +801,7 @@ add_decomps("Adjoint(RZ)", adjoint_rotation2)
 add_decomps("Pow(RZ)", pow_rotation2)
 
 
+# pylint: disable-next=unused-argument
 def _controlled_rz_resource(base, control_wires, control_values, work_wires, work_wire_type):
     if len(control_wires) == 1:
         return {qp.CRZ: 1}
@@ -824,6 +816,7 @@ def _controlled_rz_resource(base, control_wires, control_values, work_wires, wor
 
 
 @register_resources(_controlled_rz_resource)
+# pylint: disable-next=unused-argument
 def _controlled_rz_decomp(base, control_wires, control_values, work_wires, work_wire_type):
 
     if len(control_wires) == 1:
@@ -872,12 +865,34 @@ class PhaseShift(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.PhaseShift
+            :symbols: :math:`c` control wires, :math:`z` controls on :math:`0`
+            :example: :math:`c=2`, :math:`z=0`
 
             .. decomposition-rule:: _phaseshift_to_rz_gp
                 :image: /_static/decomposition_thumbnails/phaseshift_to_rz_gp.svg
 
                 :class:`~.RZ` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_phase_shift_decomp)
+                :image: /_static/decomposition_thumbnails/controlled_phase_shift_pauli_rots.svg
+                :region: controlled
+                :where: A Pauli-Z rotation acts on each of the :math:`2^{c+1}-1` non-empty subsets of the control wires and the target wire. For :math:`c=1`, a single ControlledPhaseShift is used instead. Controls on :math:`0` are flipped with X gates before and after the decomposition.
+
+                :class:`~.PauliRot` | :math:`2^{c+1}-1` | 7
+                :class:`~.GlobalPhase` | :math:`1` | 1
+                :class:`~.PauliX` | :math:`2z` | 0
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_phase_shift_single_phase)
+                :image: /_static/decomposition_thumbnails/controlled_phase_shift_single_phase.svg
+                :region: controlled
+                :requires: :math:`c` zeroed work wires
+                :where: A ladder of TemporaryAND gates computes the AND of the :math:`c` control wires and the target wire into the last work wire, which then receives a single PhaseShift. The ladder is uncomputed with mid-circuit measurements. Controls on :math:`0` are flipped with X gates before and after the decomposition.
+
+                :class:`~.TemporaryAND` | :math:`c` | 2
+                :class:`~.PhaseShift` | :math:`1` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`c` | 2
+                :class:`~.PauliX` | :math:`2z` | 0
     """
 
     num_wires = 1
@@ -915,7 +930,7 @@ class PhaseShift(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ", cache=cache)
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -947,7 +962,7 @@ class PhaseShift(Operator2):
         return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(2, like=diags), diags)
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=unused-argument
     def compute_eigvals(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -1039,10 +1054,45 @@ def _controlled_phase_shift_decomp(base, control_wires, *_, **__):
     qp.GlobalPhase(-base.phi / 2**n)
 
 
+def _controlled_phase_shift_single_phase_resources(base, control_wires, *_, **__):
+    #  pylint: disable=unused-argument
+    num_control_wires = len(control_wires)
+    return {
+        qp.TemporaryAND: num_control_wires,
+        PhaseShift: 1,
+        qp.adjoint(qp.TemporaryAND(Wire[3])): num_control_wires,
+    }
+
+
+@register_condition(
+    lambda control_wires, work_wires, work_wire_type, **_: work_wire_type == "zeroed"
+    and len(control_wires) > 0
+    and len(work_wires) >= len(control_wires)
+)
+@register_resources(_controlled_phase_shift_single_phase_resources)
+def _controlled_phase_shift_single_phase(base, control_wires, work_wires, **_):
+    """Computes ``AND(*control_wires, base.wires[0])`` into ``len(control_wires)`` zeroed work
+    wires with a ``TemporaryAND`` ladder, applies a single ``PhaseShift`` to the last work wire
+    and uncomputes the ladder with measurements."""
+    and_controls = [*control_wires, base.wires[0]]
+    and_targets = list(work_wires[: len(control_wires)])
+    and_wires = list(zip([and_controls[0], *and_targets[:-1]], and_controls[1:], and_targets))
+
+    for wires in and_wires:
+        qp.TemporaryAND(wires=wires)
+    PhaseShift(base.phi, wires=and_targets[-1])
+    for wires in reversed(and_wires):
+        qp.adjoint(qp.TemporaryAND)(wires=wires)
+
+
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
 add_decomps("Adjoint(PhaseShift)", adjoint_rotation2)
 add_decomps("Pow(PhaseShift)", pow_rotation2)
-add_decomps("C(PhaseShift)", flip_zero_control2(_controlled_phase_shift_decomp))
+add_decomps(
+    "C(PhaseShift)",
+    flip_zero_control2(_controlled_phase_shift_decomp),
+    flip_zero_control2(_controlled_phase_shift_single_phase),
+)
 
 
 class Rot(Operator2):
@@ -1196,8 +1246,7 @@ class Rot(Operator2):
         return Rot(p0, p1, p2, wires=self.wires)
 
 
-# pylint: disable-next=unused-argument
-def _rot_to_rz_ry_rz_resources(phi, theta, omega, wires):
+def _rot_to_rz_ry_rz_resources(phi, theta, omega, wires):  # pylint: disable=unused-argument
     return {qp.RZ: 2, qp.RY: 1}
 
 
@@ -1219,6 +1268,7 @@ def _adjoint_rot(base):
 add_decomps("Adjoint(Rot)", _adjoint_rot)
 
 
+# pylint: disable-next=unused-argument
 def _controlled_rot_resource(base, control_wires, control_values, work_wires, work_wire_type):
     if len(control_wires) == 1:
         return {qp.CRot: 1}
@@ -1234,6 +1284,7 @@ def _controlled_rot_resource(base, control_wires, control_values, work_wires, wo
 
 
 @register_resources(_controlled_rot_resource)
+# pylint: disable-next=unused-argument
 def _controlled_rot_decomp(base, control_wires, control_values, work_wires, work_wire_type):
 
     phi, theta, omega = base.phi, base.theta, base.omega
@@ -1308,7 +1359,7 @@ class U1(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1355,7 +1406,6 @@ class U1(Operator2):
         return U1(phi, wires=self.wires)
 
 
-# pylint: disable=unused-argument
 def _u1_phaseshift_resources(*_, **__):
     return {PhaseShift: 1}
 
@@ -1431,7 +1481,7 @@ class U2(Operator2):
         super().__init__(phi, delta, wires=wires)
 
     @staticmethod
-    # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
     def compute_matrix(phi: TensorLike, delta: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1483,8 +1533,7 @@ class U2(Operator2):
         return U2(phi, delta, wires=wires)
 
 
-# pylint: disable=unused-argument
-def _u2_phaseshift_rot_resources(phi, delta, wires):
+def _u2_phaseshift_rot_resources(phi, delta, wires):  # pylint: disable=unused-argument
     return {PhaseShift: 2, Rot: 1}
 
 
@@ -1577,9 +1626,11 @@ class U3(Operator2):
         super().__init__(theta, phi, delta, wires=wires)
 
     @staticmethod
-    # pylint: disable=unused-argument
-    def compute_matrix(
-        theta: TensorLike, phi: TensorLike, delta: TensorLike, wires: WiresLike = None
+    def compute_matrix(  # pylint: disable=unused-argument
+        theta: TensorLike,
+        phi: TensorLike,
+        delta: TensorLike,
+        wires: WiresLike = None,
     ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1652,8 +1703,7 @@ class U3(Operator2):
         return U3(theta, phi, delta, wires=wires)
 
 
-# pylint: disable=unused-argument
-def _u3_phaseshift_rot_resources(theta, phi, delta, wires):
+def _u3_phaseshift_rot_resources(theta, phi, delta, wires):  # pylint: disable=unused-argument
     return {PhaseShift: 2, Rot: 1}
 
 

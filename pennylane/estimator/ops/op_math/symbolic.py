@@ -26,8 +26,6 @@ from pennylane.estimator.resource_operator import (
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=arguments-differ,super-init-not-called, signature-differs
-
 
 class Adjoint(ResourceOperator):
     r"""Resource class for the symbolic Adjoint operation.
@@ -91,7 +89,7 @@ class Adjoint(ResourceOperator):
 
     resource_keys = {"base_cmpr_op"}
 
-    def __init__(self, base_op: ResourceOperator) -> None:
+    def __init__(self, base_op: ResourceOperator) -> None:  # pylint: disable=super-init-not-called
         _dequeue(op_to_remove=base_op)
         self.queue()
         base_cmpr_op = base_op.resource_rep_from_op()
@@ -113,6 +111,7 @@ class Adjoint(ResourceOperator):
         return {"base_cmpr_op": self.base_op}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, base_cmpr_op: CompressedResourceOp) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -128,6 +127,7 @@ class Adjoint(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"base_cmpr_op": base_cmpr_op})
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, base_cmpr_op: CompressedResourceOp, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
@@ -163,6 +163,7 @@ class Adjoint(ResourceOperator):
         return base_class.adjoint_resource_decomp(target_resource_params=base_params)
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
@@ -183,7 +184,7 @@ class Adjoint(ResourceOperator):
         return [GateCount(base_cmpr_op)]
 
     @staticmethod
-    # pylint: disable=arguments-renamed
+    # pylint: disable-next=arguments-differ
     def tracking_name(base_cmpr_op: CompressedResourceOp) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_cmpr_op.name
@@ -247,7 +248,7 @@ class Controlled(ResourceOperator):
 
     resource_keys = {"base_cmpr_op", "num_ctrl_wires", "num_zero_ctrl"}
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self,
         base_op: ResourceOperator,
         num_ctrl_wires: int,
@@ -292,7 +293,7 @@ class Controlled(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         base_cmpr_op: CompressedResourceOp,
         num_ctrl_wires: int,
@@ -323,7 +324,7 @@ class Controlled(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls, base_cmpr_op: CompressedResourceOp, num_ctrl_wires: int, num_zero_ctrl: int, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
@@ -368,7 +369,7 @@ class Controlled(ResourceOperator):
         )
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
@@ -409,11 +410,8 @@ class Controlled(ResourceOperator):
         ]
 
     @staticmethod
-    def tracking_name(
-        base_cmpr_op: CompressedResourceOp,
-        num_ctrl_wires: int,
-        num_zero_ctrl: int,
-    ):
+    # pylint: disable-next=arguments-differ
+    def tracking_name(base_cmpr_op: CompressedResourceOp, num_ctrl_wires: int, num_zero_ctrl: int):
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_cmpr_op.name
         return f"C({base_name}, num_ctrl_wires={num_ctrl_wires},num_zero_ctrl={num_zero_ctrl})"
@@ -472,6 +470,7 @@ class Pow(ResourceOperator):
 
     resource_keys = {"base_cmpr_op", "z"}
 
+    # pylint: disable-next=super-init-not-called
     def __init__(self, base_op: ResourceOperator, pow_z: int) -> None:
         _dequeue(op_to_remove=base_op)
         self.queue()
@@ -498,6 +497,7 @@ class Pow(ResourceOperator):
         }
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, base_cmpr_op: CompressedResourceOp, pow_z: int) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute a resource estimation.
@@ -514,7 +514,7 @@ class Pow(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"base_cmpr_op": base_cmpr_op, "pow_z": pow_z})
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls, base_cmpr_op: CompressedResourceOp, pow_z: int, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
@@ -552,6 +552,7 @@ class Pow(ResourceOperator):
         return base_class.pow_resource_decomp(pow_z=pow_z, target_resource_params=base_params)
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
@@ -575,6 +576,7 @@ class Pow(ResourceOperator):
         return [GateCount(cls.resource_rep(base_cmpr_op, pow_z * z))]
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def tracking_name(base_cmpr_op: CompressedResourceOp, pow_z: int) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         base_name = base_cmpr_op.name
@@ -641,7 +643,7 @@ class Prod(ResourceOperator):
 
     resource_keys = {"num_wires", "cmpr_factors_and_counts"}
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self,
         res_ops: Iterable[ResourceOperator | tuple[ResourceOperator, int]],
         wires: WiresLike = None,
@@ -703,7 +705,7 @@ class Prod(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls, cmpr_factors_and_counts, num_wires: WiresLike = None
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
@@ -726,9 +728,8 @@ class Prod(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(
-        cls, cmpr_factors_and_counts, num_wires: int
-    ):  # pylint: disable=unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
+    def resource_decomp(cls, cmpr_factors_and_counts, num_wires: int):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
@@ -815,7 +816,7 @@ class ChangeOpBasis(ResourceOperator):
 
     resource_keys = {"num_wires", "cmpr_compute_op", "cmpr_target_op", "cmpr_uncompute_op"}
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self,
         compute_op: ResourceOperator,
         target_op: ResourceOperator,
@@ -886,7 +887,7 @@ class ChangeOpBasis(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         cmpr_compute_op: CompressedResourceOp,
         cmpr_target_op: CompressedResourceOp,
@@ -926,12 +927,12 @@ class ChangeOpBasis(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ,unused-argument
         cls,
         cmpr_compute_op: CompressedResourceOp,
         cmpr_target_op: CompressedResourceOp,
         cmpr_uncompute_op: CompressedResourceOp,
-        num_wires: int,  # pylint: disable=unused-argument
+        num_wires: int,
     ):
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
@@ -993,7 +994,7 @@ class ChangeOpBasis(ResourceOperator):
         ]
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -1067,10 +1068,11 @@ def _(action: Deallocate):
     return Allocate(action.num_wires)
 
 
-# pylint: disable=unused-argument
 @singledispatch
-def apply_controlled(
-    action: GateCount | Allocate | Deallocate, num_ctrl_wires: int, num_zero_ctrl: int
+def apply_controlled(  # pylint: disable=unused-argument
+    action: GateCount | Allocate | Deallocate,
+    num_ctrl_wires: int,
+    num_zero_ctrl: int,
 ) -> GateCount | Allocate | Deallocate:
     """Create the controlled version of a resource-tracking gate.
 

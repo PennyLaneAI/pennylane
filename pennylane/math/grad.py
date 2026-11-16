@@ -25,7 +25,6 @@ from pennylane._grad import jacobian as _autograd_jacobian
 from .interface_utils import get_interface
 
 
-# pylint: disable=import-outside-toplevel
 def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     """Compute the gradient in a jax-like manner for any interface.
 
@@ -91,9 +90,9 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     return compute_grad
 
 
-# pylint: disable=import-outside-toplevel
 def _torch_jac(f, argnums, args, kwargs):
     """Calculate a jacobian via torch."""
+    # pylint: disable-next=import-outside-toplevel
     from torch.autograd.functional import jacobian as _torch_jac
 
     argnums_torch = (argnums,) if isinstance(argnums, int) else argnums
@@ -117,7 +116,6 @@ def _torch_jac(f, argnums, args, kwargs):
     return jac[0] if isinstance(argnums, int) else jac
 
 
-# pylint: disable=import-outside-toplevel
 def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     """Compute the Jacobian in a jax-like manner for any interface.
 
