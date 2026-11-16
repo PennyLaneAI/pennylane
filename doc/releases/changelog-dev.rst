@@ -589,6 +589,17 @@ New features since last release
       Total wires: 2
       Circuit Depth: Not computed
 
+  The ``target`` can also be a level of the compile pipeline, such as ``"user"``, ``"device"``
+  (the default), a marker label, or an ``int``. The resources are then projected onto the gates
+  that the circuit can contain at that level, such as the gate set of the last
+  :func:`~.transforms.decompose` transform before it, or the gates supported by the QNode's device.
+  The :func:`~.transforms.decompose` transforms before that level are applied, with their
+  ``fixed_decomps`` and ``exclude_decomps``, while the other transforms are still skipped, as with
+  ``level="top"``. A warning is raised if a skipped transform may introduce new gates, such as
+  :func:`~.transforms.gridsynth`. If ``target`` is a gate set, the rules of the compile pipeline
+  are ignored, with a warning.
+  `(#10541) <https://github.com/PennyLaneAI/pennylane/pull/10541>`__
+
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
   In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.Expression` instances where ``int`` values would normally appear.
@@ -1909,6 +1920,11 @@ Deprecations 👋
 
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
+
+* The helper that inserts the resource analysis passes for :func:`~.analyze` and
+  :func:`~.estimate` now inserts the requested analysis pass at every level, instead of
+  ``resource-analysis`` at every level other than 0.
+  `(#10541) <https://github.com/PennyLaneAI/pennylane/pull/10541>`__
 
 * :class:`~.Barrier` now uses a dedicated program-capture primitive while retaining
   the ``Operator2`` argument format and operator reconstruction behavior.
