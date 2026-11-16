@@ -22,14 +22,15 @@ from functools import partial
 from pennylane import capture
 from pennylane.core.transforms import CompilePipeline
 from pennylane.transforms import decompose
-
-from ._utils import (
-    apply_partial_args,
-    build_circuit_specs,
-    preprocess_level_input,
-    unwrap_partial,
-    unwrap_qjit_qnode,
+from pennylane.workflow._levels import (
+    is_single_level,
+    level_to_number,
+    pipeline_at_slice,
+    validate_level,
 )
+from pennylane.workflow.get_compile_pipeline import unwrap_qjit_qnode
+
+from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial
 from .mlir_specs import resources_from_analysis_pass
 from .resource import CircuitSpecs
 
@@ -51,10 +52,18 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
     original_qnode = unwrap_qjit_qnode(func, fn_name="qp.estimate")
     from catalyst.utils.exceptions import CompileError  # pylint: disable=import-outside-toplevel
 
-    if level == "device":
+    compile_pipeline = original_qnode.compile_pipeline
+    validate_level(level, compile_pipeline)
+
+    # The ``isinstance`` check avoids elementwise comparisons
+    if isinstance(level, str) and level == "device":
         raise NotImplementedError("qp.estimate does not support level='device' yet.")
-    levels = preprocess_level_input(level, original_qnode.compile_pipeline)
-    if levels != [0] or not isinstance(level, (int, str)) or level == "all":
+    if isinstance(level, slice):
+        # A slice that selects no transforms is the same as level 0
+        is_top = not pipeline_at_slice(compile_pipeline, level)
+    else:
+        is_top = is_single_level(level) and level_to_number(level, compile_pipeline) == 0
+    if not is_top:
         raise NotImplementedError(
             f"qp.estimate only supports level='top' or level=0, instead got: {level!r}."
         )
@@ -73,9 +82,12 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
         )
 
     # At level="top", the user transforms are skipped and only the decomposition is applied
-    bound_t = decompose(gate_set=target, **_decomps_from_pipeline(original_qnode.compile_pipeline))
+    bound_t = decompose(gate_set=target, **_decomps_from_pipeline(compile_pipeline))
     estimate_kwargs = bound_t.kwargs
-    estimate_qnode = original_qnode.update_pipelines(CompilePipeline())
+    estimate_qnode = original_qnode.update_pipelines(
+        CompilePipeline(),
+        post_device_pipeline=CompilePipeline(original_qnode.post_device_pipeline),
+    )
     try:
         resources = resources_from_analysis_pass(
             func,
@@ -103,7 +115,7 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
 
 def estimate(
     qnode,
-    level: str | int = "top",
+    level: str | int | slice = "top",
     *,
     target: str | Iterable[type | str] | dict[type | str, float],
 ) -> Callable[..., CircuitSpecs]:
@@ -118,10 +130,11 @@ def estimate(
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the qjit'd QNode for which to estimate resources.
-        level (str | int): The level to compile to before projecting the resources onto the
-            ``target``. Only ``"top"``, ``0``, or the name of a marker placed before all passes,
-            are currently supported, indicating the original circuit before any compilation
-            passes have been applied. Defaults to ``"top"``.
+        level (str | int | slice): The portion of the
+            :class:`~.CompilePipeline` to apply before projecting the resources onto the
+            ``target``. See :func:`~.workflow.get_compile_pipeline` for accepted values.
+            Currently, only ``"top"``, ``0``, or the label of a marker placed before all
+            transforms are supported. Defaults to ``"top"``.
         target (str | Iterable[type | str] | dict[type | str, float]): The gate set to project
             the resources onto, in any form accepted by the ``gate_set`` argument of
             :func:`~.decompose`.
