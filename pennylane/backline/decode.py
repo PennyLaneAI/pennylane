@@ -140,16 +140,13 @@ def _resolve_nodes(controller, coprocessor):
     return controller, coprocessor
 
 
-def _validate_packed(syndrome, in_bytes, out_bytes):
-    """Validate packed decode inputs and transport sizes."""
+def _validate_packed(syndrome, in_bytes, out_bytes, fn_name: str):
+    """Validate packed decode inputs and transport sizes for the function named ``fn_name``."""
+    prefix = f"decode: coprocessor function {fn_name!r} has bitpack=True, so"
     if in_bytes is not None and int(in_bytes) != _PACKED_U64_BYTES:
-        raise ValueError(
-            f"decode: bitpack=True requires in_bytes={_PACKED_U64_BYTES}, got {int(in_bytes)}"
-        )
+        raise ValueError(f"{prefix} in_bytes must be {_PACKED_U64_BYTES}, got {int(in_bytes)}")
     if out_bytes is not None and int(out_bytes) != _PACKED_U64_BYTES:
-        raise ValueError(
-            f"decode: bitpack=True requires out_bytes={_PACKED_U64_BYTES}, got {int(out_bytes)}"
-        )
+        raise ValueError(f"{prefix} out_bytes must be {_PACKED_U64_BYTES}, got {int(out_bytes)}")
 
     interface = (
         math.get_interface(*syndrome)
@@ -163,10 +160,11 @@ def _validate_packed(syndrome, in_bytes, out_bytes):
         syndrome = np.asarray(syndrome, dtype=np.uint8)
 
     if syndrome.ndim != 1:
-        raise ValueError("decode: packed syndromes must be a 1D bit vector")
+        raise ValueError(f"{prefix} the syndrome must be a 1D bit vector")
     if int(syndrome.shape[0]) > _PACKED_U64_BITS:
         raise ValueError(
-            f"decode: packed syndromes support at most {_PACKED_U64_BITS} bits, got {int(syndrome.shape[0])}"
+            f"{prefix} the syndrome can have at most {_PACKED_U64_BITS} bits, "
+            f"got {int(syndrome.shape[0])}"
         )
     return syndrome
 
@@ -249,6 +247,8 @@ def decode(  # pylint: disable=too-many-arguments
     Raises:
         ValueError: if the round targets an unnamed coprocessor which cannot be resolved as the
             placement holds more than one coprocessor.
+        ValueError: If the coprocessor's function has ``bitpack=True``, and ``syndrome`` is not a
+            1D bit vector with at most 64 entries, or ``in_bytes`` or ``out_bytes`` is not 8.
 
     .. seealso:: :class:`~.Controller`, :class:`~.Coprocessor`,
         :class:`~pennylane.Backline`
@@ -284,9 +284,10 @@ def decode(  # pylint: disable=too-many-arguments
     controller, coprocessor = _resolve_nodes(controller, coprocessor)
     placement = active_placement()
     key = _session_key(coprocessor, placement.coprocessors if placement is not None else ())
-    bitpack = coprocessor.coprocessor_fn.bitpack
+    fn = coprocessor.coprocessor_fn
+    bitpack = fn.bitpack
     if bitpack:
-        syndrome = _pack(_validate_packed(syndrome, in_bytes, out_bytes))
+        syndrome = _pack(_validate_packed(syndrome, in_bytes, out_bytes, fn.name))
         nbytes = _PACKED_U64_BYTES
         reply_bytes = _PACKED_U64_BYTES
     else:

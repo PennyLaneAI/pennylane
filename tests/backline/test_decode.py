@@ -104,10 +104,14 @@ class TestDecodeBitpack:
         ("name", "kwargs"), [("in_bytes", {"in_bytes": 4}), ("out_bytes", {"out_bytes": 4})]
     )
     def test_bitpack_decode_requires_u64_sized_buffers(self, name, kwargs):
-        """It should refuse packed transport sizes other than one u64."""
+        """It should refuse packed transport sizes other than one u64, naming the function whose
+        ``bitpack=True`` asks for them."""
         controller, coprocessor = self._nodes()
 
-        with pytest.raises(ValueError, match=rf"{name}=8"):
+        with pytest.raises(
+            ValueError,
+            match=rf"coprocessor function 'decoder' has bitpack=True, so {name} must be 8, got 4",
+        ):
             decode(
                 np.array([1], dtype=np.uint8),
                 controller=controller,
@@ -470,21 +474,21 @@ class TestPackedHelpersNumpy:
 
     def test_validate_accepts_a_numpy_syndrome(self):
         """A numpy syndrome takes the numpy branch and comes back as a ``uint8`` array."""
-        out = _validate_packed(np.array([1, 0, 1], dtype=np.uint8), None, None)
+        out = _validate_packed(np.array([1, 0, 1], dtype=np.uint8), None, None, "decoder")
         assert isinstance(out, np.ndarray)
         assert out.dtype == np.uint8
         assert list(out) == [1, 0, 1]
 
     def test_validate_accepts_a_python_list(self):
         """A Python list is treated as numpy, since ``math.get_interface`` reports so."""
-        out = _validate_packed([1, 0, 1, 1], None, None)
+        out = _validate_packed([1, 0, 1, 1], None, None, "decoder")
         assert isinstance(out, np.ndarray)
         assert out.dtype == np.uint8
 
     def test_validate_still_rejects_non_1d_numpy_inputs(self):
         """Shape validation runs after the numpy conversion, and still catches a 2D input."""
         with pytest.raises(ValueError, match="1D bit vector"):
-            _validate_packed(np.zeros((2, 3), dtype=np.uint8), None, None)
+            _validate_packed(np.zeros((2, 3), dtype=np.uint8), None, None, "decoder")
 
     def test_pack_numpy_packs_bits_little_endian(self):
         """The numpy branch of ``_pack`` packs bits little-endian into the low byte and pads.
