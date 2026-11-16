@@ -1881,6 +1881,10 @@ Breaking changes 💔
   ``FromBloq``, ``ToBloq``, ``to_bloq``, and ``bloq_registers``.
   `(#10498) <https://github.com/PennyLaneAI/pennylane/pull/10498>`__
 
+* :class:`~.Barrier` no longer accepts ``only_visual``. Barriers are preserved by
+  simplification and separate compilation into blocks.
+  `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
+
 Deprecations 👋
 ~~~~~~~~~~~~~~~
 
@@ -1910,6 +1914,10 @@ Deprecations 👋
 
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
+
+* :class:`~.Barrier` now uses a dedicated program-capture primitive while retaining
+  the ``Operator2`` argument format and operator reconstruction behavior.
+  `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
 
 * Updated Pylint to 4.1.3, cleaned up suppression scope and formatting, and made unnecessary
   suppressions fail lint. Labs tests now consistently use the test lint configuration.
@@ -2438,6 +2446,7 @@ Documentation 📝
   `(#10433) <https://github.com/PennyLaneAI/pennylane/pull/10433>`__
   `(#10436) <https://github.com/PennyLaneAI/pennylane/pull/10436>`__
   `(#10453) <https://github.com/PennyLaneAI/pennylane/pull/10453>`__
+  `(#10435) <https://github.com/PennyLaneAI/pennylane/pull/10435>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
