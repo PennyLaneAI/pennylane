@@ -23,8 +23,7 @@ from pennylane.devices.qubit_mixed import get_final_state, measure_final_state, 
 ml_interfaces = ["numpy", "autograd", "jax", "torch"]
 
 
-# pylint: disable=too-few-public-methods
-class TestResultInterface:
+class TestResultInterface:  # pylint: disable=too-few-public-methods
     """Test that the result interface is correct."""
 
     @pytest.mark.all_interfaces
@@ -40,7 +39,6 @@ class TestResultInterface:
         assert qp.math.get_interface(res) == interface
 
 
-# pylint: disable=too-few-public-methods
 class TestStatePrepBase:
     """Tests integration with various state prep methods."""
 
@@ -207,28 +205,6 @@ class TestBasicCircuit:
         jacobian = jacobian.real if hasattr(jacobian, "real") else jacobian
         expected = (0, -np.cos(phi.detach().numpy()), -np.sin(phi.detach().numpy()))
         assert math.allclose(jacobian.detach().numpy(), expected)
-
-    @pytest.mark.tf
-    def test_tf_results_and_backprop(self, wires):
-        """Tests execution and gradients with tensorflow."""
-        import tensorflow as tf
-
-        phi = tf.Variable(4.873)
-
-        with tf.GradientTape(persistent=True) as grad_tape:
-            qs = self.get_quantum_script(phi, wires)
-            result = simulate(qs)
-
-        expected = (0, -np.sin(float(phi)), np.cos(float(phi)))
-        assert qp.math.allclose(result, expected)
-
-        expected = (0, -np.cos(float(phi)), -np.sin(float(phi)))
-        assert math.all(
-            [
-                math.allclose(grad_tape.jacobian(one_obs_result, [phi])[0], one_obs_expected)
-                for one_obs_result, one_obs_expected in zip(result, expected)
-            ]
-        )
 
     def test_state_cache(self, wires):
         """Test that the state_cache parameter properly stores the final state when accounting for wire mapping."""

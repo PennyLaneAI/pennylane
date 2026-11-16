@@ -30,7 +30,7 @@ The operations are divided into the following files:
 """
 
 from ..identity import GlobalPhase, Identity, I
-from ..meta import Barrier, Snapshot, WireCut
+from ..meta import Barrier, Snapshot
 from .arithmetic_ops import QubitCarry, QubitSum, IntegerComparator
 from .matrix_ops import QubitUnitary, DiagonalQubitUnitary, BlockEncode
 from .non_parametric_ops import (
@@ -50,7 +50,9 @@ from .non_parametric_ops import (
     ISWAP,
     SISWAP,
     SQISW,
-    PPR,
+    PPR_2,
+    PPR_4,
+    PPR_8,
 )
 from .observables import (
     Hermitian,
@@ -98,7 +100,9 @@ __ops__ = {
     "PauliZ",
     "Z",
     "PauliRot",
-    "PPR",
+    "PPR_2",
+    "PPR_4",
+    "PPR_8",
     "MultiRZ",
     "S",
     "T",
@@ -144,7 +148,6 @@ __ops__ = {
     "OrbitalRotation",
     "FermionicSWAP",
     "Barrier",
-    "WireCut",
     "GlobalPhase",
 }
 

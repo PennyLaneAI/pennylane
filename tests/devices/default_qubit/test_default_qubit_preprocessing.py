@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 import scipy as sp
@@ -29,7 +31,6 @@ from pennylane.exceptions import DecompositionWarning, DeviceError
 class NoMatOp(qp.operation.Operation):
     """Dummy operation for expanding circuit."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
@@ -41,7 +42,6 @@ class NoMatOp(qp.operation.Operation):
 class MatOp(qp.operation.Operation):
     """Dummy operation for expanding circuit."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return True
@@ -50,13 +50,11 @@ class MatOp(qp.operation.Operation):
         return [qp.PauliX(self.wires), qp.PauliY(self.wires)]
 
 
-# pylint: disable=too-few-public-methods
 class MyTemplate(qp.operation.Operation):
     """Temp operator."""
 
     num_wires = 2
 
-    # pylint: disable=missing-function-docstring
     def decomposition(self):
         return [
             qp.RX(self.data[0], self.wires[0]),
@@ -65,13 +63,11 @@ class MyTemplate(qp.operation.Operation):
         ]
 
 
-# pylint: disable=too-few-public-methods
 class CustomIsingXX(qp.operation.Operation):
     """Temp operator."""
 
     num_wires = 2
 
-    # pylint: disable=missing-function-docstring
     def decomposition(self):
         return [qp.IsingXX(self.data[0], self.wires)]
 
@@ -100,47 +96,39 @@ def custom_decomps():
     def custom_rule_isingxx(data, wires):
         qp.IsingXX(data, wires)
 
-    with qp.decomposition.local_decomps():
-        qp.add_decomps(NoMatOp, custom_rule_no_mat_op)
-        qp.add_decomps(MatOp, custom_rule_mat_op)
-        qp.add_decomps(MyTemplate, custom_rule_template)
-        qp.add_decomps(CustomIsingXX, custom_rule_isingxx)
-        yield
+    qp.add_decomps(NoMatOp, custom_rule_no_mat_op)
+    qp.add_decomps(MatOp, custom_rule_mat_op)
+    qp.add_decomps(MyTemplate, custom_rule_template)
+    qp.add_decomps(CustomIsingXX, custom_rule_isingxx)
 
 
-# pylint: disable=too-few-public-methods
 class NoMatNoDecompOp(qp.operation.Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
 
 
-# pylint: disable=too-few-public-methods
 class HasDiagonalizingGatesOp(qp.operation.Operator):
     """Dummy observable that has diagonalizing gates."""
 
-    # pylint: disable=arguments-renamed,invalid-overridden-method,no-self-argument
     @classproperty
-    def has_diagonalizing_gates(cls):
+    def has_diagonalizing_gates(cls):  # pylint: disable=no-self-argument
         return True
 
 
-# pylint: disable=too-few-public-methods
 class CustomizedSparseOp(qp.operation.Operator):
     def __init__(self, wires):
         U = sp.sparse.eye(2 ** len(wires))
         super().__init__(U, wires)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self) -> bool:
         return False
 
-    def compute_sparse_matrix(self, U):  # pylint:disable=unused-argument, arguments-differ
+    def compute_sparse_matrix(self, U):  # pylint: disable=unused-argument
         return sp.sparse.eye(2 ** len(self.wires))
 
 
@@ -305,7 +293,6 @@ class TestConfigSetup:
             dev.setup_execution_config(config)
 
 
-# pylint: disable=too-few-public-methods
 class TestPreprocessing:
     """Unit tests for the preprocessing method."""
 
@@ -458,7 +445,6 @@ class TestPreprocessing:
             def generator(self):
                 return qp.PauliX(0)
 
-            # pylint: disable=arguments-renamed, invalid-overridden-method
             @property
             def has_matrix(self):
                 return True
@@ -467,10 +453,9 @@ class TestPreprocessing:
         def custom_decomp(data, wires):
             qp.RX(data, wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(CustomOpWithGenerator, custom_decomp)
-            tape4 = qp.tape.QuantumScript([CustomOpWithGenerator(qp.numpy.array(1.2), wires=0)])
-            batch, _ = program((tape4,))
+        qp.add_decomps(CustomOpWithGenerator, custom_decomp)
+        tape4 = qp.tape.QuantumScript([CustomOpWithGenerator(qp.numpy.array(1.2), wires=0)])
+        batch, _ = program((tape4,))
 
         assert batch[0].circuit == tape4.circuit
 
@@ -910,7 +895,7 @@ class TestPreprocessingIntegration:
         [new_tape], _ = prog((tape,))
 
         expected = qp.tape.QuantumScript(
-            [qp.CNOT((0, 1)), qp.CNOT((1, 0)), qp.CY((1, 0))], [qp.probs(wires=0)]
+            [qp.CNOT((0, 1)), qp.ctrl(qp.X(0), 1), qp.ctrl(qp.Y(0), 1)], [qp.probs(wires=0)]
         )
         qp.assert_equal(new_tape, expected)
 
@@ -1173,14 +1158,12 @@ class TestDefaultQubitGraphModeExclusive:
         def decomp_with_work_wire(wires):
             qp.X(wires)
 
-        with qp.decomposition.local_decomps():
+        qp.add_decomps(MyDefaultQubitOp, decomp_fallback, decomp_with_work_wire)
 
-            qp.add_decomps(MyDefaultQubitOp, decomp_fallback, decomp_with_work_wire)
-
-            tape = qp.tape.QuantumScript([MyDefaultQubitOp(0)])
-            dev = qp.device("default.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
-            program = dev.preprocess_transforms()
-            (out_tape,), _ = program([tape])
+        tape = qp.tape.QuantumScript([MyDefaultQubitOp(0)])
+        dev = qp.device("default.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
+        program = dev.preprocess_transforms()
+        (out_tape,), _ = program([tape])
 
         assert len(out_tape.operations) == 2
         assert out_tape.operations[0].name == "Hadamard"

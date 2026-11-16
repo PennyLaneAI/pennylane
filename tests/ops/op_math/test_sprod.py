@@ -29,10 +29,7 @@ from pennylane.wires import Wires
 
 scalars = (1, 1.23, 0.0, 1 + 2j)  # int, float, zero, and complex cases accounted for
 
-no_mat_ops = (
-    qp.Barrier,
-    qp.WireCut,
-)
+no_mat_ops = (qp.Barrier,)
 
 non_param_ops = (
     (qp.Identity, gd.I),
@@ -209,13 +206,12 @@ class TestMscMethods:
         sprod_op = SProd(scalar, op)
         assert op_rep == repr(sprod_op)
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("op_scalar_tup", ops)
     def test_flatten_unflatten(self, op_scalar_tup):
         scalar, op = op_scalar_tup
         sprod_op = SProd(scalar, op)
 
-        data, metadata = sprod_op._flatten()
+        data, metadata = sprod_op._flatten()  # pylint: disable=protected-access
 
         assert len(data) == 2
         assert data[0] == scalar
@@ -223,7 +219,7 @@ class TestMscMethods:
 
         assert metadata == tuple()
 
-        new_op = type(sprod_op)._unflatten(*sprod_op._flatten())
+        new_op = type(sprod_op)._unflatten(*sprod_op._flatten())  # pylint: disable=protected-access
         qp.assert_equal(new_op, sprod_op)
         assert new_op is not sprod_op
 
@@ -262,8 +258,7 @@ class TestMscMethods:
         """Test that a scalar product with an operator that has `has_matrix=False`
         has `has_matrix=True` as well."""
 
-        # pylint: disable=too-few-public-methods
-        class MyOp(qp.RX):
+        class MyOp(qp.RX):  # pylint: disable=too-few-public-methods
             """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
             has_matrix = False
@@ -275,8 +270,7 @@ class TestMscMethods:
     def test_has_diagonalizing_gates(self, value):
         """Test that SProd defers has_diagonalizing_gates to base operator."""
 
-        # pylint: disable=too-few-public-methods
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             has_diagonalizing_gates = value
 
@@ -388,20 +382,6 @@ class TestMatrix:
         assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
         assert isinstance(mat, torch.Tensor)
-
-    @pytest.mark.tf
-    def test_batching_tf(self):
-        """Test that SProd matrix has batching support with the tensorflow interface."""
-        import tensorflow as tf
-
-        x = tf.constant([-1.0, -2.0, -3.0])
-        y = tf.constant([1.0, 2.0, 3.0])
-        op = qp.s_prod(y, qp.RX(x, 0))
-        mat = op.matrix()
-        true_mat = qp.math.stack([qp.s_prod(j, qp.RX(i, 0)).matrix() for i, j in zip(x, y)])
-        assert qp.math.allclose(mat, true_mat)
-        assert mat.shape == (3, 2, 2)
-        assert isinstance(mat, tf.Tensor)
 
     @pytest.mark.parametrize("scalar", scalars)
     @pytest.mark.parametrize("op, mat", param_ops + non_param_ops)
@@ -550,51 +530,6 @@ class TestMatrix:
 
         assert torch.allclose(mat, true_mat)
 
-    @pytest.mark.tf
-    def test_sprod_tf(self):
-        """Test matrix is cast correctly using tf parameters."""
-        import tensorflow as tf
-
-        coeff = tf.Variable(1.23, dtype=tf.complex128)
-        raw_rot_params = [0.12, 3.45, 6.78]
-        rot_params = tf.Variable(raw_rot_params)
-
-        sprod_op = SProd(coeff, qp.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0))
-        mat = sprod_op.matrix()
-
-        true_mat = 1.23 * gd.Rot3(raw_rot_params[0], raw_rot_params[1], raw_rot_params[2])
-        true_mat = tf.Variable(true_mat, dtype=tf.complex128)
-
-        assert isinstance(mat, tf.Tensor)
-        assert mat.dtype == true_mat.dtype
-        assert np.allclose(mat, true_mat)
-
-    @pytest.mark.tf
-    def test_tf_matrix_type_casting(self):
-        """Test that types for the matrix are always converted to complex128 and parameters aren't truncated."""
-        import tensorflow as tf
-
-        coeff = tf.Variable(0.1)
-        op = qp.PauliX(0)
-
-        sprod_op = SProd(coeff, op)
-        mat = sprod_op.matrix()
-
-        assert mat.dtype == tf.complex128
-        expected = np.array([[0, 0.1], [0.1, 0.0]], dtype="complex128")
-        assert qp.math.allclose(mat, expected)
-        assert sprod_op.data[0].dtype == coeff.dtype  # coeff not modified by calling the matrix
-
-        op = qp.PauliY(0)
-
-        sprod_op = SProd(coeff, op)
-        mat = sprod_op.matrix()
-
-        assert mat.dtype == tf.complex128
-        expected = np.array([[0, -0.1j], [0.1j, 0.0]], dtype="complex128")
-        assert qp.math.allclose(mat, expected)
-        assert sprod_op.data[0].dtype == coeff.dtype  # coeff not modified by calling the matrix
-
 
 class TestSparseMatrix:
     sparse_ops = (
@@ -680,26 +615,6 @@ class TestSparseMatrix:
         assert all(sparse_matrix.data == expected_sparse_matrix.data)
         assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("scalar", scalars)
-    @pytest.mark.parametrize("op", sparse_ops)
-    def test_sparse_matrix_tf_scalar(self, scalar, op):
-        """Test the sparse_matrix representation of scaled ops when scalar is a tf Variable."""
-        import tensorflow as tf
-
-        scalar = tf.Variable(scalar)
-        sprod_op = SProd(scalar, op)
-        sparse_matrix = sprod_op.sparse_matrix()
-        sparse_matrix.sort_indices()
-
-        expected_sparse_matrix = csr_matrix(op.matrix()).multiply(scalar)
-        expected_sparse_matrix.sort_indices()
-        expected_sparse_matrix.eliminate_zeros()
-
-        assert isinstance(sparse_matrix, type(expected_sparse_matrix))
-        assert all(sparse_matrix.data == expected_sparse_matrix.data)
-        assert all(sparse_matrix.indices == expected_sparse_matrix.indices)
-
     def test_sparse_matrix_sparse_hamiltonian(self):
         """Test the sparse_matrix representation of scaled ops."""
         scalar = 1.23
@@ -744,7 +659,7 @@ class TestProperties:
     def test_is_verified_hermitian_abstract(self):
         """Test that is_verified_hermitian works with abstract coefficients."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         def float_arg(x):
             op = x * qp.X(0)
@@ -757,25 +672,6 @@ class TestProperties:
             assert not op.is_verified_hermitian
 
         jax.jit(complex_arg)(jax.numpy.array(0.5 + 1.2j))
-
-    @pytest.mark.tf
-    def test_is_verified_hermitian_tf(self):
-        """Test that is_verified_hermitian works when a tf type scalar is provided."""
-        import tensorflow as tf
-
-        coeffs = (tf.Variable(1.23), tf.Variable(1.23 + 1.2j))
-        true_hermitian_states = (True, False)
-
-        for scalar, hermitian_state in zip(coeffs, true_hermitian_states):
-            op = s_prod(scalar, qp.PauliX(wires=0))
-            assert op.is_verified_hermitian == hermitian_state
-
-    @pytest.mark.tf
-    def test_no_dtype_promotion(self):
-        import tensorflow as tf
-
-        op = qp.s_prod(tf.constant(0.5), qp.X(0))
-        assert op.scalar.dtype == next(iter(op.pauli_rep.values())).dtype
 
     @pytest.mark.jax
     def test_is_verified_hermitian_jax(self):
@@ -891,7 +787,7 @@ class TestSimplify:
         sprod_op = SProd(
             2, SProd(2, qp.RZ(1.32, wires=0)) + qp.Identity(wires=0) + qp.RX(1.9, wires=1)
         )
-        final_op = qp.ops.Sum(  # pylint:disable=no-member
+        final_op = qp.ops.Sum(
             SProd(4, qp.RZ(1.32, wires=0)),
             SProd(2, qp.Identity(wires=0)),
             SProd(2, qp.RX(1.9, wires=1)),
@@ -931,18 +827,6 @@ class TestSimplify:
         result = s_prod(c3, qp.PauliX(0))
         simplified_op = op.simplify()
 
-        qp.assert_equal(simplified_op, result)
-
-    @pytest.mark.tf
-    def test_simplify_pauli_rep_tf(self):
-        """Test that simplifying operators with a valid pauli representation works with tf interface."""
-        import tensorflow as tf
-
-        c1, c2, c3 = tf.Variable(1.23), tf.Variable(2.0), tf.Variable(2.46)
-
-        op = s_prod(c1, s_prod(c2, qp.PauliX(0)))
-        result = s_prod(c3, qp.PauliX(0))
-        simplified_op = op.simplify()
         qp.assert_equal(simplified_op, result)
 
     @pytest.mark.torch
@@ -1072,8 +956,8 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 1.23 in results  # pylint:disable=unsupported-membership-test
-        assert -1.23 not in results  # pylint:disable=unsupported-membership-test
+        assert 1.23 in results
+        assert -1.23 not in results
 
     def test_differentiable_scalar(self):
         """Test that the gradient can be computed of the scalar when a SProd op
@@ -1140,21 +1024,6 @@ class TestIntegration:
             return qp.expval(qp.s_prod(s, qp.PauliZ(0)))
 
         res = circuit(jnp.array(2))
-
-        assert qp.math.allclose(res, 2)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ("parameter-shift", "backprop"))
-    def test_tensorflow_qnode(self, diff_method):
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=5)
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(s):
-            return qp.expval(qp.s_prod(s, qp.PauliZ(0)))
-
-        res = circuit(tf.Variable(2, dtype=tf.float64))
 
         assert qp.math.allclose(res, 2)
 

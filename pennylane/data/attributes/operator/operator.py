@@ -87,7 +87,6 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qops.CSWAP,
                 qops.CCZ,
                 qops.Toffoli,
-                qops.WireCut,
                 # pennylane/ops/qubit/observables.py
                 qops.Hermitian,
                 qops.Projector,

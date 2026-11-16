@@ -52,23 +52,7 @@ def _get_jax_interface_name() -> Interface:
     abstract.
     """
     x = math.asarray([0], like="jax")
-    return Interface.JAX_JIT if math.is_abstract(x) else Interface.JAX
-
-
-# pylint: disable=import-outside-toplevel
-# TensorFlow tests were disabled during deprecation
-def _use_tensorflow_autograph() -> bool:  # pragma: no cover
-    """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
-    try:  # pragma: no cover
-        import tensorflow as tf
-    except ImportError as e:  # pragma: no cover
-        raise QuantumFunctionError(  # pragma: no cover
-            "tensorflow not found. Please install the latest "  # pragma: no cover
-            "version of tensorflow supported by Pennylane "  # pragma: no cover
-            "to enable the 'tensorflow' interface."  # pragma: no cover
-        ) from e  # pragma: no cover
-
-    return not tf.executing_eagerly()
+    return Interface.JAX_JIT if math.is_tracer(x) else Interface.JAX
 
 
 def _resolve_interface(interface: str | Interface | None, tapes: QuantumScriptBatch) -> Interface:
@@ -94,10 +78,6 @@ def _resolve_interface(interface: str | Interface | None, tapes: QuantumScriptBa
             # If the interface is not recognized, default to numpy, like networkx
             interface = Interface.NUMPY
 
-    if (
-        interface == Interface.TF and _use_tensorflow_autograph()
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        interface = Interface.TF_AUTOGRAPH
     if interface == Interface.JAX:
         interface = _get_jax_interface_name()
 

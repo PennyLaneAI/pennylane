@@ -21,7 +21,6 @@ Queuing
 
     ~QueuingManager
     ~AnnotatedQueue
-    ~apply
 
 Operator Types
 ~~~~~~~~~~~~~~
@@ -42,8 +41,25 @@ Operator Types
 .. inheritance-diagram:: Operator Operation Channel StatePrepBase
     :parts: 1
 
+Pauli Arithmetic
+~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.core.pauli
+.. autosummary::
+    :toctree: api
+
+    ~PauliWord
+    ~PauliSentence
+
 Utility Functions
 ~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.core.apply
+
+.. autosummary::
+    :toctree: api
+
+    ~apply
 
 .. currentmodule:: pennylane.core.operator
 
@@ -104,7 +120,9 @@ Transforms
 
 """
 
-from .queuing import QueuingManager, AnnotatedQueue, apply
+from .apply import apply
+from .queuing import QueuingManager, AnnotatedQueue
+from .pauli import PauliWord, PauliSentence
 
 from .operator import (
     Channel,
@@ -115,6 +133,7 @@ from .operator import (
     StatePrepBase,
     StatePrepBase2,
     abstractify,
+    get_op_class_by_name,
 )
 from .measurements import (
     MeasurementProcess,
@@ -141,9 +160,12 @@ __all__ = [
     "Operator2",
     "Operation",
     "abstractify",
+    "get_op_class_by_name",
     "Channel",
     "StatePrepBase",
     "StatePrepBase2",
+    "PauliWord",
+    "PauliSentence",
     "MeasurementProcess",
     "StateMeasurement",
     "SampleMeasurement",

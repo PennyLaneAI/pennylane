@@ -20,14 +20,14 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qp.AngleEmbedding(features=[1.0, 2.0, 3.0], wires=range(3), rotation="Z")
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_repr():
@@ -37,19 +37,18 @@ def test_repr():
     assert repr(op) == expected
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the _flatten and _unflatten methods."""
     wires = qp.wires.Wires((0, 1, 2))
     op = qp.AngleEmbedding(features=[1, 2, 3], wires=wires, rotation="Z")
 
-    data, metadata = op._flatten()
+    data, metadata = op._flatten()  # pylint: disable=protected-access
     assert data == op.data
     assert len(metadata) == 2
     assert metadata[0] == wires
     assert metadata[1] == (("rotation", "Z"),)
 
-    new_op = type(op)._unflatten(*op._flatten())
+    new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
     qp.assert_equal(op, new_op)
     assert op is not new_op
 
@@ -167,8 +166,7 @@ class TestDecomposition:
     @pytest.mark.parametrize(("features", "wires", "rotation"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, wires, rotation):
         op = qp.AngleEmbedding(features, wires, rotation=rotation)
-        for rule in qp.list_decomps(qp.AngleEmbedding):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 class TestInputs:
@@ -316,33 +314,6 @@ class TestInterfaces:
         grads2 = grad_fn2(features)
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        features = tf.Variable([1.0, 1.0, 1.0])
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(features)
-        res2 = circuit2(features)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(features)
-        grads = tape.gradient(res, [features])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(features)
-        grads2 = tape2.gradient(res2, [features])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):

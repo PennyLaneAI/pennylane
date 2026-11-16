@@ -19,6 +19,7 @@ functions. The purpose is to convert imperative style code to functional or grap
 
 import copy
 import functools
+import logging
 import operator
 from collections.abc import Callable, Iterator
 from numbers import Number
@@ -35,6 +36,9 @@ from malt.operators.variables import Undefined
 
 import pennylane as qp
 from pennylane.exceptions import AutoGraphError
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
 
 __all__ = [
     "if_stmt",
@@ -56,7 +60,7 @@ def set_item(
 ):
     """An implementation of the AutoGraph 'set_item' function."""
 
-    if qp.math.is_abstract(target):
+    if qp.math.is_tracer(target):
         target = target.at[index].set(x)
     else:
         target[index] = x
@@ -83,7 +87,7 @@ def update_item_with_op(
     if op == "sub":
         x = -x
 
-    if qp.math.is_abstract(target):
+    if qp.math.is_tracer(target):
         if isinstance(index, slice):
             target = getattr(target.at[index.start : index.stop : index.step], ast_op_map[op])(x)
         else:
@@ -106,8 +110,7 @@ def _assert_results(results, var_names):
     return results
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
-def if_stmt(
+def if_stmt(  # pylint: disable=too-many-arguments
     pred: bool,
     true_fn: Callable[[], Any],
     false_fn: Callable[[], Any],
@@ -197,8 +200,7 @@ def _assert_iteration_results(inputs, outputs, symbol_names):
             )
 
 
-# pylint: disable=too-many-positional-arguments
-def _call_pennylane_for(
+def _call_pennylane_for(  # pylint: disable=too-many-arguments
     start,
     stop,
     step,
@@ -216,8 +218,7 @@ def _call_pennylane_for(
     init_iter_args = get_state()
     _assert_iteration_inputs(init_iter_args, symbol_names)
 
-    @qp.for_loop(start, stop, step)
-    def functional_for(i, *iter_args):
+    def functional_for(i, iter_args):
         # Assign tracers to the iteration variables identified by AutoGraph (iter_args in mlir).
         set_state(iter_args)
 
@@ -237,7 +238,8 @@ def _call_pennylane_for(
 
         return get_state()
 
-    final_iter_args = functional_for(*init_iter_args)
+    # Pass the state tuple as one argument so empty loops preserve its structure.
+    final_iter_args = qp.for_loop(start, stop, step)(functional_for)(init_iter_args)
     _assert_iteration_results(init_iter_args, final_iter_args, symbol_names)
     return final_iter_args
 
@@ -263,42 +265,33 @@ def for_stmt(
     # - For loops over a Python enumeration use a combination of the above, providing a dynamic
     #   iteration variable and conversion of the iterable to array.
 
-    # Any of these could fail depending on the compatibility of the user code. A failure could
-    # also occur because an exception is raised during the tracing of the loop body after conversion
-    # (for example because the user forgot to use a list instead of an array)
-    # The PennyLane autograph implementation does not currently fall back to a Python loop in this case,
-    # but this has been implemented in Catalyst and could be extended to this. It does, however, require an
-    # active queuing context.
+    # If array conversion fails, execute the Python loop during capture. No structured body
+    # has been traced yet, so no captured operations or loop state need to be restored.
 
-    exception_raised = None
     init_state = get_state()
     assert len(init_state) == len(symbol_names)
 
-    if isinstance(iteration_target, PRange):
-        start, stop, step = iteration_target.get_raw_range()
-        enum_start = None
-        iteration_array = None
-    elif isinstance(iteration_target, PEnumerate):
-        start, stop, step = 0, len(iteration_target.iteration_target), 1
-        enum_start = iteration_target.start_idx
-        try:
+    try:
+        if isinstance(iteration_target, PRange):
+            start, stop, step = iteration_target.get_raw_range()
+            enum_start = None
+            iteration_array = None
+        elif isinstance(iteration_target, PEnumerate):
+            start, stop, step = 0, len(iteration_target.iteration_target), 1
+            enum_start = iteration_target.start_idx
             iteration_array = jnp.asarray(iteration_target.iteration_target)
-        except Exception as e:  # pylint: disable=broad-exception-caught,broad-except
-            exception_raised = e
-    else:
-        start, stop, step = 0, len(iteration_target), 1
-        enum_start = None
-        try:
+        else:
+            start, stop, step = 0, len(iteration_target), 1
+            enum_start = None
             iteration_array = jnp.asarray(iteration_target)
-        except Exception as e:  # pylint: disable=broad-exception-caught,broad-except
-            exception_raised = e
-
-    if exception_raised:
-
-        raise AutoGraphError(
-            f"Could not convert the iteration target {iteration_target} to array while processing "
-            f"a for-loop with AutoGraph."
-        ) from exception_raised
+    except Exception:  # pylint: disable=broad-exception-caught
+        logger.debug(
+            "AutoGraph could not convert the iterable to an array; unrolling the Python loop.",
+            exc_info=True,
+        )
+        for item in iteration_target:
+            body_fn(item)
+        return
 
     try:
         set_state(init_state)
@@ -314,8 +307,7 @@ def for_stmt(
             iteration_array,
         )
     except Exception as e:
-        # pylint: disable=import-outside-toplevel
-        import textwrap
+        import textwrap  # pylint: disable=import-outside-toplevel
 
         raise AutoGraphError(
             f"Tracing of an AutoGraph converted for loop failed with an exception:\n"
@@ -370,7 +362,7 @@ def _logical_op(*args, jax_fn: Callable, python_fn: Callable):
 
     values = [arg() if callable(arg) else arg for arg in args]
 
-    if any(qp.math.is_abstract(val) for val in values):
+    if any(qp.math.is_tracer(val) for val in values):
         result = jax_fn(*values)
     else:
         result = python_fn(*values)
@@ -467,7 +459,7 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
             if not args:
                 raise ValueError(f"{fn.__name__} requires at least one argument")
 
-            is_abstract_operator = qp.math.is_abstract(args[0]) and isinstance(
+            is_abstract_operator = qp.math.is_tracer(args[0]) and isinstance(
                 args[0].aval, qp.capture.primitives.AbstractOperator
             )
             # If first argument is already an operator, pass it through directly
@@ -532,23 +524,24 @@ class PRange:
         return self._py_range
 
     # Interface of the Python range class.
-    # pylint: disable=missing-function-docstring
 
     @property
-    def start(self) -> int:  # pragma: no cover
+    def start(self) -> int:  # pragma: no cover  # pylint: disable=missing-function-docstring
         return self.py_range.start
 
     @property
-    def stop(self) -> int:  # pragma: no cover
+    def stop(self) -> int:  # pragma: no cover  # pylint: disable=missing-function-docstring
         return self.py_range.stop
 
     @property
-    def step(self) -> int:  # pragma: no cover
+    def step(self) -> int:  # pragma: no cover  # pylint: disable=missing-function-docstring
         return self.py_range.step
 
+    # pylint: disable-next=missing-function-docstring
     def count(self, __value: int) -> int:  # pragma: no cover
         return self.py_range.count(__value)
 
+    # pylint: disable-next=missing-function-docstring
     def index(self, __value: int) -> int:  # pragma: no cover
         return self.py_range.index(__value)
 
@@ -574,8 +567,7 @@ class PRange:
         return self.py_range.__reversed__()
 
 
-# pylint: disable=too-few-public-methods
-class PEnumerate(enumerate):
+class PEnumerate(enumerate):  # pylint: disable=too-few-public-methods
     """PennyLane enumeration object. Inherits from Python ``enumerate``, but adds storing the
     input iteration_target and start_idx, which are used by the for-loop conversion.
     """

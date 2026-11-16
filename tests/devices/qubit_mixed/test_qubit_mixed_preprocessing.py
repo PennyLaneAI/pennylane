@@ -31,7 +31,6 @@ from pennylane.devices.default_mixed import (
 from pennylane.exceptions import DecompositionWarning, DeviceError
 
 
-# pylint: disable=protected-access
 def test_mid_circuit_measurement_preprocessing():
     """Test mid-circuit measurement preprocessing not supported with default.mixed device."""
     dev = DefaultMixed(wires=2)
@@ -56,13 +55,16 @@ def test_mid_circuit_measurement_preprocessing():
     # Check that mid-circuit measurements have been deferred
     mid_measure_ops = [op for op in processed_tape.operations if isinstance(op, qp.ops.MidMeasure)]
     assert len(mid_measure_ops) == 0, "Mid-circuit measurements were not deferred properly."
-    assert processed_tape.circuit == [qp.CNOT([0, 1]), qp.CNOT([1, 0]), qp.expval(qp.Z(0))]
+    assert processed_tape.circuit == [
+        qp.CNOT([0, 1]),
+        qp.MultiControlledX([1, 0]),
+        qp.expval(qp.Z(0)),
+    ]
 
 
 class NoMatOp(qp.operation.Operation):
     """Dummy operation for expanding circuit in qubit devices."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
@@ -71,11 +73,9 @@ class NoMatOp(qp.operation.Operation):
         return [qp.PauliX(self.wires), qp.PauliY(self.wires)]
 
 
-# pylint: disable=too-few-public-methods
-class NoMatNoDecompOp(qp.operation.Operation):
+class NoMatNoDecompOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
     """Dummy operation for checking check_validity throws error when expected."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
@@ -90,12 +90,9 @@ def custom_decomps():
         qp.X(wires)
         qp.Y(wires)
 
-    with qp.decomposition.local_decomps():
-        qp.add_decomps(NoMatOp, custom_rule_no_mat_op)
-        yield
+    qp.add_decomps(NoMatOp, custom_rule_no_mat_op)
 
 
-# pylint: disable=too-few-public-methods
 class TestPreprocessing:
     """Unit tests for the preprocessing method."""
 
@@ -415,9 +412,7 @@ class TestPreprocessing:
 
         # Since preprocessing does not modify the seed, we check the device's attributes
         # Verify that the device's _prng_key is set correctly
-        # pylint: disable=protected-access
-        assert dev._prng_key is seed
+        assert dev._prng_key is seed  # pylint: disable=protected-access
 
         # Verify that the device's _rng is initialized appropriately
-        # pylint: disable=protected-access
-        assert dev._rng is not None
+        assert dev._rng is not None  # pylint: disable=protected-access

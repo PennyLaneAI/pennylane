@@ -16,8 +16,6 @@ Contains the classical Jacobian transform.
 """
 
 import jax
-
-# pylint: disable=import-outside-toplevel
 import numpy as np
 
 from pennylane import math
@@ -108,10 +106,6 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
          - ``array`` [2]
          - ``array``
          - ``tuple(array)``
-       * - ``'tf'``
-         - ``tuple(array)``
-         - ``array``
-         - ``tuple(array)``
        * - ``'torch'``
          - ``tuple(array)``
          - ``array``
@@ -164,7 +158,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
             jac = jacobian(classical_preprocessing, argnums=wrapper_argnum)(*args, **kwargs)
 
         elif qnode.interface == "torch":
-            import torch
+            import torch  # pylint: disable=import-outside-toplevel
 
             def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
                 jac = torch.autograd.functional.jacobian(classical_preprocessing, args)
@@ -188,27 +182,6 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
             def _jacobian(*args, **kwargs):
                 return jax.jacobian(classical_preprocessing, argnums=argnum)(*args, **kwargs)
-
-            jac = _jacobian(*args, **kwargs)
-
-        elif (
-            qnode.interface == "tf"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            import tensorflow as tf
-
-            def _jacobian(*args, **kwargs):
-                if np.isscalar(wrapper_argnum):
-                    sub_args = args[wrapper_argnum]
-                elif wrapper_argnum is None:
-                    sub_args = args
-                else:
-                    sub_args = tuple(args[i] for i in wrapper_argnum)
-
-                with tf.GradientTape() as tape:
-                    gate_params = classical_preprocessing(*args, **kwargs)
-
-                jac = tape.jacobian(gate_params, sub_args)
-                return jac
 
             jac = _jacobian(*args, **kwargs)
 

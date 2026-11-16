@@ -13,17 +13,19 @@
 # limitations under the License.
 """Tests for capturing mid-circuit measurements."""
 
-# pylint: disable=ungrouped-imports, wrong-import-order, wrong-import-position, too-many-positional-arguments
+# pylint: disable=wrong-import-order,wrong-import-position
+
+
 import pytest
 
 import pennylane as qp
 from pennylane.ops.mid_measure import MeasurementValue, MidMeasure
-from tests.capture.capture_utils import assert_eqn_matches_op
+from pennylane.testing import assert_eqn_matches_op
 
 jax = pytest.importorskip("jax")
 import jax.numpy as jnp
 
-from pennylane.capture.primitives import AbstractOperator
+from pennylane.capture.primitives import AbstractOperator  # pylint: disable=ungrouped-imports
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 

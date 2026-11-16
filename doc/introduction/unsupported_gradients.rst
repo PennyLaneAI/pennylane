@@ -163,7 +163,7 @@ In general, the state of a quantum circuit will be complex-valued, so differenti
 the state directly is not possible without the use of
 `complex analysis <https://en.wikipedia.org/wiki/Holomorphic_function>`__. Though complex
 gradients can be implemented for most "simple" functions, this is not supported in Autograd
-but is done in the other three interfaces.
+but is done in JAX and PyTorch.
 
 Instead, in Autograd, real scalar-valued post-processing should be performed on the output state to allow
 the auto-differentiation frameworks to backpropagate through them. For example, the following
@@ -230,21 +230,6 @@ Using a different interface that supports complex differentiation will fix this 
         x = jnp.array([0.1], dtype=np.complex64)
         print(jax.jacrev(circuit, holomorphic=True)(x))
 
-    def state_vector_grad_tf():
-        dev = qp.device('default.qubit', wires=1)
-
-        @qp.set_shots(shots=None)
-        @qp.qnode(dev, interface='tf', diff_method='backprop')
-        def circuit(x):
-            qp.RX(x[0], wires=0)
-            return qp.state()
-
-        x = tf.Variable([0.1], trainable=True, dtype=np.complex64)
-        with tf.GradientTape() as tape:
-            out = circuit(x)
-
-        print(tape.jacobian(out, [x]))
-
     def state_vector_grad_torch():
         dev = qp.device('default.qubit', wires=1)
 
@@ -260,10 +245,6 @@ Using a different interface that supports complex differentiation will fix this 
 >>> state_vector_grad_jax()
 [[-0.02498958+0.j        ]
  [ 0.        -0.49937513j]]
->>> state_vector_grad_tf()
-[<tf.Tensor: shape=(2, 1), dtype=complex64, numpy=
-array([[-0.02498958+0.j        ],
-       [-0.        +0.49937513j]], dtype=complex64)>]
 >>> state_vector_grad_torch()
 (tensor([[-0.0250+0.0000j],
         [ 0.0000+0.4994j]]),)

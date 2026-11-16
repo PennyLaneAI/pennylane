@@ -52,6 +52,7 @@ Symbolic Classes
     ~Exp
     ~LinearCombination
     ~Pow
+    ~Pow2
     ~Prod
     ~Prod2
     ~Sum
@@ -108,16 +109,6 @@ Control Decompositions
     ~ctrl_decomp_zyz
     ~ctrl_decomp_bisect
 
-Other Functions
-~~~~~~~~~~~~~~~
-
-.. currentmodule:: pennylane.ops.op_math
-
-.. autosummary::
-    :toctree: api
-
-    ~custom_ctrl_dispatch
-
 """
 
 from .adjoint import Adjoint, adjoint
@@ -125,7 +116,7 @@ from .adjoint2 import Adjoint2
 from .composite import CompositeOp
 from .composite2 import CompositeOp2
 from .condition import Conditional, cond
-from .controlled import Controlled, ControlledOp, ctrl, custom_ctrl_dispatch
+from .controlled import Controlled, ControlledOp, ctrl
 from .controlled2 import Controlled2, ControlledOp2
 from .controlled_ops import (
     CCZ,
@@ -157,6 +148,7 @@ from .evolution import Evolution
 from .exp import Exp, exp
 from .linear_combination import LinearCombination
 from .pow import Pow, pow
+from .pow2 import Pow2
 from .prod import Prod, prod
 from .prod2 import Prod2
 from .change_op_basis import ChangeOpBasis, change_op_basis

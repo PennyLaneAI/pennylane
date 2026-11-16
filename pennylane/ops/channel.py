@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-arguments
 """
 This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
@@ -70,7 +69,7 @@ class AmplitudeDamping(Channel):
         super().__init__(gamma, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(gamma):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(gamma):  # pylint: disable=arguments-differ
         """Kraus matrices representing the AmplitudeDamping channel.
 
         Args:
@@ -87,7 +86,7 @@ class AmplitudeDamping(Channel):
          array([[0.        , 0.70710678],
                 [0.        , 0.        ]])]
         """
-        if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
+        if not np.is_tracer(gamma) and not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
 
         K0 = np.diag([1, np.sqrt(1 - gamma + _SQRT_STABILITY_EPS)])
@@ -152,7 +151,7 @@ class GeneralizedAmplitudeDamping(Channel):
         super().__init__(gamma, p, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(gamma, p):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(gamma, p):  # pylint: disable=arguments-differ
         """Kraus matrices representing the GeneralizedAmplitudeDamping channel.
 
         Args:
@@ -170,10 +169,10 @@ class GeneralizedAmplitudeDamping(Channel):
          array([[0.64807407, 0.        ], [0.        , 0.77459667]]),
          array([[0.        , 0.        ], [0.42426407, 0.        ]])]
         """
-        if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
+        if not np.is_tracer(gamma) and not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
 
-        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
+        if not np.is_tracer(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1].")
 
         K0 = np.sqrt(1 - p + _SQRT_STABILITY_EPS) * np.diag(
@@ -235,7 +234,7 @@ class PhaseDamping(Channel):
         super().__init__(gamma, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(gamma):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(gamma):  # pylint: disable=arguments-differ
         """Kraus matrices representing the PhaseDamping channel.
 
         Args:
@@ -250,7 +249,7 @@ class PhaseDamping(Channel):
         [array([[1.        , 0.        ], [0.        , 0.70710678]]),
          array([[0.        , 0.        ], [0.        , 0.70710678]])]
         """
-        if not np.is_abstract(gamma) and not 0.0 <= gamma <= 1.0:
+        if not np.is_tracer(gamma) and not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
 
         K0 = np.diag([1, np.sqrt(1 - gamma + _SQRT_STABILITY_EPS)])
@@ -322,7 +321,7 @@ class DepolarizingChannel(Channel):
         super().__init__(p, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(p):  # pylint: disable=arguments-differ
         r"""Kraus matrices representing the depolarizing channel.
 
         Args:
@@ -343,13 +342,8 @@ class DepolarizingChannel(Channel):
          array([[ 0.40824829+0.j,  0.        +0.j],
                 [ 0.        +0.j, -0.40824829+0.j]])]
         """
-        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
+        if not np.is_tracer(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
-
-        if (
-            np.get_interface(p) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = np.cast_like(p, 1j)
 
         K0 = np.sqrt(1 - p + _SQRT_STABILITY_EPS) * np.convert_like(np.eye(2, dtype=complex), p)
         K1 = np.sqrt(p / 3 + _SQRT_STABILITY_EPS) * np.convert_like(
@@ -404,7 +398,7 @@ class BitFlip(Channel):
         super().__init__(p, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(p):  # pylint: disable=arguments-differ
         """Kraus matrices representing the BitFlip channel.
 
         Args:
@@ -419,7 +413,7 @@ class BitFlip(Channel):
         [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
          array([[0.        , 0.70710678], [0.70710678, 0.        ]])]
         """
-        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
+        if not np.is_tracer(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
         K0 = np.sqrt(1 - p + _SQRT_STABILITY_EPS) * np.convert_like(np.cast_like(np.eye(2), p), p)
@@ -488,7 +482,7 @@ class ResetError(Channel):
         super().__init__(p0, p1, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(p_0, p_1):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(p_0, p_1):  # pylint: disable=arguments-differ
         """Kraus matrices representing the ResetError channel.
 
         Args:
@@ -507,13 +501,13 @@ class ResetError(Channel):
          array([[0.        , 0.        ], [0.54772256, 0.        ]]),
          array([[0.        , 0.        ], [0.        , 0.54772256]])]
         """
-        if not np.is_abstract(p_0) and not 0.0 <= p_0 <= 1.0:
+        if not np.is_tracer(p_0) and not 0.0 <= p_0 <= 1.0:
             raise ValueError("p_0 must be in the interval [0,1]")
 
-        if not np.is_abstract(p_1) and not 0.0 <= p_1 <= 1.0:
+        if not np.is_tracer(p_1) and not 0.0 <= p_1 <= 1.0:
             raise ValueError("p_1 must be in the interval [0,1]")
 
-        if not np.is_abstract(p_0 + p_1) and not 0.0 <= p_0 + p_1 <= 1.0:
+        if not np.is_tracer(p_0 + p_1) and not 0.0 <= p_0 + p_1 <= 1.0:
             raise ValueError("p_0 + p_1 must be in the interval [0,1]")
 
         interface = np.get_interface(p_0, p_1)
@@ -599,7 +593,7 @@ class PauliError(Channel):
             raise ValueError("The specified operators need to be either of 'I', 'X', 'Y' or 'Z'.")
 
         # check if probabilities are legal
-        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
+        if not np.is_tracer(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
         # check if the number of operators matches the number of wires
@@ -635,7 +629,7 @@ class PauliError(Channel):
         return PauliError(hyperparameters_dict["operators"], data[0], wires=metadata[0])
 
     @staticmethod
-    def compute_kraus_matrices(p, operators):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(p, operators):  # pylint: disable=arguments-differ
         """Kraus matrices representing the PauliError channel.
 
         Args:
@@ -659,7 +653,7 @@ class PauliError(Channel):
         )
 
         interface = np.get_interface(p)
-        if interface == "tensorflow" or "Y" in operators:
+        if "Y" in operators:
             if interface == "numpy":
                 p = (1 + 0j) * p
             else:
@@ -720,7 +714,7 @@ class PhaseFlip(Channel):
         super().__init__(p, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(p):  # pylint: disable=arguments-differ
         """Kraus matrices representing the PhaseFlip channel.
 
         Args:
@@ -735,7 +729,7 @@ class PhaseFlip(Channel):
         [array([[0.70710678, 0.        ], [0.        , 0.70710678]]),
          array([[ 0.70710678,  0.        ], [ 0.        , -0.70710678]])]
         """
-        if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
+        if not np.is_tracer(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
         K0 = np.sqrt(1 - p + _SQRT_STABILITY_EPS) * np.convert_like(np.cast_like(np.eye(2), p), p)
@@ -787,7 +781,7 @@ class QubitChannel(Channel):
             )
 
         # check that the channel represents a trace-preserving map
-        if not any(np.is_abstract(K) for K in K_list):
+        if not any(np.is_tracer(K) for K in K_list):
             K_arr = np.array(K_list)
             Kraus_sum = np.einsum("ajk,ajl->kl", K_arr.conj(), K_arr)
             if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
@@ -796,14 +790,13 @@ class QubitChannel(Channel):
     def _flatten(self):
         return (self.data,), (self.wires, ())
 
-    # pylint: disable=arguments-differ, unused-argument
     @classmethod
-    def _primitive_bind_call(cls, K_list, wires: WiresLike):
+    def _primitive_bind_call(cls, K_list, wires: WiresLike):  # pylint: disable=arguments-differ
         wires = Wires(wires)
         return super()._primitive_bind_call(*K_list, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(*kraus_matrices):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(*kraus_matrices):  # pylint: disable=arguments-differ
         """Kraus matrices representing the QubitChannel channel.
 
         Args:
@@ -919,7 +912,7 @@ class ThermalRelaxationError(Channel):
         super().__init__(pe, t1, t2, tg, wires=wires)
 
     @staticmethod
-    def compute_kraus_matrices(pe, t1, t2, tg):  # pylint:disable=arguments-differ
+    def compute_kraus_matrices(pe, t1, t2, tg):  # pylint: disable=arguments-differ
         """Kraus matrices representing the ThermalRelaxationError channel.
 
         Args:
@@ -947,15 +940,15 @@ class ThermalRelaxationError(Channel):
          array([[0., 0.],
                 [0., 0.]])]
         """
-        if not np.is_abstract(pe) and not 0.0 <= pe <= 1.0:
+        if not np.is_tracer(pe) and not 0.0 <= pe <= 1.0:
             raise ValueError("pe must be between 0 and 1.")
-        if not np.is_abstract(tg) and tg < 0:
+        if not np.is_tracer(tg) and tg < 0:
             raise ValueError(f"Invalid gate_time tg ({tg} < 0)")
-        if not np.is_abstract(t1) and t1 <= 0:
+        if not np.is_tracer(t1) and t1 <= 0:
             raise ValueError("Invalid T_1 relaxation time parameter: T_1 <= 0.")
-        if not np.is_abstract(t2) and t2 <= 0:
+        if not np.is_tracer(t2) and t2 <= 0:
             raise ValueError("Invalid T_2 relaxation time parameter: T_2 <= 0.")
-        if not np.is_abstract(t2 - 2 * t1) and t2 - 2 * t1 > 0:
+        if not np.is_tracer(t2 - 2 * t1) and t2 - 2 * t1 > 0:
             raise ValueError("Invalid T_2 relaxation time parameter: T_2 greater than 2 * T_1.")
         # T1 relaxation rate
         eT1 = np.exp(-tg / t1)

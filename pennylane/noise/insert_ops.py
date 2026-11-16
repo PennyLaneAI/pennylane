@@ -28,8 +28,6 @@ from pennylane.ops.op_math import Adjoint
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
-# pylint: disable=too-many-branches
-
 
 def _check_position(position):
     """Checks the position argument to determine if an operation or list of operations was provided."""
@@ -41,7 +39,7 @@ def _check_position(position):
             try:
                 if not (isinstance(operation, type) and issubclass(operation, Operator)):
                     not_op = True
-            except AttributeError:
+            except AttributeError:  # pragma: no cover
                 not_op = True
     elif not isinstance(position, list):
         try:
@@ -49,13 +47,13 @@ def _check_position(position):
                 req_ops = [position]
             else:
                 not_op = True
-        except AttributeError:
+        except AttributeError:  # pragma: no cover
             not_op = True
     return not_op, req_ops
 
 
 @transform
-def insert(
+def insert(  # pylint: disable=too-many-branches
     tape: QuantumScript,
     op: Callable | type[Operation],
     op_args: tuple | float,
@@ -218,9 +216,9 @@ def insert(
     # decompose templates and their adjoints to fix a bug in the tutorial_error_mitigation demo
     def stop_at(obj):
         if not isinstance(obj, Operator):
-            return True
+            return True  # pragma: no cover
         if not obj.has_decomposition:
-            return True
+            return True  # pragma: no cover
         return not (hasattr(templates, obj.name) or isinstance(obj, Adjoint))
 
     [tape], _ = decompose(

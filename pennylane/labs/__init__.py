@@ -29,7 +29,6 @@ Modules
     estimator_beta
     tcdq
     profiler
-    templates
     transforms
     trotter_error
 
@@ -39,7 +38,6 @@ from pennylane.labs import dla
 from pennylane.labs import estimator_beta
 from pennylane.labs import tcdq
 from pennylane.labs import profiler
-from pennylane.labs import templates
 from pennylane.labs import transforms
 from pennylane.labs import trotter_error
 

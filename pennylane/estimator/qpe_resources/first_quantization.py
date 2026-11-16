@@ -16,7 +16,9 @@ This module contains the functions needed for estimating the number of logical q
 non-Clifford gates for quantum algorithms in first quantization using a plane-wave basis.
 """
 
-# pylint: disable=no-self-use disable=too-many-arguments disable=too-many-instance-attributes
+# pylint: disable=too-many-arguments
+
+
 import numpy as np
 import scipy as sp
 
@@ -24,7 +26,7 @@ from pennylane.core.operator import Operation
 from pennylane.math import ceil_log2
 
 
-class FirstQuantization(Operation):
+class FirstQuantization(Operation):  # pylint: disable=too-many-instance-attributes
     r"""Estimate the number of non-Clifford gates and logical qubits for a quantum phase estimation
     algorithm in first quantization using a plane-wave basis.
 
@@ -148,9 +150,8 @@ class FirstQuantization(Operation):
             ("vectors", self.vectors),
         )
 
-    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, n, eta, **kwargs):
+    def _primitive_bind_call(cls, n, eta, **kwargs):  # pylint: disable=arguments-differ
         return cls._primitive.bind(n, eta, **kwargs)
 
     @classmethod
@@ -695,7 +696,7 @@ class FirstQuantization(Operation):
 
         # the expression for computing the cost is taken from Eq. (101) of arXiv:2204.11890v1
         qubits = 3 * eta * n_p + 4 * n_m * n_p + 12 * n_p
-        qubits += 2 * (ceil_log2(np.ceil(np.pi * lamb / (2 * error_qpe)))) + 5 * n_m
+        qubits += 2 * ceil_log2(int(np.ceil(np.pi * lamb / (2 * error_qpe)))) + 5 * n_m
         qubits += 2 * ceil_log2(eta) + 3 * n_p**2 + ceil_log2(eta + 2 * l_z)
         qubits += np.maximum(5 * n_p + 1, 5 * n_r - 4) + np.maximum(n_t, n_r + 1) + 33
 
@@ -895,7 +896,7 @@ class FirstQuantization(Operation):
         # PRX Quantum 2, 040332 (2021) and adapting to non-cubic using Appendix L of
         # arXiv:2302.07981v1 (2023)
         clean_cost = 3 * eta * n_p
-        clean_cost += ceil_log2(np.ceil(np.pi * lambda_total / (2 * error_qpe)))
+        clean_cost += ceil_log2(int(np.ceil(np.pi * lambda_total / (2 * error_qpe))))
         clean_cost += 1 + 1 + ceil_log2(eta + 2 * l_z) + 3 + 3
         clean_cost += 2 * ceil_log2(eta) + 5 + 3 * (n_p + 1)
         clean_cost += n_p + n_m + 3 * n_p + 2 + 2 * n_p + 1 + 1 + 2 + 2 * n_p + 6 + 1
@@ -1010,16 +1011,16 @@ class FirstQuantization(Operation):
 
         x = 2 ** (3 * n_p)
 
-        beta_dirty = max([np.floor(n_dirty / n_m), 1])
-        beta_parallel = max([np.floor(n_tof / kappa), 1])
+        beta_dirty = max(int(np.floor(n_dirty / n_m)), 1)
+        beta_parallel = max(int(np.floor(n_tof / kappa)), 1)
 
         if n_tof == 1:
-            beta_gate = max([np.floor(np.sqrt(2 * x / (3 * n_m))), 1])
-            beta = np.min([beta_dirty, beta_gate])
+            beta_gate = max(int(np.floor(np.sqrt(2 * x / (3 * n_m)))), 1)
+            beta = min(beta_dirty, beta_gate)
             ms_cost_qrom = 2 * np.ceil(x / beta) + 3 * n_m * beta
         else:
-            beta_gate = max([np.floor(2 * x / (3 * n_m / kappa) * np.log(2)), 1])
-            beta = np.min([beta_dirty, beta_gate, beta_parallel])
+            beta_gate = max(int(np.floor(2 * x / (3 * n_m / kappa) * np.log(2))), 1)
+            beta = min(beta_dirty, beta_gate, beta_parallel)
             ms_cost_qrom = 2 * np.ceil(x / beta) + 3 * np.ceil(n_m / kappa) * ceil_log2(beta)
 
         ms_cost = 2 * ms_cost_qrom + n_m + 8 * (n_p - 1) + 6 * n_p + 2 + 2 * n_p + n_m + 2

@@ -15,7 +15,6 @@
 Unit tests for PyTorch GPU support.
 """
 
-# pylint: disable=protected-access
 import pytest
 
 import pennylane as qp
@@ -170,33 +169,6 @@ class TestTorchGPUDevice:
         res2 = circuit_cuda(inputs)
 
         assert res2.is_cuda
-
-
-@pytest.mark.skipif(not torch_cuda.is_available(), reason="no cuda support")
-def test_qnn_torchlayer():
-    """Test if TorchLayer can be run on GPU"""
-
-    n_qubits = 4
-    dev = qp.device("default.qubit", wires=n_qubits)
-
-    @qp.qnode(dev, interface="torch")
-    def circuit(inputs, weights):
-        qp.templates.AngleEmbedding(inputs, wires=range(n_qubits))
-        qp.templates.BasicEntanglerLayers(weights, wires=range(n_qubits))
-        return [qp.expval(qp.PauliZ(wires=i)) for i in range(n_qubits)]
-
-    n_layers = 1
-    weight_shapes = {"weights": (n_layers, n_qubits)}
-
-    qlayer = qp.qnn.TorchLayer(circuit, weight_shapes)
-
-    x = torch.rand((5, n_qubits), dtype=torch.float64).to(torch.device("cuda"))
-    res = qlayer(x)
-    assert res.is_cuda
-
-    loss = torch.sum(res).squeeze()
-    loss.backward()
-    assert loss.is_cuda
 
 
 @pytest.mark.skipif(

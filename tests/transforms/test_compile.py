@@ -103,7 +103,7 @@ class TestCompile:
     def test_compile_non_commuting_observables(self):
         """Test that compile works with non-commuting observables."""
 
-        ops = (qp.RX(0.1, 0), qp.RX(0.2, 0), qp.Barrier(only_visual=True), qp.X(0), qp.X(0))
+        ops = (qp.RX(0.1, 0), qp.RX(0.2, 0), qp.X(0), qp.X(0))
         ms = (qp.expval(qp.X(0)), qp.expval(qp.Y(0)))
         tape = qp.tape.QuantumScript(ops, ms, shots=50)
 
@@ -350,9 +350,9 @@ class TestCompileIntegration:
 
         # Push commuting gates to the right and merging rotations gives a circuit
         # with alternating RX and CNOT gates
-        # pylint: disable=expression-not-assigned
         def qfunc(x, params):
             qp.templates.AngleEmbedding(x, wires=range(3))
+            # pylint: disable-next=expression-not-assigned
             qp.adjoint(qp.adjoint(qp.templates.BasicEntanglerLayers(params, wires=range(3)))) ** 2
             return qp.expval(qp.PauliZ(wires=2))
 
@@ -468,43 +468,6 @@ class TestCompileInterfaces:
         transformed_result.backward()
 
         assert qp.math.allclose(original_params.grad, transformed_params.grad)
-
-        # Check operation list
-        tape = qp.workflow.construct_tape(transformed_qnode)(transformed_x, transformed_params)
-        ops = tape.operations
-        compare_operation_lists(ops, expected_op_list, expected_wires_list)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
-    def test_compile_tf(self, diff_method):
-        """Test QNode and gradient in tensorflow interface."""
-        import tensorflow as tf
-
-        original_qnode = qp.QNode(qfunc_emb, dev_3wires, diff_method=diff_method)
-        transformed_qnode = qp.QNode(transformed_qfunc_emb, dev_3wires, diff_method=diff_method)
-
-        original_x = tf.Variable([0.8, -0.6, 0.4], dtype=tf.float64)
-        original_params = tf.Variable(tf.ones((2, 3), dtype=tf.float64))
-
-        transformed_x = tf.Variable([0.8, -0.6, 0.4], dtype=tf.float64)
-        transformed_params = tf.Variable(tf.ones((2, 3), dtype=tf.float64))
-
-        original_result = original_qnode(original_x, original_params)
-        transformed_result = transformed_qnode(transformed_x, transformed_params)
-
-        # Check that the numerical output is the same
-        assert qp.math.allclose(original_result, transformed_result)
-
-        # Check that the gradient is the same
-        with tf.GradientTape() as tape:
-            loss = original_qnode(original_x, original_params)
-        original_grad = tape.gradient(loss, original_params)
-
-        with tf.GradientTape() as tape:
-            loss = transformed_qnode(transformed_x, transformed_params)
-        transformed_grad = tape.gradient(loss, transformed_params)
-
-        assert qp.math.allclose(original_grad, transformed_grad)
 
         # Check operation list
         tape = qp.workflow.construct_tape(transformed_qnode)(transformed_x, transformed_params)

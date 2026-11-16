@@ -16,14 +16,12 @@ Unit tests for the Superposition template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.superposition import order_states
+from pennylane.testing import assert_decomposable
 
 PROBS_BASES = [
     (
@@ -121,7 +119,7 @@ def test_standard_validity():
     bases = np.array([[0, 0, 0, 0, 0], [0, 1, 0, 1, 1], [0, 0, 0, 1, 0], [1, 1, 0, 1, 1]])
 
     op = qp.Superposition(coeffs, bases=bases, wires=range(5), work_wire=5)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestSuperposition:
@@ -154,9 +152,9 @@ class TestSuperposition:
 
         expected = [
             qp.StatePrep(np.array([0.70710678, 0.70710678]), pad_with=0, wires=[1]),
-            qp.MultiControlledX(wires=[0, 1, 2], control_values=[0, 1]),
+            qp.MultiControlledX([0, 1, 2], control_values=[0, 1]),
             qp.CNOT(wires=[2, 0]),
-            qp.Toffoli(wires=[0, 1, 2]),
+            qp.MultiControlledX([0, 1, 2]),
         ]
 
         for op1, op2 in zip(decomposition, expected):
@@ -170,8 +168,7 @@ class TestSuperposition:
         op = qp.Superposition(
             np.sqrt(probs), bases, wires=range(len(bases[0])), work_wire=len(bases[0])
         )
-        for rule in qp.list_decomps(qp.Superposition):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize(
         ("coeffs", "bases", "msg_match"),
@@ -303,26 +300,6 @@ class TestInterfaces:
         for i, base in enumerate(bases):
             dec = int("".join(map(str, base)), 2)
             assert jnp.isclose(output[dec], probs[i])
-
-    @pytest.mark.tf
-    def test_tensorflow(self, probs, bases):
-        """Test that Superposition can be correctly used with the TensorFlow interface."""
-        import tensorflow as tf
-
-        probs = tf.Variable(probs)
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.Superposition(
-                tf.sqrt(probs), bases=bases, wires=range(len(bases[0])), work_wire=len(bases[0])
-            )
-            return qp.probs(range(len(bases[0])))
-
-        output = circuit()
-        for i, base in enumerate(bases):
-            dec = int("".join(map(str, base)), 2)
-            assert np.isclose(output[dec], probs[i])
 
     @pytest.mark.torch
     def test_torch(self, probs, bases):

@@ -79,7 +79,7 @@ class Hermitian(Operator):
 
     def __init__(self, A: TensorLike, wires: WiresLike):
         A = np.array(A) if isinstance(A, list) else A
-        if not qp.math.is_abstract(A):
+        if not qp.math.is_tracer(A):
             if isinstance(wires, Sequence) and not isinstance(wires, str):
                 if len(wires) == 0:
                     raise ValueError(
@@ -140,9 +140,8 @@ class Hermitian(Operator):
         Hermitian._validate_input(A)
         return A
 
-    # pylint: disable=arguments-differ
     @staticmethod
-    def compute_sparse_matrix(A, format="csr") -> csr_matrix:
+    def compute_sparse_matrix(A, format="csr") -> csr_matrix:  # pylint: disable=arguments-differ
         return csr_matrix(Hermitian.compute_matrix(A)).asformat(format)
 
     @property
@@ -375,8 +374,8 @@ class SparseHamiltonian(Operator):
         """
         return H.toarray()
 
-    # pylint: disable=arguments-differ
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_sparse_matrix(H: spmatrix, format="csr") -> spmatrix:
         r"""Representation of the operator as a sparse canonical matrix in the computational basis (static method).
 
@@ -663,9 +662,8 @@ class BasisStateProjector(Projector, Operation):
         return []
 
     @staticmethod
-    def compute_sparse_matrix(  # pylint: disable=arguments-differ
-        basis_state: TensorLike, format="csr"
-    ) -> spmatrix:
+    # pylint: disable-next=arguments-differ
+    def compute_sparse_matrix(basis_state: TensorLike, format="csr") -> spmatrix:
         """
         Computes the sparse CSR matrix representation of the projector onto the basis state.
 
@@ -756,9 +754,7 @@ class StateVectorProjector(Projector):
         return f"P(M{mat_num})"
 
     @staticmethod
-    def compute_matrix(  # pylint: disable=arguments-differ
-        state_vector: TensorLike,
-    ) -> np.ndarray:
+    def compute_matrix(state_vector: TensorLike) -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -785,9 +781,7 @@ class StateVectorProjector(Projector):
         return qp.math.outer(state_vector, qp.math.conj(state_vector))
 
     @staticmethod
-    def compute_eigvals(  # pylint: disable=arguments-differ
-        state_vector: TensorLike,
-    ) -> np.ndarray:
+    def compute_eigvals(state_vector: TensorLike) -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -850,24 +844,7 @@ class StateVectorProjector(Projector):
         # Alternatively, we could take the adjoint of the Mottonen decomposition for the state vector.
         # https://quantumcomputing.stackexchange.com/questions/10239/how-can-i-fill-a-unitary-knowing-only-its-first-column
 
-        if (
-            qp.math.get_interface(state_vector) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            dtype_name = qp.math.get_dtype_name(state_vector)
-            if dtype_name == "int32":
-                state_vector = qp.math.cast(state_vector, np.complex64)
-            elif dtype_name == "int64":
-                state_vector = qp.math.cast(state_vector, np.complex128)
-
         angle = qp.math.angle(state_vector[0])
-        if (
-            qp.math.get_interface(angle) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            if qp.math.get_dtype_name(angle) == "float32":
-                angle = qp.math.cast(angle, np.complex64)
-            else:
-                angle = qp.math.cast(angle, np.complex128)
-
         phase = qp.math.exp(-1.0j * angle)
         psi = phase * state_vector
         denominator = qp.math.sqrt(2 + 2 * psi[0])

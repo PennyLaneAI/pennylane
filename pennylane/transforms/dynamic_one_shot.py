@@ -56,8 +56,7 @@ def null_postprocessing(results):
     return results[0]
 
 
-# pylint: disable=unused-argument
-def _expand_fn(
+def _expand_fn(  # pylint: disable=unused-argument
     tape: QuantumScript, postselect_mode=None, **_
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     if not any(is_mcm(o) for o in tape.operations):
@@ -289,7 +288,6 @@ def parse_native_mid_circuit_measurements(
     assert results is not None  # condition needed to not break signature
     interface = math.get_deep_interface(results)
     interface = "numpy" if interface == "builtins" else interface
-    interface = "tensorflow" if interface == "tf" else interface
 
     all_mcms = [op for op in circuit.operations if is_mcm(op)]
     mcm_samples = math.hstack(
@@ -323,8 +321,7 @@ def parse_native_mid_circuit_measurements(
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]
 
 
-# pylint: disable=too-many-arguments
-def _handle_measurement_qjit(
+def _handle_measurement_qjit(  # pylint: disable=too-many-arguments
     m: MeasurementProcess,
     m_count: int,
     results,
@@ -353,8 +350,7 @@ def _handle_measurement_qjit(
     return gather_non_mcm(m, result, is_valid, postselect_mode=postselect_mode), m_count + 1
 
 
-# pylint: disable=too-many-arguments
-def _handle_measurement(
+def _handle_measurement(  # pylint: disable=too-many-arguments
     m: MeasurementProcess,
     m_count: int,
     results,
@@ -460,52 +456,23 @@ def _gather_samples(measurement: SampleMP, samples, is_valid, postselect_mode=No
     return samples[is_valid]
 
 
-# pylint: disable=unused-arguement
 @gather_non_mcm.register
 def _gather_expval(measurement: ExpectationMP, samples, is_valid, postselect_mode=None):
     samples = math.stack(samples)
-    if (
-        math.get_interface(is_valid) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        # Tensorflow requires arrays that are used for arithmetic with each other to have the
-        # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
-        # index other tf.Tensors (is_valid is used to index valid samples).
-        is_valid = math.cast_like(is_valid, samples)
     return math.sum(math.squeeze(samples) * is_valid) / math.sum(is_valid)
 
 
-# pylint: disable=unused-arguement
 @gather_non_mcm.register
 def _gather_probability(measurement: ProbabilityMP, samples, is_valid, postselect_mode=None):
     samples = math.stack(samples, axis=0)
-    if (
-        math.get_interface(is_valid) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        # Tensorflow requires arrays that are used for arithmetic with each other to have the
-        # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
-        # index other tf.Tensors (is_valid is used to index valid samples).
-        is_valid = math.cast_like(is_valid, samples)
     return math.sum(samples * math.reshape(is_valid, (-1, 1)), axis=0) / math.sum(is_valid)
 
 
 @gather_non_mcm.register
 def _gather_variance(measurement: VarianceMP, samples, is_valid, postselect_mode=None):
     samples = math.stack(samples)
-    if (
-        interface := math.get_interface(is_valid)
-    ) == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        # Tensorflow requires arrays that are used for arithmetic with each other to have the
-        # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
-        # index other tf.Tensors (is_valid is used to index valid samples).
-        is_valid = math.cast_like(is_valid, samples)
     samples = math.squeeze(samples)
     expval = math.sum(samples * is_valid) / math.sum(is_valid)
-    if (
-        interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        # Casting needed for tensorflow
-        samples = math.cast_like(samples, expval)
-        is_valid = math.cast_like(is_valid, expval)
     return math.sum((samples - expval) ** 2 * is_valid) / math.sum(is_valid)
 
 
@@ -532,8 +499,7 @@ def gather_mcm(measurement: MeasurementProcess, samples, is_valid, postselect_mo
             values = [list(m.branches.values()) for m in mv]
             values = list(itertools.product(*values))
             values = [math.array([v], like=interface, dtype=mcm_samples.dtype) for v in values]
-            # Need to use boolean functions explicitly as Tensorflow does not allow integer math
-            # on boolean arrays
+            # Use boolean functions explicitly; integer math on boolean arrays is not portable.
             counts = [
                 math.count_nonzero(math.logical_and(math.all(mcm_samples == v, axis=1), is_valid))
                 for v in values
@@ -546,8 +512,7 @@ def gather_mcm(measurement: MeasurementProcess, samples, is_valid, postselect_mo
 
     mcm_samples = math.array(mv.concretize(samples), like=interface)
     if isinstance(measurement, ProbabilityMP):
-        # Need to use boolean functions explicitly as Tensorflow does not allow integer math
-        # on boolean arrays
+        # Use boolean functions explicitly; integer math on boolean arrays is not portable.
         mcm_samples = math.squeeze(mcm_samples)
         counts = [
             math.count_nonzero(math.logical_and((mcm_samples == v), is_valid))

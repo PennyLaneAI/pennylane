@@ -41,7 +41,6 @@ class PauliMeasure(Operator2):
 
     compilable_argnames = ("pauli_word", "postselect", "meas_uid")
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         pauli_word: str,
@@ -97,7 +96,7 @@ pauli_measure_prim = QpPrimitive("pauli_measure")
 
 @pauli_measure_prim.def_impl
 def _pauli_measure_primitive_impl(*wires, pauli_word="", postselect=None):
-    wires = [w if math.is_abstract(w) else int(w) for w in wires]
+    wires = [w if math.is_tracer(w) else int(w) for w in wires]
     return _pauli_measure_impl(wires, pauli_word=pauli_word, postselect=postselect)
 
 
@@ -178,19 +177,20 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     2: ──H─╰┤↗Y├──║─┤
              ╚════╝
 
-    Additionally, the number of PPM operations in a circuit can be easily inspected with :func:`~.specs`
-    where they are denoted as a :class:`~.ops.mid_measure.pauli_measure.PauliMeasure` gate type:
+    Additionally, the number of PPM operations in a circuit can be easily inspected with :func:`~.specs`:
 
-    >>> print(qp.specs(circuit)()['resources'])
+    >>> print(qp.specs(qp.qjit(circuit), level="top")()['resources'])
     Quantum operations:
     - Total: 4
-      - Hadamard: 2
-      - PauliMeasure: 1
-      - Conditional(PauliX): 1
+    - Hadamard: 2
+    - PPM-w2: 1
+    - PauliX: 1
     Measurement processes:
     - expval(PauliZ): 1
     Total wires: 3
-    Circuit Depth: 3
+    PBC Depths:
+    - Any commuting depth: 1
+    - Qubit disjoint depth: 1
     """
 
     if capture_enabled():

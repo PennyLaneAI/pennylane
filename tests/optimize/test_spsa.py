@@ -228,7 +228,6 @@ class TestSPSAOptimizer:
         k = 1
         ck = c / k**gamma
         ak = a / (A + k) ** alpha
-        # pylint:disable=too-many-function-args
         deltas = np.array(np.meshgrid([1, -1], [1, -1], [1, -1], [1, -1])).T.reshape(-1, 2, 2)
 
         args = (multid_array,)
@@ -415,32 +414,6 @@ class TestSPSAOptimizer:
             match="The objective function must be a scalar function for the gradient ",
         ):
             spsa_opt.step(f, args)
-
-    @pytest.mark.tf
-    def test_obj_func_not_a_scalar_function_with_tensorflow_interface(self):
-        """Test that if the objective function is not a
-        scalar function, an error is raised using tensorflow_interface."""
-
-        n_wires = 4
-        n_layers = 3
-        dev = qp.device("default.qubit", wires=n_wires)
-
-        def circuit(params):
-            qp.StronglyEntanglingLayers(params, wires=list(range(n_wires)))
-
-        @qp.qnode(dev)
-        def cost(params):
-            circuit(params)
-            return qp.probs(wires=[0, 1, 2, 3])
-
-        opt = qp.SPSAOptimizer(maxiter=10)
-        params = np.random.normal(scale=0.1, size=(n_layers, n_wires, 3), requires_grad=True)
-
-        with pytest.raises(
-            ValueError,
-            match="The objective function must be a scalar function for the gradient ",
-        ):
-            opt.step(cost, params)
 
     @pytest.mark.slow
     def test_lightning_device(self):

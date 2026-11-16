@@ -21,15 +21,16 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
 from pennylane.ops import adjoint
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.out_multiplier import (
     OutMultiplier,
     _add_plus_one,
+    _caddsub_multiplication,
     _out_multiplier_with_cache_resources,
     _out_multiplier_with_caddsub,
     _out_multiplier_with_qft,
 )
 from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
+from pennylane.testing import assert_valid_decomp_rule
 from pennylane.typing import Wire
 
 
@@ -91,7 +92,7 @@ class TestBuildingBlocks:
             "S",
             "Adjoint(T)",
             "Adjoint(S)",
-            "MidMeasureMP",
+            "MidMeasure",
             "H",
             "Cond",
             "CZ",
@@ -100,7 +101,7 @@ class TestBuildingBlocks:
         if not decompose_right_elbow:
             gate_set.add("Adjoint(TemporaryAND)")
 
-        @qp.decompose(gate_set=gate_set)
+        @qp.transforms._tape_decompose(gate_set=gate_set)  # pylint: disable=protected-access
         @qp.qnode(qp.device("default.qubit"))
         def node(x_state, y_state, transformed_state):
             qp.StatePrep(x_state, x_wires)
@@ -121,6 +122,51 @@ class TestBuildingBlocks:
         assert np.isclose(probs[0], 1.0)
         assert np.allclose(probs[1:], 0.0)
 
+    @pytest.mark.parametrize("output_wires_zeroed", [False, True])
+    @pytest.mark.parametrize(
+        "num_x_wires, num_y_wires, num_output_wires",
+        [(1, 2, 3), (2, 2, 4), (3, 2, 4), (4, 2, 3), (2, 3, 6)],
+    )
+    def test_caddsub_multiplication_signed_x(
+        self, num_x_wires, num_y_wires, num_output_wires, output_wires_zeroed
+    ):
+        """Test that ``_caddsub_multiplication`` with ``x_signed=True`` computes
+        ``(z + x * y) mod 2^k`` for a two's-complement signed ``x`` and an unsigned ``y``."""
+        x_wires = list(range(num_x_wires))
+        y_wires = list(range(num_x_wires, num_x_wires + num_y_wires))
+        output_wires = list(
+            range(len(x_wires + y_wires), len(x_wires + y_wires) + num_output_wires)
+        )
+        num_wires = len(x_wires + y_wires + output_wires)
+        work_wires = list(range(num_wires, num_wires + num_output_wires + 1))
+
+        @qp.set_shots(1)
+        @qp.qnode(qp.device("default.qubit"))
+        def node(x, y, z):
+            qp.BasisEmbedding(qp.math.int_to_binary(x % 2**num_x_wires, num_x_wires), x_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(y, num_y_wires), y_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(z, num_output_wires), output_wires)
+            _caddsub_multiplication(
+                x_wires, y_wires, output_wires, work_wires, output_wires_zeroed, x_signed=True
+            )
+            return qp.sample(wires=x_wires + y_wires + output_wires + work_wires)
+
+        def to_int(bits):
+            return int("".join(str(int(s)) for s in bits), 2)
+
+        mod = 2**num_output_wires
+        z_values = [0] if output_wires_zeroed else [0, mod - 3]
+        num_inputs = num_x_wires + num_y_wires
+        for x in range(-(2 ** (num_x_wires - 1)), 2 ** (num_x_wires - 1)):
+            for y in range(2**num_y_wires):
+                for z in z_values:
+                    sample = node(x, y, z)[0]
+                    assert to_int(sample[:num_x_wires]) == x % 2**num_x_wires
+                    assert to_int(sample[num_x_wires:num_inputs]) == y
+                    out = to_int(sample[num_inputs : num_inputs + num_output_wires])
+                    assert out == (z + x * y) % mod
+                    assert not any(sample[num_inputs + num_output_wires :])
+
 
 @pytest.mark.parametrize(
     (
@@ -138,9 +184,9 @@ class TestBuildingBlocks:
         ([0, 1, 2], [3, 4, 5], [6, 7, 8], 8, [9], 8, 1),
     ],
 )
-def test_abstract_init(
+def test_abstract_init(  # pylint: disable=too-many-arguments
     x_wires, y_wires, output_wires, mod, work_wires, expected_mod, expected_num_work_wires
-):  # pylint: disable=too-many-arguments
+):
     """Tests that creating an abstract operator works."""
     abstract_op = OutMultiplier(
         Wire[len(x_wires)],
@@ -184,7 +230,7 @@ def test_standard_validity_out_multiplier_capture():
     output_wires = [6, 7, 8, 9]
     work_wires = [5, 10]
     op = OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_wires_property():
@@ -291,49 +337,49 @@ def _test_mult_correctness(all_wires, mod, rule, seed, output_wires_zeroed=False
 
 
 _DECOMP_NEW_OUTPUT_WIRES_ZEROED_CASES = [
-    ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10, 11], [0]),
-    ([0, 1, 2], [3, 6], [5, 8], 4, [], [0]),
-    ([0, 1, 2], [3, 6], [5, 8], 4, [9], [0, 1]),
-    ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2]),
+    ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10, 11], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [9], [0, 1, 4]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2, 4]),
     ([0], [3, 6], [5, 8], 4, [], [0]),
     ([0], [3, 6], [5, 8], 4, [9], [0, 1]),
     ([0], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2]),
-    ([0, 1, 2], [3], [5, 7, 8], None, [9], [0]),
-    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0, 1]),
-    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], [0, 1, 2]),
-    ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11], [0]),
-    ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11, 12], [0, 1]),
-    ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11, 12, 13, 14, 15, 16], [0, 1, 2]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9], [0]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13], [0, 1]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13, 14, 15, 16], [0, 1, 2]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10], [0]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10, 13, 14, 15, 16, 17, 18], [0]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9], [0, 4]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0, 1, 4]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], [0, 1, 2, 4]),
+    ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11], [0, 4]),
+    ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11, 12], [0, 1, 4]),
+    ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11, 12, 13, 14, 15, 16], [0, 1, 2, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13], [0, 1, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13, 14, 15, 16], [0, 1, 2, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10, 13, 14, 15, 16, 17, 18], [0, 4]),
     ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9], [0]),
     ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11], [0, 1]),
     ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12, 13], [0, 1, 2]),
 ]
 
 _DECOMP_NEW_NON_ZERO_OUTPUT_WIRES_CASES = [
-    ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10], [0]),
-    ([0, 1, 2], [3, 6], [5, 8], 4, [9], [0]),
-    ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10], [0, 1]),
-    ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
+    ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [9], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10], [0, 1, 4]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3, 4]),
     ([0], [3, 6], [5, 8], 4, [9], [0]),
     ([0], [3, 6], [5, 8], 4, [9, 10], [0, 1]),
     ([0], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
     ([0], [3, 6, 4], [5, 8], 4, [9], [0]),
     ([0], [3, 6, 4], [5, 8], 4, [9, 10], [0, 1]),
     ([0], [3, 6, 4], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
-    ([0, 1, 2], [3], [5, 7, 8], None, [9], [0]),
-    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0]),
-    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], [0, 1, 2]),
-    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12, 13], [0, 1, 2, 3]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9], [0]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13], [0]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13, 14, 15, 16], [0, 1, 2]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10], [0]),
-    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10, 13, 14, 15, 16, 17, 18], [0]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9], [0, 4]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0, 4]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], [0, 1, 2, 4]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12, 13], [0, 1, 2, 3, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13, 14, 15, 16], [0, 1, 2, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10], [0, 4]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10, 13, 14, 15, 16, 17, 18], [0, 4]),
     ([0, 1], [2, 3], [4, 5, 6, 7], 16, [8, 9], [0]),
     ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9], [0]),
     ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11], [0]),
@@ -357,9 +403,9 @@ class TestOutMultiplier:
             ([0, 1], [3, 4, 5], [6, 7, 8], None, None),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_operation_result(self, x_wires, y_wires, output_wires, mod, work_wires, seed):
         """Test the correctness of the OutMultiplier template output."""
-        # pylint: disable=too-many-arguments
         all_wires = (x_wires, y_wires, output_wires, work_wires)
         _test_mult_correctness(all_wires, mod, _out_multiplier_with_qft, seed)
 
@@ -424,9 +470,8 @@ class TestOutMultiplier:
             ),
         ],
     )
-    def test_wires_error(
-        self, x_wires, y_wires, output_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_wires_error(self, x_wires, y_wires, output_wires, mod, work_wires, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
@@ -491,15 +536,32 @@ class TestOutMultiplier:
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("mod", [4, 3])
+    @pytest.mark.parametrize("output_wires_zeroed", [False, True])
+    def test_decomposition_qft_rule(self, mod, output_wires_zeroed):
+        """Test the QFT decomposition and its declared resources."""
+        op = OutMultiplier(
+            x_wires=[0, 1],
+            y_wires=[2, 3],
+            output_wires=[4, 5],
+            mod=mod,
+            work_wires=[6, 7],
+            output_wires_zeroed=output_wires_zeroed,
+        )
+
+        assert _out_multiplier_with_qft.is_applicable(**op.arguments)
+        assert_valid_decomp_rule(op, _out_multiplier_with_qft)
+
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "applicable_rules"),
         _DECOMP_NEW_OUTPUT_WIRES_ZEROED_CASES,
     )
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_decomposition_new_output_wires_zeroed(
+    def test_decomposition_new_output_wires_zeroed(  # pylint: disable=too-many-arguments
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
-    ):  # pylint: disable=too-many-arguments
-        """Tests the decomposition rule implemented with the new system
+    ):
+        """Tests the decomposition rules implemented with the new system
         with output_wires_zeroed=True."""
 
         op = qp.OutMultiplier(
@@ -515,7 +577,7 @@ class TestOutMultiplier:
             # TODO: ControlledSequence doesn't take traced wires [sc-128372]
             if rule.name != "_out_multiplier_with_qft":
                 assert applicable is (j in applicable_rules)
-            _test_decomposition_rule(op, rule)
+            assert_valid_decomp_rule(op, rule)
 
         if qp.capture.enabled():
             pytest.skip("The following test relies on executing a qnode with capture.")
@@ -531,9 +593,9 @@ class TestOutMultiplier:
         _DECOMP_NEW_NON_ZERO_OUTPUT_WIRES_CASES,
     )
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_decomposition_new_non_zero_output_wires(
+    def test_decomposition_new_non_zero_output_wires(  # pylint: disable=too-many-arguments
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Tests the decomposition rule implemented with the new system
         with output_wires_zeroed=False (default)."""
 
@@ -543,7 +605,7 @@ class TestOutMultiplier:
             # TODO: ControlledSequence doesn't take traced wires [sc-128372]
             if rule.name != "_out_multiplier_with_qft":
                 assert applicable is (j in applicable_rules)
-            _test_decomposition_rule(op, rule)
+            assert_valid_decomp_rule(op, rule)
 
         if qp.capture.enabled():
             pytest.skip("The following test relies on executing a qnode with capture.")
@@ -564,9 +626,9 @@ class TestOutMultiplier:
             ([0], [3, 6], [5, 8], 4, [9, 10, 11], True),
         ],
     )
-    def test_decomposition_caddsub_rule(
+    def test_decomposition_caddsub_rule(  # pylint: disable=too-many-arguments
         self, x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Regression test (#10065): ``_out_multiplier_with_caddsub`` relies internally on
         ``_adder_flipped_first_work_wire``, whose collect-reorder-replay strategy used to be
         capture-unsafe. Verify the rule still decomposes correctly with program capture
@@ -575,7 +637,7 @@ class TestOutMultiplier:
             x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=output_wires_zeroed
         )
         assert _out_multiplier_with_caddsub.is_applicable(**op.arguments)
-        _test_decomposition_rule(op, _out_multiplier_with_caddsub)
+        assert_valid_decomp_rule(op, _out_multiplier_with_caddsub)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
@@ -596,7 +658,7 @@ class TestOutMultiplier:
         work_wires = [5, 10]
         dev = qp.device("lightning.qubit")
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():
@@ -605,7 +667,6 @@ class TestOutMultiplier:
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
             return qp.sample(wires=output_wires)
 
-        # pylint: disable=bad-reversed-sequence
         out = circuit()[0, :]
 
         assert np.allclose(2 ** np.arange(3, -1, -1) @ out, (x * y) % mod)

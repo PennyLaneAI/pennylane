@@ -15,7 +15,7 @@
 Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
 
-# pylint:disable=protected-access, unused-argument
+# pylint: disable=too-few-public-methods
 
 import re
 from functools import partial
@@ -28,16 +28,13 @@ import pennylane.numpy as qnp
 from pennylane.core.operator import abstractify
 from pennylane.core.operator.base import Operator, Operator1
 from pennylane.exceptions import DeviceError
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.ops.op_math.change_op_basis import _convert_to_prod, _validate_callable
 from pennylane.templates import Subroutine
+from pennylane.testing import assert_decomposable, assert_eqn_matches_op
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
-from tests.capture.capture_utils import assert_eqn_matches_op
 from tests.core.operator.operator2_utils import NonParametricOp
-
-# pylint: disable=too-few-public-methods
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
 
@@ -79,7 +76,6 @@ ops = (
 )
 
 
-# pylint: disable-next=too-few-public-methods
 class DummyOp(qp.core.Operator1):
     pass
 
@@ -93,7 +89,7 @@ def test_basic_validity():
     op2 = DummyOp(0)
     op3 = qp.PauliZ(0)
     op = qp.change_op_basis(op1, op2, op3)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_change_op_basis_callables():
@@ -284,11 +280,11 @@ def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
         qp.change_op_basis(compute_op(0), target_op(1), uncompute_op(0))
 
     jaxpr = qp.capture.make_plxpr(circuit)()
-    tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+    tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
     assert tape.operations == [compute_op(0), target_op(1), uncompute_op(0)]
 
 
-class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
+class MyOp(qp.RX):
     """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
@@ -297,7 +293,7 @@ class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
     has_diagonalizing_gates = False
 
 
-class TestInitialization:  # pylint:disable=too-many-public-methods
+class TestInitialization:
     """Test the initialization."""
 
     def test_init_change_op_basis_op(self):
@@ -370,7 +366,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert change_op_basis_op.has_diagonalizing_gates is False
 
 
-class TestProperties:  # pylint: disable=too-few-public-methods
+class TestProperties:
     """Test class properties."""
 
     @pytest.mark.parametrize("ops_lst", list(ops))
@@ -404,7 +400,7 @@ class TestProperties:  # pylint: disable=too-few-public-methods
         assert op.is_verified_hermitian is expected
 
 
-class TestWrapperFunc:  # pylint: disable=too-few-public-methods
+class TestWrapperFunc:
     """Test wrapper function."""
 
     def test_op_change_op_basis_top_level(self):
@@ -515,8 +511,7 @@ class TestDecomposition:
         """Test the qfunc decomposition."""
         change_op_basis_op = ChangeOpBasis(*ops_lst)
 
-        for rule in qp.list_decomps(ChangeOpBasis):
-            _test_decomposition_rule(change_op_basis_op, rule)
+        assert_decomposable(change_op_basis_op)
 
     @pytest.mark.parametrize("ops_lst", ops)
     @pytest.mark.capture
@@ -524,7 +519,7 @@ class TestDecomposition:
         """Test that capture applies each decomposition operand in order."""
 
         jaxpr = qp.capture.make_plxpr(lambda: change_op_basis(*ops_lst))()
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
         assert tape.operations == list(ops_lst)
 
@@ -541,8 +536,7 @@ class TestDecomposition:
             [1],
             work_wires=work_wires,
         )
-        for rule in qp.list_decomps("C(ChangeOpBasis)"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_on_tape(self, ops_lst):
@@ -570,7 +564,7 @@ def test_callable_validation_doesnt_hide_bugs_with_typeerror():
         change_op_basis(f, qp.Y(0))
 
 
-def blah(a, b, c=3):
+def blah(a, b, c=3):  # pylint: disable=unused-argument
     pass
 
 

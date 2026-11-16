@@ -29,8 +29,6 @@ from pennylane.typing import AbstractWires
 
 from .composite import handle_recursion_error
 
-# pylint: disable=too-many-instance-attributes,invalid-sequence-index
-
 
 class CompositeOp2(Operator2, is_baseclass=True):
     """A base class for operators that are composed of other operators.
@@ -63,8 +61,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
                 self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
             )
 
-        for op in self:
-            remove_from_program(op)
+        remove_from_program(*operands)
 
     # FIX: This is a temporary work-around. Long-term fix is to remove `_init_pauli_rep`
     # from the constructor [sc-130145].
@@ -147,7 +144,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
         if cls.compute_eigvals is CompositeOp2.compute_eigvals:
 
             @handle_recursion_error
-            # pylint: disable-next=unused-argument
             def _compute_eigvals(operands=(), _init_pauli_rep=None):
                 """Return the eigenvalues of the specified operator.
 
@@ -239,10 +235,9 @@ class CompositeOp2(Operator2, is_baseclass=True):
     def is_verified_hermitian(self):
         """This property determines if the composite operator is hermitian."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method, arguments-differ
     @property
     @handle_recursion_error
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return all(op.has_matrix for op in self)
 
     @property
@@ -275,7 +270,8 @@ class CompositeOp2(Operator2, is_baseclass=True):
                     # If the op has already been added to the first group, every subsequent
                     # group that overlaps with this op is merged into the first group
                     ops, wires = groups.pop(i)
-                    groups[first_group_idx][0].extend(ops)
+                    groups[first_group_idx][0].extend(ops)  # pylint: disable=invalid-sequence-index
+                    # pylint: disable-next=invalid-sequence-index
                     groups[first_group_idx][1] = groups[first_group_idx][1] + wires
                 else:
                     i += 1
@@ -309,9 +305,8 @@ class CompositeOp2(Operator2, is_baseclass=True):
 
         return self._eigs[self]
 
-    # pylint: disable-next=arguments-differ
     @property
-    def has_diagonalizing_gates(self):
+    def has_diagonalizing_gates(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         if self.has_overlapping_wires:
             for ops in self.overlapping_ops:
                 # if any of the single ops doesn't have diagonalizing gates, the overall operator doesn't either
@@ -385,7 +380,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
 
     @handle_recursion_error
     def map_wires(self, wire_map: dict):
-        # pylint:disable=protected-access
         if self._init_pauli_rep:
             rep = self._init_pauli_rep.map_wires(wire_map=wire_map)
         else:

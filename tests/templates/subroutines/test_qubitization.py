@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.parametrize(
@@ -82,7 +82,7 @@ def test_standard_validity(lcu, control):
     """Check the operation using the assert_valid function."""
     op = qp.Qubitization(lcu, control)
     # Skip differentiation for test cases that raise NaNs in gradients (known limitation of ``MottonenStatePreparation``).
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.parametrize(
@@ -131,11 +131,10 @@ def test_decomposition(hamiltonian, expected_decomposition):
 )
 @pytest.mark.xfail_if_capture(reason="come back to this as we port Qubitization [sc-129900]")
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_decomposition_new(hamiltonian, control):  # pylint: disable=unused-argument
+def test_decomposition_new(hamiltonian, control):
     """Tests the decomposition rule implemented with the new system."""
     op = qp.Qubitization(hamiltonian, control=control)
-    for rule in qp.list_decomps(qp.Qubitization):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 def test_lightning_qubit():
@@ -233,28 +232,6 @@ class TestDifferentiability:
         assert qp.math.shape(jac) == (4,)
         atol = 1e-5 if shots is None else 0.05
         assert qp.math.allclose(jac, self.exp_grad, atol=atol)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("shots", [None, 50000])
-    @pytest.mark.xfail(reason="tf gradient doesn't seem to be working, returns ()")
-    def test_qnode_tf(self, shots, seed):
-        """ "Test that the QNode executes and is differentiable with TensorFlow. The shots
-        argument controls whether autodiff or parameter-shift gradients are used."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", seed=seed)
-        diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qp.set_shots(
-            qp.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
-        )
-
-        params = tf.Variable(self.params)
-        with tf.GradientTape() as tape:
-            res = qnode(params)
-
-        jac = tape.gradient(res, params)
-        assert qp.math.shape(jac) == (4,)
-        assert qp.math.allclose(res, self.exp_grad, atol=0.001)
 
 
 def test_copy():

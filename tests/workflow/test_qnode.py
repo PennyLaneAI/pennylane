@@ -13,9 +13,9 @@
 # limitations under the License.
 """Unit tests for the QNode"""
 
-import copy
+# pylint: disable=protected-access,too-few-public-methods
 
-# pylint: disable=import-outside-toplevel, protected-access, no-member
+import copy
 import warnings
 from dataclasses import replace
 from functools import partial
@@ -46,23 +46,23 @@ def dummyfunc():
     return None
 
 
-# pylint: disable=unused-argument
 class CustomDevice(qp.devices.Device):
     """A null device that just returns 0."""
 
     def __repr__(self):
         return "CustomDevice"
 
-    def execute(self, circuits, execution_config=None):
+    def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
         return (0,)
 
 
 class CustomDeviceWithDiffMethod(qp.devices.Device):
     """A device that defines a derivative."""
 
-    def execute(self, circuits, execution_config=None):
+    def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
         return 0
 
+    # pylint: disable-next=unused-argument
     def compute_derivatives(self, circuits, execution_config=None):
         """Device defines its own method to compute derivatives"""
         return 0
@@ -93,6 +93,8 @@ def test_copy():
     assert copied_qn.execute_kwargs is not qn.execute_kwargs
     assert list(copied_qn.compile_pipeline) == list(qn.compile_pipeline)
     assert copied_qn.compile_pipeline is not qn.compile_pipeline
+    assert list(copied_qn.post_device_pipeline) == list(qn.post_device_pipeline)
+    assert copied_qn.post_device_pipeline is not qn.post_device_pipeline
     assert copied_qn.gradient_kwargs == qn.gradient_kwargs
     assert copied_qn.gradient_kwargs is not qn.gradient_kwargs
 
@@ -208,6 +210,26 @@ class TestUpdate:
         new_circuit = circuit.update(diff_method="parameter-shift")
         assert new_circuit.diff_method == "parameter-shift"
         assert circuit.compile_pipeline == new_circuit.compile_pipeline
+        assert circuit.post_device_pipeline == new_circuit.post_device_pipeline
+        assert new_circuit.post_device_pipeline is not circuit.post_device_pipeline
+
+    def test_update_pipelines(self):
+        """Test that QNode compile pipelines can be updated via update_pipelines."""
+        dev = qp.device("default.qubit", wires=1)
+        qn = qp.QNode(dummyfunc, dev)
+
+        new_compile = qp.CompilePipeline(qp.transforms.cancel_inverses)
+        new_post_device = qp.CompilePipeline(qp.transforms.merge_rotations)
+        updated = qn.update_pipelines(new_compile, new_post_device)
+
+        assert updated is not qn
+        assert updated.compile_pipeline is new_compile
+        assert updated.post_device_pipeline is new_post_device
+
+        empty_post_device = qn.update_pipelines(new_compile)
+        assert empty_post_device is not qn
+        assert empty_post_device.compile_pipeline is new_compile
+        assert empty_post_device.post_device_pipeline == qp.CompilePipeline()
 
 
 class TestInitialization:
@@ -229,7 +251,7 @@ class TestInitialization:
         def f2():
             return qp.state()
 
-        assert f2._shots_override_device  # pylint: disable=protected-access
+        assert f2._shots_override_device
         assert f2.shots == qp.measurements.Shots(10)
 
         # Shots from device should be set correctly
@@ -269,7 +291,6 @@ class TestInitialization:
         assert f.execute_kwargs["cache"] == "auto"
 
 
-# pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
 
@@ -314,7 +335,6 @@ class TestValidation:
         with pytest.raises(QuantumFunctionError, match="Invalid device"):
             QNode(dummyfunc, None)
 
-    # pylint: disable=protected-access, too-many-statements
     def test_diff_method(self):
         """Test that a user-supplied diff method correctly returns the right
         diff method."""
@@ -476,8 +496,6 @@ class TestValidation:
         assert len(record) == 0
 
 
-# pylint: disable=too-few-public-methods
-# pylint: disable=unnecessary-lambda
 class TestPyTreeStructure:
     """Tests for preservation of pytree structure through execution"""
 
@@ -485,7 +503,7 @@ class TestPyTreeStructure:
         "measurement",
         [
             lambda: ({"probs": qp.probs()},),
-            lambda: qp.probs(),
+            lambda: qp.probs(),  # pylint: disable=unnecessary-lambda
             lambda: [
                 [qp.probs(wires=1), {"a": qp.probs(wires=0)}, qp.expval(qp.Z(0))],
                 {"probs": qp.probs(wires=0), "exp": qp.expval(qp.X(1))},
@@ -846,7 +864,6 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # pylint: disable=too-many-positional-arguments
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
@@ -861,9 +878,9 @@ class TestIntegration:
             (qp.probs, lambda x: [np.cos(x / 2) ** 2, np.sin(x / 2) ** 2]),
         ],
     )
-    def test_defer_meas_if_mcm_unsupported(
+    def test_defer_meas_if_mcm_unsupported(  # pylint: disable=too-many-arguments
         self, dev_name, first_par, sec_par, return_type, mv_return, mv_res, mocker
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
         natively."""
@@ -896,7 +913,7 @@ class TestIntegration:
         assert spy.call_count == 2
 
     @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
-    def test_sampling_with_mcm(self, basis_state, mocker):
+    def test_sampling_with_mcm(self, basis_state, mocker):  # pylint: disable=unused-argument
         """Tests that a QNode with qp.sample and mid-circuit measurements
         returns the expected results."""
         dev = qp.device("default.qubit", wires=3)
@@ -931,57 +948,6 @@ class TestIntegration:
         r1 = cry_qnode_deferred(first_par)
         r2 = conditional_ry_qnode_deferred(first_par)
         assert np.allclose(r1, r2)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_conditional_ops_tensorflow(self, interface):
-        """Test conditional operations with TensorFlow."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=3)
-
-        @qp.qnode(dev, interface=interface, diff_method="parameter-shift")
-        def cry_qnode(x):
-            """QNode where we apply a controlled Y-rotation."""
-            qp.Hadamard(1)
-            qp.RY(1.234, wires=0)
-            qp.CRY(x, wires=[0, 1])
-            return qp.expval(qp.PauliZ(1))
-
-        @qp.qnode(dev, interface=interface, diff_method="parameter-shift")
-        def conditional_ry_qnode(x):
-            """QNode where the defer measurements transform is applied by
-            default under the hood."""
-            qp.Hadamard(1)
-            qp.RY(1.234, wires=0)
-            m_0 = qp.measure(0)
-            qp.cond(m_0, qp.RY)(x, wires=1)
-            return qp.expval(qp.PauliZ(1))
-
-        dm_conditional_ry_qnode = qp.defer_measurements(conditional_ry_qnode)
-
-        x_ = -0.654
-        x1 = tf.Variable(x_, dtype=tf.float64)
-        x2 = tf.Variable(x_, dtype=tf.float64)
-        x3 = tf.Variable(x_, dtype=tf.float64)
-
-        with tf.GradientTape() as tape1:
-            r1 = cry_qnode(x1)
-
-        with tf.GradientTape() as tape2:
-            r2 = conditional_ry_qnode(x2)
-
-        with tf.GradientTape() as tape3:
-            r3 = dm_conditional_ry_qnode(x3)
-
-        assert np.allclose(r1, r2)
-        assert np.allclose(r1, r3)
-
-        grad1 = tape1.gradient(r1, x1)
-        grad2 = tape2.gradient(r2, x2)
-        grad3 = tape3.gradient(r3, x3)
-        assert np.allclose(grad1, grad2)
-        assert np.allclose(grad1, grad3)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["torch", "auto"])
@@ -1070,7 +1036,7 @@ class TestIntegration:
             circuit()
 
         tape = qp.workflow.construct_tape(circuit)()
-        assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert q.queue == []
         assert len(tape.operations) == 1
 
     def test_qnode_preserves_inferred_numpy_interface(self):
@@ -1090,7 +1056,6 @@ class TestIntegration:
     def test_qnode_default_interface(self):
         """Tests that the default interface is set correctly for a QNode."""
 
-        # pylint: disable=import-outside-toplevel
         import networkx as nx
 
         @qp.qnode(qp.device("default.qubit"))
@@ -1108,12 +1073,10 @@ class TestIntegration:
     def test_qscript_default_interface(self):
         """Tests that the default interface is set correctly for a QuantumScript."""
 
-        # pylint: disable=import-outside-toplevel
         import networkx as nx
 
         dev = qp.device("default.qubit")
 
-        # pylint: disable=too-few-public-methods
         class DummyCustomGraphOp(qp.operation.Operation):
             """Dummy custom operation for testing purposes."""
 
@@ -1123,17 +1086,17 @@ class TestIntegration:
             def decomposition(self) -> list:
                 return []
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(DummyCustomGraphOp, null_decomp)
-            graph = nx.complete_graph(3)
-            tape = qp.tape.QuantumScript([DummyCustomGraphOp(graph)], [qp.expval(qp.PauliZ(0))])
-            res = qp.execute([tape], dev)
-            assert qp.math.get_interface(res) == "numpy"
+        qp.add_decomps(DummyCustomGraphOp, null_decomp)
+        graph = nx.complete_graph(3)
+        tape = qp.tape.QuantumScript([DummyCustomGraphOp(graph)], [qp.expval(qp.PauliZ(0))])
+        res = qp.execute([tape], dev)
+        assert qp.math.get_interface(res) == "numpy"
 
     def test_error_device_vjp_unsuppoprted(self):
         """Test that an error is raised in the device_vjp is unsupported."""
 
         class DummyDev(qp.devices.Device):
+            # pylint: disable=unused-argument
             def execute(self, circuits, execution_config=qp.devices.ExecutionConfig()):
                 return 0
 
@@ -1156,7 +1119,6 @@ class TestIntegration:
             pytest.param("autograd", marks=pytest.mark.autograd),
             pytest.param("jax", marks=pytest.mark.jax),
             pytest.param("torch", marks=pytest.mark.torch),
-            pytest.param("tensorflow", marks=pytest.mark.tf),
         ),
     )
     def test_error_if_differentiate_diff_method_None(self, interface):
@@ -1191,7 +1153,6 @@ class TestShots:
         with pytest.raises(AttributeError, match="Shots cannot be set on a qnode instance"):
             circuit.shots = 5
 
-    # pylint: disable=unexpected-keyword-arg
     def test_no_shots_per_call_if_user_has_shots_qfunc_kwarg(self):
         """Tests that the per-call shots overwriting is suspended if user
         has a shots keyword argument, but a warning is raised."""
@@ -1216,7 +1177,6 @@ class TestShots:
         tape = qp.workflow.construct_tape(circuit)(0.8, shots=0)
         assert tape.operations[0].wires.labels == (0,)
 
-    # pylint: disable=unexpected-keyword-arg
     def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
         """Tests that the per-call shots overwriting is suspended
         if user has a shots argument, but a warning is raised."""
@@ -1262,7 +1222,6 @@ class TestShots:
         with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
             circuit(0.3)
 
-    # pylint: disable=unexpected-keyword-arg
     def test_warning_finite_shots_override(self):
         """Tests that a warning is raised when caching is used with finite shots."""
         dev = qp.device("default.qubit", wires=1)
@@ -1572,11 +1531,14 @@ class TestNewDeviceIntegration:
         class CustomDeviceWithDiffMethod2(qp.devices.DefaultQubit):
             """A device with a custom derivative named hello."""
 
+            # pylint: disable-next=unused-argument
             def supports_derivatives(self, execution_config=None, circuit=None):
                 return getattr(execution_config, "gradient_method", None) == "hello"
 
-            def setup_execution_config(
-                self, config: qp.devices.ExecutionConfig | None = None, circuit=None
+            def setup_execution_config(  # pylint: disable=unused-argument
+                self,
+                config: qp.devices.ExecutionConfig | None = None,
+                circuit=None,
             ):
                 if config.gradient_method in {"best", "hello"}:
                     return replace(config, gradient_method="hello", use_device_gradient=True)
@@ -1656,7 +1618,7 @@ class TestMCMConfiguration:
     def test_defer_measurements_with_jit(self, diff_method, mocker, seed):
         """Test that using mcm_method="deferred" defaults to behaviour like
         postselect_mode="fill-shots" when using jax jit."""
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         shots = 100
         postselect = 1
@@ -1690,7 +1652,7 @@ class TestMCMConfiguration:
     def test_deferred_hw_like_error_with_jit(self, diff_method, seed):
         """Test that an error is raised if attempting to use postselect_mode="hw-like"
         with jax jit with mcm_method="deferred"."""
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         shots = 100
         postselect = 1
@@ -1775,7 +1737,6 @@ class TestTapeExpansion:
         """Test expansion of an unsupported operation on the device"""
         dev = qp.device("default.qubit", wires=1)
 
-        # pylint: disable=too-few-public-methods
         class UnsupportedOp(qp.operation.Operation):
             """custom unsupported op."""
 
@@ -1798,10 +1759,9 @@ class TestTapeExpansion:
         else:
             spy = mocker.spy(circuit.device, "execute")
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(UnsupportedOp, _decomp)
-            x = pnp.array(0.5)
-            circuit(x)
+        qp.add_decomps(UnsupportedOp, _decomp)
+        x = pnp.array(0.5)
+        circuit(x)
 
         tape = spy.call_args[0][0][0]
         assert len(tape.operations) == 1
@@ -1814,7 +1774,6 @@ class TestTapeExpansion:
 
         dev = qp.device("default.qubit", wires=1)
 
-        # pylint: disable=too-few-public-methods
         class UnsupportedOp(qp.operation.Operation):
             """custom unsupported op."""
 
@@ -1827,33 +1786,30 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qp.RX(3 * self.data[0], wires=self.wires)]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RX: 1})
+        def _decomp(data, wires):
+            qp.RX(3 * data, wires)
 
-            @qp.register_resources({qp.RX: 1})
-            def _decomp(data, wires):
-                qp.RX(3 * data, wires)
+        qp.add_decomps(UnsupportedOp, _decomp)
 
-            qp.add_decomps(UnsupportedOp, _decomp)
+        @qnode(dev, interface="autograd", diff_method="parameter-shift", max_diff=2)
+        def circuit(x):
+            UnsupportedOp(x, wires=0)
+            return qp.expval(qp.PauliZ(0))
 
-            @qnode(dev, interface="autograd", diff_method="parameter-shift", max_diff=2)
-            def circuit(x):
-                UnsupportedOp(x, wires=0)
-                return qp.expval(qp.PauliZ(0))
+        x = pnp.array(0.5, requires_grad=True)
+        qp.grad(circuit)(x)
 
-            x = pnp.array(0.5, requires_grad=True)
-            qp.grad(circuit)(x)
-
-            # check second derivative
-            assert np.allclose(qp.grad(qp.grad(circuit))(x), -9 * np.cos(3 * x))
+        # check second derivative
+        assert np.allclose(qp.grad(qp.grad(circuit))(x), -9 * np.cos(3 * x))
 
     @pytest.mark.autograd
-    def test_gradient_expansion(self, mocker):
+    def test_gradient_expansion(self, mocker):  # pylint: disable=unused-argument
         """Test that a *supported* operation with no gradient recipe is
         expanded when applying the gradient transform, but not for execution."""
 
         dev = qp.device("default.qubit", wires=1)
 
-        # pylint: disable=too-few-public-methods
         class PhaseShift(qp.PhaseShift):
             """custom phase shift."""
 
@@ -1862,30 +1818,28 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qp.RY(3 * self.data[0], wires=self.wires)]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RY: 1})
+        def custom_decomposition(param, wires):
+            qp.RY(3 * param, wires=wires)
 
-            @qp.register_resources({qp.RY: 1})
-            def custom_decomposition(param, wires):
-                qp.RY(3 * param, wires=wires)
+        qp.add_decomps(PhaseShift, custom_decomposition)
 
-            qp.add_decomps(PhaseShift, custom_decomposition)
+        @qnode(dev, diff_method="parameter-shift", max_diff=2)
+        def circuit(x):
+            qp.Hadamard(wires=0)
+            PhaseShift(x, wires=0)
+            return qp.expval(qp.PauliX(0))
 
-            @qnode(dev, diff_method="parameter-shift", max_diff=2)
-            def circuit(x):
-                qp.Hadamard(wires=0)
-                PhaseShift(x, wires=0)
-                return qp.expval(qp.PauliX(0))
+        x = pnp.array(0.5, requires_grad=True)
+        circuit(x)
 
-            x = pnp.array(0.5, requires_grad=True)
-            circuit(x)
+        res = qp.grad(circuit)(x)
 
-            res = qp.grad(circuit)(x)
+        assert np.allclose(res, -3 * np.sin(3 * x))
 
-            assert np.allclose(res, -3 * np.sin(3 * x))
-
-            # test second order derivatives
-            res = qp.grad(qp.grad(circuit))(x)
-            assert np.allclose(res, -9 * np.cos(3 * x))
+        # test second order derivatives
+        res = qp.grad(qp.grad(circuit))(x)
+        assert np.allclose(res, -9 * np.cos(3 * x))
 
     def test_hamiltonian_expansion_analytic(self):
         """Test result if there are non-commuting groups and the number of shots is None"""
@@ -1909,7 +1863,6 @@ class TestTapeExpansion:
 def test_resets_after_execution_error():
     """Test that the interface is reset to ``"auto"`` if an error occurs during execution."""
 
-    # pylint: disable=too-few-public-methods
     class BadOp(qp.operation.Operator):
         """An operator that will cause an error during execution."""
 
@@ -1978,7 +1931,7 @@ class TestPrivateFunctions:
         assert config == expected_config
 
 
-class TestSetShots:
+class TestSetShots:  # pylint: disable=too-many-public-methods
     """Tests for the set_shots decorator functionality."""
 
     def test_shots_initialization(self):

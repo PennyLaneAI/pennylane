@@ -27,7 +27,6 @@ on:
           - all-interfaces-tests
           - external-libraries-tests
           - catalyst-tests
-          - qcut-tests
           - qchem-tests
           - gradients-tests
           - data-tests
@@ -55,7 +54,7 @@ jobs:
         if: inputs.workflow != 'documentation-tests' || inputs.workflow != 'docs' || inputs.workflow != 'format' || inputs.workflow != 'module-validation' || inputs.workflow != 'package-warning-as-errors' 
         id: set-skip-tests
         run: |
-          ALL_TESTS='torch-tests,gradients-tests,all-interfaces-tests,external-libraries-tests,catalyst-tests,qcut-tests,gradients-tests,device-tests,core-tests,capture-jax-tests,jax-tests,autograd-tests,qchem-tests,data-tests'
+          ALL_TESTS='torch-tests,gradients-tests,all-interfaces-tests,external-libraries-tests,catalyst-tests,gradients-tests,device-tests,core-tests,capture-jax-tests,jax-tests,autograd-tests,qchem-tests,data-tests'
           WORKFLOW='${{ inputs.workflow }}'
           SKIP_TESTS=${ALL_TESTS[@]/$WORKFLOW}
           echo "skip-tests=$SKIP_TESTS" >> $GITHUB_OUTPUT
@@ -123,7 +122,6 @@ jobs:
         inputs.workflow == 'all-interfaces-tests' ||
         inputs.workflow == 'external-libraries-tests' ||
         inputs.workflow == 'catalyst-tests' ||
-        inputs.workflow == 'qcut-tests' ||
         inputs.workflow == 'qchem-tests' ||
         inputs.workflow == 'gradients-tests' ||
         inputs.workflow == 'data-tests' ||

@@ -27,8 +27,6 @@ import pennylane.templates as qtemps
 from pennylane.core.operator import Operation
 from pennylane.estimator.resource_mapping import _map_term_trotter, _map_to_resource_op
 
-# pylint: disable= no-self-use,too-few-public-methods
-
 
 class TestMapToResourceOp:
     """Test the class for mapping PennyLane operations to their resource operators."""
@@ -428,6 +426,10 @@ class TestMapToResourceOp:
                 ),
             ),
             (
+                qtemps.PhaseGradientStatePrep(wires=[0, 1, 2, 3, 4]),
+                re_temps.PhaseGradient(num_wires=5, wires=[0, 1, 2, 3, 4]),
+            ),
+            (
                 qtemps.GQSP(qp.RX(0.3, 0), qp.poly_to_angles([0.1, 0.2j, 0.3], "GQSP"), control=1),
                 qp.estimator.GQSP(qp.estimator.RX(), d_plus=2, wires=(0, 1)),
             ),
@@ -437,6 +439,63 @@ class TestMapToResourceOp:
         """Test that _map_to_resource_op maps templates to the appropriate resource operator"""
         mapped_op = _map_to_resource_op(operator)
         assert mapped_op == expected_res_op
+        assert mapped_op.wires == expected_res_op.wires
+
+    @staticmethod
+    def _gqsp_all_adjoint(num_ctrl_ops):
+        """Explicit resources of a GQSP whose controlled unitaries are all adjoints."""
+        factors = [(re_ops.Rot(), num_ctrl_ops + 1)]
+        if num_ctrl_ops > 0:
+            ctrl_adj = re_ops.Controlled(
+                re_ops.Adjoint(re_ops.RX()), num_ctrl_wires=1, num_zero_ctrl=0
+            )
+            factors.append((ctrl_adj, num_ctrl_ops))
+        return re_ops.Prod(factors, wires=(0, 1))
+
+    @pytest.mark.parametrize(
+        ("num_ctrl_ops", "shift", "expected"),
+        [
+            # the degree is read from the number of angle columns
+            (5, 0, lambda: re_temps.GQSP(re_ops.RX(), d_plus=5, wires=(0, 1))),
+            # a negative shift is absorbed into the controlled unitaries
+            (2, -1, lambda: re_temps.GQSP(re_ops.RX(), d_plus=1, d_minus=1, wires=(0, 1))),
+            # a positive shift adds a power of the unitary
+            (
+                2,
+                3,
+                lambda: re_ops.Prod(
+                    (re_temps.GQSP(re_ops.RX(), d_plus=2), re_ops.Pow(re_ops.RX(), 3)),
+                    wires=(0, 1),
+                ),
+            ),
+            # all controlled unitaries are adjoints
+            (2, -2, lambda: TestMapToResourceOp._gqsp_all_adjoint(2)),
+            # the powers that cannot be absorbed are applied as a power of the adjoint
+            (
+                2,
+                -5,
+                lambda: re_ops.Prod(
+                    (
+                        TestMapToResourceOp._gqsp_all_adjoint(2),
+                        re_ops.Pow(re_ops.Adjoint(re_ops.RX()), 3),
+                    ),
+                    wires=(0, 1),
+                ),
+            ),
+            # no controlled unitaries
+            (0, 0, lambda: TestMapToResourceOp._gqsp_all_adjoint(0)),
+        ],
+    )
+    def test_map_to_resource_op_gqsp_shift(self, num_ctrl_ops, shift, expected):
+        """Test that GQSP maps to the right resources for different degrees and shifts."""
+        angles = np.ones([3, num_ctrl_ops + 1])
+        op = qtemps.GQSP(qp.RX(0.3, 0), angles, control=1, shift=shift)
+
+        mapped_op = _map_to_resource_op(op)
+        expected_res_op = expected()
+
+        # compare the compressed representations, which also compare the factors of a Prod
+        assert mapped_op.resource_rep_from_op() == expected_res_op.resource_rep_from_op()
         assert mapped_op.wires == expected_res_op.wires
 
     def test_map_to_resource_op_trotter_vibronic(self):
@@ -457,7 +516,7 @@ class TestMapToResourceOp:
                 "cache": 2 * k,
                 "coefficients": b,
                 "phase_gradient": b,
-                "work": max(n - 1, 2 * k, 2 * b + 2),
+                "work": max(n - 1, b + 1, 2 * k + 2),
             }
         )
         operator = qp.TrotterVibronic(
@@ -515,7 +574,7 @@ class TestMapToResourceOp:
                 "cache": 2 * k,
                 "coefficients": b,
                 "phase_gradient": b,
-                "work": max(n - 1, 2 * k, 2 * b + 2),
+                "work": max(n - 1, b + 1, 2 * k + 2),
             }
         )
         operator = qp.TrotterVibronic(
@@ -550,7 +609,7 @@ class TestMapToResourceOp:
                 "cache": 2 * k,
                 "coefficients": b,
                 "phase_gradient": b,
-                "work": max(n - 1, 2 * k, 2 * b + 2),
+                "work": max(n - 1, b + 1, 2 * k + 2),
             }
         )
         operator = qp.TrotterVibronic(
@@ -683,7 +742,7 @@ class TestMapToResourceOp:
     def test_map_from_decomposition(self):
         """Test that the decomposition is used when a resource equivalent is not defined"""
 
-        class DummyOp(Operation):
+        class DummyOp(Operation):  # pylint: disable=too-few-public-methods
             num_wires = 2
 
             def __init__(self, theta, wires=None):

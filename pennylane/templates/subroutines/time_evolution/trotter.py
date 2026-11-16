@@ -19,9 +19,10 @@ import copy
 
 from pennylane import ops as qp_ops
 from pennylane.capture.autograph import wraps
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator
 from pennylane.core.qscript import make_qscript
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.wires import Wires
 
@@ -99,7 +100,15 @@ class TrotterProduct(Operation):
         time (float): The time of evolution, namely the parameter :math:`t` in :math:`e^{iHt}`
         n (int): An integer representing the number of Trotter steps to perform
         order (int): An integer (:math:`m`) representing the order of the approximation (must be 1 or even)
-        check_hermitian (bool): A flag to enable the validation check to ensure this is a valid unitary operator
+        check_hermitian (bool): Whether to check if the Hamiltonian terms are
+            verified to be Hermitian. Defaults to ``True``. The check relies on
+            ``is_verified_hermitian``, which is conservative and may reject
+            Hamiltonian terms that are actually Hermitian. Setting this option
+            to ``False`` skips the validation without changing the generated
+            time-evolution operation. Users are responsible for ensuring that
+            the Hamiltonian is Hermitian when this option is ``False``. The
+            more exhaustive :func:`~.is_hermitian` check can be used to verify
+            Hermiticity manually.
 
     Raises:
         TypeError: The ``hamiltonian`` is not of type :class:`~.Sum`.
@@ -231,9 +240,7 @@ class TrotterProduct(Operation):
         # accepts no wires, so bypasses the wire processing.
         return cls._primitive.bind(*args, **kwargs)
 
-    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        self, hamiltonian, time, n=1, order=1, check_hermitian=True
-    ):
+    def __init__(self, hamiltonian, time, n=1, order=1, check_hermitian=True):
         r"""Initialize the TrotterProduct class"""
 
         if order <= 0 or order != 1 and order % 2 != 0:
@@ -537,7 +544,6 @@ class TrotterizedQfunc(Operation):
 
     """
 
-    # pylint: disable = too-many-arguments
     def __init__(
         self,
         time,

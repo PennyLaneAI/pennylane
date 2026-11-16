@@ -16,8 +16,6 @@ Unit tests for the ArbitraryStatePreparation template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -42,7 +40,7 @@ def test_standard_validity():
 
     op = qp.MottonenStatePreparation(state_vector=state, wires=range(3))
 
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def compute_theta_reference(alpha):
@@ -289,7 +287,7 @@ class TestDecomposition:
         circuit(state_vector)
         tape = spy.call_args[0][0][0]
 
-        assert tape.specs["resources"].quantum_operations["CNOT"] == n_CNOT
+        assert qp.resource.resources_from_tape(tape).quantum_operations["CNOT"] == n_CNOT
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -443,7 +441,7 @@ class TestInputs:
             qp.MottonenStatePreparation(state_vector, 2)
 
 
-class TestGradient:
+class TestGradient:  # pylint: disable=too-few-public-methods
     """Tests gradients."""
 
     # TODO: Currently the template fails for more elaborate gradient
@@ -517,23 +515,6 @@ class TestCasting:
             return qp.probs(wires=[0, 1])
 
         inputs = inputs / jnp.linalg.norm(inputs)
-        res = circuit(inputs)
-        assert np.allclose(res, expected, atol=1e-6, rtol=0)
-
-    @pytest.mark.tf
-    def test_tensorflow(self, inputs, expected):
-        """Test that MottonenStatePreparation can be correctly used with the TensorFlow interface."""
-        import tensorflow as tf
-
-        inputs = tf.Variable(inputs)
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev)
-        def circuit(inputs):
-            qp.MottonenStatePreparation(inputs, wires=[0, 1])
-            return qp.probs(wires=[0, 1])
-
-        inputs = inputs / tf.linalg.norm(inputs)
         res = circuit(inputs)
         assert np.allclose(res, expected, atol=1e-6, rtol=0)
 

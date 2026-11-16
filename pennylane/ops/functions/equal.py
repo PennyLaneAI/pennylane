@@ -15,7 +15,8 @@
 This module contains the qp.equal function.
 """
 
-# pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches, too-many-positional-arguments
+# pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches
+
 
 from collections.abc import Iterable
 from functools import singledispatch
@@ -25,6 +26,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator, Operator2
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
@@ -47,8 +49,6 @@ from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.composite2 import CompositeOp2
 from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.ops.op_math.pow2 import Pow2
-from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPrep, Select
@@ -348,7 +348,7 @@ def _equal_operators(
             f"Got {op1.hyperparameters}\n and {op2.hyperparameters}."
         )
 
-    if any(math.is_abstract(d) for d in op1.data + op2.data):
+    if any(math.is_tracer(d) for d in op1.data + op2.data):
         # assume all tracers are independent
         return "Data contains a tracer. Abstract tracers are assumed to be unique."
     if len(op1.data) != len(op2.data):
@@ -497,7 +497,7 @@ def _check_wire_value(wname: str, wval1: Any, wval2: Any):
 
     else:
         for w1, w2 in zip(wval1, wval2, strict=True):
-            if math.is_abstract(w1) or math.is_abstract(w2):
+            if math.is_tracer(w1) or math.is_tracer(w2):
                 unequal_wires = True
                 abstract_wires = True
                 break
@@ -538,7 +538,7 @@ def _check_dynamic_value(
     if is_aa1 != is_aa2:
         return f"Unmatched representations for {dname}. Got {dval1} and {dval2}."
 
-    if math.is_abstract(dval1) or math.is_abstract(dval2):
+    if math.is_tracer(dval1) or math.is_tracer(dval2):
         return (
             f"At least one of op1 or op2 has a tracer value for '{dname}'. Abstract "
             "tracers are assumed to be unique."
@@ -696,7 +696,6 @@ def _equal_paulisentence(
 
 @_equal_dispatch.register(CompositeOp)
 @_equal_dispatch.register(CompositeOp2)
-# pylint: disable=protected-access
 def _equal_prod_and_sum(op1, op2, **kwargs):
     """Determine whether two Prod, Sum or Prod2 objects are equal"""
     if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
@@ -706,8 +705,8 @@ def _equal_prod_and_sum(op1, op2, **kwargs):
         return f"op1 and op2 have different number of operands. Got {len(op1.operands)} and {len(op2.operands)}"
 
     # organizes by wire indices while respecting commutation relations
-    sorted_ops1 = op1._sort(op1.operands)
-    sorted_ops2 = op2._sort(op2.operands)
+    sorted_ops1 = op1._sort(op1.operands)  # pylint: disable=protected-access
+    sorted_ops2 = op2._sort(op2.operands)  # pylint: disable=protected-access
 
     for o1, o2 in zip(sorted_ops1, sorted_ops2, strict=True):
         op_check = _equal(o1, o2, **kwargs)
@@ -721,8 +720,10 @@ def _equal_prod_and_sum(op1, op2, **kwargs):
 def _equal_controlled2(op1: Controlled2, op2: Controlled2, **kwargs):
     """Determine whether two Controlled2 or ControlledOp2 objects are equal"""
 
-    if op1.arithmetic_depth != op2.arithmetic_depth:
-        return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
+    depth1 = getattr(op1, "arithmetic_depth", None)
+    depth2 = getattr(op2, "arithmetic_depth", None)
+    if depth1 is not None and depth2 is not None and depth1 != depth2:
+        return f"op1 and op2 have different arithmetic depths. Got {depth1} and {depth2}"
 
     wire_comparison = _check_wire_value("work_wires", op1.work_wires, op2.work_wires)
     if isinstance(wire_comparison, str):
@@ -807,10 +808,14 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
 @_equal_dispatch.register
 def _equal_controlled_sequence(op1: ControlledSequence, op2: ControlledSequence, **kwargs):
     """Determine whether two ControlledSequences are equal"""
-    if op1.wires != op2.wires:
-        return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
-    if op1.arithmetic_depth != op2.arithmetic_depth:
-        return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
+    control_equal_check = _check_wire_value("control", op1.control, op2.control)
+    if isinstance(control_equal_check, str):
+        return control_equal_check
+
+    depth1 = getattr(op1, "arithmetic_depth", None)
+    depth2 = getattr(op2, "arithmetic_depth", None)
+    if depth1 is not None and depth2 is not None and depth1 != depth2:
+        return f"op1 and op2 have different arithmetic depths. Got {depth1} and {depth2}"
 
     base_equal_check = _equal(op1.base, op2.base, **kwargs)
     if isinstance(base_equal_check, str):
@@ -905,7 +910,7 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
                 f"{op1.coeff} trainability is {coeff1_train} and {op2.coeff} trainability is {coeff2_train}"
             )
 
-    if qp.math.is_abstract(op1.coeff) or qp.math.is_abstract(op2.coeff):
+    if qp.math.is_tracer(op1.coeff) or qp.math.is_tracer(op2.coeff):
         if op1.coeff is not op2.coeff:
             return "Data contains a tracer. Abstract tracers are assumed to be unique."
 
@@ -947,7 +952,7 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
                 f"{op1.scalar} trainability is {scalar1_train} and {op2.scalar} trainability is {scalar2_train}"
             )
 
-    if qp.math.is_abstract(op1.scalar) or qp.math.is_abstract(op2.scalar):
+    if qp.math.is_tracer(op1.scalar) or qp.math.is_tracer(op2.scalar):
         if op1.scalar is not op2.scalar:
             return "Data contains a tracer. Abstract tracers are assumed to be unique."
 
@@ -963,29 +968,6 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
         return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + equal_check
 
     return True
-
-
-@_equal_dispatch.register
-def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedEvolution, **kwargs):
-    # check times match
-    if op1.t is None or op2.t is None:
-        if not (op1.t is None and op2.t is None):
-            return False
-    elif not math.allclose(op1.t, op2.t):
-        return False
-
-    # check parameters passed to operator match
-    operator_check = _equal_operators(op1, op2, **kwargs)
-    if isinstance(operator_check, str):
-        return False
-
-    # check H.coeffs match
-    if len(op1.H.coeffs) != len(op2.H.coeffs) or len(op1.H.ops) != len(op2.H.ops):
-        return False
-    if not all(c1 == c2 for c1, c2 in zip(op1.H.coeffs, op2.H.coeffs, strict=True)):
-        return False
-
-    return all(equal(o1, o2, **kwargs) for o1, o2 in zip(op1.H.ops, op2.H.ops, strict=True))
 
 
 @_equal_dispatch.register
@@ -1013,7 +995,7 @@ def _equal_measurements(
         if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
             return qp.equal(op1.mv, op2.mv)
 
-        if math.is_abstract(op1.mv) or math.is_abstract(op2.mv):
+        if math.is_tracer(op1.mv) or math.is_tracer(op2.mv):
             return op1.mv is op2.mv
 
         if isinstance(op1.mv, Iterable) and isinstance(op2.mv, Iterable):
@@ -1211,10 +1193,9 @@ def _equal_qsvt(op1: QSVT, op2: QSVT, **kwargs):
     if len(projectors1) != len(projectors2):
         return f"op1 and op2 have a different number of projectors. Got {projectors1} and {projectors2}."
     for i, (p1, p2) in enumerate(zip(projectors1, projectors2, strict=True)):
-        try:
-            assert_equal(p1, p2, **kwargs)
-        except AssertionError as e:
-            return f"op1 and op2 have different projectors at position {i}. Got {p1} and {p2}, which differ: {e}."
+        comparer = _equal(p1, p2, **kwargs)
+        if isinstance(comparer, str):
+            return f"op1 and op2 have different projectors at position {i}. Got {p1} and {p2}, which differ: {comparer}."
     return True
 
 

@@ -28,8 +28,6 @@ from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import CompilableOp, OneWireDynOp
 
-# pylint: disable=unused-argument,arguments-differ,useless-parent-delegation
-
 
 class SX2(Operator2):
     """A new SX gate."""
@@ -38,7 +36,7 @@ class SX2(Operator2):
 
     is_verified_hermitian = True
 
-    def __init__(self, wires):
+    def __init__(self, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(wires)
 
     @property
@@ -51,15 +49,15 @@ class SX2(Operator2):
         )
 
     @staticmethod
-    def compute_matrix(wires):
+    def compute_matrix(wires):  # pylint: disable=unused-argument
         return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @staticmethod
-    def compute_sparse_matrix(wires, format="csr"):
+    def compute_sparse_matrix(wires, format="csr"):  # pylint: disable=unused-argument
         return 0.5 * sparse.csr_matrix([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]]).asformat(format=format)
 
     @staticmethod
-    def compute_eigvals(wires):
+    def compute_eigvals(wires):  # pylint: disable=unused-argument
         return np.array([1, 1j])
 
     @staticmethod
@@ -76,11 +74,11 @@ class RX2(Operator2):
 
     is_verified_hermitian = True
 
-    def __init__(self, theta, wires):
+    def __init__(self, theta, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(theta, wires)
 
     @staticmethod
-    def compute_matrix(theta, wires):
+    def compute_matrix(theta, wires):  # pylint: disable=unused-argument
         return qp.math.array(
             [
                 [qp.math.cos(theta / 2), -1j * qp.math.sin(theta / 2)],
@@ -157,12 +155,10 @@ def test_old_decomp_integartion():
     def _sx_to_rx(wires):
         qp.RX(np.pi / 2, wires=wires)
 
-    with qp.decomposition.local_decomps():
-
-        qp.add_decomps(SX2, _sx_to_rx)
-        op = qp.adjoint(SX2(0))
-        assert op.has_decomposition
-        assert op.decomposition() == [qp.adjoint(qp.RX(np.pi / 2, wires=[0]))]
+    qp.add_decomps(SX2, _sx_to_rx)
+    op = qp.adjoint(SX2(0))
+    assert op.has_decomposition
+    assert op.decomposition() == [qp.adjoint(qp.RX(np.pi / 2, wires=[0]))]
 
 
 def test_parameter_frequencies():
@@ -251,10 +247,9 @@ def test_adjoint_rotation_decomposition_rule():
     op = qp.adjoint(OneWireDynOp(0.5, wires=[0]))
     assert isinstance(op, Adjoint2)
 
-    with qp.core.AnnotatedQueue() as q:
-        adjoint_rotation(**op.arguments)
+    tape = qp.testing.decomp_rule_to_tape(op, adjoint_rotation)
 
-    assert q.queue == [OneWireDynOp(-0.5, wires=[0])]
+    assert tape.operations == [OneWireDynOp(-0.5, wires=[0])]
     assert adjoint_rotation.compute_resources(**op.arguments) == Resources(
         {OneWireDynOp(Float, wires=Wire[1]): 1}
     )
@@ -279,7 +274,7 @@ def test_make_adjoint_decomp_closes_over_compilable_args():
     op = CompilableOp(True, wires=[0])
     rule = _make_adjoint_decomp(_some_decomp)
 
-    @qp.qjit
+    @qp.qjit(capture=False)
     @qp.qnode(qp.device("lightning.qubit", wires=1))
     def f():
         rule(base=op)

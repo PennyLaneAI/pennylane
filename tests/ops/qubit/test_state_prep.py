@@ -16,6 +16,8 @@ Unit tests for the available qubit state preparation operations.
 """
 
 # pylint: disable=protected-access
+
+
 import numpy as np
 import pytest
 import scipy as sp
@@ -36,7 +38,7 @@ def test_subclasshook_state_prep_base():
         def __init__(self, wires):  # pylint: disable=useless-parent-delegation
             super().__init__(wires)
 
-        def state_vector(self, wire_order):  # pylint: disable=signature-differs, unused-argument
+        def state_vector(self, wire_order):  # pylint: disable=unused-argument
             return [0, 1]
 
     new_op = NewOp(wires=0)
@@ -132,10 +134,9 @@ class TestStandardValidityBasisState:
     @pytest.mark.parametrize("input_state", (np.array([0, 1]), [0, 1], (0, 1), (True, False)))
     def test_assert_valid(self, input_state):
         """Test standard validity."""
-        # pylint: disable=import-outside-toplevel
         wires = [0, 1]
         op = qp.BasisState(input_state, wires=wires)
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     @staticmethod
     def make_abstract_check(state_traced, wires_traced, closure_state, closure_wires):
@@ -150,8 +151,8 @@ class TestStandardValidityBasisState:
             if not wires_traced:
                 # Using a closure variable avoids automatic tracing
                 wires = closure_wires
-            assert qp.math.is_abstract(state) == state_traced
-            assert qp.math.is_abstract(wires) == wires_traced
+            assert qp.math.is_tracer(state) == state_traced
+            assert qp.math.is_tracer(wires) == wires_traced
             tapes = []
             for rule in qp.list_decomps(qp.BasisState):
                 if not rule.is_applicable(num_wires=len(wires)):
@@ -394,8 +395,6 @@ class TestStatePrepIntegration:
 class TestStateVector:
     """Test the state_vector() method of various state-prep operations."""
 
-    # pylint: disable=too-many-public-methods
-
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",
         [
@@ -497,30 +496,18 @@ class TestStateVector:
         """Test that StatePrep works with torch."""
         import torch
 
-        def QuantumLayer():
-            @qp.qnode(qp.device("default.qubit"), interface="torch")
-            def qlayer(inputs, weights):
-                qp.StatePrep(inputs, wires=[1, 2, 3])
-                qp.RY(phi=weights, wires=[0])
-                return qp.expval(qp.PauliZ(wires=0))
+        @qp.qnode(qp.device("default.qubit"), interface="torch")
+        def circuit(inputs, weights):
+            qp.StatePrep(inputs, wires=[1, 2, 3])
+            qp.RY(phi=weights, wires=[0])
+            return qp.expval(qp.PauliZ(wires=0))
 
-            weight_shapes = {"weights": (1)}
-            return qp.qnn.TorchLayer(qlayer, weight_shapes)
-
-        class SimpleQuantumModel(torch.nn.Module):  # pylint:disable=too-few-public-methods
-            def __init__(self):
-                super().__init__()
-                self.quantum_layer = QuantumLayer()
-
-            def forward(self, x):
-                return self.quantum_layer(x)
-
-        model = SimpleQuantumModel()
         features = torch.tensor(
             [[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]],
             requires_grad=True,
         )
-        result = model(features)
+        weights = torch.tensor(0.1, requires_grad=True)
+        result = torch.stack([circuit(row, weights) for row in features])
         assert qp.math.get_interface(result) == "torch"
         assert qp.math.shape(result) == (2,)
 
@@ -569,25 +556,6 @@ class TestStateVector:
         state = jax.numpy.array([1.0, 0.0])
         grad = jax.jacobian(circuit)(state)
         assert qp.math.get_interface(grad) == "jax"
-        assert np.array_equal(grad, [2.0, 0.0])
-
-    @pytest.mark.tf
-    def test_StatePrep_backprop_tf(self):
-        """Test backprop with tf"""
-        import tensorflow as tf
-
-        @qp.qnode(qp.device("default.qubit"), diff_method="backprop")
-        def circuit(state):
-            qp.StatePrep(state, wires=(0,))
-            qp.S(1)
-            return qp.expval(qp.PauliZ(0))
-
-        state = tf.Variable([1.0, 0.0])
-        with tf.GradientTape() as tape:
-            res = circuit(state)
-
-        grad = tape.jacobian(res, state)
-        assert qp.math.get_interface(grad) == "tensorflow"
         assert np.array_equal(grad, [2.0, 0.0])
 
     @pytest.mark.parametrize(

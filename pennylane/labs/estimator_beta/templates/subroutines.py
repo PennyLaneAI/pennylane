@@ -18,10 +18,8 @@ import math
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import CompressedResourceOp, GateCount, ResourceOperator, resource_rep
 from pennylane.labs.estimator_beta.wires_manager.base_classes import Allocate, Deallocate
-from pennylane.math import ceil_log2
+from pennylane.math import ceil_log2, floor_log2
 from pennylane.wires import WiresLike
-
-# pylint: disable=unused-argument
 
 
 def selectpaulirot_controlled_resource_decomp(
@@ -692,7 +690,6 @@ def qrom_state_preparation_phase_grad_resource_decomp(
     return gate_counts
 
 
-# pylint: disable=arguments-differ,too-many-arguments
 class LabsQROM(ResourceOperator):
     r"""Resource class for the Quantum Read-Only Memory (QROM) template.
 
@@ -765,7 +762,7 @@ class LabsQROM(ResourceOperator):
             # The continuous solution could be non-physical
             w1 = w2 = 1
         else:
-            w1 = 2 ** int(math.floor(math.log2(opt_width_continuous)))
+            w1 = 2 ** floor_log2(opt_width_continuous)
             w2 = 2 ** ceil_log2(opt_width_continuous)
 
         def t_cost_func(w, borrow):
@@ -779,7 +776,7 @@ class LabsQROM(ResourceOperator):
             return w2
         return w1
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         num_bitstrings: int,
         size_bitstring: int,
@@ -851,7 +848,7 @@ class LabsQROM(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         num_bitstrings: int,
         size_bitstring: int,
@@ -903,9 +900,8 @@ class LabsQROM(ResourceOperator):
         num_wires = size_bitstring + ceil_log2(num_bitstrings)
         return CompressedResourceOp(cls, num_wires, params)
 
-    # pylint: disable=protected-access
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         num_bitstrings: int,
         size_bitstring: int,
@@ -1509,7 +1505,7 @@ class LabsQROM(ResourceOperator):
         return cls.qrom_clean_auxiliary_adjoint_resource_decomp(target_resource_params)
 
     @staticmethod
-    def tracking_name(
+    def tracking_name(  # pylint: disable=arguments-differ,unused-argument
         num_bitstrings: int,
         size_bitstring: int,
         num_bit_flips: int | None = None,
@@ -1596,7 +1592,7 @@ class SelectCopyQROM(ResourceOperator):
             term2 = (lam - 1) * (mu * (beta + 1) + b % mu)
             return term1 + term2
 
-        highest_l_index = math.floor(math.log2(N - 1))
+        highest_l_index = floor_log2(N - 1)
 
         eligible_k = list(range(1, b + 1))
         eligible_l = [2**i for i in range(1, highest_l_index + 1)]
@@ -1683,7 +1679,7 @@ class SelectCopyQROM(ResourceOperator):
 
         return (batch_size, bits_per_iter)
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         num_bitstrings: int,
         size_bitstring: int,
@@ -1744,7 +1740,7 @@ class SelectCopyQROM(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         num_bitstrings: int,
         size_bitstring: int,
@@ -1791,7 +1787,7 @@ class SelectCopyQROM(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         num_bitstrings: int,
         size_bitstring: int,
@@ -2290,7 +2286,7 @@ class SelectCopyQROM(ResourceOperator):
             GateCount(
                 cnot,
                 (
-                    bits_per_iter * math.floor(size_bitstring / bits_per_iter)
+                    bits_per_iter * (size_bitstring // bits_per_iter)
                     + (size_bitstring % bits_per_iter)
                 )
                 * (num_data_blocks - 1),

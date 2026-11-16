@@ -19,8 +19,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.amplitude_amplification import _get_fixed_point_angles
+from pennylane.testing import assert_decomposable
 
 
 @qp.prod
@@ -75,7 +75,7 @@ class TestInitialization:
         U = generator(wires=range(3))
         O = oracle([0, 2], wires=range(3))
         op = qp.AmplitudeAmplification(U, O, iters=3, fixed_point=False)
-        qp.ops.functions.assert_valid(op)
+        qp.testing.assert_valid(op)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -228,28 +228,6 @@ class TestDifferentiability:
         assert qp.math.shape(jac) == (2,)
         assert qp.math.allclose(jac, self.exp_grad, atol=0.01)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("shots", [None, 50000])
-    @pytest.mark.xfail(reason="tf gradient doesn't seem to be working, returns ()")
-    def test_qnode_tf(self, shots, seed):
-        """Test that the QNode executes and is differentiable with TensorFlow. The shots
-        argument controls whether autodiff or parameter-shift gradients are used."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", seed=seed)
-        diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qp.set_shots(
-            qp.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
-        )
-
-        params = tf.Variable(self.params)
-        with tf.GradientTape() as tape:
-            res = qnode(params)
-
-        jac = tape.gradient(res, params)
-        assert qp.math.shape(jac) == (8,)
-        assert qp.math.allclose(res, self.exp_grad, atol=0.001)
-
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
 def test_correct_queueing():
@@ -371,5 +349,4 @@ def test_decomposition_new(n_wires, items, iters, fixed):
     U = generator(wires=range(n_wires))
     O = oracle(items, wires=range(n_wires))
     op = qp.AmplitudeAmplification(U, O, iters, work_wire=n_wires, fixed_point=fixed)
-    for rule in qp.list_decomps(qp.AmplitudeAmplification):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)

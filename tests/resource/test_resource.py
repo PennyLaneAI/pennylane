@@ -15,9 +15,9 @@
 Test base Resource class and its associated methods
 """
 
-import dataclasses
+# pylint: disable=protected-access
 
-# pylint: disable=unnecessary-dunder-call,protected-access,disallowed-name
+import dataclasses
 import textwrap
 from dataclasses import FrozenInstanceError
 
@@ -27,6 +27,7 @@ import pennylane as qp
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
 from pennylane.resource.expression import Expression
+from pennylane.resource.extension import _RESOURCE_EXTENSIONS, weighted_sum
 from pennylane.resource.resource import (
     CircuitSpecs,
     PBCSpecsResources,
@@ -237,8 +238,9 @@ class TestBaseResourcesExtension:
     class DummyResources(Resources):
         """Dummy class to test automatic subclass field handling"""
 
+        # pylint: disable-next=disallowed-name
         foo: int = dataclasses.field(default=5, metadata={"display_name": "My field"})
-        bar: dict = dataclasses.field(
+        bar: dict = dataclasses.field(  # pylint: disable=disallowed-name
             default_factory=lambda: {"a": 1, "b": 2}, metadata={"display_name": "My dict field"}
         )
 
@@ -856,6 +858,146 @@ class TestSpecsResources:
         }
 
         assert s.to_dict() == expected
+
+
+class TestResourceExtensionDisplay:
+    """Test registered extension fields alongside the standard resource display."""
+
+    @pytest.fixture(scope="class")
+    @classmethod
+    def example_specs(cls):
+        """Complete reports with registered and unregistered extension data."""
+        original = _RESOURCE_EXTENSIONS.copy()
+        qp.resource.register_resource_extension(
+            "example_count", aggregate=weighted_sum, display_name="Example resources"
+        )
+        yield CircuitSpecs(
+            device_name="default.qubit",
+            num_device_wires=5,
+            shots=Shots(1000),
+            level={0: "before", 1: "after"},
+            resources={
+                n: SpecsResources(
+                    counts={"Hadamard": 2, "CNOT": 3},
+                    measurement_processes={"expval(PauliZ)": 2},
+                    num_wires=2,
+                    circuit_depth=3,
+                    extra={
+                        "example_count": {
+                            "count": str(n) if n == 0 else n,
+                            "unavailable_count": None,
+                        },
+                        "unknown": {"hidden_count": 7},
+                    },
+                )
+                for n in range(2)
+            },
+        )
+        _RESOURCE_EXTENSIONS.clear()
+        _RESOURCE_EXTENSIONS.update(original)
+
+    def test_str(self, example_specs):
+        """Registered fields appear under their heading; unregistered fields stay hidden."""
+        expected = textwrap.dedent("""\
+            Quantum operations:
+            - Total: 5
+              - Hadamard: 2
+              - CNOT: 3
+            Measurement processes:
+            - expval(PauliZ): 2
+            Total wires: 2
+            Circuit Depth: 3
+            Example resources:
+            - count: 1
+            - unavailable_count: Not computed
+        """).strip()
+
+        assert str(example_specs.resources[1]) == expected
+
+    def test_ipython_display(self, example_specs):
+        """Registered fields appear in the Markdown table with the standard fields."""
+        expected = textwrap.dedent("""\
+            | **Metric** | **Value** |
+            | :--- | ---: |
+            | **Quantum operations:** | |
+            | *Total* | 5 |
+            | Hadamard | 2 |
+            | CNOT | 3 |
+            | **Measurement processes:** | |
+            | expval(PauliZ) | 2 |
+            | **Total wires** | 2 |
+            | **Circuit depth** | 3 |
+            | **Example resources** | |
+            | count | 1 |
+            | unavailable_count | Not computed |
+        """).strip()
+
+        assert example_specs.resources[1]._repr_markdown_().strip() == expected
+
+    def test_circuit_specs_str(self, example_specs):
+        """Extension values align with their resource columns in the text table."""
+        expected = textwrap.dedent("""\
+            Device: default.qubit
+            Device wires: 5
+            Shots: Shots(total=1000)
+            Levels:
+            - 0: before
+            - 1: after
+
+            ↓Metric         Level→ |  0 |  1
+            --------------------------------
+            Quantum operations:    |
+            - Total                |  5 |  5
+              - Hadamard           |  2 |  2
+              - CNOT               |  3 |  3
+            Measurement processes: |
+            - expval(PauliZ)       |  2 |  2
+            Total wires            |  2 |  2
+            Circuit depth          |  3 |  3
+            Example resources:     |
+            - count                |  0 |  1
+            - unavailable_count    |  - |  -
+        """).strip()
+
+        assert str(example_specs) == expected
+
+    def test_circuit_specs_md(self, example_specs):
+        """Extension values align with their resource columns in the Markdown table."""
+        expected = textwrap.dedent("""\
+            <details open>
+            <summary>Circuit Specs</summary>
+
+            | Metric | Value |
+            | :--- | ---: |
+            | **Device** | default.qubit |
+            | **Device wires** | 5 |
+            | **Shots** | Shots(total=1000) |
+            | **Levels** | |
+            | 0 | before |
+            | 1 | after |
+
+            </details>
+            <details open>
+            <summary>Resources</summary>
+
+            | ↓Metric / Level→ | 0 | 1 |
+            | :--- | ---: | ---: |
+            | **Quantum operations** |  |  |
+            | *Total* | 5 | 5 |
+            | Hadamard | 2 | 2 |
+            | CNOT | 3 | 3 |
+            | **Measurement processes** |  |  |
+            | expval(PauliZ) | 2 | 2 |
+            | **Total wires** | 2 | 2 |
+            | **Circuit depth** | 3 | 3 |
+            | **Example resources** |  |  |
+            | count | 0 | 1 |
+            | unavailable_count | N/A | N/A |
+
+            </details>
+        """).strip()
+
+        assert example_specs._repr_markdown_() == expected
 
 
 class TestPBCSpecsResources:
@@ -1477,9 +1619,18 @@ class TestCircuitSpecs:
         assert r["level"] == r.level
         assert r["resources"] == r.resources
 
-    def test_to_dict(
-        self, example_specs_result, example_specs_result_multi, example_specs_result_multi_symbolic
-    ):
+    def test_getitem_invalid(self, example_specs_result):
+        """Test that CircuitSpecs raises a KeyError for invalid keys."""
+
+        r = example_specs_result
+
+        with pytest.raises(
+            KeyError,
+            match="key 'foo' not available",
+        ):
+            _ = r["foo"]
+
+    def test_to_dict(self, example_specs_result):
         """Test the to_dict method of CircuitSpecs."""
 
         r = example_specs_result
@@ -1502,6 +1653,8 @@ class TestCircuitSpecs:
 
         assert r.to_dict() == expected
 
+    def test_to_dict_multi(self, example_specs_result_multi, example_specs_result_multi_symbolic):
+        """Test the to_dict method of CircuitSpecs when multiple resources are present."""
         r = example_specs_result_multi
 
         expected = {
@@ -1589,6 +1742,50 @@ class TestCircuitSpecs:
 
         assert r.to_dict() == expected
 
+        # Test with a list of resources
+        r = example_specs_result_multi
+        r = dataclasses.replace(
+            r, resources=[r.resources[1], r.resources[2][0], r.resources[2][1]], level=1
+        )
+
+        expected = {
+            "device_name": "default.qubit",
+            "num_device_wires": 5,
+            "shots": Shots(1000),
+            "level": 1,
+            "resources": [
+                {
+                    "quantum_operations": {"Hadamard": 4, "CNOT": 2},
+                    "measurement_processes": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
+                    "num_wires": 2,
+                    "circuit_depth": 2,
+                    "total_quantum_operations": 6,
+                    "vars": frozenset(),
+                    "extra": {},
+                },
+                {
+                    "quantum_operations": {"CNOT": 1},
+                    "measurement_processes": {"expval(PauliX)": 1},
+                    "num_wires": 2,
+                    "circuit_depth": 1,
+                    "total_quantum_operations": 1,
+                    "vars": frozenset(),
+                    "extra": {},
+                },
+                {
+                    "quantum_operations": {"CNOT": 1},
+                    "measurement_processes": {"expval(PauliZ)": 1},
+                    "num_wires": 2,
+                    "circuit_depth": 1,
+                    "total_quantum_operations": 1,
+                    "vars": frozenset(),
+                    "extra": {},
+                },
+            ],
+        }
+
+        assert r.to_dict() == expected
+
     def test_str(self, example_specs_result):
         """Test the string representation of a CircuitSpecs instance."""
 
@@ -1671,9 +1868,9 @@ class TestCircuitSpecs:
         expected += "\n\n" + "-" * 60 + "\n\n"
 
         expected += "Level = 2:\n"
-        expected += "    Batched tape a:\n"
+        expected += "    Batched qnode a:\n"
         expected += r.resources[2][0].to_pretty_str(preindent=8)
-        expected += "\n\n    Batched tape b:\n"
+        expected += "\n\n    Batched qnode b:\n"
         expected += r.resources[2][1].to_pretty_str(preindent=8)
 
         assert r.to_pretty_str(tabular=False) == expected
@@ -1877,7 +2074,7 @@ class TestIPythonDisplays:
 
             **Resources:**
 
-            **Batched tape a:**
+            **Batched qnode a:**
 
             | **Metric** | **Value** |
             | :--- | ---: |
@@ -1890,7 +2087,7 @@ class TestIPythonDisplays:
             | **Total wires** | 2 |
             | **Circuit depth** | 2 |
 
-            **Batched tape b:**
+            **Batched qnode b:**
 
             | **Metric** | **Value** |
             | :--- | ---: |
@@ -1932,7 +2129,7 @@ class TestIPythonDisplays:
             <summary>Resources</summary>
 
             <details open>
-            <summary>Batched tape a</summary>
+            <summary>Batched qnode a</summary>
 
             | **Metric** | **Value** |
             | :--- | ---: |
@@ -1947,7 +2144,7 @@ class TestIPythonDisplays:
 
             </details>
             <details open>
-            <summary>Batched tape b</summary>
+            <summary>Batched qnode b</summary>
 
             | **Metric** | **Value** |
             | :--- | ---: |

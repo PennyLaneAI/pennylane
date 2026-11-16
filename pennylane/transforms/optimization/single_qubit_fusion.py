@@ -306,7 +306,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
         # If not tracing or differentiating, check whether total rotation is trivial by checking
         # if the RY angle and the sum of the RZ angles are close to 0
         if (
-            math.is_abstract(cumulative_angles)
+            math.is_tracer(cumulative_angles)
             or math.requires_grad(cumulative_angles)
             or not math.allclose(
                 math.stack([cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]),
@@ -321,7 +321,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
         # Remove the starting gate from the list
         list_copy.pop(0)
 
-    if math.is_abstract(global_phase) or not math.allclose(global_phase, 0):
+    if math.is_tracer(global_phase) or not math.allclose(global_phase, 0):
         new_operations.append(qp.GlobalPhase(-global_phase))
     new_tape = tape.copy(operations=new_operations)
 

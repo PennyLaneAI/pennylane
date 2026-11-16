@@ -21,7 +21,6 @@ from scipy.stats import norm
 
 import pennylane as qp
 from pennylane.decomposition import gate_sets
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qmc import (
     QuantumMonteCarlo,
     _make_V,
@@ -30,6 +29,7 @@ from pennylane.templates.subroutines.qmc import (
     make_Q,
     probs_to_unitary,
 )
+from pennylane.testing import assert_decomposable
 from pennylane.wires import Wires
 
 
@@ -268,7 +268,7 @@ class TestQuantumMonteCarlo:
         p = np.ones(4) / 4
         target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     DECOMP_PARAMS = [
         (np.ones(4) / 4, Wires(range(3)), Wires(range(3, 5))),
@@ -279,8 +279,7 @@ class TestQuantumMonteCarlo:
     @pytest.mark.parametrize(("p", "target_wires", "estimation_wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, p, target_wires, estimation_wires):
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-        for rule in qp.list_decomps(QuantumMonteCarlo):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_non_flat(self):
         """Test if a ValueError is raised when a non-flat array is input"""
@@ -319,7 +318,7 @@ class TestQuantumMonteCarlo:
         queue_before_qpe = tape.operations[:2]
 
         # Build a new tape from all operations following the two QubitUnitary ops and expand it
-        [tape], _ = qp.transforms.decompose(
+        [tape], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
             qp.tape.QuantumScript(tape.operations[2:]),
             gate_set=gate_sets.ROTATIONS_PLUS_CNOT,
             max_expansion=2,
@@ -340,10 +339,10 @@ class TestQuantumMonteCarlo:
         Q = make_Q(A, R)
 
         with qp.queuing.AnnotatedQueue() as q_qpe_tape:
-            qp.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
+            qp.QuantumPhaseEstimation(qp.QubitUnitary(Q, wires=target_wires), estimation_wires)
 
         qpe_tape = qp.tape.QuantumScript.from_queue(q_qpe_tape)
-        [qpe_tape], _ = qp.transforms.decompose(
+        [qpe_tape], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
             qpe_tape, gate_set=gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=2
         )
 
@@ -358,7 +357,6 @@ class TestQuantumMonteCarlo:
     def test_expected_value(self):
         """Test that the QuantumMonteCarlo template can correctly estimate the expectation value
         following the example in the usage details"""
-        # pylint: disable=cell-var-from-loop
         m = 5
         M = 2**m
 
@@ -383,8 +381,12 @@ class TestQuantumMonteCarlo:
 
             @qp.qnode(dev)
             def circuit():
+                # pylint: disable=cell-var-from-loop
                 qp.QuantumMonteCarlo(
-                    probs, func, target_wires=target_wires, estimation_wires=estimation_wires
+                    probs,
+                    func,
+                    target_wires=target_wires,
+                    estimation_wires=estimation_wires,
                 )
                 return qp.probs(estimation_wires)
 
@@ -406,7 +408,6 @@ class TestQuantumMonteCarlo:
     def test_expected_value_jax_jit(self):
         """Test that the QuantumMonteCarlo template can correctly estimate the expectation value
         following the example in the usage details using JAX-JIT"""
-        # pylint: disable=cell-var-from-loop
         import jax
         from jax import numpy as jnp
 
@@ -435,8 +436,12 @@ class TestQuantumMonteCarlo:
             @jax.jit
             @qp.qnode(dev, interface="jax")
             def circuit():
+                # pylint: disable=cell-var-from-loop
                 qp.QuantumMonteCarlo(
-                    probs, func, target_wires=target_wires, estimation_wires=estimation_wires
+                    probs,
+                    func,
+                    target_wires=target_wires,
+                    estimation_wires=estimation_wires,
                 )
                 return qp.probs(estimation_wires)
 

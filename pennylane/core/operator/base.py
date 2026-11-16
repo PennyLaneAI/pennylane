@@ -10,17 +10,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 Defines the base class for Operator and Operation.
 """
 
-# pylint: disable=access-member-before-definition
 import abc
 import copy
 import warnings
-from collections.abc import Callable, Hashable, Iterable, Set
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Union
+from collections.abc import Hashable, Iterable, Set
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Union
 from warnings import warn
 
 import jax
@@ -31,6 +29,7 @@ import pennylane as qp
 from pennylane import capture
 from pennylane._class_property import classproperty
 from pennylane.capture import ABCCaptureMeta
+from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -45,7 +44,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.math import expand_matrix, is_abstract
+from pennylane.math import expand_matrix, is_tracer
 from pennylane.pytrees import register_pytree
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit
@@ -68,18 +67,15 @@ _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been 
 class AbstractOperator(jax.core.AbstractValue):  # pragma: no cover
     """An operator captured into plxpr."""
 
-    # pylint: disable=missing-function-docstring
-    def at_least_vspace(self):
+    def at_least_vspace(self):  # pylint: disable=missing-function-docstring
         # TODO: investigate the proper definition of this method
         raise NotImplementedError
 
-    # pylint: disable=missing-function-docstring
-    def join(self, other):
+    def join(self, other):  # pylint: disable=missing-function-docstring
         # TODO: investigate the proper definition of this method
         raise NotImplementedError
 
-    # pylint: disable=missing-function-docstring
-    def update(self, **kwargs):
+    def update(self, **kwargs):  # pylint: disable=missing-function-docstring
         # TODO: investigate the proper definition of this method
         raise NotImplementedError
 
@@ -88,6 +84,15 @@ class AbstractOperator(jax.core.AbstractValue):  # pragma: no cover
 
     def __hash__(self):
         return hash("AbstractOperator")
+
+    @staticmethod
+    def _is_op(x):
+        """True for Operator instances and operator-valued tracers.
+
+        ``+``/``-`` between an operator tracer and a scalar return ``NotImplemented`` (a clear
+        ``TypeError``) rather than building a ``Sum`` with a non-operator operand.
+        """
+        return isinstance(x, Operator) or isinstance(getattr(x, "aval", None), AbstractOperator)
 
     @staticmethod
     def _matmul(*args):
@@ -100,15 +105,31 @@ class AbstractOperator(jax.core.AbstractValue):  # pragma: no cover
 
     @staticmethod
     def _mul(a, b):
-        return qp.s_prod(b, a)
+        return qp.s_prod(b, a) if isinstance(b, TensorLike) else NotImplemented
 
-    @staticmethod
-    def _rmul(a, b):
-        return qp.s_prod(b, a)
+    _rmul = _mul
 
     @staticmethod
     def _add(a, b):
-        return qp.sum(a, b)
+        return qp.sum(a, b) if AbstractOperator._is_op(b) else NotImplemented
+
+    @staticmethod
+    def _radd(a, b):
+        """Preserve operand order when ``+`` falls back to the captured right operand."""
+        return qp.sum(b, a) if AbstractOperator._is_op(b) else NotImplemented
+
+    @staticmethod
+    def _sub(a, b):
+        return qp.sum(a, qp.s_prod(-1, b)) if AbstractOperator._is_op(b) else NotImplemented
+
+    @staticmethod
+    def _rsub(a, b):
+        """Preserve operand order when ``-`` falls back to the captured right operand."""
+        return qp.sum(b, qp.s_prod(-1, a)) if AbstractOperator._is_op(b) else NotImplemented
+
+    @staticmethod
+    def _neg(a):
+        return qp.s_prod(-1, a)
 
     @staticmethod
     def _pow(a, b):
@@ -144,7 +165,7 @@ def create_operator_primitive(
         # for plxpr, all wires must be integers
         # could be abstract when using tracing evaluation in interpreter
         wire_args = args[split:] if split else ()
-        wires = tuple(w if is_abstract(w) else int(w) for w in wire_args)
+        wires = tuple(w if is_tracer(w) else int(w) for w in wire_args)
         return type.__call__(operator_type, *args[:split], wires=wires, **kwargs)
 
     @primitive.def_abstract_eval
@@ -173,11 +194,10 @@ def _process_data(op):
     else:
         mod_val = None
 
-    return str([id(d) if is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
+    return str([id(d) if is_tracer(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
-# pylint: disable=abstract-method
-class _GiveOperatorMeta(ABCCaptureMeta):
+class _GiveOperatorMeta(ABCCaptureMeta):  # pylint: disable=abstract-method
     """When someone tries to inherit from Operator1, we switch it out for Operator instead."""
 
     def __new__(mcs, name, bases, attrs):
@@ -185,7 +205,6 @@ class _GiveOperatorMeta(ABCCaptureMeta):
         return super().__new__(mcs, name, new_bases, attrs)
 
 
-# pylint: disable=too-few-public-methods
 class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
     """A class for checking if a object specifying implements the old version of :class:`~.Operator`.
 
@@ -243,6 +262,7 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
         return getattr(subclass, "_operator_version", None) == 1
 
 
+# pylint: disable-next=too-many-instance-attributes,too-many-public-methods
 class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
@@ -512,8 +532,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         trigger a call to ``_check_batching``, which validates and sets these properties.
     """
 
-    # pylint: disable=too-many-public-methods, too-many-instance-attributes
-
     # this allows scalar multiplication from left with numpy arrays np.array(0.5) * ps1
     # taken from [stackexchange](https://stackoverflow.com/questions/40694380/forcing-multiplication-to-use-rmul-instead-of-numpy-array-mul-or-byp/44634634#44634634)
     __array_priority__ = 1000
@@ -614,8 +632,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         cls = self.__class__
         copied_op = cls.__new__(cls)
         copied_op._data = copy.copy(self.data)
-        # pylint: disable=attribute-defined-outside-init
         if hasattr(self, "_hyperparameters"):
+            # pylint: disable-next=attribute-defined-outside-init
             copied_op._hyperparameters = copy.copy(self._hyperparameters)
         for attr, value in vars(self).items():
             if attr not in {"_data", "_hyperparameters"}:
@@ -682,13 +700,13 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise MatrixUndefinedError
 
-    # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
-    def has_matrix(cls) -> bool:
+    def has_matrix(cls) -> bool:  # pylint: disable=no-self-argument
         r"""Bool: Whether or not the Operator returns a defined matrix.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
+        # pylint: disable-next=comparison-with-callable
         return cls.compute_matrix != Operator.compute_matrix or cls.matrix != Operator.matrix
 
     def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
@@ -747,15 +765,15 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise SparseMatrixUndefinedError
 
-    # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
-    def has_sparse_matrix(cls) -> bool:
+    def has_sparse_matrix(cls) -> bool:  # pylint: disable=no-self-argument
         r"""Bool: Whether the Operator returns a defined sparse matrix.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
         return (
             cls.compute_sparse_matrix != Operator.compute_sparse_matrix
+            # pylint: disable-next=comparison-with-callable
             or cls.sparse_matrix != Operator.sparse_matrix
         )
 
@@ -843,7 +861,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
                 return qp.math.linalg.eigvals(self.matrix())
             raise EigvalsUndefinedError from e
 
-    def terms(self) -> tuple[list[TensorLike], list["Operation"]]:  # pylint: disable=no-self-use
+    def terms(self) -> tuple[list[TensorLike], list["Operation"]]:
         r"""Representation of the operator as a linear combination of other operators.
 
         .. math:: O = \sum_i c_i O_i
@@ -966,7 +984,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     def __init__(self, *params: TensorLike, wires: WiresLike | None = None):
         self._name: str = self.__class__.__name__  #: str: name of the operator
 
-        self._pauli_rep: qp.pauli.PauliSentence | None = (
+        self._pauli_rep: PauliSentence | None = (
             None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
         )
 
@@ -1025,30 +1043,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         self._batch_size = None
         params = self.data
-
-        try:
-            ndims = tuple(qp.math.ndim(p) for p in params)
-        except (
-            ValueError
-        ) as e:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            # TODO:[dwierichs] When using tf.function with an input_signature that contains
-            # an unknown-shaped input, ndim() will not be able to determine the number of
-            # dimensions because they are not specified yet. Failing example: Let `fun` be
-            # a single-parameter QNode.
-            # `tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))`
-            # There might be a way to support batching nonetheless, which remains to be
-            # investigated. For now, the batch_size is left to be `None` when instantiating
-            # an operation with abstract parameters that make `qp.math.ndim` fail.
-            if any(is_abstract(p) for p in params):
-                self._batch_size = None
-                self._ndim_params = (0,) * len(params)
-                return
-            raise e  # pragma: no cover
+        ndims = tuple(qp.math.ndim(p) for p in params)
 
         if any(len(qp.math.shape(p)) >= 1 and qp.math.shape(p)[0] is None for p in params):
             # if the batch dimension is unknown, then skip the validation
             # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
-            # typically during compilation of a function decorated with jax.jit or tf.function
+            # typically during compilation of a function decorated with jax.jit
             return  # pragma: no cover
 
         self._ndim_params = ndims
@@ -1144,14 +1144,13 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @property
     def hyperparameters(self) -> dict[str, Any]:
         """dict: Dictionary of non-trainable variables that this operation depends on."""
-        # pylint: disable=attribute-defined-outside-init
         if hasattr(self, "_hyperparameters"):
             return self._hyperparameters
-        self._hyperparameters = {}
+        self._hyperparameters = {}  # pylint: disable=attribute-defined-outside-init
         return self._hyperparameters
 
     @property
-    def pauli_rep(self) -> Optional["qp.pauli.PauliSentence"]:
+    def pauli_rep(self) -> PauliSentence | None:
         """A :class:`~.PauliSentence` representation of the Operator, or ``None`` if it doesn't have one."""
         return self._pauli_rep
 
@@ -1264,9 +1263,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         return {}
 
-    # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
-    def has_diagonalizing_gates(cls) -> bool:
+    def has_diagonalizing_gates(cls) -> bool:  # pylint: disable=no-self-argument
         r"""Bool: Whether or not the Operator returns defined diagonalizing gates.
 
         Note: Child classes may have this as an instance property instead of as a class property.
@@ -1275,6 +1273,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         # Currently, those are mostly classes from the operator arithmetic module.
         return (
             cls.compute_diagonalizing_gates != Operator.compute_diagonalizing_gates
+            # pylint: disable-next=comparison-with-callable
             or cls.diagonalizing_gates != Operator.diagonalizing_gates
         )
 
@@ -1303,7 +1302,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise DiagGatesUndefinedError
 
-    def diagonalizing_gates(self) -> list["Operator"]:  # pylint:disable=no-self-use
+    def diagonalizing_gates(self) -> list["Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1324,16 +1323,15 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             *self.parameters, wires=self.wires, **self.hyperparameters
         )
 
-    # pylint: disable=no-self-argument
     @classproperty
-    def has_generator(cls) -> bool:
+    def has_generator(cls) -> bool:  # pylint: disable=no-self-argument
         r"""Bool: Whether or not the Operator returns a defined generator.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
         return cls.generator != Operator.generator
 
-    def generator(self) -> "Operator":  # pylint: disable=no-self-use
+    def generator(self) -> "Operator":
         r"""Generator of an operator that is in single-parameter-form.
 
         For example, for operator
@@ -1396,16 +1394,15 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
-    # pylint: disable=no-self-argument
     @classproperty
-    def has_adjoint(cls) -> bool:
+    def has_adjoint(cls) -> bool:  # pylint: disable=no-self-argument
         r"""Bool: Whether or not the Operator can compute its own adjoint.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
         return cls.adjoint != Operator.adjoint
 
-    def adjoint(self) -> "Operator":  # pylint:disable=no-self-use
+    def adjoint(self) -> "Operator":
         """Create an operation that is the adjoint of this one. Used to simplify
         :class:`~.Adjoint` operators constructed by :func:`~.adjoint`.
 
@@ -1451,6 +1448,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         Returns:
             .Operator: new operator
         """
+        # pylint: disable=protected-access
         new_op = copy.copy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         if (p_rep := self.pauli_rep) is not None:
@@ -1481,10 +1479,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     __radd__ = __add__
 
-    def __mul__(self, other: Callable | TensorLike) -> "Operator":
+    def __mul__(self, other: TensorLike) -> "Operator":
         """The scalar multiplication between scalars and Operators."""
-        if callable(other):
-            return qp.pulse.ParametrizedHamiltonian([other], [self])
         if isinstance(other, TensorLike):
             return qp.s_prod(scalar=other, operator=self, lazy=False)
         return NotImplemented  # pragma: no cover
@@ -1623,7 +1619,7 @@ class Operation(Operator):
         if self.grad_recipe != [None] * self.num_params:
             return "A"
         try:
-            self.parameter_frequencies  # pylint:disable=pointless-statement
+            self.parameter_frequencies  # pylint: disable=pointless-statement
             return "A"
         except ParameterFrequenciesUndefinedError:
             return "F"
@@ -1645,9 +1641,8 @@ class Operation(Operator):
     """
 
     # Attributes for compilation transforms
-    # pylint: disable=useless-return
     @property
-    def basis(self) -> Literal["X", "Y", "Z", None]:
+    def basis(self) -> Literal["X", "Y", "Z", None]:  # pylint: disable=useless-return
         """str or None: The basis of an operation, or for controlled gates, of the
         target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
         or ``"Z"``.
@@ -1703,7 +1698,6 @@ class Operation(Operator):
 
         These frequencies encode the behaviour of the operator :math:`U(\mathbf{p})`
         on the value of the expectation value as the parameters are modified.
-        For more details, please see the :mod:`.pennylane.fourier` module.
 
         Returns:
             list[tuple[int or float]]: Tuple of frequencies for each parameter.

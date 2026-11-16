@@ -121,13 +121,12 @@ ALL_DQ_GATES = GateSet(
     name="All DefaultQubit Gates",
 )
 
-ALL_DQ_GATES_PLUS_MCM = ALL_DQ_GATES | GateSet({"MidMeasureMP"})
+ALL_DQ_GATES_PLUS_MCM = ALL_DQ_GATES | GateSet({"MidMeasure"})
 ALL_DQ_GATES_PLUS_MCM.name = "All DefaultQubit Gates With MCM"
 
 _special_operator_support = {
     "QFT": lambda op: len(op.wires) < 6,
     "GroverOperator": lambda op: len(op.wires) < 13,
-    "FromBloq": lambda op: len(op.wires) < 4 and op.has_matrix,
     "IQP": lambda op: len(op.wires) < 6,
     "Snapshot": lambda _: True,
     "Allocate": lambda _: True,
@@ -240,7 +239,7 @@ def no_counts(tape):
 
 
 @transform
-def adjoint_state_measurements(
+def adjoint_state_measurements(  # pylint: disable=unused-argument
     tape: QuantumScript, device_vjp=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Perform adjoint measurement preprocessing.
@@ -262,17 +261,6 @@ def adjoint_state_measurements(
         )
 
     params = tape.get_parameters()
-
-    if device_vjp:
-        for p in params:
-            if (
-                math.requires_grad(p)
-                and math.get_interface(p) == "tensorflow"
-                and math.get_dtype_name(p) in {"float32", "complex64"}
-            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-                raise ValueError(
-                    "tensorflow with adjoint differentiation of the state requires float64 or complex128 parameters."
-                )
 
     complex_data = [math.cast(p, complex) for p in params]
     tape = tape.bind_new_parameters(complex_data, list(range(len(params))))

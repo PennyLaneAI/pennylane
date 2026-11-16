@@ -25,3 +25,4 @@ from .state_prep_mps import MPSPrep, right_canonicalize_mps
 from .multiplexer_state_prep import MultiplexerStatePreparation
 from .sum_of_slaters import SumOfSlatersPrep, compute_sos_encoding, select_sos_rows
 from .partial_unary import PartialUnaryStatePreparation, PUIsometryFinder
+from .phase_gradient import PhaseGradientStatePrep

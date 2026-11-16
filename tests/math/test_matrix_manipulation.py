@@ -13,7 +13,9 @@
 # limitations under the License.
 """Unit tests for matrix expand functions."""
 
-# pylint: disable=too-few-public-methods,too-many-public-methods
+# pylint: disable=too-few-public-methods
+
+
 from functools import reduce
 
 import numpy as np
@@ -35,7 +37,6 @@ ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
@@ -43,7 +44,7 @@ CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
-class TestExpandMatrix:
+class TestExpandMatrix:  # pylint: disable=too-many-public-methods
     """Tests for the expand_matrix helper function."""
 
     base_matrix_1 = np.arange(1, 5).reshape((2, 2))
@@ -232,26 +233,6 @@ class TestExpandMatrix:
         jac_fn = jax.jacobian(self.func_for_autodiff)
         jac = jac_fn(base_matrix)
 
-        assert np.allclose(jac, self.expected_autodiff[i], atol=tol)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "i, base_matrix",
-        [
-            (0, [[0.2, 1.1], [-1.3, 1.9]]),
-            (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
-        ],
-    )
-    def test_tf(self, i, base_matrix, tol):
-        """Tests differentiation in TensorFlow by computing the Jacobian of
-        the expanded matrix with respect to the canonical matrix."""
-        import tensorflow as tf
-
-        base_matrix = tf.Variable(base_matrix)
-        with tf.GradientTape() as tape:
-            res = self.func_for_autodiff(base_matrix)
-
-        jac = tape.jacobian(res, base_matrix)
         assert np.allclose(jac, self.expected_autodiff[i], atol=tol)
 
     def test_expand_one(self, tol):
@@ -533,7 +514,6 @@ class TestExpandMatrix:
 
             num_wires = 2
 
-            # pylint: disable=arguments-differ
             @staticmethod
             def compute_matrix():
                 """Compute the matrix of the DummyOp."""
@@ -807,19 +787,19 @@ class TestExpandMatrixSparse:
 
     def test_sparse_swap_mat(self):
         """Test the swap matrix generated is as expected."""
-        # pylint: disable=protected-access
         n = 4
         for i in range(n):
             for j in range(n):
                 if i != j:
                     expected_mat = qp.SWAP(wires=[i, j]).matrix()
                     expected_mat = qp.math.expand_matrix(expected_mat, [i, j], wire_order=range(n))
+                    # pylint: disable-next=protected-access
                     computed_mat = qp.math.matrix_manipulation._sparse_swap_mat(i, j, n).toarray()
                     assert np.allclose(expected_mat, computed_mat)
 
     def test_sparse_swap_mat_same_index(self):
         """Test that if the indices are the same then the identity is returned."""
-        # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         computed_mat = qp.math.matrix_manipulation._sparse_swap_mat(2, 2, 3).toarray()
         expected_mat = np.eye(8)
         assert np.allclose(expected_mat, computed_mat)
@@ -946,15 +926,8 @@ class TestPartialTrace:
         )
 
         # Attempt to trace over an invalid wire
-        with pytest.raises(Exception) as e:
-            import tensorflow as tf  # pylint: disable=Import outside toplevel (tensorflow) (import-outside-toplevel)
-
+        with pytest.raises((ValueError, IndexError)):
             qp.math.quantum.partial_trace(rho, [2], c_dtype=c_dtype)
-            assert e.type in (
-                ValueError,
-                IndexError,
-                tf.python.framework.errors_impl.InvalidArgumentError,
-            )
 
     @pytest.mark.parametrize("c_dtype", dtypes)
     def test_partial_trace_single_matrix(self, ml_framework, c_dtype):

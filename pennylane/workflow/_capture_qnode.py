@@ -177,7 +177,6 @@ qnode_prim.multiple_results = True
 qnode_prim.prim_type = "higher_order"
 
 
-# pylint: disable=unused-arguments
 @debug_logger
 @qnode_prim.def_impl
 def _(*args, **kwargs):
@@ -221,8 +220,7 @@ def custom_staging_rule(
 pe.custom_staging_rules[qnode_prim] = custom_staging_rule
 
 
-# pylint: disable=too-many-arguments
-def _qnode_batching_rule(
+def _qnode_batching_rule(  # pylint: disable=too-many-arguments
     batched_args,
     batch_dims,
     *,
@@ -443,7 +441,7 @@ def _bind_qnode(qnode, *args, **kwargs):
             "devices must specify wires for integration with program capture."
         )
 
-    if any(math.is_abstract(w) for w in qnode.device.wires):
+    if any(math.is_tracer(w) for w in qnode.device.wires):
         raise NotImplementedError(
             "Dynamic device wires are not currently supported with program capture."
         )

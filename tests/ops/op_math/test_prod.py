@@ -15,7 +15,11 @@
 Unit tests for the Prod arithmetic class of qubit operations
 """
 
-# pylint:disable=protected-access, unused-argument
+# pylint: disable=protected-access,unused-argument
+
+
+from functools import reduce
+
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -25,17 +29,14 @@ import pennylane.numpy as qnp
 from pennylane import math
 from pennylane.core.operator import Operator, abstractify
 from pennylane.exceptions import DeviceError, MatrixUndefinedError
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
+from pennylane.testing import assert_decomposable
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
 
-no_mat_ops = (
-    qp.Barrier,
-    qp.WireCut,
-)
+no_mat_ops = (qp.Barrier,)
 
 non_param_ops = (
     (qp.Identity, gd.I),
@@ -100,7 +101,7 @@ def test_basic_validity():
     op2 = qp.Rot(1.2, 2.3, 3.4, wires=0)
     op3 = qp.IsingZZ(4.32, wires=(1, 2))
     op = Prod(op1, op2, op3)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def compare_and_expand_mat(mat1, mat2):
@@ -123,7 +124,7 @@ def compare_and_expand_mat(mat1, mat2):
     return smaller_mat, larger_mat
 
 
-class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
+class MyOp(qp.RX):  # pylint: disable=too-few-public-methods
     """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
@@ -132,7 +133,7 @@ class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
     has_diagonalizing_gates = False
 
 
-class TestInitialization:  # pylint:disable=too-many-public-methods
+class TestInitialization:  # pylint: disable=too-many-public-methods
     """Test the initialization."""
 
     @pytest.mark.parametrize("id", ("foo", "bar"))
@@ -523,8 +524,7 @@ def test_empty_repr():
     assert repr(Prod()) == "Prod()"
 
 
-# pylint: disable=too-many-public-methods
-class TestMatrix:
+class TestMatrix:  # pylint: disable=too-many-public-methods
     """Test matrix-related methods."""
 
     @pytest.mark.parametrize("op1, mat1", non_param_ops)
@@ -576,6 +576,24 @@ class TestMatrix:
         prod_op = Prod(op(wires=0), qp.PauliX(wires=2), qp.PauliZ(wires=1))
         with pytest.raises(MatrixUndefinedError):
             prod_op.matrix()
+
+    @pytest.mark.parametrize(
+        "factors",
+        (
+            (qp.H(1), qp.H(0), qp.CNOT([2, 1]), qp.CNOT([1, 0])),
+            (qp.CNOT([1, 3]), qp.X(0), qp.CNOT([3, 2]), qp.Toffoli([2, 0, 1])),
+        ),
+    )
+    @pytest.mark.parametrize("wire_order", [None, [0, 1, 2, 3], [3, 2, 0, 1]])
+    def test_merged_overlapping_groups(self, wire_order, factors):
+        """Test the matrix when merging overlapping groups reorders the wires relative to
+        the wires of the ``Prod`` op, and we need to reorder them back."""
+        prod_op = Prod(*factors)
+        mat = prod_op.matrix(wire_order=wire_order)
+        if wire_order is None:
+            wire_order = prod_op.wires
+        expected = reduce(np.matmul, [factor.matrix(wire_order=wire_order) for factor in factors])
+        assert np.allclose(mat, expected)
 
     def test_prod_ops_multi_terms(self):
         """Test matrix is correct for a product of more than two terms."""
@@ -792,33 +810,6 @@ class TestMatrix:
 
         assert torch.allclose(mat, true_mat)
 
-    @pytest.mark.tf
-    def test_prod_tf(self):
-        """Test matrix is cast correctly using tf parameters."""
-        import tensorflow as tf
-
-        theta = tf.Variable(1.23)
-        rot_params = tf.Variable([0.12, 3.45, 6.78])
-
-        prod_op = Prod(
-            qp.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0),
-            qp.RX(theta, wires=1),
-            qp.Identity(wires=0),
-        )
-        mat = prod_op.matrix()
-
-        true_mat = (
-            qnp.kron(gd.Rot3(0.12, 3.45, 6.78), qnp.eye(2))
-            @ qnp.kron(qnp.eye(2), gd.Rotx(1.23))
-            @ qnp.eye(4)
-        )
-        true_mat = tf.Variable(true_mat)
-        true_mat = tf.Variable(true_mat, dtype=tf.complex128)
-
-        assert isinstance(mat, tf.Tensor)
-        assert mat.dtype == true_mat.dtype
-        assert np.allclose(mat, true_mat)
-
     # sparse matrix tests:
 
     @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
@@ -885,7 +876,7 @@ class TestMatrix:
         """Test that an error is raised when the sparse matrix method
         is undefined for any of the factors."""
 
-        class DummyOp(qp.operation.Operation):  # pylint:disable=too-few-public-methods
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
             def sparse_matrix(self, wire_order=None):
@@ -905,22 +896,6 @@ class TestProperties:
         """Test is_verified_hermitian property updates correctly."""
         prod_op = prod(*ops_lst)
         assert prod_op.is_verified_hermitian == hermitian_status
-
-    @pytest.mark.tf
-    def test_is_hermitian_tf(self):
-        """Test that is_hermitian works when a tf type scalar is provided."""
-        # pylint:disable=invalid-unary-operand-type
-        import tensorflow as tf
-
-        theta = tf.Variable(1.23)
-        prod_ops = (
-            prod(qp.RX(theta, wires=0), qp.RX(-theta, wires=0), qp.PauliZ(wires=1)),
-            prod(qp.RX(theta, wires=0), qp.RX(-theta, wires=1), qp.PauliZ(wires=2)),
-        )
-        true_hermitian_states = (True, False)
-
-        for op, hermitian_state in zip(prod_ops, true_hermitian_states):
-            assert qp.is_hermitian(op) == hermitian_state
 
     @pytest.mark.jax
     def test_is_hermitian_jax(self):
@@ -1004,7 +979,6 @@ class TestProperties:
 
         assert qp.math.allclose(op.eigvals(), op2.eigvals())
 
-    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
         diag_prod_op = Prod(qp.PauliZ(wires=0), qp.PauliZ(wires=1))
@@ -1162,7 +1136,9 @@ class TestSimplify:
         prod_op = prod_fn(
             qp.RX(1, 0), qp.RZ(1, 1), qp.CNOT((1, 2)), qp.RZ(1, 1), qp.RX(3, 0), qp.RZ(1, 1)
         )
-        final_op = prod_fn(qp.RZ(1, 1), qp.CNOT((1, 2)), qp.RX(4, 0), qp.RZ(2, 1))
+        final_op = prod_fn(
+            qp.RZ(1, 1), qp.ops.ControlledOp2(qp.X(2), [1]), qp.RX(4, 0), qp.RZ(2, 1)
+        )
         simplified_op = prod_op.simplify()
         qp.assert_equal(simplified_op, final_op)
 
@@ -1254,11 +1230,6 @@ class TestSimplify:
         simplified_op = prod_op.simplify()
         qp.assert_equal(simplified_op, prod_op)
 
-    def test_grouping_with_only_visual_barriers(self):
-        """Test that grouping is implemented when an only-visual barrier is present."""
-        prod_op = qp.prod(qp.S(0), qp.Barrier(0, only_visual=True), qp.S(0)).simplify()
-        qp.assert_equal(prod_op.simplify(), qp.PauliZ(0))
-
     @pytest.mark.jax
     def test_simplify_pauli_rep_jax(self):
         """Test that simplifying operators with a valid pauli representation works with jax interface."""
@@ -1270,22 +1241,6 @@ class TestSimplify:
         result = qp.s_prod(c3, prod(qp.PauliZ(0), qp.PauliZ(1)))
         simplified_op = op.simplify()
 
-        qp.assert_equal(simplified_op, result)
-
-    @pytest.mark.tf
-    def test_simplify_pauli_rep_tf(self):
-        """Test that simplifying operators with a valid pauli representation works with tf interface."""
-        import tensorflow as tf
-
-        c1, c2, c3 = (
-            tf.Variable(1.23, dtype=tf.complex128),
-            tf.Variable(2.0, dtype=tf.complex128),
-            tf.Variable(2.46j, dtype=tf.complex128),
-        )
-
-        op = prod(qp.s_prod(c1, qp.PauliX(0)), qp.s_prod(c2, prod(qp.PauliY(0), qp.PauliZ(1))))
-        result = qp.s_prod(c3, prod(qp.PauliZ(0), qp.PauliZ(1)))
-        simplified_op = op.simplify()
         qp.assert_equal(simplified_op, result)
 
     @pytest.mark.torch
@@ -1437,8 +1392,8 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 1 in results  # pylint:disable=unsupported-membership-test
-        assert -1 not in results  # pylint:disable=unsupported-membership-test
+        assert 1 in results
+        assert -1 not in results
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Prod op in the measurement process."""
@@ -1722,7 +1677,7 @@ class TestDecomposition:
             control=[4, 5, 6],
             work_wires=[7, 8, 9],
         )
-        qp.ops.functions.assert_valid(op, skip_decomp_matrix_check=True)
+        qp.testing.assert_valid(op, skip_decomp_matrix_check=True)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("control_values", [[1, 1, 1], [0, 1, 0], [1, 0, 1], [0, 0, 0]])
@@ -1742,20 +1697,14 @@ class TestDecomposition:
             work_wires=work_wires,
             work_wire_type="zeroed",
         )
-        rules = qp.list_decomps("C(Prod)")
-        assert rules, "no decomp rules registered for C(Prod)"
-
-        # ``_test_decomposition_rule`` is a no-op for rules that are not applicable, so check
-        # explicitly that when the work_wire_type is "zeroed", at least one rule is applicable
-        applicable = [rule for rule in rules if rule.is_applicable(**op.resource_params)]
-        assert applicable
-
-        for rule in rules:
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
-    @pytest.mark.parametrize("num_control_wires, num_work_wires", [(3, 1), (3, 2), (4, 1), (5, 3)])
+    @pytest.mark.parametrize(
+        "num_control_wires, num_work_wires",
+        [(3, 1), (3, 2), (4, 1), (5, 3)],
+    )
     @pytest.mark.parametrize("work_wire_type", ["zeroed"])
     def test_controlled_prod_qjit(self, num_control_wires, num_work_wires, work_wire_type):
         """Test that the ``C(Prod)`` decompositions* is QJIT-compatible with JAX-traced wires.

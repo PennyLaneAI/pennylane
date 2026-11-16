@@ -22,14 +22,16 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator, Operator2, abstractify
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
+from pennylane.ops._pauli_conversion import to_operator
 from pennylane.ops.identity import Identity
 
 from .pow2 import Pow2
@@ -237,43 +239,23 @@ class Pow(ScalarSymbolicOp):
     @staticmethod
     def _matrix(scalar, mat):
         if isinstance(scalar, int):
-            if (
-                qp.math.get_deep_interface(mat) == "tensorflow"
-            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-                # TensorFlow doesn't have a matrix_power func, and scipy.linalg.fractional_matrix_power
-                # is not differentiable. So we use a custom implementation of matrix power for integer
-                # exponents below.
-                if scalar == 0:
-                    # Used instead of qp.math.eye for tracing derivatives
-                    return mat @ math.linalg.inv(mat)
-                if scalar > 0:
-                    out = mat
-                else:
-                    out = mat = math.linalg.inv(mat)
-                    scalar *= -1
-
-                for _ in range(scalar - 1):
-                    out @= mat
-                return out
-
             return math.linalg.matrix_power(mat, scalar)
 
         return fractional_matrix_power(mat, scalar)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
         return self.base.has_sparse_matrix and isinstance(self.z, int)
 
-    # pylint: disable=arguments-differ
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_sparse_matrix(*params, base=None, z=0, format="csr"):
         if isinstance(z, int):
             base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
             return (base_matrix**z).asformat(format)
         raise SparseMatrixUndefinedError
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
         if isinstance(self.z, int) and self.z > 0:
@@ -304,6 +286,7 @@ class Pow(ScalarSymbolicOp):
             raise DecompositionUndefinedError from e
 
     @property
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
@@ -341,9 +324,8 @@ class Pow(ScalarSymbolicOp):
         complex_dtype = "complex64" if is_single_precision else "complex128"
         return math.cast(base_eigvals, complex_dtype) ** self.z
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_generator(self):
+    def has_generator(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_generator
 
     def generator(self):
@@ -363,9 +345,8 @@ class Pow(ScalarSymbolicOp):
     def pow(self, z):
         return [Pow(base=self.base, z=self.z * z)]
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return isinstance(self.z, int)
 
     def adjoint(self):
@@ -399,7 +380,7 @@ class Pow(ScalarSymbolicOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return pr.operation(wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         base = self.base if qp.capture.enabled() else self.base.simplify()
         try:

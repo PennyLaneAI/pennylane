@@ -15,11 +15,11 @@
 Tests for the jacobian product calculator classes.
 """
 
+# pylint: disable=protected-access
+
 from functools import partial
 
 import numpy as np
-
-# pylint: disable=protected-access
 import pytest
 from cachetools import LRUCache
 from param_shift_dev import ParamShiftDerivativesDevice
@@ -130,7 +130,6 @@ def test_no_gradients():
         jpc.execute_and_compute_jacobian(())
 
 
-# pylint: disable=too-few-public-methods
 class TestBasics:
     """Test initialization and repr for jacobian product calculator classes."""
 
@@ -877,29 +876,3 @@ class TestTransformsDifferentiability:
         res.backward()
         assert qp.math.allclose(x.grad, -2.0 * np.cos(0.1))
         assert qp.math.allclose(dy.grad, -np.sin(0.1))
-
-    @pytest.mark.tf
-    def test_vjp_tf(self, seed):
-        """Test that the derivatives of compute_vjp can be taken with tensorflow."""
-
-        import tensorflow as tf
-
-        jpc = param_shift_jpc(seed)
-
-        def f(x, dy):
-            tape = qp.tape.QuantumScript([qp.RX(x, 0)], [qp.expval(qp.PauliZ(0))])
-            vjp = jpc.compute_vjp((tape,), (dy,))
-            return vjp[0]
-
-        x = tf.Variable(0.6, dtype=tf.float64)
-        dy = tf.Variable(1.5, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            res = f(x, dy)
-
-        assert qp.math.allclose(res, -1.5 * np.sin(0.6))
-
-        dx, ddy = tape.gradient(res, (x, dy))
-
-        assert qp.math.allclose(dx, -1.5 * np.cos(0.6))
-        assert qp.math.allclose(ddy, -np.sin(0.6))

@@ -67,6 +67,15 @@ def test_import_pyzx_error(monkeypatch):
             qp.transforms.to_zx(QuantumScript([qp.PauliX(wires=0), qp.PauliZ(wires=1)]))
 
 
+def test_pyzx_min_version_error(monkeypatch):
+    """Test that an ImportError is raised when pyzx is older than 0.10."""
+
+    monkeypatch.setattr(pyzx, "__version__", "0.9.0")
+
+    with pytest.raises(ImportError, match=r"require pyzx>=0.10"):
+        qp.transforms.to_zx(qp.PauliX(wires=0))
+
+
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestConvertersZX:
     """Test converters to_zx and from_zx."""

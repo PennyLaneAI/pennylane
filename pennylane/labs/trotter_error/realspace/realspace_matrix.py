@@ -26,8 +26,6 @@ from pennylane.labs.trotter_error.realspace import HOState, VibronicHO
 from pennylane.labs.trotter_error.realspace.matrix import _kron, _zeros
 from pennylane.labs.trotter_error.realspace.realspace_operator import RealspaceSum
 
-# pylint: disable=protected-access
-
 
 class RealspaceMatrix(Fragment):
     r"""Implements a dictionary of :class:`~.pennylane.labs.trotter_error.RealspaceSum` objects.
@@ -143,7 +141,7 @@ class RealspaceMatrix(Fragment):
                 f"Index out of bounds. Got {(row, col)} but there are only {self.states} states."
             )
 
-        if rs_sum._is_zero:
+        if rs_sum._is_zero:  # pylint: disable=protected-access
             return
 
         self._blocks[(row, col)] = rs_sum
@@ -249,11 +247,12 @@ class RealspaceMatrix(Fragment):
 
         padded = RealspaceMatrix(_next_pow_2(self.states), self.modes, self._blocks)
 
-        return padded._norm(params)
+        return padded._norm(params)  # pylint: disable=protected-access
 
     def _norm(self, params: dict) -> float:
         """Returns an upper bound on the spectral norm. This method assumes ``self.states`` is a
         power of two."""
+        # pylint: disable=protected-access
         if self.states == 1:
             return self.block(0, 0).norm(params)
 
@@ -386,7 +385,6 @@ class RealspaceMatrix(Fragment):
         """Partitions the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` into
         four :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` objects on ``self.states // 2`` states. This
         method assumes ``self.states`` is a power of two."""
-        # pylint: disable=chained-comparison
         half = self.states // 2
 
         top_left = RealspaceMatrix(half, self.modes, {})
@@ -399,9 +397,9 @@ class RealspaceMatrix(Fragment):
 
             if x < half and y < half:
                 top_left.set_block(x, y, word)
-            if x < half and y >= half:
+            if x < half and y >= half:  # pylint: disable=chained-comparison
                 top_right.set_block(x, y - half, word)
-            if x >= half and y < half:
+            if x >= half and y < half:  # pylint: disable=chained-comparison
                 bottom_left.set_block(x - half, y, word)
             if x >= half and y >= half:
                 bottom_right.set_block(x - half, y - half, word)

@@ -128,9 +128,10 @@ operations = {
     "QFT",
     "ThermalRelaxationError",
     "ECR",
-    "ParametrizedEvolution",
     "GlobalPhase",
-    "PPR",
+    "PPR_2",
+    "PPR_4",
+    "PPR_8",
 }
 
 DEFAULT_MIXED_GATES = operations | {"Snapshot"} | channels
@@ -174,9 +175,10 @@ def warn_readout_error_state(
     return (tape,), null_postprocessing
 
 
+# Derivative entry points are optional for devices without native differentiation.
 @simulator_tracking
 @single_tape_support
-class DefaultMixed(Device):
+class DefaultMixed(Device):  # pylint: disable=abstract-method
     r"""A PennyLane Python-based device for mixed-state qubit simulation.
 
     Args:

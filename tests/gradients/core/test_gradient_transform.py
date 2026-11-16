@@ -51,9 +51,6 @@ def test_supported_gradient_kwargs():
 
     # Remove arguments that are not keyword arguments
     grad_kwargs -= {"tape"}
-    # Remove "dev", because we decided against supporting this kwarg, although
-    # it is an argument to param_shift_cv, to avoid confusion.
-    grad_kwargs -= {"dev"}
 
     # Check equality of required and supported gradient kwargs
     assert grad_kwargs == SUPPORTED_GRADIENT_KWARGS
@@ -70,8 +67,6 @@ def test_repr():
 
 class TestGradAnalysis:
     """Tests for parameter gradient methods"""
-
-    # pylint: disable=protected-access
 
     def test_non_differentiable(self):
         """Test that a non-differentiable parameter is correctly marked"""
@@ -150,8 +145,6 @@ class TestGradAnalysis:
 
 class TestGradMethodValidation:
     """Test the helper function _grad_method_validation."""
-
-    # pylint: disable=protected-access
 
     @pytest.mark.parametrize("method", ["analytic", "best"])
     def test_with_nondiff_parameters(self, method):
@@ -371,8 +364,7 @@ class TestGradientTransformIntegration:
         dev = qp.device("default.qubit", wires=2)
         spy = mocker.spy(qp.gradients.parameter_shift, "expval_param_shift")
 
-        # pylint: disable=too-few-public-methods
-        class NonDiffRXGate(qp.RX):
+        class NonDiffRXGate(qp.RX):  # pylint: disable=too-few-public-methods
             """A non-differentiable gate that decomposes into RX."""
 
             grad_method = None
@@ -401,9 +393,8 @@ class TestGradientTransformIntegration:
 
         w = np.array([0.543, -0.654], requires_grad=True)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(NonDiffRXGate, _decomp)
-            res = grad_fn(w)
+        qp.add_decomps(NonDiffRXGate, _decomp)
+        res = grad_fn(w)
 
         x, y = w
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
@@ -447,7 +438,6 @@ class TestGradientTransformIntegration:
         y = np.array([[0.2, 0.2], [0.3, 0.5]], requires_grad=True)
 
         expected = qp.jacobian(circuit)(x, y)
-        # pylint:disable=unexpected-keyword-arg
         res = qp.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
@@ -528,9 +518,8 @@ class TestGradientTransformIntegration:
         dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev)
-        def circuit(x, y):
+        def circuit(x, y):  # pylint: disable=unused-argument
             """A quantum circuit that does not use its first parameter."""
-            # pylint: disable=unused-argument
             qp.RX(y[0], wires=0)
             qp.RY(y[0], wires=0)
             qp.RZ(y[1], wires=0)
@@ -647,7 +636,6 @@ class TestGradientTransformIntegration:
         expected = qp.jacobian(circuit)(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # pylint: disable=unexpected-keyword-arg
     def test_setting_shots(self):
         """Test that setting the number of shots works correctly for
         a gradient transform"""
@@ -678,7 +666,6 @@ class TestGradientTransformIntegration:
             pytest.param("autograd", marks=pytest.mark.autograd),
             pytest.param("jax", marks=pytest.mark.jax),
             pytest.param("torch", marks=pytest.mark.torch),
-            pytest.param("tensorflow", marks=pytest.mark.tf),
         ),
     )
     def test_use_with_batch_transform(self, interface):
@@ -694,13 +681,7 @@ class TestGradientTransformIntegration:
 
         x = qp.math.asarray(0.5, like=interface, requires_grad=True)
 
-        if interface == "tensorflow":
-            import tensorflow as tf
-
-            with tf.GradientTape():  # need to make x trainable
-                grad_z, grad_y, grad_x = qp.gradients.param_shift(c)(x)
-        else:
-            grad_z, grad_y, grad_x = qp.gradients.param_shift(c)(x)
+        grad_z, grad_y, grad_x = qp.gradients.param_shift(c)(x)
 
         expected_z = -2 * x * qp.math.sin(x**2)
         expected_y = -2 * x * qp.math.cos(x**2)
@@ -734,34 +715,6 @@ class TestInterfaceIntegration:
 
         res = qp.grad(circuit)(x)
         expected = -2 * (4 * x**2 * np.cos(2 * x**2) + np.sin(2 * x**2))
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Test that a gradient transform remains differentiable
-        with TF"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.gradients.param_shift
-        @qp.qnode(dev, interface="tf", diff_method="parameter-shift")
-        def circuit(x):
-            qp.RY(x**2, wires=[1])
-            qp.CNOT(wires=[0, 1])
-            return qp.var(qp.PauliX(1))
-
-        x_ = -0.654
-        x = tf.Variable(x_, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            res = circuit(x)
-
-        expected = -4 * x_ * np.cos(x_**2) * np.sin(x_**2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        res = tape.gradient(res, x)
-        expected = -2 * (4 * x_**2 * np.cos(2 * x_**2) + np.sin(2 * x_**2))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.torch

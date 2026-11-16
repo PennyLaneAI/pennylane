@@ -58,16 +58,12 @@ class StateMP(StateMeasurement):
         num_wires = len(self.wires) if self.wires else num_device_wires
         return (2**num_wires,)
 
+    # pylint: disable-next=redefined-outer-name
     def process_state(self, state: Sequence[complex], wire_order: Wires):
-        # pylint:disable=redefined-outer-name
-        def cast_to_complex(state):
+        def cast_to_complex(state):  # pylint: disable=redefined-outer-name
             dtype = str(state.dtype)
-            if "complex" in dtype:
+            if math.is_complex_dtype(state):
                 return state
-            if (
-                math.get_interface(state) == "tensorflow"
-            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-                return math.cast(state, "complex128")
             floating_single = "float32" in dtype or "complex64" in dtype
             return math.cast(state, "complex64" if floating_single else "complex128")
 
@@ -102,8 +98,8 @@ class StateMP(StateMeasurement):
         state = math.reshape(state, flat_shape)
         return cast_to_complex(state)
 
+    # pylint: disable-next=redefined-outer-name
     def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
-        # pylint:disable=redefined-outer-name
         raise ValueError("Processing from density matrix to state is not supported.")
 
 
@@ -135,21 +131,21 @@ class DensityMatrixMP(StateMP):
         dim = 2 ** len(self.wires)
         return (dim, dim)
 
+    # pylint: disable-next=redefined-outer-name
     def process_state(self, state: Sequence[complex], wire_order: Wires):
-        # pylint:disable=redefined-outer-name
         wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
-        if not math.is_abstract(state) and math.any(math.iscomplex(state)):
+        if not math.is_tracer(state) and math.any(math.iscomplex(state)):
             kwargs["c_dtype"] = state.dtype
         return math.reduce_statevector(state, **kwargs)
 
+    # pylint: disable-next=redefined-outer-name
     def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
-        # pylint:disable=redefined-outer-name
         wire_map = {w: i for i, w in enumerate(wire_order)}
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
-        if not math.is_abstract(density_matrix) and math.any(math.iscomplex(density_matrix)):
+        if not math.is_tracer(density_matrix) and math.any(math.iscomplex(density_matrix)):
             kwargs["c_dtype"] = density_matrix.dtype
         return math.reduce_dm(density_matrix, **kwargs)
 

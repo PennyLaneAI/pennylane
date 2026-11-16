@@ -24,6 +24,7 @@ from scipy.linalg import cossin
 
 from pennylane import capture, compiler, math, ops, templates
 from pennylane.core import queuing
+from pennylane.core.apply import apply
 from pennylane.decomposition.decomposition_rule import register_condition, register_resources
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.math.decomposition import (
@@ -103,7 +104,7 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op)
+            apply(op)
 
     return q.queue
 
@@ -238,7 +239,7 @@ def two_qubit_decomposition(U, wires):
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op)
+            apply(op)
 
     return q.queue
 
@@ -278,7 +279,7 @@ def multi_qubit_decomposition(U, wires):
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op)
+            apply(op)
 
     return q.queue
 
@@ -398,7 +399,7 @@ def _two_qubit_resource(*_, **__):
     }
 
 
-@register_condition(lambda U, wires, **_: len(wires) == 2)  # pylint: disable=unused-argument
+@register_condition(lambda U, wires, **_: len(wires) == 2)
 @register_resources(_two_qubit_resource, exact=False)
 def two_qubit_decomp_rule(U, wires, **_):
     """The decomposition rule for a two-qubit unitary."""
@@ -445,7 +446,7 @@ def _multi_qubit_decomp_resource(U, wires, **_):  # pylint: disable=unused-argum
     }
 
 
-@register_condition(lambda U, wires, **_: len(wires) > 2)  # pylint: disable=unused-argument
+@register_condition(lambda U, wires, **_: len(wires) > 2)
 @register_resources(_multi_qubit_decomp_resource)
 def multi_qubit_decomp_rule(U, wires, **__):
     """The decomposition rule for a multi-qubit unitary."""
@@ -508,8 +509,6 @@ def multi_qubit_decomp_rule(U, wires, **__):
 #   other cases, it cannot autodifferentiate through the linalg.eigvals function.
 # - In Torch, it is not currently possible to autodiff through linalg.det for
 #   complex values.
-# - In Tensorflow, it sometimes works in limited cases (0, sometimes 1 CNOT), but
-#   for others it fails without output making it hard to pinpoint the cause.
 # - In JAX, we receive the TypeError:
 #       Can't differentiate w.r.t. type <class 'jaxlib.xla_extension.Array'>
 #
@@ -663,7 +662,6 @@ def _get_basis_and_eigenvalues(M):
     Returns eigenvalues and basis O such that :math:`D = O^T M O` is diagonal with
     sorted eigenvalues.
     """
-    # pylint: disable=protected-access
     # Use split_eigh to get a basis (ignoring its mixed eigenvalues)
     _, O = _real_imag_split_eigh(M, 1.0)
 
@@ -785,7 +783,6 @@ def _decompose_2_cnots(U, wires, initial_phase):
 
     The final circuit is then constructed by applying these local gates around the V.
     """
-    # pylint: disable=too-many-locals
     # 1. Compute gamma(U)
     u_mag = _multidot(math.cast_like(E_dag, U), U, math.cast_like(E, U))
     gamma_u = math.dot(u_mag, math.T(u_mag))
@@ -1174,4 +1171,4 @@ def _cossin_decomposition(U, p):
 
 def _is_jax_jit(U):
     """Assume jax-jit if U is abstract and not in a capture or qjit context."""
-    return math.is_abstract(U) and not (capture.enabled() or compiler.active())
+    return math.is_tracer(U) and not (capture.enabled() or compiler.active())

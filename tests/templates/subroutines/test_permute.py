@@ -16,21 +16,19 @@ Tests for the Permute template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qp
 from pennylane.decomposition import gate_sets
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.transforms import decompose
+from pennylane.testing import assert_decomposable
+from pennylane.transforms import _tape_decompose as decompose
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qp.Permute([0, 1, 2, 3], wires=(3, 2, 1, 0))
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_repr():
@@ -56,8 +54,7 @@ class TestDecomposition:
         """Tests the decomposition rule implemented with the new system."""
         op = qp.Permute(permutation_order, wire_order)
 
-        for rule in qp.list_decomps(qp.Permute):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_identity_permutation_qnode(self, mocker):
         """Test that identity permutations have no effect on QNodes."""

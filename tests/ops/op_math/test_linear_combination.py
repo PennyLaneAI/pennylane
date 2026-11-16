@@ -15,7 +15,6 @@
 Tests for the LinearCombination class.
 """
 
-# pylint: disable=too-many-public-methods, too-few-public-methods
 from collections.abc import Iterable
 from copy import copy
 
@@ -42,15 +41,6 @@ try:
     from jax import numpy as jnp
 
     COEFFS_PARAM_INTERFACE.append((jnp.array([-0.05, 0.17]), jnp.array(1.7), "jax"))
-except ImportError:
-    pass
-
-try:
-    import tensorflow as tf
-
-    COEFFS_PARAM_INTERFACE.append(
-        (tf.Variable([-0.05, 0.17], dtype=tf.double), tf.Variable(1.7, dtype=tf.double), "tf")
-    )
 except ImportError:
     pass
 
@@ -530,7 +520,7 @@ def circuit2(param):
 dev = qp.device("default.qubit", wires=2)
 
 
-class TestLinearCombination:
+class TestLinearCombination:  # pylint: disable=too-many-public-methods
     """Test the LinearCombination class"""
 
     def test_error_if_observables_operator(self):
@@ -608,11 +598,11 @@ class TestLinearCombination:
         res = H1 - H2
         qp.assert_equal(qp.simplify(res), true_res)
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
     @pytest.mark.parametrize("grouping_type", (None, "qwc"))
     def test_flatten_unflatten(self, coeffs, ops, grouping_type):
         """Test the flatten and unflatten methods for LinearCombinations"""
+        # pylint: disable=protected-access
 
         if any(not qp.pauli.is_pauli_word(t) for t in ops) and grouping_type:
             pytest.skip("grouping type must be none if a term is not a pauli word.")
@@ -933,74 +923,6 @@ class TestLinearCombinationCoefficients:
     def test_operands(self):
         op = qp.ops.LinearCombination([1.1, 2.2], [X(0), Z(0)])
         assert op.operands == (qp.s_prod(1.1, X(0)), qp.s_prod(2.2, Z(0)))
-
-
-@pytest.mark.tf
-class TestLinearCombinationArithmeticTF:
-    """Tests creation of LinearCombinations using arithmetic
-    operations with TensorFlow tensor coefficients."""
-
-    def test_LinearCombination_equal(self):
-        """Tests equality"""
-        coeffs = tf.Variable([0.5, -1.6])
-        obs = [X(0), Y(1)]
-        H1 = qp.ops.LinearCombination(coeffs, obs)
-
-        coeffs2 = tf.Variable([-1.6, 0.5])
-        obs2 = [Y(1), X(0)]
-        H2 = qp.ops.LinearCombination(coeffs2, obs2)
-
-        assert H1 == (H2)
-
-    def test_LinearCombination_add(self):
-        """Tests that LinearCombinations are added correctly"""
-        coeffs = tf.Variable([0.5, -1.5])
-        obs = [X(0), Y(1)]
-        H1 = qp.ops.LinearCombination(coeffs, obs)
-
-        coeffs2 = tf.Variable([0.5, -0.5])
-        H2 = qp.ops.LinearCombination(coeffs2, obs)
-
-        coeffs_expected = tf.Variable([1.0, -2.0])
-        H = qp.ops.LinearCombination(coeffs_expected, obs)
-
-        assert H == (H1 + H2)
-
-    def test_LinearCombination_sub(self):
-        """Tests that LinearCombinations are subtracted correctly"""
-        coeffs = tf.constant([1.0, -2.0])
-        obs = [X(0), Y(1)]
-        H1 = qp.ops.LinearCombination(coeffs, obs)
-
-        coeffs2 = tf.constant([0.5, -0.5])
-        H2 = qp.ops.LinearCombination(coeffs2, obs)
-
-        coeffs_expected = tf.constant([0.5, -1.5])
-        H = qp.ops.LinearCombination(coeffs_expected, obs)
-
-        assert H == (H1 - H2)
-
-    def test_LinearCombination_matmul(self):
-        """Tests that LinearCombinations are tensored correctly"""
-
-        coeffs = tf.Variable([1.0, 2.0])
-        obs = [X(0), Y(1)]
-        H1 = qp.ops.LinearCombination(coeffs, obs)
-
-        coeffs2 = tf.Variable([-1.0, -2.0])
-        obs2 = [X(2), Y(3)]
-        H2 = qp.ops.LinearCombination(coeffs2, obs2)
-
-        coeffs_expected = tf.Variable([-4.0, -2.0, -2.0, -1.0])
-        obs_expected = [
-            qp.prod(Y(1), Y(3)),
-            qp.prod(X(0), Y(3)),
-            qp.prod(X(2), Y(1)),
-            qp.prod(X(0), X(2)),
-        ]
-        H = qp.ops.LinearCombination(coeffs_expected, obs_expected)
-
-        assert H == (H1 @ H2)
 
 
 @pytest.mark.torch
@@ -1731,7 +1653,6 @@ class TestLinearCombinationDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    # pylint: disable=superfluous-parens
     @pytest.mark.jax
     def test_nontrainable_coeffs_jax(self):
         """Test the jax interface if the coefficients are explicitly set non-trainable"""
@@ -1782,7 +1703,7 @@ class TestLinearCombinationDifferentiation:
             )
 
         res = circuit(coeffs, param)
-        res.backward()  # pylint:disable=no-member
+        res.backward()
         grad = (coeffs.grad, param.grad)
 
         # differentiating a cost that combines circuits with
@@ -1824,7 +1745,7 @@ class TestLinearCombinationDifferentiation:
             )
 
         res = circuit(coeffs, param)
-        res.backward()  # pylint:disable=no-member
+        res.backward()
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
@@ -1844,91 +1765,6 @@ class TestLinearCombinationDifferentiation:
 
         assert coeffs.grad is None
         assert np.allclose(param.grad, param2.grad)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("simplify", [True, False])
-    @pytest.mark.parametrize("group", [None, "qwc"])
-    def test_trainable_coeffs_tf(self, simplify, group):
-        """Test the tf interface by comparing the differentiation of linearly combined subcircuits
-        with the differentiation of a LinearCombination expectation"""
-        coeffs = tf.Variable([-0.05, 0.17], dtype=tf.double)
-        param = tf.Variable(1.7, dtype=tf.double)
-
-        # differentiating a circuit with measurement expval(H)
-        @qp.qnode(dev, interface="tf", diff_method="backprop")
-        def circuit(coeffs, param):
-            qp.RX(param, wires=0)
-            qp.RY(param, wires=0)
-            return qp.expval(
-                qp.simplify(qp.ops.LinearCombination(coeffs, [X(0), Z(0)], grouping_type=group))
-                if simplify
-                else qp.ops.LinearCombination(coeffs, [X(0), Z(0)], grouping_type=group)
-            )
-
-        with tf.GradientTape() as tape:
-            res = circuit(coeffs, param)
-        grad = tape.gradient(res, [coeffs, param])
-
-        # differentiating a cost that combines circuits with
-        # measurements expval(Pauli)
-
-        # we need to create new tensors here
-        coeffs2 = tf.Variable([-0.05, 0.17], dtype=tf.double)
-        param2 = tf.Variable(1.7, dtype=tf.double)
-        half1 = qp.QNode(circuit1, dev, interface="tf", diff_method="backprop")
-        half2 = qp.QNode(circuit2, dev, interface="tf", diff_method="backprop")
-
-        def combine(coeffs, param):
-            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
-
-        with tf.GradientTape() as tape2:
-            res_expected = combine(coeffs2, param2)
-        grad_expected = tape2.gradient(res_expected, [coeffs2, param2])
-
-        assert np.allclose(grad[0], grad_expected[0])
-        assert np.allclose(grad[1], grad_expected[1])
-
-    @pytest.mark.tf
-    def test_nontrainable_coeffs_tf(self):
-        """Test the tf interface if the coefficients are explicitly set non-trainable"""
-
-        coeffs = tf.constant([-0.05, 0.17], dtype=tf.double)
-        param = tf.Variable(1.7, dtype=tf.double)
-
-        # differentiating a circuit with measurement expval(H)
-        @qp.qnode(dev, interface="tf", diff_method="backprop")
-        def circuit(coeffs, param):
-            qp.RX(param, wires=0)
-            qp.RY(param, wires=0)
-            return qp.expval(
-                qp.ops.LinearCombination(
-                    coeffs,
-                    [X(0), Z(0)],
-                )
-            )
-
-        with tf.GradientTape() as tape:
-            res = circuit(coeffs, param)
-        grad = tape.gradient(res, [coeffs, param])
-
-        # differentiating a cost that combines circuits with
-        # measurements expval(Pauli)
-
-        # we need to create new tensors here
-        coeffs2 = tf.constant([-0.05, 0.17], dtype=tf.double)
-        param2 = tf.Variable(1.7, dtype=tf.double)
-        half1 = qp.QNode(circuit1, dev, interface="tf", diff_method="backprop")
-        half2 = qp.QNode(circuit2, dev, interface="tf", diff_method="backprop")
-
-        def combine(coeffs, param):
-            return coeffs[0] * half1(param) + coeffs[1] * half2(param)
-
-        with tf.GradientTape() as tape2:
-            res_expected = combine(coeffs2, param2)
-        grad_expected = tape2.gradient(res_expected, [coeffs2, param2])
-
-        assert grad[0] is None
-        assert np.allclose(grad[1], grad_expected[1])
 
     def test_not_supported_by_adjoint_differentiation(self):
         """Test that error is raised when attempting the adjoint differentiation method."""
@@ -1953,7 +1789,6 @@ class TestLinearCombinationDifferentiation:
             grad_fn(coeffs, param)
 
 
-# pylint: disable=protected-access
 @pytest.mark.capture
 def test_create_instance_while_tracing():
     """Test that a LinearCombination instance can be created while tracing."""
@@ -1977,6 +1812,7 @@ def test_create_instance_while_tracing():
             hybrid_trees=(),
             forward_mask=(),
         )
+        # pylint: disable-next=protected-access
         op = qp.ops.LinearCombination._primitive.impl(a, b, op1, op2, n_obs=2)
         assert isinstance(op, qp.ops.LinearCombination)
 
@@ -1996,5 +1832,6 @@ def test_capture_with_legacy_observable():
 
     jaxpr = jax.make_jaxpr(f)(np.eye(2))
 
+    # pylint: disable-next=protected-access
     assert jaxpr.eqns[-1].primitive == qp.ops.LinearCombination._primitive
     assert jaxpr.eqns[-1].params["n_obs"] == 2

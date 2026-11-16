@@ -157,9 +157,8 @@ def qubitization_thc_wires(M, N, aleph, beth, num_batches=1):
     }
 
 
-def _prepare_registers(
-    M, N, aleph, index_wires, prep_garbage_wires, work_wires
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _prepare_registers(M, N, aleph, index_wires, prep_garbage_wires, work_wires):
     r"""Split the input registers into the sub-registers of the three THC oracles.
 
     The layout is the one documented by :func:`qubitization_thc_wires`. The returned
@@ -282,8 +281,8 @@ class QubitizationTHC(Operator2):
             \sum_{k = 0}^{2^{\mathrm{beth} + 1} - 1}
             e^{-2 \pi i k / 2^{\mathrm{beth} + 1}} \lvert k \rangle ,
 
-        a product state that ``beth + 1`` ``Hadamard`` and ``beth + 1`` ``PhaseShift`` gates
-        prepare. The walk leaves it unchanged, so a single register is prepared once and
+        which can be done with :class:`~.PhaseGradientStatePrep`.
+        The walk leaves it unchanged, so a single register is prepared once and
         shared across every repetition of :math:`\mathcal{W}`.
 
     .. seealso:: :func:`~.qubitization_thc_wires`, :class:`~.SuperpositionTHC`,
@@ -338,27 +337,42 @@ class QubitizationTHC(Operator2):
         wires = qp.registers(sizes)
         gradient = wires["gradient_wires"]
 
-        def gradient_state():
-            for j, w in enumerate(gradient):
-                qp.Hadamard(w)
-                qp.PhaseShift(-2 * np.pi * 2 ** (len(gradient) - 1 - j) / 2 ** len(gradient), w)
 
-        @qp.transforms.decompose(stopping_condition=lambda op: len(op.wires) <= 3)
+        @qp.transforms._tape_decompose(stopping_condition=lambda op: len(op.wires) <= 3)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            gradient_state()
+            qp.PhaseGradientStatePrep(gradient)
             qp.QubitizationTHC(
                 tuple(map(tuple, zeta)), tuple(t_ell), tuple(map(tuple, chi)),
                 tuple(map(tuple, t_eigenvectors)), aleph, beth,
                 wires["system_wires"], wires["index_wires"], wires["prep_garbage_wires"],
                 gradient, wires["work_wires"],
             )
-            qp.adjoint(gradient_state)()
+
             return qp.probs(wires=wires["index_wires"] + wires["prep_garbage_wires"])
 
     The first entry of the returned distribution is the probability that the reflected
     register returns to :math:`\lvert \vec 0 \rangle`, i.e. the squared norm of
     :math:`(\hat{\mathcal{H}} / \lambda) \lvert \psi \rangle`.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.QubitizationTHC
+            :stacked:
+
+            .. decomposition-rule:: _qubitization_thc_decomp
+                :image: /_static/decomposition_thumbnails/qubitization_thc_walk.svg
+
+                :class:`~.SuperpositionTHC` | :math:`1`
+                :class:`Adjoint(SuperpositionTHC) <.SuperpositionTHC>` | :math:`1`
+                :class:`~.AliasSamplingTHC` | :math:`1`
+                :class:`Adjoint(AliasSamplingTHC) <.AliasSamplingTHC>` | :math:`1`
+                :class:`~.Hadamard` | :math:`4`
+                :class:`~.Z` | :math:`1`
+                :class:`~.SelectTHC` | :math:`1`
+                :class:`~.FlipSign` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
 
     """
 
@@ -378,7 +392,7 @@ class QubitizationTHC(Operator2):
         "work_wires": Wire[-1],
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         zeta,
         t_ell,
@@ -392,7 +406,7 @@ class QubitizationTHC(Operator2):
         gradient_wires: WiresLike,
         work_wires: WiresLike,
         num_batches=1,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+    ):
         _validate_zeta(zeta)
         _validate_t_ell(t_ell)
         M, n_half = _validate_select_data(chi, t_eigenvectors)
@@ -438,7 +452,7 @@ class QubitizationTHC(Operator2):
         )
 
 
-def _prepare_select(
+def _prepare_select(  # pylint: disable=too-many-arguments
     M,
     N,
     zeta,
@@ -453,7 +467,7 @@ def _prepare_select(
     gradient_wires,
     work_wires,
     num_batches,
-):  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+):
     r"""Return ``PREPARE``:math:`^\dagger \cdot` ``SELECT`` :math:`\cdot` ``PREPARE`` as a
     single :func:`~.change_op_basis`, given the registers of :func:`_prepare_registers`."""
     mu_wires, nu_wires = registers["mu_wires"], registers["nu_wires"]
@@ -504,7 +518,7 @@ def _prepare_select(
     return change_op_basis(prepare, select)
 
 
-def _qubitization_thc_resources(
+def _qubitization_thc_resources(  # pylint: disable=too-many-arguments
     zeta,
     t_ell,
     chi,
@@ -517,7 +531,7 @@ def _qubitization_thc_resources(
     gradient_wires,
     work_wires,
     num_batches=1,
-):  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+):
     """Return the top-level resources of the QubitizationTHC decomposition."""
     M = len(zeta)
     N = 2 * len(chi[0])
@@ -565,7 +579,7 @@ def _qubitization_thc_resources(
 
 
 @register_resources(_qubitization_thc_resources)
-def _qubitization_thc_decomp(
+def _qubitization_thc_decomp(  # pylint: disable=too-many-arguments
     zeta,
     t_ell,
     chi,
@@ -579,7 +593,7 @@ def _qubitization_thc_decomp(
     work_wires,
     num_batches=1,
     **_,
-):  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+):
     M = len(zeta)
     N = 2 * len(chi[0])
 

@@ -17,8 +17,6 @@ with preparing a certain state on the device.
 """
 
 from collections.abc import Sequence
-
-# pylint: disable=too-many-branches,arguments-differ
 from warnings import warn
 
 import numpy as np
@@ -120,7 +118,7 @@ class BasisState(StatePrepBase2):
         if isinstance(state, AbstractArray):
             return state
 
-        if not qp.math.is_abstract(state):
+        if not qp.math.is_tracer(state):
             state_list = list(qp.math.toarray(state))
             if not set(state_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
@@ -322,15 +320,14 @@ class StatePrep(StatePrepBase):
     """int: Number of dimensions per trainable parameter of the operator."""
 
     @classmethod
-    def _primitive_bind_call(cls, state, wires, **kwargs):
+    def _primitive_bind_call(cls, state, wires, **kwargs):  # pylint: disable=arguments-differ
         if isinstance(state, (tuple, list)):
-            if any(qp.math.is_abstract(x) for x in state):
+            if any(qp.math.is_tracer(x) for x in state):
                 state = qp.math.asarray(state, like="jax")
             else:
                 state = qp.math.asarray(state)
         return super()._primitive_bind_call(state, wires, **kwargs)
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         state: TensorLike | csr_matrix,
@@ -365,8 +362,8 @@ class StatePrep(StatePrepBase):
         else:
             super()._check_batching()
 
-    # pylint: disable=unused-argument
     @staticmethod
+    # pylint: disable-next=unused-argument,arguments-differ
     def compute_decomposition(state: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
@@ -432,6 +429,7 @@ class StatePrep(StatePrepBase):
         return math.transpose(op_vector, transpose_axes)
 
     @staticmethod
+    # pylint: disable-next=too-many-branches
     def _preprocess(state, wires, pad_with, normalize, validate_norm):
         """Validate and pre-process inputs as follows:
 
@@ -488,7 +486,7 @@ class StatePrep(StatePrepBase):
 
         norm = math.linalg.norm(state, axis=-1)
 
-        if math.is_abstract(norm):
+        if math.is_tracer(norm):
             if normalize:
                 state = state / math.reshape(norm, (*shape[:-1], 1))
 

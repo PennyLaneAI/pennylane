@@ -15,14 +15,15 @@
 
 import logging
 import warnings
-from typing import Literal
+from typing import Any, Literal
 
 import jax
 
 from pennylane import capture, math
-from pennylane.capture import FlatFn, enabled
+from pennylane.capture import FlatFn, HintedCallable, apply_hint
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
+from pennylane.capture.hint import get_hints, process_hints
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 from pennylane.exceptions import CaptureWarning
 
@@ -53,9 +54,9 @@ def _reverse_iterator(f, start, step):
 def _is_reverse_iteration(start, stop, step):
     # without the int() call, when we have a jnp array with a single int
     # in it (jnp.array(1)), performing a comparison will produce a tracer
-    if not math.is_abstract(step):
+    if not math.is_tracer(step):
         return int(step) < 0
-    return not math.is_abstract(start) and not math.is_abstract(stop) and int(stop) < int(start)
+    return not math.is_tracer(start) and not math.is_tracer(stop) and int(stop) < int(start)
 
 
 def for_loop(
@@ -144,14 +145,14 @@ def for_loop(
             return qp.expval(qp.Z(0))
 
     >>> circuit(7, 1.6)
-    array(0.97926626)
+    Array(0.979...)
 
     ``for_loop`` is also :func:`~.qjit` compatible; when used with the
     :func:`~.qjit` decorator, the for loop will not be unrolled, and instead
     will be captured as-is during compilation and executed during runtime:
 
     >>> qp.qjit(circuit)(7, 1.6)
-    Array(0.97926626, dtype=float64)
+    Array(0.979..., dtype=float64)
 
     .. note::
 
@@ -161,6 +162,56 @@ def for_loop(
 
     .. details::
         :title: Usage Details
+
+        **Compiler hints and Resource Profiling:**
+
+        When running resource analysis on a qjit workflow, loops may appear symbolically. Calling :func:`~.analyze` on the ``circuit`` above, we get
+
+        >>> s = qp.analyze(qp.qjit(circuit, capture=True))(3, 0.5)
+        >>> print(s.resources)
+        Symbolic Variables: a
+        Quantum operations:
+        - Total: a
+        - RX: a
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
+
+        To resolve symbolic expressions directly, :func:`~.hint` can be used indicate the likely number of iterations
+        on the loop:
+
+        .. code-block:: python
+
+            dev = qp.device("lightning.qubit", wires=1)
+
+            @qp.qnode(dev)
+            def circuit(n: int, x: float):
+
+                @qp.hint({"num-iters": 10})
+                @qp.for_loop(0, n, 1)
+                def loop_rx(i, x):
+                    # perform some work and update (some of) the arguments
+                    qp.RX(x, wires=0)
+
+                    # update the value of x for the next iteration
+                    return jnp.sin(x)
+
+                # apply the for loop
+                final_x = loop_rx(x)
+
+                return qp.expval(qp.Z(0))
+
+        >>> print(qp.analyze(qp.qjit(circuit, capture=True))(3, 0.5).resources)
+        Quantum operations:
+        - Total: 10
+          - RX: 10
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
+
+        **Dynamic Shapes Support:**
 
         .. note::
 
@@ -284,8 +335,17 @@ def for_loop(
         Returns:
             Callable: a callable with the same signature as ``body_fn``
         """
+        num_iters_hint = get_hints(body_fn, {"num-iters"}).get("num-iters", None)
+        if isinstance(body_fn, HintedCallable):
+            body_fn = body_fn.f
+
         return ForLoopCallable(
-            start, stop, step, body_fn, allow_array_resizing=allow_array_resizing
+            start,
+            stop,
+            step,
+            body_fn,
+            allow_array_resizing=allow_array_resizing,
+            num_iters_hint=num_iters_hint,
         )
 
     return _decorator
@@ -328,10 +388,17 @@ register_custom_staging_rule(
 )
 
 
-# pylint: disable=too-many-arguments
 @for_loop_prim.def_impl
-def _for_loop_impl(
-    start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+def _for_loop_impl(  # pylint: disable=too-many-arguments,unused-argument
+    start,
+    stop,
+    step,
+    *args,
+    jaxpr_body_fn,
+    consts_slice,
+    args_slice,
+    abstract_shapes_slice,
+    estimated_iterations,
 ):
     # Convert tuples back to slices (tuples are used for JAX 0.7.1 hashability)
     consts_slice = slice(*consts_slice)
@@ -351,15 +418,15 @@ def _for_loop_impl(
     return fn_res
 
 
-# pylint: disable=unused-argument
 @for_loop_prim.def_abstract_eval
+# pylint: disable-next=unused-argument
 def _for_loop_abstract_eval(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
     args_slice = slice(*args_slice)
     abstract_shapes_slice = slice(*abstract_shapes_slice)
     return args[abstract_shapes_slice] + args[args_slice]
 
 
-class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-arguments
+class ForLoopCallable:  # pylint: disable=too-few-public-methods
     """Base class to represent a for loop. This class
     when called with an initial state will execute the while
     loop via the Python interpreter.
@@ -380,7 +447,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         start,
         stop,
@@ -388,12 +455,14 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         body_fn,
         *,
         allow_array_resizing: Literal["auto", True, False] = "auto",
+        num_iters_hint: int | None = None,
     ):
         self.start = start
         self.stop = stop
         self.step = step
         self.body_fn = body_fn
         self.allow_array_resizing = allow_array_resizing
+        self.num_iters_hint = num_iters_hint
 
     def _call_capture_disabled(self, *init_state):
         args = init_state
@@ -504,6 +573,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             consts_slice=consts_slice,
             args_slice=args_slice,
             abstract_shapes_slice=abstract_shapes_slice,
+            estimated_iterations=self.num_iters_hint,
         )
 
         results = results[-out_tree.num_leaves :]
@@ -526,6 +596,21 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             isinstance(self.stop, int) and isinstance(self.start, int) and self.stop == self.start
         )
 
-        if enabled() and not start_equals_stop:
+        if capture.enabled() and not start_equals_stop:
             return self._call_capture_enabled(*init_state)
         return self._call_capture_disabled(*init_state)
+
+
+@apply_hint.register
+def _apply_hint_to_for_loop(
+    f: ForLoopCallable, hints: dict[Literal["num-iters"], Any]
+) -> ForLoopCallable:
+    hints = process_hints(hints, {"num-iters"})
+    return ForLoopCallable(
+        f.start,
+        f.stop,
+        f.step,
+        f.body_fn,
+        allow_array_resizing=f.allow_array_resizing,
+        num_iters_hint=hints.get("num-iters", None),
+    )

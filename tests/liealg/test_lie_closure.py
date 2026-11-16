@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for pennylane/dla/lie_closure.py functionality"""
 
-# pylint: disable=too-few-public-methods, protected-access
-
 import numpy as np
 import pytest
 
@@ -456,22 +454,6 @@ class TestLieClosureInterfaces:
         gens_list = [torch.tensor(X0), torch.tensor(Y0)]
 
         gens = torch.tensor(np.array([X0, Y0]))
-
-        res = qp.lie_closure(gens, matrix=True)
-        assert qp.math.allclose(res, su2)
-
-        res_list = qp.lie_closure(gens_list, matrix=True)
-        assert qp.math.allclose(res_list, su2)
-
-    @pytest.mark.tf
-    def test_tf_lie_closure_matrix(self):
-        """Test lie_closure can handle tf inputs in matrix mode"""
-        import tensorflow as tf
-
-        su2 = qp.math.stack([X0, Y0, -Z0], like="tensorflow")
-        gens_list = [tf.constant(X0), tf.constant(Y0)]
-
-        gens = qp.math.stack([tf.constant(X0), tf.constant(Y0)])
 
         res = qp.lie_closure(gens, matrix=True)
         assert qp.math.allclose(res, su2)

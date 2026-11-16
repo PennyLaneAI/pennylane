@@ -228,7 +228,7 @@ class SignedOutSquare(_SquareArithmeticOp):
         15: ··· ─╰SemiAdder────┤
         M0 =
         [ True]
-        Gate Count: {Adjoint(TemporaryAND): 2, CNOT: 6, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 3, MultiX(AbstractArray((1,), bool, weak_type=True), wires=AbstractWires(1)): 2, OutSquare(x_wires=AbstractWires(2), output_wires=AbstractWires(7), work_wires=AbstractWires(6), output_wires_zeroed=True): 1, PauliX: 8, SemiAdder(x_wires=AbstractWires(1), y_wires=AbstractWires(2), work_wires=AbstractWires(6)): 1, TemporaryAND: 2}
+        Gate Count: {Adjoint(TemporaryAND): 2, CNOT: 6, Controlled(PauliX, control_wires=AbstractWires(2), work_wires=AbstractWires(4), control_values=AbstractArray((2,), bool)): 3, MultiX(AbstractArray((1,), bool, weak_type=True), wires=AbstractWires(1)): 2, OutSquare(x_wires=AbstractWires(2), output_wires=AbstractWires(7), work_wires=AbstractWires(6), output_wires_zeroed=True): 1, PauliX: 8, SemiAdder(x_wires=AbstractWires(1), y_wires=AbstractWires(2), work_wires=AbstractWires(6)): 1, TemporaryAND: 2}
 
     """
 
@@ -292,7 +292,6 @@ def _c_subtract_then_add_one(c_wire, x_wires, y_wires, work_wires):
 def _signed_out_square_resources(
     x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> dict:
-    # pylint: disable=unused-argument
     n = len(x_wires)
     m = len(output_wires)
     num_work_wires = len(work_wires)

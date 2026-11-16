@@ -39,13 +39,12 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
 
     .. note::
 
-        When using ``torch``, ``tensorflow`` or ``jax`` interfaces, refer to :doc:`Gradients and training </introduction/interfaces>` for suitable optimizers.
+        When using ``torch`` or ``jax`` interfaces, refer to :doc:`Gradients and training </introduction/interfaces>` for suitable optimizers.
 
     """
 
-    def compute_grad(
-        self, objective_fn, args, kwargs, grad_fn=None
-    ):  # pylint: disable=arguments-renamed
+    # pylint: disable-next=arguments-renamed
+    def compute_grad(self, objective_fn, args, kwargs, grad_fn=None):
         r"""Compute the gradient of the objective function at the shifted point :math:`(x -
         m\times\text{accumulation})` and return it along with the objective function forward pass
         (if available).

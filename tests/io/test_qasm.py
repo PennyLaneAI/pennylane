@@ -15,7 +15,9 @@
 Unit tests for the :mod:`pennylane.circuit_graph.to_openqasm()` method.
 """
 
-# pylint: disable=no-self-use,too-many-arguments,protected-access
+# pylint: disable=protected-access
+
+
 from textwrap import dedent
 
 import numpy as np
@@ -606,32 +608,6 @@ class TestQNodeQasmIntegrationTests:
 
         assert res == expected
 
-    @pytest.mark.tf
-    def test_tf_interface_information_removed(self):
-        """Test that interface information from tensorflow is not included in the
-        parameter string for parametrized operators"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev)
-        def qnode(param):
-            qp.RX(param, wires="a")
-            return qp.expval(qp.PauliZ("a"))
-
-        res = qp.to_openqasm(qnode)(tf.Variable(1.2))
-
-        expected = dedent("""\
-            OPENQASM 2.0;
-            include "qelib1.inc";
-            qreg q[1];
-            creg c[1];
-            rx(1.2) q[0];
-            measure q[0] -> c[0];
-            """)
-
-        assert res == expected
-
     def test_error_reset_True(self):
         """Test an error is raised if the mcm has reset"""
         m0 = qp.measure(0, reset=True)
@@ -704,7 +680,6 @@ class TestQNodeQasmIntegrationTests:
         assert res == expected
 
 
-# pylint: disable=unused-argument
 @pytest.mark.slow
 class TestQASMConformanceTests:
     """Conformance tests to ensure that the CircuitGraph
@@ -712,9 +687,11 @@ class TestQASMConformanceTests:
     by Qiskit. Note that this test class requires Qiskit and
     PennyLane-Qiskit as a dependency."""
 
-    # pylint: disable=attribute-defined-outside-init
+    # pylint: disable=unused-argument
+
     @pytest.fixture(name="check_dependencies")
     def check_dependencies_fixture(self):
+        # pylint: disable-next=attribute-defined-outside-init
         self.qiskit = pytest.importorskip("qiskit", minversion="0.14.1")
         pytest.importorskip("pennylane_qiskit")
 

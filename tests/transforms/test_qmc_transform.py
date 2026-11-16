@@ -207,7 +207,7 @@ class TestQuantumMonteCarlo:
         def circ_ideal():
             fn()
             qp.templates.QuantumPhaseEstimation(
-                q_mat, target_wires=wires, estimation_wires=estimation_wires
+                qp.QubitUnitary(q_mat, wires=wires), estimation_wires=estimation_wires
             )
 
         u_ideal = get_unitary(circ_ideal, n_all_wires)

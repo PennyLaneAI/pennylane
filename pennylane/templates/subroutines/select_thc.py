@@ -199,9 +199,8 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
     ]
 
 
-def _apply_loaded_rotation(
-    psi_down, angle_wires, beth, pairs, gradient_wires, work_wires
-):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments
+def _apply_loaded_rotation(psi_down, angle_wires, beth, pairs, gradient_wires, work_wires):
     r"""Apply the rotations of one batch, whose angles are held in ``angle_wires``.
 
     This is the phase-gradient compilation of Section III.C of `Lee et al. (2021)
@@ -303,7 +302,7 @@ def select_thc_wires(M, N, beth, num_batches=1):
             \sum_{k=0}^{2^{\mathrm{beth}+1} - 1}
             e^{-2 \pi i k / 2^{\mathrm{beth}+1}} \lvert k \rangle ,
 
-        a product state that ``beth + 1`` ``Hadamard`` and ``beth + 1`` ``PhaseShift`` gates prepare.
+        which can be done with :class:`~.PhaseGradientStatePrep`.
         The ``SELECT`` oracle leaves it unchanged, so it is
         deliberately not allocated internally: one register is prepared once and shared by
         ``PREPARE`` and ``SELECT``.
@@ -341,7 +340,7 @@ def select_thc_wires(M, N, beth, num_batches=1):
     }
 
 
-def _select_half(
+def _select_half(  # pylint: disable=too-many-arguments
     chi,
     t_eigenvectors,
     beth,
@@ -353,7 +352,7 @@ def _select_half(
     num_batches=1,
     one_body_table=False,
     skip_one_body=False,
-):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+):
     r"""Apply one :math:`V = U^\dagger Z_1 U` sandwich of the THC ``SELECT`` oracle.
 
     This is the kernel of Fig. 5 of `Lee et al. (2021)
@@ -466,17 +465,13 @@ def _select_half(
         )
 
     def _unbasis():
-        # ``lazy=False``: the QROM in ``_basis`` uncomputes through measurement-based elbow
-        # uncompute, which cannot be reversed, so the adjoint has to be pushed onto the
-        # individual ops instead of wrapping the body in a region that is reversed later.
-        adjoint(_basis, lazy=False)()
+        adjoint(_basis)()
 
     return change_op_basis(_basis, _reflect, _unbasis)
 
 
-def _index_swaps(
-    mu_wires, nu_wires, edge, spin1, spin2, work_wires
-):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments
+def _index_swaps(mu_wires, nu_wires, edge, spin1, spin2, work_wires):
     r"""Exchange the two index registers and the two spin flags off the one-body block.
 
     The swaps are conditioned on :math:`\nu \neq M`, so they are emitted as a
@@ -596,15 +591,41 @@ class SelectTHC(Operator2):
             qp.X(wires["flag_wires"][0])              # success flag
             for w in wires["flag_wires"][3:]:              # the two spin flags
                 qp.Hadamard(w)
-            grad = wires["gradient_wires"]
-            for j, w in enumerate(grad):     # phase gradient state
-                qp.Hadamard(w)
-                qp.PhaseShift(-2 * np.pi * 2 ** (len(grad) - 1 - j) / 2**len(grad), wires=w)
+            qp.PhaseGradientStatePrep(wires["gradient_wires"])
             qp.SelectTHC(
                 chi, t_eigenvectors, beth, wires["system_wires"], wires["index_wires"],
                 wires["flag_wires"], wires["gradient_wires"], wires["work_wires"],
             )
             return qp.probs(wires=wires["system_wires"])
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SelectTHC
+            :stacked:
+            :symbols: :math:`N` spin orbitals, :math:`M` is the THC rank, :math:`h = N/2` spatial orbitals, :math:`P = h - 1` Givens pairs loaded in
+                :math:`B` batches (:math:`B \leq` ``num_batches``, and :math:`B = 0` if
+                :math:`P = 0`), and :math:`n = \lceil \log_2(M+1) \rceil` wires per index
+            :example: :math:`M=1`, :math:`N=4` (:math:`h=2`, :math:`P=1`, :math:`B=1`, :math:`n=1`)
+
+            .. decomposition-rule:: _select_thc_decomp
+                :image: /_static/decomposition_thumbnails/select_thc_double_factorized.svg
+                :lightbox:
+
+                :class:`~.QROM` | :math:`2B` | 2
+                :class:`Adjoint(QROM) <.QROM>` | :math:`2B` | 2
+                :class:`~.CSWAP` | :math:`4h + n + 1` | 10
+                :class:`~.Hadamard` | :math:`24P` | 24
+                :class:`~.CNOT` | :math:`8P` | 8
+                :class:`~.S` | :math:`8P` | 8
+                :class:`Adjoint(S) <.S>` | :math:`8P` | 8
+                :class:`~.Z` | :math:`8P` | 8
+                :class:`~.MultiX` with 1 control | :math:`16P` | 16
+                :class:`~.SemiAdder` | :math:`4P` | 4
+                :class:`Adjoint(SemiAdder) <.SemiAdder>` | :math:`4P` | 4
+                :class:`~.CZ` with 1 control | :math:`1` | 1
+                :class:`~.CZ` with 2 controls | :math:`1` | 1
+                :class:`~.X` | :math:`3` | 3
 
     """
 
@@ -624,7 +645,7 @@ class SelectTHC(Operator2):
         "work_wires": Wire[-1],
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         chi,
         t_eigenvectors,
@@ -635,7 +656,7 @@ class SelectTHC(Operator2):
         gradient_wires: WiresLike,
         work_wires: WiresLike,
         num_batches=1,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):
         M, n_half = _validate_select_data(chi, t_eigenvectors)
 
         requirements = select_thc_wires(M, 2 * n_half, beth, num_batches)
@@ -678,7 +699,7 @@ class SelectTHC(Operator2):
         )
 
 
-def _select_thc_resources(
+def _select_thc_resources(  # pylint: disable=too-many-arguments
     chi,
     t_eigenvectors,
     beth,
@@ -688,7 +709,7 @@ def _select_thc_resources(
     gradient_wires,
     work_wires,
     num_batches=1,
-):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+):
     """Return the top-level resources of the SelectTHC decomposition."""
     sizes = [
         len(system_wires),
@@ -744,7 +765,7 @@ def _select_thc_resources(
 
 
 @register_resources(_select_thc_resources)
-def _select_thc_decomp(
+def _select_thc_decomp(  # pylint: disable=too-many-arguments
     chi,
     t_eigenvectors,
     beth,
@@ -755,7 +776,7 @@ def _select_thc_decomp(
     work_wires,
     num_batches=1,
     **_,
-):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+):
     M = len(chi)
     n = math.ceil_log2(M + 1)
     mu_wires = index_wires[:n]

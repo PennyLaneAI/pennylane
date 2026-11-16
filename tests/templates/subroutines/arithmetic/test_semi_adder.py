@@ -21,18 +21,26 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.arithmetic.semi_adder import _controlled_semi_adder
+from pennylane.ops import CNOT, adjoint
+from pennylane.templates.subroutines.arithmetic.semi_adder import (
+    _controlled_semi_adder,
+    _effective_skip_input_pos,
+    _semi_adder,
+    _semi_adder_resources,
+)
+from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
+from pennylane.testing import assert_decomposable
+from pennylane.typing import Wire
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_standard_validity_SemiAdder():
+@pytest.mark.parametrize("work_wires", [[6, 7], [6, 7, 8]])
+def test_standard_validity_SemiAdder(work_wires):
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2]
     y_wires = [3, 4, 5]
-    work_wires = [6, 7]
     op = qp.SemiAdder(x_wires, y_wires, work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestSemiAdder:
@@ -69,9 +77,7 @@ class TestSemiAdder:
             (["a", "b", "d"], ["e", "h", "p"], ["f", "z", "u", "q", "v"], 4, 2),
         ],
     )
-    def test_operation_result(
-        self, x_wires, y_wires, work_wires, x, y
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_result(self, x_wires, y_wires, work_wires, x, y):
         """Test the correctness of the SemiAdder template output."""
         dev = qp.device("default.qubit")
 
@@ -90,7 +96,6 @@ class TestSemiAdder:
         sample = output[0]
 
         #  check that the output sample is the binary representation of x + y mod 2^len(y_wires)
-        # pylint: disable=bad-reversed-sequence
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(sample[0, :]))),
             (x + y) % 2 ** len(y_wires),
@@ -129,9 +134,7 @@ class TestSemiAdder:
             ),
         ],
     )
-    def test_wires_error(
-        self, x_wires, y_wires, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_wires_error(self, x_wires, y_wires, work_wires, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qp.SemiAdder(x_wires, y_wires, work_wires)
@@ -161,8 +164,7 @@ class TestSemiAdder:
     def test_decomposition_rule(self, x_wires, work_wires):
         """Tests that SemiAdder is decomposed properly."""
 
-        for rule in qp.list_decomps(qp.SemiAdder):
-            _test_decomposition_rule(qp.SemiAdder(x_wires, [5, 6, 7, 8], work_wires), rule)
+        assert_decomposable(qp.SemiAdder(x_wires, [5, 6, 7, 8], work_wires))
 
     @pytest.mark.capture
     @pytest.mark.parametrize(
@@ -212,7 +214,6 @@ class TestSemiAdder:
             qp.SemiAdder(x_wires, y_wires, work_wires)
             return qp.sample(wires=y_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))),
             (x + y) % 2 ** len(y_wires),
@@ -262,7 +263,7 @@ class TestSemiAdder:
         ],
     )
     @pytest.mark.parametrize("split_work_wires", [True, False])
-    def test_controlled_decomposition(
+    def test_controlled_decomposition(  # pylint: disable=too-many-arguments
         self,
         x_wires,
         y_wires,
@@ -272,7 +273,7 @@ class TestSemiAdder:
         y_value,
         control_values,
         split_work_wires,
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Test correctness of C(SemiAdder) decomposition"""
 
         dev = qp.device("default.qubit")
@@ -323,6 +324,21 @@ class TestSemiAdder:
             else:
                 assert output == expected_output
 
+    @pytest.mark.parametrize("y_wires", [[3], [3, 4, 5]])
+    def test_controlled_decomposition_surplus_base_work_wires_are_zeroed(self, y_wires):
+        """Test that the surplus work wires of the base ``SemiAdder`` are passed on as zeroed
+        work wires to the controlled CNOTs, even if the work wire type of the control is borrowed.
+        """
+        base = qp.SemiAdder([0, 1, 2], y_wires, [6, 7, 8, 9])
+
+        with qp.queuing.AnnotatedQueue() as q:
+            _controlled_semi_adder(base, [10], [1], work_wire_type="borrowed")
+
+        ops = qp.tape.QuantumScript.from_queue(q).operations
+        ctrl_ops = [o for o in ops if isinstance(o, qp.ops.ControlledOp2)]
+        assert ctrl_ops
+        assert all(o.work_wire_type == "zeroed" for o in ctrl_ops)
+
     @pytest.mark.capture
     @pytest.mark.parametrize(
         "wire_lens",
@@ -353,8 +369,74 @@ class TestSemiAdder:
             "work_wires": jnp.array([]),
         }
         for rule in qp.list_decomps("C(SemiAdder)"):
-            if not rule.is_applicable(**decomp_args):
+            if not rule.is_applicable(**decomp_args, work_wire_type="borrowed"):
                 continue
             # pylint: disable-next=protected-access
             subroutine = qp.capture.subroutine(partial(rule._impl, work_wire_type="borrowed"))
             jax.make_jaxpr(subroutine)(**decomp_args)
+
+
+class TestSemiAdderSkipInputPos:
+    """Independent tests for the ``skip_input_pos`` feature of ``_semi_adder``."""
+
+    @staticmethod
+    def _sparse_addend(x, num_x_wires, num_y_wires, skip_input_pos):
+        """Integer added to ``y`` when ``skip_input_pos`` zeros some input bit slots."""
+        skip = _effective_skip_input_pos(num_x_wires, num_y_wires, skip_input_pos)
+        used_x = 0
+        addend = 0
+        for i in range(num_y_wires):
+            if i in skip:
+                continue
+            addend |= ((x >> used_x) & 1) << i
+            used_x += 1
+        return addend
+
+    @pytest.mark.parametrize(
+        ("x_wires", "y_wires", "work_wires", "x", "y", "skip_input_pos"),
+        [
+            ([0, 1, 2], [3, 4, 5, 6], [7, 8, 9], 5, 3, [1]),
+            ([0, 1, 2], [3, 4, 5], [6, 7], 7, 1, [1]),
+            ([0, 1], [2, 3, 4, 5], [6, 7, 8], 3, 2, [1, 2]),
+            ([0, 1], [2, 3, 4], [5, 6], 3, 4, [2]),
+            ([0, 1], [2, 3, 4, 5], [6, 7, 8], 3, 5, [1, 3]),
+        ],
+    )
+    # pylint: disable-next=too-many-arguments
+    def test_operation_result(self, x_wires, y_wires, work_wires, x, y, skip_input_pos):
+        """Test that skipped input positions inject classical zeros into the addend."""
+        n = len(x_wires)
+        m = len(y_wires)
+        expected = (y + self._sparse_addend(x, n, m, skip_input_pos)) % (2**m)
+        dev = qp.device("default.qubit")
+
+        @qp.set_shots(1)
+        @qp.qnode(dev)
+        def circuit():
+            qp.BasisEmbedding(qp.math.int_to_binary(x, n), wires=x_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(y, m), wires=y_wires)
+            _semi_adder(x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos)
+            return qp.sample(wires=y_wires), qp.probs(wires=work_wires)
+
+        sample, work_probs = circuit()
+        int_sample = 2 ** np.arange(len(sample[0, :])) @ sample[0, ::-1]
+        assert np.allclose(int_sample, expected)
+        assert np.isclose(work_probs[0], 1.0)
+
+    def test_resources_match_decomposition(self):
+        """Test that ``_semi_adder_resources`` matches the queued ``skip_input_pos``
+        decomposition."""
+        x_wires, y_wires, work_wires = [0, 1, 2], [3, 4, 5, 6], [7, 8, 9]
+        skip_input_pos = [1, 2]
+
+        with qp.queuing.AnnotatedQueue() as q:
+            _semi_adder(x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos)
+
+        names = [op.name for op in qp.tape.QuantumScript.from_queue(q).operations]
+        resources = _semi_adder_resources(
+            x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos
+        )
+
+        assert names.count("TemporaryAND") == resources[TemporaryAND]
+        assert names.count("Adjoint(TemporaryAND)") == resources[adjoint(TemporaryAND(Wire[3]))]
+        assert names.count("CNOT") == resources[CNOT]

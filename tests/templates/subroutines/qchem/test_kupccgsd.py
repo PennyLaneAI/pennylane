@@ -16,8 +16,6 @@ Tests for the k-UpCCGSD template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -64,7 +62,7 @@ def test_standard_validity(k, delta_sz, init_state, wires):
     op = qp.kUpCCGSD(weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state)
 
     skip_diff = len(wires) > 4
-    qp.ops.functions.assert_valid(op, skip_differentiation=skip_diff)
+    qp.testing.assert_valid(op, skip_differentiation=skip_diff)
 
 
 class TestDecomposition:
@@ -347,7 +345,7 @@ class TestDecomposition:
         assert gen_doubles_wires == generalized_pair_doubles_wires
 
 
-class TestInputs:
+class TestInputs:  # pylint: disable=too-few-public-methods
     """Test inputs and pre-processing."""
 
     @pytest.mark.parametrize(
@@ -419,6 +417,7 @@ class TestInputs:
             ),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_kupccgsd_exceptions(self, wires, weights, k, delta_sz, init_state, msg_match):
         """Test that k-UpCCGSD throws an exception if the parameters have illegal
         shapes, types or values."""
@@ -595,33 +594,6 @@ class TestInterfaces:
 
         assert qp.math.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Test the tf interface."""
-
-        import tensorflow as tf
-
-        weights = tf.Variable(np.random.random(size=(1, 6)))
-
-        dev = qp.device("default.qubit", wires=4)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(weights)
-        grads = tape.gradient(res, [weights])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(weights)
-        grads2 = tape2.gradient(res2, [weights])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-
     @pytest.mark.torch
     def test_torch(self, tol):
         """Test the torch interface."""
@@ -650,7 +622,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
 
-class TestGradient:
+class TestGradient:  # pylint: disable=too-few-public-methods
     """Test that the parameter-shift rule for this template matches that of backprop."""
 
     def test_ps_rule_gradient(self, tol):

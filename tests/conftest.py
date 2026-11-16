@@ -15,24 +15,22 @@
 Pytest configuration file for PennyLane test suite.
 """
 
-# pylint: disable=unused-import
 import os
 import pathlib
 import sys
-import warnings
+import warnings  # pylint: disable=unused-import
 
 import numpy as np
 import pytest
 from packaging.version import Version
 
 import pennylane as qp
-from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.exceptions import PennyLaneDeprecationWarning  # pylint: disable=unused-import
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
 # defaults
 TOL = 1e-3
-TF_TOL = 2e-2
 TOL_STOCHASTIC = 0.05
 
 
@@ -46,12 +44,6 @@ def tol():
 def tol_stochastic():
     """Numerical tolerance for equality tests of stochastic values."""
     return TOL_STOCHASTIC
-
-
-@pytest.fixture(scope="session")
-def tf_tol():
-    """Numerical tolerance for equality tests."""
-    return float(os.environ.get("TF_TOL", TF_TOL))
 
 
 @pytest.fixture(scope="session", params=[1, 2])
@@ -84,14 +76,13 @@ def mock_device(monkeypatch):
         m.setattr(dev, "short_name", "mock_device")
         m.setattr(dev, "capabilities", lambda cls: {"model": "qubit"})
         m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
-        yield qp.devices.LegacyDevice(wires=2)  # pylint:disable=abstract-class-instantiated
+        yield qp.devices.LegacyDevice(wires=2)
 
 
-# pylint: disable=protected-access
 @pytest.fixture
 def tear_down_hermitian():
     yield None
-    qp.Hermitian._eigs = {}
+    qp.Hermitian._eigs = {}  # pylint: disable=protected-access
 
 
 @pytest.fixture(autouse=True)
@@ -99,6 +90,13 @@ def restore_global_seed():
     original_state = np.random.get_state()
     yield
     np.random.set_state(original_state)
+
+
+@pytest.fixture(autouse=True)
+def restore_decomposition_rules():
+    """Undo any changes a test makes to the registry of decomposition rules."""
+    with qp.decomposition.local_decomps():
+        yield
 
 
 @pytest.fixture
@@ -119,7 +117,7 @@ def seed(request):
 
     """
 
-    fixture_manager = request._fixturemanager  # pylint:disable=protected-access
+    fixture_manager = request._fixturemanager  # pylint: disable=protected-access
     fixture_defs = fixture_manager.getfixturedefs("seed", request.node)
     original_fixture_def = fixture_defs[0]  # the original seed fixture provided by pytest-rng
     original_seed = original_fixture_def.func(request)
@@ -229,8 +227,8 @@ def enable_and_disable_graph_decomp(request):
 #######################################################################
 
 try:
-    import torch
-    from torch.autograd import Variable
+    import torch  # pylint: disable=unused-import
+    from torch.autograd import Variable  # pylint: disable=unused-import
 
     torch_available = True
 except ImportError as e:
@@ -238,15 +236,14 @@ except ImportError as e:
 
 try:
     import jax
-    import jax.numpy as jnp
+    import jax.numpy as jnp  # pylint: disable=unused-import
 
     jax_available = True
 except ImportError as e:
     jax_available = False
 
 
-# pylint: disable=unused-argument
-def pytest_generate_tests(metafunc):
+def pytest_generate_tests(metafunc):  # pylint: disable=unused-argument
     if jax_available:
         jax.config.update("jax_enable_x64", True)
 
@@ -286,7 +283,6 @@ CUSTOM_MARKERS = {
     "torch",
     "jax",
     "qchem",
-    "qcut",
     "all_interfaces",
     "finite-diff",
     "param-shift",
@@ -296,7 +292,6 @@ CUSTOM_MARKERS = {
 }
 
 
-# pylint: disable=unused-argument
 def pytest_collection_modifyitems(items, config):
     """Handles markers for tests automatically."""
 
@@ -392,7 +387,7 @@ def pytest_runtest_setup(item):
     ]
 
     # load the marker specifying what the interface is
-    all_interfaces = {"tf", "torch", "jax", "all_interfaces"}
+    all_interfaces = {"torch", "jax", "all_interfaces"}
     marks = {mark.name for mark in item.iter_markers() if mark.name in all_interfaces}
 
     for b in marks:

@@ -21,13 +21,14 @@ from itertools import product
 import numpy as np
 
 from pennylane import capture, math
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.ops import CNOT, X, adjoint, ctrl
+from pennylane.ops import CNOT, MultiControlledX, adjoint, ctrl
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import AbstractWires, Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, validate_no_wire_overlaps
 
 from .arithmetic.temporary_and import TemporaryAND
@@ -150,6 +151,40 @@ class Select(Operator2):
     3: ────╰X─╰SWAP─┤ ╰State
 
     Note how the first (second) control node of the second (third) operator was skipped.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.Select
+            :stacked:
+            :symbols: :math:`K` operators :math:`U_j=` ``ops[j]``, :math:`c\geq 2` control wires,
+                :math:`w` work wires and ``partial=False``
+            :example: :math:`K=4`, :math:`c=2`
+
+            .. decomposition-rule:: _select_decomp_multi_control
+                :image: /_static/decomposition_thumbnails/select_multi_control.svg
+
+                :math:`U_j` with :math:`c` controls | :math:`K` (one per :math:`U_j`) | 4
+
+            .. decomposition-rule:: _select_decomp_unary
+                :image: /_static/decomposition_thumbnails/select_unary.svg
+                :requires: :math:`w \geq c - 1` work wires
+                :where: :math:`N = c + K - 2 - \mathrm{wt}(K-1) - [K > 2^{c-1}]`, with
+                    :math:`\mathrm{wt}` the number of ones in the binary representation, and
+                    :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
+
+                :class:`~.TemporaryAND` | :math:`N` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`N` | 1
+                :class:`~.CNOT` | :math:`K - 1` :math:`+ [K > 2^{c-1}]` :math:`- [K > 2^{c-2}]` | 3
+                :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`[K > 2^{c-2}]` | 1
+                :math:`U_j` with 1 control | :math:`K` (one per :math:`U_j`) | 4
+
+            .. decomposition-rule:: _select_decomp_multi_control_work_wire
+                :image: /_static/decomposition_thumbnails/select_multi_control_work_wire.svg
+                :requires: :math:`w \geq 1` work wire
+
+                :class:`~.MultiControlledX` with :math:`c` controls | :math:`2K` | 8
+                :math:`U_j` with 1 control | :math:`K` (one per :math:`U_j`) | 4
 
     .. details::
         :title: Unary iterator decomposition
@@ -360,35 +395,13 @@ class Select(Operator2):
                 + "wires are required."
             )
 
-        # Concrete target wires have known labels and are deduplicated, while abstract wires are
-        # assumed disjoint from all other wires and only contribute to the total wire count.
-        concrete_target_wires = Wires([])
-        num_abstract_target_wires = 0
-        for op in self.ops:
-            # CompressedResourceOps have no accessible wires and are skipped.
-            if not isinstance(op, Operator):
-                continue
-            if isinstance(op.wires, AbstractWires):
-                num_abstract_target_wires += len(op.wires)
-            else:
-                concrete_target_wires += op.wires
-
-        if num_abstract_target_wires:
-            all_target_wires = Wire[len(concrete_target_wires) + num_abstract_target_wires]
-        else:
-            all_target_wires = concrete_target_wires
-
-        self._target_wires = all_target_wires
-
-        # ``wires`` is the union of control and target wires (work wires are excluded). Control and
-        # target wires are disjoint, so when either is abstract only the total count is known.
-        if isinstance(self.control, AbstractWires) or isinstance(all_target_wires, AbstractWires):
-            self._wires = Wire[len(self.control) + len(all_target_wires)]
-        else:
-            self._wires = self.control + all_target_wires
+        target_wire_args = tuple(op.wires for op in self.ops if isinstance(op, Operator))
+        self._target_wires = Wires.all_wires(target_wire_args)
+        all_wire_args = (self.control, self._target_wires)
+        self._wires = Wires.all_wires(all_wire_args)
 
         wire_args = {
-            "target_wires": all_target_wires,
+            "target_wires": self._target_wires,
             "control": self.control,
             "work_wires": self.work_wires,
         }
@@ -498,7 +511,7 @@ def _add_first_k_units(ops, controls, work_wires, k):
     first_half = (
         [TemporaryAND(and_wires, control_values=(0, 0))]
         + _add_k_units(ops[:k0], new_controls, work_wires, k0)
-        + [ctrl(X(controls[2]), control=controls[0], control_values=[0])]
+        + [MultiControlledX([controls[0], controls[2]], control_values=[0])]
         + _add_k_units(ops[k0:k01], new_controls, work_wires, k1)
     )
 
@@ -628,14 +641,13 @@ def _select_resources_unary_not_partial(ops, num_control_wires, num_work_wires):
     more_than_a_quarter = int(K > 2 ** (c - 2))
     more_than_a_half = int(K > 2 ** (c - 1))
     resources[CNOT] += K - 1 + more_than_a_half - more_than_a_quarter
-    resources[_ctrl_abstract(X, Wire[1], num_zero_control_values=1)] += more_than_a_quarter
+    resources[MultiControlledX(Wire[2], control_values=Bool[1])] += more_than_a_quarter
     for op in ops:
         resources[_ctrl_abstract(op, Wire[1], Wire[num_work_wires])] += 1
 
     return dict(resources)
 
 
-# pylint: disable=unused-argument
 def _select_resources_unary(ops, control, work_wires, partial):
     num_control_wires = len(control)
     num_work_wires = len(work_wires)
@@ -666,7 +678,7 @@ def _select_resources_unary(ops, control, work_wires, partial):
                 TemporaryAND: num_ops - 3,
                 _adjoint_abstract(TemporaryAND): num_ops - 3,
                 CNOT: num_ops - 1,
-                _ctrl_abstract(X, Wire[1], num_zero_control_values=1): 1,
+                MultiControlledX(Wire[2], control_values=Bool[1]): 1,
             }
         )
     else:
@@ -675,7 +687,7 @@ def _select_resources_unary(ops, control, work_wires, partial):
                 TemporaryAND: num_ops - 2,
                 _adjoint_abstract(TemporaryAND): num_ops - 2,
                 CNOT: num_ops - 3,
-                _ctrl_abstract(X, Wire[1], num_zero_control_values=1): 1,
+                MultiControlledX(Wire[2], control_values=Bool[1]): 1,
             }
         )
 
@@ -834,7 +846,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
             if first_bit_has_flipped:
                 inter_ops = [CNOT([c0, c2])]
             else:
-                inter_ops = [ctrl(X(c2), control=[c0], control_values=[0])]
+                inter_ops = [MultiControlledX([c0, c2], control_values=[0])]
         elif first_flip_bit == 0:
             c0, c1, c2 = unary_triples[0]
             inter_ops = [CNOT([c0, c2]), CNOT([c1, c2])]
@@ -862,8 +874,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     return ops_decomp
 
 
-# pylint: disable=unused-argument
-def _unary_condition(ops, control, work_wires, partial):
+def _unary_condition(ops, control, work_wires, partial):  # pylint: disable=unused-argument
     return len(work_wires) >= len(control) - 1
 
 
@@ -935,6 +946,9 @@ add_decomps(Select, _select_decomp_unary)
 
 
 def _select_multi_control_work_wire_resources(ops, control, work_wires, partial):
+    if len(control) == 0:
+        return dict(Counter(ops))
+
     num_control_wires = len(control)
     num_work_wires = len(work_wires)
     resources = defaultdict(int)
@@ -943,30 +957,43 @@ def _select_multi_control_work_wire_resources(ops, control, work_wires, partial)
         if len(ops) == 1:
             resources[_multi_controlled_rep(ops[0], 1, [1], num_work_wires - 1)] += 1
             resources[
-                _multi_controlled_rep(
-                    X, num_control_wires, [0] * num_control_wires, num_work_wires - 1
+                MultiControlledX(
+                    Wire[num_control_wires + 1],
+                    control_values=Bool[num_control_wires],
+                    work_wires=Wire[num_work_wires - 1],
                 )
             ] += 2
         else:
             # Use dummy control values, we will only care about the length of the outputs
             ctrls_and_ctrl_states = _partial_select(len(ops), list(range(num_control_wires)))
-            for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops, strict=True):
+            for (ctrl_, _), op in zip(ctrls_and_ctrl_states, ops, strict=True):
                 resources[_multi_controlled_rep(op, 1, [1], num_work_wires - 1)] += 1
-                resources[_multi_controlled_rep(X, len(ctrl_), ctrl_state, num_work_wires - 1)] += 2
+                resources[
+                    MultiControlledX(
+                        Wire[len(ctrl_) + 1],
+                        control_values=Bool[len(ctrl_)],
+                        work_wires=Wire[num_work_wires - 1],
+                    )
+                ] += 2
     else:
         state_iterator = product([0, 1], repeat=num_control_wires)
 
         # state_iterator may be longer than ops, but will not be shorter. So we use strict=False
-        for state, op in zip(state_iterator, ops, strict=False):
+        for _, op in zip(state_iterator, ops, strict=False):
 
             resources[_multi_controlled_rep(op, 1, [1], num_work_wires - 1)] += 1
-            resources[_multi_controlled_rep(X, num_control_wires, state, num_work_wires - 1)] += 2
+            resources[
+                MultiControlledX(
+                    Wire[num_control_wires + 1],
+                    control_values=Bool[num_control_wires],
+                    work_wires=Wire[num_work_wires - 1],
+                )
+            ] += 2
 
     return dict(resources)
 
 
-# pylint: disable=unused-argument
-def _work_wire_condition(ops, control, work_wires, partial):
+def _work_wire_condition(ops, control, work_wires, partial):  # pylint: disable=unused-argument
     return len(work_wires) >= 1
 
 
@@ -983,18 +1010,21 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
     if len(ops) == 0:
         return []
 
+    if len(control) == 0:
+        for op in ops:
+            apply(op)
+        return []
+
     if partial:
         if len(ops) == 1:
-            ctrl(
-                X(work_wires[:1]),
-                control,
+            MultiControlledX(
+                [*control, work_wires[0]],
                 control_values=[0] * len(control),
                 work_wires=work_wires[1:],
             )
             ctrl(ops[0], control=work_wires[:1], work_wires=work_wires[1:])
-            ctrl(
-                X(work_wires[:1]),
-                control,
+            MultiControlledX(
+                [*control, work_wires[0]],
                 control_values=[0] * len(control),
                 work_wires=work_wires[1:],
             )
@@ -1002,16 +1032,18 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
 
         ctrls_and_ctrl_states = _partial_select(len(ops), control)
         for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops, strict=True):
-            ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state, work_wires=work_wires[1:])
+            mcx_wires = [*ctrl_, work_wires[0]]
+            MultiControlledX(mcx_wires, control_values=ctrl_state, work_wires=work_wires[1:])
             ctrl(op, control=work_wires[:1], work_wires=work_wires[1:])
-            ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state, work_wires=work_wires[1:])
+            MultiControlledX(mcx_wires, control_values=ctrl_state, work_wires=work_wires[1:])
         return []
 
     # ctrl_states may be longer than `ops`, but will never be shorter. So we use strict=False
     for ctrl_state, op in zip(product([0, 1], repeat=len(control)), ops, strict=False):
-        ctrl(X(work_wires[:1]), control, control_values=ctrl_state, work_wires=work_wires[1:])
+        mcx_wires = [*control, work_wires[0]]
+        MultiControlledX(mcx_wires, control_values=ctrl_state, work_wires=work_wires[1:])
         ctrl(op, control=work_wires[:1], work_wires=work_wires[1:])
-        ctrl(X(work_wires[:1]), control, control_values=ctrl_state, work_wires=work_wires[1:])
+        MultiControlledX(mcx_wires, control_values=ctrl_state, work_wires=work_wires[1:])
     return []
 
 

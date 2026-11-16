@@ -16,10 +16,10 @@ Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
 
+# pylint: disable=too-few-public-methods
+
 import itertools
 import re
-
-# pylint: disable=too-many-arguments, too-many-public-methods
 from copy import deepcopy
 from functools import partial
 
@@ -31,7 +31,6 @@ from pennylane import numpy as npp
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.drawer.label import LabelledOp
-from pennylane.fourier.mark import MarkedOp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
 from pennylane.ops import Conditional, PauliMeasure
@@ -255,16 +254,14 @@ def test_assert_equal_types():
 
 
 def test_assert_equal_unspecified():
-    # pylint: disable=too-few-public-methods
     class RandomType:
         """dummy type"""
 
         def __init__(self):
             pass
 
-    # pylint: disable=unused-argument
     @_equal_dispatch.register
-    def _(op1: RandomType, op2, **_):
+    def _(op1: RandomType, op2, **_):  # pylint: disable=unused-argument
         """always returns false"""
         return False
 
@@ -272,7 +269,7 @@ def test_assert_equal_unspecified():
         assert_equal(RandomType(), RandomType())
 
 
-class TestEqual:
+class TestEqual:  # pylint: disable=too-many-public-methods
     def test_identity_equal(self):
         """Test that comparing two Identities always returns True regardless of wires"""
         I1 = qp.Identity()
@@ -707,7 +704,6 @@ class TestEqual:
     @pytest.mark.all_interfaces
     def test_equal_op_remaining(self):  # pylint: disable=too-many-statements
         """Test optional arguments are working"""
-        # pylint: disable=too-many-statements
         wire = 0
 
         import jax
@@ -1363,7 +1359,6 @@ class TestEqual:
     def test_equal_subclass_returns_false(self):
         """Test that a strict subclass is not equal to its parent operator."""
 
-        # pylint: disable=too-few-public-methods
         class MyPauliX(qp.X):
             pass
 
@@ -1378,7 +1373,6 @@ class TestEqual:
     def test_equal_identity_subclass_returns_false(self):
         """Test that a subclass of Identity is not equal to Identity itself."""
 
-        # pylint: disable=too-few-public-methods
         class MyIdentity(qp.Identity):
             pass
 
@@ -1481,7 +1475,6 @@ class TestPauliErrorEqual:
             assert_equal(pes[0], pes[1], check_trainability=False)
 
 
-# pylint: disable=too-few-public-methods
 class TestPauliWordsEqual:
     """Tests for qp.equal with PauliSentences."""
 
@@ -1801,15 +1794,15 @@ class TestMeasurementsEqual:
     def test_abstract_mv_equality(self, mp_fn):
         """Test that equality is verified correctly for measurements collecting statistics for
         abstract mid-circuit measurement values"""
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         m1 = True
         m2 = False
 
         @jax.jit
         def eq_traced(a, b):
-            assert qp.math.is_abstract(a)
-            assert qp.math.is_abstract(b)
+            assert qp.math.is_tracer(a)
+            assert qp.math.is_tracer(b)
 
             mp1 = mp_fn(op=a)
             mp2 = mp_fn(op=a)
@@ -1837,7 +1830,7 @@ def test_unsupported_object_type_not_implemented():
         qp.equal(dev, dev)
 
 
-class TestSymbolicOpComparison:
+class TestSymbolicOpComparison:  # pylint: disable=too-many-public-methods
     """Test comparison for subclasses of SymbolicOp"""
 
     WIRES = [(5, 5, True), (6, 7, False)]
@@ -2015,7 +2008,6 @@ class TestSymbolicOpComparison:
             ):
                 assert_equal(op1, op2)
 
-    # pylint: disable=too-many-positional-arguments
     @pytest.mark.parametrize(
         ("wires1", "controls1", "wires2", "controls2", "res"),
         [
@@ -2057,6 +2049,7 @@ class TestSymbolicOpComparison:
         ],
     )
     @pytest.mark.parametrize("ctrl_cls", [Controlled, ControlledOp2])
+    # pylint: disable-next=too-many-arguments
     def test_controlled_work_wires_comparison(self, wire1, wire2, res, wwt1, wwt2, ctrl_cls):
         """Test that equal compares work_wires for Controlled operators"""
         base1 = qp.MultiRZ(1.23, [0, 1])
@@ -2091,6 +2084,17 @@ class TestSymbolicOpComparison:
         op3 = ControlledOp2(base, control_wires=Wire[3])
         with pytest.raises(AssertionError, match="Different numbers of abstract control_wires"):
             assert_equal(op2, op3)
+
+    @pytest.mark.parametrize("mod, expected", [(8, True), (7, False)])
+    def test_controlled2_abstract_controlled_sequence(self, mod, expected):
+        """Test equality and graph lookups with abstract PhaseAdder bases."""
+        base1 = qp.PhaseAdder(qp.typing.Int, Wire[3], mod=8, work_wire=Wire[0])
+        base2 = qp.PhaseAdder(qp.typing.Int, Wire[3], mod=mod, work_wire=Wire[int(mod != 8)])
+        op1 = ControlledOp2(ControlledSequence(base1, control=Wire[2]), control_wires=Wire[1])
+        op2 = ControlledOp2(ControlledSequence(base2, control=Wire[2]), control_wires=Wire[1])
+
+        assert qp.equal(op1, op2) is expected
+        assert (op2 in {op1: 1}) is expected
 
     def test_controlled2_abstract_control_values(self):
         """Tests comparing ControlledOp2 with abstract control values."""
@@ -2735,145 +2739,6 @@ class TestSumComparisons:
                 assert_equal(H1, H2)
 
 
-def f1(p, t):
-    return np.polyval(p, t)
-
-
-def f2(p, t):
-    return p[0] * t**2 + p[1]
-
-
-@pytest.mark.jax
-class TestParametrizedEvolutionComparisons:
-    """Tests comparisons between ParametrizedEvolution operators"""
-
-    def test_params_comparison(self):
-        """Test that params are compared for two ParametrizedEvolution ops"""
-        coeffs = [3, f1, f2]
-        ops = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
-
-        h1 = qp.dot(coeffs, ops)
-
-        ev1 = qp.evolve(h1)
-        ev2 = qp.evolve(h1)
-
-        params1 = [[1.0, 2.0, 3.0, 4.0, 5.0], [6.0, 7.0]]
-        params2 = [[1.0, 2.0, 3.0, 4.0, 5.0], [8.0, 9.0]]
-
-        t = 3
-
-        assert qp.equal(ev1(params1, t), ev2(params1, t)) is True
-        assert qp.equal(ev1(params1, t), ev2(params2, t)) is False
-
-    def test_wires_comparison(self):
-        """Test that wires are compared for two ParametrizedEvolution ops"""
-        coeffs = [3, f1, f2]
-        ops1 = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
-        ops2 = [qp.PauliX(1), qp.PauliY(2), qp.PauliZ(3)]
-
-        h1 = qp.dot(coeffs, ops1)
-        h2 = qp.dot(coeffs, ops2)
-
-        ev1 = qp.evolve(h1)
-        ev2 = qp.evolve(h1)
-        ev3 = qp.evolve(h2)
-
-        params = [[1.0, 2.0, 3.0, 4.0, 5.0], [6.0, 7.0]]
-        t = 3
-
-        assert qp.equal(ev1(params, t), ev2(params, t)) is True
-        assert qp.equal(ev1(params, t), ev3(params, t)) is False
-
-    def test_times_comparison(self):
-        """Test that times are compared for two ParametrizedEvolution ops"""
-        coeffs = [3, f1, f2]
-        ops = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
-
-        h1 = qp.dot(coeffs, ops)
-
-        ev1 = qp.evolve(h1)
-
-        params = [[1.0, 2.0, 3.0, 4.0, 5.0], [6.0, 7.0]]
-
-        t1 = 3
-        t2 = 4
-
-        assert qp.equal(ev1(params, t1), ev1(params, t1)) is True
-        assert qp.equal(ev1(params, t1), ev1(params, t2)) is False
-
-    def test_operator_comparison(self):
-        """Test that operators are compared for two ParametrizedEvolution ops"""
-        coeffs = [3, f1, f2]
-        ops1 = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
-        ops2 = [qp.PauliZ(0), qp.PauliX(1), qp.PauliY(2)]
-
-        h1 = qp.dot(coeffs, ops1)
-        h2 = qp.dot(coeffs, ops2)
-
-        ev1 = qp.evolve(h1)
-        ev2 = qp.evolve(h1)
-        ev3 = qp.evolve(h2)
-
-        params = [[1.0, 2.0, 3.0, 4.0, 5.0], [6.0, 7.0]]
-        t = 3
-
-        assert qp.equal(ev1(params, t), ev2(params, t)) is True
-        assert qp.equal(ev1(params, t), ev3(params, t)) is False
-
-    def test_coefficients_comparison(self):
-        """Test that coefficients are compared for two ParametrizedEvolution ops"""
-        coeffs1 = [3, f1, f2]
-        coeffs2 = [3, 4, f2]
-        coeffs4 = [f1, f2]
-        coeffs5 = [f2, f1]
-        ops = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
-        ops4 = [qp.PauliX(0) @ qp.PauliX(1), qp.PauliZ(2)]
-
-        h1 = qp.dot(coeffs1, ops)
-        h2 = qp.dot(coeffs2, ops)
-        h4 = qp.dot(coeffs4, ops4)
-        h5 = qp.dot(coeffs5, ops4)
-
-        ev1 = qp.evolve(h1)
-        ev2 = qp.evolve(h1)
-        ev3 = qp.evolve(h2)
-        ev4 = qp.evolve(h4)
-        ev5 = qp.evolve(h5)
-
-        params1 = [6.0, 7.0]
-        params2 = [6.0, 7.0]
-        params3 = [[6.0, 7.0]]
-        t = 3
-
-        assert qp.equal(ev1(params1, t), ev2(params2, t)) is True
-        # Differing evolutions due to different parameters
-        assert qp.equal(ev1(params1, t), ev3(params3, t)) is False
-        # Differing evolutions due to differing coefficient lengths
-        assert qp.equal(ev1(params1, t), ev4(params1, t)) is False
-        # Differing evolutions due to different coefficients
-        assert qp.equal(ev4(params1, t), ev5(params1, t)) is False
-
-    def test_different_times(self):
-        """Test that times are compared for two ParametrizedEvolution ops"""
-        coeffs1 = [3, f1, f2]
-        ops = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
-
-        h1 = qp.dot(coeffs1, ops)
-
-        params1 = [6.0, 7.0]
-        t = 3
-
-        ev1 = qp.pulse.ParametrizedEvolution(h1, params1)
-        ev11 = qp.pulse.ParametrizedEvolution(h1, params1)
-        ev2 = qp.pulse.ParametrizedEvolution(h1, params1, t)
-        ev3 = qp.pulse.ParametrizedEvolution(h1, params1, 0.5)
-
-        assert qp.equal(ev1, ev11) is True
-        assert qp.equal(ev1, ev2) is False
-        assert qp.equal(ev1, ev3) is False
-        assert qp.equal(ev2, ev3) is False
-
-
 class TestQuantumScriptComparisons:
     tape1 = qp.tape.QuantumScript(
         [qp.PauliX(0), qp.RX(1.2, wires=0)], [qp.expval(qp.PauliZ(0))], shots=10
@@ -2983,20 +2848,22 @@ class TestBasisRotation:
 class TestHilbertSchmidt:
     """Test that qp.equal works with qp.HilbertSchmidt."""
 
-    # pylint: disable=no-self-argument
-
+    @staticmethod
     def v_function1(params):
         """Returns a v_function that is used in the HilbertSchmidt operator."""
         return qp.RZ(params[0], wires=1)
 
+    @staticmethod
     def v_function2(params):
         """Differs from v_function1 by operation type and used parameter."""
         return qp.RX(params[1], wires=1)
 
+    @staticmethod
     def v_function3(params):
         """Differs from v_function1 by the used wire."""
         return qp.RZ(params[0], wires=2)
 
+    @staticmethod
     def v_function4(params):
         """Differs from v_function1 by the functional parameter dependence, but
         produces the same tape at params[0]=0.2."""
@@ -3106,11 +2973,9 @@ class TestHilbertSchmidt:
         assert qp.equal(op, other_op, check_interface=False, check_trainability=False) is True
 
 
-# pylint: disable=too-few-public-methods
 class DepthIncreaseOperator(Operator):
     """Dummy class which increases depth by one"""
 
-    # pylint: disable=super-init-not-called
     def __init__(self, op: Operator):
         self._op = op
 
@@ -3240,7 +3105,6 @@ def test_compressed_resource_op():
         qp.assert_equal(rep1, qp.X(0))
 
 
-# pylint: disable=unused-argument
 class TestCompareSubroutines:
     def test_different_subroutine_defs(self):
         """Test SubroutineOp are not equal if their Subroutines are not equal."""
@@ -3264,7 +3128,7 @@ class TestCompareSubroutines:
         """Test they are different if they have different static args."""
 
         @partial(qp.templates.Subroutine, static_argnames=("a",))
-        def f(a, wires):
+        def f(a, wires):  # pylint: disable=unused-argument
             pass
 
         op1 = qp.tape.make_qscript(f)("val1", 0)[0]
@@ -3278,7 +3142,7 @@ class TestCompareSubroutines:
         """Test they are different if their wires are different."""
 
         @partial(qp.templates.Subroutine, wire_argnames=("reg1", "reg2"))
-        def f(reg1, reg2):
+        def f(reg1, reg2):  # pylint: disable=unused-argument
             pass
 
         op1 = qp.tape.make_qscript(f)((0,), (1,))[0]
@@ -3291,7 +3155,7 @@ class TestCompareSubroutines:
         """Test that if the pytrees for an input are different, the ops are different."""
 
         @qp.templates.Subroutine
-        def f(x, wires):
+        def f(x, wires):  # pylint: disable=unused-argument
             pass
 
         op1 = qp.tape.make_qscript(f)((0.5,), 0)[0]
@@ -3312,7 +3176,7 @@ class TestCompareSubroutines:
         """Test that if there is different data, they are different operators."""
 
         @qp.templates.Subroutine
-        def f(x, wires):
+        def f(x, wires):  # pylint: disable=unused-argument
             pass
 
         op1 = qp.tape.make_qscript(f)(np.array(0.5), 0)[0]
@@ -3344,20 +3208,4 @@ class TestCompareSubroutines:
             assert_equal(op1, op3)
         assert qp.equal(op1, op4) is False
         with pytest.raises(AssertionError, match="op1 and op2 have different custom labels"):
-            assert_equal(op1, op4)
-
-    @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
-    def test_marked_op_comparison(self, base):
-        """Test that equal compares two objects of the MarkedOp class"""
-        op1 = MarkedOp(base, "my-base")
-        op2 = MarkedOp(base, "my-base")
-        op3 = MarkedOp(qp.PauliX(15), "my-base")
-        op4 = MarkedOp(base, "blah")
-
-        assert qp.equal(op1, op2) is True
-        assert qp.equal(op1, op3) is False
-        with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
-            assert_equal(op1, op3)
-        assert qp.equal(op1, op4) is False
-        with pytest.raises(AssertionError, match="op1 and op2 have different markers"):
             assert_equal(op1, op4)

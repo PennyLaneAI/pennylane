@@ -18,14 +18,12 @@ Unit tests for the SelectPauliRot template.
 import re
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import Prod
+from pennylane.testing import assert_decomposable
 from pennylane.typing import AbstractWires, Float
 
 
@@ -77,7 +75,7 @@ class TestSelectPauliRot:
             rot_axis="X",
         )
 
-        qp.ops.functions.assert_valid(op)
+        qp.testing.assert_valid(op)
 
     @pytest.mark.parametrize(
         ("angles", "control_wires", "target_wire", "rot_axis", "expected_error"),
@@ -240,8 +238,7 @@ class TestSelectPauliRot:
 
         angles = np.random.random((2**n,))
         op = qp.SelectPauliRot(angles, control_wires=range(n), target_wire=n, rot_axis=axis)
-        for rule in qp.list_decomps("SelectPauliRot"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.jax
     def test_interface_jax(self):
@@ -291,31 +288,6 @@ class TestSelectPauliRot:
         output = dev.execute(tape[0])[0]
 
         assert qp.math.allclose(output, output_torch)
-
-    @pytest.mark.tf
-    def test_interface_tf(self):
-        """Test that SelectPauliRot works with tensorflow"""
-
-        import tensorflow as tf
-
-        angles = [1, 2, 3, 4]
-
-        wires = qp.registers({"control": 2, "target": 1})
-        dev = qp.device("default.qubit", wires=3)
-
-        qs = get_tape(tf.Variable(angles), wires)
-
-        program, _ = dev.preprocess()
-        tape = program([qs])
-        output_tf = dev.execute(tape[0])[0]
-
-        qs = get_tape(angles, wires)
-
-        program, _ = dev.preprocess()
-        tape = program([qs])
-        output = dev.execute(tape[0])[0]
-
-        assert qp.math.allclose(output, output_tf)
 
     @pytest.mark.jax
     def test_jax_jit(self):

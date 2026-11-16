@@ -15,7 +15,9 @@
 Tests for the TrotterProduct template and helper functions.
 """
 
-# pylint: disable=private-access, protected-access, too-many-arguments
+# pylint: disable=too-many-arguments
+
+
 import copy
 from functools import partial, reduce
 
@@ -24,13 +26,13 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.time_evolution.trotter import (
     TrotterizedQfunc,
     _recursive_expression,
     _recursive_qfunc,
     _scalar,
 )
+from pennylane.testing import assert_decomposable
 
 test_hamiltonians = (
     qp.dot([1.0, 1.0, 1.0], [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(1)]),
@@ -373,7 +375,7 @@ class TestInitialization:
         """Test standard validity criteria using assert_valid."""
         time, n, order = (4.2, 10, 4)
         op = qp.TrotterProduct(hamiltonian, time, n=n, order=order)
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
     @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -382,7 +384,7 @@ class TestInitialization:
         """Test standard validity criteria using assert_valid."""
         time, n, order = (4.2, 10, 4)
         op = qp.TrotterProduct(hamiltonian, time, n=n, order=order)
-        qp.ops.functions.assert_valid(op)
+        qp.testing.assert_valid(op)
 
     # TODO: Remove test when we deprecate ApproxTimeEvolution
     @pytest.mark.parametrize("n", (1, 2, 5, 10))
@@ -529,13 +531,11 @@ class TestDecomposition:
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("order", (1, 2, 4))
     @pytest.mark.parametrize("hamiltonian_index, hamiltonian", list(enumerate(test_hamiltonians)))
-    def test_decomposition_new(
-        self, hamiltonian, hamiltonian_index, order
-    ):  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
+    def test_decomposition_new(self, hamiltonian, hamiltonian_index, order):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.TrotterProduct(hamiltonian, 4.2, order=order)
-        for rule in qp.list_decomps(qp.TrotterProduct):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize("order", (1, 2))
     @pytest.mark.parametrize("num_steps", (1, 2, 3))
@@ -718,43 +718,6 @@ class TestIntegration:
         state = circ(time, c1, c2)
         assert allclose(expected_state, state)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("time", (0.5, 1, 2))
-    def test_tf_execute(self, time):
-        """Test that the gate executes correctly in the tensorflow interface."""
-        import tensorflow as tf
-
-        time = tf.Variable(time, dtype=tf.complex128)
-        coeffs = tf.Variable([1.23, -0.45], dtype=tf.complex128)
-        terms = [qp.PauliX(0), qp.PauliZ(0)]
-
-        dev = qp.device("reference.qubit", wires=2)
-
-        @qp.qnode(dev)
-        def circ(time, coeffs):
-            h = qp.sum(
-                qp.s_prod(coeffs[0], terms[0]),
-                qp.s_prod(coeffs[1], terms[1]),
-            )
-            qp.TrotterProduct(h, time, n=2, order=2)
-
-            return qp.state()
-
-        initial_state = tf.Variable([1.0, 0.0, 0.0, 0.0], dtype=tf.complex128)
-
-        expected_product_sequence = _generate_simple_decomp(coeffs, terms, time, order=2, n=2)
-
-        expected_state = tf.linalg.matvec(
-            reduce(
-                lambda x, y: x @ y,
-                [qp.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
-            ),
-            initial_state,
-        )
-
-        state = circ(time, coeffs)
-        assert allclose(expected_state, state)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     def test_torch_execute(self, time):
@@ -888,48 +851,6 @@ class TestIntegration:
         reference_time_grad = time_reference.grad
         reference_coeff_grad = coeffs_reference.grad
 
-        assert allclose(measured_time_grad, reference_time_grad)
-        assert allclose(measured_coeff_grad, reference_coeff_grad)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
-    def test_tf_gradient(self, order, n):
-        """Test that the gradient is computed correctly using tensorflow"""
-        import tensorflow as tf
-
-        time = tf.Variable(1.5, dtype=tf.complex128)
-        coeffs = tf.Variable([1.23, -0.45], dtype=tf.complex128)
-        terms = [qp.PauliX(0), qp.PauliZ(0)]
-
-        dev = qp.device("default.qubit", wires=1)
-
-        @qp.qnode(dev)
-        def circ(time, coeffs):
-            h = qp.sum(
-                qp.s_prod(coeffs[0], terms[0]),
-                qp.s_prod(coeffs[1], terms[1]),
-            )
-            qp.TrotterProduct(h, time, n=n, order=order)
-            return qp.expval(qp.Hadamard(0))
-
-        @qp.qnode(dev)
-        def reference_circ(time, coeffs):
-            decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
-
-            for op in decomp[::-1]:
-                qp.apply(op)
-
-            return qp.expval(qp.Hadamard(0))
-
-        with tf.GradientTape() as tape:
-            result = circ(time, coeffs)
-
-        measured_time_grad, measured_coeff_grad = tape.gradient(result, (time, coeffs))
-
-        with tf.GradientTape() as tape:
-            result = reference_circ(time, coeffs)
-
-        reference_time_grad, reference_coeff_grad = tape.gradient(result, (time, coeffs))
         assert allclose(measured_time_grad, reference_time_grad)
         assert allclose(measured_coeff_grad, reference_coeff_grad)
 
@@ -1084,7 +1005,7 @@ class TestTrotterizedQfuncInitialization:
         """Test that an error is raised if the named kwargs for the qfunc match the
         names of the kwargs of the TrotterizedQfunc class."""
 
-        def my_dummy_qfunc(time, wires, **kwargs):  # pylint:disable=unused-argument
+        def my_dummy_qfunc(time, wires, **kwargs):  # pylint: disable=unused-argument
             qp.RZ(time, wires[0])
 
         for special_key in ["n", "order", "qfunc", "reverse"]:
@@ -1112,7 +1033,7 @@ class TestTrotterizedQfuncInitialization:
             wires=[3, 4, 5],
             flip=True,
         )
-        qp.ops.functions.assert_valid(op, skip_pickle=True)
+        qp.testing.assert_valid(op, skip_pickle=True)
 
 
 class TestTrotterizedQfuncIntegration:

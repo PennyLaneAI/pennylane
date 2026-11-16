@@ -15,7 +15,6 @@
 Tests for the PrepSelPrep template.
 """
 
-# pylint: disable=protected-access,import-outside-toplevel
 import copy
 
 import numpy as np
@@ -54,7 +53,7 @@ def test_standard_checks(lcu, control, skip_diff):
 
     op = qp.PrepSelPrep(lcu, control)
     # Skip differentiation for test cases that raise NaNs in gradients (known limitation of ``MottonenStatePreparation``).
-    qp.ops.functions.assert_valid(op, skip_differentiation=skip_diff)
+    qp.testing.assert_valid(op, skip_differentiation=skip_diff)
 
 
 def test_repr():
@@ -260,7 +259,7 @@ class TestPrepSelPrep:
         lcu_coeffs, lcu_ops = lcu.terms()
 
         op = qp.PrepSelPrep(lcu, control=0)
-        data, metadata = op._flatten()
+        data, metadata = op._flatten()  # pylint: disable=protected-access
 
         data_coeffs, data_ops = data[0].terms()
 
@@ -272,7 +271,7 @@ class TestPrepSelPrep:
 
         assert metadata[0] == op.control
 
-        new_op = type(op)._unflatten(*op._flatten())
+        new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
         assert op.lcu == new_op.lcu
         # assert all(coeff1 == coeff2 for coeff1, coeff2 in zip(op.coeffs, new_op.coeffs))
         # assert all(qp.equal(op1, op2) for op1, op2 in zip(op.ops, new_op.ops))
@@ -358,10 +357,9 @@ class TestPrepSelPrep:
 
         decomp = qp.list_decomps(qp.PrepSelPrep)[0]
 
-        with qp.queuing.AnnotatedQueue() as q:
-            decomp(*op.data, wires=op.wires, **op.hyperparameters)
+        tape = qp.testing.decomp_rule_to_tape(op, decomp)
 
-        q = q.queue[0].decomposition()
+        q = tape.operations[0].decomposition()
 
         phase_ops = [qp.GlobalPhase(0) for _ in ops]
 

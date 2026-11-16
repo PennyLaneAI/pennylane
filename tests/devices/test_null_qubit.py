@@ -53,11 +53,10 @@ def test_wires():
 
 def test_debugger_attribute():
     """Test that NullQubit has a debugger attribute and that it is `None`"""
-    # pylint: disable=protected-access
     dev = NullQubit()
 
     assert hasattr(dev, "_debugger")
-    assert dev._debugger is None
+    assert dev._debugger is None  # pylint: disable=protected-access
 
 
 def test_resource_tracking_attributes():
@@ -127,8 +126,7 @@ def test_set_device_target():
 def test_supports_operator_without_decomp(shots):
     """Test that null.qubit automatically supports any operation without a decomposition."""
 
-    # pylint: disable=too-few-public-methods
-    class MyOp(qp.operation.Operator):
+    class MyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
         pass
 
     tape = qp.tape.QuantumScript([MyOp(wires=(0, 1))], [qp.expval(qp.Z(0))], shots=shots)
@@ -313,45 +311,6 @@ class TestBasicCircuit:
         expected = np.zeros(2)
         assert np.array_equal(f(phi), expected)
         assert np.array_equal(torch.autograd.functional.jacobian(f, phi + 0j), expected)
-
-    @pytest.mark.xfail(reason="tf can't track derivatives")
-    @pytest.mark.tf
-    def test_tf_results_and_backprop(self):
-        """Tests execution and gradients of a simple circuit with tensorflow."""
-        import tensorflow as tf
-
-        phi = tf.Variable(4.873)
-
-        dev = NullQubit()
-
-        with tf.GradientTape(persistent=True) as grad_tape:
-            qs = qp.tape.QuantumScript(
-                [qp.RX(phi, wires=0)], [qp.expval(qp.PauliY(0)), qp.expval(qp.PauliZ(0))]
-            )
-            result = dev.execute(qs)
-
-        expected = np.zeros(2)
-        assert np.array_equal(result, expected)
-        grads = [grad_tape.jacobian(result[0], [phi]), grad_tape.jacobian(result[1], [phi])]
-        assert np.array_equal(grads, expected)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("op,param", [(qp.RX, np.pi), (qp.BasisState, [1])])
-    def test_qnode_returns_correct_interface(self, op, param):
-        """Test that even if no interface parameters are given, result is correct."""
-        dev = NullQubit()
-
-        import tensorflow as tf
-
-        @qp.qnode(dev, interface="tf")
-        def circuit(p):
-            op(p, wires=[0])
-            return qp.expval(qp.PauliZ(0))
-
-        res = circuit(param)
-        assert qp.math.get_interface(res) == "tensorflow"
-        # float64 due to float64 input variables
-        assert qp.math.allclose(res, tf.Variable(0.0, dtype=tf.float64))  # input variables float64
 
     def test_basis_state_wire_order(self):
         """Test that the wire order is correct with a basis state if the tape wires have a non standard order."""
@@ -684,29 +643,6 @@ class TestExecutingBatches:
         g1 = torch.autograd.functional.jacobian(lambda y: self.f(dev, y)[1], x)
         assert np.array_equal(g1, np.zeros(4))
 
-    @pytest.mark.xfail(reason="tf can't track derivatives")
-    @pytest.mark.tf
-    def test_tf(self):
-        """Test batches can be executed and have backprop derivatives in tf."""
-
-        import tensorflow as tf
-
-        dev = NullQubit()
-
-        x = tf.Variable(5.2281)
-        with tf.GradientTape(persistent=True) as tape:
-            results = self.f(dev, x)
-
-        self.assert_results(results)
-
-        g00 = tape.gradient(results[0][0], x)
-        assert g00 == 0
-        g01 = tape.gradient(results[0][1], x)
-        assert g01 == 0
-
-        g1 = tape.jacobian(results[1], x)
-        assert np.array_equal(g1, np.zeros(4))
-
 
 class TestSumOfTermsDifferentiability:
     """Basically a copy of the `qubit.simulate` test but using the device instead."""
@@ -781,27 +717,8 @@ class TestSumOfTermsDifferentiability:
         out = self.f(dev, x, style=style)
         assert out == torch.tensor(0)
 
-        out.backward()  # pylint:disable=no-member
+        out.backward()
         assert x.grad == 0
-
-    @pytest.mark.xfail(reason="tf can't track derivatives")
-    @pytest.mark.tf
-    @pytest.mark.parametrize("style", ("sum", "hermitian"))
-    def test_tf_backprop(self, style):
-        """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
-        import tensorflow as tf
-
-        dev = NullQubit()
-
-        x = tf.Variable(0.5)
-
-        with tf.GradientTape() as tape1:
-            out = self.f(dev, x, style=style)
-
-        assert out == 0
-
-        g1 = tape1.gradient(out, x)
-        assert g1 == 0
 
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
@@ -818,7 +735,7 @@ class TestDeviceDifferentiation:
         [qs], _ = dev.preprocess_transforms(config)((qs,))
         actual_grad = dev.compute_derivatives(qs, config)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad.shape == ()
         assert actual_grad == 0
 
         actual_val, actual_grad = dev.execute_and_compute_derivatives(qs, config)
@@ -881,7 +798,7 @@ class TestDeviceDifferentiation:
 
         actual_grad = dev.compute_jvp(qs, tangent, config)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad.shape == ()
         assert actual_grad == 0.0
 
         actual_val_and_grad = dev.execute_and_compute_jvp(qs, tangent, config)
@@ -1255,22 +1172,6 @@ class TestJacobian:
         assert np.array_equal(probs_jac, np.zeros(2))
         assert np.array_equal(expval_jac, 0.0)
 
-    @pytest.mark.tf
-    def test_jacobian_tf(self, method, device_vjp):
-        """Test the jacobian with tf."""
-        import tensorflow as tf
-
-        x = tf.Variable(0.1)
-        with tf.GradientTape(persistent=True) as tape:
-            res = self.get_circuit(method, device_vjp)(x)
-
-        probs_jac = tape.jacobian(res[0], x, experimental_use_pfor=not device_vjp)
-        assert np.array_equal(probs_jac, np.zeros(2))
-        if method == "parameter-shift":
-            pytest.xfail(reason="TF panics when computing the second jacobian here.")
-        expval_jac = tape.jacobian(res[1], x, experimental_use_pfor=not device_vjp)
-        assert np.array_equal(expval_jac, 0.0)
-
     @pytest.mark.torch
     def test_jacobian_torch(self, method, device_vjp):
         """Test the jacobian with torch."""
@@ -1335,7 +1236,7 @@ def test_measurement_shape_matches_default_qubit(mp, x, shots):
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
-class TestNullQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
+class TestNullQubitGraphModeExclusive:
     """Tests for NullQubit features that require graph mode enabled.
     The legacy decomposition mode should not be able to run these tests.
     NOTE: All tests in this suite will auto-enable graph mode via fixture.
@@ -1357,13 +1258,12 @@ class TestNullQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
         def decomp_with_work_wire(wires):
             qp.X(wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(MyNullQubitOp, decomp_fallback, decomp_with_work_wire)
+        qp.add_decomps(MyNullQubitOp, decomp_fallback, decomp_with_work_wire)
 
-            tape = qp.tape.QuantumScript([MyNullQubitOp(0)])
-            dev = qp.device("null.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
-            program = dev.preprocess_transforms()
-            (out_tape,), _ = program([tape])
+        tape = qp.tape.QuantumScript([MyNullQubitOp(0)])
+        dev = qp.device("null.qubit", wires=1)  # Only 1 wire, but decomp needs 5 burnable
+        program = dev.preprocess_transforms()
+        (out_tape,), _ = program([tape])
 
         assert len(out_tape.operations) == 2
         assert out_tape.operations[0].name == "Hadamard"

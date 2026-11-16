@@ -14,8 +14,6 @@
 # limitations under the License.
 """Unit tests for sampling states in devices/qubit_mixed."""
 
-# pylint: disable=unused-argument,too-many-arguments, import-outside-toplevel
-
 import numpy as np
 import pytest
 
@@ -33,7 +31,6 @@ ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 
 

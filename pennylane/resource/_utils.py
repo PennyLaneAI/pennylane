@@ -19,13 +19,10 @@ Common utility functions for processing resource information
     This module is intended for internal use only and may change or be removed in future releases.
 """
 
-import warnings
 from collections.abc import Iterable
 from functools import partial, wraps
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from pennylane.core.transforms import CompilePipeline
+from .resource import CircuitSpecs
 
 
 def unwrap_partial(fn):
@@ -51,112 +48,27 @@ def apply_partial_args(fn, args, kwargs):
     return wrapper
 
 
-def get_last_tape_transform_level(compile_pipeline: "CompilePipeline") -> int:
-    """Helper function to get the last level from a :class:`~.CompilePipeline` which is a tape
-    transform and not an MLIR pass.
-
-    .. note::
-
-        The returned level includes an implicit level 0 which corresponds to the original circuit before any transforms.
-
-    .. warning::
-
-        This function is intended for internal use only and may change or be removed in future releases.
-
-    Args:
-        compile_pipeline: The :class:`~.CompilePipeline` to analyse, which may contain both user-applied tape transforms
-            and MLIR passes
-
-    Returns:
-        int: The last level which is a tape transform and not an MLIR pass, or 0 if there are no tape transforms
-    """
-    # Find the seam where transforms end and MLIR passes begin
-    # If the pass name is None, it indicates a transform which is NOT also a Catalyst pass
-    for i, trans in reversed(list(enumerate(compile_pipeline))):
-        if trans.pass_name is None:
-            #  Add 1 to account for the implicit "Before Tape Transforms" at level=0
-            return i + 1
-    return 0
-
-
-def preprocess_level_input(
-    level: str | int | slice | list[int | str],
-    marker_to_level: dict[str, int],
-    pipeline_len: int,
-    num_tape_levels: int,
-) -> list[int]:
-    """Preprocesses a level input to always return a sorted list of integers.
-
-    .. warning::
-
-        This function is intended for internal use only and may change or be removed in future releases.
-
-    Args:
-        level (str | int | slice | iter[int | str]): The level input to preprocess
-        marker_to_level (dict[str, int]): Mapping from marker names to their associated level numbers.
-            Note that this should already account for any inserted lowering pass.
-        pipeline_len (int): The length of the compile pipeline (number of transforms and passes)
-        num_tape_levels (int): The number of tape levels in the compile pipeline (including the implicit level 0)
-    Returns:
-        list[int]: The preprocessed level input
-
-    Examples:
-        >>> marker_to_level = {"before": 0, "after": 1}
-        >>> preprocess_level_input("before", marker_to_level, 2, 1)
-        [0]
-        >>> preprocess_level_input([0, "after"], marker_to_level, 2, 1)
-        [0, 1]
-        >>> preprocess_level_input(slice(0, 2), marker_to_level, 2, 1)
-        [0, 1]
-    """
-    # Account for "Before MLIR passes" level
-    total_levels = pipeline_len + 1
-
-    if num_tape_levels > 1:
-        # Account for an additional "Before Tape Transforms" level
-        total_levels += 1
-
-    default_level_map = {
-        "all": list(range(0, total_levels)),
-        "all-mlir": list(range(num_tape_levels, total_levels)),
-        "user": [total_levels - 1],
-    }
-    if isinstance(level, str) and level in default_level_map:
-        return default_level_map[level]
-
-    if isinstance(level, (int, str)):
-        level = [level]
-    elif isinstance(level, slice):
-        stop = level.stop if level.stop is not None else total_levels
-        step = level.step if level.step is not None else 1
-        level = list(range(level.start or 0, stop, step))
-    else:
-        level = list(level)
-
-    # Convert marker names to the associated level number
-    for i, lvl in enumerate(level):
-        if isinstance(lvl, str):
-            if lvl not in marker_to_level:
-                raise ValueError(f"Marker name '{lvl}' not found in the compile pipeline.")
-            level[i] = marker_to_level[lvl]
-        elif isinstance(lvl, int):
-            if lvl < 0 or lvl >= total_levels:
-                raise ValueError(
-                    "The 'level' argument to qp.specs for QJIT'd QNodes is out of bounds, "
-                    f"got {lvl}."
-                )
-        else:
-            raise ValueError(f"Invalid level '{lvl}' in level list, expected int or str.")
-
-    level_sorted = sorted(set(level))
-    if level != level_sorted:
-        warnings.warn(
-            "The 'level' argument to qp.specs for QJIT'd QNodes has been sorted to be in ascending "
-            "order with no duplicate levels.",
-            UserWarning,
+def check_no_tape_transforms(compile_pipeline) -> None:
+    """Raise an error if ``compile_pipeline`` contains tape transforms, which have no
+    ``pass_name``."""
+    if trans := [pass_ for pass_ in compile_pipeline if pass_.pass_name is None]:
+        raise ValueError(
+            f"Encountered the following tape transforms: {trans}."
+            " Tape transforms are no longer supported."
         )
 
-    return level_sorted
+
+def build_circuit_specs(original_qnode, resources, level) -> CircuitSpecs:
+    """Assemble the ``CircuitSpecs`` describing a qjit'd QNode at a given level."""
+    return CircuitSpecs(
+        resources=resources,
+        shots=original_qnode.shots,
+        device_name=original_qnode.device.name,
+        num_device_wires=(
+            len(original_qnode.device.wires) if original_qnode.device.wires is not None else None
+        ),
+        level=level,
+    )
 
 
 def make_level_name_unique(level_name: str, existing_names: Iterable[str]) -> str:
@@ -184,29 +96,3 @@ def make_level_name_unique(level_name: str, existing_names: Iterable[str]) -> st
         counter += 1
         unique_name = f"{level_name}-{counter}"
     return unique_name
-
-
-def get_marker_level_map(compile_pipeline: "CompilePipeline") -> dict[str, int]:
-    """Helper function to get a mapping from marker names to their associated level numbers.
-
-    .. warning::
-
-        This function is intended for internal use and may be subject to change without deprecation.
-
-    """
-    marker_to_level: dict[str, int] = {}
-
-    num_tape_levels = get_last_tape_transform_level(compile_pipeline)
-    if num_tape_levels != 0:
-        # Account for the "Before Tape Transforms" tape at level 0
-        num_tape_levels += 1
-
-    for marker in compile_pipeline.markers:
-        lvl = compile_pipeline.get_marker_level(marker)
-        marker_to_level[marker] = lvl
-
-        # Account for the MLIR lowering pass if necessary
-        if 0 < num_tape_levels <= lvl:
-            marker_to_level[marker] += 1
-
-    return marker_to_level

@@ -15,7 +15,8 @@
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
 
-# pylint: disable=protected-access, too-many-arguments
+# pylint: disable=protected-access
+
 
 import os
 import warnings
@@ -33,7 +34,7 @@ from pennylane.exceptions import (
     QuantumFunctionError,
     WireError,
 )
-from pennylane.math import is_abstract, requires_grad
+from pennylane.math import is_tracer, requires_grad
 from pennylane.measurements import (
     counts,
     sample,
@@ -130,7 +131,7 @@ def validate_device_wires(
         WireError: if the tape has a wire not present in the provided wires, or if abstract wires are present.
     """
 
-    if any(is_abstract(w) for w in tape.wires):
+    if any(is_tracer(w) for w in tape.wires):
         raise WireError(
             f"Cannot run circuit(s) on {name} as abstract wires are present in the tape: {tape.wires}. "
             f"Abstract wires are not yet supported."
@@ -139,7 +140,7 @@ def validate_device_wires(
     if not wires:
         return (tape,), null_postprocessing
 
-    if any(is_abstract(w) for w in wires):
+    if any(is_tracer(w) for w in wires):
         raise WireError(
             f"Cannot run circuit(s) on {name} as abstract wires are present in the device: {wires}. "
             f"Abstract wires are not yet supported."
@@ -161,7 +162,7 @@ def validate_device_wires(
                     new_ops = list(tape.operations)
                 modified = True
                 new_mp = copy(mp)
-                new_mp._wires = wires  # pylint:disable=protected-access
+                new_mp._wires = wires
                 new_ops[i] = Snapshot(
                     measurement=new_mp, tag=op.tag, shots=op.hyperparameters["shots"]
                 )
@@ -173,7 +174,7 @@ def validate_device_wires(
         if not mp.obs and not mp.wires:
             modified = True
             new_mp = copy(mp)
-            new_mp._wires = wires  # pylint:disable=protected-access
+            new_mp._wires = wires
             measurements[m_idx] = new_mp
     if modified:
         tape = tape.copy(ops=new_ops, measurements=measurements)
@@ -266,7 +267,7 @@ def validate_adjoint_trainable_params(
 
 
 @transform
-def decompose(  # pylint: disable = too-many-positional-arguments
+def decompose(  # pylint: disable=too-many-arguments
     tape: QuantumScript,
     stopping_condition: Callable[[Operator], bool],
     stopping_condition_shots: Callable[[Operator], bool] | None = None,

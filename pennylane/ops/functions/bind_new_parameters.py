@@ -15,7 +15,8 @@
 This module contains the qp.bind_new_parameters function.
 """
 
-# pylint:disable=missing-function-docstring
+# pylint: disable=missing-function-docstring
+
 
 import copy
 from collections.abc import Sequence
@@ -23,6 +24,7 @@ from functools import singledispatch
 
 from pennylane import capture, ops, queuing
 from pennylane.core import Operator2
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator
 from pennylane.ops import (
     Adjoint,
@@ -77,18 +79,18 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
         new_op = copy.deepcopy(op)
         new_op._data = tuple(params)  # pylint: disable=protected-access
         if queuing.QueuingManager.recording() or capture.enabled():
-            return queuing.apply(new_op)
+            return apply(new_op)
         return new_op
 
 
-# pylint: disable=too-many-arguments
 @bind_new_parameters.register
 def bind_new_dynamic_arguments(
     op: Operator2,
     dynamic_args: Sequence[TensorLike],
 ) -> Operator2:
     kwargs = op.wire_args | op.static_args | op.compilable_args | op.hybrid_args
-    return op.__class__(*dynamic_args, **kwargs)
+    kwargs.update(zip(op.dynamic_argnames, dynamic_args, strict=True))
+    return op.__class__(**kwargs)
 
 
 @bind_new_parameters.register
@@ -288,11 +290,12 @@ def bind_new_parameters_hilbert_schmidt(op: HilbertSchmidt, params: Sequence[Ten
 
 @bind_new_parameters.register
 def bind_new_parameters_qsvt(op: QSVT, params: Sequence[TensorLike]):
-    ua = op.hyperparameters["UA"]
-    new_ua = bind_new_parameters(ua, params[: ua.num_params])
-    new_projectors = _bind_nested_operators(
-        op.hyperparameters["projectors"], params[ua.num_params :]
-    )
+    params = list(params)
+    if not params:
+        return copy.copy(op)
+
+    new_ua = bind_new_parameters(op.UA, params[: op.UA.num_params])
+    new_projectors = _bind_nested_operators(op.projectors, params[op.UA.num_params :])
     return QSVT(new_ua, new_projectors)
 
 

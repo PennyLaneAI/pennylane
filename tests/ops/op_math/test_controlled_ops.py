@@ -23,7 +23,6 @@ from scipy.linalg import fractional_matrix_power
 from scipy.stats import unitary_group
 
 import pennylane as qp
-from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled_ops import _toffoli_elbow
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires
@@ -52,8 +51,7 @@ X = np.array([[0, 1], [1, 0]])
 X_broadcasted = np.array([X] * 3)
 
 
-# pylint: disable=too-many-public-methods
-class TestControlledQubitUnitary:
+class TestControlledQubitUnitary:  # pylint: disable=too-many-public-methods
     """Tests specific to the ControlledQubitUnitary operation"""
 
     def test_has_decomposition_sparse_edge_case(self):
@@ -78,7 +76,7 @@ class TestControlledQubitUnitary:
     )
     def test_standard_validity(self, op):
         """Test that the operation is valid."""
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     def test_noniterable_base(self):
         """Test that an error is raised if the user provides a non-iterable base operator"""
@@ -503,8 +501,7 @@ class TestControlledQubitUnitary:
             op.pow(0.12)
 
     def test_ctrl_of_controlled_qubit_unitary(self):
-        """Test that controlling a ControlledQubitUnitary (``_ctrl_c_qu``) merges into a single
-        ControlledQubitUnitary with the combined control wires, control values and work wires."""
+        """Test that controlling a ControlledQubitUnitary merges into a symbolic control with the combined control wires, control values and work wires."""
         U = np.array(
             [
                 [0.73708696 + 0.61324932j, 0.27034258 + 0.08685028j],
@@ -523,7 +520,7 @@ class TestControlledQubitUnitary:
             work_wire_type="borrowed",
         )
 
-        assert isinstance(op, qp.ControlledQubitUnitary)
+        assert isinstance(op, qp.ops.ControlledOp2)
         assert op.wires == Wires([2, 3, 0, 1])
         assert op.control_wires == Wires([2, 3, 0])
         assert op.target_wires == Wires([1])
@@ -540,12 +537,12 @@ class TestControlledQubitUnitary:
         )
 
     def test_ctrl_of_controlled_qubit_unitary_defaults(self):
-        """Test ``_ctrl_c_qu`` with default control values and merging of zeroed work wire types."""
+        """Test nested unitary controls with default control values and merging of zeroed work wire types."""
         U = qp.RX.compute_matrix(0.5)
         base = qp.ControlledQubitUnitary(U, wires=(0, 1), work_wire_type="zeroed")
 
         op = qp.ctrl(base, control=[2], work_wires=[5], work_wire_type="zeroed")
-        assert isinstance(op, qp.ControlledQubitUnitary)
+        assert isinstance(op, qp.ops.ControlledOp2)
         assert op.control_wires == Wires([2, 0])
         assert list(op.control_values) == [True, True]
         assert op.work_wires == Wires([5])
@@ -766,38 +763,12 @@ class TestComputations:
         assert np.allclose(op.compute_matrix(*params), expected_matrix, atol=tol, rtol=0)
         assert np.allclose(op(*params, wires=[0, 1]).matrix(), expected_matrix, atol=tol, rtol=0)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("op, params, expected_matrix", EXPECTED_MATRICES)
-    def test_matrix_tf(self, tol, op, params, expected_matrix):
-        """Tests that the correct matrix is returned when using TensorFlow"""
-
-        import tensorflow as tf
-
-        variables = [tf.Variable(param) for param in params]
-
-        assert np.allclose(op.compute_matrix(*variables), expected_matrix, atol=tol, rtol=0)
-        assert np.allclose(op(*variables, wires=[0, 1]).matrix(), expected_matrix, atol=tol, rtol=0)
-
     @pytest.mark.parametrize("op, params, expected_eigvals", EXPECTED_EIGVALS)
     def test_eigvals(self, tol, op, params, expected_eigvals):
         """Tests that the correct eigenvalues are returned"""
 
         assert np.allclose(op.compute_eigvals(*params), expected_eigvals, atol=tol, rtol=0)
         assert np.allclose(op(*params, wires=[0, 1]).eigvals(), expected_eigvals, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("op, params, expected_eigvals", EXPECTED_EIGVALS)
-    def test_eigvals_tf(self, tol, op, params, expected_eigvals):
-        """Tests that the correct eigenvalues are returned when using TensorFlow"""
-
-        import tensorflow as tf
-
-        variables = [tf.Variable(param) for param in params]
-
-        assert np.allclose(op.compute_eigvals(*variables), expected_eigvals, atol=tol, rtol=0)
-        assert np.allclose(
-            op(*variables, wires=[0, 1]).eigvals(), expected_eigvals, atol=tol, rtol=0
-        )
 
 
 def test_simplify_crot():
@@ -806,28 +777,28 @@ def test_simplify_crot():
     crot_x = qp.CRot(np.pi / 2, 0.1, -np.pi / 2, wires=[0, 1])
     simplify_crot_x = crot_x.simplify()
 
-    assert simplify_crot_x.name == "CRX"
+    assert simplify_crot_x.name == "C(RX)"
     assert simplify_crot_x.data == (0.1,)
     assert np.allclose(simplify_crot_x.matrix(), crot_x.matrix())
 
     crot_y = qp.CRot(0, 0.1, 0, wires=[0, 1])
     simplify_crot_y = crot_y.simplify()
 
-    assert simplify_crot_y.name == "CRY"
+    assert simplify_crot_y.name == "C(RY)"
     assert simplify_crot_y.data == (0.1,)
     assert np.allclose(simplify_crot_y.matrix(), crot_y.matrix())
 
     crot_z = qp.CRot(0.1, 0, 0.2, wires=[0, 1])
     simplify_crot_z = crot_z.simplify()
 
-    assert simplify_crot_z.name == "CRZ"
+    assert simplify_crot_z.name == "C(RZ)"
     assert np.allclose(simplify_crot_z.data, [0.3])
     assert np.allclose(simplify_crot_z.matrix(), crot_z.matrix())
 
     crot = qp.CRot(0.1, 0.2, 0.3, wires=[0, 1])
     not_simplified_crot = crot.simplify()
 
-    assert not_simplified_crot.name == "CRot"
+    assert not_simplified_crot.name == "C(Rot)"
     assert np.allclose(not_simplified_crot.matrix(), crot.matrix())
 
 
@@ -865,20 +836,6 @@ def test_abstract_controlled_ops(op_type, wires):
     assert isinstance(key, op_type)
     assert isinstance(key.wires, AbstractWires)
     assert len(key.wires) == len(wires)
-
-
-@pytest.mark.parametrize(
-    "base, control_wires, control_values, expected",
-    [
-        (qp.X(Wire[1]), Wire[1], [1], qp.CNOT(Wire[2])),
-        (qp.CNOT(Wire[2]), Wire[1], [1], qp.Toffoli(Wire[3])),
-        (qp.Y(Wire[1]), Wire[1], [1], qp.CY(Wire[2])),
-    ],
-)
-def test_custom_controlled_ops_dispatch(base, control_wires, control_values, expected):
-    """Tests that we can use the custom dispatch logic with abstract controlled ops."""
-    mapped_op = custom_ctrl_dispatch(base, control_wires, control_values, None, "borrowed")
-    assert mapped_op == expected
 
 
 @pytest.mark.catalyst

@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from tests.capture.capture_utils import assert_eqn_matches_op
+from pennylane.testing import assert_eqn_matches_op
 
 
 def test_subroutine_no_jax():
@@ -123,7 +123,7 @@ class TestCaptureUse:
         assert jaxpr0 != jaxpr2
 
         assert len(jaxpr0.eqns) == 1
-        assert_eqn_matches_op(jaxpr0.eqns[0], qp.RX)  # pylint: disable=protected-access
+        assert_eqn_matches_op(jaxpr0.eqns[0], qp.RX)
 
         assert len(jaxpr2.eqns) == 1
         assert_eqn_matches_op(jaxpr2.eqns[0], qp.RY)

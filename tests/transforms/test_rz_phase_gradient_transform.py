@@ -21,14 +21,6 @@ import pennylane as qp
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 
 
-def prepare_phase_gradient(wires):
-    ops = []
-    for i, w in enumerate(wires):
-        ops.append(qp.H(w))
-        ops.append(qp.PhaseShift(-np.pi / 2**i, w))
-    return ops
-
-
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_units_rz_phase_gradient(p):
     """Test the outputs of ``_rz_phase_gradient``. The fanout is a ``MultiX`` (one ``X`` per set bit
@@ -133,9 +125,9 @@ def test_integration_rz_phase_gradient(phi):
     rz_circ = qp.tape.QuantumScript(
         [
             qp.Hadamard(wire),  # prepare |+>
-            *prepare_phase_gradient(phase_grad_wires),
+            qp.PhaseGradientStatePrep(phase_grad_wires),
             qp.RZ(phi, wire),
-            *[qp.adjoint(op) for op in prepare_phase_gradient(phase_grad_wires)[::-1]],
+            qp.adjoint(qp.PhaseGradientStatePrep(phase_grad_wires)),
             qp.Hadamard(wire),  # unprepare |+>
         ]
     )

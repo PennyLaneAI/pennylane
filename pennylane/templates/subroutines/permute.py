@@ -91,7 +91,7 @@ class Permute(Operation):
             op = qp.Permute([4, 2, 0, 1, 3], wires=[0, 1, 2, 3, 4])
             tape = qp.tape.QuantumTape([op])
 
-        >>> [tape_expanded], _ = qp.decompose(tape, gate_set={qp.SWAP})
+        >>> [tape_expanded], _ = qp.transforms._tape_decompose(tape, gate_set={qp.SWAP})
         >>> print(qp.drawer.tape_text(tape_expanded, wire_order=range(5)))
         0: ─╭SWAP───────────────────┤
         1: ─│─────╭SWAP─────────────┤

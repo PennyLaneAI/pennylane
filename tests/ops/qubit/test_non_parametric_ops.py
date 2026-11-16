@@ -48,10 +48,8 @@ from scipy.stats import unitary_group
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.utils import _get_decomp_args
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.transforms import decompose
-
-# pylint: disable=too-few-public-methods
+from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
 
@@ -558,6 +556,85 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize(
+        "base, control, custom_type, num_paulis",
+        [(qp.SWAP([0, 1]), [2], "CSWAP", 2), (qp.Z(0), [1, 2], "CCZ", 4)],
+    )
+    def test_controlled_op_with_work_wires_to_custom_op(
+        self, base, control, custom_type, num_paulis
+    ):
+        """Tests that a controlled op with work wires still decomposes into the custom
+        controlled op, which does not have work wires, if it is in the gate set."""
+
+        @qp.qjit(capture=True, target="mlir")
+        # PauliX is needed for flipping zero-valued controls, which can't be ruled out
+        # when solving the decomposition graph for abstract control values
+        @qp.decompose(gate_set={custom_type, "PauliX"})
+        @qp.qnode(qp.device("lightning.qubit", wires=6))
+        def circuit():
+            qp.ctrl(base, control=control, work_wires=[5], work_wire_type="zeroed")
+            return qp.state()
+
+        resources = qp.analyze(circuit)().resources
+        assert resources.quantum_operations == {custom_type: 1, "PauliX": num_paulis}
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        "base, control_values",
+        [
+            (qp.SWAP([0, 1]), [0]),
+            (qp.SWAP([0, 1]), [1]),
+            (qp.SWAP([0, 1]), [1, 1]),
+            (qp.SWAP([0, 1]), [0, 1, 0]),
+            (qp.Z(0), [1, 1]),
+            (qp.Z(0), [0, 1]),
+        ],
+    )
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_controlled_op_with_work_wires_decomposable(self, base, control_values, work_wire_type):
+        """Tests that the decomposition rules of controlled ops with work wires are valid."""
+        control = list(range(2, 2 + len(control_values)))
+        work_wires = list(range(5, 5 + len(control_values)))
+        op = qp.ctrl(
+            base,
+            control=control,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+        assert_decomposable(op)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(
+        "base, num_controls, num_work_wires",
+        [
+            (qp.SWAP([0, 1]), 1, 1),
+            (qp.SWAP([0, 1]), 2, 2),
+            (qp.SWAP([0, 1]), 3, 3),
+            (qp.Z(0), 2, 1),
+        ],
+    )
+    def test_controlled_op_t_count_with_zeroed_work_wires(self, base, num_controls, num_work_wires):
+        """Tests that controlled ops decompose into 4 T gates per zeroed work wire if
+        enough zeroed work wires are provided."""
+        control = list(range(2, 2 + num_controls))
+        work_wires = list(range(5, 5 + num_work_wires))
+        gate_set = {"T": 100, "Adjoint(T)": 100, "Adjoint(S)": 1, "Hadamard": 1, "CNOT": 1}
+        gate_set |= {"CZ": 1, "PauliX": 1, "MidMeasure": 1}
+
+        @decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("null.qubit"))
+        def circuit():
+            qp.ctrl(base, control=control, work_wires=work_wires, work_wire_type="zeroed")
+            return qp.state()
+
+        tape = qp.workflow.construct_tape(circuit)()
+        resources = qp.resource.resources_from_tape(tape).quantum_operations
+        assert resources["T"] + resources["Adjoint(T)"] == 4 * num_work_wires
+        assert "Allocate" not in resources
+        assert set(tape.wires) == set(base.wires + control + work_wires)
+
     def test_swap_decomposition(self):
         """Tests the swap operator produces the correct output"""
         opr = qp.SWAP(wires=[0, 1])
@@ -770,6 +847,7 @@ class TestMultiControlledX:
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
+
         tape = qp.tape.QuantumScript.from_queue(q)
         [tape], _ = decompose(tape, max_expansion=2, gate_set=qp.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qp.MultiControlledX) for op in tape.operations)
@@ -805,7 +883,7 @@ class TestMultiControlledX:
         with qp.queuing.AnnotatedQueue() as q:
             qp.MultiControlledX(wires=control_target_wires, work_wires=worker_wires)
         tape = qp.tape.QuantumScript.from_queue(q)
-        [tape], _ = decompose(tape, max_expansion=1, gate_set=qp.gate_sets.CLIFFORD_T)
+        [tape], _ = decompose(tape, max_expansion=2, gate_set=qp.gate_sets.CLIFFORD_T)
         assert all(not isinstance(op, qp.MultiControlledX) for op in tape.operations)
 
         @qp.qnode(dev)
@@ -827,13 +905,44 @@ class TestMultiControlledX:
         mat2 = qp.MultiControlledX.compute_matrix([0, 1], control_values=[1])
         assert np.allclose(mat1, mat2)
 
-    def test_repr(self):
-        """Test ``__repr__`` method that shows ``control_values``"""
-        wires = [0, 1, 2]
-        control_values = [False, True]
-        # pylint: disable=unnecessary-dunder-call
-        op_repr = qp.MultiControlledX(wires=wires, control_values=control_values).__repr__()
-        assert op_repr == f"MultiControlledX(wires={wires}, control_values={control_values})"
+    @pytest.mark.parametrize(
+        "kwargs, expected",
+        [
+            # trivial control values and missing work wires are not shown
+            ({}, "MultiControlledX(wires=[0, 1, 2])"),
+            ({"control_values": [True, True]}, "MultiControlledX(wires=[0, 1, 2])"),
+            (
+                {"control_values": [False, True]},
+                "MultiControlledX(wires=[0, 1, 2], control_values=[False, True])",
+            ),
+            (
+                {"work_wires": [3]},
+                "MultiControlledX(wires=[0, 1, 2], work_wires=[3], work_wire_type=borrowed)",
+            ),
+            (
+                {"work_wires": [3, 4], "work_wire_type": "zeroed"},
+                "MultiControlledX(wires=[0, 1, 2], work_wires=[3, 4], work_wire_type=zeroed)",
+            ),
+            (
+                {"control_values": [True, False], "work_wires": [3], "work_wire_type": "zeroed"},
+                "MultiControlledX(wires=[0, 1, 2], control_values=[True, False], "
+                "work_wires=[3], work_wire_type=zeroed)",
+            ),
+        ],
+    )
+    def test_repr(self, kwargs, expected):
+        """Test that ``__repr__`` shows non-trivial ``control_values`` and, if present, the
+        ``work_wires`` together with their ``work_wire_type``."""
+        assert repr(qp.MultiControlledX(wires=[0, 1, 2], **kwargs)) == expected
+
+    def test_repr_abstract(self):
+        """Test that the abstract ``control_values`` and the abstract work wires are shown."""
+        op = qp.MultiControlledX(wires=[0, 1, 2], work_wires=[3], work_wire_type="zeroed")
+        op = abstractify(op)
+        assert repr(op) == (
+            "MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool), "
+            "work_wires=AbstractWires(1), work_wire_type=zeroed)"
+        )
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("num_work_wires", [0, 1, 2, 3])
@@ -847,34 +956,7 @@ class TestMultiControlledX:
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
-        for rule in qp.list_decomps(op):
-            _test_decomposition_rule(op, rule)
-
-    def test_custom_dispatch(self):
-        """Tests that qp.ctrl() of MCX dispatches to another MCX."""
-
-        op = qp.MultiControlledX(
-            [0, 1, 2],
-            control_values=[0, 1],
-            work_wires=[3],
-            work_wire_type="borrowed",
-        )
-        new_op = qp.ctrl(
-            op,
-            control=[4, 5],
-            control_values=[1, 0],
-            work_wires=[6],
-            work_wire_type="zeroed",
-        )
-        qp.assert_equal(
-            new_op,
-            qp.MultiControlledX(
-                [4, 5, 0, 1, 2],
-                control_values=[1, 0, 0, 1],
-                work_wires=[6, 3],
-                work_wire_type="borrowed",
-            ),
-        )
+        assert_decomposable(op)
 
 
 period_two_ops = (
@@ -905,7 +987,12 @@ class TestPowMethod:
         """Test that ops with a period of 2 raised to an odd power are the same as the original op."""
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
-        qp.assert_equal(pow_ops[0], op)
+        expected = (
+            qp.ctrl(op.base, op.control_wires, control_values=op.control_values)
+            if isinstance(op, qp.ops.Controlled2)
+            else op
+        )
+        qp.assert_equal(pow_ops[0], expected)
 
     @pytest.mark.parametrize("op", period_two_ops)
     @pytest.mark.parametrize("n", (2, 6, 0, -2))
@@ -1075,37 +1162,24 @@ class TestPowMethod:
         expected = qp.math.linalg.matrix_power(op_mat, n)
         assert qp.math.allclose(mat, expected)
 
-    @pytest.mark.parametrize("op", (qp.WireCut(0), qp.Barrier(0)))
     @pytest.mark.parametrize("n", (2, 0.123, -2.3))
-    def test_pow_independent_ops(self, op, n):
-        """Assert that the pow-independent ops WireCut and Barrier can be raised
-        to any power and just return a copy."""
+    def test_pow_independent_ops(self, n):
+        """Assert that Barrier can be raised to any power and just return a copy."""
+        op = qp.Barrier(0)
         assert op.pow(n)[0].__class__ is op.__class__
 
 
-class TestControlledMethod:
-    """Tests for the _controlled method of non-parametric operations."""
-
-    # pylint: disable=protected-access
-
-    def test_PauliZ(self):
-        """A positive control on ``PauliZ`` should dispatch to ``CZ``."""
-        out = qp.ctrl(qp.PauliZ(0), "a")
-        qp.assert_equal(out, qp.CZ(("a", 0)))
+class TestControlledMethod:  # pylint: disable=too-few-public-methods
+    """Tests symbolic controls of non-parametric operations."""
 
     def test_Barrier(self):
-        """Tests the _controlled behavior of Barrier."""
-        original = qp.Barrier((0, 1, 2), only_visual=True)
-        out = original._controlled("a")
+        """Tests the control behavior of Barrier."""
+        original = qp.Barrier((0, 1, 2))
+        out = qp.ctrl(original, "a")
         qp.assert_equal(original, out)
 
-    def test_CZ(self):
-        """Test the CZ ctrl dispatch produces CCZ."""
-        out = qp.ctrl(qp.CZ(wires=[0, 1]), control="a")
-        qp.assert_equal(out, qp.CCZ(("a", 0, 1)))
 
-
-class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
+class TestSpecialPowDecomps:
     """Tests special decomposition rules for Pow of operators."""
 
     @pytest.mark.parametrize("batched", [True, False])
@@ -1146,12 +1220,9 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
         decomps = qp.list_decomps(f"Pow({op.name})")
         for rule in decomps:
             if rule.is_applicable(**pow_op.arguments):
-                with qp.queuing.AnnotatedQueue() as q:
-                    rule(**pow_op.arguments)
-
                 # It's fine to test matrix equivalence here because ISWAP and SISWAP
                 # have very specific power decompositions.
-                tape = qp.tape.QuantumScript.from_queue(q)
+                tape = qp.testing.decomp_rule_to_tape(pow_op, rule)
                 assert qp.math.allclose(qp.matrix(tape, wire_order=[0, 1]), qp.matrix(pow_op))
 
 
@@ -1210,7 +1281,6 @@ label_data = [
     (qp.SISWAP(wires=(0, 1)), "SISWAP"),
     (qp.SQISW(wires=(0, 1)), "SISWAP"),
     (qp.Barrier(0), "||"),
-    (qp.WireCut(wires=0), "//"),
     # Controlled operations
     (qp.CY(wires=(0, 1)), "Y"),
     (qp.CZ(wires=(0, 1)), "Z"),
@@ -1257,7 +1327,6 @@ involution_ops = [  # ops who are their own inverses
     qp.SWAP((0, 1)),
     qp.ECR((0, 1)),
     qp.Barrier(0),
-    qp.WireCut(0),
     # Controlled operations
     qp.CNOT((0, 1)),
     qp.CH((0, 1)),
@@ -1289,7 +1358,6 @@ op_pauli_rep = (
 
 @pytest.mark.parametrize("op, rep", op_pauli_rep)
 def test_pauli_rep(op, rep):
-    # pylint: disable=protected-access
     assert op.pauli_rep == rep
 
 
@@ -1343,10 +1411,9 @@ class TestPauliRep:
     )
     def test_lazy_implementation(self, op, _):
         """Checks if the ._pauli_rep attribute is only computed when needed."""
-        # pylint: disable=unused-variable, protected-access
-        assert op._pauli_rep is None
-        pauli_rep = op.pauli_rep
-        assert op._pauli_rep is not None
+        assert op._pauli_rep is None  # pylint: disable=protected-access
+        pauli_rep = op.pauli_rep  # pylint: disable=unused-variable
+        assert op._pauli_rep is not None  # pylint: disable=protected-access
 
     @pytest.mark.parametrize(
         "op, rep", NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED
@@ -1357,156 +1424,199 @@ class TestPauliRep:
         assert np.allclose(rep, qp.matrix(op.pauli_rep, wire_order=op.wires))
 
 
-class TestPPR:
-    """Tests for the fixed-angle Pauli product rotation (PPR)."""
+PPR_DENOMINATORS = {qp.PPR_2: 2, qp.PPR_4: 4, qp.PPR_8: 8}
 
-    @pytest.mark.parametrize("denominator", [-8, -4, -2, 2, 4, 8])
-    def test_allowed_denominators(self, denominator):
-        """Test that all allowed angle denominators can be used."""
-        op = qp.PPR(denominator, "XY", wires=[0, 1])
-        assert op.angle_denominator == denominator
+
+@pytest.mark.parametrize("op_cls", list(PPR_DENOMINATORS))
+class TestPPR:
+    """Tests for the fixed-angle Pauli product rotations (PPR) PPR_2, PPR_4 and PPR_8."""
+
+    @pytest.mark.parametrize("sign", [1, -1])
+    def test_init(self, op_cls, sign):
+        """Test that both signs can be used."""
+        op = op_cls(sign, "XY", wires=[0, 1])
+        assert op.sign == sign
         assert op.pauli_word == "XY"
         assert op.wires == Wires([0, 1])
 
-    def test_no_trainable_parameters(self):
-        """Test that the angle is a compilable, not a dynamic argument."""
-        op = qp.PPR(4, "XY", wires=[0, 1])
+    def test_no_trainable_parameters(self, op_cls):
+        """Test that the sign is a compilable, not a dynamic argument."""
+        op = op_cls(1, "XY", wires=[0, 1])
         assert op.data == ()
         assert op.parameters == []
-        assert op.hyperparameters == {"angle_denominator": 4, "pauli_word": "XY"}
+        assert op.hyperparameters == {"sign": 1, "pauli_word": "XY"}
 
-    @pytest.mark.use_fixtures("enable_and_disable_capture")
-    def test_standard_validity(self):
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("sign", [1, -1])
+    @pytest.mark.parametrize(
+        "pauli_word", ["X", "Y", "Z", "ZZ", "XY", "ZXY", "IX", "YIZ", "YZXY", "III"]
+    )
+    def test_standard_validity(self, op_cls, sign, pauli_word):
         """Run the standard operator validity checks."""
-        qp.ops.functions.assert_valid(qp.PPR(2, "ZXY", wires=[0, 1, 2]))
+        wires = list(range(len(pauli_word)))
+        qp.testing.assert_valid(op_cls(sign, pauli_word, wires=wires))
 
-    @pytest.mark.parametrize("denominator", [0, 3, 1, -3, -1, np.pi / 4, "4"])
-    def test_invalid_denominator_raises(self, denominator):
-        """Test that only exact integers from the Clifford+T set are accepted."""
-        with pytest.raises(ValueError, match="angle denominator must be an integer in"):
-            qp.PPR(denominator, "X", wires=0)
+    @pytest.mark.parametrize("sign", [0, 2, -2, 0.5, "1"])
+    def test_invalid_sign_raises(self, op_cls, sign):
+        """Test that only 1 and -1 are accepted as sign."""
+        with pytest.raises(ValueError, match="The sign must be 1 or -1"):
+            op_cls(sign, "X", wires=0)
 
-    @pytest.mark.parametrize("denominator", [np.int64(4), np.int32(-2)])
-    def test_numpy_integer_denominator(self, denominator):
-        """Test that NumPy integers are accepted as angle denominators."""
-        assert qp.PPR(denominator, "X", wires=0).angle_denominator == denominator
+    @pytest.mark.parametrize("sign", [np.int64(1), np.int32(-1)])
+    def test_numpy_integer_sign(self, op_cls, sign):
+        """Test that NumPy integers are accepted as sign."""
+        assert op_cls(sign, "X", wires=0).sign == sign
 
     @pytest.mark.parametrize("pauli_word", ["W", "iX", "XA", "xy"])
-    def test_invalid_pauli_word_raises(self, pauli_word):
+    def test_invalid_pauli_word_raises(self, op_cls, pauli_word):
         """Test that Pauli words with characters other than X, Y, Z and I are rejected."""
         with pytest.raises(ValueError, match="contains characters that are not allowed"):
-            qp.PPR(4, pauli_word, wires=range(len(pauli_word)))
+            op_cls(1, pauli_word, wires=range(len(pauli_word)))
 
     @pytest.mark.parametrize("pauli_word, wires", [("XY", [0]), ("X", [0, 1]), ("", [0])])
-    def test_wire_count_mismatch_raises(self, pauli_word, wires):
+    def test_wire_count_mismatch_raises(self, op_cls, pauli_word, wires):
         """Test that the Pauli word length must match the number of wires."""
         with pytest.raises(ValueError, match="number of wires must be equal to the length"):
-            qp.PPR(4, pauli_word, wires=wires)
+            op_cls(1, pauli_word, wires=wires)
 
-    def test_no_wires_raises(self):
+    def test_no_wires_raises(self, op_cls):
         """Test that at least one wire has to be provided."""
         with pytest.raises(ValueError, match="At least one wire has to be provided"):
-            qp.PPR(4, "", wires=[])
+            op_cls(1, "", wires=[])
 
-    @pytest.mark.parametrize(
-        "denominator, expected",
-        [
-            (2, "PPR(π/2, Z)"),
-            (-2, "PPR(-π/2, Z)"),
-            (4, "PPR(π/4, Z)"),
-            (-4, "PPR(-π/4, Z)"),
-            (8, "PPR(π/8, Z)"),
-        ],
-    )
-    def test_label(self, denominator, expected):
+    @pytest.mark.parametrize("sign, sign_str", [(1, ""), (-1, "-")])
+    def test_label(self, op_cls, sign, sign_str):
         """Test that the label contains the Pauli word and the angle."""
-        assert qp.PPR(denominator, "Z", wires=0).label() == expected
+        denominator = PPR_DENOMINATORS[op_cls]
+        assert op_cls(sign, "Z", wires=0).label() == f"PPR({sign_str}π/{denominator}, Z)"
 
-    def test_label_base_label(self):
+    def test_label_base_label(self, op_cls):
         """Test that the label can be overridden."""
-        assert qp.PPR(4, "XY", wires=[0, 1]).label(base_label="my_ppr") == "my_ppr"
+        assert op_cls(1, "XY", wires=[0, 1]).label(base_label="my_ppr") == "my_ppr"
 
-    def test_repr(self):
+    def test_repr(self, op_cls):
         """Test the string representation."""
-        assert repr(qp.PPR(-4, "XY", wires=[0, 1])) == "PPR(-4, 'XY', wires=[0, 1])"
+        denominator = PPR_DENOMINATORS[op_cls]
+        expected = f"PPR_{denominator}(-1, 'XY', wires=[0, 1])"
+        assert repr(op_cls(-1, "XY", wires=[0, 1])) == expected
 
-    def test_equality_and_hash(self):
-        """Test that the angle denominator is taken into account by equality and hashing."""
-        op = qp.PPR(4, "XY", wires=[0, 1])
-        assert qp.equal(op, qp.PPR(4, "XY", wires=[0, 1]))
-        assert hash(op) == hash(qp.PPR(4, "XY", wires=[0, 1]))
-        assert not qp.equal(op, qp.PPR(-4, "XY", wires=[0, 1]))
-        assert not qp.equal(op, qp.PPR(4, "YX", wires=[0, 1]))
+    def test_equality_and_hash(self, op_cls):
+        """Test that the sign, Pauli word and class are taken into account by equality and
+        hashing."""
+        op = op_cls(1, "XY", wires=[0, 1])
+        assert qp.equal(op, op_cls(1, "XY", wires=[0, 1]))
+        assert hash(op) == hash(op_cls(1, "XY", wires=[0, 1]))
+        assert not qp.equal(op, op_cls(-1, "XY", wires=[0, 1]))
+        assert not qp.equal(op, op_cls(1, "YX", wires=[0, 1]))
+        for other_cls in PPR_DENOMINATORS:
+            if other_cls is not op_cls:
+                assert not qp.equal(op, other_cls(1, "XY", wires=[0, 1]))
 
-    def test_map_wires(self):
+    def test_map_wires(self, op_cls):
         """Test that the wires can be remapped."""
-        op = qp.PPR(4, "XY", wires=[0, 1]).map_wires({0: "a", 1: "b"})
+        op = op_cls(1, "XY", wires=[0, 1]).map_wires({0: "a", 1: "b"})
         assert op.wires == Wires(["a", "b"])
-        assert op.angle_denominator == 4
+        assert op.sign == 1
         assert op.pauli_word == "XY"
 
     @pytest.mark.capture
-    def test_capture(self):
-        """Test that the angle denominator is captured as a compilable argument."""
+    def test_capture(self, op_cls):
+        """Test that the sign is captured as a compilable argument."""
         import jax
 
-        jaxpr = jax.make_jaxpr(lambda: qp.PPR(4, "XY", wires=[0, 1]))()
+        jaxpr = jax.make_jaxpr(lambda: op_cls(-1, "XY", wires=[0, 1]))()
 
         (eqn,) = jaxpr.eqns
-        assert eqn.params["op_cls"] is qp.PPR
-        assert eqn.params["angle_denominator"][0] == (4,)
+        assert eqn.params["op_cls"] is op_cls
+        assert eqn.params["sign"][0] == (-1,)
         assert eqn.params["pauli_word"][0] == ("XY",)
 
-    def test_abstract_init(self):
+    def test_abstract_init(self, op_cls):
         """Test that the operator can be initialized with abstract inputs"""
-        # angle_denominator and pauli_word are compilable args, so they are provided concretely.
-        op = qp.PPR(-2, "XY", wires=Wire[2])
-        assert op.angle_denominator == -2
+        # sign and pauli_word are compilable args, so they are provided concretely.
+        op = op_cls(-1, "XY", wires=Wire[2])
+        assert op.sign == -1
         assert op.pauli_word == "XY"
         assert len(op.wires) == 2
 
     @pytest.mark.jax
-    def test_abstractify(self):
+    def test_abstractify(self, op_cls):
         """Test that the operator can be abstractified."""
-        op = abstractify(qp.PPR(4, "XY", wires=[0, 1]))
-        assert op.angle_denominator == 4
+        op = abstractify(op_cls(1, "XY", wires=[0, 1]))
+        assert op.sign == 1
         assert op.pauli_word == "XY"
         assert len(op.wires) == 2
 
-    def test_adjoint_decomp_queuing(self):
-        """Test the operations queued by the Adjoint(PPR) rule."""
-        adj_op = qp.adjoint(qp.PPR(4, "XY", wires=[0, 1]))
-        rule = qp.list_decomps("Adjoint(PPR)")["_adjoint_ppr_to_ppr"]
+    def test_adjoint_decomp_queuing(self, op_cls):
+        """Test the operations queued by the adjoint rule."""
+        denominator = PPR_DENOMINATORS[op_cls]
+        adj_op = qp.adjoint(op_cls(1, "XY", wires=[0, 1]))
+        rule = qp.list_decomps(f"Adjoint(PPR_{denominator})")["_adjoint_ppr_flip_sign"]
 
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(**adj_op.arguments)
+        tape = qp.testing.decomp_rule_to_tape(adj_op, rule)
 
-        expected = [qp.PPR(-4, "XY", wires=[0, 1])]
-        for actual, exp in zip(q.queue, expected, strict=True):
+        expected = [op_cls(-1, "XY", wires=[0, 1])]
+        for actual, exp in zip(tape.operations, expected, strict=True):
             qp.assert_equal(actual, exp)
 
-    def test_adjoint_decomp_resources(self):
-        """Test the resources of the Adjoint(PPR) rule."""
-        rule = qp.list_decomps("Adjoint(PPR)")["_adjoint_ppr_to_ppr"]
-        adj_op = qp.adjoint(qp.PPR(4, "XY", wires=[0, 1]))
+    def test_adjoint_decomp_resources(self, op_cls):
+        """Test the resources of the adjoint rule."""
+        denominator = PPR_DENOMINATORS[op_cls]
+        rule = qp.list_decomps(f"Adjoint(PPR_{denominator})")["_adjoint_ppr_flip_sign"]
+        adj_op = qp.adjoint(op_cls(1, "XY", wires=[0, 1]))
 
-        expected = qp.decomposition.Resources({qp.PPR(-4, pauli_word="XY", wires=Wire[2]): 1})
+        expected = qp.decomposition.Resources({op_cls(-1, pauli_word="XY", wires=Wire[2]): 1})
         assert rule.compute_resources(**adj_op.arguments) == expected
 
-    @pytest.mark.parametrize(
-        "denominator, pauli_word",
-        [(2, "XYZ"), (-2, "Z"), (4, "XX"), (-4, "YZ"), (8, "Y"), (-8, "ZYZX")],
-    )
-    def test_compute_matrix_against_pauli_rot(self, denominator, pauli_word):
-        """Test PPR.compute_matrix against PauliRot.compute_matrix."""
-        mat_ppr = qp.PPR.compute_matrix(denominator, pauli_word)
-        theta = np.pi / denominator * 2
-        mat_paulirot = qp.PauliRot.compute_matrix(theta, pauli_word)
+    @pytest.mark.parametrize("sign", [1, -1])
+    @pytest.mark.parametrize("pauli_word", ["XYZ", "Z", "XX", "YZ", "ZYZX", "XI", "YIZ", "I", "II"])
+    def test_compute_matrix(self, op_cls, sign, pauli_word):
+        """Test compute_matrix against PauliRot.compute_matrix and a manual exponential."""
+        denominator = PPR_DENOMINATORS[op_cls]
+        mat_ppr = op_cls.compute_matrix(sign, pauli_word)
+        mat_paulirot = qp.PauliRot.compute_matrix(2 * np.pi * sign / denominator, pauli_word)
         assert np.allclose(mat_ppr, mat_paulirot)
 
         pw = qp.pauli.PauliWord(dict(enumerate(pauli_word)))
-        wires = list(pw)
+        wires = list(range(len(pauli_word)))
         expected_manual = sp.linalg.expm(
-            -1j * np.pi / denominator * qp.matrix(pw, wire_order=wires)
+            -1j * np.pi * sign / denominator * qp.matrix(pw, wire_order=wires)
         )
         assert np.allclose(mat_ppr, expected_manual)
+
+
+class TestToPPRDecompositions:
+    """Tests for the decomposition rules of non-parametric gates into PPRs."""
+
+    @pytest.mark.parametrize(
+        "op, rule_name, expected",
+        [
+            (qp.X(0), "_paulix_to_ppr", [qp.PPR_2(1, "X", 0), qp.GlobalPhase(-np.pi / 2)]),
+            (qp.Y(0), "_pauliy_to_ppr", [qp.PPR_2(1, "Y", 0), qp.GlobalPhase(-np.pi / 2)]),
+            (qp.Z(0), "_pauliz_to_ppr", [qp.PPR_2(1, "Z", 0), qp.GlobalPhase(-np.pi / 2)]),
+            (qp.S(0), "_s_to_ppr", [qp.PPR_4(1, "Z", 0), qp.GlobalPhase(-np.pi / 4)]),
+            (qp.T(0), "_t_to_ppr", [qp.PPR_8(1, "Z", 0), qp.GlobalPhase(-np.pi / 8)]),
+        ],
+    )
+    def test_decomposition_rule(self, op, rule_name, expected):
+        """Test the queued operations, resources and matrix of the decomposition rule."""
+        rule = qp.list_decomps(op)[rule_name]
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(**op.arguments)
+
+        for actual, exp in zip(q.queue, expected, strict=True):
+            qp.assert_equal(actual, exp)
+
+        assert_valid_decomp_rule(op, rule)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize("base, ppr_cls", [(qp.S, qp.PPR_4), (qp.T, qp.PPR_8)])
+    def test_adjoint_reaches_ppr(self, base, ppr_cls):
+        """Test that the adjoint of S and T decompose into a PPR with a negative sign."""
+        tape = qp.tape.QuantumScript([qp.adjoint(base(0))])
+        [new_tape], _ = decompose(tape, gate_set={ppr_cls, qp.GlobalPhase})
+
+        (ppr,) = (op for op in new_tape.operations if isinstance(op, ppr_cls))
+        qp.assert_equal(ppr, ppr_cls(-1, "Z", 0))
+        assert np.allclose(qp.matrix(new_tape, wire_order=[0]), qp.matrix(qp.adjoint(base(0))))

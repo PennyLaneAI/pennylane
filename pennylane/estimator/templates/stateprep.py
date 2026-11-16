@@ -28,8 +28,6 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable= signature-differs, arguments-differ, too-many-arguments
-
 
 class UniformStatePrep(ResourceOperator):
     r"""Resource class for preparing a uniform superposition.
@@ -104,6 +102,7 @@ class UniformStatePrep(ResourceOperator):
         return {"num_states": self.num_states}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_states: int) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -120,6 +119,7 @@ class UniformStatePrep(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"num_states": num_states})
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, num_states: int) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
@@ -223,6 +223,7 @@ class AliasSampling(ResourceOperator):
         return {"num_coeffs": self.num_coeffs, "precision": self.precision}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_coeffs: int, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -236,6 +237,7 @@ class AliasSampling(ResourceOperator):
         )
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, num_coeffs: int, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
@@ -362,7 +364,7 @@ class MPSPrep(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls, num_mps_matrices: int, max_bond_dim: int, precision: float | None = None
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
@@ -385,7 +387,7 @@ class MPSPrep(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         num_mps_matrices: int,
         max_bond_dim: int,
@@ -426,6 +428,7 @@ class MPSPrep(ResourceOperator):
         return gate_lst
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def tracking_name(cls, num_mps_matrices, max_bond_dim, precision) -> str:
         return f"MPSPrep({num_mps_matrices}, {max_bond_dim}, {precision})"
 
@@ -624,7 +627,7 @@ class QROMStatePreparation(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         num_state_qubits: int,
         precision: float | None = None,
@@ -856,7 +859,7 @@ class QROMStatePreparation(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         num_state_qubits: int,
         positive_and_real: bool,
@@ -967,7 +970,7 @@ class PrepTHC(ResourceOperator):
         self.select_swap_depth = select_swap_depth
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
-        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) // 2  # N+M(M+1)/2
         coeff_register = ceil_log2(num_coeff)
 
         # Based on section III D in arXiv:2011.03494
@@ -1000,7 +1003,7 @@ class PrepTHC(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         thc_ham: THCHamiltonian,
         coeff_precision: int = 15,
@@ -1032,7 +1035,7 @@ class PrepTHC(ResourceOperator):
 
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
-        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) // 2  # N+M(M+1)/2
         coeff_register = ceil_log2(num_coeff)
 
         num_wires = 4 * ceil_log2(tensor_rank + 1) + coeff_register + coeff_precision * 2 + 8
@@ -1045,7 +1048,7 @@ class PrepTHC(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         thc_ham: THCHamiltonian,
         coeff_precision: int = 15,
@@ -1074,7 +1077,7 @@ class PrepTHC(ResourceOperator):
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
 
-        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) // 2  # N+M(M+1)/2
         m_register = ceil_log2(tensor_rank + 1)
 
         gate_list = []
@@ -1169,10 +1172,8 @@ class PrepTHC(ResourceOperator):
         return gate_list
 
     @classmethod
-    def adjoint_resource_decomp(
-        cls,
-        target_resource_params: dict,
-    ) -> list[GateCount]:
+    # pylint: disable-next=signature-differs
+    def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -1193,7 +1194,7 @@ class PrepTHC(ResourceOperator):
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
 
-        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) // 2
         m_register = ceil_log2(tensor_rank + 1)
         gate_list = []
 

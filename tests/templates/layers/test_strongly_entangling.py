@@ -15,15 +15,13 @@
 Unit tests for the StronglyEntanglingLayers template.
 """
 
-# pylint: disable=too-few-public-methods
-
 import numpy as np
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane import ops as qp_ops
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -38,7 +36,7 @@ def test_standard_validity():
 
     op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires))
 
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.parametrize("batch_dim", [None, 1, 3])
@@ -71,13 +69,11 @@ class TestDecomposition:
         """Tests the decomposition rule implemented with the new system."""
         weights = np.random.random(size=(1, n_wires, 3))
         op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
-        for rule in qp.list_decomps(qp.StronglyEntanglingLayers):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize("n_wires, weight_shape, expected_names, expected_wires", QUEUES)
     def test_expansion(self, n_wires, weight_shape, expected_names, expected_wires, batch_dim):
         """Checks the queue for the default settings."""
-        # pylint: disable=too-many-arguments
 
         if batch_dim is not None:
             weight_shape = (batch_dim,) + weight_shape
@@ -209,7 +205,7 @@ class TestInputs:
             circuit(weights, ranges=[0])
 
 
-class TestAttributes:
+class TestAttributes:  # pylint: disable=too-few-public-methods
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(
@@ -321,33 +317,6 @@ class TestInterfaces:
         grads2 = grad_fn2(weights)
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        weights = tf.Variable(np.random.random(size=(1, 3, 3)))
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(weights)
-        grads = tape.gradient(res, [weights])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(weights)
-        grads2 = tape2.gradient(res2, [weights])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):

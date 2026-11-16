@@ -13,7 +13,8 @@
 # limitations under the License.
 """Tests for default qubit."""
 
-# pylint: disable=import-outside-toplevel, no-member, too-many-arguments
+# pylint: disable=too-many-arguments
+
 
 from unittest import mock
 
@@ -60,11 +61,10 @@ def test_wires():
 
 def test_debugger_attribute():
     """Test that DefaultQubit has a debugger attribute and that it is `None`"""
-    # pylint: disable=protected-access
     dev = DefaultQubit()
 
     assert hasattr(dev, "_debugger")
-    assert dev._debugger is None
+    assert dev._debugger is None  # pylint: disable=protected-access
 
 
 def test_snapshot_multiprocessing_qnode():
@@ -86,13 +86,12 @@ def test_snapshot_multiprocessing_qnode():
         qp.snapshots(circuit)()
 
 
-# pylint: disable=protected-access
 def test_applied_modifiers():
     """Test that default qubit has the `single_tape_support` and `simulator_tracking`
     modifiers applied.
     """
     dev = DefaultQubit()
-    assert dev._applied_modifiers == [
+    assert dev._applied_modifiers == [  # pylint: disable=protected-access
         qp.devices.modifiers.single_tape_support,
         qp.devices.modifiers.simulator_tracking,
     ]
@@ -203,9 +202,8 @@ class TestBasicCircuit:
         )
 
         dev = DefaultQubit(max_workers=max_workers)
-        config = ExecutionConfig(
-            device_options={"max_workers": dev._max_workers}  # pylint: disable=protected-access
-        )
+        # pylint: disable-next=protected-access
+        config = ExecutionConfig(device_options={"max_workers": dev._max_workers})
         result = dev.execute(qs, execution_config=config)
 
         assert isinstance(result, tuple)
@@ -300,50 +298,6 @@ class TestBasicCircuit:
         g = torch.autograd.functional.jacobian(f, phi + 0j)
         assert qp.math.allclose(g[0], -torch.cos(phi))
         assert qp.math.allclose(g[1], -torch.sin(phi))
-
-    # pylint: disable=invalid-unary-operand-type
-    @pytest.mark.tf
-    @pytest.mark.parametrize("max_workers", max_workers_list)
-    def test_tf_results_and_backprop(self, max_workers):
-        """Tests execution and gradients of a simple circuit with tensorflow."""
-        import tensorflow as tf
-
-        phi = tf.Variable(4.873, dtype="float64")
-
-        dev = DefaultQubit(max_workers=max_workers)
-
-        with tf.GradientTape(persistent=True) as grad_tape:
-            qs = qp.tape.QuantumScript(
-                [qp.RX(phi, wires=0)], [qp.expval(qp.PauliY(0)), qp.expval(qp.PauliZ(0))]
-            )
-            result = dev.execute(qs)
-
-        assert qp.math.allclose(result[0], -tf.sin(phi))
-        assert qp.math.allclose(result[1], tf.cos(phi))
-
-        if max_workers is not None:
-            return
-
-        grad0 = grad_tape.jacobian(result[0], [phi])
-        grad1 = grad_tape.jacobian(result[1], [phi])
-
-        assert qp.math.allclose(grad0[0], -tf.cos(phi))
-        assert qp.math.allclose(grad1[0], -tf.sin(phi))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("op,param", [(qp.RX, np.pi), (qp.BasisState, [1])])
-    def test_qnode_returns_correct_interface(self, op, param):
-        """Test that even if no interface parameters are given, result is correct."""
-        dev = DefaultQubit()
-
-        @qp.qnode(dev, interface="tf")
-        def circuit(p):
-            op(p, wires=[0])
-            return qp.expval(qp.PauliZ(0))
-
-        res = circuit(param)
-        assert qp.math.get_interface(res) == "tensorflow"
-        assert qp.math.allclose(res, -1)
 
     def test_basis_state_wire_order(self):
         """Test that the wire order is correct with a basis state if the tape wires have a non standard order."""
@@ -783,35 +737,6 @@ class TestExecutingBatches:
         g3 = torch.tensor([temp, -temp, temp, -temp])
         assert qp.math.allclose(g1, g3)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("max_workers", max_workers_list)
-    def test_tf(self, max_workers):
-        """Test batches can be executed and have backprop derivatives in tf."""
-
-        import tensorflow as tf
-
-        dev = DefaultQubit(max_workers=max_workers)
-
-        x = tf.Variable(5.2281, dtype="float64")
-        with tf.GradientTape(persistent=True) as tape:
-            results = self.f(dev, x)
-
-        expected = self.expected(x)
-        self.nested_compare(results, expected)
-
-        if max_workers is not None:
-            return
-
-        g00 = tape.gradient(results[0][0], x)
-        assert qp.math.allclose(g00, -qp.math.cos(x))
-        g01 = tape.gradient(results[0][1], x)
-        assert qp.math.allclose(g01, -3 * qp.math.sin(x))
-
-        g1 = tape.jacobian(results[1], x)
-        temp = -0.5 * qp.math.cos(x / 2) * qp.math.sin(x / 2)
-        g3 = tf.Variable([temp, -temp, temp, -temp])
-        assert qp.math.allclose(g1, g3)
-
     @pytest.mark.jax
     def test_warning_if_jitting_batch(self):
         """Test that a warning is given if end-to-end jitting is enabled with a batch."""
@@ -905,30 +830,9 @@ class TestSumOfTermsDifferentiability:
         expected_out = self.expected(x2, like="torch")
         assert qp.math.allclose(out, expected_out)
 
-        out.backward()  # pylint:disable=no-member
+        out.backward()
         expected_out.backward()
         assert qp.math.allclose(x.grad, x2.grad)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("style", ("sum", "hermitian"))
-    def test_tf_backprop(self, style):
-        """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
-        import tensorflow as tf
-
-        dev = DefaultQubit()
-
-        x = tf.Variable(0.5, dtype="float64")
-
-        with tf.GradientTape() as tape1:
-            out = self.f(dev, x, style=style)
-
-        with tf.GradientTape() as tape2:
-            expected_out = self.expected(x)
-
-        assert qp.math.allclose(out, expected_out)
-        g1 = tape1.gradient(out, x)
-        g2 = tape2.gradient(expected_out, x)
-        assert qp.math.allclose(g1, g2)
 
 
 @pytest.mark.parametrize("max_workers", max_workers_list)
@@ -947,7 +851,7 @@ class TestAdjointDifferentiation:
         expected_grad = -qp.math.sin(x)
         actual_grad = dev.compute_derivatives(qs, config)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad.shape == ()
         assert np.isclose(actual_grad, expected_grad)
 
         expected_val = qp.math.cos(x)
@@ -1024,7 +928,7 @@ class TestAdjointDifferentiation:
         expected_grad = -qp.math.sin(x) * tangent[0]
         actual_grad = dev.compute_jvp(qs, tangent, config)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad.shape == ()
         assert np.isclose(actual_grad, expected_grad)
 
         expected_val = qp.math.cos(x)
@@ -1309,19 +1213,20 @@ class TestRandomSeed:
 
     def test_global_seed_no_device_seed_by_default(self):
         """Test that the global numpy seed initializes the rng if device seed is none."""
+        # pylint: disable=protected-access
         np.random.seed(42)
         dev = DefaultQubit()
-        first_num = dev._rng.random()  # pylint: disable=protected-access
+        first_num = dev._rng.random()
 
         np.random.seed(42)
         dev2 = DefaultQubit()
-        second_num = dev2._rng.random()  # pylint: disable=protected-access
+        second_num = dev2._rng.random()
 
         assert qp.math.allclose(first_num, second_num)
 
         np.random.seed(42)
         dev2 = DefaultQubit(seed="global")
-        third_num = dev2._rng.random()  # pylint: disable=protected-access
+        third_num = dev2._rng.random()
 
         assert qp.math.allclose(third_num, first_num)
 
@@ -1819,7 +1724,6 @@ def test_projector_dynamic_type(max_workers, n_wires):
         pytest.param("autograd", marks=pytest.mark.autograd),
         pytest.param("torch", marks=pytest.mark.torch),
         pytest.param("jax", marks=pytest.mark.jax),
-        pytest.param("tensorflow", marks=pytest.mark.tf),
     ],
 )
 @pytest.mark.parametrize("use_jit", [True, False])
@@ -1960,7 +1864,7 @@ class TestPostselection:
         # module rather than the functions directly exposed by a local RNG. This makes
         # mocking easier.
         dev = qp.device("default.qubit")
-        dev._rng = None
+        dev._rng = None  # pylint: disable=protected-access
         param = qp.math.asarray(param, like=interface)
 
         with mock.patch("numpy.random.binomial", lambda *args, **kwargs: 5):
@@ -2004,9 +1908,7 @@ class TestPostselection:
         """Test that the results of a qnode are nan values of the correct shape if the state
         that we are postselecting has a zero probability of occurring."""
 
-        if (isinstance(mp, qp.measurements.MutualInfoMP) and interface != "jax") or (
-            isinstance(mp, qp.measurements.VnEntropyMP) and interface == "tensorflow"
-        ):
+        if isinstance(mp, qp.measurements.MutualInfoMP) and interface != "jax":
             pytest.skip("Unsupported measurements and interfaces.")
 
         if use_jit:
@@ -2167,7 +2069,6 @@ class TestPostselection:
                     reason="defer measurements + hw-like does not work with JAX jit yet. See sc-96593 or #7981."
                 )
 
-            # pylint: disable=import-outside-toplevel
             import jax
 
             # We do not raise an error if using jax.jit, because we cannot check whether or not
@@ -2332,48 +2233,3 @@ def test_broadcasted_parameter(max_workers):
     results = dev.execute(batch, config)
     processed_results = pre_processing_fn(results)
     assert qp.math.allclose(processed_results, np.cos(x))
-
-
-@pytest.mark.jax
-@pytest.mark.usefixtures("preserve_jax_x64")
-def test_renomalization_issue():
-    """Test that no normalization error occurs with the following workflow in float32 mode.
-    Just tests executes without error.  Not producing a more minimal example due to difficulty
-    finding an exact case that leads to renomalization issues.
-    """
-    import jax
-    from jax import numpy as jnp
-
-    jax.config.update("jax_enable_x64", False)
-
-    def gaussian_fn(p, t):
-        return p[0] * jnp.exp(-((t - p[1]) ** 2) / (2 * p[2] ** 2))
-
-    global_drive = qp.pulse.rydberg_drive(
-        amplitude=gaussian_fn, phase=0, detuning=0, wires=[0, 1, 2]
-    )
-
-    a = 5
-
-    coordinates = [(0, 0), (a, 0), (a / 2, np.sqrt(a**2 - (a / 2) ** 2))]
-
-    settings = {"interaction_coeff": 862619.7915580727}
-
-    H_interaction = qp.pulse.rydberg_interaction(coordinates, **settings)
-
-    max_amplitude = 2.0
-    displacement = 1.0
-    sigma = 0.3
-
-    amplitude_params = [max_amplitude, displacement, sigma]
-
-    params = [amplitude_params]
-    ts = [0.0, 1.75]
-
-    def circuit(params):
-        qp.evolve(H_interaction + global_drive)(params, ts)
-        return qp.counts()
-
-    circuit_qp = qp.QNode(circuit, qp.device("default.qubit"), interface="jax", shots=1000)
-
-    circuit_qp(params)

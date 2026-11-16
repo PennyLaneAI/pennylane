@@ -120,14 +120,8 @@ class MidMeasure(Operator2):
     ):
         super().__init__(wires=wires, reset=reset, postselect=postselect, meas_uid=meas_uid)
 
-    @property
-    def name(self) -> str:
-        # Kept as ``"MidMeasureMP"`` for backwards compatibility (gate sets, resource-rep aliases,
-        # device capabilities, etc. all key on this name).
-        return "MidMeasureMP"
-
     @staticmethod
-    def compute_diagonalizing_gates(*args, **kwargs) -> list:  # pylint: disable=unused-argument
+    def compute_diagonalizing_gates(*args, **kwargs) -> list:
         return []
 
     @override
@@ -353,8 +347,7 @@ def measure(
               with postselection states that have zero or close to zero probability.
 
             * With analytic execution, ``qp.mutual_info`` will raise errors when using any interfaces except
-              ``jax``, and ``qp.vn_entropy`` will raise an error with the ``tensorflow`` interface when the
-              postselection state has zero probability.
+              ``jax`` when the postselection state has zero probability.
 
             * When using JIT, ``QNode``'s may have unexpected behaviour when postselection on a zero
               probability state is performed. Due to floating point precision, the zero probability may not be

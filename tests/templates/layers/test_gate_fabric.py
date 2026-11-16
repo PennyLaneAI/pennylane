@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.typing import Bool, Wire
+from pennylane.typing import Bool, Float, Wire
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -38,7 +38,7 @@ def test_standard_validity(include_pi):
 
     op = qp.GateFabric(weights, wires=range(qubits), init_state=init_state, include_pi=include_pi)
 
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.parametrize("include_pi", (True, False))
@@ -53,8 +53,8 @@ def test_resources(include_pi):
 
     expected = {
         qp.BasisState(Bool[n_wires], Wire[n_wires]): 1,
-        qp.resource_rep(qp.DoubleExcitation): n_layers * len_wire_pattern,
-        qp.resource_rep(qp.OrbitalRotation): (include_pi + 1) * n_layers * len_wire_pattern,
+        qp.DoubleExcitation(Float, Wire[4]): n_layers * len_wire_pattern,
+        qp.OrbitalRotation(Float, Wire[4]): (include_pi + 1) * n_layers * len_wire_pattern,
     }
     out = rule.compute_resources(
         n_layers=n_layers,
@@ -617,7 +617,7 @@ def _get_queue(op, system):
     try:
         f = partial(qp.list_decomps(qp.GateFabric)[0], **op.hyperparameters)
         jaxpr = jax.make_jaxpr(f)(*op.data, op.wires)
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *op.data, *op.wires)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *op.data, *op.wires)
         return tape.circuit
     finally:
         qp.capture.disable()
@@ -626,7 +626,6 @@ def _get_queue(op, system):
 class TestDecomposition:  # pylint: disable=too-few-public-methods
     """Tests that the template defines the correct decomposition."""
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "system",
         ("decomp_method", "graph_decomp", pytest.param("capture", marks=pytest.mark.capture)),
@@ -910,33 +909,6 @@ class TestInterfaces:
         grads2 = grad_fn2(weights)
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        weights = tf.Variable(np.random.random(size=(1, 1, 2)))
-
-        dev = qp.device("default.qubit", wires=4)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(weights)
-        grads = tape.gradient(res, [weights])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(weights)
-        grads2 = tape2.gradient(res2, [weights])
-
-        assert qp.math.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):

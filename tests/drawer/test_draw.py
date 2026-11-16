@@ -15,7 +15,6 @@
 Integration tests for the draw transform
 """
 
-# pylint: disable=import-outside-toplevel
 from functools import partial
 
 import pytest
@@ -205,15 +204,6 @@ class TestDecimals:
         out = draw(circuit, decimals=1)(torch.tensor(1.23), torch.tensor(2.34), torch.tensor(3.45))
         assert out == expected
 
-    @pytest.mark.tf
-    def test_tensorflow_parameters(self):
-        """Test tensorflow parameters display as normal numbers."""
-        import tensorflow as tf
-
-        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤\n1.234: ──RZ(3.5)─┤"
-        out = draw(circuit, decimals=1)(tf.Variable(1.234), tf.Variable(2.345), tf.Variable(3.456))
-        assert out == expected
-
     @pytest.mark.jax
     def test_jax_parameters(self):
         """Test jax parameters in tape display as normal numbers."""
@@ -350,10 +340,8 @@ class TestLayering:
         assert draw(circ)() == expected
 
 
-class TestMidCircuitMeasurements:
+class TestMidCircuitMeasurements:  # pylint: disable=too-many-public-methods
     """Tests for drawing mid-circuit measurements and classical conditions."""
-
-    # pylint: disable=too-many-public-methods
 
     @pytest.mark.parametrize("device_name", ["default.qubit"])
     def test_qnode_mid_circuit_measurement_not_deferred(self, device_name, mocker):

@@ -24,6 +24,7 @@ from scipy.sparse.linalg import expm as sparse_expm
 import pennylane as qp
 from pennylane import math
 from pennylane.core import queuing
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     add_decomps,
@@ -230,7 +231,7 @@ class Exp(ScalarSymbolicOp, Operation):
         return (self.base, self.data[0]), ()
 
     @classmethod
-    def _unflatten(cls, data, metadata):  # pylint: disable=unused-argument
+    def _unflatten(cls, data, metadata):
         base, coeff = data
         return cls(base, coeff)
 
@@ -267,7 +268,6 @@ class Exp(ScalarSymbolicOp, Operation):
     def resource_params(self) -> dict:
         return {"base": self.base}
 
-    # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
     @queuing.QueuingManager.stop_recording()
     def has_decomposition(self):
@@ -277,8 +277,8 @@ class Exp(ScalarSymbolicOp, Operation):
             coeff *= base.scalar
             base = base.base
 
-        # pylint: disable=unidiomatic-typecheck
-        if type(self) is Exp and not math.is_abstract(coeff) and math.real(coeff):
+        # pylint: disable-next=unidiomatic-typecheck
+        if type(self) is Exp and not math.is_tracer(coeff) and math.real(coeff):
             # if type is Evolution, we assume that is is indeed time evolution
             return False
 
@@ -311,7 +311,7 @@ class Exp(ScalarSymbolicOp, Operation):
 
         if queuing.QueuingManager.recording():
             for op in d:
-                queuing.apply(op)
+                apply(op)
 
         return d
 
@@ -328,8 +328,8 @@ class Exp(ScalarSymbolicOp, Operation):
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
 
-        # pylint: disable=unidiomatic-typecheck
-        if type(self) is Exp and not math.is_abstract(coeff) and math.real(coeff):
+        # pylint: disable-next=unidiomatic-typecheck
+        if type(self) is Exp and not math.is_tracer(coeff) and math.real(coeff):
             error_msg = f"The decomposition of the {self} operator is not defined."
 
             if self.base.is_verified_hermitian:
@@ -424,8 +424,8 @@ class Exp(ScalarSymbolicOp, Operation):
 
         return sparse_expm(self.coeff * self.base.sparse_matrix().tocsc()).asformat(format)
 
-    # pylint: disable=arguments-renamed,invalid-overridden-method
     @property
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
@@ -470,10 +470,9 @@ class Exp(ScalarSymbolicOp, Operation):
             return Exp(new_base.base, self.coeff * new_base.scalar)
         return Exp(new_base, self.coeff)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_generator(self):
-        if math.is_abstract(self.coeff):
+    def has_generator(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
+        if math.is_tracer(self.coeff):
             return self.base.is_verified_hermitian
         return self.base.is_verified_hermitian and not np.real(self.coeff)
 
