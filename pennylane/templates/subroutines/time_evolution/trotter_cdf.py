@@ -325,8 +325,10 @@ class TrotterCDF(Operator2):
         central full :math:`\Delta t` term (visited once per step), so the emitted angle is
         :math:`-\epsilon_p \Delta t = -2 \epsilon_p (\Delta t/2)`, accumulating :math:`RZ(-\epsilon_p t)`
         over the :math:`n` steps. The constant :math:`\epsilon_p/2` is deferred to the global phase (step 5).
-        Except for the genuine controlled circuit, this layer and the basis rotations around it are
-        fused into a single basis rotation (step 6).
+        This layer and the basis rotations around it are fused into a single basis rotation
+        (step 6) in the uncontrolled circuit, and in the double-phase circuit for real leaves.
+        For complex leaves in the double-phase circuit, and in the genuine controlled circuit,
+        the one-body block is never fused.
 
         **4. Two-body diagonal**
         In the fragment basis the two-body generator is a sum over distinct wire pairs
