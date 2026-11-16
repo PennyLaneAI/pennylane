@@ -1079,8 +1079,6 @@ def _controlled_z_resources(  # pylint: disable=unused-argument
 ):
     if len(control_wires) == 1:
         return {qp.CZ: 1}
-    if len(control_wires) == 2:
-        return {qp.CCZ: 1}
     return {
         qp.H: 2,
         qp.MultiControlledX(
@@ -1101,16 +1099,22 @@ def _controlled_z_decomp(  # pylint: disable=unused-argument
         qp.CZ(wires=wires)
         return
 
-    if len(control_wires) == 2:
-        qp.CCZ(wires=wires)
-        return
-
     qp.H(wires=wires[-1])
     qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
     qp.H(wires=wires[-1])
 
 
-add_decomps("C(PauliZ)", flip_zero_control2(_controlled_z_decomp))
+@register_condition(lambda control_wires, **_: len(control_wires) == 2)
+@register_resources(lambda *_, **__: {qp.CCZ: 1})
+def _controlled_z_to_ccz(base, control_wires, **_):
+    qp.CCZ(wires=concatenate_wires(control_wires, base.wires))
+
+
+add_decomps(
+    "C(PauliZ)",
+    flip_zero_control2(_controlled_z_to_ccz),
+    flip_zero_control2(_controlled_z_decomp),
+)
 
 
 class S(Operator2):
@@ -1744,8 +1748,6 @@ add_decomps("Pow(SWAP)", pow_involutory2)
 
 # pylint: disable-next=unused-argument
 def _controlled_swap_resources(base, control_wires, control_values, work_wires, work_wire_type):
-    if len(control_wires) == 1:
-        return {qp.CSWAP: 1}
     return {
         qp.CNOT: 2,
         qp.MultiControlledX(
@@ -1760,10 +1762,6 @@ def _controlled_swap_resources(base, control_wires, control_values, work_wires, 
 # pylint: disable-next=unused-argument
 def _controlled_swap_decomp(base, control_wires, control_values, work_wires, work_wire_type):
     wires = concatenate_wires(control_wires, base.wires)
-    if len(control_wires) == 1:
-        qp.CSWAP(wires=wires)
-        return
-
     qp.CNOT(wires=[wires[-2], wires[-1]])
     qp.MultiControlledX(
         wires=concatenate_wires(wires[:-2], [wires[-1], wires[-2]]),
@@ -1773,7 +1771,17 @@ def _controlled_swap_decomp(base, control_wires, control_values, work_wires, wor
     qp.CNOT(wires=[wires[-2], wires[-1]])
 
 
-add_decomps("C(SWAP)", flip_zero_control2(_controlled_swap_decomp))
+@register_condition(lambda control_wires, **_: len(control_wires) == 1)
+@register_resources(lambda *_, **__: {qp.CSWAP: 1})
+def _controlled_swap_to_cswap(base, control_wires, **_):
+    qp.CSWAP(wires=concatenate_wires(control_wires, base.wires))
+
+
+add_decomps(
+    "C(SWAP)",
+    flip_zero_control2(_controlled_swap_to_cswap),
+    flip_zero_control2(_controlled_swap_decomp),
+)
 
 
 class ECR(Operator2):
