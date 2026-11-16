@@ -76,38 +76,13 @@ When creating a new quantum operator in PennyLane2, the input arguments to the
 operator must be accurately binned into the following categories for
 compatibility with the :func:`~pennylane.qjit` compiler.
 
-* ``wire_argnames`` : The names of arguments corresponding to wires. For
-  example, :class:`~pennylane.MultiControlledX`'s ``wires`` and ``work_wires``
-  arguments belong in ``wire_argnames``.
+.. autosummary::
 
-* ``dynamic_argnames`` : The names of arguments that are scalars, arrays, or
-  castable to arrays. These arguments can be treated by the
-  :func:`~pennylane.qjit` compiler as *dynamic*. For example, the ``bitstrings``
-  argument in :class:`~pennylane.QROM` is an array of integer values (``0`` and
-  ``1``), and can therefore be in ``dynamic_argnames``.
-
-* ``static_argnames`` : The names of arguments whose concrete values are known
-  at compile time, but that do not need to be accessible to the
-  :func:`~pennylane.qjit` compiler. For example, the ``partial`` argument in
-  :class:`~pennylane.Select` is a Boolean flag that only changes how the
-  operator is decomposed, and therefore belongs in ``static_argnames``.
-
-* ``compilable_argnames`` : The names of arguments whose concrete values are
-  known at compile time and *are* visible to the :func:`~pennylane.qjit`
-  compiler. These can be numbers, strings, and lists, tuples, or dictionaries of
-  them. For example, the ``pauli_word`` argument in :class:`~pennylane.PauliRot`
-  is a string (e.g., ``"XYZ"``), and can therefore be in
-  ``compilable_argnames``. An operator can specify either
-  ``compilable_argnames`` or ``static_argnames`` and ``hybrid_argnames``, but
-  not both.
-
-* ``hybrid_argnames`` : The names of arguments that hold dynamic data wrapped in
-  static structures (Pytrees), such as other operators or collections of wires
-  or arrays. These names cannot appear in ``dynamic_argnames``,
-  ``static_argnames``, or ``compilable_argnames``, but they can appear in
-  ``wire_argnames`` when the argument contains nested structures of wires. For
-  example, the ``ops`` argument in :class:`~pennylane.Select` is a list of
-  operators, and therefore belongs in ``hybrid_argnames``.
+    ~pennylane.core.operator.Operator2.wire_argnames
+    ~pennylane.core.operator.Operator2.dynamic_argnames
+    ~pennylane.core.operator.Operator2.static_argnames
+    ~pennylane.core.operator.Operator2.compilable_argnames
+    ~pennylane.core.operator.Operator2.hybrid_argnames
 
 An example
 ##########
