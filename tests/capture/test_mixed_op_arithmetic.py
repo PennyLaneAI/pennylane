@@ -19,7 +19,6 @@ AbstractOperator arithmetic instead of the scalar/Identity branch. Scalar
 ``+/-`` still uses the Identity embedding.
 """
 
-# pylint: disable=unnecessary-lambda
 import pytest
 
 import pennylane as qp

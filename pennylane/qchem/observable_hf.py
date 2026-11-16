@@ -136,5 +136,5 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
     h.prune(tol=cutoff)
 
     if not h.wires:
-        return h.operation(wire_order=[0])
-    return h.operation()
+        return qp.pauli.to_operator(h, identity_wires=[0])
+    return qp.pauli.to_operator(h)

@@ -110,10 +110,7 @@ def _construct_ml_execution_pipeline(
     return jpc, execute_fn
 
 
-# pylint: disable=import-outside-toplevel
-def _get_ml_boundary_execute(
-    resolved_execution_config: ExecutionConfig,
-) -> Callable:
+def _get_ml_boundary_execute(resolved_execution_config: ExecutionConfig) -> Callable:
     """Imports and returns the function that handles the interface boundary for a given machine learning framework.
 
     Args:
@@ -125,6 +122,7 @@ def _get_ml_boundary_execute(
     Raises:
         pennylane.QuantumFunctionError: If the required package for the specified interface is not installed.
     """
+    # pylint: disable=import-outside-toplevel
     interface = resolved_execution_config.interface
     device_vjp = resolved_execution_config.use_device_jacobian_product
     try:

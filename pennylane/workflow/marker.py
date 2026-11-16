@@ -60,9 +60,9 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
     >>> print(c.compile_pipeline)
     CompilePipeline(
        ├─▶ nothing-applied
-      [1] cancel_inverses(),
+      [0] cancel_inverses(),
        ├─▶ after-cancel-inverses
-      [2] merge_rotations()
+      [1] merge_rotations()
        └─▶ after-merge-rotations
     )
     >>> print(c.compile_pipeline.markers)

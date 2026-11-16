@@ -15,6 +15,8 @@
 Integration tests to ensure that tensor observables return the correct result.
 """
 
+# pylint: disable=too-many-arguments
+
 import functools
 
 import numpy as np
@@ -37,7 +39,6 @@ def ansatz(a, b, c):
     qp.CNOT(wires=[1, 2])
 
 
-# pylint: disable=too-many-arguments
 @pytest.mark.parametrize("shots", [None, 1_000_000])
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorExpval:
@@ -242,10 +243,9 @@ class TestTensorExpval:
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
         )
 
-        # pylint: disable=unused-argument
         @qp.set_shots(shots)
         @qp.qnode(dev)
-        def circuit(a, b, c):
+        def circuit(a, b, c):  # pylint: disable=unused-argument
             qp.RY(a, wires=0)
             qp.RY(b, wires=1)
             qp.CNOT(wires=[0, 1])
@@ -377,7 +377,7 @@ def tensor_product(observables):
 class TestTensorSample:
     """Tests for samples of tensor observables"""
 
-    # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
     def test_paulix_tensor_pauliz(self, theta, phi, varphi, tol_stochastic, seed):
         """Test that a tensor product involving PauliX and PauliZ works correctly"""
         dev = qp.device("default.qubit", wires=2, seed=seed)
@@ -423,6 +423,7 @@ class TestTensorSample:
         # s1 should only contain 1 and -1
         assert np.allclose(s1**2, 1, atol=tol_stochastic, rtol=0)
 
+    # pylint: disable-next=unused-argument
     def test_tensor_hermitian(self, theta, phi, varphi, tol_stochastic, seed):
         """Test that a tensor product involving qp.Hermitian works correctly"""
         dev = qp.device("default.qubit", wires=3, seed=seed)

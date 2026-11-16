@@ -121,7 +121,7 @@ class MidMeasure(Operator2):
         super().__init__(wires=wires, reset=reset, postselect=postselect, meas_uid=meas_uid)
 
     @staticmethod
-    def compute_diagonalizing_gates(*args, **kwargs) -> list:  # pylint: disable=unused-argument
+    def compute_diagonalizing_gates(*args, **kwargs) -> list:
         return []
 
     @override
