@@ -219,6 +219,7 @@ def _ctrl_seq_ir_optimized_decomposition(*_, base=None, control=None, **__):
     _powers_loop()
 
 
+# TODO: worth exploring how Catalyst can handle these situations (execution versus compilation optimization)
 add_decomps(
     ControlledSequence,
     _ctrl_seq_execution_optimized_decomposition,
