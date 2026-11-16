@@ -8,7 +8,7 @@ can either be formally added to PennyLane2 or just used locally.
 
 .. note::
 
-    The term "quantum operators" encompasses anything that can be programmed
+    The term "quantum operator" encompasses anything that can be programmed
     onto a quantum device. This includes
     :doc:`gates </introduction/operations>`, elaborate
     :doc:`subroutines </introduction/subroutines>`, and mid-circuit
@@ -19,8 +19,8 @@ Important classes and functions
 
 To define a quantum operator in PennyLane2, there are a handful of important
 functions to be aware of that pertain to the general scaffolding for operator
-creation, how the operator is implemented (its decomposition(s)), and how it
-integrates with resource estimation.
+creation, how the operator is decomposed,
+and the resulting quantum resources.
 
 Operator creation
 -----------------
@@ -34,7 +34,7 @@ below.
     ~pennylane.core.operator.Operator2
 
 The :func:`~pennylane.subcircuit` function and the
-:class:`~pennylane.core.operator.Operator2` only differ syntactically; using
+:class:`~pennylane.core.operator.Operator2` class only differ syntactically; using
 either will result in a valid quantum operator that is agnostic to how it
 originated.
 
@@ -222,8 +222,7 @@ Available Decomposition Rules:
 {'MidCircuitMeasure': 1, 'PauliRot-Phi-w1': 1, 'PauliX': 1}
 
 Note that the decomposition rule name given by default is
-``qfunc.name + "_decomp"`` (i.e., the name of the quantum function plus
-"_decomp").
+``qfunc.name + "_decomp"``.
 
 Subclassing Operator2
 ---------------------
