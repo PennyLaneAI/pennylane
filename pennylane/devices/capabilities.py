@@ -21,6 +21,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from itertools import repeat
+from typing import TypedDict, cast
 
 from pennylane.core.operator import Operator
 from pennylane.exceptions import InvalidCapabilitiesError, QuantumFunctionError
@@ -218,6 +219,18 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         return bool(_get_supported_base_op(observable_name, self.observables))
 
 
+class _CompilationOptions(TypedDict, total=False):
+    """Optional compilation capabilities declared by a device."""
+
+    qjit_compatible: bool
+    runtime_code_generation: bool
+    dynamic_qubit_management: bool
+    overlapping_observables: bool
+    non_commuting_observables: bool
+    initial_state_prep: bool
+    supported_mcm_methods: list[str]
+
+
 VALID_COMPILATION_OPTIONS = {
     "qjit_compatible",
     "runtime_code_generation",
@@ -361,7 +374,7 @@ def _get_measurement_processes(
     return measurement_processes
 
 
-def _get_compilation_options(document: dict, prefix: str = "") -> dict[str, bool]:
+def _get_compilation_options(document: dict, prefix: str = "") -> _CompilationOptions:
     """Gets the capabilities in the compilation section.
 
     Args:
@@ -384,7 +397,7 @@ def _get_compilation_options(document: dict, prefix: str = "") -> dict[str, bool
             "When overlapping_observables is False, non_commuting_observables cannot be True."
         )
 
-    return section
+    return cast(_CompilationOptions, section)
 
 
 def parse_toml_document(document: dict) -> DeviceCapabilities:

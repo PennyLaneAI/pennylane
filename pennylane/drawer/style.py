@@ -258,7 +258,7 @@ def use_style(style: str):
         )
 
 
-def _set_style(style: str = None):
+def _set_style(style: str | None = None):
     """
     Execute a style function to change the current rcParams.
 
