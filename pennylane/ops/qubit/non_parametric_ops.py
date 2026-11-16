@@ -991,7 +991,7 @@ class PauliZ(Operator2):
 
                 :class:`~.PauliZ` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_z_decomp)
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/pauliz_controlled.svg
                 :region: controlled
                 :where: :math:`c \geq 3` is the number of control wires, each control wire with
@@ -1240,8 +1240,6 @@ def _controlled_z_standard_resources(
 ):
     if len(control_wires) == 1:
         return {qp.CZ: 1}
-    if len(control_wires) == 2:
-        return {qp.CCZ: 1}
     return {
         qp.H: 2,
         qp.MultiControlledX(
@@ -1261,16 +1259,23 @@ def _controlled_z_standard(base, control_wires, control_values, work_wires, work
         qp.CZ(wires=wires)
         return
 
-    if len(control_wires) == 2:
-        qp.CCZ(wires=wires)
-        return
-
     qp.H(wires=wires[-1])
     qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
     qp.H(wires=wires[-1])
 
 
-add_decomps("C(PauliZ)", flip_zero_control2(_controlled_z_standard, name="standard"))
+@register_condition(lambda control_wires, **_: len(control_wires) == 2)
+@register_name("to_ccz")
+@register_resources(lambda *_, **__: {qp.CCZ: 1})
+def _controlled_z_to_ccz(base, control_wires, **_):
+    qp.CCZ(wires=concatenate_wires(control_wires, base.wires))
+
+
+add_decomps(
+    "C(PauliZ)",
+    flip_zero_control2(_controlled_z_to_ccz, name="to_ccz"),
+    flip_zero_control2(_controlled_z_standard, name="standard"),
+)
 
 
 class S(Operator2):
@@ -1861,7 +1866,7 @@ class SWAP(Operator2):
 
                 :class:`~.SWAP` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_swap_decomp)
+            .. decomposition-rule:: standard
                 :image: /_static/decomposition_thumbnails/swap_controlled.svg
                 :region: controlled
                 :where: :math:`c \geq 2` is the number of control wires, each control wire with
@@ -2012,8 +2017,6 @@ add_decomps("Pow(SWAP)", pow_involutory2)
 def _controlled_swap_standard_resources(
     base, control_wires, control_values, work_wires, work_wire_type
 ):
-    if len(control_wires) == 1:
-        return {qp.CSWAP: 1}
     return {
         qp.CNOT: 2,
         qp.MultiControlledX(
@@ -2028,10 +2031,6 @@ def _controlled_swap_standard_resources(
 @register_resources(_controlled_swap_standard_resources)
 def _controlled_swap_standard(base, control_wires, control_values, work_wires, work_wire_type):
     wires = concatenate_wires(control_wires, base.wires)
-    if len(control_wires) == 1:
-        qp.CSWAP(wires=wires)
-        return
-
     qp.CNOT(wires=[wires[-2], wires[-1]])
     qp.MultiControlledX(
         wires=concatenate_wires(wires[:-2], [wires[-1], wires[-2]]),
@@ -2041,7 +2040,18 @@ def _controlled_swap_standard(base, control_wires, control_values, work_wires, w
     qp.CNOT(wires=[wires[-2], wires[-1]])
 
 
-add_decomps("C(SWAP)", flip_zero_control2(_controlled_swap_standard, name="standard"))
+@register_condition(lambda control_wires, **_: len(control_wires) == 1)
+@register_name("to_cswap")
+@register_resources(lambda *_, **__: {qp.CSWAP: 1})
+def _controlled_swap_to_cswap(base, control_wires, **_):
+    qp.CSWAP(wires=concatenate_wires(control_wires, base.wires))
+
+
+add_decomps(
+    "C(SWAP)",
+    flip_zero_control2(_controlled_swap_to_cswap, name="to_cswap"),
+    flip_zero_control2(_controlled_swap_standard, name="standard"),
+)
 
 
 class ECR(Operator2):
