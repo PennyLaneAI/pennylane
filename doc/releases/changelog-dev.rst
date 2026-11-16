@@ -2416,6 +2416,10 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed a precision loss in :func:`~pennylane.math.decomposition.givens_decomposition` and
+  the complex-valued decomposition of :class:`~.BasisRotation` for unitaries close to the identity.
+  `(#10518) <https://github.com/PennyLaneAI/pennylane/pull/10518>`__
+
 * Fixed a bug where AutoGraph raised an error for ``for`` loops over static iterables
   that cannot be converted to arrays, such as lists of strings. These loops, including
   ``enumerate`` loops, are now unrolled during capture without a warning.
