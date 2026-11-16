@@ -36,10 +36,8 @@ from pennylane.pytrees.pytrees import (
 from pennylane.wires import Wires
 
 
-class CustomNode:
+class CustomNode:  # pylint: disable=too-few-public-methods
     """Example Pytree for testing."""
-
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, data, metadata):
         self.data = data

@@ -17,8 +17,6 @@ of tapes.
 """
 
 import autograd
-
-# pylint: disable=too-many-branches
 import numpy as np
 
 from pennylane import math
@@ -216,7 +214,7 @@ def compute_vjp_multi(dy, jac, num=None):
             )  # Scalar value per observable output
         # NOTE: We want any potential failure to fall back here, so catch every exception type
         # TODO: Catalogue and update for expected exception types
-        except Exception:  # pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-exception-caught
             res = []
             for d, j_ in zip(dy, jac, strict=True):
                 sub_res = []

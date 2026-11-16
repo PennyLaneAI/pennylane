@@ -176,7 +176,7 @@ class QROM(Operator2):
             .. decomposition-rule:: _qrom_measurement_decomposition
                 :image: /_static/decomposition_thumbnails/qrom_measurement_based.svg
                 :lightbox:
-                :requires: compilation with :func:`~.qjit` and :math:`w \geq c - 1` work wires
+                :requires: :math:`w \geq c - 1` work wires
                 :where: :math:`K = 2^{\lceil \log_2 L \rceil}`, :math:`e = c - \lceil \log_2 L \rceil`
                     extra control wires, :math:`A = K - 3 + 2[e > 0]` temporary ANDs that are
                     uncomputed with measurements, and :math:`[\cdot]` is 1 if the condition holds
@@ -203,7 +203,7 @@ class QROM(Operator2):
                 :image: /_static/decomposition_thumbnails/qrom_measurement_based.svg
                 :lightbox:
                 :region: adjoint
-                :requires: compilation with :func:`~.qjit` and :math:`w \geq c - 1` work wires
+                :requires: :math:`w \geq c - 1` work wires
                 :where: :class:`~.QROM` is self-adjoint, so this is the same rule as above
 
                 Gates of ``_qrom_measurement_decomposition`` above | same counts
@@ -463,9 +463,9 @@ def _flag_resources(num_control_wires_extra):
     }
 
 
-def _qrom_measurement_condition(
+def _qrom_measurement_condition(  # pylint: disable=unused-argument
     bitstrings=None, control_wires=None, target_wires=None, work_wires=None, base=None
-):  # pylint: disable=unused-argument
+):
 
     if base is not None:
         num_bitstrings = len(base.bitstrings)
@@ -673,12 +673,7 @@ def _unary_iteration_num_elbows(num_control_wires_tree, num_blocks):
     return num_control_wires_tree + num_blocks - 2 - (num_blocks - 1).bit_count() - more_than_half
 
 
-def _qrom_unary_iteration_resources(
-    bitstrings,
-    control_wires,
-    target_wires,
-    work_wires,
-):
+def _qrom_unary_iteration_resources(bitstrings, control_wires, target_wires, work_wires):
     c = len(control_wires)
     K = len(bitstrings)
     num_targets = len(target_wires)
@@ -832,7 +827,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
 
             recompute()  # pylint: disable=no-value-for-parameter
 
-        for_loop(num_blocks - 1)(loop)()  # pylint: disable=no-value-for-parameter
+        for_loop(num_blocks - 1)(loop)()
 
     # Load the last block, which may be partially filled
     concrete_load(last_block)

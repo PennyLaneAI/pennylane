@@ -310,7 +310,6 @@ class TestAdjointJacobian:
 
         assert np.allclose(dM1, dM2, atol=tol, rtol=0)
 
-    # pylint: disable=protected-access
     def test_provide_starting_state(self, tol, dev):
         """Tests provides correct answer when provided starting state."""
         x, y, z = [0.5, 0.3, -0.7]
@@ -327,6 +326,7 @@ class TestAdjointJacobian:
         dM1 = dev.adjoint_jacobian(tape)
 
         qp.execute([tape], dev, None)
+        # pylint: disable-next=protected-access
         dM2 = dev.adjoint_jacobian(tape, starting_state=dev._pre_rotated_state)
 
         assert np.allclose(dM1, dM2, atol=tol, rtol=0)

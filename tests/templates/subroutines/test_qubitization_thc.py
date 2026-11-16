@@ -69,7 +69,7 @@ def _reference_V(leaf, N, sector):
     return np.eye(2**N) - 2.0 * qp.matrix(n_op, wire_order=list(range(N)))
 
 
-def _realized_lcu(M, N, zeta, t_ell, aleph):  # pylint: disable=too-many-arguments
+def _realized_lcu(M, N, zeta, t_ell, aleph):
     """Per-entry probability and sign the alias tables actually realize.
 
     This replays the integer tables the ``QROM`` loads, so the comparison is exact for
@@ -87,8 +87,8 @@ def _realized_lcu(M, N, zeta, t_ell, aleph):  # pylint: disable=too-many-argumen
     return per_pair, {e: (-1.0 if s else 1.0) for e, s in zip(entries, signs)}
 
 
+# pylint: disable-next=too-many-arguments
 def _reference_block(M, N, zeta, t_ell, chi, t_eigenvectors, aleph):
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     """The operator the walk block-encodes, assembled from the documented LCU."""
     zeta = np.array(zeta)
     t_ell = np.array(t_ell)
@@ -112,8 +112,8 @@ def _reference_block(M, N, zeta, t_ell, chi, t_eigenvectors, aleph):
     return block
 
 
+# pylint: disable-next=too-many-arguments
 def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, num_walks=1):
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     """Apply the walk ``num_walks`` times to ``psi`` and return the system amplitudes with
     every auxiliary wire on |0>."""
     M, n_half = np.shape(chi)
@@ -155,8 +155,6 @@ def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, num_walks=1):
 
 class TestQubitizationTHC:
     """Test the QubitizationTHC class."""
-
-    # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize("num_batches", [1, 2])
     def test_standard_validity(self, seed, num_batches):

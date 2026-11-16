@@ -23,15 +23,13 @@ import pennylane.labs.estimator_beta as qre
 from pennylane.templates.subroutines.qrom import QROM
 from pennylane.templates.subroutines.qrom_load import QROMLoad
 
-# pylint: disable=protected-access
-
 
 @pytest.mark.parametrize("mod, work_wires", [(7, [3, 4]), (8, [])])
 def test_adder_mapping(mod, work_wires):
     """Test that the Adder operator gets mapped correctly"""
     adder = qp.Adder(3, x_wires=[0, 1, 2], mod=mod, work_wires=work_wires)
 
-    mapped = pl_qre.resource_mapping._map_to_resource_op(adder)
+    mapped = pl_qre.resource_mapping._map_to_resource_op(adder)  # pylint: disable=protected-access
     assert mapped == qre.Adder(num_x_wires=3, mod=mod, wires=[0, 1, 2])
     assert mapped.wires == qp.wires.Wires([0, 1, 2])
 
@@ -45,7 +43,7 @@ def test_qrom_mapping():
         work_wires=[5, 6, 7],
     )
 
-    mapped = pl_qre.resource_mapping._map_to_resource_op(qrom)
+    mapped = pl_qre.resource_mapping._map_to_resource_op(qrom)  # pylint: disable=protected-access
     assert isinstance(mapped, qre.LabsQROM)
     assert mapped.select_swap_depth == 1
 
@@ -61,6 +59,7 @@ def test_qrom_load_mapping(clean):
         clean=clean,
     )
 
+    # pylint: disable-next=protected-access
     mapped = pl_qre.resource_mapping._map_to_resource_op(qrom)
     assert isinstance(mapped, qre.LabsQROM)
     assert mapped.borrow_qubits is not clean

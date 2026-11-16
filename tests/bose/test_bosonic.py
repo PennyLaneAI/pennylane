@@ -104,7 +104,6 @@ bw21 = BoseWord({(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 1): "+", (4, 0): "+"
 bw22 = BoseWord({(0, 0): "-", (1, 0): "+"})
 
 
-# pylint: disable=too-many-public-methods
 class TestBoseWord:
     """
     Tests for BoseWord
@@ -335,7 +334,7 @@ class TestBoseWord:
         assert bw.adjoint() == bw_dag
 
 
-class TestBoseWordArithmetic:
+class TestBoseWordArithmetic:  # pylint: disable=too-many-public-methods
     WORDS_MUL = (
         (
             bw1,
@@ -862,7 +861,7 @@ class TestBoseSentence:
         assert bs.adjoint() == bs_dag
 
 
-class TestBoseSentenceArithmetic:
+class TestBoseSentenceArithmetic:  # pylint: disable=too-many-public-methods
     tup_bs_mult = (  # computed by hand
         (
             bs1,

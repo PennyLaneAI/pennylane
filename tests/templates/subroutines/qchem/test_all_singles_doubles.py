@@ -16,8 +16,6 @@ Tests for the AllSinglesDoubles template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -194,7 +192,7 @@ class TestDecomposition:
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
-class TestInputs:
+class TestInputs:  # pylint: disable=too-few-public-methods
     """Test inputs and pre-processing."""
 
     @pytest.mark.parametrize(
@@ -298,7 +296,7 @@ class TestInputs:
             ),
         ],
     )
-    def test_allsinglesdoubles_exceptions(
+    def test_allsinglesdoubles_exceptions(  # pylint: disable=too-many-arguments
         self, weights, wires, singles, doubles, hf_state, msg_match
     ):
         """Test that AllSinglesDoubles throws an exception if the parameters have illegal
@@ -330,7 +328,7 @@ class TestInputs:
             )
 
 
-class TestAttributes:
+class TestAttributes:  # pylint: disable=too-few-public-methods
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(

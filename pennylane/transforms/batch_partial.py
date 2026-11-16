@@ -155,7 +155,6 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
 
     @functools.wraps(qnode)
     def wrapper(*args, **kwargs):
-        # pylint: disable=not-callable
 
         # raise an error if keyword arguments are passed, since the
         # arguments are passed to the lambda statement instead of the QNode
@@ -186,9 +185,9 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
             else:
                 kwargs[key] = val
         if is_partial:
-            return qnode(*_convert_to_args(sig, args, kwargs))
+            return qnode(*_convert_to_args(sig, args, kwargs))  # pylint: disable=not-callable
 
         # don't pass the arguments to the lambda itself into the QNode
-        return qnode(*_convert_to_args(sig, (), kwargs))
+        return qnode(*_convert_to_args(sig, (), kwargs))  # pylint: disable=not-callable
 
     return wrapper

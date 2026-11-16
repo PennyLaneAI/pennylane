@@ -21,8 +21,6 @@ import pytest
 
 import pennylane.estimator as qre
 
-# pylint: disable=no-self-use, too-many-arguments
-
 
 class TestSelectTHC:
     """Test the SelectTHC class."""
@@ -199,7 +197,7 @@ class TestSelectTHC:
             ),
         ),
     )
-    def test_controlled_resources(
+    def test_controlled_resources(  # pylint: disable=too-many-arguments
         self,
         thc_ham,
         num_batches,

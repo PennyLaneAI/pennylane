@@ -22,10 +22,8 @@ from pennylane.ops.identity import I
 
 from .lattice import Lattice, generate_lattice
 
-# pylint: disable=too-many-arguments
 
-
-def transverse_ising(
+def transverse_ising(  # pylint: disable=too-many-arguments
     lattice, n_cells, coupling=1.0, h=1.0, boundary_condition=False, neighbour_order=1
 ):
     r"""Generates the Hamiltonian for the transverse-field Ising model on a lattice.
@@ -190,7 +188,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
     return hamiltonian.simplify()
 
 
-def fermi_hubbard(
+def fermi_hubbard(  # pylint: disable=too-many-arguments
     lattice,
     n_cells,
     hopping=1.0,
@@ -319,7 +317,7 @@ def fermi_hubbard(
     return qubit_ham.simplify()
 
 
-def emery(
+def emery(  # pylint: disable=too-many-arguments
     lattice,
     n_cells,
     hopping=1.0,
@@ -486,7 +484,7 @@ def emery(
     return qubit_ham.simplify()
 
 
-def haldane(
+def haldane(  # pylint: disable=too-many-arguments
     lattice,
     n_cells,
     hopping=1.0,

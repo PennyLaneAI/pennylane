@@ -13,7 +13,9 @@
 # limitations under the License.
 """Helper Functionality to compute the kak decomposition variationally, as outlined in https://arxiv.org/abs/2104.00728"""
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable=too-many-arguments
+
+
 import warnings
 from datetime import datetime
 from functools import partial
@@ -196,7 +198,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
         def Kc(theta_opt):
             for th, op in zip(theta_opt, k):
-                qp.exp(-1j * th * op.operation())
+                qp.exp(-1j * th * qp.pauli.to_operator(op))
 
         Kc_m = qp.matrix(Kc, wire_order=range(n))(theta_opt)
 
@@ -315,7 +317,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     # Compute the ansatz K_c = K(theta_c) = K_1(theta_1) .. K_|k|(theta_|k|)
     Km = jnp.eye(2**n)
     for th, op in zip(theta_opt, k, strict=True):
-        opm = qp.matrix(op.operation(), wire_order=range(n)) if not _is_dense else op
+        opm = qp.matrix(qp.pauli.to_operator(op), wire_order=range(n)) if not _is_dense else op
         Km @= jax.scipy.linalg.expm(1j * th * opm)
 
     assert np.allclose(Km @ Km.conj().T, np.eye(2**n))

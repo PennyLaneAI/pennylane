@@ -15,7 +15,6 @@
 Tests for the LinearCombination class.
 """
 
-# pylint: disable=too-many-public-methods, too-few-public-methods
 from collections.abc import Iterable
 from copy import copy
 
@@ -521,7 +520,7 @@ def circuit2(param):
 dev = qp.device("default.qubit", wires=2)
 
 
-class TestLinearCombination:
+class TestLinearCombination:  # pylint: disable=too-many-public-methods
     """Test the LinearCombination class"""
 
     def test_error_if_observables_operator(self):
@@ -599,11 +598,11 @@ class TestLinearCombination:
         res = H1 - H2
         qp.assert_equal(qp.simplify(res), true_res)
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
     @pytest.mark.parametrize("grouping_type", (None, "qwc"))
     def test_flatten_unflatten(self, coeffs, ops, grouping_type):
         """Test the flatten and unflatten methods for LinearCombinations"""
+        # pylint: disable=protected-access
 
         if any(not qp.pauli.is_pauli_word(t) for t in ops) and grouping_type:
             pytest.skip("grouping type must be none if a term is not a pauli word.")
@@ -1654,7 +1653,6 @@ class TestLinearCombinationDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    # pylint: disable=superfluous-parens
     @pytest.mark.jax
     def test_nontrainable_coeffs_jax(self):
         """Test the jax interface if the coefficients are explicitly set non-trainable"""
@@ -1705,7 +1703,7 @@ class TestLinearCombinationDifferentiation:
             )
 
         res = circuit(coeffs, param)
-        res.backward()  # pylint:disable=no-member
+        res.backward()
         grad = (coeffs.grad, param.grad)
 
         # differentiating a cost that combines circuits with
@@ -1747,7 +1745,7 @@ class TestLinearCombinationDifferentiation:
             )
 
         res = circuit(coeffs, param)
-        res.backward()  # pylint:disable=no-member
+        res.backward()
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
@@ -1791,7 +1789,6 @@ class TestLinearCombinationDifferentiation:
             grad_fn(coeffs, param)
 
 
-# pylint: disable=protected-access
 @pytest.mark.capture
 def test_create_instance_while_tracing():
     """Test that a LinearCombination instance can be created while tracing."""
@@ -1815,6 +1812,7 @@ def test_create_instance_while_tracing():
             hybrid_trees=(),
             forward_mask=(),
         )
+        # pylint: disable-next=protected-access
         op = qp.ops.LinearCombination._primitive.impl(a, b, op1, op2, n_obs=2)
         assert isinstance(op, qp.ops.LinearCombination)
 
@@ -1834,5 +1832,6 @@ def test_capture_with_legacy_observable():
 
     jaxpr = jax.make_jaxpr(f)(np.eye(2))
 
+    # pylint: disable-next=protected-access
     assert jaxpr.eqns[-1].primitive == qp.ops.LinearCombination._primitive
     assert jaxpr.eqns[-1].params["n_obs"] == 2

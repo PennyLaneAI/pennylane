@@ -61,8 +61,7 @@ class SymbolicOp(Operator):
         for leaf in leaves:
             if isinstance(leaf, Operator2):
                 if leaf.tracer is None:
-                    # pylint: disable-next=protected-access
-                    leaf._bind_primitive()
+                    leaf._bind_primitive()  # pylint: disable=protected-access
                 new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
             else:
                 new_leaves.append(leaf)
@@ -87,8 +86,7 @@ class SymbolicOp(Operator):
 
         return copied_op
 
-    # pylint: disable=super-init-not-called
-    def __init__(self, base):
+    def __init__(self, base):  # pylint: disable=super-init-not-called
         self.hyperparameters["base"] = base
         if isinstance(base, (qp.ops.MidMeasure, qp.ops.PauliMeasure)):
             raise ValueError("Symbolic operators of mid-circuit measurements are not supported.")
@@ -114,10 +112,9 @@ class SymbolicOp(Operator):
     def num_params(self):
         return self.base.num_params
 
-    # pylint:disable = missing-function-docstring
     @property
     @handle_recursion_error
-    def basis(self):
+    def basis(self):  # pylint: disable=missing-function-docstring
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
@@ -130,9 +127,8 @@ class SymbolicOp(Operator):
         """Number of wires the operator acts on."""
         return len(self.wires)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_matrix
 
     @property
@@ -159,12 +155,13 @@ class SymbolicOp(Operator):
 
     @handle_recursion_error
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy(self)
         new_base = self.base.map_wires(wire_map=wire_map)
         new_op.hyperparameters["base"] = new_base
-        new_op._wires = new_base.wires  # pylint:disable=protected-access
+        new_op._wires = new_base.wires
         if (p_rep := new_op.pauli_rep) is not None:
-            new_op._pauli_rep = p_rep.map_wires(wire_map)  # pylint:disable=protected-access
+            new_op._pauli_rep = p_rep.map_wires(wire_map)
         return new_op
 
 

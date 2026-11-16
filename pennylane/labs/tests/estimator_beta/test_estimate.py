@@ -33,8 +33,6 @@ from pennylane.estimator.resources_base import Resources
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.labs.estimator_beta import Allocate, Deallocate, estimate
 
-# pylint: disable= no-self-use, arguments-differ, too-many-public-methods, too-few-public-methods
-
 
 def _circuit_w_expval(circ):
     circ()
@@ -75,6 +73,7 @@ class DummyCNOT(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
+    # pylint: disable-next=unused-argument
     def adjoint_resource_decomp(cls, target_resource_params=None):
         return [GateCount(cls.resource_rep())]
 
@@ -98,6 +97,7 @@ class DummyHadamard(ResourceOperator):
         raise ResourcesUndefinedError
 
     @classmethod
+    # pylint: disable-next=unused-argument
     def adjoint_resource_decomp(cls, target_resource_params=None):
         return [GateCount(cls.resource_rep())]
 
@@ -141,6 +141,7 @@ class DummyZ(ResourceOperator):
         return [GateCount(t, count=4)]
 
     @classmethod
+    # pylint: disable-next=unused-argument
     def adjoint_resource_decomp(cls, target_resource_params=None):
         return [GateCount(cls.resource_rep())]
 
@@ -170,6 +171,7 @@ class DummyRZ(ResourceOperator):
         return [GateCount(t, count=t_counts)]
 
     @classmethod
+    # pylint: disable-next=unused-argument
     def adjoint_resource_decomp(cls, target_resource_params=None):
         return [GateCount(cls.resource_rep())]
 
@@ -273,7 +275,7 @@ def mock_rotation_decomp(precision):
     return [GateCount(t, count=t_counts)]
 
 
-class TestEstimateResources:
+class TestEstimateResources:  # pylint: disable=too-many-public-methods
     """Test that core resource estimation functionality"""
 
     @staticmethod
@@ -639,9 +641,8 @@ class TestEstimateResources:
     def test_custom_controlled_decomposition_labs(self):
         """Test that a custom controlled decomposition can be set and used."""
 
-        def custom_ctrl_RZ(
-            num_ctrl_wires, num_zero_ctrl, target_resource_params
-        ):  # pylint: disable=unused-argument
+        # pylint: disable-next=unused-argument
+        def custom_ctrl_RZ(num_ctrl_wires, num_zero_ctrl, target_resource_params):
             return [GateCount(resource_rep(qre.X), count=3)]
 
         rc = ResourceConfig()
@@ -705,11 +706,11 @@ class TestEstimateResources:
         assert actual_resources == expected_resources
 
 
-class TestMonkeyPatching:
+class TestMonkeyPatching:  # pylint: disable=too-few-public-methods
     """Test that the monkey patching works as expected"""
 
     def test_qrom(self):
         """Test that qre.QROM gets monkey patched to qre.LabsQROM"""
-        import pennylane.labs.estimator_beta as new_qre  # pylint: disable=import-outside-toplevel
+        import pennylane.labs.estimator_beta as new_qre
 
         assert new_qre.QROM is new_qre.LabsQROM

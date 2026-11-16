@@ -21,13 +21,11 @@ from functools import partial
 import pennylane as qp
 from pennylane import transform
 from pennylane.core.operator import Operator
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import MatrixUndefinedError, TransformError
-from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.typing import PostprocessingFn, TensorLike
-
-# pylint: disable=too-many-branches
 
 
 def catalyst_qjit(qnode):
@@ -35,7 +33,7 @@ def catalyst_qjit(qnode):
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
-def matrix(
+def matrix(  # pylint: disable=too-many-branches
     op: Operator | PauliWord | PauliSentence | Sequence[Operator], wire_order=None
 ) -> TensorLike:
     r"""The dense matrix representation of an operation or quantum circuit.
