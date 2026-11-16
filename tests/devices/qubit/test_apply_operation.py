@@ -60,8 +60,6 @@ methods = [
     apply_operation,
 ]
 
-# pylint: disable=import-outside-toplevel,unsubscriptable-object,arguments-differ
-
 
 def test_custom_operator_with_matrix():
     """Test that apply_operation works with any operation that defines a matrix."""
@@ -73,8 +71,7 @@ def test_custom_operator_with_matrix():
         ]
     )
 
-    # pylint: disable=too-few-public-methods
-    class CustomOp(Operation):
+    class CustomOp(Operation):  # pylint: disable=too-few-public-methods
         """Custom Operation"""
 
         num_wires = 1
@@ -694,7 +691,7 @@ class TestRXCalcGrad:
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 @pytest.mark.parametrize("method", methods)
-class TestBroadcasting:  # pylint: disable=too-few-public-methods
+class TestBroadcasting:
     """Tests that broadcasted operations are applied correctly."""
 
     # include operations both with batch_size==1 and batch_size>1
@@ -788,7 +785,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         param = qp.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
         state = np.ones((2, 2)) / 2
         op = qp.RX(param, 0)
-        assert op._batch_size is _UNSET_BATCH_SIZE  # pylint:disable=protected-access
+        assert op._batch_size is _UNSET_BATCH_SIZE  # pylint: disable=protected-access
         state = method(op, state)
         assert state.shape == (3, 2, 2)
 
@@ -900,7 +897,6 @@ class TestApplyGroverOperator:
     )
     def test_dispatching(self, op_wires, state_wires, einsum_called, tensordot_called, mocker):
         """Test that apply_operation dispatches to einsum, tensordot and the kernel correctly."""
-        # pylint: disable=too-many-arguments
         state = np.random.random([2] * state_wires) + 1j * np.random.random([2] * state_wires)
 
         op = qp.GroverOperator(list(range(op_wires)))
@@ -1035,7 +1031,6 @@ class TestApplyGroverOperator:
 class TestMultiControlledXKernel:
     """Test the specialized kernel for MultiControlledX and its dispatching."""
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "num_op_wires, num_state_wires, einsum_called, tdot_called",
         [
@@ -1119,7 +1114,6 @@ class TestMultiControlledXKernel:
         assert qp.math.allclose(out, exp_out)
 
 
-# pylint: disable=too-few-public-methods
 class TestConditionalsAndMidMeasure:
     """Test dispatching for mid-circuit measurements and conditionals."""
 

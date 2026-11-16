@@ -91,9 +91,8 @@ def _recursive_find_mcm_stats_layer(layer_to_check, op_occupied_cwires, used_cwi
     )
 
 
-# pylint: disable=unused-argument
 @singledispatch
-def _get_op_occupied_wires(op, wire_map, bit_map):
+def _get_op_occupied_wires(op, wire_map, bit_map):  # pylint: disable=unused-argument
     """Helper function to find wires that would be used by an operator in a drawable layer."""
     *_, base = unwrap_controls(op)
 

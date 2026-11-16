@@ -16,8 +16,8 @@ Tests that application of gates and state preparations works correctly on a
 device by checking expectation values.
 """
 
-# pylint: disable=no-self-use
 # pylint: disable=too-many-arguments
+
 
 from math import pi, sqrt
 

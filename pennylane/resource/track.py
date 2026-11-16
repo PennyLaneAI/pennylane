@@ -48,8 +48,8 @@ def _run_with_resource_tracking(
 
     Returns the result of the execution along with the resources counted while running it.
     """
-    # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
+    # pylint: disable=import-outside-toplevel
     from catalyst import QJIT
 
     from ..devices import NullQubit
@@ -131,7 +131,7 @@ def track(
     Keyword Args:
         level (str | int | slice): The portion of the
             :class:`~.CompilePipeline` to apply before executing the circuit and tracking its
-            resources. Accepts the same values as :func:`~.workflow.get_compile_pipeline`.
+            resources. See :func:`~.workflow.get_compile_pipeline` for accepted values.
             Currently, only ``"device"`` is supported. Defaults to ``"device"``.
 
     Returns:

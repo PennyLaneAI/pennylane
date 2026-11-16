@@ -12,6 +12,8 @@
 # limitations under the License.
 """Tests for ``pennylane.core.operator.utils``."""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 from operator2_utils import CompilableOp, DynOp, FullOp, MixedHybridOp, MultiWireOp, TwoDynOp
@@ -23,8 +25,6 @@ from pennylane.core.operator.utils import abstractify
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
 from pennylane.wires import Wires
-
-# pylint: disable=useless-parent-delegation,too-few-public-methods
 
 
 class TestAbstractifyBasics:
@@ -235,7 +235,7 @@ class TestAbstractifyOperatorInstances:
 
             arg_specs = {"theta": Float, "wires": Wire[1]}
 
-            def __init__(self, theta, wires):
+            def __init__(self, theta, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(theta, wires)
 
         class CustomOp2(Operator2):
@@ -247,6 +247,7 @@ class TestAbstractifyOperatorInstances:
 
             arg_specs = {"params": Float[...], "wires": Wire[3]}
 
+            # pylint: disable-next=useless-parent-delegation
             def __init__(self, params, wires, inner_op):
                 super().__init__(params, wires, inner_op)
 

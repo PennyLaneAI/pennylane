@@ -15,7 +15,6 @@
 
 import copy
 
-# pylint: disable=not-callable
 from pennylane import math
 from pennylane import numpy as pnp
 from pennylane._grad import grad
@@ -172,7 +171,7 @@ class AdaptiveOptimizer:
         """
         final_circuit = append_gate(initial_circuit, params, gates)
 
-        return final_circuit()
+        return final_circuit()  # pylint: disable=not-callable
 
     def step(self, circuit, operator_pool, params_zero=True):
         r"""Update the circuit with one step of the optimizer.

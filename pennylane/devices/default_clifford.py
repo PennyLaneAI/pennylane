@@ -15,8 +15,6 @@
 This module contains the Clifford simulator using ``stim``.
 """
 
-# pylint: disable=no-member
-
 import concurrent.futures
 from collections.abc import Sequence
 from dataclasses import replace
@@ -200,9 +198,10 @@ def _handle_state_prep(prep, circuit, stim_circuit):
     return stim_circuit
 
 
+# Derivative entry points are optional for devices without native differentiation.
 @simulator_tracking
 @single_tape_support
-class DefaultClifford(Device):
+class DefaultClifford(Device):  # pylint: disable=abstract-method
     r"""A PennyLane device for fast simulation of Clifford circuits using
     `stim <https://github.com/quantumlib/stim/>`_.
 
@@ -419,8 +418,7 @@ class DefaultClifford(Device):
         """The name of the device."""
         return "default.clifford"
 
-    # pylint:disable = too-many-arguments, too-many-positional-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         wires=None,
         shots=None,
@@ -641,7 +639,6 @@ class DefaultClifford(Device):
             ShadowExpvalMP: self._sample_expval_shadow,
         }
 
-    # pylint: disable=too-many-positional-arguments
     def _apply_snapshot(
         self,
         circuit: QuantumScript,
@@ -868,7 +865,6 @@ class DefaultClifford(Device):
         z_stabs = math.array([tableau.z_output(wire) for wire in range(len(wires))])
         return 2 ** (-self._measure_stabilizer_entropy(z_stabs, list(meas.wires), log_base=2))
 
-    # pylint: disable=protected-access
     @staticmethod
     def _measure_stabilizer_entropy(stabilizer, wires, log_base=None):
         r"""Computes the Rényi entanglement entropy using stabilizer information.
@@ -919,8 +915,7 @@ class DefaultClifford(Device):
 
         return entropy / math.log(log_base)
 
-    # pylint: disable=too-many-branches
-    def _measure_probability(self, meas, _, **kwargs):
+    def _measure_probability(self, meas, _, **kwargs):  # pylint: disable=too-many-branches
         r"""Measure the probability of each computational basis state.
 
         Computes the probability for each of the computational basis state vector iteratively

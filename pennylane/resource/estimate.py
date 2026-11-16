@@ -38,10 +38,9 @@ from .resource import CircuitSpecs
 def _decomps_from_pipeline(pipeline: CompilePipeline) -> dict:
     """Collect the ``fixed_decomps`` and ``exclude_decomps`` of the ``decompose`` transforms in
     ``pipeline``. If more than one fixes a rule for the same operator, the last one is used."""
-    # pylint: disable=protected-access
     fixed_decomps, exclude_decomps = {}, {}
     for bound_transform in pipeline:
-        if bound_transform._transform is decompose:
+        if bound_transform._transform is decompose:  # pylint: disable=protected-access
             fixed_decomps |= bound_transform.kwargs.get("fixed_decomps", {})
             for op, rules in bound_transform.kwargs.get("exclude_decomps", {}).items():
                 exclude_decomps.setdefault(op, []).extend(rules)
@@ -50,9 +49,8 @@ def _decomps_from_pipeline(pipeline: CompilePipeline) -> dict:
 
 def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
     """Decompose a qjit'd QNode at ``level`` into the ``target`` gate set and return its specs."""
-    # pylint: disable=import-outside-toplevel,no-value-for-parameter
     original_qnode = unwrap_qjit_qnode(func, fn_name="qp.estimate")
-    from catalyst.utils.exceptions import CompileError
+    from catalyst.utils.exceptions import CompileError  # pylint: disable=import-outside-toplevel
 
     compile_pipeline = original_qnode.compile_pipeline
     validate_level(level, compile_pipeline)
@@ -84,13 +82,24 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
         )
 
     # At level="top", the user transforms are skipped and only the decomposition is applied
+    bound_t = decompose(gate_set=target, **_decomps_from_pipeline(compile_pipeline))
+    estimate_kwargs = bound_t.kwargs
     estimate_qnode = original_qnode.update_pipelines(
-        CompilePipeline(decompose(gate_set=target, **_decomps_from_pipeline(compile_pipeline))),
+        CompilePipeline(),
         post_device_pipeline=CompilePipeline(original_qnode.post_device_pipeline),
     )
-
     try:
-        resources = resources_from_analysis_pass(func, estimate_qnode, 1, {}, {}, *args, **kwargs)
+        resources = resources_from_analysis_pass(
+            func,
+            estimate_qnode,
+            0,
+            {},
+            {},
+            *args,
+            analysis_pass_name="resource-estimate",
+            analysis_pass_kwargs=estimate_kwargs,
+            **kwargs,
+        )
     except CompileError as exc:
         missing_rule = re.search(r"Decomposition rule not found for operator '([^'{]+)", str(exc))
         if missing_rule is None:
@@ -123,7 +132,7 @@ def estimate(
         qnode (:class:`~catalyst.jit.QJIT`): the qjit'd QNode for which to estimate resources.
         level (str | int | slice): The portion of the
             :class:`~.CompilePipeline` to apply before projecting the resources onto the
-            ``target``. Accepts the same values as :func:`~.workflow.get_compile_pipeline`.
+            ``target``. See :func:`~.workflow.get_compile_pipeline` for accepted values.
             Currently, only ``"top"``, ``0``, or the label of a marker placed before all
             transforms are supported. Defaults to ``"top"``.
         target (str | Iterable[type | str] | dict[type | str, float]): The gate set to project
@@ -201,7 +210,9 @@ def estimate(
             qp.add_decomps(qp.CZ, cz_with_ry)
 
             @qp.qjit(capture=True)
-            @qp.decompose(gate_set={"CNOT", "PauliZ", "RY"}, fixed_decomps={qp.CZ: cz_with_ry})
+            @qp.decompose(
+                gate_set={"CNOT", "PauliZ", "RY"}, fixed_decomps={qp.CZ: "cz_with_ry"}
+            )
             @qp.qnode(qp.device("null.qubit", wires=2))
             def circuit():
                 qp.CZ([0, 1])

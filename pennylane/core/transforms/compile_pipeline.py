@@ -721,7 +721,7 @@ class CompilePipeline:
 
         i = len(self) - 1
         while i >= 0:
-            # pylint: disable=protected-access
+            # pylint: disable-next=protected-access
             if (isinstance(obj, Transform) and obj == self[i]._transform) or self[i] == obj:
                 removed = self._compile_pipeline.pop(i)
                 self._markers = {k: (v - 1 if v > i else v) for k, v in self._markers.items()}
@@ -933,7 +933,7 @@ class CompilePipeline:
 
     def set_classical_component(self, qnode, args, kwargs):
         """Set the classical jacobians and argnums if the transform is hybrid with a classical cotransform."""
-        # pylint: disable=no-member
+        # pylint: disable-next=no-member
         if self.has_classical_cotransform() and self[-1].kwargs.get("hybrid", True):
             self.cotransform_cache = CotransformCache(qnode, args, kwargs)
 
@@ -1034,8 +1034,8 @@ class CompilePipeline:
         # NOTE: Duck type a QNode object so we don't have to import it here
         if hasattr(result, "compile_pipeline"):
             offset = len(result.compile_pipeline) - len(self)
-            # pylint: disable=protected-access
             for name, pos in self._markers.items():
+                # pylint: disable-next=protected-access
                 result.compile_pipeline._markers[name] = pos + offset
 
         return result

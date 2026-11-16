@@ -28,10 +28,9 @@ def unwrap_qjit_qnode(qjit, *, fn_name: str) -> QNode:
 
     ``fn_name`` is the name of the public function to report in the error message.
     """
-    # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
     try:
-        from catalyst import QJIT
+        from catalyst import QJIT  # pylint: disable=import-outside-toplevel
     except ImportError as exc:  # pragma: no cover
         raise ImportError(f"Catalyst must be installed to use {fn_name}.") from exc
 
@@ -50,9 +49,9 @@ def get_compile_pipeline(
 
     .. note::
 
-        The device preprocessing is represented by a single ``Device Preprocessing`` placeholder,
-        since the device applies its own transforms when the QNode is executed. The placeholder
-        cannot be applied to a QNode.
+        The device preprocessing passes are represented by a single ``Device Preprocessing``
+        placeholder, since the device applies its own transforms when the QNode is executed. The
+        placeholder cannot be applied to a QNode.
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): The qjit'd QNode to get the compile pipeline for.
@@ -65,13 +64,12 @@ def get_compile_pipeline(
               A marker label includes all transforms up to the location of that marker.
             * ``int``: The number of transforms to include from the start of the pipeline. Must
               be non-negative, e.g. ``level=0`` is empty and ``level=2`` contains the first two
-              transforms (``[0]`` and ``[1]``). The device preprocessing counts as a single
-              level, placed after all user-applied transforms.
+              transforms (``[0]`` and ``[1]``). The device preprocessing passes are
+              denoted by a single level, placed after all user-applied transforms.
             * ``slice``: A range of transforms, using standard Python slicing with non-negative
               ``int`` bounds and a positive step, e.g. ``level=slice(1, 3)`` contains transforms
-              ``[1]`` and ``[2]``. The start cannot exceed the device level. Since the device
-              preprocessing is the last level, a slice without a stop, such as
-              ``slice(1, None)``, includes the device preprocessing. To exclude it, give an
+              ``[1]`` and ``[2]``. A slice without a stop, such as
+              ``slice(1, None)``, includes device preprocessing passes. To exclude them, give an
               explicit stop, e.g. ``slice(1, 2)`` for a pipeline with two user-applied
               transforms. A step greater than ``1`` skips transforms, and emits a warning, as
               does a slice that selects no transforms.
