@@ -214,9 +214,9 @@ def _ctrl_seq_ir_optimized_decomposition(*_, base=None, control=None, **__):
         def _repeat_loop(_):
             ctrl(base, control=ctrl_wire)
 
-        _repeat_loop()
+        _repeat_loop()  # pylint: disable=no-value-for-parameter
 
-    _powers_loop()
+    _powers_loop()  # pylint: disable=no-value-for-parameter
 
 
 # TODO: worth exploring how Catalyst can handle these situations (execution versus compilation optimization)
