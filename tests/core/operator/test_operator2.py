@@ -635,7 +635,7 @@ class TestOperatorInit:
         """Test that a wire argument matching the declared ``wire_sizes`` is accepted."""
 
         class Op(Operator2):
-            arg_specs = {"wires": Wires[2]}
+            
             def __init__(self, wires):
                 super().__init__(wires=wires)
 
@@ -646,7 +646,7 @@ class TestOperatorInit:
         """Test that supplying a different number of wires than ``wire_sizes`` raises an error."""
 
         class Op(Operator2):
-            arg_specs = {"wires": Wires[2]}
+            
 
             def __init__(self, wires):
                 super().__init__(wires=wires)
