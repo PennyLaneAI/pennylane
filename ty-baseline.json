@@ -211,14 +211,6 @@
         "lineCount": 1
       }
     ],
-    "pennylane/backline/functions.py": [
-      {
-        "rule": "import-not-found",
-        "startColumn": 15,
-        "endColumn": 53,
-        "lineCount": 1
-      }
-    ],
     "pennylane/backline/placement.py": [
       {
         "rule": "unresolved-attribute",
@@ -262,14 +254,6 @@
         "rule": "possibly-missing-submodule",
         "startColumn": 21,
         "endColumn": 29,
-        "lineCount": 1
-      }
-    ],
-    "pennylane/backline/transports.py": [
-      {
-        "rule": "import-not-found",
-        "startColumn": 13,
-        "endColumn": 30,
         "lineCount": 1
       }
     ],
@@ -3989,14 +3973,6 @@
         "lineCount": 1
       }
     ],
-    "pennylane/devices/toml_check.py": [
-      {
-        "rule": "import-not-found",
-        "startColumn": 9,
-        "endColumn": 13,
-        "lineCount": 1
-      }
-    ],
     "pennylane/drawer/_add_obj.py": [
       {
         "rule": "invalid-argument-type",
@@ -6577,33 +6553,7 @@
         "lineCount": 1
       }
     ],
-    "pennylane/io/io.py": [
-      {
-        "rule": "import-not-found",
-        "startColumn": 11,
-        "endColumn": 20,
-        "lineCount": 1
-      }
-    ],
     "pennylane/io/qasm_interpreter.py": [
-      {
-        "rule": "import-not-found",
-        "startColumn": 5,
-        "endColumn": 14,
-        "lineCount": 1
-      },
-      {
-        "rule": "import-not-found",
-        "startColumn": 5,
-        "endColumn": 18,
-        "lineCount": 1
-      },
-      {
-        "rule": "import-not-found",
-        "startColumn": 5,
-        "endColumn": 22,
-        "lineCount": 1
-      },
       {
         "rule": "no-matching-overload",
         "startColumn": 6,
@@ -6647,6 +6597,30 @@
         "lineCount": 1
       },
       {
+        "rule": "unresolved-attribute",
+        "startColumn": 11,
+        "endColumn": 20,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 35,
+        "endColumn": 44,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 56,
+        "endColumn": 65,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 39,
+        "endColumn": 59,
+        "lineCount": 1
+      },
+      {
         "rule": "invalid-assignment",
         "startColumn": 18,
         "endColumn": 34,
@@ -6656,6 +6630,30 @@
         "rule": "unresolved-attribute",
         "startColumn": 40,
         "endColumn": 65,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 38,
+        "endColumn": 58,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 25,
+        "endColumn": 45,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 25,
+        "endColumn": 45,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 27,
+        "endColumn": 38,
         "lineCount": 1
       },
       {
@@ -6677,12 +6675,24 @@
         "lineCount": 1
       },
       {
+        "rule": "unresolved-attribute",
+        "startColumn": 67,
+        "endColumn": 87,
+        "lineCount": 1
+      },
+      {
         "rule": "invalid-argument-type",
         "startColumn": 20,
         "endColumn": 24,
         "lineCount": 1
       },
       {
+        "rule": "unresolved-attribute",
+        "startColumn": 20,
+        "endColumn": 40,
+        "lineCount": 1
+      },
+      {
         "rule": "too-many-positional-arguments",
         "startColumn": 52,
         "endColumn": 90,
@@ -6692,6 +6702,18 @@
         "rule": "too-many-positional-arguments",
         "startColumn": 52,
         "endColumn": 90,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 23,
+        "endColumn": 43,
+        "lineCount": 1
+      },
+      {
+        "rule": "not-subscriptable",
+        "startColumn": 27,
+        "endColumn": 40,
         "lineCount": 1
       },
       {
@@ -6701,10 +6723,196 @@
         "lineCount": 1
       },
       {
+        "rule": "unresolved-attribute",
+        "startColumn": 92,
+        "endColumn": 112,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 69,
+        "endColumn": 89,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 16,
+        "endColumn": 36,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 55,
+        "endColumn": 75,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 52,
+        "endColumn": 72,
+        "lineCount": 1
+      },
+      {
         "rule": "invalid-argument-type",
         "startColumn": 16,
         "endColumn": 25,
         "lineCount": 3
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 16,
+        "endColumn": 41,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 16,
+        "endColumn": 52,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 21,
+        "endColumn": 41,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 25,
+        "endColumn": 46,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 29,
+        "endColumn": 50,
+        "lineCount": 1
+      },
+      {
+        "rule": "invalid-argument-type",
+        "startColumn": 52,
+        "endColumn": 55,
+        "lineCount": 1
+      },
+      {
+        "rule": "invalid-argument-type",
+        "startColumn": 52,
+        "endColumn": 55,
+        "lineCount": 1
+      },
+      {
+        "rule": "invalid-argument-type",
+        "startColumn": 21,
+        "endColumn": 34,
+        "lineCount": 1
+      },
+      {
+        "rule": "not-subscriptable",
+        "startColumn": 49,
+        "endColumn": 65,
+        "lineCount": 1
+      },
+      {
+        "rule": "not-subscriptable",
+        "startColumn": 35,
+        "endColumn": 51,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 113,
+        "endColumn": 133,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 15,
+        "endColumn": 27,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 11,
+        "endColumn": 23,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 13,
+        "endColumn": 25,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 31,
+        "endColumn": 43,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 13,
+        "endColumn": 25,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 13,
+        "endColumn": 25,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 55,
+        "endColumn": 75,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 53,
+        "endColumn": 73,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 40,
+        "endColumn": 60,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 42,
+        "endColumn": 57,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 42,
+        "endColumn": 62,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 47,
+        "endColumn": 56,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 63,
+        "endColumn": 72,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 27,
+        "endColumn": 47,
+        "lineCount": 1
+      },
+      {
+        "rule": "unresolved-attribute",
+        "startColumn": 15,
+        "endColumn": 25,
+        "lineCount": 1
       }
     ],
     "pennylane/io/qualtran_io.py": [
@@ -18267,20 +18475,6 @@
         "lineCount": 1
       }
     ],
-    "pennylane/optimize/qng_qjit.py": [
-      {
-        "rule": "import-not-found",
-        "startColumn": 19,
-        "endColumn": 27,
-        "lineCount": 1
-      },
-      {
-        "rule": "import-not-found",
-        "startColumn": 19,
-        "endColumn": 27,
-        "lineCount": 1
-      }
-    ],
     "pennylane/optimize/qnspsa.py": [
       {
         "rule": "unresolved-attribute",
@@ -19077,14 +19271,6 @@
         "lineCount": 1
       }
     ],
-    "pennylane/resource/estimate.py": [
-      {
-        "rule": "import-not-found",
-        "startColumn": 9,
-        "endColumn": 34,
-        "lineCount": 1
-      }
-    ],
     "pennylane/resource/expression.py": [
       {
         "rule": "invalid-return-type",
@@ -19195,14 +19381,6 @@
         "lineCount": 1
       }
     ],
-    "pennylane/resource/mlir_specs.py": [
-      {
-        "rule": "import-not-found",
-        "startColumn": 9,
-        "endColumn": 17,
-        "lineCount": 1
-      }
-    ],
     "pennylane/resource/parsing.py": [
       {
         "rule": "invalid-return-type",
@@ -19264,14 +19442,6 @@
         "rule": "unresolved-attribute",
         "startColumn": 26,
         "endColumn": 42,
-        "lineCount": 1
-      }
-    ],
-    "pennylane/resource/track.py": [
-      {
-        "rule": "import-not-found",
-        "startColumn": 9,
-        "endColumn": 17,
         "lineCount": 1
       }
     ],
@@ -25097,12 +25267,6 @@
     ],
     "pennylane/transforms/decompositions/clifford_t_transform.py": [
       {
-        "rule": "import-not-found",
-        "startColumn": 13,
-        "endColumn": 54,
-        "lineCount": 1
-      },
-      {
         "rule": "unresolved-attribute",
         "startColumn": 50,
         "endColumn": 68,
@@ -26122,14 +26286,6 @@
         "rule": "invalid-return-type",
         "startColumn": 11,
         "endColumn": 18,
-        "lineCount": 1
-      }
-    ],
-    "pennylane/workflow/get_compile_pipeline.py": [
-      {
-        "rule": "import-not-found",
-        "startColumn": 13,
-        "endColumn": 21,
         "lineCount": 1
       }
     ],
