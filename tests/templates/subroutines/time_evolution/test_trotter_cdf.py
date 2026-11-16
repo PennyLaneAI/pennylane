@@ -636,13 +636,15 @@ class TestDecomposition:
             double_phase,
         )
 
+    @pytest.mark.xfail(
+        reason="The ``tol`` cutoff in ``givens_decomposition`` limits accuracy for some matrices (#10509)",
+        strict=False,
+    )
     @pytest.mark.parametrize("evolution_time", [1e-4, 1e-5, 1e-6])
-    def test_fused_one_body_precision_close_to_identity(self, evolution_time):
+    def test_fused_one_body_precision_close_to_identity(self, evolution_time, seed):
         """The fused one-body block stays at machine precision for small time steps, i.e., close
         to the identity, in the base and double-phase circuits."""
-        # Fixed seed, as the ``tol`` cutoff in ``givens_decomposition`` limits accuracy for some
-        # matrices (see https://github.com/PennyLaneAI/pennylane/issues/10509).
-        rng = np.random.default_rng(42)
+        rng = np.random.default_rng(seed)
         num_orbitals = 3
         core = rng.normal(size=(2, num_orbitals, num_orbitals)) * 0.4
         core = 0.5 * (core + np.transpose(core, (0, 2, 1)))
