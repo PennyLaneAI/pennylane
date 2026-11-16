@@ -161,7 +161,7 @@ def _ctrl_seq_execution_optimized_decomposition(*_, base=None, control=None, **_
     """
     A decomposition optimized for execution time, over IR size and compilation time.
 
-    Using Pows with different z grows the IR but the execution is faster because they powers
+    Using Pows with different z grows the IR but the execution is faster because the powers
     can be simplified eagerly to a single rotation each. Additionally, the Pows have more
     decomposition variants which increases compile time.
     """
