@@ -356,13 +356,10 @@ def _compile_kernel(  # pylint: disable=too-many-arguments
     kernel_binary = compile_result.asm[backend_impl.binary_ext]
     binary_hex = str(binascii.hexlify(kernel_binary))[2:-1]
     if backend == "cuda":
-        from triton.backends.nvidia.driver import (  # pylint: disable=import-outside-toplevel,no-name-in-module
-            ty_to_cpp,
-        )
+        # pylint: disable-next=import-outside-toplevel
+        from triton.backends.nvidia.driver import ty_to_cpp
     elif backend == "hip":  # pragma: no cover
-        from triton.backends.amd.driver import (  # pylint: disable=import-outside-toplevel,no-name-in-module
-            ty_to_cpp,
-        )
+        from triton.backends.amd.driver import ty_to_cpp  # pylint: disable=import-outside-toplevel
     else:  # pragma: no cover
         # Unreachable: _validate_platform already rejects backends outside {"cuda", "hip"}.
         raise ValueError(f"unsupported backend for type mapping: {backend}")

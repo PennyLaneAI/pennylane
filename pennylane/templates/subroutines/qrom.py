@@ -41,9 +41,9 @@ from .arithmetic import TemporaryAND
 from .multix import MultiX
 
 
-def _select_ops(
+def _select_ops(  # pylint: disable=too-many-arguments
     bitstrings, depth, target_wires, swap_wires, select_control_wires, select_work_wires
-):  # pylint:disable=too-many-arguments
+):
     num_targets = len(target_wires)
     num_bitstrings = bitstrings.shape[0]
     num_columns = int(np.ceil(num_bitstrings / depth))
@@ -158,6 +158,63 @@ class QROM(Operator2):
     >>> print(circuit())
     [[1 1 0]]
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.QROM
+            :stacked:
+            :symbols: :math:`K` bitstrings of length :math:`b`, :math:`c \geq 2` control wires,
+                :math:`w` work wires and ``clean=True``
+            :example: :math:`K=4`, :math:`b=2`, :math:`c=2`, :math:`w=2`, bitstrings
+                ``[[0, 0], [0, 1], [1, 0], [1, 1]]``
+
+            .. decomposition-rule:: _select_swap
+                :image: /_static/decomposition_thumbnails/qrom_select_swap.svg
+                :requires: :math:`w \geq c - 1` work wires and :math:`\lambda \geq 2`
+                :where: :math:`\lambda` is the number of bitstrings loaded in parallel: the largest
+                    power of 2 with :math:`\lambda \leq K`, :math:`b(\lambda - 1) \leq w` and
+                    :math:`w - b(\lambda - 1) \geq c - \log_2 \lambda - 1`. The nested
+                    :class:`~.QROM` loads :math:`\lceil K/\lambda \rceil` bitstrings of length
+                    :math:`\lambda b`
+
+                :class:`~.QROM` | :math:`2` | 2
+                :class:`~.Hadamard` | :math:`2b` | 4
+                :class:`~.CSWAP` | :math:`4b(\lambda - 1)` | 8
+
+            .. decomposition-rule:: _qrom_unary_iteration
+                :image: /_static/decomposition_thumbnails/qrom_unary_iteration.svg
+                :where: :math:`t = \min(c, w + 1)` control wires span the unary iteration tree and
+                    the other :math:`e = c - t` are added as controls to each load,
+                    :math:`B = \lceil K / 2^e \rceil`,
+                    :math:`N = t + B - 2 - \mathrm{wt}(B-1) - [B > 2^{t-1}]`, with
+                    :math:`\mathrm{wt}` the number of ones in the binary representation, and
+                    :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise. With no work
+                    wires (:math:`w = 0`), each bitstring is instead loaded by a :class:`~.MultiX`
+                    with :math:`c` controls
+
+                :class:`~.TemporaryAND` | :math:`N` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`N` | 1
+                :class:`~.CNOT` | :math:`B - 1 + [B > 2^{t-1}]` | 4
+                :class:`~.X` | :math:`2[B > 2^{t-2}]` | 2
+                :class:`~.MultiX` with :math:`e + 1` controls | :math:`K` | 4
+
+            .. decomposition-rule:: _qrom_measurement_decomposition
+                :image: /_static/decomposition_thumbnails/qrom_measurement.svg
+                :requires: :math:`w \geq c - 1` work wires and compilation with :func:`~.qjit`
+                :where: :math:`L = 2^c` (the data is padded to :math:`L` entries, assuming
+                    :math:`c = \lceil \log_2 K \rceil`) and :math:`A = L - 3`. Gates marked as
+                    conditional are applied depending on mid-circuit measurement outcomes,
+                    and the number of :class:`~.CNOT` gates depends on the bitstrings
+
+                :class:`~.MultiX` | :math:`1 + A` (:math:`A` conditional) | 2
+                :class:`~.TemporaryAND` | :math:`A` | 1
+                :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`1` | 1
+                :class:`~.CNOT` | at most :math:`\max(3, L/2 - 1) + 2b` | 5
+                :func:`PauliMeasure <.pauli_measure>` (:math:`X`-type, :math:`\leq b + 1` wires) | :math:`A` | 1
+                :func:`PauliMeasure <.pauli_measure>` (:math:`Z`, 1 wire) | :math:`A` | 1
+                :class:`~.CZ` (conditional) | :math:`A` | 1
+                :class:`~.Z` (conditional) | :math:`A` | 1
+                :class:`~.X` (conditional) | :math:`A` | 1
 
     .. details::
         :title: Usage Details
@@ -218,7 +275,7 @@ class QROM(Operator2):
         target_wires: WiresLike,
         work_wires: WiresLike,
         clean=True,
-    ):  # pylint: disable=too-many-arguments,disable=too-many-positional-arguments
+    ):
 
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
@@ -314,8 +371,8 @@ def _calculate_select_swap_sizes(
     )
 
 
+# pylint: disable-next=unused-argument
 def _select_swap_condition(bitstrings, control_wires, target_wires, work_wires, clean):
-    # pylint: disable=unused-argument
     """We use Select-SWAP only when there are enough work wires for unary iteration on the
     nested select QROM and an actual SWAP network is used on top, i.e. for depth > 1."""
     num_control_wires = len(control_wires)
@@ -330,9 +387,7 @@ def _select_swap_condition(bitstrings, control_wires, target_wires, work_wires, 
     return depth > 1
 
 
-def _select_swap_resources(
-    bitstrings, control_wires, target_wires, work_wires, clean
-):  # pylint: disable=too-many-branches
+def _select_swap_resources(bitstrings, control_wires, target_wires, work_wires, clean):
     """Assumes depth computed below satisfies depth > 1, as guaranteed by _select_swap_condition."""
     num_bitstrings = len(bitstrings)
     num_control_wires = len(control_wires)
@@ -373,9 +428,7 @@ def _select_swap_resources(
 
 @register_condition(_select_swap_condition)
 @register_resources(_select_swap_resources)
-def _select_swap(
-    bitstrings, control_wires, target_wires, work_wires, clean
-):  # pylint: disable=unused-argument, too-many-arguments
+def _select_swap(bitstrings, control_wires, target_wires, work_wires, clean):
     if len(control_wires) == 0:
         MultiX(bitstrings[0, :], wires=target_wires)
         return
@@ -405,7 +458,7 @@ def _select_swap(
         target_wires = math.array(target_wires, like="jax")
 
     @for_loop(2)
-    def _select_swap_loop(i):
+    def _select_swap_loop(i):  # pylint: disable=unused-argument
 
         @for_loop(len(target_wires))
         def apply_h(i):
@@ -651,9 +704,14 @@ def _flag_resources(num_control_wires_extra):
     }
 
 
-def _qrom_measurement_condition(
-    bitstrings=None, control_wires=None, target_wires=None, work_wires=None, clean=None, base=None
-):  # pylint: disable=too-many-arguments,unused-argument
+def _qrom_measurement_condition(  # pylint: disable=too-many-arguments,unused-argument
+    bitstrings=None,
+    control_wires=None,
+    target_wires=None,
+    work_wires=None,
+    clean=None,
+    base=None,
+):
 
     if base is not None:
         num_bitstrings = len(base.bitstrings)
@@ -731,9 +789,14 @@ def _build_flag(extra_wires, work_wires):
 
 @register_condition(_qrom_measurement_condition)
 @register_resources(_qrom_measurement_resources, exact=False)
-def _qrom_measurement_decomposition(
-    bitstrings=None, control_wires=None, target_wires=None, work_wires=None, clean=None, base=None
-):  # pylint: disable=too-many-arguments,too-many-branches,unused-argument
+def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,unused-argument
+    bitstrings=None,
+    control_wires=None,
+    target_wires=None,
+    work_wires=None,
+    clean=None,
+    base=None,
+):
     """QROM decomposition using measurement-based uncomputation.
 
     Uses L-3 (or L-2) TemporaryAND gates. All uncomputation is done via
@@ -839,13 +902,13 @@ def _unary_iteration_split(num_control_wires, num_work_wires):
     return num_control_wires_tree, num_control_wires - num_control_wires_tree
 
 
-def _qrom_unary_iteration_resources(
+def _qrom_unary_iteration_resources(  # pylint: disable=unused-argument
     bitstrings,
     control_wires,
     target_wires,
     work_wires,
     clean=True,
-):  # pylint: disable=unused-argument,too-many-arguments
+):
     c = len(control_wires)
     K = len(bitstrings)
     num_targets = len(target_wires)
@@ -1017,7 +1080,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
 
             recompute()  # pylint: disable=no-value-for-parameter
 
-        for_loop(num_blocks - 1)(loop)()  # pylint: disable=no-value-for-parameter
+        for_loop(num_blocks - 1)(loop)()
 
     # Load the last block, which may be partially filled
     concrete_load(last_block)
@@ -1032,9 +1095,8 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
 
 
 @register_resources(_qrom_unary_iteration_resources)
-def _qrom_unary_iteration(
-    bitstrings, control_wires, target_wires, work_wires, clean, **__
-):  # pylint: disable=unused-argument, too-many-arguments
+# pylint: disable-next=unused-argument
+def _qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires, clean, **__):
     """Unary iteration decomposition of QROM.
 
     The unary iteration tree is grown over the most-significant control wires, one level per

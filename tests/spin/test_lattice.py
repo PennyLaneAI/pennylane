@@ -23,8 +23,6 @@ import pytest
 from pennylane.spin import Lattice
 from pennylane.spin.lattice import generate_lattice
 
-# pylint: disable=too-many-arguments, too-many-instance-attributes
-
 
 @pytest.mark.parametrize(("boundary_condition"), [([True, True]), ([4])])
 def test_boundary_condition_type_error(boundary_condition):
@@ -373,6 +371,7 @@ def test_neighbour_order(vectors, positions, n_cells, neighbour_order, expected_
         (np.eye(3), [[0, 0, 0]], [3, 3, 4], True, 3, [True, True, True]),
     ],
 )
+# pylint: disable-next=too-many-arguments
 def test_attributes(vectors, positions, n_cells, boundary_condition, n_dim, expected_bc):
     r"""Test that the methods and attributes return correct values"""
     lattice = Lattice(

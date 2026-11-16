@@ -49,9 +49,7 @@ import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
-
-# pylint: disable=too-few-public-methods
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
 
@@ -557,6 +555,85 @@ class TestDecompositions:
         decomposed_matrix = np.linalg.multi_dot(mats)
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize(
+        "base, control, custom_type, num_paulis",
+        [(qp.SWAP([0, 1]), [2], "CSWAP", 2), (qp.Z(0), [1, 2], "CCZ", 4)],
+    )
+    def test_controlled_op_with_work_wires_to_custom_op(
+        self, base, control, custom_type, num_paulis
+    ):
+        """Tests that a controlled op with work wires still decomposes into the custom
+        controlled op, which does not have work wires, if it is in the gate set."""
+
+        @qp.qjit(capture=True, target="mlir")
+        # PauliX is needed for flipping zero-valued controls, which can't be ruled out
+        # when solving the decomposition graph for abstract control values
+        @qp.decompose(gate_set={custom_type, "PauliX"})
+        @qp.qnode(qp.device("lightning.qubit", wires=6))
+        def circuit():
+            qp.ctrl(base, control=control, work_wires=[5], work_wire_type="zeroed")
+            return qp.state()
+
+        resources = qp.analyze(circuit)().resources
+        assert resources.quantum_operations == {custom_type: 1, "PauliX": num_paulis}
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        "base, control_values",
+        [
+            (qp.SWAP([0, 1]), [0]),
+            (qp.SWAP([0, 1]), [1]),
+            (qp.SWAP([0, 1]), [1, 1]),
+            (qp.SWAP([0, 1]), [0, 1, 0]),
+            (qp.Z(0), [1, 1]),
+            (qp.Z(0), [0, 1]),
+        ],
+    )
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_controlled_op_with_work_wires_decomposable(self, base, control_values, work_wire_type):
+        """Tests that the decomposition rules of controlled ops with work wires are valid."""
+        control = list(range(2, 2 + len(control_values)))
+        work_wires = list(range(5, 5 + len(control_values)))
+        op = qp.ctrl(
+            base,
+            control=control,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+        assert_decomposable(op)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(
+        "base, num_controls, num_work_wires",
+        [
+            (qp.SWAP([0, 1]), 1, 1),
+            (qp.SWAP([0, 1]), 2, 2),
+            (qp.SWAP([0, 1]), 3, 3),
+            (qp.Z(0), 2, 1),
+        ],
+    )
+    def test_controlled_op_t_count_with_zeroed_work_wires(self, base, num_controls, num_work_wires):
+        """Tests that controlled ops decompose into 4 T gates per zeroed work wire if
+        enough zeroed work wires are provided."""
+        control = list(range(2, 2 + num_controls))
+        work_wires = list(range(5, 5 + num_work_wires))
+        gate_set = {"T": 100, "Adjoint(T)": 100, "Adjoint(S)": 1, "Hadamard": 1, "CNOT": 1}
+        gate_set |= {"CZ": 1, "PauliX": 1, "MidMeasure": 1}
+
+        @decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("null.qubit"))
+        def circuit():
+            qp.ctrl(base, control=control, work_wires=work_wires, work_wire_type="zeroed")
+            return qp.state()
+
+        tape = qp.workflow.construct_tape(circuit)()
+        resources = qp.resource.resources_from_tape(tape).quantum_operations
+        assert resources["T"] + resources["Adjoint(T)"] == 4 * num_work_wires
+        assert "Allocate" not in resources
+        assert set(tape.wires) == set(base.wires + control + work_wires)
 
     def test_swap_decomposition(self):
         """Tests the swap operator produces the correct output"""
@@ -1092,10 +1169,8 @@ class TestPowMethod:
         assert op.pow(n)[0].__class__ is op.__class__
 
 
-class TestControlledMethod:
+class TestControlledMethod:  # pylint: disable=too-few-public-methods
     """Tests symbolic controls of non-parametric operations."""
-
-    # pylint: disable=protected-access
 
     def test_Barrier(self):
         """Tests the control behavior of Barrier."""
@@ -1104,7 +1179,7 @@ class TestControlledMethod:
         qp.assert_equal(original, out)
 
 
-class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
+class TestSpecialPowDecomps:
     """Tests special decomposition rules for Pow of operators."""
 
     @pytest.mark.parametrize("batched", [True, False])
@@ -1283,7 +1358,6 @@ op_pauli_rep = (
 
 @pytest.mark.parametrize("op, rep", op_pauli_rep)
 def test_pauli_rep(op, rep):
-    # pylint: disable=protected-access
     assert op.pauli_rep == rep
 
 
@@ -1337,10 +1411,9 @@ class TestPauliRep:
     )
     def test_lazy_implementation(self, op, _):
         """Checks if the ._pauli_rep attribute is only computed when needed."""
-        # pylint: disable=unused-variable, protected-access
-        assert op._pauli_rep is None
-        pauli_rep = op.pauli_rep
-        assert op._pauli_rep is not None
+        assert op._pauli_rep is None  # pylint: disable=protected-access
+        pauli_rep = op.pauli_rep  # pylint: disable=unused-variable
+        assert op._pauli_rep is not None  # pylint: disable=protected-access
 
     @pytest.mark.parametrize(
         "op, rep", NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED

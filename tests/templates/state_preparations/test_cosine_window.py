@@ -16,8 +16,6 @@ Unit tests for the CosineWindow template.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -147,7 +145,7 @@ class TestStateVector:
         assert np.allclose(res, expected)
 
 
-class TestInterfaces:
+class TestInterfaces:  # pylint: disable=too-few-public-methods
     """Test that the template works with different interfaces"""
 
     @pytest.mark.jax

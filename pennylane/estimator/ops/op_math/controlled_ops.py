@@ -26,8 +26,6 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable= arguments-differ, signature-differs
-
 
 class CH(ResourceOperator):
     r"""Resource class for the CH gate.
@@ -75,7 +73,7 @@ class CH(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -85,7 +83,7 @@ class CH(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list of ``GateCount`` objects representing the resources of the operator..
 
         Resources:
@@ -234,7 +232,7 @@ class CY(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -244,7 +242,7 @@ class CY(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator.
 
         Resources:
@@ -385,7 +383,7 @@ class CZ(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -395,7 +393,7 @@ class CZ(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator.
 
         Resources:
@@ -543,7 +541,7 @@ class CSWAP(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -553,7 +551,7 @@ class CSWAP(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator.
 
         Resources:
@@ -697,7 +695,7 @@ class CCZ(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -707,7 +705,7 @@ class CCZ(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator.
 
         Resources:
@@ -841,7 +839,7 @@ class CNOT(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -851,7 +849,7 @@ class CNOT(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator.
 
         Resources:
@@ -985,7 +983,7 @@ class TemporaryAND(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
 
@@ -995,7 +993,7 @@ class TemporaryAND(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator.
 
         Resources:
@@ -1151,6 +1149,7 @@ class Toffoli(ResourceOperator):
         return gate_types
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, elbow: Literal["left", "right"] | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator.
 
@@ -1258,6 +1257,7 @@ class Toffoli(ResourceOperator):
         return {"elbow": self.elbow}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, elbow: Literal["left", "right"] | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
@@ -1271,6 +1271,7 @@ class Toffoli(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"elbow": elbow})
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
@@ -1295,7 +1296,7 @@ class Toffoli(ResourceOperator):
         return [GateCount(cls.resource_rep(elbow=adj_elbow))]
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
@@ -1326,6 +1327,7 @@ class Toffoli(ResourceOperator):
         return [GateCount(mcx)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
@@ -1417,6 +1419,7 @@ class MultiControlledX(ResourceOperator):
         }
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_ctrl_wires: int, num_zero_ctrl: int) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
@@ -1439,6 +1442,7 @@ class MultiControlledX(ResourceOperator):
         )
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, num_ctrl_wires: int, num_zero_ctrl: int) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator.
 
@@ -1500,6 +1504,7 @@ class MultiControlledX(ResourceOperator):
         return gate_lst
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
@@ -1520,7 +1525,7 @@ class MultiControlledX(ResourceOperator):
         return [GateCount(cls.resource_rep(num_ctrl_wires, num_zero_ctrl))]
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
@@ -1556,6 +1561,7 @@ class MultiControlledX(ResourceOperator):
         ]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
@@ -1630,6 +1636,7 @@ class CRX(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
@@ -1644,6 +1651,7 @@ class CRX(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator.
 
@@ -1675,6 +1683,7 @@ class CRX(ResourceOperator):
         return [GateCount(cnot, 2), GateCount(rz, 2), GateCount(h, 2)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
@@ -1694,7 +1703,7 @@ class CRX(ResourceOperator):
         return [GateCount(cls.resource_rep(precision))]
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
@@ -1730,6 +1739,7 @@ class CRX(ResourceOperator):
         return [GateCount(ctrl_rx)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
@@ -1799,6 +1809,7 @@ class CRY(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
@@ -1812,6 +1823,7 @@ class CRY(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator.
 
@@ -1840,6 +1852,7 @@ class CRY(ResourceOperator):
         return [GateCount(cnot, 2), GateCount(ry, 2)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
@@ -1859,7 +1872,7 @@ class CRY(ResourceOperator):
         return [GateCount(cls.resource_rep(precision))]
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
@@ -1895,6 +1908,7 @@ class CRY(ResourceOperator):
         return [GateCount(ctrl_ry)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
@@ -1965,6 +1979,7 @@ class CRZ(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
@@ -1979,6 +1994,7 @@ class CRZ(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator.
 
@@ -2007,6 +2023,7 @@ class CRZ(ResourceOperator):
         return [GateCount(cnot, 2), GateCount(rz, 2)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
@@ -2027,7 +2044,7 @@ class CRZ(ResourceOperator):
         return [GateCount(cls.resource_rep(precision))]
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
@@ -2063,6 +2080,7 @@ class CRZ(ResourceOperator):
         return [GateCount(ctrl_rz)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
@@ -2142,6 +2160,7 @@ class CRot(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
@@ -2155,6 +2174,7 @@ class CRot(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator.
 
@@ -2193,6 +2213,7 @@ class CRot(ResourceOperator):
         return [GateCount(cnot, 2), GateCount(rz, 3), GateCount(ry, 2)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
@@ -2213,7 +2234,7 @@ class CRot(ResourceOperator):
         return [GateCount(cls.resource_rep(precision))]
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
@@ -2249,6 +2270,7 @@ class CRot(ResourceOperator):
         return [GateCount(ctrl_rot)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
@@ -2319,6 +2341,7 @@ class ControlledPhaseShift(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
@@ -2332,6 +2355,7 @@ class ControlledPhaseShift(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list of GateCount objects representing the resources of the operator.
 
@@ -2369,6 +2393,7 @@ class ControlledPhaseShift(ResourceOperator):
         return [GateCount(cnot, 2), GateCount(rz, 3)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
@@ -2389,7 +2414,7 @@ class ControlledPhaseShift(ResourceOperator):
         return [GateCount(cls.resource_rep(precision))]
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
@@ -2425,6 +2450,7 @@ class ControlledPhaseShift(ResourceOperator):
         return [GateCount(ctrl_ps)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 

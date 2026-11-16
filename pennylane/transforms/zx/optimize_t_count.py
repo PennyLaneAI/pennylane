@@ -87,8 +87,7 @@ def optimize_t_count(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
     2: ──────────╰X─┤ ╰State
 
     """
-    # pylint: disable=import-outside-toplevel
-    import pyzx
+    import pyzx  # pylint: disable=import-outside-toplevel
 
     def transform_fn(pyzx_graph):
         pyzx_circ = pyzx.Circuit.from_graph(pyzx_graph)
