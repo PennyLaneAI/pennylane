@@ -169,12 +169,18 @@ def test_givens_decomposition_exact_zeros(matrix):
     assert onp.allclose(matrix, decomposed_matrix)
 
 
+@pytest.mark.parametrize("matrix_type", ["orthogonal", "unitary"])
 @pytest.mark.parametrize("dt", [1e-3, 1e-5, 1e-6])
-def test_givens_decomposition_close_to_identity(dt, seed):
-    r"""Test that `givens_decomposition` is accurate for unitaries close to the identity."""
+def test_givens_decomposition_close_to_identity(matrix_type, dt, seed):
+    r"""Test that `givens_decomposition` is accurate for orthogonal and unitary matrices
+    close to the identity."""
     rng = onp.random.default_rng(seed)
-    h = rng.normal(size=(4, 4)) + 1j * rng.normal(size=(4, 4))
-    matrix = expm(1j * dt * (h + h.conj().T))
+    if matrix_type == "orthogonal":
+        h = rng.normal(size=(4, 4))
+        matrix = expm(dt * (h - h.T))
+    else:
+        h = rng.normal(size=(4, 4)) + 1j * rng.normal(size=(4, 4))
+        matrix = expm(1j * dt * (h + h.conj().T))
 
     phase_mat, ordered_rotations = givens_decomposition(matrix)
     decomposed_matrix = onp.diag(phase_mat)
