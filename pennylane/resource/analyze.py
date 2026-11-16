@@ -102,8 +102,7 @@ def _run_resource_analysis(func, original_qnode, level, *args, **kwargs) -> tupl
         **kwargs,
     )
 
-    # The printed name of a transform level describes the circuit after that transform. The
-    # resources stay keyed by the bare name.
+    # The displayed level describes the circuit after the associated transform has been applied
     level_to_name = {
         lvl: name if lvl == 0 or lvl in markers_by_level else f"After {name}"
         for lvl, name in level_to_name.items()
