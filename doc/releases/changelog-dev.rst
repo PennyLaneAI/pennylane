@@ -2348,6 +2348,11 @@ Internal changes ⚙️
 Documentation 📝
 ~~~~~~~~~~~~~~~~
 
+* The documentation of :attr:`~.Node.init_args` now describes ``peer=``, the ``config`` key with
+  which an RDMA :class:`~.Coprocessor` names the kind of controller it answers, and the
+  ``backend`` argument of :class:`~.Controller` lists the default and FPGA backends.
+  `(#10530) <https://github.com/PennyLaneAI/pennylane/pull/10530>`__
+
 * The ``level`` argument of :func:`~.drawer.draw`, :func:`~.drawer.draw_mpl`,
   :func:`~.workflow.construct_tape` and :func:`~.noise.add_noise` is now documented in
   :func:`~.workflow.construct_batch`.
