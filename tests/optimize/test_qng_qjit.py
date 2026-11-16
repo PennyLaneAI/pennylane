@@ -399,8 +399,8 @@ class TestOptimize:
         new_params1, state1 = opt.step(qnode, params, state)
         new_params2, state2, cost = opt.step_and_cost(qnode, params, state)
 
-        step = qp.qjit(partial(opt.step, qnode))
-        step_and_cost = qp.qjit(partial(opt.step_and_cost, qnode))
+        step = qp.qjit(partial(opt.step, qnode), capture=False)
+        step_and_cost = qp.qjit(partial(opt.step_and_cost, qnode), capture=False)
         new_params1_qjit, state1_qjit = step(params, state)
         new_params2_qjit, state2_qjit, cost_qjit = step_and_cost(params, state)
 

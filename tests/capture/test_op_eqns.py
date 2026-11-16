@@ -81,7 +81,7 @@ def test_skips_op_without_tracer():
         (lambda: qp.CNOT([0, 1]), ["CNOT"]),
         (lambda: qp.adjoint(qp.S(0)), ["S"]),
         (lambda: qp.ctrl(qp.RX(0.5, 0), [1, 2]), ["RX"]),
-        (lambda: qp.adjoint(qp.ctrl(qp.Hadamard(0), 1)), ["CH"]),
+        (lambda: qp.adjoint(qp.ctrl(qp.Hadamard(0), 1)), ["Hadamard"]),
         (lambda: [qp.CNOT([0, 1]) for _ in range(5)], ["CNOT"] * 5),
     ],
 )

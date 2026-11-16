@@ -921,7 +921,7 @@ class TestSumOfSlatersPrep:
         all_wires = qp.registers(sizes)
         all_wires["selected_wires"] = selected_wires
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.qnode(qp.device("lightning.qubit"))
         def func():
             _sos_state_prep_with_wires(data, **all_wires)  # pylint: disable=missing-kwoa

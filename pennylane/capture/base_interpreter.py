@@ -474,14 +474,14 @@ def _iota_primitive(self, *dyn_shape, dimension, dtype, shape, sharding):
 
 
 @PlxprInterpreter.register_primitive(adjoint_transform_prim)
-def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
+def handle_adjoint_transform(self, *invals, jaxpr, n_consts):
     """Interpret an adjoint transform primitive."""
     consts = invals[:n_consts]
     args = invals[n_consts:]
     jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
     return adjoint_transform_prim.bind(
-        *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
+        *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, n_consts=len(jaxpr.consts)
     )
 
 
@@ -492,12 +492,12 @@ def handle_ctrl_transform(
     *invals,
     n_control,
     jaxpr,
-    work_wires,
     n_consts,
+    n_work_wires,
     work_wire_type="borrowed",
 ):
     """Interpret a ctrl transform primitive."""
-    controls_start = len(invals) - 2 * n_control
+    controls_start = len(invals) - n_work_wires - 2 * n_control
     consts = invals[:n_consts]
     args = invals[n_consts:controls_start]
     jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
@@ -508,7 +508,7 @@ def handle_ctrl_transform(
         *invals[controls_start:],
         n_control=n_control,
         jaxpr=jaxpr.jaxpr,
-        work_wires=work_wires,
+        n_work_wires=n_work_wires,
         work_wire_type=work_wire_type,
         n_consts=len(jaxpr.consts),
     )

@@ -719,7 +719,7 @@ class TestIntegration:
 
         phi = 0.345
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.qnode(qp.device("lightning.qubit", wires=1))
         def func(params):
             qp.exp(qp.X(0), -0.5j * params)

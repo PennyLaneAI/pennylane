@@ -400,6 +400,21 @@ class QSVT(Operator2):
     encoding methods.
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.QSVT
+            :symbols: block encoding :math:`U=` ``UA`` and :math:`d+1` projector-controlled phase
+                shifts :math:`\Pi_{\phi_k}=` ``projectors[k]``
+            :example: :math:`d=2`
+
+            .. decomposition-rule:: _QSVT_decomposition
+                :image: /_static/decomposition_thumbnails/qsvt_alternating_projectors.svg
+
+                :math:`\Pi_{\phi_k}` | :math:`d+1` (one per :math:`\Pi_{\phi_k}`) | 3
+                :math:`U` | :math:`\lceil d/2 \rceil` | 1
+                :math:`U^\dagger` | :math:`\lfloor d/2 \rfloor` | 1
+
+    .. details::
         :title: Usage Details
 
         The QSVT operation can be used with different block encoding methods, depending on the

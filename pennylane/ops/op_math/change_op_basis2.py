@@ -29,7 +29,9 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import adjoint, ctrl
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
+from pennylane.ops.op_math.adjoint import _adjoint_eager
+from pennylane.ops.op_math.controlled2 import flip_zero_control
+from pennylane.typing import Bool
 
 from .composite import handle_recursion_error
 from .composite2 import CompositeOp2
@@ -123,7 +125,7 @@ class ChangeOpBasis2(CompositeOp2):
     def adjoint(self):
         return ChangeOpBasis2(
             self.compute_op,
-            adjoint(self.target_op, lazy=False),
+            _adjoint_eager(self.target_op, update_queue=True),
             self.uncompute_op,
         )
 
@@ -179,11 +181,12 @@ def _controlled_change_op_basis_resources(
     resources = defaultdict(int)
     resources[base.compute_op] += 1
     resources[
-        _ctrl_abstract(
+        ctrl(
             base.target_op,
-            control_wires,
-            work_wires,
-            work_wire_type,
+            control=control_wires,
+            control_values=Bool[len(control_wires)],
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
         )
     ] += 1
     resources[base.uncompute_op] += 1
@@ -228,3 +231,21 @@ def _change_op_basis_decomp(compute_op, target_op, uncompute_op):
 
 add_decomps(ChangeOpBasis2, _change_op_basis_decomp)
 add_decomps("C(ChangeOpBasis2)", flip_zero_control(_controlled_change_op_basis_decomposition))
+
+
+def _adjoint_change_op_basis_resources(base):
+    resources = Counter()
+    resources[base.compute_op] += 1
+    resources[adjoint(base.target_op)] += 1
+    resources[base.uncompute_op] += 1
+    return dict(resources)
+
+
+@register_resources(_adjoint_change_op_basis_resources)
+def _adjoint_change_op_basis_decomp(base):
+    apply(base.compute_op)
+    adjoint(base.target_op)
+    apply(base.uncompute_op)
+
+
+add_decomps("Adjoint(ChangeOpBasis2)", _adjoint_change_op_basis_decomp)

@@ -859,7 +859,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         D = np.exp(1j * rng.random(2**n))
         wires = tuple(range(n))
         decomp_mat_fn = qp.matrix(qp.DiagonalQubitUnitary.compute_decomposition, wire_order=wires)
-        decomp_mat = qp.qjit(decomp_mat_fn, static_argnums=[1])(D, wires)
+        decomp_mat = qp.qjit(decomp_mat_fn, static_argnums=[1], capture=False)(D, wires)
 
         mat_mat = qp.DiagonalQubitUnitary(D, wires=wires).matrix()
         orig_mat = np.diag(D)
@@ -934,6 +934,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
                     wire_order=all_wires,
                 ),
                 static_argnums=[1],
+                capture=False,
             )
             mat = fn(op.D, op.wires)
             dim = 2 ** len(op.wires)
@@ -996,6 +997,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
                     wire_order=all_wires,
                 ),
                 static_argnums=[1],
+                capture=False,
             )
             mat = fn(op.D, op.wires)
             dim = 2 ** len(op.wires)

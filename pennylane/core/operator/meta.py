@@ -23,6 +23,7 @@ from typing import ClassVar
 
 from pennylane import capture, math
 from pennylane.pytrees import flatten
+from pennylane.typing import AbstractArray, AbstractWires
 
 
 def _stop_autograph(f):
@@ -65,10 +66,7 @@ class OperatorMeta(ABCMeta):
         bound.apply_defaults()
         arguments: dict = bound.arguments
 
-        # NOTE: Detect if static / compilable argument received a tracer
-        # indicating it is incorrectly being used as a dynamic argument.
-        if capture.enabled():
-            _verify_no_traced_static_args(cls, arguments)
+        _validate_compile_time_args(cls, arguments)
 
         # default behaviour calls __new__ and then __init__
         op = super().__call__(*args, **kwargs)
@@ -82,12 +80,19 @@ class OperatorMeta(ABCMeta):
         return op
 
 
-def _verify_no_traced_static_args(cls, arguments):
-    """Verify that no static/compilable arguments received a tracer."""
+def _validate_compile_time_args(cls, arguments):
+    """Validate abstract compilable inputs and traced static/compilable inputs."""
     for arg_name in cls.static_argnames + cls.compilable_argnames:
         leaves, _ = flatten(arguments[arg_name])
-        if any(math.is_tracer(l) for l in leaves):
+        if any(
+            (
+                arg_name in cls.compilable_argnames
+                and isinstance(value, (AbstractArray, AbstractWires))
+            )
+            or math.is_tracer(value)
+            for value in leaves
+        ):
             raise ValueError(
                 f"Argument '{arg_name}' of operator '{cls.__name__}' must be a concrete, "
-                f"compile-time constant. A dynamic/traced variable was provided instead. "
+                "compile-time constant. An abstract input or dynamic/traced variable was provided instead."
             )

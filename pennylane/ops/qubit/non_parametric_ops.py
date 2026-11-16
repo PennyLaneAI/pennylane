@@ -37,8 +37,6 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
@@ -220,13 +218,6 @@ class Hadamard(Operator2):
         return super().pow(z % 2)
 
 
-@custom_ctrl_dispatch.register
-def _ctrl_h(base: Hadamard, control, control_values, *_):
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CH(control + base.wires)
-    return NotImplemented
-
-
 H = Hadamard
 r"""H(wires)
 The Hadamard operator
@@ -312,11 +303,10 @@ def _controlled_h_resources(base, control_wires, control_values, work_wires, wor
     return {
         qp.H: 2,
         qp.RY: 2,
-        _ctrl_abstract(
-            qp.X,
-            Wire[len(control_wires)],
-            Wire[len(work_wires)],
-            work_wire_type,
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 1],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
         ): 1,
     }
 
@@ -331,9 +321,8 @@ def _controlled_hadamard(base, control_wires, control_values, work_wires, work_w
 
     qp.RY(-np.pi / 4, wires=wires[-1])
     qp.H(wires=wires[-1])
-    qp.ctrl(
-        qp.X(wires[-1]),
-        control=wires[:-1],
+    qp.MultiControlledX(
+        wires,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
@@ -518,18 +507,6 @@ class PauliX(Operator2):
         if abs(z_mod2 - 0.5) < 1e-6:
             return [SX(wires=self.wires)]
         return super().pow(z_mod2)
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_x(base: PauliX, control, control_values, work_wires, work_wire_type):
-    wires = control + base.wires
-    if not _is_empty_or_all_true(control_values):
-        return qp.MultiControlledX(wires, control_values, work_wires, work_wire_type)
-    if len(control) == 1:
-        return qp.CNOT(wires)
-    if len(control) == 2 and not work_wires:
-        return qp.Toffoli(wires)
-    return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
 X = PauliX
@@ -780,13 +757,6 @@ class PauliY(Operator2):
         return super().pow(z % 2)
 
 
-@custom_ctrl_dispatch.register
-def _ctrl_y(base: PauliY, control, control_values, *_):
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CY(control + base.wires)
-    return NotImplemented
-
-
 Y = PauliY
 r"""The Pauli Y operator
 
@@ -842,11 +812,10 @@ def _controlled_y_resource(base, control_wires, control_values, work_wires, work
     return {
         qp.S: 1,
         _adjoint_abstract(qp.S): 1,
-        _ctrl_abstract(
-            qp.X,
-            Wire[len(control_wires)],
-            Wire[len(work_wires)],
-            work_wire_type,
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 1],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
         ): 1,
     }
 
@@ -860,9 +829,7 @@ def _controlled_y_decomp(base, control_wires, control_values, work_wires, work_w
         return
 
     qp.adjoint(qp.S(wires[-1]))
-    qp.ctrl(
-        qp.X(wires[-1]), control=wires[:-1], work_wires=work_wires, work_wire_type=work_wire_type
-    )
+    qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
     qp.S(wires=wires[-1])
 
 
@@ -1046,18 +1013,6 @@ class PauliZ(Operator2):
             return [T(wires=self.wires)]
 
         return [qp.PhaseShift(np.pi * z_mod2, wires=self.wires)]
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_z(base: PauliZ, control, control_values, work_wires, work_wire_type):
-    if not _is_empty_or_all_true(control_values):
-        return NotImplemented
-    is_abstract = isinstance(control, AbstractWires) or isinstance(base.wires, AbstractWires)
-    if len(control) == 1:
-        return qp.CZ(Wire[2]) if is_abstract else qp.CZ(control + base.wires)
-    if len(control) == 2:
-        return qp.CCZ(Wire[3]) if is_abstract else qp.CCZ(control + base.wires)
-    return NotImplemented
 
 
 Z = PauliZ
@@ -1752,13 +1707,6 @@ class SWAP(Operator2):
     @override
     def adjoint(self) -> "SWAP":
         return SWAP(wires=self.wires)
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_swap(base: SWAP, control, control_values, *_):
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CSWAP(control + base.wires)
-    return NotImplemented
 
 
 def _swap_to_cnot_resources(wires: WiresLike):

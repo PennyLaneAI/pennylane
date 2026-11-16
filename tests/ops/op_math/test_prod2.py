@@ -121,7 +121,7 @@ class TestInitialization:
 
     def test_mcm_operands_raises(self):
         """Test that a product of mid-circuit measurements raises an error."""
-        m = qp.measurements.MidMeasureMP(qp.wires.Wires([0]))
+        m = qp.ops.MidMeasure(qp.wires.Wires([0]))
         with pytest.raises(ValueError, match="mid-circuit measurements"):
             Prod2([qp.X(1), m])
 

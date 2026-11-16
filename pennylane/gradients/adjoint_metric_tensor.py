@@ -244,10 +244,10 @@ def adjoint_metric_tensor(
             for i in range(j - 1, -1, -1):
                 # after first iteration of inner loop: apply U_{i+1}^\dagger
                 if i < j - 1:
-                    phi = apply_operation(adjoint(trainable_operations[i + 1], lazy=False), phi)
+                    phi = apply_operation(adjoint(trainable_operations[i + 1]), phi)
                 # apply V_{i}^\dagger
                 for op in reversed(group_after_trainable_op[i]):
-                    adj_op = adjoint(op, lazy=False)
+                    adj_op = adjoint(op)
                     phi = apply_operation(adj_op, phi)
                     lam = apply_operation(adj_op, lam)
 
@@ -269,7 +269,7 @@ def adjoint_metric_tensor(
                     L, [(i, j), (j, i)], value * math.convert_like(math.ones((2,)), value)
                 )
                 # apply U_i^\dagger
-                lam = apply_operation(adjoint(inner_op, lazy=False), lam)
+                lam = apply_operation(adjoint(inner_op), lam)
 
             # apply U_j and V_j
             psi = apply_operation(outer_op, psi)

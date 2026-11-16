@@ -19,7 +19,7 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import partial
 
-from pennylane.capture import enabled
+from pennylane import capture
 
 from ._utils import (
     apply_partial_args,
@@ -49,7 +49,7 @@ def _run_resource_analysis(func, original_qnode, level, *args, **kwargs) -> tupl
     has_device_level: bool = level in ("device", "all")
     if has_device_level:
         if not func.compile_options.capture or (
-            func.compile_options.capture == "global" and not enabled()
+            func.compile_options.capture == "global" and not capture.enabled()
         ):
             raise ValueError("Device level is only supported when capture is enabled.")
 
@@ -112,7 +112,7 @@ def analyze(
             ``level`` accepts the following types:
 
             * ``int``: The number of transforms to apply before analyzing resources.
-            * ``str``: The name of the last transform to apply before analyzing resources, or the ``label`` of a  :func:`~.marker`.
+            * ``str``: One of the presets listed below, or the ``label`` of a :func:`~.marker`.
             * ``iterable``: A ``list``, ``tuple``, or similar containing ``int`` or ``str`` values.
               These should be sorted in ascending transform order with no duplicates. Resources will be analyzed for each provided level in the ``iterable``.
 

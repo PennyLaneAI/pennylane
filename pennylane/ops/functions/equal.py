@@ -720,8 +720,10 @@ def _equal_prod_and_sum(op1, op2, **kwargs):
 def _equal_controlled2(op1: Controlled2, op2: Controlled2, **kwargs):
     """Determine whether two Controlled2 or ControlledOp2 objects are equal"""
 
-    if op1.arithmetic_depth != op2.arithmetic_depth:
-        return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
+    depth1 = getattr(op1, "arithmetic_depth", None)
+    depth2 = getattr(op2, "arithmetic_depth", None)
+    if depth1 is not None and depth2 is not None and depth1 != depth2:
+        return f"op1 and op2 have different arithmetic depths. Got {depth1} and {depth2}"
 
     wire_comparison = _check_wire_value("work_wires", op1.work_wires, op2.work_wires)
     if isinstance(wire_comparison, str):
@@ -806,10 +808,14 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
 @_equal_dispatch.register
 def _equal_controlled_sequence(op1: ControlledSequence, op2: ControlledSequence, **kwargs):
     """Determine whether two ControlledSequences are equal"""
-    if op1.wires != op2.wires:
-        return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
-    if op1.arithmetic_depth != op2.arithmetic_depth:
-        return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
+    control_equal_check = _check_wire_value("control", op1.control, op2.control)
+    if isinstance(control_equal_check, str):
+        return control_equal_check
+
+    depth1 = getattr(op1, "arithmetic_depth", None)
+    depth2 = getattr(op2, "arithmetic_depth", None)
+    if depth1 is not None and depth2 is not None and depth1 != depth2:
+        return f"op1 and op2 have different arithmetic depths. Got {depth1} and {depth2}"
 
     base_equal_check = _equal(op1.base, op2.base, **kwargs)
     if isinstance(base_equal_check, str):

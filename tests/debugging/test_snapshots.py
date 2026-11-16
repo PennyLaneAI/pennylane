@@ -436,7 +436,7 @@ class TestSnapshotSupportedQNode:
         @qp.qnode(dev)
         def qnode(params):
             qp.Hadamard(0)
-            qp.adjoint(circuit, 0)(params, wire=1)
+            qp.adjoint(circuit)(params, wire=1)
             return qp.expval(qp.PauliZ(1))
 
         params = np.array([1.3, 1.4, 0.2])

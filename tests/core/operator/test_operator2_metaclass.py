@@ -16,10 +16,11 @@ import numpy as np
 import pytest
 from operator2_utils import CompilableOp, DynOp, StaticOp
 
+import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.operator2 import operator_p
 from pennylane.testing import find_eqns
-from pennylane.typing import AbstractArray, Complex, Float, Int, Wire
+from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
 
@@ -193,3 +194,32 @@ def test_bind_primitive():
     cjaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(2.0)
     # Make sure the operator primitive is in the JAXPR
     assert len(find_eqns(cjaxpr, operator_p)) == 1
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("value", [Int, Float[2], Bool[3], Wire[2], (1, Int), {"data": [Float[2]]}])
+def test_abstract_compilable_argument_rejected(value, monkeypatch):
+    """Reject abstract leaves before entering operator-specific constructors."""
+
+    def unexpected_constructor(*_args, **_kwargs):
+        pytest.fail("The operator constructor must not run for abstract compilable inputs.")
+
+    monkeypatch.setattr(CompilableOp, "__init__", unexpected_constructor)
+    with pytest.raises(ValueError, match="Argument 'n' of operator 'CompilableOp'.*abstract input"):
+        CompilableOp(value, wires=0)
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+def test_flipsign_abstract_state_rejected():
+    """FlipSign reports the invalid argument instead of a later MLIR conversion failure."""
+    with pytest.raises(ValueError, match="Argument 'state' of operator 'FlipSign'.*abstract input"):
+        qp.FlipSign(Bool[3], wires=Wire[3], work_wires=Wire[1])
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("value", [3, (0, 1, 0), {"data": [1, 2]}])
+def test_concrete_compilable_arguments_with_abstract_wires(value):
+    """Concrete compilable arguments still allow abstract wire arguments."""
+    op = CompilableOp(value, wires=Wire[2])
+    assert op.n == value
+    assert op.wires == Wire[2]

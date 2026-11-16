@@ -793,12 +793,12 @@ class TestAdjointConstructorPreconstructedOp:
         assert len(q) == 1
         assert q.queue[0] is out
 
-    def test_single_op_defined_outside_queue_eager(self):
-        """Test if base is defined outside context and the function eagerly simplifies
-        the adjoint, the base is not added to queue."""
+    def test_single_op_defined_outside_queue_symbolic(self):
+        """Test if base is defined outside context and the function constructs
+        the symbolic adjoint, the base is not added to queue."""
         base = qp.RX(1.2, wires=0)
         with qp.queuing.AnnotatedQueue() as q:
-            out = adjoint(base, lazy=False)
+            out = adjoint(base)
 
         assert len(q) == 1
         assert q.queue[0] is out
@@ -882,77 +882,6 @@ class TestAdjointConstructorDifferentCallableTypes:
         assert out.wires == qp.wires.Wires("b")
 
 
-class TestAdjointConstructorNonLazyExecution:
-    """Test the lazy=False keyword."""
-
-    def test_single_decomposeable_op(self):
-        """Test lazy=False for a single op that gets decomposed."""
-
-        x = 1.23
-        with qp.queuing.AnnotatedQueue() as q:
-            base = qp.RX(x, wires="b")
-            out = adjoint(base, lazy=False)
-
-        assert len(q) == 1
-        assert q.queue[0] is out
-
-        assert isinstance(out, qp.RX)
-        assert out.data == (-1.23,)
-
-    def test_single_nondecomposable_op(self):
-        """Test lazy=false for a single op that can't be decomposed."""
-        with qp.queuing.AnnotatedQueue() as q:
-            base = qp.S(0)
-            out = adjoint(base, lazy=False)
-
-        assert len(q) == 1
-        assert q.queue[0] is out
-
-        assert isinstance(out, Adjoint)
-        assert isinstance(out.base, qp.S)
-
-    def test_single_decomposable_op_function(self):
-        """Test lazy=False for a single op callable that gets decomposed."""
-        x = 1.23
-        with qp.queuing.AnnotatedQueue() as q:
-            out = adjoint(qp.RX, lazy=False)(x, wires="b")
-
-        tape = qp.tape.QuantumScript.from_queue(q)
-        assert out is tape[0]
-        assert not isinstance(out, Adjoint)
-        assert isinstance(out, qp.RX)
-        assert out.data == (-x,)
-
-    def test_single_nondecomposable_op_function(self):
-        """Test lazy=False for a single op function that can't be decomposed."""
-        with qp.queuing.AnnotatedQueue() as q:
-            out = adjoint(qp.S, lazy=False)(0)
-
-        tape = qp.tape.QuantumScript.from_queue(q)
-        assert out is tape[0]
-        assert isinstance(out, Adjoint)
-        assert isinstance(out.base, qp.S)
-
-    def test_mixed_function(self):
-        """Test lazy=False with a function that applies operations of both types."""
-        x = 1.23
-
-        def qfunc(x):
-            qp.RZ(x, wires="b")
-            qp.T("b")
-
-        with qp.queuing.AnnotatedQueue() as q:
-            out = adjoint(qfunc, lazy=False)(x)
-
-        tape = qp.tape.QuantumScript.from_queue(q)
-        assert len(tape) == len(out) == 2
-        assert isinstance(tape[0], Adjoint)
-        assert isinstance(tape[0].base, qp.T)
-
-        assert isinstance(tape[1], qp.RZ)
-        assert tape[1].data[0] == -x
-
-
 class TestAdjointConstructorOutsideofQueuing:
     """Test the behaviour of the adjoint transform when not called in a queueing context."""
 
@@ -969,16 +898,6 @@ class TestAdjointConstructorOutsideofQueuing:
         assert out.base.__class__ is DummyOp
         assert out.data == (x,)
         assert out.wires == qp.wires.Wires(0)
-
-    def test_single_op_eager(self):
-        """Test a single op that can be decomposed in eager mode outside of a queuing context."""
-
-        x = 1.234
-        base = qp.RX(x, wires=0)
-        out = adjoint(base, lazy=False)
-
-        assert isinstance(out, qp.RX)
-        assert out.data == (-x,)
 
     def test_single_op_function(self):
         """Test the transform on a single op as a callable outside of a queuing context."""
@@ -1003,14 +922,6 @@ class TestAdjointConstructorOutsideofQueuing:
         assert len(out) == 2
         assert all(isinstance(op, Adjoint) for op in out)
         assert all(op.wires == qp.wires.Wires(wire) for op in out)
-
-    def test_nonlazy_op_function(self):
-        """Test non-lazy mode on a simplifiable op outside of a queuing context."""
-
-        out = adjoint(qp.PauliX, lazy=False)(0)
-
-        assert not isinstance(out, Adjoint)
-        assert isinstance(out, qp.PauliX)
 
 
 class TestAdjointConstructorIntegration:

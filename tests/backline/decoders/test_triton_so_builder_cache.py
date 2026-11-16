@@ -50,6 +50,7 @@ class TestConstexprCacheKeys:
             "handoff_u64_ptr": "*u64",
             "stop_u32_ptr": "*u32",
             "ring_slots": "u32",
+            "slot_words": "u32",
             "total": "u64",
         }
 

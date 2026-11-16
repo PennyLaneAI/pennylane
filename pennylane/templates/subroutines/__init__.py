@@ -48,6 +48,7 @@ from .amplitude_amplification import AmplitudeAmplification
 from .qram import BBQRAM, HybridQRAM, SelectOnlyQRAM, FFQRAM
 from .iqp import IQP
 from .qrom import QROM
+from .qrom_load import QROMLoad
 from .alias_sampling import AliasSampling, UniformPrep, alias_sampling_wires
 from .one_body_block_encoding import OneBodyBlockEncoding, one_body_block_encoding_wires
 from .alias_sampling_thc import AliasSamplingTHC, alias_sampling_thc_wires
@@ -130,6 +131,7 @@ __all__ = [
     "AQFT",
     "AmplitudeAmplification",
     "QROM",
+    "QROMLoad",
     "AliasSampling",
     "alias_sampling_wires",
     "AliasSamplingTHC",

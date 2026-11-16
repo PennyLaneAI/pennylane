@@ -51,6 +51,7 @@ pytestmark = [pytest.mark.gpu]
 
 from pennylane.backline.decoders.triton import triton_so_builder as builder
 from pennylane.backline.decoders.triton.persistent_kernel import _persistent_decoder_kernel
+from pennylane.backline.functions import _TRITON_LAUNCHER_ABI_VERSION
 
 
 @triton.jit
@@ -163,6 +164,7 @@ class TestBuildSo:
                 "handoff_u64_ptr": "*u64",
                 "stop_u32_ptr": "*u32",
                 "ring_slots": "u32",
+                "slot_words": "u32",
                 "total": "u64",
             },
             constexpr={"decoder_fns": (_echo_decoder,), "cache_mod": ".cv"},
@@ -195,6 +197,7 @@ class TestBuildSo:
                 "handoff_u64_ptr": "*u64",
                 "stop_u32_ptr": "*u32",
                 "ring_slots": "u32",
+                "slot_words": "u32",
                 "total": "u64",
             },
             constexpr={"decoder_fns": (_echo_decoder,), "cache_mod": ""},
@@ -229,6 +232,17 @@ class TestBuildSo:
 
 class TestCatalystWrapperSource:
     """The wrapper source builder for the Catalyst launcher ABI."""
+
+    def test_the_wrapper_follows_catalysts_launch_contract(self):
+        """The generated launcher declares launcher ABI 2, refuses frames other than 16 B, and
+        passes the slot stride to the kernel in 8-byte words."""
+        source = builder._make_catalyst_wrapper_source("cuda", "kernel")
+        assert "const CoprocessorFnInfoCompat *kernel_catalyst_info(void)" in source
+        # The version functions.py checks Catalyst against.
+        assert f"info = {{{_TRITON_LAUNCHER_ABI_VERSION}, 0, 0, 0}}" in source
+        assert "desc->frame_mode != 0" in source
+        assert "desc->ring_slots," in source
+        assert "desc->slot_stride / 8," in source
 
     def test_an_unknown_backend_is_refused(self):
         """A backend outside {cuda, hip} does not have a known Catalyst ABI mapping."""

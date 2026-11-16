@@ -26,8 +26,7 @@ from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
+from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 
 
@@ -237,8 +236,10 @@ def _reflection_decomposition_resources(base_rep, num_wires, num_reflection_wire
 
     if num_wires > 1:
         resources[
-            _ctrl_abstract(
-                ops.PhaseShift, Wire[num_wires - 1], num_zero_control_values=num_wires - 1
+            ops.ctrl(
+                ops.PhaseShift(Float, Wire[1]),
+                control=Wire[num_wires - 1],
+                control_values=Bool[num_wires - 1],
             )
         ] = 1
     else:

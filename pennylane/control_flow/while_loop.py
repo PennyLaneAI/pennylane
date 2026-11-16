@@ -20,7 +20,7 @@ import jax
 from jax import numpy as jnp
 
 from pennylane import capture
-from pennylane.capture import FlatFn, HintedCallable, apply_hint, enabled
+from pennylane.capture import FlatFn, HintedCallable, apply_hint
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.capture.hint import get_hints, process_hints
@@ -460,7 +460,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
                 self.body_fn
             )(*init_state)
 
-        if enabled():
+        if capture.enabled():
             return self._call_capture_enabled(*init_state)
 
         return self._call_capture_disabled(*init_state)

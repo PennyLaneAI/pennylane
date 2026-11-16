@@ -140,13 +140,14 @@ def test_rdma_coprocessor_requires_endpoint():
 
 
 @pytest.mark.parametrize("name", ["in_bytes", "out_bytes"])
-def test_rdma_rejects_messages_above_eight_bytes(name):
-    """RDMA carries 8-byte messages, so a larger controller message size is rejected."""
-    controller = qp.Controller(**{name: 9})
+def test_rdma_leaves_message_sizes_to_the_compiler(name):
+    """Which sizes RDMA carries depends on the backend the compiler selects, so a placement
+    accepts any size and the compiler reports one no backend carries."""
+    controller = qp.Controller(**{name: 64})
     coprocessor = qp.Coprocessor(coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1", 7760))
 
-    with pytest.raises(ValueError, match=f"transport='rdma' carries at most 8 bytes.*{name}=9"):
-        qp.Backline(controller=controller, coprocessors=[coprocessor], transport="rdma")
+    dev = qp.Backline(controller=controller, coprocessors=[coprocessor], transport="rdma")
+    assert getattr(dev.placement, name) == 64
 
 
 def test_rdma_accepts_eight_byte_messages():
@@ -234,15 +235,6 @@ def test_coprocessors_declaring_different_sizes_raise():
             ],
             transport="memcpy",
         )
-
-
-def test_a_declared_size_above_eight_bytes_is_rejected_over_rdma():
-    """Sizes taken from a function are subject to the transport's limit, like set ones."""
-    fn = qp.CoprocessorFunction("decoder", message_bytes=(120, 121))
-    coprocessor = qp.Coprocessor(coprocessor_fn=fn, endpoint=qp.Endpoint("127.0.0.1", 7760))
-
-    with pytest.raises(ValueError, match="transport='rdma' carries at most 8 bytes.*in_bytes=120"):
-        qp.Backline(controller=qp.Controller(), coprocessors=[coprocessor], transport="rdma")
 
 
 def test_coprocessor_stores_endpoint():

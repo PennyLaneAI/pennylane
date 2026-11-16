@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import contextlib
+import copy
 import sys
 from collections.abc import Callable, Hashable, Sequence
 from dataclasses import dataclass, field
@@ -180,6 +181,16 @@ class AbstractArray:
 
     >>> isinstance(np.ones((4, 2)), AbstractArray(..., float))
     True
+
+    Elementwise arithmetic returns an ``AbstractArray`` with broadcast shape and
+    NumPy-promoted dtype. Builtin numeric dtypes participate as weak types, and the
+    result remains weak when both operands are weak. Unknown dimensions are accepted
+    unless known axes conflict; compatibility may still depend on their concrete sizes.
+    An unknown rank produces an unknown result rank. The corresponding NumPy arithmetic
+    ufuncs are supported for ordinary calls without keyword options; reductions and other
+    ufunc methods are not supported. Unary ``-``, ``+``, and ``abs`` and their NumPy
+    equivalents preserve shape and infer the output dtype, including real dtypes for
+    the absolute value of complex inputs.
 
     """
 
@@ -390,6 +401,141 @@ class AbstractArray:
 
     def __hash__(self) -> int:
         return hash(("AbstractArray", self.shape, self.dtype))
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        """Infer metadata for supported elementwise NumPy arithmetic calls."""
+        # Ordinary calls like np.add(a, b) use "__call__"; reductions use "reduce", etc.
+        if method != "__call__" or kwargs:
+            return NotImplemented
+        if ufunc in (np.negative, np.positive, np.absolute):
+            return self._unary_arithmetic(ufunc)
+        if ufunc not in (
+            np.add,
+            np.subtract,
+            np.multiply,
+            np.true_divide,
+            np.remainder,
+            np.floor_divide,
+            np.power,
+        ):
+            return NotImplemented
+        left, right = inputs
+        if isinstance(left, AbstractArray):
+            return left._arithmetic(right, ufunc)  # pylint: disable=protected-access
+        return self._arithmetic(left, ufunc)
+
+    def _resolve_binary_shape(self, other):
+        """Resolve the shape for a binary operation."""
+        if self.shape is Ellipsis or other.shape is Ellipsis:
+            shape = Ellipsis
+        else:
+            ndim = max(len(self.shape), len(other.shape))
+            left_shape = (1,) * (ndim - len(self.shape)) + self.shape
+            right_shape = (1,) * (ndim - len(other.shape)) + other.shape
+            shape = []
+            for left, right in zip(left_shape, right_shape, strict=True):
+                if right in (left, 1):
+                    shape.append(left)
+                elif left == 1:
+                    shape.append(right)
+                elif left == -1:
+                    shape.append(right)
+                elif right == -1:
+                    shape.append(left)
+                else:
+                    raise ValueError(f"Cannot broadcast shapes {self.shape} and {other.shape}.")
+            shape = tuple(shape)
+
+        return shape
+
+    def _resolve_binary_dtype(self, other, operation):
+        """Resolve the dtype for a binary operation."""
+        weak_dtypes = {"i": int, "u": int, "f": float, "c": complex}
+        left_dtype = weak_dtypes.get(self.dtype.kind, self.dtype) if self._weak_type else self.dtype
+        right_dtype = (
+            weak_dtypes.get(other.dtype.kind, other.dtype)
+            if other._weak_type  # pylint: disable=protected-access
+            else other.dtype  # pylint: disable=protected-access
+        )
+        return operation.resolve_dtypes((left_dtype, right_dtype, None))[-1]
+
+    def _arithmetic(self, other, operation):
+        """Infer elementwise arithmetic metadata, rejecting only known shape conflicts."""
+        if not isinstance(other, AbstractArray):
+            if isinstance(other, Number):
+                other = AbstractArray((), getattr(other, "dtype", type(other)))
+            elif hasattr(other, "shape") and hasattr(other, "dtype"):
+                other = AbstractArray(other.shape, other.dtype)
+            else:
+                return NotImplemented
+
+        shape = self._resolve_binary_shape(other)
+        dtype = self._resolve_binary_dtype(other, operation)
+
+        result = AbstractArray(shape, dtype)
+        object.__setattr__(
+            result,
+            "_weak_type",
+            self._weak_type and other._weak_type,  # pylint: disable=protected-access
+        )  # pylint: disable=protected-access
+
+        return result
+
+    # pylint: disable-next=unused-argument
+    def _unary_arithmetic(self, operation):
+        """Infer unary arithmetic metadata while preserving weak typing."""
+        return copy.deepcopy(self)
+
+    def __neg__(self):
+        return self._unary_arithmetic(np.negative)
+
+    def __pos__(self):
+        return self._unary_arithmetic(np.positive)
+
+    def __abs__(self):
+        return self._unary_arithmetic(np.absolute)
+
+    def __add__(self, other):
+        return self._arithmetic(other, np.add)
+
+    def __radd__(self, other):
+        return self._arithmetic(other, np.add)
+
+    def __sub__(self, other):
+        return self._arithmetic(other, np.subtract)
+
+    def __rsub__(self, other):
+        return self._arithmetic(other, np.subtract)
+
+    def __mul__(self, other):
+        return self._arithmetic(other, np.multiply)
+
+    def __rmul__(self, other):
+        return self._arithmetic(other, np.multiply)
+
+    def __truediv__(self, other):
+        return self._arithmetic(other, np.true_divide)
+
+    def __rtruediv__(self, other):
+        return self._arithmetic(other, np.true_divide)
+
+    def __mod__(self, other):
+        return self._arithmetic(other, np.remainder)
+
+    def __rmod__(self, other):
+        return self._arithmetic(other, np.remainder)
+
+    def __floordiv__(self, other):
+        return self._arithmetic(other, np.floor_divide)
+
+    def __rfloordiv__(self, other):
+        return self._arithmetic(other, np.floor_divide)
+
+    def __pow__(self, other):
+        return self._arithmetic(other, np.power)
+
+    def __rpow__(self, other):
+        return self._arithmetic(other, np.power)
 
 
 class _AbstractTypeFactory(AbstractArray):

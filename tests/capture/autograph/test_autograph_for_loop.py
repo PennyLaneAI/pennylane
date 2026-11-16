@@ -110,6 +110,35 @@ class TestCustomRangeAndEnumeration:
 class TestForLoops:
     """Test that the autograph transformations produce correct results on for loops."""
 
+    @pytest.mark.parametrize("bounds", [(0, 0, 1), (2, 2, 1), (2, 0, 1), (0, 2, -1)])
+    def test_empty_loop_without_state(self, bounds):
+        """Empty loops preserve the empty AutoGraph state without executing the body."""
+
+        def f():
+            for _ in range(*bounds):
+                qp.X(0)
+            return 1
+
+        ag_fn = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_fn)()
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts) == [1]
+
+    @pytest.mark.parametrize("bounds", [(0, 0, 1), (2, 2, 1), (2, 0, 1), (0, 2, -1)])
+    @pytest.mark.parametrize("initial_state", [1, 1.5])
+    def test_empty_loop_with_state(self, bounds, initial_state):
+        """Empty loops preserve the value and type of a loop-carried variable."""
+
+        def f():
+            value = initial_state
+            for _ in range(*bounds):
+                value = initial_state
+            return value
+
+        ag_fn = run_autograph(f)
+        jaxpr = jax.make_jaxpr(ag_fn)()
+        expected, _ = jax.tree_util.tree_flatten(initial_state)
+        assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts) == expected
+
     def test_for_in_array(self):
         """Test for loop over JAX array."""
 

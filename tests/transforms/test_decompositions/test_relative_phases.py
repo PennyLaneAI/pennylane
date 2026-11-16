@@ -57,22 +57,22 @@ class TestMultiControlledPhaseXGate:
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.Hadamard(wires=3),
             # second instance
             qp.Hadamard(wires=3),
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.Hadamard(wires=3),
         ]
 
@@ -99,11 +99,11 @@ class TestMultiControlledPhaseXGate:
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.Hadamard(wires=3),
             qp.PauliZ(wires=0),
             qp.PauliX(wires=3),
@@ -127,11 +127,11 @@ class TestMultiControlledPhaseXGate:
             qp.adjoint(qp.T(3)),
             qp.CNOT(wires=[2, 3]),
             qp.T(3),
-            qp.Toffoli(wires=[0, 1, 3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.adjoint(qp.T(3)),
             qp.CNOT(wires=[2, 3]),
             qp.T(3),
-            qp.Toffoli(wires=[0, 1, 3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.H(3),
             qp.adjoint(qp.ctrl(qp.S(2), control=[0, 1])),
         ]
@@ -155,11 +155,11 @@ class TestMultiControlledPhaseXGate:
                 qp.adjoint(qp.T(wires=fourth)),
                 qp.CNOT(wires=[third] + [fourth]),
                 qp.T(wires=fourth),
-                qp.Toffoli(wires=[first, second] + [fourth]),
+                qp.ctrl(qp.X(fourth), control=[first, second]),
                 qp.adjoint(qp.T(wires=fourth)),
                 qp.CNOT(wires=[third] + [fourth]),
                 qp.T(wires=fourth),
-                qp.Toffoli(wires=[first, second] + [fourth]),
+                qp.ctrl(qp.X(fourth), control=[first, second]),
                 qp.Hadamard(wires=fourth),
             ]
 
@@ -179,19 +179,24 @@ class TestMultiControlledPhaseXGate:
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.Hadamard(wires=3),
             qp.PauliX(wires=4),
         ]
 
-    def test_basic_transform(self):
+    @pytest.mark.parametrize(
+        "controlled_x",
+        [qp.MultiControlledX, lambda wires: qp.ctrl(qp.X(wires[-1]), control=wires[:-1])],
+        ids=["named", "symbolic"],
+    )
+    def test_basic_transform(self, controlled_x):
         def qfunc():
             qp.ctrl(qp.S(wires=[2]), control=[0, 1])
-            qp.MultiControlledX(wires=[0, 1, 2, 3])
+            controlled_x(wires=[0, 1, 2, 3])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 2)
@@ -203,13 +208,17 @@ class TestMultiControlledPhaseXGate:
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.adjoint(qp.T(wires=3)),
             qp.CNOT(wires=[2] + [3]),
             qp.T(wires=3),
-            qp.Toffoli(wires=[0, 1] + [3]),
+            qp.ctrl(qp.X(3), control=[0, 1]),
             qp.Hadamard(wires=3),
         ]
+        assert qp.math.allclose(
+            qp.matrix(tape, wire_order=[0, 1, 2, 3]),
+            qp.matrix(qfunc, wire_order=[0, 1, 2, 3])(),
+        )
 
 
 class TestPhaseXGate:
@@ -232,22 +241,22 @@ class TestPhaseXGate:
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.Hadamard(wires=2),
             # second instance
             qp.Hadamard(wires=2),
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.Hadamard(wires=2),
         ]
 
@@ -274,11 +283,11 @@ class TestPhaseXGate:
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.PauliZ(wires=0),
             qp.PauliX(wires=3),
             qp.PauliZ(wires=5),
@@ -300,11 +309,11 @@ class TestPhaseXGate:
             qp.adjoint(qp.T(2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.adjoint(qp.T(2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.H(2),
             qp.adjoint(qp.ctrl(qp.S(1), control=[0])),
         ]
@@ -328,11 +337,11 @@ class TestPhaseXGate:
                 qp.adjoint(qp.T(wires=third)),
                 qp.CNOT(wires=[second, third]),
                 qp.T(wires=third),
-                qp.CNOT(wires=[first, third]),
+                qp.ctrl(qp.X(third), control=[first]),
                 qp.adjoint(qp.T(wires=third)),
                 qp.CNOT(wires=[second, third]),
                 qp.T(wires=third),
-                qp.CNOT(wires=[first, third]),
+                qp.ctrl(qp.X(third), control=[first]),
                 qp.Hadamard(wires=third),
             ]
 
@@ -352,19 +361,24 @@ class TestPhaseXGate:
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.Hadamard(wires=2),
             qp.PauliX(wires=3),
         ]
 
-    def test_basic_transform(self):
+    @pytest.mark.parametrize(
+        "controlled_x",
+        [qp.Toffoli, lambda wires: qp.ctrl(qp.X(wires[-1]), control=wires[:-1])],
+        ids=["named", "symbolic"],
+    )
+    def test_basic_transform(self, controlled_x):
         def qfunc():
             qp.ctrl(qp.S(wires=[1]), control=[0])
-            qp.Toffoli(wires=[0, 1, 2])
+            controlled_x(wires=[0, 1, 2])
             return qp.expval(qp.Z(0))
 
         transformed_qfunc = match_controlled_iX_gate(qfunc, 1)
@@ -376,13 +390,17 @@ class TestPhaseXGate:
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.adjoint(qp.T(wires=2)),
             qp.CNOT(wires=[1, 2]),
             qp.T(wires=2),
-            qp.CNOT(wires=[0, 2]),
+            qp.ctrl(qp.X(2), control=[0]),
             qp.Hadamard(wires=2),
         ]
+        assert qp.math.allclose(
+            qp.matrix(tape, wire_order=[0, 1, 2]),
+            qp.matrix(qfunc, wire_order=[0, 1, 2])(),
+        )
 
 
 class TestRelativePhaseToffoli:

@@ -18,7 +18,7 @@ Contains the CommutingEvolution template.
 # pylint: disable-msg=too-many-arguments
 import copy
 
-from pennylane import capture, math
+from pennylane import capture, math, ops
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator1
 from pennylane.core.queuing import QueuingManager
@@ -226,3 +226,17 @@ def _commuting_evolution_decomposition(
 
 
 add_decomps(CommutingEvolution, _commuting_evolution_decomposition)
+
+
+@register_resources(lambda base_params, **_: {resource_rep(CommutingEvolution, **base_params): 1})
+def _adjoint_commuting_evolution(time, *params, base, **__):
+    hamiltonian = ops.functions.bind_new_parameters(base.hyperparameters["hamiltonian"], params)
+    CommutingEvolution(
+        hamiltonian,
+        -time,
+        frequencies=base.hyperparameters["frequencies"],
+        shifts=base.hyperparameters["shifts"],
+    )
+
+
+add_decomps("Adjoint(CommutingEvolution)", _adjoint_commuting_evolution)

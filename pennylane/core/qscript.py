@@ -885,7 +885,8 @@ class QuantumScript:
         Returns:
             ~.QuantumScript: the adjointed script
         """
-        from pennylane.ops import adjoint  # pylint: disable=import-outside-toplevel # tach-ignore
+        # pylint: disable=import-outside-toplevel
+        from pennylane.ops.op_math.adjoint import _adjoint_eager  # tach-ignore
 
         warnings.warn(
             "Using QuantumScript.adjoint is deprecated "
@@ -897,7 +898,7 @@ class QuantumScript:
         ops = self.operations[self.num_preps :]
         prep = self.operations[: self.num_preps]
         with QueuingManager.stop_recording():
-            ops_adj = [adjoint(op, lazy=False) for op in reversed(ops)]
+            ops_adj = [_adjoint_eager(op) for op in reversed(ops)]
         return self.__class__(ops=prep + ops_adj, measurements=self.measurements, shots=self.shots)
 
     # ========================================================

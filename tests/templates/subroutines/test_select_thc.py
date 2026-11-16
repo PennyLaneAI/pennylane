@@ -160,7 +160,7 @@ class TestQROMTable:
         assert _build_qrom_givens_data(np.ones((3, 1)), np.eye(1), 4, True, []) == []
 
     def test_qrom_is_an_xor_load(self):
-        """Test that ``qp.QROM(clean=True)`` maps
+        """Test that ``qp.QROM`` maps
         ``|i>|d>`` to ``|i>|d XOR b_i>`` for *any* target state, not just ``|0>``."""
         table = [[0, 1, 1], [1, 1, 0], [1, 0, 1], [0, 0, 1]]
         ctrl, targ, work = [0, 1], [2, 3, 4], [5, 6, 7]
@@ -169,7 +169,7 @@ class TestQROMTable:
         def circuit(index, data):
             qp.BasisState(index, wires=ctrl)
             qp.BasisState(data, wires=targ)
-            qp.QROM(table, control_wires=ctrl, target_wires=targ, work_wires=work, clean=True)
+            qp.QROM(table, control_wires=ctrl, target_wires=targ, work_wires=work)
             return qp.probs(wires=ctrl + targ + work)
 
         for i, d in ((0, 0), (1, 5), (3, 7)):
@@ -664,7 +664,7 @@ class TestSelectTHCInvariants:
         assert np.isclose(np.asarray(circuit())[0], 1.0, atol=1e-8)
 
     def test_extra_work_wires_do_not_change_the_unitary(self):
-        """Test that extra work wires switch QROM to a SelectSwap decomposition."""
+        """Test that extra work wires do not change the unitary."""
         extra = 1
         M, N, beth = 2, 4, 2
         chi = np.random.default_rng(6).standard_normal((M, N // 2))

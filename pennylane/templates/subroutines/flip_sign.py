@@ -21,8 +21,7 @@ from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CZ, X, Z, ctrl
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import AbstractArray, Wire
+from pennylane.typing import AbstractArray, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -120,12 +119,11 @@ def _flip_sign_resources(state: tuple[int], wires: WiresLike, work_wires: WiresL
     elif num_ctrl_wires == 1 and state[0]:
         res = {CZ: 1}
     else:
-        num_zeros = num_ctrl_wires - sum(state[:-1])
         res = {
-            _ctrl_abstract(
-                Z,
-                Wire[num_ctrl_wires],
-                num_zero_control_values=num_zeros,
+            ctrl(
+                Z(Wire[1]),
+                control=Wire[num_ctrl_wires],
+                control_values=Bool[num_ctrl_wires],
                 work_wires=Wire[len(work_wires)],
                 work_wire_type="zeroed",
             ): 1

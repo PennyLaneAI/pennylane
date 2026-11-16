@@ -130,6 +130,9 @@ def _make_catalyst_wrapper_source(backend: str, raw_symbol: str) -> str:
 
     return textwrap.dedent(f"""
 
+        #include <stdio.h>
+
+        /* Catalyst's CoprocLaunchDesc, through its frame fields. */
         typedef struct {{
             void *ring;
             uint32_t ring_slots;
@@ -137,7 +140,17 @@ def _make_catalyst_wrapper_source(backend: str, raw_symbol: str) -> str:
             void *stop;
             uint64_t total;
             void *stream;
+            uint32_t frame_mode;
+            uint32_t slot_stride;
         }} CoprocLaunchDescCompat;
+
+        /* Catalyst's CatalystCoprocessorFnInfo. */
+        typedef struct {{
+            uint32_t abi_version;
+            uint32_t reserved;
+            void *(*init)(const char *config);
+            void (*fini)(void *ctx);
+        }} CoprocessorFnInfoCompat;
 
         int {wrapper_symbol}(const CoprocLaunchDescCompat *desc, void *ctx) {{
             (void)ctx;
@@ -147,6 +160,14 @@ def _make_catalyst_wrapper_source(backend: str, raw_symbol: str) -> str:
             if (desc->ring_slots == 0 || (desc->ring_slots & (desc->ring_slots - 1)) != 0) {{
                 return 1;
             }}
+            /* The kernel reads 16 B frames (mode 0), in slots a whole number of words apart. */
+            if (desc->frame_mode != 0 || desc->slot_stride < 16 || desc->slot_stride % 8 != 0) {{
+                fprintf(stderr,
+                        "[triton] decoders read only 16 B frames (frame mode 0), which carry 8 B, "
+                        "but the session uses frame mode %u with %u B slots\\n",
+                        desc->frame_mode, desc->slot_stride);
+                return 1;
+            }}
 
             int rc = {raw_symbol}(
                 ({stream_type})desc->stream,
@@ -154,9 +175,17 @@ def _make_catalyst_wrapper_source(backend: str, raw_symbol: str) -> str:
                 ({deviceptr_type})(uintptr_t)desc->handoff,
                 ({deviceptr_type})(uintptr_t)desc->stop,
                 desc->ring_slots,
+                desc->slot_stride / 8,
                 desc->total
             );
             return rc == 0 ? 0 : 1;
+        }}
+
+        /* Tells Catalyst which launch contract this launcher follows: version 2, codec frames in
+           both rings, replies carrying the request's decoder_id. */
+        const CoprocessorFnInfoCompat *{wrapper_symbol}_info(void) {{
+            static const CoprocessorFnInfoCompat info = {{2, 0, 0, 0}};
+            return &info;
         }}
         """)
 

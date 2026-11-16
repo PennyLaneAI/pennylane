@@ -276,7 +276,7 @@ def test_make_adjoint_decomp_closes_over_compilable_args():
     op = CompilableOp(True, wires=[0])
     rule = _make_adjoint_decomp(_some_decomp)
 
-    @qp.qjit
+    @qp.qjit(capture=False)
     @qp.qnode(qp.device("lightning.qubit", wires=1))
     def f():
         rule(base=op)

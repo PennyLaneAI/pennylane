@@ -28,7 +28,7 @@ from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic.left_classical_comparator import LeftClassicalComparator
 from .arithmetic.left_quantum_comparator import LeftQuantumComparator
-from .qrom import QROM
+from .qrom_load import QROMLoad
 
 
 def _apply_hadamards(wires):
@@ -81,6 +81,29 @@ class UniformPrep(Operator2):
 
     >>> print(np.round(circuit(), 3))
     [0.2 0.2 0.2 0.2 0.2 0.  0.  0. ]
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.UniformPrep
+            :stacked:
+            :symbols: :math:`n_\text{states} = 2^k L` with :math:`L` odd, and
+                :math:`\ell = \lceil \log_2 L \rceil`
+            :example: :math:`n_\text{states}=5` (:math:`k=0`, :math:`L=5`, :math:`\ell=3`)
+
+            .. decomposition-rule:: _uniform_prep_decomp
+                :image: /_static/decomposition_thumbnails/uniform_prep_amplification.svg
+                :lightbox:
+                :requires: :math:`\ell` work wires
+                :where: :math:`\delta = 1` if :math:`L > 1` and :math:`\delta = 0` otherwise. The
+                    controlled :class:`~.GlobalPhase` is controlled on :math:`|0\rangle`
+
+                :class:`~.Hadamard` | :math:`k + 3\ell` | 9
+                :class:`~.LeftClassicalComparator` | :math:`\delta` | 1
+                :class:`Adjoint(LeftClassicalComparator) <.LeftClassicalComparator>` | :math:`\delta` | 1
+                :class:`~.RZ` | :math:`\delta` | 1
+                :class:`~.GlobalPhase` with :math:`\ell` controls | :math:`\delta` | 1
+                :class:`~.GlobalPhase` | :math:`\delta` | 1
     """
 
     wire_argnames = ("target_wires", "work_wires")
@@ -128,7 +151,7 @@ def _uniform_prep_resources(n_states, target_wires, work_wires):
 
     lcc = LeftClassicalComparator(
         x_wires=Wire[logL],
-        L=L,
+        value=L,
         target_wire=Wire[1],
         work_wires=Wire[max(logL - 1, 0)],
         comparator="<",
@@ -159,11 +182,11 @@ def _uniform_prep_decomp(n_states, target_wires, work_wires, **_):
     w_used = work_wires[1:logL]
 
     LeftClassicalComparator(
-        x_wires=data_L, L=L, target_wire=work_wires[0], work_wires=w_used, comparator="<"
+        x_wires=data_L, value=L, target_wire=work_wires[0], work_wires=w_used, comparator="<"
     )
     RZ(theta, wires=work_wires[0])
     adjoint(LeftClassicalComparator)(
-        x_wires=data_L, L=L, target_wire=work_wires[0], work_wires=w_used, comparator="<"
+        x_wires=data_L, value=L, target_wire=work_wires[0], work_wires=w_used, comparator="<"
     )
 
     _apply_hadamards(data_L)
@@ -267,9 +290,9 @@ def alias_sampling_wires(n_states, mu):
 
         The reported ``work_wires`` is the minimum required by :class:`~.AliasSampling`.
         More work_wires can be added to be forwarded to the internal
-        ``QROM``, which uses them for a ``SelectSwap`` decomposition that lowers
+        ``QROMLoad``, which uses them for a ``SelectSwap`` decomposition that lowers
         the T-gate count at the cost of the additional qubits. At exactly the
-        minimum, ``QROM`` uses its unary decomposition (more T-gates, fewer qubits).
+        minimum, ``QROMLoad`` uses unary iteration (more T-gates, fewer qubits).
         ``target_wires`` and ``temp_wires`` are exact and must be matched exactly.
     """
     if isinstance(mu, bool) or not isinstance(mu, int) or mu < 1:
@@ -329,7 +352,7 @@ class AliasSampling(Operator2):
     satisfying  :math:`|\widetilde{\rho}_\ell - w_\ell / \lambda| \le 2^{-\mu}`.
 
     The gate sequence is: ``UNIFORM_L`` on ``target_wires``, ``H^mu`` on the sigma part of
-    ``temp_wires``, a ``QROM`` load of ``alt_l``/``keep_l``, the inequality test
+    ``temp_wires``, a ``QROMLoad`` of ``alt_l``/``keep_l``, the inequality test
     ``keep_l <= sigma``, and a flag-controlled SWAP of ``target_wires`` with ``alt_l``.
 
     Use :func:`~.alias_sampling_wires` for the required register sizes.
@@ -372,6 +395,24 @@ class AliasSampling(Operator2):
 
     >>> print(np.round(circuit(), 3))
     [0.094 0.203 0.297 0.406]
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.AliasSampling
+            :stacked:
+            :symbols: :math:`L` weights in ``probs``, :math:`\ell = \lceil \log_2 L \rceil` and
+                :math:`\mu` = ``mu`` bits
+            :example: :math:`L=4`, :math:`\mu=2`
+
+            .. decomposition-rule:: _alias_sampling_decomp
+                :image: /_static/decomposition_thumbnails/alias_sampling_coherent.svg
+
+                :class:`~.UniformPrep` | :math:`1` | 1
+                :class:`~.Hadamard` | :math:`\mu` | 2
+                :class:`~.QROMLoad` | :math:`1` | 1
+                :class:`~.LeftQuantumComparator` | :math:`1` | 1
+                :class:`~.CSWAP` | :math:`\ell` | 2
     """
 
     wire_argnames = ("target_wires", "temp_wires", "work_wires")
@@ -451,7 +492,7 @@ def _alias_sampling_resources(probs, mu, target_wires, temp_wires, work_wires):
     n_target = len(target_wires)
     n_work = len(work_wires)
     data = _qrom_data(probs, mu, logL)
-    qrom = QROM(
+    qrom = QROMLoad(
         data,
         control_wires=Wire[n_target],
         target_wires=Wire[logL + mu],
@@ -477,7 +518,7 @@ def _alias_sampling_decomp(probs, mu, target_wires, temp_wires, work_wires, **_)
 
     UniformPrep(L, target_wires, work_wires)
     _apply_hadamards(sigma_wires)
-    QROM(
+    QROMLoad(
         data,
         control_wires=list(target_wires),
         target_wires=list(alt_wires) + list(keep_wires),

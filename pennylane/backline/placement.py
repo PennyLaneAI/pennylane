@@ -255,18 +255,16 @@ class Controller(Node):
             :attr:`~.Node.init_args` attribute below for the keys it accepts.
         device (pennylane.devices.Device, None): The PennyLane device the controller executes.
             Defaults to ``None``, which builds a ``null.qubit``.
-        in_bytes (int, None): The size in bytes of each message the controller sends.
-            ``"memcpy"`` supports any size to a CPU coprocessor, and to a GPU coprocessor running
-            a per-message function. A GPU coprocessor running a persistent kernel over
-            ``"memcpy"``, and every coprocessor over ``"rdma"``, currently supports up to
-            :data:`DEFAULT_MESSAGE_BYTES`. Defaults to ``None`` (unset), in which case the
-            placement sends the size the coprocessors' functions declare (as
-            :func:`~.onnx_decoder` does from its model), or else :data:`DEFAULT_MESSAGE_BYTES`.
-            See :attr:`~.Placement.in_bytes`. A size passed explicitly must match what they
-            declare.
+        in_bytes (int, None): The size in bytes of each message the controller sends. Which
+            sizes are supported depends on the transport backend the compiler selects for each
+            node, and a size no available backend carries is reported when the program is
+            compiled. Defaults to ``None`` (unset), in which case the placement sends the size the
+            coprocessors' functions declare (as :func:`~.onnx_decoder` does from its model), or
+            else :data:`DEFAULT_MESSAGE_BYTES`. See :attr:`~.Placement.in_bytes`. A size passed
+            explicitly must match what they declare.
         out_bytes (int, None): The size in bytes of each reply the controller receives. Defaults
-            to ``None``, resolved like ``in_bytes`` (see :attr:`~.Placement.out_bytes`) and with
-            the same bound.
+            to ``None``, resolved like ``in_bytes`` (see :attr:`~.Placement.out_bytes`) and
+            checked the same way.
 
     See :class:`~.Node` for the options every node shares.
 
@@ -518,15 +516,6 @@ class Placement:
                     raise ValueError(
                         "transport='rdma' requires every coprocessor to set endpoint; "
                         "memcpy does not require it"
-                    )
-            for name in ("in_bytes", "out_bytes"):
-                size = getattr(self, name)
-                if size > DEFAULT_MESSAGE_BYTES:
-                    raise ValueError(
-                        f"transport='rdma' carries at most {DEFAULT_MESSAGE_BYTES} bytes per "
-                        f"message, got {name}={size}. transport='memcpy' carries larger messages "
-                        "to a CPU coprocessor, and to a GPU coprocessor running a per-message "
-                        "function"
                     )
 
     def _resolve_message_sizes(self):

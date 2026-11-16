@@ -1156,7 +1156,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
             qp.RZ(angle, wires=0)
             return qp.expval(qp.Z(0))
 
-        grad_fn = qp.qjit(catalyst_grad(circuit))
+        grad_fn = qp.qjit(catalyst_grad(circuit), capture=False)
 
         # Before the fix, this raised TracerArrayConversionError inside _decompose_2_cnots
         # because np.lexsort received abstract traced arrays under qjit.

@@ -190,8 +190,8 @@ def _(op: qtemps.state_preparations.QROMStatePreparation):
     # From ResourceQROMStatePreparation
 
     def _add_qrom_and_adjoint(gate_types, bitstrings, control_wires):
-        """Helper to create a QROM, count it and its adjoint."""
-        qrom_op = qtemps.QROM(
+        """Helper to create a QROMLoad, count it and its adjoint."""
+        qrom_op = qtemps.QROMLoad(
             bitstrings=bitstrings,
             target_wires=precision_wires,
             control_wires=control_wires,
@@ -257,8 +257,8 @@ def _(op: qops.BasisState):
 
 
 @_get_op_call_graph.register
-def _(op: qtemps.subroutines.QROM):
-    """Call graph for QROM"""
+def _(op: qtemps.subroutines.QROMLoad):
+    """Call graph for QROMLoad"""
 
     # From ResourceQROM
     gate_types = defaultdict(int, {})
@@ -556,10 +556,28 @@ def _(op: qtemps.subroutines.QFT, custom_mapping=None, map_ops=True, **kwargs):
     return QFTTextBook(len(op.wires))
 
 
+def _bitstrings_to_ints(bitstrings):
+    powers_of_two = 2 ** np.arange(bitstrings.shape[1])[::-1]
+    return math.sum(powers_of_two * bitstrings, axis=1)
+
+
 # pylint: disable=import-outside-toplevel
 @_map_to_bloq.register
 def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
-    """Mapping for QROM that defaults to either ``QROAMClean`` or ``SelectSwapQROM``"""
+    """Mapping for QROM that defaults to ``QROM``"""
+    from qualtran.bloqs.data_loading.qrom import QROM
+
+    mapped_op = _handle_custom_map(op, map_ops, custom_mapping, **kwargs)
+    if mapped_op is not None:
+        return mapped_op
+
+    return QROM.build_from_data(_bitstrings_to_ints(op.data[0]))
+
+
+# pylint: disable=import-outside-toplevel
+@_map_to_bloq.register
+def _(op: qtemps.subroutines.QROMLoad, map_ops=True, custom_mapping=None, **kwargs):
+    """Mapping for QROMLoad that defaults to either ``QROAMClean`` or ``SelectSwapQROM``"""
     from qualtran.bloqs.data_loading.qroam_clean import QROAMClean
     from qualtran.bloqs.data_loading.select_swap_qrom import SelectSwapQROM
 
@@ -567,9 +585,7 @@ def _(op: qtemps.subroutines.QROM, map_ops=True, custom_mapping=None, **kwargs):
     if mapped_op is not None:
         return mapped_op
 
-    data = op.data[0]
-    powers_of_two = 2 ** np.arange(data.shape[1])[::-1]
-    data = math.sum(powers_of_two * data, axis=1)
+    data = _bitstrings_to_ints(op.data[0])
     if op.clean:
         return QROAMClean.build_from_data(data)
 

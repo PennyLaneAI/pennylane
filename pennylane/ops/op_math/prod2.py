@@ -424,7 +424,7 @@ def _controlled_prod2_with_work_wires(base, control_wires, control_values, work_
 def _ctrl_prod2_resources_with_one_work_wire(base, control_wires, work_wires, **_):
 
     resources = Counter()
-    resources[qp.ctrl(qp.X(Wire[1]), Wire[len(control_wires)])] += 2
+    resources[qp.MultiControlledX(Wire[len(control_wires) + 1])] += 2
 
     # Per-factor single-control fan-out from the single aux qubit
     for op in base.operands:
@@ -446,10 +446,10 @@ def _controlled_prod2_with_one_work_wire(base, control_wires, control_values, wo
     ``Operator2`` port of :func:`~._controlled_product_with_one_work_wire`. Assumes all
     ``control_values`` are 1; zero-control flipping is handled by ``flip_zero_control``.
     """
-    qp.ctrl(qp.X(work_wires[:1]), control=control_wires)
+    qp.MultiControlledX([*control_wires, work_wires[0]])
     for op in base.operands[::-1]:
         qp.ctrl(op, control=work_wires[:1])
-    qp.ctrl(qp.X(work_wires[:1]), control=control_wires)
+    qp.MultiControlledX([*control_wires, work_wires[0]])
 
 
 add_decomps(Prod2, _prod2_decomp)

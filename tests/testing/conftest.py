@@ -73,7 +73,11 @@ _INSTANCES_TO_TEST = [
         {"skip_differentiation": True, "skip_capture": True},
     ),
     # Skipping bind_new_parameters test for `MultiControlledX` because it does not make sense for control values
-    (qp.MultiControlledX(wires=[0, 1]), {"skip_bind_new_parameters": True}),
+    # Boolean control values are not differentiable.
+    (
+        qp.MultiControlledX(wires=[0, 1]),
+        {"skip_bind_new_parameters": True, "skip_differentiation": True},
+    ),
     (qp.Projector([1], 0), {"skip_differentiation": True}),
     (qp.Projector([1, 0], 0), {"skip_differentiation": True}),
     (qp.DiagonalQubitUnitary([1, 1, 1, 1], wires=[0, 1]), {"skip_differentiation": True}),

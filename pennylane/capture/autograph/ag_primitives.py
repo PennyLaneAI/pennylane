@@ -216,8 +216,7 @@ def _call_pennylane_for(
     init_iter_args = get_state()
     _assert_iteration_inputs(init_iter_args, symbol_names)
 
-    @qp.for_loop(start, stop, step)
-    def functional_for(i, *iter_args):
+    def functional_for(i, iter_args):
         # Assign tracers to the iteration variables identified by AutoGraph (iter_args in mlir).
         set_state(iter_args)
 
@@ -237,7 +236,8 @@ def _call_pennylane_for(
 
         return get_state()
 
-    final_iter_args = functional_for(*init_iter_args)
+    # Pass the state tuple as one argument so empty loops preserve its structure.
+    final_iter_args = qp.for_loop(start, stop, step)(functional_for)(init_iter_args)
     _assert_iteration_results(init_iter_args, final_iter_args, symbol_names)
     return final_iter_args
 
