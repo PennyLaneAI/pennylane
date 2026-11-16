@@ -1876,6 +1876,10 @@ Breaking changes 💔
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
+* :class:`~.Barrier` no longer accepts ``only_visual``. Barriers are preserved by
+  simplification and separate compilation into blocks.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 Deprecations 👋
 ~~~~~~~~~~~~~~~
 
@@ -1905,6 +1909,10 @@ Deprecations 👋
 
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
+
+* :class:`~.Barrier` now uses a dedicated program-capture primitive while retaining
+  the ``Operator2`` argument format and operator reconstruction behavior.
+  `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
 
 * Updated Pylint to 4.1.3, cleaned up suppression scope and formatting, and made unnecessary
   suppressions fail lint. Labs tests now consistently use the test lint configuration.
