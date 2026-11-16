@@ -18,8 +18,6 @@ the necessary information to perform a Hartree-Fock calculation for a given mole
 """
 
 import collections
-
-# pylint: disable=too-many-arguments,too-many-instance-attributes
 import itertools
 import warnings
 
@@ -34,7 +32,7 @@ from .integrals import contracted_norm, primitive_norm
 BOHR_TO_ANG = physical_constants["Bohr radius"][0] / angstrom
 
 
-class Molecule:
+class Molecule:  # pylint: disable=too-many-instance-attributes
     r"""Create a molecule object that stores molecular information and default basis set parameters.
 
     The molecule object can be passed to functions that perform a Hartree-Fock calculation.
@@ -80,7 +78,7 @@ class Molecule:
 
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         symbols,
         coordinates,
@@ -267,7 +265,7 @@ class Molecule:
         0.01825128
         """
         # molecular coefficients are set by other modules
-        c = self.mo_coefficients[index]  # pylint:disable=unsubscriptable-object
+        c = self.mo_coefficients[index]  # pylint: disable=unsubscriptable-object
 
         def orbital(x, y, z):
             r"""Evaluate a molecular orbital at a given position.

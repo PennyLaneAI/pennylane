@@ -14,8 +14,6 @@
 """Unit tests for the JAX-JIT interface"""
 
 import numpy as np
-
-# pylint: disable=protected-access,too-few-public-methods,unnecessary-lambda
 import pytest
 
 import pennylane as qp
@@ -182,6 +180,7 @@ class TestCaching:
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
         dev = qp.device("default.qubit", wires=1)
+        # pylint: disable-next=protected-access
         spy = mocker.spy(qp.workflow._cache_transform, "_tape_transform")
 
         def cost(a, cachesize):
@@ -211,6 +210,7 @@ class TestCaching:
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
         dev = qp.device("default.qubit", wires=1)
+        # pylint: disable-next=protected-access
         spy = mocker.spy(qp.workflow._cache_transform, "_tape_transform")
 
         def cost(a, cache):
@@ -238,6 +238,7 @@ class TestCaching:
     def test_custom_cache_multiple(self, mocker):
         """Test the use of a custom cache object with multiple tapes"""
         dev = qp.device("default.qubit", wires=1)
+        # pylint: disable-next=protected-access
         spy = mocker.spy(qp.workflow._cache_transform, "_tape_transform")
 
         a = jax.numpy.array(0.1)
@@ -464,7 +465,7 @@ class TestJaxExecuteIntegration:
             # Unless the update is issued, the validation check related to the
             # number of provided parameters fails in the tape: (len(params) !=
             # required_length) and the tape produces incorrect results.
-            tape._update()
+            tape._update()  # pylint: disable=protected-access
             new_tape = tape.bind_new_parameters([a, b], [0, 1])
             return execute([new_tape], dev, **execute_kwargs)[0]
 
@@ -617,7 +618,7 @@ class TestJaxExecuteIntegration:
         """Test that operation and nested tapes expansion
         is differentiable"""
 
-        class MyU3(qp.U3):
+        class MyU3(qp.U3):  # pylint: disable=too-few-public-methods
 
             name = "MyU3"
 
@@ -633,8 +634,7 @@ class TestJaxExecuteIntegration:
             qscript = qp.tape.QuantumScript(
                 [qp.RX(a, wires=0), MyU3(*p, wires=0)], [qp.expval(qp.PauliX(0))]
             )
-            # pylint: disable-next=protected-access
-            [qscript], _ = qp.transforms._tape_decompose(
+            [qscript], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
                 qscript, stopping_condition=qp.devices.default_qubit.stopping_condition
             )
             return execute([qscript], device, **execute_kwargs)[0]

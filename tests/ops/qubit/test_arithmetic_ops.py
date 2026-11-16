@@ -15,7 +15,6 @@
 Unit tests for the the arithmetic qubit operations
 """
 
-# pylint: disable=too-many-arguments
 import copy
 import itertools
 
@@ -25,7 +24,7 @@ import pytest
 import pennylane as qp
 from pennylane.decomposition import gate_sets
 from pennylane.testing import assert_decomposable
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.wires import Wires
 
 label_data = [
@@ -245,7 +244,6 @@ class TestQubitSum:
 class TestIntegerComparator:
     """Tests for the IntegerComparator"""
 
-    # pylint: disable=protected-access
     def test_flatten_unflatten(self):
         """Tests the flatten and unflatten methods"""
         wires = qp.wires.Wires((0, 1, 2, 3))
@@ -257,7 +255,7 @@ class TestIntegerComparator:
             work_wires=(4),
         )
 
-        data, metadata = op._flatten()
+        data, metadata = op._flatten()  # pylint: disable=protected-access
         assert data == tuple()
         assert len(metadata) == 2
         assert metadata[0] == wires
@@ -268,7 +266,7 @@ class TestIntegerComparator:
         # check hashable
         assert hash(metadata)
 
-        new_op = type(op)._unflatten(*op._flatten())
+        new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
         qp.assert_equal(new_op, op)
         assert new_op is not op
 
@@ -446,8 +444,7 @@ class TestIntegerComparator:
         """Tests that the decomposition is correct under the new system."""
 
         tape = qp.tape.QuantumScript([qp.IntegerComparator(42, wires=[0, 1, 2, 3, 4, 5, 6])])
-        # pylint: disable-next=protected-access
-        [decomp], _ = qp.transforms._tape_decompose(
+        [decomp], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
             tape,
             gate_set={qp.X, qp.CNOT, qp.Hadamard, qp.T, "Adjoint(T)", qp.RX, qp.RY, qp.RZ},
         )
@@ -470,7 +467,6 @@ class TestIntegerComparator:
         tape2 = qp.tape.QuantumScript.from_queue(q2)
         assert all(isinstance(op, qp.Identity) for op in tape2.operations)
 
-    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_power(self):
         """Test ``pow`` method."""
         op = qp.IntegerComparator(3, wires=[0, 1, 2, 3])

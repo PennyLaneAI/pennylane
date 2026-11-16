@@ -35,8 +35,7 @@ else:
     jax = None
 
 
-# pylint: disable=too-many-public-methods, too-many-positional-arguments
-class TestWires:
+class TestWires:  # pylint: disable=too-many-public-methods
     """Tests for the ``Wires`` class."""
 
     def test_AbstractWires_handled(self):
@@ -410,13 +409,12 @@ class TestWires:
         assert Wires([1, 2, 3]) != (1, 5, 3)
         assert (1, 5, 3) != Wires([1, 2, 3])
 
-    # pylint: disable=protected-access
     def test_hash_cached(self):
         """Test that the hash of a Wires object is being cached."""
         wires = Wires([0, 1])
-        assert wires._hash is None
+        assert wires._hash is None  # pylint: disable=protected-access
         h = hash(wires)
-        assert wires._hash == h
+        assert wires._hash == h  # pylint: disable=protected-access
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
@@ -543,7 +541,6 @@ class TestWires:
             (Wires([]), Wires([1, 2]), Wires([2, 3]), Wires([3, 4, 5]), Wires([1, 2, 3, 4, 5])),
         ],
     )
-    # pylint: disable=too-many-arguments
     def test_multiple_union(self, wire_a, wire_b, wire_c, wire_d, expected):
         """
         Test the union operation (|) with multiple Wires objects.

@@ -106,6 +106,40 @@ class TestTrack:
         assert specs.resources.circuit_depth == 2
         assert specs == qp.specs(circuit, level="device")(0.5)
 
+    def test_pbc_pipeline(self):
+        """Test that track counts device-level resources after a Clifford+T → PPR → PPM
+        compilation pipeline, including H/T from lowered magic-state fabrication."""
+
+        @qp.qjit(capture=True)
+        @qp.transforms.ppr_to_ppm
+        @qp.transforms.to_ppr
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def qfunc():
+            qp.Toffoli([0, 1, 2])
+            qp.Hadamard(0)
+            qp.Hadamard(0)
+            return qp.expval(qp.Z(0))
+
+        _, specs = qp.track(qfunc)()
+
+        assert specs.level == "device"
+        assert specs.resources == SpecsResources(
+            counts={
+                "T": 7,
+                "Hadamard": 7,
+                "PauliMeasure-w2": 31,
+                "PauliMeasure-w3": 6,
+                "PauliRot-pi-w1": 12,
+                "PauliMeasure-w1": 37,
+                "PauliRot-pi-w2": 6,
+                "GlobalPhase": 17,
+            },
+            measurement_processes={"expval(PauliZ)": 1},
+            num_wires=4,
+            circuit_depth=40,
+        )
+
     def test_partial(self, circuit):
         """Test track for a partial-wrapped Catalyst jitted QNode."""
 
@@ -114,11 +148,56 @@ class TestTrack:
         assert results.shape == (4,)
         assert specs.resources.counts == {"RX": 1, "RY": 1, "CNOT": 1}
 
-    @pytest.mark.parametrize("level", [0, None, "top", "user", "all"])
+    def test_device_level_number(self, circuit):
+        """Test that the device level number is equivalent to level='device'."""
+
+        # The circuit has no user transforms, so the device level is 1
+        results, specs = qp.track(circuit, level=1)(0.1, 0.2)
+        expected_results, expected_specs = qp.track(circuit, level="device")(0.1, 0.2)
+
+        assert qp.math.allclose(results, expected_results)
+        assert specs == expected_specs
+
+    @pytest.mark.parametrize("level", [slice(0, None), slice(0, 1)])
+    def test_levels_equivalent_to_device(self, circuit, level):
+        """Test that a slice that selects all the transforms including the device preprocessing
+        is the same as level='device'."""
+
+        results, specs = qp.track(circuit, level=level)(0.1, 0.2)
+        expected_results, expected_specs = qp.track(circuit, level="device")(0.1, 0.2)
+
+        assert qp.math.allclose(results, expected_results)
+        assert specs == expected_specs
+
+    @pytest.mark.parametrize(
+        "level",
+        [
+            0,
+            "top",
+            "user",
+            "all",
+            [0],
+            ["device"],
+            [1],
+            ("device",),
+            ["user"],
+            (0, 1),
+            slice(0, 0),
+            slice(1, None),
+        ],
+    )
     def test_unsupported_level(self, circuit, level):
         """Test that a helpful error message is raised for levels other than 'device'."""
 
         with pytest.raises(NotImplementedError, match="qp.track only supports level='device'"):
+            qp.track(circuit, level=level)(0.1, 0.2)
+
+    @pytest.mark.parametrize("level", [None, 0.5, [], ["typo"], slice(-1, None)])
+    def test_invalid_level(self, circuit, level):
+        """Test that invalid levels are rejected, even if they are of an unsupported type such as
+        a Sequence or a slice."""
+
+        with pytest.raises(ValueError, match="Invalid level|Marker name 'typo' not found"):
             qp.track(circuit, level=level)(0.1, 0.2)
 
     def test_error_with_non_qjit(self):

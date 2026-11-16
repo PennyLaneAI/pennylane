@@ -16,8 +16,6 @@ Tests for ``pennylane.numpy.random`` wrapping.  Arrays generated should have an
 additional property, ``requires_grad``, that marks them as trainable/ non-trainable.
 """
 
-# pylint: disable=too-few-public-methods
-
 import pytest
 
 from pennylane import numpy as np
@@ -45,7 +43,7 @@ general_gen = random.default_rng()
 
 
 @pytest.mark.unit
-class TestGeneratorDistributions:
+class TestGeneratorDistributions:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize("distribution", distributions_no_extra_input)
     def test_generator_distributions(self, distribution):
         """Tests the distributions from a generator object that don't require

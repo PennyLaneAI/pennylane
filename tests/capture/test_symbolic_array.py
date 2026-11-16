@@ -24,7 +24,7 @@ pytestmark = pytest.mark.capture
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-# pylint: disable=wrong-import-position
+# pylint: disable-next=wrong-import-position
 from pennylane.capture.primitives import symbolic_array_prim
 
 
@@ -51,7 +51,6 @@ def test_error_if_bad_dimesion(bad_dimension):
         jax.make_jaxpr(f)()
 
 
-# pylint: disable=protected-access
 @pytest.mark.parametrize("shape", [(), (4, 3), (5, 2, 1)])
 @pytest.mark.parametrize(
     "dtype, converted_dtype",
@@ -69,6 +68,7 @@ def test_capturing_symbolic_array(shape, dtype, converted_dtype, eager_constant_
     def f():
         return qp.capture.symbolic_array(shape, dtype)
 
+    # pylint: disable-next=protected-access
     with jax._src.config.eager_constant_folding(eager_constant_folding):
         jaxpr = jax.make_jaxpr(f)()
 

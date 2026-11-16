@@ -132,8 +132,8 @@ class IQP(Operator2):
 
         super().__init__(weights, wires=wires, pattern=pattern, spin_sym=spin_sym)
 
-    # pylint: disable=arguments-differ
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_matrix(weights, wires, pattern, spin_sym) -> TensorLike:
         num_wires = len(Wires(wires))
         layers = []
@@ -151,9 +151,8 @@ class IQP(Operator2):
         return reduce(math.matmul, layers[::-1])
 
 
-def _instantaneous_quantum_polynomial_resources(
-    weights, wires, pattern, spin_sym
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _instantaneous_quantum_polynomial_resources(weights, wires, pattern, spin_sym):
     num_wires = len(wires)
     resources = defaultdict(int)
     if spin_sym:
