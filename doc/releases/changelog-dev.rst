@@ -19,7 +19,7 @@ New features since last release
 
   .. code-block:: python
 
-      @qp.qjit(capture=True, target="mlir")
+      @qp.qjit
       @qp.set_shots(1)
       @qp.qnode(qp.device("lightning.qubit", wires=8))
       def circuit():
