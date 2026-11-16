@@ -34,6 +34,8 @@ from tests.core.operator.operator2_utils import CompilableOp, OneWireDynOp
 class SX2(Operator2):
     """A new SX gate."""
 
+    arg_specs = {"wires": Wire[1]}
+
     is_verified_hermitian = True
 
     def __init__(self, wires):
