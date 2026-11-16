@@ -19,6 +19,7 @@ dependencies = [
     "autoray==0.8.10",
     "cachetools",
     "pennylane-lightning>=0.45",
+    "pennylane-catalyst>=0.15.0",
     "requests",
     "typing_extensions",
     "packaging",
