@@ -28,6 +28,7 @@ from pennylane.core._capture_measurements import AbstractMeasurement  # tach-ign
 from pennylane.core.operator.base import AbstractOperator  # tach-ignore
 from pennylane.core.operator.operator2 import operator_p  # tach-ignore
 from pennylane.core.transforms.transform import transform_prim  # tach-ignore
+from pennylane.ops.meta import barrier_p
 from pennylane.ops.mid_measure.mid_measure import measure_prim
 from pennylane.ops.mid_measure.pauli_measure import pauli_measure_prim
 from pennylane.ops.op_math.adjoint import adjoint_transform_prim
@@ -43,6 +44,7 @@ symbolic_array_prim = symbolic_array_p
 __all__ = [
     "AbstractOperator",
     "AbstractMeasurement",
+    "barrier_p",
     "adjoint_transform_prim",
     "ctrl_transform_prim",
     "symbolic_array_prim",

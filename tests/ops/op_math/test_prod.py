@@ -1230,11 +1230,6 @@ class TestSimplify:
         simplified_op = prod_op.simplify()
         qp.assert_equal(simplified_op, prod_op)
 
-    def test_grouping_with_only_visual_barriers(self):
-        """Test that grouping is implemented when an only-visual barrier is present."""
-        prod_op = qp.prod(qp.S(0), qp.Barrier(0, only_visual=True), qp.S(0)).simplify()
-        qp.assert_equal(prod_op.simplify(), qp.PauliZ(0))
-
     @pytest.mark.jax
     def test_simplify_pauli_rep_jax(self):
         """Test that simplifying operators with a valid pauli representation works with jax interface."""

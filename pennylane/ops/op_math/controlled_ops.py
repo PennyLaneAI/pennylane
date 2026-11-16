@@ -1731,7 +1731,7 @@ class MultiControlledX(Controlled2):
             :symbols: :math:`c` control wires and :math:`w` work wires
 
             .. decomposition-rule:: to_cnot_or_toffoli
-                :image: /_static/decomposition_thumbnails/_mcx_to_cnot_or_toffoli.svg
+                :image: /_static/decomposition_thumbnails/mcx_to_cnot_or_toffoli.svg
                 :where: :math:`c \leq 2`, the circuit shows :math:`c = 2`, and a control value of
                     :math:`0` adds :class:`~.PauliX` gates, not included in the counts: one on the target
                     if :math:`c = 1`, and two per such control wire if :math:`c = 2`
