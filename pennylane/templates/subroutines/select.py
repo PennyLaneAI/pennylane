@@ -166,12 +166,12 @@ class Select(Operator2):
                 :math:`w` work wires and ``partial=False``
             :example: :math:`K=4`, :math:`c=2`
 
-            .. decomposition-rule:: _select_decomp_multi_control
+            .. decomposition-rule:: multi_control
                 :image: /_static/decomposition_thumbnails/select_multi_control.svg
 
                 :math:`U_j` with :math:`c` controls | :math:`K` (one per :math:`U_j`) | 4
 
-            .. decomposition-rule:: _select_decomp_unary
+            .. decomposition-rule:: unary
                 :image: /_static/decomposition_thumbnails/select_unary.svg
                 :requires: :math:`w \geq c - 1` work wires
                 :where: :math:`N = c + K - 2 - \mathrm{wt}(K-1) - [K > 2^{c-1}]`, with
@@ -184,7 +184,7 @@ class Select(Operator2):
                 :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`[K > 2^{c-2}]` | 1
                 :math:`U_j` with 1 control | :math:`K` (one per :math:`U_j`) | 4
 
-            .. decomposition-rule:: _select_decomp_multi_control_work_wire
+            .. decomposition-rule:: multi_control_work_wire
                 :image: /_static/decomposition_thumbnails/select_multi_control_work_wire.svg
                 :requires: :math:`w \geq 1` work wire
 
