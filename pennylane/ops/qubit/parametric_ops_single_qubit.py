@@ -123,13 +123,14 @@ class RX(Operator2):
             .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rx_decomp)
                 :image: /_static/decomposition_thumbnails/rx_controlled.svg
                 :region: controlled
-                :where: :math:`c \geq 2` is the number of control wires, each control wire with
+                :where: :math:`c` is the number of control wires, each control wire with
                     control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
                     counts, and the circuit shows :math:`c = 2`
 
-                :class:`~.Hadamard` | :math:`2`
-                :class:`~.RZ` | :math:`2`
-                :class:`~.MultiControlledX` | :math:`2`
+                :class:`~.CRX` | :math:`1` if :math:`c = 1`
+                :class:`~.Hadamard` | :math:`2` if :math:`c \geq 2`
+                :class:`~.RZ` | :math:`2` if :math:`c \geq 2`
+                :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/rx_pow.svg
@@ -383,12 +384,13 @@ class RY(Operator2):
             .. decomposition-rule:: flip_zero_ctrl_values(_controlled_ry_decomp)
                 :image: /_static/decomposition_thumbnails/ry_controlled.svg
                 :region: controlled
-                :where: :math:`c \geq 2` is the number of control wires, each control wire with
+                :where: :math:`c` is the number of control wires, each control wire with
                     control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
                     counts, and the circuit shows :math:`c = 2`
 
-                :class:`~.RY` | :math:`2`
-                :class:`~.MultiControlledX` | :math:`2`
+                :class:`~.CRY` | :math:`1` if :math:`c = 1`
+                :class:`~.RY` | :math:`2` if :math:`c \geq 2`
+                :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/ry_pow.svg
@@ -660,12 +662,13 @@ class RZ(Operator2):
             .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rz_decomp)
                 :image: /_static/decomposition_thumbnails/rz_controlled.svg
                 :region: controlled
-                :where: :math:`c \geq 2` is the number of control wires, each control wire with
+                :where: :math:`c` is the number of control wires, each control wire with
                     control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
                     counts, and the circuit shows :math:`c = 2`
 
-                :class:`~.RZ` | :math:`2`
-                :class:`~.MultiControlledX` | :math:`2`
+                :class:`~.CRZ` | :math:`1` if :math:`c = 1`
+                :class:`~.RZ` | :math:`2` if :math:`c \geq 2`
+                :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/rz_pow.svg
@@ -949,14 +952,14 @@ class PhaseShift(Operator2):
             .. decomposition-rule:: flip_zero_ctrl_values(_controlled_phase_shift_decomp)
                 :image: /_static/decomposition_thumbnails/phaseshift_controlled.svg
                 :region: controlled
-                :where: :math:`c \geq 2` is the number of control wires, :math:`\binom{c+1}{k}` of
+                :where: :math:`c` is the number of control wires, :math:`\binom{c+1}{k}` of
                     the :class:`~.PauliRot` gates act on :math:`k` wires, each control wire with
                     control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
                     counts, and the circuit shows :math:`c = 2`
 
-                :class:`~.ControlledPhaseShift` | :math:`1` if :math:`c = 1`                
-                :class:`~.PauliRot` | :math:`2^{c+1} - 1` if :math:`c \geq 2`  
-                :class:`~.GlobalPhase` | :math:`1` if :math:`c \geq 2`  
+                :class:`~.ControlledPhaseShift` | :math:`1` if :math:`c = 1`
+                :class:`~.PauliRot` | :math:`2^{c+1} - 1` if :math:`c \geq 2`
+                :class:`~.GlobalPhase` | :math:`1` if :math:`c \geq 2`
 
             .. decomposition-rule:: pow_rotation
                 :image: /_static/decomposition_thumbnails/phaseshift_pow.svg
@@ -1183,7 +1186,7 @@ class Rot(Operator2):
             .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rot_decomp)
                 :image: /_static/decomposition_thumbnails/rot_controlled.svg
                 :region: controlled
-                :where: :math:`c \geq 2` is the number of control wires, each control wire with
+                :where: :math:`c` is the number of control wires, each control wire with
                     control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
                     counts, and the circuit shows :math:`c = 2`
 
