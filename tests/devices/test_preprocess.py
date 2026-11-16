@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for preprocess in devices/qubit."""
 
+# pylint: disable=too-few-public-methods
+
 import warnings
 
 import numpy as np
@@ -39,13 +41,10 @@ from pennylane.devices.preprocess import (
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import CountsMP, SampleMP
 
-# pylint: disable=too-few-public-methods
-
 
 class NoMatOp(Operation):
     """Dummy operation for expanding circuit."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
@@ -58,7 +57,6 @@ class NoMatNoDecompOp(Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
@@ -399,8 +397,7 @@ def dummy_rz_decomp_1(phi, wires):
 
 
 @qp.register_resources({qp.H: 1}, work_wires={"zeroed": 1})
-def dummy_rz_decomp_2(phi, wires):
-    # pylint: disable=unused-argument
+def dummy_rz_decomp_2(phi, wires):  # pylint: disable=unused-argument
     qp.H(wires)
 
 
@@ -601,7 +598,6 @@ class TestDecomposeTransformations:
     ):
         """Test that decompose works correctly when passing through ``fixed_decomps``
         and/or ``alt_decomps`` with the graph-based decomposer."""
-        # pylint: disable=too-many-arguments
         if not qp.decomposition.enabled_graph():
             pytest.skip("This test only is expected to work with the graph-based system.")
 
@@ -751,7 +747,6 @@ class TestMeasurementsFromCountsOrSamples:
         ):
             meas_transform(tape)
 
-    # pylint: disable=unnecessary-lambda, too-many-arguments
     @pytest.mark.parametrize(
         "meas_transform", (measurements_from_counts, measurements_from_samples)
     )

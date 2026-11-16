@@ -16,8 +16,6 @@
 import warnings
 from collections.abc import Iterable
 from copy import copy
-
-# pylint: disable=too-many-arguments
 from itertools import product
 
 import numpy as np
@@ -30,6 +28,7 @@ from pennylane.pauli import (
     PauliVSpace,
     PauliWord,
     pauli_sentence,
+    to_operator,
     trace_inner_product,
 )
 from pennylane.typing import TensorLike
@@ -40,7 +39,7 @@ from pennylane.wires import Wires
 _LINEAR_DEPENDENCE_TOL = 1e-10
 
 
-def lie_closure(
+def lie_closure(  # pylint: disable=too-many-arguments
     generators: Iterable[PauliWord | PauliSentence | Operator | TensorLike],
     *,  # force non-positional kwargs of the following
     max_iterations: int = 10000,
@@ -122,7 +121,7 @@ def lie_closure(
         >>> dla
         [1.0 * X(0) @ X(1), 1.0 * Z(0), 1.0 * Z(1), -1.0 * Y(0) @ X(1), -1.0 * X(0) @ Y(1), 1.0 * Y(0) @ Y(1)]
         >>> type(dla[0])
-        <class 'pennylane.pauli.pauli_arithmetic.PauliSentence'>
+        <class 'pennylane.core.pauli.PauliSentence'>
 
         In the case of sums of Pauli operators with many terms, it is often faster to use the matrix representation of the operators rather than
         the semi-analytic :class:`~pennylane.pauli.PauliSentence` or :class:`~Operator` representation.
@@ -199,7 +198,7 @@ def lie_closure(
 
     res = vspace.basis
     if not pauli:
-        res = [op.operation() for op in res]
+        res = [to_operator(op) for op in res]
 
     return res
 

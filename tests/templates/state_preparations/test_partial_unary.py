@@ -38,8 +38,6 @@ from pennylane.testing import assert_valid, assert_valid_decomp_rule
 from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires
 
-# pylint: disable=protected-access
-
 
 def random_distinct_integers(high, size, rng):
     if high < 2**25:
@@ -184,6 +182,7 @@ class TestPUIsometryFinder:
         # Load the final states
         final_states = list(map(int, iso_finder.tableau))
         states = np.array(
+            # pylint: disable-next=protected-access
             [[(val >> s) & iso_finder._one for s in iso_finder._shifts] for val in final_states]
         ).astype(np.int8)
         # Transform the final states back
@@ -220,6 +219,7 @@ class TestPUIsometryFinder:
         # Compute target state bit tableau
         target_states = np.array(
             [
+                # pylint: disable-next=protected-access
                 [(int(val) >> s) & iso_finder._one for s in iso_finder._shifts]
                 for val in basis_states
             ]
@@ -232,6 +232,7 @@ class TestPUIsometryFinder:
     )
     def test_find_isometry(self, num_entries, n, seed):
         """Test the main method ``find_isometry``."""
+        # pylint: disable=protected-access
         rng = np.random.default_rng(seed)
         states = random_distinct_integers(2**n, num_entries, rng)
         iso_finder = PUIsometryFinder(states, n)
@@ -431,7 +432,6 @@ def assert_pui_correctness(rule, coefficients, indices, wire_specs):
     @qp.qnode(qp.device("lightning.qubit", wires=num_device_wires))
     @qp.transforms.resolve_dynamic_wires(min_int=num_wires + num_work_wires)
     def func():
-        # pylint: disable=cell-var-from-loop
         # Make sure that the output state length is at least 2**num_wires
         rule(coefficients, wires=wires, indices=indices, work_wires=work_wires)
         return qp.state()

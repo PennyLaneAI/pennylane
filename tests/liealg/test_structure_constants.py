@@ -122,7 +122,7 @@ class TestAdjointRepr:
         """Test that operators can be passed and lead to the same result"""
         ad_rep_true = structure_constants(dla, pauli=True, matrix=matrix)
 
-        ops = [op.operation() for op in dla]
+        ops = [qp.pauli.to_operator(op) for op in dla]
         ad_rep = structure_constants(ops, pauli=False, matrix=matrix)
         assert qp.math.allclose(ad_rep, ad_rep_true)
 

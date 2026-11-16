@@ -32,8 +32,6 @@ from pennylane.spin import (
     transverse_ising,
 )
 
-# pylint: disable=too-many-arguments
-
 
 def test_coupling_error():
     r"""Test that an error is raised when the provided coupling shape is wrong for
@@ -941,6 +939,7 @@ def test_mapping_error_emery():
         ),
     ],
 )
+# pylint: disable-next=too-many-arguments
 def test_emery_hamiltonian(shape, n_cells, t, u, v, boundary_condition, expected_ham):
     r"""Test that the correct Emery Hamiltonian is generated."""
 
@@ -1073,6 +1072,7 @@ def test_emery_hamiltonian(shape, n_cells, t, u, v, boundary_condition, expected
         ),
     ],
 )
+# pylint: disable-next=too-many-arguments
 def test_emery_hamiltonian_matrix(shape, n_cells, t, u, v, expected_ham):
     r"""Test that the correct Emery Hamiltonian is generated when interaction parameters are provided as a matrix"""
 
@@ -1296,6 +1296,7 @@ def test_mapping_error_haldane():
         ),
     ],
 )
+# pylint: disable-next=too-many-arguments
 def test_haldane_hamiltonian_matrix(shape, n_cells, t1, t2, phi, boundary_condition, expected_ham):
     r"""Test that the correct Haldane Hamiltonian is generated."""
 

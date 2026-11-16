@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for the ``Prod2`` operator."""
 
-# pylint: disable=import-outside-toplevel
-
 from functools import reduce
 
 import numpy as np
@@ -400,7 +398,7 @@ class TestSimplify:
         qp.assert_equal(simplified, qp.RY(0.3, 1))
 
 
-class TestValidity:  # pylint: disable=too-few-public-methods
+class TestValidity:
     """Standard validity checks."""
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -479,7 +477,6 @@ class TestAbstractOperands:
 
 
 @pytest.mark.capture
-# pylint: disable-next=too-few-public-methods
 class TestCapture:
     """Test that Prod2 integrates with program capture."""
 

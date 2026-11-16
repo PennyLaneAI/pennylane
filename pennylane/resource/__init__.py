@@ -44,6 +44,7 @@ Circuit Specification Classes and Utilities
     ~PBCSpecsResources
 
     ~resources_from_tape
+    ~register_resource_extension
 """
 
 from .resource import (
@@ -56,6 +57,7 @@ from .resource import (
 from .expression import Expression
 from .analyze import analyze
 from .estimate import estimate
+from .extension import register_resource_extension
 from .specs import specs
 from .track import track
 
@@ -70,4 +72,5 @@ __all__ = [
     "estimate",
     "specs",
     "track",
+    "register_resource_extension",
 ]
