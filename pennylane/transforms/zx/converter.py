@@ -13,8 +13,6 @@
 # limitations under the License.
 """Transforms for interacting with PyZX, framework for ZX calculus."""
 
-# pylint: disable=too-many-return-statements,too-many-arguments
-
 from collections import OrderedDict
 from fractions import Fraction
 from functools import partial
@@ -103,10 +101,9 @@ class EdgeType:  # pylint: disable=too-few-public-methods
     HADAMARD = 2
 
 
-# pylint: disable=too-many-statements
 @partial(transform, is_informative=True)
 @_needs_pyzx
-def to_zx(tape, expand_measurements=False):
+def to_zx(tape, expand_measurements=False):  # pylint: disable=too-many-statements
     """This transform converts a PennyLane quantum tape to a ZX-Graph in the `PyZX framework <https://pyzx.readthedocs.io/en/latest/>`_.
     The graph can be optimized and transformed by well-known ZX-calculus reductions.
 
@@ -330,7 +327,7 @@ def to_zx(tape, expand_measurements=False):
     from pyzx.circuit.gates import TargetMapper
     from pyzx.graph import Graph
 
-    _pyzx_010 = Version(pyzx.__version__) >= Version("0.10")  # pylint: disable=protected-access
+    _pyzx_010 = Version(pyzx.__version__) >= Version("0.10")
 
     # Dictionary of gates (PennyLane to PyZX circuit)
     # Please keep in mind to keep this in sync with the pennylane.decomposition.gate_sets.PYZX,
@@ -608,6 +605,7 @@ def from_zx(graph, decompose_phases=True):
     return QuantumScript(operations)
 
 
+# pylint: disable-next=too-many-return-statements
 def _add_one_qubit_gate(param, type_1, qubit_1, decompose_phases):
     """Return the list of one qubit gates, that will be added to the tape."""
     if decompose_phases:
@@ -644,6 +642,7 @@ def _add_one_qubit_gate(param, type_1, qubit_1, decompose_phases):
     return []
 
 
+# pylint: disable-next=too-many-arguments
 def _add_two_qubit_gates(graph, vertex, neighbor, type_1, type_2, qubit_1, qubit_2):
     """Return the list of two qubit gates giveeen the vertex and its neighbor."""
     if type_1 == type_2:

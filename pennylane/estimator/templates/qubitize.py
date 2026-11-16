@@ -30,8 +30,6 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=signature-differs, arguments-differ, too-many-arguments
-
 
 class QubitizeTHC(ResourceOperator):
     r"""Resource class for qubitization of tensor hypercontracted Hamiltonian.
@@ -101,7 +99,7 @@ class QubitizeTHC(ResourceOperator):
 
     resource_keys = {"thc_ham", "prep_op", "select_op", "coeff_precision", "rotation_precision"}
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         thc_ham: THCHamiltonian,
         prep_op: ResourceOperator | None = None,
@@ -188,7 +186,7 @@ class QubitizeTHC(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         thc_ham: THCHamiltonian,
         prep_op: CompressedResourceOp | None = None,
@@ -246,7 +244,7 @@ class QubitizeTHC(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         thc_ham: THCHamiltonian,
         prep_op: CompressedResourceOp | None = None,
@@ -325,7 +323,7 @@ class QubitizeTHC(ResourceOperator):
         return gate_list
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for the controlled version of the operator.

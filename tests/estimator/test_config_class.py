@@ -22,17 +22,14 @@ from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
 from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.resource_operator import ResourceOperator
 
-# pylint: disable=protected-access, too-few-public-methods
 
-
-class DummyOp(ResourceOperator):
+class DummyOp(ResourceOperator):  # pylint: disable=too-few-public-methods
     """Dummy ResourceOperator for testing."""
 
     num_wires = 1
 
 
-# pylint: disable=unused-argument
-def dummy_decomp_func(**kwargs):
+def dummy_decomp_func(**kwargs):  # pylint: disable=unused-argument
     """Dummy decomposition function for testing."""
     return []
 
@@ -40,7 +37,6 @@ def dummy_decomp_func(**kwargs):
 class TestResourceConfig:
     """Test the ResourceConfig class and its methods."""
 
-    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_initialization_of_custom_decomps(self):
         """Test that the custom decomposition dictionaries initialize as empty."""
         config = ResourceConfig()
@@ -49,7 +45,6 @@ class TestResourceConfig:
         assert config.adj_custom_decomps == {}
         assert config.ctrl_custom_decomps == {}
 
-    # pylint: disable=use-implicit-booleaness-not-comparison
     @pytest.mark.parametrize(
         "decomp_type, target_dict_name",
         [

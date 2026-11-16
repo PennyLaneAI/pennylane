@@ -15,6 +15,8 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 
+# pylint: disable=too-few-public-methods
+
 import copy
 
 import numpy as np
@@ -35,10 +37,6 @@ from pennylane.ops.op_math.pow import PowOperation
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
-# pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
-# pylint: disable=use-implicit-booleaness-not-comparison
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -361,7 +359,7 @@ class TestOperatorConstruction:
         class MyOpOverwriteInit(qp.operation.Operation):
             num_wires = 1
 
-            def __init__(self, wires):  # pylint:disable=super-init-not-called
+            def __init__(self, wires):
                 pass
 
         op = MyOp(wires=0)
@@ -376,7 +374,7 @@ class TestOperatorConstruction:
         class MyOp(qp.operation.Operation):
             num_wires = 1
 
-            def __init__(self, wires, basis_state=None):  # pylint:disable=super-init-not-called
+            def __init__(self, wires, basis_state=None):  # pylint: disable=unused-argument
                 self._hyperparameters = {"basis_state": basis_state}
 
         state = [0, 1, 0]
@@ -417,6 +415,7 @@ class TestOperatorConstruction:
     @pytest.mark.parametrize("data,batch_size,ndim_params", [(1.1, None, 0), ([1.1, 2.2], 2, 1)])
     def test_lazy_ndim_params_and_batch_size(self, data, batch_size, ndim_params):
         """Test that ndim_params and batch_size are lazy properties."""
+        # pylint: disable=protected-access
 
         class DummyOp(Operator):
             num_wires = 1
@@ -446,7 +445,7 @@ class TestPytreeMethods:
         info = "value"
         op = CustomOp(1.2, 2.3, wires=(0, 1), info=info)
 
-        data, metadata = op._flatten()
+        data, metadata = op._flatten()  # pylint: disable=protected-access
         assert data == (1.2, 2.3)
         assert len(metadata) == 2
         assert metadata[0] == qp.wires.Wires((0, 1))
@@ -455,7 +454,7 @@ class TestPytreeMethods:
         # check metadata is hashable
         _ = {metadata: 0}
 
-        new_op = CustomOp._unflatten(*op._flatten())
+        new_op = CustomOp._unflatten(*op._flatten())  # pylint: disable=protected-access
         qp.assert_equal(op, new_op)
         assert new_op.i_got_initialized
 
@@ -555,7 +554,7 @@ class TestHasReprProperties:
             num_wires = 1
 
             @staticmethod
-            def compute_matrix(*params, **hyperparams):
+            def compute_matrix(*params, **hyperparams):  # pylint: disable=unused-argument
                 return np.eye(2)
 
         assert MyOp.has_matrix is True
@@ -617,7 +616,7 @@ class TestHasReprProperties:
             num_params = 1
 
             @staticmethod
-            def compute_decomposition(x, wires=None):  # pylint:disable=arguments-differ
+            def compute_decomposition(x, wires=None):
                 return [qp.RX(x, wires=wires)]
 
         assert MyOp.has_decomposition is True
@@ -693,7 +692,7 @@ class TestHasReprProperties:
             num_params = 1
 
             @staticmethod
-            def compute_diagonalizing_gates(x, wires=None):  # pylint:disable=arguments-differ
+            def compute_diagonalizing_gates(x, wires=None):  # pylint: disable=unused-argument
                 return []
 
         assert MyOp.has_diagonalizing_gates is True
@@ -784,7 +783,8 @@ class TestModificationMethods:
             num_wires = 3
 
         op = DummyOp(wires=[0, 1, 2])
-        op._pauli_rep = qp.pauli.PauliSentence(  # pylint:disable=attribute-defined-outside-init
+        # pylint: disable-next=attribute-defined-outside-init,protected-access
+        op._pauli_rep = qp.pauli.PauliSentence(
             {
                 qp.pauli.PauliWord({0: "X", 1: "Y", 2: "Z"}): 1.1,
                 qp.pauli.PauliWord({0: "Z", 1: "X", 2: "Y"}): 2.2,
@@ -1085,7 +1085,7 @@ class TestObservableConstruction:
         assert op.is_verified_hermitian is False
 
 
-class TestOperatorIntegration:
+class TestOperatorIntegration:  # pylint: disable=too-many-public-methods
     """Integration tests for the Operator class"""
 
     def test_pow_method_with_non_numeric_power_raises_error(self):
@@ -1295,7 +1295,7 @@ class TestOperatorIntegration:
 
 
 # Dummy class inheriting from Operator
-class MyOp(Operator):
+class UndefinedOp(Operator):
     num_wires = 1
 
 
@@ -1304,7 +1304,7 @@ class MyGate(Operation):
     num_wires = 1
 
 
-op = MyOp(wires=1)
+undefined_op = UndefinedOp(wires=1)
 gate = MyGate(wires=1)
 
 
@@ -1384,40 +1384,40 @@ class TestDefaultRepresentations:
     def test_matrix_undefined(self):
         """Tests that custom error is raised in the default matrix representation."""
         with pytest.raises(qp.operation.MatrixUndefinedError):
-            MyOp.compute_matrix()
+            UndefinedOp.compute_matrix()
         with pytest.raises(qp.operation.MatrixUndefinedError):
-            op.matrix()
+            undefined_op.matrix()
 
     def test_terms_undefined(self):
         """Tests that custom error is raised in the default terms representation."""
         with pytest.raises(qp.operation.TermsUndefinedError):
-            op.terms()
+            undefined_op.terms()
 
     def test_sparse_matrix_undefined(self):
         """Tests that custom error is raised in the default sparse matrix representation."""
         with pytest.raises(qp.operation.SparseMatrixUndefinedError):
-            MyOp.compute_sparse_matrix()
+            UndefinedOp.compute_sparse_matrix()
         with pytest.raises(qp.operation.SparseMatrixUndefinedError):
-            op.sparse_matrix()
+            undefined_op.sparse_matrix()
 
     def test_eigvals_undefined(self):
         """Tests that custom error is raised in the default eigenvalue representation."""
         with pytest.raises(qp.operation.EigvalsUndefinedError):
-            MyOp.compute_eigvals()
+            UndefinedOp.compute_eigvals()
         with pytest.raises(qp.operation.EigvalsUndefinedError):
-            op.eigvals()
+            undefined_op.eigvals()
 
     def test_diaggates_undefined(self):
         """Tests that custom error is raised in the default diagonalizing gates representation."""
         with pytest.raises(qp.operation.DiagGatesUndefinedError):
-            MyOp.compute_diagonalizing_gates(wires=[1])
+            UndefinedOp.compute_diagonalizing_gates(wires=[1])
         with pytest.raises(qp.operation.DiagGatesUndefinedError):
-            op.diagonalizing_gates()
+            undefined_op.diagonalizing_gates()
 
     def test_adjoint_undefined(self):
         """Tests that custom error is raised in the default adjoint representation."""
         with pytest.raises(qp.operation.AdjointUndefinedError):
-            op.adjoint()
+            undefined_op.adjoint()
 
     def test_generator_undefined(self):
         """Tests that custom error is raised in the default generator representation."""
@@ -1444,7 +1444,7 @@ class MyOpWithMat(Operator):
     num_wires = 1
 
     @staticmethod
-    def compute_matrix(theta):  # pylint:disable=arguments-differ
+    def compute_matrix(theta):
         return np.tensordot(theta, np.array([[0.4, 1.2], [1.2, 0.4]]), axes=0)
 
 
@@ -1480,7 +1480,7 @@ class TestChannel:
             grad_method = "F"
 
             @staticmethod
-            def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
+            def compute_kraus_matrices(p):
                 K1 = np.sqrt(p) * X
                 K2 = np.sqrt(1 - p) * I
                 return [K1, K2]
@@ -1572,11 +1572,9 @@ class TestStatePrepBase:
     class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 
-        # pylint:disable=unused-argument,too-few-public-methods
-        def state_vector(self, wire_order=None):
+        def state_vector(self, wire_order=None):  # pylint: disable=unused-argument
             return self.parameters[0]
 
-    # pylint:disable=unused-argument,too-few-public-methods
     def test_basic_initial_state(self):
         """Tests a basic implementation of the StatePrepBase interface."""
         prep_op = self.DefaultPrep([1, 0], wires=[0])
@@ -1587,8 +1585,6 @@ class TestStatePrepBase:
 
         class NoStatePrepOp(StatePrepBase):
             """A class that is missing the state_vector implementation."""
-
-            # pylint:disable=abstract-class-instantiated
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             NoStatePrepOp(wires=[0])
@@ -1616,7 +1612,6 @@ class TestCriteria:
         assert not qp.operation.is_trainable(self.cnot)
 
 
-# pylint: disable=too-few-public-methods
 class MultiRot(Operator2):
     """MultiRot class used for testing purposes."""
 
@@ -1945,7 +1940,6 @@ def test_docstring_example_of_operator_class(tol):
     class FlipAndRotate(qp.operation.Operation):
         grad_method = "A"
 
-        # pylint: disable=too-many-arguments,too-many-positional-arguments
         def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False):
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
@@ -1964,7 +1958,7 @@ def test_docstring_example_of_operator_class(tol):
             return (0,)
 
         @staticmethod
-        def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
+        def compute_decomposition(angle, wires, do_flip):
             op_list = []
             if do_flip:
                 op_list.append(qp.PauliX(wires=wires[1]))
@@ -2009,7 +2003,6 @@ def test_custom_operator_is_jax_pytree():
     qp.assert_equal(new_op, CustomOperator(2.3, wires=0))
 
 
-# pylint: disable=unused-import,no-name-in-module
 def test_get_attr():
     """Test that importing attributes of operation work as expected"""
 
@@ -2020,7 +2013,7 @@ def test_get_attr():
         _ = qp.operation.non_existent_attr  # error is raised if non-existent attribute accessed
 
     with pytest.raises(ImportError, match=f"cannot import name '{attr_name}'"):
-        from pennylane.operation import (
+        from pennylane.operation import (  # pylint: disable=unused-import
             non_existent_attr,
         )  # error is raised if non-existent attribute imported
 

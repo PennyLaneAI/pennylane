@@ -16,14 +16,12 @@ Tests for the Permute template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qp
 from pennylane.decomposition import gate_sets
 from pennylane.testing import assert_decomposable
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
