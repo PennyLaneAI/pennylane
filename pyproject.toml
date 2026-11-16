@@ -68,6 +68,9 @@ dev = [
     "isort~=7.0.0",
     "black==26.3.1",
     "matplotlib",
+    "ty==0.0.99",
+    "scipy-stubs",
+    "types-networkx",
 ]
 upload-reports = [
     "pydantic==2.10.6",
@@ -184,6 +187,20 @@ pennylane = ["devices/tests/pytest.ini", "drawer/plot.mplstyle", "transforms/sig
 line-length = 100
 target-version = ["py312", "py313", "py314"]
 include = '\.pyi?$'
+
+[tool.ty]
+baseline = "ty-baseline.json"
+
+[tool.ty.environment]
+python-version = "3.12"
+python-platform = "all"
+
+[tool.ty.src]
+include = ["pennylane"]
+exclude = ["pennylane/labs", "pennylane/devices/tests"]
+
+[tool.ty.terminal]
+error-on-warning = true
 
 [tool.isort]
 py_version = 312
