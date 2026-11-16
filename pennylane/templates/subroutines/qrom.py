@@ -463,7 +463,7 @@ def _flag_resources(num_control_wires_extra):
     }
 
 
-def _qrom_measurement_condition(  # pylint: disable=too-many-arguments,unused-argument
+def _qrom_measurement_condition(  # pylint: disable=unused-argument
     bitstrings=None, control_wires=None, target_wires=None, work_wires=None, base=None
 ):
 
@@ -543,7 +543,7 @@ def _build_flag(extra_wires, work_wires):
 
 @register_condition(_qrom_measurement_condition)
 @register_resources(_qrom_measurement_resources, exact=False)
-def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,unused-argument
+def _qrom_measurement_decomposition(
     bitstrings=None, control_wires=None, target_wires=None, work_wires=None, base=None
 ):
     """QROM decomposition using measurement-based uncomputation.
@@ -673,12 +673,7 @@ def _unary_iteration_num_elbows(num_control_wires_tree, num_blocks):
     return num_control_wires_tree + num_blocks - 2 - (num_blocks - 1).bit_count() - more_than_half
 
 
-def _qrom_unary_iteration_resources(  # pylint: disable=unused-argument
-    bitstrings,
-    control_wires,
-    target_wires,
-    work_wires,
-):
+def _qrom_unary_iteration_resources(bitstrings, control_wires, target_wires, work_wires):
     c = len(control_wires)
     K = len(bitstrings)
     num_targets = len(target_wires)
@@ -847,7 +842,6 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
 
 
 @register_resources(_qrom_unary_iteration_resources)
-# pylint: disable-next=unused-argument
 def _qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires, **__):
     """Unary iteration decomposition of QROM.
 
