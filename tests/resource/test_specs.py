@@ -314,19 +314,19 @@ class TestPassByPassSpecs:
         no_passes = qp.qjit(simple_circuit)
         with pytest.raises(
             ValueError,
-            match="The 'level' argument for QJIT'd QNodes is out of bounds, got -5.",
+            match="The 'level' argument is out of bounds, got -5.",
         ):
             qp.specs(no_passes, level=-5)()
 
         with pytest.raises(
             ValueError,
-            match="The 'level' argument for QJIT'd QNodes is out of bounds, got 10.",
+            match="The 'level' argument is out of bounds, got 10.",
         ):
             qp.specs(no_passes, level=10)()
 
         with pytest.raises(
             ValueError,
-            match="The 'level' argument for QJIT'd QNodes is out of bounds, got 10.",
+            match="The 'level' argument is out of bounds, got 10.",
         ):
             qp.specs(no_passes, level=[10, 11])()
 
@@ -373,8 +373,8 @@ class TestPassByPassSpecs:
                 enumerate(
                     (
                         "Before MLIR Passes",
-                        "cancel-inverses",
-                        "merge-rotations",
+                        "After cancel-inverses",
+                        "After merge-rotations",
                     )
                 )
             ),
@@ -414,7 +414,7 @@ class TestPassByPassSpecs:
         simple_circuit = qp.qjit(simple_circuit)
 
         specs = qp.specs(simple_circuit, level="user")()
-        assert specs.level == "merge-rotations"
+        assert specs.level == "After merge-rotations"
         assert specs.resources == SpecsResources(
             counts={"RX": 1, "RZ": 1},
             measurement_processes={"probs(all wires)": 1},
@@ -448,8 +448,8 @@ class TestPassByPassSpecs:
                 enumerate(
                     (
                         "Before MLIR Passes",
-                        "cancel-inverses",
-                        "cancel-inverses-2",
+                        "After cancel-inverses",
+                        "After cancel-inverses-2",
                     )
                 )
             ),
@@ -493,8 +493,8 @@ class TestPassByPassSpecs:
                 enumerate(
                     (
                         "Before MLIR Passes",
-                        "cancel-inverses",
-                        "merge-rotations",
+                        "After cancel-inverses",
+                        "After merge-rotations",
                     )
                 )
             ),
@@ -630,7 +630,7 @@ class TestPassByPassSpecs:
             device_name="null.qubit",
             num_device_wires=3,
             shots=Shots(None),
-            level={1: "split-non-commuting", 2: "cancel-inverses"},
+            level={1: "After split-non-commuting", 2: "After cancel-inverses"},
             resources={
                 "split-non-commuting": [
                     SpecsResources(
@@ -771,7 +771,7 @@ class TestSpecsWithPPR:
             device_name="null.qubit",
             num_device_wires=2,
             shots=Shots(None),
-            level="to-ppr",
+            level="After to-ppr",
             resources=PBCSpecsResources(
                 counts={"GlobalPhase": 2, "PPR-pi/4-w1": 3, "PPR-pi/8-w1": 1},
                 measurement_processes={},
@@ -798,7 +798,7 @@ class TestSpecsWithPPR:
             device_name="null.qubit",
             num_device_wires=3,
             shots=Shots(None),
-            level="decompose-arbitrary-ppr",
+            level="After decompose-arbitrary-ppr",
             resources=PBCSpecsResources(
                 counts={
                     "pbc.prepare": 1,
@@ -972,7 +972,7 @@ class TestSymbolicSpecs:
             return qp.expval(qp.PauliX(0))
 
         s = qp.specs(circuit, level="all-user")(3, 5)
-        assert s.level == {0: "Before MLIR Passes", 1: "cancel-inverses"}
+        assert s.level == {0: "Before MLIR Passes", 1: "After cancel-inverses"}
         assert s.device_name == "lightning.qubit"
         all_res = s.resources
 
@@ -1457,7 +1457,7 @@ class TestMarkerIntegration:
 
         with pytest.warns(
             UserWarning,
-            match="The 'level' argument for QJIT'd QNodes has been sorted to be "
+            match="The 'level' argument has been sorted to be "
             "in ascending order with no duplicate levels.",
         ):
             actual = qp.specs(simple_circuit, level=["m0", "m1", "m1-duplicate"])()

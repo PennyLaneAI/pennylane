@@ -32,6 +32,7 @@ import pennylane as qp
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
+    register_condition,
     register_resources,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -112,6 +113,32 @@ class RX(Operator2):
 
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.RZ` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/rx_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.RX` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rx_decomp)
+                :image: /_static/decomposition_thumbnails/rx_controlled.svg
+                :region: controlled
+                :where: :math:`c` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.CRX` | :math:`1` if :math:`c = 1`
+                :class:`~.Hadamard` | :math:`2` if :math:`c \geq 2`
+                :class:`~.RZ` | :math:`2` if :math:`c \geq 2`
+                :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/rx_pow.svg
+                :region: pow
+                :where: the angle of rotation is multiplied by the power :math:`z`
+
+                :class:`~.RX` | :math:`1`
     """
 
     num_wires = 1
@@ -347,6 +374,31 @@ class RY(Operator2):
                 :class:`~.S` | :math:`1`
                 :class:`Adjoint(S) <.S>` | :math:`1`
                 :class:`~.RZ` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/ry_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.RY` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_ry_decomp)
+                :image: /_static/decomposition_thumbnails/ry_controlled.svg
+                :region: controlled
+                :where: :math:`c` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.CRY` | :math:`1` if :math:`c = 1`
+                :class:`~.RY` | :math:`2` if :math:`c \geq 2`
+                :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/ry_pow.svg
+                :region: pow
+                :where: the angle of rotation is multiplied by the power :math:`z`
+
+                :class:`~.RY` | :math:`1`
     """
 
     num_wires = 1
@@ -604,6 +656,25 @@ class RZ(Operator2):
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/rz_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.RZ` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rz_decomp)
+                :image: /_static/decomposition_thumbnails/rz_controlled.svg
+                :region: controlled
+                :where: :math:`c` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.CRZ` | :math:`1` if :math:`c = 1`
+                :class:`~.RZ` | :math:`2` if :math:`c \geq 2`
+                :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/rz_pow.svg
+                :region: pow
+                :where: the angle of rotation is multiplied by the power :math:`z`
 
                 :class:`~.RZ` | :math:`1`
     """
@@ -865,12 +936,56 @@ class PhaseShift(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.PhaseShift
+            :symbols: :math:`c` control wires, :math:`z` controls on :math:`0`
+            :example: :math:`c=2`, :math:`z=0`
 
             .. decomposition-rule:: _phaseshift_to_rz_gp
                 :image: /_static/decomposition_thumbnails/phaseshift_to_rz_gp.svg
 
                 :class:`~.RZ` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/phaseshift_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_phase_shift_decomp)
+                :image: /_static/decomposition_thumbnails/phaseshift_controlled.svg
+                :region: controlled
+                :where: :math:`c` is the number of control wires, :math:`\binom{c+1}{k}` of
+                    the :class:`~.PauliRot` gates act on :math:`k` wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, and the circuit 
+                    shows :math:`c = 2` and :math:`z = 0`.
+
+                :class:`~.ControlledPhaseShift` | :math:`1` if :math:`c = 1`
+                :class:`~.PauliRot` | :math:`2^{c+1} - 1` if :math:`c \geq 2`
+                :class:`~.GlobalPhase` | :math:`1` if :math:`c \geq 2`
+                :class:`~.PauliX` | :math:`2z` | 0
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_phase_shift_single_phase)
+                :image: /_static/decomposition_thumbnails/controlled_phase_shift_single_phase.svg
+                :region: controlled
+                :requires: :math:`c` zeroed work wires
+                :where: A ladder of :class:`~.TemporaryAND` gates computes the AND of the 
+                    :math:`c` control wires and the target wire into the last work wire, which 
+                    then receives a single ``PhaseShift``. The ladder is uncomputed with mid-circuit 
+                    measurements. Controls on :math:`0` are flipped with ``X`` gates before and 
+                    after the decomposition. The circuit shows :math:`c = 2` and :math:`z = 0`.
+
+                :class:`~.TemporaryAND` | :math:`c` | 2
+                :class:`~.PhaseShift` | :math:`1` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`c` | 2
+                :class:`~.PauliX` | :math:`2z` | 0
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/phaseshift_pow.svg
+                :region: pow
+                :where: the angle is multiplied by the power :math:`z`
+
+                :class:`~.PhaseShift` | :math:`1`
     """
 
     num_wires = 1
@@ -1033,10 +1148,45 @@ def _controlled_phase_shift_decomp(base, control_wires, *_, **__):
     qp.GlobalPhase(-base.phi / 2**n)
 
 
+def _controlled_phase_shift_single_phase_resources(base, control_wires, *_, **__):
+    #  pylint: disable=unused-argument
+    num_control_wires = len(control_wires)
+    return {
+        qp.TemporaryAND: num_control_wires,
+        PhaseShift: 1,
+        qp.adjoint(qp.TemporaryAND(Wire[3])): num_control_wires,
+    }
+
+
+@register_condition(
+    lambda control_wires, work_wires, work_wire_type, **_: work_wire_type == "zeroed"
+    and len(control_wires) > 0
+    and len(work_wires) >= len(control_wires)
+)
+@register_resources(_controlled_phase_shift_single_phase_resources)
+def _controlled_phase_shift_single_phase(base, control_wires, work_wires, **_):
+    """Computes ``AND(*control_wires, base.wires[0])`` into ``len(control_wires)`` zeroed work
+    wires with a ``TemporaryAND`` ladder, applies a single ``PhaseShift`` to the last work wire
+    and uncomputes the ladder with measurements."""
+    and_controls = [*control_wires, base.wires[0]]
+    and_targets = list(work_wires[: len(control_wires)])
+    and_wires = list(zip([and_controls[0], *and_targets[:-1]], and_controls[1:], and_targets))
+
+    for wires in and_wires:
+        qp.TemporaryAND(wires=wires)
+    PhaseShift(base.phi, wires=and_targets[-1])
+    for wires in reversed(and_wires):
+        qp.adjoint(qp.TemporaryAND)(wires=wires)
+
+
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
 add_decomps("Adjoint(PhaseShift)", adjoint_rotation2)
 add_decomps("Pow(PhaseShift)", pow_rotation2)
-add_decomps("C(PhaseShift)", flip_zero_control2(_controlled_phase_shift_decomp))
+add_decomps(
+    "C(PhaseShift)",
+    flip_zero_control2(_controlled_phase_shift_decomp),
+    flip_zero_control2(_controlled_phase_shift_single_phase),
+)
 
 
 class Rot(Operator2):
@@ -1090,7 +1240,9 @@ class Rot(Operator2):
             .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rot_decomp)
                 :image: /_static/decomposition_thumbnails/rot_controlled.svg
                 :region: controlled
-                :where: :math:`c` is the number of control wires, and the circuit shows :math:`c = 2`
+                :where: :math:`c` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
 
                 :class:`~.CRot` | :math:`1` if :math:`c = 1`
                 :class:`~.RZ` | :math:`3` if :math:`c \geq 2`
@@ -1284,6 +1436,20 @@ class U1(Operator2):
                 :image: /_static/decomposition_thumbnails/u1_to_phaseshift.svg
 
                 :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/u1_adjoint.svg
+                :region: adjoint
+
+                :class:`~.U1` | :math:`1`
+                :where: ``phi`` changes sign
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/u1_pow.svg
+                :region: pow
+                :where: the angle is multiplied by the power :math:`z`
+
+                :class:`~.U1` | :math:`1`
     """
 
     num_wires = 1
@@ -1410,6 +1576,13 @@ class U2(Operator2):
 
                 :class:`~.Rot` | :math:`1`
                 :class:`~.PhaseShift` | :math:`2`
+
+            .. decomposition-rule:: _adjoint_u2
+                :image: /_static/decomposition_thumbnails/u2_adjoint.svg
+                :region: adjoint
+                :where: the angles change to :math:`\delta \rightarrow \pi - \delta` and  :math:`\phi \rightarrow \pi - \phi` (both :math:`\text{mod} 2 \pi`)
+
+                :class:`~.U2` | :math:`1`
     """
 
     num_wires = 1
@@ -1550,6 +1723,13 @@ class U3(Operator2):
 
                 :class:`~.Rot` | :math:`1`
                 :class:`~.PhaseShift` | :math:`2`
+
+            .. decomposition-rule:: _adjoint_u3
+                :image: /_static/decomposition_thumbnails/u3_adjoint.svg
+                :region: adjoint
+                :where: :math:`\theta` stays the same, but :math:`\delta \rightarrow \pi - \delta` and  :math:`\phi \rightarrow \pi - \phi` (both :math:`\text{mod} 2 \pi`)
+
+                :class:`~.U3` | :math:`1`
     """
 
     num_wires = 1

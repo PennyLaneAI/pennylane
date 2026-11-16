@@ -159,7 +159,7 @@ def transpile(
                 return True
             if not obj.has_decomposition:
                 return True
-            return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+            return obj.name in all_ops
 
         [expanded_tape], _ = qp.devices.preprocess.decompose(
             tape,
