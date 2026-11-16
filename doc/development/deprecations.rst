@@ -232,8 +232,9 @@ Completed deprecation cycles
     qp.fourier.mark(qp.RX(0.5, wires=0), "x0")
 
 * The :func:`~pennylane.workflow.get_transform_program` function has been removed.
-  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
-  of a QNode.
+  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the compile pipeline
+  of a :func:`~pennylane.qjit`'d QNode. For a QNode that is not qjit'd, use ``qnode.compile_pipeline`` for the user
+  transforms, or :func:`~pennylane.workflow.construct_batch` to inspect the tapes at the gradient or device level.
 
   - Deprecated in v0.45
   - Removed in v0.46
