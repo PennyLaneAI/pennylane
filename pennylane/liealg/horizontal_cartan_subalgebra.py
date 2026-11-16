@@ -13,7 +13,6 @@
 # limitations under the License.
 """Functionality to compute the Cartan subalgebra"""
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments, possibly-used-before-assignment
 import copy
 from collections.abc import Iterable
 from itertools import combinations, combinations_with_replacement
@@ -74,7 +73,7 @@ def _orthogonal_complement_basis(a, m, tol):
     return basis.T  # Transpose to get row vectors
 
 
-def horizontal_cartan_subalgebra(
+def horizontal_cartan_subalgebra(  # pylint: disable=too-many-arguments
     k, m, adj=None, start_idx=0, tol=1e-10, verbose=0, return_adjvec=False, is_orthogonal=True
 ):
     r"""
@@ -385,6 +384,7 @@ def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bo
         res.append(rep)
     res = math.array(res)
     if not is_orthogonal:
+        # pylint: disable-next=possibly-used-before-assignment
         res = math.einsum("ij,kj->ki", inv_gram, res)
 
     return res

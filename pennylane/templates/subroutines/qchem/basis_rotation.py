@@ -363,7 +363,7 @@ def _prepare_args(unitary_matrix, wires):
     return unitary_matrix, wires
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _real_basis_rotation_resources(unitary_matrix, wires, check=False):
     """Upper bound on the gates emitted by '_real_basis_rotation_decomp'.
 
@@ -410,7 +410,7 @@ def _real_basis_rotation_decomp(unitary_matrix, wires, **_):
     givens_loop()  # pylint: disable=no-value-for-parameter
 
 
-# pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
 def _complex_basis_rotation_resources(unitary_matrix, wires, check=False):
     """Upper bound on the gates emitted by '_complex_basis_rotation_decomp'.
 

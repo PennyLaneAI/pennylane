@@ -77,9 +77,7 @@ class TestSemiAdder:
             (["a", "b", "d"], ["e", "h", "p"], ["f", "z", "u", "q", "v"], 4, 2),
         ],
     )
-    def test_operation_result(
-        self, x_wires, y_wires, work_wires, x, y
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_result(self, x_wires, y_wires, work_wires, x, y):
         """Test the correctness of the SemiAdder template output."""
         dev = qp.device("default.qubit")
 
@@ -98,7 +96,6 @@ class TestSemiAdder:
         sample = output[0]
 
         #  check that the output sample is the binary representation of x + y mod 2^len(y_wires)
-        # pylint: disable=bad-reversed-sequence
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(sample[0, :]))),
             (x + y) % 2 ** len(y_wires),
@@ -137,9 +134,7 @@ class TestSemiAdder:
             ),
         ],
     )
-    def test_wires_error(
-        self, x_wires, y_wires, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_wires_error(self, x_wires, y_wires, work_wires, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qp.SemiAdder(x_wires, y_wires, work_wires)
@@ -219,7 +214,6 @@ class TestSemiAdder:
             qp.SemiAdder(x_wires, y_wires, work_wires)
             return qp.sample(wires=y_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))),
             (x + y) % 2 ** len(y_wires),
@@ -269,7 +263,7 @@ class TestSemiAdder:
         ],
     )
     @pytest.mark.parametrize("split_work_wires", [True, False])
-    def test_controlled_decomposition(
+    def test_controlled_decomposition(  # pylint: disable=too-many-arguments
         self,
         x_wires,
         y_wires,
@@ -279,7 +273,7 @@ class TestSemiAdder:
         y_value,
         control_values,
         split_work_wires,
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Test correctness of C(SemiAdder) decomposition"""
 
         dev = qp.device("default.qubit")
@@ -408,9 +402,8 @@ class TestSemiAdderSkipInputPos:
             ([0, 1], [2, 3, 4, 5], [6, 7, 8], 3, 5, [1, 3]),
         ],
     )
-    def test_operation_result(
-        self, x_wires, y_wires, work_wires, x, y, skip_input_pos
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_operation_result(self, x_wires, y_wires, work_wires, x, y, skip_input_pos):
         """Test that skipped input positions inject classical zeros into the addend."""
         n = len(x_wires)
         m = len(y_wires)

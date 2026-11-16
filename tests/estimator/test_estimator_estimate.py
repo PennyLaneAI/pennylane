@@ -50,8 +50,6 @@ from pennylane.estimator.templates.trotter import TrotterVibrational
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 
-# pylint: disable= no-self-use, arguments-differ
-
 
 def _circuit_w_expval(circ):
     circ()
@@ -776,9 +774,8 @@ class TestEstimateResources:
     def test_custom_controlled_decomposition(self):
         """Test that a custom controlled decomposition can be set and used."""
 
-        def custom_ctrl_RZ(
-            num_ctrl_wires, num_zero_ctrl, target_resource_params
-        ):  # pylint: disable=unused-argument
+        # pylint: disable-next=unused-argument
+        def custom_ctrl_RZ(num_ctrl_wires, num_zero_ctrl, target_resource_params):
             return [GateCount(resource_rep(X), count=3)]
 
         rc = ResourceConfig()

@@ -49,11 +49,10 @@ def refresh_devices():
     # as re-importing metadata can be a very slow operation on systems
     # with a large number of installed packages.
 
-    global plugin_devices  # pylint:disable=global-statement
+    global plugin_devices  # pylint: disable=global-statement
     plugin_devices = _get_device_entrypoints()
 
 
-# pylint: disable=protected-access
 def device(name, *args, **kwargs):
     r"""Load a device and return the instance.
 

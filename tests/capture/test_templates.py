@@ -15,9 +15,9 @@
 Integration tests for the capture of PennyLane templates into plxpr.
 """
 
-import inspect
-
 # pylint: disable=protected-access
+
+import inspect
 from typing import Any
 
 import numpy as np
@@ -31,8 +31,9 @@ from pennylane.core.operator import Operator2
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-# pylint: disable=wrong-import-position,no-name-in-module
-from pennylane.capture.primitives import operator_p
+from pennylane.capture.primitives import operator_p  # pylint: disable=wrong-import-position
+
+# pylint: disable-next=wrong-import-position
 from pennylane.testing import assert_eqn_matches_op, find_eqns, plxpr_to_tape
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
@@ -381,8 +382,7 @@ tested_modified_templates = [
 ]
 
 
-# pylint: disable=too-many-public-methods
-class TestModifiedTemplates:
+class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
     """Test that templates with custom primitive binds are captured as expected."""
 
     def test_basis_embedding_is_basis_state(self):
@@ -1865,9 +1865,7 @@ class TestModifiedTemplates:
     def test_trotter_cdf(self, work_wires):
         """Test TrotterCDF with program capture."""
 
-        from pennylane.numeric_hamiltonians import (  # pylint: disable=import-outside-toplevel
-            CDFHamiltonian,
-        )
+        from pennylane.numeric_hamiltonians import CDFHamiltonian
 
         hamiltonian = CDFHamiltonian(
             core_tensors=np.random.rand(2, 2, 2),
@@ -1897,9 +1895,7 @@ class TestModifiedTemplates:
     def test_trotter_cgf(self):
         """Test TrotterCGF with program capture."""
 
-        from pennylane.numeric_hamiltonians import (  # pylint: disable=import-outside-toplevel
-            CGFHamiltonian,
-        )
+        from pennylane.numeric_hamiltonians import CGFHamiltonian
 
         hamiltonian = CGFHamiltonian(
             core_tensors=np.random.rand(2, 2, 2, 2, 2),

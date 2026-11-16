@@ -67,7 +67,7 @@ class TestWhileLoopHints:
         """A typo'd key on a HintedCallable body should still set the hint."""
 
         @qp.hint({"num_iters": 10})
-        def body(i):  # pylint: disable=unused-argument
+        def body(i):
             return i + 1
 
         loop = qp.while_loop(lambda i: i < 3)(body)
@@ -76,7 +76,7 @@ class TestWhileLoopHints:
     def test_typo_on_apply_hint_is_canonicalized(self):
         """Applying a typo'd hint to a while-loop callable should canonicalize it."""
 
-        def body(i):  # pylint: disable=unused-argument
+        def body(i):
             return i + 1
 
         loop = qp.hint({"num_iters": 10})(qp.while_loop(lambda i: i < 3)(body))
@@ -86,7 +86,7 @@ class TestWhileLoopHints:
         """Unrecognized hint keys on the body should be ignored."""
 
         @qp.hint({"identity": True})
-        def body(i):  # pylint: disable=unused-argument
+        def body(i):
             return i + 1
 
         loop = qp.while_loop(lambda i: i < 3)(body)
@@ -95,7 +95,7 @@ class TestWhileLoopHints:
     def test_unknown_hint_on_apply_is_ignored(self):
         """Unrecognized keys applied to a while-loop callable should be ignored."""
 
-        def body(i):  # pylint: disable=unused-argument
+        def body(i):
             return i + 1
 
         loop = qp.hint({"identity": True})(qp.while_loop(lambda i: i < 3)(body))
@@ -105,7 +105,7 @@ class TestWhileLoopHints:
         """A correctly spelled hint on the body should be accepted."""
 
         @qp.hint({"num-iters": 10})
-        def body(i):  # pylint: disable=unused-argument
+        def body(i):
             return i + 1
 
         loop = qp.while_loop(lambda i: i < 3)(body)
@@ -114,7 +114,7 @@ class TestWhileLoopHints:
     def test_valid_apply_hint(self):
         """Applying a correctly spelled hint should set ``num_iters_hint``."""
 
-        def body(i):  # pylint: disable=unused-argument
+        def body(i):
             return i + 1
 
         loop = qp.hint({"num-iters": 7})(qp.while_loop(lambda i: i < 3)(body))

@@ -29,8 +29,6 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=arguments-differ,super-init-not-called, signature-differs, too-many-arguments
-
 
 class GQSP(ResourceOperator):
     r"""Resource class for the Generalized Quantum Signal Processing (GQSP) algorithm.
@@ -103,7 +101,7 @@ class GQSP(ResourceOperator):
 
     resource_keys = {"cmpr_signal_op", "d_plus", "d_minus", "rotation_precision"}
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self,
         signal_operator: ResourceOperator,
         d_plus: int,
@@ -164,7 +162,7 @@ class GQSP(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         cmpr_signal_op: CompressedResourceOp,
         d_plus: int,
@@ -206,7 +204,7 @@ class GQSP(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         cmpr_signal_op: CompressedResourceOp,
         d_plus: int,
@@ -306,7 +304,7 @@ class GQSPTimeEvolution(ResourceOperator):
 
     resource_keys = {"walk_op", "time", "one_norm", "poly_approx_precision"}
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self,
         walk_op: ResourceOperator,
         time: float,
@@ -376,7 +374,7 @@ class GQSPTimeEvolution(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         walk_op: CompressedResourceOp,
         time: float,
@@ -429,7 +427,7 @@ class GQSPTimeEvolution(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         walk_op: CompressedResourceOp,
         time: float,
@@ -631,12 +629,8 @@ class QSVT(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
-        cls,
-        block_encoding: CompressedResourceOp,
-        encoding_dims: int,
-        poly_deg: int,
-    ):
+    # pylint: disable-next=arguments-differ
+    def resource_rep(cls, block_encoding: CompressedResourceOp, encoding_dims: int, poly_deg: int):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -684,7 +678,7 @@ class QSVT(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         block_encoding: CompressedResourceOp,
         encoding_dims: int,
@@ -844,7 +838,7 @@ class QSP(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         block_encoding: CompressedResourceOp,
         poly_deg: int,
@@ -880,7 +874,7 @@ class QSP(ResourceOperator):
         return CompressedResourceOp(cls, num_wires=1, params=params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         block_encoding: CompressedResourceOp,
         poly_deg: int,

@@ -15,6 +15,8 @@
 Tests for the variance calculation on the DefaultTensor device.
 """
 
+# pylint: disable=redefined-outer-name
+
 import numpy as np
 import pytest
 
@@ -28,8 +30,6 @@ VARPHI = np.linspace(0.02, 1, 3)
 quimb = pytest.importorskip("quimb")
 
 pytestmark = pytest.mark.external
-
-# pylint: disable=too-many-arguments, redefined-outer-name
 
 
 @pytest.fixture(
@@ -164,6 +164,7 @@ class TestVar:
             ),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_single_wire_observables_variance(self, Obs, Op, expected_fn, theta, phi, dev):
         """Test that variance values for single wire observables are correct"""
 

@@ -92,7 +92,8 @@ class GateSet(Mapping):
         sorted_gs = sorted(to_name_generator, key=lambda item: (item[1], item[0]))
         self._gate_set = dict(sorted_gs)
 
-    def __eq__(self, value: object, /) -> bool:
+    # Pylint miscounts positional-only parameters inherited from Mapping.
+    def __eq__(self, value: object, /) -> bool:  # pylint: disable=arguments-differ
         if not isinstance(value, GateSet):
             return False
         return self._gate_set == value._gate_set
@@ -103,7 +104,7 @@ class GateSet(Mapping):
     def __len__(self) -> int:
         return len(self._gate_set)
 
-    def __getitem__(self, key, /):
+    def __getitem__(self, key, /):  # pylint: disable=arguments-differ
         return self._gate_set[to_name(key)]
 
     def __setitem__(self, key, value, /) -> None:
