@@ -181,10 +181,11 @@ class TestOperations:
     @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
     def test_flatten_unflatten(self, op):
         """Test that the flatten and unflatten methods work as expected."""
-        _, metadata = op._flatten()  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        _, metadata = op._flatten()
         assert hash(metadata)
 
-        new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
+        new_op = type(op)._unflatten(*op._flatten())
         qp.assert_equal(op, new_op)
 
     @pytest.mark.jax
@@ -804,13 +805,20 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("base_type", [qp.PhaseShift, qp.U1])
-    @pytest.mark.parametrize("control_values", [[0], [1], [1, 1], [0, 1, 0]])
+    @pytest.mark.parametrize("control_values", [[], [0], [1], [1, 1], [0, 1, 0]])
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     def test_controlled_phase_shift_with_work_wires_decomposable(
-        self, base_type, control_values, work_wire_type
+        self, base_type, control_values, work_wire_type, request
     ):
         """Tests that the decomposition rules of a controlled phase shift with work wires
         are valid."""
+        if control_values == []:
+            request.applymarker(
+                pytest.mark.xfail(
+                    reason="Empty control registers are currently not supported [sc-137261]",
+                    strict=True,
+                )
+            )
         num_controls = len(control_values)
         op = qp.ctrl(
             base_type(0.3, 0),
@@ -832,8 +840,7 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         control = list(range(1, 1 + num_controls))
         work_wires = list(range(1 + num_controls, 1 + 2 * num_controls))
 
-        # pylint: disable-next=protected-access
-        @qp.qjit(capture=True, target="mlir", enable_aot_compilation=False)
+        @qp.qjit(enable_aot_compilation=False)
         @qp.decompose(gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", "PhaseShift", "PauliX"})
         @qp.qnode(qp.device("null.qubit", wires=1 + 2 * num_controls))
         def circuit():
