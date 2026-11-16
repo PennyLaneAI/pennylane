@@ -7,7 +7,7 @@ Subroutines
 ===========
 
 PennyLane2 provides a growing library of subroutines for common tasks, including
-state preparation, data reading and loading, quantum arithmetic, and more.
+state preparation, data loading, quantum arithmetic, and more.
 
 .. _intro_ref_temp_stateprep:
 
@@ -31,7 +31,7 @@ circuit.
 
 .. _intro_ref_temp_subroutines:
 
-Arithmetic subroutines
+Arithmetic
 ----------------------
 
 Quantum arithmetic subroutines enable in-place and out-place operations such as
