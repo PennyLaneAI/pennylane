@@ -1057,6 +1057,7 @@ def _controlled_phase_shift_decomp(base, control_wires, *_, **__):
 
 
 def _controlled_phase_shift_single_phase_resources(base, control_wires, *_, **__):
+    #  pylint: disable=unused-argument
     num_control_wires = len(control_wires)
     return {
         qp.TemporaryAND: num_control_wires,
