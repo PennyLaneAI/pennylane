@@ -199,6 +199,25 @@ a correction.
 
         return qp.expval(qp.Z(0))
 
+Here ``some_decoder`` reads the syndrome as packed bits, so its :class:`~.CoprocessorFunction` sets
+``bitpack=True``. A coprocessor function's ``bitpack`` sets the message format of every
+:func:`~.decode` round it serves:
+
+* ``bitpack=False``, the default: the syndrome's bytes are sent as they are, and the correction
+  comes back as a ``uint8`` buffer. Catalyst's built-in Steane decoders and
+  :func:`~.onnx_decoder` take this format.
+
+* ``bitpack=True``: the syndrome, a bit vector of at most 64 entries, is packed into one 8-byte
+  word, and the correction comes back as a 64-entry boolean vector. :func:`~.css_bp_decoder` sets
+  this, and :func:`~.triton_decoder` takes it as an argument.
+
+See :func:`~.decode` for the exact layout.
+
+.. warning::
+
+    Nothing checks ``bitpack`` against what the function actually reads. A wrong setting gives
+    wrong corrections, with no error.
+
 Runtime calls
 ~~~~~~~~~~~~~
 
