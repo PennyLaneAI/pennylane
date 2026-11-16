@@ -1921,6 +1921,9 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* Added pinned local ``ty`` tooling and a diagnostic baseline for the package.
+  `(#10537) <https://github.com/PennyLaneAI/pennylane/pull/10537>`__
+
 * :class:`~.Barrier` now uses a dedicated program-capture primitive while retaining
   the ``Operator2`` argument format and operator reconstruction behavior.
   `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
