@@ -812,7 +812,7 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
     ):
         """Tests that the decomposition rules of a controlled phase shift with work wires
         are valid."""
-        if control_values == []:
+        if control_values == [] and qp.capture.enabled():
             request.applymarker(
                 pytest.mark.xfail(
                     reason="Empty control registers are currently not supported [sc-137261]",
