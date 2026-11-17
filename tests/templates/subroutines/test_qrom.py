@@ -913,8 +913,8 @@ class TestMeasurementQROM:
         @qp.decompose(
             gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ | {"PauliMeasure"},
             fixed_decomps={
-                "QROM": "_qrom_measurement_decomposition",
-                "Adjoint(QROM)": "_qrom_measurement_decomposition",
+                "QROM": "measurement",
+                "Adjoint(QROM)": "measurement",
             },
         )
         @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
