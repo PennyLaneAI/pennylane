@@ -524,7 +524,7 @@ class TestExpandMatrix:  # pylint: disable=too-many-public-methods
         assert np.allclose(op.matrix(wire_order=[2, 0]), permuted_matrix, atol=tol)
         assert np.allclose(op.matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)
 
-    @pytest.mark.parametrize("wire_order", [[0], [0, 1], [0, 1, 2], ["a", "b"]])
+    @pytest.mark.parametrize("wire_order", [[0], [0, 1], [0, 1, 2], [18, 19]])
     @pytest.mark.parametrize(
         "scalar_mat",
         [

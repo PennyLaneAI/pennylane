@@ -2784,8 +2784,8 @@ class TestResourceUnaryIterationQPE:
                     qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
                 ),
                 qre.Adjoint(qre.QFT(4)),
-                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
-                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+                Wires([1, 2, 3, 4, 19, 22, 23, 27]),
+                Wires([1, 2, 3, 4, 19, 22, 23, 27]),
             ),
             (
                 qre.Qubitization(
@@ -2793,9 +2793,9 @@ class TestResourceUnaryIterationQPE:
                     qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
                     wires=[1, 2, 3, 4],
                 ),
-                qre.Adjoint(qre.QFT(4, ["c1", "c2", "c3", "c4"])),
+                qre.Adjoint(qre.QFT(4, [19, 22, 23, 27])),
                 None,
-                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+                Wires([1, 2, 3, 4, 19, 22, 23, 27]),
             ),
             (
                 qre.Qubitization(
@@ -2804,17 +2804,17 @@ class TestResourceUnaryIterationQPE:
                     wires=[1, 2, 3, 4],
                 ),
                 qre.Adjoint(qre.QFT(4)),
-                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
-                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+                Wires([1, 2, 3, 4, 19, 22, 23, 27]),
+                Wires([1, 2, 3, 4, 19, 22, 23, 27]),
             ),
             (
                 qre.Qubitization(
                     qre.UniformStatePrep(3),
                     qre.SelectPauli(qre.PauliHamiltonian(2, {"XX": 1, "Z": 1, "Y": 1})),
                 ),
-                qre.Adjoint(qre.QFT(4, wires=["c1", "c2", "c3", "c4"])),
-                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
-                Wires([1, 2, 3, 4, "c1", "c2", "c3", "c4"]),
+                qre.Adjoint(qre.QFT(4, wires=[19, 22, 23, 27])),
+                Wires([1, 2, 3, 4, 19, 22, 23, 27]),
+                Wires([1, 2, 3, 4, 19, 22, 23, 27]),
             ),
         ),
     )

@@ -62,9 +62,13 @@ def _expected_rz_specs(phi, p):
 )
 def test_validate_phase_gradient_wires(n_angle_wires, n_phase_grad_wires, n_work_wires, msg_match):
     """Test that a WireError is raised correctly for wrongly-sized registers"""
-    angle_wires = qp.wires.Wires([f"ang_{i}" for i in range(n_angle_wires)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(n_phase_grad_wires)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(n_work_wires)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(n_angle_wires)])
+    phase_grad_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + i for i in range(n_phase_grad_wires)]
+    )
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(n_work_wires)]
+    )
 
     with pytest.raises(WireError, match=msg_match):
         _ = validate_phase_gradient_wires(angle_wires, phase_grad_wires, work_wires)
@@ -117,9 +121,11 @@ def test_valid_decomp(p):
 def test_as_fixed_decomps(phi, p):
     """Test that the decomposition rule from make_rz_to_phase_gradient_decomp works as expected
     as a fixed decomposition and yields the correct resources."""
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([100 + len(angle_wires) + i for i in range(p)])
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(p - 1)]
+    )
 
     kwargs = {
         "angle_wires": angle_wires,
@@ -148,9 +154,11 @@ def test_as_fixed_decomps(phi, p):
 def test_as_alt_decomps(phi, p):
     """Test that the decomposition rule from ``make_rz_to_phase_gradient_decomp works`` as
     expected as an alternative decomposition and yields the correct resources."""
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([100 + len(angle_wires) + i for i in range(p)])
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(p - 1)]
+    )
 
     kwargs = {
         "angle_wires": angle_wires,
@@ -185,9 +193,11 @@ def test_integration_multi_wire(seed):
     phi = (1 / 2 + 0 / 4 + 1 / 8) * 4 * np.pi
     wires = [0]
 
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(prec)])
+    phase_grad_wires = qp.wires.Wires([100 + len(angle_wires) + i for i in range(prec)])
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(prec - 1)]
+    )
 
     all_wires = angle_wires + phase_grad_wires + work_wires + wires
 

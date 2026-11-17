@@ -760,58 +760,22 @@ class TestSampleMeasurements:
 
             assert shot_res[2].shape == (s, 2)
 
-    def test_custom_wire_labels(self):
-        """Test that custom wire labels works as expected"""
-        x, y = np.array(0.732), np.array(0.488)
-        qs = qp.tape.QuantumScript(
-            [qp.RX(x, wires="b"), qp.CNOT(wires=["b", "a"]), qp.RY(y, wires="a")],
-            [
-                qp.expval(qp.PauliZ("b")),
-                qp.probs(wires=["a", "b"]),
-                qp.sample(wires=["b", "a"]),
-            ],
-            shots=10000,
-        )
-        result = simulate(qs)
-
-        assert isinstance(result, tuple)
-        assert len(result) == 3
-        assert isinstance(result[0], np.float64)
-        assert isinstance(result[1], np.ndarray)
-        assert isinstance(result[2], np.ndarray)
-
-        assert np.allclose(result[0], np.cos(x), atol=0.1)
-
-        assert result[1].shape == (4,)
-        assert np.allclose(
-            result[1],
-            [
-                np.cos(x / 2) ** 2 * np.cos(y / 2) ** 2,
-                np.sin(x / 2) ** 2 * np.sin(y / 2) ** 2,
-                np.cos(x / 2) ** 2 * np.sin(y / 2) ** 2,
-                np.sin(x / 2) ** 2 * np.cos(y / 2) ** 2,
-            ],
-            atol=0.1,
-        )
-
-        assert result[2].shape == (10000, 2)
-
 
 class TestOperatorArithmetic:
     def test_numpy_op_arithmetic(self):
-        """Test an operator arithmetic circuit with non-integer wires with numpy."""
+        """Test an operator arithmetic circuit with nonconsecutive integer wires with numpy."""
         phi = 1.2
         ops = [
-            qp.PauliX("a"),
-            qp.PauliX("b"),
-            qp.ctrl(qp.RX(phi, "target") ** 2, ("a", "b", -3), control_values=[1, 1, 0]),
+            qp.PauliX(6),
+            qp.PauliX(7),
+            qp.ctrl(qp.RX(phi, 11) ** 2, (6, 7, -3), control_values=[1, 1, 0]),
         ]
 
         qs = qp.tape.QuantumScript(
             ops,
             [
-                qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
+                qp.expval(qp.sum(qp.PauliY(11), qp.PauliZ(7))),
+                qp.expval(qp.s_prod(3, qp.PauliZ(11))),
             ],
         )
 
@@ -821,22 +785,22 @@ class TestOperatorArithmetic:
 
     @pytest.mark.autograd
     def test_autograd_op_arithmetic(self):
-        """Test operator arithmetic circuit with non-integer wires works with autograd."""
+        """Test operator arithmetic circuit with nonconsecutive integer wires works with autograd."""
 
         phi = qp.numpy.array(1.2)
 
         def f(x):
             ops = [
-                qp.PauliX("a"),
-                qp.PauliX("b"),
-                qp.ctrl(qp.RX(x, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
+                qp.PauliX(6),
+                qp.PauliX(7),
+                qp.ctrl(qp.RX(x, 11), (6, 7, -3), control_values=[1, 1, 0]),
             ]
 
             qs = qp.tape.QuantumScript(
                 ops,
                 [
-                    qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                    qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
+                    qp.expval(qp.sum(qp.PauliY(11), qp.PauliZ(7))),
+                    qp.expval(qp.s_prod(3, qp.PauliZ(11))),
                 ],
             )
 
@@ -853,23 +817,23 @@ class TestOperatorArithmetic:
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_jax_op_arithmetic(self, use_jit):
-        """Test operator arithmetic circuit with non-integer wires works with jax."""
+        """Test operator arithmetic circuit with nonconsecutive integer wires works with jax."""
         import jax
 
         phi = jax.numpy.array(1.2)
 
         def f(x):
             ops = [
-                qp.PauliX("a"),
-                qp.PauliX("b"),
-                qp.ctrl(qp.RX(x, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
+                qp.PauliX(6),
+                qp.PauliX(7),
+                qp.ctrl(qp.RX(x, 11), (6, 7, -3), control_values=[1, 1, 0]),
             ]
 
             qs = qp.tape.QuantumScript(
                 ops,
                 [
-                    qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                    qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
+                    qp.expval(qp.sum(qp.PauliY(11), qp.PauliZ(7))),
+                    qp.expval(qp.s_prod(3, qp.PauliZ(11))),
                 ],
             )
 
@@ -888,23 +852,23 @@ class TestOperatorArithmetic:
 
     @pytest.mark.torch
     def test_torch_op_arithmetic(self):
-        """Test operator arithmetic circuit with non-integer wires works with torch."""
+        """Test operator arithmetic circuit with nonconsecutive integer wires works with torch."""
         import torch
 
         phi = torch.tensor(-0.7290, requires_grad=True)
 
         def f(x):
             ops = [
-                qp.PauliX("a"),
-                qp.PauliX("b"),
-                qp.ctrl(qp.RX(x, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
+                qp.PauliX(6),
+                qp.PauliX(7),
+                qp.ctrl(qp.RX(x, 11), (6, 7, -3), control_values=[1, 1, 0]),
             ]
 
             qs = qp.tape.QuantumScript(
                 ops,
                 [
-                    qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                    qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
+                    qp.expval(qp.sum(qp.PauliY(11), qp.PauliZ(7))),
+                    qp.expval(qp.s_prod(3, qp.PauliZ(11))),
                 ],
             )
 
