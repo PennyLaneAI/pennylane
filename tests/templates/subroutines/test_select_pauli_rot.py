@@ -19,8 +19,6 @@ import re
 from functools import partial
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp

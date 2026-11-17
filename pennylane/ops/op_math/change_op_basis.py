@@ -259,8 +259,8 @@ class ChangeOpBasis(CompositeOp):
     def _flatten(self):
         return tuple(reversed(self.operands)), tuple()
 
-    # pylint: disable=arguments-differ
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, compute_op, target_op, uncompute_op=None):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
@@ -273,8 +273,7 @@ class ChangeOpBasis(CompositeOp):
         for leaf in leaves:
             if isinstance(leaf, Operator2):
                 if leaf.tracer is None:
-                    # pylint: disable-next=protected-access
-                    leaf._bind_primitive()
+                    leaf._bind_primitive()  # pylint: disable=protected-access
                 new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
                 # The equation is now an input to the legacy primitive. Detach its tracer
                 # so prebuilt operands can be reused in another trace.
@@ -346,7 +345,6 @@ class ChangeOpBasis(CompositeOp):
         """
         return self[1].is_verified_hermitian
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
         return True
@@ -357,9 +355,8 @@ class ChangeOpBasis(CompositeOp):
             _ = [apply(op) for op in reversed(self)]
         return list(self[::-1])
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return True
 
     def adjoint(self):
@@ -391,7 +388,6 @@ def _adjoint_change_op_basis_resources(base_params, **_):
     return resources
 
 
-# pylint: disable=protected-access
 @register_resources(_adjoint_change_op_basis_resources)
 def _adjoint_change_op_basis_decomp(*_, base, **__):
     apply(base.operands[2])
@@ -402,7 +398,7 @@ def _adjoint_change_op_basis_decomp(*_, base, **__):
 add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
 
 
-def _controlled_change_op_basis_resources(
+def _controlled_change_op_basis_resources(  # pylint: disable=too-many-arguments,unused-argument
     *_,
     num_control_wires,
     num_zero_control_values,
@@ -411,7 +407,7 @@ def _controlled_change_op_basis_resources(
     base_class,
     base_params,
     **__,
-):  # pylint: disable=unused-argument, too-many-arguments
+):
     resources = defaultdict(int)
     resources[base_params["compute_op"]] += 1
     resources[
@@ -448,9 +444,8 @@ def _controlled_change_op_basis_decomposition(
     apply(base.operands[0])
 
 
-# pylint: disable=unused-argument
 @register_resources(_change_op_basis_resources)
-def _change_op_basis_decomp(*_, wires=None, operands, **__):
+def _change_op_basis_decomp(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
     for op in operands[::-1]:
         apply(op)
 

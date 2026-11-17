@@ -15,7 +15,6 @@
 build an active space and generate single and double excitations.
 """
 
-# pylint: disable=too-many-locals
 import os
 import re
 from shutil import copyfile
@@ -72,6 +71,7 @@ def read_structure(filepath, outpath="."):
     return symbols, np.array(coordinates) / BOHR_TO_ANG
 
 
+# pylint: disable-next=too-many-branches
 def active_space(electrons, orbitals, mult=1, active_electrons=None, active_orbitals=None):
     r"""Build the active space for a given number of active electrons and active orbitals.
 
@@ -127,7 +127,6 @@ def active_space(electrons, orbitals, mult=1, active_electrons=None, active_orbi
     >>> print(active) # active orbitals
     [1, 2]
     """
-    # pylint: disable=too-many-branches
 
     if active_electrons is None:
         ncore_orbs = 0
@@ -554,8 +553,7 @@ def mol_data(identifier, identifier_type="name"):
     """
 
     try:
-        # pylint: disable=import-outside-toplevel
-        import pubchempy as pcp
+        import pubchempy as pcp  # pylint: disable=import-outside-toplevel
     except ImportError as Error:
         raise ImportError(
             "This feature requires pubchempy.\nIt can be installed with: pip install pubchempy."
@@ -568,8 +566,9 @@ def mol_data(identifier, identifier_type="name"):
         "smiles": re.compile(
             r"^(?!InChI=)(?!\d{1,7}\-\d{2}\-\d)(?![A-Z]{14}\-[A-Z]{10}(\-[A-Z])?)[^J][a-zA-Z0-9@+\-\[\]\(\)\\\/%=#$]{1,}$"
         ),
+        # One group handles all layers because its body includes "/".
         "inchi": re.compile(
-            r"^InChI\=1S?\/[A-Za-z0-9\.]+(\+[0-9]+)?(\/[cnpqbtmsih][A-Za-z0-9\-\+\(\)\,\/\?\;\.]+)*$"
+            r"^InChI\=1S?\/[A-Za-z0-9\.]+(\+[0-9]+)?(\/[cnpqbtmsih][A-Za-z0-9\-\+\(\)\,\/\?\;\.]+)?$"
         ),
         "inchikey": re.compile(r"^[A-Z]{14}\-[A-Z]{10}(\-[A-Z])?"),
     }

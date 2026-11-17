@@ -15,11 +15,11 @@
 Tests for the jacobian product calculator classes.
 """
 
+# pylint: disable=protected-access
+
 from functools import partial
 
 import numpy as np
-
-# pylint: disable=protected-access
 import pytest
 from cachetools import LRUCache
 from param_shift_dev import ParamShiftDerivativesDevice
@@ -130,7 +130,6 @@ def test_no_gradients():
         jpc.execute_and_compute_jacobian(())
 
 
-# pylint: disable=too-few-public-methods
 class TestBasics:
     """Test initialization and repr for jacobian product calculator classes."""
 

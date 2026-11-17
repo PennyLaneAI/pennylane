@@ -75,7 +75,6 @@ class TestDefaultBitMap:
 
     def test_empty(self):
         """Test creating empty bit map"""
-        # pylint: disable=use-implicit-booleaness-not-comparison
         bit_map = default_bit_map([])
         assert bit_map == {}
 
@@ -185,10 +184,8 @@ class TestConvertWireOrder:
         assert full_wire_map == used_wire_map == {2: 0, 1: 1, 0: 2, 4: 3, 3: 4, 5: 5}
 
 
-class TestUnwrapControls:
+class TestUnwrapControls:  # pylint: disable=too-few-public-methods
     """Tests the ``unwrap_controls`` utility function."""
-
-    # pylint:disable=too-few-public-methods
 
     @pytest.mark.parametrize(
         "op,expected_control_wires,expected_control_values,expected_base_cls",
@@ -255,7 +252,6 @@ class TestUnwrapControls:
         assert isinstance(base, expected_base_cls)
 
 
-# pylint: disable=use-implicit-booleaness-not-comparison
 class TestCwireConnections:
     """Tests for the cwire_connections helper method."""
 

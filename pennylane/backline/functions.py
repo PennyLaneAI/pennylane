@@ -183,9 +183,8 @@ def triton_decoder(
     ... )
     """
     try:
-        from pennylane.backline.decoders.triton.decoder_frontend import (  # pylint: disable=import-outside-toplevel
-            _build_triton_decoder,
-        )
+        # pylint: disable-next=import-outside-toplevel
+        from pennylane.backline.decoders.triton.decoder_frontend import _build_triton_decoder
     except ImportError as exc:
         raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
@@ -261,9 +260,8 @@ def css_bp_decoder(
     ... )
     """
     try:
-        from pennylane.backline.decoders.triton.decoder_frontend import (  # pylint: disable=import-outside-toplevel
-            _build_css_bp_decoder,
-        )
+        # pylint: disable-next=import-outside-toplevel
+        from pennylane.backline.decoders.triton.decoder_frontend import _build_css_bp_decoder
     except ImportError as exc:
         raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 

@@ -24,8 +24,6 @@ from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_operator import CompressedResourceOp
 from pennylane.wires import Wires
 
-# pylint: disable=no-self-use, too-many-arguments, too-many-positional-arguments
-
 
 class TestResourceTrotterProduct:
     """Test the ResourceTrotterProduct class"""
@@ -257,7 +255,7 @@ class TestTrotterCDF:
             ),
         ),
     )
-    def test_controlled_resource_decomp(
+    def test_controlled_resource_decomp(  # pylint: disable=too-many-arguments
         self,
         num_orbitals,
         num_fragments,
@@ -390,7 +388,7 @@ class TestTrotterTHC:
             ),
         ),
     )
-    def test_controlled_resource_decomp(
+    def test_controlled_resource_decomp(  # pylint: disable=too-many-arguments
         self,
         num_orbitals,
         tensor_rank,
@@ -538,7 +536,7 @@ class TestTrotterVibrational:
     @pytest.mark.parametrize(
         "num_modes, grid_size, taylor_degree, num_steps, order, expected_res", hamiltonian_data
     )
-    def test_resource_trotter_vibrational(
+    def test_resource_trotter_vibrational(  # pylint: disable=too-many-arguments
         self, num_modes, grid_size, taylor_degree, num_steps, order, expected_res
     ):
         """Test the Resource TrotterVibrational class for correct resources"""
@@ -686,7 +684,7 @@ class TestTrotterVibronic:
         "num_modes, num_states, grid_size, taylor_degree, num_steps, order, expected_res",
         hamiltonian_data,
     )
-    def test_resource_trotter_vibronic(
+    def test_resource_trotter_vibronic(  # pylint: disable=too-many-arguments
         self, num_modes, num_states, grid_size, taylor_degree, num_steps, order, expected_res
     ):
         """Test the Resource TrotterVibronic class for correct resources"""
@@ -1047,10 +1045,8 @@ class TestTrotterPauli:
             GateCount(qre.PauliRot.resource_rep("ZZZ"), 10),
         ]
 
-        assert (
-            qre.TrotterPauli._cost_pauli_group(pauli_terms)  # pylint: disable=protected-access
-            == expected_cost
-        )
+        # pylint: disable-next=protected-access
+        assert qre.TrotterPauli._cost_pauli_group(pauli_terms) == expected_cost
 
 
 CLASSES_AND_HAMS = [
@@ -1102,7 +1098,7 @@ class TestInvalidTrotterInputs:
             ),
         ],
     )
-    def test_trotter_common_incompatible_inputs(
+    def test_trotter_common_incompatible_inputs(  # pylint: disable=too-many-arguments
         self, op_class, valid_ham, bad_steps, bad_order, error_type, msg
     ):
         """Test that all Trotter classes raise errors for invalid steps/orders."""

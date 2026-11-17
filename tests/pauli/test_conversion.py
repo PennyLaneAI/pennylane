@@ -95,8 +95,7 @@ hamiltonian_ps = (
 )
 
 
-# pylint: disable=too-many-public-methods
-class TestDecomposition:
+class TestDecomposition:  # pylint: disable=too-many-public-methods
     """Tests the pauli_decompose function"""
 
     @pytest.mark.parametrize("hamiltonian", [np.ones((3, 3)), np.ones((4, 2)), np.ones((2, 4))])
@@ -155,7 +154,6 @@ class TestDecomposition:
         tensors = filter(lambda obs: isinstance(obs, qp.ops.Prod), decomposed_obs)
         assert all(len(tensor.operands) == n for tensor in tensors)
 
-    # pylint: disable = consider-using-generator
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_decomposition(self, hamiltonian):
         """Tests that pauli_decompose successfully decomposes Hamiltonians into a
@@ -615,7 +613,6 @@ class TestPhasedDecomposition:
         tensors = filter(lambda obs: isinstance(obs, qp.ops.Prod), decomposed_obs)
         assert all(len(tensor.operands) == n for tensor in tensors)
 
-    # pylint: disable = consider-using-generator
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_decomposition(self, hamiltonian):
         """Tests that pauli_decompose successfully decomposes Hamiltonians into a
@@ -638,8 +635,6 @@ class TestPhasedDecomposition:
 
         assert isinstance(ps, qp.pauli.PauliSentence)
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
-
-    # pylint: disable = consider-using-generator
 
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("matrix", test_general_matrix)
@@ -726,7 +721,6 @@ class TestPhasedDecomposition:
             coeffs = qp.pauli_decompose(mat).coeffs
             assert qp.math.get_interface(coeffs[0]) == interface
 
-    # pylint: disable = superfluous-parens
     # Multiple interfaces will be tested with math module
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
@@ -755,6 +749,7 @@ class TestPhasedDecomposition:
             grad_numpy = qp.grad(circuit)(qp.numpy.array(matrix))
 
             # Jax Interface
+            # pylint: disable-next=superfluous-parens
             grad_jax = jax.grad(circuit, argnums=(0))(jax.numpy.array(matrix))
 
             # PyTorch Interface

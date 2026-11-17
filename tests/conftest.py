@@ -15,18 +15,17 @@
 Pytest configuration file for PennyLane test suite.
 """
 
-# pylint: disable=unused-import
 import os
 import pathlib
 import sys
-import warnings
+import warnings  # pylint: disable=unused-import
 
 import numpy as np
 import pytest
 from packaging.version import Version
 
 import pennylane as qp
-from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.exceptions import PennyLaneDeprecationWarning  # pylint: disable=unused-import
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
@@ -77,14 +76,13 @@ def mock_device(monkeypatch):
         m.setattr(dev, "short_name", "mock_device")
         m.setattr(dev, "capabilities", lambda cls: {"model": "qubit"})
         m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
-        yield qp.devices.LegacyDevice(wires=2)  # pylint:disable=abstract-class-instantiated
+        yield qp.devices.LegacyDevice(wires=2)
 
 
-# pylint: disable=protected-access
 @pytest.fixture
 def tear_down_hermitian():
     yield None
-    qp.Hermitian._eigs = {}
+    qp.Hermitian._eigs = {}  # pylint: disable=protected-access
 
 
 @pytest.fixture(autouse=True)
@@ -119,7 +117,7 @@ def seed(request):
 
     """
 
-    fixture_manager = request._fixturemanager  # pylint:disable=protected-access
+    fixture_manager = request._fixturemanager  # pylint: disable=protected-access
     fixture_defs = fixture_manager.getfixturedefs("seed", request.node)
     original_fixture_def = fixture_defs[0]  # the original seed fixture provided by pytest-rng
     original_seed = original_fixture_def.func(request)
@@ -229,8 +227,8 @@ def enable_and_disable_graph_decomp(request):
 #######################################################################
 
 try:
-    import torch
-    from torch.autograd import Variable
+    import torch  # pylint: disable=unused-import
+    from torch.autograd import Variable  # pylint: disable=unused-import
 
     torch_available = True
 except ImportError as e:
@@ -238,15 +236,14 @@ except ImportError as e:
 
 try:
     import jax
-    import jax.numpy as jnp
+    import jax.numpy as jnp  # pylint: disable=unused-import
 
     jax_available = True
 except ImportError as e:
     jax_available = False
 
 
-# pylint: disable=unused-argument
-def pytest_generate_tests(metafunc):
+def pytest_generate_tests(metafunc):  # pylint: disable=unused-argument
     if jax_available:
         jax.config.update("jax_enable_x64", True)
 
@@ -295,7 +292,6 @@ CUSTOM_MARKERS = {
 }
 
 
-# pylint: disable=unused-argument
 def pytest_collection_modifyitems(items, config):
     """Handles markers for tests automatically."""
 

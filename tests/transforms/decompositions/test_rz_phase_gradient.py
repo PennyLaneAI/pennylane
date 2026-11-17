@@ -14,8 +14,6 @@
 
 """Tests for ``qp.transforms.decompositions.make_rz_to_phase_gradient_decomp``"""
 
-# pylint: disable=no-value-for-parameter,disable=too-many-arguments
-
 from collections import Counter
 
 import hint_helpers
@@ -250,8 +248,7 @@ def test_integration_multi_wire(seed):
 
     custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
 
-    # pylint: disable-next=protected-access
-    @qp.transforms._tape_decompose(
+    @qp.transforms._tape_decompose(  # pylint: disable=protected-access
         gate_set={
             "StatePrep",
             "PhaseGradientStatePrep",
@@ -388,8 +385,8 @@ def test_precision_stats_hints(precision_stats, expected):
 @pytest.mark.catalyst
 def test_precision_stats_hint_weighted_resources():
     """Test that the resources estimated from the hinted branches for a batch of rotations match
-    the decompositions of the individual rotations if ``precision_stats`` is computed from the
-    angles."""
+    the directly emitted operators for the individual rotations if ``precision_stats`` is
+    computed from the angles."""
     pytest.importorskip("catalyst")
     bits = [[0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 0, 0], [1, 0, 1, 1]]
     angles = phase_gradient_helpers.bits_to_angles(bits, 2 * np.pi)
@@ -410,5 +407,6 @@ def test_precision_stats_hint_weighted_resources():
     for phi in angles:
         with qp.queuing.AnnotatedQueue() as q:
             rule(phi, wires=[0])
-        expected.update(op.name for op in phase_gradient_helpers.leaf_ops(q.queue))
+        # Level 0 retains each basis-change block rather than decomposing its operands.
+        expected.update(op.name for op in q.queue)
     assert qp.analyze(circuit, level=0)(angles).resources.counts == expected

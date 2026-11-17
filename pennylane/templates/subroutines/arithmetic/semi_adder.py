@@ -246,6 +246,23 @@ class SemiAdder(Operator2):
     [[0 0]]
 
     The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4` where :math:`4 \mod 2^2 = 0`.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SemiAdder
+            :stacked:
+            :symbols: :math:`m` ``x_wires`` and :math:`n \geq 2` ``y_wires``
+            :example: :math:`m=n=3`
+
+            .. decomposition-rule:: _semi_adder
+                :image: /_static/decomposition_thumbnails/semi_adder_elbow_ladder.svg
+                :where: :math:`\ell = \min(m, n - 1)`, and :math:`[m \geq n]` equal to 1 if
+                    :math:`m \geq n` and 0 otherwise
+
+                :class:`~.TemporaryAND` | :math:`n - 1` | 2
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`n - 1` | 2
+                :class:`~.CNOT` | :math:`n + 5\ell - 5 + [m \geq n]` | 9
     """
 
     grad_method = None
@@ -313,8 +330,7 @@ def _semi_adder_resources(x_wires, y_wires, work_wires=None, skip_input_pos=None
     }
 
 
-# pylint: disable-next=unused-argument
-def _semi_adder_work_wires(x_wires, y_wires, work_wires):
+def _semi_adder_work_wires(x_wires, y_wires, work_wires):  # pylint: disable=unused-argument
     """The work wires that the ladders need, minus the ones that were already provided.
 
     Symbolic rules like ``C(SemiAdder)`` reuse this spec but are called with the symbolic
@@ -371,7 +387,7 @@ def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_p
 add_decomps(SemiAdder, _semi_adder)
 
 
-# pylint: disable-next=too-many-arguments,unused-argument
+# pylint: disable-next=unused-argument
 def _ctrl_semi_adder_resource(base, control_wires, control_values, work_wires, work_wire_type):
     r"""
     Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
@@ -437,14 +453,14 @@ def _ctrl_semi_adder_resource(base, control_wires, control_values, work_wires, w
     _ctrl_semi_adder_resource,
     work_wires=lambda base, *_, **__: _semi_adder_work_wires(**base.arguments),
 )
-def _controlled_semi_adder(
+def _controlled_semi_adder(  # pylint: disable=too-many-arguments
     base,
     control_wires,
     control_values=None,
     work_wires=None,
     work_wire_type="borrowed",
     carry_flip=None,
-):  # pylint: disable=too-many-arguments
+):
     r"""
     Decomposition extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_
     using building block described in Figure 4.

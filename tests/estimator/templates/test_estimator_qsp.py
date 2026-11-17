@@ -18,8 +18,6 @@ import pytest
 import pennylane.estimator as qre
 from pennylane.estimator.resource_operator import CompressedResourceOp, ResourceOperator
 
-# pylint: disable=no-self-use, too-many-arguments
-
 
 class DummyOp(ResourceOperator):
     def __init__(self, wires):
@@ -34,9 +32,8 @@ class DummyOp(ResourceOperator):
     def resource_rep(cls):
         return CompressedResourceOp(cls, 1, {})
 
-    # pylint: disable=unused-argument
     @classmethod
-    def resource_decomp(cls, **kwargs):
+    def resource_decomp(cls, **kwargs):  # pylint: disable=unused-argument
         return []
 
 
@@ -197,9 +194,8 @@ class TestQSP:
             def resource_rep(cls):
                 return CompressedResourceOp(cls, 2, {})
 
-            # pylint: disable=unused-argument
             @classmethod
-            def resource_decomp(cls, **kwargs):
+            def resource_decomp(cls, **kwargs):  # pylint: disable=unused-argument
                 return []
 
         op = MultiWireOp(wires=[0, 1])
