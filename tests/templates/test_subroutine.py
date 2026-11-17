@@ -50,9 +50,9 @@ class TestInitialization:
         assert S.name == "Simple"
         assert S.signature == inspect.signature(Simple)
 
-        a, k = S.setup_inputs("a", wires="b")
+        a, k = S.setup_inputs("a", wires=7)
         assert a == ("a",)
-        assert k == {"wires": "b"}
+        assert k == {"wires": 7}
 
         assert S.static_argnames == tuple()
         assert S.wire_argnames == ("wires",)
@@ -240,7 +240,7 @@ def test_fallback_resources_error():
 class TestSubroutineOp:
 
     op1 = generate_subroutine_op_example(
-        0.5, 0.6, qp.wires.Wires((0, "a")), qp.wires.Wires(("a", 1)), ("XY", "YZ")
+        0.5, 0.6, qp.wires.Wires((0, 6)), qp.wires.Wires((6, 1)), ("XY", "YZ")
     )
 
     def test_no_primitive_bind_call(self):
@@ -265,12 +265,12 @@ class TestSubroutineOp:
 
         assert (
             repr(self.op1)
-            == "<Example1(x=0.5, y=0.6, reg1=[0, 'a'], reg2=['a', 1], pauli_words=('XY', 'YZ'))>"
+            == "<Example1(x=0.5, y=0.6, reg1=[0, 6], reg2=[6, 1], pauli_words=('XY', 'YZ'))>"
         )
 
     def test_set_wires(self):
         """Test that the wires for a subroutineop are set."""
-        assert self.op1.wires == qp.wires.Wires([0, "a", 1])
+        assert self.op1.wires == qp.wires.Wires([0, 6, 1])
 
     def test_set_data(self):
         """Test that data can automatically be extracted."""
@@ -292,7 +292,7 @@ class TestSubroutineOp:
     def test_map_wires(self):
         """Test that map_wires can handle multiple registers."""
 
-        new_op = self.op1.map_wires({0: 3, "a": 4})
+        new_op = self.op1.map_wires({0: 3, 6: 4})
         assert new_op.wires == qp.wires.Wires([3, 4, 1])
         decomp = new_op.decomposition()
         qp.assert_equal(decomp[0], qp.PauliRot(0.5, "XY", (3, 4)))
@@ -307,8 +307,8 @@ class TestSubroutineOp:
         decomp2 = self.op1.decomposition()  # no queuing context
 
         for d in [q.queue, decomp, decomp2]:
-            qp.assert_equal(d[0], qp.PauliRot(0.5, "XY", (0, "a")))
-            qp.assert_equal(d[1], qp.PauliRot(0.6, "YZ", ("a", 1)))
+            qp.assert_equal(d[0], qp.PauliRot(0.5, "XY", (0, 6)))
+            qp.assert_equal(d[1], qp.PauliRot(0.6, "YZ", (6, 1)))
 
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_decompose_integration(self):
@@ -319,8 +319,8 @@ class TestSubroutineOp:
         # pylint: disable-next=protected-access
         [new_tape], _ = qp.transforms._tape_decompose(tape, gate_set={qp.PauliRot})
 
-        qp.assert_equal(new_tape[0], qp.PauliRot(0.5, "XY", (0, "a")))
-        qp.assert_equal(new_tape[1], qp.PauliRot(0.6, "YZ", ("a", 1)))
+        qp.assert_equal(new_tape[0], qp.PauliRot(0.5, "XY", (0, 6)))
+        qp.assert_equal(new_tape[1], qp.PauliRot(0.6, "YZ", (6, 1)))
 
 
 class TestSubroutineCall:
@@ -625,7 +625,7 @@ class TestGraphDecomposition:
         """Test that the resource_params creates the signature key properly."""
 
         op1 = generate_subroutine_op_example(
-            0.5, 0.6, qp.wires.Wires((0, "a")), qp.wires.Wires(("a", 1)), ("XY", "YZ")
+            0.5, 0.6, qp.wires.Wires((0, 6)), qp.wires.Wires((6, 1)), ("XY", "YZ")
         )
         rp = op1.resource_params
         assert list(rp.keys()) == ["subroutine", "signature_key"]
