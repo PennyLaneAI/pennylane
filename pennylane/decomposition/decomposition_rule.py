@@ -146,12 +146,21 @@ def register_name(
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     """Binds a public name to a decomposition rule.
 
+    .. warning::
+
+        This function is intended only for use as a decorator, before the rule is registered
+        with an operator. Do not rename a rule after registration: registered collections retain
+        the original name, so lookup by the new name will fail.
+
     Args:
         name (str): public rule name, which must not start with an underscore
         qfunc (Callable): quantum function or rule to name. If ``None``, returns a decorator.
 
     Returns:
         DecompositionRule: The named rule, preserving its resources and conditions.
+
+    Raises:
+        ValueError: If the rule is already registered with an operator.
 
     **Example**
 
@@ -170,6 +179,10 @@ def register_name(
 
     def _decorator(rule: Callable) -> DecompositionRule:
         if isinstance(rule, DecompositionRule):
+            if any(rule in decomps for decomps in _decompositions_var.get().values()):
+                raise ValueError(
+                    "Cannot rename a decomposition rule already registered with an operator."
+                )
             rule.name = name
             return rule
         return DecompositionRule(rule, name=name)

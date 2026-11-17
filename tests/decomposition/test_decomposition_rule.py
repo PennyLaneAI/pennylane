@@ -129,6 +129,22 @@ class TestDecompositionRule:  # pylint: disable=too-many-public-methods
             register_name(name, rule)
         assert rule.name == "public"
 
+    def test_register_name_rejects_registered_rule(self):
+        """Registered rules retain their original lookup name."""
+
+        @register_name("custom")
+        @register_resources({qp.CNOT: 1})
+        def rule(wires):
+            qp.CNOT(wires=wires)
+
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(CustomOp, rule)
+            with pytest.raises(ValueError, match="already registered"):
+                register_name("renamed", rule)
+            assert rule.name == "custom"
+            assert qp.list_decomps(CustomOp)["custom"] is rule
+            assert "renamed" not in qp.list_decomps(CustomOp)
+
     def test_private_function_default_name(self):
         """Undecorated rule objects derive a public name without leading underscores."""
 
