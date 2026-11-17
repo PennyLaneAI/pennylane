@@ -1924,6 +1924,10 @@ Internal changes ⚙️
 * Adding trusted publishing PyPI uploads.
   `(#10513) <https://github.com/PennyLaneAI/pennylane/pull/10513>`__
 
+* Removed leftover array-interface selection from QSVT iterative angle solvers now that
+  JAX is always available.
+  `(#10216) <https://github.com/PennyLaneAI/pennylane/pull/10216>`__
+
 * Added pinned local ``ty`` tooling and a diagnostic baseline for the package.
   `(#10537) <https://github.com/PennyLaneAI/pennylane/pull/10537>`__
 
