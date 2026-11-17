@@ -16,7 +16,14 @@
 import pytest
 
 import pennylane as qp
+from pennylane.ops.conversion.pauli_to_operator import to_operator as ops_to_operator
 from pennylane.pauli import PauliSentence, PauliWord, to_operator
+
+
+def test_to_operator_reexport():
+    """The public converter shares its implementation with ops."""
+    assert to_operator is ops_to_operator
+    assert to_operator is qp.ops.conversion.to_operator
 
 
 @pytest.mark.parametrize("value", [1, {}, qp.X(0)])

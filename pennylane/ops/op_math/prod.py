@@ -31,7 +31,7 @@ from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, remove_from_program
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
-from pennylane.ops._pauli_conversion import to_operator
+from pennylane.ops.conversion import to_operator
 from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires
 

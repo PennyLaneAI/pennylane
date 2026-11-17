@@ -47,7 +47,7 @@ from pennylane.exceptions import (
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops._pauli_conversion import to_operator
+from pennylane.ops.conversion import to_operator
 from pennylane.ops.op_math import adjoint
 
 from .adjoint import Adjoint

@@ -19,7 +19,7 @@ from copy import copy
 from warnings import warn
 
 import pennylane as qp
-from pennylane import math
+from pennylane import math, ops
 from pennylane.core import queuing
 from pennylane.exceptions import GeneratorUndefinedError
 from pennylane.typing import Float, Wire
@@ -160,13 +160,13 @@ def _pauli_rot_decomp_condition(base, **__):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
     # The PauliRot decomposition is only applicable when the base is a Pauli word
-    return qp.pauli.is_pauli_word(base)
+    return ops.is_pauli_word(base)
 
 
 def _pauli_rot_decomp_resource(base, **__):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
-    pauli_word = qp.pauli.pauli_word_to_string(base)
+    pauli_word = ops.pauli_word_to_string(base)
     return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
@@ -185,7 +185,7 @@ def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argum
         if math.get_interface(coeff) not in ("torch", "jax")
         else math.real(coeff)
     )
-    pauli_word = qp.pauli.pauli_word_to_string(base)
+    pauli_word = ops.pauli_word_to_string(base)
     qp.PauliRot(coeff, pauli_word, base.wires)
 
 

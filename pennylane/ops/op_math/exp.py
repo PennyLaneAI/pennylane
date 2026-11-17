@@ -22,7 +22,7 @@ import numpy as np
 from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qp
-from pennylane import math
+from pennylane import math, ops
 from pennylane.core import queuing
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator
@@ -282,7 +282,7 @@ class Exp(ScalarSymbolicOp, Operation):
             # if type is Evolution, we assume that is is indeed time evolution
             return False
 
-        if qp.pauli.is_pauli_word(base):
+        if ops.is_pauli_word(base):
             return True
 
         op = _find_equal_generator(base, coeff)
@@ -348,7 +348,7 @@ class Exp(ScalarSymbolicOp, Operation):
         if op is not None:
             return [op]
 
-        if qp.pauli.is_pauli_word(base):
+        if ops.is_pauli_word(base):
             # Check if the exponential can be decomposed into a PauliRot gate
             return self._pauli_rot_decomposition(base, coeff)
 
@@ -372,7 +372,7 @@ class Exp(ScalarSymbolicOp, Operation):
             if math.get_interface(coeff) == "jax"
             else math.real_if_close(2j * coeff)  # only cast to real if close
         )
-        pauli_word = qp.pauli.pauli_word_to_string(base)
+        pauli_word = ops.pauli_word_to_string(base)
         return [qp.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
 
     def matrix(self, wire_order=None):
@@ -508,14 +508,14 @@ def _pauli_rot_decomp_condition(base):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
     # The PauliRot decomposition is only applicable when the base is a Pauli word
-    return qp.pauli.is_pauli_word(base)
+    return ops.is_pauli_word(base)
 
 
 def _pauli_rot_decomp_resource(base):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
 
-    pauli_word = qp.pauli.pauli_word_to_string(base)
+    pauli_word = ops.pauli_word_to_string(base)
     return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
@@ -534,7 +534,7 @@ def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argum
         if math.get_interface(coeff) not in ("torch", "jax")
         else math.real(coeff)
     )
-    pauli_word = qp.pauli.pauli_word_to_string(base)
+    pauli_word = ops.pauli_word_to_string(base)
     qp.PauliRot(coeff, pauli_word, base.wires)
 
 

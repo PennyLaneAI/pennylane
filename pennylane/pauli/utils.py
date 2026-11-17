@@ -21,20 +21,22 @@ representation of Pauli words and applications, see:
 * `arXiv:1907.09386 <https://arxiv.org/abs/1907.09386>`_
 """
 
-from functools import lru_cache, singledispatch
+from functools import lru_cache
 from itertools import product
 
 import numpy as np
 
 import pennylane as qp
-from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
+from pennylane.ops import Identity, PauliX, PauliY, PauliZ, conversion
+from pennylane.ops.conversion import is_pauli_word
 from pennylane.wires import Wires
+
+pauli_word_to_string = conversion.pauli_word_to_string
+string_to_pauli_word = conversion.string_to_pauli_word
 
 # Define constants that are used often within the functions in this module
 ID_MAT = np.eye(2)
-_PAULI_MAP = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
 _BINARY_PAULI_MAP = {(1, 0): PauliX, (1, 1): PauliY, (0, 1): PauliZ}
-_PAULI_STRING_SET = frozenset(("I", "X", "Y", "Z"))
 
 
 def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
@@ -50,83 +52,6 @@ def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
     """
     wire_labels = Wires.all_wires([pauli_word_1.wires, pauli_word_2.wires]).labels
     return {label: i for i, label in enumerate(wire_labels)}
-
-
-def is_pauli_word(observable):
-    """
-    Checks if an observable instance consists only of Pauli and Identity Operators.
-
-    A Pauli word can be either:
-
-    * A single pauli operator (see :class:`~.PauliX` for an example).
-
-    * A :class:`.Prod` instance containing Pauli operators.
-
-    * A :class:`.SProd` instance containing a valid Pauli word.
-
-    * A :class:`.Sum` instance with only one term.
-
-    .. Warning::
-
-        This function will only confirm that all operators are Pauli or Identity operators,
-        and not whether the observable is mathematically a Pauli word.
-        If an Observable consists of multiple Pauli operators targeting the same wire, the
-        function will return ``True`` regardless of any complex coefficients.
-
-
-    Args:
-        observable (~.Operator): the operator to be examined
-
-    Returns:
-        bool: true if the input observable is a Pauli word, false otherwise.
-
-    **Example**
-
-    >>> is_pauli_word(qp.Identity(0))
-    True
-    >>> is_pauli_word(qp.X(0) @ qp.Z(2))
-    True
-    >>> is_pauli_word(qp.Z(0) @ qp.Hadamard(1))
-    False
-    >>> is_pauli_word(4 * qp.X(0) @ qp.Z(0))
-    True
-    """
-    return _is_pauli_word(observable) or (len(observable.pauli_rep or []) == 1)
-
-
-@singledispatch
-def _is_pauli_word(observable):  # pylint: disable=unused-argument
-    """
-    Private implementation of is_pauli_word, to prevent all of the
-    registered functions from appearing in the Sphinx docs.
-    """
-    return False
-
-
-@_is_pauli_word.register(PauliX)
-@_is_pauli_word.register(PauliY)
-@_is_pauli_word.register(PauliZ)
-@_is_pauli_word.register(Identity)
-def _is_pw_pauli(
-    observable: PauliX | PauliY | PauliZ | Identity,
-):
-    return True
-
-
-@_is_pauli_word.register(Sum)
-def _is_pw_ham(observable: Sum):
-    ops = observable.terms()[1]
-    return False if len(ops) != 1 else is_pauli_word(ops[0])
-
-
-@_is_pauli_word.register
-def _is_pw_prod(observable: Prod):
-    return all(is_pauli_word(op) for op in observable)
-
-
-@_is_pauli_word.register
-def _is_pw_sprod(observable: SProd):
-    return is_pauli_word(observable.base)
 
 
 def are_identical_pauli_words(pauli_1, pauli_2):
@@ -347,133 +272,6 @@ def binary_to_pauli(binary_vector, wire_map=None):
 
     if len(pauli_word) == 0:
         return Identity(wires=list(label_map.values())[0])
-
-    return qp.prod(*pauli_word)
-
-
-def pauli_word_to_string(pauli_word, wire_map=None):
-    """Convert a Pauli word to a string.
-
-    A Pauli word can be either:
-
-    * A single pauli operator (see :class:`~.PauliX` for an example).
-
-    * A :class:`.Prod` instance containing Pauli operators.
-
-    * A :class:`.SProd` instance containing a Pauli operator.
-
-    * A :class:`.Sum` instance with only one term.
-
-    Given a Pauli in observable form, convert it into string of
-    characters from ``['I', 'X', 'Y', 'Z']``. This representation is required for
-    functions such as :class:`.PauliRot`.
-
-    .. warning::
-
-        This method ignores any potential coefficient multiplying the Pauli word:
-
-        >>> qp.pauli.pauli_word_to_string(3 * qp.X(0) @ qp.Y(1))
-        'XY'
-
-    .. warning::
-
-        This method assumes all Pauli operators are acting on different wires, ignoring
-        any extra operators:
-
-        >>> qp.pauli.pauli_word_to_string(qp.X(0) @ qp.Y(0) @ qp.Y(0))
-        'X'
-
-    Args:
-        pauli_word (Operator): an observable, either a single-qubit observable
-            representing a Pauli group element, or a tensor product of single-qubit observables.
-        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
-            the Pauli word as keys, and unique integer labels as their values
-
-    Returns:
-        str: The string representation of the observable in terms of ``'I'``, ``'X'``, ``'Y'``,
-        and/or ``'Z'``.
-
-    Raises:
-        TypeError: if the input observable is not a proper Pauli word.
-
-    **Example**
-
-    >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
-    >>> pauli_word = qp.X('a') @ qp.Y('c')
-    >>> pauli_word_to_string(pauli_word, wire_map=wire_map)
-    'XIY'
-    """
-
-    if not is_pauli_word(pauli_word):
-        raise TypeError(f"Expected Pauli word observables, instead got {pauli_word}")
-
-    pr = next(iter(pauli_word.pauli_rep.keys()))
-
-    # If there is no wire map, we must infer from the structure of Paulis
-    if wire_map is None:
-        wire_map = {pauli_word.wires.labels[i]: i for i in range(len(pauli_word.wires))}
-
-    n_qubits = len(wire_map)
-
-    # Set default value of all characters to identity
-    pauli_string = ["I"] * n_qubits
-
-    for wire, op_label in pr.items():
-        pauli_string[wire_map[wire]] = op_label
-
-    return "".join(pauli_string)
-
-
-def string_to_pauli_word(pauli_string, wire_map=None):
-    """Convert a string in terms of ``'I'``, ``'X'``, ``'Y'``, and ``'Z'`` into a Pauli word
-    for the given wire map.
-
-    Args:
-        pauli_string (str): A string of characters consisting of ``'I'``, ``'X'``, ``'Y'``, and ``'Z'``
-            indicating a Pauli word.
-        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
-            the Pauli word as keys, and unique integer labels as their values
-
-    Returns:
-        .Operator: The Pauli word representing of ``pauli_string`` on the wires
-        enumerated in the wire map.
-
-    **Example**
-
-    >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
-    >>> string_to_pauli_word('XIY', wire_map=wire_map)
-    X('a') @ Y('c')
-    """
-
-    if not isinstance(pauli_string, str):
-        raise TypeError(f"Input to string_to_pauli_word must be string, obtained {pauli_string}")
-
-    # If no wire map is provided, construct one using integers based on the length of the string
-    if wire_map is None:
-        wire_map = {x: x for x in range(len(pauli_string))}
-
-    elif len(pauli_string) != len(wire_map):
-        raise ValueError(
-            "Wire map and pauli_string must have the same length to convert "
-            "from string to Pauli word."
-        )
-
-    # Special case: all-identity Pauli
-    if pauli_string == "I" * len(wire_map):
-        first_wire = list(wire_map)[0]
-        return Identity(first_wire)
-
-    if any(char not in _PAULI_STRING_SET for char in pauli_string):
-        raise ValueError(
-            "Invalid characters encountered in string_to_pauli_word "
-            f"string {pauli_string}. Permitted characters are 'I', 'X', 'Y', and 'Z'"
-        )
-
-    pauli_word = tuple(
-        _PAULI_MAP[pauli_string[wire_idx]](wire_name)
-        for wire_name, wire_idx in wire_map.items()
-        if pauli_string[wire_idx] != "I"
-    )
 
     return qp.prod(*pauli_word)
 

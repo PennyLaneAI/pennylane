@@ -23,7 +23,7 @@ import pennylane as qp
 from pennylane.core.operator import Operator, Operator2
 from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
-from pennylane.ops._pauli_conversion import to_operator
+from pennylane.ops.conversion import to_operator
 from pennylane.pytrees import flatten, unflatten
 
 from .sprod import SProd
