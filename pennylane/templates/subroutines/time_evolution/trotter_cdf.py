@@ -573,7 +573,7 @@ def _fused_one_body_unitary(hamiltonian, time_step):
     return (A * one_body_phases) @ _transpose_leaf(A)
 
 
-def _apply_fused_one_body(  #  pylint: disable=unused-argument
+def _apply_fused_one_body(  # pylint: disable=unused-argument
     unitary, wires, control_wires, double_phase
 ):
     r"""Apply the fused one-body block as a :class:`~.BasisRotation` on both spin channels.

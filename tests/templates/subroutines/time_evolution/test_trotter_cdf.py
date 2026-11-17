@@ -636,14 +636,27 @@ class TestDecomposition:
             double_phase,
         )
 
-    @pytest.mark.xfail(
-        reason="The ``tol`` cutoff in ``givens_decomposition`` limits accuracy for some matrices (#10509)",
-        strict=False,
+    @pytest.mark.parametrize(
+        ("evolution_time", "atol"),
+        [
+            # The 1e-8 cutoff in ``givens_decomposition`` drops small entries of the fused
+            # unitary, which limits the accuracy for small time steps (#10536).
+            (1e-4, 1e-7),
+            (1e-5, 1e-7),
+            (1e-6, 1e-7),
+            pytest.param(
+                1e-9,
+                1e-13,
+                marks=pytest.mark.xfail(
+                    reason="``givens_decomposition`` drops entries below 1e-8 (#10536)",
+                    strict=True,
+                ),
+            ),
+        ],
     )
-    @pytest.mark.parametrize("evolution_time", [1e-4, 1e-5, 1e-6])
-    def test_fused_one_body_precision_close_to_identity(self, evolution_time, seed):
-        """The fused one-body block stays at machine precision for small time steps, i.e., close
-        to the identity, in the base and double-phase circuits."""
+    def test_fused_one_body_precision_close_to_identity(self, evolution_time, atol, seed):
+        """The fused one-body block stays accurate for small time steps, i.e., close to the
+        identity, in the base and double-phase circuits."""
         rng = np.random.default_rng(seed)
         num_orbitals = 3
         core = rng.normal(size=(2, num_orbitals, num_orbitals)) * 0.4
@@ -655,9 +668,9 @@ class TestDecomposition:
 
         actual = qp.matrix(qp.TrotterCDF(evolution_time, 1, ham, wires=wires), wire_order=wires)
         block0, block1 = control_branches(qp.TrotterCDF, ham, wires, evolution_time, 1, True)
-        assert np.allclose(actual, expected, atol=1e-13, rtol=0)
-        assert np.allclose(block0, expected, atol=1e-13, rtol=0)
-        assert np.allclose(block1, expected.conj().T, atol=1e-13, rtol=0)
+        assert np.allclose(actual, expected, atol=atol, rtol=0)
+        assert np.allclose(block0, expected, atol=atol, rtol=0)
+        assert np.allclose(block1, expected.conj().T, atol=atol, rtol=0)
 
     @pytest.mark.slow
     def test_base_matches_expm_nonidentity_leaves(self, seed):
