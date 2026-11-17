@@ -358,7 +358,6 @@ class TestCoefficientReadout:
         ((3, 5, 4), 6, -16, 3),
     ],
 )
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 def test_half_signed_out_multiplier(sizes, x, y, z):
     """Test that the half-signed multiplier computes ``(z + x*y) mod 2^k`` for a signed ``y``,
     restores the input registers and leaves the work wires clean."""

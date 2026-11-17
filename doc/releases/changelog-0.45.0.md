@@ -1447,8 +1447,8 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
   [(#8939)](https://github.com/PennyLaneAI/pennylane/pull/8939)
 
 * A ``qp.decomposition.toggle_graph_ctx`` context manager has been added to temporarily enable or disable graph-based
-  decompositions in a thread-safe way. The fixtures ``"enable_graph_decomposition"``, ``"disable_graph_decomposition"``,
-  and ``"enable_and_disable_graph_decomp"`` have been updated to use this method so that they are thread-safe.
+  decompositions in a thread-safe way. The graph-decomposition fixtures have been updated to use this method
+  so that they are thread-safe.
   [(#8966)](https://github.com/PennyLaneAI/pennylane/pull/8966)
 
 * Specialized gate kernels have been added for ``RX``, ``RY``, ``RZ``, and ``Hadamard`` in the ``default.qubit`` device.
