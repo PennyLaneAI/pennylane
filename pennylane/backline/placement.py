@@ -212,7 +212,12 @@ class Node:
     * ``"config"`` (str) - a ``;``-separated ``key=value`` string configuring the backend on this
       machine, e.g. ``"dev=mlx5_0;gid=3"``. ``dev`` and ``gid`` select the RDMA device and GID
       index; the remaining keys are backend-specific (a GPU backend takes ``gpu=``, an FPGA engine
-      takes ``sq_mem=``/``data_mem=``/``reply_mem=``).
+      takes ``sq_mem=``/``data_mem=``/``reply_mem=``). An RDMA coprocessor also takes ``peer=``,
+      the kind of controller it answers: ``catalyst``, the default, for the controllers Catalyst
+      ships (``cpu_verbs``, ``hwhs``, ``fpga_verbs``), ``hsb`` for ``hsb_hwhs``, and ``balboa``
+      for ``balboa_hwhs``. For more information about how to build and load the required FPGA
+      images, please refer to the `backline <https://github.com/PennyLaneAI/backline>`__ and
+      `backline-vpk120 <https://github.com/PennyLaneAI/backline-vpk120>`__ repositories.
 
     Keys outside this set are rejected when the program is compiled.
     """
@@ -243,8 +248,15 @@ class Controller(Node):
         hardware (str): The hardware the controller executes on. Defaults to ``"cpu"``; other allowed
             values are ``"fpga"``. ``"gpu"`` is not accepted as a controller. The compiler
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
-        backend (str, None): The name of the transport backend to run this node on. Defaults to
-            ``None``, letting the compiler pick the default backend for the transport and hardware.
+        backend (str, None): The transport backend this node runs on. Defaults to ``None``, which
+            lets the compiler choose from the transport and hardware: ``cpu_verbs`` for ``"rdma"``
+            on ``cpu`` and ``memcpy`` for ``"memcpy"``. On ``fpga``, pick the backend that matches
+            the image on the board: ``hwhs`` (the default), ``hsb_hwhs`` or ``balboa_hwhs``. Each
+            coprocessor sets the matching ``peer=`` in its ``config``: ``catalyst`` for ``hwhs``
+            (the default, so it can be omitted), ``hsb`` for ``hsb_hwhs`` and ``balboa`` for
+            ``balboa_hwhs``. Catalyst's `Backline documentation
+            <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/backline.html>`__ lists all
+            backends.
         remote (bool): Whether the controller runs on another machine. Defaults to ``False``.
         executor_options (dict, None): Options for the executor to launch for this controller.
             Defaults to ``None``, which runs the node in this process. See the
@@ -351,7 +363,7 @@ class Coprocessor(Node):
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
         backend (str, None): The name of the transport backend to run this node on. Defaults to
             ``None``, letting the compiler pick the default backend for the transport and hardware.
-        remote (bool): Whether the controller runs on another machine. Defaults to ``False``.
+        remote (bool): Whether the coprocessor runs on another machine. Defaults to ``False``.
         coprocessor_fn (str, CoprocessorFunction): The function that processes each received
             message. A string is wrapped in a :class:`~.CoprocessorFunction` naming that symbol, so
             reading the attribute back always gives a :class:`~.CoprocessorFunction`.
