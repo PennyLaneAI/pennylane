@@ -122,7 +122,7 @@ class TestMultiplier:
         )
         op_list.append(qp.adjoint(qp.QFT(wires=wires_aux)))
 
-        for x_wire, aux_wire in zip(x_wires, wires_aux_swap, strict=False):
+        for x_wire, aux_wire in zip(x_wires, wires_aux_swap, strict=True):
             op_list.append(qp.SWAP(wires=[x_wire, aux_wire]))
         inv_k = pow(k, -1, mod)
         op_list.append(qp.QFT(wires=wires_aux))
@@ -135,7 +135,7 @@ class TestMultiplier:
         )
         op_list.append(qp.adjoint(qp.QFT(wires=wires_aux)))
 
-        for op1, op2 in zip(multiplier_decomposition, op_list, strict=False):
+        for op1, op2 in zip(multiplier_decomposition, op_list, strict=True):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.jax

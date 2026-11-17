@@ -353,7 +353,7 @@ class TestJacobian:
             np.array([-np.sin(x) * np.sin(y), 2 * x * y]),
         )
         assert all(
-            np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected, strict=False)
+            np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected, strict=True)
         )
 
     def test_no_argnums_jacobian(self, tol):
@@ -370,7 +370,7 @@ class TestJacobian:
             np.array([-np.sin(x) * np.sin(y), 2 * x * y]),
         )
         assert all(
-            np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected, strict=False)
+            np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected, strict=True)
         )
 
         x = np.array(0.5, requires_grad=False)

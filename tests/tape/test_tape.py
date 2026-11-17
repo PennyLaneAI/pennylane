@@ -171,7 +171,7 @@ class TestConstruction:
         obs_rotations = [o.diagonalizing_gates() for o in obs]
         obs_rotations = [item for sublist in obs_rotations for item in sublist]
 
-        for o1, o2 in zip(tape.diagonalizing_gates, obs_rotations, strict=False):
+        for o1, o2 in zip(tape.diagonalizing_gates, obs_rotations, strict=True):
             assert isinstance(o1, o2.__class__)
             assert o1.wires == o2.wires
 
@@ -423,7 +423,7 @@ class TestIteration:
         tape = list(tape)
 
         expected = ops + meas
-        for op_, exp_op in zip(tape, expected, strict=False):
+        for op_, exp_op in zip(tape, expected, strict=True):
             assert op_ is exp_op
 
         assert len(tape) == len(expected)
@@ -679,7 +679,7 @@ class TestParameters:
 
         new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3, 4])
 
-        for pinfo, pval in zip(new_tape.par_info, new_params, strict=False):
+        for pinfo, pval in zip(new_tape.par_info, new_params, strict=True):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
         assert new_tape.get_parameters() == new_params
@@ -737,7 +737,7 @@ class TestParameters:
         tape.trainable_params = [1, 3]
         new_tape = tape.bind_new_parameters(new_params, [0, 1, 2, 3, 4])
 
-        for pinfo, pval in zip(new_tape.par_info, new_params, strict=False):
+        for pinfo, pval in zip(new_tape.par_info, new_params, strict=True):
             assert pinfo["op"].data[pinfo["p_idx"]] == pval
 
         assert new_tape.get_parameters(trainable_only=False) == new_params
@@ -1050,14 +1050,12 @@ class TestTapeCopying:
         assert copied_tape is not tape
 
         # the operations are simply references
+        assert all(o1 is o2 for o1, o2 in zip(copied_tape.operations, tape.operations, strict=True))
         assert all(
-            o1 is o2 for o1, o2 in zip(copied_tape.operations, tape.operations, strict=False)
+            o1 is o2 for o1, o2 in zip(copied_tape.observables, tape.observables, strict=True)
         )
         assert all(
-            o1 is o2 for o1, o2 in zip(copied_tape.observables, tape.observables, strict=False)
-        )
-        assert all(
-            m1 is m2 for m1, m2 in zip(copied_tape.measurements, tape.measurements, strict=False)
+            m1 is m2 for m1, m2 in zip(copied_tape.measurements, tape.measurements, strict=True)
         )
 
         # operation data is also a reference
@@ -1086,14 +1084,13 @@ class TestTapeCopying:
 
         # the operations are not references; they are unique objects
         assert all(
-            o1 is not o2 for o1, o2 in zip(copied_tape.operations, tape.operations, strict=False)
+            o1 is not o2 for o1, o2 in zip(copied_tape.operations, tape.operations, strict=True)
         )
         assert all(
-            o1 is not o2 for o1, o2 in zip(copied_tape.observables, tape.observables, strict=False)
+            o1 is not o2 for o1, o2 in zip(copied_tape.observables, tape.observables, strict=True)
         )
         assert all(
-            m1 is not m2
-            for m1, m2 in zip(copied_tape.measurements, tape.measurements, strict=False)
+            m1 is not m2 for m1, m2 in zip(copied_tape.measurements, tape.measurements, strict=True)
         )
 
         # however, the underlying operation data *is still shared*
@@ -1121,14 +1118,13 @@ class TestTapeCopying:
 
         # the operations are not references
         assert all(
-            o1 is not o2 for o1, o2 in zip(copied_tape.operations, tape.operations, strict=False)
+            o1 is not o2 for o1, o2 in zip(copied_tape.operations, tape.operations, strict=True)
         )
         assert all(
-            o1 is not o2 for o1, o2 in zip(copied_tape.observables, tape.observables, strict=False)
+            o1 is not o2 for o1, o2 in zip(copied_tape.observables, tape.observables, strict=True)
         )
         assert all(
-            m1 is not m2
-            for m1, m2 in zip(copied_tape.measurements, tape.measurements, strict=False)
+            m1 is not m2 for m1, m2 in zip(copied_tape.measurements, tape.measurements, strict=True)
         )
 
         # The underlying operation data has also been copied

@@ -283,7 +283,7 @@ class TestInitialization:  # pylint: disable=too-many-public-methods
         true_decomposition = list(ops_lst[::-1])  # reversed list of factors
 
         assert isinstance(decomposition, list)
-        for op1, op2 in zip(decomposition, true_decomposition, strict=False):
+        for op1, op2 in zip(decomposition, true_decomposition, strict=True):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -296,7 +296,7 @@ class TestInitialization:  # pylint: disable=too-many-public-methods
             prod_op.decomposition()
 
         tape = qp.tape.QuantumScript.from_queue(q)
-        for op1, op2 in zip(tape.operations, true_decomposition, strict=False):
+        for op1, op2 in zip(tape.operations, true_decomposition, strict=True):
             qp.assert_equal(op1, op2)
 
     def test_eigen_caching(self):
@@ -728,7 +728,7 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
         mat = op.matrix()
         sum_list = [
             prod_fn(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.PauliZ(1))
-            for i, j in zip(x, y, strict=False)
+            for i, j in zip(x, y, strict=True)
         ]
         compare = qp.math.stack([s.matrix() for s in sum_list])
         assert qp.math.allclose(mat, compare)
@@ -755,7 +755,7 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
                 qp.RZ(k, wires=1),
                 qp.prod(qp.PauliX(2), qp.PauliY(3)),
             )
-            for i, j, k in zip(x, batched_y, z, strict=False)
+            for i, j, k in zip(x, batched_y, z, strict=True)
         ]
         compare = qp.math.stack([s.matrix() for s in sum_list])
         assert qp.math.allclose(mat, compare)
@@ -893,7 +893,7 @@ class TestProperties:
     """Test class properties."""
 
     @pytest.mark.parametrize(
-        "ops_lst, hermitian_status", list(zip(ops, ops_hermitian_status, strict=False))
+        "ops_lst, hermitian_status", list(zip(ops, ops_hermitian_status, strict=True))
     )
     def test_is_verified_hermitian(self, ops_lst, hermitian_status):
         """Test is_verified_hermitian property updates correctly."""
@@ -912,7 +912,7 @@ class TestProperties:
         )
         true_hermitian_states = (True, False)
 
-        for op, hermitian_state in zip(prod_ops, true_hermitian_states, strict=False):
+        for op, hermitian_state in zip(prod_ops, true_hermitian_states, strict=True):
             assert qp.is_hermitian(op) == hermitian_state
 
     @pytest.mark.torch
@@ -927,7 +927,7 @@ class TestProperties:
         )
         true_hermitian_states = (True, False)
 
-        for op, hermitian_state in zip(prod_ops, true_hermitian_states, strict=False):
+        for op, hermitian_state in zip(prod_ops, true_hermitian_states, strict=True):
             assert qp.is_hermitian(op) == hermitian_state
 
     def test_eigendecomposition(self):
@@ -1516,7 +1516,7 @@ class TestSortWires:
             qp.PauliX(5),
         ]
 
-        for op1, op2 in zip(final_list, sorted_list, strict=False):
+        for op1, op2 in zip(final_list, sorted_list, strict=True):
             qp.assert_equal(op1, op2)
 
     def test_sorting_operators_with_multiple_wires(self):
@@ -1545,7 +1545,7 @@ class TestSortWires:
             qp.RX(1, 5),
         ]
 
-        for op1, op2 in zip(final_list, sorted_list, strict=False):
+        for op1, op2 in zip(final_list, sorted_list, strict=True):
             qp.assert_equal(op1, op2)
 
     def test_sorting_operators_with_wire_map(self):
@@ -1574,7 +1574,7 @@ class TestSortWires:
             qp.RX(1, 5),
         ]
 
-        for op1, op2 in zip(final_list, sorted_list, strict=False):
+        for op1, op2 in zip(final_list, sorted_list, strict=True):
             assert op1.name == op2.name
             assert op1.wires == op2.wires
             assert op1.data == op2.data

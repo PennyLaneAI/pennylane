@@ -133,7 +133,7 @@ class TestSample:  # pylint: disable=too-many-public-methods
             res = func(phi)
             if isinstance(shots, list):
                 assert len(res) == len(shots)
-                assert all(r.shape == (s,) for r, s in zip(res, shots, strict=False))
+                assert all(r.shape == (s,) for r, s in zip(res, shots, strict=True))
             else:
                 assert res.shape == (shots,)
 
@@ -157,7 +157,7 @@ class TestSample:  # pylint: disable=too-many-public-methods
             res = func(phi)
             if isinstance(shots, list):
                 assert len(res) == len(shots)
-                assert all(r.shape == (s,) for r, s in zip(res, shots, strict=False))
+                assert all(r.shape == (s,) for r, s in zip(res, shots, strict=True))
             else:
                 assert res.shape == (shots,)
 
@@ -181,7 +181,7 @@ class TestSample:  # pylint: disable=too-many-public-methods
             res = func(phi)
             if isinstance(shots, list):
                 assert len(res) == len(shots)
-                assert all(r.shape == (s, 2) for r, s in zip(res, shots, strict=False))
+                assert all(r.shape == (s, 2) for r, s in zip(res, shots, strict=True))
             else:
                 assert res.shape == (shots, 2)
 
@@ -262,7 +262,7 @@ class TestSample:  # pylint: disable=too-many-public-methods
 
         expected_shapes = [(shots1, num_wires), (shots2, num_wires), (shots3, num_wires)]
         assert len(res) == len(expected_shapes)
-        assert all(r.shape == exp_shape for r, exp_shape in zip(res, expected_shapes, strict=False))
+        assert all(r.shape == exp_shape for r, exp_shape in zip(res, expected_shapes, strict=True))
 
         # assert first wire is always the same as second
         assert np.all(res[0][:, 0] == res[0][:, 1])

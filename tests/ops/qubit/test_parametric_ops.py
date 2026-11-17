@@ -195,6 +195,7 @@ class TestOperations:
         import jax
 
         leaves = jax.tree_util.tree_leaves(op)
+        # Operator2 leaves also include wires and hybrid arguments after the numerical data.
         for d1, d2 in zip(leaves, op.data, strict=False):
             assert d1 is d2
 
@@ -209,7 +210,7 @@ class TestOperations:
             return
 
         new_op = jax.tree_util.tree_map(lambda x: x + 1.0, op)
-        for d1, d2 in zip(new_op.data, op.data, strict=False):
+        for d1, d2 in zip(new_op.data, op.data, strict=True):
             assert qp.math.allclose(d1, d2 + 1.0)
 
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
@@ -336,7 +337,7 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         params = [[phi], [theta], [omega]]
 
         for ops in [ops1, ops2]:
-            for c, p, op in zip(classes, params, ops, strict=False):
+            for c, p, op in zip(classes, params, ops, strict=True):
                 assert isinstance(op, c)
                 assert op.parameters == p
 
@@ -355,7 +356,7 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         params = [[phi], [theta], [omega]]
 
         for ops in [ops1, ops2]:
-            for c, p, op in zip(classes, params, ops, strict=False):
+            for c, p, op in zip(classes, params, ops, strict=True):
                 assert isinstance(op, c)
                 assert op.parameters == p
 
@@ -392,7 +393,7 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         params = [[lam, np.ones_like(lam) * np.pi / 2, -lam], [lam], [phi]]
 
         for ops in [ops1, ops2]:
-            for op, c, p in zip(ops, classes, params, strict=False):
+            for op, c, p in zip(ops, classes, params, strict=True):
                 assert isinstance(op, c)
                 assert op.parameters == p
 
@@ -408,7 +409,7 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         params = [[lam, np.ones_like(lam) * np.pi / 2, -lam], [lam], [phi]]
 
         for ops in [ops1, ops2]:
-            for op, c, p in zip(ops, classes, params, strict=False):
+            for op, c, p in zip(ops, classes, params, strict=True):
                 assert isinstance(op, c)
                 assert np.allclose(op.parameters, p)
 
@@ -425,7 +426,7 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         params = [[lam, theta, -lam], [lam], [phi]]
 
         for ops in [ops1, ops2]:
-            for op, c, p in zip(ops, classes, params, strict=False):
+            for op, c, p in zip(ops, classes, params, strict=True):
                 assert isinstance(op, c)
                 assert op.parameters == p
 
@@ -442,7 +443,7 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         params = [[lam, theta, -lam], [lam], [phi]]
 
         for ops in [ops1, ops2]:
-            for op, c, p in zip(ops, classes, params, strict=False):
+            for op, c, p in zip(ops, classes, params, strict=True):
                 assert isinstance(op, c)
                 assert np.allclose(op.parameters, p)
 
@@ -707,7 +708,7 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         tape = decomp_rule_to_tape(op, rule)
         flips = [
             qp.X(wire)
-            for wire, value in zip(control_wires, control_values, strict=False)
+            for wire, value in zip(control_wires, control_values, strict=True)
             if not value
         ]
         expected = [
@@ -723,7 +724,7 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
             *flips,
         ]
         assert len(tape.operations) == len(expected)
-        for actual, expected_op in zip(tape.operations, expected, strict=False):
+        for actual, expected_op in zip(tape.operations, expected, strict=True):
             qp.assert_equal(actual, expected_op)
         assert_valid_decomp_rule(op, rule)
 
@@ -889,7 +890,7 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         expected_mats = qp.matrix(op, wire_order=wires)
         decomp_mats = qp.matrix(decomp_op, wire_order=wires)
 
-        for expected_mat, decomp_mat in zip(expected_mats, decomp_mats, strict=False):
+        for expected_mat, decomp_mat in zip(expected_mats, decomp_mats, strict=True):
             assert np.allclose(expected_mat, decomp_mat)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -1171,7 +1172,7 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
         x = torch.tensor([[0.1, 0.2, 0.3]])
         res = torch.vmap(qp.RZ.compute_matrix, in_dims=0)(x)
 
-        for xi, resi in zip(x[0], res[0], strict=False):
+        for xi, resi in zip(x[0], res[0], strict=True):
             assert qp.math.allclose(resi, qp.RZ.compute_matrix(xi))
 
     @pytest.mark.parametrize("dim", range(3))
@@ -1643,7 +1644,7 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
             neg_imag = np.exp(-1j * theta / 2)
             plus_imag = np.exp(1j * theta / 2)
             expected = np.array(
-                [np.diag([n, p, p, n]) for n, p in zip(neg_imag, plus_imag, strict=False)]
+                [np.diag([n, p, p, n]) for n, p in zip(neg_imag, plus_imag, strict=True)]
             )
             return expected
 
@@ -1709,7 +1710,7 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
                         [np.exp(-0.5j * (_x + _z)) * _c, -np.exp(0.5j * (_x - _z)) * _s],
                         [np.exp(-0.5j * (_x - _z)) * _s, np.exp(0.5j * (_x + _z)) * _c],
                     ]
-                    for _x, _z, _c, _s in zip(x, z, c, s, strict=False)
+                    for _x, _z, _c, _s in zip(x, z, c, s, strict=True)
                 ]
             )
 
@@ -4037,7 +4038,7 @@ class TestParametricPow:
         else:
             assert pow_op[0].__class__ is op.__class__
         assert all(
-            (qp.math.allclose(d1, d2 * n) for d1, d2 in zip(pow_op[0].data, op.data, strict=False))
+            (qp.math.allclose(d1, d2 * n) for d1, d2 in zip(pow_op[0].data, op.data, strict=True))
         )
 
     @pytest.mark.parametrize("op", pow_parametric_ops)

@@ -343,10 +343,10 @@ class TestBatchedOperations:
             assert (
                 len(result) == shots.num_copies
             ), f"Result length {len(result)} does not match number of shot copies {shots.num_copies}"
-            for res, shot in zip(result, shots.shot_vector, strict=False):
+            for res, shot in zip(result, shots, strict=True):
                 assert res[0].shape == (
                     batch_size,
-                    shot.shots,
+                    shot,
                     2,
                 ), f"Result shape {res[0].shape} does not match expected shape"
         else:

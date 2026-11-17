@@ -1171,7 +1171,7 @@ def _controlled_phase_shift_single_phase(base, control_wires, work_wires, **_):
     and_controls = [*control_wires, base.wires[0]]
     and_targets = list(work_wires[: len(control_wires)])
     and_wires = list(
-        zip([and_controls[0], *and_targets[:-1]], and_controls[1:], and_targets, strict=False)
+        zip([and_controls[0], *and_targets[:-1]], and_controls[1:], and_targets, strict=True)
     )
 
     for wires in and_wires:

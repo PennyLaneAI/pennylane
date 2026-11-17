@@ -2171,7 +2171,7 @@ def filter_fn(member: Any) -> bool:
     )
 
 
-_, all_templates = zip(*inspect.getmembers(qp.templates, filter_fn), strict=False)
+_, all_templates = zip(*inspect.getmembers(qp.templates, filter_fn), strict=True)
 
 unmodified_templates = [template for template, *_ in unmodified_templates_cases]
 unsupported_templates = [

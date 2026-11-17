@@ -538,7 +538,7 @@ class TestProbs:  # pylint: disable=too-many-public-methods
 
         # Check that they agree up to numeric tolerance
         assert all(
-            np.allclose(_rF, _rA, atol=tol, rtol=0) for _rF, _rA in zip(res_F, res_A, strict=False)
+            np.allclose(_rF, _rA, atol=tol, rtol=0) for _rF, _rA in zip(res_F, res_A, strict=True)
         )
 
     @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])

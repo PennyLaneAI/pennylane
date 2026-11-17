@@ -144,7 +144,7 @@ def test_allequal(t1, t2):
     """Test that the allequal function works for a variety of inputs."""
     res = fn.allequal(t1, t2)
 
-    expected = all(float(x) == float(y) for x, y in zip(t1, t2, strict=False))
+    expected = all(float(x) == float(y) for x, y in zip(t1, t2, strict=True))
     assert res == expected
 
 
@@ -191,7 +191,7 @@ def test_allclose(t1, t2):
     """Test that the allclose function works for a variety of inputs."""
     res = fn.allclose(t1, t2)
 
-    expected = all(float(x) == float(y) for x, y in zip(t1, t2, strict=False))
+    expected = all(float(x) == float(y) for x, y in zip(t1, t2, strict=True))
     assert res == expected
 
 
@@ -1713,7 +1713,7 @@ def test_where(t):
         [0, 0, 1, 1, 2, 0, 0, 2, 2],
         [0, 1, 0, 1, 1, 0, 1, 0, 1],
     )
-    assert all(fn.allclose(_res, _exp) for _res, _exp in zip(res, expected, strict=False))
+    assert all(fn.allclose(_res, _exp) for _res, _exp in zip(res, expected, strict=True))
 
 
 squeeze_data = [
@@ -2309,7 +2309,7 @@ class TestUnwrap:
         ]
         res = qp.math.unwrap(values)
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
-        assert all(np.allclose(a, b) for a, b in zip(res, expected, strict=False))
+        assert all(np.allclose(a, b) for a, b in zip(res, expected, strict=True))
 
     def test_autograd_unwrapping_forward(self):
         """Test that a sequence of Autograd values is properly unwrapped
@@ -2325,7 +2325,7 @@ class TestUnwrap:
         cost_fn(values)
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
-        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected, strict=False))
+        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected, strict=True))
         # pylint: disable-next=not-an-iterable
         assert all(not isinstance(a, np.tensor) for a in unwrapped_params)
 
@@ -2347,7 +2347,7 @@ class TestUnwrap:
         _ = qp.grad(cost_fn, argnums=[1, 2])(*values)
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
-        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected, strict=False))
+        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected, strict=True))
         # pylint: disable-next=not-an-iterable
         assert not any(isinstance(a, ArrayBox) for a in unwrapped_params)
 
@@ -2388,7 +2388,7 @@ class TestUnwrap:
         cost_fn(values)
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
-        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected, strict=False))
+        assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected, strict=True))
         # pylint: disable-next=not-an-iterable
         assert all(not isinstance(a, np.tensor) for a in unwrapped_params)
 

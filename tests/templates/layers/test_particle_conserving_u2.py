@@ -173,7 +173,7 @@ class TestDecomposition:  # pylint: disable=too-few-public-methods
         assert isinstance(queue[0], qp.BasisState)
 
         # order of gates
-        for op1, op2 in zip(queue[1:], exp_gates, strict=False):
+        for op1, op2 in zip(queue[1:], exp_gates, strict=True):
             assert isinstance(op1, op2)
 
         # gate parameter

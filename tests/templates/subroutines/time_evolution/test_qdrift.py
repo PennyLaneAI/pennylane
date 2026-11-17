@@ -131,7 +131,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_private_sample(self, coeffs, ops, time, seed, n):
         """Test the private function which samples the decomposition"""
-        ops_to_coeffs = dict(zip(ops, coeffs, strict=False))
+        ops_to_coeffs = dict(zip(ops, coeffs, strict=True))
         normalization = qnp.sum(qnp.abs(coeffs))
 
         with qp.tape.QuantumTape() as tape:
@@ -317,7 +317,7 @@ class TestIntegration:
         @qp.qnode(dev, interface="jax")
         def circ(time):
             hamiltonian = qp.sum(
-                *(qp.s_prod(coeff, op) for coeff, op in zip(coeffs, ops, strict=False))
+                *(qp.s_prod(coeff, op) for coeff, op in zip(coeffs, ops, strict=True))
             )
             qp.QDrift(hamiltonian, time, n=2, seed=seed)
             return qp.state()

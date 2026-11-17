@@ -310,12 +310,12 @@ class TestGradientTransformIntegration:
                 assert isinstance(_res, tuple) and len(_res) == 2
                 assert all(
                     np.allclose(r, e, atol=atol, rtol=0)
-                    for r, e in zip(_res, expected, strict=False)
+                    for r, e in zip(_res, expected, strict=True)
                 )
         else:
             assert isinstance(res, tuple) and len(res) == 2
             assert all(
-                np.allclose(r, e, atol=atol, rtol=0) for r, e in zip(res, expected, strict=False)
+                np.allclose(r, e, atol=atol, rtol=0) for r, e in zip(res, expected, strict=True)
             )
 
     def test_decorator(self, tol):
@@ -446,7 +446,7 @@ class TestGradientTransformIntegration:
         res = qp.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert all(
-            np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected, strict=False)
+            np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected, strict=True)
         )
 
     def test_multiple_tensor_arguments_old_version(self, tol):
@@ -467,7 +467,7 @@ class TestGradientTransformIntegration:
         expected = qp.jacobian(circuit)(x, y)
         res = qp.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
-        for _r, _e in zip(res, expected, strict=False):
+        for _r, _e in zip(res, expected, strict=True):
             assert qp.math.allclose(_r, _e, atol=tol, rtol=0)
 
     def test_high_dimensional_single_parameter_arg(self, tol):

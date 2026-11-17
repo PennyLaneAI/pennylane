@@ -531,7 +531,7 @@ class TestDiffMulti:
 
         assert isinstance(res, tuple)
         assert len(res) == 2
-        for r, exp in zip(res, expected, strict=False):
+        for r, exp in zip(res, expected, strict=True):
             assert qp.math.allclose(r, exp, atol=tol)
 
         grad = jax.jacobian(circuit, argnums=1)(input, x)
@@ -551,7 +551,7 @@ class TestDiffMulti:
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
-        for g, exp in zip(grad, expected, strict=False):
+        for g, exp in zip(grad, expected, strict=True):
             assert qp.math.allclose(g, exp, atol=tol, rtol=0)
 
     @pytest.mark.jax
@@ -596,7 +596,7 @@ class TestDiffMulti:
 
         assert isinstance(res, tuple)
         assert len(res) == 2
-        for r, exp in zip(res, expected, strict=False):
+        for r, exp in zip(res, expected, strict=True):
             assert qp.math.allclose(r, exp, atol=tol)
 
         grad = jax.jacobian(circuit, argnums=1)(input, x)
@@ -616,7 +616,7 @@ class TestDiffMulti:
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
-        for g, exp in zip(grad, expected, strict=False):
+        for g, exp in zip(grad, expected, strict=True):
             assert qp.math.allclose(g, exp, atol=tol, rtol=0)
 
     @pytest.mark.torch
@@ -657,7 +657,7 @@ class TestDiffMulti:
 
         assert isinstance(res, tuple)
         assert len(res) == 2
-        for r, exp in zip(res, expected, strict=False):
+        for r, exp in zip(res, expected, strict=True):
             assert qp.math.allclose(r, exp, atol=tol)
 
         grad = torch.autograd.functional.jacobian(lambda x: circuit(input, x), x)
@@ -677,7 +677,7 @@ class TestDiffMulti:
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
-        for g, exp in zip(grad, expected, strict=False):
+        for g, exp in zip(grad, expected, strict=True):
             assert qp.math.allclose(g, exp, atol=tol, rtol=0)
 
 

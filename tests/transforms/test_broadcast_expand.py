@@ -86,7 +86,7 @@ observables_and_exp_fns = [
 class TestBroadcastExpand:
     """Tests for the broadcast_expand transform"""
 
-    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=False)))
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=True)))
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     def test_expansion(self, params, size, obs, exp_fn, seed):
         """Test that the expansion works as expected."""
@@ -121,7 +121,7 @@ class TestBroadcastExpand:
 
         assert qp.math.allclose(result, expected)
 
-    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=False)))
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=True)))
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     # pylint: disable-next=too-many-arguments,unused-argument
     def test_shot_vector_expval(self, params, size, obs, exp_fn, tol_stochastic, seed):
@@ -141,7 +141,7 @@ class TestBroadcastExpand:
         # Note: Analytic accuracy is tested in test_expansion() above.
         # This test focuses on shot vector structure/batching behavior only.
 
-    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=False)))
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=True)))
     @pytest.mark.parametrize(
         "args, shapes",
         [
@@ -168,7 +168,7 @@ class TestBroadcastExpand:
             for i, _r in enumerate(r):
                 assert qp.math.shape(_r) == (size, shapes[i]) if size > 1 else (shapes[i],)
 
-    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=False)))
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=True)))
     @pytest.mark.parametrize(
         "args, shapes",
         [
@@ -199,7 +199,7 @@ class TestBroadcastExpand:
                     else (shots[i], *shapes[j])
                 )
 
-    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=False)))
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=True)))
     @pytest.mark.parametrize(
         "args",
         [
@@ -289,7 +289,7 @@ class TestBroadcastExpand:
         jac = qp.jacobian(cost)(*params)
         exp_jac = qp.jacobian(exp_fn)(*params)
 
-        assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac, strict=False))
+        assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac, strict=True))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params", parameters)
@@ -323,17 +323,18 @@ class TestBroadcastExpand:
         exp_jac = jax.jacobian(exp_fn, argnums=[0, 1, 2])(*params)
 
         if len(obs) > 1:
+            # The reference groups derivatives by input, with measurements on axis 0.
             assert all(
                 qp.math.allclose(_jac, e_jac)
-                for _jac, e_jac in zip(jac[0], exp_jac[0], strict=False)
+                for _jac, e_jac in zip(jac[0], (j[0] for j in exp_jac), strict=True)
             )
             assert all(
                 qp.math.allclose(_jac, e_jac)
-                for _jac, e_jac in zip(jac[1], exp_jac[1], strict=False)
+                for _jac, e_jac in zip(jac[1], (j[1] for j in exp_jac), strict=True)
             )
         else:
             assert all(
-                qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac, strict=False)
+                qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac, strict=True)
             )
 
     @pytest.mark.torch
@@ -361,7 +362,7 @@ class TestBroadcastExpand:
         exp_jac = torch.autograd.functional.jacobian(exp_fn, torch_params)
 
         if len(obs) > 1:
-            assert all(qp.math.allclose(r, e) for r, e in zip(res, exp_fn(*params), strict=False))
+            assert all(qp.math.allclose(r, e) for r, e in zip(res, exp_fn(*params), strict=True))
             # Need to perform a transpose because the broadcast_expand transform pulls out the
             # broadcasting axis, which the `exp_fn` does not do.
             jac = tuple(
@@ -371,4 +372,4 @@ class TestBroadcastExpand:
             assert qp.math.allclose(res[0], exp_fn(*params))
             jac = jac[0]
 
-        assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac, strict=False))
+        assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac, strict=True))

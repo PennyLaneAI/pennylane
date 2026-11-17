@@ -25,9 +25,9 @@ def _hermitian(mat):
 
 u = 1 / (4 - 4 ** (1 / 3))
 v = 1 - 4 * u
-pf1 = ProductFormula(list(zip([0, 1, 2, 1, 0], [1 / 2, 1 / 2, 1, 1 / 2, 1 / 2], strict=False)))
+pf1 = ProductFormula(list(zip([0, 1, 2, 1, 0], [1 / 2, 1 / 2, 1, 1 / 2, 1 / 2], strict=True)))
 pf2 = ProductFormula.prod([pf1(u) ** 2, pf1(v), pf1(u) ** 2])
-pf3 = ProductFormula(list(zip([0, 1, 2], [1, 1, 1], strict=False)))
+pf3 = ProductFormula(list(zip([0, 1, 2], [1, 1, 1], strict=True)))
 pf4 = ProductFormula.prod([pf1(u), pf1(v)])
 
 
@@ -77,9 +77,9 @@ def test_second_order_representations(fragment_dict):
     """Test that two representations of second order Trotter produce the same effective
     Hamiltonian"""
 
-    second_order1 = ProductFormula(list(zip([0, 1, 0], [1 / 2, 1, 1 / 2], strict=False)))
+    second_order1 = ProductFormula(list(zip([0, 1, 0], [1 / 2, 1, 1 / 2], strict=True)))
     second_order2 = ProductFormula(
-        list(zip([0, 1, 1, 0], [1 / 2, 1 / 2, 1 / 2, 1 / 2], strict=False))
+        list(zip([0, 1, 1, 0], [1 / 2, 1 / 2, 1 / 2, 1 / 2], strict=True))
     )
 
     eff1 = effective_hamiltonian(second_order1, fragment_dict, order=5)
@@ -93,10 +93,10 @@ def test_second_order_recursive(fragment_dict):
     """Test that the recursively defined product formula yields the same effective Hamiltonian as
     the unraveled product formula"""
 
-    first_order_1 = ProductFormula(list(zip([0, 1], [1 / 2, 1 / 2], strict=False)))
-    first_order_2 = ProductFormula(list(zip([1, 0], [1 / 2, 1 / 2], strict=False)))
+    first_order_1 = ProductFormula(list(zip([0, 1], [1 / 2, 1 / 2], strict=True)))
+    first_order_2 = ProductFormula(list(zip([1, 0], [1 / 2, 1 / 2], strict=True)))
 
-    explicit = ProductFormula(list(zip([0, 1, 1, 0], [1 / 2, 1 / 2, 1 / 2, 1 / 2], strict=False)))
+    explicit = ProductFormula(list(zip([0, 1, 1, 0], [1 / 2, 1 / 2, 1 / 2, 1 / 2], strict=True)))
     constructed = ProductFormula.prod([first_order_1, first_order_2])
 
     eff1 = effective_hamiltonian(explicit, fragment_dict, order=3)
@@ -115,12 +115,12 @@ def test_fourth_order_recursive(fragment_dict):
     frag_labels = (list(range(n_frags)) + list(reversed(range(n_frags)))) * 5
     frag_coeffs = [u / 2] * (n_frags * 4) + [v / 2] * (n_frags * 2) + [u / 2] * (n_frags * 4)
 
-    fourth_order1 = ProductFormula(list(zip(frag_labels, frag_coeffs, strict=False)))
+    fourth_order1 = ProductFormula(list(zip(frag_labels, frag_coeffs, strict=True)))
 
     frag_labels = list(range(n_frags)) + list(reversed(range(n_frags)))
     frag_coeffs = [1 / 2] * len(frag_labels)
 
-    second_order = ProductFormula(list(zip(frag_labels, frag_coeffs, strict=False)))
+    second_order = ProductFormula(list(zip(frag_labels, frag_coeffs, strict=True)))
     fourth_order2 = ProductFormula.prod(
         [second_order(u) ** 2, second_order(v), second_order(u) ** 2]
     )
@@ -139,11 +139,11 @@ def test_mul_and_pow(fragment_dict):
     n_frags = len(fragment_dict)
     second_order_labels = list(range(n_frags)) + list(reversed(range(n_frags)))
     second_order_coeffs = [1 / 2] * len(second_order_labels)
-    second_order = ProductFormula(list(zip(second_order_labels, second_order_coeffs, strict=False)))
+    second_order = ProductFormula(list(zip(second_order_labels, second_order_coeffs, strict=True)))
 
     mul1 = ProductFormula.prod([second_order, second_order, second_order])
     mul2 = second_order**3
-    mul3 = ProductFormula(list(zip(second_order_labels * 3, second_order_coeffs * 3, strict=False)))
+    mul3 = ProductFormula(list(zip(second_order_labels * 3, second_order_coeffs * 3, strict=True)))
 
     eff1 = effective_hamiltonian(mul1, fragment_dict, order=5)
     eff2 = effective_hamiltonian(mul2, fragment_dict, order=5)

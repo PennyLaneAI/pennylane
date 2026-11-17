@@ -28,7 +28,7 @@ from pennylane.labs.trotter_error import (
 symbols = ["A", "B", "C", "D"]
 frag_labels = symbols + symbols[::-1]
 frag_coeffs = [1 / 2] * len(frag_labels)
-second_order = ProductFormula(list(zip(frag_labels, frag_coeffs, strict=False)))
+second_order = ProductFormula(list(zip(frag_labels, frag_coeffs, strict=True)))
 u = 1 / (4 - 4 ** (1 / 3))
 v = 1 - 4 * u
 fourth_order = ProductFormula.prod([second_order(u) ** 2, second_order(v), second_order(u) ** 2])

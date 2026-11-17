@@ -1579,7 +1579,7 @@ class TestIntegrationShotVectors:
         all_shot_copies = _get_all_shot_copies(shot_vector)
 
         assert len(res) == len(all_shot_copies)
-        for r, shots in zip(res, all_shot_copies, strict=False):
+        for r, shots in zip(res, all_shot_copies, strict=True):
             assert r.shape == (shots,) if measurement.obs else (shots, 1)
 
     @pytest.mark.parametrize("measurement", [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0])])
@@ -1682,7 +1682,7 @@ class TestIntegrationSameMeasurementShotVector:
         all_shot_copies = _get_all_shot_copies(shot_vector)
 
         assert len(res) == len(all_shot_copies)
-        for r, shots in zip(res, all_shot_copies, strict=False):
+        for r, shots in zip(res, all_shot_copies, strict=True):
             assert r[0].shape == (shots,) if measurement1.obs else (shots, 1)
             assert r[1].shape == (shots,) if measurement2.obs else (shots, 1)
 

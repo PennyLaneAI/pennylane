@@ -135,10 +135,10 @@ class TestResources:
                         wire_info.get("algo", 0),
                         gate_types,
                     )
-                    for wire_info, gate_types in zip(wire_data, gate_types_data, strict=False)
+                    for wire_info, gate_types in zip(wire_data, gate_types_data, strict=True)
                 ),
                 str_data,
-                strict=False,
+                strict=True,
             )
         ),
     )

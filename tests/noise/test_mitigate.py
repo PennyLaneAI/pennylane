@@ -57,26 +57,26 @@ dev_ideal = qp.device("default.mixed", wires=2)
 def same_tape(tape1, tape2):
     """Raises an error if tapes are not identical"""
     assert all(
-        o1.name == o2.name for o1, o2 in zip(tape1.operations, tape2.operations, strict=False)
+        o1.name == o2.name for o1, o2 in zip(tape1.operations, tape2.operations, strict=True)
     )
     assert all(
-        o1.wires == o2.wires for o1, o2 in zip(tape1.operations, tape2.operations, strict=False)
+        o1.wires == o2.wires for o1, o2 in zip(tape1.operations, tape2.operations, strict=True)
     )
     assert all(
         np.allclose(o1.parameters, o2.parameters)
-        for o1, o2 in zip(tape1.operations, tape2.operations, strict=False)
+        for o1, o2 in zip(tape1.operations, tape2.operations, strict=True)
     )
     assert len(tape1.measurements) == len(tape2.measurements)
     assert all(
         # pylint: disable-next=protected-access
         m1._shortname == m2._shortname
-        for m1, m2 in zip(tape1.measurements, tape2.measurements, strict=False)
+        for m1, m2 in zip(tape1.measurements, tape2.measurements, strict=True)
     )
     assert all(
-        o1.name == o2.name for o1, o2 in zip(tape1.observables, tape2.observables, strict=False)
+        o1.name == o2.name for o1, o2 in zip(tape1.observables, tape2.observables, strict=True)
     )
     assert all(
-        o1.wires == o2.wires for o1, o2 in zip(tape1.observables, tape2.observables, strict=False)
+        o1.wires == o2.wires for o1, o2 in zip(tape1.observables, tape2.observables, strict=True)
     )
 
 

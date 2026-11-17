@@ -100,6 +100,7 @@ class TestLogging:
             ),
         ]
 
+        # This assertion checks the first five records of the longer expected sequence.
         for expected, actual in zip(log_records_expected, caplog.records[:5], strict=False):
             assert expected[0] in actual.name
             for msg in expected[1]:
@@ -144,6 +145,7 @@ class TestLogging:
             ),
         ]
 
+        # This assertion checks only QNode creation from the longer expected sequence.
         for expected, actual in zip(log_records_expected, caplog.records[:1], strict=False):
             assert expected[0] in actual.name
             for exp_msg in expected[1]:

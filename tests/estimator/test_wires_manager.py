@@ -40,7 +40,7 @@ class TestWireResourceManager:
 
     @pytest.mark.parametrize(
         "wire_manager, attribute_tup",
-        list(zip(wire_manager_quantities, wire_manager_parameters, strict=False)),
+        list(zip(wire_manager_quantities, wire_manager_parameters, strict=True)),
     )
     def test_init(self, wire_manager, attribute_tup):
         """Test that the WireResourceManager class is instantiated as expected."""
@@ -53,7 +53,7 @@ class TestWireResourceManager:
 
     @pytest.mark.parametrize(
         "wire_manager, attribute_tup",
-        list(zip(wire_manager_quantities, wire_manager_parameters, strict=False)),
+        list(zip(wire_manager_quantities, wire_manager_parameters, strict=True)),
     )
     def test_equality(self, wire_manager, attribute_tup):
         """Test that the equality methods behaves as expected"""
@@ -83,7 +83,7 @@ class TestWireResourceManager:
                 copy.deepcopy(wire_manager_quantities),
                 wire_manager_parameters_algo,
                 extra_wires,
-                strict=False,
+                strict=True,
             )
         ),
     )
@@ -107,7 +107,7 @@ class TestWireResourceManager:
                 copy.deepcopy(wire_manager_quantities),
                 wire_manager_parameters_algo,
                 extra_wires,
-                strict=False,
+                strict=True,
             )
         ),
     )
@@ -125,7 +125,7 @@ class TestWireResourceManager:
 
     @pytest.mark.parametrize(
         "wire_manager, algo_q",
-        list(zip(copy.deepcopy(wire_manager_quantities), extra_wires, strict=False)),
+        list(zip(copy.deepcopy(wire_manager_quantities), extra_wires, strict=True)),
     )
     def test_setting_algo_wires(self, wire_manager, algo_q):
         """Test that the logic wires are set correctly."""
@@ -140,7 +140,7 @@ class TestWireResourceManager:
                 copy.deepcopy(wire_manager_quantities),
                 wire_manager_parameters_algo,
                 extra_wires,
-                strict=False,
+                strict=True,
             )
         ),
     )

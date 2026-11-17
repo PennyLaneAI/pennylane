@@ -134,7 +134,7 @@ class TestCompressedResourceOp:
         assert CmprssedQSVT1 != Other
 
     @pytest.mark.parametrize(
-        "args, name", list(zip(compressed_ops_and_params_lst, compressed_op_names, strict=False))
+        "args, name", list(zip(compressed_ops_and_params_lst, compressed_op_names, strict=True))
     )
     def test_name(self, args, name):
         """Test that the name method behaves as expected."""
@@ -432,7 +432,7 @@ class TestResourceOperator:
             self.ops_to_queue[3:],
         )
 
-        for op_to_remove, expected_queue in zip(ops_to_remove, expected_queues, strict=False):
+        for op_to_remove, expected_queue in zip(ops_to_remove, expected_queues, strict=True):
             with AnnotatedQueue() as q:
                 for op in self.ops_to_queue:
                     op.queue()

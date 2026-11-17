@@ -292,7 +292,7 @@ def perturbation_error(  # pylint: disable=too-many-arguments,too-many-branches
     expectations = defaultdict(int)
     partial_sums = defaultdict(list)
 
-    for comm, group in groupby(zip(comms, applied_terms, strict=False), key=lambda x: x[0]):
+    for comm, group in groupby(zip(comms, applied_terms, strict=True), key=lambda x: x[0]):
         for _, expectation in group:
             expectations[comm.order] += (1j * timestep) ** comm.order * expectation
         partial_sums[comm.order].append(expectations[comm.order])

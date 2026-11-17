@@ -84,7 +84,7 @@ def _realized_lcu(M, N, zeta, t_ell, aleph):
         keep_prob = keep[i] / 2**aleph
         per_pair[entry] += keep_prob / len(entries)
         per_pair[entries[alt[i]]] += (1 - keep_prob) / len(entries)
-    return per_pair, {e: (-1.0 if s else 1.0) for e, s in zip(entries, signs, strict=False)}
+    return per_pair, {e: (-1.0 if s else 1.0) for e, s in zip(entries, signs, strict=True)}
 
 
 # pylint: disable-next=too-many-arguments

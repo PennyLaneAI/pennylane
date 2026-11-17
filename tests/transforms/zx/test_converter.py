@@ -551,7 +551,7 @@ class TestConvertersZX:
 
         tape = qp.transforms.from_zx(graph)
         expected_op = [qp.Hadamard(wires=[1]), qp.CNOT(wires=[1, 0]), qp.Hadamard(wires=[1])]
-        for op, op_ex in zip(tape.operations, expected_op, strict=False):
+        for op, op_ex in zip(tape.operations, expected_op, strict=True):
             qp.assert_equal(op, op_ex)
 
     def test_qnode_decorator(self):

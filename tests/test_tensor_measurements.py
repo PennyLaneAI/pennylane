@@ -40,7 +40,7 @@ def ansatz(a, b, c):
 
 
 @pytest.mark.parametrize("shots", [None, 1_000_000])
-@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI, strict=False)))
+@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI, strict=True)))
 class TestTensorExpval:
     """Test tensor expectation values"""
 
@@ -262,7 +262,7 @@ class TestTensorExpval:
 
 
 @pytest.mark.parametrize("shots", [None, 1_000_000])
-@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI, strict=False)))
+@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI, strict=True)))
 class TestTensorVar:
     """Tests for variance of tensor observables"""
 
@@ -373,7 +373,7 @@ def tensor_product(observables):
     return functools.reduce(np.kron, observables)
 
 
-@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI, strict=False)))
+@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI, strict=True)))
 class TestTensorSample:
     """Tests for samples of tensor observables"""
 

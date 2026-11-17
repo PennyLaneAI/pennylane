@@ -263,7 +263,7 @@ class TestLieClosure:
         genYY = [Y(i) @ Y(i + 1) for i in range(n - 1)]
         genZZ = [Z(i) @ Z(i + 1) for i in range(n - 1)]
 
-        generators = [qp.sum(XX + YY + ZZ) for XX, YY, ZZ in zip(genXX, genYY, genZZ, strict=False)]
+        generators = [qp.sum(XX + YY + ZZ) for XX, YY, ZZ in zip(genXX, genYY, genZZ, strict=True)]
         g = qp.lie_closure(generators, matrix=matrix)
         assert len(g) == res
 

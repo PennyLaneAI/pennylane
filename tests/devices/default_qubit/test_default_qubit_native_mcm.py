@@ -70,7 +70,7 @@ def test_all_invalid_shots_circuit(obs, mcm_method):
 
     res1 = qp.QNode(circuit_op, dev, mcm_method="deferred")()
     res2 = qp.set_shots(qp.QNode(circuit_op, dev_shots, mcm_method=mcm_method), shots=10)()
-    for r1, r2 in zip(res1, res2, strict=False):
+    for r1, r2 in zip(res1, res2, strict=True):
         if isinstance(r1, Sequence):
             assert len(r1) == len(r2)
         assert np.all(np.isnan(r1))
@@ -180,8 +180,8 @@ def test_multiple_measurements_and_reset(mcm_method, shots, params, postselect, 
     if not isinstance(shots, list):
         shots, results0, results1 = [shots], [results0], [results1]
 
-    for shot, res1, res0 in zip(shots, results1, results0, strict=False):
-        for measure_f, r1, r0 in zip(measurements, res1, res0, strict=False):
+    for shot, res1, res0 in zip(shots, results1, results0, strict=True):
+        for measure_f, r1, r0 in zip(measurements, res1, res0, strict=True):
             if shots is None and measure_f in [qp.expval, qp.probs] and batch_size is not None:
                 r0 = qp.math.squeeze(r0)
             mcm_utils.validate_measurements(measure_f, shot, r1, r0, batch_size=batch_size)
@@ -347,7 +347,7 @@ class TestJaxIntegration:
         results0_2 = func0(*params)
         # Same result expected with multiple executions
         if isinstance(shots, list):
-            for r0, r0_2 in zip(results0, results0_2, strict=False):
+            for r0, r0_2 in zip(results0, results0_2, strict=True):
                 assert np.allclose(r0, r0_2)
         else:
             assert np.allclose(results0, results0_2)
@@ -410,7 +410,7 @@ class TestJaxIntegration:
             qp.var,
             qp.probs,
         ]
-        for measure_f, r1, r2 in zip(measures, results1, results2, strict=False):
+        for measure_f, r1, r2 in zip(measures, results1, results2, strict=True):
             r1, r2 = np.array(r1).ravel(), np.array(r2).ravel()
             if measure_f == qp.sample:
                 r2 = r2[r2 != fill_in_value]

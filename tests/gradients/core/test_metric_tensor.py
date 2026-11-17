@@ -977,7 +977,7 @@ def autodiff_metric_tensor(ansatz, num_wires):
 
         if isinstance(rjac, tuple):
             out = []
-            for rc, ic in zip(rjac, ijac, strict=False):
+            for rc, ic in zip(rjac, ijac, strict=True):
                 c = rc + 1j * ic
                 psidpsi = np.tensordot(np.conj(state), c, axes=([0], [0]))
                 out.append(
@@ -1030,7 +1030,7 @@ class TestFullMetricTensor:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize(
-        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=False))
+        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=True))
     )
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
@@ -1048,13 +1048,13 @@ class TestFullMetricTensor:
         mt = qp.metric_tensor(circuit, approx=None)(*params)
 
         if isinstance(mt, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=False))
+            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=True))
         else:
             assert qp.math.allclose(mt, expected)
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
-        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=False))
+        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=True))
     )
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
@@ -1088,13 +1088,13 @@ class TestFullMetricTensor:
         mt = mt_fn(*params)
 
         if isinstance(mt, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=False))
+            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=True))
         else:
             assert qp.math.allclose(mt, expected)
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
-        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=False))
+        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=True))
     )
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
@@ -1119,7 +1119,7 @@ class TestFullMetricTensor:
 
     @pytest.mark.torch
     @pytest.mark.parametrize(
-        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=False))
+        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=True))
     )
     @pytest.mark.parametrize("interface", ["auto", "torch"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
@@ -1140,7 +1140,7 @@ class TestFullMetricTensor:
         mt = qp.metric_tensor(circuit, approx=None)(*params)
 
         if isinstance(mt, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=False))
+            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=True))
         else:
             assert qp.math.allclose(mt, expected)
 
@@ -1258,7 +1258,7 @@ class TestDifferentiabilityDiag:
         if isinstance(jac, tuple):
             assert all(
                 qp.math.allclose(j, e, atol=tol, rtol=0)
-                for j, e in zip(jac, expected_diag_jac(*weights), strict=False)
+                for j, e in zip(jac, expected_diag_jac(*weights), strict=True)
             )
         else:
             assert qp.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
@@ -1309,7 +1309,7 @@ class TestDifferentiabilityDiag:
         if isinstance(jac, tuple) and len(jac) != 1:
             assert all(
                 qp.math.allclose(j.detach().numpy(), e, atol=tol, rtol=0)
-                for j, e in zip(jac, expected_diag_jac(*weights), strict=False)
+                for j, e in zip(jac, expected_diag_jac(*weights), strict=True)
             )
         else:
             if isinstance(jac, tuple) and len(jac) == 1:
@@ -1358,7 +1358,7 @@ class TestDifferentiability:
         c = cost_full(*weights)
         assert all(
             qp.math.allclose(_sub_c, sub_c, atol=tol, rtol=0)
-            for _sub_c, sub_c in zip(_c, c, strict=False)
+            for _sub_c, sub_c in zip(_c, c, strict=True)
         )
         for argnum in range(len(weights)):
             expected_full = qp.jacobian(_cost_full, argnums=argnum)(*weights)
@@ -1408,7 +1408,7 @@ class TestDifferentiability:
         if isinstance(jac, tuple) and len(jac) != 1:
             assert all(
                 qp.math.allclose(j.detach().numpy(), e, atol=tol, rtol=0)
-                for j, e in zip(jac, expected_full, strict=False)
+                for j, e in zip(jac, expected_full, strict=True)
             )
         else:
             if isinstance(jac, tuple) and len(jac) == 1:

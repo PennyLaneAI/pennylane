@@ -568,7 +568,7 @@ class TestDecomposition:
         true_decomposition = list(ops_lst)  # reversed list of factors
 
         assert isinstance(decomposition, list)
-        for op1, op2 in zip(decomposition, true_decomposition, strict=False):
+        for op1, op2 in zip(decomposition, true_decomposition, strict=True):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -627,7 +627,7 @@ class TestDecomposition:
             change_op_basis_op.decomposition()
 
         tape = qp.tape.QuantumScript.from_queue(q)
-        for op1, op2 in zip(tape.operations, true_decomposition, strict=False):
+        for op1, op2 in zip(tape.operations, true_decomposition, strict=True):
             qp.assert_equal(op1, op2)
 
 

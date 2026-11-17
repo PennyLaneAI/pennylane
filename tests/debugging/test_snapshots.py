@@ -62,7 +62,7 @@ class TestSnapshotTape:
 
         assert len(tapes) == num_snapshots + 1
 
-        for out, expected in zip(tapes, expected_tapes, strict=False):
+        for out, expected in zip(tapes, expected_tapes, strict=True):
             assert_equal(out, expected)
 
         tape_no_meas = qp.tape.QuantumTape(ops, shots=shots)
@@ -70,7 +70,7 @@ class TestSnapshotTape:
 
         assert len(tapes_no_meas) == num_snapshots
 
-        for out, expected in zip(tapes_no_meas, expected_tapes[:-1], strict=False):
+        for out, expected in zip(tapes_no_meas, expected_tapes[:-1], strict=True):
             assert_equal(out, expected)
 
     def test_snapshot_postprocessing_fn(self):
@@ -538,7 +538,7 @@ class TestSnapshotUnsupportedQNode:
 
         # TODO: fallback to simple `np.allclose` tests once `setRandomSeed` is exposed from the lightning C++ code
         counts, expvals = tuple(
-            zip(*(qp.snapshots(circuit)().values() for _ in range(50)), strict=False)
+            zip(*(qp.snapshots(circuit)().values() for _ in range(50)), strict=True)
         )
         assert ttest_ind([count["0"] for count in counts], 250).pvalue >= 0.75
         assert ttest_ind(expvals, 0.0).pvalue >= 0.75
@@ -547,7 +547,7 @@ class TestSnapshotUnsupportedQNode:
         counts, _ = tuple(
             zip(
                 *(qp.snapshots(qp.set_shots(circuit, shots=1000))().values() for _ in range(50)),
-                strict=False,
+                strict=True,
             )
         )
         assert ttest_ind([count["0"] for count in counts], 500).pvalue >= 0.75

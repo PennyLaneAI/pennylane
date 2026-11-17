@@ -160,7 +160,7 @@ def test_expval(  # pylint: disable=too-many-arguments
                         expectation_operators.append(expval(PauliZ(i)))
         else:
             rows, cols = ops.nonzero()
-            for row, col in zip(rows, cols, strict=False):
+            for row, col in zip(rows, cols, strict=True):
                 if ops[row, col] == 1:
                     expectation_operators.append(expval(PauliZ(col)))
 

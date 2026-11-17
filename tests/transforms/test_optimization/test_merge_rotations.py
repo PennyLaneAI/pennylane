@@ -54,7 +54,7 @@ class TestMergeRotations:
         assert len(ops) == len(expected_ops)
 
         # Check that all operations and parameter values are as expected
-        for op_obtained, op_expected in zip(ops, expected_ops, strict=False):
+        for op_obtained, op_expected in zip(ops, expected_ops, strict=True):
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
@@ -90,7 +90,7 @@ class TestMergeRotations:
 
         assert len(ops) == len(expected_ops)
 
-        for op_obtained, op_expected in zip(ops, expected_ops, strict=False):
+        for op_obtained, op_expected in zip(ops, expected_ops, strict=True):
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
@@ -137,7 +137,7 @@ class TestMergeRotations:
 
         assert len(ops) == len(expected_ops)
 
-        for op_obtained, op_expected in zip(ops, expected_ops, strict=False):
+        for op_obtained, op_expected in zip(ops, expected_ops, strict=True):
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
@@ -165,7 +165,7 @@ class TestMergeRotations:
 
         assert len(ops) == len(expected_ops)
 
-        for op_obtained, op_expected in zip(ops, expected_ops, strict=False):
+        for op_obtained, op_expected in zip(ops, expected_ops, strict=True):
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
@@ -254,7 +254,7 @@ class TestMergeRotations:
         assert len(ops) == len(expected_ops)
 
         # Check that all operations and parameter values are as expected
-        for op_obtained, op_expected in zip(ops, expected_ops, strict=False):
+        for op_obtained, op_expected in zip(ops, expected_ops, strict=True):
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 

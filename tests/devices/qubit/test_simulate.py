@@ -713,12 +713,12 @@ class TestSampleMeasurements:
         assert len(result) == len(list(shots))
 
         assert all(isinstance(res, np.ndarray) for res in result)
-        assert all(res.shape == (s, 2) for res, s in zip(result, shots, strict=False))
+        assert all(res.shape == (s, 2) for res, s in zip(result, shots, strict=True))
         assert all(
             np.allclose(
                 np.sum(res, axis=0).astype(np.float32) / s, [np.sin(x / 2) ** 2, 0], atol=0.1
             )
-            for res, s in zip(result, shots, strict=False)
+            for res, s in zip(result, shots, strict=True)
         )
 
     @pytest.mark.parametrize("shots", shots_data)
@@ -736,7 +736,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        for shot_res, s in zip(result, shots, strict=False):
+        for shot_res, s in zip(result, shots, strict=True):
             assert isinstance(shot_res, tuple)
             assert len(shot_res) == 3
 
@@ -986,7 +986,7 @@ class TestQInfoMeasurements:
         qs = qp.tape.QuantumScript([qp.IsingXX(phi, wires=(0, 1))], self.measurements)
 
         results = simulate(qs)
-        for val1, val2 in zip(results, self.expected_results(phi), strict=False):
+        for val1, val2 in zip(results, self.expected_results(phi), strict=True):
             assert qp.math.allclose(val1, val2)
 
     @pytest.mark.autograd
@@ -1000,7 +1000,7 @@ class TestQInfoMeasurements:
 
         results = f(phi)
         expected = self.expected_results(phi)
-        for val1, val2 in zip(results, expected, strict=False):
+        for val1, val2 in zip(results, expected, strict=True):
             assert qp.math.allclose(val1, val2)
 
     @pytest.mark.autograd
@@ -1043,7 +1043,7 @@ class TestQInfoMeasurements:
         phi = jax.numpy.array(-0.792)
 
         results = f(phi)
-        for val1, val2 in zip(results, self.expected_results(phi), strict=False):
+        for val1, val2 in zip(results, self.expected_results(phi), strict=True):
             assert qp.math.allclose(val1, val2)
 
         def real_out(phi):
@@ -1055,7 +1055,7 @@ class TestQInfoMeasurements:
             return tuple(jax.numpy.imag(r) for r in f(phi))
 
         grad_imag = jax.jacobian(imag_out)(phi)
-        grads = tuple(r + 1j * i for r, i in zip(grad_real, grad_imag, strict=False))
+        grads = tuple(r + 1j * i for r, i in zip(grad_real, grad_imag, strict=True))
         expected_grads = self.expected_grad(phi)
 
         # Writing this way makes it easier to figure out which is failing
@@ -1084,7 +1084,7 @@ class TestQInfoMeasurements:
             return simulate(qs)
 
         results = f(phi)
-        for val1, val2 in zip(results, self.expected_results(phi.detach().numpy()), strict=False):
+        for val1, val2 in zip(results, self.expected_results(phi.detach().numpy()), strict=True):
             assert qp.math.allclose(val1, val2)
 
         def real_out(phi):
@@ -1096,7 +1096,7 @@ class TestQInfoMeasurements:
             return tuple(torch.imag(r) if torch.is_complex(r) else torch.tensor(0) for r in f(phi))
 
         grad_imag = torch.autograd.functional.jacobian(imag_out, phi)
-        grads = tuple(r + 1j * i for r, i in zip(grad_real, grad_imag, strict=False))
+        grads = tuple(r + 1j * i for r, i in zip(grad_real, grad_imag, strict=True))
 
         expected_grads = self.expected_grad(phi.detach().numpy())
 
@@ -1156,7 +1156,7 @@ class TestTreeTraversalStack:
                 ).values()
             )
             assert tree_stack.probs[depth] == list(
-                counts_to_probs(dict(zip([0, 1], tree_stack.counts[depth], strict=False))).values()
+                counts_to_probs(dict(zip([0, 1], tree_stack.counts[depth], strict=True))).values()
             )
 
             state_vec = np.array(tree_stack.states[depth]).T
@@ -1356,12 +1356,12 @@ class TestMidMeasurements:
         if not isinstance(shots, list):
             res1, res2 = (res1,), (res2,)
 
-        for rs1, rs2 in zip(res1, res2, strict=False):
+        for rs1, rs2 in zip(res1, res2, strict=True):
             prob_dist1, prob_dist2 = rs1, rs2
             if measure_f in (qp.sample,):
                 n_wires = rs1.shape[1]
                 prob_dist1, prob_dist2 = np.zeros(2**n_wires), np.zeros(2**n_wires)
-                for prob, rs in zip([prob_dist1, prob_dist2], [rs1, rs2], strict=False):
+                for prob, rs in zip([prob_dist1, prob_dist2], [rs1, rs2], strict=True):
                     index, count = np.unique(
                         np.packbits(rs, axis=1, bitorder="little").squeeze(), return_counts=True
                     )
@@ -1506,7 +1506,7 @@ class TestMidMeasurements:
             )
             for _ in range(n_shots)
         ]
-        terminal_results, mcm_results = zip(*results, strict=False)
+        terminal_results, mcm_results = zip(*results, strict=True)
 
         equivalent_tape = qp.tape.QuantumScript(
             [qp.RX(np.pi / 4, wires=0)], [qp.sample(wires=0)], shots=n_shots
@@ -1514,14 +1514,14 @@ class TestMidMeasurements:
         expected_result = simulate(equivalent_tape, rng=rng)
         fisher_exact_test(mcm_results, expected_result, threshold=0.01)
 
-        subset = [ts for ms, ts in zip(mcm_results, terminal_results, strict=False) if ms == 0]
+        subset = [ts for ms, ts in zip(mcm_results, terminal_results, strict=True) if ms == 0]
         equivalent_tape = qp.tape.QuantumScript(
             [qp.RX(np.pi / 4, wires=0)], [qp.expval(qp.Z(0))], shots=n_shots
         )
         expected_sample = simulate(equivalent_tape, rng=rng)
         fisher_exact_test(subset, expected_sample, outcomes=(-1, 1), threshold=0.01)
 
-        subset = [ts for ms, ts in zip(mcm_results, terminal_results, strict=False) if ms == 1]
+        subset = [ts for ms, ts in zip(mcm_results, terminal_results, strict=True) if ms == 1]
         equivalent_tape = qp.tape.QuantumScript(
             [qp.X(0), qp.RX(np.pi / 4, wires=0)], [qp.expval(qp.Z(0))], shots=n_shots
         )

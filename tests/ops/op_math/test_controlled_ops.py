@@ -603,7 +603,7 @@ def _arbitrary_crot_broadcasted(x, y, z):
                 [0, 0, np.exp(-0.5j * (_x + _z)) * _c, -np.exp(0.5j * (_x - _z)) * _s],
                 [0, 0, np.exp(-0.5j * (_x - _z)) * _s, np.exp(0.5j * (_x + _z)) * _c],
             ]
-            for _x, _z, _c, _s in zip(x, z, c, s, strict=False)
+            for _x, _z, _c, _s in zip(x, z, c, s, strict=True)
         ]
     )
 

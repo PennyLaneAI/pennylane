@@ -41,7 +41,7 @@ def _coeffs(states: int, modes: int, order: int):
             for j in range(states):
                 phi[i, j] = (phi[i, j] + phi[i, j].T) / 2
 
-    for phi, symmetric_phi in zip(phis, symmetric_phis, strict=False):
+    for phi, symmetric_phi in zip(phis, symmetric_phis, strict=True):
         for i in range(states):
             for j in range(states):
                 symmetric_phi[i, j] = (phi[i, j] + phi[j, i]) / 2

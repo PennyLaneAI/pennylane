@@ -47,7 +47,7 @@ def equal_list(lhs, rhs):
         lhs = [lhs]
     if not isinstance(rhs, list):
         rhs = [rhs]
-    return len(lhs) == len(rhs) and all(qp.equal(l, r) for l, r in zip(lhs, rhs, strict=False))
+    return len(lhs) == len(rhs) and all(qp.equal(l, r) for l, r in zip(lhs, rhs, strict=True))
 
 
 class TempOperator(Operator):
@@ -529,7 +529,7 @@ class TestControlledMiscMethods:
 
         assert base_gen_coeff == gen_coeff
 
-        for wire, val in zip(op.control_wires, control_values, strict=False):
+        for wire, val in zip(op.control_wires, control_values, strict=True):
             ob = list(op for op in gen_tensor.operands if op.wires == qp.wires.Wires(wire))
             assert len(ob) == 1
             assert ob[0].data == ([val],)
@@ -553,7 +553,7 @@ class TestControlledMiscMethods:
 
         assert len(op_gates) == len(base_gates)
 
-        for op1, op2 in zip(op_gates, base_gates, strict=False):
+        for op1, op2 in zip(op_gates, base_gates, strict=True):
             assert op1.__class__ is op2.__class__
             assert op1.wires == op2.wires
 
@@ -668,7 +668,7 @@ class TestControlledSimplify:
         simplified_op = controlled_op.simplify()
 
         assert isinstance(simplified_op, Controlled)
-        for s1, s2 in zip(final_op.base.operands, simplified_op.base.operands, strict=False):
+        for s1, s2 in zip(final_op.base.operands, simplified_op.base.operands, strict=True):
             qp.assert_equal(s1, s2)
 
     def test_simplify_nested_controlled_ops(self):
@@ -768,10 +768,10 @@ class TestMatrix:
         mat = op.matrix()
         with qp.queuing.AnnotatedQueue() as q:
             # pylint: disable-next=expression-not-assigned
-            [qp.PauliX(w) for w, val in zip(control_wires, control_values, strict=False) if not val]
+            [qp.PauliX(w) for w, val in zip(control_wires, control_values, strict=True) if not val]
             Controlled(base, control_wires, control_values=[1, 1, 1])
             # pylint: disable-next=expression-not-assigned
-            [qp.PauliX(w) for w, val in zip(control_wires, control_values, strict=False) if not val]
+            [qp.PauliX(w) for w, val in zip(control_wires, control_values, strict=True) if not val]
         tape = qp.tape.QuantumScript.from_queue(q)
         decomp_mat = qp.matrix(tape, wire_order=op.wires)
 

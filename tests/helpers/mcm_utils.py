@@ -36,7 +36,7 @@ def validate_counts(shots, results1, results2, batch_size=None):
         assert isinstance(results1, tuple)
         assert isinstance(results2, tuple)
         assert len(results1) == len(results2) == len(shots)
-        for s, r1, r2 in zip(shots, results1, results2, strict=False):
+        for s, r1, r2 in zip(shots, results1, results2, strict=True):
             validate_counts(s, r1, r2, batch_size=batch_size)
         return
 
@@ -44,7 +44,7 @@ def validate_counts(shots, results1, results2, batch_size=None):
         assert isinstance(results1, Iterable)
         assert isinstance(results2, Iterable)
         assert len(results1) == len(results2) == batch_size
-        for r1, r2 in zip(results1, results2, strict=False):
+        for r1, r2 in zip(results1, results2, strict=True):
             validate_counts(shots, r1, r2, batch_size=None)
         return
 
@@ -67,7 +67,7 @@ def validate_samples(shots, results1, results2, batch_size=None):
         assert isinstance(results1, tuple)
         assert isinstance(results2, tuple)
         assert len(results1) == len(results2) == len(shots)
-        for s, r1, r2 in zip(shots, results1, results2, strict=False):
+        for s, r1, r2 in zip(shots, results1, results2, strict=True):
             validate_samples(s, r1, r2, batch_size=batch_size)
         return
 
@@ -75,7 +75,7 @@ def validate_samples(shots, results1, results2, batch_size=None):
         assert isinstance(results1, Iterable)
         assert isinstance(results2, Iterable)
         assert len(results1) == len(results2) == batch_size
-        for r1, r2 in zip(results1, results2, strict=False):
+        for r1, r2 in zip(results1, results2, strict=True):
             validate_samples(shots, r1, r2, batch_size=None)
         return
 
@@ -110,7 +110,7 @@ def validate_expval(shots, results1, results2, batch_size=None):
 
     if batch_size is not None:
         assert len(results1) == len(results2) == batch_size
-        for r1, r2 in zip(results1, results2, strict=False):
+        for r1, r2 in zip(results1, results2, strict=True):
             validate_expval(shots, r1, r2, batch_size=None)
 
     assert np.allclose(results1, results2, atol=0.01, rtol=0.2)

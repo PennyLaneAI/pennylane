@@ -326,7 +326,7 @@ class TestRecordedRound:
         jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor(name="decoder-0")]))
         calls = runtime_calls_of(jaxpr)
         assert len(calls) == 2 * len(TRANSPORT_CALLS)
-        for call, check in zip(calls[::2], calls[1::2], strict=False):
+        for call, check in zip(calls[::2], calls[1::2], strict=True):
             name = call.params["symbol"].removeprefix("__catalyst__transport__")
             expected = CHECKS[1] if name == "get_session" else CHECKS[0]
             assert check.params["symbol"] == expected

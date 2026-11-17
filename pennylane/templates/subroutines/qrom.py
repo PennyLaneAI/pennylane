@@ -480,7 +480,7 @@ def _select_swap(bitstrings, control_wires, target_wires, work_wires, clean):
 def _measure_masked_x(work_wire, targets, bit_mask):
     """Measure X on the work wire and on targets selected by an integer bit mask."""
     if not math.is_tracer(bit_mask):
-        x_wires = [wire for wire, bit in zip(targets, bit_mask, strict=False) if bit]
+        x_wires = [wire for wire, bit in zip(targets, bit_mask, strict=True) if bit]
         return pauli_measure("X" * (len(x_wires) + 1), [work_wire, *x_wires])
 
     # A PauliMeasure has a static word and number of wires. Group the selected targets
@@ -795,6 +795,7 @@ def _interleave_controls(sel_wires, work_wires, head=None):
         sel_wires = sel_wires[1:]
     else:
         controls = [head]
+    # Only one work wire per remaining selection wire is needed; extra work wires are unused.
     for sel, work in zip(sel_wires, work_wires, strict=False):
         controls.append(sel)
         controls.append(work)

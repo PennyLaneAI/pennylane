@@ -184,7 +184,7 @@ def qudit_expectation_brute_force(
 
     # D(theta) = prod_g exp(i theta_g Q_g)  [eqn 43]
     D = np.eye(dim, dtype=complex)
-    for g, theta in zip(gates, thetas, strict=False):
+    for g, theta in zip(gates, thetas, strict=True):
         Q_g = _kron_n([_hermitian_observable(g[i], 0, dims[i]) for i in range(n)])
         D = expm(1j * theta * Q_g) @ D
 
@@ -202,7 +202,7 @@ def qudit_expectation_brute_force(
         psi0[0] = 1.0
     else:
         psi0 = np.zeros(dim, dtype=complex)
-        for elem, amp in zip(init_state_elems, init_state_amps, strict=False):
+        for elem, amp in zip(init_state_elems, init_state_amps, strict=True):
             idx = 0
             for i, e in enumerate(elem):
                 idx = idx * dims[i] + int(e)
@@ -242,7 +242,7 @@ def _pennylane_qubit_expval(generators_list, thetas_list, l_vec, m_vec):
         for i in range(n):
             qp.Hadamard(i)
 
-        for theta, gen in zip(thetas_list, generators_list, strict=False):
+        for theta, gen in zip(thetas_list, generators_list, strict=True):
             active = [i for i, g in enumerate(gen) if g == 1]
             if active:
                 qp.MultiRZ(2 * -theta, wires=active)
@@ -334,7 +334,7 @@ class TestQuditExpvalVsPennyLane:
         expval_fn = _build_qudit_expval_func_exact(config)
         our_vals, *_ = expval_fn(jnp.array(params))
 
-        for i, (l, m) in enumerate(zip(l_arr, m_arr, strict=False)):
+        for i, (l, m) in enumerate(zip(l_arr, m_arr, strict=True)):
             pl_val = _pennylane_qubit_expval(generators_arr.tolist(), thetas_arr.tolist(), l, m)
             assert np.isclose(our_vals[i], pl_val, atol=1e-6), (
                 f"Observable {i} (l={l}, m={m}): got {our_vals[i]:.8f}, "
@@ -527,7 +527,7 @@ class TestQuditExpvalBatchedVsMatrix:
         batched_fn = build_qudit_expval_func(config)
         mc_vals, *_ = batched_fn(jnp.array(params))
 
-        for i, (l, m) in enumerate(zip(l_arr, m_arr, strict=False)):
+        for i, (l, m) in enumerate(zip(l_arr, m_arr, strict=True)):
             ref = qudit_expectation_brute_force(n, d, generators_arr, thetas_arr, l, m)
             assert np.isclose(
                 mc_vals[i], ref, atol=3.5 / np.sqrt(NUM_SAMPLES)
@@ -600,7 +600,7 @@ class TestQuditExpvalNonUniformDims:
         assert mc_cov.shape == exact_vals.shape + (2, 2)
         np.testing.assert_allclose(mc_vals, exact_vals, atol=3.5 / np.sqrt(NUM_SAMPLES))
 
-        for i, (l, m) in enumerate(zip(l_arr, m_arr, strict=False)):
+        for i, (l, m) in enumerate(zip(l_arr, m_arr, strict=True)):
             ref = qudit_expectation_brute_force(n, dims, generators_arr, thetas_arr, l, m)
             assert np.isclose(
                 mc_vals[i], ref, atol=3.5 / np.sqrt(NUM_SAMPLES)
@@ -1076,7 +1076,7 @@ class TestQuditExpvalBatchedWithInitState:
         mc_err_re = np.sqrt(mc_cov[:, 0, 0])
         mc_err_im = np.sqrt(mc_cov[:, 1, 1])
 
-        for i, (l, m) in enumerate(zip(l_arr, m_arr, strict=False)):
+        for i, (l, m) in enumerate(zip(l_arr, m_arr, strict=True)):
             ref = qudit_expectation_brute_force(
                 n,
                 d,
@@ -1514,7 +1514,7 @@ class TestQuditExpvalWithPhaseLayer:
 
         phase_diag = self._build_phase_diag(self._phase_fn, phase_params, d, n)
 
-        for i, (l, m) in enumerate(zip(l_vecs, m_vecs, strict=False)):
+        for i, (l, m) in enumerate(zip(l_vecs, m_vecs, strict=True)):
             ref = qudit_expectation_brute_force(
                 n,
                 d,
@@ -1565,7 +1565,7 @@ class TestQuditExpvalWithPhaseLayer:
 
         phase_diag = self._build_phase_diag(self._phase_fn, phase_params, d, n)
 
-        for i, (l, m) in enumerate(zip(l_vecs, m_vecs, strict=False)):
+        for i, (l, m) in enumerate(zip(l_vecs, m_vecs, strict=True)):
             ref = qudit_expectation_brute_force(
                 n,
                 d,
@@ -1687,7 +1687,7 @@ class TestQuditPhaseBlocking:
 
         grad_s = jax.grad(loss(fn_single), argnums=(0, 1))(params, phase_params)
         grad_b = jax.grad(loss(fn_blocked), argnums=(0, 1))(params, phase_params)
-        for g_s, g_b in zip(grad_s, grad_b, strict=False):
+        for g_s, g_b in zip(grad_s, grad_b, strict=True):
             np.testing.assert_allclose(g_b, g_s, atol=1e-5, rtol=1e-5)
 
     def test_blocked_matches_exact(self):
@@ -1709,7 +1709,7 @@ class TestQuditPhaseBlocking:
             max_memory=tiny,
         )
         mc_vals, mc_cov = build_qudit_expval_func(config)(jnp.array(thetas))
-        for i, (l, m) in enumerate(zip(l_vecs, m_vecs, strict=False)):
+        for i, (l, m) in enumerate(zip(l_vecs, m_vecs, strict=True)):
             ref = qudit_expectation_brute_force(n, d, generators, thetas, l, m)
             tol = max(
                 3.5 * float(np.sqrt(mc_cov[i, 0, 0])), 3.5 * float(np.sqrt(mc_cov[i, 1, 1])), 1e-5

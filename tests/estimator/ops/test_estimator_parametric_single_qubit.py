@@ -31,7 +31,7 @@ from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import (
 )
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
 
-params = list(zip([10e-3, 10e-4, 10e-5], [17, 21, 24], strict=False))
+params = list(zip([10e-3, 10e-4, 10e-5], [17, 21, 24], strict=True))
 
 
 @pytest.mark.parametrize("precision, expected", params)
@@ -159,7 +159,7 @@ class TestPauliRotation:
     )
 
     @pytest.mark.parametrize(
-        "resource_class, local_res", list(zip(params_classes, params_ctrl_res, strict=False))
+        "resource_class, local_res", list(zip(params_classes, params_ctrl_res, strict=True))
     )
     @pytest.mark.parametrize("ctrl_wires, ctrl_values, general_res", ctrl_res_data)
     def test_controlled_decomposition_multi_controlled(

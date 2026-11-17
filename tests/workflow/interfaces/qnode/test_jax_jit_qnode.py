@@ -438,8 +438,8 @@ class TestVectorValuedQNode:
 
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]])
 
-        for _res, _exp in zip(res, expected, strict=False):
-            for r, e in zip(_res, _exp, strict=False):
+        for _res, _exp in zip(res, expected, strict=True):
+            for r, e in zip(_res, _exp, strict=True):
                 assert isinstance(r, jax.numpy.ndarray)
                 assert r.shape == ()
                 assert np.allclose(r, e, atol=tol, rtol=0)
@@ -455,8 +455,8 @@ class TestVectorValuedQNode:
 
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]])
 
-        for _res, _exp in zip(res, expected, strict=False):
-            for r, e in zip(_res, _exp, strict=False):
+        for _res, _exp in zip(res, expected, strict=True):
+            for r, e in zip(_res, _exp, strict=True):
                 assert isinstance(r, jax.numpy.ndarray)
                 assert r.shape == ()
                 assert np.allclose(r, e, atol=tol, rtol=0)

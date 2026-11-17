@@ -120,7 +120,7 @@ class TestZOmega:
         assert z_omega.d == d
         string_repr = [
             f"{coeff} {var}".strip()
-            for coeff, var in zip([a, b, c, d], ["ω^3", "ω^2", "ω", ""], strict=False)
+            for coeff, var in zip([a, b, c, d], ["ω^3", "ω^2", "ω", ""], strict=True)
             if coeff
         ]
         assert str(z_omega) == " + ".join(string_repr) if string_repr else "0"

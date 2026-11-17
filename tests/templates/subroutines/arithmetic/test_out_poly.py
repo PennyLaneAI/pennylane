@@ -188,7 +188,7 @@ class TestOutPoly:
             polynomial_function, input_registers=[[0, 1], [2]], output_wires=[3]
         ).decomposition()
 
-        for op1, op2 in zip(expected_decomposition, ops, strict=False):
+        for op1, op2 in zip(expected_decomposition, ops, strict=True):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
@@ -221,7 +221,7 @@ class TestOutPoly:
             qp.ctrl(pa2, 0),
             qp.adjoint(qp.QFT(wires=[4, 5])),
         ]
-        for op1, op2 in zip(decomp, expected, strict=False):
+        for op1, op2 in zip(decomp, expected, strict=True):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.jax

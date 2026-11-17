@@ -426,7 +426,7 @@ class TestMiscMethods:
         assert op.has_overlapping_wires is True
 
     @pytest.mark.parametrize(
-        "ops_lst, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep, strict=False))
+        "ops_lst, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep, strict=True))
     )
     def test_repr(self, ops_lst, op_rep):
         """Test __repr__ method."""
@@ -466,7 +466,7 @@ class TestMiscMethods:
     def test_iter(self, ops_lst):
         """Test __iter__ method."""
         op = ValidOp(ops_lst)
-        for i, j in zip(op, ops_lst, strict=False):
+        for i, j in zip(op, ops_lst, strict=True):
             assert i == j
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -531,8 +531,8 @@ class TestProperties:
                 qp.prod(qp.PauliX(4), qp.PauliY(3), qp.PauliZ(8)),
             ],
         ]
-        for list_op1, list_op2 in zip(overlapping_ops, valid_op.overlapping_ops, strict=False):
-            for op1, op2 in zip(list_op1, list_op2, strict=False):
+        for list_op1, list_op2 in zip(overlapping_ops, valid_op.overlapping_ops, strict=True):
+            for op1, op2 in zip(list_op1, list_op2, strict=True):
                 qp.assert_equal(op1, op2)
 
     def test_no_batching(self):

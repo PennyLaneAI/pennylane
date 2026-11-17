@@ -528,7 +528,7 @@ class TestPreprocessingIntegration:
         tapes, _ = program([tape])
 
         assert len(tapes) == 1
-        for op, expected in zip(tapes[0].circuit, ops + measurements, strict=False):
+        for op, expected in zip(tapes[0].circuit, ops + measurements, strict=True):
             qp.assert_equal(op, expected)
 
     def test_batch_transform_broadcast_not_adjoint(self):
@@ -565,7 +565,7 @@ class TestPreprocessingIntegration:
 
         assert len(tapes) == 2
         for i, t in enumerate(tapes):
-            for op, expected in zip(t.circuit, expected_ops[i] + measurements, strict=False):
+            for op, expected in zip(t.circuit, expected_ops[i] + measurements, strict=True):
                 qp.assert_equal(op, expected)
 
     def test_preprocess_batch_transform_not_adjoint(self):
@@ -584,7 +584,7 @@ class TestPreprocessingIntegration:
 
         assert len(res_tapes) == 2
         for i, t in enumerate(res_tapes):
-            for op, expected_op in zip(t.operations, ops, strict=False):
+            for op, expected_op in zip(t.operations, ops, strict=True):
                 qp.assert_equal(op, expected_op)
             assert len(t.measurements) == 1
             if i == 0:
@@ -621,7 +621,7 @@ class TestPreprocessingIntegration:
 
         assert len(res_tapes) == 6
         for i, t in enumerate(res_tapes):
-            for op, expected_op in zip(t.operations, expected_ops[i % 3], strict=False):
+            for op, expected_op in zip(t.operations, expected_ops[i % 3], strict=True):
                 qp.assert_equal(op, expected_op)
             assert len(t.measurements) == 1
             if i < 3:
@@ -650,7 +650,7 @@ class TestPreprocessingIntegration:
 
         assert len(res_tapes) == 2
         for i, t in enumerate(res_tapes):
-            for op, exp in zip(t.circuit, expected + measurements[i], strict=False):
+            for op, exp in zip(t.circuit, expected + measurements[i], strict=True):
                 qp.assert_equal(op, exp)
 
         val = (("a", "b"), "c", "d")
@@ -678,7 +678,7 @@ class TestPreprocessingIntegration:
 
         assert len(res_tapes) == 2
         for i, t in enumerate(res_tapes):
-            for op, expected_op in zip(t.operations, expected_ops, strict=False):
+            for op, expected_op in zip(t.operations, expected_ops, strict=True):
                 qp.assert_equal(op, expected_op)
             assert len(t.measurements) == 1
             if i == 0:
@@ -715,7 +715,7 @@ class TestPreprocessingIntegration:
 
         assert len(res_tapes) == 6
         for i, t in enumerate(res_tapes):
-            for op, expected_op in zip(t.operations, expected_ops[i % 3], strict=False):
+            for op, expected_op in zip(t.operations, expected_ops[i % 3], strict=True):
                 qp.assert_equal(op, expected_op)
             assert len(t.measurements) == 1
             if i < 3:
@@ -1079,9 +1079,9 @@ class TestAdjointDiffTapeValidation:
         qs.trainable_params = [1]
         qs_valid, _ = program((qs,))
         qs_valid = qs_valid[0]
-        for o1, o2 in zip(qs.operations, qs_valid.operations, strict=False):
+        for o1, o2 in zip(qs.operations, qs_valid.operations, strict=True):
             qp.assert_equal(o1, o2)
-        for o1, o2 in zip(qs.measurements, qs_valid.measurements, strict=False):
+        for o1, o2 in zip(qs.measurements, qs_valid.measurements, strict=True):
             qp.assert_equal(o1, o2)
         assert qs_valid.trainable_params == [1]  # same as input tape since no decomposition
 
@@ -1114,9 +1114,9 @@ class TestAdjointDiffTapeValidation:
             qp.RZ(qp.numpy.array(0.3), wires=[0]),
         ]
 
-        for o1, o2 in zip(qs_valid.operations, expected_ops, strict=False):
+        for o1, o2 in zip(qs_valid.operations, expected_ops, strict=True):
             qp.assert_equal(o1, o2)
-        for o1, o2 in zip(qs.measurements, qs_valid.measurements, strict=False):
+        for o1, o2 in zip(qs.measurements, qs_valid.measurements, strict=True):
             qp.assert_equal(o1, o2)
         assert qs_valid.trainable_params == [0, 1, 2, 3]
         assert qs.shots == qs_valid.shots

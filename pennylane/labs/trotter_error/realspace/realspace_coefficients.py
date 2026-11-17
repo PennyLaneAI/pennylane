@@ -488,7 +488,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         if len(index) != len(self.shape):
             return False
 
-        for x, y in zip(index, self.shape, strict=False):
+        for x, y in zip(index, self.shape, strict=True):
             if x < 0 or x >= y:
                 return False
 
@@ -615,7 +615,7 @@ def _numpy_to_dict(arr, threshold):
     nz = arr.nonzero()
     d = {}
 
-    for index in zip(*nz, strict=False):
+    for index in zip(*nz, strict=True):
         if abs(arr[index]) > threshold:
             index = tuple(map(int, index))
             d[index] = float(arr[index])

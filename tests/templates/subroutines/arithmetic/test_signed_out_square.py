@@ -304,7 +304,7 @@ class TestSignedOutSquare:
             qp.SemiAdder([0], [3], [8, 9, 10, 11, 12]),
             qp.X(3),
         ]
-        for op1, op2 in zip(decomp, expected, strict=False):
+        for op1, op2 in zip(decomp, expected, strict=True):
             if isinstance(op1, qp.ops.MidMeasure):
                 assert isinstance(op2, qp.ops.MidMeasure)
                 assert op1.wires == op2.wires

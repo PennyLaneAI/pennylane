@@ -202,7 +202,7 @@ class TestDecomposition:
 
         expected = [qp.H(0), qp.RZ(0.5, wires=0)]
         assert len(decomp) == len(expected)
-        for actual, exp in zip(decomp, expected, strict=False):
+        for actual, exp in zip(decomp, expected, strict=True):
             qp.assert_equal(actual, exp)
 
     def test_decomposition_with_control_flow_matches_qfunc(self):
@@ -213,7 +213,7 @@ class TestDecomposition:
 
         expected = [qp.H(0), qp.RZ(0.5, wires=0)] * 3
         assert len(decomp) == len(expected)
-        for actual, exp in zip(decomp, expected, strict=False):
+        for actual, exp in zip(decomp, expected, strict=True):
             qp.assert_equal(actual, exp)
 
     def test_adjoint_decomposition(self):
@@ -224,7 +224,7 @@ class TestDecomposition:
         # The adjoint reverses the body and adjoints each operator.
         expected = [qp.adjoint(qp.RZ(0.5, wires=0)), qp.adjoint(qp.H(0))]
         assert len(decomp) == len(expected)
-        for actual, exp in zip(decomp, expected, strict=False):
+        for actual, exp in zip(decomp, expected, strict=True):
             qp.assert_equal(actual, exp)
 
     def test_controlled_decomposition(self):
@@ -236,7 +236,7 @@ class TestDecomposition:
         # Each operator in the body becomes controlled on the same control wire.
         expected = [qp.ctrl(qp.H(1), control=0), qp.ctrl(qp.RZ(0.5, wires=1), control=0)]
         assert len(decomp) == len(expected)
-        for actual, exp in zip(decomp, expected, strict=False):
+        for actual, exp in zip(decomp, expected, strict=True):
             qp.assert_equal(actual, exp)
 
 

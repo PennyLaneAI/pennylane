@@ -367,7 +367,7 @@ class TestParamShift:
         # They are not batched together because we trust operation recipes to be condensed already
         expected_shifts = [[0, 0], [s, 0], [-s, 0], [0, s], [0, -s]]
         assert len(tapes) == 5
-        for tape, expected in zip(tapes, expected_shifts, strict=False):
+        for tape, expected in zip(tapes, expected_shifts, strict=True):
             assert tape.operations[0].data[0] == x[0] + expected[0]
             assert tape.operations[1].data[0] == x[1] + expected[1]
 
@@ -383,7 +383,7 @@ class TestParamShift:
             for (
                 a,
                 b,
-            ) in zip(g, _expected, strict=False):
+            ) in zip(g, _expected, strict=True):
                 assert np.allclose(a, b, atol=shot_vec_tol)
 
     @pytest.mark.slow
@@ -542,7 +542,7 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
         shot_vec_manual_res = [
             tuple(comp[l] for comp in shot_vec_manual_res) for l in range(shot_vec_len)
         ]
-        for r1, r2 in zip(autograd_val, shot_vec_manual_res, strict=False):
+        for r1, r2 in zip(autograd_val, shot_vec_manual_res, strict=True):
             manualgrad_val = np.subtract(*r2) / 2
             assert np.allclose(r1, manualgrad_val, atol=shot_vec_tol, rtol=0)
 
@@ -553,7 +553,7 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
 
         tapes, fn = qp.gradients.finite_diff(tape, h=h_val)
         numeric_val = fn(dev.execute(tapes))
-        for a_val, n_val in zip(autograd_val, numeric_val, strict=False):
+        for a_val, n_val in zip(autograd_val, numeric_val, strict=True):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
 
     @pytest.mark.parametrize("theta", angles)
@@ -595,7 +595,7 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
             backward = dev.execute(tape)
 
             shot_vec_comp = []
-            for f, b in zip(forward, backward, strict=False):
+            for f, b in zip(forward, backward, strict=True):
                 shot_vec_comp.append((f - b) / 2)
 
             manualgrad_val.append(tuple(shot_vec_comp))
@@ -605,7 +605,7 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
         manualgrad_val = [tuple(comp[l] for comp in manualgrad_val) for l in range(shot_vec_len)]
         assert len(autograd_val) == len(manualgrad_val)
 
-        for a_val, m_val in zip(autograd_val, manualgrad_val, strict=False):
+        for a_val, m_val in zip(autograd_val, manualgrad_val, strict=True):
             assert isinstance(a_val, tuple)
             assert len(a_val) == num_params
             assert np.allclose(a_val, m_val, atol=shot_vec_tol, rtol=0)
@@ -613,7 +613,7 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
 
         tapes, fn = qp.gradients.finite_diff(tape, h=h_val)
         numeric_val = fn(dev.execute(tapes))
-        for a_val, n_val in zip(autograd_val, numeric_val, strict=False):
+        for a_val, n_val in zip(autograd_val, numeric_val, strict=True):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
 
     @pytest.mark.parametrize("G", [qp.CRX, qp.CRY, qp.CRZ])
@@ -644,7 +644,7 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
 
         tapes, fn = qp.gradients.finite_diff(tape, h=h_val)
         numeric_val = fn(dev.execute(tapes))
-        for a_val, n_val in zip(grad, numeric_val, strict=False):
+        for a_val, n_val in zip(grad, numeric_val, strict=True):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
 
     @pytest.mark.parametrize("theta", angles)
@@ -690,7 +690,7 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
 
         tapes, fn = qp.gradients.finite_diff(tape, h=h_val)
         numeric_val = fn(dev.execute(tapes))
-        for a_val, n_val in zip(grad, numeric_val, strict=False):
+        for a_val, n_val in zip(grad, numeric_val, strict=True):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
 
     def test_gradients_agree_finite_differences(self, broadcast):
@@ -725,9 +725,9 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
         grad_A = grad_fn(tape, dev, broadcast=broadcast)
 
         # gradients computed with different methods must agree
-        for a_val, n_val in zip(grad_A, grad_F1, strict=False):
+        for a_val, n_val in zip(grad_A, grad_F1, strict=True):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
-        for a_val, n_val in zip(grad_A, grad_F2, strict=False):
+        for a_val, n_val in zip(grad_A, grad_F2, strict=True):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
 
     def test_variance_gradients_agree_finite_differences(self, broadcast):
@@ -1093,7 +1093,7 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
             assert len(res[0]) == 2
             assert len(res[1]) == 2
 
-            for a, e in zip(res, expected, strict=False):
+            for a, e in zip(res, expected, strict=True):
                 assert np.allclose(np.squeeze(np.stack(a)), e, atol=shot_vec_tol, rtol=0)
 
     def test_prob_expectation_values(self, broadcast):
@@ -1263,7 +1263,7 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
         assert len(tapes) == 3
 
         all_Fres = fn(dev.execute(tapes))
-        for gradF, gradA in zip(all_Fres, all_res, strict=False):
+        for gradF, gradA in zip(all_Fres, all_res, strict=True):
 
             expected = 2 * np.sin(a + b) * np.cos(a + b)
             assert gradF[0] == pytest.approx(expected, abs=finite_diff_tol)
@@ -1710,7 +1710,7 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
         expected = np.array([2 * np.cos(a) * np.sin(a), -np.cos(b) * np.sin(a), 0])
         for gradA in all_res:
             assert isinstance(gradA, tuple)
-            for a_comp, e_comp in zip(gradA, expected, strict=False):
+            for a_comp, e_comp in zip(gradA, expected, strict=True):
                 assert isinstance(a_comp, np.ndarray)
                 assert a_comp.shape == ()
                 assert np.allclose(a_comp, e_comp, atol=shot_vec_tol, rtol=0)
@@ -1780,8 +1780,8 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
         ).T
         for gradA in all_res:
             assert isinstance(gradA, tuple)
-            for a, e in zip(gradA, expected, strict=False):
-                for a_comp, e_comp in zip(a, e, strict=False):
+            for a, e in zip(gradA, expected, strict=True):
+                for a_comp, e_comp in zip(a, e, strict=True):
                     assert isinstance(a_comp, np.ndarray)
                     assert a_comp.shape == ()
                     assert np.allclose(a_comp, e_comp, atol=shot_vec_tol, rtol=0)
@@ -2154,7 +2154,7 @@ single_scalar_output_measurements = [
 ]
 
 single_meas_with_shape = list(
-    zip(single_scalar_output_measurements, [(), (4,), (), ()], strict=False)
+    zip(single_scalar_output_measurements, [(), (4,), (), ()], strict=True)
 )
 
 """
@@ -2247,7 +2247,7 @@ class TestReturn:
 
         expected_shapes = [(), (4,), (), ()]
         for meas_res in all_res:
-            for res, shape in zip(meas_res, expected_shapes, strict=False):
+            for res, shape in zip(meas_res, expected_shapes, strict=True):
                 assert isinstance(res, np.ndarray)
                 assert res.shape == shape
 

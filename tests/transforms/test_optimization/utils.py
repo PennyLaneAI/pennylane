@@ -30,8 +30,8 @@ def compare_operation_lists(ops_obtained, names_expected, wires_expected):
     """Compare two lists of operations."""
     assert len(ops_obtained) == len(names_expected)
     assert all(
-        op.name == exp_name for (op, exp_name) in zip(ops_obtained, names_expected, strict=False)
+        op.name == exp_name for (op, exp_name) in zip(ops_obtained, names_expected, strict=True)
     )
     assert all(
-        op.wires == exp_wires for (op, exp_wires) in zip(ops_obtained, wires_expected, strict=False)
+        op.wires == exp_wires for (op, exp_wires) in zip(ops_obtained, wires_expected, strict=True)
     )

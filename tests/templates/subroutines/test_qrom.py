@@ -314,7 +314,7 @@ class TestQROM:
             qp.ctrl(qp.SWAP([2, 3]), control=1, work_wire_type="zeroed"),
         ]
 
-        for op1, op2 in zip(qrom_decomposition, expected_gates, strict=False):
+        for op1, op2 in zip(qrom_decomposition, expected_gates, strict=True):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -993,7 +993,7 @@ class TestMeasurementQROM:
                 work_wires=op.work_wires,
             )
         assert len(q_base.queue) == len(q_direct.queue)
-        for op_base, op_direct in zip(q_base.queue, q_direct.queue, strict=False):
+        for op_base, op_direct in zip(q_base.queue, q_direct.queue, strict=True):
             assert type(op_base) is type(op_direct)
             assert op_base.wires == op_direct.wires
 

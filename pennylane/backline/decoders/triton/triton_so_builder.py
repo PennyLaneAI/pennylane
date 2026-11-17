@@ -374,7 +374,7 @@ def _compile_kernel(  # pylint: disable=too-many-arguments
         "bin_size": len(kernel_binary),
         "bin_data": ", ".join(
             f"0x{high_nibble}{low_nibble}"
-            for high_nibble, low_nibble in zip(binary_hex[::2], binary_hex[1::2], strict=False)
+            for high_nibble, low_nibble in zip(binary_hex[::2], binary_hex[1::2], strict=True)
         ),
         "signature": runtime_signature,
         "full_signature": runtime_signature,

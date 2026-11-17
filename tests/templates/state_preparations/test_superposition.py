@@ -157,7 +157,7 @@ class TestSuperposition:
             qp.MultiControlledX([0, 1, 2]),
         ]
 
-        for op1, op2 in zip(decomposition, expected, strict=False):
+        for op1, op2 in zip(decomposition, expected, strict=True):
             assert qp.equal(op1, op2)
 
     @pytest.mark.xfail_if_capture(reason="come back to this as we port Superposition [sc-128373]")

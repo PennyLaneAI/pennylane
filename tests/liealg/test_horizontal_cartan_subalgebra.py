@@ -129,7 +129,7 @@ class TestChangeBasisAdRep:
         adj = qp.structure_constants(dla)
         coeffs = rng.random((len(dla), len(dla)))
         skewed_dla = [
-            qp.sum(*(c * op for c, op in zip(_coeffs, dla, strict=False))) for _coeffs in coeffs
+            qp.sum(*(c * op for c, op in zip(_coeffs, dla, strict=True))) for _coeffs in coeffs
         ]
         skewed_adj = qp.structure_constants(skewed_dla, is_orthogonal=False)
 
@@ -146,7 +146,7 @@ class TestChangeBasisAdRep:
         adj = qp.structure_constants(dla, is_orthogonal=False)
         coeffs = rng.random((len(dla), len(dla)))
         skewed_dla = [
-            qp.sum(*(c * op for c, op in zip(_coeffs, dla, strict=False))) for _coeffs in coeffs
+            qp.sum(*(c * op for c, op in zip(_coeffs, dla, strict=True))) for _coeffs in coeffs
         ]
         skewed_adj = qp.structure_constants(skewed_dla, is_orthogonal=False)
 
@@ -164,7 +164,7 @@ class TestChangeBasisAdRep:
         adj = qp.structure_constants(dla)
         coeffs = rng.random((len(dla), len(dla)))
         skewed_dla = [
-            qp.sum(*(c * op for c, op in zip(_coeffs, dla, strict=False))) for _coeffs in coeffs
+            qp.sum(*(c * op for c, op in zip(_coeffs, dla, strict=True))) for _coeffs in coeffs
         ]
         skewed_adj = qp.structure_constants(skewed_dla, is_orthogonal=False)
 
@@ -180,14 +180,14 @@ class TestChangeBasisAdRep:
 
         coeffs = rng.random((len(ortho_dla), len(ortho_dla)))
         dla = [
-            qp.sum(*(c * op for c, op in zip(_coeffs, ortho_dla, strict=False)))
+            qp.sum(*(c * op for c, op in zip(_coeffs, ortho_dla, strict=True)))
             for _coeffs in coeffs
         ]
         adj = qp.structure_constants(dla, is_orthogonal=False)
 
         coeffs = rng.random((len(dla), len(dla)))
         skewed_dla = [
-            qp.sum(*(c * op for c, op in zip(_coeffs, dla, strict=False))) for _coeffs in coeffs
+            qp.sum(*(c * op for c, op in zip(_coeffs, dla, strict=True))) for _coeffs in coeffs
         ]
         skewed_adj = qp.structure_constants(skewed_dla, is_orthogonal=False)
 
@@ -317,14 +317,14 @@ class TestAdjvecToOp(TestData):
         if vspace:
             basis = qp.pauli.PauliVSpace(basis)
         out = adjvec_to_op(adj_vecs, basis, is_orthogonal=False)
-        for out_op, exp_op in zip(out, expected, strict=False):
+        for out_op, exp_op in zip(out, expected, strict=True):
             assert isinstance(out_op, PauliSentence)
             assert all(c.dtype == np.float64 for c in out_op.values())
             assert set(out_op) == set(exp_op)
             assert all(np.isclose(out_op[k], exp_op[k]) for k in out_op)
         if is_ortho:
             out = adjvec_to_op(adj_vecs, basis, is_orthogonal=True)
-            for out_op, exp_op in zip(out, expected, strict=False):
+            for out_op, exp_op in zip(out, expected, strict=True):
                 assert isinstance(out_op, PauliSentence)
                 assert all(c.dtype == np.float64 for c in out_op.values())
                 assert set(out_op) == set(exp_op)
@@ -335,11 +335,11 @@ class TestAdjvecToOp(TestData):
         adj_vecs, basis, expected, is_ortho = op_test_case
 
         out = adjvec_to_op(adj_vecs, basis, is_orthogonal=False)
-        for out_op, exp_op in zip(out, expected, strict=False):
+        for out_op, exp_op in zip(out, expected, strict=True):
             assert qp.equal(out_op.simplify(), exp_op.simplify())
         if is_ortho:
             out = adjvec_to_op(adj_vecs, basis, is_orthogonal=True)
-            for out_op, exp_op in zip(out, expected, strict=False):
+            for out_op, exp_op in zip(out, expected, strict=True):
                 assert qp.equal(out_op.simplify(), exp_op.simplify())
 
     def test_with_dense(self, dense_test_case):

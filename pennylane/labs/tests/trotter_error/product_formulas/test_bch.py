@@ -60,9 +60,7 @@ def test_first_order(fragments, r, delta):
 
     expected *= 1j / r * delta
 
-    first_order = (
-        ProductFormula(list(zip(range(n_frags), [delta / r] * n_frags, strict=False))) ** r
-    )
+    first_order = ProductFormula(list(zip(range(n_frags), [delta / r] * n_frags, strict=True))) ** r
     actual = effective_hamiltonian(first_order, fragments, order=2)
 
     assert np.allclose(1j * delta * (expected + ham).fragment, actual.fragment)
@@ -77,7 +75,7 @@ def test_second_order(fragments, r, delta):
     frag_labels = list(range(n_frags)) + list(range(n_frags))[::-1]
     coeffs = [1 / (2 * r)] * n_frags * 2
 
-    pf = ProductFormula(list(zip(frag_labels, coeffs, strict=False))) ** r
+    pf = ProductFormula(list(zip(frag_labels, coeffs, strict=True))) ** r
     actual = effective_hamiltonian(pf, fragments, order=3, timestep=delta)
 
     expected = NumpyFragment(np.zeros(shape=(3, 3), dtype=np.complex128))
@@ -108,7 +106,7 @@ def test_fourth_order(fragments, delta):
 
     frag_labels = list(range(len(fragments))) + list(range(len(fragments)))[::-1]
     frag_coeffs = [1 / 2] * len(frag_labels)
-    second_order = ProductFormula(list(zip(frag_labels, frag_coeffs, strict=False)))
+    second_order = ProductFormula(list(zip(frag_labels, frag_coeffs, strict=True)))
     fourth_order = ProductFormula.prod(
         [second_order(u) ** 2, second_order(v), second_order(u) ** 2]
     )
@@ -153,7 +151,7 @@ def test_sixth_order(fragments, delta):
 
     frag_labels = list(range(len(fragments))) + list(reversed(range(len(fragments))))
     frag_coeffs = [1 / 2] * len(frag_labels)
-    second_order = ProductFormula(list(zip(frag_labels, frag_coeffs, strict=False)))
+    second_order = ProductFormula(list(zip(frag_labels, frag_coeffs, strict=True)))
     fourth_order = ProductFormula.prod(
         [second_order(u4) ** 2, second_order(v4), second_order(u4) ** 2]
     )
@@ -238,7 +236,7 @@ def test_effective_hamiltonian_backend(backend, num_workers, mpi4py_support):
     n_frags = len(fragments)
 
     first_order = (
-        ProductFormula(list(zip(list(range(n_frags)), [1 / r] * n_frags, strict=False))) ** r
+        ProductFormula(list(zip(list(range(n_frags)), [1 / r] * n_frags, strict=True))) ** r
     )
     actual = effective_hamiltonian(
         first_order, fragments, order=2, timestep=delta, num_workers=num_workers, backend=backend

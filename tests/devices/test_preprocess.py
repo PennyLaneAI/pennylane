@@ -416,7 +416,7 @@ class TestDecomposeTransformations:
         expanded_tape = expanded_tapes[0]
         expected = [qp.Hadamard(0), qp.PauliX(1), qp.PauliY(1), qp.RZ(0.123, wires=1)]
 
-        for op, exp in zip(expanded_tape.circuit, expected + measurements, strict=False):
+        for op, exp in zip(expanded_tape.circuit, expected + measurements, strict=True):
             qp.assert_equal(op, exp)
 
         assert tape.shots == expanded_tape.shots
@@ -429,7 +429,7 @@ class TestDecomposeTransformations:
         expanded_tapes, _ = decompose(tape, lambda obj: obj.has_matrix)
         expanded_tape = expanded_tapes[0]
 
-        for op, exp in zip(expanded_tape.circuit, ops + measurements, strict=False):
+        for op, exp in zip(expanded_tape.circuit, ops + measurements, strict=True):
             qp.assert_equal(op, exp)
 
     @pytest.mark.parametrize("validation_transform", (validate_measurements, validate_observables))
@@ -1019,7 +1019,7 @@ class TestDeviceResolveDynamicWires:
         [new_tape], fn = device_resolve_dynamic_wires(tape, wires=None)
 
         assert fn(("a",)) == "a"
-        for op, wire in zip(new_tape.operations, range(0, 10), strict=False):
+        for op, wire in zip(new_tape.operations, range(0, 10), strict=True):
             qp.assert_equal(op, qp.X(wire))
 
     def test_error_on_not_enough_available_wires(self):
@@ -1045,7 +1045,7 @@ class TestDeviceResolveDynamicWires:
         [new_tape], fn = device_resolve_dynamic_wires(tape, wires=wires)
 
         assert fn(("a",)) == "a"
-        for op, wire in zip(new_tape.operations, wires, strict=False):
+        for op, wire in zip(new_tape.operations, wires, strict=True):
             qp.assert_equal(op, qp.X(wire))
 
     def test_min_int_non_integer_algorithmic_wires(self):

@@ -130,7 +130,7 @@ class TestInitialization:
         coeff, op2 = sprod_op.terms()
 
         assert coeff == [scalar]
-        for op1, op2 in zip(op2, [op], strict=False):
+        for op1, op2 in zip(op2, [op], strict=True):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
@@ -148,7 +148,7 @@ class TestInitialization:
         """Tests that SProd.terms() flattens a nested structure."""
         coeffs, ops_actual = sprod_op.terms()
         assert coeffs == coeffs_exp
-        for op1, op2 in zip(ops_actual, ops_exp, strict=False):
+        for op1, op2 in zip(ops_actual, ops_exp, strict=True):
             qp.assert_equal(op1, op2)
 
     def test_diagonalizing_gates(self):
@@ -200,7 +200,7 @@ class TestMscMethods:
         assert repr(res) == true_res
 
     @pytest.mark.parametrize(
-        "op_scalar_tup, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep, strict=False))
+        "op_scalar_tup, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep, strict=True))
     )
     def test_repr(self, op_scalar_tup, op_rep):
         """Test the repr dunder method."""
@@ -354,7 +354,7 @@ class TestMatrix:
         op = qp.s_prod(y, qp.RX(x, 0))
         mat = op.matrix()
         true_mat = qp.math.stack(
-            [qp.s_prod(j, qp.RX(i, 0)).matrix() for i, j in zip(x, y, strict=False)]
+            [qp.s_prod(j, qp.RX(i, 0)).matrix() for i, j in zip(x, y, strict=True)]
         )
         assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
@@ -369,7 +369,7 @@ class TestMatrix:
         op = qp.s_prod(y, qp.RX(x, 0))
         mat = op.matrix()
         true_mat = qp.math.stack(
-            [qp.s_prod(j, qp.RX(i, 0)).matrix() for i, j in zip(x, y, strict=False)]
+            [qp.s_prod(j, qp.RX(i, 0)).matrix() for i, j in zip(x, y, strict=True)]
         )
         assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
@@ -385,7 +385,7 @@ class TestMatrix:
         op = qp.s_prod(y, qp.RX(x, 0))
         mat = op.matrix()
         true_mat = qp.math.stack(
-            [qp.s_prod(j, qp.RX(i, 0)).matrix() for i, j in zip(x, y, strict=False)]
+            [qp.s_prod(j, qp.RX(i, 0)).matrix() for i, j in zip(x, y, strict=True)]
         )
         assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
@@ -689,7 +689,7 @@ class TestProperties:
         coeffs = (jnp.array(1.23), jnp.array(1.23 + 1.2j))
         true_hermitian_states = (True, False)
 
-        for scalar, hermitian_state in zip(coeffs, true_hermitian_states, strict=False):
+        for scalar, hermitian_state in zip(coeffs, true_hermitian_states, strict=True):
             op = s_prod(scalar, qp.PauliX(wires=0))
             assert op.is_verified_hermitian == hermitian_state
 
@@ -701,7 +701,7 @@ class TestProperties:
         coeffs = (torch.tensor(1.23), torch.tensor(1.23 + 1.2j))
         true_hermitian_states = (True, False)
 
-        for scalar, hermitian_state in zip(coeffs, true_hermitian_states, strict=False):
+        for scalar, hermitian_state in zip(coeffs, true_hermitian_states, strict=True):
             op = s_prod(scalar, qp.PauliX(wires=0))
             assert op.is_verified_hermitian == hermitian_state
 

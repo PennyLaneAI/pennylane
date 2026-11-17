@@ -225,7 +225,7 @@ def autodiff_metric_tensor(ansatz, num_wires):
 
         if isinstance(rjac, tuple):
             out = []
-            for rc, ic in zip(rjac, ijac, strict=False):
+            for rc, ic in zip(rjac, ijac, strict=True):
                 c = rc + 1j * ic
                 psidpsi = np.tensordot(np.conj(state), c, axes=([0], [0]))
                 out.append(
@@ -247,7 +247,7 @@ def autodiff_metric_tensor(ansatz, num_wires):
 
 
 @pytest.mark.parametrize(
-    "ansatz, params", list(zip(fubini_ansatze_tape, fubini_params_tape, strict=False))
+    "ansatz, params", list(zip(fubini_ansatze_tape, fubini_params_tape, strict=True))
 )
 class TestAdjointMetricTensorTape:
     """Test the adjoint method for the metric tensor when calling it directly on
@@ -351,7 +351,7 @@ class TestAdjointMetricTensorQNode:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize(
-        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=False))
+        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=True))
     )
     @pytest.mark.parametrize("interface", interfaces)
     def test_correct_output_qnode_autograd(self, ansatz, params, interface):
@@ -369,13 +369,13 @@ class TestAdjointMetricTensorQNode:
         mt = qp.adjoint_metric_tensor(circuit)(*params)
 
         if isinstance(mt, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=False))
+            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=True))
         else:
             assert qp.math.allclose(mt, expected)
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
-        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=False))
+        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=True))
     )
     def test_correct_output_qnode_jax(self, ansatz, params):
         """Test that the output is correct when using JAX and
@@ -398,7 +398,7 @@ class TestAdjointMetricTensorQNode:
         mt = qp.adjoint_metric_tensor(circuit, argnums=list(range(len(j_params))))(*j_params)
 
         if isinstance(mt, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=False))
+            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=True))
         else:
             assert qp.math.allclose(mt, expected)
 
@@ -406,7 +406,7 @@ class TestAdjointMetricTensorQNode:
 
     @pytest.mark.torch
     @pytest.mark.parametrize(
-        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=False))
+        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=True))
     )
     @pytest.mark.parametrize("interface", interfaces)
     def test_correct_output_qnode_torch(self, ansatz, params, interface):
@@ -428,7 +428,7 @@ class TestAdjointMetricTensorQNode:
         mt = qp.adjoint_metric_tensor(circuit)(*t_params)
 
         if isinstance(mt, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=False))
+            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=True))
         else:
             assert qp.math.allclose(mt, expected)
 
@@ -447,7 +447,7 @@ diff_fubini_params = [
 
 
 @pytest.mark.parametrize(
-    "ansatz, params", list(zip(diff_fubini_ansatze, diff_fubini_params, strict=False))
+    "ansatz, params", list(zip(diff_fubini_ansatze, diff_fubini_params, strict=True))
 )
 class TestAdjointMetricTensorDifferentiability:
     """Test the differentiability of the adjoint method for the metric
@@ -474,7 +474,7 @@ class TestAdjointMetricTensorDifferentiability:
 
         if isinstance(mt_jac, tuple):
             assert all(
-                qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected, strict=False)
+                qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected, strict=True)
             )
         else:
             assert qp.math.allclose(mt_jac, expected)
@@ -505,7 +505,7 @@ class TestAdjointMetricTensorDifferentiability:
             if not isinstance(expected, tuple) and len(mt_jac) == 1:
                 expected = (expected,)
             assert all(
-                qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected, strict=False)
+                qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected, strict=True)
             )
         else:
             assert qp.math.allclose(mt_jac, expected)
@@ -532,7 +532,7 @@ class TestAdjointMetricTensorDifferentiability:
 
         if isinstance(mt_jac, tuple):
             assert all(
-                qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected, strict=False)
+                qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected, strict=True)
             )
         else:
             assert qp.math.allclose(mt_jac, expected)

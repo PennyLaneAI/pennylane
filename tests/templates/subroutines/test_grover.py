@@ -199,7 +199,7 @@ def test_expand(wires):
     assert len(decomp) == len(decomp_3wires) == len(expected_wires)
 
     for actual_op, expected_class, expected_wire in zip(
-        decomp, decomp_3wires, expected_wires, strict=False
+        decomp, decomp_3wires, expected_wires, strict=True
     ):
         assert isinstance(actual_op, expected_class)
         if expected_class is not qp.GlobalPhase:

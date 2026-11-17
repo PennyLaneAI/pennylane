@@ -483,11 +483,11 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
         for op, expected_op in zip(
             expanded_tape.operations[expanded_tape.num_preps :],
             expanded_ops,
-            strict=False,
+            strict=True,
         ):
             qp.assert_equal(op, expected_op)
 
-        for mp, expected_mp in zip(expanded_tape.measurements, measurements, strict=False):
+        for mp, expected_mp in zip(expanded_tape.measurements, measurements, strict=True):
             qp.assert_equal(mp, expected_mp)
 
     wires_to_try = [

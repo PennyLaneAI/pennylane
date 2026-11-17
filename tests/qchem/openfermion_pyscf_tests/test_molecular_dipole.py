@@ -264,8 +264,8 @@ def test_openfermion_molecular_dipole(
 
         r_ops = ops[i]
 
-        assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(d_ops, r_ops, strict=False))
-        for o1, o2 in zip(d_ops, r_ops, strict=False):
+        assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(d_ops, r_ops, strict=True))
+        for o1, o2 in zip(d_ops, r_ops, strict=True):
             qp.assert_equal(o1, o2)
 
 
@@ -422,5 +422,5 @@ def test_coordinate_units_for_molecular_dipole(method, tmpdir):
         method=method,
         outpath=tmpdir.strpath,
     )
-    for o1, o2 in zip(dipole_ang, dipole_bohr, strict=False):
+    for o1, o2 in zip(dipole_ang, dipole_bohr, strict=True):
         qp.assert_equal(o1, o2)

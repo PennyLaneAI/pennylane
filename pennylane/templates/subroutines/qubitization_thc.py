@@ -543,7 +543,7 @@ def _qubitization_thc_resources(  # pylint: disable=too-many-arguments
     offsets = np.cumsum([0] + sizes)
     system, index, garbage, gradient, work = (
         list(range(int(start), int(stop)))
-        for start, stop in zip(offsets[:-1], offsets[1:], strict=False)
+        for start, stop in zip(offsets[:-1], offsets[1:], strict=True)
     )
     registers = _prepare_registers(M, N, aleph, index, garbage, work)
 

@@ -179,7 +179,7 @@ class TestUnits:
             ),
             qp.tape.QuantumScript([qp.RY(0.5, 0)], [qp.expval(qp.Z(0)), qp.expval(qp.Y(0))]),
         ]
-        for actual_tape, expected_tape in zip(tapes, expected_tapes, strict=False):
+        for actual_tape, expected_tape in zip(tapes, expected_tapes, strict=True):
             qp.assert_equal(actual_tape, expected_tape)
 
         result = ([0.1, 0.2, 0.3], [0.4, 0.2])

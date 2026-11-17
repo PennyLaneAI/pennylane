@@ -96,7 +96,7 @@ def test_set_device_target():
     # Check that the preprocess function mimics the given target
 
     assert len(program1) == len(program2)
-    for t1, t2 in zip(program1, program2, strict=False):
+    for t1, t2 in zip(program1, program2, strict=True):
         assert t1.tape_transform == t2.tape_transform
 
         assert len(t1.args) == len(t2.args)
@@ -425,7 +425,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
         assert all(
-            np.array_equal(res, np.zeros((s, 2))) for res, s in zip(result, shots, strict=False)
+            np.array_equal(res, np.zeros((s, 2))) for res, s in zip(result, shots, strict=True)
         )
 
     @pytest.mark.parametrize("shots", shots_data)
@@ -446,7 +446,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        for shot_res, s in zip(result, shots, strict=False):
+        for shot_res, s in zip(result, shots, strict=True):
             assert isinstance(shot_res, tuple)
             assert len(shot_res) == 3
             assert np.array_equal(shot_res[0], 0.0)
@@ -997,7 +997,7 @@ class TestClassicalShadows:
         assert isinstance(res, tuple)
         assert len(res) == len(list(shots))
 
-        for r, s in zip(res, shots, strict=False):
+        for r, s in zip(res, shots, strict=True):
             assert np.array_equal(r, np.zeros((2, s, n_qubits)))
             assert r.dtype == np.int8
 

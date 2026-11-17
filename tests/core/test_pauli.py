@@ -416,7 +416,7 @@ class TestPauliWord:
         assert len(q.queue) == 0
 
         if len(pw) > 1:
-            for pw_factor, op_factor in zip(pw_op.operands, op.operands, strict=False):
+            for pw_factor, op_factor in zip(pw_op.operands, op.operands, strict=True):
                 assert pw_factor.name == op_factor.name
                 assert pw_factor.wires == op_factor.wires
         else:
@@ -941,10 +941,10 @@ class TestPauliSentence:
             ps_op = qp.pauli.to_operator(ps)
         assert len(q.queue) == 0
         if len(ps) > 1:
-            for ps_summand, op_summand in zip(ps_op.operands, op.operands, strict=False):
+            for ps_summand, op_summand in zip(ps_op.operands, op.operands, strict=True):
                 assert ps_summand.scalar == op_summand.scalar
                 if isinstance(ps_summand.base, qp.ops.Prod):
-                    for pw_factor, op_factor in zip(ps_summand.base, op_summand.base, strict=False):
+                    for pw_factor, op_factor in zip(ps_summand.base, op_summand.base, strict=True):
                         _compare_ops(pw_factor, op_factor)
                 else:
                     ps_base, op_base = (ps_summand.base, op_summand.base)
@@ -1474,7 +1474,7 @@ class TestPauliArithmeticWithADInterfaces:
         import torch
 
         tensor = scalar * torch.ones(4)
-        res = PauliSentence(dict(zip(words, tensor, strict=False)))
+        res = PauliSentence(dict(zip(words, tensor, strict=True)))
         assert all(isinstance(val, torch.Tensor) for val in res.values())
 
     @pytest.mark.autograd
@@ -1483,7 +1483,7 @@ class TestPauliArithmeticWithADInterfaces:
         """Test initializing PauliSentence from autograd array"""
 
         tensor = scalar * np.ones(4)
-        res = PauliSentence(dict(zip(words, tensor, strict=False)))
+        res = PauliSentence(dict(zip(words, tensor, strict=True)))
         assert all(isinstance(val, np.ndarray) for val in res.values())
 
     @pytest.mark.jax
@@ -1493,7 +1493,7 @@ class TestPauliArithmeticWithADInterfaces:
         import jax.numpy as jnp
 
         tensor = scalar * jnp.ones(4)
-        res = PauliSentence(dict(zip(words, tensor, strict=False)))
+        res = PauliSentence(dict(zip(words, tensor, strict=True)))
         assert all(isinstance(val, jnp.ndarray) for val in res.values())
 
     @pytest.mark.torch

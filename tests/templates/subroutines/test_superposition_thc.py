@@ -153,7 +153,7 @@ class TestSuperpositionTHC:
         probs = np.asarray(circuit()).reshape((2**n, 2**n, 2))
         success = probs[:, :, 1]
 
-        support = {tuple(map(int, arr)) for arr in zip(*np.where(success > 1e-9), strict=False)}
+        support = {tuple(map(int, arr)) for arr in zip(*np.where(success > 1e-9), strict=True)}
 
         assert set(support) == _valid_pairs(M, N)
 

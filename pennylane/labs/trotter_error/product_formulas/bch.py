@@ -124,7 +124,7 @@ def _bch_product_formula(
         coeffs = product_formula.coeffs
 
     bch = _bch_symbols(
-        [SymbolNode(symbol, coeff) for symbol, coeff in zip(symbols, coeffs, strict=False)],
+        [SymbolNode(symbol, coeff) for symbol, coeff in zip(symbols, coeffs, strict=True)],
         max_order,
         product_formula.is_symmetric,
     )
@@ -132,7 +132,7 @@ def _bch_product_formula(
     if not product_formula.is_recursive:
         return _scale_dict(bch, product_formula.exponent)
 
-    for pf, coeff in zip(symbols, coeffs, strict=False):
+    for pf, coeff in zip(symbols, coeffs, strict=True):
         symbol = SymbolNode(pf, coeff)
         if symbol in term_dict:
             continue
@@ -247,7 +247,7 @@ def _bch(x: SymbolNode, y: SymbolNode, max_order: int, symmetric: bool) -> dict[
     hall_commutators = [x, y]
     bch_coeffs = [1, 1]
 
-    rows = zip(*load_hall_basis(symmetric), strict=False)
+    rows = zip(*load_hall_basis(symmetric), strict=True)
 
     for l_comm, r_comm, p, q in rows:
         left, right = int(l_comm), int(r_comm)
@@ -264,7 +264,7 @@ def _bch(x: SymbolNode, y: SymbolNode, max_order: int, symmetric: bool) -> dict[
         hall_commutators.append(basis_element)
         bch_coeffs.append(bch_coeff)
 
-    return dict(zip(hall_commutators, bch_coeffs, strict=False))
+    return dict(zip(hall_commutators, bch_coeffs, strict=True))
 
 
 def _scale_dict(d: dict, k: float) -> dict:
@@ -357,7 +357,7 @@ def _group_terms(d: dict[ASTNode, float], max_order: int) -> dict[ASTNode, float
 
     for comm, coeff1 in d.items():
         found = False
-        for group, coeff2 in zip(groups, coeffs, strict=False):
+        for group, coeff2 in zip(groups, coeffs, strict=True):
             rep = group[0]
             if is_tree_isomorphic(comm, rep) and np.isclose(coeff1, coeff2):
                 group.append(comm)
@@ -369,7 +369,7 @@ def _group_terms(d: dict[ASTNode, float], max_order: int) -> dict[ASTNode, float
             coeffs.append(coeff1)
 
     ret = defaultdict(float)
-    for group, coeff in zip(groups, coeffs, strict=False):
+    for group, coeff in zip(groups, coeffs, strict=True):
         unmerged = set(group)
         for k in range(max_order):
             merged = set()

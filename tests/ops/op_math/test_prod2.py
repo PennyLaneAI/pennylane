@@ -215,7 +215,7 @@ class TestMethods:
         expected = np.stack(
             [
                 np.kron(qp.matrix(qp.RX(xi, 0)), qp.matrix(qp.RY(yi, 1)))
-                for xi, yi in zip(x, y, strict=False)
+                for xi, yi in zip(x, y, strict=True)
             ]
         )
         assert mat.shape == (3, 4, 4)

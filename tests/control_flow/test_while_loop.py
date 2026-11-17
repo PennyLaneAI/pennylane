@@ -56,8 +56,8 @@ def test_fallback_while_loop_qnode():
     assert qp.math.allclose(circuit(1), -1.0)
 
     tape = qp.workflow.construct_tape(circuit)(1)
-    expected = [qp.PauliX(0) for i in range(4)]
-    _ = [qp.assert_equal(i, j) for i, j in zip(tape.operations, expected, strict=False)]
+    expected = [qp.PauliX(0)]
+    _ = [qp.assert_equal(i, j) for i, j in zip(tape.operations, expected, strict=True)]
 
 
 class TestWhileLoopHints:

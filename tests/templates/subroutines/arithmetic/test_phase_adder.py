@@ -266,7 +266,7 @@ class TestPhaseAdder:
             op_list.append(qp.CNOT(wires=[aux_k, work_wire[0]]))
             op_list.append(qp.prod(*base_list_ops2, qp.X(aux_k)))
 
-        for op1, op2 in zip(phase_adder_decomposition, op_list, strict=False):
+        for op1, op2 in zip(phase_adder_decomposition, op_list, strict=True):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")

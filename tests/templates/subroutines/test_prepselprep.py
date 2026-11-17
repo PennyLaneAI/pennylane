@@ -73,7 +73,7 @@ def _get_new_terms(lcu):
     new_coeffs = []
     new_ops = []
 
-    for coeff, op in zip(*lcu.terms(), strict=False):
+    for coeff, op in zip(*lcu.terms(), strict=True):
         angle = qp.math.angle(coeff)
         new_coeffs.append(qp.math.abs(coeff))
 
@@ -266,10 +266,8 @@ class TestPrepSelPrep:
         assert hash(metadata)
 
         assert len(data[0]) == len(lcu)
-        assert all(
-            coeff1 == coeff2 for coeff1, coeff2 in zip(lcu_coeffs, data_coeffs, strict=False)
-        )
-        assert all(op1 == op2 for op1, op2 in zip(lcu_ops, data_ops, strict=False))
+        assert all(coeff1 == coeff2 for coeff1, coeff2 in zip(lcu_coeffs, data_coeffs, strict=True))
+        assert all(op1 == op2 for op1, op2 in zip(lcu_ops, data_ops, strict=True))
 
         assert metadata[0] == op.control
 

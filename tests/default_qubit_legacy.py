@@ -271,7 +271,7 @@ class DefaultQubitLegacy(QubitDevice):
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
         consecutive_wires = range(self.num_wires)
-        wire_map = zip(wires, consecutive_wires, strict=False)
+        wire_map = zip(wires, consecutive_wires, strict=True)
         return dict(wire_map)
 
     def _get_batch_size(self, tensor, expected_shape, expected_size):
@@ -637,7 +637,7 @@ class DefaultQubitLegacy(QubitDevice):
             # attribute. This is because the .data attribute may be 'unwrapped' as required by
             # the interfaces, whereas the .coeff attribute will always be the same input dtype
             # that the user provided.
-            for op, coeff in zip(observable.ops, observable.data, strict=False):
+            for op, coeff in zip(observable.ops, observable.data, strict=True):
                 # extract a scipy.sparse.coo_matrix representation of this Pauli word
                 sparse_mat = qp.prod(op).sparse_matrix(wire_order=self.wires)
                 coo = coo_matrix(sparse_mat)
@@ -901,7 +901,7 @@ class DefaultQubitLegacy(QubitDevice):
         # replaced by the new_indices
         new_state_indices = functools.reduce(
             lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
-            zip(affected_indices, new_indices, strict=False),
+            zip(affected_indices, new_indices, strict=True),
             state_indices,
         )
 

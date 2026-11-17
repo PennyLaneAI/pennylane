@@ -178,7 +178,7 @@ class TestModExp:
             )
         )
 
-        for op1, op2 in zip(adder_decomposition, op_list, strict=False):
+        for op1, op2 in zip(adder_decomposition, op_list, strict=True):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")

@@ -65,8 +65,8 @@ merged.
 
       uvx --from ruff==0.17.3 ruff check --config ./pyproject.toml pennylane/ tests/
 
-  Preserve each call's behavior when adding ``strict``: ``strict=False`` keeps the
-  default truncation behavior, while ``strict=True`` requires equal-length inputs.
+  Use ``strict=True`` when inputs should have equal lengths. Keep ``strict=False``
+  for intentional truncation, with a short comment explaining why it is needed.
   Runtime typing exceptions are documented in ``pyproject.toml`` and source comments.
 
 * **Code factor**:  `Code factor <https://www.codefactor.io/>`_ checks several common code quality

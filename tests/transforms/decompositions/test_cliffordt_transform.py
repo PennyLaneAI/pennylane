@@ -592,10 +592,10 @@ class TestCliffordCompile:
 
         # Compare results
         assert all(
-            qp.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres, strict=False)
+            qp.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres, strict=True)
         )
         assert all(
-            qp.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*igrads, strict=False)
+            qp.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*igrads, strict=True)
         )
 
     @pytest.mark.jax

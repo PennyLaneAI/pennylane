@@ -207,7 +207,7 @@ class TestAdder:
         op_list.append(qp.PhaseAdder(k, work_wires[:1] + x_wires, mod, work_wires[1:]))
         op_list.append(qp.adjoint(qp.QFT)(work_wires[:1] + x_wires))
 
-        for op1, op2 in zip(adder_decomposition, op_list, strict=False):
+        for op1, op2 in zip(adder_decomposition, op_list, strict=True):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("mod", [2, 4])

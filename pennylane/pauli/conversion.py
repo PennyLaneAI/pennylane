@@ -410,7 +410,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-branches,to
 
     coeffs = []
     words = []  # symplectic (x_bits, z_bits) pairs, one per surviving Pauli word
-    for start, end in zip(group_starts, group_ends, strict=False):
+    for start, end in zip(group_starts, group_ends, strict=True):
         d = int(diffs[start])
         values = np.zeros(dim, dtype=complex)
         values[rows[start:end]] = data[start:end]

@@ -256,4 +256,4 @@ def test_pennylane_pytree_roundtrip_list(obj_in: Any):
     data, struct = flatten(obj_in)
     obj_out = unflatten(data, pytree_structure_load(pytree_structure_dump(struct)))
 
-    assert all(qp.equal(in_, out) for in_, out in zip(obj_in, obj_out, strict=False))
+    assert all(qp.equal(in_, out) for in_, out in zip(obj_in, obj_out, strict=True))

@@ -63,7 +63,7 @@ class TestCorrectness:
             return [qp.expval(qp.PauliZ(wires=i)) for i in range(n_wires)]
 
         expectations = circuit(np.array(initial_layer_weights), np.array(weights))
-        for exp, target_exp in zip(expectations, target, strict=False):
+        for exp, target_exp in zip(expectations, target, strict=True):
             assert np.allclose(exp, target_exp, atol=tol, rtol=0)
 
     def test_custom_wire_labels(self, tol):
@@ -152,7 +152,7 @@ class TestDecomposition:
             # check layer gate parameters
             ops = ops[n_wires:]
             exp_params = weights.flatten()
-            for o, exp_param in zip(ops, exp_params, strict=False):
+            for o, exp_param in zip(ops, exp_params, strict=True):
                 res_param = o.parameters[0]
                 assert res_param == exp_param
 

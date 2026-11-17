@@ -761,7 +761,7 @@ class TestSumOfSlatersPrep:
                         [
                             f"{a} : {b}"
                             for a, b in zip(
-                                np.where(out_state)[0], out_state[np.where(out_state)], strict=False
+                                np.where(out_state)[0], out_state[np.where(out_state)], strict=True
                             )
                         ]
                     )
@@ -825,7 +825,7 @@ class TestSumOfSlatersPrep:
                     [
                         f"{a} : {b}"
                         for a, b in zip(
-                            np.where(out_state)[0], out_state[np.where(out_state)], strict=False
+                            np.where(out_state)[0], out_state[np.where(out_state)], strict=True
                         )
                     ]
                 )

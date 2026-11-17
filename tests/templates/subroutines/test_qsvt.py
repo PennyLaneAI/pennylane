@@ -110,7 +110,7 @@ class TestQSVTBasics:
             decomp = op.decomposition()
 
         ops = qp.tape.QuantumScript.from_queue(q).operations
-        for op1, op2 in zip(ops, decomp, strict=False):
+        for op1, op2 in zip(ops, decomp, strict=True):
             qp.assert_equal(op1, op2)
 
     _decomposition_cases = [
@@ -235,7 +235,7 @@ class TestQSVTBasics:
 
         orig_projectors = orig_op.projectors
         copy_projectors = copy_op.projectors
-        assert all(p1 is not p2 for p1, p2 in zip(orig_projectors, copy_projectors, strict=False))
+        assert all(p1 is not p2 for p1, p2 in zip(orig_projectors, copy_projectors, strict=True))
 
     def test_bind_new_parameters(self):
         """Test that bind_new_parameters rebinds UA and projectors without mutating the original."""
@@ -381,7 +381,7 @@ class TestQSVTIntegration:
 
         [tape], _ = decompose(tape, gate_set={"Z", "RY", "RZ", "X", "PCPhase"}, max_expansion=1)
 
-        for expected, val1, val2 in zip(results, tape.operations, tape2.operations, strict=False):
+        for expected, val1, val2 in zip(results, tape.operations, tape2.operations, strict=True):
             qp.assert_equal(expected, val1)
             qp.assert_equal(expected, val2)
 

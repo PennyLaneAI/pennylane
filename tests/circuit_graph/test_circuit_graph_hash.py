@@ -198,7 +198,7 @@ class TestQNodeCircuitHashIntegration:
             zip(
                 np.linspace(-2 * np.pi, 2 * np.pi, 7),
                 np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
-                strict=False,
+                strict=True,
             )
         ),
     )
@@ -234,7 +234,7 @@ class TestQNodeCircuitHashIntegration:
             zip(
                 np.linspace(-2 * np.pi, 2 * np.pi, 7),
                 np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
-                strict=False,
+                strict=True,
             )
         ),
     )
@@ -272,7 +272,7 @@ class TestQNodeCircuitHashIntegration:
             zip(
                 np.linspace(-2 * np.pi, 2 * np.pi, 7),
                 np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
-                strict=False,
+                strict=True,
             )
         ),
     )
@@ -311,7 +311,7 @@ class TestQNodeCircuitHashIntegration:
             zip(
                 np.linspace(-2 * np.pi, 2 * np.pi, 7),
                 np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
-                strict=False,
+                strict=True,
             )
         ),
     )
@@ -346,7 +346,7 @@ class TestQNodeCircuitHashIntegration:
             zip(
                 np.linspace(-2 * np.pi, 2 * np.pi, 7),
                 np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
-                strict=False,
+                strict=True,
             )
         ),
     )
@@ -380,7 +380,7 @@ class TestQNodeCircuitHashIntegration:
             zip(
                 np.linspace(-2 * np.pi, 2 * np.pi, 7),
                 np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
-                strict=False,
+                strict=True,
             )
         ),
     )
@@ -475,7 +475,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             zip(
                 np.linspace(-2 * np.pi, 2 * np.pi, 7),
                 np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
-                strict=False,
+                strict=True,
             )
         ),
     )
@@ -514,7 +514,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             zip(
                 np.linspace(-2 * np.pi, 2 * np.pi, 7),
                 np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
-                strict=False,
+                strict=True,
             )
         ),
     )
@@ -554,7 +554,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             zip(
                 np.linspace(-2 * np.pi, 2 * np.pi, 7),
                 np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
-                strict=False,
+                strict=True,
             )
         ),
     )
@@ -591,7 +591,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             zip(
                 np.linspace(-2 * np.pi, 2 * np.pi, 7),
                 np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
-                strict=False,
+                strict=True,
             )
         ),
     )
@@ -628,7 +628,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             zip(
                 np.linspace(-2 * np.pi, 2 * np.pi, 2),
                 np.linspace(-2 * np.pi, 2 * np.pi, 2) ** 2 / 11,
-                strict=False,
+                strict=True,
             )
         ),
     )
@@ -665,7 +665,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             zip(
                 np.linspace(-2 * np.pi, 2 * np.pi, 2),
                 np.linspace(-2 * np.pi, 2 * np.pi, 2) ** 2 / 11,
-                strict=False,
+                strict=True,
             )
         ),
     )
@@ -702,7 +702,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             zip(
                 np.linspace(-2 * np.pi, 2 * np.pi, 7),
                 np.linspace(-2 * np.pi, 2 * np.pi, 7) ** 2 / 11,
-                strict=False,
+                strict=True,
             )
         ),
     )
@@ -741,7 +741,7 @@ class TestQNodeCircuitHashDifferentHashIntegration:
             zip(
                 np.linspace(-2 * np.pi, 2 * np.pi, 2),
                 np.linspace(-2 * np.pi, 2 * np.pi, 2) ** 2 / 11,
-                strict=False,
+                strict=True,
             )
         ),
     )

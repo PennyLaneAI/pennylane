@@ -348,7 +348,7 @@ class TestGrad:
         grad_eqn = jaxpr.eqns[0]
         assert all(
             invar.aval == in_aval
-            for invar, in_aval in zip(grad_eqn.invars, jaxpr.in_avals, strict=False)
+            for invar, in_aval in zip(grad_eqn.invars, jaxpr.in_avals, strict=True)
         )
         flat_argnums = tuple(
             [0, 1] * (0 in argnums) + [2] * (1 in argnums) + [3, 4, 5] * (2 in argnums)
@@ -395,7 +395,7 @@ def _jac_allclose(jac1, jac2, num_axes, atol=1e-8):
         return False
     return all(
         _jac_allclose(_jac1, _jac2, num_axes - 1, atol=atol)
-        for _jac1, _jac2 in zip(jac1, jac2, strict=False)
+        for _jac1, _jac2 in zip(jac1, jac2, strict=True)
     )
 
 

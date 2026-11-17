@@ -207,7 +207,7 @@ def _add_layer_str_to_totals(totals: _CurrentTotals, layer_str, config) -> _Curr
     totals.wire_totals = [
         config.wire_filler(row).join([t, s])
         for row, t, s in zip(
-            range(config.n_wires), totals.wire_totals, layer_str[: config.n_wires], strict=False
+            range(config.n_wires), totals.wire_totals, layer_str[: config.n_wires], strict=True
         )
     ]
 

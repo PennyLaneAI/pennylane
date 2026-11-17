@@ -144,7 +144,7 @@ class TestMethods:
         queued_ops = queue.queue
         for operations in (decomp, queued_ops):
             assert len(operations) == len(expected_decomp)
-            for actual, expected in zip(operations, expected_decomp, strict=False):
+            for actual, expected in zip(operations, expected_decomp, strict=True):
                 qp.assert_equal(actual, expected)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -189,7 +189,7 @@ class TestMethods:
             for j, wire in enumerate(control)
         ]
         assert len(operations) == len(expected)
-        for actual, expected_op in zip(operations, expected, strict=False):
+        for actual, expected_op in zip(operations, expected, strict=True):
             qp.assert_equal(actual, expected_op)
 
 

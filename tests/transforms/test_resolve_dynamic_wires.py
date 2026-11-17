@@ -69,7 +69,7 @@ def test_highly_nested_min_int():
     [new_tape], fn = qp.transforms.resolve_dynamic_wires(tape, min_int=5)
 
     assert fn(("a",)) == "a"
-    for op, wire in zip(new_tape.operations, range(5, 15), strict=False):
+    for op, wire in zip(new_tape.operations, range(5, 15), strict=True):
         qp.assert_equal(op, qp.X(wire))
 
 

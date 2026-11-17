@@ -137,7 +137,7 @@ def equal_resource_profile(root: ProfileNode, other_root: ProfileNode):
     )
     if all(equality_checks) and all(
         equal_resource_profile(c1, c2)
-        for c1, c2 in zip(root.children, other_root.children, strict=False)
+        for c1, c2 in zip(root.children, other_root.children, strict=True)
     ):
         return True
     return False
