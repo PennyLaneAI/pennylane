@@ -966,15 +966,17 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
         expectation values and a scalar parameter."""
         if mode in {"reversed", "reversed-direct"} and exp_shape == (2,):
             pytest.xfail("reversed modes do not work with more than one output value.")
+        import torch
+
         dev = qp.device("default.qubit", wires=4)
 
-        x = np.array(0.419)
+        x = torch.tensor(0.419, dtype=torch.float64, requires_grad=True)
         circuit = qp.QNode(cost, dev)
 
         res_hadamard = qp.gradients.hadamard_grad(circuit, mode=mode, aux_wire=2)(x)
 
-        assert isinstance(res_hadamard, exp_type)
-        assert np.array(res_hadamard).shape == exp_shape
+        assert isinstance(res_hadamard, torch.Tensor if exp_type is np.ndarray else exp_type)
+        assert np.array(qp.math.unwrap(res_hadamard)).shape == exp_shape
 
     costs_and_expected_expval_array = [
         (cost1, [3], np.ndarray),
@@ -990,21 +992,23 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
         if mode in {"reversed", "reversed-direct"} and exp_shape == [2, 3]:
             pytest.xfail("reversed modes do not work with more than one output value.")
 
+        import torch
+
         dev = qp.device("default.qubit", wires=4)
 
-        x = np.random.rand(3)
+        x = torch.tensor(np.random.rand(3), dtype=torch.float64, requires_grad=True)
         circuit = qp.QNode(cost, dev)
 
         res_hadamard = qp.gradients.hadamard_grad(circuit, mode=mode, aux_wire=2)(x)
 
-        assert isinstance(res_hadamard, exp_type)
+        assert isinstance(res_hadamard, torch.Tensor if exp_type is np.ndarray else exp_type)
         if len(res_hadamard) == 1:
             res_hadamard = res_hadamard[0]
         assert len(res_hadamard) == exp_shape[0]
 
         if len(exp_shape) > 1:
             for r in res_hadamard:
-                assert isinstance(r, np.ndarray)
+                assert isinstance(r, torch.Tensor)
                 assert len(r) == exp_shape[1]
 
     costs_and_expected_probs = [
@@ -1022,13 +1026,15 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_probs)
     def test_output_shape_matches_qnode_probs(self, cost, exp_shape, exp_type, mode):
         """Test that the transform output shape matches that of the QNode."""
+        import torch
+
         dev = qp.device("default.qubit", wires=6)
 
-        x = np.random.rand(3)
+        x = torch.tensor(np.random.rand(3), dtype=torch.float64, requires_grad=True)
         circuit = qp.QNode(cost, dev)
 
         res_hadamard = qp.gradients.hadamard_grad(circuit, mode=mode, aux_wire=5)(x)
-        assert isinstance(res_hadamard, exp_type)
+        assert isinstance(res_hadamard, torch.Tensor if exp_type is np.ndarray else exp_type)
         if len(res_hadamard) == 1:
             res_hadamard = res_hadamard[0]
         assert len(res_hadamard) == exp_shape[0]
@@ -1036,21 +1042,23 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
         # Also check on the tape level
         tape = qp.workflow.construct_tape(circuit)(x)
         tapes, fn = qp.gradients.hadamard_grad(tape, mode=mode, aux_wire=6)
-        res_hadamard_tape = qp.math.moveaxis(qp.math.stack(fn(dev.execute(tapes))), -2, -1)
+        tape_results = qp.math.unwrap(fn(dev.execute(tapes)))
+        res_hadamard_tape = qp.math.moveaxis(qp.math.stack(tape_results), -2, -1)
 
         for res in [res_hadamard, res_hadamard_tape]:
+            array_type = torch.Tensor if res is res_hadamard else np.ndarray
             if len(exp_shape) > 2:
                 for r in res:
-                    assert isinstance(r, np.ndarray)
+                    assert isinstance(r, array_type)
                     assert len(r) == exp_shape[1]
 
                     for r_ in r:
-                        assert isinstance(r_, np.ndarray)
+                        assert isinstance(r_, array_type)
                         assert len(r_) == exp_shape[2]
 
             elif len(exp_shape) > 1:
                 for r in res:
-                    assert isinstance(r, np.ndarray)
+                    assert isinstance(r, array_type)
                     assert len(r) == exp_shape[1]
 
     @pytest.mark.parametrize("shots", [None, 100, (1000, 1000)])
@@ -1339,6 +1347,8 @@ class TestHadamardGradEdgeCases:
     def test_all_zero_diff_methods(self, prefactor, mode):
         """Test that the transform works correctly when the diff method for every parameter is
         identified to be 0, and that no tapes were generated."""
+        import torch
+
         dev = qp.device("default.qubit", wires=4)
 
         @qp.qnode(dev)
@@ -1346,13 +1356,13 @@ class TestHadamardGradEdgeCases:
             qp.Rot(*(prefactor * params), wires=0)
             return qp.probs([2, 3])
 
-        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = torch.tensor([0.5, 0.5, 0.5], dtype=torch.float64, requires_grad=True)
 
         result = qp.gradients.hadamard_grad(circuit, mode=mode, aux_wire=1)(params)
 
-        assert isinstance(result, np.ndarray)
+        assert isinstance(result, torch.Tensor)
         assert result.shape == (4, 3)
-        assert np.allclose(result, 0)
+        assert qp.math.allclose(result, 0)
 
     @pytest.mark.parametrize(
         "kwargs", [{"aux_wire": 1}, {"mode": "reversed"}, {"mode": "standard"}]

@@ -143,7 +143,7 @@ class TestMitigateWithZNE:
         n_layers = 2
 
         shapes = qp.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = (np.random.random(s) for s in shapes)
+        w1, w2 = (qp.math.toarray(np.random.random(s)) for s in shapes)
 
         @mitigate_with_zne(
             scale_factors=[1, 2, 3],
@@ -219,7 +219,7 @@ class TestMitigateWithZNE:
             expanded_qnode, [1, 2, 3], fold_global, richardson_extrapolate
         )
         rng = np.random.default_rng(seed=seed)
-        inputs = rng.uniform(0, 1, size=(batch_size, 2**2))
+        inputs = qp.math.toarray(rng.uniform(0, 1, size=(batch_size, 2**2)))
         result_orig = mitigated_qnode_orig(inputs)
         result_expanded = mitigated_qnode_expanded(inputs)
         # !TODO: double check if this shape mismatch needs to be taken care of from user side PR6684
@@ -307,7 +307,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qp.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = (np.random.random(s) for s in shapes)
+        w1, w2 = (qp.math.toarray(np.random.random(s)) for s in shapes)
 
         @mitigate_with_zne(
             scale_factors=[1, 2, 3],
@@ -356,7 +356,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qp.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = (np.random.random(s) for s in shapes)
+        w1, w2 = (qp.math.toarray(np.random.random(s)) for s in shapes)
 
         @mitigate_with_zne(
             scale_factors=[1, 2, 3],
@@ -444,7 +444,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qp.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = (np.random.random(s) for s in shapes)
+        w1, w2 = (qp.math.toarray(np.random.random(s)) for s in shapes)
 
         def circuit(w1, w2):
             qp.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -558,7 +558,7 @@ class TestDifferentiableZNE:
         n_wires = 3
         template = qp.SimplifiedTwoDesign
         weights_shape = template.shape(n_layers, n_wires)
-        w1, w2 = (np.arange(np.prod(s)).reshape(s) for s in weights_shape)
+        w1, w2 = (qp.math.toarray(np.arange(np.prod(s)).reshape(s)) for s in weights_shape)
 
         dev = qp.device("default.qubit", wires=range(n_wires))
 

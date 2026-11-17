@@ -515,6 +515,8 @@ class TestQSVTMatrix:
 
     def test_QSVT_grad(self):
         """Test that qp.grad results are the same as finite difference results"""
+        import jax
+        import jax.numpy as jnp
 
         @qp.qnode(qp.device("default.qubit", wires=2))
         def circuit(A, phis):
@@ -524,32 +526,33 @@ class TestQSVTMatrix:
             )
             return qp.expval(qp.PauliZ(wires=0))
 
-        A = np.array([[0.1, 0.2], [0.3, 0.4]], dtype=complex, requires_grad=True)
-        phis = np.array([0.1, 0.2, 0.3], dtype=float, requires_grad=True)
-        y = circuit(A, phis)
+        with jax.experimental.enable_x64():
+            A = jnp.array([[0.1, 0.2], [0.3, 0.4]], dtype=complex)
+            phis = jnp.array([0.1, 0.2, 0.3], dtype=float)
+            y = circuit(A, phis)
 
-        mat_grad_results, phi_grad_results = qp.grad(circuit)(A, phis)
+            mat_grad_results, phi_grad_results = qp.grad(circuit, argnums=(0, 1))(A, phis)
 
-        diff = 1e-8
+            diff = 1e-8
 
-        manual_mat_results = [
-            (circuit(A + np.array([[diff, 0], [0, 0]]), phis) - y) / diff,
-            (circuit(A + np.array([[0, diff], [0, 0]]), phis) - y) / diff,
-            (circuit(A + np.array([[0, 0], [diff, 0]]), phis) - y) / diff,
-            (circuit(A + np.array([[0, 0], [0, diff]]), phis) - y) / diff,
-        ]
+            manual_mat_results = [
+                (circuit(A + jnp.array([[diff, 0], [0, 0]]), phis) - y) / diff,
+                (circuit(A + jnp.array([[0, diff], [0, 0]]), phis) - y) / diff,
+                (circuit(A + jnp.array([[0, 0], [diff, 0]]), phis) - y) / diff,
+                (circuit(A + jnp.array([[0, 0], [0, diff]]), phis) - y) / diff,
+            ]
 
-        for idx, result in enumerate(manual_mat_results):
-            assert np.isclose(result, np.real(mat_grad_results.flatten()[idx]), atol=1e-6)
+            for idx, result in enumerate(manual_mat_results):
+                assert np.isclose(result, np.real(mat_grad_results.flatten()[idx]), atol=1e-6)
 
-        manual_phi_results = [
-            (circuit(A, phis + np.array([diff, 0, 0])) - y) / diff,
-            (circuit(A, phis + np.array([0, diff, 0])) - y) / diff,
-            (circuit(A, phis + np.array([0, 0, diff])) - y) / diff,
-        ]
+            manual_phi_results = [
+                (circuit(A, phis + jnp.array([diff, 0, 0])) - y) / diff,
+                (circuit(A, phis + jnp.array([0, diff, 0])) - y) / diff,
+                (circuit(A, phis + jnp.array([0, 0, diff])) - y) / diff,
+            ]
 
-        for idx, result in enumerate(manual_phi_results):
-            assert np.isclose(result, np.real(phi_grad_results[idx]), atol=1e-6)
+            for idx, result in enumerate(manual_phi_results):
+                assert np.isclose(result, np.real(phi_grad_results[idx]), atol=1e-6)
 
 
 phase_angle_data = (
@@ -743,8 +746,9 @@ class Testqsvt:
             qp.qsvt(A, poly, [0, 1, 2], "embedding")
             return qp.expval(qp.Z(0) @ qp.Z(1))
 
-        assert np.allclose(qp.grad(circuit)(np.array(A)), jax.grad(circuit)(jnp.array(A)))
-        assert not np.allclose(qp.grad(circuit)(np.array(A)), 0.0)
+        A = jnp.array(A)
+        assert np.allclose(qp.grad(circuit)(A), jax.grad(circuit)(A))
+        assert not np.allclose(qp.grad(circuit)(A), 0.0)
 
     @pytest.mark.jax
     def test_qsvt_jit(self):

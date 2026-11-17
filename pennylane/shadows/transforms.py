@@ -149,7 +149,7 @@ def shadow_state(
     .. code-block:: python
 
         import numpy as onp
-        from pennylane import numpy as np
+        import torch
 
         dev = qp.device("default.qubit", wires=2, seed=42)
 
@@ -162,9 +162,9 @@ def shadow_state(
             qp.RX(x, wires=0)
             return qp.classical_shadow(wires=[0, 1], seed=99)
 
-    >>> x = np.array(1.2, requires_grad=True)
+    >>> x = torch.tensor(1.2, dtype=torch.float64, requires_grad=True)
     >>> onp.random.seed(123)
-    >>> circuit(x)
+    >>> qp.math.toarray(circuit(x))
     array([[ 3.2582501e-01+0.j      , -8.2500000e-03+0.238425j,
              2.9999996e-04+0.230925j,  3.3142501e-01+0.009j   ],
            [-8.2500000e-03-0.238425j,  1.6337499e-01+0.j      ,
@@ -175,11 +175,11 @@ def shadow_state(
              2.9999996e-04+0.241275j,  3.5282502e-01+0.j      ]],
           dtype=complex64)
     >>> onp.random.seed(123)
-    >>> qp.jacobian(lambda x: np.real(circuit(x)))(x)
-    array([[-2.30550e-01,  5.62500e-03,  2.25000e-04, -2.29725e-01],
-           [ 5.62500e-03,  2.30550e-01,  2.29725e-01, -1.57500e-03],
-           [ 2.25000e-04,  2.29725e-01,  2.37900e-01,  2.47500e-03],
-           [-2.29725e-01, -1.57500e-03,  2.47500e-03, -2.37900e-01]])
+    >>> qp.math.toarray(qp.jacobian(lambda x: qp.math.real(circuit(x)))(x))
+    array([[-0.23055 , -0.002325,  0.003   , -0.227925],
+           [ 0.00825 ,  0.234375,  0.2295  ,  0.0015  ],
+           [-0.005625,  0.231075,  0.229725,  0.00135 ],
+           [-0.2331  , -0.002325,  0.00285 , -0.239025]])
     """
     tapes, fn = (
         _shadow_state_diffable(tape, wires) if diffable else _shadow_state_undiffable(tape, wires)

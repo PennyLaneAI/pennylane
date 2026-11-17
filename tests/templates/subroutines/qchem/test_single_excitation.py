@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.testing import assert_decomposable
 
 
@@ -191,24 +190,6 @@ def circuit_template(weight):
 class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
-
-    @pytest.mark.autograd
-    def test_autograd(self):
-        """Tests the autograd interface."""
-
-        weight = pnp.array(0.5, requires_grad=True)
-
-        dev = qp.device("default.qubit", wires=4)
-
-        circuit = qp.QNode(circuit_template, dev)
-
-        circuit(weight)
-        grad_fn = qp.grad(circuit)
-
-        # since test cases are hard to construct
-        # for this template, just check that the gradient is computed
-        # without error
-        grad_fn(weight)
 
     @pytest.mark.jax
     def test_jax(self):

@@ -79,6 +79,33 @@ def test_simple_classical_jacobian(interface):
         assert qp.math.allclose(y_jac, [0.0, 0.5])
 
 
+@pytest.mark.torch
+@pytest.mark.parametrize("trainable_index, expected", [(0, [2.0, 3.0]), (1, [0.0, 0.5])])
+def test_classical_jacobian_excludes_constant_torch_arguments(trainable_index, expected):
+    """Constant arguments contribute no input Jacobian axes."""
+    import torch
+
+    @qp.transforms.split_non_commuting
+    @qp.qnode(qp.device("default.qubit"), interface="torch")
+    def circuit(x, y):
+        qp.RX(2 * x, 0)
+        qp.RY(x * y, 0)
+        return qp.expval(qp.Z(0)), qp.expval(qp.X(0))
+
+    circuit = qp.gradients.param_shift(circuit)
+    transform = circuit.compile_pipeline[-1]
+    args = tuple(
+        torch.tensor(value, requires_grad=index == trainable_index)
+        for index, value in enumerate((0.5, 3.0))
+    )
+    cache = CotransformCache(circuit, args, {})
+
+    for tape_index in range(2):
+        (jacobian,) = cache.get_classical_jacobian(transform, tape_index)
+        assert qp.math.allclose(jacobian, expected)
+    assert not args[1 - trainable_index].requires_grad
+
+
 @pytest.mark.jax
 @pytest.mark.parametrize(
     "argnums, trainable_params",

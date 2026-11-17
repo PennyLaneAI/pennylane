@@ -17,6 +17,8 @@
 
 from functools import partial
 
+import jax
+import jax.numpy as jnp
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 from device_shots_to_analytic import shots_to_analytic
@@ -260,12 +262,12 @@ class TestParamShift:
             qp.Rot(*params, wires=0)
             return qp.probs([2, 3])
 
-        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = jnp.array([0.5, 0.5, 0.5])
 
         tape = qp.workflow.construct_tape(circuit)(params)
 
         result = qp.gradients.param_shift(circuit)(params)
-        assert np.allclose(result, np.zeros((4, 3)), atol=0, rtol=0)
+        assert np.allclose(result, jnp.zeros((4, 3)), atol=0, rtol=0)
 
         tapes, _ = qp.gradients.param_shift(tape, broadcast=broadcast)
         assert tapes == []
@@ -1885,9 +1887,10 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
         """Test that the transform output shape matches that of the QNode."""
 
         shot_vec = many_shots_shot_vector
+        exp_type = jax.Array if exp_type is np.ndarray else exp_type
         dev = qp.device("default.qubit", wires=4)
 
-        x = np.random.rand(3)
+        x = jnp.asarray(np.random.rand(3))
         circuit = qp.set_shots(qp.QNode(cost, dev), shots=shot_vec)
 
         all_res = qp.gradients.param_shift(circuit, broadcast=broadcast)(x)
@@ -1908,9 +1911,10 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
     def test_output_shape_matches_qnode_probs(self, cost, expected_shape, exp_type, broadcast):
         """Test that the transform output shape matches that of the QNode."""
         shot_vec = many_shots_shot_vector
+        exp_type = jax.Array if exp_type is np.ndarray else exp_type
         dev = qp.device("default.qubit", wires=4)
 
-        x = np.random.rand(3)
+        x = jnp.asarray(np.random.rand(3))
         circuit = qp.set_shots(qp.QNode(cost, dev), shots=shot_vec)
 
         all_res = qp.gradients.param_shift(circuit, broadcast=broadcast)(x)
@@ -1921,8 +1925,6 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
             assert isinstance(res, exp_type)
             assert qp.math.shape(res) == expected_shape
 
-    # TODO: revisit the following test when the Autograd interface supports
-    # parameter-shift with the new return type system
     def test_special_observable_qnode_differentiation(self, broadcast):
         """Test differentiation of a QNode on a device supporting a
         special observable that returns an object rather than a number."""
@@ -1979,19 +1981,30 @@ class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
 
         dev = DeviceSupporingSpecialObservable(wires=1, shots=None)
 
-        @qp.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"broadcast": broadcast})
+        @qp.qnode(dev, interface="numpy", diff_method=None)
         def qnode(x):
             qp.RY(x, wires=0)
             return qp.expval(SpecialObservable(wires=0))
 
-        @qp.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"broadcast": broadcast})
+        @qp.qnode(dev, interface="numpy", diff_method=None)
         def reference_qnode(x):
             qp.RY(x, wires=0)
             return qp.expval(qp.PauliZ(wires=0))
 
-        par = np.array(0.2, requires_grad=True)
-        assert np.isclose(qnode(par).item().val, reference_qnode(par))
-        assert np.isclose(qp.jacobian(qnode)(par).item().val, qp.jacobian(reference_qnode)(par))
+        par = 0.2
+        assert np.isclose(qnode(par).item().val, qp.math.toarray(reference_qnode(par)).item())
+
+        tape = qp.workflow.construct_tape(qnode)(par)
+        reference_tape = qp.workflow.construct_tape(reference_qnode)(par)
+        tape.trainable_params = [0]
+        reference_tape.trainable_params = [0]
+        tapes, postprocessing = qp.gradients.param_shift(tape)
+        reference_tapes, reference_postprocessing = qp.gradients.param_shift(reference_tape)
+        result = postprocessing(qp.execute(tapes, dev, interface=None, diff_method=None))
+        expected = reference_postprocessing(
+            qp.execute(reference_tapes, dev, interface=None, diff_method=None)
+        )
+        assert np.isclose(result.item().val, expected.item())
 
     def test_multi_measure_no_warning(self, broadcast):
         """Test computing the gradient of a tape that contains multiple

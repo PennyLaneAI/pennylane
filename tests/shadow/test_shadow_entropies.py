@@ -14,15 +14,15 @@
 
 """Tests for shadow entropies"""
 
+import numpy as np
 import pytest
 
 import pennylane as qp
-import pennylane.numpy as np
 from pennylane.shadows import ClassicalShadow
 from pennylane.shadows.classical_shadow import _project_density_matrix_spectrum
 
 
-def max_entangled_circuit(wires, shots=10000, interface="autograd"):
+def max_entangled_circuit(wires, shots=10000, interface="numpy"):
     """maximally entangled state preparation circuit"""
     dev = qp.device("default.qubit", wires=wires)
 
@@ -97,7 +97,7 @@ class TestShadowEntropies:
 
             return qp.classical_shadow(wires=dev.wires)
 
-        x = np.arange(n_wires, requires_grad=True)
+        x = np.arange(n_wires)
 
         bitstrings, recipes = qnode(x)
         shadow = ClassicalShadow(bitstrings, recipes)
@@ -130,7 +130,7 @@ class TestShadowEntropies:
             assert np.allclose(entropies, exact, atol=1e-1)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
+    @pytest.mark.parametrize("interface", ["numpy", "torch", "jax"])
     def test_analytic_entropy(self, interface):
         """Test entropies on analytic results"""
         dev = qp.device("default.qubit", wires=2)

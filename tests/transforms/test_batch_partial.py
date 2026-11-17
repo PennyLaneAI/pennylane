@@ -45,6 +45,9 @@ def test_partial_evaluation():
     # the batched argument to the new partial circuit
     x = np.random.uniform(size=batch_size)
 
+    y = qp.math.asarray(y, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+
     batched_partial_circuit = qp.batch_partial(circuit, y=y)
     res = batched_partial_circuit(x)
 
@@ -53,7 +56,7 @@ def test_partial_evaluation():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y))
 
-    assert np.allclose(res, indiv_res)
+    assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
 def test_partial_evaluation_kwargs():
@@ -76,6 +79,9 @@ def test_partial_evaluation_kwargs():
     # the batched argument to the new partial circuit
     x = np.random.uniform(size=batch_size)
 
+    y = qp.math.asarray(y, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+
     batched_partial_circuit = qp.batch_partial(circuit, y=y)
     res = batched_partial_circuit(x=x)
 
@@ -84,7 +90,7 @@ def test_partial_evaluation_kwargs():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y))
 
-    assert np.allclose(res, indiv_res)
+    assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
 def test_partial_evaluation_multi_args():
@@ -109,6 +115,10 @@ def test_partial_evaluation_multi_args():
     # the batched argument to the new partial circuit
     x = np.random.uniform(size=batch_size)
 
+    y = qp.math.asarray(y, like="torch", dtype="float64", requires_grad=True)
+    z = qp.math.asarray(z, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+
     batched_partial_circuit = qp.batch_partial(circuit, y=y, z=z)
     res = batched_partial_circuit(x)
 
@@ -117,7 +127,7 @@ def test_partial_evaluation_multi_args():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y, z))
 
-    assert np.allclose(res, indiv_res)
+    assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
 def test_partial_evaluation_nonnumeric1():
@@ -141,6 +151,9 @@ def test_partial_evaluation_nonnumeric1():
     # the batched argument to the new partial circuit
     x = np.random.uniform(size=batch_size)
 
+    y = qp.math.asarray(y, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+
     batched_partial_circuit = qp.batch_partial(circuit, y=y, measurement=measurement)
     res = batched_partial_circuit(x)
 
@@ -149,7 +162,7 @@ def test_partial_evaluation_nonnumeric1():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y, measurement))
 
-    assert np.allclose(res, indiv_res)
+    assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
 def test_partial_evaluation_nonnumeric2():
@@ -168,10 +181,13 @@ def test_partial_evaluation_nonnumeric2():
 
     # the partial arguments to construct a new circuit with
     y = np.random.uniform(size=2)
-    func = np.cos
+    func = qp.math.cos
 
     # the batched argument to the new partial circuit
     x = np.random.uniform(size=batch_size)
+
+    y = qp.math.asarray(y, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
 
     batched_partial_circuit = qp.batch_partial(circuit, y=y, func=func)
     res = batched_partial_circuit(x)
@@ -181,7 +197,7 @@ def test_partial_evaluation_nonnumeric2():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y, func))
 
-    assert np.allclose(res, indiv_res)
+    assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
 def test_partial_evaluation_nonnumeric3():
@@ -205,6 +221,9 @@ def test_partial_evaluation_nonnumeric3():
     # the batched argument to the new partial circuit
     x = np.random.uniform(size=batch_size)
 
+    y = qp.math.asarray(y, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+
     batched_partial_circuit = qp.batch_partial(circuit, y=y, op=op)
     res = batched_partial_circuit(x)
 
@@ -213,7 +232,7 @@ def test_partial_evaluation_nonnumeric3():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y, op))
 
-    assert np.allclose(res, indiv_res)
+    assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
 @pytest.mark.autograd
@@ -357,10 +376,14 @@ def test_lambda_evaluation():
     y = np.random.uniform(size=2)
 
     # the second partial argument as a function of the inputs
-    fn = lambda y0: y + y0 * np.ones(2)
+    fn = lambda y0: y + y0 * qp.math.ones_like(y)
 
     # values for the second argument
     y0 = np.random.uniform(size=batch_size)
+
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+    y = qp.math.asarray(y, like="torch", dtype="float64", requires_grad=True)
+    y0 = qp.math.asarray(y0, like="torch", dtype="float64", requires_grad=True)
 
     batched_partial_circuit = qp.batch_partial(circuit, x=x, preprocess={"y": fn})
     res = batched_partial_circuit(y0)
@@ -368,9 +391,9 @@ def test_lambda_evaluation():
     # check the results against individually executed circuits
     indiv_res = []
     for y0_indiv in y0:
-        indiv_res.append(circuit(x, y + y0_indiv * np.ones(2)))
+        indiv_res.append(circuit(x, y + y0_indiv * qp.math.ones_like(y)))
 
-    assert np.allclose(res, indiv_res)
+    assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
 @pytest.mark.autograd

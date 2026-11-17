@@ -892,7 +892,7 @@ class TestIntegration:
             Exp(qp.PauliX(0), 0.5j * x)
             return qp.expval(qp.PauliY(0))
 
-        x = qp.numpy.array([1.234, 2.34, 3.456])
+        x = qp.math.asarray([1.234, 2.34, 3.456], like="numpy")
         res = circuit(x)
 
         expected = np.sin(x)
@@ -966,8 +966,11 @@ class TestDifferentiation:
 
         assert parameter_frequencies(op2) == [(4.0,)]
 
+    @pytest.mark.torch
     def test_params_can_be_considered_trainable(self):
         """Tests that the parameters of an Exp are considered trainable."""
+        import torch
+
         dev = qp.device("default.qubit", wires=1)
 
         @qp.qnode(dev)
@@ -975,8 +978,8 @@ class TestDifferentiation:
             Exp(qp.RX(x, 0), coeff)
             return qp.expval(qp.PauliZ(0))
 
-        with pytest.warns(UserWarning):
-            circuit(np.array(2.0), np.array(0.5))
+        args = (torch.tensor(2.0, requires_grad=True), torch.tensor(0.5, requires_grad=True))
+        circuit(*args)
 
-        tape = qp.workflow.construct_tape(circuit)(np.array(2.0), np.array(0.5))
+        tape = qp.workflow.construct_tape(circuit)(*args)
         assert tape.trainable_params == [0, 1]

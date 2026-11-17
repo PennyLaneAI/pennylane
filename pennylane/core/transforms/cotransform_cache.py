@@ -32,11 +32,18 @@ def _numpy_jac(*_, **__) -> TensorLike:
 
 # pylint: disable-next=unused-argument
 def _torch_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
-    if not math.get_trainable_indices(args):
+    trainable_indices = sorted(math.get_trainable_indices(args))
+    if not trainable_indices:
         raise QuantumFunctionError("No trainable parameters.")
     from torch.autograd.functional import jacobian  # pylint: disable=import-outside-toplevel
 
-    return jacobian(partial(classical_function, **kwargs), args)
+    def trainable_function(*trainable_args):
+        full_args = list(args)
+        for index, value in zip(trainable_indices, trainable_args, strict=True):
+            full_args[index] = value
+        return classical_function(*full_args, **kwargs)
+
+    return jacobian(trainable_function, tuple(args[index] for index in trainable_indices))
 
 
 def _jax_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:

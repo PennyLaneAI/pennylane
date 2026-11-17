@@ -363,8 +363,8 @@ class TestCompileIntegration:
         transformed_qfunc = compile(qfunc, pipeline=pipeline)
         transformed_qnode = qp.QNode(transformed_qfunc, dev)
 
-        x = np.array([0.1, 0.2, 0.3])
-        params = np.ones((2, 3))
+        x = qp.math.array([0.1, 0.2, 0.3], like="numpy")
+        params = qp.math.ones((2, 3), like="numpy")
 
         original_result = qnode(x, params)
         transformed_result = transformed_qnode(x, params)

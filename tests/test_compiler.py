@@ -742,7 +742,7 @@ class TestCatalystGrad:
             return qp.jacobian(func, method="auto")(p)
 
         result = workflow(0.5)
-        reference = qp.jacobian(func, argnums=0)(0.5)
+        reference = qp.jacobian(func, argnums=0)(jnp.array(0.5))
 
         assert jnp.allclose(result, reference)
 
@@ -760,7 +760,7 @@ class TestCatalystGrad:
             g = qp.jacobian(circuit)
             return g(x)
 
-        reference = workflow(np.array([2.0, 1.0]))
+        reference = workflow(jnp.array([2.0, 1.0]))
         result = qp.qjit(workflow)(jnp.array([2.0, 1.0]))
 
         assert jnp.allclose(result, reference)

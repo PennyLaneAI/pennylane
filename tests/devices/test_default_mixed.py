@@ -24,7 +24,7 @@ import pennylane as qp
 from pennylane.devices import DefaultMixed
 from pennylane.math import Interface
 
-ML_INTERFACES = ["numpy", "autograd", "torch", "jax"]
+ML_INTERFACES = ["numpy", "torch", "jax"]
 
 
 def test_execution_with_no_execution_config():
@@ -139,7 +139,7 @@ class TestDefaultMixedTrainability:
 
     @pytest.mark.integration
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["torch", "autograd"])
+    @pytest.mark.parametrize("interface", ["torch"])
     def test_trainable_initial_state(self, interface):
         """Test that the trainable parameters are correctly applied to initial state"""
         num_qubits = 2

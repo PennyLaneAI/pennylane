@@ -889,6 +889,7 @@ class TestInterfaces:
     @pytest.mark.all_interfaces
     def test_all_interfaces_gradient_agree(self, tol):
         """Test the gradient agrees across all interfaces"""
+        import jax.numpy as jnp
         import torch
 
         dev = qp.device("default.qubit", wires=2)
@@ -911,11 +912,11 @@ class TestInterfaces:
         loss.backward()
         res_torch = w.grad.numpy()
 
-        # NumPy interface
-        w = params
+        # JAX interface
+        w = jnp.array(params)
         ansatz = qp.templates.layers.StronglyEntanglingLayers
-        cost = generate_cost_fn(ansatz, H, dev, interface="autograd")
-        dcost = qp.grad(cost, argnums=[0])
+        cost = generate_cost_fn(ansatz, H, dev, interface="jax")
+        dcost = qp.grad(cost, argnums=0)
         res = dcost(w)
 
         assert np.allclose(res, res_torch, atol=tol, rtol=0)

@@ -15,6 +15,8 @@
 Tests for the gradients.finite_difference module.
 """
 
+import jax
+import jax.numpy as jnp
 import numpy
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
@@ -245,22 +247,6 @@ class TestFiniteDiff:
         assert g_tapes == []
         assert isinstance(res, tuple)
 
-    @pytest.mark.autograd
-    def test_no_trainable_params_qnode_autograd(self):
-        """Test that the correct output and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev)
-        def circuit(weights):
-            qp.RX(weights[0], wires=0)
-            qp.RY(weights[1], wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qp.gradients.finite_diff(circuit)(weights)
-
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
         """Test that the correct output and warning is generated in the absence of any trainable
@@ -304,11 +290,11 @@ class TestFiniteDiff:
             qp.Rot(*(prefactor * params), wires=0)
             return qp.probs([2, 3])
 
-        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = jnp.array([0.5, 0.5, 0.5])
 
         result = qp.gradients.finite_diff(circuit)(params)
 
-        assert isinstance(result, np.ndarray)
+        assert isinstance(result, jax.Array)
         assert result.shape == (4, 3)
         assert np.allclose(result, 0)
 
@@ -323,7 +309,7 @@ class TestFiniteDiff:
             qp.Rot(*params, wires=0)
             return qp.expval(qp.PauliZ(wires=2)), qp.probs([2, 3])
 
-        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = jnp.array([0.5, 0.5, 0.5])
 
         result = qp.gradients.finite_diff(circuit)(params)
 
@@ -332,7 +318,7 @@ class TestFiniteDiff:
         assert len(result) == 2
 
         for r, exp_shape in zip(result, [(3,), (4, 3)]):
-            assert isinstance(r, np.ndarray)
+            assert isinstance(r, jax.Array)
             assert r.shape == exp_shape
             assert np.allclose(r, 0)
 
@@ -426,7 +412,7 @@ class TestFiniteDiff:
             qp.Rot(*x, wires=0)
             return qp.probs([0, 1]), qp.probs([2, 3])
 
-        x = np.random.rand(3)
+        x = jnp.asarray(np.random.rand(3))
         circuits = [qp.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         transform = [qp.math.shape(qp.gradients.finite_diff(c)(x)) for c in circuits]
@@ -507,19 +493,30 @@ class TestFiniteDiff:
 
         dev = DeviceSupportingSpecialObservable(wires=1, shots=None)
 
-        @qp.qnode(dev, diff_method="finite-diff")
+        @qp.qnode(dev, interface="numpy", diff_method=None)
         def qnode(x):
             qp.RY(x, wires=0)
             return qp.expval(SpecialObservable(wires=0))
 
-        @qp.qnode(dev, diff_method="finite-diff")
+        @qp.qnode(dev, interface="numpy", diff_method=None)
         def reference_qnode(x):
             qp.RY(x, wires=0)
             return qp.expval(qp.PauliZ(wires=0))
 
-        par = np.array(0.2, requires_grad=True)
-        assert np.isclose(qnode(par).item().val, reference_qnode(par))
-        assert np.isclose(qp.jacobian(qnode)(par).item().val, qp.jacobian(reference_qnode)(par))
+        par = 0.2
+        assert np.isclose(qnode(par).item().val, qp.math.toarray(reference_qnode(par)).item())
+
+        tape = qp.workflow.construct_tape(qnode)(par)
+        reference_tape = qp.workflow.construct_tape(reference_qnode)(par)
+        tape.trainable_params = [0]
+        reference_tape.trainable_params = [0]
+        tapes, postprocessing = qp.gradients.finite_diff(tape)
+        reference_tapes, reference_postprocessing = qp.gradients.finite_diff(reference_tape)
+        result = postprocessing(qp.execute(tapes, dev, interface=None, diff_method=None))
+        expected = reference_postprocessing(
+            qp.execute(reference_tapes, dev, interface=None, diff_method=None)
+        )
+        assert np.isclose(result.item().val, expected.item())
 
 
 @pytest.mark.parametrize("approx_order", [2, 4])
@@ -835,62 +832,6 @@ class TestFiniteDiffIntegration:
 class TestFiniteDiffGradients:
     """Test that the transform is differentiable"""
 
-    @pytest.mark.autograd
-    def test_autograd(self, approx_order, strategy, tol):
-        """Tests that the output of the finite-difference transform
-        can be differentiated using autograd, yielding second derivatives."""
-        dev = qp.device("default.qubit", wires=2)
-        params = np.array([0.543, -0.654], requires_grad=True)
-
-        def cost_fn(x):
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(x[0], wires=[0])
-                qp.RY(x[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-            tape = qp.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
-            return np.array(fn(dev.execute(tapes)))
-
-        res = qp.jacobian(cost_fn)(params)
-        x, y = params
-        expected = np.array(
-            [
-                [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
-                [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
-            ]
-        )
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.autograd
-    def test_autograd_ragged(self, approx_order, strategy, tol):
-        """Tests that the output of the finite-difference transform
-        of a ragged tape can be differentiated using autograd, yielding second derivatives."""
-        dev = qp.device("default.qubit", wires=2)
-        params = np.array([0.543, -0.654], requires_grad=True)
-
-        def cost_fn(x):
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(x[0], wires=[0])
-                qp.RY(x[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0))
-                qp.probs(wires=[1])
-
-            tape = qp.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
-            jac = fn(dev.execute(tapes))
-            return jac[1][0]
-
-        x, y = params
-        res = qp.jacobian(cost_fn)(params)[0]
-        expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
     @pytest.mark.torch
     def test_torch(self, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
@@ -930,8 +871,6 @@ class TestFiniteDiffGradients:
     def test_jax(self, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using JAX, yielding second derivatives."""
-        import jax
-        from jax import numpy as jnp
 
         dev = qp.device("default.qubit", wires=2)
         params = jnp.array([0.543, -0.654])
@@ -962,7 +901,6 @@ class TestFiniteDiffGradients:
     @pytest.mark.jax
     def test_jax_probs(self, approx_order, strategy, tol):  # pylint: disable=unused-argument
         """Tests that the output of the finite-difference transform is similar using or not diff method on the QNode."""
-        import jax
 
         dev = qp.device("default.qubit", wires=2)
         x = jax.numpy.array(0.543)
@@ -1007,7 +945,6 @@ class TestJaxArgnums:
 
     def test_single_expectation_value(self, argnums, interface, approx_order, strategy):
         """Test for single expectation value."""
-        import jax
 
         dev = qp.device("default.qubit", wires=2)
 
@@ -1038,7 +975,6 @@ class TestJaxArgnums:
 
     def test_multi_expectation_values(self, argnums, interface, approx_order, strategy):
         """Test for multiple expectation values."""
-        import jax
 
         dev = qp.device("default.qubit", wires=2)
 
@@ -1073,7 +1009,6 @@ class TestJaxArgnums:
 
     def test_hessian(self, argnums, interface, approx_order, strategy):
         """Test for hessian."""
-        import jax
 
         dev = qp.device("default.qubit", wires=2)
 

@@ -1231,24 +1231,6 @@ def test_two_qubit_decomposition_special_case_discontinuity(U):
 class TestTwoQubitDecompositionWarnings:
     """Test suite for warning generation in two_qubit_decomposition"""
 
-    def test_warning_parameterized_autograd(self):
-        """Test warning is raised for parameterized matrix with autograd"""
-        dev = qp.device("default.qubit", wires=2)
-
-        def my_qfunc(params):
-            U = qp.numpy.array(np.eye(4, dtype=np.complex128), requires_grad=True) * params
-            ops = qp.ops.two_qubit_decomposition(U, wires=[0, 1])
-            for op in ops:
-                qp.apply(op)
-            return qp.expval(qp.PauliZ(0))
-
-        qnode = qp.QNode(my_qfunc, dev, interface="autograd")
-
-        with pytest.warns(
-            RuntimeWarning, match="The two-qubit decomposition may not be differentiable"
-        ):
-            qnode(1.0)
-
     @pytest.mark.torch
     def test_warning_parameterized_torch(self):
         """Test warning is raised for parameterized matrix with PyTorch"""
@@ -1306,21 +1288,12 @@ class TestTwoQubitDecompositionWarnings:
 
     def test_warning_complex_input(self):
         """Test warning is raised with complex input parameters"""
-        dev = qp.device("default.qubit", wires=2)
-
-        def my_qfunc(params):
-            U = qp.numpy.array(np.eye(4, dtype=np.complex128), requires_grad=True) * params
-            ops = qp.ops.two_qubit_decomposition(U, wires=[0, 1])
-            for op in ops:
-                qp.apply(op)
-            return qp.expval(qp.PauliZ(0))
-
-        qnode = qp.QNode(my_qfunc, dev, interface="autograd")
+        U = qp.numpy.array(np.eye(4, dtype=np.complex128), requires_grad=True) * (1.0 + 0.5j)
 
         with pytest.warns(
             RuntimeWarning, match="The two-qubit decomposition may not be differentiable"
         ):
-            qnode(1.0 + 0.5j)
+            qp.ops.two_qubit_decomposition(U, wires=[0, 1])
 
 
 @pytest.mark.unit

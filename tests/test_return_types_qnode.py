@@ -2154,10 +2154,13 @@ class TestIntegrationMultipleMeasurementsShotVector:
 class TestIntegrationJacobianBackpropMultipleReturns:
     """Test the new return types for the Jacobian of multiple measurements, with backprop."""
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("interface", ["auto", "autograd"])
-    def test_multiple_expval_autograd(self, interface, device):
+    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    def test_multiple_expval_jax_stacked(self, interface, device):
         """Return Jacobian of multiple expvals."""
+        import jax
+
         dev = qp.device(device, wires=2)
 
         @qp.qnode(dev, interface=interface)
@@ -2168,14 +2171,14 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             qp.RZ(a[2], wires=1)
             return qp.expval(qp.Projector([0], wires=0)), qp.expval(qp.PauliZ(wires=1))
 
-        x = qp.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
+        x = jax.numpy.array([0.1, 0.2, 0.3])
 
         def cost(a):
-            return qp.numpy.hstack(circuit(a))
+            return jax.numpy.hstack(circuit(a))
 
         res = qp.jacobian(cost)(x)
 
-        assert isinstance(res, (np.ndarray, np.float64))
+        assert isinstance(res, jax.Array)
         assert res.shape == (2, 3)
 
     @pytest.mark.torch
@@ -2257,10 +2260,13 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert isinstance(elem, jax.numpy.ndarray)
             assert elem.shape == (3,)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("interface", ["auto", "autograd"])
-    def test_multiple_probs_autograd(self, interface, device):
+    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    def test_multiple_probs_jax_stacked(self, interface, device):
         """Return Jacobian of multiple probs."""
+        import jax
+
         dev = qp.device(device, wires=2)
 
         @qp.qnode(dev, interface=interface)
@@ -2271,14 +2277,14 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             qp.RZ(a[2], wires=1)
             return qp.probs(op=qp.PauliZ(wires=0)), qp.probs(wires=[1])
 
-        x = qp.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
+        x = jax.numpy.array([0.1, 0.2, 0.3])
 
         def cost(a):
-            return qp.numpy.stack(circuit(a))
+            return jax.numpy.stack(circuit(a))
 
         res = qp.jacobian(cost)(x)
 
-        assert isinstance(res, (np.ndarray, np.float64))
+        assert isinstance(res, jax.Array)
         assert res.shape == (2, 2, 3)
 
     @pytest.mark.torch
@@ -2362,10 +2368,13 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert isinstance(elem, jax.numpy.ndarray)
             assert elem.shape == (2, 3)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("interface", ["auto", "autograd"])
-    def test_multiple_meas_autograd(self, interface, device):
+    @pytest.mark.parametrize("interface", ["auto", "jax"])
+    def test_multiple_meas_jax_stacked(self, interface, device):
         """Return Jacobian of multiple measurements."""
+        import jax
+
         dev = qp.device(device, wires=2)
 
         @qp.qnode(dev, interface=interface)
@@ -2376,14 +2385,14 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             qp.RZ(a[2], wires=1)
             return qp.expval(qp.PauliZ(wires=0)), qp.probs(wires=[0, 1]), qp.vn_entropy(wires=1)
 
-        x = qp.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
+        x = jax.numpy.array([0.1, 0.2, 0.3])
 
         def cost(a):
-            return qp.numpy.hstack(circuit(a))
+            return jax.numpy.hstack(circuit(a))
 
         res = qp.jacobian(cost)(x)
 
-        assert isinstance(res, (np.ndarray, np.float64))
+        assert isinstance(res, jax.Array)
         assert res.shape == (6, 3)
 
     @pytest.mark.torch

@@ -356,6 +356,7 @@ class TestDifferentiability:  # pylint: disable=too-few-public-methods
         ("block", "n_params_block", "wires", "n_block_wires", "template_weights"),
         [(circuit2_block, 2, [0, 1, 2, 3], 2, [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]])],
     )
+    @pytest.mark.jax
     def test_template_differentiable(
         self, block, n_params_block, wires, n_block_wires, template_weights
     ):
@@ -367,7 +368,9 @@ class TestDifferentiability:  # pylint: disable=too-few-public-methods
             qp.TTN(wires, n_block_wires, block, n_params_block, template_weights)
             return qp.expval(qp.PauliZ(wires=wires[-1]))
 
-        qp.grad(circuit)(qp.numpy.array(template_weights, requires_grad=True))
+        import jax.numpy as jnp
+
+        qp.grad(circuit)(jnp.asarray(template_weights))
 
 
 class TestTemplateOutputs:

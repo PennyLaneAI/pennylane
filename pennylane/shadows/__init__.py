@@ -78,7 +78,7 @@ The easiest way of computing expectation values with classical shadows in PennyL
 
 .. code-block:: python
 
-    from pennylane import numpy as np
+    import torch
 
     H = qp.Hamiltonian([1., 1.], [qp.Z(0) @ qp.Z(1), qp.X(0) @ qp.Z(1)])
 
@@ -95,13 +95,13 @@ The easiest way of computing expectation values with classical shadows in PennyL
         qp.measure(1)
         return qp.shadow_expval(H, seed=99)
 
-    x = np.array(0.5, requires_grad=True)
+    x = torch.tensor(0.5, dtype=torch.float64, requires_grad=True)
 
 The big advantage of this way of computing expectation values is that it is differentiable.
 
->>> qnode(x)
+>>> qp.math.toarray(qnode(x))
 array(0.8532)
->>> print(qp.grad(qnode)(x))
+>>> print(qp.math.toarray(qp.grad(qnode)(x)))
 -0.4644...
 
 There are more options for post-processing classical shadows in :class:`ClassicalShadow`.

@@ -468,14 +468,17 @@ class TestGradientSupport:
         assert processed_config.use_device_gradient is True
         assert processed_config.grad_on_execution is True
 
+    @pytest.mark.torch
     def test_no_backprop_with_sparse_hamiltonian(self):
         """Test that backpropagation is not supported with SparseHamiltonian."""
 
+        import torch
+
         class BackpropDevice(DummyDevice):
-            _capabilities = {"passthru_interface": "autograd"}
+            _capabilities = {"passthru_interface": "torch"}
 
         H = qp.SparseHamiltonian(qp.X.compute_sparse_matrix(), wires=0)
-        x = qp.numpy.array(0.1)
+        x = torch.tensor(0.1, requires_grad=True)
         tape = qp.tape.QuantumScript([qp.RX(x, 0)], [qp.expval(H)])
         dev = LegacyDeviceFacade(BackpropDevice())
         assert not dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"), tape)
@@ -487,7 +490,7 @@ class TestGradientSupport:
         """Test that if the passthru interface is set, no substitution occurs."""
 
         class BackpropDevice(DummyDevice):
-            _capabilities = {"passthru_interface": "autograd"}
+            _capabilities = {"passthru_interface": "torch"}
 
         dev = LegacyDeviceFacade(BackpropDevice(wires=2, shots=None))
 

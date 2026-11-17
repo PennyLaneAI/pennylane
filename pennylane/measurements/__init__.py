@@ -269,7 +269,8 @@ The gradient of the measurement process is
 
 When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444`
 
->>> x = qp.numpy.array(1.23, requires_grad=True)
+>>> import jax.numpy as jnp
+>>> x = jnp.array(1.23)
 >>> print(qp.grad(circuit)(x)) 
 4711.5...
 

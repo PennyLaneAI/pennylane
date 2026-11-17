@@ -150,22 +150,23 @@ def execute(  # pylint: disable=too-many-arguments
 
     Let's execute this cost function while tracking the gradient:
 
-    >>> params = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
-    >>> x = pnp.array([0.5], requires_grad=True)
-    >>> print(cost_fn(params, x))
+    >>> import torch
+    >>> params = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64, requires_grad=True)
+    >>> x = torch.tensor([0.5], dtype=torch.float64, requires_grad=True)
+    >>> print(qp.math.toarray(cost_fn(params, x)))
     1.93...
 
     Since the ``execute`` function is differentiable, we can
     also compute the gradient:
 
-    >>> print(qp.grad(cost_fn)(params, x)) # doctest: +SKIP
+    >>> print(tuple(g.detach().numpy() for g in qp.grad(cost_fn)(params, x))) # doctest: +SKIP
     (array([-0.0978434 , -0.19767681, -0.29552021]), array([5.37764278e-17]))
 
     Finally, we can also compute any nth-order derivative. Let's compute the Jacobian
     of the gradient (that is, the Hessian):
 
     >>> x.requires_grad = False
-    >>> print(qp.jacobian(qp.grad(cost_fn))(params, x)) # doctest: +SKIP
+    >>> print(qp.math.toarray(qp.jacobian(qp.grad(cost_fn))(params, x))) # doctest: +SKIP
     [[-0.97517033  0.01983384  0.        ]
      [ 0.01983384 -0.97517033  0.        ]
      [ 0.          0.         -0.95533649]]

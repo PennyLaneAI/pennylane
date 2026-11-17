@@ -445,7 +445,11 @@ def mitigate_with_zne(  # pylint: disable=too-many-arguments
 
     This mitigated qnode can be differentiated like any other qnode.
 
-    >>> qp.grad(circuit)(qp.numpy.array(w1), qp.numpy.array(w2))
+    >>> import torch
+    >>> params1 = torch.tensor(w1, dtype=torch.float64, requires_grad=True)
+    >>> params2 = torch.tensor(w2, dtype=torch.float64, requires_grad=True)
+    >>> gradients = qp.grad(circuit)(params1, params2)
+    >>> tuple(g.detach().numpy() for g in gradients)
     (array([-0.92625176,  0.28914607]), array([[[-1.01036246e+00,  2.99296508e-01]],
     <BLANKLINE>
            [[-6.93099601e-01, -7.92154137e-04]]]))

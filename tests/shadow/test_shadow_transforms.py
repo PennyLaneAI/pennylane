@@ -13,14 +13,14 @@
 # limitations under the License.
 """Unit tests for the classical shadows transforms"""
 
+import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as np
 from pennylane.shadows.transforms import _replace_obs
 
 
-def hadamard_circuit(wires, shots=10000, interface="autograd"):
+def hadamard_circuit(wires, shots=10000, interface="numpy"):
     """Hadamard circuit to put all qubits in equal superposition (locally)"""
     dev = qp.device("default.qubit", wires=wires)
 
@@ -34,7 +34,7 @@ def hadamard_circuit(wires, shots=10000, interface="autograd"):
     return circuit
 
 
-def max_entangled_circuit(wires, shots=10000, interface="autograd"):
+def max_entangled_circuit(wires, shots=10000, interface="numpy"):
     """maximally entangled state preparation circuit"""
     dev = qp.device("default.qubit", wires=wires)
 
@@ -49,7 +49,7 @@ def max_entangled_circuit(wires, shots=10000, interface="autograd"):
     return circuit
 
 
-def qft_circuit(wires, shots=10000, interface="autograd"):
+def qft_circuit(wires, shots=10000, interface="numpy"):
     """Quantum Fourier Transform circuit"""
     dev = qp.device("default.qubit", wires=wires)
 
@@ -66,7 +66,7 @@ def qft_circuit(wires, shots=10000, interface="autograd"):
     return circuit
 
 
-def basic_entangler_circuit(n_wires, shots=10000, interface="autograd"):
+def basic_entangler_circuit(n_wires, shots=10000, interface="numpy"):
     dev = qp.device("default.qubit", wires=n_wires)
 
     @qp.set_shots(shots)
@@ -78,7 +78,7 @@ def basic_entangler_circuit(n_wires, shots=10000, interface="autograd"):
     return circuit
 
 
-def basic_entangler_circuit_exact_state(n_wires, sub_wires, interface="autograd"):
+def basic_entangler_circuit_exact_state(n_wires, sub_wires, interface="numpy"):
     dev = qp.device("default.qubit", wires=n_wires)
 
     @qp.qnode(dev, interface=interface)
@@ -89,7 +89,7 @@ def basic_entangler_circuit_exact_state(n_wires, sub_wires, interface="autograd"
     return circuit
 
 
-def basic_entangler_circuit_exact_expval(n_wires, interface="autograd"):
+def basic_entangler_circuit_exact_expval(n_wires, interface="numpy"):
     dev = qp.device("default.qubit", wires=n_wires)
 
     @qp.qnode(dev, interface=interface)
@@ -123,7 +123,6 @@ class TestReplaceObs:
         assert res.shape == (4,)
 
 
-@pytest.mark.autograd
 class TestStateForward:
     """Test that the state reconstruction is correct for a variety of states"""
 
@@ -212,7 +211,7 @@ class TestStateForward:
 class TestStateForwardInterfaces:  # pylint: disable=too-few-public-methods
     """Test that state reconstruction works for all interfaces"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     @pytest.mark.parametrize("diffable", [True, False])
     def test_qft_state(self, interface, diffable):
         """Test that the state reconstruction is correct for a QFT state"""
@@ -233,27 +232,6 @@ class TestStateBackward:
     x = np.random.uniform(
         0.8, 2, size=qp.BasicEntanglerLayers.shape(n_layers=1, n_wires=3)
     ).tolist()
-
-    @pytest.mark.autograd
-    def test_backward_autograd(self):
-        """Test the gradient of the state for the autograd interface"""
-        shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="autograd")
-
-        sub_wires = [[0, 1], [1, 2]]
-        shadow_circuit = qp.shadows.shadow_state(shadow_circuit, wires=sub_wires, diffable=True)
-
-        x = np.array(self.x, requires_grad=True)
-
-        # for autograd in particular, take only the real part since it doesn't
-        # support complex differentiation
-        actual = qp.jacobian(lambda x: qp.math.real(qp.math.stack(shadow_circuit(x))))(x)
-
-        for act, w in zip(qp.math.unstack(actual), sub_wires):
-            exact_circuit = basic_entangler_circuit_exact_state(3, w, "autograd")
-            # pylint: disable-next=cell-var-from-loop
-            expected = qp.jacobian(lambda x: qp.math.real(exact_circuit(x)))(x)
-
-            assert qp.math.allclose(act, expected, atol=1e-1)
 
     @pytest.mark.jax
     def test_backward_jax(self):

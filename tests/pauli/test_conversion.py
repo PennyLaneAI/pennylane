@@ -745,8 +745,8 @@ class TestPhasedDecomposition:
             return qp.expval(qp.PauliZ(0))
 
         for matrix in matrices:
-            # NumPy Interface
-            grad_numpy = qp.grad(circuit)(qp.numpy.array(matrix))
+            # PennyLane's JAX gradient wrapper
+            grad_native = qp.grad(circuit)(jax.numpy.array(matrix))
 
             # Jax Interface
             # pylint: disable-next=superfluous-parens
@@ -759,8 +759,8 @@ class TestPhasedDecomposition:
             grad_torch = A.grad
 
             # Comparisons - note: https://github.com/google/jax/issues/9110
-            assert qp.math.allclose(grad_numpy, grad_jax)
-            assert qp.math.allclose(grad_numpy, qp.math.conjugate(grad_torch))
+            assert qp.math.allclose(grad_native, grad_jax)
+            assert qp.math.allclose(grad_native, qp.math.conjugate(grad_torch))
 
 
 class TestPauliSentence:

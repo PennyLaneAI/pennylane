@@ -30,12 +30,57 @@ from pennylane.core import Operator2
 from pennylane.core.operator import Operator
 from pennylane.testing.operators import (
     _check_bind_new_parameters,
+    _check_differentiation,
     _check_eigendecomposition,
     _check_pytree,
     assert_valid,
 )
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp
+
+
+@pytest.mark.jax
+class TestDifferentiation:
+    """Check native differentiation without treating static metadata as trainable."""
+
+    @pytest.mark.parametrize(
+        "op",
+        [
+            qp.RX(0.5, 0),
+            qp.Rot(0.1, 0.2, 0.3, 0),
+            qp.MultiRZ(0.4, [0, 1]),
+            qp.RX(np.array(0.5), "alpha"),
+        ],
+    )
+    def test_jax_floating_parameters(self, op):
+        """Floating scalar leaves are compared through the JAX interface."""
+        _check_differentiation(op)
+
+    def test_integer_metadata_does_not_execute(self, mocker):
+        """Static integer-only operators need no differentiation or large state allocation."""
+        device = mocker.patch("pennylane.testing.operators.device")
+        _check_differentiation(qp.MultiRZ(1, wires=range(28)))
+        device.assert_not_called()
+
+    def test_every_floating_argument_is_checked(self):
+        """An incorrect shift rule for the second argument must be detected."""
+
+        class BadFrequencyOp(qp.operation.Operation):
+            num_params = 2
+            num_wires = 1
+            grad_method = "A"
+            parameter_frequencies = [(1,), (2,)]
+
+            @staticmethod
+            def compute_matrix(first_angle, second_angle):
+                return qp.math.matmul(
+                    qp.RY.compute_matrix(second_angle), qp.RX.compute_matrix(first_angle)
+                )
+
+        with pytest.raises(
+            AssertionError, match="Parameter-shift does not produce the same Jacobian"
+        ):
+            _check_differentiation(BadFrequencyOp(0.4, 0.6, wires=0))
 
 
 class TestDecompositionErrors:

@@ -24,10 +24,7 @@ import jax
 import numpy as np
 import scipy.sparse as sp
 
-from pennylane import capture, math
-from pennylane import numpy as pnp
-from pennylane import ops, pytrees
-from pennylane._grad import jacobian
+from pennylane import capture, math, ops, pytrees
 from pennylane.allocation import Allocate
 from pennylane.core import apply, queuing
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
@@ -518,17 +515,27 @@ def _check_differentiation(op):
         return
 
     data, struct = pytrees.flatten(op)
+    params = list(data)
+    argnums = []
+    for index, value in enumerate(data):
+        array = math.toarray(value)
+        if np.asarray(array).dtype.kind in ("f", "c"):
+            params[index] = jax.numpy.asarray(array)
+            argnums.append(index)
+    if not argnums:
+        return
 
     def circuit(*args):
         apply(pytrees.unflatten(args, struct))
         return probs(wires=op.wires)
 
-    qnode_ref = QNode(circuit, device("default.qubit"), diff_method="backprop")
-    qnode_ps = QNode(circuit, device("default.qubit"), diff_method="parameter-shift")
+    qnode_ref = QNode(circuit, device("default.qubit"), interface="jax", diff_method="backprop")
+    qnode_ps = QNode(
+        circuit, device("default.qubit"), interface="jax", diff_method="parameter-shift"
+    )
 
-    params = [x if isinstance(x, int) else pnp.array(x) for x in data]
-    ps = jacobian(qnode_ps)(*params)
-    expected_bp = jacobian(qnode_ref)(*params)
+    ps = jax.jacobian(qnode_ps, argnums=tuple(argnums))(*params)
+    expected_bp = jax.jacobian(qnode_ref, argnums=tuple(argnums))(*params)
 
     error_msg = (
         "Parameter-shift does not produce the same Jacobian as with backpropagation. "
@@ -661,7 +668,7 @@ def assert_valid(  # pylint: disable=too-many-arguments
                 self._data = data
                 super().__init__(wires=wires)
 
-        op = MyOp(pnp.array(0.5), wires=0)
+        op = MyOp(np.array(0.5), wires=0)
 
     >>> assert_valid(op)
     Traceback (most recent call last):

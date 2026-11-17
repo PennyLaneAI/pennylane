@@ -671,11 +671,13 @@ def shadow_expval(
                 qp.RX(x, wires=0)
                 return qp.shadow_expval(obs, seed=99)
 
-            x = pnp.array(0.5, requires_grad=True)
+            import torch
 
-        >>> print(circuit(x, H))
+            x = torch.tensor(0.5, dtype=torch.float64, requires_grad=True)
+
+        >>> print(qp.math.toarray(circuit(x, H)))
         1.8891
-        >>> print(qp.grad(circuit)(x, H))
+        >>> print(qp.math.toarray(qp.grad(circuit)(x, H)))
         -0.4653...
 
         In ``shadow_expval``, we can also pass a list of observables to estimate them
@@ -684,10 +686,10 @@ def shadow_expval(
         to include all observables that you want to estimate from a single measurement in the same execution.
 
         >>> Hs = [H, qp.X(0), qp.Y(0), qp.Z(0)]
-        >>> print(circuit(x, Hs))
+        >>> print(qp.math.toarray(circuit(x, Hs)))
         [ 1.8783  0.0096 -0.0174  0.0138]
-        >>> print(qp.jacobian(circuit)(x, Hs))
-        [-0.4851 -0.0063 -0.0099  0.0006]
+        >>> print(qp.math.toarray(qp.jacobian(circuit)(x, Hs)))
+        [-0.4851  0.006   0.0036  0.0015]
     """
     seed = seed or np.random.randint(2**30)
     return ShadowExpvalMP(H=H, seed=seed, k=k)

@@ -202,8 +202,7 @@ fubini_params = [
 
 
 def autodiff_metric_tensor(ansatz, num_wires):
-    """Compute the metric tensor by full state vector
-    differentiation via autograd."""
+    """Compute an independent metric tensor by differentiating the full state vector."""
     dev = qp.device("default.qubit", wires=num_wires)
 
     @qp.qnode(dev)
@@ -215,32 +214,33 @@ def autodiff_metric_tensor(ansatz, num_wires):
         state = qnode(*params)
 
         def rqnode(*params):
-            return np.real(qnode(*params))
+            return qp.math.real(qnode(*params))
 
         def iqnode(*params):
-            return np.imag(qnode(*params))
+            return qp.math.imag(qnode(*params))
 
-        rjac = qp.jacobian(rqnode)(*params)
-        ijac = qp.jacobian(iqnode)(*params)
+        argnums = tuple(range(len(params))) if len(params) > 1 else 0
+        rjac = qp.jacobian(rqnode, argnums=argnums)(*params)
+        ijac = qp.jacobian(iqnode, argnums=argnums)(*params)
 
         if isinstance(rjac, tuple):
             out = []
             for rc, ic in zip(rjac, ijac):
                 c = rc + 1j * ic
-                psidpsi = np.tensordot(np.conj(state), c, axes=([0], [0]))
+                psidpsi = qp.math.tensordot(qp.math.conj(state), c, axes=([0], [0]))
                 out.append(
-                    np.real(
-                        np.tensordot(np.conj(c), c, axes=([0], [0]))
-                        - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
+                    qp.math.real(
+                        qp.math.tensordot(qp.math.conj(c), c, axes=([0], [0]))
+                        - qp.math.tensordot(qp.math.conj(psidpsi), psidpsi, axes=0)
                     )
                 )
             return tuple(out)
 
         jac = rjac + 1j * ijac
-        psidpsi = np.tensordot(np.conj(state), jac, axes=([0], [0]))
-        return np.real(
-            np.tensordot(np.conj(jac), jac, axes=([0], [0]))
-            - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
+        psidpsi = qp.math.tensordot(qp.math.conj(state), jac, axes=([0], [0]))
+        return qp.math.real(
+            qp.math.tensordot(qp.math.conj(jac), jac, axes=([0], [0]))
+            - qp.math.tensordot(qp.math.conj(psidpsi), psidpsi, axes=0)
         )
 
     return mt
@@ -318,8 +318,8 @@ class TestAdjointMetricTensorTape:
 
         import torch
 
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         t_params = tuple(torch.tensor(p, requires_grad=True) for p in params)
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*t_params)
         dev = qp.device("default.qubit", wires=self.num_wires)
 
         @qp.qnode(dev, interface=interface)
@@ -379,8 +379,8 @@ class TestAdjointMetricTensorQNode:
 
         jax.config.update("jax_enable_x64", True)
 
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         j_params = tuple(jax.numpy.array(p) for p in params)
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*j_params)
         dev = qp.device("default.qubit", wires=self.num_wires)
 
         @qp.qnode(dev, interface="jax")
@@ -407,8 +407,8 @@ class TestAdjointMetricTensorQNode:
 
         import torch
 
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         t_params = tuple(torch.tensor(p, requires_grad=True, dtype=torch.float64) for p in params)
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*t_params)
         dev = qp.device("default.qubit", wires=self.num_wires)
 
         @qp.qnode(dev, interface=interface)
@@ -474,8 +474,8 @@ class TestAdjointMetricTensorDifferentiability:
 
         import jax
 
-        expected = qp.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*params)
         j_params = tuple(jax.numpy.array(p) for p in params)
+        expected = qp.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*j_params)
         dev = qp.device("default.qubit", wires=self.num_wires)
 
         @qp.qnode(dev, interface="jax")
@@ -503,8 +503,8 @@ class TestAdjointMetricTensorDifferentiability:
 
         import torch
 
-        expected = qp.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*params)
         t_params = tuple(torch.tensor(p, requires_grad=True, dtype=torch.float64) for p in params)
+        expected = qp.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*t_params)
         dev = qp.device("default.qubit", wires=self.num_wires)
 
         @qp.qnode(dev, interface="torch")

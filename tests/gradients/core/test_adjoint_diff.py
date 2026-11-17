@@ -427,16 +427,18 @@ class TestAdjointJacobian:
         """Test that a parametrized `QubitUnitary` is accounted for correctly
         when it is not trainable."""
 
+        import torch
+
         dev = DefaultQubitLegacy(wires=1)
-        par = np.array(0.6)
+        par = torch.tensor(0.6, dtype=torch.float64, requires_grad=True)
 
         def circuit(x):
             qp.RY(x, wires=0)
-            qp.QubitUnitary(np.eye(2, requires_grad=False), wires=0)
+            qp.QubitUnitary(qp.math.eye(2, like="numpy"), wires=0)
             return qp.expval(qp.PauliZ(0))
 
         circ = qp.QNode(circuit, dev, diff_method="adjoint")
         grad_adjoint = qp.jacobian(circ)(par)
         circ = qp.QNode(circuit, dev, diff_method="parameter-shift")
         grad_psr = qp.jacobian(circ)(par)
-        assert np.allclose(grad_adjoint, grad_psr)
+        assert qp.math.allclose(grad_adjoint, grad_psr)

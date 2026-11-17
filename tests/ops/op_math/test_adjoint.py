@@ -17,6 +17,7 @@
 
 import pickle
 
+import jax.numpy as jnp
 import numpy as np
 import pytest
 
@@ -554,7 +555,6 @@ class TestMatrix:
     @pytest.mark.jax
     def test_matrix_jax(self):
         """Test the matrix of an adjoint operator with a jax parameter."""
-        import jax.numpy as jnp
 
         self.check_matrix(jnp.array(1.2345), "jax")
 
@@ -716,13 +716,14 @@ class TestIntegration:
     @pytest.mark.parametrize(
         "diff_method", ("parameter-shift", "finite-diff", "adjoint", "backprop")
     )
+    @pytest.mark.jax
     def test_gradient_adj_rx(self, diff_method):
         @qp.qnode(qp.device("default.qubit", wires=1), diff_method=diff_method)
         def circuit(x):
             Adjoint(qp.RX(x, wires=0))
             return qp.expval(qp.PauliY(0))
 
-        x = np.array(1.2345, requires_grad=True)
+        x = jnp.array(1.2345)
 
         res = circuit(x)
         expected = np.sin(x)
@@ -742,7 +743,7 @@ class TestIntegration:
             Adjoint(qp.RX(x, wires=0))
             return qp.expval(qp.PauliY(0))
 
-        x = qp.numpy.array([1.234, 2.34, 3.456])
+        x = qp.math.asarray([1.234, 2.34, 3.456], like="numpy")
         res = circuit(x)
 
         expected = np.sin(x)

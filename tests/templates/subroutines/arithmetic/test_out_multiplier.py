@@ -15,10 +15,10 @@
 Tests for the OutMultiplier template.
 """
 
+import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as np
 from pennylane.core.operator import abstractify
 from pennylane.ops import adjoint
 from pennylane.templates.subroutines.arithmetic.out_multiplier import (

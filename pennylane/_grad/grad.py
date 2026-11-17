@@ -430,7 +430,7 @@ class grad:  # pylint: disable=too-many-instance-attributes
             self._forward = self._func(*args, **kwargs)
             return ()
 
-        grad_value, ans = grad_fn(*args, **kwargs)  # pylint: disable=not-callable
+        grad_value, ans = grad_fn(*args, **kwargs)
         self._forward = ans
 
         return grad_value

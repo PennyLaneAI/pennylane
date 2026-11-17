@@ -242,7 +242,7 @@ class TestEvolution:  # pylint: disable=too-many-public-methods
 
         dev = qp.device("default.qubit", wires=2)
         base = qp.PauliX(0)
-        x = np.array(1.234)
+        x = jax.numpy.array(1.234)
 
         @qp.qnode(dev, diff_method=qp.gradients.param_shift)
         def circ_param_shift(x):

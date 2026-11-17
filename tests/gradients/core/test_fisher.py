@@ -36,7 +36,7 @@ class TestMakeProbs:
             qp.CNOT(wires=[0, 1])
             return qp.expval(qp.PauliX(0))
 
-        x = pnp.array(0.5)
+        x = np.array(0.5)
         new_qnode = _make_probs(qnode)
         res = new_qnode(x)
 
@@ -99,6 +99,8 @@ class TestIntegration:
     @pytest.mark.parametrize("n_params", np.arange(1, 5))
     def test_different_sizes(self, n_wires, n_params):
         """Testing that for any number of wires and parameters, the correct size and values are computed"""
+        import torch
+
         dev = qp.device("default.qubit", wires=n_wires)
 
         @qp.qnode(dev)
@@ -114,12 +116,14 @@ class TestIntegration:
 
             return qp.probs(wires=range(n_wires))
 
-        params = pnp.zeros(n_params, requires_grad=True)
+        params = torch.zeros(int(n_params), dtype=torch.float64, requires_grad=True)
         res = classical_fisher(circ)(params)
-        assert np.allclose(res, n_wires * np.ones((n_params, n_params)))
+        assert qp.math.allclose(res, n_wires * np.ones((n_params, n_params)))
 
     def test_hardware_compatibility_classical_fisher(self):
         """Testing that classical_fisher can be computed with finite shots"""
+        import torch
+
         n_wires = 3
         n_params = 3
 
@@ -139,9 +143,9 @@ class TestIntegration:
 
             return qp.probs(wires=range(n_wires))
 
-        params = pnp.zeros(n_params, requires_grad=True)
+        params = torch.zeros(n_params, dtype=torch.float64, requires_grad=True)
         res = classical_fisher(circ)(params)
-        assert np.allclose(res, n_wires * np.ones((n_params, n_params)), atol=1)
+        assert qp.math.allclose(res, n_wires * np.ones((n_params, n_params)), atol=1)
 
     @pytest.mark.parametrize(
         "dev",
@@ -155,9 +159,11 @@ class TestIntegration:
         """Integration test of quantum fisher information matrix CFIM. This is just calling
         ``qp.metric_tensor`` or ``qp.adjoint_metric_tensor`` and multiplying by a factor of 4"""
 
+        import torch
+
         n_wires = 2
 
-        rng = pnp.random.default_rng(seed)
+        rng = np.random.default_rng(seed)
         dev_hard = qp.device("default.qubit", wires=n_wires + 1, seed=rng)
 
         def qfunc(params):
@@ -166,7 +172,7 @@ class TestIntegration:
             qp.CNOT(wires=(0, 1))
             return qp.probs(wires=[0, 1])
 
-        params = rng.random(2, requires_grad=True)
+        params = torch.tensor(rng.random(2), dtype=torch.float64, requires_grad=True)
 
         circ_hard = qp.set_shots(qp.QNode(qfunc, dev_hard), shots=1000)
         QFIM_hard = quantum_fisher(circ_hard)(params)
@@ -175,8 +181,8 @@ class TestIntegration:
         circ = qp.QNode(qfunc, dev)
         QFIM = quantum_fisher(circ)(params)
         QFIM1 = 4.0 * qp.adjoint_metric_tensor(circ)(params)
-        assert np.allclose(QFIM, QFIM1)
-        assert np.allclose(QFIM_hard, QFIM1_hard, atol=1e-1)
+        assert qp.math.allclose(QFIM, QFIM1)
+        assert qp.math.allclose(QFIM_hard, QFIM1_hard, atol=1e-1)
 
 
 class TestInterfacesClassicalFisher:
@@ -427,9 +433,7 @@ class TestDiffCFIM:
 
     @pytest.mark.all_interfaces
     def test_consistency(self):
-        """Testing that the derivative of the cfim is giving consistently the same results for all interfaces.
-        Currently failing as (jax and autograd) and (torch) are giving two different results.
-        """
+        """Test that Torch and JAX agree on derivatives of the classical Fisher matrix."""
         import jax
         import jax.numpy as jnp
         import torch
@@ -458,15 +462,11 @@ class TestDiffCFIM:
         grad_torch = torch.autograd.functional.jacobian(classical_fisher(circuit), weights)
 
         circuit = qp.QNode(qfunc, dev)
-        weights = pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], requires_grad=True)
-        grad_autograd = qp.jacobian(classical_fisher(circuit))(weights)
-
-        circuit = qp.QNode(qfunc, dev)
         weights = jnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
         grad_jax = jax.jacobian(classical_fisher(circuit))(weights)
 
         # Evaluate and compare
-        grads = [grad_autograd, grad_torch, grad_jax]
+        grads = [grad_torch, grad_jax]
 
         is_same = np.zeros((len(grads), len(grads)))
 

@@ -186,12 +186,14 @@ class TestMetricTensor:
         lam = 1e-11
 
         opt_with_lam = qp.QNGOptimizerQJIT(stepsize=stepsize, approx=None, lam=lam)
-        state_with_lam = opt_with_lam.init(params)
+        assert opt_with_lam.init(params) is None
+        state_with_lam = None
         new_params_with_lam, _ = opt_with_lam.step(circ, params, state_with_lam)
         mt_with_lam = opt_with_lam._get_metric_tensor(circ, params)
 
         opt = qp.QNGOptimizerQJIT(stepsize=stepsize, approx=None)
-        state = opt.init(params)
+        assert opt.init(params) is None
+        state = None
         new_params, _ = opt.step(circ, params, state)
         mt = opt._get_metric_tensor(circ, params)
 
@@ -229,7 +231,8 @@ class TestExceptions:  # pylint: disable=too-few-public-methods
 
         opt = qp.QNGOptimizerQJIT()
         params = jnp.array(0.5)
-        state = opt.init(params)
+        assert opt.init(params) is None
+        state = None
 
         with pytest.raises(
             ValueError,
@@ -254,17 +257,17 @@ class TestOptimize:
             return qp.expval(qp.PauliZ(0))
 
         params = [0.31, 0.842]
-        params_qp = qp.numpy.array(params)
         params_jax = jnp.array(params)
 
         opt = qp.QNGOptimizerQJIT(stepsize=0.05)
-        state = opt.init(params_jax)
+        assert opt.init(params_jax) is None
+        state = None
 
         new_params1, _ = opt.step(circ, params_jax, state)
         new_params2, _, cost = opt.step_and_cost(circ, params_jax, state)
 
         expected_mt = np.array([0.25, (np.cos(params[0]) ** 2) / 4])
-        expected_params = params_qp - opt.stepsize * qp.grad(circ)(params_qp) / expected_mt
+        expected_params = params_jax - opt.stepsize * qp.grad(circ)(params_jax) / expected_mt
         expected_cost = circ(params)
 
         assert np.allclose(new_params1, expected_params)
@@ -285,18 +288,18 @@ class TestOptimize:
             return qp.expval(qp.PauliZ(0))
 
         params = [0.31, 0.842]
-        params_qp = qp.numpy.array(params)
         params_jax = jnp.array(params)
 
         opt = qp.QNGOptimizerQJIT(stepsize=0.05)
-        state = opt.init(params_jax)
+        assert opt.init(params_jax) is None
+        state = None
 
         new_params1, _ = opt.step(circ, params_jax, state)
         new_params2, _, cost = opt.step_and_cost(circ, params_jax, state)
 
         expected_cost = circ(params)
         expected_mt = np.array([1 / 16, 1 / 4])
-        expected_params = params_qp - opt.stepsize * qp.grad(circ)(params_qp) / expected_mt
+        expected_params = params_jax - opt.stepsize * qp.grad(circ)(params_jax) / expected_mt
 
         assert np.allclose(cost, expected_cost)
         assert np.allclose(new_params1, expected_params)
@@ -323,7 +326,8 @@ class TestOptimize:
         opt = qp.QNGOptimizerQJIT(stepsize=0.1)
         params = jnp.array([0.011, 0.012])
         expected_params = jnp.array([0.011, 0.012])
-        state = opt.init(params)
+        assert opt.init(params) is None
+        state = None
 
         num_steps = 30
         for _ in range(num_steps):
@@ -351,7 +355,8 @@ class TestOptimize:
         params = jnp.array(params)
 
         opt = qp.QNGOptimizerQJIT()
-        state = opt.init(params)
+        assert opt.init(params) is None
+        state = None
 
         new_params1, state1 = opt.step(qnode, params, state)
         new_params2, state2, cost = opt.step_and_cost(qnode, params, state)
@@ -389,7 +394,8 @@ class TestOptimize:
         params = jnp.array(params)
 
         opt = qp.QNGOptimizerQJIT()
-        state = opt.init(params)
+        assert opt.init(params) is None
+        state = None
 
         new_params1, state1 = opt.step(qnode, params, state)
         new_params2, state2, cost = opt.step_and_cost(qnode, params, state)

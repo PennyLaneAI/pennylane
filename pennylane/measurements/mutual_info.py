@@ -153,9 +153,10 @@ def mutual_info(wires0, wires1, log_base=None) -> MutualInfoMP:
 
     It is also possible to get the gradient of the previous QNode:
 
-    >>> param = pnp.array(np.pi/4, requires_grad=True)
-    >>> qp.grad(circuit_mutual)(param)
-    tensor(1.24645048, requires_grad=True)
+    >>> import jax.numpy as jnp
+    >>> param = jnp.array(np.pi/4)
+    >>> print(qp.grad(circuit_mutual)(param))
+    1.246...
 
     .. note::
 

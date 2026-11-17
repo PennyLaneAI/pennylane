@@ -212,6 +212,19 @@ class TestChooseParams:
         assert chosen == []
 
 
+def _torch_array(value, requires_grad=True, dtype=None):
+    """Create trainable native parameters for transform integration checks."""
+    pytest.importorskip("torch")
+    return qp.math.asarray(
+        value, like="torch", dtype=dtype or "float64", requires_grad=requires_grad
+    )
+
+
+def _allclose(actual, expected, **kwargs):
+    """Compare values after detaching their native differentiation graphs."""
+    return qp.math.allclose(qp.math.unwrap(actual), qp.math.unwrap(expected), **kwargs)
+
+
 class TestGradientTransformIntegration:
     """Test integration of the gradient transform decorator"""
 
@@ -233,17 +246,17 @@ class TestGradientTransformIntegration:
 
         grad_fn = qp.gradients.param_shift(circuit)
 
-        w = np.array([0.543] if slicing else 0.543, requires_grad=True)
+        w = _torch_array([0.543] if slicing else 0.543, requires_grad=True)
         res = grad_fn(w)
         assert circuit.interface == "auto"
 
         # Need to multiply 0 with w to get the right output shape for non-scalar w
-        expected = (-prefactor * np.sin(prefactor * w), w * 0)
+        expected = (-prefactor * qp.math.sin(prefactor * w), w * 0)
 
         if isinstance(shots, list):
-            assert all(np.allclose(r, expected, atol=atol, rtol=0) for r in res)
+            assert all(_allclose(r, expected, atol=atol, rtol=0) for r in res)
         else:
-            assert np.allclose(res, expected, atol=atol, rtol=0)
+            assert _allclose(res, expected, atol=atol, rtol=0)
 
     @pytest.mark.local_salt(1)
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 2e-1), ([1000, 1500], 2e-1)])
@@ -263,24 +276,24 @@ class TestGradientTransformIntegration:
 
         grad_fn = qp.gradients.param_shift(circuit)
 
-        w = np.array([0.543, -0.654], requires_grad=True)
+        w = _torch_array([0.543, -0.654], requires_grad=True)
         res = grad_fn(w)
         assert circuit.interface == "auto"
         x, y = w
-        y *= prefactor
-        expected = np.array(
+        y = y * prefactor
+        expected = _torch_array(
             [
-                [-np.sin(x), 0],
+                [-qp.math.sin(x), 0],
                 [
-                    2 * np.cos(x) * np.sin(x) * np.cos(y) ** 2,
-                    2 * prefactor * np.cos(y) * np.sin(y) * np.cos(x) ** 2,
+                    2 * qp.math.cos(x) * qp.math.sin(x) * qp.math.cos(y) ** 2,
+                    2 * prefactor * qp.math.cos(y) * qp.math.sin(y) * qp.math.cos(x) ** 2,
                 ],
             ]
         )
         if isinstance(shots, list):
-            assert all(np.allclose(r, expected, atol=atol) for r in res)
+            assert all(_allclose(r, expected, atol=atol) for r in res)
         else:
-            assert np.allclose(res, expected, atol=atol)
+            assert _allclose(res, expected, atol=atol)
 
     @pytest.mark.xfail(reason="Gradient transforms are not compatible with shots and mixed shapes")
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
@@ -299,19 +312,22 @@ class TestGradientTransformIntegration:
 
         grad_fn = qp.gradients.param_shift(circuit)
 
-        w = [np.array(0.543, requires_grad=True), np.array([-0.654], requires_grad=True)]
+        w = [_torch_array(0.543, requires_grad=True), _torch_array([-0.654], requires_grad=True)]
         res = grad_fn(*w)
         assert circuit.interface == "auto"
         x, (y,) = w
-        expected = (np.array([-np.sin(x), 0]), np.array([[0], [-2 * np.cos(y) * np.sin(y)]]))
+        expected = (
+            _torch_array([-qp.math.sin(x), 0]),
+            _torch_array([[0], [-2 * qp.math.cos(y) * qp.math.sin(y)]]),
+        )
         if isinstance(shots, list):
             assert isinstance(res, tuple) and len(res) == len(shots)
             for _res in res:
                 assert isinstance(_res, tuple) and len(_res) == 2
-                assert all(np.allclose(r, e, atol=atol, rtol=0) for r, e in zip(_res, expected))
+                assert all(_allclose(r, e, atol=atol, rtol=0) for r, e in zip(_res, expected))
         else:
             assert isinstance(res, tuple) and len(res) == 2
-            assert all(np.allclose(r, e, atol=atol, rtol=0) for r, e in zip(res, expected))
+            assert all(_allclose(r, e, atol=atol, rtol=0) for r, e in zip(res, expected))
 
     def test_decorator(self, tol):
         """Test that a gradient transform decorating a QNode
@@ -326,12 +342,12 @@ class TestGradientTransformIntegration:
             qp.CNOT(wires=[0, 1])
             return qp.expval(qp.PauliZ(0)), qp.var(qp.PauliX(1))
 
-        w = np.array([0.543, -0.654], requires_grad=True)
+        w = _torch_array([0.543, -0.654], requires_grad=True)
         res = circuit(w)
 
         x, y = w
-        expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = _torch_array([[-qp.math.sin(x), 0], [0, -2 * qp.math.cos(y) * qp.math.sin(y)]])
+        assert _allclose(res, expected, atol=tol, rtol=0)
 
     def test_passing_arguments(self, mocker, tol):
         """Test that a gradient transform correctly
@@ -349,12 +365,12 @@ class TestGradientTransformIntegration:
         shifts = [(np.pi / 4,), (np.pi / 3,)]
         grad_fn = qp.gradients.param_shift(circuit, shifts=shifts)
 
-        w = np.array([0.543, -0.654], requires_grad=True)
+        w = _torch_array([0.543, -0.654], requires_grad=True)
         res = grad_fn(w)
 
         x, y = w
-        expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = _torch_array([[-qp.math.sin(x), 0], [0, -2 * qp.math.cos(y) * qp.math.sin(y)]])
+        assert _allclose(res, expected, atol=tol, rtol=0)
 
         assert spy.call_args[0][2] == shifts
 
@@ -391,14 +407,14 @@ class TestGradientTransformIntegration:
 
         grad_fn = qp.gradients.param_shift(circuit)
 
-        w = np.array([0.543, -0.654], requires_grad=True)
+        w = _torch_array([0.543, -0.654], requires_grad=True)
 
         qp.add_decomps(NonDiffRXGate, _decomp)
         res = grad_fn(w)
 
         x, y = w
-        expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = _torch_array([[-qp.math.sin(x), 0], [0, -2 * qp.math.cos(y) * qp.math.sin(y)]])
+        assert _allclose(res, expected, atol=tol, rtol=0)
         assert spy.call_args[0][0].operations[0].name == "RX"
 
     def test_permuted_arguments(self, tol):
@@ -416,11 +432,11 @@ class TestGradientTransformIntegration:
         def cost(w):
             return qp.math.stack(circuit(w))
 
-        w = np.array([-0.654, 0.543], requires_grad=True)
+        w = _torch_array([-0.654, 0.543], requires_grad=True)
         res = qp.gradients.param_shift(circuit)(w)
 
         expected = qp.jacobian(cost)(w)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert _allclose(res, expected, atol=tol, rtol=0)
 
     def test_multiple_tensor_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
@@ -434,13 +450,13 @@ class TestGradientTransformIntegration:
             qp.RZ(x[1, 0], wires=0)
             return qp.probs(wires=[0, 1])
 
-        x = np.array([[0.1, 0.3], [0.2, -0.1]], requires_grad=True)
-        y = np.array([[0.2, 0.2], [0.3, 0.5]], requires_grad=True)
+        x = _torch_array([[0.1, 0.3], [0.2, -0.1]], requires_grad=True)
+        y = _torch_array([[0.2, 0.2], [0.3, 0.5]], requires_grad=True)
 
         expected = qp.jacobian(circuit)(x, y)
         res = qp.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
-        assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
+        assert all(_allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
     def test_multiple_tensor_arguments_old_version(self, tol):
         """Test that a gradient transform acts on QNodes
@@ -454,8 +470,8 @@ class TestGradientTransformIntegration:
             qp.RZ(x[1, 0], wires=0)
             return qp.probs(wires=[0, 1])
 
-        x = np.array([[0.1], [0.2]], requires_grad=True)
-        y = np.array([[0.2], [0.3]], requires_grad=True)
+        x = _torch_array([[0.1], [0.2]], requires_grad=True)
+        y = _torch_array([[0.2], [0.3]], requires_grad=True)
 
         expected = qp.jacobian(circuit)(x, y)
         res = qp.gradients.param_shift(circuit)(x, y)
@@ -474,11 +490,11 @@ class TestGradientTransformIntegration:
             qp.RX(x[0, 0] / 2, wires=0)
             return qp.probs(wires=[0, 1])
 
-        x = np.array([[0.1, 0.1], [0.1, 0.1]], requires_grad=True)
+        x = _torch_array([[0.1, 0.1], [0.1, 0.1]], requires_grad=True)
 
         expected = qp.jacobian(circuit)(x)
         res = qp.gradients.param_shift(circuit)(x)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert _allclose(res, expected, atol=tol, rtol=0)
 
     def test_high_dimensional_single_parameter_arg_and_single_gate(self, tol):
         """Test that a gradient transform acts on QNodes correctly
@@ -490,27 +506,27 @@ class TestGradientTransformIntegration:
             qp.RX(x[0, 0], wires=0)
             return qp.probs(wires=[0, 1])
 
-        x = np.array([[0.1]], requires_grad=True)
+        x = _torch_array([[0.1]], requires_grad=True)
 
         expected = qp.jacobian(circuit)(x)
         res = qp.gradients.param_shift(circuit)(x)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert _allclose(res, expected, atol=tol, rtol=0)
 
     def test_single_gate_arg(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single QNode argument and gate are present"""
         dev = qp.device("default.qubit", wires=2)
 
-        @qp.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="torch")
         def circuit(x):
             qp.RX(x[0], wires=0)
             return qp.probs(wires=[0, 1])
 
-        x = np.array([0.1, 0.2], requires_grad=True)
+        x = _torch_array([0.1, 0.2], requires_grad=True)
 
         expected = qp.jacobian(circuit)(x)
         res = qp.gradients.param_shift(circuit)(x)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert _allclose(res, expected, atol=tol, rtol=0)
 
     def test_first_non_trainable_argument(self, tol):
         """Test that a gradient transform acts on QNodes
@@ -525,13 +541,13 @@ class TestGradientTransformIntegration:
             qp.RZ(y[1], wires=0)
             return qp.probs(wires=[0, 1])
 
-        x = np.array([0.1], requires_grad=False)
-        y = np.array([0.2, 0.3], requires_grad=True)
+        x = _torch_array([0.1], requires_grad=False)
+        y = _torch_array([0.2, 0.3], requires_grad=True)
 
         expected = qp.jacobian(circuit)(x, y)
         res = qp.gradients.param_shift(circuit)(x, y)
 
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert _allclose(res, expected, atol=tol, rtol=0)
 
     def test_classical_processing_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
@@ -545,12 +561,12 @@ class TestGradientTransformIntegration:
             qp.CNOT(wires=[0, 1])
             return qp.expval(qp.PauliZ(0))
 
-        w = np.array([0.543, -0.654], requires_grad=True)
+        w = _torch_array([0.543, -0.654], requires_grad=True)
         res = qp.gradients.param_shift(circuit)(w)
 
         x, _ = w
-        expected = [-2 * x * np.sin(x**2), 0]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = [-2 * x * qp.math.sin(x**2), 0]
+        assert _allclose(res, expected, atol=tol, rtol=0)
 
     def test_classical_processing_multiple_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
@@ -559,32 +575,32 @@ class TestGradientTransformIntegration:
 
         @qp.qnode(dev)
         def circuit(data, weights):
-            qp.RY(np.cos(data), wires=0)
+            qp.RY(qp.math.cos(data), wires=0)
             qp.RX(weights[0] ** 2, wires=[0])
             qp.RY(weights[1], wires=[1])
             qp.CNOT(wires=[0, 1])
             return qp.expval(qp.PauliZ(0))
 
         # set d as non-differentiable
-        d = np.array(0.56, requires_grad=False)
-        w = np.array([0.543, -0.654], requires_grad=True)
+        d = _torch_array(0.56, requires_grad=False)
+        w = _torch_array([0.543, -0.654], requires_grad=True)
         x, _ = w
 
         res = qp.gradients.param_shift(circuit)(d, w)
 
-        expected = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x**2), 0])
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = _torch_array([-2 * x * qp.math.cos(qp.math.cos(d)) * qp.math.sin(x**2), 0])
+        assert _allclose(res, expected, atol=tol, rtol=0)
 
         # set d as differentiable
-        d = np.array(0.56, requires_grad=True)
-        w = np.array([0.543, -0.654], requires_grad=True)
+        d = _torch_array(0.56, requires_grad=True)
+        w = _torch_array([0.543, -0.654], requires_grad=True)
 
         res = qp.gradients.param_shift(circuit)(d, w)
 
-        expected_dd = np.cos(x**2) * np.sin(d) * np.sin(np.cos(d))
-        expected_dw = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x**2), 0])
-        assert np.allclose(res[0], expected_dd, atol=tol, rtol=0)
-        assert np.allclose(res[1], expected_dw, atol=tol, rtol=0)
+        expected_dd = qp.math.cos(x**2) * qp.math.sin(d) * qp.math.sin(qp.math.cos(d))
+        expected_dw = _torch_array([-2 * x * qp.math.cos(qp.math.cos(d)) * qp.math.sin(x**2), 0])
+        assert _allclose(res[0], expected_dd, atol=tol, rtol=0)
+        assert _allclose(res[1], expected_dw, atol=tol, rtol=0)
 
     def test_advanced_classical_processing_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
@@ -599,12 +615,12 @@ class TestGradientTransformIntegration:
             qp.CNOT(wires=[0, 1])
             return qp.probs(wires=[0, 1])
 
-        w = np.array([[0.543, -0.654], [0.0, 0.0]], requires_grad=True)
+        w = _torch_array([[0.543, -0.654], [0.0, 0.0]], requires_grad=True)
         res = qp.gradients.param_shift(circuit)(w)
         assert res.shape == (4, 2, 2)
 
         expected = qp.jacobian(circuit)(w)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert _allclose(res, expected, atol=tol, rtol=0)
 
         @qp.qnode(dev)
         def circuit1(weights):
@@ -613,11 +629,11 @@ class TestGradientTransformIntegration:
             qp.CNOT(wires=[0, 1])
             return qp.probs(wires=[0, 1])
 
-        w = np.array([0.543**2, -0.654], requires_grad=True)
+        w = _torch_array([0.543**2, -0.654], requires_grad=True)
         expected = qp.jacobian(circuit1)(w)
 
-        assert np.allclose(res[0][0], expected[0], atol=10e-2, rtol=0)
-        assert np.allclose(res[1][0], expected[1], atol=10e-2, rtol=0)
+        assert _allclose(res[0][0], expected[0], atol=10e-2, rtol=0)
+        assert _allclose(res[1][0], expected[1], atol=10e-2, rtol=0)
 
     def test_template_integration(self, tol):
         """Test that the gradient transform acts on QNodes
@@ -629,12 +645,12 @@ class TestGradientTransformIntegration:
             qp.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
             return qp.probs(wires=[0, 1])
 
-        weights = np.ones([2, 3, 3], dtype=np.float64, requires_grad=True)
+        weights = _torch_array(np.ones([2, 3, 3], dtype=np.float64))
         res = qp.gradients.param_shift(circuit)(weights)
         assert res.shape == (4, 2, 3, 3)
 
         expected = qp.jacobian(circuit)(weights)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert _allclose(res, expected, atol=tol, rtol=0)
 
     def test_setting_shots(self):
         """Test that setting the number of shots works correctly for
@@ -648,7 +664,7 @@ class TestGradientTransformIntegration:
             qp.RX(x, wires=0)
             return qp.expval(qp.PauliZ(0))
 
-        x = np.array(0.543, requires_grad=True)
+        x = _torch_array(0.543, requires_grad=True)
 
         # the gradient function can be called with different shot values
         grad_fn = qp.gradients.param_shift(circuit)

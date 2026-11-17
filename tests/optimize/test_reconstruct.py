@@ -798,7 +798,7 @@ class TestReconstruct:
     def test_with_qnode(self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls):
         """Run a full reconstruction on a QNode."""
         # pylint: disable=cell-var-from-loop
-        qnode = qp.QNode(qnode, dev_1, interface="autograd")
+        qnode = qp.transforms.convert_to_numpy_parameters(qp.QNode(qnode, dev_1, interface="numpy"))
 
         with qp.Tracker(qnode.device) as tracker:
             recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
@@ -827,55 +827,6 @@ class TestReconstruct:
                 assert np.isclose(rec(x0), qnode(*params))
                 assert np.isclose(rec(x0 + 0.1), univariate(x0 + 0.1))
                 assert fun_close(rec, univariate, 10)
-
-    @pytest.mark.parametrize(
-        "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
-        test_cases_qnodes,
-    )
-    def test_differentiability_autograd(
-        self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls
-    ):
-        """Tests the reconstruction and differentiability with autograd."""
-        # pylint: disable=cell-var-from-loop
-        qnode = qp.QNode(qnode, dev_1, interface="autograd")
-        with qp.Tracker(qnode.device) as tracker:
-            recons = reconstruct(qnode, ids, nums_frequency, spectra, shifts)(*params)
-        assert tracker.totals["executions"] == exp_calls
-        arg_names = list(signature(qnode.func).parameters.keys())
-        for outer_key in recons:
-            outer_key_num = arg_names.index(outer_key)
-            for inner_key, rec in recons[outer_key].items():
-                x0 = params[outer_key_num]
-                if not pnp.isscalar(x0):
-                    x0 = x0[inner_key]
-                    shift_vec = qp.math.zeros_like(params[outer_key_num])
-                    shift_vec[inner_key] = 1.0
-                shift_vec = 1.0 if pnp.isscalar(params[outer_key_num]) else shift_vec
-                mask = (
-                    0.0
-                    if pnp.isscalar(params[outer_key_num])
-                    else pnp.ones(qp.math.shape(params[outer_key_num])) - shift_vec
-                )
-                univariate = lambda x: qnode(
-                    *params[:outer_key_num],
-                    params[outer_key_num] * mask + x * shift_vec,
-                    *params[outer_key_num + 1 :],
-                )
-                exp_qnode_grad = qp.grad(qnode, argnums=outer_key_num)
-                exp_grad = qp.grad(univariate)
-                grad = qp.grad(rec)
-                if nums_frequency is None:
-                    # Gradient evaluation at reconstruction point not supported for
-                    # Dirichlet reconstruction
-                    assert np.isclose(
-                        grad(pnp.array(x0, requires_grad=True)),
-                        exp_qnode_grad(*params)[inner_key],
-                    )
-                assert np.isclose(
-                    grad(pnp.array(x0 + 0.1, requires_grad=True)),
-                    exp_grad(pnp.array(x0 + 0.1, requires_grad=True)),
-                )
-                assert fun_close(grad, exp_grad, pnp.array(10, requires_grad=True))
 
     @pytest.mark.jax
     @pytest.mark.parametrize(

@@ -294,7 +294,13 @@ def test_excitation_integration_with_uccsd(weights, singles, doubles, expected):
 
     @qp.qnode(dev)
     def circuit(weights):
-        UCCSD(weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=np.array([1, 1, 0, 0]))
+        UCCSD(
+            qp.math.toarray(weights),
+            wires,
+            s_wires=s_wires,
+            d_wires=d_wires,
+            init_state=qp.math.array([1, 1, 0, 0], like="numpy"),
+        )
         return [qp.expval(qp.PauliZ(w)) for w in range(n)]
 
     res = circuit(weights)
@@ -361,8 +367,9 @@ def test_hf_state_basis(electrons, symbols, geometry, charge):
 
     @qp.qnode(dev)
     def circuit(hf_state, h):
-        qp.BasisState(hf_state, wires=range(qubits))
-        return qp.expval(h)
+        qp.BasisState(qp.math.toarray(hf_state), wires=range(qubits))
+        coeffs, ops = h.terms()
+        return qp.expval(qp.Hamiltonian(qp.math.toarray(coeffs), ops))
 
     assert circuit(state_occ, h_occ) == circuit(state_parity, h_parity)
     assert circuit(state_occ, h_occ) == circuit(state_bk, h_bk)

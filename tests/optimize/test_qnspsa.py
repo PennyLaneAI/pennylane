@@ -33,7 +33,8 @@ def get_single_input_qnode():
 
     # the analytical expression of the qnode goes as:
     # np.cos(params[0][0] / 2) ** 2 - np.sin(params[0][0] / 2) ** 2 * np.cos(params[0][1])
-    @qp.qnode(dev)
+    @qp.transforms.convert_to_numpy_parameters
+    @qp.qnode(dev, interface="numpy")
     def loss_fn(params):
         qp.RY(params[0][0], wires=0)
         qp.CRX(params[0][1], wires=[0, 1])
@@ -48,7 +49,8 @@ def get_multi_input_qnode():
 
     # the analytical expression of the qnode goes as:
     # np.cos(x1 / 2) ** 2 - np.sin(x1 / 2) ** 2 * np.cos(x2)
-    @qp.qnode(dev)
+    @qp.transforms.convert_to_numpy_parameters
+    @qp.qnode(dev, interface="numpy")
     def loss_fn(x1, x2):
         qp.RY(x1, wires=0)
         qp.CRX(x2, wires=[0, 1])
@@ -374,14 +376,16 @@ class TestQNSPSAOptimizer:
 
         trainable_param = np.random.rand(1)
 
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def qnode_with_non_trainable(trainable, non_trainable):
             qp.RY(trainable, wires=0)
             qp.CRX(non_trainable, wires=[0, 1])
             return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         # reduced qnode where non-trainable param value is hard coded
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def qnode_reduced(trainable):
             qp.RY(trainable, wires=0)
             qp.CRX(non_trainable_param, wires=[0, 1])
@@ -432,7 +436,8 @@ def test_template_no_adjoint(seed):
     num_qubits = 2
     dev = qp.device("default.qubit", wires=num_qubits)
 
-    @qp.qnode(dev)
+    @qp.transforms.convert_to_numpy_parameters
+    @qp.qnode(dev, interface="numpy")
     def cost(params):
         qp.RandomLayers(weights=params, wires=range(num_qubits), seed=seed)
         return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
@@ -449,7 +454,8 @@ def test_workflow_integration():
     num_qubits = 2
     dev = qp.device("default.qubit", wires=num_qubits)
 
-    @qp.qnode(dev)
+    @qp.transforms.convert_to_numpy_parameters
+    @qp.qnode(dev, interface="numpy")
     def cost(params):
         qp.RX(params[0], wires=0)
         qp.CRY(params[1], wires=[0, 1])

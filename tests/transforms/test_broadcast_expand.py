@@ -44,8 +44,8 @@ parameters = [
     (0.2, np.array([0.1]), np.array([-0.3])),
     (
         0.2,
-        pnp.array([0.1, 0.3], requires_grad=True),
-        pnp.array([-0.3, 2.1], requires_grad=False),
+        np.array([0.1, 0.3]),
+        np.array([-0.3, 2.1]),
     ),
 ]
 sizes = [3, 1, 2]

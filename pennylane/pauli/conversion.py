@@ -178,14 +178,15 @@ def _generalized_pauli_decompose(
 
         We can also use the method within a differentiable workflow and obtain gradients:
 
-        >>> A = qp.numpy.array([[-2, -2 + 1j]], requires_grad=True)
+        >>> import jax.numpy as jnp
+        >>> A = jnp.array([[-2, -2 + 1j]])
         >>> dev = qp.device("default.qubit", wires=1)
         >>> @qp.qnode(dev)
         ... def circuit(A):
         ...    coeffs, _ = qp.pauli.conversion._generalized_pauli_decompose(A, padding=True)
         ...    qp.RX(qp.math.real(coeffs[2]), 0)
         ...    return qp.expval(qp.Z(0))
-        >>> qp.grad(circuit)(A)
+        >>> np.asarray(qp.grad(circuit)(A), dtype=complex)
         array([[0.+0.j        , 0.+0.2397...j]])
 
     """

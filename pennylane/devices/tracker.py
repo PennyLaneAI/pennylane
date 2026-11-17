@@ -56,6 +56,7 @@ class Tracker:
     .. code-block:: python
 
         import pennylane as qp
+        import torch
 
         dev = qp.device('default.qubit', wires=1, seed=42)
 
@@ -65,7 +66,7 @@ class Tracker:
             qp.RX(x, wires=0)
             return qp.expval(qp.Z(0))
 
-        x = qp.numpy.array(0.1, requires_grad=True)
+        x = torch.tensor(0.1, dtype=torch.float64, requires_grad=True)
 
         with qp.Tracker(dev) as tracker:
             qp.grad(circuit)(x)
@@ -120,7 +121,7 @@ class Tracker:
         >>> def shots_info(totals, history, latest):
         ...     if 'shots' in latest:
         ...         print("Total shots: ", totals['shots'])
-        >>> x = qp.numpy.array(0.1, requires_grad=True)
+        >>> x = torch.tensor(0.1, dtype=torch.float64, requires_grad=True)
         >>> with qp.Tracker(circuit.device, callback=shots_info) as tracker:
         ...     _ = qp.grad(circuit)(x)
         Total shots:  100

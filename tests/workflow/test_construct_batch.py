@@ -189,16 +189,19 @@ class TestConstructBatch:
         assert fn(("a",)) == ("a",)
 
     @pytest.mark.parametrize("level", (3, "gradient"))
+    @pytest.mark.torch
     def test_gradient_transforms(self, level):
         """Test that the gradient transform can be selected with an integer or keyword."""
-        weights = qp.numpy.array([[1.0, 2.0]], requires_grad=True)
+        import torch
+
+        weights = torch.tensor([[1.0, 2.0]], dtype=torch.float64, requires_grad=True)
         order = [2, 1, 0]
         batch, fn = construct_batch(circuit1, level=level)(weights=weights, order=order)
 
         expected = qp.tape.QuantumScript(
             [
-                qp.RY(qp.numpy.array(1), 0),
-                qp.RX(qp.numpy.array(2), 1),
+                qp.RY(torch.tensor(1.0, dtype=torch.float64, requires_grad=True), 0),
+                qp.RX(torch.tensor(2.0, dtype=torch.float64, requires_grad=True), 1),
                 qp.Permute(order, (0, 1, 2)),
             ],
             [qp.expval(qp.PauliX(0))],

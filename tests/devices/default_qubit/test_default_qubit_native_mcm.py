@@ -226,7 +226,7 @@ def test_composite_mcms(mcm_method, shots, mcm_name, mcm_func, measure_f, seed):
         )
 
     dev = qp.device("default.qubit", seed=seed)
-    param = qp.numpy.array([np.pi / 3, np.pi / 6])
+    param = np.array([np.pi / 3, np.pi / 6])
 
     def func(x, y):  # pylint: disable=unused-argument
         qp.RX(x, 0)

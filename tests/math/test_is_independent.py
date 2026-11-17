@@ -136,21 +136,18 @@ class TestIsIndependentAutograd:
     dev = qp.device("default.qubit", wires=1)
 
     constant_functions = [
-        qp.QNode(const_circuit, dev, interface=interface),
         lambda x: np.arange(20).reshape((2, 5, 2)),
         lambda x: (np.ones(3), -0.1),
         qp.jacobian(lambda x, y: 4 * x - 2.1 * y, argnums=[0, 1]),
     ]
 
     args_constant = [
-        (0.1, np.array([-2.1, 0.1])),
         (1.2,),
         (np.ones((2, 3)),),
         (np.ones((3, 8)) * 0.1, -0.2 * np.ones((3, 8))),
     ]
 
     dependent_functions = [
-        qp.QNode(dependent_circuit, dev, interface=interface),
         np.array,
         lambda x: np.array(x * 0.0),
         lambda x: (1 + qp.math.tanh(100 * x)) / 2,
@@ -158,7 +155,6 @@ class TestIsIndependentAutograd:
     ]
 
     args_dependent = [
-        (0.1, np.array(-2.1), -0.9),
         (-4.1,),
         (-4.1,),
         (np.ones((3, 8)) * 1.1,),

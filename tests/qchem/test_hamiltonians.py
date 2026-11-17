@@ -15,6 +15,7 @@
 Unit tests for functions needed for computing the Hamiltonian.
 """
 
+import jax.numpy as jnp
 import numpy as np
 import pytest
 
@@ -375,44 +376,39 @@ def test_gradient_expvalH():
     r"""Test that the gradient of expval(H) computed with ``qp.grad`` is equal to the value
     obtained with the finite difference method."""
     symbols = ["H", "H"]
-    geometry = (
-        pnp.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]], requires_grad=False)
-        / 0.529177210903
-    )
-    alpha = pnp.array(
+    geometry = jnp.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]]) / 0.529177210903
+    alpha = jnp.array(
         [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-        requires_grad=True,
     )
 
     mol = qchem.Molecule(symbols, geometry, alpha=alpha)
-    args = [alpha]
+    args = [geometry, mol.coeff, mol.alpha]
     dev = qp.device("default.qubit", wires=4)
 
-    def energy(mol):
-        @qp.qnode(dev)
+    def energy():
+        @qp.qnode(dev, interface="jax")
         def circuit(*args):
             qp.PauliX(0)
             qp.PauliX(1)
             qp.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
-            h_qubit = qchem.diff_hamiltonian(mol)(*args)
+            molecule = qchem.Molecule(symbols, args[0], coeff=args[1], alpha=args[2])
+            h_qubit = qchem.diff_hamiltonian(molecule)(*args)
             return qp.expval(h_qubit)
 
         return circuit
 
-    grad_qp = qp.grad(energy(mol), argnums=0)(*args)
+    grad_qp = qp.grad(energy(), argnums=2)(*args)
 
-    alpha_1 = pnp.array(
+    alpha_1 = jnp.array(
         [[3.42515091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-        requires_grad=False,
     )  # alpha[0][0] -= 0.0001
 
-    alpha_2 = pnp.array(
+    alpha_2 = jnp.array(
         [[3.42535091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-        requires_grad=False,
     )  # alpha[0][0] += 0.0001
 
-    e_1 = energy(mol)(*[alpha_1])
-    e_2 = energy(mol)(*[alpha_2])
+    e_1 = energy()(geometry, mol.coeff, alpha_1)
+    e_2 = energy()(geometry, mol.coeff, alpha_2)
 
     grad_finitediff = (e_2 - e_1) / 0.0002
 

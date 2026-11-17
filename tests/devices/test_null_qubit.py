@@ -1107,16 +1107,17 @@ class TestIntegration:
     @pytest.mark.parametrize(
         "diff_method", ["device", "adjoint", "backprop", "finite-diff", "parameter-shift"]
     )
+    @pytest.mark.torch
     def test_expected_shape_all_methods(self, diff_method, seed):
         """Test that the gradient shape is as expected with all diff methods."""
         n_wires = 4
 
         shape = qp.StronglyEntanglingLayers.shape(n_layers=5, n_wires=n_wires)
         rng = np.random.default_rng(seed=seed)
-        params = qp.numpy.array(rng.random(shape))
-        dev = qp.device("null.qubit")
+        import torch
 
-        diff_method = "device"
+        params = torch.tensor(rng.random(shape), requires_grad=True)
+        dev = qp.device("null.qubit")
 
         @qp.qnode(dev, diff_method=diff_method)
         def circuit(params):
@@ -1125,9 +1126,9 @@ class TestIntegration:
 
         def cost(params):
             out = circuit(params)
-            return qp.math.sum(out)
+            return qp.math.sum(qp.math.stack(out))
 
-        assert np.array_equal(qp.grad(cost)(params), np.zeros(shape))
+        assert np.array_equal(qp.math.toarray(qp.grad(cost)(params)), np.zeros(shape))
 
 
 @pytest.mark.parametrize(
@@ -1145,15 +1146,17 @@ class TestJacobian:
 
         return circuit
 
-    def test_jacobian_autograd(self, method, device_vjp):
-        """Test the jacobian with autograd."""
+    @pytest.mark.torch
+    def test_jacobian_dispatch_torch(self, method, device_vjp):
+        """Test PennyLane's Jacobian wrapper with Torch."""
+        import torch
 
         @qp.qnode(NullQubit(), diff_method=method, device_vjp=device_vjp)
         def circuit(x, mp):
             qp.RX(x, wires=0)
             return qp.apply(mp)
 
-        x = qp.numpy.array(0.1)
+        x = torch.tensor(0.1, requires_grad=True)
         probs_jac = qp.jacobian(circuit)(x, qp.probs(wires=[0]))
         expval_jac = qp.jacobian(circuit)(x, qp.expval(qp.PauliZ(0)))
         assert np.array_equal(probs_jac, np.zeros(2))

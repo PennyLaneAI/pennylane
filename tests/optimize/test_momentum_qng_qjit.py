@@ -82,7 +82,7 @@ class TestOptimize:
         new_params1, state1 = opt.step(circ, params, state)
         new_params2, state2, cost = opt.step_and_cost(circ, params, state)
 
-        exp_params = qp.numpy.array(params)
+        exp_params = params
         exp_state = np.array([-0.31, 0.842])
         exp_cost = circ(exp_params)
         exp_mt = np.array([0.25, (np.cos(exp_params[0]) ** 2) / 4])
@@ -115,7 +115,7 @@ class TestOptimize:
         new_params1, state1 = opt.step(circ, params, state)
         new_params2, state2, cost = opt.step_and_cost(circ, params, state)
 
-        exp_params = qp.numpy.array(params)
+        exp_params = params
         exp_state = np.array([-0.31, 0.842])
         exp_cost = circ(exp_params)
         exp_mt = np.array([1 / 16, 1 / 4])

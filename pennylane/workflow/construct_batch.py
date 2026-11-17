@@ -184,7 +184,7 @@ def construct_batch(qnode: QNode, level: str | int | slice = "user") -> Callable
             @qp.transforms.cancel_inverses
             @qp.qnode(dev, diff_method="parameter-shift", gradient_kwargs = {"shifts": np.pi/4})
             def circuit(x):
-                qp.RandomLayers(qp.numpy.array([[1.0, 2.0]]), wires=(0,1))
+                qp.RandomLayers(np.array([[1.0, 2.0]]), wires=(0,1))
                 qp.RX(x, wires=0)
                 qp.RX(-x, wires=0)
                 qp.SWAP((0,1))
@@ -206,17 +206,17 @@ def construct_batch(qnode: QNode, level: str | int | slice = "user") -> Callable
         >>> fn(dev.execute(batch))
         (np.float64(-0.9092974268256817),)
 
-        Or what the parameter shift gradient transform will be applied to:
+        Or the batch at the gradient transform stage:
 
         >>> batch, fn = construct_batch(circuit, level="gradient")(1.23)
         >>> batch[0].circuit
-        [RY(1.0, wires=[1]), RX(2.0, wires=[0]), expval(X(0) + Y(0))]
+        [RandomLayers(array([[1., 2.]]), wires=[1, 0]), expval(X(0) + Y(0))]
 
         We can inspect what was directly captured from the qfunc with ``level=0``.
 
         >>> batch, fn = construct_batch(circuit, level=0)(1.23)
         >>> batch[0].circuit
-        [RandomLayers(tensor([[1., 2.]], requires_grad=True), wires=[0, 1]),
+        [RandomLayers(array([[1., 2.]]), wires=[0, 1]),
          RX(1.23, wires=[0]),
          RX(-1.23, wires=[0]),
          SWAP(wires=[0, 1]),
@@ -229,7 +229,7 @@ def construct_batch(qnode: QNode, level: str | int | slice = "user") -> Callable
 
         >>> batch, fn = construct_batch(circuit, level=1)(1.23)
         >>> batch[0].circuit
-        [RandomLayers(tensor([[1., 2.]], requires_grad=True), wires=[0, 1]),
+        [RandomLayers(array([[1., 2.]]), wires=[0, 1]),
          RX(1.23, wires=[0]),
          RX(-1.23, wires=[0]),
          SWAP(wires=[0, 1]),
