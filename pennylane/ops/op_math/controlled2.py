@@ -762,9 +762,12 @@ def _controlled_flip_adjoint(base, control_wires, control_values, work_wires, wo
     )
 
 
-# pylint: disable-next=unused-argument
 def _controlled_to_unitary_resources(
-    base, control_wires, control_values, work_wires, work_wire_type
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,  # pylint: disable=unused-argument
 ):
     num_control_wires = len(control_wires)
     return {

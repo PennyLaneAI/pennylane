@@ -66,7 +66,7 @@ class CustomOp(Operator):
 
 
 @pytest.mark.unit
-class TestDecompositionRule:
+class TestDecompositionRule:  # pylint: disable=too-many-public-methods
     """Unit tests for DecompositionRule."""
 
     def test_register_name_requires_name(self):
@@ -112,7 +112,7 @@ class TestDecompositionRule:
             qp.CNOT(wires=wires)
 
         assert rule.name == "to_cnot"
-        assert rule._compute_resources is None
+        assert rule._compute_resources is None  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("name", ["_hidden", "__hidden"])
     def test_underscore_names_rejected(self, name):

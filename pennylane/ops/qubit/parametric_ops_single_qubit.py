@@ -290,9 +290,12 @@ add_decomps("Adjoint(RX)", adjoint_rotation2)
 add_decomps("Pow(RX)", pow_rotation2)
 
 
-# pylint: disable-next=unused-argument
 def _controlled_rx_standard_resources(
-    base, control_wires, control_values, work_wires, work_wire_type
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,  # pylint: disable=unused-argument
 ):
     if len(control_wires) == 1:
         return {qp.CRX: 1}
@@ -574,9 +577,12 @@ add_decomps("Adjoint(RY)", adjoint_rotation2)
 add_decomps("Pow(RY)", pow_rotation2)
 
 
-# pylint: disable-next=unused-argument
 def _controlled_ry_standard_resources(
-    base, control_wires, control_values, work_wires, work_wire_type
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,  # pylint: disable=unused-argument
 ):
     if len(control_wires) == 1:
         return {qp.CRY: 1}
@@ -895,9 +901,12 @@ add_decomps("Adjoint(RZ)", adjoint_rotation2)
 add_decomps("Pow(RZ)", pow_rotation2)
 
 
-# pylint: disable-next=unused-argument
 def _controlled_rz_standard_resources(
-    base, control_wires, control_values, work_wires, work_wire_type
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,  # pylint: disable=unused-argument
 ):
     if len(control_wires) == 1:
         return {qp.CRZ: 1}
@@ -1395,9 +1404,12 @@ def _adjoint_rot_standard(base):
 add_decomps("Adjoint(Rot)", _adjoint_rot_standard)
 
 
-# pylint: disable-next=unused-argument
 def _controlled_rot_standard_resources(
-    base, control_wires, control_values, work_wires, work_wire_type
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,  # pylint: disable=unused-argument
 ):
     if len(control_wires) == 1:
         return {qp.CRot: 1}

@@ -33,8 +33,8 @@ from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.templates.subroutines.qrom import (
     _calculate_select_swap_sizes,
     _count_tempAND_in_measurement_qrom,
-    _qrom_measurement,
     _measurement_qrom_inner,
+    _qrom_measurement,
     _qrom_measurement_condition,
     _qrom_measurement_resources,
     _qrom_select_swap,

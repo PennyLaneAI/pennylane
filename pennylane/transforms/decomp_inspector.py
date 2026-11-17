@@ -373,7 +373,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     Decomposition 1 (name: many_zeroed_work_wires)
     Not applicable (provided operator instance does not meet all conditions for this rule).
     <BLANKLINE>
-    Decomposition 2 (name: controlled(to_ppr))
+    Decomposition 2 (name: controlled(to_paulirot))
     0: ─╭RZZ(0.50)─┤
     1: ─├RZZ(0.50)─┤
     3: ─├●─────────┤
@@ -422,7 +422,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     wires in the budget, so this inner operator has one fewer work wire available to it):
 
     >>> inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=2), num_work_wires=1)
-    Decomposition 0 (name: controlled(to_ppr))
+    Decomposition 0 (name: controlled(to_paulirot))
     0: ─╭RZZ(0.50)─┤
     1: ─├RZZ(0.50)─┤
     2: ─╰●─────────┤
@@ -567,7 +567,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Decomposition 1 (name: many_zeroed_work_wires)
         Not applicable (provided operator instance does not meet all conditions for this rule).
         <BLANKLINE>
-        Decomposition 2 (name: controlled(to_ppr))
+        Decomposition 2 (name: controlled(to_paulirot))
         0: ─╭RZZ(0.50)─┤
         1: ─├RZZ(0.50)─┤
         3: ─├●─────────┤

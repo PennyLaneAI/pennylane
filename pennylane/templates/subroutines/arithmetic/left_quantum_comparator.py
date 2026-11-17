@@ -143,9 +143,8 @@ class LeftQuantumComparator(Operator2):
         super().__init__(x_wires, y_wires, target_wire, work_wires, comparator)
 
 
-# pylint: disable-next=unused-argument
 def _left_quantum_comparator_standard_resources(
-    x_wires, y_wires, target_wire, work_wires, comparator
+    x_wires, y_wires, target_wire, work_wires, comparator  # pylint: disable=unused-argument
 ):
     num_y_wires = len(y_wires)
     resources = {

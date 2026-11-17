@@ -1635,9 +1635,12 @@ def _isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
     qp.PauliRot(phi, "ZZ", wires=wires)
 
 
-# pylint: disable-next=unused-argument
 def _controlled_ising_zz_standard_resources(
-    base, control_wires, control_values, work_wires, work_wire_type
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,  # pylint: disable=unused-argument
 ):
     return {
         qp.CNOT: 2,

@@ -535,9 +535,12 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
     return dict(resources)
 
 
-# pylint: disable-next=unused-argument
 def _trotter_cgf_standard_resources(
-    evolution_time, num_trotter_steps, hamiltonian, wires, double_phase
+    evolution_time,
+    num_trotter_steps,
+    hamiltonian,
+    wires,
+    double_phase,  # pylint: disable=unused-argument
 ):
     return _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control=False)
 
@@ -582,9 +585,12 @@ def _controlled_trotter_cgf_standard_resources(  # pylint: disable=unused-argume
 @register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
 @register_name("controlled_compressed_factorized_steps")
 @register_resources(_controlled_trotter_cgf_standard_resources, exact=False)
-# pylint: disable-next=unused-argument
 def _controlled_trotter_cgf_standard(
-    base, control_wires, control_values, work_wires, work_wire_type
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,  # pylint: disable=unused-argument
 ):
     evolution_time = base.arguments["evolution_time"]
     num_trotter_steps = base.arguments["num_trotter_steps"]

@@ -766,9 +766,12 @@ def _controlled_trotter_cdf_standard_resources(  # pylint: disable=unused-argume
 @register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
 @register_name("controlled_double_factorized_steps")
 @register_resources(_controlled_trotter_cdf_standard_resources, exact=False)
-# pylint: disable-next=unused-argument
 def _controlled_trotter_cdf_standard(
-    base, control_wires, control_values, work_wires, work_wire_type
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,  # pylint: disable=unused-argument
 ):
     evolution_time = base.arguments["evolution_time"]
     num_trotter_steps = base.arguments["num_trotter_steps"]

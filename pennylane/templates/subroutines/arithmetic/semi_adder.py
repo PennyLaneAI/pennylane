@@ -389,9 +389,12 @@ def _semi_adder_standard(x_wires, y_wires, work_wires=None, carry_flip=None, ski
 add_decomps(SemiAdder, _semi_adder_standard)
 
 
-# pylint: disable-next=unused-argument
 def _controlled_semi_adder_standard_resources(
-    base, control_wires, control_values, work_wires, work_wire_type
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,  # pylint: disable=unused-argument
 ):
     r"""
     Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
