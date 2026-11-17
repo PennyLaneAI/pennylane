@@ -98,6 +98,28 @@ def test_jax_jit_interface():
     assert resolved_config.mcm_config == expected_mcm_config
 
 
+@pytest.mark.jax
+def test_numpy_interface_retains_jax_jit_mcm_probe():
+    """Forward-only execution still detects JIT when resolving postselection."""
+    import jax
+    import jax.numpy as jnp
+
+    device = qp.device("default.qubit")
+    config = ExecutionConfig(
+        interface=None, gradient_method=None, mcm_config=MCMConfig(mcm_method="deferred")
+    )
+
+    @jax.jit
+    def resolve(angle):
+        tape = qp.tape.QuantumScript([qp.RX(angle, 0)], [qp.expval(qp.Z(0))], shots=100)
+        resolved = _resolve_execution_config(config, device, [tape])
+        assert resolved.interface == qp.math.Interface.NUMPY
+        assert resolved.mcm_config.postselect_mode == "fill-shots"
+        return angle
+
+    assert resolve(jnp.array(0.4)) == jnp.array(0.4)
+
+
 def test_no_device_vjp_if_not_supported():
     """Test that an error is raised for device_vjp=True if the device does not support it."""
 
