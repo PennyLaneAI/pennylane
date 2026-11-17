@@ -105,14 +105,14 @@ class Hadamard(Operator2):
                 :class:`PPR_4(1, "Y") <.PPR_4>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: decompose_to_base
+            .. decomposition-rule:: to_base
                 :image: /_static/decomposition_thumbnails/hadamard_adjoint.svg
                 :region: adjoint
                 :where: :class:`~.Hadamard` is self-adjoint
 
                 :class:`~.Hadamard` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_hadamard)
+            .. decomposition-rule:: to_mcx
                 :image: /_static/decomposition_thumbnails/hadamard_controlled.svg
                 :region: controlled
                 :where: :math:`c \geq 2` is the number of control wires, each control wire with
@@ -404,7 +404,7 @@ class PauliX(Operator2):
                 :class:`PPR_2(1, "X") <.PPR_2>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: decompose_to_base
+            .. decomposition-rule:: to_base
                 :image: /_static/decomposition_thumbnails/paulix_adjoint.svg
                 :region: adjoint
                 :where: :class:`~.PauliX` is self-adjoint
@@ -700,14 +700,14 @@ class PauliY(Operator2):
                 :class:`PPR_2(1, "Y") <.PPR_2>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: decompose_to_base
+            .. decomposition-rule:: to_base
                 :image: /_static/decomposition_thumbnails/pauliy_adjoint.svg
                 :region: adjoint
                 :where: :class:`~.PauliY` is self-adjoint
 
                 :class:`~.PauliY` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_y_decomp)
+            .. decomposition-rule:: to_mcx
                 :image: /_static/decomposition_thumbnails/pauliy_controlled.svg
                 :region: controlled
                 :where: :math:`c \geq 2` is the number of control wires, each control wire with
@@ -984,7 +984,7 @@ class PauliZ(Operator2):
                 :class:`PPR_2(1, "Z") <.PPR_2>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: decompose_to_base
+            .. decomposition-rule:: to_base
                 :image: /_static/decomposition_thumbnails/pauliz_adjoint.svg
                 :region: adjoint
                 :where: :class:`~.PauliZ` is self-adjoint
@@ -1860,7 +1860,7 @@ class SWAP(Operator2):
                 :class:`PPR_4(1, "ZZ") <.PPR_4>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: decompose_to_base
+            .. decomposition-rule:: to_base
                 :image: /_static/decomposition_thumbnails/swap_adjoint.svg
                 :region: adjoint
 
@@ -2088,7 +2088,7 @@ class ECR(Operator2):
                 :class:`~.RX` | :math:`2`
                 :class:`~.RY` | :math:`1`
 
-            .. decomposition-rule:: decompose_to_base
+            .. decomposition-rule:: to_base
                 :image: /_static/decomposition_thumbnails/ecr_adjoint.svg
                 :region: adjoint
 

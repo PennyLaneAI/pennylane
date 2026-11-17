@@ -122,7 +122,7 @@ class RX(Operator2):
 
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rx_decomp)
+            .. decomposition-rule:: to_rz_mcx
                 :image: /_static/decomposition_thumbnails/rx_controlled.svg
                 :region: controlled
                 :where: :math:`c` is the number of control wires, each control wire with
@@ -134,7 +134,7 @@ class RX(Operator2):
                 :class:`~.RZ` | :math:`2` if :math:`c \geq 2`
                 :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/rx_pow.svg
                 :region: pow
                 :where: the angle of rotation is multiplied by the power :math:`z`
@@ -394,7 +394,7 @@ class RY(Operator2):
 
                 :class:`~.RY` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_ry_decomp)
+            .. decomposition-rule:: to_ry_mcx
                 :image: /_static/decomposition_thumbnails/ry_controlled.svg
                 :region: controlled
                 :where: :math:`c` is the number of control wires, each control wire with
@@ -405,7 +405,7 @@ class RY(Operator2):
                 :class:`~.RY` | :math:`2` if :math:`c \geq 2`
                 :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/ry_pow.svg
                 :region: pow
                 :where: the angle of rotation is multiplied by the power :math:`z`
@@ -683,7 +683,7 @@ class RZ(Operator2):
 
                 :class:`~.RZ` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rz_decomp)
+            .. decomposition-rule:: to_rz_mcx
                 :image: /_static/decomposition_thumbnails/rz_controlled.svg
                 :region: controlled
                 :where: :math:`c` is the number of control wires, each control wire with
@@ -694,7 +694,7 @@ class RZ(Operator2):
                 :class:`~.RZ` | :math:`2` if :math:`c \geq 2`
                 :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/rz_pow.svg
                 :region: pow
                 :where: the angle of rotation is multiplied by the power :math:`z`
@@ -987,7 +987,7 @@ class PhaseShift(Operator2):
 
                 :class:`~.PhaseShift` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_phase_shift_decomp)
+            .. decomposition-rule:: to_pauli_rot
                 :image: /_static/decomposition_thumbnails/phaseshift_controlled.svg
                 :region: controlled
                 :where: :math:`c` is the number of control wires, :math:`\binom{c+1}{k}` of
@@ -1015,7 +1015,7 @@ class PhaseShift(Operator2):
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`c` | 2
                 :class:`~.PauliX` | :math:`2z` | 0
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/phaseshift_pow.svg
                 :region: pow
                 :where: the angle is multiplied by the power :math:`z`
@@ -1490,7 +1490,7 @@ class U1(Operator2):
                 :class:`~.U1` | :math:`1`
                 :where: ``phi`` changes sign
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/u1_pow.svg
                 :region: pow
                 :where: the angle is multiplied by the power :math:`z`

@@ -103,7 +103,7 @@ class SelectPauliRot(Operator2):
             :symbols: :math:`c \geq 1` control wires and rotation axis :math:`P` (``rot_axis``)
             :example: :math:`c=1`, :math:`P=Y`
 
-            .. decomposition-rule:: decompose_select_pauli_rot
+            .. decomposition-rule:: gray_code
                 :image: /_static/decomposition_thumbnails/select_pauli_rot_cnot_ladder.svg
                 :where: :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
 
