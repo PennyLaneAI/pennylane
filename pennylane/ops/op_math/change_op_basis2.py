@@ -233,7 +233,8 @@ def _change_op_basis_standard(compute_op, target_op, uncompute_op):
 
 add_decomps(ChangeOpBasis2, _change_op_basis_standard)
 add_decomps(
-    "C(ChangeOpBasis2)", flip_zero_control(_controlled_change_op_basis_standard, name="control_target")
+    "C(ChangeOpBasis2)",
+    flip_zero_control(_controlled_change_op_basis_standard, name="control_target"),
 )
 
 

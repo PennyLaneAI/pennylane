@@ -451,4 +451,6 @@ def _controlled_multix_ladder_standard(base, control_wires, work_wires, work_wir
         _multix_ladder_fanout(base, control_wires, work_wires=available + list(allocated))
 
 
-add_decomps("C(MultiX)", flip_zero_control2(_controlled_multix_ladder_standard, name="ancilla_fanout"))
+add_decomps(
+    "C(MultiX)", flip_zero_control2(_controlled_multix_ladder_standard, name="ancilla_fanout")
+)

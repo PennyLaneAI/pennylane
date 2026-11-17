@@ -45,9 +45,9 @@ from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2, _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import (
     ControlledOp2,
+    _controlled_to_unitary,
     ctrl_many_zeroed_work_wires,
     ctrl_single_work_wire,
-    _controlled_to_unitary,
 )
 from pennylane.ops.op_math.pow2 import _pow_flip_adjoint, _pow_merge_powers, _pow_repeat_base
 from pennylane.ops.op_math.prod2 import Prod2

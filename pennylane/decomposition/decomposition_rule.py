@@ -771,9 +771,9 @@ def _list_control_decomps(op_name: str) -> DecompCollection:
     # TODO: the circular dependency can be eliminated when we move the decomposition
     #       rule library to a separate module [sc-136709]
     from pennylane.ops.op_math.controlled2 import (  # pylint: disable=import-outside-toplevel
+        _controlled_to_unitary,
         ctrl_many_zeroed_work_wires,
         ctrl_single_work_wire,
-        _controlled_to_unitary,
     )
 
     registered_rules = _get_registered_decomps(op_name)

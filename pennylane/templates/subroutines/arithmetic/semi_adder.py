@@ -518,7 +518,10 @@ def _controlled_semi_adder_standard(  # pylint: disable=too-many-arguments
         _controlled_right_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip, **ctrl_kwargs)
 
 
-add_decomps("C(SemiAdder)", flip_zero_control2(_controlled_semi_adder_standard, name="controlled_carry_ladder"))
+add_decomps(
+    "C(SemiAdder)",
+    flip_zero_control2(_controlled_semi_adder_standard, name="controlled_carry_ladder"),
+)
 
 
 def _self_ctrl_one_sparse_add_resources(

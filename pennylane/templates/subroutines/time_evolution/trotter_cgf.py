@@ -632,4 +632,9 @@ def _controlled_trotter_cgf_standard(
     PhaseShift(-phi, control_wires)
 
 
-add_decomps("C(TrotterCGF)", flip_zero_control2(_controlled_trotter_cgf_standard, name="controlled_compressed_factorized_steps"))
+add_decomps(
+    "C(TrotterCGF)",
+    flip_zero_control2(
+        _controlled_trotter_cgf_standard, name="controlled_compressed_factorized_steps"
+    ),
+)

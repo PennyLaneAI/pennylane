@@ -257,6 +257,9 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         }
 
     @pytest.mark.parametrize("use_names", [False, True])
+    @pytest.mark.xfail(
+        reason="Waiting for a Catalyst build with updated precompiled decomposition rule names.",
+    )
     def test_exclude_decomps(self, qnode, use_names):
         """Estimate respects exclusions from a decompose transform in the pipeline."""
 
@@ -276,6 +279,9 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             "RX": 1,
         }
 
+    @pytest.mark.xfail(
+        reason="Waiting for a Catalyst build with updated precompiled decomposition rule names.",
+    )
     def test_exclusions_from_several_decompose_transforms(self, qnode):
         """Estimate combines excluded rules from every decomposition in the pipeline."""
         target = TARGET | {"RY", "PauliZ"}
