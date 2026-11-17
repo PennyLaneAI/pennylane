@@ -226,13 +226,13 @@ class TestMultipleOperations:
 
     def test_multiple_operations_tape(self):
         """Check the total matrix for a tape containing multiple gates"""
-        wire_order = ["a", "b", "c"]
+        wire_order = [6, 7, 9]
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.PauliX(wires="a")
-            qp.S(wires="b")
-            qp.Hadamard(wires="c")
-            qp.CNOT(wires=["b", "c"])
+            qp.PauliX(wires=6)
+            qp.S(wires=7)
+            qp.Hadamard(wires=9)
+            qp.CNOT(wires=[7, 9])
 
         tape = qp.tape.QuantumScript.from_queue(q)
         matrix = qp.matrix(tape, wire_order)
@@ -246,13 +246,13 @@ class TestMultipleOperations:
 
     def test_multiple_operations_sequence(self):
         """Check the total matrix for a sequence containing multiple gates"""
-        wire_order = ["a", "b", "c"]
+        wire_order = [6, 7, 9]
 
         op_list = [
-            qp.PauliX(wires="a"),
-            qp.S(wires="b"),
-            qp.Hadamard(wires="c"),
-            qp.CNOT(wires=["b", "c"]),
+            qp.PauliX(wires=6),
+            qp.S(wires=7),
+            qp.Hadamard(wires=9),
+            qp.CNOT(wires=[7, 9]),
         ]
         matrix = qp.matrix(op_list, wire_order)
         expected_matrix = I_CNOT @ X_S_H
@@ -260,13 +260,13 @@ class TestMultipleOperations:
 
     def test_multiple_operations_qfunc(self):
         """Check the total matrix for a qfunc containing multiple gates"""
-        wire_order = ["a", "b", "c"]
+        wire_order = [6, 7, 9]
 
         def testcircuit():
-            qp.PauliX(wires="a")
-            qp.S(wires="b")
-            qp.Hadamard(wires="c")
-            qp.CNOT(wires=["b", "c"])
+            qp.PauliX(wires=6)
+            qp.S(wires=7)
+            qp.Hadamard(wires=9)
+            qp.CNOT(wires=[7, 9])
 
         matrix = qp.matrix(testcircuit, wire_order)()
         expected_matrix = I_CNOT @ X_S_H
@@ -289,15 +289,15 @@ class TestMultipleOperations:
 
     def test_multiple_operations_qnode(self):
         """Check the total matrix for a QNode containing multiple gates"""
-        dev = qp.device("default.qubit", wires=["a", "b", "c"])
+        dev = qp.device("default.qubit", wires=[6, 7, 9])
 
         @qp.qnode(dev)
         def testcircuit():
-            qp.PauliX(wires="a")
-            qp.adjoint(qp.S)(wires="b")
-            qp.Hadamard(wires="c")
-            qp.CNOT(wires=["b", "c"])
-            return qp.expval(qp.PauliZ("a"))
+            qp.PauliX(wires=6)
+            qp.adjoint(qp.S)(wires=7)
+            qp.Hadamard(wires=9)
+            qp.CNOT(wires=[7, 9])
+            return qp.expval(qp.PauliZ(6))
 
         matrix = qp.matrix(testcircuit)()
         expected_matrix = I_CNOT @ (X_S_H.conj().T)
@@ -308,14 +308,14 @@ class TestWithParameterBroadcasting:
     def test_multiple_operations_tape_single_broadcasted_op(self):
         """Check the total matrix for a tape containing multiple gates
         and a single broadcasted gate."""
-        wire_order = ["a", "b", "c"]
+        wire_order = [6, 7, 9]
 
         angles = np.array([0.0, np.pi, 0.7])
         with qp.queuing.AnnotatedQueue() as q:
-            qp.S(wires="b")
-            qp.RX(angles, wires="a")
-            qp.Hadamard(wires="c")
-            qp.CNOT(wires=["b", "c"])
+            qp.S(wires=7)
+            qp.RX(angles, wires=6)
+            qp.Hadamard(wires=9)
+            qp.CNOT(wires=[7, 9])
 
         tape = qp.tape.QuantumScript.from_queue(q)
         matrix = qp.matrix(tape, wire_order)
@@ -329,14 +329,14 @@ class TestWithParameterBroadcasting:
     def test_multiple_operations_tape_leading_broadcasted_op(self):
         """Check the total matrix for a tape containing multiple gates
         and a leading single broadcasted gate."""
-        wire_order = ["a", "b", "c"]
+        wire_order = [6, 7, 9]
 
         angles = np.array([0.0, np.pi, 0.7])
         with qp.queuing.AnnotatedQueue() as q:
-            qp.RX(angles, wires="a")
-            qp.S(wires="b")
-            qp.Hadamard(wires="c")
-            qp.CNOT(wires=["b", "c"])
+            qp.RX(angles, wires=6)
+            qp.S(wires=7)
+            qp.Hadamard(wires=9)
+            qp.CNOT(wires=[7, 9])
 
         tape = qp.tape.QuantumScript.from_queue(q)
         matrix = qp.matrix(tape, wire_order)
@@ -346,16 +346,16 @@ class TestWithParameterBroadcasting:
     def test_multiple_operations_tape_multi_broadcasted_op(self):
         """Check the total matrix for a tape containing multiple gates
         and a multiple broadcasted gate."""
-        wire_order = ["a", "b", "c"]
+        wire_order = [6, 7, 9]
 
         angles1 = np.array([0.0, np.pi, 0.0, np.pi])
         angles2 = np.array([0.0, 0.0, np.pi, np.pi])
         with qp.queuing.AnnotatedQueue() as q:
-            qp.S(wires="b")
-            qp.RX(angles1, wires="a")
-            qp.Hadamard(wires="c")
-            qp.CNOT(wires=["b", "c"])
-            qp.RX(angles2, wires="c")
+            qp.S(wires=7)
+            qp.RX(angles1, wires=6)
+            qp.Hadamard(wires=9)
+            qp.CNOT(wires=[7, 9])
+            qp.RX(angles2, wires=9)
 
         tape = qp.tape.QuantumScript.from_queue(q)
         matrix = qp.matrix(tape, wire_order)
@@ -371,16 +371,16 @@ class TestWithParameterBroadcasting:
     def test_multiple_operations_tape_bcasting_matches_Hilbert_dim(self):
         """Check the total matrix for a tape containing multiple gates
         and a multiple broadcasted gate."""
-        wire_order = ["a", "b"]
+        wire_order = [6, 7]
 
         angles1 = np.array([0.0, np.pi, 0.0, np.pi])
         angles2 = np.array([0.0, 0.0, np.pi, np.pi])
         with qp.queuing.AnnotatedQueue() as q:
-            qp.S(wires="b")
-            qp.RX(angles1, wires="a")
-            qp.Hadamard(wires="b")
-            qp.CNOT(wires=["a", "b"])
-            qp.RX(angles2, wires="b")
+            qp.S(wires=7)
+            qp.RX(angles1, wires=6)
+            qp.Hadamard(wires=7)
+            qp.CNOT(wires=[6, 7])
+            qp.RX(angles2, wires=7)
 
         tape = qp.tape.QuantumScript.from_queue(q)
         matrix = qp.matrix(tape, wire_order)
@@ -493,7 +493,7 @@ class TestCustomWireOrdering:
 
 pw1 = PauliWord({0: "X", 1: "Z"})
 pw2 = PauliWord({0: "Y", 1: "Z"})
-pw3 = PauliWord({"a": "Y", "b": "Z"})
+pw3 = PauliWord({6: "Y", 7: "Z"})
 op_pairs = (
     (pw1, qp.prod(qp.PauliX(0), qp.PauliZ(1))),
     (pw2, qp.prod(qp.PauliY(0), qp.PauliZ(1))),
@@ -522,8 +522,8 @@ class TestPauliWordPauliSentence:
         # needs fix https://github.com/PennyLaneAI/pennylane/pull/5041
         # once fixed, uncomment the last line in op_pairs above, i.e. add
         # (pw3, qp.prod(qp.PauliY("a"), qp.PauliZ("b"))),
-        pw, op = pw3, qp.prod(qp.PauliY("a"), qp.PauliZ("b"))
-        res = qp.matrix(PauliSentence({pw: 0.5}), wire_order=["a", "b"])
+        pw, op = pw3, qp.prod(qp.PauliY(6), qp.PauliZ(7))
+        res = qp.matrix(PauliSentence({pw: 0.5}), wire_order=[6, 7])
         true_res = qp.matrix(qp.s_prod(0.5, op))
         assert qp.math.allclose(res, true_res)
 
@@ -640,11 +640,11 @@ class TestValidation:
             qp.PauliX(wires=1)
             qp.PauliZ(wires=0)
 
-        wires = [0, "b"]
+        wires = [0, 7]
 
         with pytest.raises(
             TransformError,
-            match=r"Wires in circuit \[1, 0\] are inconsistent with those in wire_order \[0, 'b'\]",
+            match="Wires in circuit \\[1, 0\\] are inconsistent with those in wire_order \\[0, 7\\]",
         ):
             qp.matrix(circuit, wire_order=wires)()
 

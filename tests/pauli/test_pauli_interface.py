@@ -23,7 +23,7 @@ from pennylane.pauli import pauli_word_prefactor
 ops_factors = (
     (qp.PauliX(0), 1),
     (qp.PauliY(1), 1),
-    (qp.PauliZ("a"), 1),
+    (qp.PauliZ(2), 1),
     (qp.Identity(0), 1),
     (qp.PauliX(0) @ qp.PauliY(1), 1),
     (qp.PauliX(0) @ qp.PauliY(0), 1j),
