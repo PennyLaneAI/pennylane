@@ -219,7 +219,7 @@ def _(op: qp.QROMLoad):
     return LabsQROM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
-        borrow_qubits=not op.clean,
+        borrow_qubits=False,
         wires=op_wires,
     )
 
