@@ -184,7 +184,13 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
 
         core_constant, one, two = electron_integrals(mol, core, active)(*args)
 
-        return fermionic_observable(core_constant, one, two, cutoff)
+        observable = fermionic_observable(core_constant, one, two, cutoff)
+        parameters = [mol.coordinates, *mol.alpha, *mol.coeff]
+        if not args and not any(qp.math.requires_grad(parameter) for parameter in parameters):
+            for word, coefficient in observable.items():
+                if qp.math.get_interface(coefficient) == "autograd":
+                    observable[word] = qp.math.toarray(coefficient)
+        return observable
 
     return _fermionic_hamiltonian
 
@@ -464,7 +470,9 @@ def _dhf_molecular_hamiltonian(  # pylint: disable=too-many-arguments
     requires_grad = args is not None
     interface = qp.math.get_interface(coordinates, alpha, coeff)
     if interface == "autograd":
-        interface_args = {"like": "autograd", "requires_grad": requires_grad}
+        interface_args = (
+            {"like": "autograd", "requires_grad": True} if requires_grad else {"like": "numpy"}
+        )
     elif interface in {"numpy", "jax"}:
         interface_args = {"like": interface}
     else:

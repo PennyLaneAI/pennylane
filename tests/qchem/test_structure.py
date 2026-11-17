@@ -353,6 +353,7 @@ def test_hf_state_basis(electrons, symbols, geometry, charge):
 
     mol = qp.qchem.Molecule(symbols, geometry, charge)
     h_ferm = qchem.fermionic_hamiltonian(mol)()
+    assert qp.math.get_interface(*h_ferm.values()) == "numpy"
     qubits = len(h_ferm.wires)
 
     state_occ = qchem.hf_state(electrons, qubits, basis="occupation_number")
@@ -367,12 +368,12 @@ def test_hf_state_basis(electrons, symbols, geometry, charge):
 
     @qp.qnode(dev)
     def circuit(hf_state, h):
-        qp.BasisState(qp.math.toarray(hf_state), wires=range(qubits))
-        coeffs, ops = h.terms()
-        return qp.expval(qp.Hamiltonian(qp.math.toarray(coeffs), ops))
+        qp.BasisState(hf_state, wires=range(qubits))
+        return qp.expval(h)
 
-    assert circuit(state_occ, h_occ) == circuit(state_parity, h_parity)
-    assert circuit(state_occ, h_occ) == circuit(state_bk, h_bk)
+    energy = circuit(state_occ, h_occ)
+    assert circuit(state_parity, h_parity) == pytest.approx(energy, abs=1e-12, rel=0)
+    assert circuit(state_bk, h_bk) == pytest.approx(energy, abs=1e-12, rel=0)
 
 
 @pytest.mark.parametrize(
