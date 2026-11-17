@@ -97,7 +97,7 @@ class RX(Operator2):
                 :class:`~.RZ` | :math:`2`
                 :class:`~.RY` | :math:`1`
 
-            .. decomposition-rule:: to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/rx_to_ppr.svg
 
                 :class:`PauliRot("X") <.PauliRot>` | :math:`1`
@@ -279,7 +279,7 @@ def _rx_to_ppr_resources(*_, **__):
     return {qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1}
 
 
-@register_name("to_ppr")
+@register_name("to_paulirot")
 @register_resources(_rx_to_ppr_resources)
 def _rx_to_ppr(phi, wires):
     qp.PauliRot(phi, "X", wires=wires)
@@ -364,7 +364,7 @@ class RY(Operator2):
                 :class:`~.RZ` | :math:`2`
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/ry_to_ppr.svg
 
                 :class:`PauliRot("Y") <.PauliRot>` | :math:`1`
@@ -563,7 +563,7 @@ def _ry_to_ppr_resources(*_, **__):
     return {qp.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1}
 
 
-@register_name("to_ppr")
+@register_name("to_paulirot")
 @register_resources(_ry_to_ppr_resources)
 def _ry_to_ppr(phi, wires):
     qp.PauliRot(phi, "Y", wires=wires)
@@ -651,7 +651,7 @@ class RZ(Operator2):
                 :class:`~.RY` | :math:`2`
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/rz_to_ppr.svg
 
                 :class:`PauliRot("Z") <.PauliRot>` | :math:`1`
@@ -884,7 +884,7 @@ def _rz_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1}
 
 
-@register_name("to_ppr")
+@register_name("to_paulirot")
 @register_resources(_rz_to_ppr_resources)
 def _rz_to_ppr(phi, wires, **_):
     qp.PauliRot(phi, "Z", wires=wires)

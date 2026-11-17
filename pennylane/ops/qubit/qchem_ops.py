@@ -160,7 +160,7 @@ class SingleExcitation(Operator2):
                 :class:`~.CNOT` | :math:`2`
                 :class:`~.RY` | :math:`2`
 
-            .. decomposition-rule:: to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/singleexcitation_ppr.svg
 
                 :class:`PauliRot("YX") <.PauliRot>` | :math:`1`
@@ -294,7 +294,7 @@ def _single_excitation_to_ppr_resources(phi, wires):  # pylint: disable=unused-a
     }
 
 
-@register_name("to_ppr")
+@register_name("to_paulirot")
 @register_resources(_single_excitation_to_ppr_resources)
 def _single_excitation_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 2, "YX", wires=wires)
@@ -871,7 +871,7 @@ def _double_excitation_to_ppr_resources(phi, wires):  # pylint: disable=unused-a
     }
 
 
-@register_name("to_ppr")
+@register_name("to_paulirot")
 @register_resources(_double_excitation_to_ppr_resources)
 def _double_excitation_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 8, pauli_word="YYYX", wires=wires)

@@ -548,24 +548,24 @@ class DecompCollection:
     0: to_rx_cz
     1: to_rz_ry
     2: to_h_crz
-    3: to_ppr
+    3: to_paulirot
 
     Access rules by index or by name:
 
     >>> decomps[0]
     DecompositionRule(name=to_rx_cz)
-    >>> decomps["to_ppr"]
-    DecompositionRule(name=to_ppr)
+    >>> decomps["to_paulirot"]
+    DecompositionRule(name=to_paulirot)
 
     Check membership:
 
-    >>> "to_ppr" in decomps
+    >>> "to_paulirot" in decomps
     True
 
     Iterate through rule names:
 
     >>> [rule.name for rule in decomps]
-    ['to_rx_cz', 'to_rz_ry', 'to_h_crz', 'to_ppr']
+    ['to_rx_cz', 'to_rz_ry', 'to_h_crz', 'to_paulirot']
 
     """
 
@@ -814,19 +814,19 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
         DecompositionRule(name=to_rx_cz),
         DecompositionRule(name=to_rz_ry),
         DecompositionRule(name=to_h_crz),
-        DecompositionRule(name=to_ppr)
+        DecompositionRule(name=to_paulirot)
     ])
     >>> print(qp.list_decomps(qp.CRX))
     Available Decomposition Rules:
     0: to_rx_cz
     1: to_rz_ry
     2: to_h_crz
-    3: to_ppr
+    3: to_paulirot
 
     Each decomposition rule can be accessed by name or by index.
 
-    >>> qp.list_decomps(qp.CRX)['to_ppr']
-    DecompositionRule(name=to_ppr)
+    >>> qp.list_decomps(qp.CRX)['to_paulirot']
+    DecompositionRule(name=to_paulirot)
     >>> print(qp.list_decomps(qp.CRX)[0])
     @register_name("to_rx_cz")
     @register_resources(_crx_to_rx_cz_resources)
@@ -887,7 +887,7 @@ def exclude_decomps(op: type[Operator] | Operator | str, *names: str) -> _Decomp
 
     When used as a context manager, the rules are excluded only within the context:
 
-    >>> with qp.exclude_decomps(qp.CRX, "to_ppr", "to_h_crz"):
+    >>> with qp.exclude_decomps(qp.CRX, "to_paulirot", "to_h_crz"):
     ...     print(qp.list_decomps(qp.CRX))
     Available Decomposition Rules:
     0: to_rx_cz
@@ -897,7 +897,7 @@ def exclude_decomps(op: type[Operator] | Operator | str, *names: str) -> _Decomp
     0: to_rx_cz
     1: to_rz_ry
     2: to_h_crz
-    3: to_ppr
+    3: to_paulirot
 
     Otherwise, the rules remain excluded for the rest of the session, or until the enclosing
     :func:`~pennylane.decomposition.local_decomps` context exits:
@@ -905,10 +905,10 @@ def exclude_decomps(op: type[Operator] | Operator | str, *names: str) -> _Decomp
     .. code-block:: python
 
         with qp.decomposition.local_decomps():
-            qp.exclude_decomps(qp.CRX, "to_ppr")
-            assert "to_ppr" not in qp.list_decomps(qp.CRX)
+            qp.exclude_decomps(qp.CRX, "to_paulirot")
+            assert "to_paulirot" not in qp.list_decomps(qp.CRX)
 
-        assert "to_ppr" in qp.list_decomps(qp.CRX)
+        assert "to_paulirot" in qp.list_decomps(qp.CRX)
 
     """
     op_name = to_name(op)
@@ -1207,7 +1207,7 @@ def inspect_decomps(
     1: ──H─╰RZ(0.50)──H─┤
     Gate Count: {CRZ: 1, Hadamard: 2}
     <BLANKLINE>
-    Decomposition 3 (name: to_ppr)
+    Decomposition 3 (name: to_paulirot)
     0: ───────────╭RZX(-0.25)─┤
     1: ──RX(0.25)─╰RZX(-0.25)─┤
     Gate Count: {PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=X, wires=AbstractWires(1)): 1, PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZX, wires=AbstractWires(2)): 1}

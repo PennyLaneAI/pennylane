@@ -72,7 +72,7 @@ def test_decompose_setup_inputs():
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("excluded", [None, {}, {qp.CRX: ["_crx_to_ppr"]}])
+@pytest.mark.parametrize("excluded", [None, {}, {qp.CRX: ["to_paulirot"]}])
 def test_decompose_exclusions(excluded):
     """The public transform preserves provided exclusions and omits unset options."""
     bound_transform = qp.decompose(gate_set={"RX", "CZ"}, exclude_decomps=excluded)

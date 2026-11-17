@@ -56,7 +56,7 @@ def all_decomps(
     >>> rules_map[qp.RX(Float, Wire[1])]
     [DecompositionRule(name=to_rot),
      DecompositionRule(name=to_rz_ry),
-     DecompositionRule(name=to_ppr),
+     DecompositionRule(name=to_paulirot),
      DecompositionRule(name=to_ry_cliff),
      DecompositionRule(name=to_rz_cliff)]
 

@@ -113,7 +113,7 @@ class TestInspectDecompGraph:
             Decomposition 1 (name: many_zeroed_work_wires)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
-            Decomposition 2 (name: controlled(to_ppr))
+            Decomposition 2 (name: controlled(to_paulirot))
             0: ─╭RZZ(0.50)─┤
             1: ─├RZZ(0.50)─┤
             3: ─├●─────────┤
@@ -150,7 +150,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### Decomposition 2 (name: controlled(to_ppr))
+            #### Decomposition 2 (name: controlled(to_paulirot))
 
             ```
             0: ─╭RZZ(0.50)─┤
@@ -237,7 +237,7 @@ class TestInspectDecompGraph:
             Decomposition 1 (name: many_zeroed_work_wires)
             Not applicable (provided operator instance does not meet all conditions for this rule).
 
-            Decomposition 2 (name: controlled(to_ppr))
+            Decomposition 2 (name: controlled(to_paulirot))
             0: ─╭RZZ(0.50)─┤
             1: ─├RZZ(0.50)─┤
             3: ─├●─────────┤
@@ -303,7 +303,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### Decomposition 2 (name: controlled(to_ppr))
+            #### Decomposition 2 (name: controlled(to_paulirot))
 
             ```
             0: ─╭RZZ(0.50)─┤

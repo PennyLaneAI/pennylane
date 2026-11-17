@@ -2216,7 +2216,7 @@ class CRX(Controlled2):
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.CRZ` | :math:`1`
 
-            .. decomposition-rule:: to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/crx_to_ppr.svg
 
                 :class:`PauliRot("ZX") <.PauliRot>` | :math:`1`
@@ -2348,7 +2348,7 @@ def _crx_to_ppr_resources(phi, wires):
     }
 
 
-@register_name("to_ppr")
+@register_name("to_paulirot")
 @register_resources(_crx_to_ppr_resources)
 def _crx_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 2, "X", wires=wires[1])
@@ -2408,7 +2408,7 @@ class CRY(Controlled2):
                 :class:`~.RY` | :math:`2`
                 :class:`~.CNOT` | :math:`2`
 
-            .. decomposition-rule:: to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/cry_to_ppr.svg
 
                 :class:`PauliRot("ZY") <.PauliRot>` | :math:`1`
@@ -2513,7 +2513,7 @@ def _cry_to_ppr_resources(phi, wires):
     }
 
 
-@register_name("to_ppr")
+@register_name("to_paulirot")
 @register_resources(_cry_to_ppr_resources)
 def _cry_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 2, "Y", wires=wires[1])
@@ -2577,7 +2577,7 @@ class CRZ(Controlled2):
                 :class:`~.RZ` | :math:`2`
                 :class:`~.CNOT` | :math:`2`
 
-            .. decomposition-rule:: to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/crz_to_ppr.svg
 
                 :class:`PauliRot("ZZ") <.PauliRot>` | :math:`1`
@@ -2710,7 +2710,7 @@ def _crz_to_ppr_resources(phi, wires):
     }
 
 
-@register_name("to_ppr")
+@register_name("to_paulirot")
 @register_resources(_crz_to_ppr_resources)
 def _crz_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 2, "Z", wires=wires[1])
@@ -2922,7 +2922,7 @@ class ControlledPhaseShift(Controlled2):
                 :class:`~.CNOT` | :math:`2`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/cphase_to_ppr.svg
 
                 :class:`PauliRot("ZZ") <.PauliRot>` | :math:`1`
@@ -3065,7 +3065,7 @@ def _cphase_to_ppr_resources(phi, wires):
     }
 
 
-@register_name("to_ppr")
+@register_name("to_paulirot")
 @register_resources(_cphase_to_ppr_resources)
 def _cphase_to_ppr(phi: TensorLike, wires: WiresLike, **__):
     qp.PauliRot(-phi / 2, pauli_word="ZZ", wires=wires)

@@ -83,7 +83,7 @@ class MultiRZ(Operator2):
                 :class:`~.CNOT` | :math:`2(n-1)` | 4
                 :class:`~.RZ` | :math:`1` | 1
 
-            .. decomposition-rule:: to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/multirz_to_ppr.svg
 
                 :class:`PauliRot("Z...Z") <.PauliRot>` on :math:`n` wires | :math:`1` | 1
@@ -260,7 +260,7 @@ def _multi_rz_to_ppr_resources(theta: TensorLike, wires: WiresLike):
     return {qp.PauliRot(Float, pauli_word="Z" * num_wires, wires=Wire[num_wires]): 1}
 
 
-@register_name("to_ppr")
+@register_name("to_paulirot")
 @register_resources(_multi_rz_to_ppr_resources)
 def _multi_rz_to_ppr(theta: TensorLike, wires: WiresLike):
     qp.PauliRot(theta, "Z" * len(wires), wires=wires)
@@ -1136,7 +1136,7 @@ class IsingXX(Operator2):
                 :class:`~.CNOT` | :math:`2`
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/isingxx_ppr.svg
 
                 :class:`PauliRot("XX") <.PauliRot>` | :math:`1`
@@ -1246,7 +1246,7 @@ def _isingxx_to_ppr_resources(phi: TensorLike, wires: WiresLike | None = None):
     return {PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1}
 
 
-@register_name("to_ppr")
+@register_name("to_paulirot")
 @register_resources(_isingxx_to_ppr_resources)
 def _isingxx_to_ppr(phi: TensorLike, wires: WiresLike, **_):
     qp.PauliRot(phi, "XX", wires=wires)
@@ -1299,7 +1299,7 @@ class IsingYY(Operator2):
                 :class:`~.CY` | :math:`2`
                 :class:`~.RY` | :math:`1`
 
-            .. decomposition-rule:: to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/isingyy_ppr.svg
 
                 :class:`PauliRot("YY") <.PauliRot>` | :math:`1`
@@ -1419,7 +1419,7 @@ def _isingyy_to_ppr_resources(phi: TensorLike, wires: WiresLike | None = None):
     return {PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1}
 
 
-@register_name("to_ppr")
+@register_name("to_paulirot")
 @register_resources(_isingyy_to_ppr_resources)
 def _isingyy_to_ppr(phi: TensorLike, wires: WiresLike, **_):
     qp.PauliRot(phi, "YY", wires=wires)
@@ -1475,7 +1475,7 @@ class IsingZZ(Operator2):
                 :class:`~.CNOT` | :math:`2`
                 :class:`~.RZ` | :math:`1`
 
-            .. decomposition-rule:: to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/isingzz_ppr.svg
 
                 :class:`PauliRot("ZZ") <.PauliRot>` | :math:`1`
@@ -1629,7 +1629,7 @@ def _isingzz_to_ppr_resources(phi: TensorLike, wires: WiresLike | None = None):
     return {PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1}
 
 
-@register_name("to_ppr")
+@register_name("to_paulirot")
 @register_resources(_isingzz_to_ppr_resources)
 def _isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
     qp.PauliRot(phi, "ZZ", wires=wires)
