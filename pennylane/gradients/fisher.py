@@ -18,7 +18,6 @@ from functools import partial
 import jax
 
 from pennylane import math
-from pennylane._grad import jacobian
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import adjoint_metric_tensor
@@ -242,9 +241,6 @@ def classical_fisher(qnode, argnums=0):
 
         elif interface == "torch":
             jac = _torch_jac(new_qnode)
-
-        elif interface == "autograd":
-            jac = jacobian(new_qnode)
 
         else:
             raise ValueError(

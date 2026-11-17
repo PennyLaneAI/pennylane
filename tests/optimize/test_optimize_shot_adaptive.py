@@ -107,7 +107,7 @@ class TestGradientStatistics:
     """Test native sample generation and backend-independent gradient aggregation."""
 
     @staticmethod
-    def _qnode():
+    def qnode():
         @qp.qnode(qp.device("default.qubit"), interface="numpy", diff_method=None)
         def circuit(*params, offset=0.0):
             angle = sum(qp.math.reshape(param, (-1,))[0] for param in params) + offset
@@ -125,7 +125,7 @@ class TestGradientStatistics:
         opt.s = [np.array(budget)]
         samples = np.arange(1.0, 11.0)
         sample_fn = mocker.patch.object(opt, "_single_shot_qnode_gradients", return_value=[samples])
-        qnode = self._qnode()
+        qnode = self.qnode()
         args = [np.array(0.5)]
 
         gradients, variances = opt.compute_grad(qnode, args, {})
@@ -147,7 +147,7 @@ class TestGradientStatistics:
         coefficients = np.arange(1.0, 7.0).reshape(shape)
         samples = np.arange(1.0, 11.0).reshape((-1,) + (1,) * len(shape)) * coefficients
         sample_fn = mocker.patch.object(opt, "_single_shot_qnode_gradients", return_value=[samples])
-        qnode = self._qnode()
+        qnode = self.qnode()
         args = [np.zeros(shape)]
 
         gradients, variances = opt.compute_grad(qnode, args, {})
@@ -169,7 +169,7 @@ class TestGradientStatistics:
             "_single_shot_qnode_gradients",
             return_value=[samples, samples[:, None] * np.array([2.0, 3.0])],
         )
-        qnode = self._qnode()
+        qnode = self.qnode()
         args = [np.array(0.5), np.array([0.4, 0.2])]
         kwargs = {"offset": 1.0}
 
@@ -225,3 +225,158 @@ class TestGradientStatistics:
         assert gradients[0].shape == (10, *weights.shape)
         if len(argnums) == 2:
             assert gradients[1].shape == (10,)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("term_sampling", [None, "weighted_random_sampling"])
+    @pytest.mark.parametrize(
+        "argnums, expected", [({0}, [-0.25]), ({1}, [-0.5]), ({0, 1}, [-0.25, -0.5])]
+    )
+    def test_native_single_shot_gradient_dispatch(self, mocker, term_sampling, argnums, expected):
+        """The standalone sampling helper differentiates each explicit JAX argument."""
+        import jax.numpy as jnp
+
+        @qp.set_shots(100)
+        @qp.qnode(
+            qp.device("default.qubit", wires=1, seed=123),
+            interface="jax",
+            diff_method="parameter-shift",
+        )
+        def circuit(angle, offset, scale=2.0):
+            qp.RX(angle + scale * offset, 0)
+            return qp.expval(qp.Hamiltonian([0.25], [qp.Z(0)]))
+
+        opt = qp.ShotAdaptiveOptimizer(min_shots=5, term_sampling=term_sampling)
+        opt.max_shots = 5
+        opt.trainable_args = argnums
+        opt.s = [np.array(5) for _ in argnums]
+        sample_fn = mocker.spy(opt, "_single_shot_qnode_gradients")
+
+        gradients, variances = opt.compute_grad(
+            circuit, [jnp.array(np.pi / 2), jnp.array(0.0)], {"scale": 2.0}
+        )
+
+        sample_fn.assert_called_once()
+        assert len(sample_fn.spy_return) == len(argnums)
+        for samples, value in zip(sample_fn.spy_return, expected, strict=True):
+            assert samples.shape == (5,)
+            assert np.allclose(samples, value)
+        assert np.allclose(gradients, expected)
+        assert np.allclose(variances, 0.0)
+        assert opt.lipschitz == 0.25
+        assert circuit.shots == qp.measurements.Shots(100)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("term_sampling", [None, "weighted_random_sampling"])
+    def test_nonconsecutive_single_shot_argument_order(self, term_sampling):
+        """Native gradients follow positional input order for nonconsecutive arguments."""
+        import jax.numpy as jnp
+
+        @qp.set_shots(100)
+        @qp.qnode(
+            qp.device("default.qubit", wires=1, seed=123),
+            interface="jax",
+            diff_method="parameter-shift",
+        )
+        def circuit(*angles):
+            qp.RX(angles[1] + 2 * angles[8], 0)
+            return qp.expval(qp.Hamiltonian([0.25], [qp.Z(0)]))
+
+        args = [jnp.array(0.0) for _ in range(9)]
+        args[1] = jnp.array(np.pi / 2)
+        opt = qp.ShotAdaptiveOptimizer(min_shots=5, term_sampling=term_sampling)
+        opt.max_shots = 5
+        opt.trainable_args = {1, 8}
+        opt.s = [np.array(5), np.array(5)]
+
+        gradients, variances = opt.compute_grad(circuit, args, {})
+
+        assert np.allclose(gradients, [-0.25, -0.5])
+        assert np.allclose(variances, 0.0)
+        assert circuit.shots == qp.measurements.Shots(100)
+
+
+class TestShotAllocation:
+    """Test retained optimizer arithmetic with synthetic single-shot gradient samples."""
+
+    @pytest.mark.parametrize("multiple_args", [False, True])
+    def test_running_statistics_and_shot_budget(self, mocker, multiple_args):
+        """Bias correction, budget clipping, and counters persist across optimization steps."""
+        qnode = TestGradientStatistics.qnode()
+        args = [pnp.array(1.0, requires_grad=True)]
+        samples = [np.array([-1.0, 1.0, 3.0, 1.0, 1.0, 1.0, 1.0])]
+        if multiple_args:
+            args.extend([pnp.array([9.0, 8.0], requires_grad=False), pnp.array([2.0, 3.0])])
+            samples.append(np.stack([samples[0], samples[0] - 0.5], axis=-1))
+
+        opt = qp.ShotAdaptiveOptimizer(min_shots=3, stepsize=0.25, mu=0.5, b=0.25)
+        opt.check_learning_rate([-1.0, 3.0])
+        sample_fn = mocker.patch.object(opt, "_single_shot_qnode_gradients", return_value=samples)
+        kwargs = {"offset": 0.2}
+
+        first_args = opt.step(qnode, *args, **kwargs)
+
+        sample_fn.assert_called_once_with(qnode, tuple(args), kwargs)
+        assert opt.trainable_args == ({0, 2} if multiple_args else {0})
+        assert opt.max_shots == 3
+        assert opt.shots_used == opt.total_shots_used == (18 if multiple_args else 6)
+        assert opt.k == 1
+        assert np.allclose((opt.chi[0], opt.xi[0]), (0.5, 2.0))
+        assert opt.s[0] == 7
+        if multiple_args:
+            assert isinstance(first_args, list)
+            assert np.allclose(first_args[0], 0.75)
+            assert first_args[1] is args[1]
+            assert np.allclose(first_args[2], [1.75, 2.875])
+            assert np.allclose(opt.chi[1], [0.5, 0.25])
+            assert np.allclose(opt.xi[1], [2.0, 2.0])
+            assert np.array_equal(opt.s[1], [7, 7])
+        else:
+            assert first_args.shape == ()
+            assert np.allclose(first_args, 0.75)
+            first_args = [first_args]
+
+        second_args = opt.step(qnode, *first_args, **kwargs)
+
+        assert sample_fn.call_count == 2
+        assert opt.max_shots == 7
+        assert (opt.shots_used, opt.total_shots_used) == ((42, 60) if multiple_args else (14, 20))
+        assert opt.k == 2
+        assert np.allclose((opt.chi[0], opt.xi[0]), (0.75, 5 / 3))
+        assert opt.s[0] == 4
+        assert opt.s[0].dtype == np.int64
+        if multiple_args:
+            assert np.allclose(second_args[0], 0.5)
+            assert second_args[1] is args[1]
+            assert np.allclose(second_args[2], [1.5, 2.75])
+            assert np.allclose(opt.chi[1], [0.75, 0.375])
+            assert np.allclose(opt.xi[1], [5 / 3, 5 / 3])
+            assert np.array_equal(opt.s[1], [4, 4])
+            assert opt.s[1].dtype == np.int64
+        else:
+            assert second_args.shape == ()
+            assert np.allclose(second_args, 0.5)
+
+    def test_step_and_cost_uses_old_parameters_and_current_budget(self, mocker):
+        """Forward evaluation uses pre-update arguments and the current maximum shot budget."""
+
+        @qp.set_shots(100)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(qp.device("default.qubit", wires=1, seed=123), interface="numpy")
+        def circuit(angle):
+            qp.RY(angle, 0)
+            return qp.expval(qp.Z(0))
+
+        opt = qp.ShotAdaptiveOptimizer(min_shots=3, stepsize=0.25, mu=0.5, b=0.25)
+        opt.check_learning_rate([1.0])
+        mocker.patch.object(
+            opt, "_single_shot_qnode_gradients", return_value=[np.array([-1.0, 1.0, 3.0])]
+        )
+        shot_override = mocker.spy(qp.optimize.shot_adaptive, "set_shots")
+        angle = pnp.array(0.0, requires_grad=True)
+
+        updated, cost = opt.step_and_cost(circuit, angle)
+
+        assert np.allclose(updated, -0.25)
+        assert cost == 1.0
+        shot_override.assert_called_once_with(circuit, shots=3)
+        assert circuit.shots == qp.measurements.Shots(100)

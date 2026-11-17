@@ -181,6 +181,7 @@ class TestReconstructEqu:
         assert spy.call_count == num_frequency * 2
         assert fun_close(fun, rec)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize(
         "fun, num_frequency, base_f, expected_grad",

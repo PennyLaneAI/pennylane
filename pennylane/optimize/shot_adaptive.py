@@ -317,7 +317,13 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         if self.term_sampling == "weighted_random_sampling":
             return self.qnode_weighted_random_sampling(
-                qnode, coeffs, observables, self.max_shots, self.trainable_args, *args, **kwargs
+                qnode,
+                coeffs,
+                observables,
+                self.max_shots,
+                tuple(sorted(self.trainable_args)),
+                *args,
+                **kwargs,
             )
         if self.term_sampling is not None:
             raise ValueError(
@@ -331,7 +337,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         def cost(*args, **kwargs):
             return math.stack(set_shots(qnode, shots=new_shots)(*args, **kwargs))
 
-        grads = [jacobian(cost, argnums=i)(*args, **kwargs) for i in self.trainable_args]
+        grads = [jacobian(cost, argnums=i)(*args, **kwargs) for i in sorted(self.trainable_args)]
 
         return grads
 

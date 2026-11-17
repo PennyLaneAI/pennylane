@@ -74,6 +74,7 @@ def test_NotImplementedError():
 
 
 class TestTraceInnerProductInterfaces:
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_autograd_input(self):
         """Test autograd inputs are handled correctly"""

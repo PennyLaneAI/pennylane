@@ -522,6 +522,33 @@ class TestAdjointMetricTensorDifferentiability:
             assert qp.math.allclose(mt_jac, expected)
 
 
+@pytest.mark.jax
+@pytest.mark.parametrize("wires", [(2, 5), ("left", "right")])
+def test_custom_wires_match_canonical_metric(wires):
+    """Custom wires preserve the full metric for native JAX QNodes and tapes."""
+    from jax import numpy as jnp
+
+    params = jnp.array([0.3, -0.7])
+    expected = autodiff_metric_tensor(fubini_ansatz0, 2)(params)
+    dev = qp.device("default.qubit", wires=wires)
+
+    @qp.qnode(dev, interface="jax")
+    def circuit(params):
+        fubini_ansatz0(params, wires=wires)
+        return qp.state()
+
+    metric = qp.adjoint_metric_tensor(circuit)(params)
+    assert qp.math.shape(metric) == (2, 2)
+    assert qp.math.get_interface(metric) == "jax"
+    assert qp.math.allclose(metric, expected)
+
+    tape = qp.workflow.construct_tape(circuit)(params)
+    tape.trainable_params = [0, 2]
+    tape_metric = qp.adjoint_metric_tensor(tape)
+    assert qp.math.shape(tape_metric) == (2, 2)
+    assert qp.math.allclose(tape_metric, expected)
+
+
 def test_error_finite_shots():
     """Test that an error is raised if the device has a finite number of shots set."""
     with qp.queuing.AnnotatedQueue() as q:

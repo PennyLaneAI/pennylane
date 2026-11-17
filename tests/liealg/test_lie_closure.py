@@ -461,6 +461,7 @@ class TestLieClosureInterfaces:
         res_list = qp.lie_closure(gens_list, matrix=True)
         assert qp.math.allclose(res_list, su2)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_autograd_lie_closure_matrix(self):
         """Test lie_closure can handle autograd inputs in matrix mode"""

@@ -15,6 +15,7 @@
 
 from functools import partial
 
+import numpy as onp
 import pytest
 
 import pennylane as qp
@@ -44,6 +45,27 @@ class TestComputeVJP:
 
         assert isinstance(vjp, np.ndarray)
         assert np.allclose(vjp, 0.9)
+
+    def test_object_jacobian_single_measurement_single_param(self):
+        """Numeric object Jacobians contract while preserving the single-parameter axis."""
+        dy = onp.array([2.0, -3.0])
+        jac = onp.array([0.5, 0.25], dtype=object)
+
+        vjp = qp.gradients.compute_vjp_single(dy, jac)
+
+        assert isinstance(vjp, onp.ndarray)
+        assert vjp.shape == (1,)
+        assert onp.allclose(vjp.astype(float), [0.25])
+
+    def test_empty_tuple_jacobian_single_measurement(self):
+        """An empty adjoint Jacobian preserves the zero-parameter VJP shape."""
+        dy = onp.array([[1.0, 2.0], [3.0, 4.0]])
+
+        vjp = qp.gradients.compute_vjp_single(dy, ())
+
+        assert isinstance(vjp, onp.ndarray)
+        assert vjp.shape == (1, 0)
+        assert onp.array_equal(vjp, onp.zeros((1, 0)))
 
     def test_compute_single_measurement_multiple_params(self):
         """Test that the correct VJP is returned"""

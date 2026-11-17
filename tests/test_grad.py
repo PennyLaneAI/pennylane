@@ -284,7 +284,7 @@ def test_jax_pytree_jacobian():
 @pytest.mark.torch
 @pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
 def test_torch_inferred_trainability(diff_function):
-    """Torch re-infers trainable arguments on each call and unwraps a single result."""
+    """Torch re-infers enabled and frozen arguments on every call."""
     torch = pytest.importorskip("torch")
     first = torch.tensor(2.0, requires_grad=True)
     second = torch.tensor(3.0)
@@ -297,6 +297,23 @@ def test_torch_inferred_trainability(diff_function):
     assert isinstance(result, tuple)
     assert torch.allclose(result[0], torch.tensor(3.0))
     assert torch.allclose(result[1], torch.tensor(2.0))
+
+    first.requires_grad_(False)
+    second.requires_grad_(False)
+    first.fill_(4.0)
+    second.fill_(5.0)
+    with pytest.warns(
+        UserWarning, match="Attempted to differentiate a function with no trainable parameters"
+    ):
+        assert derivative(first, second) == ()
+    if diff_function is qp.grad:
+        assert torch.allclose(derivative.forward, torch.tensor(20.0))
+        assert not derivative.forward.requires_grad
+
+    first.requires_grad_(True)
+    result = derivative(first, second)
+    assert not isinstance(result, tuple)
+    assert torch.allclose(result, torch.tensor(5.0))
 
 
 @pytest.mark.torch

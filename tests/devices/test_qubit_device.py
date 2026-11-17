@@ -160,6 +160,26 @@ def _working_get_batch_size(tensor, expected_shape, expected_size):
     return None
 
 
+@pytest.mark.parametrize(
+    "dtype, values, expected",
+    [
+        (np.int32, [2, -3], [[0, 0, 2], [-3, 0, 0]]),
+        (np.float32, [0.5, -2.25], [[0, 0, 0.5], [-2.25, 0, 0]]),
+        (np.complex64, [0.5 + 0.75j, -2.25j], [[0, 0, 0.5 + 0.75j], [-2.25j, 0, 0]]),
+    ],
+)
+def test_scatter_preserves_dtype_and_zero_fills(dtype, values, expected):
+    """Scatter preserves numeric types and places values in an otherwise zero array."""
+    indices = (np.array([0, 1], dtype=np.int32), np.array([2, 0], dtype=np.int64))
+    values = np.array(values, dtype=dtype)
+
+    result = QubitDevice._scatter(indices, values, (2, 3))
+
+    assert result.shape == (2, 3)
+    assert result.dtype == values.dtype
+    np.testing.assert_array_equal(result, np.array(expected, dtype=dtype))
+
+
 def test_notimplemented_circuit_hash(mock_qubit_device):
     """Test that the circuit hash property is not implemented"""
     dev = mock_qubit_device()
