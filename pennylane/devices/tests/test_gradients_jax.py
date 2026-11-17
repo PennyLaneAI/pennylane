@@ -14,8 +14,6 @@
 """Tests trainable circuits using the JAX interface."""
 
 import numpy as np
-
-# pylint:disable=no-self-use
 import pytest
 
 import pennylane as qp

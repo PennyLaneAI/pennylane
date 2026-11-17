@@ -98,8 +98,7 @@ def _assert_equal_ops(ops0, ops1):
         _assert_equal(op0, op1)
 
 
-# pylint: disable=too-many-branches
-def _check_decomposition_legacy(op, skip_wire_mapping):
+def _check_decomposition_legacy(op, skip_wire_mapping):  # pylint: disable=too-many-branches
     """Checks involving the decomposition."""
 
     if not op.has_decomposition:
@@ -184,7 +183,6 @@ def _check_decomposition_legacy(op, skip_wire_mapping):
 
         for mapped_op, orig_op in zip(mapped_decomp, decomp_output, strict=True):
             comment = "Operators in decomposition of wire-mapped operator must have mapped wires."
-            # pylint: disable-next=no-member
             assert mapped_op.wires == op_funcs.map_wires(orig_op, wire_map).wires, comment
 
 
@@ -363,11 +361,10 @@ def _check_copy(op, skip_deepcopy):
         _assert_copy_equal(copy.deepcopy(op), op)
 
 
-# pylint: disable=import-outside-toplevel, protected-access
 def _check_pytree(op):
     """Check that the operator is a pytree."""
 
-    data, metadata = op._flatten()
+    data, metadata = op._flatten()  # pylint: disable=protected-access
     try:
         assert hash(metadata), "metadata must be hashable"
     except Exception as e:
@@ -375,7 +372,7 @@ def _check_pytree(op):
         raise AssertionError(error_message) from e
 
     try:
-        new_op = type(op)._unflatten(data, metadata)
+        new_op = type(op)._unflatten(data, metadata)  # pylint: disable=protected-access
         op_funcs.assert_equal(op, new_op)
     except Exception as e:
         raise AssertionError(
@@ -449,13 +446,17 @@ def _check_capture(op):
     def test_fn(*args):
         op = jax.tree_util.tree_unflatten(struct, args)
         if isinstance(op, Operator2):
-            op._bind_primitive()
+            op._bind_primitive()  # pylint: disable=protected-access
             return op.tracer
         return op
 
     jaxpr = jax.make_jaxpr(test_fn)(*data)
-    new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
-    op_funcs.assert_equal(op, new_op)
+    results = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)
+    if isinstance(op, ops.Barrier):
+        assert jaxpr.eqns[-1].primitive is ops.meta.barrier_p
+        assert results == []
+    else:
+        op_funcs.assert_equal(op, results[0])
 
     leaves = jax.tree_util.tree_leaves(jaxpr.eqns[-1].params)
     error_msg = "capture params cannot contain tracers"
@@ -618,8 +619,7 @@ def _check_properties_operator2(op: Operator2) -> None:
             assert dim is None or len(val) == dim, error_msg
 
 
-# pylint: disable=too-many-arguments
-def assert_valid(
+def assert_valid(  # pylint: disable=too-many-arguments
     op: Operator,
     *,
     skip_deepcopy=False,

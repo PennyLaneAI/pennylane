@@ -26,7 +26,7 @@ pytestmark = pytest.mark.capture
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-# pylint: disable=wrong-import-position
+# pylint: disable-next=wrong-import-position
 from pennylane.capture.primitives import value_and_grad_prim
 
 

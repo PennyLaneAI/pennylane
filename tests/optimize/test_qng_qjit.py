@@ -13,8 +13,6 @@
 # limitations under the License.
 """Test Jax-based Catalyst-compatible QNG optimizer"""
 
-# pylint: disable=assignment-from-none
-
 from functools import partial
 
 import numpy as np
@@ -65,7 +63,6 @@ class TestGradients:
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_get_grad_jax(self, dev_name):
         """Test `_get_grad` method with Jax interface."""
-        # pylint:disable=protected-access
         import jax.numpy as jnp
 
         device = qp.device(dev_name, wires=2)
@@ -75,7 +72,7 @@ class TestGradients:
         params = [0.1, 0.2]
 
         params_jax = jnp.array(params)
-        grad_jax = opt._get_grad(qnode, params_jax)
+        grad_jax = opt._get_grad(qnode, params_jax)  # pylint: disable=protected-access
 
         grad_exact = jnp.array([-np.sin(params[0]), 0.0])
 
@@ -85,7 +82,6 @@ class TestGradients:
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_get_value_and_grad_jax(self, dev_name):
         """Test `_get_value_and_grad` method with Jax interface."""
-        # pylint:disable=protected-access
         import jax.numpy as jnp
 
         device = qp.device(dev_name, wires=2)
@@ -95,6 +91,7 @@ class TestGradients:
         params = [0.1, 0.2]
 
         params_jax = jnp.array(params)
+        # pylint: disable-next=protected-access
         cost_jax, grad_jax = opt._get_value_and_grad(qnode, params_jax)
 
         cost_exact = qnode(params)
@@ -107,11 +104,12 @@ class TestGradients:
 class TestMetricTensor:
     """Test that the metric tensor computation works with `approx` and `lam`."""
 
+    # pylint: disable=protected-access
+
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_no_approx(self, dev_name):
         """Test that the full metric tensor is computed for `approx=None`."""
-        # pylint:disable=protected-access
         import jax.numpy as jnp
 
         @qp.qnode(qp.device(dev_name))
@@ -140,7 +138,6 @@ class TestMetricTensor:
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_with_approx(self, dev_name):
         """Test that the approximated metric tensor is computed for `approx=block-diag` and `approx=diag`."""
-        # pylint:disable=protected-access
         import jax.numpy as jnp
 
         @qp.qnode(qp.device(dev_name))
@@ -173,7 +170,6 @@ class TestMetricTensor:
     @pytest.mark.parametrize("dev_name", dev_names)
     def test_lam(self, dev_name):
         """Test that the regularization `lam` is used correctly."""
-        # pylint:disable=protected-access
         import jax.numpy as jnp
 
         @qp.qnode(qp.device(dev_name))
@@ -214,8 +210,7 @@ class TestMetricTensor:
         assert np.isclose(new_params[1], y)
 
 
-# pylint:disable=too-few-public-methods
-class TestExceptions:
+class TestExceptions:  # pylint: disable=too-few-public-methods
     """Test exceptions are raised for incorrect usage."""
 
     @pytest.mark.jax

@@ -290,9 +290,8 @@ class TestAdditionalDecompositionRules:
     def test_register_controlled_rule(self):
         """Test that a valid controlled decomposition rule can be registered for the operator."""
 
-        def _ctrl_resources(
-            base, control_wires, control_values, work_wires, work_wire_type
-        ):  # pylint: disable=unused-argument
+        # pylint: disable-next=unused-argument
+        def _ctrl_resources(base, control_wires, control_values, work_wires, work_wire_type):
             resources = {}
             resources[
                 qp.ctrl(

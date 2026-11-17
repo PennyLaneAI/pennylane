@@ -15,7 +15,6 @@
 Unit tests for the ``decompose`` function.
 """
 
-# pylint: disable=too-many-arguments
 import os
 
 import numpy as np
@@ -527,6 +526,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
+# pylint: disable-next=too-many-arguments
 def test_transformation(name, core, active, mapping, coeffs_ref, pauli_strings_ref, tol):
     r"""Test the correctness of the decomposed Hamiltonian for the (:math: `H_2, H_2O, LiH`)
     molecules using Jordan-Wigner and Bravyi-Kitaev transformations."""

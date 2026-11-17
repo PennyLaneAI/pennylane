@@ -16,10 +16,8 @@ Tests that application of gates and state preparations
 works correctly an a device.
 """
 
-# pylint: disable=no-self-use
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,unnecessary-lambda-assignment
 
-# pylint: disable=unnecessary-lambda-assignment
 
 from cmath import exp
 from math import cos, sin, sqrt
@@ -353,8 +351,7 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1
 # ===============================================================
 
 
-# pylint: disable=too-few-public-methods
-class TestSupportedGates:
+class TestSupportedGates:  # pylint: disable=too-few-public-methods
     """Test that the device can implement all gates that it claims to support."""
 
     @pytest.mark.parametrize("operation", all_ops)

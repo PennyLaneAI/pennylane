@@ -46,7 +46,7 @@ namespace = {
 }
 
 
-# pylint: disable=unused-argument, redefined-outer-name
+# pylint: disable=unused-argument,redefined-outer-name
 def reset_pennylane_state(namespace):
     """
     A teardown function for Sybil to reset PennyLane's global state

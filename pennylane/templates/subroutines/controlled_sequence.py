@@ -15,11 +15,14 @@ r"""
 Contains the ControlledSequence template.
 """
 
+from collections import Counter
+
 from pennylane import capture, compiler, math
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops.op_math import SymbolicOp2, ctrl
+from pennylane.ops.op_math import SymbolicOp2, ctrl, pow
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
 from pennylane.wires import Wires, validate_no_wire_overlaps
@@ -62,10 +65,10 @@ class ControlledSequence(SymbolicOp2):
             return qp.state()
 
     >>> print(qp.draw(circuit, wire_order=[0,1,2,3])())
-    0: ─╭●────────╭●────────╭●────────╭●──────────────────────────────────────┤ ╭State
-    1: ─│─────────│─────────│─────────│─────────╭●────────╭●──────────────────┤ ├State
-    2: ─│─────────│─────────│─────────│─────────│─────────│─────────╭●────────┤ ├State
-    3: ─╰RX(0.25)─╰RX(0.25)─╰RX(0.25)─╰RX(0.25)─╰RX(0.25)─╰RX(0.25)─╰RX(0.25)─┤ ╰State
+    0: ─╭●────────────────────────────┤ ╭State
+    1: ─│─────────╭●──────────────────┤ ├State
+    2: ─│─────────│─────────╭●────────┤ ├State
+    3: ─╰RX(1.00)─╰RX(0.50)─╰RX(0.25)─┤ ╰State
 
 
     .. code-block:: python
@@ -141,18 +144,58 @@ class ControlledSequence(SymbolicOp2):
         return f"ControlledSequence({self.base}, control={list(self.control)})"
 
 
-def _ctrl_seq_decomposition_resources(base, control) -> dict:
+def _ctrl_seq_execution_optimized_decomposition_resources(base, control) -> dict:
     control = Wires(control)
     base_rep = abstractify(base)
 
     if not control:
         return {}
-    return {_ctrl_abstract(base_rep, Wire[1]): 2 ** len(control) - 1}
+    controlled_base = _ctrl_abstract(base_rep, Wire[1])
+    return dict(
+        Counter(abstractify(pow(controlled_base, 2**i, lazy=False)) for i in range(len(control)))
+    )
 
 
-# pylint: disable=no-value-for-parameter
-@register_resources(_ctrl_seq_decomposition_resources)
-def _ctrl_seq_decomposition(*_, base=None, control=None, **__):
+@register_resources(_ctrl_seq_execution_optimized_decomposition_resources)
+def _ctrl_seq_execution_optimized_decomposition(*_, base=None, control=None, **__):
+    """
+    A decomposition optimized for execution time, over IR size and compilation time.
+
+    Using Pows with different z grows the IR but the execution is faster because the powers
+    can be simplified eagerly to a single rotation each. Additionally, the Pows have more
+    decomposition variants which increases compile time.
+    """
+    if compiler.active() or capture.enabled():
+        control = math.array(control, like="jax")
+
+    num_controls = len(control)
+
+    for i in range(num_controls - 1, -1, -1):
+        j = num_controls - 1 - i
+        ctrl_wire = control[j]
+
+        controlled_base = ctrl(base, control=ctrl_wire)
+        if capture.enabled():
+            pop_op_eqns((controlled_base,))
+        pow(controlled_base, 2**i, lazy=False)
+
+
+def _ctrl_seq_ir_optimized_resources(base, control) -> dict:
+    control = Wires(control)
+    if not control:
+        return {}
+    controlled_base = _ctrl_abstract(abstractify(base), Wire[1])
+    return {controlled_base: 2 ** len(control) - 1}
+
+
+@register_resources(_ctrl_seq_ir_optimized_resources)
+def _ctrl_seq_ir_optimized_decomposition(*_, base=None, control=None, **__):
+    """
+    A decomposition optimized for IR size and compilation time, over execution time.
+
+    Using the nested @for_loop keeps the IR compact, but the runtime increases since
+    there is no simplification of repeated operators. They are all executed individually.
+    """
     if compiler.active() or capture.enabled():
         control = math.array(control, like="jax")
 
@@ -171,9 +214,14 @@ def _ctrl_seq_decomposition(*_, base=None, control=None, **__):
         def _repeat_loop(_):
             ctrl(base, control=ctrl_wire)
 
-        _repeat_loop()
+        _repeat_loop()  # pylint: disable=no-value-for-parameter
 
-    _powers_loop()
+    _powers_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(ControlledSequence, _ctrl_seq_decomposition)
+# TODO: worth exploring how Catalyst can handle these situations (execution versus compilation optimization)
+add_decomps(
+    ControlledSequence,
+    _ctrl_seq_execution_optimized_decomposition,
+    _ctrl_seq_ir_optimized_decomposition,
+)

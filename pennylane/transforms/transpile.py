@@ -159,7 +159,7 @@ def transpile(
                 return True
             if not obj.has_decomposition:
                 return True
-            return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+            return obj.name in all_ops
 
         [expanded_tape], _ = qp.devices.preprocess.decompose(
             tape,
@@ -223,7 +223,7 @@ def transpile(
     new_tape = tape.copy(operations=gates, measurements=measurements)
 
     # note: no need for transposition with density matrix, so type must be `StateMP` but not `DensityMatrixMP`
-    # pylint: disable=unidiomatic-typecheck
+    # pylint: disable-next=unidiomatic-typecheck
     any_state_mp = any(type(m) is qp.measurements.StateMP for m in measurements)
     if not any_state_mp or device_wires is None:
 

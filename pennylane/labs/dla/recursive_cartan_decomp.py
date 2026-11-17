@@ -13,7 +13,6 @@
 # limitations under the License.
 """Functionality for Cartan decomposition"""
 
-# pylint: disable= missing-function-docstring
 from functools import partial
 
 import numpy as np
@@ -25,7 +24,7 @@ from pennylane.ops import QubitUnitary
 IDENTITY = object()
 
 
-def pauli_y_eigenbasis(wire, num_wires):
+def pauli_y_eigenbasis(wire, num_wires):  # pylint: disable=missing-function-docstring
     V = np.array([[1, 1], [1j, -1j]]) / np.sqrt(2)
     return QubitUnitary(V, wire).matrix(wire_order=range(num_wires))
 

@@ -16,7 +16,9 @@ This module contains the functions needed for resource estimation with the doubl
 method.
 """
 
-# pylint: disable=no-self-use, too-many-arguments, too-many-instance-attributes, too-many-positional-arguments
+# pylint: disable=too-many-arguments
+
+
 import numpy as np
 
 from pennylane.core.operator import Operation
@@ -24,7 +26,7 @@ from pennylane.math import ceil_log2
 from pennylane.qchem import factorize
 
 
-class DoubleFactorization(Operation):
+class DoubleFactorization(Operation):  # pylint: disable=too-many-instance-attributes
     r"""Estimate the number of non-Clifford gates and logical qubits for a quantum phase estimation
     algorithm in second quantization with a double-factorized Hamiltonian.
 

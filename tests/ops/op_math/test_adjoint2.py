@@ -28,8 +28,6 @@ from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import CompilableOp, OneWireDynOp
 
-# pylint: disable=unused-argument,arguments-differ,useless-parent-delegation
-
 
 class SX2(Operator2):
     """A new SX gate."""
@@ -38,7 +36,7 @@ class SX2(Operator2):
 
     is_verified_hermitian = True
 
-    def __init__(self, wires):
+    def __init__(self, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(wires)
 
     @property
@@ -51,15 +49,15 @@ class SX2(Operator2):
         )
 
     @staticmethod
-    def compute_matrix(wires):
+    def compute_matrix(wires):  # pylint: disable=unused-argument
         return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @staticmethod
-    def compute_sparse_matrix(wires, format="csr"):
+    def compute_sparse_matrix(wires, format="csr"):  # pylint: disable=unused-argument
         return 0.5 * sparse.csr_matrix([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]]).asformat(format=format)
 
     @staticmethod
-    def compute_eigvals(wires):
+    def compute_eigvals(wires):  # pylint: disable=unused-argument
         return np.array([1, 1j])
 
     @staticmethod
@@ -76,11 +74,11 @@ class RX2(Operator2):
 
     is_verified_hermitian = True
 
-    def __init__(self, theta, wires):
+    def __init__(self, theta, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(theta, wires)
 
     @staticmethod
-    def compute_matrix(theta, wires):
+    def compute_matrix(theta, wires):  # pylint: disable=unused-argument
         return qp.math.array(
             [
                 [qp.math.cos(theta / 2), -1j * qp.math.sin(theta / 2)],
