@@ -131,6 +131,8 @@ from .templates import LabsMottonenStatePreparation
 from .templates import LabsSumOfSlatersPrep
 
 from .templates import (
+    PrepAmp,
+    SelAmp,
     SelectCopyQROM,
     LabsQROM,
     OutOfPlaceIntegerComparator,
