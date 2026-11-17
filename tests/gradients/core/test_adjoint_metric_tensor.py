@@ -533,8 +533,11 @@ def test_error_finite_shots():
         qp.adjoint_metric_tensor(tape)
 
 
+@pytest.mark.jax
 def test_works_with_state_prep():
     """Test that a state preparation operation is respected."""
+    from jax import numpy as jnp
+
     dev = qp.device("default.qubit")
 
     # Some random normalized state, no particular relevance
@@ -552,7 +555,7 @@ def test_works_with_state_prep():
         ansatz(angles, wires=[0, 1])
         return qp.expval(qp.Z(0) @ qp.X(1))
 
-    angles = np.random.uniform(size=(2,), requires_grad=True)
+    angles = jnp.array(onp.random.uniform(size=(2,)))
     qfim = qp.adjoint_metric_tensor(circuit)(angles)
     autodiff_qfim = autodiff_metric_tensor(ansatz, 2)(angles)
     assert onp.allclose(qfim, autodiff_qfim)

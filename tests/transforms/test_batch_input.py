@@ -136,6 +136,7 @@ def test_value_error():
         circuit(input1, input2, weights)
 
 
+@pytest.mark.torch
 def test_batch_input_with_trainable_parameters_raises_error():
     """Test that using the batch_input method with trainable parameters raises a ValueError."""
     dev = qp.device("default.qubit", wires=2)
