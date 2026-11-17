@@ -156,6 +156,7 @@ def _ctrl_seq_execution_optimized_decomposition_resources(base, control) -> dict
     )
 
 
+@register_name("controlled_powers")
 @register_resources(_ctrl_seq_execution_optimized_decomposition_resources)
 def _ctrl_seq_execution_optimized_decomposition(*_, base=None, control=None, **__):
     """
@@ -188,6 +189,7 @@ def _ctrl_seq_ir_optimized_resources(base, control) -> dict:
     return {controlled_base: 2 ** len(control) - 1}
 
 
+@register_name("looped_controlled_repetitions")
 @register_resources(_ctrl_seq_ir_optimized_resources)
 def _ctrl_seq_ir_optimized_decomposition(*_, base=None, control=None, **__):
     """
