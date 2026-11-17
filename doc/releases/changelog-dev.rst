@@ -1547,8 +1547,8 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
-* Decomposition rule names are registered with :func:`~.register_name` instead of the
-  ``name`` argument of :func:`~.register_resources` and cannot start with an underscore.
+* Decomposition rule names are registered with :func:`~pennylane.register_name` instead of the
+  ``name`` argument of :func:`~pennylane.register_resources` and cannot start with an underscore.
   Built-in decomposition rules use short strategy names, such as
   ``"to_cnot"`` for ``SWAP``, available through
   ``qp.list_decomps(qp.SWAP)["to_cnot"]`` and ``fixed_decomps={qp.SWAP: "to_cnot"}``.

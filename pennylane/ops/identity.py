@@ -384,11 +384,11 @@ class GlobalPhase(Operator2):
 
 
 def _controlled_g_phase_standard_resources(
-    base,
+    base,  # pylint: disable=unused-argument
     control_wires,
-    control_values,
+    control_values,  # pylint: disable=unused-argument
     work_wires,
-    work_wire_type,  # pylint: disable=unused-argument
+    work_wire_type,
 ):
     num_control_wires = len(control_wires)
     num_work_wires = len(work_wires)

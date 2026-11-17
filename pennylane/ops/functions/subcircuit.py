@@ -78,7 +78,7 @@ def subcircuit(  # pylint: disable=too-many-arguments
 
     The quantum function decorated with `subcircuit` can be any valid quantum
     function, provided that nothing is returned from it (e.g., terminal measurements are
-    not allowed) and that it has resources registered to it via :func:`~.register_resources`.
+    not allowed) and that it has resources registered to it via :func:`~pennylane.register_resources`.
 
     The decorated quantum function will automatically be registered as an :class:`~.Operator2`
     subclass with a single decomposition rule that corresponds to the quantum function body.

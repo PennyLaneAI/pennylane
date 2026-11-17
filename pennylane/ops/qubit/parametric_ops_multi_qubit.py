@@ -1636,11 +1636,11 @@ def _isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 def _controlled_ising_zz_standard_resources(
-    base,
+    base,  # pylint: disable=unused-argument
     control_wires,
-    control_values,
+    control_values,  # pylint: disable=unused-argument
     work_wires,
-    work_wire_type,  # pylint: disable=unused-argument
+    work_wire_type,
 ):
     return {
         qp.CNOT: 2,

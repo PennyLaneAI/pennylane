@@ -769,8 +769,8 @@ def _controlled_trotter_cdf_standard_resources(  # pylint: disable=unused-argume
 def _controlled_trotter_cdf_standard(
     base,
     control_wires,
-    control_values,
-    work_wires,
+    control_values,  # pylint: disable=unused-argument
+    work_wires,  # pylint: disable=unused-argument
     work_wire_type,  # pylint: disable=unused-argument
 ):
     evolution_time = base.arguments["evolution_time"]
