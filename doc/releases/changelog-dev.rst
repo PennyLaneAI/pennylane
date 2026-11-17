@@ -217,6 +217,7 @@ New features since last release
   `(#10138) <https://github.com/PennyLaneAI/pennylane/pull/10138>`__
   `(#10120) <https://github.com/PennyLaneAI/pennylane/pull/10120>`__
   `(#10340) <https://github.com/PennyLaneAI/pennylane/pull/10340>`__
+  `(#10450) <https://github.com/PennyLaneAI/pennylane/pull/10450>`__
 
 * Three new operators called :class:`pennylane.PPR_2`, :class:`pennylane.PPR_4` and
   :class:`pennylane.PPR_8` have been added, which represent the Pauli product rotations
@@ -886,8 +887,34 @@ New features since last release
       >>> print(bool(output))  # 3 >= 2
       True
 
+* Plugins can register aggregation callbacks and display names for compiler resource
+  extensions with :func:`~pennylane.resource.register_resource_extension`.
+  Extension values remain in ``SpecsResources.extra`` and appear in resource reports.
+  `(#10438) <https://github.com/PennyLaneAI/pennylane/pull/10438>`__
+
 Improvements 🛠
 ~~~~~~~~~~~~~~
+
+* :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
+  powers that can simplify eagerly for faster execution, while the other uses nested
+  loops to keep the captured intermediate representation compact. Both variants include
+  resource counts.
+  `(#10529) <https://github.com/PennyLaneAI/pennylane/pull/10529>`__
+
+* Controlled :class:`~.SWAP` and :class:`~.PauliZ` operators now use their work wires when
+  decomposed. The decompositions into :class:`~.CSWAP` (one control wire) and :class:`~.CCZ`
+  (two control wires) are now separate decomposition rules, and the decompositions via
+  :class:`~.MultiControlledX` apply to any number of control wires.
+
+  A controlled :class:`~.PhaseShift` with any number of control wires has a new decomposition into
+  a single :class:`~.PhaseShift` on one of the provided zeroed work wires, computed with a
+  :class:`~.TemporaryAND` ladder, that requires one zeroed work wire per control wire.
+  `(#10455) <https://github.com/PennyLaneAI/pennylane/pull/10455>`__
+
+* :func:`~pennylane.list_decomps` now includes generic controlled fallback rules when given an
+  operator name such as ``"C(RX)"``. Their registered conditions determine applicability
+  from operator arguments.
+  `(#10502) <https://github.com/PennyLaneAI/pennylane/pull/10502>`__
 
 * Callable :func:`~.ctrl` now captures work-wire labels as operands, supporting
   traced work wires.
@@ -1373,6 +1400,18 @@ Improvements 🛠
   `(#10342) <https://github.com/PennyLaneAI/pennylane/pull/10342>`__
   `(#10360) <https://github.com/PennyLaneAI/pennylane/pull/10360>`__
 
+* :func:`~.workflow.get_compile_pipeline` now supports ``level="device"``, ``"all-user"``,
+  ``"all"``, and a ``Sequence`` of levels for :func:`~.qjit`'d QNodes. The
+  ``level`` argument of :func:`~.analyze` accepts the same values, including ``slice``, and
+  those of :func:`~pennylane.estimate` and :func:`~.track` are interpreted in the same way. The
+  levels are documented in a single place in :func:`~.workflow.get_compile_pipeline`.
+  `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
+
+* The levels printed by :func:`~.analyze` are now labelled ``After <pass name>`` (e.g.,
+  ``Level: After merge-rotations``), since they describe the circuit after that pass has been
+  applied. The keys of ``CircuitSpecs.resources`` are unchanged.
+  `(#10493) <https://github.com/PennyLaneAI/pennylane/pull/10493>`__
+
 Labs: a place for unified and rapid prototyping of research software 🧪
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1505,6 +1544,54 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
+
+* :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly: use
+  ``get_compile_pipeline(qnode, level)`` instead of
+  ``get_compile_pipeline(qnode, level)(*args, **kwargs)``. The device preprocessing transforms
+  are shown as a single ``Device Preprocessing`` level, and ``level="gradient"`` is no longer
+  supported. Printed :class:`~.CompilePipeline` transforms are numbered from ``[0]``,
+  and ``"all-user"`` can no longer be used as a marker label. The ``level`` argument of
+  :func:`~.analyze`, :func:`~pennylane.estimate` and :func:`~.track` now follows
+  :func:`~.workflow.get_compile_pipeline`, so a negative or out-of-range ``int`` level, or a
+  ``set`` or generator of levels, now raises a ``ValueError``, and a marker at the end of the
+  selected transforms is kept. :func:`~.workflow.get_compile_pipeline` now only
+  accepts :func:`~.qjit`'d QNodes; for a QNode that is not qjit'd, use ``qnode.compile_pipeline``
+  for the user transforms, or :func:`~.workflow.construct_batch` to inspect the tapes at the
+  gradient or device level.
+  `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
+
+* Pauli data and arithmetic are being separated from operator construction to remove
+  the circular dependency between ``pennylane.ops`` and ``pennylane.pauli``.
+  This involves the following breaking changes:
+
+  - ``PauliWord.operation()`` and ``PauliSentence.operation()`` have been replaced by
+    :func:`~pennylane.pauli.to_operator`.
+    `(#10483) <https://github.com/PennyLaneAI/pennylane/pull/10483>`__
+
+    .. code-block:: pycon
+
+        >>> from pennylane.core.operator import Operator
+        >>> word = qp.pauli.PauliWord({0: "X", 1: "Z"})
+        >>> word_op = qp.pauli.to_operator(word)
+        >>> isinstance(word_op, Operator)
+        True
+        >>> word_op
+        X(0) @ Z(1)
+        >>> sentence = qp.pauli.PauliSentence({word: 2.0})
+        >>> sentence_op = qp.pauli.to_operator(sentence)
+        >>> isinstance(sentence_op, Operator)
+        True
+        >>> sentence_op
+        2.0 * (X(0) @ Z(1))
+
+    The ``identity_wires`` argument replaces ``wire_order`` and assigns wires to
+    identity terms, including the identity used to represent zero.
+
+  - ``PauliWord`` and ``PauliSentence`` now live in ``pennylane.core.pauli``; their
+    existing imports from ``pennylane.pauli`` remain available. Their ``commutator``
+    methods now accept only Pauli words and sentences. For mixed operator inputs,
+    use ``qp.commutator(pauli_value, operator, pauli=True)``.
+    `(#10484) <https://github.com/PennyLaneAI/pennylane/pull/10484>`__
 
 * ``qp.ops.MidMeasure(...).name`` and resource names now use ``"MidMeasure"`` instead of
   ``"MidMeasureMP"``. Update raw device operation names and comparisons; the deprecated
@@ -1801,6 +1888,15 @@ Breaking changes 💔
   transforms now require ``gate_set``.
   `(#10510) <https://github.com/PennyLaneAI/pennylane/pull/10510>`__
 
+* PyQuil and Qualtran interoperability has been removed from ``qp.io`` and the top-level
+  PennyLane namespace. The removed APIs are ``from_pyquil``, ``from_quil``, ``from_quil_file``,
+  ``FromBloq``, ``ToBloq``, ``to_bloq``, and ``bloq_registers``.
+  `(#10498) <https://github.com/PennyLaneAI/pennylane/pull/10498>`__
+
+* :class:`~.Barrier` no longer accepts ``only_visual``. Barriers are preserved by
+  simplification and separate compilation into blocks.
+  `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
+
 Deprecations 👋
 ~~~~~~~~~~~~~~~
 
@@ -1830,6 +1926,24 @@ Deprecations 👋
 
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
+
+* Adding trusted publishing PyPI uploads.
+  `(#10513) <https://github.com/PennyLaneAI/pennylane/pull/10513>`__
+
+* Removed leftover array-interface selection from QSVT iterative angle solvers now that
+  JAX is always available.
+  `(#10216) <https://github.com/PennyLaneAI/pennylane/pull/10216>`__
+
+* Added pinned local ``ty`` tooling and a diagnostic baseline for the package.
+  `(#10537) <https://github.com/PennyLaneAI/pennylane/pull/10537>`__
+
+* :class:`~.Barrier` now uses a dedicated program-capture primitive while retaining
+  the ``Operator2`` argument format and operator reconstruction behavior.
+  `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
+
+* Updated Pylint to 4.1.3, cleaned up suppression scope and formatting, and made unnecessary
+  suppressions fail lint. Labs tests now consistently use the test lint configuration.
+  `(#10462) <https://github.com/PennyLaneAI/pennylane/pull/10462>`__
 
 * :func:`~.specs`, :func:`~.analyze` and :func:`~pennylane.estimate` now compile QJIT-compiled
   QNodes up to the MLIR passes with Catalyst's ``target="mlir_opt"``, instead of reproducing part
@@ -1929,7 +2043,8 @@ Internal changes ⚙️
     - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
       :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`,
       :class:`~.GlobalPhase`, :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`, :class:`~.RX`, :class:`~.CRX`,
-      :class:`~.RY`, :class:`~.CRY`, :class:`~.QubitUnitary`, :class:`~.ControlledQubitUnitary`
+      :class:`~.RY`, :class:`~.CRY`, :class:`~.QubitUnitary`, :class:`~.ControlledQubitUnitary`,
+      :class:`~.CPhaseShift00`, :class:`~.CPhaseShift01`, :class:`~.CPhaseShift10`
 
     `(#9998) <https://github.com/PennyLaneAI/pennylane/pull/9998>`__
     `(#9857) <https://github.com/PennyLaneAI/pennylane/pull/9857>`__
@@ -1950,6 +2065,7 @@ Internal changes ⚙️
     `(#10041) <https://github.com/PennyLaneAI/pennylane/pull/10041>`__
     `(#10072) <https://github.com/PennyLaneAI/pennylane/pull/10072>`__
     `(#10149) <https://github.com/PennyLaneAI/pennylane/pull/10149>`__
+    `(#10494) <https://github.com/PennyLaneAI/pennylane/pull/10494>`__
 
   - Templates are ported:
 
@@ -1999,6 +2115,7 @@ Internal changes ⚙️
     `(#10226) <https://github.com/PennyLaneAI/pennylane/pull/10226>`__
     `(#10267) <https://github.com/PennyLaneAI/pennylane/pull/10267>`__
     `(#10449) <https://github.com/PennyLaneAI/pennylane/pull/10449>`__
+    `(#10495) <https://github.com/PennyLaneAI/pennylane/pull/10495>`__
     `(#10459) <https://github.com/PennyLaneAI/pennylane/pull/10459>`__
     `(#10240) <https://github.com/PennyLaneAI/pennylane/pull/10240>`__
 
@@ -2273,6 +2390,20 @@ Internal changes ⚙️
 Documentation 📝
 ~~~~~~~~~~~~~~~~
 
+* The documentation of :attr:`~.Node.init_args` now describes ``peer=``, the ``config`` key with
+  which an RDMA :class:`~.Coprocessor` names the kind of controller it answers, and the
+  ``backend`` argument of :class:`~.Controller` lists the default and FPGA backends.
+  `(#10530) <https://github.com/PennyLaneAI/pennylane/pull/10530>`__
+
+* The ``level`` argument of :func:`~.drawer.draw`, :func:`~.drawer.draw_mpl`,
+  :func:`~.workflow.construct_tape` and :func:`~.noise.add_noise` is now documented in
+  :func:`~.workflow.construct_batch`.
+  `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
+
+* Updated :class:`~.MPSPrep` documentation to use ``default.qubit`` and explain the
+  work wires required for gate-based decomposition, replacing the ``lightning.tensor`` example.
+  `(#10505) <https://github.com/PennyLaneAI/pennylane/pull/10505>`__
+
 * The docstring for :class:`~.ControlledPhaseShift` now mentions that :class:`~.CPhase` is an alias.
   `(#10405) <https://github.com/PennyLaneAI/pennylane/pull/10405>`__
 
@@ -2339,9 +2470,40 @@ Documentation 📝
   `(#10433) <https://github.com/PennyLaneAI/pennylane/pull/10433>`__
   `(#10436) <https://github.com/PennyLaneAI/pennylane/pull/10436>`__
   `(#10453) <https://github.com/PennyLaneAI/pennylane/pull/10453>`__
+  `(#10435) <https://github.com/PennyLaneAI/pennylane/pull/10435>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed the measurement-based decomposition of :class:`~.QROM` to support dynamic
+  bitstrings with ``qjit(capture=True)``, including padding for extra control wires.
+  Its inner traversal now uses :func:`~.for_loop` instead of recursion.
+  `(#10501) <https://github.com/PennyLaneAI/pennylane/pull/10501>`__
+* Fixed a precision loss in :func:`~pennylane.math.decomposition.givens_decomposition` and
+  the complex-valued decomposition of :class:`~.BasisRotation` for unitaries close to the identity.
+  `(#10518) <https://github.com/PennyLaneAI/pennylane/pull/10518>`__
+
+* Fixed a bug where AutoGraph raised an error for ``for`` loops over static iterables
+  that cannot be converted to arrays, such as lists of strings. These loops, including
+  ``enumerate`` loops, are now unrolled during capture without a warning.
+  `(#10515) <https://github.com/PennyLaneAI/pennylane/pull/10515>`__
+
+* Fixed exponential regular-expression backtracking in :func:`~.qchem.mol_data` when
+  validating malformed InChI identifiers.
+  `(#10462) <https://github.com/PennyLaneAI/pennylane/pull/10462>`__
+
+* Fixed :func:`~pennylane.draw_mpl` to show the control values of :class:`~.TemporaryAND`
+  and its adjoint. Rounded connectors on the left or right distinguish these
+  operations from :class:`~.Toffoli`, consistently with :func:`~pennylane.draw`.
+  `(#10514) <https://github.com/PennyLaneAI/pennylane/pull/10514>`__
+
+* Fixed a bug where :func:`~pennylane.draw_mpl` replaced the symbols and quantum controls of
+  conditionally applied operations with a labelled box. Conditional control/target diagrams
+  now have a dashed boundary showing that the classical condition applies to the whole operation.
+  Conditional controlled global gates no longer overlap other operations.
+  Conditional operations without wires, such as :class:`~.GlobalPhase`, no longer cause an error
+  when drawn.
+  `(#10496) <https://github.com/PennyLaneAI/pennylane/pull/10496>`__
 
 * Fixed tracer leaks when passing traced work-wire labels to :func:`~.ctrl`
   applied to a callable during program capture. Concrete work-wire labels retain
@@ -2657,6 +2819,7 @@ Contributors ✍️
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire,
 Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,

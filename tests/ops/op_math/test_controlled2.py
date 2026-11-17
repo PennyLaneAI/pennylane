@@ -13,6 +13,8 @@
 
 """Tests for the Controlled2 class."""
 
+# pylint: disable=too-few-public-methods
+
 import copy
 import pickle
 from typing import override
@@ -31,15 +33,13 @@ from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import CompilableOp, DynOp, NonParametricOp, OneWireDynOp
 
-# pylint: disable=unused-argument,too-few-public-methods,useless-parent-delegation
-
 
 class CustomBase(Operator2):
     """A custom base op."""
 
     arg_specs = {"wires": Wire[1]}
 
-    def __init__(self, wires):
+    def __init__(self, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(wires)
 
     @override
@@ -113,7 +113,6 @@ class TestControlled2:
     def test_capture(self):
         """Tests that the base operator is removed from the jaxpr."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         from pennylane.testing import assert_eqn_matches_op
@@ -171,6 +170,7 @@ class TestControlled2:
 
             arg_specs = {"phi": Float, "theta": Float, "omega": Float, "wires": Wire[1]}
 
+            # pylint: disable-next=useless-parent-delegation
             def __init__(self, phi, theta, omega, wires):
                 super().__init__(phi, theta, omega, wires)
 
@@ -291,7 +291,7 @@ class TestControlled2:
     def test_custom_op_compute_methods_capture(self):
         """Tests the default compute methods custom controlled ops doesn't capture extra ops."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         class CH2(Controlled2):
             """A new CH."""
@@ -332,7 +332,7 @@ class TestControlled2:
 
             @staticmethod
             @override
-            def compute_matrix(wires):
+            def compute_matrix(wires):  # pylint: disable=unused-argument
                 return np.array(
                     [
                         [1, 0, 0, 0],
@@ -620,7 +620,7 @@ class TestControlledOp2:
     def test_control_values_traced(self):
         """Tests that control values can be traced."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         def circ(cvals):
             qp.ctrl(qp.H(0), control=[1, 2], control_values=cvals)

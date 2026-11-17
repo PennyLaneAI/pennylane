@@ -17,8 +17,6 @@ arithmetic operations on their input states.
 """
 
 from collections import Counter
-
-# pylint: disable=arguments-differ
 from copy import copy
 
 import numpy as np
@@ -170,6 +168,7 @@ class QubitCarry(Operation):
         )
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(wires: WiresLike) -> list[qp.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -327,6 +326,7 @@ class QubitSum(Operation):
         )
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(wires: WiresLike) -> qp.operation.Operator:
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -483,10 +483,12 @@ class IntegerComparator(Operation):
     ):
         return base_label or f">={self.value}" if self.geq else f"<{self.value}"
 
-    # pylint: disable=unused-argument
     @staticmethod
-    def compute_matrix(
-        control_wires: WiresLike, value: int | None = None, geq: bool = True, **kwargs
+    def compute_matrix(  # pylint: disable=arguments-differ,unused-argument
+        control_wires: WiresLike,
+        value: int | None = None,
+        geq: bool = True,
+        **kwargs,
     ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -556,7 +558,7 @@ class IntegerComparator(Operation):
         return mat
 
     @staticmethod
-    def compute_decomposition(
+    def compute_decomposition(  # pylint: disable=arguments-differ,unused-argument
         value: int,
         wires: WiresLike,
         geq: bool = True,

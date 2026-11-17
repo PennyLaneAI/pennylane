@@ -15,7 +15,9 @@
 Unit tests for the :mod:`pennylane.circuit_graph.to_openqasm()` method.
 """
 
-# pylint: disable=no-self-use,too-many-arguments,protected-access
+# pylint: disable=protected-access
+
+
 from textwrap import dedent
 
 import numpy as np
@@ -678,7 +680,6 @@ class TestQNodeQasmIntegrationTests:
         assert res == expected
 
 
-# pylint: disable=unused-argument
 @pytest.mark.slow
 class TestQASMConformanceTests:
     """Conformance tests to ensure that the CircuitGraph
@@ -686,9 +687,11 @@ class TestQASMConformanceTests:
     by Qiskit. Note that this test class requires Qiskit and
     PennyLane-Qiskit as a dependency."""
 
-    # pylint: disable=attribute-defined-outside-init
+    # pylint: disable=unused-argument
+
     @pytest.fixture(name="check_dependencies")
     def check_dependencies_fixture(self):
+        # pylint: disable-next=attribute-defined-outside-init
         self.qiskit = pytest.importorskip("qiskit", minversion="0.14.1")
         pytest.importorskip("pennylane_qiskit")
 

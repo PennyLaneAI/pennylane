@@ -20,7 +20,7 @@ from string import ascii_letters
 import scipy as sp
 import scipy.sparse.linalg as spla
 from autoray import numpy as np
-from numpy import float64, sqrt  # pylint:disable=wrong-import-order
+from numpy import float64, sqrt  # pylint: disable=wrong-import-order
 from scipy.sparse import csc_matrix, issparse
 
 from pennylane import math
@@ -324,7 +324,6 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
     return reduced_density_matrix if is_batched else reduced_density_matrix[0]
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
 def _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim, dim):
     """Compute the reduced density matrix for autograd interface by tracing out the provided indices with the use
     of projectors as same subscripts indices are not supported in autograd backprop.
@@ -660,15 +659,8 @@ def _compute_vn_entropy(density_matrix, base=None):
     return entropy
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
-def mutual_info(
-    state,
-    indices0,
-    indices1,
-    base=None,
-    check_state=False,
-    c_dtype="complex128",
-):
+# pylint: disable-next=too-many-arguments
+def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"):
     r"""Compute the mutual information between two subsystems given a state:
 
     .. math::
@@ -734,8 +726,7 @@ def mutual_info(
     )
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
-def _compute_mutual_info(
+def _compute_mutual_info(  # pylint: disable=too-many-arguments
     state,
     indices0,
     indices1,
@@ -857,8 +848,7 @@ def expectation_value(
     return expval
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
-def vn_entanglement_entropy(
+def vn_entanglement_entropy(  # pylint: disable=too-many-arguments
     state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"
 ):
     r"""Compute the Von Neumann entanglement entropy between two subsystems in a given state.

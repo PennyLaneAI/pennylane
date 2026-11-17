@@ -14,6 +14,8 @@
 
 """Tests the ``decompose`` transform with the new experimental graph-based decomposition system."""
 
+# pylint: disable=too-few-public-methods
+
 from collections import defaultdict
 
 import numpy as np
@@ -50,7 +52,6 @@ def test_pass_name():
 @pytest.mark.unit
 def test_decompose_setup_inputs():
     """Test that ``_decompose_setup_inputs`` forwards only the provided options."""
-    # pylint: disable=protected-access
     args, options = _decompose_setup_inputs(gate_set={"RX", "CNOT"})
     assert args == ()
     assert options == {"gate_set": {"RX", "CNOT"}}
@@ -162,7 +163,7 @@ def test_weights_affect_graph_decomposition():
     ]
 
 
-class CustomOp1(Operation):  # pylint: disable=too-few-public-methods
+class CustomOp1(Operation):
     resource_keys = set()
 
     @property
@@ -170,7 +171,7 @@ class CustomOp1(Operation):  # pylint: disable=too-few-public-methods
         return {}
 
 
-class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
+class AnotherOp(Operation):
     """A custom operation."""
 
     resource_keys = set()
@@ -180,7 +181,7 @@ class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
         return {}
 
 
-class CustomOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
+class CustomOpDynamicWireDecomp(Operation):
     """A custom operation."""
 
     resource_keys = set()
@@ -209,7 +210,7 @@ def _decomp_without_work_wire(wires, **__):
     qp.Toffoli(wires=wires[::1])
 
 
-class LargeOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
+class LargeOpDynamicWireDecomp(Operation):
     """A larger custom operation."""
 
     resource_keys = set()
@@ -412,7 +413,7 @@ class TestDecomposeGraphEnabled:
     def test_fall_back(self):
         """Tests that op.decompose() is used for ops unsolved in the graph."""
 
-        class CustomOpWithFallback(Operation):  # pylint: disable=too-few-public-methods
+        class CustomOpWithFallback(Operation):
             """Dummy custom op."""
 
             resource_keys = set()

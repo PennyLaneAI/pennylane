@@ -21,8 +21,6 @@ import pytest
 
 import pennylane as qp
 
-# pylint: disable=too-few-public-methods
-
 
 @pytest.mark.parametrize(
     "op, basis",

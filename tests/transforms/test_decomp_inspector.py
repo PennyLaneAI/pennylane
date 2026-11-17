@@ -44,7 +44,7 @@ class TestInspectDecompGraph:
             "produced by any of the operators' decomposition rules."
         )
         assert str(result) == expected
-        assert result._repr_markdown_() == expected
+        assert result._repr_markdown_() == expected  # pylint: disable=protected-access
 
     def test_op_type_error(self):
         """Tests that a proper error is raised when an operator type is provided."""
@@ -77,7 +77,7 @@ class TestInspectDecompGraph:
         )
         result = inspector.inspect_decomps(qp.MultiControlledX([0, 1, 2, 3, 4]), num_work_wires=2)
         assert str(result) == expected
-        assert result._repr_markdown_() == expected
+        assert result._repr_markdown_() == expected  # pylint: disable=protected-access
 
     def test_work_wire_budget(self):
         """Tests that the correct output is produced according to the work wire budget."""
@@ -122,6 +122,7 @@ class TestInspectDecompGraph:
             Weighted Cost: 85.0
             """).strip()
 
+        # pylint: disable-next=protected-access
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: ctrl_single_work_wire)
 
@@ -245,6 +246,7 @@ class TestInspectDecompGraph:
             Weighted Cost: 1996.0
             """).strip()
 
+        # pylint: disable-next=protected-access
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: ctrl_single_work_wire)
 
@@ -431,6 +433,7 @@ class TestInspectDecompGraph:
             Missing Ops: {(PPR_4(-1, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR_4(1, 'X', wires=AbstractWires(1)) @ Hadamard)}
             """).strip()
 
+        # pylint: disable-next=protected-access
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: _pauli_rot_decomposition)
 
@@ -526,6 +529,7 @@ class TestInspectDecompGraph:
             Weighted Cost: 6.0
             """).strip()
 
+        # pylint: disable-next=protected-access
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: multi_qubit_decomp_rule)
 
@@ -667,4 +671,4 @@ class TestInspectDecompGraph:
         msg = "The operator does not have decompositions as it is in the target gate set."
         result = inspector.inspect_decomps(qp.CNOT([0, 1]))
         assert str(result) == msg
-        assert result._repr_markdown_() == msg
+        assert result._repr_markdown_() == msg  # pylint: disable=protected-access

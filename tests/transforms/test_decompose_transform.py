@@ -14,6 +14,8 @@
 
 """Unit tests for the ``decompose`` transform"""
 
+# pylint: disable=too-few-public-methods
+
 import warnings
 
 import numpy as np
@@ -27,12 +29,7 @@ from pennylane.ops import Conditional, MidMeasure
 from pennylane.transforms.decompose import (
     _operator_decomposition_gen,
 )
-from pennylane.transforms.decompose import (
-    _tape_decompose as decompose,  # pylint: disable=protected-access
-)
-
-# pylint: disable=unnecessary-lambda-assignment
-# pylint: disable=too-few-public-methods
+from pennylane.transforms.decompose import _tape_decompose as decompose
 
 
 @pytest.fixture(autouse=True)
@@ -45,7 +42,6 @@ def warnings_as_errors():
 class NoMatOp(Operation):
     """Dummy operation for expanding circuit."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
@@ -58,7 +54,6 @@ class NoMatNoDecompOp(Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
@@ -166,7 +161,7 @@ class TestDecompose:
         gate_set = {qp.RX}
 
         def stopping_condition(op):
-            return op.name in ("NoMatNoDecompOp")
+            return op.name in "NoMatNoDecompOp"
 
         tape = qp.tape.QuantumScript([NoMatNoDecompOp(0, wires=[0])])
 
@@ -176,7 +171,7 @@ class TestDecompose:
         qp.assert_equal(tape, decomposed_tape)
 
         def stopping_condition_2(op):
-            return op.name in ("CX")
+            return op.name in "CX"
 
         with pytest.raises(
             qp.exceptions.DecompositionWarning,
@@ -252,7 +247,7 @@ class TestDecompose:
     def test_decompose_with_mcm(self):
         """Tests that circuits and decomposition rules containing MCMs are supported."""
 
-        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operation):
             resource_keys = set()
 
             @property
@@ -419,5 +414,4 @@ class TestPrivateHelpers:
 
         tape = qp.tape.QuantumScript([])
         with pytest.raises(TypeError, match="Invalid gate_set type."):
-            # pylint: disable-next=protected-access
-            qp.transforms._tape_decompose(tape, gate_set=123)
+            qp.transforms._tape_decompose(tape, gate_set=123)  # pylint: disable=protected-access

@@ -15,6 +15,7 @@
 
 # pylint: disable=unused-argument
 
+
 import inspect
 from collections import Counter, defaultdict
 from functools import partial
@@ -252,7 +253,6 @@ class TestSubroutineOp:
     def test_isinstance_with_Subroutine(self):
         """Test that SubroutineOp's are instances of their corresponding Subroutine."""
 
-        # pylint: disable=isinstance-second-argument-not-valid-type
         assert isinstance(self.op1, Example1Subroutine)
 
     # SubroutineOp exists for the tape pipeline only. It does not need to be capture compatible.
@@ -382,7 +382,7 @@ class TestSubroutineCapture:
     def test_setup_inputs_program_capture(self):
         """Test that setup_inputs can make inputs hashable for use with program capture."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         def my_setup_inputs(wires, pauli_words):
             return (), {"wires": wires, "pauli_words": tuple(pauli_words)}
@@ -398,7 +398,6 @@ class TestSubroutineCapture:
         jaxpr = jax.make_jaxpr(w)()
         assert jaxpr.eqns[-1].primitive == qp.capture.primitives.quantum_subroutine_prim
         inner_jaxpr = jaxpr.eqns[-1].params["jaxpr"]
-        # pylint: disable=protected-access
         assert inner_jaxpr.eqns[-1].primitive == qp.capture.primitives.operator_p
         assert inner_jaxpr.eqns[-1].params["op_cls"] is qp.PauliRot
         assert inner_jaxpr.eqns[-1].params["pauli_word"][0] == ("X",)
@@ -460,7 +459,7 @@ class TestSubroutineCapture:
     def test_autograph_not_propagated_through(self):
         """Test that autograph would propagate through a Subroutine."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         @Subroutine
         def f(x, wires):
@@ -479,7 +478,7 @@ class TestSubroutineCapture:
     def test_manual_autograph_use(self):
         """Test that autograph can be manually applied to a Subroutine."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         @Subroutine
         @qp.capture.run_autograph
@@ -498,7 +497,7 @@ class TestSubroutineCapture:
     def test_stack_wires(self):
         """Test that wire arguments to a subroutine are stacked"""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         @Subroutine
         def f(wires):
@@ -641,7 +640,6 @@ class TestGraphDecomposition:
         )
         assert rp["signature_key"] == key
 
-    # pylint: disable=too-many-statements
     def test_change_op_basis_subroutine_resource_rep_with_a_subroutine(self):
         """Test creating a ChangeOpBasis resource representation with a subroutine."""
 
@@ -1008,8 +1006,7 @@ class TestGraphDecomposition:
             for i in range(params.shape[0]):
                 qp.RY(params[i], wires[i])
 
-        # pylint: disable=too-few-public-methods
-        class SubroutineDemoOp(qp.operation.Operator):
+        class SubroutineDemoOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
 
             resource_keys = frozenset(())
 

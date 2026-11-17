@@ -20,10 +20,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-
-# pylint: disable=no-name-in-module
-from conftest import atol_for_shots, get_device, test_matrix
 from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
+from tests.workflow.interfaces.run.conftest import atol_for_shots, get_device, test_matrix
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -86,7 +84,7 @@ class TestJaxRun:
         a = jnp.array(0.1)
         res = jax.jacobian(cost)(a)
         if not shots.has_partitioned_shots:
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qp.math.sin(a)
 

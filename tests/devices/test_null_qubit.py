@@ -53,11 +53,10 @@ def test_wires():
 
 def test_debugger_attribute():
     """Test that NullQubit has a debugger attribute and that it is `None`"""
-    # pylint: disable=protected-access
     dev = NullQubit()
 
     assert hasattr(dev, "_debugger")
-    assert dev._debugger is None
+    assert dev._debugger is None  # pylint: disable=protected-access
 
 
 def test_resource_tracking_attributes():
@@ -127,8 +126,7 @@ def test_set_device_target():
 def test_supports_operator_without_decomp(shots):
     """Test that null.qubit automatically supports any operation without a decomposition."""
 
-    # pylint: disable=too-few-public-methods
-    class MyOp(qp.operation.Operator):
+    class MyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
         pass
 
     tape = qp.tape.QuantumScript([MyOp(wires=(0, 1))], [qp.expval(qp.Z(0))], shots=shots)
@@ -719,7 +717,7 @@ class TestSumOfTermsDifferentiability:
         out = self.f(dev, x, style=style)
         assert out == torch.tensor(0)
 
-        out.backward()  # pylint:disable=no-member
+        out.backward()
         assert x.grad == 0
 
 
@@ -736,7 +734,7 @@ class TestDeviceDifferentiation:
         [qs], _ = dev.preprocess_transforms(config)((qs,))
         actual_grad = dev.compute_derivatives(qs, config)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad.shape == ()
         assert actual_grad == 0
 
         actual_val, actual_grad = dev.execute_and_compute_derivatives(qs, config)
@@ -799,7 +797,7 @@ class TestDeviceDifferentiation:
 
         actual_grad = dev.compute_jvp(qs, tangent, config)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad.shape == ()
         assert actual_grad == 0.0
 
         actual_val_and_grad = dev.execute_and_compute_jvp(qs, tangent, config)

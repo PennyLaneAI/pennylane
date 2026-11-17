@@ -984,8 +984,7 @@ class SumOfSlatersPrep(Operator2):
     # coefficients lead to a cheaper MultiplexerStatePreparation than complex-valued ones.
     arg_specs = {"wires": Wire[-1]}
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         coefficients: TensorLike,
         wires: WiresLike,
@@ -1002,7 +1001,6 @@ class SumOfSlatersPrep(Operator2):
             v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
             _, data = _preprocess(v_bits, wires)
 
-            # pylint: disable-next=protected-access
             sizes = self._required_register_sizes_from_nums(num_entries, data.r, n)
 
             if len(enumeration_wires) > 0 and len(enumeration_wires) != sizes["enumeration_wires"]:
@@ -1153,7 +1151,6 @@ class SumOfSlatersPrep(Operator2):
         }
 
 
-# pylint: disable-next=unused-argument
 def _sos_state_prep_resources(coefficients, wires, indices, **_):
     """Compute the resources for _sos_state_prep. It is an upper bound due to
     conditionally applied CNOT and X gates."""
@@ -1214,8 +1211,7 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     return resources
 
 
-# pylint: disable=unused-argument,too-many-arguments
-def _sos_state_prep_work_wires(
+def _sos_state_prep_work_wires(  # pylint: disable=too-many-arguments,unused-argument
     coefficients,
     wires,
     indices,
@@ -1229,7 +1225,6 @@ def _sos_state_prep_work_wires(
     if indices is None:
         # invalid rule, just return so we dont get an error
         return {}
-    # pylint: disable-next=protected-access
     n = 1 if isinstance(wires, int) else len(wires)
     v_bits = math.int_to_binary(np.array(indices), n).T
     selector_ids, _ = select_sos_rows(v_bits)
@@ -1281,7 +1276,7 @@ def _pad_and_cast_coeffs(coefficients, enumeration_wires):
     return qp.math.cast(coefficients, cast_dtype)
 
 
-def _sos_state_prep_with_wires(
+def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
     data: tuple[np.ndarray, np.ndarray, SoSData],
     *,
     wires,
@@ -1291,7 +1286,7 @@ def _sos_state_prep_with_wires(
     mcx_cache_wires,
     selected_wires,
 ):
-    # pylint: disable=too-many-arguments, no-value-for-parameter
+    # pylint: disable=no-value-for-parameter
     coefficients, v_bits, data = data
     identity_encoding = data.r == data.m
     b_bits = data.b_bits
@@ -1411,8 +1406,7 @@ def _sos_state_prep_with_wires(
     lambda coefficients, wires, indices, *_, **__: indices is not None
 )  # indices must be known
 @register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
-# pylint: disable-next=too-many-arguments
-def _sos_state_prep(
+def _sos_state_prep(  # pylint: disable=too-many-arguments
     coefficients,
     wires,
     indices,
@@ -1465,7 +1459,7 @@ def _sos_state_prep(
         all_wires["wires"] = wires
         all_wires["selected_wires"] = selected_wires
         data = (coefficients, v_bits, data)
-        _sos_state_prep_with_wires(data, **all_wires)  # pylint: disable=missing-kwoa
+        _sos_state_prep_with_wires(data, **all_wires)
 
 
 add_decomps(SumOfSlatersPrep, _sos_state_prep)

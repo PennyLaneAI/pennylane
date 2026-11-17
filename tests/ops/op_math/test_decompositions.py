@@ -15,8 +15,6 @@
 Tests for the QubitUnitary decomposition transforms.
 """
 
-# pylint: disable=unused-variable,unused-argument
-
 from functools import reduce
 
 import numpy as np
@@ -150,7 +148,6 @@ class TestQubitUnitaryZYZDecomposition:
     def test_zyz_decomposition_torch(self, U, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
@@ -161,7 +158,6 @@ class TestQubitUnitaryZYZDecomposition:
     def test_zyz_decomposition_jax(self, U, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
@@ -217,7 +213,6 @@ class TestQubitUnitaryXYXDecomposition:
     def test_xyx_decomposition_torch(self, U, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
@@ -228,7 +223,6 @@ class TestQubitUnitaryXYXDecomposition:
     def test_xyx_decomposition_jax(self, U, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
@@ -281,7 +275,6 @@ class TestQubitUnitaryXZXDecomposition:
     def test_xzx_decomposition_torch(self, U, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
@@ -292,7 +285,6 @@ class TestQubitUnitaryXZXDecomposition:
     def test_xzx_decomposition_jax(self, U, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
@@ -359,7 +351,6 @@ class TestQubitUnitaryZXZDecomposition:
     def test_zxz_decomposition_torch(self, U, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
@@ -370,7 +361,6 @@ class TestQubitUnitaryZXZDecomposition:
     def test_zxz_decomposition_jax(self, U, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
@@ -415,7 +405,6 @@ class TestOneQubitRotDecomposition:
     def test_rot_decomposition_torch(self, U, expected_gates, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
@@ -426,7 +415,6 @@ class TestOneQubitRotDecomposition:
     def test_rot_decomposition_jax(self, U, expected_gates, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
@@ -1038,7 +1026,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_torch(self, U, wires):
         """Test that a two-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
@@ -1056,7 +1043,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_tensor_products_torch(self, U_pair, wires):
         """Test that a two-qubit tensor product in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import torch
 
         U1 = torch.tensor(U_pair[0], dtype=torch.complex128)
@@ -1076,7 +1062,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_jax(self, U, wires):
         """Test that a two-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
@@ -1094,7 +1079,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_tensor_products_jax(self, U_pair, wires):
         """Test that a two-qubit tensor product in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U1 = jax.numpy.array(U_pair[0], dtype=jax.numpy.complex128)
@@ -1114,7 +1098,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_jax_jit(self, U, wires):
         """Test that a two-qubit operation is correctly decomposed with JAX-JIT ."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
@@ -1172,7 +1155,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_tensor_products_jax_jit(self, U_pair, wires):
         """Test that a two-qubit tensor product is correctly decomposed with JAX-JIT."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U1 = jax.numpy.array(U_pair[0], dtype=jax.numpy.complex128)
@@ -1271,7 +1253,6 @@ class TestTwoQubitDecompositionWarnings:
     def test_warning_parameterized_torch(self):
         """Test warning is raised for parameterized matrix with PyTorch"""
         try:
-            # pylint: disable=import-outside-toplevel
             import torch
         except ImportError:
             pytest.skip("PyTorch not installed")
@@ -1297,7 +1278,6 @@ class TestTwoQubitDecompositionWarnings:
     def test_warning_parameterized_jax(self):
         """Test warning is raised for parameterized matrix with JAX"""
         try:
-            # pylint: disable=import-outside-toplevel
             import jax
             import jax.numpy as jnp
         except ImportError:

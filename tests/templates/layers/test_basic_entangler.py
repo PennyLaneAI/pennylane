@@ -16,8 +16,6 @@ Unit tests for the BasicEntanglerLayers template.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -140,7 +138,7 @@ class TestDecomposition:
         assert_decomposable(op)
 
 
-class TestInputs:
+class TestInputs:  # pylint: disable=too-few-public-methods
     """Test inputs and pre-processing."""
 
     def test_exception_wrong_dim(self):
@@ -161,7 +159,7 @@ class TestInputs:
             circuit([[1, 0], [1, 0]])
 
 
-class TestAttributes:
+class TestAttributes:  # pylint: disable=too-few-public-methods
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(

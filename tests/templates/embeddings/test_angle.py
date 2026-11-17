@@ -37,19 +37,18 @@ def test_repr():
     assert repr(op) == expected
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the _flatten and _unflatten methods."""
     wires = qp.wires.Wires((0, 1, 2))
     op = qp.AngleEmbedding(features=[1, 2, 3], wires=wires, rotation="Z")
 
-    data, metadata = op._flatten()
+    data, metadata = op._flatten()  # pylint: disable=protected-access
     assert data == op.data
     assert len(metadata) == 2
     assert metadata[0] == wires
     assert metadata[1] == (("rotation", "Z"),)
 
-    new_op = type(op)._unflatten(*op._flatten())
+    new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
     qp.assert_equal(op, new_op)
     assert op is not new_op
 

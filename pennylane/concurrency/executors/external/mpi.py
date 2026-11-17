@@ -23,7 +23,6 @@ from typing import Any
 from pennylane.concurrency.executors.base import ExecBackendConfig, ExtExec
 
 
-# pylint: disable=import-outside-toplevel
 class MPIPoolExec(ExtExec):  # pragma: no cover
     r"""
     MPIPoolExecutor abstraction class executor.
@@ -54,7 +53,7 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
 
         # Imports will initialise the MPI environment.
         # Handle set-up upon object creation only.
-        from mpi4py import MPI
+        from mpi4py import MPI  # pylint: disable=import-outside-toplevel
 
         self._size = max_workers
         self._comm = MPI.COMM_WORLD
@@ -115,12 +114,11 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
 
     @classmethod
     def _exec_backend(cls):
-        from mpi4py.futures import MPIPoolExecutor
+        from mpi4py.futures import MPIPoolExecutor  # pylint: disable=import-outside-toplevel
 
         return MPIPoolExecutor
 
 
-# pylint: disable=import-outside-toplevel
 class MPICommExec(ExtExec):  # pragma: no cover
     r"""
     MPICommExecutor abstraction class functor. To be used if dynamic process spawning
@@ -145,6 +143,7 @@ class MPICommExec(ExtExec):  # pragma: no cover
 
         super().__init__(max_workers=max_workers, **kwargs)
 
+        # pylint: disable-next=import-outside-toplevel
         from mpi4py import MPI  # Required to call MPI_Init
 
         self._comm = MPI.COMM_WORLD
@@ -206,6 +205,6 @@ class MPICommExec(ExtExec):  # pragma: no cover
 
     @classmethod
     def _exec_backend(cls):
-        from mpi4py.futures import MPICommExecutor
+        from mpi4py.futures import MPICommExecutor  # pylint: disable=import-outside-toplevel
 
         return MPICommExecutor
