@@ -533,7 +533,7 @@ class TestOutMultiplier:
         )
         op_list.append(qp.adjoint(qp.QFT)(wires=qft_output_wires))
 
-        for op1, op2 in zip(multiplier_decomposition, op_list):
+        for op1, op2 in zip(multiplier_decomposition, op_list, strict=True):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")

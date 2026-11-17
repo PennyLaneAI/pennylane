@@ -293,7 +293,7 @@ class TestOptimize:
         factors = [1.0, 1.0, 2.0, 2.0, 0.25]
         expected_cost = circuit(*params)
 
-        for factor, step in zip(factors, [step1, step2, step3, step4, step5]):
+        for factor, step in zip(factors, [step1, step2, step3, step4, step5], strict=True):
             expected_step = tuple(
                 par + exact_update * factor if i == trainable_idx else par
                 for i, par in enumerate(params)
@@ -387,7 +387,7 @@ class TestOptimize:
             # check parameter update
             theta_new = (x, y)
             grad = gradient(theta)
-            dtheta = tuple(eta * g / e[0, 0] for e, g in zip(exp, grad))
+            dtheta = tuple(eta * g / e[0, 0] for e, g in zip(exp, grad, strict=True))
             assert np.allclose(dtheta, theta - theta_new)
 
         # check final cost

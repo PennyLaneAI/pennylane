@@ -84,10 +84,10 @@ class TestDecompositionRule:
         """Test that a DecompositionRule object can be created."""
 
         def multi_rz_decomposition(theta, wires, **__):
-            for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
+            for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1], strict=True):
                 qp.CNOT(wires=(w0, w1))
             qp.RZ(theta, wires=wires[0])
-            for w0, w1 in zip(wires[1:], wires[:-1]):
+            for w0, w1 in zip(wires[1:], wires[:-1], strict=True):
                 qp.CNOT(wires=(w0, w1))
 
         def _multi_rz_resources(num_wires):
@@ -130,10 +130,10 @@ class TestDecompositionRule:
 
         @register_resources(_multi_rz_resources, exact=exact_resources)
         def multi_rz_decomposition(theta, wires, **__):
-            for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
+            for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1], strict=True):
                 qp.CNOT(wires=(w0, w1))
             qp.RZ(theta, wires=wires[0])
-            for w0, w1 in zip(wires[1:], wires[:-1]):
+            for w0, w1 in zip(wires[1:], wires[:-1], strict=True):
                 qp.CNOT(wires=(w0, w1))
 
         assert isinstance(multi_rz_decomposition, DecompositionRule)
@@ -250,10 +250,10 @@ class TestDecompositionRule:
         """Tests that an error is raised when no resource fn is provided."""
 
         def multi_rz_decomposition(theta, wires, **__):
-            for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
+            for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1], strict=True):
                 qp.CNOT(wires=(w0, w1))
             qp.RZ(theta, wires=wires[0])
-            for w0, w1 in zip(wires[1:], wires[:-1]):
+            for w0, w1 in zip(wires[1:], wires[:-1], strict=True):
                 qp.CNOT(wires=(w0, w1))
 
         multi_rz_decomposition = register_resources(None, multi_rz_decomposition)
@@ -421,10 +421,10 @@ class TestDecompositionRule:
         """Test that a DecompositionRule object can be assigned new resources."""
 
         def multi_rz_decomposition(theta, wires, **__):
-            for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
+            for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1], strict=True):
                 qp.CNOT(wires=(w0, w1))
             qp.RZ(theta, wires=wires[0])
-            for w0, w1 in zip(wires[1:], wires[:-1]):
+            for w0, w1 in zip(wires[1:], wires[:-1], strict=True):
                 qp.CNOT(wires=(w0, w1))
 
         def _multi_rz_resources_old(num_wires):

@@ -205,16 +205,28 @@ class TestLocalExecutor:
         [
             (
                 custom_func3,
-                list(zip(range(9), np.ones(9))),
-                [custom_func3(i, j) for i, j in zip(range(9), np.ones(9))],
+                list(zip(range(9), np.ones(9), strict=True)),
+                [custom_func3(i, j) for i, j in zip(range(9), np.ones(9), strict=True)],
             ),
             (
                 custom_func4,
-                list(zip([np.linspace(-5, 5, 10)], [np.linspace(-5, 5, 10)], np.ones(10))),
+                list(
+                    # This case supplies one pair of arrays, so only the first scalar is used.
+                    zip(
+                        [np.linspace(-5, 5, 10)],
+                        [np.linspace(-5, 5, 10)],
+                        np.ones(10),
+                        strict=False,
+                    )
+                ),
                 [
                     custom_func4(i, j, k)
+                    # Match the single array pair above, using only the first scalar.
                     for i, j, k in zip(
-                        [np.linspace(-5, 5, 10)], [np.linspace(-5, 5, 10)], np.ones(10)
+                        [np.linspace(-5, 5, 10)],
+                        [np.linspace(-5, 5, 10)],
+                        np.ones(10),
+                        strict=False,
                     )
                 ],
             ),
@@ -254,17 +266,17 @@ class TestLocalExecutor:
     @pytest.mark.parametrize("exec_kwargs", [{}, {"chunksize": 2}, {"chunksize": 4}])
     def test_functor_call(self, backend, fn, data, result, exec_kwargs):
         executor = create_executor(backend[0], **exec_kwargs)
-        for i, a in enumerate(zip(*data)):
+        for i, a in enumerate(zip(*data, strict=True)):
             assert np.isclose(result[i], executor("submit", fn, *a))
         assert np.allclose(result, executor("map", fn, *data))
         assert np.allclose(result, executor("map", fn, *data))
-        assert np.allclose(result, executor("starmap", fn, zip(*data)))
+        assert np.allclose(result, executor("starmap", fn, zip(*data, strict=True)))
 
         executor.shutdown()
 
         with create_executor(backend[0]) as executor_ctx:
-            for i, a in enumerate(zip(*data)):
+            for i, a in enumerate(zip(*data, strict=True)):
                 assert np.isclose(result[i], executor_ctx("submit", fn, *a))
             assert np.allclose(result, executor_ctx("map", fn, *data))
             assert np.allclose(result, executor_ctx("map", fn, *data))
-            assert np.allclose(result, executor_ctx("starmap", fn, zip(*data)))
+            assert np.allclose(result, executor_ctx("starmap", fn, zip(*data, strict=True)))

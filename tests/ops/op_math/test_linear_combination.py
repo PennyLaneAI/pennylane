@@ -848,9 +848,9 @@ class TestLinearCombination:  # pylint: disable=too-many-public-methods
         assert h is not mapped_h
         assert h.wires == Wires([0, 1, 2])
         assert mapped_h.wires == Wires([10, 11, 12])
-        for obs1, obs2 in zip(mapped_h.ops, final_obs):
+        for obs1, obs2 in zip(mapped_h.ops, final_obs, strict=True):
             qp.assert_equal(obs1, obs2)
-        for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
+        for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs, strict=True):
             assert coeff1 == coeff2
 
     def test_map_wires_grouping(self):
@@ -865,9 +865,9 @@ class TestLinearCombination:  # pylint: disable=too-many-public-methods
         assert h is not mapped_h
         assert h.wires == Wires([0, 1, 2])
         assert mapped_h.wires == Wires([10, 11, 12])
-        for obs1, obs2 in zip(mapped_h.ops, final_obs):
+        for obs1, obs2 in zip(mapped_h.ops, final_obs, strict=True):
             qp.assert_equal(obs1, obs2)
-        for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs):
+        for coeff1, coeff2 in zip(mapped_h.coeffs, h.coeffs, strict=True):
             assert coeff1 == coeff2
         assert group_indices_before == mapped_h.grouping_indices
 

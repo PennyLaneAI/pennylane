@@ -1248,5 +1248,5 @@ class TestConvertToSUMatrices:
         sus, phases = converter(matrices)
         assert qp.math.shape(sus) == (3, size, size)
         assert qp.math.shape(phases) == (3,)
-        for matrix, su2, phase in zip(matrices, sus, phases):
+        for matrix, su2, phase in zip(matrices, sus, phases, strict=True):
             self._assert_correct(matrix, su2, phase)

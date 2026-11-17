@@ -818,7 +818,7 @@ class TestSnapshot:
             if is_state_batched:
                 snapshot_result = snapshot_result[0]
             assert isinstance(snapshot_result, dict)
-            assert all(isinstance(k, str) for k in snapshot_result.keys())
+            assert all(isinstance(k, str) for k in snapshot_result)
             assert sum(snapshot_result.values()) == 1000
 
 

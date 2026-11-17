@@ -60,7 +60,7 @@ class TestRotXZX:
         else:
             ops = RotXZX.compute_decomposition(phi, theta, omega, wires=wire)
 
-        for op, expected_op in zip(ops, expected_decomp):
+        for op, expected_op in zip(ops, expected_decomp, strict=True):
             qp.assert_equal(op, expected_op)
 
     def test_adjoint(self):

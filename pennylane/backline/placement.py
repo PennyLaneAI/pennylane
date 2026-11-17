@@ -547,7 +547,7 @@ class Placement:
                 f"controller sends one size to every coprocessor"
             )
         label, expected = declared[0] if declared else (None, (None, None))
-        for name, size in zip(("in_bytes", "out_bytes"), expected):
+        for name, size in zip(("in_bytes", "out_bytes"), expected, strict=True):
             given = getattr(self.controller, name)
             if given is not None and size is not None and given != size:
                 raise ValueError(

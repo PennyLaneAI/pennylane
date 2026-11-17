@@ -144,7 +144,7 @@ class TestTranspile:  # pylint: disable=too-many-public-methods
 
         assert all(
             isclose(po, pt, abs_tol=np.finfo(float).eps)
-            for po, pt in zip(original_probs, transpiled_probs)
+            for po, pt in zip(original_probs, transpiled_probs, strict=True)
         )
 
     @pytest.mark.autograd

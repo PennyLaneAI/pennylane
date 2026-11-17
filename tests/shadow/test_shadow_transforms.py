@@ -248,7 +248,7 @@ class TestStateBackward:
         # support complex differentiation
         actual = qp.jacobian(lambda x: qp.math.real(qp.math.stack(shadow_circuit(x))))(x)
 
-        for act, w in zip(qp.math.unstack(actual), sub_wires):
+        for act, w in zip(qp.math.unstack(actual), sub_wires, strict=True):
             exact_circuit = basic_entangler_circuit_exact_state(3, w, "autograd")
             # pylint: disable-next=cell-var-from-loop
             expected = qp.jacobian(lambda x: qp.math.real(exact_circuit(x)))(x)
@@ -269,7 +269,7 @@ class TestStateBackward:
         x = jnp.array(self.x)
         actual = jax.jacobian(lambda x: qp.math.real(qp.math.stack(shadow_circuit(x))))(x)
 
-        for act, w in zip(qp.math.unstack(actual), sub_wires):
+        for act, w in zip(qp.math.unstack(actual), sub_wires, strict=True):
             exact_circuit = basic_entangler_circuit_exact_state(3, w, "jax")
             # pylint: disable-next=cell-var-from-loop
             expected = jax.jacobian(lambda x: qp.math.real(exact_circuit(x)))(x)
@@ -291,7 +291,7 @@ class TestStateBackward:
 
         actual = torch.autograd.functional.jacobian(lambda x: qp.math.stack(shadow_circuit(x)), x)
 
-        for act, w in zip(qp.math.unstack(actual), sub_wires):
+        for act, w in zip(qp.math.unstack(actual), sub_wires, strict=True):
             exact_circuit = basic_entangler_circuit_exact_state(3, w, "torch")
             expected = torch.autograd.functional.jacobian(exact_circuit, x)
 

@@ -183,7 +183,7 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
     # it also scales with ``2 ** len(control_wires)``, so both are kept as tight as possible.
     n_rows = block + n_half if one_body_table else M
     width = len(batches[0]) * beth
-    leaf_of = dict(zip(addresses, range(len(leaves))))
+    leaf_of = dict(zip(addresses, range(len(leaves)), strict=True))
 
     def _row(address, batch):
         if address not in leaf_of:
@@ -194,8 +194,11 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
 
     tables = [[_row(address, batch) for address in range(n_rows)] for batch in batches]
     return [tables[0]] + [
-        [[cur ^ prev for cur, prev in zip(row, previous)] for row, previous in zip(table, before)]
-        for table, before in zip(tables[1:], tables[:-1])
+        [
+            [cur ^ prev for cur, prev in zip(row, previous, strict=True)]
+            for row, previous in zip(table, before, strict=True)
+        ]
+        for table, before in zip(tables[1:], tables[:-1], strict=True)
     ]
 
 
@@ -443,7 +446,7 @@ def _select_half(  # pylint: disable=too-many-arguments
     def _basis():
         # Route V onto the spin-up block when the spin flag is set, then apply U,
         # one batch of angles at a time.
-        for down, up in zip(psi_down, psi_up):
+        for down, up in zip(psi_down, psi_up, strict=True):
             ctrl(
                 SWAP(wires=[down, up]),
                 control=spin,
@@ -720,7 +723,7 @@ def _select_thc_resources(  # pylint: disable=too-many-arguments
     ]
     offsets = np.cumsum([0] + sizes)
     concrete_wires = [
-        range(int(start), int(stop)) for start, stop in zip(offsets[:-1], offsets[1:])
+        range(int(start), int(stop)) for start, stop in zip(offsets[:-1], offsets[1:], strict=True)
     ]
     system, index, flags, gradient, work = concrete_wires
     n = math.ceil_log2(len(chi) + 1)

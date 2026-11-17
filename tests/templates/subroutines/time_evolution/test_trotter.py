@@ -227,16 +227,18 @@ def _generate_simple_decomp(coeffs, ops, time, order, n):
     Trotter product for order and number of trotter steps."""
     decomp = []
     if order == 1:
-        decomp.extend(qp.evolve(op, -coeff * (time / n)) for coeff, op in zip(coeffs, ops))
+        decomp.extend(
+            qp.evolve(op, -coeff * (time / n)) for coeff, op in zip(coeffs, ops, strict=True)
+        )
 
-    coeffs_ops = zip(coeffs, ops)
+    coeffs_ops = zip(coeffs, ops, strict=True)
 
     if get_interface(coeffs) == "torch":
         import torch
 
-        coeffs_ops_reversed = zip(torch.flip(coeffs, dims=(0,)), ops[::-1])
+        coeffs_ops_reversed = zip(torch.flip(coeffs, dims=(0,)), ops[::-1], strict=True)
     else:
-        coeffs_ops_reversed = zip(coeffs[::-1], ops[::-1])
+        coeffs_ops_reversed = zip(coeffs[::-1], ops[::-1], strict=True)
 
     if order == 2:
         decomp.extend(qp.evolve(op, -coeff * (time / n) / 2) for coeff, op in coeffs_ops)
@@ -491,7 +493,9 @@ class TestPrivateFunctions:
         ],
     )
 
-    @pytest.mark.parametrize("order, expected_expansion", list(zip((1, 2, 4), expected_expansions)))
+    @pytest.mark.parametrize(
+        "order, expected_expansion", list(zip((1, 2, 4), expected_expansions, strict=True))
+    )
     def test_recursive_expression_no_queue(self, order, expected_expansion):
         """Test the _recursive_expression function correctly generates the decomposition"""
         ops = [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(1)]
@@ -500,7 +504,7 @@ class TestPrivateFunctions:
             decomp = _recursive_expression(1.23, order, ops)
 
         assert len(q) == 0  # No queuing!
-        for op1, op2 in zip(decomp, expected_expansion):
+        for op1, op2 in zip(decomp, expected_expansion, strict=True):
             qp.assert_equal(op1, op2)
 
 
@@ -521,7 +525,7 @@ class TestDecomposition:
         true_decomp = [
             qp.simplify(op) for op in test_decompositions[(hamiltonian_index, order)][::-1]
         ]
-        for op1, op2 in zip(decomp, true_decomp):
+        for op1, op2 in zip(decomp, true_decomp, strict=True):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.xfail_if_capture(
@@ -563,7 +567,7 @@ class TestDecomposition:
 
         op = qp.TrotterProduct(hamiltonian, time, n=num_steps, order=order)
         decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
-        for op1, op2 in zip(decomp, true_decomp):
+        for op1, op2 in zip(decomp, true_decomp, strict=True):
             qp.assert_equal(op1, op2)
 
 

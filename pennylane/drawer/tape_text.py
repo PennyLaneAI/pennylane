@@ -206,7 +206,9 @@ def _add_layer_str_to_totals(totals: _CurrentTotals, layer_str, config) -> _Curr
     # Process quantum wires - join accumulated wire strings with current layer strings
     totals.wire_totals = [
         config.wire_filler(row).join([t, s])
-        for row, t, s in zip(range(config.n_wires), totals.wire_totals, layer_str[: config.n_wires])
+        for row, t, s in zip(
+            range(config.n_wires), totals.wire_totals, layer_str[: config.n_wires], strict=True
+        )
     ]
 
     # Process classical bits - join accumulated bit strings with current layer strings

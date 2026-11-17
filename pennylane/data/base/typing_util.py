@@ -18,7 +18,8 @@ from enum import Enum
 from functools import lru_cache
 from typing import Any, ForwardRef, Literal, Optional, TypeVar, _SpecialForm, get_args, get_origin
 
-JSON = Optional[str | int | bool | float | dict[str, Any] | list[Any]]
+# Preserve the typing.Union origin used by runtime type inspection.
+JSON = Optional[str | int | bool | float | dict[str, Any] | list[Any]]  # noqa: UP045
 
 # Generic type variable
 T = TypeVar("T")

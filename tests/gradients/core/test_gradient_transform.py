@@ -308,10 +308,15 @@ class TestGradientTransformIntegration:
             assert isinstance(res, tuple) and len(res) == len(shots)
             for _res in res:
                 assert isinstance(_res, tuple) and len(_res) == 2
-                assert all(np.allclose(r, e, atol=atol, rtol=0) for r, e in zip(_res, expected))
+                assert all(
+                    np.allclose(r, e, atol=atol, rtol=0)
+                    for r, e in zip(_res, expected, strict=True)
+                )
         else:
             assert isinstance(res, tuple) and len(res) == 2
-            assert all(np.allclose(r, e, atol=atol, rtol=0) for r, e in zip(res, expected))
+            assert all(
+                np.allclose(r, e, atol=atol, rtol=0) for r, e in zip(res, expected, strict=True)
+            )
 
     def test_decorator(self, tol):
         """Test that a gradient transform decorating a QNode
@@ -440,7 +445,9 @@ class TestGradientTransformIntegration:
         expected = qp.jacobian(circuit)(x, y)
         res = qp.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
-        assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
+        assert all(
+            np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected, strict=True)
+        )
 
     def test_multiple_tensor_arguments_old_version(self, tol):
         """Test that a gradient transform acts on QNodes
@@ -460,7 +467,7 @@ class TestGradientTransformIntegration:
         expected = qp.jacobian(circuit)(x, y)
         res = qp.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
-        for _r, _e in zip(res, expected):
+        for _r, _e in zip(res, expected, strict=True):
             assert qp.math.allclose(_r, _e, atol=tol, rtol=0)
 
     def test_high_dimensional_single_parameter_arg(self, tol):

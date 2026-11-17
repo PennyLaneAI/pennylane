@@ -155,7 +155,8 @@ class TestReconstructEqu:
     ]
 
     @pytest.mark.parametrize(
-        "fun, num_frequency, base_f", list(zip(c_funs, nums_frequency, base_frequencies))
+        "fun, num_frequency, base_f",
+        list(zip(c_funs, nums_frequency, base_frequencies, strict=True)),
     )
     def test_with_classical_fun(self, fun, num_frequency, base_f, mocker):
         """Test that equidistant-frequency classical functions are
@@ -184,7 +185,7 @@ class TestReconstructEqu:
     @pytest.mark.autograd
     @pytest.mark.parametrize(
         "fun, num_frequency, base_f, expected_grad",
-        list(zip(c_funs, nums_frequency, base_frequencies, expected_grads)),
+        list(zip(c_funs, nums_frequency, base_frequencies, expected_grads, strict=True)),
     )
     def test_differentiability_autograd(self, fun, num_frequency, base_f, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
@@ -203,7 +204,7 @@ class TestReconstructEqu:
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "fun, num_frequency, base_f, expected_grad",
-        list(zip(c_funs, nums_frequency, base_frequencies, expected_grads)),
+        list(zip(c_funs, nums_frequency, base_frequencies, expected_grads, strict=True)),
     )
     def test_differentiability_jax(self, fun, num_frequency, base_f, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
@@ -225,7 +226,7 @@ class TestReconstructEqu:
     @pytest.mark.torch
     @pytest.mark.parametrize(
         "fun, num_frequency, base_f, expected_grad",
-        list(zip(c_funs, nums_frequency, base_frequencies, expected_grads)),
+        list(zip(c_funs, nums_frequency, base_frequencies, expected_grads, strict=True)),
     )
     def test_differentiability_torch(self, fun, num_frequency, base_f, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
@@ -243,7 +244,8 @@ class TestReconstructEqu:
         assert fun_close(expected_grad, grad, zero=torch.tensor(0.0, requires_grad=True))
 
     @pytest.mark.parametrize(
-        "fun, num_frequency, base_f", list(zip(c_funs, nums_frequency, base_frequencies))
+        "fun, num_frequency, base_f",
+        list(zip(c_funs, nums_frequency, base_frequencies, strict=True)),
     )
     def test_with_classical_fun_num_freq_too_small(self, fun, num_frequency, base_f, mocker):
         """Test that equidistant-frequency classical functions are
@@ -263,7 +265,8 @@ class TestReconstructEqu:
         assert not fun_close(fun, rec)
 
     @pytest.mark.parametrize(
-        "fun, num_frequency, base_f", list(zip(c_funs, nums_frequency, base_frequencies))
+        "fun, num_frequency, base_f",
+        list(zip(c_funs, nums_frequency, base_frequencies, strict=True)),
     )
     def test_with_classical_fun_num_freq_too_large(self, fun, num_frequency, base_f, mocker):
         """Test that equidistant-frequency classical functions are
@@ -349,7 +352,7 @@ class TestReconstructGen:
         np.arange(-9, 10) * np.pi / 19,
     ]
 
-    @pytest.mark.parametrize("fun, spectrum", list(zip(c_funs, spectra)))
+    @pytest.mark.parametrize("fun, spectrum", list(zip(c_funs, spectra, strict=True)))
     def test_with_classical_fun(self, fun, spectrum, mocker):
         """Test that arbitrary-frequency classical functions are
         reconstructed correctly."""
@@ -367,7 +370,9 @@ class TestReconstructGen:
         assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2
         assert fun_close(fun, rec)
 
-    @pytest.mark.parametrize("fun, spectrum, shifts", list(zip(c_funs, spectra, all_shifts)))
+    @pytest.mark.parametrize(
+        "fun, spectrum, shifts", list(zip(c_funs, spectra, all_shifts, strict=True))
+    )
     def test_with_classical_fun_with_shifts(self, fun, spectrum, shifts, mocker, recwarn):
         """Test that arbitrary-frequency classical functions are
         reconstructed correctly."""
@@ -392,7 +397,7 @@ class TestReconstructGen:
 
     @pytest.mark.parametrize(
         "fun, spectrum, expected_grad",
-        list(zip(c_funs, spectra, expected_grads)),
+        list(zip(c_funs, spectra, expected_grads, strict=True)),
     )
     def test_differentiability_autograd(self, fun, spectrum, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
@@ -406,7 +411,7 @@ class TestReconstructGen:
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "fun, spectrum, expected_grad",
-        list(zip(c_funs, spectra, expected_grads)),
+        list(zip(c_funs, spectra, expected_grads, strict=True)),
     )
     def test_differentiability_jax(self, fun, spectrum, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
@@ -424,7 +429,7 @@ class TestReconstructGen:
     @pytest.mark.torch
     @pytest.mark.parametrize(
         "fun, spectrum, expected_grad",
-        list(zip(c_funs, spectra, expected_grads)),
+        list(zip(c_funs, spectra, expected_grads, strict=True)),
     )
     def test_differentiability_torch(self, fun, spectrum, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
@@ -440,7 +445,7 @@ class TestReconstructGen:
             expected_grad, grad, zero=torch.tensor(np.float64(0.0), requires_grad=True)
         )
 
-    @pytest.mark.parametrize("fun, spectrum", list(zip(c_funs, spectra)))
+    @pytest.mark.parametrize("fun, spectrum", list(zip(c_funs, spectra, strict=True)))
     def test_with_classical_fun_spectrum_incomplete(self, fun, spectrum, mocker):
         """Test that arbitrary-frequency classical functions are reconstructed wrongly
         if spectrum does not contain all frequencies."""
@@ -454,7 +459,7 @@ class TestReconstructGen:
         assert spy.call_count == len([f for f in spectrum if f > 0.0]) * 2 + 1
         assert not fun_close(fun, rec)
 
-    @pytest.mark.parametrize("fun, spectrum", list(zip(c_funs, spectra)))
+    @pytest.mark.parametrize("fun, spectrum", list(zip(c_funs, spectra, strict=True)))
     def test_with_classical_fun_spectrum_overcomplete(self, fun, spectrum, mocker):
         """Test that arbitrary-frequency classical functions are reconstructed correctly
         if spectrum contains additional frequencies."""

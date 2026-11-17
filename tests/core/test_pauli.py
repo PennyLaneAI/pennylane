@@ -102,12 +102,12 @@ class TestPauliWord:
     def test_identity_removed_on_init(self):
         """Test that identities are removed on init."""
         pw = PauliWord({0: "I", 1: "X", 2: "Y"})
-        assert 0 not in pw.keys()  # identity ops are removed from pw
+        assert 0 not in pw  # identity ops are removed from pw
 
     def test_missing(self):
         """Test the result when a missing key is indexed"""
         pw = PauliWord({0: "I", 1: "X", 2: "Y"})
-        assert 3 not in pw.keys()
+        assert 3 not in pw
         assert pw[3] == "I"
 
     @pytest.mark.parametrize("pw", words)
@@ -416,7 +416,7 @@ class TestPauliWord:
         assert len(q.queue) == 0
 
         if len(pw) > 1:
-            for pw_factor, op_factor in zip(pw_op.operands, op.operands):
+            for pw_factor, op_factor in zip(pw_op.operands, op.operands, strict=True):
                 assert pw_factor.name == op_factor.name
                 assert pw_factor.wires == op_factor.wires
         else:
@@ -477,7 +477,7 @@ class TestPauliSentence:
         new_pw = PauliWord({"a": "Z"})
         ps = PauliSentence({pw: 1.0})
 
-        assert new_pw not in ps.keys()
+        assert new_pw not in ps
         assert ps[new_pw] == 0.0
 
     @pytest.mark.parametrize("pw", words)
@@ -499,10 +499,10 @@ class TestPauliSentence:
         ps = PauliSentence({pw: 1.0})
 
         new_pw = PauliWord({"a": "Z"})
-        assert new_pw not in ps.keys()
+        assert new_pw not in ps
 
         ps[new_pw] = 3.45
-        assert new_pw in ps.keys() and ps[new_pw] == 3.45
+        assert new_pw in ps and ps[new_pw] == 3.45
 
     def test_pauli_rep(self):
         """Test trivial pauli_rep property"""
@@ -941,10 +941,10 @@ class TestPauliSentence:
             ps_op = qp.pauli.to_operator(ps)
         assert len(q.queue) == 0
         if len(ps) > 1:
-            for ps_summand, op_summand in zip(ps_op.operands, op.operands):
+            for ps_summand, op_summand in zip(ps_op.operands, op.operands, strict=True):
                 assert ps_summand.scalar == op_summand.scalar
                 if isinstance(ps_summand.base, qp.ops.Prod):
-                    for pw_factor, op_factor in zip(ps_summand.base, op_summand.base):
+                    for pw_factor, op_factor in zip(ps_summand.base, op_summand.base, strict=True):
                         _compare_ops(pw_factor, op_factor)
                 else:
                     ps_base, op_base = (ps_summand.base, op_summand.base)
@@ -1474,7 +1474,7 @@ class TestPauliArithmeticWithADInterfaces:
         import torch
 
         tensor = scalar * torch.ones(4)
-        res = PauliSentence(dict(zip(words, tensor)))
+        res = PauliSentence(dict(zip(words, tensor, strict=True)))
         assert all(isinstance(val, torch.Tensor) for val in res.values())
 
     @pytest.mark.autograd
@@ -1483,7 +1483,7 @@ class TestPauliArithmeticWithADInterfaces:
         """Test initializing PauliSentence from autograd array"""
 
         tensor = scalar * np.ones(4)
-        res = PauliSentence(dict(zip(words, tensor)))
+        res = PauliSentence(dict(zip(words, tensor, strict=True)))
         assert all(isinstance(val, np.ndarray) for val in res.values())
 
     @pytest.mark.jax
@@ -1493,7 +1493,7 @@ class TestPauliArithmeticWithADInterfaces:
         import jax.numpy as jnp
 
         tensor = scalar * jnp.ones(4)
-        res = PauliSentence(dict(zip(words, tensor)))
+        res = PauliSentence(dict(zip(words, tensor, strict=True)))
         assert all(isinstance(val, jnp.ndarray) for val in res.values())
 
     @pytest.mark.torch

@@ -201,7 +201,7 @@ class TestValidation:
         assert "cond" in str(cond_eq)
         cond_branches = cond_eq.params["jaxpr_branches"]
         assert len(cond_branches) == 2
-        for branch, angle in zip(cond_branches, [0, 1.57]):
+        for branch, angle in zip(cond_branches, [0, 1.57], strict=True):
             branch_str = str(branch)
             assert "measure_in_basis" in branch_str
             assert "plane=XY" in branch_str

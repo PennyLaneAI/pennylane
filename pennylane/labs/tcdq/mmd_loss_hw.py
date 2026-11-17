@@ -156,7 +156,7 @@ def _sample_fourier_indices(  # pylint: disable=too-many-arguments
 
     all_obs = jnp.zeros((n_ops, n_qudits), dtype=_INDEX_DTYPE)
     keys = jax.random.split(key, len(wires_by_dim)) if wires_by_dim else []
-    for group_key, (d_i, wires) in zip(keys, sorted(wires_by_dim.items())):
+    for group_key, (d_i, wires) in zip(keys, sorted(wires_by_dim.items()), strict=True):
         marginal = _marginal_probs(d_i, bandwidth, graph_type)
         cols = jax.random.choice(group_key, d_i, shape=(n_ops, len(wires)), p=marginal)
         all_obs = all_obs.at[:, jnp.asarray(wires, dtype=_INDEX_DTYPE)].set(

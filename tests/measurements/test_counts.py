@@ -170,10 +170,10 @@ class TestProcessSamples:
             assert len(result) == batch_size
             for r in result:
                 assert sum(r.values()) == shots
-                assert all("-" not in sample for sample in r.keys())
+                assert all("-" not in sample for sample in r)
         else:
             assert sum(result.values()) == shots
-            assert all("-" not in sample for sample in result.keys())
+            assert all("-" not in sample for sample in result)
 
     def test_counts_obs(self, seed):
         """Test that the counts function outputs counts of the right size for observables"""

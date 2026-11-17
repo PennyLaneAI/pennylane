@@ -53,7 +53,7 @@ class TestDecomposition:
         qscript2 = qp.tape.QuantumScript.from_queue(q)
         assert len(qscript) == len(qscript2)
         # qp.equal doesn't work for Adjoint or Pow op yet, so we stop before we get to it.
-        for op1, op2 in zip(qscript[:2], qscript2[:2]):
+        for op1, op2 in zip(qscript[:2], qscript2[:2], strict=True):
             qp.assert_equal(op1, op2)
 
         qp.assert_equal(qscript[2].base.base, qscript2[2].base.base)

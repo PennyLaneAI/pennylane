@@ -184,7 +184,7 @@ class TestMatrix:
         y = np.array([1, 2, 3])
         op = Exp(qp.RX(x, 0), y)
         mat = op.matrix()
-        true_mat = qp.math.stack([Exp(qp.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        true_mat = qp.math.stack([Exp(qp.RX(i, 0), j).matrix() for i, j in zip(x, y, strict=True)])
         assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
 
@@ -197,7 +197,7 @@ class TestMatrix:
         y = jnp.array([1, 2, 3])
         op = Exp(qp.RX(x, 0), y)
         mat = op.matrix()
-        true_mat = qp.math.stack([Exp(qp.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        true_mat = qp.math.stack([Exp(qp.RX(i, 0), j).matrix() for i, j in zip(x, y, strict=True)])
         assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
         assert isinstance(mat, jnp.ndarray)
@@ -211,7 +211,7 @@ class TestMatrix:
         y = torch.tensor([1, 2, 3])
         op = Exp(qp.RX(x, 0), y)
         mat = op.matrix()
-        true_mat = qp.math.stack([Exp(qp.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        true_mat = qp.math.stack([Exp(qp.RX(i, 0), j).matrix() for i, j in zip(x, y, strict=True)])
         assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
         assert isinstance(mat, torch.Tensor)
@@ -529,7 +529,7 @@ class TestDecomposition:
                 and dec[0].wires == op.wires
             )
         elif op_class is qp.FermionicSWAP:
-            expected = op.map_wires(dict(zip(op.wires, reversed(op.wires))))
+            expected = op.map_wires(dict(zip(op.wires, reversed(op.wires), strict=True)))
             # simplifying the generator changes the wire order
             qp.assert_equal(expected, dec[0])
         elif op_class is qp.MultiRZ:
@@ -608,7 +608,7 @@ class TestMiscMethods:
         """Test that the diagonalizing gates are the same as the base diagonalizing gates."""
         base = qp.PauliX(0)
         op = Exp(base, 1 + 2j)
-        for op1, op2 in zip(base.diagonalizing_gates(), op.diagonalizing_gates()):
+        for op1, op2 in zip(base.diagonalizing_gates(), op.diagonalizing_gates(), strict=True):
             qp.assert_equal(op1, op2)
 
     def test_pow(self):

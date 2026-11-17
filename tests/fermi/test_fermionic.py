@@ -114,7 +114,7 @@ class TestFermiWord:
     def test_missing(self):
         """Test that empty string is returned for missing key."""
         fw = FermiWord({(0, 0): "+", (1, 1): "-"})
-        assert (2, 3) not in fw.keys()
+        assert (2, 3) not in fw
         assert fw[(2, 3)] == ""
 
     def test_set_items(self):
@@ -693,7 +693,7 @@ class TestFermiSentence:
         new_fw = FermiWord({(0, 2): "+", (1, 3): "-"})
         fs = FermiSentence({fw: 1.0})
 
-        assert new_fw not in fs.keys()
+        assert new_fw not in fs
         assert fs[new_fw] == 0.0
 
     def test_set_items(self):
@@ -702,10 +702,10 @@ class TestFermiSentence:
         fs = FermiSentence({fw: 1.0})
 
         new_fw = FermiWord({(0, 2): "+", (1, 3): "-"})
-        assert new_fw not in fs.keys()
+        assert new_fw not in fs
 
         fs[new_fw] = 3.45
-        assert new_fw in fs.keys() and fs[new_fw] == 3.45
+        assert new_fw in fs and fs[new_fw] == 3.45
 
     tup_fs_str = (
         (

@@ -83,7 +83,7 @@ class TestWhileLoops:
 
         @qp.qnode(qp.device("default.qubit", wires=4))
         def f(p):
-            w = int(0)
+            w = 0
             while w < 4:
                 qp.RY(p, wires=w)
                 p *= 0.5

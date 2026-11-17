@@ -88,7 +88,7 @@ def test_perturbation_error(backend, num_workers, mpi4py_support):
     if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
         pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
 
-    pf = ProductFormula(list(zip(frag_labels, frag_coeffs)))
+    pf = ProductFormula(list(zip(frag_labels, frag_coeffs, strict=True)))
     actual_dict = perturbation_error(
         pf,
         frags,

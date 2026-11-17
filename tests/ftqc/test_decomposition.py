@@ -103,7 +103,7 @@ class TestGateSetDecomposition:
         (new_tape,), _ = convert_to_mbqc_gateset(tape)
 
         expected_ops = [RotXZX, RotXZX, qp.H, qp.CNOT, qp.H]
-        for op, expected_type in zip(new_tape.operations, expected_ops):
+        for op, expected_type in zip(new_tape.operations, expected_ops, strict=True):
             assert isinstance(op, expected_type)
 
     def test_error_if_old_decomp_method(self):
@@ -138,7 +138,7 @@ class TestGateSetDecomposition:
             [RotXZX] * 3 + [qp.H, qp.CNOT, qp.H] + [RotXZX, qp.CNOT, RotXZX, qp.CNOT, qp.S]
         )
 
-        for op, expected_type in zip(tape.operations, expected_ops):
+        for op, expected_type in zip(tape.operations, expected_ops, strict=True):
             assert isinstance(op, expected_type)
 
         assert np.allclose(circuit(), decomposed_circuit())
@@ -277,7 +277,7 @@ class TestMBQCFormalismConversion:
 
         assert len(q.queue) == 4
         for op, expected_op in zip(
-            q.queue, [qp.Z("ctrl"), qp.X("ctrl"), qp.Z("target"), qp.X("target")]
+            q.queue, [qp.Z("ctrl"), qp.X("ctrl"), qp.Z("target"), qp.X("target")], strict=True
         ):
             assert qp.equal(op, expected_op)
 

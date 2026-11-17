@@ -97,11 +97,16 @@ class TestAddNoise:
             qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
         tape_exp = QuantumScript.from_queue(q_tape_exp)
 
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -130,11 +135,16 @@ class TestAddNoise:
             qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
         tape_exp = QuantumScript.from_queue(q_tape_exp)
 
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -230,11 +240,16 @@ class TestAddNoiseInterface:
             qp.expval(qp.PauliZ(0))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=True)
         )
         assert len(tape.measurements) == 2
         assert tape.observables[0].name == "Prod"
@@ -428,7 +443,8 @@ class TestAddNoiseLevels:
         transform_level2.add_transform(add_noise, noise_model=noise_model, level=level1)
 
         assert len(transform_level1) == len(transform_level2) + bool(level1 == "user")
-        for t1, t2 in zip(transform_level1, transform_level2):
+        # The user-level pipeline has an extra transform; compare only the shared prefix.
+        for t1, t2 in zip(transform_level1, transform_level2, strict=False):
             if t1.tape_transform.__name__ == t2.tape_transform.__name__ == "expand_fn":
                 continue
             assert t1 == t2

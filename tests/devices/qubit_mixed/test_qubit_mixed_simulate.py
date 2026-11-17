@@ -422,7 +422,7 @@ class TestSampleMeasurements:
         assert len(result) == len(list(shots))
 
         assert all(isinstance(res, np.ndarray) for res in result)
-        assert all(res.shape == (s, 2) for res, s in zip(result, shots))
+        assert all(res.shape == (s, 2) for res, s in zip(result, shots, strict=True))
 
     @pytest.mark.parametrize("x", [0.732, 0.488])
     @pytest.mark.parametrize("y", [0.732, 0.488])
@@ -448,7 +448,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        for shot_res, s in zip(result, shots):
+        for shot_res, s in zip(result, shots, strict=True):
             assert isinstance(shot_res, tuple)
             assert len(shot_res) == 3
 
@@ -485,7 +485,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        for shot_res, s in zip(result, shots):
+        for shot_res, s in zip(result, shots, strict=True):
             assert isinstance(shot_res, tuple)
             assert len(shot_res) == 3
 

@@ -217,3 +217,19 @@ exclude_dirs = ["tests", "pennylane/labs/tests"]
 skips = [
     "B101", # We are okay with using asserts in source code as we do not compile optimized bytecode of pennylane
 ]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "B905", # Require an explicit zip strict argument.
+    "UP", # Apply Python syntax modernizations.
+    "SIM118", # Iterate over dictionaries directly.
+]
+# Preserve runtime type aliases and shared type variables during this lint migration.
+ignore = ["UP040", "UP046", "UP047"]
+
+[tool.ruff.lint.per-file-ignores]
+# These tests exercise the legacy typing forms and their string representations.
+"tests/data/base/test_typing_util.py" = ["UP007", "UP045"]

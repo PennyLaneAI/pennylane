@@ -167,7 +167,7 @@ def test_mottonenstate_preparation(mocker):
         return qp.probs(wires=[0, 1, 2])
 
     indiv_res = []
-    for state, weight in zip(data, weights):
+    for state, weight in zip(data, weights, strict=True):
         indiv_res.append(circuit2(state, weight))
     assert np.allclose(res, indiv_res)
 
@@ -203,7 +203,7 @@ def test_qubit_state_prep(mocker):
         return qp.probs(wires=[0, 1, 2])
 
     indiv_res = []
-    for state, weight in zip(data, weights):
+    for state, weight in zip(data, weights, strict=True):
         indiv_res.append(circuit2(state, weight))
     assert np.allclose(res, indiv_res)
 
@@ -485,7 +485,7 @@ class TestDiffMulti:
 
         assert isinstance(res, tuple)
         assert len(res) == 2
-        for r, exp in zip(res, expected):
+        for r, exp in zip(res, expected, strict=True):
             assert qp.math.allclose(r, exp, atol=tol)
 
         grad = jax.jacobian(circuit)(x)
@@ -497,7 +497,7 @@ class TestDiffMulti:
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
-        for g, exp in zip(grad, expected):
+        for g, exp in zip(grad, expected, strict=True):
             assert qp.math.allclose(g, exp, atol=tol, rtol=0)
 
     @pytest.mark.jax
@@ -535,7 +535,7 @@ class TestDiffMulti:
 
         assert isinstance(res, tuple)
         assert len(res) == 2
-        for r, exp in zip(res, expected):
+        for r, exp in zip(res, expected, strict=True):
             assert qp.math.allclose(r, exp, atol=tol)
 
         grad = jax.jacobian(circuit)(x)
@@ -547,7 +547,7 @@ class TestDiffMulti:
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
-        for g, exp in zip(grad, expected):
+        for g, exp in zip(grad, expected, strict=True):
             assert qp.math.allclose(g, exp, atol=tol, rtol=0)
 
     @pytest.mark.torch
@@ -586,7 +586,7 @@ class TestDiffMulti:
 
         assert isinstance(res, tuple)
         assert len(res) == 2
-        for r, exp in zip(res, expected):
+        for r, exp in zip(res, expected, strict=True):
             assert qp.math.allclose(r, exp, atol=tol)
 
         grad = torch.autograd.functional.jacobian(circuit, x)
@@ -600,7 +600,7 @@ class TestDiffMulti:
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
-        for g, exp in zip(grad, expected):
+        for g, exp in zip(grad, expected, strict=True):
             assert qp.math.allclose(g, exp, atol=tol, rtol=0)
 
 

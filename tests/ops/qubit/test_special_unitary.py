@@ -42,7 +42,9 @@ class TestPauliUtils:
         convention regarding order and prefactors."""
         assert _pauli_letters == "IXYZ"
         for op, mat in zip(
-            [qp.Identity(0), qp.PauliX(0), qp.PauliY(0), qp.PauliZ(0)], _pauli_matrices
+            [qp.Identity(0), qp.PauliX(0), qp.PauliY(0), qp.PauliZ(0)],
+            _pauli_matrices,
+            strict=True,
         ):
             assert np.allclose(op.matrix(), mat)
 
@@ -159,7 +161,7 @@ class TestGetOneParameterGenerators:
         )
         basis = pauli_basis_matrices(n)
         d = 4**n - 1
-        for i, (theta, pauli_mat) in enumerate(zip(jnp.eye(d), basis)):
+        for i, (theta, pauli_mat) in enumerate(zip(jnp.eye(d), basis, strict=True)):
             Omegas = fn(theta, n, "jax")
             assert Omegas.shape == (d, 2**n, 2**n)
             assert all(jnp.allclose(O.conj().T, -O) for O in Omegas)
@@ -185,7 +187,9 @@ class TestGetOneParameterGenerators:
         n = 1
         basis = pauli_basis_matrices(n)
         d = 4**n - 1
-        for i, (theta, pauli_mat) in enumerate(zip(torch.eye(d, requires_grad=True), basis)):
+        for i, (theta, pauli_mat) in enumerate(
+            zip(torch.eye(d, requires_grad=True), basis, strict=True)
+        ):
             Omegas = self.get_one_parameter_generators(theta, n, "torch")
             assert Omegas.shape == (d, 2**n, 2**n)
             assert all(qp.math.allclose(qp.math.conj(qp.math.T(O)), -O, atol=3e-8) for O in Omegas)
@@ -437,7 +441,7 @@ class TestSpecialUnitary:
         d = 4**n - 1
         words = pauli_basis_strings(n)
         x = 0.2142
-        for word, theta in zip(words, np.eye(d)):
+        for word, theta in zip(words, np.eye(d), strict=True):
             matrices = [
                 qp.SpecialUnitary(x * theta, list(range(n))).matrix(),
                 qp.SpecialUnitary.compute_matrix(x * theta, n),
@@ -461,7 +465,7 @@ class TestSpecialUnitary:
     def test_compute_matrix_special_cases_broadcasted(self):
         """Tests that ``compute_matrix`` returns the correct matrices
         for a few specific cases broadcasted together."""
-        _, thetas, exp = zip(*special_matrix_cases[1:])
+        _, thetas, exp = zip(*special_matrix_cases[1:], strict=True)
         n = 2
         theta = np.stack(thetas)
         matrices = [
@@ -515,7 +519,7 @@ class TestSpecialUnitary:
             """Wrapper function to allow marking the parameters as trainable in JAX."""
             decomp = qp.SpecialUnitary(theta, wires).decomposition()
             assert len(decomp) == d + 1
-            for w, op in zip(words, decomp[:-1]):
+            for w, op in zip(words, decomp[:-1], strict=True):
                 qp.assert_equal(
                     TmpPauliRot(0.0, w, wires=wires),
                     op,
@@ -547,7 +551,7 @@ class TestSpecialUnitary:
         theta = torch.tensor(theta, requires_grad=True)
         decomp = qp.SpecialUnitary(theta, wires).decomposition()
         assert len(decomp) == d + 1
-        for w, op in zip(words, decomp[:-1]):
+        for w, op in zip(words, decomp[:-1], strict=True):
             qp.assert_equal(
                 TmpPauliRot(0.0, w, wires=wires),
                 op,
@@ -751,7 +755,9 @@ class TestSpecialUnitaryIntegration:
         )
         exp_jac_fn = jax.jacobian(paulirot_qnode)
         words = qp.ops.qubit.special_unitary.pauli_basis_strings(2)
-        for i, (single_x, unit_vector, word) in enumerate(zip(x, jax.numpy.eye(15), words)):
+        for i, (single_x, unit_vector, word) in enumerate(
+            zip(x, jax.numpy.eye(15), words, strict=True)
+        ):
             jac = jac_fn(single_x * unit_vector)
             exp_jac = exp_jac_fn(single_x, word)
             assert qp.math.allclose(jac[i], exp_jac, atol=atol)
@@ -781,7 +787,9 @@ class TestSpecialUnitaryIntegration:
             self.paulirot_comp_circuit, dev, interface="torch", diff_method=diff_method
         )
         words = qp.ops.qubit.special_unitary.pauli_basis_strings(2)
-        for i, (single_x, unit_vector, word) in enumerate(zip(x, torch.eye(15), words)):
+        for i, (single_x, unit_vector, word) in enumerate(
+            zip(x, torch.eye(15), words, strict=True)
+        ):
             jac = torch.autograd.functional.jacobian(qnode, single_x * unit_vector)
             exp_jac = torch.autograd.functional.jacobian(
                 partial(paulirot_qnode, word=word), single_x

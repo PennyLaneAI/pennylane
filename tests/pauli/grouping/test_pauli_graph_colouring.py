@@ -27,7 +27,7 @@ class TestGraphcolouringFunctions:
     def verify_graph_colour_solution(self, adjacency_matrix, colouring):
         """Verifies if all vertices of the same colour are not connected."""
 
-        for colour in colouring.keys():
+        for colour in colouring:
             grouping = colouring[colour]
             size_grouping = len(grouping)
 

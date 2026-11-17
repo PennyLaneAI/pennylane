@@ -346,7 +346,10 @@ class TestGrad:
         assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * num_out_avals
 
         grad_eqn = jaxpr.eqns[0]
-        assert all(invar.aval == in_aval for invar, in_aval in zip(grad_eqn.invars, jaxpr.in_avals))
+        assert all(
+            invar.aval == in_aval
+            for invar, in_aval in zip(grad_eqn.invars, jaxpr.in_avals, strict=True)
+        )
         flat_argnums = tuple(
             [0, 1] * (0 in argnums) + [2] * (1 in argnums) + [3, 4, 5] * (2 in argnums)
         )
@@ -391,7 +394,8 @@ def _jac_allclose(jac1, jac2, num_axes, atol=1e-8):
     if len(jac1) != len(jac2):
         return False
     return all(
-        _jac_allclose(_jac1, _jac2, num_axes - 1, atol=atol) for _jac1, _jac2 in zip(jac1, jac2)
+        _jac_allclose(_jac1, _jac2, num_axes - 1, atol=atol)
+        for _jac1, _jac2 in zip(jac1, jac2, strict=True)
     )
 
 

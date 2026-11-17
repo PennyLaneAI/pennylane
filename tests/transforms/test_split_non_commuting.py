@@ -275,7 +275,7 @@ class TestSplitNonCommuting:
         )
         tapes, fn = split_non_commuting(initial_tape, grouping_strategy=None)
         assert len(tapes) == len(terms)
-        for tape, term in zip(tapes, terms):
+        for tape, term in zip(tapes, terms, strict=True):
             assert tape.measurements == [qp.expval(term)]
             assert tape.shots.total_shots == 100
             assert tape.operations == [qp.X(0)]
@@ -367,7 +367,7 @@ class TestSplitNonCommuting:
         )
         tapes, fn = split_non_commuting(initial_tape, grouping_strategy=grouping_strategy)
         assert len(tapes) == len(groups)
-        for tape, group in zip(tapes, groups):
+        for tape, group in zip(tapes, groups, strict=True):
             assert tape.measurements == [qp.expval(term) for term in group]
             assert tape.shots.total_shots == 100
             assert tape.operations == [qp.X(0)]
@@ -472,7 +472,7 @@ class TestSplitNonCommuting:
             {"0": 2},
         )
         assert len(results) == len(expected)
-        for res, _expected in zip(results, expected):
+        for res, _expected in zip(results, expected, strict=True):
             if isinstance(res, np.ndarray):
                 assert np.allclose(res, _expected)
             else:
@@ -508,7 +508,7 @@ class TestSplitNonCommuting:
             [qp.probs(wires=[0, 1])],
             [qp.counts(wires=[0])],
         ]
-        for tape, group in zip(tapes, expected_groups):
+        for tape, group in zip(tapes, expected_groups, strict=True):
             assert tape.measurements == group
 
         results = fn(
@@ -534,7 +534,7 @@ class TestSplitNonCommuting:
         )
 
         assert len(results) == len(expected)
-        for res, _expected in zip(results, expected):
+        for res, _expected in zip(results, expected, strict=True):
             if isinstance(res, np.ndarray):
                 assert np.allclose(res, _expected)
             else:
@@ -553,7 +553,7 @@ class TestSplitNonCommuting:
         initial_tape = qp.tape.QuantumScript([qp.X(0)], measurements, shots=100)
         tapes, _ = split_non_commuting(initial_tape, grouping_strategy=grouping_strategy)
         assert len(tapes) == 2
-        for tape, meas in zip(tapes, measurements):
+        for tape, meas in zip(tapes, measurements, strict=True):
             assert tape.measurements == [meas]
             assert tape.shots == initial_tape.shots
             assert tape.operations == [qp.X(0)]

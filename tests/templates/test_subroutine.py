@@ -1066,7 +1066,7 @@ class TestGraphDecomposition:
             for (
                 p,
                 w,
-            ) in zip(params, wires):
+            ) in zip(params, wires, strict=True):
                 qp.PauliRot(p, rotation, w)
             qp.MultiControlledX(wires)
 

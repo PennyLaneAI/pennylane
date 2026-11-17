@@ -1442,7 +1442,7 @@ class TestPauliErrorEqual:
     ]
     EQS = [True, False, False, False]
 
-    @pytest.mark.parametrize("args1, args2, eqs", list(zip(ARGS_ONE, ARGS_TWO, EQS)))
+    @pytest.mark.parametrize("args1, args2, eqs", list(zip(ARGS_ONE, ARGS_TWO, EQS, strict=True)))
     def test_equality(self, args1, args2, eqs):
         e1 = qp.PauliError(*args1)
         e2 = qp.PauliError(*args2)

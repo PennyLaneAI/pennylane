@@ -185,7 +185,7 @@ class TestPauliRot:
 
     expected_h_count = (0, 4, 6, 6, 0)
     expected_s_count = (0, 1, 0, 1, 0)
-    params = tuple(zip(pauli_words, expected_h_count, expected_s_count))
+    params = tuple(zip(pauli_words, expected_h_count, expected_s_count, strict=True))
 
     @pytest.mark.parametrize("precision", (None, 1e-3))
     @pytest.mark.parametrize("pauli_string, expected_h_count, expected_s_count", params)

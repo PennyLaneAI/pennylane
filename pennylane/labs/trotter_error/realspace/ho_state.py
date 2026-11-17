@@ -269,7 +269,7 @@ class VibronicHO:
             states=self.states,
             modes=self.modes,
             gridpoints=self.gridpoints,
-            ho_states=[x + y for x, y in zip(self.ho_states, other.ho_states)],
+            ho_states=[x + y for x, y in zip(self.ho_states, other.ho_states, strict=True)],
         )
 
     def __mul__(self, scalar: float) -> VibronicHO:
@@ -332,7 +332,7 @@ class VibronicHO:
         4
         """
 
-        return np.real(sum(x.dot(y) for x, y in zip(self.ho_states, other.ho_states)))
+        return np.real(sum(x.dot(y) for x, y in zip(self.ho_states, other.ho_states, strict=True)))
 
 
 def _tensor_with_identity(op: csr_array, gridpoints: int, n_modes: int, mode: int) -> csr_array:

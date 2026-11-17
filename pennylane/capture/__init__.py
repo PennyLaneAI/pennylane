@@ -168,7 +168,7 @@ If needed, developers can also override the implementation method of the primiti
         return type.__call__(MyCustomOp, *args, **kwargs)
 """
 
-from typing import Type, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from collections.abc import Callable
 
 from .switches import disable, enable, enabled, pause, toggle_ctx

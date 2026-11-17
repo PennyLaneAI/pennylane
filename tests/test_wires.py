@@ -138,7 +138,7 @@ class TestWires:  # pylint: disable=too-many-public-methods
         wires = Wires(iterable)
 
         # check single index
-        for wire, item in zip(wires, iterable):
+        for wire, item in zip(wires, iterable, strict=True):
             assert wire == item
         # check slicing
         assert wires[:2] == Wires(iterable[:2])
@@ -227,7 +227,7 @@ class TestWires:  # pylint: disable=too-many-public-methods
         array = np.array(wires)
         assert isinstance(array, np.ndarray)
         assert array.shape == (3,)
-        for w1, w2 in zip(array, np.array([4, 0, 1])):
+        for w1, w2 in zip(array, np.array([4, 0, 1]), strict=True):
             assert w1 == w2
 
     @pytest.mark.jax
@@ -237,7 +237,7 @@ class TestWires:  # pylint: disable=too-many-public-methods
         wires = Wires([4, 0, 1])
         array = jax.numpy.asarray(wires)
         assert isinstance(array, jax.numpy.ndarray)
-        for w1, w2 in zip(array, [4, 0, 1]):
+        for w1, w2 in zip(array, [4, 0, 1], strict=True):
             assert w1 == w2
 
     def test_set_of_wires(self):
@@ -266,7 +266,7 @@ class TestWires:  # pylint: disable=too-many-public-methods
         array = wires.toarray()
         assert isinstance(array, np.ndarray)
         assert array.shape == (3,)
-        for w1, w2 in zip(array, np.array([4, 0, 1])):
+        for w1, w2 in zip(array, np.array([4, 0, 1]), strict=True):
             assert w1 == w2
 
     def test_convert_to_list(self):
@@ -625,7 +625,7 @@ class TestWiresJax:
         array = jax.numpy.array(wires.labels)
         assert isinstance(array, jax.numpy.ndarray)
         assert array.shape == (3,)
-        for w1, w2 in zip(array, jax.numpy.array([4, 0, 1])):
+        for w1, w2 in zip(array, jax.numpy.array([4, 0, 1]), strict=True):
             assert w1 == w2
 
     @pytest.mark.parametrize(

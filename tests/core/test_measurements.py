@@ -406,7 +406,7 @@ class TestDiagonalizingGates:
         assert len(res) == 3
 
         expected_classes = [qp.PauliZ, qp.S, qp.Hadamard]
-        for op, c in zip(res, expected_classes):
+        for op, c in zip(res, expected_classes, strict=True):
             assert isinstance(op, c)
 
     def test_has_decomposition(self):

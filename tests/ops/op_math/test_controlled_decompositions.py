@@ -83,7 +83,7 @@ def assert_equal_list(lhs, rhs):
     if not isinstance(rhs, list):
         rhs = [rhs]
     assert len(lhs) == len(rhs)
-    for l, r in zip(lhs, rhs):
+    for l, r in zip(lhs, rhs, strict=True):
         qp.assert_equal(l, r)
 
 
@@ -236,7 +236,7 @@ class TestControlledDecompositionZYZ:
         torch_decomp = ctrl_decomp_zyz(target_op1, 1)
         decomp = ctrl_decomp_zyz(target_op2, 1)
 
-        for op1, op2 in zip(torch_decomp, decomp):
+        for op1, op2 in zip(torch_decomp, decomp, strict=True):
             qp.assert_equal(op1, op2, check_interface=False)
 
 
@@ -556,7 +556,7 @@ class TestControlledDecompBisect:
         assert qp.math.allclose(decomp_matrix, expected_matrix)
 
     @pytest.mark.unit
-    @pytest.mark.parametrize("op", list(zip(gen_ops, gen_ops_best)))
+    @pytest.mark.parametrize("op", list(zip(gen_ops, gen_ops_best, strict=True)))
     @pytest.mark.parametrize("control_wires", cw5)
     def test_auto_select(self, op, control_wires, mocker):
         """Tests that the correct shortcut is chosen if possible."""

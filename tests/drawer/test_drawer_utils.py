@@ -447,7 +447,7 @@ class TestCwireConnections:
         m = [qp.measure(0) for _ in range(rep)]
         conds = [qp.ops.Conditional(_m, qp.RX(i * 0.1, 2)) for i, _m in enumerate(m)]
         bit_map = {_m.measurements[0]: i for i, _m in enumerate(m)}
-        layers = sum(([_m.measurements, [_c]] for _m, _c in zip(m, conds)), start=[])
+        layers = sum(([_m.measurements, [_c]] for _m, _c in zip(m, conds, strict=True)), start=[])
 
         new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
 

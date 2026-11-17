@@ -120,7 +120,7 @@ class TestDecomposition:
         op = qp.ApproxTimeEvolution(hamiltonian, time, steps)
         queue = op.decomposition()
 
-        for expected_gate, gate in zip(expected_queue, queue):
+        for expected_gate, gate in zip(expected_queue, queue, strict=True):
             qp.assert_equal(expected_gate, gate)
 
     @pytest.mark.parametrize(

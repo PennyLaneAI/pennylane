@@ -213,7 +213,10 @@ class TestMethods:
         mat = qp.matrix(op, wire_order=[0, 1])
         # operands act on distinct wires, so each broadcasted matrix is a Kronecker product
         expected = np.stack(
-            [np.kron(qp.matrix(qp.RX(xi, 0)), qp.matrix(qp.RY(yi, 1))) for xi, yi in zip(x, y)]
+            [
+                np.kron(qp.matrix(qp.RX(xi, 0)), qp.matrix(qp.RY(yi, 1)))
+                for xi, yi in zip(x, y, strict=True)
+            ]
         )
         assert mat.shape == (3, 4, 4)
         assert np.allclose(mat, expected)

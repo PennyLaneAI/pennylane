@@ -675,7 +675,7 @@ def test_custom_wiremap_hamiltonian_dhf(wiremap, args, tmpdir):
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-    wiremap_dict = dict(zip(range(len(wiremap)), wiremap))
+    wiremap_dict = dict(zip(range(len(wiremap)), wiremap, strict=True))
 
     hamiltonian_ref, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
@@ -692,7 +692,7 @@ def test_custom_wiremap_hamiltonian_dhf(wiremap, args, tmpdir):
         outpath=tmpdir.strpath,
     )
 
-    wiremap_calc = dict(zip(list(hamiltonian_ref.wires), list(hamiltonian.wires)))
+    wiremap_calc = dict(zip(list(hamiltonian_ref.wires), list(hamiltonian.wires), strict=True))
 
     assert wiremap_calc == wiremap_dict
 
@@ -715,7 +715,7 @@ def test_custom_wiremap_hamiltonian_dhf_molecule_class(wiremap, args, tmpdir):
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-    wiremap_dict = dict(zip(range(len(wiremap)), wiremap))
+    wiremap_dict = dict(zip(range(len(wiremap)), wiremap, strict=True))
 
     molecule = qchem.Molecule(symbols, geometry)
     hamiltonian_ref, _ = qchem.molecular_hamiltonian(
@@ -731,7 +731,7 @@ def test_custom_wiremap_hamiltonian_dhf_molecule_class(wiremap, args, tmpdir):
         outpath=tmpdir.strpath,
     )
 
-    wiremap_calc = dict(zip(list(hamiltonian_ref.wires), list(hamiltonian.wires)))
+    wiremap_calc = dict(zip(list(hamiltonian_ref.wires), list(hamiltonian.wires), strict=True))
 
     assert wiremap_calc == wiremap_dict
 

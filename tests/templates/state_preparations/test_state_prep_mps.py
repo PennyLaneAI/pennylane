@@ -77,7 +77,7 @@ class TestMPSPrep:
         ]
         op = qp.MPSPrep(mps, wires=[0, 1, 2])
 
-        for arr1, arr2 in zip(mps, op.mps):
+        for arr1, arr2 in zip(mps, op.mps, strict=True):
             assert np.allclose(arr1, arr2)
 
     @pytest.mark.parametrize(
@@ -781,7 +781,7 @@ class TestMPSPrep:
         mps_copy = mps.copy()
         _ = right_canonicalize_mps(mps)
 
-        for tensor1, tensor2 in zip(mps, mps_copy):
+        for tensor1, tensor2 in zip(mps, mps_copy, strict=True):
             assert qp.math.allclose(tensor1, tensor2)
 
         wires = qp.registers({"work": 2, "state": n_sites})
@@ -795,7 +795,7 @@ class TestMPSPrep:
         )
         _ = dev.execute(qs)
 
-        for tensor1, tensor2 in zip(mps, mps_copy):
+        for tensor1, tensor2 in zip(mps, mps_copy, strict=True):
             assert qp.math.allclose(tensor1, tensor2)
 
     def test_mps_prep_work_wires_types(self):

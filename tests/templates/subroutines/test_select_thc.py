@@ -175,7 +175,7 @@ class TestQROMTable:
         for i, d in ((0, 0), (1, 5), (3, 7)):
             index = list(qp.math.int_to_binary(i, 2))
             data = list(qp.math.int_to_binary(d, 3))
-            expected_data = [a ^ b for a, b in zip(data, table[i])]
+            expected_data = [a ^ b for a, b in zip(data, table[i], strict=True)]
             # work wires must come back clean, so the outcome is a single basis state
             expected_state = int("".join(map(str, index + expected_data)) + "000", 2)
             assert np.isclose(np.asarray(circuit(index, data))[expected_state], 1.0, atol=1e-9)
@@ -193,13 +193,19 @@ class TestQROMTable:
 
         register = [[0] * (width * beth) for _ in tables[0]]
         for b, table in enumerate(tables):
-            register = [[x ^ y for x, y in zip(r, l)] for r, l in zip(register, loads[b])]
+            register = [
+                [x ^ y for x, y in zip(r, l, strict=True)]
+                for r, l in zip(register, loads[b], strict=True)
+            ]
             # only the last batch can be short, and it is zero-padded to the register
             padded = [row + [0] * (width * beth - len(row)) for row in table]
             assert register == padded
         # walking the increments back down and re-loading the first clears the register
         for b in reversed(range(len(tables))):
-            register = [[x ^ y for x, y in zip(r, l)] for r, l in zip(register, loads[b])]
+            register = [
+                [x ^ y for x, y in zip(r, l, strict=True)]
+                for r, l in zip(register, loads[b], strict=True)
+            ]
         assert all(all(bit == 0 for bit in row) for row in register)
 
 
@@ -263,7 +269,7 @@ def test_select_thc_register_sizes(n_index, n_flag, n_grad, n_work, match):
     """Test that the registers are kept disjoint so a wrong size surfaces as a ValueError"""
     sizes = [4, n_index, n_flag, n_grad, n_work]
     edges = np.cumsum([0] + sizes)
-    regs = [range(int(lo), int(hi)) for lo, hi in zip(edges[:-1], edges[1:])]
+    regs = [range(int(lo), int(hi)) for lo, hi in zip(edges[:-1], edges[1:], strict=True)]
     with pytest.raises(ValueError, match=match):
         SelectTHC(_static_matrix(np.ones((3, 2))), _static_matrix(np.eye(2)), 3, *regs)
 
@@ -282,7 +288,7 @@ def test_select_thc_register_sizes(n_index, n_flag, n_grad, n_work, match):
 def test_select_half_register_sizes(sizes, one_body_table, t_eigenvectors, match):
     """Test the register validation of a single SELECT sandwich."""
     edges = np.cumsum([0] + sizes)
-    regs = [range(int(lo), int(hi)) for lo, hi in zip(edges[:-1], edges[1:])]
+    regs = [range(int(lo), int(hi)) for lo, hi in zip(edges[:-1], edges[1:], strict=True)]
     with pytest.raises(ValueError, match=match):
         _select_half(
             np.ones((3, 2)),
@@ -433,12 +439,14 @@ class TestSelectTHCOperator:
         psi = np.random.default_rng(0).standard_normal((2, 2**N)).T @ [1, 1j]
         psi /= np.linalg.norm(psi)
 
-        prep = dict(zip(index[:n], qp.math.int_to_binary(0, n)))  # mu = 0
-        prep.update(zip(index[n:], qp.math.int_to_binary(1, n)))  # nu = 1
+        prep = dict(zip(index[:n], qp.math.int_to_binary(0, n), strict=True))  # mu = 0
+        prep.update(zip(index[n:], qp.math.int_to_binary(1, n), strict=True))  # nu = 1
         prep.update({flags[0]: 1, flags[1]: 0, flags[2]: swap, flags[3]: spin1, flags[4]: spin2})
 
-        out = dict(zip(index[:n], qp.math.int_to_binary(1, n)))  # the closing index exchange
-        out.update(zip(index[n:], qp.math.int_to_binary(0, n)))
+        out = dict(
+            zip(index[:n], qp.math.int_to_binary(1, n), strict=True)
+        )  # the closing index exchange
+        out.update(zip(index[n:], qp.math.int_to_binary(0, n), strict=True))
         out[flags[2]] = 1 - swap  # the X on the symmetrization flag
         out[flags[3]], out[flags[4]] = spin2, spin1  # the spin exchange
 
@@ -512,8 +520,8 @@ class TestSelectTHCOperator:
         psi = np.random.default_rng(2).standard_normal((2, 2**N)).T @ [1, 1j]
         psi /= np.linalg.norm(psi)
 
-        prep = dict(zip(index[:n], qp.math.int_to_binary(ell, n)))
-        prep.update(zip(index[n:], qp.math.int_to_binary(0, n)))
+        prep = dict(zip(index[:n], qp.math.int_to_binary(ell, n), strict=True))
+        prep.update(zip(index[n:], qp.math.int_to_binary(0, n), strict=True))
         prep.update({flags[0]: 1, flags[1]: 1, flags[2]: 0, flags[3]: spin, flags[4]: 1 - spin})
 
         # the indices and the spins are NOT exchanged on edge=1
@@ -531,12 +539,12 @@ class TestSelectTHCOperator:
         psi = np.zeros(2**N, dtype=complex)
         psi[0b0101] = 1.0  # a two-electron basis state
 
-        prep = dict(zip(index[:n], qp.math.int_to_binary(0, n)))
-        prep.update(zip(index[n:], qp.math.int_to_binary(1, n)))
+        prep = dict(zip(index[:n], qp.math.int_to_binary(0, n), strict=True))
+        prep.update(zip(index[n:], qp.math.int_to_binary(1, n), strict=True))
         prep.update({flags[0]: 1, flags[1]: 0, flags[2]: 0, flags[3]: 0, flags[4]: 1})
 
-        out = dict(zip(index[:n], qp.math.int_to_binary(1, n)))  # the closing exchange
-        out.update(zip(index[n:], qp.math.int_to_binary(0, n)))
+        out = dict(zip(index[:n], qp.math.int_to_binary(1, n), strict=True))  # the closing exchange
+        out.update(zip(index[n:], qp.math.int_to_binary(0, n), strict=True))
         out[flags[2]], out[flags[3]], out[flags[4]] = 1, 1, 0
 
         result = self._run(psi, prep, out, (chi, np.eye(2)))
@@ -569,7 +577,7 @@ class TestPhaseGradientRotation:  # pylint: disable=too-few-public-methods
             fn = qp.adjoint(_apply_loaded_rotation) if adjoint else _apply_loaded_rotation
             fn(system, angle, beth, [0], gradient, adder_work)
             qp.adjoint(qp.PhaseGradientStatePrep(gradient))
-            for bit, wire in zip(bits, angle):  # undo the angle load
+            for bit, wire in zip(bits, angle, strict=True):  # undo the angle load
                 if bit:
                     qp.X(wire)
             return qp.state()
@@ -841,7 +849,8 @@ def test_select_thc_register_overlap(overlap, match):
     names = ["system_wires", "index_wires", "flag_wires", "gradient_wires", "work_wires"]
     edges = np.cumsum([0, 4, 4, 5, 4, 6])
     regs = {
-        name: list(range(int(lo), int(hi))) for name, lo, hi in zip(names, edges[:-1], edges[1:])
+        name: list(range(int(lo), int(hi)))
+        for name, lo, hi in zip(names, edges[:-1], edges[1:], strict=True)
     }
     regs[overlap] = [0] + regs[overlap][1:]
     with pytest.raises(ValueError, match=match):

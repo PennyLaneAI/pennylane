@@ -488,7 +488,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         if len(index) != len(self.shape):
             return False
 
-        for x, y in zip(index, self.shape):
+        for x, y in zip(index, self.shape, strict=True):
             if x < 0 or x >= y:
                 return False
 
@@ -595,7 +595,7 @@ def _scale_dict(scalar, d, threshold):
         dict: the product of ``d`` and ``scalar``
     """
     scaled = {}
-    for key in d.keys():
+    for key in d:
         if abs(scalar * d[key]) > threshold:
             scaled[key] = scalar * d[key]
 
@@ -615,7 +615,7 @@ def _numpy_to_dict(arr, threshold):
     nz = arr.nonzero()
     d = {}
 
-    for index in zip(*nz):
+    for index in zip(*nz, strict=True):
         if abs(arr[index]) > threshold:
             index = tuple(map(int, index))
             d[index] = float(arr[index])

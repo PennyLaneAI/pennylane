@@ -70,7 +70,7 @@ def test_composite_ops(op, new_params, expected_op):
 
     qp.assert_equal(new_op, expected_op)
     assert new_op is not op
-    assert all(no is not o for no, o in zip(new_op.operands, op.operands))
+    assert all(no is not o for no, o in zip(new_op.operands, op.operands, strict=True))
 
 
 def test_prod2():
@@ -81,7 +81,7 @@ def test_prod2():
 
     qp.assert_equal(new_op, qp.ops.Prod2((qp.RZ(0.3, 0), qp.X(1), qp.RY(0.4, 2))))
     assert new_op is not op
-    assert all(new_operand is not operand for new_operand, operand in zip(new_op, op))
+    assert all(new_operand is not operand for new_operand, operand in zip(new_op, op, strict=True))
 
 
 @pytest.mark.parametrize(
@@ -415,9 +415,13 @@ def test_evolution_template_ops(op, new_params, expected_op):
     # `qp.equal` fails.
     assert isinstance(new_op, type(op))
     assert new_op.arithmetic_depth == expected_op.arithmetic_depth
-    assert all(qp.math.allclose(d1, d2) for d1, d2 in zip(new_op.data, expected_op.data))
+    assert all(
+        qp.math.allclose(d1, d2) for d1, d2 in zip(new_op.data, expected_op.data, strict=True)
+    )
     assert new_op.wires == op.wires
-    for val1, val2 in zip(new_op.hyperparameters.values(), expected_op.hyperparameters.values()):
+    for val1, val2 in zip(
+        new_op.hyperparameters.values(), expected_op.hyperparameters.values(), strict=True
+    ):
         if isinstance(val1, qp.Hamiltonian):
             qp.assert_equal(val1, val2)
         else:

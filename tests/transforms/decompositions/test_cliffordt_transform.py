@@ -591,8 +591,12 @@ class TestCliffordCompile:
             igrads.append([grad_numpy, grad_jax, grad_torch])
 
         # Compare results
-        assert all(qp.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres))
-        assert all(qp.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*igrads))
+        assert all(
+            qp.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres, strict=True)
+        )
+        assert all(
+            qp.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*igrads, strict=True)
+        )
 
     @pytest.mark.jax
     def test_abstract_wires(self):

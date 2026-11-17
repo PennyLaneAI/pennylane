@@ -200,7 +200,7 @@ class TestInitialization:
         H = qp.dot(coeffs, obs)
         _, H_ops = H.terms()
 
-        assert all(o1.wires == o2.wires for o1, o2 in zip(obs, H_ops))
+        assert all(o1.wires == o2.wires for o1, o2 in zip(obs, H_ops, strict=True))
         assert H_ops[0] == qp.prod(qp.X(w0), qp.Y(w1), qp.X(w2), qp.Z(w3))
         assert H_ops[1] == qp.prod(qp.X(w0), qp.X(w1), qp.Y(w2), qp.Z(w3))
 
@@ -998,7 +998,7 @@ class TestSortWires:
             qp.Z("c"),
         ]
 
-        for op1, op2 in zip(final_list, sorted_list):
+        for op1, op2 in zip(final_list, sorted_list, strict=True):
             qp.assert_equal(op1, op2)
 
     def test_sorting_operators_with_multiple_wires(self):
@@ -1033,7 +1033,7 @@ class TestSortWires:
             qp.X("d"),
         ]
 
-        for op1, op2 in zip(final_list, sorted_list):
+        for op1, op2 in zip(final_list, sorted_list, strict=True):
             qp.assert_equal(op1, op2)
 
     def test_sorting_operators_with_wire_map(self):
@@ -1062,7 +1062,7 @@ class TestSortWires:
             qp.X(5),
         ]
 
-        for op1, op2 in zip(final_list, sorted_list):
+        for op1, op2 in zip(final_list, sorted_list, strict=True):
             assert op1.name == op2.name
             assert op1.wires == op2.wires
             assert op1.data == op2.data
@@ -1086,7 +1086,7 @@ class TestSortWires:
             qp.PauliZ(1),
         ]
         sorted_list = Sum._sort(mixed_list)
-        for op1, op2 in zip(final_list, sorted_list):
+        for op1, op2 in zip(final_list, sorted_list, strict=True):
             qp.assert_equal(op1, op2)
 
     def test_sorting_operators_with_no_wires(self):
@@ -1299,7 +1299,7 @@ class TestGrouping:
         assert op1.grouping_indices == ((0, 1), (2,))
 
         # check with qp.sum
-        sprods = [qp.s_prod(c, o) for c, o in zip(coeffs, obs)]
+        sprods = [qp.s_prod(c, o) for c, o in zip(coeffs, obs, strict=True)]
         op2 = qp.sum(*sprods, grouping_type="qwc")
         assert op2.grouping_indices == ((0, 1), (2,))
 
@@ -1359,7 +1359,7 @@ class TestGrouping:
         assert set(op1.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping during construction with qp.sum
-        sprods = [qp.s_prod(c, o) for c, o in zip(coeffs, obs)]
+        sprods = [qp.s_prod(c, o) for c, o in zip(coeffs, obs, strict=True)]
         op2 = qp.sum(*sprods, grouping_type="qwc", method="lf")
         assert set(op2.grouping_indices) == {(0, 1), (2,)}
 
@@ -1391,7 +1391,7 @@ class TestGrouping:
         assert set(op1.grouping_indices) == grouping_indices
 
         # compute grouping during construction with qp.sum
-        sprods = [qp.s_prod(c, o) for c, o in zip(coeffs, obs)]
+        sprods = [qp.s_prod(c, o) for c, o in zip(coeffs, obs, strict=True)]
         op2 = qp.sum(*sprods, grouping_type=grouping_type)
         assert set(op2.grouping_indices) == grouping_indices
 
@@ -1451,7 +1451,10 @@ class TestSupportsBroadcasting:
         y = qp.numpy.array([0.4, 0.5, 0.6])
         op = Sum(qp.RX(x, wires=0), qp.RY(y, wires=2), qp.PauliZ(1))
         mat = op.matrix()
-        sum_list = [Sum(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.PauliZ(1)) for i, j in zip(x, y)]
+        sum_list = [
+            Sum(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.PauliZ(1))
+            for i, j in zip(x, y, strict=True)
+        ]
         compare = qp.math.stack([s.matrix() for s in sum_list])
         assert qp.math.allclose(mat, compare)
         assert mat.shape == (3, 8, 8)
@@ -1466,7 +1469,7 @@ class TestSupportsBroadcasting:
         batched_y = [y for _ in x]
         sum_list = [
             Sum(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.RZ(k, wires=1))
-            for i, j, k in zip(x, batched_y, z)
+            for i, j, k in zip(x, batched_y, z, strict=True)
         ]
         compare = qp.math.stack([s.matrix() for s in sum_list])
         assert qp.math.allclose(mat, compare)

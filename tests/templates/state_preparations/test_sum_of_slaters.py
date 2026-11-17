@@ -760,7 +760,9 @@ class TestSumOfSlatersPrep:
                     assert np.allclose(out_state[1::2], 0.0), "\n".join(
                         [
                             f"{a} : {b}"
-                            for a, b in zip(np.where(out_state)[0], out_state[np.where(out_state)])
+                            for a, b in zip(
+                                np.where(out_state)[0], out_state[np.where(out_state)], strict=True
+                            )
                         ]
                     )
                     out_state = out_state[::2]
@@ -822,7 +824,9 @@ class TestSumOfSlatersPrep:
                 assert np.allclose(out_state[1::2], 0.0), "\n".join(
                     [
                         f"{a} : {b}"
-                        for a, b in zip(np.where(out_state)[0], out_state[np.where(out_state)])
+                        for a, b in zip(
+                            np.where(out_state)[0], out_state[np.where(out_state)], strict=True
+                        )
                     ]
                 )
                 out_state = out_state[::2]

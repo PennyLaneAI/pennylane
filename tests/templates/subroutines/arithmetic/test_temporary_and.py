@@ -296,7 +296,7 @@ class TestTemporaryAND:
             + expected_ops_per_elbow
         )
 
-        for op, exp_op in zip(tape.operations, expected_ops):
+        for op, exp_op in zip(tape.operations, expected_ops, strict=True):
             assert repr(op) == exp_op
 
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])

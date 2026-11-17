@@ -57,6 +57,18 @@ merged.
 
       isort --py 312 --profile black -l 100 -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests
 
+* **Ruff check**: Ruff checks Python syntax, explicit ``zip`` strict arguments, and
+  dictionary iteration in ``pennylane/`` and ``tests/``. From the repository root, run
+  the same pinned version as CI:
+
+  .. code-block:: bash
+
+      uvx --from ruff==0.17.3 ruff check --config ./pyproject.toml pennylane/ tests/
+
+  Use ``strict=True`` when inputs should have equal lengths. Keep ``strict=False``
+  for intentional truncation, with a short comment explaining why it is needed.
+  Runtime typing exceptions are documented in ``pyproject.toml`` and source comments.
+
 * **Code factor**:  `Code factor <https://www.codefactor.io/>`_ checks several common code quality
   characteristics. 
 

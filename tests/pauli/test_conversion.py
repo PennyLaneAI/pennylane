@@ -409,7 +409,10 @@ class TestDecomposition:  # pylint: disable=too-many-public-methods
         padded = np.zeros((8, 8), dtype=complex)
         padded[:5, :5] = sparse_dup_5x5.toarray()
         reconstructed_padded = PauliSentence(
-            {PauliWord({w: o for o, w in term}): coeff for coeff, term in zip(coeffs, obs)}
+            {
+                PauliWord({w: o for o, w in term}): coeff
+                for coeff, term in zip(coeffs, obs, strict=True)
+            }
         ).to_mat(range(3))
         assert np.allclose(reconstructed_padded, padded)
 
@@ -717,7 +720,7 @@ class TestPhasedDecomposition:
         matrices = [[[library(i) for i in row] for row in matrix] for library in libraries]
 
         interfaces = ["numpy", "jax", "torch"]
-        for mat, interface in zip(matrices, interfaces):
+        for mat, interface in zip(matrices, interfaces, strict=True):
             coeffs = qp.pauli_decompose(mat).coeffs
             assert qp.math.get_interface(coeffs[0]) == interface
 

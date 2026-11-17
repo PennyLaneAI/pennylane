@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from math import prod
 from numbers import Number
 from types import EllipsisType
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -76,21 +76,21 @@ if TYPE_CHECKING:
     # Keep the optional torch import out of runtime module initialization.
     from torch import Tensor as TorchTensor
 
-    TensorLike = Union[
-        int,
-        float,
-        bool,
-        complex,
-        bytes,
-        list,
-        tuple,
-        np.ndarray,
-        np.generic,
-        ArrayBox,
-        Array,
-        Tracer,
-        TorchTensor,
-    ]
+    TensorLike = (
+        int
+        | float
+        | bool
+        | complex
+        | bytes
+        | list
+        | tuple
+        | np.ndarray
+        | np.generic
+        | ArrayBox
+        | Array
+        | Tracer
+        | TorchTensor
+    )
 else:
     # Runtime checks must inspect each tracer, including on Python 3.12.
 
@@ -153,7 +153,8 @@ ResultBatch = Sequence[Result]
 PostprocessingFn = Callable[[ResultBatch], Result]
 BatchPostprocessingFn = Callable[[ResultBatch], ResultBatch]
 
-JSON = Optional[int | str | bool | list["JSON"] | dict[str, "JSON"]]
+# Preserve the typing.Union origin used by runtime type inspection.
+JSON = Optional[int | str | bool | list["JSON"] | dict[str, "JSON"]]  # noqa: UP045
 
 
 @dataclass(frozen=True)

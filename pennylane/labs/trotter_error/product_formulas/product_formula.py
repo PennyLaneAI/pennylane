@@ -84,7 +84,7 @@ class ProductFormula:
         if any(isinstance(symbol[0], ProductFormula) for symbol in symbols):
             raise TypeError("Symbols cannot be type `ProductFormula`.")
 
-        symbols, coeffs = zip(*symbols)
+        symbols, coeffs = zip(*symbols, strict=True)
         self.symbols, self.coeffs = list(symbols), list(coeffs)
 
         self.exponent = exponent
@@ -266,4 +266,4 @@ class ProductFormula:
             str: a representation of the form
             ``PF[((symbol, coeff), ...)]**exponent``.
         """
-        return f"PF[{tuple(zip(self.symbols, self.coeffs))}]**{self.exponent}"
+        return f"PF[{tuple(zip(self.symbols, self.coeffs, strict=True))}]**{self.exponent}"

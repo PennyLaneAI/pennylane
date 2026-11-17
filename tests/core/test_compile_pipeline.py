@@ -1377,7 +1377,7 @@ class TestCompilePipelineCall:
 
         assert len(new_batch) == 1
         expected = [qp.S(0), qp.SX(2), qp.expval(qp.PauliZ(0))]
-        for op1, op2 in zip(expected, new_batch[0]):
+        for op1, op2 in zip(expected, new_batch[0], strict=True):
             qp.assert_equal(op1, op2)
         assert new_batch[0].shots == qp.measurements.Shots(100)
 

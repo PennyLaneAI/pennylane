@@ -609,7 +609,7 @@ class TestDiagonalizingGates:
 
         assert len(op_gates) == len(base_gates)
 
-        for op1, op2 in zip(op_gates, base_gates):
+        for op1, op2 in zip(op_gates, base_gates, strict=True):
             assert op1.__class__ is op2.__class__
             assert op1.wires == op2.wires
 
@@ -674,7 +674,7 @@ class TestMatrix:
         y = pnp.array([1, 2, 3])
         op = Pow(qp.RX(x, 0), z=y)
         mat = op.matrix()
-        true_mat = qp.math.stack([Pow(qp.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        true_mat = qp.math.stack([Pow(qp.RX(i, 0), j).matrix() for i, j in zip(x, y, strict=True)])
         assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
 
@@ -685,7 +685,7 @@ class TestMatrix:
         y = jnp.array([1, 2, 3])
         op = Pow(qp.RX(x, 0), y)
         mat = op.matrix()
-        true_mat = qp.math.stack([Pow(qp.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        true_mat = qp.math.stack([Pow(qp.RX(i, 0), j).matrix() for i, j in zip(x, y, strict=True)])
         assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
 
@@ -698,7 +698,7 @@ class TestMatrix:
         y = torch.tensor([1, 2, 3])
         op = Pow(qp.RX(x, 0), y)
         mat = op.matrix()
-        true_mat = qp.math.stack([Pow(qp.RX(i, 0), j).matrix() for i, j in zip(x, y)])
+        true_mat = qp.math.stack([Pow(qp.RX(i, 0), j).matrix() for i, j in zip(x, y, strict=True)])
         assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
 

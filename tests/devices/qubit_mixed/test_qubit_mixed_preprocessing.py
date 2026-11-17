@@ -255,8 +255,8 @@ class TestPreprocessing:
         res_tapes, batch_fn = program(tapes)
 
         assert len(res_tapes) == 2
-        for res_tape, measurement in zip(res_tapes, measurements):
-            for op, expected_op in zip(res_tape.operations, ops):
+        for res_tape, measurement in zip(res_tapes, measurements, strict=True):
+            for op, expected_op in zip(res_tape.operations, ops, strict=True):
                 qp.assert_equal(op, expected_op)
             assert res_tape.measurements == [measurement]
 
@@ -279,7 +279,7 @@ class TestPreprocessing:
 
         assert len(res_tapes) == 2
         for i, t in enumerate(res_tapes):
-            for op, exp in zip(t.circuit, expected + measurements[i]):
+            for op, exp in zip(t.circuit, expected + measurements[i], strict=True):
                 qp.assert_equal(op, exp)
 
         val = (("a", "b"), "c", "d")
@@ -305,8 +305,8 @@ class TestPreprocessing:
         ]
 
         assert len(res_tapes) == 2
-        for res_tape, measurement in zip(res_tapes, measurements):
-            for op, expected_op in zip(res_tape.operations, expected_ops):
+        for res_tape, measurement in zip(res_tapes, measurements, strict=True):
+            for op, expected_op in zip(res_tape.operations, expected_ops, strict=True):
                 qp.assert_equal(op, expected_op)
             assert res_tape.measurements == [measurement]
 

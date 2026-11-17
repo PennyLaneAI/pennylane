@@ -667,8 +667,6 @@ class TestMultiControlledX:
         (2, 0),
         (1, 1),
         (2, 1),
-        (3, 2),
-        (5, 3),
     )
 
     expected_resources = (
@@ -707,7 +705,9 @@ class TestMultiControlledX:
             "num_zero_ctrl": num_zero_ctrl,
         }
 
-    @pytest.mark.parametrize("params, expected_res", list(zip(res_params, expected_resources)))
+    @pytest.mark.parametrize(
+        "params, expected_res", list(zip(res_params, expected_resources, strict=True))
+    )
     def test_resources(self, params, expected_res):
         """Test that the resources method produces the expected resources."""
         op_resource_params = self._prep_params(*params)
@@ -729,7 +729,7 @@ class TestMultiControlledX:
             Deallocate(3),
         ]
 
-    @pytest.mark.parametrize("op, params", list(zip(res_ops, res_params)))
+    @pytest.mark.parametrize("op, params", list(zip(res_ops, res_params, strict=True)))
     def test_resource_rep(self, op, params):
         """Test the resource_rep produces the correct compressed representation."""
         op_resource_params = self._prep_params(*params)
@@ -737,7 +737,7 @@ class TestMultiControlledX:
         expected_rep = CompressedResourceOp(MultiControlledX, num_wires, op_resource_params)
         assert op.resource_rep(**op.resource_params) == expected_rep
 
-    @pytest.mark.parametrize("op, params", list(zip(res_ops, res_params)))
+    @pytest.mark.parametrize("op, params", list(zip(res_ops, res_params, strict=True)))
     def test_resource_params(self, op, params):
         """Test that the resource_params are produced as expected."""
         expected_params = self._prep_params(*params)

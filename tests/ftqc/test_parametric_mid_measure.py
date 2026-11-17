@@ -765,7 +765,7 @@ class TestDiagonalizeMCMs:
 
         # conditional diagonalizing gates for the true_cond measurement
         original_meas = original_tape.operations[2]
-        for gate, expected_base in zip(new_tape.operations[2:4], diag_gates_true):
+        for gate, expected_base in zip(new_tape.operations[2:4], diag_gates_true, strict=True):
             assert isinstance(gate, qp.ops.Conditional)
             assert gate.base == expected_base
             assert gate.wires == original_meas.wires
@@ -774,7 +774,7 @@ class TestDiagonalizeMCMs:
 
         # conditional diagonalizing gates for the false_cond measurement
         original_meas = original_tape.operations[3]
-        for gate, expected_base in zip(new_tape.operations[4:6], diag_gates_false):
+        for gate, expected_base in zip(new_tape.operations[4:6], diag_gates_false, strict=True):
             assert isinstance(gate, qp.ops.Conditional)
             assert gate.base == expected_base
             assert gate.wires == original_meas.wires

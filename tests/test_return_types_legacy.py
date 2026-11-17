@@ -599,7 +599,7 @@ class TestShotVector:
         all_shot_copies = _get_all_shot_copies(shot_vector)
 
         assert len(res[0]) == len(all_shot_copies)
-        for r, shots in zip(res[0], all_shot_copies):
+        for r, shots in zip(res[0], all_shot_copies, strict=True):
             if shots == 1:
                 # Scalar tensors
                 assert r.shape == ()
@@ -713,7 +713,7 @@ class TestSameMeasurementShotVector:
         all_shot_copies = _get_all_shot_copies(shot_vector)
 
         assert len(res[0]) == len(all_shot_copies)
-        for r, shots in zip(res[0], all_shot_copies):
+        for r, shots in zip(res[0], all_shot_copies, strict=True):
             shape = () if shots == 1 else (shots,)
             assert all(res_item.shape == shape for res_item in r)
 

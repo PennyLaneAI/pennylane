@@ -1921,6 +1921,10 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* Added Ruff checks for Python syntax modernizations, explicit ``zip`` strict arguments,
+  and direct dictionary iteration in source code and tests.
+  `(#9587) <https://github.com/PennyLaneAI/pennylane/pull/9587>`__
+
 * Adding trusted publishing PyPI uploads.
   `(#10513) <https://github.com/PennyLaneAI/pennylane/pull/10513>`__
 

@@ -358,7 +358,7 @@ class TestExpValAnalytical:
                 np.kron(qp.PauliX(0).matrix(), np.eye(2)),
                 np.kron(np.eye(2), qp.PauliX(1).matrix()),
             ]
-            hamiltonian_matrix = sum(c * m for c, m in zip(obs.coeffs, matrices))
+            hamiltonian_matrix = sum(c * m for c, m in zip(obs.coeffs, matrices, strict=True))
             obs_matrix = hamiltonian_matrix
         else:
             obs_matrix = obs.matrix()
@@ -369,7 +369,7 @@ class TestExpValAnalytical:
         state = self.prepare_pure_state(theta)
 
         if isinstance(obs, qp.Hamiltonian):
-            hamiltonian_matrix = sum(c * m for c, m in zip(coeffs, matrices))
+            hamiltonian_matrix = sum(c * m for c, m in zip(coeffs, matrices, strict=True))
             res = np.trace(state @ hamiltonian_matrix)
         else:
             res = np.trace(state @ obs.matrix())
@@ -383,7 +383,7 @@ class TestExpValAnalytical:
         state = self.prepare_mixed_state(theta, weights)
 
         if isinstance(obs, qp.Hamiltonian):
-            hamiltonian_matrix = sum(c * m for c, m in zip(coeffs, matrices))
+            hamiltonian_matrix = sum(c * m for c, m in zip(coeffs, matrices, strict=True))
             res = np.trace(state @ hamiltonian_matrix)
         else:
             res = np.trace(state @ obs.matrix())
@@ -508,7 +508,7 @@ class TestBroadcasting:
         res = measure(qp.expval(observable), initial_state, is_state_batched=True)
 
         expanded_mat = np.zeros(((4, 4)), dtype=complex)
-        for coeff, summand in zip(coeffs, observables):
+        for coeff, summand in zip(coeffs, observables, strict=True):
             mat = summand.matrix()
             expanded_mat = np.add(
                 expanded_mat,
@@ -519,7 +519,7 @@ class TestBroadcasting:
         expected = []
         for i in range(BATCH_SIZE):
             expval_sum = 0.0
-            for coeff, summand in zip(coeffs, observables):
+            for coeff, summand in zip(coeffs, observables, strict=True):
                 expval_sum += coeff * get_expval(summand, two_qubit_batched_state[i])
             expected.append(expval_sum)
 

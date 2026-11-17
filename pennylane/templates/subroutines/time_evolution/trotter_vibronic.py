@@ -974,7 +974,9 @@ def _position_coefficients(matrix, constant, linear, quadratic, n_states, n_mode
 
     rows, cols = np.triu_indices(n_modes, 1)
     if len(rows) > 0:
-        bilinear = math.stack([sec_order_diag[int(r), int(c)] for r, c in zip(rows, cols)])
+        bilinear = math.stack(
+            [sec_order_diag[int(r), int(c)] for r, c in zip(rows, cols, strict=True)]
+        )
     else:
         bilinear = np.zeros((0, n_states))
 
@@ -1070,7 +1072,10 @@ def _branch_probs(hamiltonian, evolution_time, num_trotter_steps):
     time_step = float(evolution_time) / num_trotter_steps
     coeffs, _ = _preprocess_data(time_step, hamiltonian, n_elec, n_states, n_modes)
     kinetic = (_momentum_coefficients(hamiltonian.kinetic) * time_step)[:, None]
-    return {term: _applied_fraction(c) for term, c in zip(_BRANCH_TERMS, (*coeffs, kinetic))}
+    return {
+        term: _applied_fraction(c)
+        for term, c in zip(_BRANCH_TERMS, (*coeffs, kinetic), strict=True)
+    }
 
 
 # ---------------------------------------------------------------------------

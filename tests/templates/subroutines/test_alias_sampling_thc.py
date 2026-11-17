@@ -191,7 +191,7 @@ class TestClassicalTables:
             recon[entry] += (1 / d) * keep_prob
             recon[entries[alt[i]]] += (1 / d) * (1 - keep_prob)
 
-        for entry, w in zip(entries, probs):
+        for entry, w in zip(entries, probs, strict=True):
             # mu-bit alias sampling reproduces the target up to the d / 2 ** aleph bound.
             assert np.abs(recon[entry] - w / tot) <= float(d) / n_levels
 

@@ -549,7 +549,7 @@ class TestNumpyConversion:
 
         ops = tape.operations
         assert len(ops) == 4
-        for op, p in zip(ops, phi[0]):
+        for op, p in zip(ops, phi[0], strict=True):
             # Test each rotation applied
             assert op.name == "RX"
             assert op.parameters == [p]

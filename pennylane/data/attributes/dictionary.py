@@ -89,10 +89,10 @@ class DatasetDict(
         if self.keys() != __value.keys():
             return False
 
-        return all(__value[key] == self[key] for key in __value.keys())
+        return all(__value[key] == self[key] for key in __value)
 
     def __iter__(self) -> Iterator[str]:
-        return (key for key in self.bind.keys())
+        return (key for key in self.bind)
 
     def __str__(self) -> str:
         return str(dict(self))

@@ -165,7 +165,7 @@ class TestPLDB:
         np.array([1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0], dtype=complex),
     )
 
-    @pytest.mark.parametrize("tape, expected_result", list(zip(tapes, results)))
+    @pytest.mark.parametrize("tape, expected_result", list(zip(tapes, results, strict=True)))
     @pytest.mark.parametrize(
         "dev", (qp.device("default.qubit", wires=2), qp.device("lightning.qubit", wires=2))
     )

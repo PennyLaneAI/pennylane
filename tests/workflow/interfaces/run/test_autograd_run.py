@@ -122,7 +122,7 @@ class TestAutogradRun:
             assert res[1].shape == (4,)
 
             expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
-            for _r, _e in zip(res, expected):
+            for _r, _e in zip(res, expected, strict=True):
                 assert np.allclose(_r[:2], _e, atol=atol_for_shots(shots))
                 assert np.allclose(_r[2:], _e, atol=atol_for_shots(shots))
         else:
@@ -130,5 +130,5 @@ class TestAutogradRun:
             assert res[1].shape == (2,)
 
             expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
-            for _r, _e in zip(res, expected):
+            for _r, _e in zip(res, expected, strict=True):
                 assert np.allclose(_r, _e, atol=atol_for_shots(shots))

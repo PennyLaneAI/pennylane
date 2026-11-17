@@ -236,7 +236,7 @@ class TestGeneralizedAmplitudeDamping:
         jac = torch.autograd.functional.jacobian(self.kraus_fn, (gamma, p))
         exp_jac = self.expected_jac_fn(gamma.detach().numpy(), p.detach().numpy())
         assert len(jac) == len(exp_jac) == 2
-        for j, exp_j in zip(jac, exp_jac):
+        for j, exp_j in zip(jac, exp_jac, strict=True):
             assert qp.math.allclose(j.detach().numpy(), exp_j)
 
     @pytest.mark.jax
@@ -534,7 +534,9 @@ class TestDepolarizingChannel:
 class TestResetError:
     """Tests for the quantum channel ResetError"""
 
-    @pytest.mark.parametrize("p_0,p_1", list(zip([0.5, 0.1, 0.0, 0.0], [0, 0.1, 0.5, 0.0])))
+    @pytest.mark.parametrize(
+        "p_0,p_1", list(zip([0.5, 0.1, 0.0, 0.0], [0, 0.1, 0.5, 0.0], strict=True))
+    )
     def test_p0_p1_arbitrary(self, p_0, p_1, tol):
         """Test that various values of p_0 and p_1 give correct Kraus matrices"""
         op = channel.ResetError
@@ -640,7 +642,7 @@ class TestResetError:
         jac = torch.autograd.functional.jacobian(self.kraus_fn, (p0, p1))
         exp_jac = self.expected_jac_fn(p0.detach().numpy(), p1.detach().numpy())
         assert len(jac) == len(exp_jac) == 2
-        for j, exp_j in zip(jac, exp_jac):
+        for j, exp_j in zip(jac, exp_jac, strict=True):
             assert qp.math.allclose(j.detach().numpy(), exp_j)
 
     @pytest.mark.jax
@@ -676,6 +678,7 @@ class TestPauliError:
                 WIRES_WRONG_PARAMS,
                 EXPECTED_ERRORS,
                 EXPECTED_MESSAGES,
+                strict=True,
             )
         ),
     )
@@ -752,7 +755,7 @@ class TestPauliError:
     ]
 
     @pytest.mark.parametrize(
-        "operators, wires, expected_Ks", list(zip(OPERATORS, WIRES, EXPECTED_KS))
+        "operators, wires, expected_Ks", list(zip(OPERATORS, WIRES, EXPECTED_KS, strict=True))
     )
     def test_kraus_matrix(self, tol, operators, wires, expected_Ks):
         """Test sevaral resulting kraus matrices for sevaral configurations"""
@@ -918,6 +921,7 @@ class TestThermalRelaxationError:
                 [100e-6, 50e-6, 80e-6, np.inf],
                 [80e-6, 40e-6, 80e-6, 50e-6],
                 [20e-9, 40e-9, 40e-6, 40e-9],
+                strict=True,
             )
         ),
     )
@@ -973,6 +977,7 @@ class TestThermalRelaxationError:
                 [100e-6, 50e-6, 80e-6],
                 [120e-6, 100e-6, 90e-6],
                 [20e-9, 40e-9, 90e-6],
+                strict=True,
             )
         ),
     )

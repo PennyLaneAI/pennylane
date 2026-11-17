@@ -298,7 +298,9 @@ class TestSelect:
         control_values = [
             list(map(int, np.binary_repr(i, width=len(control)))) for i in range(len(ops))
         ]
-        expected_gates = [qp.ctrl(op, control, vals) for op, vals in zip(ops, control_values)]
+        expected_gates = [
+            qp.ctrl(op, control, vals) for op, vals in zip(ops, control_values, strict=True)
+        ]
 
         select_op = qp.Select(ops, control, partial=False)
         with qp.queuing.AnnotatedQueue() as q0:
@@ -343,7 +345,7 @@ class TestSelect:
         Tests both the returned and the queued operations."""
         expected_gates = [
             qp.ctrl(op, ctrl, vals) if ctrl else op
-            for op, (ctrl, vals) in zip(ops, expected_controls)
+            for op, (ctrl, vals) in zip(ops, expected_controls, strict=True)
         ]
 
         select_op = qp.Select(ops, control, partial=True)

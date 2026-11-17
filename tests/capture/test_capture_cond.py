@@ -1546,7 +1546,7 @@ class TestCondBranchProbHintsCapture:
         expected_ops = (qp.X, qp.RZ, qp.RY, qp.RY, qp.RX)
 
         assert cond_eqn.params["estimated_probabilities"] == pytest.approx(expected_probs)
-        for branch, exp_op in zip(cond_eqn.params["jaxpr_branches"], expected_ops):
+        for branch, exp_op in zip(cond_eqn.params["jaxpr_branches"], expected_ops, strict=True):
             assert branch.outvars == []
             assert_eqn_matches_op(branch.eqns[-1], exp_op)
 

@@ -458,7 +458,7 @@ class Sum(CompositeOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             with qp.QueuingManager.stop_recording():
-                ops = [to_operator(pauli) for pauli in pr.keys()]
+                ops = [to_operator(pauli) for pauli in pr]
             return list(pr.values()), ops
 
         with qp.QueuingManager.stop_recording():

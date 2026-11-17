@@ -501,7 +501,7 @@ class TestDecomposition:
         true_decomposition = list(ops_lst)  # reversed list of factors
 
         assert isinstance(decomposition, list)
-        for op1, op2 in zip(decomposition, true_decomposition):
+        for op1, op2 in zip(decomposition, true_decomposition, strict=True):
             qp.assert_equal(op1, op2)
 
     # ChangeOpBasis as an operator only exists in the tape-based pipeline
@@ -548,7 +548,7 @@ class TestDecomposition:
             change_op_basis_op.decomposition()
 
         tape = qp.tape.QuantumScript.from_queue(q)
-        for op1, op2 in zip(tape.operations, true_decomposition):
+        for op1, op2 in zip(tape.operations, true_decomposition, strict=True):
             qp.assert_equal(op1, op2)
 
 

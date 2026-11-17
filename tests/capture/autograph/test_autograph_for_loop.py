@@ -427,7 +427,8 @@ class TestForLoops:  # pylint: disable=too-many-public-methods
         @qp.qnode(qp.device("default.qubit", wires=3))
         def f():
             ops = [qp.X, qp.Y, qp.Z]
-            for op, wire in zip(ops, wires):
+            # Shorter wire lists deliberately test zip's stop-at-the-shortest behavior.
+            for op, wire in zip(ops, wires, strict=False):
                 op(wire)
             return qp.probs()
 

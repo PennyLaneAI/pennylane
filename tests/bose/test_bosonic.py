@@ -231,7 +231,7 @@ class TestBoseWord:
     def test_missing(self):
         """Test that empty string is returned for missing key."""
         bw = BoseWord({(0, 0): "+", (1, 1): "-"})
-        assert (2, 3) not in bw.keys()
+        assert (2, 3) not in bw
         assert bw[(2, 3)] == ""
 
     def test_set_items(self):
@@ -750,7 +750,7 @@ class TestBoseSentence:
         new_bw = BoseWord({(0, 2): "+", (1, 3): "-"})
         bs = BoseSentence({bw: 1.0})
 
-        assert new_bw not in bs.keys()
+        assert new_bw not in bs
         assert bs[new_bw] == 0.0
 
     def test_set_items(self):
@@ -759,10 +759,10 @@ class TestBoseSentence:
         bs = BoseSentence({bw: 1.0})
 
         new_bw = BoseWord({(0, 2): "+", (1, 3): "-"})
-        assert new_bw not in bs.keys()
+        assert new_bw not in bs
 
         bs[new_bw] = 3.45
-        assert new_bw in bs.keys() and bs[new_bw] == 3.45
+        assert new_bw in bs and bs[new_bw] == 3.45
 
     tup_bs_str = (
         (

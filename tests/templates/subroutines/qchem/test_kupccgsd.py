@@ -86,6 +86,7 @@ class TestDecomposition:
         n_gates = 1 + n_excit_terms * k
         exp_unitary = [qp.FermionicDoubleExcitation] * len(pair_double_terms_wires)
         exp_unitary += [qp.FermionicSingleExcitation] * len(gen_single_terms_wires)
+        exp_unitary *= k
 
         op = qp.kUpCCGSD(weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state)
         queue = op.decomposition()
@@ -97,7 +98,7 @@ class TestDecomposition:
         assert isinstance(queue[0], qp.BasisEmbedding)
 
         # order of gates
-        for op1, op2 in zip(queue[1:], exp_unitary):
+        for op1, op2 in zip(queue[1:], exp_unitary, strict=True):
             assert isinstance(op1, op2)
 
         # gate parameter
@@ -117,7 +118,7 @@ class TestDecomposition:
             [np.concatenate(w) for w in pair_double_terms_wires] + gen_single_terms_wires
         ) * k
         res_wires = [queue[i].wires.tolist() for i in range(1, n_gates)]
-        for wires1, wires2 in zip(exp_wires, res_wires):
+        for wires1, wires2 in zip(exp_wires, res_wires, strict=True):
             assert np.all(wires1 == wires2)
 
     def test_custom_wire_labels(self, tol):

@@ -205,7 +205,7 @@ class TestCollectRecipes:
         """Test that a diagonal boolean argnum is considered correctly."""
         argnum = qp.math.eye(3, dtype=bool)
         diag, offdiag = _collect_recipes(self.tape, argnum, ("A",) * 3, None, None)
-        for res, exp in zip(diag, self.expected_diag_recipes):
+        for res, exp in zip(diag, self.expected_diag_recipes, strict=True):
             assert qp.math.allclose(res, exp)
         assert all(entry == (None, None, None) for entry in offdiag)
 
@@ -213,7 +213,7 @@ class TestCollectRecipes:
         """Test that a block diagonal boolean argnum is considered correctly."""
         argnum = qp.math.array([[True, True, False], [True, True, False], [False, False, True]])
         diag, offdiag = _collect_recipes(self.tape, argnum, ("A",) * 3, None, None)
-        for res, exp in zip(diag, self.expected_diag_recipes):
+        for res, exp in zip(diag, self.expected_diag_recipes, strict=True):
             assert qp.math.allclose(res, exp)
         assert qp.math.allclose(offdiag[0], self.two_term_recipe)
         assert qp.math.allclose(offdiag[1], self.four_term_recipe)
@@ -223,7 +223,7 @@ class TestCollectRecipes:
         """Test that a custom boolean argnum is considered correctly."""
         argnum = qp.math.array([[True, True, False], [True, False, True], [False, True, True]])
         diag, offdiag = _collect_recipes(self.tape, argnum, ("A",) * 3, None, None)
-        for i, (res, exp) in enumerate(zip(diag, self.expected_diag_recipes)):
+        for i, (res, exp) in enumerate(zip(diag, self.expected_diag_recipes, strict=True)):
             if i == 1:
                 assert res is None
             else:
@@ -260,9 +260,11 @@ class TestGenerateOffDiagTapes:
         expected_pars = list(product([0.2, 0.2 + np.pi], [0.9, 0.9 + np.pi]))
         if not add_unshifted:
             expected_pars = expected_pars[1:]
-        for exp_par, h_tape in zip(expected_pars, t):
+        for exp_par, h_tape in zip(expected_pars, t, strict=True):
             assert len(h_tape.operations) == 2
-            assert all(op.__class__ == cls for op, cls in zip(h_tape.operations, orig_cls))
+            assert all(
+                op.__class__ == cls for op, cls in zip(h_tape.operations, orig_cls, strict=True)
+            )
             assert np.allclose(h_tape.get_parameters(), exp_par)
 
 
@@ -336,7 +338,7 @@ class TestParameterShiftHessian:
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
 
-        for hess, exp in zip(hessian, expected):
+        for hess, exp in zip(hessian, expected, strict=True):
             assert isinstance(hess, np.ndarray)
             assert hess.shape == ()
             assert np.allclose(hess, exp)
@@ -363,7 +365,7 @@ class TestParameterShiftHessian:
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
 
-        for hess, exp in zip(hessian, expected):
+        for hess, exp in zip(hessian, expected, strict=True):
             assert isinstance(hess, np.ndarray)
             assert hess.shape == exp.shape
             assert np.allclose(hess, exp)
@@ -390,7 +392,7 @@ class TestParameterShiftHessian:
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
 
-        for hess, exp in zip(hessian, expected):
+        for hess, exp in zip(hessian, expected, strict=True):
             assert isinstance(hess, np.ndarray)
             assert hess.shape == exp.shape
             assert np.allclose(hess, exp)
@@ -503,7 +505,7 @@ class TestParameterShiftHessian:
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
 
-        for hess, exp in zip(hessian, expected):
+        for hess, exp in zip(hessian, expected, strict=True):
             assert isinstance(hess, tuple)
             assert len(hess) == 2
             assert all(isinstance(h, tuple) for h in hess)
@@ -552,7 +554,7 @@ class TestParameterShiftHessian:
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
 
-        for hess, exp in zip(hessian, expected):
+        for hess, exp in zip(hessian, expected, strict=True):
             assert isinstance(hess, tuple)
             assert len(hess) == 2
             assert all(isinstance(h, tuple) for h in hess)
@@ -613,7 +615,7 @@ class TestParameterShiftHessian:
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
 
-        for hess, exp in zip(hessian, expected):
+        for hess, exp in zip(hessian, expected, strict=True):
             assert isinstance(hess, tuple)
             assert len(hess) == 2
             assert all(isinstance(h, tuple) for h in hess)
@@ -909,7 +911,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
         dev = qp.device("default.qubit", wires=2)
 
         c, s = qp.gradients.generate_shift_rule((0.5, 1)).T
-        recipe = list(zip(c, np.ones_like(c), s))
+        recipe = list(zip(c, np.ones_like(c), s, strict=True))
 
         class DummyOp(qp.CRX):
             """A custom variant of qp.CRX with a specific gradient recipe."""
@@ -1568,7 +1570,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
         transform = [qp.math.shape(qp.gradients.param_shift_hessian(c)(x)) for c in circuits]
         expected = [(3, 3), (3, 3), (2, 3, 3), (3, 3, 4), (3, 3, 4), (2, 3, 3, 4)]
 
-        assert all(t == e for t, e in zip(transform, expected))
+        assert all(t == e for t, e in zip(transform, expected, strict=True))
 
 
 class TestParamShiftHessianWithKwargs:
@@ -1611,7 +1613,7 @@ class TestParamShiftHessianWithKwargs:
         assert np.allclose(tapes[2].get_parameters(), x + np.array([-2 * np.pi / 3, 0.0]))
         assert np.allclose(tapes[-1].get_parameters(), x + np.array([0.0, -np.pi]))
         expected_shifts = np.array([[1, 1], [1, -1], [-1, 1], [-1, -1]]) * (np.pi / 2)
-        for _tape, exp_shift in zip(tapes[3:-1], expected_shifts):
+        for _tape, exp_shift in zip(tapes[3:-1], expected_shifts, strict=True):
             assert np.allclose(_tape.get_parameters(), x + exp_shift)
 
         hessian = fn(qp.execute(tapes, dev, diff_method=qp.gradients.param_shift))
@@ -1658,12 +1660,12 @@ class TestParamShiftHessianWithKwargs:
         expected_shifts = np.array(
             [[1, 1], [1, -1], [1, 2], [1, -2], [-1, 1], [-1, -1], [-1, 2], [-1, -2]]
         ) * np.array([[np.pi / 2, 0.3]])
-        for _tape, exp_shift in zip(tapes[2:10], expected_shifts):
+        for _tape, exp_shift in zip(tapes[2:10], expected_shifts, strict=True):
             assert np.allclose(_tape.get_parameters(), x + exp_shift)
 
         # Check that the vanilla diagonal rule is used for the second diagonal entry
         shift_order = [1, -1, -2]
-        for mult, _tape in zip(shift_order, tapes[10:]):
+        for mult, _tape in zip(shift_order, tapes[10:], strict=True):
             assert np.allclose(_tape.get_parameters(), x + np.array([0.0, np.pi * mult]))
 
         hessian = fn(qp.execute(tapes, dev, diff_method=qp.gradients.param_shift))

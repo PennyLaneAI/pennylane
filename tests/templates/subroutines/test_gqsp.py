@@ -231,7 +231,7 @@ class TestGQSP:
             expected += rotation(i)
 
         assert len(decomposition) == len(expected)
-        for op1, op2 in zip(decomposition, expected):
+        for op1, op2 in zip(decomposition, expected, strict=True):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")

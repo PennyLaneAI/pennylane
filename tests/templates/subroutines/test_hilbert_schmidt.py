@@ -44,9 +44,9 @@ def test_flatten_unflatten_standard_checks(op_type):
     new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
     assert qp.math.allclose(op.data, new_op.data)
 
-    for op1, op2 in zip(op.hyperparameters["U"], new_op.hyperparameters["U"]):
+    for op1, op2 in zip(op.hyperparameters["U"], new_op.hyperparameters["U"], strict=True):
         qp.assert_equal(op1, op2)
-    for op1, op2 in zip(op.hyperparameters["V"], new_op.hyperparameters["V"]):
+    for op1, op2 in zip(op.hyperparameters["V"], new_op.hyperparameters["V"], strict=True):
         qp.assert_equal(op1, op2)
 
     assert new_op is not op
@@ -232,7 +232,7 @@ class TestHilbertSchmidt:
             qp.CNOT(wires=[0, 1]),
             qp.H(0),
         ]
-        for i, j in zip(tape_dec.operations, expected_operations):
+        for i, j in zip(tape_dec.operations, expected_operations, strict=True):
             assert i.name == j.name
             assert i.wires == j.wires
             assert qp.math.allclose(i.data, j.data)
@@ -263,7 +263,7 @@ class TestHilbertSchmidt:
             qp.Hadamard(wires=[1]),
         ]
 
-        for i, j in zip(tape_dec.operations, expected_operations):
+        for i, j in zip(tape_dec.operations, expected_operations, strict=True):
             assert i.name == j.name
             assert i.wires == j.wires
             assert qp.math.allclose(i.data, j.data)
@@ -297,10 +297,10 @@ class TestHilbertSchmidt:
             qp.Hadamard(wires=["b"]),
         ]
 
-        for op1, op2 in zip(tape_dec.operations, expected_operations):
+        for op1, op2 in zip(tape_dec.operations, expected_operations, strict=True):
             qp.assert_equal(op1, op2)
 
-        for op1, op2 in zip(decomp, expected_operations):
+        for op1, op2 in zip(decomp, expected_operations, strict=True):
             qp.assert_equal(op1, op2)
 
     def test_data(self):
@@ -328,11 +328,11 @@ class TestHilbertSchmidt:
 
         orig_U = orig_op.hyperparameters["U"]
         copy_U = copy_op.hyperparameters["U"]
-        assert all(u1 is not u2 for u1, u2 in zip(orig_U, copy_U))
+        assert all(u1 is not u2 for u1, u2 in zip(orig_U, copy_U, strict=True))
 
         orig_V = orig_op.hyperparameters["V"]
         copy_V = copy_op.hyperparameters["V"]
-        assert all(v1 is not v2 for v1, v2 in zip(orig_V, copy_V))
+        assert all(v1 is not v2 for v1, v2 in zip(orig_V, copy_V, strict=True))
 
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
@@ -522,9 +522,9 @@ class TestLocalHilbertSchmidt:
 
         tape_dec = qp.tape.QuantumScript.from_queue(q_tape_dec)
 
-        for o1, o2 in zip(decomp, tape_dec):
+        for o1, o2 in zip(decomp, tape_dec, strict=True):
             qp.assert_equal(o1, o2)
-        for o1, o2 in zip(decomp, unqueued_decomp):
+        for o1, o2 in zip(decomp, unqueued_decomp, strict=True):
             qp.assert_equal(o1, o2)
 
         expected_operations = [
@@ -536,7 +536,7 @@ class TestLocalHilbertSchmidt:
             qp.Hadamard(wires=[0]),
         ]
 
-        for i, j in zip(tape_dec.operations, expected_operations):
+        for i, j in zip(tape_dec.operations, expected_operations, strict=True):
             assert i.name == j.name
             assert i.wires == j.wires
             assert qp.math.allclose(i.data, j.data)
@@ -562,7 +562,7 @@ class TestLocalHilbertSchmidt:
             qp.Hadamard(wires=["a"]),
         ]
 
-        for i, j in zip(tape_dec.operations, expected_operations):
+        for i, j in zip(tape_dec.operations, expected_operations, strict=True):
             assert i.name == j.name
             assert i.wires == j.wires
             assert qp.math.allclose(i.data, j.data)
