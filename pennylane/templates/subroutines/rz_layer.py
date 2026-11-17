@@ -26,7 +26,7 @@ from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
-from .arithmetic.hamming_weight import _apply_hamming_weight, _hamming_weight_plan
+from .arithmetic.hamming_weight import _hamming_weight, _hamming_weight_resource_rep
 
 
 class RZLayer(Operator2):
@@ -166,8 +166,8 @@ def _hwp_num_hw_wires(block_size):
     fewer ANDs."""
 
     def _cost(num_hw_wires):
-        _, out_positions, num_work = _hamming_weight_plan(num_hw_wires)
-        return len(out_positions) + block_size - num_hw_wires, num_work
+        num_rotations = num_hw_wires.bit_length() + block_size - num_hw_wires
+        return num_rotations, num_hw_wires - num_hw_wires.bit_count()
 
     return min(block_size, block_size - 1, key=_cost)
 
@@ -175,16 +175,15 @@ def _hwp_num_hw_wires(block_size):
 def _rzlayer_hwp_synthesis_resources(angles, wires, **_):
     block_size = len(wires) // len(angles)
     num_hw_wires = _hwp_num_hw_wires(block_size)
-    gates, out_positions, _ = _hamming_weight_plan(num_hw_wires)
-    # The factors of a product are in matrix order, the reverse of the order of application
-    compute_op = prod(*(abstractify(op) for op, _ in reversed(gates)))
-    num_rotations = len(out_positions) + block_size - num_hw_wires
+    compute_op = _hamming_weight_resource_rep(num_hw_wires)
+    num_rotations = num_hw_wires.bit_length() + block_size - num_hw_wires
     target_op = prod(*[abstractify(PhaseShift)] * num_rotations)
     return {ChangeOpBasis2(compute_op, target_op): len(angles), GlobalPhase: len(angles)}
 
 
 def _rzlayer_hwp_synthesis_work_wires(angles, wires, work_wires):
-    _, _, num_work = _hamming_weight_plan(_hwp_num_hw_wires(len(wires) // len(angles)))
+    num_hw_wires = _hwp_num_hw_wires(len(wires) // len(angles))
+    num_work = num_hw_wires - num_hw_wires.bit_count()
     return {"zeroed": max(num_work - len(work_wires), 0)}
 
 
@@ -196,8 +195,7 @@ def _rzlayer_hwp_synthesis(angles, wires, work_wires):
     Hamming weight of their wires."""
     block_size = len(wires) // len(angles)
     num_hw_wires = _hwp_num_hw_wires(block_size)
-    plan = _hamming_weight_plan(num_hw_wires)
-    _, out_positions, num_work = plan
+    num_work = num_hw_wires - num_hw_wires.bit_count()
     if capture.enabled() or compiler.active():
         angles = math.array(angles, like="jax")
         wires = math.array(wires, like="jax")
@@ -209,15 +207,16 @@ def _rzlayer_hwp_synthesis(angles, wires, work_wires):
 
         def _block(i):
             block_wires = [wires[i * block_size + j] for j in range(block_size)]
-            hw_wires = block_wires[:num_hw_wires] + work_wires
+            hw_wires = block_wires[:num_hw_wires]
+            out_wires = [hw_wires[-1], *work_wires[: num_hw_wires.bit_length() - 1]]
 
             def _phase_shifts():
-                for j, position in enumerate(out_positions):
-                    PhaseShift(2**j * angles[i], wires=hw_wires[position])
+                for j, out_wire in enumerate(out_wires):
+                    PhaseShift(2**j * angles[i], wires=out_wire)
                 if num_hw_wires < block_size:
                     PhaseShift(angles[i], wires=block_wires[-1])
 
-            change_op_basis(partial(_apply_hamming_weight, plan, hw_wires), _phase_shifts)
+            change_op_basis(partial(_hamming_weight, hw_wires, work_wires), _phase_shifts)
             GlobalPhase(block_size * angles[i] / 2)
 
         for_loop(len(angles))(_block)()

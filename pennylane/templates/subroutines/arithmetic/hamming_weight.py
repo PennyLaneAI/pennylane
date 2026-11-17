@@ -16,95 +16,68 @@ Private helpers for computing the Hamming weight of a register in place, with
 :class:`~.TemporaryAND` and :class:`~.CNOT` gates.
 """
 
+from pennylane import capture
+from pennylane.core.operator import abstractify
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.ops import CNOT
+from pennylane.ops.op_math import prod
 
-from .temporary_and import TemporaryAND
-
-
-def _full_adder(a, b, c, t):
-    """Gates of a full adder on the positions ``a``, ``b`` and ``c``, with the zeroed work
-    position ``t``. Afterwards, ``b`` holds the sum and ``t`` the carry, ``a`` holds garbage and
-    ``c`` is unchanged."""
-    return [
-        (CNOT, (c, a)),
-        (CNOT, (c, b)),
-        (TemporaryAND, (a, b, t)),
-        (CNOT, (c, t)),
-        (CNOT, (a, b)),
-        (CNOT, (c, b)),
-    ]
+from .semi_adder import _left_block, _left_block_zeroed
 
 
-def _half_adder(a, b, t):
-    """Gates of a half adder on the positions ``a`` and ``b``, with the zeroed work position
-    ``t``. Afterwards, ``b`` holds the sum and ``t`` the carry, and ``a`` is unchanged."""
-    return [(TemporaryAND, (a, b, t)), (CNOT, (a, b))]
+def _hamming_weight_resource_rep(num_wires):
+    """Abstract product of the gates of :func:`~._hamming_weight` on ``num_wires`` input wires,
+    e.g., to describe its use as the compute block of :func:`~.change_op_basis` in resource
+    functions."""
+    num_work_wires = num_wires - num_wires.bit_count()
+    with capture.pause(), AnnotatedQueue() as q:
+        _hamming_weight(range(num_wires), range(num_wires, num_wires + num_work_wires))
+    # The factors of a product are in matrix order, the reverse of the order of application
+    return prod(*(abstractify(op) for op in reversed(q.queue)))
 
 
-def _hamming_weight_plan(n):
-    r"""Plan a circuit that computes the Hamming weight of ``n`` bits in place.
+def _hamming_weight(wires, work_wires):
+    r"""Compute the Hamming weight of ``wires`` in place.
 
-    The bits are sorted into buckets by their weight :math:`2^j`, starting with all inputs in
-    bucket :math:`0`. While a bucket holds at least three entries, a full adder replaces three of
-    them by their sum, and moves their carry to the next bucket. A half adder does the same for
-    the last two entries. Each adder uses one :class:`~.TemporaryAND` with a fresh work wire as
-    target, for a total of ``n - popcount(n)`` ANDs and work wires. The remaining entry of bucket
-    :math:`j` is bit :math:`j` of the Hamming weight. All other wires are left in garbage states,
-    so that callers uncompute the circuit, e.g., by using it as the compute block of
-    :func:`~.change_op_basis`.
+    The bits are summed by their weight :math:`2^j`, starting with all inputs at weight
+    :math:`1`. Each full adder adds two bits of weight :math:`2^j` onto the last one and writes
+    their carry, of weight :math:`2^{j+1}`, onto a zeroed work wire. For an even number of bits
+    of weight :math:`2^j`, a half adder adds the remaining one. Each adder uses one
+    :class:`~.TemporaryAND`, for a total of ``n - popcount(n)`` work wires and ANDs, where
+    ``n = len(wires)``.
+
+    Bit :math:`0` of the Hamming weight ends up on ``wires[-1]``, and bit :math:`j>0` on
+    ``work_wires[j - 1]``. All other wires are left in garbage states, so that callers uncompute
+    the circuit, e.g., by using it as the compute block of :func:`~.change_op_basis`.
 
     Args:
-        n (int): number of input bits
-
-    Returns:
-        tuple[list[tuple[type, tuple[int]]], list[int], int]: ``(gates, out_positions,
-        num_work)``. ``gates`` is the list of gates in order of application, each given as a
-        gate type (:class:`~.TemporaryAND` or :class:`~.CNOT`) and the positions of its wires.
-        ``out_positions`` are the positions holding the bits of the Hamming weight, least
-        significant bit first, and ``num_work`` is the number of work wires. The positions
-        refer to the register ``input_wires + work_wires``, i.e., ``0, ..., n-1`` are the inputs
-        and ``n, ..., n+num_work-1`` are the work wires.
+        wires (Sequence): the input wires
+        work_wires (Sequence): at least ``n - popcount(n)`` work wires in the zero state
 
     **Example**
 
-    For three bits, a single full adder leaves the sum on position ``1`` and the carry on the
-    work position ``3``:
+    For three bits, a single full adder leaves the sum on wire ``2`` and the carry on the work
+    wire ``3``:
 
-    >>> from pennylane.templates.subroutines.arithmetic.hamming_weight import _hamming_weight_plan
-    >>> gates, out_positions, num_work = _hamming_weight_plan(3)
-    >>> [(op.__name__, positions) for op, positions in gates]
-    [('CNOT', (2, 0)), ('CNOT', (2, 1)), ('TemporaryAND', (0, 1, 3)),
-     ('CNOT', (2, 3)), ('CNOT', (0, 1)), ('CNOT', (2, 1))]
-    >>> out_positions, num_work
-    ([1, 3], 1)
+    >>> from pennylane.templates.subroutines.arithmetic.hamming_weight import _hamming_weight
+    >>> qp.tape.make_qscript(_hamming_weight)([0, 1, 2], [3]).operations
+    [CNOT(wires=[1, 0]), CNOT(wires=[1, 2]), TemporaryAND(wires=[0, 2, 3]), CNOT(wires=[1, 3]),
+     CNOT(wires=[1, 2]), CNOT(wires=[0, 2])]
     """
-    gates, out_positions, num_work = [], [], 0
-    bucket = list(range(n))
-    while bucket:
-        carries = []
-        while len(bucket) > 1:
-            t = n + num_work
-            num_work += 1
-            if len(bucket) > 2:
-                (a, b, c), bucket = bucket[:3], bucket[3:]
-                gates += _full_adder(a, b, c, t)
+    num_bits = len(wires).bit_length()
+    out_wires, spare_wires = work_wires[: num_bits - 1], work_wires[num_bits - 1 :]
+    for j in range(num_bits - 1):
+        *addends, total = wires
+        num_adders = len(wires) // 2
+        carry_wires = [*spare_wires[: num_adders - 1], out_wires[j]]
+        spare_wires = spare_wires[num_adders - 1 :]
+        for i, carry in enumerate(carry_wires):
+            a = addends[2 * i]
+            if 2 * i + 1 < len(addends):
+                c = addends[2 * i + 1]
+                _left_block([c, a, total, carry])
+                CNOT([c, total])
             else:
-                (a, b), bucket = bucket, []
-                gates += _half_adder(a, b, t)
-            bucket.append(b)
-            carries.append(t)
-        out_positions.append(bucket[0])
-        bucket = carries
-    return gates, out_positions, num_work
-
-
-def _apply_hamming_weight(plan, wires):
-    """Apply the gates of a plan from :func:`~._hamming_weight_plan`.
-
-    Args:
-        plan (tuple): the output of :func:`~._hamming_weight_plan`
-        wires (Sequence): the register that the positions of the plan refer to, i.e., the input
-            wires followed by at least ``num_work`` work wires in the zero state
-    """
-    for op, positions in plan[0]:
-        op([wires[p] for p in positions])
+                _left_block_zeroed([a, total, carry])
+            CNOT([a, total])
+        wires = carry_wires
