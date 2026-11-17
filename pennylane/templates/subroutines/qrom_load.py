@@ -56,7 +56,9 @@ class QROMLoad(Operator2):
     trading qubits for fewer T gates. With fewer work wires, or if loading in parallel does not pay
     off, it simply falls back to ``QROM``.
 
-    To unload the data again, apply ``qp.adjoint`` of ``QROMLoad``.
+    To unload the data again, apply ``qp.adjoint`` of ``QROMLoad``. If you can leave the work
+    wires in a garbage state until unloading, use :class:`~.SelectSwap` instead, which skips
+    cleaning them up and thus costs less than half.
 
     .. warning::
 
@@ -64,7 +66,8 @@ class QROMLoad(Operator2):
         decomposition and generally is *not* the XOR you would get from :class:`~.QROM`. Use
         :class:`~.QROM` if you cannot assume a zeroed target.
 
-    .. seealso:: :class:`~.QROM`, :class:`~.BBQRAM`, :class:`~.QROMStatePreparation`
+    .. seealso:: :class:`~.QROM`, :class:`~.SelectSwap`, :class:`~.BBQRAM`,
+        :class:`~.QROMStatePreparation`
 
     Args:
         bitstrings (TensorLike | Sequence[str]): the :math:`L` bitstrings, either as a 2D array of
@@ -311,10 +314,11 @@ def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires, ad
     outer_loop(outer)()
 
 
-def _select_swap_cost(num_bitstrings, num_control_wires, num_targets, log_depth):
+def _select_swap_cost(num_bitstrings, num_control_wires, num_targets, log_depth, clean=True):
     """Number of Toffoli-like gates, i.e., elbows of the Select component and controlled SWAPs,
     of the Select-SWAP decomposition loading ``2**log_depth`` bitstrings in parallel. For
-    ``log_depth=0``, this is the cost of a single plain ``QROM``."""
+    ``log_depth=0``, this is the cost of a single plain ``QROM``. With ``clean=False``, the work
+    wires are not restored, as in :class:`~.SelectSwap`, so each component only runs once."""
     num_control_wires_select = num_control_wires - log_depth
     num_columns = -(-num_bitstrings // 2**log_depth)
     num_elbows = 0
@@ -324,10 +328,14 @@ def _select_swap_cost(num_bitstrings, num_control_wires, num_targets, log_depth)
         # Plain QROM
         return num_elbows
     num_cswaps = num_targets * (2**log_depth - 1)
-    return 2 * num_elbows + 4 * num_cswaps
+    if clean:
+        return 2 * num_elbows + 4 * num_cswaps
+    return num_elbows + num_cswaps
 
 
-def _calculate_select_swap_sizes(num_bitstrings, num_control_wires, num_targets, num_work_wires):
+def _calculate_select_swap_sizes(
+    num_bitstrings, num_control_wires, num_targets, num_work_wires, clean=True
+):
     """Calculates the register sizes for the Select-SWAP decomposition.
 
     This utility function determines how many bitstrings to load in parallel, and how many
@@ -340,6 +348,7 @@ def _calculate_select_swap_sizes(num_bitstrings, num_control_wires, num_targets,
         num_control_wires (int): number of control wires
         num_targets (int): number of target wires (bitstring length)
         num_work_wires (int): total number of available work wires
+        clean (bool): whether the work wires are restored, which changes the cost of each depth
 
     Returns:
         tuple[int]: ``(num_control_wires_select, num_work_wires_select, num_work_wires_swap,
@@ -363,7 +372,7 @@ def _calculate_select_swap_sizes(num_bitstrings, num_control_wires, num_targets,
     log_depth = min(
         log_depths,
         key=lambda j: (
-            _select_swap_cost(num_bitstrings, num_control_wires, num_targets, j),
+            _select_swap_cost(num_bitstrings, num_control_wires, num_targets, j, clean),
             j,
         ),
     )

@@ -96,9 +96,11 @@ class QROM(Operator2):
     If you know that the target register starts out in :math:`|0\rangle`, use :class:`~.QROMLoad`
     instead. Given enough work wires, it switches to a cheaper decomposition, which ``QROM``
     cannot do. The same goes for uncomputation: if the target is known to end up in
-    :math:`|0\rangle`, use the adjoint of :class:`~.QROMLoad`.
+    :math:`|0\rangle`, use the adjoint of :class:`~.QROMLoad`. If, in addition, you can afford to
+    leave garbage in the work wires until unloading, use :class:`~.SelectSwap`.
 
-    .. seealso:: :class:`~.QROMLoad`, :class:`~.BBQRAM`, :class:`~.QROMStatePreparation`
+    .. seealso:: :class:`~.QROMLoad`, :class:`~.SelectSwap`, :class:`~.BBQRAM`,
+        :class:`~.QROMStatePreparation`
 
     Args:
         bitstrings (TensorLike | Sequence[str]): the :math:`L` bitstrings, either as a 2D array of

@@ -35,6 +35,12 @@ New features since last release
       >>> print(circuit())
       [[0 1 1]]
 
+* The new :class:`~.SelectSwap` operator loads bitstrings into a zeroed target register like
+  :class:`~.QROMLoad`, but leaves its work wires in a garbage state instead of cleaning them up.
+  This makes it less than half as expensive. Use its adjoint, with the garbage left untouched,
+  to unload the data and clean up the work wires again.
+  `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
+
 * A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
   `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
 
@@ -1074,7 +1080,8 @@ Improvements 🛠
   (``qp.list_decomps(qp.QROMLoad)["_select_swap"]``). Additionally, this decomposition no longer
   has a ``clean`` parameter that allows to leave behind a garbage state. While this parameter 
   allowed to save resources, it could cause bugs in the produced circuits via mismatching
-  decompositions in the graph decomposition system.
+  decompositions in the graph decomposition system. The garbage-leaving variant is now available
+  as the separate operator :class:`~.SelectSwap`.
   Finally, this decomposition rule no longer uses :class:`~.Select`, but instead expresses the 
   Select block as a :class:`~.QROM` with fewer controls and more target qubits. This allows for 
   scalable compilation of this decomposition rule.
@@ -1587,6 +1594,7 @@ Breaking changes 💔
 * :class:`~.QROM` no longer takes a ``clean`` argument and no longer has a Select-SWAP
   decomposition, which requires a target register in the zero state. Use :class:`~.QROMLoad`
   instead if the target wires start in the zero state, and drop the ``clean`` argument otherwise.
+  If you used ``clean=False`` with a zeroed target register, use :class:`~.SelectSwap` instead.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
 
 * :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly: use
