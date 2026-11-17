@@ -95,6 +95,7 @@ class TestComputeClassicalFisher:
 class TestIntegration:
     """Integration test of classical and quantum fisher information matrices"""
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("n_wires", np.arange(1, 5))
     @pytest.mark.parametrize("n_params", np.arange(1, 5))
     def test_different_sizes(self, n_wires, n_params):
@@ -120,6 +121,7 @@ class TestIntegration:
         res = classical_fisher(circ)(params)
         assert qp.math.allclose(res, n_wires * np.ones((n_params, n_params)))
 
+    @pytest.mark.torch
     def test_hardware_compatibility_classical_fisher(self):
         """Testing that classical_fisher can be computed with finite shots"""
         import torch
@@ -147,6 +149,7 @@ class TestIntegration:
         res = classical_fisher(circ)(params)
         assert qp.math.allclose(res, n_wires * np.ones((n_params, n_params)), atol=1)
 
+    @pytest.mark.torch
     @pytest.mark.parametrize(
         "dev",
         (

@@ -1994,6 +1994,8 @@ class TestGrad:
         for device, method in device_methods:
             configuration.append([device, method, npp.array(phi, requires_grad=True)])
 
+    native_configuration = [[device, method, float(phi)] for device, method, phi in configuration]
+
     @pytest.mark.autograd
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_pswap_autograd_grad(self, tol, dev_name, diff_method, phi):
@@ -2438,14 +2440,15 @@ class TestGrad:
         expected = -1 / 2 * np.sin(par / 2), -1 / 2 * 1j * np.cos(par / 2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name,diff_method,phi", native_configuration)
     def test_pcphase_grad(self, dev_name, diff_method, phi):
-        """Test pcphase operator gradient"""
+        """Test the PCPhase gradient through qp.grad with JAX."""
         if diff_method in {"adjoint"}:
             pytest.skip("PCPhase does not support adjoint diff")
 
         dev = qp.device(dev_name, wires=[0, 1])
-        expected_grad = -4 * npp.cos(phi) * npp.sin(phi)  # computed by hand
+        expected_grad = -4 * np.cos(phi) * np.sin(phi)  # computed by hand
 
         @qp.qnode(dev, diff_method=diff_method)
         def circ(phi):
@@ -2458,12 +2461,12 @@ class TestGrad:
             qp.Hadamard(wires=1)
             return qp.expval(qp.PauliZ(wires=0))
 
-        phi = npp.array(phi, requires_grad=True)
+        phi = jnp.array(phi)
         computed_grad = qp.grad(circ)(phi)
         assert np.isclose(computed_grad, expected_grad)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    @pytest.mark.parametrize("dev_name,diff_method,phi", native_configuration)
     def test_pcphase_grad_torch(self, dev_name, diff_method, phi):
         """Test pcphase operator gradient"""
         if diff_method in {"adjoint"}:
@@ -2472,8 +2475,8 @@ class TestGrad:
         import torch
 
         dev = qp.device(dev_name, wires=[0, 1])
-        expected_grad = torch.tensor(-4 * npp.cos(phi) * npp.sin(phi))  # computed by hand
-        phi = torch.tensor(phi, requires_grad=True)
+        expected_grad = torch.tensor(-4 * np.cos(phi) * np.sin(phi))  # computed by hand
+        phi = torch.tensor(phi, dtype=torch.float64, requires_grad=True)
 
         @qp.qnode(dev, diff_method=diff_method)
         def circ(phi):
@@ -2491,7 +2494,7 @@ class TestGrad:
         assert np.isclose(phi.grad, expected_grad)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    @pytest.mark.parametrize("dev_name,diff_method,phi", native_configuration)
     def test_pcphase_grad_jax(self, dev_name, diff_method, phi):
         """Test pcphase operator gradient"""
         if diff_method in {"adjoint"}:
@@ -2500,7 +2503,7 @@ class TestGrad:
         import jax
 
         dev = qp.device(dev_name, wires=[0, 1])
-        expected_grad = jnp.array(-4 * npp.cos(phi) * npp.sin(phi))  # computed by hand
+        expected_grad = jnp.array(-4 * np.cos(phi) * np.sin(phi))  # computed by hand
         phi = jnp.array(phi)
 
         @qp.qnode(dev, diff_method=diff_method)
@@ -2900,7 +2903,7 @@ class TestPauliRot:  # pylint: disable=too-many-public-methods
         gradient = np.squeeze(qp.grad(circuit)(angle))
 
         assert gradient == pytest.approx(
-            0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), abs=tol
+            float(0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2))), abs=tol
         )
 
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
@@ -3218,7 +3221,7 @@ class TestMultiRZ:
         gradient = np.squeeze(qp.grad(circuit)(angle))
 
         assert gradient == pytest.approx(
-            0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), abs=tol
+            float(0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2))), abs=tol
         )
 
     @pytest.mark.jax

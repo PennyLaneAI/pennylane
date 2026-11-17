@@ -26,6 +26,7 @@ import pennylane as qp
 from pennylane import numpy as np
 
 
+@pytest.mark.torch
 def test_partial_evaluation():
     """Test partial evaluation matches individual full evaluations"""
     dev = qp.device("default.qubit", wires=2)
@@ -59,6 +60,7 @@ def test_partial_evaluation():
     assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
+@pytest.mark.torch
 def test_partial_evaluation_kwargs():
     """Test partial evaluation matches individual full evaluations
     when the keyword syntax is used to call the partial object"""
@@ -93,6 +95,7 @@ def test_partial_evaluation_kwargs():
     assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
+@pytest.mark.torch
 def test_partial_evaluation_multi_args():
     """Test partial evaluation matches individual full evaluations
     for multiple pre-supplied arguments"""
@@ -130,6 +133,7 @@ def test_partial_evaluation_multi_args():
     assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
+@pytest.mark.torch
 def test_partial_evaluation_nonnumeric1():
     """Test partial evaluation matches individual full evaluations
     for non-numeric pre-supplied arguments"""
@@ -165,6 +169,7 @@ def test_partial_evaluation_nonnumeric1():
     assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
+@pytest.mark.torch
 def test_partial_evaluation_nonnumeric2():
     """Test partial evaluation matches individual full evaluations
     for non-numeric pre-supplied arguments"""
@@ -200,6 +205,7 @@ def test_partial_evaluation_nonnumeric2():
     assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
+@pytest.mark.torch
 def test_partial_evaluation_nonnumeric3():
     """Test partial evaluation matches individual full evaluations
     for non-numeric pre-supplied arguments"""
@@ -356,6 +362,7 @@ def test_partial_evaluation_torch(diff_method):
     assert np.allclose(grad, indiv_grad)
 
 
+@pytest.mark.torch
 def test_lambda_evaluation():
     """Test lambda argument replacement matches individual full evaluations"""
     dev = qp.device("default.qubit", wires=2)

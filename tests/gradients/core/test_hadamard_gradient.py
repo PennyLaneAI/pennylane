@@ -959,6 +959,7 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
         (cost9, (2,), tuple),
     ]
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_expval_scalar)
     def test_output_shape_matches_qnode_expval_scalar(self, cost, exp_shape, exp_type, mode):
@@ -984,6 +985,7 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
         (cost3, [2, 3], tuple),
     ]
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.parametrize("cost, exp_shape, exp_type", costs_and_expected_expval_array)
     def test_output_shape_matches_qnode_expval_array(self, cost, exp_shape, exp_type, mode):
@@ -1020,6 +1022,7 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
         (cost12, [8, 3], np.ndarray),
     ]
 
+    @pytest.mark.torch
     @pytest.mark.parametrize(
         "mode", ["standard"]
     )  # other modes should not work with probs at the moment
@@ -1342,6 +1345,7 @@ class TestHadamardGradEdgeCases:
         assert res_hadamard[1][2].shape == (4,)
         assert np.allclose(res_hadamard[1][2], 0)
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("mode", ["standard"])
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
     def test_all_zero_diff_methods(self, prefactor, mode):

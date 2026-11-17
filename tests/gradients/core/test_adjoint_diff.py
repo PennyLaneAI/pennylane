@@ -423,6 +423,7 @@ class TestAdjointJacobian:
 
             assert np.allclose(grad_D[i], expected)
 
+    @pytest.mark.torch
     def test_with_nontrainable_parametrized(self):
         """Test that a parametrized `QubitUnitary` is accounted for correctly
         when it is not trainable."""

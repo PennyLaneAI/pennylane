@@ -22,6 +22,7 @@ import pennylane as qp
 from pennylane import numpy as np
 
 
+@pytest.mark.torch
 def test_simple_circuit(mocker):
     """Test that batching works for a simple circuit"""
     dev = qp.device("default.qubit", wires=3)
@@ -50,6 +51,7 @@ def test_simple_circuit(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
+@pytest.mark.torch
 def test_simple_circuit_one_batch(mocker):
     """Test that batching works for a simple circuit when the batch size is 1"""
     dev = qp.device("default.qubit", wires=3)
@@ -78,6 +80,7 @@ def test_simple_circuit_one_batch(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
+@pytest.mark.torch
 def test_simple_circuit_with_prep(mocker):
     """Test that batching works for a simple circuit with a state preparation"""
     dev = qp.device("default.qubit", wires=3)
@@ -109,6 +112,7 @@ def test_simple_circuit_with_prep(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
+@pytest.mark.torch
 def test_basic_entangler_layers(mocker):
     """Test that batching works for BasicEngtanglerLayers"""
     dev = qp.device("default.qubit", wires=2)
@@ -131,6 +135,7 @@ def test_basic_entangler_layers(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
+@pytest.mark.torch
 def test_angle_embedding(mocker):
     """Test that batching works for AngleEmbedding"""
     dev = qp.device("default.qubit", wires=3)
@@ -153,6 +158,7 @@ def test_angle_embedding(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
+@pytest.mark.torch
 def test_mottonenstate_preparation(mocker):
     """Test that batching works for MottonenStatePreparation"""
     dev = qp.device("default.qubit", wires=3)
@@ -192,6 +198,7 @@ def test_mottonenstate_preparation(mocker):
     assert onp.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
+@pytest.mark.torch
 def test_qubit_state_prep(mocker):
     """Test that batching works for StatePrep"""
     dev = qp.device("default.qubit", wires=3)
@@ -231,6 +238,7 @@ def test_qubit_state_prep(mocker):
     assert onp.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
+@pytest.mark.torch
 def test_multi_returns():
     """Test that batching works for a simple circuit with multiple returns"""
     dev = qp.device("default.qubit", wires=3)
@@ -262,6 +270,7 @@ def test_multi_returns():
     assert res[1].shape == (batch_size, 4)
 
 
+@pytest.mark.torch
 def test_shot_vector():
     """Test that batching works for a simple circuit with a shot vector"""
     dev = qp.device("default.qubit", wires=3)
@@ -292,6 +301,7 @@ def test_shot_vector():
     assert all(shot_res.shape == (batch_size, 4) for shot_res in res)
 
 
+@pytest.mark.torch
 def test_multi_returns_shot_vector():
     """Test that batching works for a simple circuit with multiple returns
     and with a shot vector"""
@@ -639,6 +649,7 @@ class TestDiffMulti:
             assert qp.math.allclose(g, exp, atol=tol, rtol=0)
 
 
+@pytest.mark.torch
 def test_all_operations(mocker):
     """Test that a batch dimension can be added to all operations"""
     dev = qp.device("default.qubit", wires=3)

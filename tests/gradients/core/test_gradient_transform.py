@@ -228,6 +228,7 @@ def _allclose(actual, expected, **kwargs):
 class TestGradientTransformIntegration:
     """Test integration of the gradient transform decorator"""
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 500], 3e-1)])
     @pytest.mark.parametrize("slicing", [False, True])
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
@@ -258,6 +259,7 @@ class TestGradientTransformIntegration:
         else:
             assert _allclose(res, expected, atol=atol, rtol=0)
 
+    @pytest.mark.torch
     @pytest.mark.local_salt(1)
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 2e-1), ([1000, 1500], 2e-1)])
     @pytest.mark.parametrize("prefactor", [1.0, 2.0])
@@ -295,6 +297,7 @@ class TestGradientTransformIntegration:
         else:
             assert _allclose(res, expected, atol=atol)
 
+    @pytest.mark.torch
     @pytest.mark.xfail(reason="Gradient transforms are not compatible with shots and mixed shapes")
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (1000, 1e-1), ([1000, 100], 2e-1)])
     def test_acting_on_qnodes_multi_param_multi_arg(self, shots, atol):
@@ -329,6 +332,7 @@ class TestGradientTransformIntegration:
             assert isinstance(res, tuple) and len(res) == 2
             assert all(_allclose(r, e, atol=atol, rtol=0) for r, e in zip(res, expected))
 
+    @pytest.mark.torch
     def test_decorator(self, tol):
         """Test that a gradient transform decorating a QNode
         acts correctly"""
@@ -349,6 +353,7 @@ class TestGradientTransformIntegration:
         expected = _torch_array([[-qp.math.sin(x), 0], [0, -2 * qp.math.cos(y) * qp.math.sin(y)]])
         assert _allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_passing_arguments(self, mocker, tol):
         """Test that a gradient transform correctly
         passes arguments"""
@@ -374,6 +379,7 @@ class TestGradientTransformIntegration:
 
         assert spy.call_args[0][2] == shifts
 
+    @pytest.mark.torch
     def test_expansion(self, mocker, tol):
         """Test that a gradient transform correctly
         expands gates with no gradient recipe"""
@@ -417,6 +423,7 @@ class TestGradientTransformIntegration:
         assert _allclose(res, expected, atol=tol, rtol=0)
         assert spy.call_args[0][0].operations[0].name == "RX"
 
+    @pytest.mark.torch
     def test_permuted_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when the QNode arguments are permuted"""
@@ -438,6 +445,7 @@ class TestGradientTransformIntegration:
         expected = qp.jacobian(cost)(w)
         assert _allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_multiple_tensor_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when multiple tensor QNode arguments are present"""
@@ -458,6 +466,7 @@ class TestGradientTransformIntegration:
         assert isinstance(res, tuple) and len(res) == 2
         assert all(_allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
+    @pytest.mark.torch
     def test_multiple_tensor_arguments_old_version(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when multiple tensor QNode arguments are present"""
@@ -479,6 +488,7 @@ class TestGradientTransformIntegration:
         for _r, _e in zip(res, expected):
             assert qp.math.allclose(_r, _e, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_high_dimensional_single_parameter_arg(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single high-dimensional tensor QNode arguments is used"""
@@ -496,6 +506,7 @@ class TestGradientTransformIntegration:
         res = qp.gradients.param_shift(circuit)(x)
         assert _allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_high_dimensional_single_parameter_arg_and_single_gate(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single high-dimensional tensor QNode arguments is used"""
@@ -512,6 +523,7 @@ class TestGradientTransformIntegration:
         res = qp.gradients.param_shift(circuit)(x)
         assert _allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_single_gate_arg(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single QNode argument and gate are present"""
@@ -528,6 +540,7 @@ class TestGradientTransformIntegration:
         res = qp.gradients.param_shift(circuit)(x)
         assert _allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_first_non_trainable_argument(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when the first argument is non-trainable"""
@@ -549,6 +562,7 @@ class TestGradientTransformIntegration:
 
         assert _allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_classical_processing_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when the QNode arguments are classically processed"""
@@ -568,6 +582,7 @@ class TestGradientTransformIntegration:
         expected = [-2 * x * qp.math.sin(x**2), 0]
         assert _allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_classical_processing_multiple_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when multiple QNode arguments are classically processed"""
@@ -602,6 +617,7 @@ class TestGradientTransformIntegration:
         assert _allclose(res[0], expected_dd, atol=tol, rtol=0)
         assert _allclose(res[1], expected_dw, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_advanced_classical_processing_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when the QNode arguments are classically processed,
@@ -635,6 +651,7 @@ class TestGradientTransformIntegration:
         assert _allclose(res[0][0], expected[0], atol=10e-2, rtol=0)
         assert _allclose(res[1][0], expected[1], atol=10e-2, rtol=0)
 
+    @pytest.mark.torch
     def test_template_integration(self, tol):
         """Test that the gradient transform acts on QNodes
         correctly when the QNode contains a template"""
@@ -652,6 +669,7 @@ class TestGradientTransformIntegration:
         expected = qp.jacobian(circuit)(weights)
         assert _allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_setting_shots(self):
         """Test that setting the number of shots works correctly for
         a gradient transform"""
