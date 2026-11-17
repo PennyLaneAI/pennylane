@@ -45,6 +45,14 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         The shot adaptive optimizer only supports single QNode objects as objective functions.
         The bound device must also be instantiated with a finite number of shots.
 
+        Native JAX and PyTorch parameters are supported in eager execution. Floating-point
+        JAX arrays are trainable; pass fixed values as ordinary NumPy arrays or Python values.
+        PyTorch tensors use their ``requires_grad`` flags. Updated tensors preserve their
+        dtype and device, and PyTorch updates are detached trainable leaves. Gradient statistics
+        and shot budgets are maintained as NumPy arrays, so optimizer steps cannot be JIT-compiled.
+        With JAX, use float64 parameters when ``jax_enable_x64`` is enabled, or float32 parameters
+        when it is disabled, matching the QNode's finite-shot differentiation precision.
+
     Args:
         min_shots (int): the minimum number of shots used to estimate the expectations
             of each term in the Hamiltonian. Note that this must be larger than 2 for the variance
@@ -67,61 +75,29 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
     **Example**
 
-    For VQE/VQE-like problems, the objective function for the optimizer can be realized
-    as a :class:`~.QNode` object measuring the expectation of a :class:`~.ops.LinearCombination`.
+    Optimize a sampled expectation value with a native JAX parameter:
 
-    >>> from pennylane import numpy as np
-    >>> from functools import partial
-    >>> coeffs = [2, 4, -1, 5, 2]
-    >>> obs = [
-    ...   qp.X(1),
-    ...   qp.Z(1),
-    ...   qp.X(0) @ qp.X(1),
-    ...   qp.Y(0) @ qp.Y(1),
-    ...   qp.Z(0) @ qp.Z(1)
-    ... ]
-    >>> H = qp.Hamiltonian(coeffs, obs)
-    >>> dev = qp.device("default.qubit", wires=2)
+    >>> import jax.numpy as jnp
+    >>> import pennylane as qp
+    >>> dev = qp.device("default.qubit", wires=1, seed=123)
     >>> @qp.set_shots(shots=100)
-    ... @qp.qnode(dev)
-    ... def cost(weights):
-    ...     qp.StronglyEntanglingLayers(weights, wires=range(2))
-    ...     return qp.expval(H)
+    ... @qp.qnode(dev, interface="jax", diff_method="parameter-shift")
+    ... def cost(angle):
+    ...     qp.RX(angle, 0)
+    ...     return qp.expval(qp.Z(0))
 
     Once constructed, the cost function can be passed directly to the
     optimizer's ``step`` method. The attributes ``opt.shots_used`` and
     ``opt.total_shots_used`` can be used to track the number of shots per
     iteration, and across the life of the optimizer, respectively.
 
-    >>> shape = qp.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
-    >>> params = np.random.random(shape)
-    >>> opt = qp.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
-    >>> for i in range(60):
-    ...    params = opt.step(cost, params)
-    ...    print(f"Step {i}: cost = {cost(params):.2f}, shots_used = {opt.total_shots_used}")
-    Step 0: cost = -5.69, shots_used = 240
-    Step 1: cost = -2.98, shots_used = 336
-    Step 2: cost = -4.97, shots_used = 624
-    Step 3: cost = -5.53, shots_used = 1054
-    Step 4: cost = -6.50, shots_used = 1798
-    Step 5: cost = -6.68, shots_used = 2942
-    Step 6: cost = -6.99, shots_used = 4350
-    Step 7: cost = -6.97, shots_used = 5814
-    Step 8: cost = -7.00, shots_used = 7230
-    Step 9: cost = -6.69, shots_used = 9006
-    Step 10: cost = -6.85, shots_used = 11286
-    Step 11: cost = -6.63, shots_used = 14934
-    Step 12: cost = -6.86, shots_used = 17934
-    Step 13: cost = -7.19, shots_used = 22950
-    Step 14: cost = -6.99, shots_used = 28302
-    Step 15: cost = -7.38, shots_used = 34134
-    Step 16: cost = -7.66, shots_used = 41022
-    Step 17: cost = -7.21, shots_used = 48918
-    Step 18: cost = -7.53, shots_used = 56286
-    Step 19: cost = -7.46, shots_used = 63822
-    Step 20: cost = -7.31, shots_used = 72534
-    Step 21: cost = -7.23, shots_used = 82014
-    Step 22: cost = -7.31, shots_used = 92838
+    >>> opt = qp.ShotAdaptiveOptimizer(min_shots=10)
+    >>> angle = jnp.array(jnp.pi / 2)
+    >>> updated = opt.step(cost, angle)
+    >>> bool(updated > angle)
+    True
+    >>> opt.shots_used
+    20
 
     .. details::
         :title: Usage Details
@@ -271,6 +247,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                 cost = qnode
 
             jacs = jacobian(cost, argnums=argnums)(*args, **kwargs)
+            jacs = [math.toarray(j) for j in jacs]
 
             if s == 1:
                 jacs = [np.expand_dims(j, 0) for j in jacs]
@@ -369,6 +346,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         gradient_variances = []
 
         for i, grad in enumerate(grads):
+            grad = math.toarray(grad)
             p_ind = np.ndindex(*grad.shape[1:])
 
             g = np.zeros_like(grad[0])
@@ -384,6 +362,28 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         return gradients, gradient_variances
 
+    @staticmethod
+    def _is_trainable(arg) -> bool:
+        """Infer eager JAX trainability or preserve an argument's explicit flag."""
+        if math.get_interface(arg) == "jax":
+            return np.issubdtype(arg.dtype, np.floating)
+        return bool(getattr(arg, "requires_grad", False))
+
+    def apply_grad(self, grad, args):
+        """Update trainable arguments while preserving native types and fixed arguments."""
+        new_args = list(args)
+        trainable_args = (i for i, arg in enumerate(args) if self._is_trainable(arg))
+        for index, gradient in zip(trainable_args, grad, strict=True):
+            arg = args[index]
+            interface = math.get_interface(arg)
+            if interface in {"jax", "torch"}:
+                gradient = math.cast_like(math.convert_like(gradient, arg), arg)
+            updated = arg - self.stepsize * gradient
+            if interface == "torch":
+                updated = updated.detach().requires_grad_(True)
+            new_args[index] = updated
+        return new_args
+
     def step(self, objective_fn, *args, **kwargs):
         """Update trainable arguments with one step of the optimizer.
 
@@ -396,16 +396,17 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             list[array]: The new variable values :math:`x^{(t+1)}`.
             If single arg is provided, list[array] is replaced by array.
         """
-        self.trainable_args = set()
-
-        for index, arg in enumerate(args):
-            if getattr(arg, "requires_grad", False):
-                self.trainable_args |= {index}
+        self.trainable_args = {i for i, arg in enumerate(args) if self._is_trainable(arg)}
+        if not self.trainable_args:
+            raise ValueError(
+                "No trainable arguments found. Use floating-point JAX arrays or "
+                "tensors with requires_grad=True."
+            )
 
         if self.s is None:
             # Number of shots per parameter
             self.s = [
-                np.zeros_like(a, dtype=np.int64) + self.min_shots
+                np.full(math.shape(a), self.min_shots, dtype=np.int64)
                 for i, a in enumerate(args)
                 if i in self.trainable_args
             ]
@@ -443,6 +444,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                 (2 * self.lipschitz * self.stepsize * xi)
                 / ((2 - self.lipschitz * self.stepsize) * (chi**2 + self.b * (self.mu**self.k)))
             )
+            s = np.maximum(s, max(2, self.min_shots))
 
             # apply an upper and lower bound on the new shot distributions,
             # to avoid the number of shots reducing below min(2, min_shots),

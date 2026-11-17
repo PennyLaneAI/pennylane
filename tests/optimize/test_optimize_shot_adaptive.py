@@ -380,3 +380,173 @@ class TestShotAllocation:
         assert cost == 1.0
         shot_override.assert_called_once_with(circuit, shots=3)
         assert circuit.shots == qp.measurements.Shots(100)
+
+    @pytest.mark.parametrize("dtype", ["int64", "float32", "float64"])
+    def test_apply_grad_preserves_legacy_trainability(self, dtype):
+        """Legacy flags, NumPy promotion, and fixed-argument identity are preserved."""
+        opt = qp.ShotAdaptiveOptimizer(min_shots=5, stepsize=0.2)
+        args = [
+            pnp.array(2.0, dtype=dtype, requires_grad=True),
+            pnp.array([3.0, 4.0], requires_grad=False),
+        ]
+        gradient = np.array(0.5)
+        expected = args[0] - opt.stepsize * gradient
+
+        updated = opt.apply_grad([gradient], args)
+
+        assert isinstance(updated[0], pnp.tensor)
+        assert updated[0].requires_grad
+        assert updated[0].dtype == expected.dtype
+        assert np.allclose(updated[0], expected)
+        assert updated[1] is args[1]
+
+
+class TestNativeOptimization:
+    """Exercise native optimizer steps through real single-shot gradient sampling."""
+
+    @staticmethod
+    def tensor(value, interface, dtype):
+        if interface == "jax":
+            import jax.numpy as jnp
+
+            return jnp.array(value, dtype=dtype)
+        import torch
+
+        return torch.tensor(value, dtype=getattr(torch, dtype), requires_grad=True)
+
+    @pytest.mark.parametrize(
+        "interface",
+        [
+            pytest.param("jax", marks=pytest.mark.jax),
+            pytest.param("torch", marks=pytest.mark.torch),
+        ],
+    )
+    @pytest.mark.parametrize("dtype", ["float32", "float64"])
+    @pytest.mark.parametrize("term_sampling", [None, "weighted_random_sampling"])
+    @pytest.mark.usefixtures("preserve_jax_x64")
+    def test_step_and_cost_native_arguments(self, interface, dtype, term_sampling):
+        """Real sampled updates retain native types, frozen arguments, and trainability."""
+        if interface == "jax":
+            import jax
+
+            jax.config.update("jax_enable_x64", dtype == "float64")
+        seen = []
+
+        @qp.set_shots(100)
+        @qp.qnode(
+            qp.device("default.qubit", wires=1, seed=123),
+            interface=interface,
+            diff_method="parameter-shift",
+        )
+        def circuit(angle, frozen, weights):
+            seen.append((angle, frozen, weights))
+            qp.RX(angle + frozen + 2 * weights[0] + 3 * weights[1], 0)
+            return qp.expval(qp.Hamiltonian([0.25], [qp.Z(0)]))
+
+        angle = self.tensor(np.pi / 2, interface, dtype)
+        weights = self.tensor([0.0, 0.0], interface, dtype)
+        frozen = np.array(0.0, dtype=dtype)
+        if interface == "torch":
+            import torch
+
+            frozen = torch.tensor(0.0, dtype=getattr(torch, dtype), requires_grad=False)
+        opt = qp.ShotAdaptiveOptimizer(min_shots=5, stepsize=0.1, term_sampling=term_sampling)
+
+        updated, cost = opt.step_and_cost(circuit, angle, frozen, weights)
+
+        assert opt.trainable_args == {0, 2}
+        assert (opt.k, opt.max_shots, opt.shots_used, opt.total_shots_used) == (1, 5, 30, 30)
+        assert np.allclose(opt.chi[0] / (1 - opt.mu), -0.25)
+        assert np.allclose(opt.chi[1] / (1 - opt.mu), [-0.5, -0.75])
+        assert np.allclose(opt.xi[0], 0.0)
+        assert np.allclose(opt.xi[1], 0.0)
+        assert opt.s[0] == 5
+        assert np.array_equal(opt.s[1], [5, 5])
+        assert updated[1] is frozen
+        assert seen[-1][0] is angle
+        assert seen[-1][1] is frozen
+        assert seen[-1][2] is weights
+        assert qp.math.get_interface(cost) == interface
+        assert qp.math.shape(cost) == ()
+        assert -0.25 <= qp.math.toarray(cost) <= 0.25
+        for result, original, increment in zip(
+            [updated[0], updated[2]],
+            [angle, weights],
+            [0.025, np.array([0.05, 0.075])],
+            strict=True,
+        ):
+            assert qp.math.get_interface(result) == interface
+            assert result.dtype == original.dtype
+            assert qp.math.shape(result) == qp.math.shape(original)
+            assert np.allclose(qp.math.toarray(result), qp.math.toarray(original) + increment)
+            if interface == "torch":
+                assert result.device == original.device
+                assert result.requires_grad
+                assert result.is_leaf
+
+        second = opt.step(circuit, *updated)
+
+        assert opt.k == 2
+        assert opt.total_shots_used == 60
+        assert second[1] is frozen
+        assert np.all(np.isfinite(opt.chi[0]))
+        assert np.all(np.isfinite(opt.xi[0]))
+        assert np.all(np.isfinite(opt.chi[1]))
+        assert np.all(np.isfinite(opt.xi[1]))
+        if interface == "torch":
+            assert second[0].requires_grad and second[0].is_leaf
+            assert second[2].requires_grad and second[2].is_leaf
+
+    @pytest.mark.parametrize(
+        "interface",
+        [
+            pytest.param("jax", marks=pytest.mark.jax),
+            pytest.param("torch", marks=pytest.mark.torch),
+        ],
+    )
+    @pytest.mark.parametrize("min_shots", [3, 11])
+    @pytest.mark.parametrize("gate, angle, gradient", [(qp.RZ, 0.4, 0.0), (qp.RX, np.pi / 2, -1.0)])
+    def test_zero_variance_preserves_positive_shot_floor(
+        self, interface, min_shots, gate, angle, gradient
+    ):
+        """Analytical zero-variance gradients retain the requested positive shot budget."""
+
+        @qp.set_shots(100)
+        @qp.qnode(
+            qp.device("default.qubit", wires=1, seed=123),
+            interface=interface,
+            diff_method="parameter-shift",
+        )
+        def circuit(angle):
+            gate(angle, wires=0)
+            return qp.expval(qp.Z(0))
+
+        opt = qp.ShotAdaptiveOptimizer(min_shots=min_shots, stepsize=0.1)
+        value = self.tensor(angle, interface, "float64")
+
+        updated = opt.step(circuit, value)
+
+        assert np.allclose(qp.math.toarray(updated), angle - 0.1 * gradient)
+        assert qp.math.get_interface(updated) == interface
+        assert qp.math.shape(updated) == ()
+        assert updated.dtype == value.dtype
+        if interface == "torch":
+            assert updated.requires_grad and updated.is_leaf
+        assert np.allclose(opt.chi[0] / (1 - opt.mu), gradient)
+        assert opt.xi[0] == 0.0
+        assert opt.s[0] == min_shots
+        assert opt.shots_used == 2 * min_shots
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            np.array(0.5),
+            pnp.array(0.5, requires_grad=False),
+        ],
+    )
+    def test_no_trainable_arguments(self, value):
+        """Fixed arguments produce a useful error before shot allocation."""
+        opt = qp.ShotAdaptiveOptimizer(min_shots=5)
+
+        with pytest.raises(ValueError, match="No trainable arguments found"):
+            opt.step(TestGradientStatistics.qnode(), value)
