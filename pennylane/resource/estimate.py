@@ -23,13 +23,7 @@ from functools import partial
 from pennylane import capture
 from pennylane.core.transforms import CompilePipeline
 from pennylane.decomposition import GateSet
-from pennylane.transforms import (
-    cancel_inverses,
-    combine_global_phases,
-    decompose,
-    merge_rotations,
-    split_to_single_terms,
-)
+from pennylane.transforms import decompose
 from pennylane.workflow._levels import (
     device_level,
     is_int_level,
@@ -52,19 +46,16 @@ from .resource import CircuitSpecs
 _DECOMPOSE_PASS = "graph-decomposition"
 
 # Passes of the transforms that estimate can skip without a warning: they only remove, merge or
-# reorder gates, or split the measurements, so skipping them keeps the gate types, though not
-# their counts.
+# reorder gates, or split the measurements, so skipping them does not add gate types, though
+# merge-rotations can merge Pauli product rotations into a larger angle.
 # Any other transform may introduce new gate types.
+# The pass names are not read from the transforms, which are plain functions in docs builds.
 # TODO: let each transform declare whether it is safe to skip, instead of listing them here.
 _SAFE_TO_SKIP_TRANSFORMS = frozenset(
-    transform.pass_name
-    for transform in (
-        cancel_inverses,
-        merge_rotations,
-        combine_global_phases,
-        split_to_single_terms,
-    )
+    {"cancel-inverses", "merge-rotations", "combine-global-phases", "split-to-single-terms"}
 )
+
+_GRIDSYNTH_ROTATIONS = ("RZ", "PhaseShift", "Adjoint(RZ)", "Adjoint(PhaseShift)")
 
 
 def _decompose_kwargs(bound_transform) -> dict:
@@ -208,8 +199,9 @@ def _warn_skipped_transforms(gate_changing: list[tuple], target, resources) -> N
             )
             continue
         num_rotations = sum(
-            specs.quantum_operations.get("RZ", 0) + specs.quantum_operations.get("PhaseShift", 0)
+            specs.quantum_operations.get(rotation, 0)
             for specs in (resources if isinstance(resources, list) else [resources])
+            for rotation in _GRIDSYNTH_ROTATIONS
         )
         if num_rotations:
             warnings.warn(
@@ -266,7 +258,20 @@ def _missing_rule_message(op: str, target, pipeline: CompilePipeline, gate_chang
             f" target={target!r} is not a level of the compile pipeline, so it is the name of the "
             "only gate in the target gate set."
         )
+    elif levels := [name for name in target if _is_level_name(name, pipeline)]:
+        message += (
+            f" The target gate set contains {', '.join(map(repr, levels))}, which is a gate name "
+            "here. To use a level of the compile pipeline as target, pass it on its own, such as "
+            f"target={levels[0]!r}."
+        )
     return message
+
+
+def _is_level_name(name, pipeline: CompilePipeline) -> bool:
+    """Return whether ``name`` is the name of a level or a marker label of ``pipeline``."""
+    return isinstance(name, str) and (
+        name in ("top", "user", "device", "all-user", "all") or name in pipeline.markers
+    )
 
 
 def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
@@ -437,14 +442,18 @@ def estimate(
         of :func:`~.analyze` at that level:
 
         * Transforms that only remove, merge or reorder gates, such as :func:`~.cancel_inverses`,
-          :func:`~.merge_rotations` or :func:`~.combine_global_phases`, are skipped without a warning. The
-          gate types are the same, but the gate counts can be higher.
+          :func:`~.merge_rotations` or :func:`~.combine_global_phases`, are skipped without a
+          warning. They do not add gate types, but the gate counts can be higher.
         * Other transforms are skipped with a warning, since they may introduce new gates. For
           example, the ``RZ`` and ``PhaseShift`` gates that :func:`~.transforms.gridsynth` would
           approximate in the Clifford+T basis are left as they are, and the warning gives their
           number and the ``epsilon`` of :func:`~.transforms.gridsynth`.
 
         To include the skipped transforms, use :func:`~.analyze` at that level instead.
+
+        The resources can also differ from those of :func:`~.analyze` because ``estimate`` uses
+        the resources that the decomposition rules declare, which can be upper bounds of the
+        gates that they apply.
 
         A marker label takes priority over a gate with the same name.
 

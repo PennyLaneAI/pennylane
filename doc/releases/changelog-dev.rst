@@ -543,10 +543,11 @@ New features since last release
       {'CNOT': 1, 'RX': 1}
 
 * A new function called :func:`~pennylane.estimate` is available, which provides a quick projection of the
-  resources of a ``qjit``-compiled QNode onto a target gate set, without executing the circuit.
-  Before any specified compilation passes, the original circuit's operations and their possible
-  decomposition pathways to the ``target`` gate set are analyzed and the resulting operations are
-  counted. Note that :func:`~pennylane.estimate` is only supported with ``qp.qjit(capture=True)``.
+  resources of a ``qjit``-compiled QNode onto a ``target``, without executing the circuit. The
+  ``target`` is a gate set, or a level of the compile pipeline, which defaults to the device. The
+  original circuit's operations and their possible decomposition pathways to the gates of the
+  ``target`` are analyzed and the resulting operations are counted. Note that
+  :func:`~pennylane.estimate` is only supported with ``qp.qjit(capture=True)``.
   `(#10296) <https://github.com/PennyLaneAI/pennylane/pull/10296>`__
 
   Consider the following circuit.
@@ -597,7 +598,8 @@ New features since last release
   ``fixed_decomps`` and ``exclude_decomps``, while the other transforms are still skipped, as with
   ``level="top"``. A warning is raised if a skipped transform may introduce new gates, such as
   :func:`~.transforms.gridsynth`. If ``target`` is a gate set, the rules of the compile pipeline
-  are ignored, with a warning.
+  are ignored, with a warning. The decomposition rules are counted with the resources that they
+  declare, so the resources can also differ from those of :func:`~.analyze`.
   `(#10541) <https://github.com/PennyLaneAI/pennylane/pull/10541>`__
 
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
@@ -1922,7 +1924,7 @@ Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
 * The helper that inserts the resource analysis passes for :func:`~.analyze` and
-  :func:`~.estimate` now inserts the requested analysis pass at every level, instead of
+  :func:`~pennylane.estimate` now inserts the requested analysis pass at every level, instead of
   ``resource-analysis`` at every level other than 0.
   `(#10541) <https://github.com/PennyLaneAI/pennylane/pull/10541>`__
 

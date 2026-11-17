@@ -24,6 +24,7 @@ import pytest
 import pennylane as qp
 from pennylane.core.shots import Shots
 from pennylane.resource import CircuitSpecs, SpecsResources
+from pennylane.resource.estimate import _SAFE_TO_SKIP_TRANSFORMS
 
 catalyst = pytest.importorskip("catalyst")
 
@@ -766,6 +767,33 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
 
         assert specs.resources.quantum_operations == {"CNOT": 2, "Hadamard": 2, "RZ": 2}
 
+    def test_gridsynth_counts_adjoint_rotations(self):
+        """Test that the warning for gridsynth also counts the adjoint rotations, which are
+        reported under their own names."""
+
+        @qp.qjit
+        @qp.transforms.gridsynth
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
+        def circuit(x):
+            qp.adjoint(qp.RZ(x, 0))
+            qp.RZ(x, 0)
+            qp.adjoint(qp.PhaseShift(x, 0))
+            return qp.probs()
+
+        with pytest.warns(UserWarning, match="so 3 RZ and PhaseShift gates are not approximated"):
+            qp.estimate(circuit, target="user")(0.5)
+
+    def test_safe_to_skip_transforms_are_pass_names(self):
+        """Test that the transforms that are safe to skip are the pass names of transforms."""
+
+        transforms = (
+            qp.transforms.cancel_inverses,
+            qp.transforms.merge_rotations,
+            qp.transforms.combine_global_phases,
+            qp.transforms.split_to_single_terms,
+        )
+        assert _SAFE_TO_SKIP_TRANSFORMS == {transform.pass_name for transform in transforms}
+
     @pytest.mark.parametrize("target", ["user", "device"])
     def test_gridsynth_before_decompose(self, target):
         """Test that the warning for gridsynth does not count the rotations if a decompose
@@ -1027,6 +1055,13 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
 
         with pytest.raises(ValueError, match="target='devices' is not a level of the compile"):
             qp.estimate(circuit, target="devices")(0.5)
+
+    def test_level_name_in_gate_set_target(self, circuit):
+        """Test that the error for a gate set target that contains a level name says how to use
+        the level as target."""
+
+        with pytest.raises(ValueError, match="contains 'user', .* such as target='user'.$"):
+            qp.estimate(circuit, target=["user"])(0.5)
 
     @pytest.mark.parametrize("target", [True, None])
     def test_invalid_target(self, circuit, target):
