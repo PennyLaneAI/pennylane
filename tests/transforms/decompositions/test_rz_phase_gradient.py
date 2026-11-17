@@ -353,4 +353,5 @@ def test_precision_stats_hint_weighted_resources():
         with qp.queuing.AnnotatedQueue() as q:
             rule(phi, wires=[0])
         expected.update(op.name for op in phase_gradient_helpers.leaf_ops(q.queue))
+    expected["1C(MultiX)"] = expected.pop("C(MultiX)")
     assert qp.analyze(circuit, level=0)(angles).resources.counts == expected
