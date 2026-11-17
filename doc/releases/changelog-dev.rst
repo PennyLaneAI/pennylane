@@ -898,7 +898,7 @@ Improvements 🛠
 
 * :func:`~.grad` and :func:`~.jacobian` now support JAX and PyTorch inputs outside
   program capture and :func:`~.qjit`.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10551) <https://github.com/PennyLaneAI/pennylane/pull/10551>`__
 
   .. code-block:: pycon
 
@@ -1903,7 +1903,7 @@ Breaking changes 💔
 
 * The Autograd interface has been removed. QNodes support NumPy, JAX, and PyTorch;
   the NumPy interface does not support automatic differentiation.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10551) <https://github.com/PennyLaneAI/pennylane/pull/10551>`__
 
 Deprecations 👋
 ~~~~~~~~~~~~~~~
