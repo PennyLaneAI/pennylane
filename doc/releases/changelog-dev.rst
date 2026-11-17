@@ -1929,6 +1929,13 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* Adding trusted publishing PyPI uploads.
+  `(#10513) <https://github.com/PennyLaneAI/pennylane/pull/10513>`__
+
+* Removed leftover array-interface selection from QSVT iterative angle solvers now that
+  JAX is always available.
+  `(#10216) <https://github.com/PennyLaneAI/pennylane/pull/10216>`__
+
 * Added pinned local ``ty`` tooling and a diagnostic baseline for the package.
   `(#10537) <https://github.com/PennyLaneAI/pennylane/pull/10537>`__
 
@@ -2038,7 +2045,8 @@ Internal changes ⚙️
     - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
       :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`,
       :class:`~.GlobalPhase`, :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`, :class:`~.RX`, :class:`~.CRX`,
-      :class:`~.RY`, :class:`~.CRY`, :class:`~.QubitUnitary`, :class:`~.ControlledQubitUnitary`
+      :class:`~.RY`, :class:`~.CRY`, :class:`~.QubitUnitary`, :class:`~.ControlledQubitUnitary`,
+      :class:`~.CPhaseShift00`, :class:`~.CPhaseShift01`, :class:`~.CPhaseShift10`
 
     `(#9998) <https://github.com/PennyLaneAI/pennylane/pull/9998>`__
     `(#9857) <https://github.com/PennyLaneAI/pennylane/pull/9857>`__
@@ -2059,6 +2067,7 @@ Internal changes ⚙️
     `(#10041) <https://github.com/PennyLaneAI/pennylane/pull/10041>`__
     `(#10072) <https://github.com/PennyLaneAI/pennylane/pull/10072>`__
     `(#10149) <https://github.com/PennyLaneAI/pennylane/pull/10149>`__
+    `(#10494) <https://github.com/PennyLaneAI/pennylane/pull/10494>`__
 
   - Templates are ported:
 
@@ -2812,6 +2821,7 @@ Contributors ✍️
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire,
 Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,
