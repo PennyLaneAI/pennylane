@@ -340,20 +340,25 @@ def select_thc_wires(M, N, beth, num_batches=1):
     }
 
 
-def _select_basis_resources(rotation_data, system_wires, control_wires, gradient_wires, work_wires):
+def _select_basis_resources(
+    rotation_data, system_wires, control_wires, gradient_wires, angle_wires, work_wires
+):
     """Return the routing, QROM and loaded-rotation resources of one basis change."""
     beth, batches, tables = rotation_data
-    n_angle = len(batches[0]) * beth if batches else 0
-    qrom_work = Wire[len(work_wires) - n_angle]
-    swap = ctrl(SWAP(Wire[2]), control=Wire[1], work_wires=work_wires, work_wire_type="zeroed")
+    swap = ctrl(
+        SWAP(Wire[2]),
+        control=Wire[1],
+        work_wires=Wire[len(angle_wires) + len(work_wires)],
+        work_wire_type="zeroed",
+    )
     resources = Counter({swap: len(system_wires) // 2})
     for table in tables:
         resources[
             QROM(
                 table,
                 control_wires=Wire[len(control_wires) - 1],
-                target_wires=Wire[n_angle],
-                work_wires=qrom_work,
+                target_wires=angle_wires,
+                work_wires=work_wires,
                 clean=True,
             )
         ] += 1
@@ -375,7 +380,7 @@ def _select_basis_resources(rotation_data, system_wires, control_wires, gradient
 
 @subcircuit(
     compilable_argnames=("rotation_data",),
-    wire_argnames=("system_wires", "control_wires", "gradient_wires", "work_wires"),
+    wire_argnames=("system_wires", "control_wires", "gradient_wires", "angle_wires", "work_wires"),
 )
 @register_resources(_select_basis_resources)
 def _SelectTHCBasis(
@@ -383,7 +388,8 @@ def _SelectTHCBasis(
     system_wires: WiresLike,
     control_wires: WiresLike,
     gradient_wires: WiresLike,
-    work_wires: WiresLike,
+    angle_wires: WiresLike,
+    work_wires: WiresLike = (),
 ):
     """Route the spin sector and load each batch of Givens rotations.
 
@@ -392,17 +398,16 @@ def _SelectTHCBasis(
         system_wires (Sequence[int]): the spin-down and spin-up orbitals
         control_wires (Sequence[int]): the spin flag followed by the QROM address
         gradient_wires (Sequence[int]): the prepared phase-gradient register
-        work_wires (Sequence[int]): the angle register followed by zeroed QROM and adder scratch
+        angle_wires (Sequence[int]): the angle register, left loaded until uncomputation
+        work_wires (Sequence[int]): zeroed QROM and adder scratch, restored before returning
     """
     beth, batches, tables = rotation_data
     n_half = len(system_wires) // 2
-    n_angle = len(batches[0]) * beth if batches else 0
-    angle_wires, qrom_work = work_wires[:n_angle], work_wires[n_angle:]
     for down, up in zip(system_wires[:n_half], system_wires[n_half:], strict=True):
         ctrl(
             SWAP(wires=[down, up]),
             control=control_wires[0],
-            work_wires=work_wires,
+            work_wires=Wires(angle_wires) + Wires(work_wires),
             work_wire_type="zeroed",
         )
     for table, batch in zip(tables, batches, strict=True):
@@ -410,11 +415,11 @@ def _SelectTHCBasis(
             table,
             control_wires=control_wires[1:],
             target_wires=angle_wires,
-            work_wires=qrom_work,
+            work_wires=work_wires,
             clean=True,
         )
         _apply_loaded_rotation(
-            system_wires[:n_half], angle_wires, beth, batch, gradient_wires, qrom_work
+            system_wires[:n_half], angle_wires, beth, batch, gradient_wires, work_wires
         )
 
 
@@ -512,7 +517,14 @@ def _select_half(  # pylint: disable=too-many-arguments
     )
     z_control, z_values = ([succ, edge], [1, 0]) if skip_one_body else ([succ], [1])
     return change_op_basis(
-        _SelectTHCBasis(rotation_data, system_wires, control_wires, gradient_wires, work_wires),
+        _SelectTHCBasis(
+            rotation_data,
+            system_wires,
+            control_wires,
+            gradient_wires,
+            work_wires[:n_angle],
+            qrom_work,
+        ),
         ctrl(
             Z(system_wires[0]),
             control=z_control,

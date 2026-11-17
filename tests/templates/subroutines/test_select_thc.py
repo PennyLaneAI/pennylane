@@ -376,6 +376,28 @@ class TestSelectTHCOperator:
                 qp.testing.assert_decomposable(operand, check_matrix=False)
                 if type(operand) in (_SelectTHCBasis, _THCIndexSwaps):
                     assert_valid(operand, skip_differentiation=True)
+                if isinstance(operand, _SelectTHCBasis):
+                    n_angle = len(operand.rotation_data[1][0]) * op.beth if n_half > 1 else 0
+                    assert operand.angle_wires == wires["work_wires"][:n_angle]
+                    assert operand.work_wires == wires["work_wires"][n_angle:]
+                    assert set(operand.angle_wires).issubset(operand.wires)
+                    assert set(operand.work_wires).isdisjoint(operand.wires)
+                    assert set(operand.angle_wires).issubset(sandwich.wires)
+
+    def test_basis_loaded_angle_is_an_operator_wire(self):
+        """The basis keeps its loaded angle as state until the enclosing uncomputation."""
+        basis = _SelectTHCBasis((1, ((0,),), (((1,),),)), [0, 1, 2, 3], [4], [5, 6], [7], [8])
+        assert 7 in basis.wires
+        assert 8 not in basis.wires
+
+        @qp.qnode(qp.device("default.qubit", wires=9))
+        def circuit():
+            qp.apply(basis)
+            return qp.probs(wires=[7]), qp.probs(wires=[8])
+
+        angle_probs, scratch_probs = circuit()
+        assert qp.math.allclose(angle_probs, [0, 1])
+        assert qp.math.allclose(scratch_probs, [1, 0])
 
     def test_abstract_wires_keep_static_data(self):
         """Test that abstract construction stores compilable data as given."""
