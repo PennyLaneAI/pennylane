@@ -49,12 +49,8 @@ def test_standard_validity_SemiAdder(work_wires):
     x_wires = [0, 1, 2]
     y_wires = [3, 4, 5]
     op = qp.SemiAdder(x_wires, y_wires, work_wires)
-    # PPM rules contain nested measurement branches, tested with Catalyst below.
-    with (
-        qp.exclude_decomps(qp.SemiAdder, "_semi_adder_ppm"),
-        qp.exclude_decomps("C(SemiAdder)", "flip_zero_ctrl_values(_controlled_semi_adder_ppm)"),
-    ):
-        qp.testing.assert_valid(op)
+    # Nested measurement branches are covered by the dedicated capture and Catalyst tests.
+    qp.testing.assert_valid(op, skip_new_decomp=qp.capture.enabled())
 
 
 class TestSemiAdder:
@@ -70,7 +66,7 @@ class TestSemiAdder:
         assert mapped.wires == Wires([3, 0, "y1", "y0", 4])
 
     @pytest.mark.parametrize(
-        ("x_wires", "y_wires", "work_wires", "x", "y"),
+        "case",
         [
             ([0], [1], None, 1, 0),
             ([0], [1], None, 1, 1),
@@ -100,8 +96,9 @@ class TestSemiAdder:
             (["a", "b", "d"], ["e", "h", "p"], ["f", "z", "u", "q", "v"], 4, 2),
         ],
     )
-    def test_operation_result(self, x_wires, y_wires, work_wires, x, y):
+    def test_operation_result(self, case):
         """Test the correctness of the SemiAdder template output."""
+        x_wires, y_wires, work_wires, x, y = case
         dev = qp.device("default.qubit")
 
         @qp.set_shots(1)
@@ -852,6 +849,37 @@ class TestControlledSemiAdderPPM:
 
 class TestSemiAdderPPM:
     """Test the measurement-based (Pauli product) decomposition of qp.SemiAdder."""
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("num_controls", [0, 1, 2, 3])
+    def test_graph_selects_ppm_with_allocated_work_wires(self, num_controls):
+        """A base with only carry wires can use PPM when the graph has enough spare wires."""
+        base = qp.SemiAdder(
+            range(num_controls, num_controls + 2),
+            range(num_controls + 2, num_controls + 4),
+            [num_controls + 4],
+        )
+        op = qp.ctrl(base, range(num_controls)) if num_controls else base
+        graph = qp.decomposition.DecompositionGraph(
+            [op],
+            gate_set={
+                "PPR_8": 2,
+                "PauliMeasure": 1,
+                "PauliX": 0,
+                "PauliZ": 0,
+                "GlobalPhase": 0,
+            },
+        )
+        expected_rule = (
+            "flip_zero_ctrl_values(_controlled_semi_adder_ppm)"
+            if num_controls
+            else "_semi_adder_ppm"
+        )
+        needed = num_controls + 2
+        solution = graph.solve(num_work_wires=needed - 1)
+        assert solution.decomposition(op, num_work_wires=needed - 1).name != expected_rule
+        solution = graph.solve(num_work_wires=needed)
+        assert solution.decomposition(op, num_work_wires=needed).name == expected_rule
 
     def test_condition_without_compiler(self):
         """Test that the PPM decomposition is not applicable without an active compiler."""
