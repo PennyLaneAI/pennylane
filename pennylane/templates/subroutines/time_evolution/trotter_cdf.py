@@ -170,7 +170,8 @@ class TrotterCDF(Operator2):
         In this decomposition, each diagonal rotation block is sandwiched by ``CNOT`` gates from the control wire (an
         ancilla-system ``ZZ`` coupling). For real-valued leaves, the one-body block instead is a
         complex-valued :class:`~.BasisRotation`, sandwiched by ``CNOT`` and ``CY`` gates from the
-        control wire, followed by a :class:`~.GlobalPhase` (see Implementation Details).
+        control wire, and the decomposition adds one overall :class:`~.GlobalPhase` (see
+        Implementation Details).
 
         .. code-block::
 
