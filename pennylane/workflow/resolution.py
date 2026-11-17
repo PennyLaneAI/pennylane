@@ -75,6 +75,8 @@ def _resolve_interface(interface: str | Interface | None, tapes: QuantumScriptBa
         try:
             interface = Interface(interface)
         except ValueError:
+            if interface == "autograd":
+                raise
             # If the interface is not recognized, default to numpy, like networkx
             interface = Interface.NUMPY
 

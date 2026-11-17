@@ -77,7 +77,7 @@ def test_device_transform_program():
 
 def test_interface_data_not_supported():
     """Test that convert_to_numpy_parameters transform is correctly added."""
-    config = ExecutionConfig(interface="autograd", gradient_method="adjoint")
+    config = ExecutionConfig(interface="torch", gradient_method="adjoint")
     device = qp.device("default.qubit")
 
     full_tp, inner_tp = _setup_transform_program(device, config)
@@ -88,7 +88,7 @@ def test_interface_data_not_supported():
 
 def test_interface_data_supported():
     """Test that convert_to_numpy_parameters transform is not added for these cases."""
-    config = ExecutionConfig(interface="autograd", gradient_method="backprop")
+    config = ExecutionConfig(interface="torch", gradient_method="backprop")
 
     device = qp.device("default.mixed", wires=1)
 
@@ -96,7 +96,7 @@ def test_interface_data_supported():
 
     assert qp.transforms.convert_to_numpy_parameters not in inner_tp
 
-    config = ExecutionConfig(interface="autograd", gradient_method="backprop")
+    config = ExecutionConfig(interface="torch", gradient_method="backprop")
 
     device = qp.device("default.qubit")
 

@@ -91,7 +91,6 @@ def _construct_ml_execution_pipeline(
         execute_fn,
         config.gradient_method,
         config.gradient_keyword_arguments,
-        cache_full_jacobian=config.interface == Interface.AUTOGRAD,
     )
     for _ in range(1, config.derivative_order):
         ml_boundary_execute = _get_ml_boundary_execute(config)
@@ -127,9 +126,6 @@ def _get_ml_boundary_execute(resolved_execution_config: ExecutionConfig) -> Call
     device_vjp = resolved_execution_config.use_device_jacobian_product
     try:
         match interface:
-            case Interface.AUTOGRAD:
-                from .interfaces.autograd import autograd_execute as ml_boundary
-
             case Interface.TORCH:
                 from .interfaces.torch import execute as ml_boundary
 

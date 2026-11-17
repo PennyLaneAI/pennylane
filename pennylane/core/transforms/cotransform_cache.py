@@ -20,7 +20,6 @@ from functools import partial
 import jax
 
 from pennylane import math
-from pennylane._grad import jacobian as autograd_jacobian
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.typing import TensorLike
 
@@ -29,12 +28,6 @@ from .transform import BoundTransform
 
 def _numpy_jac(*_, **__) -> TensorLike:
     raise QuantumFunctionError("No trainable parameters.")
-
-
-def _autograd_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
-    if not math.get_trainable_indices(args) and argnums is None:
-        raise QuantumFunctionError("No trainable parameters.")
-    return autograd_jacobian(classical_function, argnums=argnums)(*args, **kwargs)
 
 
 # pylint: disable-next=unused-argument
@@ -56,7 +49,6 @@ def _jax_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
 _jac_map = {
     None: _numpy_jac,
     "numpy": _numpy_jac,
-    "autograd": _autograd_jac,
     "torch": _torch_jac,
     "jax": _jax_jac,
     "jax-jit": _jax_jac,
@@ -123,6 +115,8 @@ def _get_interface(qnode, args, kwargs) -> str:
         try:
             interface = math.Interface(interface).value
         except ValueError:
+            if interface == "autograd":
+                raise
             interface = "numpy"
     else:
         interface = qnode.interface
@@ -165,7 +159,8 @@ class CotransformCache:
 
         .. code-block:: python
 
-            @qp.gradients.param_shift
+            import jax
+
             @qp.transforms.split_non_commuting
             @qp.qnode(qp.device('default.qubit'))
             def c(x, y):
@@ -174,13 +169,14 @@ class CotransformCache:
                 return qp.expval(qp.Z(0)), qp.expval(qp.X(0))
 
 
+            c = qp.gradients.param_shift(c, argnums=[0, 1])
             ps_container = c.compile_pipeline[-1]
-            x, y = qp.numpy.array(0.5), qp.numpy.array(3.0)
+            x, y = jax.numpy.array(0.5), jax.numpy.array(3.0)
 
             cc = CotransformCache(c, (x, y), {})
 
-        >>> cc.get_classical_jacobian(ps_container, tape_idx = 0)
-        (array([2., 3.]), array([0. , 0.5]))
+        >>> tuple(jac.tolist() for jac in cc.get_classical_jacobian(ps_container, tape_idx=0))
+        ([2.0, 3.0], [0.0, 0.5])
 
         """
         transform_index = self._get_idx_for_transform(transform)

@@ -22,7 +22,6 @@ import autoray as ar
 class Interface(Enum):
     """Canonical set of interfaces supported."""
 
-    AUTOGRAD = "autograd"
     NUMPY = "numpy"
     TORCH = "torch"
     JAX = "jax"
@@ -50,7 +49,6 @@ class Interface(Enum):
     def get_like(self) -> str | None:
         """Maps canonical set of interfaces to those known by autoray."""
         mapping = {
-            Interface.AUTOGRAD: "autograd",
             Interface.NUMPY: "numpy",
             Interface.TORCH: "torch",
             Interface.JAX: "jax",

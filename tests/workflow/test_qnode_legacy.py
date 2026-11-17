@@ -23,9 +23,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
-from pennylane import QNode
-from pennylane import numpy as pnp
-from pennylane import qnode
+from pennylane import QNode, qnode
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.resource import SpecsResources
@@ -50,7 +48,7 @@ class DummyDevice(qp.devices.LegacyDevice):
     pennylane_requires = 0.38
 
     def capabilities(self):
-        return {"passthru_devices": {"autograd": "default.qubit.legacy"}}
+        return {"passthru_devices": {}}
 
     def reset(self):
         pass
@@ -78,20 +76,20 @@ class DeviceDerivatives(DummyDevice):
 class TestValidation:
     """Tests for QNode creation and validation"""
 
-    def test_invalid_interface(self):
+    @pytest.mark.parametrize("test_interface", ["something", "autograd"])
+    def test_invalid_interface(self, test_interface):
         """Test that an exception is raised for an invalid interface"""
         dev = DefaultQubitLegacy(wires=1)
-        test_interface = "something"
         expected_error = rf"'{test_interface}' is not a valid Interface\. Please use one of the supported interfaces: \[.*\]\."
 
         with pytest.raises(ValueError, match=expected_error):
-            QNode(dummyfunc, dev, interface="something")
+            QNode(dummyfunc, dev, interface=test_interface)
 
-    def test_changing_invalid_interface(self):
+    @pytest.mark.parametrize("test_interface", ["something", "autograd"])
+    def test_changing_invalid_interface(self, test_interface):
         """Test that an exception is raised for an invalid interface
         on a pre-existing QNode"""
         dev = DefaultQubitLegacy(wires=1)
-        test_interface = "something"
 
         @qnode(dev)
         def circuit(x):
@@ -117,7 +115,7 @@ class TestValidation:
             QuantumFunctionError,
             match="Differentiation method hello not recognized",
         ):
-            QNode(dummyfunc, dev, interface="autograd", diff_method="hello")
+            QNode(dummyfunc, dev, interface="numpy", diff_method="hello")
 
     def test_unknown_diff_method_type(self):
         """Test that an exception is raised for an unknown differentiation method type"""
@@ -127,7 +125,7 @@ class TestValidation:
             ValueError,
             match="Differentiation method 5 must be a str, Transform, or None",
         ):
-            QNode(dummyfunc, dev, interface="autograd", diff_method=5)
+            QNode(dummyfunc, dev, interface="numpy", diff_method=5)
 
     def test_adjoint_finite_shots(self):
         """Tests that QuantumFunctionError is raised with the adjoint differentiation method
@@ -148,7 +146,6 @@ class TestValidation:
 
             circ()
 
-    @pytest.mark.autograd
     def test_sparse_diffmethod_error(self):
         """Test that an error is raised when the observable is SparseHamiltonian and the
         differentiation method is not parameter-shift."""
@@ -163,7 +160,7 @@ class TestValidation:
             QuantumFunctionError,
             match="does not support backprop with requested circuit.",
         ):
-            qp.grad(circuit, argnums=0)(0.5)
+            circuit(0.5)
 
     def test_qnode_print(self):
         """Test that printing a QNode object yields the right information."""
@@ -180,20 +177,15 @@ class TestValidation:
             == "<QNode: wires=1, device='default.qubit.legacy', interface='auto', diff_method='best', shots='Shots(total=None)'>"
         )
 
-        qn = QNode(func, dev, interface="autograd")
+        qn = QNode(func, dev, interface="numpy")
 
         assert (
             repr(qn)
-            == "<QNode: wires=1, device='default.qubit.legacy', interface='autograd', diff_method='best', shots='Shots(total=None)'>"
+            == "<QNode: wires=1, device='default.qubit.legacy', interface='numpy', diff_method='best', shots='Shots(total=None)'>"
         )
 
         # QNode can still be executed
         assert np.allclose(qn(0.5), np.cos(0.5), rtol=0)
-
-        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
-            grad = qp.grad(qn)(0.5)
-
-        assert np.allclose(grad, 0)
 
     def test_auto_interface_tracker_device_switched(self):
         """Test that checks that the tracker is switched to the new device."""
@@ -205,7 +197,7 @@ class TestValidation:
             return qp.expval(qp.PauliZ(0))
 
         with qp.Tracker(dev) as tracker:
-            circuit(qp.numpy.array(0.1, requires_grad=True))
+            circuit(np.array(0.1))
 
         assert tracker.totals == {"executions": 1, "batches": 1, "batch_len": 1}
         assert np.allclose(tracker.history.pop("results")[0], 0.99500417)
@@ -224,17 +216,17 @@ class TestValidation:
             ],
         }
 
-    def test_autograd_interface_device_switched_no_warnings(self):
+    def test_numpy_interface_device_switched_no_warnings(self):
         """Test that checks that no warning is raised for device switch when you define an interface,
         except for the deprecation warnings which will be caught by the fixture."""
         dev = DefaultQubitLegacy(wires=1)
 
-        @qp.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="numpy")
         def circuit(params):
             qp.RX(params, wires=0)
             return qp.expval(qp.PauliZ(0))
 
-        circuit(qp.numpy.array(0.1, requires_grad=True))
+        circuit(np.array(0.1))
 
     def test_not_giving_mode_kwarg_does_not_raise_warning(self):
         """Test that not providing a value for mode does not raise a warning."""
@@ -260,8 +252,8 @@ class TestTapeConstruction:
 
         qn = QNode(func, dev)
 
-        x = pnp.array(0.12, requires_grad=True)
-        y = pnp.array(0.54, requires_grad=True)
+        x = np.array(0.12)
+        y = np.array(0.54)
 
         res = qn(x, y)
         tape = qp.workflow.construct_tape(qn)(x, y)
@@ -269,7 +261,8 @@ class TestTapeConstruction:
         assert isinstance(tape, QuantumScript)
         assert len(tape.operations) == 3
         assert len(tape.observables) == 1
-        assert tape.num_params == 2
+        assert len(tape.get_parameters(trainable_only=False)) == 2
+        assert tape.num_params == 0
         assert tape.shots.total_shots is None
 
         expected = qp.execute([tape], dev, None)
@@ -419,8 +412,8 @@ def test_decorator(tol):
     assert isinstance(func, QNode)
     assert func.__doc__ == "My function docstring"
 
-    x = pnp.array(0.12, requires_grad=True)
-    y = pnp.array(0.54, requires_grad=True)
+    x = np.array(0.12)
+    y = np.array(0.54)
 
     res = func(x, y)
     tape = qp.workflow.construct_tape(func)(x, y)
@@ -428,7 +421,8 @@ def test_decorator(tol):
     assert isinstance(tape, QuantumScript)
     assert len(tape.operations) == 3
     assert len(tape.observables) == 1
-    assert tape.num_params == 2
+    assert len(tape.get_parameters(trainable_only=False)) == 2
+    assert tape.num_params == 0
 
     expected = qp.execute([tape], dev, None)
     assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -444,29 +438,6 @@ def test_decorator(tol):
 
 class TestIntegration:
     """Integration tests."""
-
-    @pytest.mark.autograd
-    def test_correct_number_of_executions_autograd(self):
-        """Test that number of executions are tracked in the autograd interface."""
-
-        def func():
-            qp.Hadamard(wires=0)
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        dev = DefaultQubitLegacy(wires=2)
-        qn = QNode(func, dev, interface="autograd")
-
-        for _ in range(2):
-            qn()
-
-        assert dev.num_executions == 2
-
-        qn2 = QNode(func, dev, interface="autograd")
-        for _ in range(3):
-            qn2()
-
-        assert dev.num_executions == 5
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["torch", "auto"])
@@ -492,20 +463,18 @@ class TestIntegration:
         assert dev.num_executions == 5
 
         # qubit of different interface
-        qn3 = QNode(func, dev, interface="autograd")
+        qn3 = QNode(func, dev, interface="numpy")
         qn3()
 
         assert dev.num_executions == 6
 
-    def test_num_exec_caching_device_swap(self):
-        """Tests that if we swapped the original device (e.g., when
-        diff_method='backprop') then the number of executions recorded is
-        correct."""
+    def test_num_exec_caching(self):
+        """Test that caching reduces repeated legacy device executions."""
         dev = DefaultQubitLegacy(wires=2)
 
         cache = {}
 
-        @qp.qnode(dev, diff_method="backprop", cache=cache)
+        @qp.qnode(dev, interface="numpy", cache=cache)
         def circuit():
             qp.RY(0.345, wires=0)
             return qp.expval(qp.PauliZ(0))
@@ -518,15 +487,13 @@ class TestIntegration:
         assert dev.num_executions == 1
         assert cache
 
-    def test_num_exec_caching_device_swap_two_exec(self):
-        """Tests that if we swapped the original device (e.g., when
-        diff_method='backprop') then the number of executions recorded is
-        correct even with multiple QNode evaluations."""
+    def test_num_exec_caching_two_exec(self):
+        """Test caching across distinct legacy device circuits."""
         dev = DefaultQubitLegacy(wires=2)
 
         cache = {}
 
-        @qp.qnode(dev, diff_method="backprop", cache=cache)
+        @qp.qnode(dev, interface="numpy", cache=cache)
         def circuit0():
             qp.RY(0.345, wires=0)
             return qp.expval(qp.PauliZ(0))
@@ -534,7 +501,7 @@ class TestIntegration:
         for _ in range(15):
             circuit0()
 
-        @qp.qnode(dev, diff_method="backprop", cache=cache)
+        @qp.qnode(dev, interface="numpy", cache=cache)
         def circuit2():
             qp.RZ(0.345, wires=0)
             return qp.expval(qp.PauliZ(0))
@@ -546,41 +513,6 @@ class TestIntegration:
         # there were two device executions recorded
         assert dev.num_executions == 2
         assert cache
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff", "spsa", "hadamard"])
-    def test_single_expectation_value_with_argnum_one(self, diff_method, tol):
-        """Tests correct output shape and evaluation for a QNode
-        with a single expval output where only one parameter is chosen to
-        estimate the jacobian.
-
-        This test relies on the fact that exactly one term of the estimated
-        jacobian will match the expected analytical value.
-        """
-        dev = DefaultQubitLegacy(wires=3)
-
-        x = pnp.array(0.543, requires_grad=True)
-        y = pnp.array(-0.654, requires_grad=True)
-
-        gradient_kwargs = {"argnum": [1]}
-        if diff_method == "hadamard":
-            gradient_kwargs["mode"] = "direct"
-
-        @qnode(
-            dev, diff_method=diff_method, gradient_kwargs=gradient_kwargs
-        )  # <--- we only choose one trainable parameter
-        def circuit(x, y):
-            qp.RX(x, wires=[0])
-            qp.RY(y, wires=[1])
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-        res = qp.grad(circuit)(x, y)
-        assert len(res) == 2
-
-        expected = (0, np.cos(y) * np.cos(x))
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_no_defer_measurements_if_supported(self, mocker):
         """Test that the defer_measurements transform is not used during
@@ -905,12 +837,14 @@ class CustomDevice(qp.devices.Device):
 class TestTapeExpansion:
     """Test that tape expansion within the QNode works correctly"""
 
+    @pytest.mark.torch
     @pytest.mark.parametrize(
         "diff_method,mode",
         [("parameter-shift", False), ("adjoint", True), ("adjoint", False)],
     )
     def test_device_expansion(self, diff_method, mode, mocker):
         """Test expansion of an unsupported operation on the device"""
+        torch = pytest.importorskip("torch")
 
         dev = DefaultQubitLegacy(wires=1)
 
@@ -937,84 +871,13 @@ class TestTapeExpansion:
             spy = mocker.spy(circuit.device, "execute")
 
         qp.add_decomps(UnsupportedOp, _decomp)
-        x = pnp.array(0.5)
+        x = torch.tensor(0.5, requires_grad=True)
         circuit(x)
 
         tape = spy.call_args[0][0][0]
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "RX"
-        assert np.allclose(tape.operations[0].parameters, 3 * x)
-
-    @pytest.mark.autograd
-    def test_no_gradient_expansion(self, mocker):  # pylint: disable=unused-argument
-        """Test that an unsupported operation with defined gradient recipe is
-        not expanded"""
-        dev = DefaultQubitLegacy(wires=1)
-
-        class UnsupportedOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
-            """custom unsupported op."""
-
-            num_wires = 1
-
-            grad_method = "A"
-            grad_recipe = ([[3 / 2, 1, np.pi / 6], [-3 / 2, 1, -np.pi / 6]],)
-
-            def decomposition(self):
-                return [qp.RX(3 * self.data[0], wires=self.wires)]
-
-        @qp.register_resources({qp.RX: 1})
-        def _decomp(data, wires):
-            qp.RX(3 * data, wires)
-
-        qp.add_decomps(UnsupportedOp, _decomp)
-
-        @qnode(dev, interface="autograd", diff_method="parameter-shift", max_diff=2)
-        def circuit(x):
-            UnsupportedOp(x, wires=0)
-            return qp.expval(qp.PauliZ(0))
-
-        x = pnp.array(0.5, requires_grad=True)
-        qp.grad(circuit)(x)
-
-        # check second derivative
-        assert np.allclose(qp.grad(qp.grad(circuit))(x), -9 * np.cos(3 * x))
-
-    @pytest.mark.autograd
-    def test_gradient_expansion(self, mocker):  # pylint: disable=unused-argument
-        """Test that a *supported* operation with no gradient recipe is
-        expanded when applying the gradient transform, but not for execution."""
-        dev = DefaultQubitLegacy(wires=1)
-
-        class PhaseShift(qp.PhaseShift):  # pylint: disable=too-few-public-methods
-            """custom phase shift."""
-
-            grad_method = None
-
-            def decomposition(self):
-                return [qp.RY(3 * self.data[0], wires=self.wires)]
-
-        @qp.register_resources({qp.RY: 1})
-        def custom_decomposition(param, wires):
-            qp.RY(3 * param, wires=wires)
-
-        qp.add_decomps(PhaseShift, custom_decomposition)
-
-        @qnode(dev, diff_method="parameter-shift", max_diff=2)
-        def circuit(x):
-            qp.Hadamard(wires=0)
-            PhaseShift(x, wires=0)
-            return qp.expval(qp.PauliX(0))
-
-        x = pnp.array(0.5, requires_grad=True)
-        circuit(x)
-
-        res = qp.grad(circuit)(x)
-
-        assert np.allclose(res, -3 * np.sin(3 * x))
-
-        # test second order derivatives
-        res = qp.grad(qp.grad(circuit))(x)
-        assert np.allclose(res, -9 * np.cos(3 * x))
+        assert np.allclose(tape.operations[0].parameters, 3 * x.detach().numpy())
 
     def test_hamiltonian_expansion_analytic(self):
         """Test result if there are non-commuting groups and the number of shots is None"""

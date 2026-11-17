@@ -32,16 +32,15 @@ def test_auto_with_numpy():
     assert resolved_interface == Interface.NUMPY
 
 
-@pytest.mark.autograd
-def test_auto_with_autograd():
-    """Test that 'auto' interface resolves to 'autograd' correctly."""
+def test_auto_rejects_autograd():
+    """Test that 'auto' rejects the removed Autograd interface."""
 
     x = pnp.array([0.5], requires_grad=True)
     tapes = [
         QuantumScript([qp.RX(x, wires=0)], [qp.expval(qp.PauliZ(0))]),
     ]
-    resolved_interface = _resolve_interface("auto", tapes)
-    assert resolved_interface == Interface.AUTOGRAD
+    with pytest.raises(ValueError, match="'autograd' is not a valid Interface."):
+        _resolve_interface("auto", tapes)
 
 
 @pytest.mark.jax
@@ -119,10 +118,11 @@ def test_jax_jit():
     abstract_func(param)
 
 
-def test_unsupported():
+@pytest.mark.parametrize("interface", ["unsupported_interface", "autograd"])
+def test_unsupported(interface):
     """Test that an unsupported interface raises an error."""
     tapes = [
         QuantumScript([qp.RX(0.5, wires=0)], [qp.expval(qp.PauliZ(0))]),
     ]
     with pytest.raises(ValueError, match="'.*' is not a valid Interface."):
-        _resolve_interface("unsupported_interface", tapes)
+        _resolve_interface(interface, tapes)

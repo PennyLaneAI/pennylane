@@ -1,7 +1,7 @@
 # This workflow is designed to run unit tests for all interfaces of the PennyLane library on GitHub Actions.
 # It allows for customization of various parameters such as the branch to checkout, the job name prefix and suffix,
 # the PyTest coverage flags, additional PyTest arguments, and the option to run a lightened version of the CI.
-# The workflow includes multiple jobs that run tests for different interfaces such as Torch, Autograd, JAX, and more.
+# The workflow includes multiple jobs that run tests for different interfaces such as Torch and JAX.
 # It also includes a job to upload the coverage report to Codecov.
 # The workflow utilizes matrix strategies to parallelize the test runs and supports skipping specific jobs on a lightened CI run.
 
@@ -265,40 +265,6 @@ jobs:
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}torch-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       pytest_markers: torch and not finite-diff and not param-shift and not catalyst
-
-  autograd-tests:
-    needs:
-      - setup-ci-load
-      - determine_runner
-      - default-dependency-versions
-      - warnings-as-errors-setup
-    strategy:
-      fail-fast: false
-      max-parallel: >-
-        ${{
-           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).autograd-tests
-           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
-         }}
-      matrix:
-        python-version: >-
-          ${{
-            fromJSON(needs.setup-ci-load.outputs.python-version).autograd-tests
-            || fromJSON(needs.setup-ci-load.outputs.python-version).default
-           }}
-    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'autograd-tests') }}
-    uses: ./.github/workflows/unit-test.yml
-    with:
-      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
-      job_name: ${{ inputs.job_name_prefix }}autograd-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
-      branch: ${{ inputs.branch }}
-      coverage_artifact_name: core-interfaces-coverage-autograd-${{ matrix.python-version }}
-      python_version: ${{ matrix.python-version }}
-      additional_pip_packages: ${{ inputs.additional_python_packages }}
-      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
-      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
-      pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
-      pytest_xml_file_path: '${{ inputs.job_name_prefix }}autograd-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
-      pytest_markers: autograd and not finite-diff and not param-shift and not catalyst
 
   jax-tests:
     needs:
@@ -687,7 +653,6 @@ jobs:
     needs:
       - determine_runner
       - torch-tests
-      - autograd-tests
       - jax-tests
       - capture-jax-tests
       - core-tests
@@ -747,7 +712,6 @@ jobs:
       - setup-ci-load
       - determine_runner
       - torch-tests
-      - autograd-tests
       - jax-tests
       - capture-jax-tests
       - core-tests

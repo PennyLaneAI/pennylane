@@ -896,6 +896,16 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* :func:`~.grad` and :func:`~.jacobian` now support JAX and PyTorch inputs outside
+  program capture and :func:`~.qjit`.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
+  .. code-block:: pycon
+
+      >>> import jax.numpy as jnp
+      >>> float(qp.grad(lambda value: value**2)(jnp.array(2.0)))
+      4.0
+
 * :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
   powers that can simplify eagerly for faster execution, while the other uses nested
   loops to keep the captured intermediate representation compact. Both variants include
@@ -1890,6 +1900,10 @@ Breaking changes 💔
 * :class:`~.Barrier` no longer accepts ``only_visual``. Barriers are preserved by
   simplification and separate compilation into blocks.
   `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
+
+* The Autograd interface has been removed. QNodes support NumPy, JAX, and PyTorch;
+  the NumPy interface does not support automatic differentiation.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
 
 Deprecations 👋
 ~~~~~~~~~~~~~~~

@@ -73,9 +73,10 @@ def execute(  # pylint: disable=too-many-arguments
         diff_method (Optional[str | Transform]): The gradient transform function to use
             for backward passes. If "device", the device will be queried directly
             for the gradient (if supported).
-        interface (str, Interface): The interface that will be used for classical auto-differentiation.
+        interface (str, Interface): The interface used for execution and classical auto-differentiation.
             This affects the types of parameters that can exist on the input tapes.
-            Available options include ``autograd``, ``torch``, ``jax``, and ``auto``.
+            Available options include ``numpy``, ``torch``, ``jax``, and ``auto``.
+            The NumPy interface does not provide automatic differentiation.
         transform_program(.CompilePipeline): A transform program to be applied to the initial tape.
         grad_on_execution (bool, str): Whether the gradients should be computed
             on the execution or not. It only applies

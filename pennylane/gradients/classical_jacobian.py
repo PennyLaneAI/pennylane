@@ -19,7 +19,6 @@ import jax
 import numpy as np
 
 from pennylane import math
-from pennylane._grad import jacobian
 from pennylane.workflow import construct_tape
 
 
@@ -36,6 +35,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
             the (classical) Jacobian is computed
         expand_fn (None or function): an expansion function (if required) to be applied to the
             QNode quantum tape before the classical Jacobian is computed
+        trainable_only (bool): whether to include only trainable gate arguments
 
     Returns:
         function: Function which accepts the same arguments as the QNode.
@@ -46,7 +46,11 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
     Consider the following QNode:
 
-    >>> @qp.qnode(dev)
+    >>> import jax
+    >>> import jax.numpy as jnp
+    >>> jax.config.update("jax_enable_x64", True)
+    >>> dev = qp.device("default.qubit", wires=2)
+    >>> @qp.qnode(dev, interface="jax")
     ... def circuit(weights):
     ...     qp.RX(weights[0], wires=0)
     ...     qp.RY(0.2 * weights[0], wires=1)
@@ -59,19 +63,20 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
     \mathbb{R}^m` between the input QNode arguments :math:`w` and the gate arguments :math:`g`, for
     a given value of the QNode arguments:
 
-    >>> cjac_fn = qp.gradients.classical_jacobian(circuit)
-    >>> weights = np.array([1., 1., 0.6], requires_grad=True)
+    >>> cjac_fn = qp.gradients.classical_jacobian(circuit, trainable_only=False)
+    >>> weights = jnp.array([1., 1., 0.6])
     >>> cjac = cjac_fn(weights)
     >>> print(cjac)
     [[1.  0.  0. ]
      [0.2 0.  0. ]
+     [0.  0.  0. ]
      [0.  2.  0. ]
      [0.  0.  1. ]]
 
     The returned Jacobian has rows corresponding to gate arguments, and columns
     corresponding to QNode arguments; that is,
 
-    .. math:: J_{ij} = \frac{\partial}{\partial g_i} f(w_j).
+    .. math:: J_{ij} = \frac{\partial f_i(w)}{\partial w_j}.
 
     We can see that:
 
@@ -80,7 +85,9 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
     - The third row consisting of all zeros indicates that the third gate ``RY(2.5)`` does not
       depend on the ``weights``.
 
-    - The quadratic dependence of the fourth gate argument yields :math:`2\cdot 0.6=1.2`.
+    - The quadratic dependence of the fourth gate argument yields :math:`2\cdot 1=2`.
+
+    Setting ``trainable_only=False`` includes the constant gate argument ``2.5`` in the output.
 
     .. note::
 
@@ -98,12 +105,8 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
          - ``argnum=None``
          - ``type(argnum)=int``
          - ``type(argnum) = Sequence[int]``
-       * - ``'autograd'``
-         - ``tuple(array)`` [1]
-         - ``array``
-         - ``tuple(array)``
        * - ``'jax'``
-         - ``array`` [2]
+         - ``array`` [1]
          - ``array``
          - ``tuple(array)``
        * - ``'torch'``
@@ -111,29 +114,27 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
          - ``array``
          - ``tuple(array)``
 
-    [1] If there only is one trainable QNode argument, the tuple is unpacked to a
-    single ``array``, as is the case for :func:`pennylane.jacobian`.
-
-    [2] For JAX, ``argnum=None`` defaults to ``argnum=0`` in contrast to all other
+    [1] For JAX, ``argnum=None`` defaults to ``argnum=0`` in contrast to all other
     interfaces. This means that only the classical Jacobian with respect to the first
     QNode argument is computed if no ``argnum`` is provided.
 
     **Example with ``argnum``**
 
-    >>> @qp.qnode(dev)
+    >>> @qp.qnode(dev, interface="jax")
     ... def circuit(x, y, z):
     ...     qp.RX(qp.math.sin(x), wires=0)
     ...     qp.CNOT(wires=[0, 1])
     ...     qp.RY(y ** 2, wires=1)
     ...     qp.RZ(1 / z, wires=1)
     ...     return qp.expval(qp.Z(0) @ qp.Z(1))
-    >>> jac_fn = qp.gradients.classical_jacobian(circuit, argnum=[1, 2])
-    >>> x, y, z = np.array([0.1, -2.5, 0.71])
+    >>> jac_fn = qp.gradients.classical_jacobian(circuit, argnum=[1, 2], trainable_only=False)
+    >>> x, y, z = jnp.array([0.1, -2.5, 0.71])
     >>> jac_fn(x, y, z)
-    (array([-0., -5., -0.]), array([-0.        , -0.        , -1.98373339]))
+    (Array([-0., -5., -0.], dtype=float64),
+     Array([-0.        , -0.        , -1.98373339], dtype=float64))
 
-    Only the Jacobians with respect to the arguments ``x`` and ``y`` were computed, and
-    returned as a tuple of ``arrays``.
+    Only the Jacobians with respect to the arguments ``y`` and ``z`` were computed, and
+    returned as a tuple of arrays.
     """
 
     def classical_preprocessing(*args, **kwargs):
@@ -154,10 +155,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
         if old_interface == "auto":
             qnode.interface = math.get_interface(*args, *list(kwargs.values()))
 
-        if qnode.interface == "autograd":
-            jac = jacobian(classical_preprocessing, argnums=wrapper_argnum)(*args, **kwargs)
-
-        elif qnode.interface == "torch":
+        if qnode.interface == "torch":
             import torch  # pylint: disable=import-outside-toplevel
 
             def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument

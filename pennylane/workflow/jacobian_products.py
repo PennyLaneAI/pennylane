@@ -131,7 +131,7 @@ class JacobianProductCalculator(abc.ABC):
     def compute_vjp(self, tapes: QuantumScriptBatch, dy: Sequence[Sequence[TensorLike]]) -> tuple:
         """Compute the vjp for a given batch of tapes.
 
-        This method is used by autograd and torch to compute VJPs.
+        This method is used by Torch to compute VJPs.
 
         Args:
             tapes (tuple[.QuantumScript]): the batch of tapes to take the derivatives of
@@ -533,7 +533,7 @@ class DeviceDerivatives(JacobianProductCalculator):
     def compute_vjp(self, tapes, dy):
         """Compute the vjp for a given batch of tapes.
 
-        This method is used by autograd and torch to compute VJPs.
+        This method is used by Torch to compute VJPs.
 
         Args:
             tapes (tuple[`~.QuantumScript`]): the batch of tapes to take the derivatives of
