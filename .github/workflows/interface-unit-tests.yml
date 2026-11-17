@@ -515,7 +515,8 @@ jobs:
       python_version: ${{ matrix.python-version }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: catalyst
-      pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
+      # Reassign queued tests when workers finish; compilation costs vary widely.
+      pytest_additional_args: --dist=worksteal --durations=20 ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}catalyst-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
         matplotlib
