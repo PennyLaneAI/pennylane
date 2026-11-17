@@ -293,7 +293,6 @@ class TestMapToResourceOp:
                     control_wires=[0, 1],
                     target_wires=[2, 3],
                     work_wires=[4],
-                    clean=False,
                 ),
                 re_temps.QROM(
                     num_bitstrings=3, size_bitstring=2, restored=False, wires=[0, 1, 2, 3, 4]
