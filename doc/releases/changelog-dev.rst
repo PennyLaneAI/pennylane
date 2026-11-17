@@ -2478,6 +2478,10 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed reconstruction of wire pytrees containing mixed Python and JAX scalars, allowing
+  nested captured operators to reuse these wires.
+  `(#10511) <https://github.com/PennyLaneAI/pennylane/pull/10511>`__
+
 * Fixed the measurement-based decomposition of :class:`~.QROM` to support dynamic
   bitstrings with ``qjit(capture=True)``, including padding for extra control wires.
   Its inner traversal now uses :func:`~.for_loop` instead of recursion.

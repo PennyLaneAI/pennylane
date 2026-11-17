@@ -14,6 +14,8 @@
 
 """Unit tests for the DecompositionRule class."""
 
+# pylint: disable=too-few-public-methods
+
 import inspect
 from textwrap import dedent
 
@@ -312,7 +314,7 @@ class TestDecompositionRule:
 
             arg_specs = my_arg_specs
 
-            def __init__(self, angles, eps, wires):
+            def __init__(self, angles, eps, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(angles, eps, wires)
 
         @register_resources({MissingFixedSigOp: 1})
@@ -351,7 +353,7 @@ class TestDecompositionRule:
 
             arg_specs = abstract_sig
 
-            def __init__(self, phi, matrix, wires):
+            def __init__(self, phi, matrix, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(phi, matrix, wires)
 
         @register_resources(

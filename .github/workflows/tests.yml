@@ -23,7 +23,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Temporary dependency until Catalyst #3470 is available in the nightly wheels.
+  catalyst-wheel:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Download Catalyst PR 3470 wheel
+        uses: actions/download-artifact@v6
+        with:
+          github-token: ${{ github.token }}
+          repository: PennyLaneAI/catalyst
+          run-id: 44138417776
+          name: catalyst-manylinux_2_28_x86_64-wheel-py-3.12.zip
+          path: catalyst-wheel
+      - name: Make the companion wheel available to the test jobs
+        uses: actions/upload-artifact@v6
+        with:
+          name: catalyst-pr-wheel
+          path: catalyst-wheel/*.whl
+          if-no-files-found: error
+
   tests:
+    needs: catalyst-wheel
     permissions:
       contents: read  
     if: github.event.pull_request.draft == false
@@ -35,6 +59,7 @@ jobs:
     with:
       branch: ${{ github.ref }}
       use_large_runner: ${{ github.event_name == 'merge_group' }}
+      catalyst_wheel_artifact: catalyst-pr-wheel
 
       # Run a 'lightened' version of the CI on Pull Requests and Merge Queues by default
       # Unless the label `ci:run-full-test-suite` is attached to the PR.

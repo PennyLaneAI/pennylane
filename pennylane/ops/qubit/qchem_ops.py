@@ -264,7 +264,7 @@ def _single_excitation_basis(wires: WiresLike, reverse: bool):
         qp.Hadamard(wires[0])
 
 
-@subcircuit(dynamic_argnames=("phi",))
+@subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": Float, "wires": Wire[2]})
 @register_resources(lambda **_: {qp.RY: 2})
 def _single_excitation_rotations(phi: TensorLike, wires: WiresLike):
     qp.RY(-phi / 2, wires[0])
@@ -291,7 +291,7 @@ def _single_excitation_decomp(phi: TensorLike, wires: WiresLike):
     )
 
 
-@subcircuit(dynamic_argnames=("phi",))
+@subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": Float, "wires": Wire[2]})
 @register_resources(lambda **_: {qp.RZ: 2})
 def _single_excitation_rz_rotations(phi: TensorLike, wires: WiresLike):
     qp.RZ(phi / 2, wires[0])

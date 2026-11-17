@@ -1873,7 +1873,7 @@ def _isingxy_basis(wires: WiresLike, reverse: bool):
         Hadamard(wires[0])
 
 
-@subcircuit(dynamic_argnames=("phi",))
+@subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": Float, "wires": Wire[2]})
 @register_resources({RX: 1, RY: 1})
 def _isingxy_rotations(phi: TensorLike, wires: WiresLike):
     RY(phi / 2, wires[0])
