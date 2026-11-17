@@ -21,11 +21,6 @@ on:
         description: The API key for the test results collection server
         required: false
     inputs:
-      catalyst_wheel_artifact:
-        description: Optional wheel artifact from this run to use for Catalyst tests
-        type: string
-        required: false
-        default: ''
       branch:
         description: The PennyLane branch to checkout and run unit tests for
         required: true
@@ -517,7 +512,6 @@ jobs:
       job_name: ${{ inputs.job_name_prefix }}catalyst-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: catalyst-tests-coverage
-      additional_wheel_artifact: ${{ inputs.catalyst_wheel_artifact }}
       python_version: ${{ matrix.python-version }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: catalyst

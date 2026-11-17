@@ -34,6 +34,12 @@ from pennylane.testing.decompositions import assert_valid_decomp_rule, decomp_ru
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
+REQUIRES_CATALYST_SHARED_WIRES = pytest.mark.xfail(
+    reason="Requires shared-wire hybrid operands from Catalyst PR #3470",
+    strict=True,
+    raises=pytest.RaisesExc(Exception, match="qubit operands must refer to distinct qubits"),
+)
+
 PARAMETRIZED_OPERATIONS = [
     qp.RX(0.123, wires=0),
     qp.RY(1.434, wires=0),
@@ -3240,7 +3246,15 @@ class TestMultiRZ:
         assert_valid_decomp_rule(op, rule)
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize("n", [1, 2, 3, 4])
+    @pytest.mark.parametrize(
+        "n",
+        [
+            1,
+            pytest.param(2, marks=REQUIRES_CATALYST_SHARED_WIRES),
+            pytest.param(3, marks=REQUIRES_CATALYST_SHARED_WIRES),
+            pytest.param(4, marks=REQUIRES_CATALYST_SHARED_WIRES),
+        ],
+    )
     def test_MultiRZ_decomposition_qjit_new(self, n):
         """Test that the decomposition with qjit with the new decomposition system
         produces the correct matrix."""

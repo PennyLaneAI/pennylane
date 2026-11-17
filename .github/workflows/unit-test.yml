@@ -12,11 +12,6 @@ permissions:
 on:
   workflow_call:
     inputs:
-      additional_wheel_artifact:
-        description: Optional wheel artifact from this run to install after PennyLane
-        required: false
-        type: string
-        default: ''
       job_name:
         description: The name of the Job as it would appear on GitHub Actions UI
         required: true
@@ -185,21 +180,6 @@ jobs:
                 uv pip install $line
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
-
-      - name: Download additional wheel
-        if: inputs.additional_wheel_artifact != ''
-        uses: actions/download-artifact@v6
-        with:
-          name: ${{ inputs.additional_wheel_artifact }}
-          path: ${{ runner.temp }}/additional-wheel
-
-      - name: Install additional wheel
-        if: inputs.additional_wheel_artifact != ''
-        env:
-          WHEEL_DIRECTORY: ${{ runner.temp }}/additional-wheel
-        run: |
-          uv pip install --no-deps --reinstall "$WHEEL_DIRECTORY"/*.whl
-          python -m catalyst.decomposition.precompile_decomposition_rules
 
       - name: Create test reports directory
         run: mkdir -p ${{ env.TEST_REPORTS_DIR }}
