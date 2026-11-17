@@ -26,7 +26,7 @@ from pennylane.decomposition import (
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import AbstractArray, Float, Int, Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.wires import Wires, WiresLike, WiresSequenceLike, validate_no_wire_overlaps
 
 
 def _add_k_fourier(k, wires: WiresLike):
@@ -199,7 +199,7 @@ def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
 
 
 @register_resources(_phase_adder_decomposition_resources)
-def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire):
+def _phase_adder_decomposition(k, x_wires: WiresSequenceLike, mod, work_wire):
 
     n_wires = len(x_wires)
 

@@ -22,7 +22,7 @@ import pennylane as qp
 from pennylane import allocate, math
 from pennylane.core.operator import Operator2
 from pennylane.typing import AbstractWires, Bool, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.wires import Wires, WiresLike, WiresSequenceLike, validate_no_wire_overlaps
 
 _U64 = np.uint64
 
@@ -852,7 +852,7 @@ class PartialUnaryStatePreparation(Operator2):
     def __init__(
         self,
         coefficients: TensorLike,
-        wires: AbstractWires | WiresLike,
+        wires: AbstractWires | WiresSequenceLike,
         indices: tuple,
         work_wires: AbstractWires | WiresLike,
     ):

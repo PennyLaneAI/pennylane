@@ -30,7 +30,7 @@ from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import WireError
 from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import AbstractArray, AbstractWires, Bool, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, WiresSequenceLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
@@ -130,7 +130,7 @@ class BasisState(StatePrepBase2):
             return f"BasisState({qp.math.cast(self.state, int)}, wires={self.wires})"
         return super().__repr__()
 
-    def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
+    def state_vector(self, wire_order: WiresSequenceLike | None = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
         prep_vals = self.state
         prep_vals_int = math.cast(self.state, int)

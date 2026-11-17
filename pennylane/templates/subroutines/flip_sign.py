@@ -22,7 +22,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CZ, X, Z, ctrl
 from pennylane.typing import AbstractArray, Bool, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, WiresSequenceLike
 
 
 class FlipSign(Operator2):
@@ -111,7 +111,9 @@ class FlipSign(Operator2):
         super().__init__(state, wires, work_wires)
 
 
-def _flip_sign_resources(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
+def _flip_sign_resources(
+    state: tuple[int], wires: WiresSequenceLike, work_wires: WiresSequenceLike
+):
     num_wires = len(wires)
     num_ctrl_wires = num_wires - 1
     if num_ctrl_wires == 0:
@@ -135,7 +137,7 @@ def _flip_sign_resources(state: tuple[int], wires: WiresLike, work_wires: WiresL
 
 
 @register_resources(_flip_sign_resources)
-def _flip_sign_decomposition(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
+def _flip_sign_decomposition(state: tuple[int], wires: WiresSequenceLike, work_wires: WiresLike):
     if state[-1] == 0:
         X(wires[-1])
 

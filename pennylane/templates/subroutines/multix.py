@@ -27,7 +27,7 @@ from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_con
 from pennylane.ops.op_math.pow2 import pow_involutory
 from pennylane.ops.op_math.prod2 import _multi_temporary_and_all_ones
 from pennylane.typing import AbstractArray, AbstractWires, Bool, TensorLike, Wire
-from pennylane.wires import DynamicWire, Wires, WiresLike, is_abstract_qubit
+from pennylane.wires import DynamicWire, Wires, WiresLike, WiresSequenceLike, is_abstract_qubit
 
 from .arithmetic.temporary_and import TemporaryAND
 
@@ -103,7 +103,7 @@ class MultiX(Operator2):
 
     @staticmethod
     def _validate_inputs(
-        bitstring: AbstractArray | TensorLike, wires: AbstractWires | WiresLike
+        bitstring: AbstractArray | TensorLike, wires: AbstractWires | WiresSequenceLike
     ) -> None:
         """Validate the bitstring's shape and values and its length relative to the wires."""
 
@@ -158,7 +158,7 @@ class MultiX(Operator2):
 
     @staticmethod
     # pylint: disable-next=arguments-differ
-    def compute_matrix(bitstring: TensorLike, wires: WiresLike) -> TensorLike:
+    def compute_matrix(bitstring: TensorLike, wires: WiresSequenceLike) -> TensorLike:
         r"""
         Representation of the operator as a canonical matrix in the computational basis.
         Assumes the wire order is the order provided by ``wires``.
@@ -194,7 +194,7 @@ class MultiX(Operator2):
 
     @staticmethod
     def compute_sparse_matrix(  # pylint: disable=arguments-differ
-        bitstring: TensorLike, wires: WiresLike, format: str = "csr"
+        bitstring: TensorLike, wires: WiresSequenceLike, format: str = "csr"
     ) -> sparse.spmatrix:
         r"""
         Representation of the operator as a canonical sparse matrix in the computational basis.
@@ -250,7 +250,7 @@ class MultiX(Operator2):
 
     @staticmethod
     # pylint: disable-next=arguments-differ
-    def compute_eigvals(bitstring: TensorLike, wires: WiresLike) -> TensorLike:
+    def compute_eigvals(bitstring: TensorLike, wires: WiresSequenceLike) -> TensorLike:
         r"""
         Eigenvalues of the operator.
 
@@ -316,7 +316,9 @@ class MultiX(Operator2):
 
 
 # Resources function for MultiX
-def _multix_resources(bitstring: TensorLike, wires: WiresLike):  # pylint: disable=unused-argument
+def _multix_resources(
+    bitstring: TensorLike, wires: WiresSequenceLike
+):  # pylint: disable=unused-argument
     # The total number of PauliX gates used depends on the bitstring.
     # Specifically, sum(bitstring) gates are used by MultiX, not len(bitstring).
     # However, if bitstring is an AbstractArray, only the shape of bitstring is known.
@@ -327,7 +329,7 @@ def _multix_resources(bitstring: TensorLike, wires: WiresLike):  # pylint: disab
 
 # Decomposition function for MultiX
 @register_resources(_multix_resources, exact=False)
-def _multix_decomposition(bitstring: TensorLike, wires: WiresLike) -> None:
+def _multix_decomposition(bitstring: TensorLike, wires: WiresSequenceLike) -> None:
     # Dynamically-allocated wires (``AbstractQubit`` handles, e.g. from ``qp.allocate``) cannot
     # be stacked into a numeric array for ``for_loop``-based dynamic indexing, so unroll instead
     # (``bitstring`` may still be traced data, indexed with a static index). Remove this fallback

@@ -36,7 +36,7 @@ from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Float, TensorLike, Wire
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike, WiresSequenceLike
 
 I4 = np.eye(4)
 I16 = np.eye(16)
@@ -270,7 +270,7 @@ def _single_excitation_resources(phi, wires):  # pylint: disable=unused-argument
 
 
 @register_resources(_single_excitation_resources)
-def _single_excitation_decomp(phi: TensorLike, wires: WiresLike):
+def _single_excitation_decomp(phi: TensorLike, wires: WiresSequenceLike):
     def _to_basis():
         qp.Hadamard(wires[0])
         qp.CNOT(wires)
@@ -310,7 +310,7 @@ def _single_excitation_ppr_rz_resource(phi, wires):  # pylint: disable=unused-ar
 
 
 @register_resources(_single_excitation_ppr_rz_resource)
-def _single_excitation_ppr_rz(phi: TensorLike, wires: WiresLike):
+def _single_excitation_ppr_rz(phi: TensorLike, wires: WiresSequenceLike):
     def _rotations():
         qp.RZ(phi / 2, wires[0])
         qp.RZ(-phi / 2, wires[1])
@@ -330,7 +330,7 @@ def _single_excitation_ppr_crz_resource(phi, wires):  # pylint: disable=unused-a
 
 
 @register_resources(_single_excitation_ppr_crz_resource)
-def _single_excitation_ppr_crz(phi: TensorLike, wires: WiresLike):
+def _single_excitation_ppr_crz(phi: TensorLike, wires: WiresSequenceLike):
     r"""A single arbitrary-angle rotation per Givens rotation.
 
     In the basis of ``_single_excitation_ppr_rz``, the two rotations
@@ -445,7 +445,9 @@ class SingleExcitationMinus(Operation):
         return _single_excitations_matrix(phi, -0.5j)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
+    def compute_decomposition(
+        phi: TensorLike, wires: WiresSequenceLike
+    ) -> list["qp.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -515,7 +517,7 @@ def _single_excitation_minus_decomp_resources():
 
 
 @register_resources(_single_excitation_minus_decomp_resources)
-def _single_excitation_minus_decomp(phi, wires: WiresLike, **__):
+def _single_excitation_minus_decomp(phi, wires: WiresSequenceLike, **__):
     qp.Hadamard(wires[1])
     qp.CNOT([wires[1], wires[0]])
     qp.RY(phi / 2, wires[0])
@@ -616,7 +618,9 @@ class SingleExcitationPlus(Operation):
         return _single_excitations_matrix(phi, 0.5j)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
+    def compute_decomposition(
+        phi: TensorLike, wires: WiresSequenceLike
+    ) -> list["qp.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -679,7 +683,7 @@ def _single_excitation_plus_decomp_resources():
 
 
 @register_resources(_single_excitation_plus_decomp_resources)
-def _single_excitation_plus_decomp(phi, wires: WiresLike, **__):
+def _single_excitation_plus_decomp(phi, wires: WiresSequenceLike, **__):
     qp.Hadamard(wires[1])
     qp.CNOT([wires[1], wires[0]])
     qp.RY(phi / 2, wires[0])
@@ -820,7 +824,7 @@ def _doublexcit_resource(phi, wires):  # pylint: disable=unused-argument
 
 
 @register_resources(_doublexcit_resource)
-def _doublexcit(phi: TensorLike, wires: WiresLike):
+def _doublexcit(phi: TensorLike, wires: WiresSequenceLike):
     qp.CNOT(wires=[wires[2], wires[3]])
     qp.CNOT(wires=[wires[0], wires[2]])
     qp.Hadamard(wires=wires[3])
@@ -1236,7 +1240,7 @@ def _orbital_rotation_decomposition_resources(phi: TensorLike, wires: WiresLike)
 
 
 @register_resources(_orbital_rotation_decomposition_resources)
-def _orbital_rotation_decomp(phi: TensorLike, wires: WiresLike):
+def _orbital_rotation_decomp(phi: TensorLike, wires: WiresSequenceLike):
     qp.FermionicSWAP(np.pi, wires=[wires[1], wires[2]])
     qp.SingleExcitation(phi, wires=[wires[0], wires[1]])
     qp.SingleExcitation(phi, wires=[wires[2], wires[3]])
@@ -1400,7 +1404,7 @@ def _fermionic_swap_decomp_resources(phi: TensorLike = None, wires: WiresLike = 
 
 
 @register_resources(_fermionic_swap_decomp_resources)
-def _fermionic_swap_decomp(phi, wires: WiresLike, **__):
+def _fermionic_swap_decomp(phi, wires: WiresSequenceLike, **__):
     qp.Hadamard(wires=wires[0])
     qp.Hadamard(wires=wires[1])
     qp.MultiRZ(phi / 2, wires=[wires[0], wires[1]])

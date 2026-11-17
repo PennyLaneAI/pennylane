@@ -788,7 +788,8 @@ class Wires(Sequence):
         )
 
 
-WiresLike = Wires | Iterable[Hashable] | Hashable
+WiresLike = Wires | Sequence[Hashable] | Hashable
+WiresSequenceLike = Wires | Sequence[Hashable]
 
 # Register Wires as a PyTree-serializable class
 register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access
