@@ -139,7 +139,8 @@ class BasisState(StatePrepBase2):
             indices = prep_vals_int
             num_wires = len(indices)
         else:
-            if not Wires(wire_order).contains_wires(self.wires):
+            wire_order = Wires(wire_order)
+            if not wire_order.contains_wires(self.wires):
                 raise WireError("Custom wire_order must contain all BasisState wires")
             num_wires = len(wire_order)
             indices = [0] * num_wires

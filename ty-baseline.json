@@ -15723,12 +15723,6 @@
         "lineCount": 1
       },
       {
-        "rule": "invalid-assignment",
-        "startColumn": 47,
-        "endColumn": 63,
-        "lineCount": 1
-      },
-      {
         "rule": "call-non-callable",
         "startColumn": 8,
         "endColumn": 45,
@@ -15811,30 +15805,6 @@
     ],
     "pennylane/templates/layers/particle_conserving_u1.py": [
       {
-        "rule": "not-iterable",
-        "startColumn": 11,
-        "endColumn": 16,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 22,
-        "endColumn": 33,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 24,
-        "endColumn": 35,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 24,
-        "endColumn": 35,
-        "lineCount": 1
-      },
-      {
         "rule": "not-subscriptable",
         "startColumn": 28,
         "endColumn": 39,
@@ -15867,24 +15837,6 @@
     ],
     "pennylane/templates/layers/particle_conserving_u2.py": [
       {
-        "rule": "invalid-argument-type",
-        "startColumn": 17,
-        "endColumn": 28,
-        "lineCount": 1
-      },
-      {
-        "rule": "not-subscriptable",
-        "startColumn": 50,
-        "endColumn": 61,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 69,
-        "endColumn": 80,
-        "lineCount": 1
-      },
-      {
         "rule": "invalid-method-override",
         "startColumn": 8,
         "endColumn": 57,
@@ -15916,12 +15868,6 @@
         "rule": "invalid-method-override",
         "startColumn": 8,
         "endColumn": 68,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 15,
-        "endColumn": 30,
         "lineCount": 1
       }
     ],
@@ -17851,102 +17797,6 @@
         "startColumn": 8,
         "endColumn": 60,
         "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
       }
     ],
     "pennylane/templates/subroutines/qchem/fermionic_single_excitation.py": [
@@ -17954,18 +17804,6 @@
         "rule": "invalid-method-override",
         "startColumn": 8,
         "endColumn": 44,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 13,
-        "endColumn": 36,
         "lineCount": 1
       }
     ],

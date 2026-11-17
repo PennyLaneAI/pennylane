@@ -26,7 +26,7 @@ from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresSequenceLike
 
 
-def decompose_ua(phi, wires=None):
+def decompose_ua(phi, wires):
     r"""Appends the circuit decomposing the controlled application of the unitary
     :math:`U_A(\phi)`
 

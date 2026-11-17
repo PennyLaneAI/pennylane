@@ -24,7 +24,7 @@ from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresSequenceLike
 
 
-def u2_ex_gate(phi, wires=None):
+def u2_ex_gate(phi, wires):
     r"""Implements the two-qubit exchange gate :math:`U_{2,\mathrm{ex}}` proposed in
     `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ to build particle-conserving VQE ansatze
     for Quantum Chemistry simulations.
