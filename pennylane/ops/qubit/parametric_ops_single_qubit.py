@@ -115,7 +115,7 @@ class RX(Operator2):
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.RZ` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/rx_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
@@ -387,7 +387,7 @@ class RY(Operator2):
                 :class:`Adjoint(S) <.S>` | :math:`1`
                 :class:`~.RZ` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/ry_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
@@ -980,7 +980,7 @@ class PhaseShift(Operator2):
                 :class:`~.RZ` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/phaseshift_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
@@ -1483,7 +1483,7 @@ class U1(Operator2):
 
                 :class:`~.PhaseShift` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/u1_adjoint.svg
                 :region: adjoint
 
