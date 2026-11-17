@@ -32,8 +32,6 @@ from pennylane.fermi.fermionic import (
     from_string,
 )
 
-# pylint: disable=too-many-public-methods
-
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw1_dag = FermiWord({(0, 1): "+", (1, 0): "-"})
 
@@ -279,7 +277,7 @@ class TestFermiWord:
         assert fw.adjoint() == fw_dag
 
 
-class TestFermiWordArithmetic:
+class TestFermiWordArithmetic:  # pylint: disable=too-many-public-methods
     WORDS_MUL = (
         (
             fw1,
@@ -845,7 +843,7 @@ class TestFermiSentence:
         assert fs.adjoint() == fs_dag
 
 
-class TestFermiSentenceArithmetic:
+class TestFermiSentenceArithmetic:  # pylint: disable=too-many-public-methods
     tup_fs_mult = (  # computed by hand
         (
             fs1,
@@ -1247,7 +1245,7 @@ class TestFermiSentenceArithmetic:
     @pytest.mark.parametrize("string", tup_fw_string_error)
     def test_from_string_error(self, string):
         with pytest.raises(ValueError, match="Invalid character encountered in string "):
-            from_string(string)  # pylint: disable=pointless-statement
+            from_string(string)
 
     fw_string = (
         (fw1, "0+ 1-"),

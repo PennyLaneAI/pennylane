@@ -304,7 +304,6 @@ class TestSparse:
     )
     def test_sparse_hamiltonian_expval(self, qubits, operations, hamiltonian, expected_output, tol):
         """Test that expectation values of sparse hamiltonians are properly calculated."""
-        # pylint: disable=too-many-arguments
 
         hamiltonian = csr_matrix(hamiltonian)
 

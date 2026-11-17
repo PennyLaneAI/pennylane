@@ -78,6 +78,27 @@ class LeftClassicalComparator(Operator2):
 
     >>> print(circuit())
     [0. 1.]
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.LeftClassicalComparator
+            :stacked:
+            :symbols: :math:`n` ``x_wires``, the constant :math:`L` and ``comparator`` :math:`c`
+            :example: :math:`n=3`, :math:`L=6`, :math:`c={<}`
+
+            .. decomposition-rule:: _left_classical_comparator
+                :image: /_static/decomposition_thumbnails/left_classical_comparator_elbow_ladder.svg
+                :where: :math:`[\cdot]` is 1 if the condition holds and 0 otherwise.
+                    Conditional gates depend on :math:`L` and :math:`c`.
+                    Their counts are upper bounds; the example counts are for the
+                    circuit shown
+
+                :class:`~.TemporaryAND` | :math:`n - 1` | 2
+                :class:`~.CNOT` | :math:`n - 1` | 2
+                :class:`~.CNOT` (conditional) | :math:`\leq 1` | 0
+                :class:`~.X` (conditional) | :math:`\leq 4n - 1` | 8
+                :class:`~.X` | :math:`[c \in \{>, \geq\}]` | 0
     """
 
     wire_argnames = ("x_wires", "target_wire", "work_wires")
@@ -99,7 +120,7 @@ class LeftClassicalComparator(Operator2):
         target_wire: WiresLike,
         work_wires: WiresLike,
         comparator: str,
-    ):  # pylint: disable=too-many-arguments
+    ):
 
         if math.shape(value) != ():
             raise ValueError("value must be a scalar integer.")
@@ -161,9 +182,9 @@ def _get_specific_bit(value, i):
     return (value >> i) & 1
 
 
+# pylint: disable-next=unused-argument
 def _left_classical_comparator_resources(x_wires, value, target_wire, work_wires, comparator, **_):
     """Return conservative worst-case gate counts without knowing the runtime threshold."""
-    # pylint: disable=unused-argument
     n = len(x_wires)
     # Count every conditional gate: two Xs for bit 0, four per remaining low bit,
     # and one for bit n. The final negation depends only on the comparator.

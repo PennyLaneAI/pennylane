@@ -24,8 +24,6 @@ A configuration is specified by:
 A configuration is supported if gradients can be computed for the
 QNode without an exception being raised."""
 
-# pylint: disable=too-many-arguments
-
 import pytest
 
 import pennylane as qp
@@ -90,6 +88,7 @@ grad_return_cases = [
 ]
 
 
+# pylint: disable-next=too-many-arguments
 def get_qnode(interface, diff_method, return_type, shots, wire_specs, gradient_kwargs=None):
     """Return a QNode with the given attributes.
 
@@ -107,10 +106,9 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs, gradient_k
 
     dev = qp.device("default.qubit", wires=device_wires)
 
-    # pylint: disable=too-many-return-statements
     @qp.set_shots(shots)
     @qp.qnode(dev, interface=interface, diff_method=diff_method, gradient_kwargs=gradient_kwargs)
-    def circuit(x):
+    def circuit(x):  # pylint: disable=too-many-return-statements
         for i, wire_label in enumerate(wire_labels[:-1]):
             qp.Hadamard(wires=wire_label)
             qp.RX(qp.math.cast(x[i], float), wires=wire_label)
@@ -189,7 +187,7 @@ def get_density_matrix_cost_fn(circuit):
     return cost_fn
 
 
-# pylint: disable=too-many-return-statements
+# pylint: disable-next=too-many-return-statements
 def compute_gradient(x, interface, circuit, return_type, complex=False):
     """Return an interface-specific gradient or jacobian using the
     provided parameters:

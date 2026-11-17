@@ -13,7 +13,9 @@
 # limitations under the License.
 """Unit tests for matrix expand functions."""
 
-# pylint: disable=too-few-public-methods,too-many-public-methods
+# pylint: disable=too-few-public-methods
+
+
 from functools import reduce
 
 import numpy as np
@@ -42,7 +44,7 @@ CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
-class TestExpandMatrix:
+class TestExpandMatrix:  # pylint: disable=too-many-public-methods
     """Tests for the expand_matrix helper function."""
 
     base_matrix_1 = np.arange(1, 5).reshape((2, 2))
@@ -512,7 +514,6 @@ class TestExpandMatrix:
 
             num_wires = 2
 
-            # pylint: disable=arguments-differ
             @staticmethod
             def compute_matrix():
                 """Compute the matrix of the DummyOp."""
@@ -786,19 +787,19 @@ class TestExpandMatrixSparse:
 
     def test_sparse_swap_mat(self):
         """Test the swap matrix generated is as expected."""
-        # pylint: disable=protected-access
         n = 4
         for i in range(n):
             for j in range(n):
                 if i != j:
                     expected_mat = qp.SWAP(wires=[i, j]).matrix()
                     expected_mat = qp.math.expand_matrix(expected_mat, [i, j], wire_order=range(n))
+                    # pylint: disable-next=protected-access
                     computed_mat = qp.math.matrix_manipulation._sparse_swap_mat(i, j, n).toarray()
                     assert np.allclose(expected_mat, computed_mat)
 
     def test_sparse_swap_mat_same_index(self):
         """Test that if the indices are the same then the identity is returned."""
-        # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         computed_mat = qp.math.matrix_manipulation._sparse_swap_mat(2, 2, 3).toarray()
         expected_mat = np.eye(8)
         assert np.allclose(expected_mat, computed_mat)

@@ -22,9 +22,17 @@ import numpy as np
 
 from pennylane.allocation import Allocate, Deallocate, DynamicWire
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.ops import Conditional, Controlled, MeasurementValue, MidMeasure, PauliMeasure
+from pennylane.ops import (
+    Adjoint,
+    Conditional,
+    Controlled,
+    MeasurementValue,
+    MidMeasure,
+    PauliMeasure,
+)
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
+from pennylane.templates.subroutines import TemporaryAND
 from pennylane.wires import Wires
 
 
@@ -218,6 +226,29 @@ def convert_wire_order(tape, wire_order=None, show_all_wires=False):
     return full_wire_map, used_wire_map
 
 
+def unwrap_temporary_and(op):
+    """Return the controls, target, values, and direction of a possibly wrapped elbow.
+
+    Return ``None`` for other operations, whose usual drawing is preserved.
+    """
+    control_wires, control_values, adjoint = [], [], False
+    while isinstance(op, (Controlled, Adjoint)):
+        if isinstance(op, Controlled):
+            control_wires.extend(op.control_wires)
+            control_values.extend(op.control_values)
+        else:
+            adjoint = not adjoint
+        op = op.base
+    if not isinstance(op, TemporaryAND):
+        return None
+    return (
+        control_wires + list(op.wires[:-1]),
+        op.wires[-1],
+        control_values + list(op.control_values),
+        adjoint,
+    )
+
+
 def unwrap_controls(op):
     """Unwraps nested controlled operations for drawing.
 
@@ -248,9 +279,8 @@ def unwrap_controls(op):
     return control_wires + base_ctrl_wires, control_values + base_ctrl_values, base_base
 
 
-# pylint: disable=unused-argument
 @singledispatch
-def _get_meas(op, bit_map, wire_map):
+def _get_meas(op, bit_map, wire_map):  # pylint: disable=unused-argument
     return [], None
 
 

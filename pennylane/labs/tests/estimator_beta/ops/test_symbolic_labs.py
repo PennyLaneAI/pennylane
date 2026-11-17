@@ -27,8 +27,6 @@ from pennylane.labs.estimator_beta.ops.op_math.symbolic import (
     mark_subroutine,
 )
 
-# pylint: disable=no-self-use, too-few-public-methods
-
 
 class TestGenerateName:
     """Tests for the ``_generate_name`` helper function."""

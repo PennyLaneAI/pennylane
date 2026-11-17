@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the classical shadows transforms"""
 
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -210,7 +209,7 @@ class TestStateForward:
 
 
 @pytest.mark.all_interfaces
-class TestStateForwardInterfaces:
+class TestStateForwardInterfaces:  # pylint: disable=too-few-public-methods
     """Test that state reconstruction works for all interfaces"""
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
@@ -238,7 +237,6 @@ class TestStateBackward:
     @pytest.mark.autograd
     def test_backward_autograd(self):
         """Test the gradient of the state for the autograd interface"""
-        # pylint: disable=cell-var-from-loop
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="autograd")
 
         sub_wires = [[0, 1], [1, 2]]
@@ -252,6 +250,7 @@ class TestStateBackward:
 
         for act, w in zip(qp.math.unstack(actual), sub_wires):
             exact_circuit = basic_entangler_circuit_exact_state(3, w, "autograd")
+            # pylint: disable-next=cell-var-from-loop
             expected = qp.jacobian(lambda x: qp.math.real(exact_circuit(x)))(x)
 
             assert qp.math.allclose(act, expected, atol=1e-1)
@@ -259,7 +258,6 @@ class TestStateBackward:
     @pytest.mark.jax
     def test_backward_jax(self):
         """Test the gradient of the state for the JAX interface"""
-        # pylint: disable=cell-var-from-loop
         import jax
         from jax import numpy as jnp
 
@@ -273,6 +271,7 @@ class TestStateBackward:
 
         for act, w in zip(qp.math.unstack(actual), sub_wires):
             exact_circuit = basic_entangler_circuit_exact_state(3, w, "jax")
+            # pylint: disable-next=cell-var-from-loop
             expected = jax.jacobian(lambda x: qp.math.real(exact_circuit(x)))(x)
 
             assert qp.math.allclose(act, expected, atol=1e-1)

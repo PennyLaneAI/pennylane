@@ -115,7 +115,6 @@ class TestFable:
     @pytest.mark.filterwarnings("ignore:The input matrix should be of shape NxN")
     def test_padding_for_non_square(self):
         """Test that non-square NxM matrices get padded with zeroes to reach NxN size."""
-        # pylint: disable=protected-access
         non_square_matrix = np.array(
             [
                 [-0.51192128, -0.51192128, 0.6237114, 0.6237114],
@@ -125,7 +124,7 @@ class TestFable:
         )
 
         op = qp.FABLE(non_square_matrix, wires=range(5), tol=0.01)
-        data = op._flatten()
+        data = op._flatten()  # pylint: disable=protected-access
         assert data[0][0].shape == (4, 4)
 
     def test_warning_for_not_power(self):
@@ -143,7 +142,6 @@ class TestFable:
     @pytest.mark.filterwarnings("ignore:The input matrix should be of shape NxN")
     def test_padding_for_not_power(self):
         """Test that matrices with dimensions N that are not a power of 2 get padded."""
-        # pylint: disable=protected-access
         two_by_three_array = np.array(
             [
                 [-0.51192128, -0.51192128, 0.6237114],
@@ -152,7 +150,7 @@ class TestFable:
         )
 
         op = qp.FABLE(two_by_three_array, wires=range(5), tol=0.01)
-        data = op._flatten()
+        data = op._flatten()  # pylint: disable=protected-access
         assert data[0][0].shape == (4, 4)
 
     @pytest.mark.jax
