@@ -221,6 +221,28 @@ def _warn_skipped_transforms(gate_changing: list[tuple], target, resources) -> N
             )
 
 
+def _missing_rule_op(exc: Exception) -> str | None:
+    """Return the operator of a compile error for a missing decomposition rule, if any."""
+    missing_rule = re.search(r"Decomposition rule not found for operator '([^'{]+)", str(exc))
+    return missing_rule.group(1) if missing_rule else None
+
+
+def _failing_decomposition(
+    compile_error: type[Exception], func, estimate_qnode, *args, **kwargs
+) -> tuple[str, dict] | None:
+    """Return the operator and the arguments of the first decomposition applied in
+    ``estimate_qnode`` that cannot decompose it, if any. Each decomposition is compiled separately,
+    so this is only done after a ``compile_error``."""
+    for num_applied, bound_transform in enumerate(estimate_qnode.compile_pipeline, start=1):
+        try:
+            resources_from_analysis_pass(func, estimate_qnode, num_applied, {}, {}, *args, **kwargs)
+        except compile_error as exc:
+            if (op := _missing_rule_op(exc)) is not None:
+                return op, _decompose_kwargs(bound_transform)
+            raise
+    return None
+
+
 def _missing_rule_message(op: str, target, pipeline: CompilePipeline, gate_changing: list) -> str:
     """Return the error message for an operator ``op`` that cannot be decomposed into the gate set
     of ``target``."""
@@ -298,15 +320,19 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
                 **kwargs,
             )
         except CompileError as exc:
-            missing_rule = re.search(
-                r"Decomposition rule not found for operator '([^'{]+)", str(exc)
-            )
-            if missing_rule is None:
+            if (op := _missing_rule_op(exc)) is None:
                 raise
+            if failing := _failing_decomposition(
+                CompileError, func, estimate_qnode, *args, **kwargs
+            ):
+                op, failing_kwargs = failing
+                raise ValueError(
+                    f"Decomposition rule not found for operator {op}: it cannot be decomposed "
+                    f"into the gate set {failing_kwargs['gate_set']} of a qp.decompose transform "
+                    f"before target={target!r}."
+                ) from None
             raise ValueError(
-                _missing_rule_message(
-                    missing_rule.group(1), target, compile_pipeline, gate_changing
-                )
+                _missing_rule_message(op, target, compile_pipeline, gate_changing)
             ) from None
 
     resources = next(iter(resources.values()))

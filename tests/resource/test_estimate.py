@@ -925,6 +925,22 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         with pytest.raises(ValueError, match="into the gate set at target='user'.$"):
             qp.estimate(circuit, target="user")(0.5)
 
+    def test_unreachable_gate_set_before_level_target(self):
+        """Test that the error for a decompose transform before a level target that cannot be
+        applied names its gate set, instead of the gate set at the target."""
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set={"RZ", "RY", "CNOT", "GlobalPhase"})
+        @qp.decompose(gate_set={"RX"})
+        @qp.qnode(qp.device("null.qubit", wires=2))
+        def circuit():
+            qp.CNOT([0, 1])
+            return qp.probs()
+
+        match = "operator CNOT: .* into the gate set .*RX.* of a qp.decompose transform before"
+        with pytest.raises(ValueError, match=match):
+            qp.estimate(circuit, target="user")()
+
     def test_device_without_decomposition(self, circuit, monkeypatch):
         """Test that an error is raised for target="device" if the device preprocessing has no
         decomposition."""
@@ -952,6 +968,23 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
 
         assert specs.resources.quantum_operations == {"2C(RX)": 1, "3C(RX)": 1}
         expected = qp.analyze(circuit, level="device")(0.1).resources.quantum_operations
+        assert specs.resources.quantum_operations == expected
+
+    def test_pauli_product_ops_match_analyze(self):
+        """Test that the ops outside the decomposition graph, such as Pauli product measurements,
+        keep their names and weights, as qp.analyze does."""
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=2))
+        def circuit():
+            qp.H(0)
+            qp.pauli_measure("ZX", wires=[0, 1])
+            return qp.probs()
+
+        specs = qp.estimate(circuit, target={"Hadamard"})()
+
+        assert specs.resources.quantum_operations == {"Hadamard": 1, "PPM-w2": 1}
+        expected = qp.analyze(circuit, level=0)().resources.quantum_operations
         assert specs.resources.quantum_operations == expected
 
     def test_marker_target(self, qnode):
