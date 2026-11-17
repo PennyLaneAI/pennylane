@@ -2469,6 +2469,11 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed a memory leak when executing :func:`~pennylane.math.decomposition.givens_decomposition`,
+  and thus the decompositions of :class:`~.BasisRotation`, within :func:`~.qjit`. The
+  decomposition no longer calls nested jitted functions, whose returned buffers Catalyst
+  does not free.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
 * Fixed the measurement-based decomposition of :class:`~.QROM` to support dynamic
   bitstrings with ``qjit(capture=True)``, including padding for extra control wires.
   Its inner traversal now uses :func:`~.for_loop` instead of recursion.
