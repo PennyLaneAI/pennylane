@@ -36,6 +36,20 @@ def test_standard_validity_Phase_Adder():
     qp.testing.assert_valid(op)
 
 
+@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("dtype", ["int32", "int64"])
+def test_modular_resources_match_integer_dtype(dtype):
+    """Basis subcircuits retain the parent operator's canonical integer signature."""
+    op = qp.PhaseAdder(
+        qp.math.asarray(1, like="jax", dtype=dtype),
+        x_wires=[0, 1, 2],
+        mod=7,
+        work_wire=[3],
+    )
+    assert_decomposable(op)
+
+
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_falsy_zero_as_work_wire():
     """Test that work wire is not treated as a falsy zero."""

@@ -169,7 +169,11 @@ def _phase_adder_basis_resources(wires, reverse, **_):
     return {ops.PhaseShift: len(wires), ops.X: 1, qft if reverse else ops.adjoint(qft): 1}
 
 
-@subcircuit(dynamic_argnames=("k",), static_argnames=("reverse",))
+@subcircuit(
+    dynamic_argnames=("k",),
+    static_argnames=("reverse",),
+    arg_specs={"k": Int, "wires": Wire[-1]},
+)
 @register_resources(_phase_adder_basis_resources)
 def _phase_adder_basis(k: int, wires: WiresLike, reverse: bool):
     if reverse:

@@ -149,6 +149,7 @@ def _uniform_rz_resources(control_wires, **_):
 @subcircuit(
     dynamic_argnames=("angles",),
     wire_argnames=("control_wires", "target_wire"),
+    arg_specs={"angles": Float[-1], "control_wires": Wire[-1], "target_wire": Wire[1]},
     ndim_params=(1,),
     grad_method=None,
 )
