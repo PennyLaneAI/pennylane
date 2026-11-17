@@ -28,7 +28,7 @@ from pennylane.labs.trotter_error import (
 symbols = ["A", "B", "C", "D"]
 frag_labels = symbols + symbols[::-1]
 frag_coeffs = [1 / 2] * len(frag_labels)
-second_order = ProductFormula(list(zip(frag_labels, frag_coeffs)))
+second_order = ProductFormula(list(zip(frag_labels, frag_coeffs, strict=False)))
 u = 1 / (4 - 4 ** (1 / 3))
 v = 1 - 4 * u
 fourth_order = ProductFormula.prod([second_order(u) ** 2, second_order(v), second_order(u) ** 2])
@@ -96,10 +96,10 @@ def test_convergence_log(backend, mpi4py_support):
         backend=backend,
     )
 
-    assert 5 in error.keys()
+    assert 5 in error
     assert np.isclose(error[5]["error"], error[5]["partial sums"][-1])
     assert len(error[5]["partial sums"]) == topk
 
-    if 3 in error.keys():
+    if 3 in error:
         assert np.isclose(error[3]["error"], error[3]["partial sums"][-1])
         assert len(error[3]["partial sums"]) == topk

@@ -29,7 +29,6 @@ from pennylane.core.queuing import QueuingManager
 from pennylane.ops.identity import I
 from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
 from pennylane.ops.op_math.condition import Conditional
-from pennylane.resource import ResourcesOperation
 from pennylane.wires import Wires
 
 
@@ -104,8 +103,7 @@ def _construct_graph_from_queue(queue, all_wires):
     return graph, inds_for_objs, nodes_on_wires
 
 
-# pylint: disable=too-many-instance-attributes, too-many-public-methods
-class CircuitGraph:
+class CircuitGraph:  # pylint: disable=too-many-instance-attributes
     """Represents a quantum circuit as a directed acyclic graph.
 
     In this representation the :class:`~.Operator` instances are the nodes of the graph,
@@ -124,7 +122,6 @@ class CircuitGraph:
             quantum circuit.
     """
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
         ops: list[Operator | MeasurementProcess],
@@ -186,7 +183,7 @@ class CircuitGraph:
                 serialization_string += str(param)
                 serialization_string += delimiter
 
-            serialization_string += str(op.wires.tolist())
+            serialization_string += str(op.wires)
 
         # Adding a distinct separating string that could not occur by any combination of the
         # name of the operation and wires
@@ -203,7 +200,7 @@ class CircuitGraph:
                 serialization_string += str(param)
                 serialization_string += delimiter
 
-            serialization_string += str(obs.wires.tolist())
+            serialization_string += str(obs.wires)
         return serialization_string
 
     @property
@@ -449,11 +446,7 @@ class CircuitGraph:
             ] + self.operations  # add identity wire to end the graph
         operation_graph, _, _ = _construct_graph_from_queue(ops_with_initial_I, self.wires)
 
-        # pylint: disable=unused-argument
-        def weight_fn(in_idx, out_idx, w):
-            out_op = ops_with_initial_I[out_idx]
-            if isinstance(out_op, ResourcesOperation):
-                return out_op.resources().depth
+        def weight_fn(in_idx, out_idx, w):  # pylint: disable=unused-argument
             return 1
 
         return rx.dag_longest_path_length(operation_graph, weight_fn=weight_fn)

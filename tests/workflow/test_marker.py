@@ -22,7 +22,7 @@ jax = pytest.importorskip("jax")
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 class TestMarkerQNode:
     """Tests the integration with compile pipeline."""
 

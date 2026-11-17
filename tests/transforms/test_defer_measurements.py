@@ -17,8 +17,6 @@ Tests for the transform implementing the deferred measurement principle.
 
 import math
 import re
-
-# pylint: disable=too-few-public-methods, too-many-arguments
 from functools import partial
 
 import pytest
@@ -232,7 +230,7 @@ class TestQNode:
         assert len(tape1.measurements) == len(tape2.measurements)
 
         # Check the measurements
-        for op1, op2 in zip(tape1.measurements, tape2.measurements):
+        for op1, op2 in zip(tape1.measurements, tape2.measurements, strict=False):
             assert isinstance(op1, type(op2))
 
     def test_reuse_wire_after_measurement(self):
@@ -285,9 +283,9 @@ class TestQNode:
         deferred_tape = deferred_tapes[0]
         assert isinstance(deferred_tape.operations[5], Controlled)
         qp.assert_equal(deferred_tape.operations[5].base, qp.PauliZ(2))
-        assert deferred_tape.operations[5].hyperparameters["control_wires"] == qp.wires.Wires(0)
+        assert deferred_tape.operations[5].control_wires == qp.wires.Wires(0)
 
-        qp.assert_equal(deferred_tape.operations[6], qp.CNOT([1, 2]))
+        qp.assert_equal(deferred_tape.operations[6], qp.ctrl(qp.X(2), 1))
 
     def test_new_wires_after_reuse(self, mocker):
         """Test that a new wire is added for every measurement after which
@@ -370,19 +368,19 @@ class TestQNode:
         expected_circuit = [
             qp.RX(phi, 0),
             qp.Projector([1], wires=0),
-            qp.X(1) if reduce_postselected else qp.CNOT([0, 1]),
+            qp.X(1) if reduce_postselected else qp.ctrl(qp.X(1), 0),
             qp.probs(wires=1),
         ]
 
         tape1 = qp.workflow.construct_tape(circ1)(phi)
         assert len(tape1) == len(expected_circuit)
-        for op, expected_op in zip(tape1, expected_circuit):
+        for op, expected_op in zip(tape1, expected_circuit, strict=False):
             qp.assert_equal(op, expected_op)
 
     @pytest.mark.parametrize("reduce_postselected", [None, True, False])
     @pytest.mark.parametrize("shots", [None, 1000])
     @pytest.mark.parametrize("phi", np.linspace(np.pi / 2, 7 * np.pi / 2, 6))
-    def test_some_postselection_qnode(
+    def test_some_postselection_qnode(  # pylint: disable=too-many-arguments
         self, phi, shots, reduce_postselected, tol, tol_stochastic, seed
     ):
         """Test that a qnode with some mid-circuit measurements with postselection
@@ -419,20 +417,20 @@ class TestQNode:
             qp.RX(phi, 0),
             qp.RX(phi, 2),
             qp.Projector([1], wires=0),
-            qp.CNOT([2, 1]) if reduce_postselected else qp.Toffoli([0, 2, 1]),
+            qp.ctrl(qp.X(1), 2) if reduce_postselected else qp.ctrl(qp.X(1), [0, 2]),
             qp.probs(wires=1),
         ]
 
         tape1 = qp.workflow.construct_tape(circ1)(phi)
         assert len(tape1) == len(expected_circuit)
-        for op, expected_op in zip(tape1, expected_circuit):
+        for op, expected_op in zip(tape1, expected_circuit, strict=False):
             qp.assert_equal(op, expected_op)
 
     @pytest.mark.parametrize("reduce_postselected", [None, True, False])
     @pytest.mark.parametrize("shots", [None, 1000])
     @pytest.mark.parametrize("phi", np.linspace(np.pi / 4, 4 * np.pi, 4))
     @pytest.mark.parametrize("theta", np.linspace(np.pi / 3, 3 * np.pi, 4))
-    def test_all_postselection_qnode(
+    def test_all_postselection_qnode(  # pylint: disable=too-many-arguments
         self, phi, theta, shots, reduce_postselected, tol, tol_stochastic
     ):
         """Test that a qnode with all mid-circuit measurements with postselection
@@ -502,14 +500,14 @@ class TestQNode:
                 qp.Projector([1], wires=2),
                 qp.CNOT([2, 5]),
                 qp.PauliX(2),
-                qp.PauliX(1) if reduce_postselected else qp.CNOT([5, 1]),
+                qp.PauliX(1) if reduce_postselected else qp.ctrl(qp.X(1), 5),
                 qp.probs(wires=[0, 1, 2]),
             ]
         )
 
         tape1 = qp.workflow.construct_tape(circ1)(phi, theta)
         assert len(tape1) == len(expected_circuit)
-        for op, expected_op in zip(tape1, expected_circuit):
+        for op, expected_op in zip(tape1, expected_circuit, strict=False):
             qp.assert_equal(op, expected_op)
 
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1000]])
@@ -607,12 +605,13 @@ class TestQNode:
 
         params = [1.5, 2.5]
         if isinstance(shots, list):
-            for out1, out2 in zip(circ1(*params), circ2(*params)):
-                for o1, o2 in zip(out1, out2):
+            for out1, out2 in zip(circ1(*params), circ2(*params), strict=False):
+                for o1, o2 in zip(out1, out2, strict=False):
                     assert np.allclose(o1, o2)
         else:
             assert all(
-                np.allclose(out1, out2) for out1, out2 in zip(circ1(*params), circ2(*params))
+                np.allclose(out1, out2)
+                for out1, out2 in zip(circ1(*params), circ2(*params), strict=False)
             )
 
     def test_measure_between_ops(self):
@@ -649,19 +648,18 @@ class TestQNode:
         assert len(tape1.measurements) == len(tape2.measurements)
 
         # Check the operations
-        for op1, op2 in zip(tape1.operations, tape2.operations):
+        for op1, op2 in zip(tape1.operations, tape2.operations, strict=False):
             assert isinstance(op1, type(op2))
             assert op1.data == op2.data
 
         # Check the measurements
-        for op1, op2 in zip(tape1.measurements, tape2.measurements):
+        for op1, op2 in zip(tape1.measurements, tape2.measurements, strict=False):
             assert isinstance(op1, type(op2))
 
     @pytest.mark.parametrize("mid_measure_wire, tp_wires", [(0, [1, 2, 3]), (0, [3, 1, 2])])
     def test_measure_with_tensor_obs(self, mid_measure_wire, tp_wires):
         """Test that the defer_measurements transform works well even with
         tensor observables in the tape."""
-        # pylint: disable=protected-access
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.measure(mid_measure_wire)
@@ -682,37 +680,6 @@ class TestQNode:
         for idx, ob in enumerate(tensor.operands):
             assert isinstance(ob, qp.PauliZ)
             assert ob.wires == qp.wires.Wires(tp_wires[idx])
-
-    def test_cv_op_error(self):
-        """Test that CV operations are not supported."""
-        dev = qp.device("default.gaussian", wires=3)
-
-        @qp.defer_measurements
-        @qp.qnode(dev)
-        def qnode():
-            qp.measure(0)
-            qp.Rotation(0.123, wires=[0])
-            return qp.expval(qp.NumberOperator(1))
-
-        with pytest.raises(
-            ValueError, match="Continuous variable operations and observables are not supported"
-        ):
-            qnode()
-
-    def test_cv_obs_error(self):
-        """Test that CV observables are not supported."""
-        dev = qp.device("default.gaussian", wires=3)
-
-        @qp.defer_measurements
-        @qp.qnode(dev)
-        def qnode():
-            qp.measure(0)
-            return qp.expval(qp.NumberOperator(1))
-
-        with pytest.raises(
-            ValueError, match="Continuous variable operations and observables are not supported"
-        ):
-            qnode()
 
 
 class TestConditionalOperations:
@@ -1417,12 +1384,12 @@ class TestTemplates:
         assert len(tape1.measurements) == len(tape2.measurements)
 
         # Check the operations
-        for op1, op2 in zip(tape1.operations, tape2.operations):
+        for op1, op2 in zip(tape1.operations, tape2.operations, strict=False):
             assert isinstance(op1, type(op2))
             assert np.allclose(op1.data, op2.data)
 
         # Check the measurements
-        for op1, op2 in zip(tape1.measurements, tape2.measurements):
+        for op1, op2 in zip(tape1.measurements, tape2.measurements, strict=False):
             assert isinstance(op1, type(op2))
 
     @pytest.mark.parametrize("template", [qp.StronglyEntanglingLayers, qp.BasicEntanglerLayers])
@@ -1456,12 +1423,12 @@ class TestTemplates:
         assert len(tape1.measurements) == len(tape2.measurements)
 
         # Check the operations
-        for op1, op2 in zip(tape1.operations, tape2.operations):
+        for op1, op2 in zip(tape1.operations, tape2.operations, strict=False):
             assert isinstance(op1, type(op2))
             assert np.allclose(op1.data, op2.data)
 
         # Check the measurements
-        for op1, op2 in zip(tape1.measurements, tape2.measurements):
+        for op1, op2 in zip(tape1.measurements, tape2.measurements, strict=False):
             assert isinstance(op1, type(op2))
 
 
@@ -1520,13 +1487,13 @@ class TestQubitReuseAndReset:
             qp.Hadamard(0),
             qp.CNOT([0, 2]),
             qp.CNOT([2, 0]),
-            qp.CRX(0.123, wires=[2, 1]),
+            qp.ctrl(qp.RX(0.123, wires=1), 2),
             qp.expval(qp.PauliZ(1)),
         ]
 
         tape2 = qp.workflow.construct_tape(qnode2)(0.123)
         assert len(tape2.circuit) == len(expected_circuit)
-        for actual, expected in zip(tape2.circuit, expected_circuit):
+        for actual, expected in zip(tape2.circuit, expected_circuit, strict=False):
             qp.assert_equal(actual, expected)
 
     def test_measurements_add_new_qubits(self):
@@ -1613,7 +1580,7 @@ class TestQubitReuseAndReset:
         deferred_tapes, _ = qp.defer_measurements(tape)
         deferred_tape = deferred_tapes[0]
         assert len(deferred_tape.circuit) == len(expected_circuit)
-        for actual, expected in zip(deferred_tape.circuit, expected_circuit):
+        for actual, expected in zip(deferred_tape.circuit, expected_circuit, strict=False):
             qp.assert_equal(actual, expected)
 
 
@@ -1642,9 +1609,9 @@ class TestDrawing:
         transformed_qnode = qp.QNode(transformed_qfunc, dev)
 
         expected = (
-            "0: ─╭●──────────────────┤     \n"
+            "0: ─╭●──────────────────┤\n"
             "1: ─╰RY(0.31)─╭RY(0.31)─┤  <Z>\n"
-            "2: ───────────╰●────────┤     "
+            "2: ───────────╰●────────┤"
         )
         assert qp.draw(transformed_qnode)() == expected
 
@@ -1669,10 +1636,10 @@ class TestDrawing:
         transformed_qnode = qp.QNode(transformed_qfunc, dev)
 
         expected = (
-            "0: ─╭●─╭X─────────────────────┤     \n"
+            "0: ─╭●─╭X─────────────────────┤\n"
             "1: ─│──│──╭RY(0.31)─╭RY(0.31)─┤  <Z>\n"
-            "2: ─│──│──│─────────╰●────────┤     \n"
-            "3: ─╰X─╰●─╰●──────────────────┤     "
+            "2: ─│──│──│─────────╰●────────┤\n"
+            "3: ─╰X─╰●─╰●──────────────────┤"
         )
         assert qp.draw(transformed_qnode)() == expected
 
@@ -1701,11 +1668,9 @@ class TestDrawing:
         transformed_qfunc = qp.transforms.defer_measurements(qfunc)
         transformed_qnode = qp.QNode(transformed_qfunc, dev)
 
-        spaces = " " * len(label)
-        expval = "<Z>".ljust(len(label))
         expected = (
-            f"0: ─╭●─╭X───────────┤  {spaces}\n"
-            f"1: ─│──│──╭RY(0.31)─┤  {expval}\n"
+            "0: ─╭●─╭X───────────┤\n"
+            "1: ─│──│──╭RY(0.31)─┤  <Z>\n"
             f"2: ─╰X─╰●─╰●────────┤  {label}"
         )
         assert qp.draw(transformed_qnode)() == expected
@@ -1742,7 +1707,7 @@ def test_custom_wire_labels_allowed_without_reuse():
 
     assert len(tape) == 3
     qp.assert_equal(tape[0], qp.Hadamard("a"))
-    qp.assert_equal(tape[1], qp.CNOT(["a", "b"]))
+    qp.assert_equal(tape[1], qp.ctrl(qp.X("b"), "a"))
     qp.assert_equal(tape[2], qp.probs(wires="b"))
 
 
@@ -1764,7 +1729,7 @@ def test_integer_wire_labels_with_reset():
     qp.assert_equal(tape[0], qp.Hadamard(0))
     qp.assert_equal(tape[1], qp.CNOT([0, 2]))
     qp.assert_equal(tape[2], qp.CNOT([2, 0]))
-    qp.assert_equal(tape[3], qp.CNOT([2, 1]))
+    qp.assert_equal(tape[3], qp.ctrl(qp.X(1), 2))
     qp.assert_equal(tape[4], qp.probs(wires=0))
 
     # Reuse example
@@ -1782,7 +1747,7 @@ def test_integer_wire_labels_with_reset():
     assert len(tape) == 5
     qp.assert_equal(tape[0], qp.Hadamard(0))
     qp.assert_equal(tape[1], qp.CNOT([0, 2]))
-    qp.assert_equal(tape[2], qp.CNOT([2, 1]))
+    qp.assert_equal(tape[2], qp.ctrl(qp.X(1), 2))
     qp.assert_equal(tape[3], qp.Hadamard(0))
     qp.assert_equal(tape[4], qp.probs(wires=1))
 
@@ -1805,7 +1770,7 @@ def test_custom_wire_labels_with_reset():
     qp.assert_equal(tape[0], qp.Hadamard("a"))
     qp.assert_equal(tape[1], qp.CNOT(["a", 0]))
     qp.assert_equal(tape[2], qp.CNOT([0, "a"]))
-    qp.assert_equal(tape[3], qp.CNOT([0, "b"]))
+    qp.assert_equal(tape[3], qp.ctrl(qp.X("b"), 0))
     qp.assert_equal(tape[4], qp.probs(wires="a"))
 
     # Reuse example (should be the same circuit as in previous test but with wire labels)
@@ -1823,6 +1788,6 @@ def test_custom_wire_labels_with_reset():
     assert len(tape) == 5
     qp.assert_equal(tape[0], qp.Hadamard("a"))
     qp.assert_equal(tape[1], qp.CNOT(["a", 0]))
-    qp.assert_equal(tape[2], qp.CNOT([0, "b"]))
+    qp.assert_equal(tape[2], qp.ctrl(qp.X("b"), 0))
     qp.assert_equal(tape[3], qp.Hadamard("a"))
     qp.assert_equal(tape[4], qp.probs(wires="b"))

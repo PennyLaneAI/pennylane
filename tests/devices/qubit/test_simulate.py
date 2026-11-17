@@ -40,12 +40,10 @@ ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 
 
-class TestCurrentlyUnsupportedCases:
-    # pylint: disable=too-few-public-methods
+class TestCurrentlyUnsupportedCases:  # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self):
         """Test sample-only measurements raise a notimplementedError."""
 
@@ -57,8 +55,7 @@ class TestCurrentlyUnsupportedCases:
 def test_custom_operation():
     """Test execution works with a manually defined operator if it has a matrix."""
 
-    # pylint: disable=too-few-public-methods
-    class MyOperator(qp.operation.Operator):
+    class MyOperator(qp.operation.Operator):  # pylint: disable=too-few-public-methods
         num_wires = 1
 
         @staticmethod
@@ -71,7 +68,6 @@ def test_custom_operation():
     assert qp.math.allclose(result, -1.0)
 
 
-# pylint: disable=too-few-public-methods
 class TestSparsePipeline:
     """System tests for the sparse pipelines."""
 
@@ -113,8 +109,7 @@ class TestSparsePipeline:
         assert qp.math.allclose(res, expected)
 
 
-# pylint: disable=too-few-public-methods
-class TestStatePrepBase:
+class TestStatePrepBase:  # pylint: disable=too-few-public-methods
     """Tests integration with various state prep methods."""
 
     def test_basis_state(self):
@@ -222,7 +217,8 @@ class TestBasicCircuit:
 
         def f(x):
             qs = qp.tape.QuantumScript(
-                [qp.RX(x, wires=0)], [qp.expval(qp.PauliY(0)), qp.expval(qp.PauliZ(0))]
+                [qp.RX(qp.math.cast(x, "float64"), wires=0)],
+                [qp.expval(qp.PauliY(0)), qp.expval(qp.PauliZ(0))],
             )
             return simulate(qs)
 
@@ -233,29 +229,6 @@ class TestBasicCircuit:
         g = torch.autograd.functional.jacobian(f, phi + 0j)
         assert qp.math.allclose(g[0], -torch.cos(phi))
         assert qp.math.allclose(g[1], -torch.sin(phi))
-
-    # pylint: disable=invalid-unary-operand-type
-    @pytest.mark.tf
-    def test_tf_results_and_backprop(self):
-        """Tests execution and gradients of a simple circuit with tensorflow."""
-        import tensorflow as tf
-
-        phi = tf.Variable(4.873, dtype="float64")
-
-        with tf.GradientTape(persistent=True) as grad_tape:
-            qs = qp.tape.QuantumScript(
-                [qp.RX(phi, wires=0)], [qp.expval(qp.PauliY(0)), qp.expval(qp.PauliZ(0))]
-            )
-            result = simulate(qs)
-
-        assert qp.math.allclose(result[0], -tf.sin(phi))
-        assert qp.math.allclose(result[1], tf.cos(phi))
-
-        grad0 = grad_tape.jacobian(result[0], [phi])
-        grad1 = grad_tape.jacobian(result[1], [phi])
-
-        assert qp.math.allclose(grad0[0], -tf.cos(phi))
-        assert qp.math.allclose(grad1[0], -tf.sin(phi))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("op", [qp.RX(np.pi, 0), qp.BasisState([1], 0)])
@@ -591,28 +564,6 @@ class TestDebugger:
             torch.tensor([torch.cos(phi / 2), -torch.sin(phi / 2) * 1j]),
         )
 
-    # pylint: disable=invalid-unary-operand-type
-    @pytest.mark.tf
-    def test_debugger_tf(self):
-        """Tests debugger with tensorflow."""
-        import tensorflow as tf
-
-        phi = tf.Variable(4.873, dtype="float64")
-        debugger = Debugger()
-
-        ops = [qp.Snapshot(), qp.RX(phi, wires=0), qp.Snapshot("final_state")]
-        qs = qp.tape.QuantumScript(ops, [qp.expval(qp.PauliY(0)), qp.expval(qp.PauliZ(0))])
-        result = simulate(qs, debugger=debugger)
-
-        assert qp.math.allclose(result[0], -tf.sin(phi))
-        assert qp.math.allclose(result[1], tf.cos(phi))
-
-        assert list(debugger.snapshots.keys()) == [0, "final_state"]
-        assert qp.math.allclose(debugger.snapshots[0], [1, 0])
-        assert qp.math.allclose(
-            debugger.snapshots["final_state"], [np.cos(phi / 2), -np.sin(phi / 2) * 1j]
-        )
-
 
 class TestSampleMeasurements:
     """Tests circuits with sample-based measurements"""
@@ -762,12 +713,12 @@ class TestSampleMeasurements:
         assert len(result) == len(list(shots))
 
         assert all(isinstance(res, np.ndarray) for res in result)
-        assert all(res.shape == (s, 2) for res, s in zip(result, shots))
+        assert all(res.shape == (s, 2) for res, s in zip(result, shots, strict=False))
         assert all(
             np.allclose(
                 np.sum(res, axis=0).astype(np.float32) / s, [np.sin(x / 2) ** 2, 0], atol=0.1
             )
-            for res, s in zip(result, shots)
+            for res, s in zip(result, shots, strict=False)
         )
 
     @pytest.mark.parametrize("shots", shots_data)
@@ -785,7 +736,7 @@ class TestSampleMeasurements:
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))
 
-        for shot_res, s in zip(result, shots):
+        for shot_res, s in zip(result, shots, strict=False):
             assert isinstance(shot_res, tuple)
             assert len(shot_res) == 3
 
@@ -967,41 +918,6 @@ class TestOperatorArithmetic:
         assert qp.math.allclose(g[0], -torch.cos(phi))
         assert qp.math.allclose(g[1], -3 * torch.sin(phi))
 
-    @pytest.mark.tf
-    def test_tensorflow_op_arithmetic(self):
-        """Test operator arithmetic circuit with non-integer wires works with tensorflow."""
-        import tensorflow as tf
-
-        phi = tf.Variable(0.4203)
-
-        def f(x):
-            ops = [
-                qp.PauliX("a"),
-                qp.PauliX("b"),
-                qp.ctrl(qp.RX(x, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
-            ]
-
-            qs = qp.tape.QuantumScript(
-                ops,
-                [
-                    qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                    qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
-                ],
-            )
-
-            return simulate(qs)
-
-        with tf.GradientTape(persistent=True) as tape:
-            results = f(phi)
-
-        assert qp.math.allclose(results[0], -np.sin(phi) - 1)
-        assert qp.math.allclose(results[1], 3 * np.cos(phi))
-
-        g0 = tape.gradient(results[0], phi)
-        assert qp.math.allclose(g0, -np.cos(phi))
-        g1 = tape.gradient(results[1], phi)
-        assert qp.math.allclose(g1, -3 * np.sin(phi))
-
 
 class TestQInfoMeasurements:
     measurements = [
@@ -1070,7 +986,7 @@ class TestQInfoMeasurements:
         qs = qp.tape.QuantumScript([qp.IsingXX(phi, wires=(0, 1))], self.measurements)
 
         results = simulate(qs)
-        for val1, val2 in zip(results, self.expected_results(phi)):
+        for val1, val2 in zip(results, self.expected_results(phi), strict=False):
             assert qp.math.allclose(val1, val2)
 
     @pytest.mark.autograd
@@ -1084,7 +1000,7 @@ class TestQInfoMeasurements:
 
         results = f(phi)
         expected = self.expected_results(phi)
-        for val1, val2 in zip(results, expected):
+        for val1, val2 in zip(results, expected, strict=False):
             assert qp.math.allclose(val1, val2)
 
     @pytest.mark.autograd
@@ -1127,7 +1043,7 @@ class TestQInfoMeasurements:
         phi = jax.numpy.array(-0.792)
 
         results = f(phi)
-        for val1, val2 in zip(results, self.expected_results(phi)):
+        for val1, val2 in zip(results, self.expected_results(phi), strict=False):
             assert qp.math.allclose(val1, val2)
 
         def real_out(phi):
@@ -1139,7 +1055,7 @@ class TestQInfoMeasurements:
             return tuple(jax.numpy.imag(r) for r in f(phi))
 
         grad_imag = jax.jacobian(imag_out)(phi)
-        grads = tuple(r + 1j * i for r, i in zip(grad_real, grad_imag))
+        grads = tuple(r + 1j * i for r, i in zip(grad_real, grad_imag, strict=False))
         expected_grads = self.expected_grad(phi)
 
         # Writing this way makes it easier to figure out which is failing
@@ -1168,7 +1084,7 @@ class TestQInfoMeasurements:
             return simulate(qs)
 
         results = f(phi)
-        for val1, val2 in zip(results, self.expected_results(phi.detach().numpy())):
+        for val1, val2 in zip(results, self.expected_results(phi.detach().numpy()), strict=False):
             assert qp.math.allclose(val1, val2)
 
         def real_out(phi):
@@ -1180,7 +1096,7 @@ class TestQInfoMeasurements:
             return tuple(torch.imag(r) if torch.is_complex(r) else torch.tensor(0) for r in f(phi))
 
         grad_imag = torch.autograd.functional.jacobian(imag_out, phi)
-        grads = tuple(r + 1j * i for r, i in zip(grad_real, grad_imag))
+        grads = tuple(r + 1j * i for r, i in zip(grad_real, grad_imag, strict=False))
 
         expected_grads = self.expected_grad(phi.detach().numpy())
 
@@ -1197,45 +1113,6 @@ class TestQInfoMeasurements:
         assert qp.math.allclose(grads[4], expected_grads[4])
         # mutual info
         assert qp.math.allclose(grads[5], expected_grads[5])
-
-    @pytest.mark.tf
-    def test_qinfo_tf(self):
-        """Test qinfo measurements with tensorflow."""
-        import tensorflow as tf
-
-        phi = tf.Variable(0.9276)
-
-        with tf.GradientTape(persistent=True) as grad_tape:
-            qs = qp.tape.QuantumScript([qp.IsingXX(phi, wires=(0, 1))], self.measurements)
-            results = simulate(qs)
-
-            result2_real = tf.math.real(results[2])
-            result2_imag = tf.math.imag(results[2])
-
-        expected = self.expected_results(phi)
-        for val1, val2 in zip(results, expected):
-            assert qp.math.allclose(val1, val2)
-
-        expected_grads = self.expected_grad(phi)
-
-        grad0 = grad_tape.jacobian(results[0], phi)
-        assert qp.math.allclose(grad0, expected_grads[0])
-
-        grad1 = grad_tape.jacobian(results[1], phi)
-        assert qp.math.allclose(grad1, expected_grads[1])
-
-        grad2_real = grad_tape.jacobian(result2_real, phi)
-        grad2_imag = grad_tape.jacobian(result2_imag, phi)
-        assert qp.math.allclose(np.array(grad2_real) + 1j * np.array(grad2_imag), expected_grads[2])
-
-        grad3 = grad_tape.jacobian(results[3], phi)
-        assert qp.math.allclose(grad3, expected_grads[3])
-
-        grad4 = grad_tape.jacobian(results[4], phi)
-        assert qp.math.allclose(grad4, expected_grads[4])
-
-        grad5 = grad_tape.jacobian(results[5], phi)
-        assert qp.math.allclose(grad5, expected_grads[5])
 
 
 @pytest.mark.unit
@@ -1279,7 +1156,7 @@ class TestTreeTraversalStack:
                 ).values()
             )
             assert tree_stack.probs[depth] == list(
-                counts_to_probs(dict(zip([0, 1], tree_stack.counts[depth]))).values()
+                counts_to_probs(dict(zip([0, 1], tree_stack.counts[depth], strict=False))).values()
             )
 
             state_vec = np.array(tree_stack.states[depth]).T
@@ -1351,12 +1228,12 @@ class TestMidMeasurements:
         result = simulate_tree_mcm(qs)
         assert qp.math.allclose(result, qp.math.array([0.5, 0.5]))
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("shots", [None, 5500])
     @pytest.mark.parametrize("postselect", [None, 0])
     @pytest.mark.parametrize("reset", [False, True])
     @pytest.mark.parametrize("measure_f", [qp.counts, qp.expval, qp.probs, qp.sample, qp.var])
     @pytest.mark.parametrize("meas_obj", [qp.Y(0), [1], [1, 0], "mcm", "composite_mcm", "mcm_list"])
+    # pylint: disable-next=too-many-arguments
     def test_simple_dynamic_circuit(self, *, shots, measure_f, postselect, reset, meas_obj, seed):
         """Tests that `simulate` can handles a simple dynamic circuit with the following measurements:
 
@@ -1479,12 +1356,12 @@ class TestMidMeasurements:
         if not isinstance(shots, list):
             res1, res2 = (res1,), (res2,)
 
-        for rs1, rs2 in zip(res1, res2):
+        for rs1, rs2 in zip(res1, res2, strict=False):
             prob_dist1, prob_dist2 = rs1, rs2
             if measure_f in (qp.sample,):
                 n_wires = rs1.shape[1]
                 prob_dist1, prob_dist2 = np.zeros(2**n_wires), np.zeros(2**n_wires)
-                for prob, rs in zip([prob_dist1, prob_dist2], [rs1, rs2]):
+                for prob, rs in zip([prob_dist1, prob_dist2], [rs1, rs2], strict=False):
                     index, count = np.unique(
                         np.packbits(rs, axis=1, bitorder="little").squeeze(), return_counts=True
                     )
@@ -1498,7 +1375,6 @@ class TestMidMeasurements:
     @pytest.mark.parametrize("postselect_mode", [None, "hw-like", "pad-invalid-samples"])
     def test_tree_traversal_interface_mcm(self, ml_framework, postselect_mode, seed):
         """Test that tree traversal works numerically with different interfaces"""
-        # pylint:disable = singleton-comparison, import-outside-toplevel
 
         qscript = qp.tape.QuantumScript(
             [
@@ -1514,6 +1390,7 @@ class TestMidMeasurements:
         res1, res2 = simulate_tree_mcm(qscript, interface=ml_framework, rng=rng)
 
         p1 = [qp.math.mean(res1 == -1), qp.math.mean(res1 == 1)]
+        # pylint: disable-next=singleton-comparison
         p2 = [qp.math.mean(res2 == True), qp.math.mean(res2 == False)]
         assert qp.math.allclose(qp.math.sum(sp.special.rel_entr(p1, p2)), 0.0, atol=0.05)
 
@@ -1629,7 +1506,7 @@ class TestMidMeasurements:
             )
             for _ in range(n_shots)
         ]
-        terminal_results, mcm_results = zip(*results)
+        terminal_results, mcm_results = zip(*results, strict=False)
 
         equivalent_tape = qp.tape.QuantumScript(
             [qp.RX(np.pi / 4, wires=0)], [qp.sample(wires=0)], shots=n_shots
@@ -1637,14 +1514,14 @@ class TestMidMeasurements:
         expected_result = simulate(equivalent_tape, rng=rng)
         fisher_exact_test(mcm_results, expected_result, threshold=0.01)
 
-        subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 0]
+        subset = [ts for ms, ts in zip(mcm_results, terminal_results, strict=False) if ms == 0]
         equivalent_tape = qp.tape.QuantumScript(
             [qp.RX(np.pi / 4, wires=0)], [qp.expval(qp.Z(0))], shots=n_shots
         )
         expected_sample = simulate(equivalent_tape, rng=rng)
         fisher_exact_test(subset, expected_sample, outcomes=(-1, 1), threshold=0.01)
 
-        subset = [ts for ms, ts in zip(mcm_results, terminal_results) if ms == 1]
+        subset = [ts for ms, ts in zip(mcm_results, terminal_results, strict=False) if ms == 1]
         equivalent_tape = qp.tape.QuantumScript(
             [qp.X(0), qp.RX(np.pi / 4, wires=0)], [qp.expval(qp.Z(0))], shots=n_shots
         )

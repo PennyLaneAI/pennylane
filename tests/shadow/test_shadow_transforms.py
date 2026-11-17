@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the classical shadows transforms"""
 
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -210,7 +209,7 @@ class TestStateForward:
 
 
 @pytest.mark.all_interfaces
-class TestStateForwardInterfaces:
+class TestStateForwardInterfaces:  # pylint: disable=too-few-public-methods
     """Test that state reconstruction works for all interfaces"""
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
@@ -238,7 +237,6 @@ class TestStateBackward:
     @pytest.mark.autograd
     def test_backward_autograd(self):
         """Test the gradient of the state for the autograd interface"""
-        # pylint: disable=cell-var-from-loop
         shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="autograd")
 
         sub_wires = [[0, 1], [1, 2]]
@@ -250,8 +248,9 @@ class TestStateBackward:
         # support complex differentiation
         actual = qp.jacobian(lambda x: qp.math.real(qp.math.stack(shadow_circuit(x))))(x)
 
-        for act, w in zip(qp.math.unstack(actual), sub_wires):
+        for act, w in zip(qp.math.unstack(actual), sub_wires, strict=False):
             exact_circuit = basic_entangler_circuit_exact_state(3, w, "autograd")
+            # pylint: disable-next=cell-var-from-loop
             expected = qp.jacobian(lambda x: qp.math.real(exact_circuit(x)))(x)
 
             assert qp.math.allclose(act, expected, atol=1e-1)
@@ -259,7 +258,6 @@ class TestStateBackward:
     @pytest.mark.jax
     def test_backward_jax(self):
         """Test the gradient of the state for the JAX interface"""
-        # pylint: disable=cell-var-from-loop
         import jax
         from jax import numpy as jnp
 
@@ -271,36 +269,10 @@ class TestStateBackward:
         x = jnp.array(self.x)
         actual = jax.jacobian(lambda x: qp.math.real(qp.math.stack(shadow_circuit(x))))(x)
 
-        for act, w in zip(qp.math.unstack(actual), sub_wires):
+        for act, w in zip(qp.math.unstack(actual), sub_wires, strict=False):
             exact_circuit = basic_entangler_circuit_exact_state(3, w, "jax")
+            # pylint: disable-next=cell-var-from-loop
             expected = jax.jacobian(lambda x: qp.math.real(exact_circuit(x)))(x)
-
-            assert qp.math.allclose(act, expected, atol=1e-1)
-
-    @pytest.mark.tf
-    def test_backward_tf(self):
-        """Test the gradient of the state for the tensorflow interface"""
-        import tensorflow as tf
-
-        shadow_circuit = basic_entangler_circuit(3, shots=20000, interface="tf")
-
-        sub_wires = [[0, 1], [1, 2]]
-        shadow_circuit = qp.shadows.shadow_state(shadow_circuit, wires=sub_wires, diffable=True)
-
-        x = tf.Variable(self.x, dtype="float64")
-
-        with tf.GradientTape() as tape:
-            out = qp.math.stack(shadow_circuit(x))
-
-        actual = tape.jacobian(out, x)
-
-        for act, w in zip(qp.math.unstack(actual), sub_wires):
-            exact_circuit = basic_entangler_circuit_exact_state(3, w, "tf")
-
-            with tf.GradientTape() as tape2:
-                out2 = exact_circuit(x)
-
-            expected = tape2.jacobian(out2, x)
 
             assert qp.math.allclose(act, expected, atol=1e-1)
 
@@ -319,7 +291,7 @@ class TestStateBackward:
 
         actual = torch.autograd.functional.jacobian(lambda x: qp.math.stack(shadow_circuit(x)), x)
 
-        for act, w in zip(qp.math.unstack(actual), sub_wires):
+        for act, w in zip(qp.math.unstack(actual), sub_wires, strict=False):
             exact_circuit = basic_entangler_circuit_exact_state(3, w, "torch")
             expected = torch.autograd.functional.jacobian(exact_circuit, x)
 

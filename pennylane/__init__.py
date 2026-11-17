@@ -16,21 +16,25 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 
+# pylint: disable=wrong-import-order
+
+
 import warnings
 
 from pennylane import exceptions
 from pennylane.boolean_fn import BooleanFn
 from pennylane import numpy
 from pennylane import queuing
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.apply import apply
+from pennylane.core.queuing import QueuingManager
 
 from pennylane import compiler
 from pennylane.compiler import qjit
 from pennylane import capture
+from pennylane.capture import hint
 from pennylane import core
 from pennylane import control_flow
 from pennylane.control_flow import for_loop, while_loop
-from pennylane import kernels
 from pennylane import math
 from pennylane import operation
 from pennylane.core import operator
@@ -42,14 +46,13 @@ from pennylane.decomposition import (
     register_condition,
     add_decomps,
     list_decomps,
+    exclude_decomps,
     inspect_decomps,
     resource_rep,
 )
 from pennylane import templates
 from pennylane import pauli
 from pennylane.pauli import pauli_decompose
-from pennylane.resource import specs
-from pennylane import resource
 from pennylane import qchem
 from pennylane.fermi import (
     FermiC,
@@ -76,11 +79,15 @@ from pennylane.qchem import (
     from_openfermion,
     to_openfermion,
 )
+from pennylane.numeric_hamiltonians import (
+    CDFHamiltonian,
+    CGFHamiltonian,
+    VibronicHamiltonian,
+)
 from pennylane._grad import grad, jacobian, vjp, jvp, value_and_grad
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.configuration import Configuration, default_config
 from pennylane.registers import registers
 from pennylane.measurements import (
     counts,
@@ -107,9 +114,10 @@ from pennylane.templates.tensornetworks import *
 from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
-from pennylane import qaoa
 from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
+from pennylane.resource import analyze, estimate, specs, track
+from pennylane import resource
 
 from pennylane.transforms import (
     transform,
@@ -156,6 +164,7 @@ from pennylane.ops.functions import (
     commutator,
     comm,
     single_qubit_zyz_angles,
+    subcircuit,
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *
@@ -168,31 +177,20 @@ from pennylane.debugging import (
     debug_tape,
 )
 from pennylane.shadows import ClassicalShadow
-from pennylane.qcut import cut_circuit, cut_circuit_mc
-from pennylane import pulse
-
-from pennylane import fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
-from pennylane import gradients  # pylint:disable=wrong-import-order
+from pennylane import gradients
 from pennylane.drawer import draw, draw_mpl
 
 from pennylane.io import (
-    from_pyquil,
     from_qasm,
     to_openqasm,
     from_qiskit,
     from_qiskit_noise,
     from_qiskit_op,
-    from_quil,
-    from_quil_file,
-    FromBloq,
-    bloq_registers,
     from_qasm3,
-    to_bloq,
 )
 
-# pylint:disable=wrong-import-order
-from pennylane import logging  # pylint:disable=wrong-import-order
+from pennylane import logging
 
 from pennylane import data
 
@@ -202,15 +200,25 @@ from pennylane.noise import NoiseModel
 from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
 
+from pennylane.backline import (
+    Backline,
+    Controller,
+    Coprocessor,
+    CoprocessorFunction,
+    Endpoint,
+)
+from pennylane.backline.runtime import declare as runtime_declare
+from pennylane.backline.runtime import runtime_call
+
 from pennylane import spin
 
 from pennylane import liealg
 from pennylane.liealg import lie_closure, structure_constants, center
-from pennylane import qnn
 
 from pennylane import estimator
 
-# pylint:disable=wrong-import-order
+from pennylane import testing
+
 from importlib.metadata import version as _metadata_version
 
 from importlib.util import find_spec as _find_spec
@@ -229,7 +237,7 @@ if _find_spec("numpy") is not None:
             exceptions.PennyLaneDeprecationWarning,
         )
 
-from ._entry_points_utils import _setup_entry_points  # pylint:disable=wrong-import-position
+from ._entry_points_utils import _setup_entry_points
 
 # add to _entry_point_groups as new groups are added and desired to be accessed top-level
 _entry_point_groups = ["pennylane.drawer"]

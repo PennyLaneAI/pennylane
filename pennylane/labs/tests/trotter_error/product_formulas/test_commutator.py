@@ -212,7 +212,7 @@ def test_bilinear_expansion():
     }
 
     assert len(result) == len(expected_result)
-    for result_dict, expected_dict in zip(result, expected_result):
+    for result_dict, expected_dict in zip(result, expected_result, strict=False):
         assert result_dict == expected_dict
 
 

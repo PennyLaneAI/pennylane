@@ -17,8 +17,6 @@ Unit tests for the metric tensor transform.
 
 import importlib
 
-# pylint: disable=too-many-arguments,too-many-public-methods,too-few-public-methods
-# pylint: disable=not-callable,too-many-statements, too-many-positional-arguments
 import pytest
 from scipy.linalg import block_diag
 
@@ -600,16 +598,13 @@ class TestMetricTensor:
         [
             pytest.param("jax", "array", marks=pytest.mark.jax),
             pytest.param("autograd", "array", marks=pytest.mark.autograd),
-            pytest.param("tf", "Variable", marks=pytest.mark.tf),
             pytest.param("torch", "Tensor", marks=pytest.mark.torch),
         ],
     )
     def test_argnum_metric_tensor_interfaces(self, tol, interface, array_cls):
         """Test that argnum successfully reduces the number of tapes and gives
         the desired outcome."""
-        if interface == "tf":
-            interface_name = "tensorflow"
-        elif interface == "jax":
+        if interface == "jax":
             interface_name = "jax.numpy"
         elif interface == "autograd":
             interface_name = "numpy"
@@ -617,7 +612,7 @@ class TestMetricTensor:
             interface_name = interface
 
         mod = importlib.import_module(interface_name)
-        type_ = type(getattr(mod, array_cls)([])) if interface != "tf" else getattr(mod, "Tensor")
+        type_ = type(getattr(mod, array_cls)([]))
 
         dev = qp.device("default.qubit", wires=3)
 
@@ -725,7 +720,7 @@ class TestMetricTensor:
     @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
     def test_no_trainable_params_qnode_autograd(self, interface):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.qubit", wires=3)
@@ -743,26 +738,7 @@ class TestMetricTensor:
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])
     def test_no_trainable_params_qnode_torch(self, interface):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
-        parameters"""
-
-        dev = qp.device("default.qubit", wires=3)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(weights):
-            qp.RX(weights[0], wires=0)
-            qp.RY(weights[1], wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qp.metric_tensor(circuit)(weights)
-
-    @pytest.mark.tf
-    @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_no_trainable_params_qnode_tf(self, interface):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.qubit", wires=3)
@@ -781,7 +757,7 @@ class TestMetricTensor:
     @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_no_trainable_params_qnode_jax(self, interface):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.qubit", wires=3)
@@ -797,7 +773,7 @@ class TestMetricTensor:
             qp.metric_tensor(circuit)(weights)
 
     def test_no_trainable_params_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=3)
 
@@ -815,7 +791,7 @@ class TestMetricTensor:
             mt_tapes, post_processing = qp.metric_tensor(tape)
         res = post_processing(qp.execute(mt_tapes, dev, None))
 
-        assert mt_tapes == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert mt_tapes == []
         assert res == ()
 
 
@@ -843,8 +819,7 @@ def fubini_ansatz1(params, wires=None):
     qp.RX(fixed_pars[2], wires=1)
 
 
-def fubini_ansatz2(params, wires=None):
-    # pylint: disable=unused-argument
+def fubini_ansatz2(params, wires=None):  # pylint: disable=unused-argument
     params0 = params[0]
     params1 = params[1]
     qp.RX(fixed_pars[1], wires=0)
@@ -857,8 +832,7 @@ def fubini_ansatz2(params, wires=None):
     qp.adjoint(qp.RX(params1, wires=1))
 
 
-def fubini_ansatz3(params, wires=None):
-    # pylint: disable=unused-argument
+def fubini_ansatz3(params, wires=None):  # pylint: disable=unused-argument
     params0 = params[0]
     params1 = params[1]
     params2 = params[2]
@@ -879,8 +853,7 @@ def fubini_ansatz3(params, wires=None):
     qp.RZ(params2, wires=2)
 
 
-def fubini_ansatz4(params00, params_rest, wires=None):
-    # pylint: disable=unused-argument
+def fubini_ansatz4(params00, params_rest, wires=None):  # pylint: disable=unused-argument
     params01 = params_rest[0]
     params10 = params_rest[1]
     params11 = params_rest[2]
@@ -910,8 +883,7 @@ def fubini_ansatz7(x, wires=None):
     qp.RX(x, wires=0)
 
 
-def fubini_ansatz8(params, wires=None):
-    # pylint: disable=unused-argument
+def fubini_ansatz8(params, wires=None):  # pylint: disable=unused-argument
     params0 = params[0]
     params1 = params[1]
     qp.RX(fixed_pars[1], wires=[0])
@@ -1005,7 +977,7 @@ def autodiff_metric_tensor(ansatz, num_wires):
 
         if isinstance(rjac, tuple):
             out = []
-            for rc, ic in zip(rjac, ijac):
+            for rc, ic in zip(rjac, ijac, strict=False):
                 c = rc + 1j * ic
                 psidpsi = np.tensordot(np.conj(state), c, axes=([0], [0]))
                 out.append(
@@ -1029,7 +1001,7 @@ def autodiff_metric_tensor(ansatz, num_wires):
 class TestFullMetricTensor:
     num_wires = 3
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     def test_catalyst_compatibility(self):
         """Test that the metric tensor can be executed with catalyst."""
 
@@ -1050,14 +1022,16 @@ class TestFullMetricTensor:
 
         x = jax.numpy.array([1.0, 2.0, 3.0, 4.0])
 
-        qjit_res = qp.qjit(qp.metric_tensor(circuit))(x)
+        qjit_res = qp.qjit(qp.metric_tensor(circuit), capture=False)(x)
 
         cost_autograd = autodiff_metric_tensor(ansatz, num_wires=3)(qp.numpy.array(x))
 
         assert qp.math.allclose(qjit_res, cost_autograd)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize(
+        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=False))
+    )
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_correct_output_autograd(self, dev_name, ansatz, params, interface):
@@ -1074,12 +1048,14 @@ class TestFullMetricTensor:
         mt = qp.metric_tensor(circuit, approx=None)(*params)
 
         if isinstance(mt, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
+            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=False))
         else:
             assert qp.math.allclose(mt, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize(
+        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=False))
+    )
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     @pytest.mark.parametrize("use_jit", [False, True])
@@ -1106,19 +1082,20 @@ class TestFullMetricTensor:
             return qp.expval(qp.PauliZ(0))
 
         argnums = range(0, len(params)) if len(params) > 1 else None
-        # pylint:disable=unexpected-keyword-arg
         mt_fn = qp.metric_tensor(circuit, argnums=argnums, approx=None)
         if use_jit:
             mt_fn = jax.jit(mt_fn)
         mt = mt_fn(*params)
 
         if isinstance(mt, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
+            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=False))
         else:
             assert qp.math.allclose(mt, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize(
+        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=False))
+    )
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_jax_argnum_error(self, dev_name, ansatz, params, interface):
@@ -1141,7 +1118,9 @@ class TestFullMetricTensor:
             qp.metric_tensor(circuit, argnum=range(len(params)), approx=None)(*params)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
+    @pytest.mark.parametrize(
+        "ansatz, params", list(zip(fubini_ansatze, fubini_params, strict=False))
+    )
     @pytest.mark.parametrize("interface", ["auto", "torch"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_correct_output_torch(self, dev_name, ansatz, params, interface):
@@ -1161,40 +1140,12 @@ class TestFullMetricTensor:
         mt = qp.metric_tensor(circuit, approx=None)(*params)
 
         if isinstance(mt, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
-        else:
-            assert qp.math.allclose(mt, expected)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
-    @pytest.mark.parametrize("interface", ["auto"])
-    @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
-    def test_correct_output_tf(self, dev_name, ansatz, params, interface):
-        import tensorflow as tf
-
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
-        dev = qp.device(dev_name, wires=self.num_wires + 1)
-
-        params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(*params):
-            """Circuit with dummy output to create a QNode."""
-            ansatz(*params, dev.wires[:-1])
-            return qp.expval(qp.PauliZ(0))
-
-        with tf.GradientTape():
-            qp.metric_tensor(circuit, approx="block-diag")(*params)
-            mt = qp.metric_tensor(circuit, approx=None)(*params)
-
-        if isinstance(mt, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
+            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected, strict=False))
         else:
             assert qp.math.allclose(mt, expected)
 
 
-def diffability_ansatz_0(weights, wires=None):
-    # pylint: disable=unused-argument
+def diffability_ansatz_0(weights, wires=None):  # pylint: disable=unused-argument
     qp.RX(weights[0], wires=0)
     qp.RX(weights[1], wires=0)
     qp.CNOT(wires=[0, 1])
@@ -1215,8 +1166,7 @@ def expected_diag_jac_0(weights):
     )
 
 
-def diffability_ansatz_1(weights, wires=None):
-    # pylint: disable=unused-argument
+def diffability_ansatz_1(weights, wires=None):  # pylint: disable=unused-argument
     qp.RX(weights[0], wires=0)
     qp.RY(weights[1], wires=0)
     qp.CNOT(wires=[0, 1])
@@ -1237,8 +1187,7 @@ def expected_diag_jac_1(weights):
     )
 
 
-def diffability_ansatz_2(weights, wires=None):
-    # pylint: disable=unused-argument
+def diffability_ansatz_2(weights, wires=None):  # pylint: disable=unused-argument
     qp.RX(weights[0], wires=0)
     qp.RY(weights[1], wires=1)
     qp.CNOT(wires=[0, 1])
@@ -1274,6 +1223,8 @@ weights_diff = np.array([0.432, 0.12, -0.292], requires_grad=True)
 class TestDifferentiabilityDiag:
     """Test for diagonal metric tensor differentiability"""
 
+    # pylint: disable=too-many-arguments
+
     def get_circuit(self, ansatz):
         def circuit(*weights):
             ansatz(*weights)
@@ -1307,7 +1258,7 @@ class TestDifferentiabilityDiag:
         if isinstance(jac, tuple):
             assert all(
                 qp.math.allclose(j, e, atol=tol, rtol=0)
-                for j, e in zip(jac, expected_diag_jac(*weights))
+                for j, e in zip(jac, expected_diag_jac(*weights), strict=False)
             )
         else:
             assert qp.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
@@ -1329,23 +1280,6 @@ class TestDifferentiabilityDiag:
             return jnp.diag(qp.metric_tensor(qnode, approx="block-diag")(*weights))
 
         jac = jax.jacobian(cost_diag)(jnp.array(*weights))
-        assert qp.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_tf_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
-        """Test metric tensor differentiability in the TF interface"""
-        import tensorflow as tf
-
-        circuit = self.get_circuit(ansatz)
-        qnode = qp.QNode(circuit, self.dev, interface=interface, diff_method=diff_method)
-
-        weights_t = tuple(tf.Variable(w) for w in weights)
-        with tf.GradientTape() as tape:
-            loss_diag = tf.linalg.diag_part(
-                qp.metric_tensor(qnode, approx="block-diag")(*weights_t)
-            )
-        jac = tape.jacobian(loss_diag, weights_t)
         assert qp.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
 
     @pytest.mark.torch
@@ -1375,7 +1309,7 @@ class TestDifferentiabilityDiag:
         if isinstance(jac, tuple) and len(jac) != 1:
             assert all(
                 qp.math.allclose(j.detach().numpy(), e, atol=tol, rtol=0)
-                for j, e in zip(jac, expected_diag_jac(*weights))
+                for j, e in zip(jac, expected_diag_jac(*weights), strict=False)
             )
         else:
             if isinstance(jac, tuple) and len(jac) == 1:
@@ -1423,7 +1357,8 @@ class TestDifferentiability:
         _c = _cost_full(*weights)
         c = cost_full(*weights)
         assert all(
-            qp.math.allclose(_sub_c, sub_c, atol=tol, rtol=0) for _sub_c, sub_c in zip(_c, c)
+            qp.math.allclose(_sub_c, sub_c, atol=tol, rtol=0)
+            for _sub_c, sub_c in zip(_c, c, strict=False)
         )
         for argnum in range(len(weights)):
             expected_full = qp.jacobian(_cost_full, argnums=argnum)(*weights)
@@ -1453,24 +1388,6 @@ class TestDifferentiability:
         expected_full = qp.jacobian(_cost_full_autograd)(*weights)
         assert qp.math.allclose(expected_full, jac, atol=tol, rtol=0)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_tf(self, diff_method, tol, ansatz, weights, interface):
-        """Test metric tensor differentiability in the TF interface"""
-        import tensorflow as tf
-
-        circuit = self.get_circuit(ansatz)
-        qnode = qp.QNode(circuit, self.dev, interface=interface, diff_method=diff_method)
-
-        weights_t = tuple(tf.Variable(w) for w in weights)
-        with tf.GradientTape() as tape:
-            loss_full = qp.metric_tensor(qnode, approx=None)(*weights_t)
-        jac = tape.jacobian(loss_full, weights_t)
-        _cost_full = autodiff_metric_tensor(ansatz, num_wires=3)
-        assert qp.math.allclose(_cost_full(*weights), loss_full, atol=tol, rtol=0)
-        expected_full = qp.jacobian(_cost_full)(*weights)
-        assert qp.math.allclose(expected_full, jac, atol=tol, rtol=0)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])
     def test_torch(self, diff_method, tol, ansatz, weights, interface):
@@ -1491,7 +1408,7 @@ class TestDifferentiability:
         if isinstance(jac, tuple) and len(jac) != 1:
             assert all(
                 qp.math.allclose(j.detach().numpy(), e, atol=tol, rtol=0)
-                for j, e in zip(jac, expected_full)
+                for j, e in zip(jac, expected_full, strict=False)
             )
         else:
             if isinstance(jac, tuple) and len(jac) == 1:
@@ -1576,7 +1493,7 @@ def test_error_generator_not_registered(allow_nonunitary):
     x = np.array(0.5, requires_grad=True)
     z = np.array(0.1, requires_grad=True)
 
-    class RX(qp.RX):
+    class RX(qp.RX):  # pylint: disable=too-few-public-methods
         def generator(self):
             return qp.Hadamard(self.wires)
 

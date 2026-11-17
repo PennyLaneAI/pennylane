@@ -15,8 +15,6 @@
 This module contains unit tests for device capabilities and the TOML module
 """
 
-# pylint: disable=protected-access,trailing-whitespace
-
 import re
 
 import pytest
@@ -691,7 +689,7 @@ class TestDeviceCapabilities:
             qp.ops.Adjoint(qp.ops.Controlled(qp.RZ(0.5, wires=0), control_wires=[1])),
             qp.ops.Controlled(qp.ops.Adjoint(qp.RZ(0.5, wires=0)), control_wires=[1]),
             qp.CNOT(wires=[0, 1]),
-            qp.adjoint(qp.CNOT),
+            qp.adjoint(qp.CNOT)(wires=[0, 1]),
         ]:
             assert capabilities.supports_operation(op.name) is True
 

@@ -16,16 +16,14 @@ Unit tests for the SimplifiedTwoDesign template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard checks with the assert_valid function."""
 
@@ -36,12 +34,12 @@ def test_standard_validity():
     initial_layer = np.random.randn(n_wires)
 
     op = qp.SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.system
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-class TestCorrectness:  # pylint: disable=too-few-public-methods
+class TestCorrectness:
     """Tests the correctness of the template in a qnode."""
 
     @pytest.mark.parametrize(
@@ -65,7 +63,7 @@ class TestCorrectness:  # pylint: disable=too-few-public-methods
             return [qp.expval(qp.PauliZ(wires=i)) for i in range(n_wires)]
 
         expectations = circuit(np.array(initial_layer_weights), np.array(weights))
-        for exp, target_exp in zip(expectations, target):
+        for exp, target_exp in zip(expectations, target, strict=False):
             assert np.allclose(exp, target_exp, atol=tol, rtol=0)
 
     def test_custom_wire_labels(self, tol):
@@ -154,7 +152,7 @@ class TestDecomposition:
             # check layer gate parameters
             ops = ops[n_wires:]
             exp_params = weights.flatten()
-            for o, exp_param in zip(ops, exp_params):
+            for o, exp_param in zip(ops, exp_params, strict=False):
                 res_param = o.parameters[0]
                 assert res_param == exp_param
 
@@ -165,15 +163,14 @@ class TestDecomposition:
         ([np.pi] * 4, [[[np.pi] * 2] * 3], range(4)),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("initial_layer_weights", "weights", "wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, initial_layer_weights, weights, wires):
         op = qp.SimplifiedTwoDesign(initial_layer_weights, weights, wires)
-        for rule in qp.list_decomps(qp.SimplifiedTwoDesign):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
-class TestInputs:
+class TestInputs:  # pylint: disable=too-few-public-methods
     """Test inputs and pre-processing."""
 
     def test_exception_wrong_dim(self):
@@ -202,7 +199,7 @@ class TestInputs:
             circuit(initial_layer, weights)
 
 
-class TestAttributes:
+class TestAttributes:  # pylint: disable=too-few-public-methods
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(
@@ -326,35 +323,6 @@ class TestInterfaces:
         grads2 = grad_fn2(initial_weights, weights)
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        weights = tf.Variable(np.random.random(size=(1, 2, 2)))
-        initial_weights = tf.Variable(np.random.random(size=(3,)))
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(initial_weights, weights)
-        res2 = circuit2(initial_weights, weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(initial_weights, weights)
-        grads = tape.gradient(res, [initial_weights, weights])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(initial_weights, weights)
-        grads2 = tape2.gradient(res2, [initial_weights, weights])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-        assert np.allclose(grads[1], grads2[1], atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):

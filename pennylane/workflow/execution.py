@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import inspect
 import logging
-import warnings
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Literal
 
@@ -28,7 +27,6 @@ from cachetools import Cache
 
 import pennylane as qp
 from pennylane.core.transforms import CompilePipeline
-from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
 from pennylane.math.interface_utils import Interface
 
 from ._setup_transform_program import _setup_transform_program
@@ -48,8 +46,7 @@ if TYPE_CHECKING:
     from pennylane.workflow.resolution import SupportedDiffMethods
 
 
-# pylint: disable=too-many-arguments
-def execute(
+def execute(  # pylint: disable=too-many-arguments
     tapes: QuantumScriptBatch,
     device: SupportedDeviceAPIs,
     diff_method: Callable | SupportedDiffMethods | Transform | None = None,
@@ -78,7 +75,7 @@ def execute(
             for the gradient (if supported).
         interface (str, Interface): The interface that will be used for classical auto-differentiation.
             This affects the types of parameters that can exist on the input tapes.
-            Available options include ``autograd``, ``torch``, ``tf``, ``jax``, and ``auto``.
+            Available options include ``autograd``, ``torch``, ``jax``, and ``auto``.
         transform_program(.CompilePipeline): A transform program to be applied to the initial tape.
         grad_on_execution (bool, str): Whether the gradients should be computed
             on the execution or not. It only applies
@@ -213,9 +210,6 @@ def execute(
     ### Specifying and preprocessing variables ###
 
     interface = _resolve_interface(interface, tapes)
-
-    if interface in {Interface.TF, Interface.TF_AUTOGRAPH}:  # pragma: no cover
-        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=4)
 
     config = qp.devices.ExecutionConfig(
         interface=interface,

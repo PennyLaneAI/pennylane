@@ -16,6 +16,8 @@ This module contains the template for the Fast Approximate BLock Encoding (FABLE
 """
 
 # pylint: disable=no-value-for-parameter
+
+
 import warnings
 from collections import Counter
 
@@ -24,7 +26,7 @@ import numpy as np
 from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, RY, SWAP, Hadamard, cond
 from pennylane.templates.state_preparations.mottonen import compute_theta, gray_code
 from pennylane.wires import Wires
@@ -90,7 +92,7 @@ class FABLE(Operation):
     def __init__(self, input_matrix, wires, tol=0):
         wires = Wires(wires)
 
-        if not math.is_abstract(input_matrix):
+        if not math.is_tracer(input_matrix):
             if math.any(math.iscomplex(input_matrix)):
                 raise ValueError("Support for imaginary values has not been implemented.")
 
@@ -147,7 +149,7 @@ class FABLE(Operation):
         }
 
     @staticmethod
-    def compute_decomposition(input_matrix, wires, tol=0):  # pylint:disable=arguments-differ
+    def compute_decomposition(input_matrix, wires, tol=0):  # pylint: disable=arguments-differ
         r"""Sequence of gates that represents the efficient circuit produced by the FABLE technique
 
         Args:
@@ -174,7 +176,7 @@ class FABLE(Operation):
 
         nots = {}
         for theta, control_index in zip(thetas, control_wires, strict=True):
-            if math.is_abstract(theta):
+            if math.is_tracer(theta):
                 for c_wire in nots:
                     op_list.append(CNOT(wires=[c_wire] + auxiliary))
                 op_list.append(RY(2 * theta, wires=auxiliary))
@@ -206,7 +208,7 @@ class FABLE(Operation):
 
 def _fable_resources(wires, thetas, control_wires, tol):
 
-    resources = Counter({resource_rep(Hadamard): len(wires) // 2 * 2})
+    resources = Counter({Hadamard: len(wires) // 2 * 2})
 
     wires_i = wires[1 : 1 + len(wires) // 2][::-1]
     wires_j = wires[1 + len(wires) // 2 : len(wires)][::-1]
@@ -218,8 +220,8 @@ def _fable_resources(wires, thetas, control_wires, tol):
 
         if math.abs(2 * theta) > tol:
             for _ in nots:
-                resources[resource_rep(CNOT)] += 1
-            resources[resource_rep(RY)] += 1
+                resources[CNOT] += 1
+            resources[RY] += 1
             nots = {}
 
         if wire_map[control_index] in nots:
@@ -228,9 +230,9 @@ def _fable_resources(wires, thetas, control_wires, tol):
             nots[wire_map[control_index]] = 1
 
     for _ in range(len(nots.keys())):
-        resources[resource_rep(CNOT)] += 1
+        resources[CNOT] += 1
 
-    resources[resource_rep(SWAP)] = min(len(wires_i), len(wires_j))
+    resources[SWAP] = min(len(wires_i), len(wires_j))
 
     return dict(resources)
 

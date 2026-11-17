@@ -21,17 +21,17 @@ from collections.abc import Iterable
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation, Operator
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.apply import apply
+from pennylane.core.operator import Operation, Operator, Operator2, abstractify
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
     register_resources,
-    resource_rep,
 )
-from pennylane.math import is_abstract
+from pennylane.math import is_tracer
 from pennylane.ops import CNOT, Hadamard, QubitUnitary
-from pennylane.typing import TensorLike
+from pennylane.typing import Complex, TensorLike, Wire
 from pennylane.wires import Wires
 
 
@@ -113,10 +113,20 @@ class HilbertSchmidt(Operation):
     resource_keys = {"num_wires", "u_reps", "v_wires"}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
-        # pylint: disable=arguments-differ
-        U = (U,) if isinstance(U, Operator) or is_abstract(U) else U
-        V = (V,) if isinstance(V, Operator) or is_abstract(V) else V
+        U = (U,) if isinstance(U, Operator) or is_tracer(U) else U
+        V = (V,) if isinstance(V, Operator) or is_tracer(V) else V
+
+        def _get_tracer(op):
+            if isinstance(op, Operator2):
+                if op.tracer is None:
+                    op._bind_primitive()  # pylint: disable=protected-access
+                return op.tracer if op.tracer is not None else op
+            return op
+
+        V = tuple(_get_tracer(op) for op in V)
+        U = tuple(_get_tracer(op) for op in U)
         num_v_ops = len(V)
         return cls._primitive.bind(*V, *U, num_v_ops=num_v_ops, **kwargs)
 
@@ -134,7 +144,7 @@ class HilbertSchmidt(Operation):
         v_ops = self.hyperparameters["V"]
         return {
             "num_wires": len(self.wires),
-            "u_reps": [resource_rep(type(op_u), **op_u.resource_params) for op_u in u_ops],
+            "u_reps": [abstractify(op_u) for op_u in u_ops],
             "v_wires": [len(op_v.wires) for op_v in v_ops],
         }
 
@@ -143,7 +153,6 @@ class HilbertSchmidt(Operation):
         V: Operator | Iterable[Operator],
         U: Operator | Iterable[Operator],
     ) -> None:
-
         u_ops = (U,) if isinstance(U, Operator) else tuple(U)
         if not all(isinstance(op, Operator) for op in u_ops):
             raise ValueError("The argument 'U' must be an Operator or an iterable of Operators.")
@@ -176,16 +185,6 @@ class HilbertSchmidt(Operation):
         r"""Flattened list of operator data in this HilbertSchmidt operation."""
         return tuple(datum for op in self._operators for datum in op.data)
 
-    @data.setter
-    def data(self, new_data):
-        # We need to check if ``new_data`` is empty because ``Operator.__init__()``  will attempt to
-        # assign the HilbertSchmidt data to an empty tuple (since no positional arguments are provided).
-        if new_data:
-            for op in self._operators:
-                if op.num_params > 0:
-                    op.data = new_data[: op.num_params]
-                    new_data = new_data[op.num_params :]
-
     def __copy__(self):
         # Override Operator.__copy__() to avoid setting the "data" property before the new instance
         # is assigned hyper-parameters since HilbertSchmidt data is derived from the hyper-parameters.
@@ -217,13 +216,12 @@ class HilbertSchmidt(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(
+    def compute_decomposition(  # pylint: disable=arguments-differ
         *params: TensorLike,
         wires: int | Iterable[int | str] | Wires,
         U: Operator | Iterable[Operator],
         V: Operator | Iterable[Operator],
     ) -> list[Operator]:
-        # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators."""
 
         u_ops = (U,) if isinstance(U, Operator) else tuple(U)
@@ -267,17 +265,15 @@ class HilbertSchmidt(Operation):
         return decomp_ops
 
 
-# pylint: disable=protected-access
-if HilbertSchmidt._primitive is not None:
-
-    @HilbertSchmidt._primitive.def_impl
-    def _hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
-        V = ops[:num_v_ops]
-        U = ops[num_v_ops:]
-        return type.__call__(HilbertSchmidt, V, U, **kwargs)
+@HilbertSchmidt._primitive.def_impl  # pylint: disable=protected-access
+def _hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
+    V = ops[:num_v_ops]
+    U = ops[num_v_ops:]
+    return type.__call__(HilbertSchmidt, V, U, **kwargs)
 
 
-class LocalHilbertSchmidt(HilbertSchmidt):
+# Wire mapping remains explicitly unsupported by the parent implementation.
+class LocalHilbertSchmidt(HilbertSchmidt):  # pylint: disable=abstract-method
     r"""Create a Local Hilbert-Schmidt template that can be used to compute the Local Hilbert-Schmidt Test (LHST).
 
     The result of the LHST is a useful quantity for compiling a unitary `U` with an approximate unitary `V`. The
@@ -397,7 +393,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         v_ops = self.hyperparameters["V"]
         return {
             "num_wires": len(self.wires),
-            "u_reps": [resource_rep(type(op_u), **op_u.resource_params) for op_u in u_ops],
+            "u_reps": [abstractify(op_u) for op_u in u_ops],
             "v_wires": [len(op_v.wires) for op_v in v_ops],
         }
 
@@ -413,14 +409,11 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         return clone
 
 
-# pylint: disable=protected-access
-if LocalHilbertSchmidt._primitive is not None:
-
-    @LocalHilbertSchmidt._primitive.def_impl
-    def _local_hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
-        V = ops[:num_v_ops]
-        U = ops[num_v_ops:]
-        return type.__call__(LocalHilbertSchmidt, V, U, **kwargs)
+@LocalHilbertSchmidt._primitive.def_impl  # pylint: disable=protected-access
+def _local_hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
+    V = ops[:num_v_ops]
+    U = ops[num_v_ops:]
+    return type.__call__(LocalHilbertSchmidt, V, U, **kwargs)
 
 
 def _hilbert_schmidt_resources(
@@ -432,17 +425,14 @@ def _hilbert_schmidt_resources(
     resources = defaultdict(int)
 
     resources.update(
-        {
-            resource_rep(Hadamard): num_first_range * 2,
-            resource_rep(CNOT): min(num_first_range, num_second_range) * 2,
-        }
+        {Hadamard: num_first_range * 2, CNOT: min(num_first_range, num_second_range) * 2}
     )
 
     for op_rep in u_reps:
         resources[op_rep] += 1
 
     for n_wires in v_wires:
-        resources[resource_rep(QubitUnitary, num_wires=n_wires)] += 1
+        resources[QubitUnitary(Complex[2**n_wires, 2**n_wires], wires=Wire[n_wires])] += 1
 
     return resources
 
@@ -456,17 +446,14 @@ def _local_hilbert_schmidt_resources(
     resources = defaultdict(int)
 
     resources.update(
-        {
-            resource_rep(Hadamard): num_first_range + 1,
-            resource_rep(CNOT): min(num_first_range, num_second_range) + 1,
-        }
+        {Hadamard: num_first_range + 1, CNOT: min(num_first_range, num_second_range) + 1}
     )
 
     for op_rep in u_reps:
         resources[op_rep] += 1
 
     for n_wires in v_wires:
-        resources[resource_rep(QubitUnitary, num_wires=n_wires)] += 1
+        resources[QubitUnitary(Complex[2**n_wires, 2**n_wires], wires=Wire[n_wires])] += 1
 
     return resources
 
@@ -480,13 +467,10 @@ def _up_to_last_layer(
     v_ops = (V,) if isinstance(V, Operator) else tuple(V)
 
     def collect_wires_in_order(ops):
-
         accumulator = []
         for operator in ops:
-            for wire_index in range(  # pylint: disable=consider-using-enumerate
-                len(operator.wires)
-            ):
-
+            # pylint: disable-next=consider-using-enumerate
+            for wire_index in range(len(operator.wires)):
                 if capture.enabled() and isinstance(operator.wires, Wires):
                     wire = operator.wires.labels[wire_index]
                 else:
@@ -538,12 +522,12 @@ def _up_to_last_layer(
 
 
 @register_resources(_hilbert_schmidt_resources)
-def _hilbert_schmidt_decomposition(
+def _hilbert_schmidt_decomposition(  # pylint: disable=unused-argument
     *params: TensorLike,
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
-):  # pylint: disable=unused-argument
+):
     _, first_range, second_range, wires = _up_to_last_layer(wires, U, V)
 
     @for_loop(min(len(first_range), len(second_range)))
@@ -560,12 +544,12 @@ def _hilbert_schmidt_decomposition(
 
 
 @register_resources(_local_hilbert_schmidt_resources)
-def _local_hilbert_schmidt_decomposition(
+def _local_hilbert_schmidt_decomposition(  # pylint: disable=unused-argument
     *params: TensorLike,
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
-):  # pylint: disable=unused-argument
+):
     n_wires, _, _, wires = _up_to_last_layer(wires, U, V)
 
     CNOT(wires=[wires[0], wires[n_wires // 2]])

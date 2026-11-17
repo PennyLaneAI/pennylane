@@ -15,8 +15,6 @@
 Tests for the gradients.spsa_gradient module using shot vectors.
 """
 
-# pylint: disable=abstract-method,too-many-arguments
-
 import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
@@ -35,12 +33,11 @@ default_shot_vector = (1000, 2000, 3000)
 many_shots_shot_vector = tuple([100000] * 3)
 
 
-def coordinate_sampler(indices, num_params, idx, rng=None):
+def coordinate_sampler(indices, num_params, idx, rng=None):  # pylint: disable=unused-argument
     """Return a single canonical basis vector, corresponding
     to the index ``indices[idx]``. This is a sequential coordinate sampler
     that allows to exactly reproduce derivatives, instead of using SPSA in the
     intended way."""
-    # pylint: disable=unused-argument
     idx = idx % len(indices)
     direction = np.zeros(num_params)
     direction[indices[idx]] = 1.0
@@ -123,7 +120,7 @@ class TestSpsaGradient:
             assert spy.call_args_list[i][0][2].shape == (2, 1)
 
     def test_no_trainable_params_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -147,7 +144,7 @@ class TestSpsaGradient:
             assert res.shape == (0,)
 
     def test_no_trainable_params_multiple_return_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters with multiple returns."""
         dev = qp.device("default.qubit", wires=2)
 
@@ -175,7 +172,7 @@ class TestSpsaGradient:
 
     @pytest.mark.autograd
     def test_no_trainable_params_qnode_autograd(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -192,24 +189,7 @@ class TestSpsaGradient:
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.set_shots(default_shot_vector)
-        @qp.qnode(dev)
-        def circuit(weights):
-            qp.RX(weights[0], wires=0)
-            qp.RY(weights[1], wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            spsa_grad(circuit, h=h_val)(weights)
-
-    @pytest.mark.tf
-    def test_no_trainable_params_qnode_tf(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -226,7 +206,7 @@ class TestSpsaGradient:
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -290,7 +270,7 @@ class TestSpsaGradient:
         for res in all_result:
             assert isinstance(res, tuple)
             assert len(res) == 2
-            for r, exp_shape in zip(res, [(3,), (4, 3)]):
+            for r, exp_shape in zip(res, [(3,), (4, 3)], strict=False):
                 assert isinstance(r, np.ndarray)
                 assert r.shape == exp_shape
                 assert np.allclose(r, 0)
@@ -394,7 +374,7 @@ class TestSpsaGradient:
         assert isinstance(j2, tuple)
         assert len(j2) == len(default_shot_vector)
 
-        for _j1, _j2 in zip(j1, j2):
+        for _j1, _j2 in zip(j1, j2, strict=False):
             assert np.allclose(_j1, [exp, 0], atol=spsa_shot_vec_tol)
             assert np.allclose(_j2, [0, exp], atol=spsa_shot_vec_tol)
 
@@ -436,7 +416,7 @@ class TestSpsaGradient:
 
         expected = [(3, 3), (3, 1, 3), (3, 2, 3), (3, 4, 3), (3, 1, 4, 3), (3, 2, 4, 3)]
 
-        assert all(t == q for t, q in zip(transform, expected))
+        assert all(t == q for t, q in zip(transform, expected, strict=False))
 
     def test_special_observable_qnode_differentiation(self):
         """Test differentiation of a QNode on a device supporting a
@@ -463,10 +443,8 @@ class TestSpsaGradient:
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
-        class SpecialObservable(Operator):
+        class SpecialObservable(Operator):  # pylint: disable=too-few-public-methods
             """SpecialObservable"""
-
-            # pylint:disable=too-few-public-methods
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""
@@ -475,7 +453,6 @@ class TestSpsaGradient:
         class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device class supporting SpecialObservable."""
 
-            # pylint:disable=too-few-public-methods
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
@@ -1035,88 +1012,6 @@ class TestSpsaGradientDifferentiation:
             expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
             assert np.allclose(res, expected, atol=spsa_shot_vec_tol, rtol=0)
 
-    @pytest.mark.tf
-    @pytest.mark.slow
-    def test_tf(self, approx_order, strategy, seed):
-        """Tests that the output of the SPSA gradient transform
-        can be differentiated using TF, yielding second derivatives."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-        rng = np.random.default_rng(seed)
-
-        with tf.GradientTape(persistent=True) as t:
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(params[0], wires=[0])
-                qp.RY(params[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-            tape = qp.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
-            tape.trainable_params = {0, 1}
-            tapes, fn = spsa_grad(
-                tape,
-                n=1,
-                approx_order=approx_order,
-                strategy=strategy,
-                h=h_val,
-                sampler_rng=rng,
-            )
-            jac_0, jac_1 = fn(dev.execute(tapes))
-
-        x, y = 1.0 * params
-
-        res_0 = t.jacobian(jac_0, params)
-        res_1 = t.jacobian(jac_1, params)
-
-        expected = np.array(
-            [
-                [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
-                [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
-            ]
-        )
-        assert np.allclose([res_0, res_1], expected, atol=spsa_shot_vec_tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf_ragged(self, approx_order, strategy, seed):
-        """Tests that the output of the SPSA gradient transform
-        of a ragged tape can be differentiated using TF, yielding second derivatives."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-        rng = np.random.default_rng(seed)
-
-        with tf.GradientTape(persistent=True) as t:
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(params[0], wires=[0])
-                qp.RY(params[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0))
-                qp.probs(wires=[1])
-
-            tape = qp.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
-            tape.trainable_params = {0, 1}
-            tapes, fn = spsa_grad(
-                tape,
-                n=1,
-                approx_order=approx_order,
-                strategy=strategy,
-                h=h_val,
-                sampler_rng=rng,
-            )
-
-            jac_01 = fn(dev.execute(tapes))[1][0]
-
-        x, y = 1.0 * params
-
-        res_01 = t.jacobian(jac_01, params)
-
-        expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
-
-        assert np.allclose(res_01[0], expected, atol=spsa_shot_vec_tol, rtol=0)
-
     @pytest.mark.torch
     def test_torch(self, approx_order, strategy, seed):
         """Tests that the output of the SPSA gradient transform
@@ -1223,7 +1118,9 @@ single_scalar_output_measurements = [
     var_non_involutory,
 ]
 
-single_meas_with_shape = list(zip(single_scalar_output_measurements, [(), (4,), (), ()]))
+single_meas_with_shape = list(
+    zip(single_scalar_output_measurements, [(), (4,), (), ()], strict=False)
+)
 
 
 @pytest.mark.parametrize(
@@ -1300,7 +1197,7 @@ class TestReturn:
 
         expected_shapes = [(), (4,), (), ()]
         for meas_res in all_res:
-            for res, shape in zip(meas_res, expected_shapes):
+            for res, shape in zip(meas_res, expected_shapes, strict=False):
                 assert isinstance(res, np.ndarray)
                 assert res.shape == shape
 

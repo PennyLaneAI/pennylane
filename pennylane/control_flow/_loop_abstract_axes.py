@@ -24,6 +24,10 @@ from collections import namedtuple
 from collections.abc import Callable
 from typing import Any
 
+import jax
+import jax.extend.core
+from jax.numpy import empty
+
 from pennylane.typing import TensorLike
 
 AbstractShapeLocation = namedtuple("AbstractShapeLocation", ("arg_idx", "shape_idx"))
@@ -141,13 +145,12 @@ def get_dummy_arg(arg):  # pragma: no cover
         return arg
     # add small, non-trivial size 2 as a concrete stand-in for dynamic axes
     shape = tuple(s if isinstance(s, int) else 2 for s in arg.shape)
-    from jax.numpy import empty  # pylint: disable=import-outside-toplevel
 
     return empty(shape=shape, dtype=arg.dtype)
 
 
 def validate_no_resizing_returns(
-    jaxpr: "jax.extend.core.Jaxpr",
+    jaxpr: jax.extend.core.Jaxpr,
     locations: list[list[AbstractShapeLocation]],
     name: str = "while_loop",
 ) -> str | None:
@@ -185,8 +188,6 @@ def handle_jaxpr_error(
 ):
     """Handle any ValueError's raised by the creation of the jaxpr, adding information to any error
     about 'Incompatible shapes for broadcasting'."""
-    import jax  # pylint: disable=import-outside-toplevel
-
     if (
         "Incompatible shapes for broadcasting" in str(e) and jax.config.jax_dynamic_shapes
     ):  # pragma: no cover
@@ -208,8 +209,7 @@ def handle_jaxpr_error(
     raise e
 
 
-# pylint: disable=too-few-public-methods
-class _CalculateLoopAbstractedAxes:
+class _CalculateLoopAbstractedAxes:  # pylint: disable=too-few-public-methods
     """A helper class for accumulating information about abstract axes for loop functions."""
 
     def __init__(self, allow_array_resizing: bool = False):
@@ -243,7 +243,6 @@ class _CalculateLoopAbstractedAxes:
         self.abstracted_axes.append(arg_abstracted_axes)
 
 
-# pylint: disable=import-outside-toplevel
 def loop_determine_abstracted_axes(
     args, allow_array_resizing: bool = False
 ) -> tuple[Any, list[TensorLike], list[list[AbstractShapeLocation]]]:
@@ -300,8 +299,6 @@ def loop_determine_abstracted_axes(
 
 
     """
-    import jax
-
     args, structure = jax.tree_util.tree_flatten(args)
     calculator = _CalculateLoopAbstractedAxes(allow_array_resizing=allow_array_resizing)
     _ = [calculator.add_arg(x_idx, x) for x_idx, x in enumerate(args)]

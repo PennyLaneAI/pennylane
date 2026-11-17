@@ -22,10 +22,12 @@ from warnings import warn
 import numpy as np
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane import math as pl_math
+from pennylane.core.operator import Operator, Operator2
 from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.pytrees import flatten, unflatten
 
 from .composite import handle_recursion_error
 
@@ -53,8 +55,20 @@ class SymbolicOp(Operator):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
-        # has no wires, so doesn't need any wires processing
-        return cls._primitive.bind(*args, **kwargs)
+        leaves, structure = flatten((args, kwargs), is_leaf=lambda x: isinstance(x, Operator))
+
+        new_leaves = []
+        for leaf in leaves:
+            if isinstance(leaf, Operator2):
+                if leaf.tracer is None:
+                    leaf._bind_primitive()  # pylint: disable=protected-access
+                new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
+            else:
+                new_leaves.append(leaf)
+
+        new_args, new_kwargs = unflatten(new_leaves, structure)
+        # needs to be overwritten because it doesnt take wires
+        return cls._primitive.bind(*new_args, **new_kwargs)
 
     @handle_recursion_error
     def __copy__(self):
@@ -72,8 +86,7 @@ class SymbolicOp(Operator):
 
         return copied_op
 
-    # pylint: disable=super-init-not-called
-    def __init__(self, base):
+    def __init__(self, base):  # pylint: disable=super-init-not-called
         self.hyperparameters["base"] = base
         if isinstance(base, (qp.ops.MidMeasure, qp.ops.PauliMeasure)):
             raise ValueError("Symbolic operators of mid-circuit measurements are not supported.")
@@ -95,18 +108,13 @@ class SymbolicOp(Operator):
         """The trainable parameters"""
         return self.base.data
 
-    @data.setter
-    def data(self, new_data):
-        self.base.data = new_data
-
     @property
     def num_params(self):
         return self.base.num_params
 
-    # pylint:disable = missing-function-docstring
     @property
     @handle_recursion_error
-    def basis(self):
+    def basis(self):  # pylint: disable=missing-function-docstring
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
@@ -119,9 +127,8 @@ class SymbolicOp(Operator):
         """Number of wires the operator acts on."""
         return len(self.wires)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_matrix(self):
+    def has_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.base.has_matrix
 
     @property
@@ -148,12 +155,13 @@ class SymbolicOp(Operator):
 
     @handle_recursion_error
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy(self)
         new_base = self.base.map_wires(wire_map=wire_map)
         new_op.hyperparameters["base"] = new_base
-        new_op._wires = new_base.wires  # pylint:disable=protected-access
+        new_op._wires = new_base.wires
         if (p_rep := new_op.pauli_rep) is not None:
-            new_op._pauli_rep = p_rep.map_wires(wire_map)  # pylint:disable=protected-access
+            new_op._pauli_rep = p_rep.map_wires(wire_map)
         return new_op
 
 
@@ -181,12 +189,12 @@ class ScalarSymbolicOp(SymbolicOp):
     def batch_size(self):
         if self._batch_size is _UNSET_BATCH_SIZE:
             base_batch_size = self.base.batch_size
-            if qp.math.ndim(self.scalar) == 0:
+            if pl_math.ndim(self.scalar) == 0:
                 # coeff is not batched
                 self._batch_size = base_batch_size
             else:
                 # coeff is batched
-                scalar_size = qp.math.size(self.scalar)
+                scalar_size = pl_math.size(self.scalar)
                 if base_batch_size is not None and base_batch_size != scalar_size:
                     raise ValueError(
                         "Broadcasting was attempted but the broadcasted dimensions "
@@ -199,11 +207,6 @@ class ScalarSymbolicOp(SymbolicOp):
     @handle_recursion_error
     def data(self):
         return (self.scalar, *self.base.data)
-
-    @data.setter
-    def data(self, new_data):
-        self.scalar = new_data[0]
-        self.base.data = new_data[1:]
 
     @property
     @handle_recursion_error
@@ -258,35 +261,27 @@ class ScalarSymbolicOp(SymbolicOp):
         # compute base matrix
         base_matrix = self.base.matrix()
 
-        scalar_interface = qp.math.get_interface(self.scalar)
+        scalar_interface = pl_math.get_interface(self.scalar)
         scalar = self.scalar
         if scalar_interface == "torch":
             # otherwise get `RuntimeError: Can't call numpy() on Tensor that requires grad.`
-            base_matrix = qp.math.convert_like(base_matrix, self.scalar)
-        elif (
-            scalar_interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            # just cast everything to complex128. Otherwise we may have casting problems
-            # where things get truncated like in SProd(tf.Variable(0.1), qp.X(0))
-            scalar = qp.math.cast(scalar, "complex128")
-            base_matrix = qp.math.cast(base_matrix, "complex128")
-
+            base_matrix = pl_math.convert_like(base_matrix, self.scalar)
         # compute scalar operation on base matrix taking batching into account
-        scalar_size = qp.math.size(scalar)
+        scalar_size = pl_math.size(scalar)
         if scalar_size != 1:
             if scalar_size == self.base.batch_size:
                 # both base and scalar are broadcasted
-                mat = qp.math.stack(
+                mat = pl_math.stack(
                     [self._matrix(s, m) for s, m in zip(scalar, base_matrix, strict=True)]
                 )
             else:
                 # only scalar is broadcasted
-                mat = qp.math.stack([self._matrix(s, base_matrix) for s in scalar])
+                mat = pl_math.stack([self._matrix(s, base_matrix) for s in scalar])
         elif self.base.batch_size is not None:
             # only base is broadcasted
-            mat = qp.math.stack([self._matrix(scalar, ar2) for ar2 in base_matrix])
+            mat = pl_math.stack([self._matrix(scalar, ar2) for ar2 in base_matrix])
         else:
             # none are broadcasted
             mat = self._matrix(scalar, base_matrix)
 
-        return qp.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+        return pl_math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)

@@ -15,7 +15,6 @@
 Tests for the gradients.finite_difference module.
 """
 
-# pylint: disable=use-implicit-booleaness-not-comparison,abstract-method
 import numpy
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
@@ -204,7 +203,7 @@ class TestFiniteDiff:
         assert spy.call_args[0][0:2] == (tape, 0)
 
     def test_no_trainable_params_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -226,7 +225,7 @@ class TestFiniteDiff:
         assert res.shape == (0,)
 
     def test_no_trainable_params_multiple_return_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters with multiple returns."""
         dev = qp.device("default.qubit", wires=2)
 
@@ -248,7 +247,7 @@ class TestFiniteDiff:
 
     @pytest.mark.autograd
     def test_no_trainable_params_qnode_autograd(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -264,23 +263,7 @@ class TestFiniteDiff:
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev)
-        def circuit(weights):
-            qp.RX(weights[0], wires=0)
-            qp.RY(weights[1], wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qp.gradients.finite_diff(circuit)(weights)
-
-    @pytest.mark.tf
-    def test_no_trainable_params_qnode_tf(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -296,7 +279,7 @@ class TestFiniteDiff:
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -348,7 +331,7 @@ class TestFiniteDiff:
 
         assert len(result) == 2
 
-        for r, exp_shape in zip(result, [(3,), (4, 3)]):
+        for r, exp_shape in zip(result, [(3,), (4, 3)], strict=False):
             assert isinstance(r, np.ndarray)
             assert r.shape == exp_shape
             assert np.allclose(r, 0)
@@ -456,7 +439,7 @@ class TestFiniteDiff:
             (1, 4, 3),
             (2, 4, 3),
         ]
-        assert all(t == q for t, q in zip(transform, expected_shapes))
+        assert all(t == q for t, q in zip(transform, expected_shapes, strict=False))
 
     def test_special_observable_qnode_differentiation(self):
         """Test differentiation of a QNode on a device supporting a
@@ -492,15 +475,13 @@ class TestFiniteDiff:
             def __radd__(self, other):
                 return self + other
 
-        # pylint: disable=too-few-public-methods
-        class SpecialObservable(qp.operation.Operator):
+        class SpecialObservable(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             """SpecialObservable"""
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""
                 return []
 
-        # pylint: disable=too-few-public-methods
         class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device that supports the above SpecialObservable as a return type."""
 
@@ -508,9 +489,8 @@ class TestFiniteDiff:
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
-            # pylint: disable=unused-argument
             @staticmethod
-            def _asarray(arr, dtype=None):
+            def _asarray(arr, dtype=None):  # pylint: disable=unused-argument
                 return np.asarray(arr)
 
             def __init__(self, *args, **kwargs):
@@ -911,72 +891,6 @@ class TestFiniteDiffGradients:
         expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.tf
-    @pytest.mark.slow
-    def test_tf(self, approx_order, strategy, tol):
-        """Tests that the output of the finite-difference transform
-        can be differentiated using TF, yielding second derivatives."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-
-        with tf.GradientTape(persistent=True) as t:
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(params[0], wires=[0])
-                qp.RY(params[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-            tape = qp.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
-            jac_0, jac_1 = fn(dev.execute(tapes))
-
-        x, y = 1.0 * params
-
-        res_0 = t.jacobian(jac_0, params)
-        res_1 = t.jacobian(jac_1, params)
-
-        expected = np.array(
-            [
-                [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
-                [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
-            ]
-        )
-        assert np.allclose([res_0, res_1], expected, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf_ragged(self, approx_order, strategy, tol):
-        """Tests that the output of the finite-difference transform
-        of a ragged tape can be differentiated using TF, yielding second derivatives."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-
-        with tf.GradientTape(persistent=True) as t:
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(params[0], wires=[0])
-                qp.RY(params[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0))
-                qp.probs(wires=[1])
-
-            tape = qp.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = finite_diff(tape, n=1, approx_order=approx_order, strategy=strategy)
-
-            jac_01 = fn(dev.execute(tapes))[1][0]
-
-        x, y = 1.0 * params
-
-        res_01 = t.jacobian(jac_01, params)
-
-        expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
-
-        assert np.allclose(res_01[0], expected, atol=tol, rtol=0)
-
     @pytest.mark.torch
     def test_torch(self, approx_order, strategy, tol):
         """Tests that the output of the finite-difference transform
@@ -1188,6 +1102,6 @@ class TestJaxArgnums:
             assert np.allclose(res, res_expected[0], atol=tol)
         else:
             # The Hessian is a 2x2 nested tuple "matrix" for argnums=[0, 1]
-            for r, r_e in zip(res, res_expected):
-                for r_, r_e_ in zip(r, r_e):
+            for r, r_e in zip(res, res_expected, strict=False):
+                for r_, r_e_ in zip(r, r_e, strict=False):
                     assert np.allclose(r_, r_e_, atol=tol)

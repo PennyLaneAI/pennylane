@@ -15,7 +15,9 @@
 Unit tests for molecular Hamiltonians.
 """
 
-# pylint: disable=too-many-arguments, protected-access
+# pylint: disable=too-many-arguments
+
+
 import pytest
 
 import pennylane as qp
@@ -673,7 +675,7 @@ def test_custom_wiremap_hamiltonian_dhf(wiremap, args, tmpdir):
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-    wiremap_dict = dict(zip(range(len(wiremap)), wiremap))
+    wiremap_dict = dict(zip(range(len(wiremap)), wiremap, strict=False))
 
     hamiltonian_ref, _ = qchem.molecular_hamiltonian(
         symbols=symbols,
@@ -690,7 +692,7 @@ def test_custom_wiremap_hamiltonian_dhf(wiremap, args, tmpdir):
         outpath=tmpdir.strpath,
     )
 
-    wiremap_calc = dict(zip(list(hamiltonian_ref.wires), list(hamiltonian.wires)))
+    wiremap_calc = dict(zip(list(hamiltonian_ref.wires), list(hamiltonian.wires), strict=False))
 
     assert wiremap_calc == wiremap_dict
 
@@ -713,7 +715,7 @@ def test_custom_wiremap_hamiltonian_dhf_molecule_class(wiremap, args, tmpdir):
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-    wiremap_dict = dict(zip(range(len(wiremap)), wiremap))
+    wiremap_dict = dict(zip(range(len(wiremap)), wiremap, strict=False))
 
     molecule = qchem.Molecule(symbols, geometry)
     hamiltonian_ref, _ = qchem.molecular_hamiltonian(
@@ -729,7 +731,7 @@ def test_custom_wiremap_hamiltonian_dhf_molecule_class(wiremap, args, tmpdir):
         outpath=tmpdir.strpath,
     )
 
-    wiremap_calc = dict(zip(list(hamiltonian_ref.wires), list(hamiltonian.wires)))
+    wiremap_calc = dict(zip(list(hamiltonian_ref.wires), list(hamiltonian.wires), strict=False))
 
     assert wiremap_calc == wiremap_dict
 
@@ -916,6 +918,7 @@ def test_real_hamiltonian_molecule_class(method, args, tmpdir):
 def test_pyscf_integrals(symbols, geometry, core_ref, one_ref, two_ref):
     r"""Test that _pyscf_integrals returns correct integrals."""
 
+    # pylint: disable-next=protected-access
     core, one, two = qchem.openfermion_pyscf._pyscf_integrals(symbols, geometry)
 
     assert np.allclose(core, core_ref)
@@ -1114,7 +1117,7 @@ def test_error_raised_for_missing_molecule_information():
                 ],
             ),
         ),
-        pytest.param(
+        (
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             0,
@@ -1161,10 +1164,6 @@ def test_error_raised_for_missing_molecule_information():
                     Z(1) @ Z(3),
                     Z(2) @ Z(3),
                 ],
-            ),
-            marks=pytest.mark.xfail(
-                reason="OpenFermion backend is not yet compatible with numpy==2.3.1. See issue https://github.com/quantumlib/OpenFermion/issues/1097 for more details.",
-                strict=True,
             ),
         ),
         (

@@ -23,6 +23,7 @@ from pennylane.ops import Identity, PauliX, PauliY, PauliZ
 from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
 from pennylane.pauli.conversion import (
     _check_hermitian_sparse,
+    _fast_walsh_hadamard_transform,
     _generalized_pauli_decompose,
     _generalized_pauli_decompose_sparse,
 )
@@ -94,8 +95,7 @@ hamiltonian_ps = (
 )
 
 
-# pylint: disable=too-many-public-methods
-class TestDecomposition:
+class TestDecomposition:  # pylint: disable=too-many-public-methods
     """Tests the pauli_decompose function"""
 
     @pytest.mark.parametrize("hamiltonian", [np.ones((3, 3)), np.ones((4, 2)), np.ones((2, 4))])
@@ -154,7 +154,6 @@ class TestDecomposition:
         tensors = filter(lambda obs: isinstance(obs, qp.ops.Prod), decomposed_obs)
         assert all(len(tensor.operands) == n for tensor in tensors)
 
-    # pylint: disable = consider-using-generator
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_decomposition(self, hamiltonian):
         """Tests that pauli_decompose successfully decomposes Hamiltonians into a
@@ -381,6 +380,42 @@ class TestDecomposition:
         expected = np.array([[3.0, 0.0], [0.0, 3.0]])
         assert np.allclose(reconstructed, expected)
 
+    def test_sparse_duplicate_entries_summed_not_overwritten(self):
+        """Regression test that duplicate COO entries are summed rather than overwritten.
+
+        The sparse decomposition scatters entry values into a dense work vector
+        (``values[rows] = data``), which would silently keep only the last duplicate
+        if the input were not canonicalized with ``sum_duplicates()`` first.
+        """
+        sps = pytest.importorskip("scipy.sparse")
+
+        # Duplicates at off-diagonal positions, including a pair that cancels to zero.
+        rows = np.array([0, 0, 1, 2, 2, 3, 3])
+        cols = np.array([1, 1, 0, 3, 3, 2, 2])
+        data = np.array([1.0, 2.0, 3.0, 0.5, -0.5, 4.0, 1.0])
+        sparse_dup = sps.coo_matrix((data, (rows, cols)), shape=(4, 4))
+        assert sparse_dup.nnz == 7  # duplicates really present in the input
+
+        result = qp.pauli_decompose(sparse_dup, pauli=True, check_hermitian=False)
+        reconstructed = result.to_mat(range(2))
+        assert np.allclose(reconstructed, sparse_dup.toarray())
+
+        # The caller's matrix must not be mutated by the internal canonicalization.
+        assert sparse_dup.nnz == 7
+
+        # The padding path rebuilds the COO matrix; duplicates must survive it too.
+        sparse_dup_5x5 = sps.coo_matrix((data, (rows, cols)), shape=(5, 5))
+        coeffs, obs = _generalized_pauli_decompose_sparse(sparse_dup_5x5, padding=True, pauli=True)
+        padded = np.zeros((8, 8), dtype=complex)
+        padded[:5, :5] = sparse_dup_5x5.toarray()
+        reconstructed_padded = PauliSentence(
+            {
+                PauliWord({w: o for o, w in term}): coeff
+                for coeff, term in zip(coeffs, obs, strict=False)
+            }
+        ).to_mat(range(3))
+        assert np.allclose(reconstructed_padded, padded)
+
     def test_sparse_non_hermitian_check_count_nonzero(self, monkeypatch):
         """Test that sparse non-Hermitian check uses count_nonzero() when nnz attribute is missing."""
         sps = pytest.importorskip("scipy.sparse")
@@ -474,6 +509,47 @@ class TestDecomposition:
         assert result_with_zero[1] == result_without_zero[1]
 
 
+class TestFastWalshHadamardTransform:
+    """Tests the _fast_walsh_hadamard_transform helper."""
+
+    def test_hadamard_2x2(self):
+        """Test the length-2 transform against the unnormalised 2x2 Hadamard matrix."""
+        result = _fast_walsh_hadamard_transform(np.array([1.0 + 0j, 2.0]))
+        assert np.allclose(result, [3.0, -1.0])
+
+    @pytest.mark.parametrize("num_qubits", [1, 2, 3, 4])
+    def test_matches_hadamard_matrix_product(self, num_qubits):
+        """Test that the fast transform matches direct multiplication by H^(x)n."""
+        rng = np.random.default_rng(42)
+        dim = 2**num_qubits
+        vec = rng.normal(size=dim) + 1j * rng.normal(size=dim)
+
+        hadamard = np.array([[1.0, 1.0], [1.0, -1.0]])
+        full_hadamard = np.array([[1.0]])
+        for _ in range(num_qubits):
+            full_hadamard = np.kron(full_hadamard, hadamard)
+
+        result = _fast_walsh_hadamard_transform(vec.copy())
+        assert np.allclose(result, full_hadamard @ vec)
+
+    @pytest.mark.parametrize("num_qubits", [1, 2, 3])
+    def test_involution_up_to_scale(self, num_qubits):
+        """Test that applying the transform twice recovers the input scaled by 2**n."""
+        rng = np.random.default_rng(7)
+        dim = 2**num_qubits
+        vec = rng.normal(size=dim) + 1j * rng.normal(size=dim)
+
+        transformed_twice = _fast_walsh_hadamard_transform(
+            _fast_walsh_hadamard_transform(vec.copy())
+        )
+        assert np.allclose(transformed_twice, dim * vec)
+
+    def test_trivial_length_one(self):
+        """Test that a length-1 vector is returned unchanged."""
+        result = _fast_walsh_hadamard_transform(np.array([3.0 + 1j]))
+        assert np.allclose(result, [3.0 + 1j])
+
+
 class TestPhasedDecomposition:
     """Tests the _generalized_pauli_decompose via pauli_decompose function"""
 
@@ -540,7 +616,6 @@ class TestPhasedDecomposition:
         tensors = filter(lambda obs: isinstance(obs, qp.ops.Prod), decomposed_obs)
         assert all(len(tensor.operands) == n for tensor in tensors)
 
-    # pylint: disable = consider-using-generator
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_decomposition(self, hamiltonian):
         """Tests that pauli_decompose successfully decomposes Hamiltonians into a
@@ -563,8 +638,6 @@ class TestPhasedDecomposition:
 
         assert isinstance(ps, qp.pauli.PauliSentence)
         assert np.allclose(hamiltonian, ps.to_mat(range(num_qubits)))
-
-    # pylint: disable = consider-using-generator
 
     @pytest.mark.parametrize("hide_identity", [True, False])
     @pytest.mark.parametrize("matrix", test_general_matrix)
@@ -647,11 +720,10 @@ class TestPhasedDecomposition:
         matrices = [[[library(i) for i in row] for row in matrix] for library in libraries]
 
         interfaces = ["numpy", "jax", "torch"]
-        for mat, interface in zip(matrices, interfaces):
+        for mat, interface in zip(matrices, interfaces, strict=False):
             coeffs = qp.pauli_decompose(mat).coeffs
             assert qp.math.get_interface(coeffs[0]) == interface
 
-    # pylint: disable = superfluous-parens
     # Multiple interfaces will be tested with math module
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize(
@@ -680,6 +752,7 @@ class TestPhasedDecomposition:
             grad_numpy = qp.grad(circuit)(qp.numpy.array(matrix))
 
             # Jax Interface
+            # pylint: disable-next=superfluous-parens
             grad_jax = jax.grad(circuit, argnums=(0))(jax.numpy.array(matrix))
 
             # PyTorch Interface

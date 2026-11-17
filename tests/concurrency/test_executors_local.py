@@ -13,8 +13,6 @@
 # limitations under the License.
 """Unit tests for local `qp.workflow.executors`"""
 
-# pylint: disable=too-many-arguments
-
 import os
 import sys
 
@@ -207,16 +205,26 @@ class TestLocalExecutor:
         [
             (
                 custom_func3,
-                list(zip(range(9), np.ones(9))),
-                [custom_func3(i, j) for i, j in zip(range(9), np.ones(9))],
+                list(zip(range(9), np.ones(9), strict=False)),
+                [custom_func3(i, j) for i, j in zip(range(9), np.ones(9), strict=False)],
             ),
             (
                 custom_func4,
-                list(zip([np.linspace(-5, 5, 10)], [np.linspace(-5, 5, 10)], np.ones(10))),
+                list(
+                    zip(
+                        [np.linspace(-5, 5, 10)],
+                        [np.linspace(-5, 5, 10)],
+                        np.ones(10),
+                        strict=False,
+                    )
+                ),
                 [
                     custom_func4(i, j, k)
                     for i, j, k in zip(
-                        [np.linspace(-5, 5, 10)], [np.linspace(-5, 5, 10)], np.ones(10)
+                        [np.linspace(-5, 5, 10)],
+                        [np.linspace(-5, 5, 10)],
+                        np.ones(10),
+                        strict=False,
                     )
                 ],
             ),
@@ -256,17 +264,17 @@ class TestLocalExecutor:
     @pytest.mark.parametrize("exec_kwargs", [{}, {"chunksize": 2}, {"chunksize": 4}])
     def test_functor_call(self, backend, fn, data, result, exec_kwargs):
         executor = create_executor(backend[0], **exec_kwargs)
-        for i, a in enumerate(zip(*data)):
+        for i, a in enumerate(zip(*data, strict=False)):
             assert np.isclose(result[i], executor("submit", fn, *a))
         assert np.allclose(result, executor("map", fn, *data))
         assert np.allclose(result, executor("map", fn, *data))
-        assert np.allclose(result, executor("starmap", fn, zip(*data)))
+        assert np.allclose(result, executor("starmap", fn, zip(*data, strict=False)))
 
         executor.shutdown()
 
         with create_executor(backend[0]) as executor_ctx:
-            for i, a in enumerate(zip(*data)):
+            for i, a in enumerate(zip(*data, strict=False)):
                 assert np.isclose(result[i], executor_ctx("submit", fn, *a))
             assert np.allclose(result, executor_ctx("map", fn, *data))
             assert np.allclose(result, executor_ctx("map", fn, *data))
-            assert np.allclose(result, executor_ctx("starmap", fn, zip(*data)))
+            assert np.allclose(result, executor_ctx("starmap", fn, zip(*data, strict=False)))

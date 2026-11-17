@@ -22,34 +22,31 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition import gate_sets
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.transforms import decompose
-
-# pylint: disable=expression-not-assigned
+from pennylane.testing import assert_decomposable
+from pennylane.transforms import _tape_decompose as decompose
 
 
-# pylint: disable=protected-access
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("op_type", (qp.HilbertSchmidt, qp.LocalHilbertSchmidt))
 def test_flatten_unflatten_standard_checks(op_type):
     """Test the flatten and unflatten methods."""
 
-    U = (qp.Hadamard("a"), qp.Identity("b"))
+    U = (qp.Identity(3), qp.Identity(4))
     V = (qp.RZ(0.1, wires=0), qp.RZ(0.2, wires=1))
 
     op = op_type(V, U)
-    qp.ops.functions.assert_valid(op, skip_wire_mapping=True, skip_differentiation=True)
+    qp.testing.assert_valid(op, skip_wire_mapping=True, skip_differentiation=True)
 
-    data, metadata = op._flatten()
+    data, metadata = op._flatten()  # pylint: disable=protected-access
     assert data == (V, U)
     assert not metadata
 
-    new_op = type(op)._unflatten(*op._flatten())
+    new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
     assert qp.math.allclose(op.data, new_op.data)
 
-    for op1, op2 in zip(op.hyperparameters["U"], new_op.hyperparameters["U"]):
+    for op1, op2 in zip(op.hyperparameters["U"], new_op.hyperparameters["U"], strict=False):
         qp.assert_equal(op1, op2)
-    for op1, op2 in zip(op.hyperparameters["V"], new_op.hyperparameters["V"]):
+    for op1, op2 in zip(op.hyperparameters["V"], new_op.hyperparameters["V"], strict=False):
         qp.assert_equal(op1, op2)
 
     assert new_op is not op
@@ -76,7 +73,6 @@ class TestHilbertSchmidt:
             return qp.probs()
 
         def cost_hst(V, U):
-            # pylint:disable=unsubscriptable-object
             return 1 - hilbert_test(V, U)[0]
 
         res = cost_hst(V, U)
@@ -88,7 +84,7 @@ class TestHilbertSchmidt:
         """Test that the result is 0 when when the Hilbert-Schmidt inner product is vanishing."""
 
         U = [qp.Hadamard(wires=0)]
-        V = [qp.Identity(wires=1), qp.GlobalPhase(param, wires=1)]
+        V = [qp.Identity(wires=1), qp.GlobalPhase(param)]
 
         @qp.qnode(qp.device("default.qubit", wires=2))
         def hilbert_test(V, U):
@@ -104,7 +100,7 @@ class TestHilbertSchmidt:
         """Test that the result is 1 when the Hilbert-Schmidt inner product is maximal."""
 
         U = [qp.Hadamard(0)]
-        V = [qp.Hadamard(wires=1), qp.GlobalPhase(param, wires=1)]
+        V = [qp.Hadamard(wires=1), qp.GlobalPhase(param)]
 
         @qp.qnode(qp.device("default.qubit", wires=2))
         def hilbert_test(V, U):
@@ -236,7 +232,7 @@ class TestHilbertSchmidt:
             qp.CNOT(wires=[0, 1]),
             qp.H(0),
         ]
-        for i, j in zip(tape_dec.operations, expected_operations):
+        for i, j in zip(tape_dec.operations, expected_operations, strict=False):
             assert i.name == j.name
             assert i.wires == j.wires
             assert qp.math.allclose(i.data, j.data)
@@ -267,7 +263,7 @@ class TestHilbertSchmidt:
             qp.Hadamard(wires=[1]),
         ]
 
-        for i, j in zip(tape_dec.operations, expected_operations):
+        for i, j in zip(tape_dec.operations, expected_operations, strict=False):
             assert i.name == j.name
             assert i.wires == j.wires
             assert qp.math.allclose(i.data, j.data)
@@ -301,20 +297,23 @@ class TestHilbertSchmidt:
             qp.Hadamard(wires=["b"]),
         ]
 
-        for op1, op2 in zip(tape_dec.operations, expected_operations):
+        for op1, op2 in zip(tape_dec.operations, expected_operations, strict=False):
             qp.assert_equal(op1, op2)
 
-        for op1, op2 in zip(decomp, expected_operations):
+        for op1, op2 in zip(decomp, expected_operations, strict=False):
             qp.assert_equal(op1, op2)
 
     def test_data(self):
-        """Test that the data property gets and sets the correct values"""
+        """Test that the data property is read-only."""
         op = qp.HilbertSchmidt(
             [qp.RX(1, wires=0), qp.RX(2, wires=1)], [qp.RY(3, wires=2), qp.RZ(4, wires=3)]
         )
         assert op.data == (1, 2, 3, 4)
-        op.data = [4, 5, 6, 7]
-        assert op.data == (4, 5, 6, 7)
+
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'HilbertSchmidt' object has no setter"
+        ):
+            setattr(op, "data", [4, 5, 6, 7])
 
     def test_copy(self):
         """Test that a HilbertSchmidt operator can be copied."""
@@ -329,11 +328,11 @@ class TestHilbertSchmidt:
 
         orig_U = orig_op.hyperparameters["U"]
         copy_U = copy_op.hyperparameters["U"]
-        assert all(u1 is not u2 for u1, u2 in zip(orig_U, copy_U))
+        assert all(u1 is not u2 for u1, u2 in zip(orig_U, copy_U, strict=False))
 
         orig_V = orig_op.hyperparameters["V"]
         copy_V = copy_op.hyperparameters["V"]
-        assert all(v1 is not v2 for v1, v2 in zip(orig_V, copy_V))
+        assert all(v1 is not v2 for v1, v2 in zip(orig_V, copy_V, strict=False))
 
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
@@ -437,12 +436,11 @@ class TestHilbertSchmidt:
         ),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("U", "V"), DECOMP_PARAMS)
     def test_decomposition_new(self, U, V):
         op = qp.HilbertSchmidt(V, U)
-        for rule in qp.list_decomps(qp.HilbertSchmidt):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 class TestLocalHilbertSchmidt:
@@ -469,7 +467,6 @@ class TestLocalHilbertSchmidt:
             return qp.probs()
 
         def cost_lhst(V, U):
-            # pylint:disable=unsubscriptable-object
             return 1 - local_hilbert_test(V, U)[0]
 
         v_params = [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2]
@@ -483,7 +480,7 @@ class TestLocalHilbertSchmidt:
         """Test that the result is 0 when when the Hilbert-Schmidt inner product is vanishing."""
 
         U = [qp.Hadamard(wires=0)]
-        V = [qp.Identity(wires=1), qp.GlobalPhase(param, wires=1)]
+        V = [qp.Identity(wires=1), qp.GlobalPhase(param)]
 
         @qp.qnode(qp.device("default.qubit", wires=2))
         def hilbert_test(V, U):
@@ -499,7 +496,7 @@ class TestLocalHilbertSchmidt:
         """Test that the result is 1 when the Hilbert-Schmidt inner product is maximal."""
 
         U = [qp.Hadamard(0)]
-        V = [qp.Hadamard(wires=1), qp.GlobalPhase(param, wires=1)]
+        V = [qp.Hadamard(wires=1), qp.GlobalPhase(param)]
 
         @qp.qnode(qp.device("default.qubit", wires=2))
         def hilbert_test(V, U):
@@ -525,9 +522,9 @@ class TestLocalHilbertSchmidt:
 
         tape_dec = qp.tape.QuantumScript.from_queue(q_tape_dec)
 
-        for o1, o2 in zip(decomp, tape_dec):
+        for o1, o2 in zip(decomp, tape_dec, strict=False):
             qp.assert_equal(o1, o2)
-        for o1, o2 in zip(decomp, unqueued_decomp):
+        for o1, o2 in zip(decomp, unqueued_decomp, strict=False):
             qp.assert_equal(o1, o2)
 
         expected_operations = [
@@ -539,7 +536,7 @@ class TestLocalHilbertSchmidt:
             qp.Hadamard(wires=[0]),
         ]
 
-        for i, j in zip(tape_dec.operations, expected_operations):
+        for i, j in zip(tape_dec.operations, expected_operations, strict=False):
             assert i.name == j.name
             assert i.wires == j.wires
             assert qp.math.allclose(i.data, j.data)
@@ -565,7 +562,7 @@ class TestLocalHilbertSchmidt:
             qp.Hadamard(wires=["a"]),
         ]
 
-        for i, j in zip(tape_dec.operations, expected_operations):
+        for i, j in zip(tape_dec.operations, expected_operations, strict=False):
             assert i.name == j.name
             assert i.wires == j.wires
             assert qp.math.allclose(i.data, j.data)
@@ -604,12 +601,11 @@ class TestLocalHilbertSchmidt:
         ),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("U", "V"), DECOMP_PARAMS)
     def test_local_decomposition_new(self, U, V):
         op = qp.LocalHilbertSchmidt(V, U)
-        for rule in qp.list_decomps(qp.LocalHilbertSchmidt):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_qnode_integration(self):
         """Test that the local hilbert schmidt template can be used inside a qnode."""
@@ -632,7 +628,6 @@ class TestLocalHilbertSchmidt:
             qp.LocalHilbertSchmidt(V, U)
             return qp.probs()
 
-        # pylint: disable=unsubscriptable-object
         def cost_lhst(V, U):
             return 1 - local_hilbert_test(V, U)[0]
 

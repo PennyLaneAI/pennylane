@@ -20,11 +20,13 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane.core.operator import Operator2
+from pennylane.decomposition.decomposition_rule import register_resources
+from pennylane.decomposition.resources import Resources
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
-from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.adjoint2 import Adjoint2, _make_adjoint_decomp, adjoint_rotation
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
-
-# pylint: disable=unused-argument,arguments-differ,useless-parent-delegation
+from tests.core.operator.operator2_utils import CompilableOp, OneWireDynOp
 
 
 class SX2(Operator2):
@@ -34,7 +36,7 @@ class SX2(Operator2):
 
     is_verified_hermitian = True
 
-    def __init__(self, wires):
+    def __init__(self, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(wires)
 
     @property
@@ -47,15 +49,15 @@ class SX2(Operator2):
         )
 
     @staticmethod
-    def compute_matrix(wires):
+    def compute_matrix(wires):  # pylint: disable=unused-argument
         return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @staticmethod
-    def compute_sparse_matrix(wires, format="csr"):
+    def compute_sparse_matrix(wires, format="csr"):  # pylint: disable=unused-argument
         return 0.5 * sparse.csr_matrix([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]]).asformat(format=format)
 
     @staticmethod
-    def compute_eigvals(wires):
+    def compute_eigvals(wires):  # pylint: disable=unused-argument
         return np.array([1, 1j])
 
     @staticmethod
@@ -72,11 +74,11 @@ class RX2(Operator2):
 
     is_verified_hermitian = True
 
-    def __init__(self, theta, wires):
+    def __init__(self, theta, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(theta, wires)
 
     @staticmethod
-    def compute_matrix(theta, wires):
+    def compute_matrix(theta, wires):  # pylint: disable=unused-argument
         return qp.math.array(
             [
                 [qp.math.cos(theta / 2), -1j * qp.math.sin(theta / 2)],
@@ -146,6 +148,19 @@ def test_attributes():
     assert op2.has_adjoint
 
 
+def test_old_decomp_integartion():
+    """Tests that adjoint2 is compatible with the old decomposition convention."""
+
+    @register_resources({qp.RX: 1})
+    def _sx_to_rx(wires):
+        qp.RX(np.pi / 2, wires=wires)
+
+    qp.add_decomps(SX2, _sx_to_rx)
+    op = qp.adjoint(SX2(0))
+    assert op.has_decomposition
+    assert op.decomposition() == [qp.adjoint(qp.RX(np.pi / 2, wires=[0]))]
+
+
 def test_parameter_frequencies():
     """Tests that adjoint2 ops have the correct parameter frequencies."""
 
@@ -200,12 +215,12 @@ def test_representation():
 
     base_op = RX2(0.5, wires=1)
     op = qp.adjoint(base_op)
-    assert repr(op) == "Adjoint(RX2(theta=0.5, wires=[1]))"
+    assert repr(op) == "Adjoint(RX2(0.5, wires=[1]))"
     assert op.label() == "RX2†"
     assert op.name == "Adjoint(RX2)"
 
     nested_op = qp.adjoint(op)
-    assert repr(nested_op) == "Adjoint(Adjoint(RX2(theta=0.5, wires=[1])))"
+    assert repr(nested_op) == "Adjoint(Adjoint(RX2(0.5, wires=[1])))"
     assert nested_op.label() == "(RX2†)†"
     assert nested_op.name == "Adjoint(Adjoint(RX2))"
 
@@ -224,3 +239,50 @@ def test_adjoint_equality():
 
     with pytest.raises(AssertionError, match="different base operations"):
         qp.assert_equal(qp.adjoint(base_op), qp.adjoint(another_base))
+
+
+def test_adjoint_rotation_decomposition_rule():
+    """Tests the adjoint_rotation decomposition with an ``Operator2`` base."""
+
+    op = qp.adjoint(OneWireDynOp(0.5, wires=[0]))
+    assert isinstance(op, Adjoint2)
+
+    tape = qp.testing.decomp_rule_to_tape(op, adjoint_rotation)
+
+    assert tape.operations == [OneWireDynOp(-0.5, wires=[0])]
+    assert adjoint_rotation.compute_resources(**op.arguments) == Resources(
+        {OneWireDynOp(Float, wires=Wire[1]): 1}
+    )
+
+
+@pytest.mark.catalyst
+def test_make_adjoint_decomp_closes_over_compilable_args():
+    """Regression test for ``_make_adjoint_decomp``: ``static_argnames``/``compilable_argnames``
+    must be closed over (via ``functools.partial``) rather than forwarded as keyword arguments
+    to ``qp.adjoint(...)``. Catalyst's ``AdjointCallable`` traces *all* keyword arguments passed
+    to the wrapped callable, so forwarding a compilable arg would turn it into a tracer and break
+    any decomposition that branches on it with a Python ``if`` (as :class:`~.OutMultiplier`'s
+    ``mod``/``output_wires_zeroed`` do)."""
+
+    @register_resources(lambda n, wires: {qp.X: 1} if n else {qp.Y: 1})
+    def _some_decomp(n, wires):
+        if n:
+            qp.X(wires[0])
+        else:
+            qp.Y(wires[0])
+
+    op = CompilableOp(True, wires=[0])
+    rule = _make_adjoint_decomp(_some_decomp)
+
+    @qp.qjit(capture=False)
+    @qp.qnode(qp.device("lightning.qubit", wires=1))
+    def f():
+        rule(base=op)
+        return qp.probs()
+
+    # Would raise a ``TracerBoolConversionError`` if ``n`` were forwarded as a traced kwarg.
+    f()
+
+    # ``n=True`` must take the ``qp.X`` branch, not the ``qp.Y`` one.
+    assert "PauliX" in f.mlir
+    assert "PauliY" not in f.mlir

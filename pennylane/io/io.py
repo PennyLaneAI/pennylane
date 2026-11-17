@@ -16,10 +16,8 @@ This module contains functions to load circuits from other frameworks as
 PennyLane templates.
 """
 
-from collections import defaultdict
 from collections.abc import Callable
 from importlib import metadata
-from sys import version_info
 
 has_openqasm = True
 try:
@@ -39,11 +37,7 @@ _MISSING_QISKIT_PLUGIN_MESSAGE = (
 )
 
 # get list of installed plugin converters
-__plugin_devices = (
-    defaultdict(tuple, metadata.entry_points())["pennylane.io"]
-    if version_info[:2] == (3, 9)
-    else metadata.entry_points(group="pennylane.io")
-)
+__plugin_devices = metadata.entry_points(group="pennylane.io")
 plugin_converters = {entry.name: entry for entry in __plugin_devices}
 
 
@@ -650,98 +644,6 @@ def from_qasm(quantum_circuit: str, measurements=None):
         ) from e
 
     return plugin_converter(quantum_circuit, measurements=measurements)
-
-
-def from_pyquil(pyquil_program):
-    """Loads pyQuil Program objects by using the converter in the
-    PennyLane-Rigetti plugin.
-
-    **Example:**
-
-    >>> program = pyquil.Program()
-    >>> program += pyquil.gates.H(0)
-    >>> program += pyquil.gates.CNOT(0, 1)
-    >>> my_circuit = qp.from_pyquil(program)
-
-    The ``my_circuit`` template can now be used within QNodes, as a
-    two-wire quantum template.
-
-    >>> @qp.qnode(dev)
-    >>> def circuit(x):
-    >>>     qp.RX(x, wires=1)
-    >>>     my_circuit(wires=[1, 0])
-    >>>     return qp.expval(qp.Z(0))
-
-    Args:
-        pyquil_program (pyquil.Program): a program created in pyQuil
-
-    Returns:
-        pennylane_forest.ProgramLoader: a ``pennylane_forest.ProgramLoader`` instance that can
-        be used like a PennyLane template and that contains additional inspection properties
-    """
-    plugin_converter = plugin_converters["pyquil_program"].load()
-    return plugin_converter(pyquil_program)
-
-
-def from_quil(quil: str):
-    """Loads quantum circuits from a Quil string using the converter in the
-    PennyLane-Rigetti plugin.
-
-    **Example:**
-
-    .. code-block:: python
-
-        quil_str = 'H 0\\nCNOT 0 1'
-        my_circuit = qp.from_quil(quil_str)
-
-    The ``my_circuit`` template can now be used within QNodes, as a
-    two-wire quantum template.
-
-    .. code-block:: python
-
-        @qp.qnode(dev)
-        def circuit(x):
-            qp.RX(x, wires=1)
-            my_circuit(wires=(1, 0))
-            return qp.expval(qp.Z(0))
-
-    Args:
-        quil (str): a Quil string containing a valid quantum circuit
-
-    Returns:
-        pennylane_forest.ProgramLoader: a ``pennylane_forest.ProgramLoader`` instance that can
-        be used like a PennyLane template and that contains additional inspection properties
-    """
-    plugin_converter = plugin_converters["quil"].load()
-    return plugin_converter(quil)
-
-
-def from_quil_file(quil_filename: str):
-    """Loads quantum circuits from a Quil file using the converter in the
-    PennyLane-Rigetti plugin.
-
-    **Example:**
-
-    >>> my_circuit = qp.from_quil_file("teleportation.quil")
-
-    The ``my_circuit`` template can now be used within QNodes, as a
-    two-wire quantum template.
-
-    >>> @qp.qnode(dev)
-    >>> def circuit(x):
-    >>>     qp.RX(x, wires=1)
-    >>>     my_circuit(wires=(1, 0))
-    >>>     return qp.expval(qp.Z(0))
-
-    Args:
-        quil_filename (str): path to a Quil file containing a valid quantum circuit
-
-    Returns:
-        pennylane_forest.ProgramLoader: a ``pennylane_forest.ProgramLoader`` instance that can
-        be used like a PennyLane template and that contains additional inspection properties
-    """
-    plugin_converter = plugin_converters["quil_file"].load()
-    return plugin_converter(quil_filename)
 
 
 def from_qasm3(quantum_circuit: str, wire_map: dict | None = None) -> Callable:

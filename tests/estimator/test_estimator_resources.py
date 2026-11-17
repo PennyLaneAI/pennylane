@@ -22,8 +22,6 @@ import pytest
 
 from pennylane.estimator.resources_base import Resources
 
-# pylint: disable= no-self-use,too-few-public-methods,comparison-with-itself,protected-access
-
 
 @dataclass(frozen=True)
 class DummyResOp:
@@ -128,17 +126,20 @@ class TestResources:
 
     @pytest.mark.parametrize(
         "resources, expected_str",
-        zip(
-            tuple(
-                Resources(
-                    wire_info.get("zeroed", 0),
-                    wire_info.get("any_state", 0),
-                    wire_info.get("algo", 0),
-                    gate_types,
-                )
-                for wire_info, gate_types in zip(wire_data, gate_types_data)
-            ),
-            str_data,
+        list(
+            zip(
+                tuple(
+                    Resources(
+                        wire_info.get("zeroed", 0),
+                        wire_info.get("any_state", 0),
+                        wire_info.get("algo", 0),
+                        gate_types,
+                    )
+                    for wire_info, gate_types in zip(wire_data, gate_types_data, strict=False)
+                ),
+                str_data,
+                strict=False,
+            )
         ),
     )
     def test_str_method(self, resources, expected_str):
@@ -190,7 +191,7 @@ class TestResources:
         """Test that this function correctly simplifies the gate types
         dictionary by grouping together gates with the same name."""
 
-        class DummyResOp2:
+        class DummyResOp2:  # pylint: disable=too-few-public-methods
             """A dummy class to populate the gate types dictionary for testing."""
 
             def __init__(self, name, parameter=None):
@@ -225,7 +226,7 @@ class TestResources:
         res1_copy = Resources(zeroed, any_state, algo, gate_types=gate_types1)
         res2 = Resources(5, 4, 3, gate_types=gate_types2)
 
-        assert res1 == res1
+        assert res1 == res1  # pylint: disable=comparison-with-itself
         assert res1 == res1_copy
         assert res1 != res2
 
@@ -351,7 +352,7 @@ class TestResources:
         """Test that _ipython_display_ prints the string representation."""
 
         # Helper class to simulate a Gate object (required by Resources API)
-        class FakeGate:
+        class FakeGate:  # pylint: disable=too-few-public-methods
             """Helper class to simulate a Gate object."""
 
             def __init__(self, name):
@@ -366,7 +367,7 @@ class TestResources:
         )
 
         # Call the method
-        resources._ipython_display_()
+        resources._ipython_display_()  # pylint: disable=protected-access
 
         # Capture output and verify
         captured = capsys.readouterr()
@@ -377,7 +378,7 @@ class TestResources:
 
         resources = Resources(zeroed_wires=0, any_state_wires=0, algo_wires=0, gate_types={})
 
-        resources._ipython_display_()
+        resources._ipython_display_()  # pylint: disable=protected-access
         captured = capsys.readouterr()
 
         assert captured.out == str(resources) + "\n"

@@ -22,8 +22,6 @@ from pennylane.estimator.ops import GlobalPhase, Identity
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
 from pennylane.wires import Wires
 
-# pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
-
 
 class TestIdentity:
     """Test ResourceIdentity"""
@@ -109,7 +107,7 @@ class TestGlobalPhase:
 
     def test_resources(self):
         """ResourceGlobalPhase should have empty resources"""
-        op = GlobalPhase(wires=0)
+        op = GlobalPhase()
         assert op.resource_decomp() == []
 
     def test_resource_rep(self):
@@ -124,7 +122,7 @@ class TestGlobalPhase:
 
     def test_resources_from_rep(self):
         """Test that the resources can be computed from the compressed representation"""
-        op = GlobalPhase(wires=[0])
+        op = GlobalPhase()
         expected = []
 
         op_compressed_rep = op.resource_rep_from_op()
@@ -134,7 +132,7 @@ class TestGlobalPhase:
 
     def test_resource_adjoint(self):
         """Test that the adjoint resources are as expected"""
-        op = GlobalPhase(wires=[0])
+        op = GlobalPhase()
         assert op.adjoint_resource_decomp() == [GateCount(GlobalPhase.resource_rep(), 1)]
 
     globalphase_ctrl_data = (
@@ -168,7 +166,7 @@ class TestGlobalPhase:
         num_ctrl_wires = len(ctrl_wires)
         num_ctrl_values = len([v for v in ctrl_values if not v])
 
-        op = GlobalPhase(wires=0)
+        op = GlobalPhase()
         op2 = qre.Controlled(op, num_ctrl_wires, num_ctrl_values)
         assert repr(op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)) == repr(
             expected_res

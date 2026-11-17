@@ -47,7 +47,7 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
     .. note::
 
         This method no longer decomposes the circuit as part of the folding procedure. Users are encouraged to use
-        :func:`~.pennylane.transforms.decompose` to expand the circuit into a target gateset before using this transform.
+        :func:`~.pennylane.transforms._tape_decompose` to expand the circuit into a target gateset before using this transform.
 
 
     **Example**
@@ -336,9 +336,8 @@ def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
     return sign * math.exp(zne_unscaled) + asymptote
 
 
-# pylint: disable=too-many-arguments
 @transform
-def mitigate_with_zne(
+def mitigate_with_zne(  # pylint: disable=too-many-arguments
     tape: QuantumScript,
     scale_factors: Sequence[float],
     folding: callable,
@@ -405,7 +404,7 @@ def mitigate_with_zne(
         instance. This is to prevent ``mitigate_with_zne`` from computing the adjoint of
         the channel operation during `folding`, which is currently not supported.
 
-    We can now set up a mitigated ``QNode`` by first decomposing it into a target gate set via :func:`~.pennylane.transforms.decompose`
+    We can now set up a mitigated ``QNode`` by first decomposing it into a target gate set via :func:`~.pennylane.transforms._tape_decompose`
     and then applying this transform by passing ``folding`` and ``extrapolate`` functions. PennyLane provides native
     functions :func:`~.pennylane.noise.fold_global` and :func:`~.pennylane.noise.poly_extrapolate`, or
     :func:`~.pennylane.noise.richardson_extrapolate`, that allow for differentiating through them. Custom functions, as well as
@@ -430,7 +429,7 @@ def mitigate_with_zne(
             extrapolate=poly_extrapolate,
             extrapolate_kwargs={'order' : 2},
         )
-        @qp.decompose(gate_set = ["RY", "CZ"])
+        @qp.transforms._tape_decompose(gate_set = ["RY", "CZ"])
         @qnode(noisy_dev)
         def circuit(w1, w2):
             qp.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -455,7 +454,7 @@ def mitigate_with_zne(
 
         As of PennyLane v0.39, the native function :func:`~.pennylane.noise.fold_global`
         no longer decomposes the circuit as part of the folding procedure. Users are
-        encouraged to use :func:`~.pennylane.transforms.decompose` to unroll the circuit into a target
+        encouraged to use :func:`~.pennylane.transforms._tape_decompose` to unroll the circuit into a target
         gateset before folding, when using this transform.
 
     .. details::

@@ -15,8 +15,9 @@
 Defines qp.vjp
 """
 
-from functools import lru_cache
-from importlib.util import find_spec
+import jax
+from jax._src.api import _dtype
+from jax.tree_util import tree_leaves, tree_unflatten
 
 from pennylane import capture
 from pennylane.compiler import compiler
@@ -24,43 +25,30 @@ from pennylane.exceptions import CompileError
 
 from .grad import _args_and_argnums, _setup_h, _setup_method
 
-has_jax = find_spec("jax") is not None
+vjp_prim = capture.QpPrimitive("vjp")
+vjp_prim.multiple_results = True
+vjp_prim.prim_type = "higher_order"
 
 
-# pylint: disable=unused-argument
-@lru_cache
-def _get_vjp_prim():
-    if not has_jax:  # pragma: no cover
-        return None
+@vjp_prim.def_impl
+def _vjp_impl(*args, jaxpr, fn, method, h, argnums):  # pylint: disable=unused-argument
+    params = args[: len(jaxpr.invars)]
+    dy = list(args[len(jaxpr.invars) :])
 
-    import jax  # pylint: disable=import-outside-toplevel
+    def func(*inner_args):
+        return jax.core.eval_jaxpr(jaxpr, [], *inner_args)
 
-    vjp_prim = capture.QpPrimitive("vjp")
-    vjp_prim.multiple_results = True
-    vjp_prim.prim_type = "higher_order"
+    res, vjp_fn = jax.vjp(func, *params)
+    dparams = vjp_fn(dy)
+    return res + [dparams[i] for i in argnums]
 
-    @vjp_prim.def_impl
-    def _vjp_impl(*args, jaxpr, fn, method, h, argnums):
-        params = args[: len(jaxpr.invars)]
-        dy = list(args[len(jaxpr.invars) :])
 
-        def func(*inner_args):
-            return jax.core.eval_jaxpr(jaxpr, [], *inner_args)
-
-        res, vjp_fn = jax.vjp(func, *params)
-        dparams = vjp_fn(dy)
-        return res + [dparams[i] for i in argnums]
-
-    @vjp_prim.def_abstract_eval
-    def _vjp_abstract_eval(*args, jaxpr, fn, method, h, argnums):
-        return [v.aval for v in jaxpr.outvars] + [jaxpr.invars[i].aval for i in argnums]
-
-    return vjp_prim
+@vjp_prim.def_abstract_eval
+def _vjp_abstract_eval(*args, jaxpr, fn, method, h, argnums):  # pylint: disable=unused-argument
+    return [v.aval for v in jaxpr.outvars] + [jaxpr.invars[i].aval for i in argnums]
 
 
 def _validate_cotangents(cotangents, out_avals):
-    import jax  # pylint: disable=import-outside-toplevel
-    from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
 
     def get_shape(x):
         return getattr(x, "shape", jax.numpy.shape(x))
@@ -87,10 +75,8 @@ def _validate_cotangents(cotangents, out_avals):
             )
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None):
-    import jax  # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
 
     h = _setup_h(h)
     method = _setup_method(method)
@@ -111,7 +97,7 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
         "argnums": shifted_argnums,
         "jaxpr": no_consts_jaxpr,
     }
-    out_flat = _get_vjp_prim().bind(*jaxpr.consts, *flat_args, *flat_cotangents, **prim_kwargs)
+    out_flat = vjp_prim.bind(*jaxpr.consts, *flat_args, *flat_cotangents, **prim_kwargs)
     assert flat_fn.out_tree is not None, "out_tree should be set after executing flat_fn"
     num_outputs = len(no_consts_jaxpr.outvars)
     flat_results = out_flat[:num_outputs]
@@ -122,7 +108,7 @@ def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None)
     return results, dparams
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments
 def vjp(f, params, cotangents, method=None, h=None, argnums=None):
     """A :func:`~.qjit` compatible Vector-Jacobian product of PennyLane programs.
 

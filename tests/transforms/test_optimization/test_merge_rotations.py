@@ -15,9 +15,6 @@
 Unit tests for the optimization transform ``merge_rotations``.
 """
 
-# pylint: disable=too-many-arguments
-
-
 import pytest
 from utils import compare_operation_lists
 
@@ -57,7 +54,7 @@ class TestMergeRotations:
         assert len(ops) == len(expected_ops)
 
         # Check that all operations and parameter values are as expected
-        for op_obtained, op_expected in zip(ops, expected_ops):
+        for op_obtained, op_expected in zip(ops, expected_ops, strict=False):
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
@@ -93,7 +90,7 @@ class TestMergeRotations:
 
         assert len(ops) == len(expected_ops)
 
-        for op_obtained, op_expected in zip(ops, expected_ops):
+        for op_obtained, op_expected in zip(ops, expected_ops, strict=False):
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
@@ -140,7 +137,7 @@ class TestMergeRotations:
 
         assert len(ops) == len(expected_ops)
 
-        for op_obtained, op_expected in zip(ops, expected_ops):
+        for op_obtained, op_expected in zip(ops, expected_ops, strict=False):
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
@@ -168,7 +165,7 @@ class TestMergeRotations:
 
         assert len(ops) == len(expected_ops)
 
-        for op_obtained, op_expected in zip(ops, expected_ops):
+        for op_obtained, op_expected in zip(ops, expected_ops, strict=False):
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
@@ -257,7 +254,7 @@ class TestMergeRotations:
         assert len(ops) == len(expected_ops)
 
         # Check that all operations and parameter values are as expected
-        for op_obtained, op_expected in zip(ops, expected_ops):
+        for op_obtained, op_expected in zip(ops, expected_ops, strict=False):
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
@@ -370,39 +367,6 @@ class TestMergeRotationsInterfaces:
         transformed_result.backward()
 
         assert qp.math.allclose(original_input.grad, transformed_input.grad)
-
-        # Check operation list
-        tape = qp.workflow.construct_tape(transformed_qnode)(transformed_input)
-        ops = tape.operations
-        compare_operation_lists(ops, expected_op_list, expected_wires_list)
-
-    @pytest.mark.tf
-    def test_merge_rotations_tf(self):
-        """Test QNode and gradient in tensorflow interface."""
-        import tensorflow as tf
-
-        original_qnode = qp.QNode(qfunc_all_ops, dev)
-        transformed_qnode = qp.QNode(transformed_qfunc_all_ops, dev)
-
-        original_input = tf.Variable([0.1, 0.2, 0.3, 0.4])
-        transformed_input = tf.Variable([0.1, 0.2, 0.3, 0.4])
-
-        original_result = original_qnode(original_input)
-        transformed_result = transformed_qnode(transformed_input)
-
-        # Check that the numerical output is the same
-        assert qp.math.allclose(original_result, transformed_result)
-
-        # Check that the gradient is the same
-        with tf.GradientTape() as tape:
-            loss = original_qnode(original_input)
-        original_grad = tape.gradient(loss, original_input)
-
-        with tf.GradientTape() as tape:
-            loss = transformed_qnode(transformed_input)
-        transformed_grad = tape.gradient(loss, transformed_input)
-
-        assert qp.math.allclose(original_grad, transformed_grad)
 
         # Check operation list
         tape = qp.workflow.construct_tape(transformed_qnode)(transformed_input)

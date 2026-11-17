@@ -104,7 +104,6 @@ bw21 = BoseWord({(0, 0): "-", (1, 1): "-", (2, 0): "+", (3, 1): "+", (4, 0): "+"
 bw22 = BoseWord({(0, 0): "-", (1, 0): "+"})
 
 
-# pylint: disable=too-many-public-methods
 class TestBoseWord:
     """
     Tests for BoseWord
@@ -232,7 +231,7 @@ class TestBoseWord:
     def test_missing(self):
         """Test that empty string is returned for missing key."""
         bw = BoseWord({(0, 0): "+", (1, 1): "-"})
-        assert (2, 3) not in bw.keys()
+        assert (2, 3) not in bw
         assert bw[(2, 3)] == ""
 
     def test_set_items(self):
@@ -335,7 +334,7 @@ class TestBoseWord:
         assert bw.adjoint() == bw_dag
 
 
-class TestBoseWordArithmetic:
+class TestBoseWordArithmetic:  # pylint: disable=too-many-public-methods
     WORDS_MUL = (
         (
             bw1,
@@ -751,7 +750,7 @@ class TestBoseSentence:
         new_bw = BoseWord({(0, 2): "+", (1, 3): "-"})
         bs = BoseSentence({bw: 1.0})
 
-        assert new_bw not in bs.keys()
+        assert new_bw not in bs
         assert bs[new_bw] == 0.0
 
     def test_set_items(self):
@@ -760,10 +759,10 @@ class TestBoseSentence:
         bs = BoseSentence({bw: 1.0})
 
         new_bw = BoseWord({(0, 2): "+", (1, 3): "-"})
-        assert new_bw not in bs.keys()
+        assert new_bw not in bs
 
         bs[new_bw] = 3.45
-        assert new_bw in bs.keys() and bs[new_bw] == 3.45
+        assert new_bw in bs and bs[new_bw] == 3.45
 
     tup_bs_str = (
         (
@@ -862,7 +861,7 @@ class TestBoseSentence:
         assert bs.adjoint() == bs_dag
 
 
-class TestBoseSentenceArithmetic:
+class TestBoseSentenceArithmetic:  # pylint: disable=too-many-public-methods
     tup_bs_mult = (  # computed by hand
         (
             bs1,

@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for the QNG optimizer"""
 
-# pylint: disable=too-few-public-methods
 import pytest
 import scipy as sp
 
@@ -106,7 +105,7 @@ class TestAttrsAffectingMetricTensor:
         assert not np.isclose(new_params_with_lam[1], y, atol=1e-11, rtol=0.0)
 
 
-class TestExceptions:
+class TestExceptions:  # pylint: disable=too-few-public-methods
     """Test exceptions are raised for incorrect usage"""
 
     def test_obj_func_not_a_qnode(self):
@@ -294,7 +293,7 @@ class TestOptimize:
         factors = [1.0, 1.0, 2.0, 2.0, 0.25]
         expected_cost = circuit(*params)
 
-        for factor, step in zip(factors, [step1, step2, step3, step4, step5]):
+        for factor, step in zip(factors, [step1, step2, step3, step4, step5], strict=False):
             expected_step = tuple(
                 par + exact_update * factor if i == trainable_idx else par
                 for i, par in enumerate(params)
@@ -388,7 +387,7 @@ class TestOptimize:
             # check parameter update
             theta_new = (x, y)
             grad = gradient(theta)
-            dtheta = tuple(eta * g / e[0, 0] for e, g in zip(exp, grad))
+            dtheta = tuple(eta * g / e[0, 0] for e, g in zip(exp, grad, strict=False))
             assert np.allclose(dtheta, theta - theta_new)
 
         # check final cost

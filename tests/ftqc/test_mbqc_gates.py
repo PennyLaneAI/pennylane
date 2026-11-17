@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=no-name-in-module, no-self-use, protected-access
 """Tests for expressing gates in the MBQC representation"""
 
 from functools import partial
@@ -22,6 +21,10 @@ import pytest
 
 import pennylane as qp
 from pennylane.ftqc import generate_lattice
+
+PARAMETRIC_MCM_XFAIL = pytest.mark.pl2do(
+    reason="Parametric mid-circuit measurements have not yet been migrated to Operator2 [sc-130033]."
+)
 
 
 def generate_random_states(n, n_qubit=1, seed=None):
@@ -48,6 +51,7 @@ def generate_random_rotation_angles(n, lo=0, hi=4 * np.pi, seed=None):
 
 
 @pytest.mark.system
+@PARAMETRIC_MCM_XFAIL
 class TestIndividualGates:
     """System-level tests to check that individual gates expressed in the MBQC formalism give
     correct results.

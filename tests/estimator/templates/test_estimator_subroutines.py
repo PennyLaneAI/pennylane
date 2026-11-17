@@ -15,6 +15,8 @@
 Tests for quantum algorithmic subroutines resource operators.
 """
 
+# pylint: disable=too-many-arguments
+
 import math
 
 import numpy as np
@@ -27,8 +29,6 @@ from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.templates import HybridQRAM, SelectOnlyQRAM
 from pennylane.wires import Wires
-
-# pylint: disable=no-self-use,too-many-arguments
 
 
 class TestResourceOutOfPlaceSquare:
@@ -245,7 +245,14 @@ class TestHybridQRAM:
         )
 
     @pytest.mark.parametrize(
-        "data, num_wires, num_select_wires, num_control_wires, expected_res",
+        (
+            "data",
+            "num_wires",
+            "num_select_wires",
+            "num_control_wires",
+            "expected_res",
+            "expected_operations",
+        ),
         (
             (
                 np.array([[0, 0, 0], [0, 1, 0], [1, 0, 1], [1, 1, 1]]),
@@ -268,6 +275,15 @@ class TestHybridQRAM:
                     ),
                     GateCount(resource_rep(qre.CNOT), 2),
                 ],
+                {
+                    "CSWAP": 16,
+                    "Adjoint(CSWAP)": 4,
+                    "C(SWAP)": 12,
+                    "Adjoint(C(SWAP))": 12,
+                    "CH": 12,
+                    "CZ": 6,
+                    "MultiControlledX": 4,
+                },
             ),
             (
                 np.array(
@@ -294,65 +310,42 @@ class TestHybridQRAM:
                     GateCount(qre.Controlled.resource_rep(resource_rep(qre.Z), 1, 0), 6),
                     GateCount(resource_rep(qre.X), 2),
                 ],
+                {
+                    "CSWAP": 11,
+                    "Adjoint(CSWAP)": 5,
+                    "C(SWAP)": 20,
+                    "Adjoint(C(SWAP))": 20,
+                    "CH": 6,
+                    "CZ": 6,
+                    "PauliX": 2,
+                },
             ),
         ),
     )
-    def test_resources(self, data, num_wires, num_select_wires, num_control_wires, expected_res):
-        """Test that the resources are correct."""
+    def test_resources(
+        self,
+        data,
+        num_wires,
+        num_select_wires,
+        num_control_wires,
+        expected_res,
+        expected_operations,
+    ):
+        """Check the estimator's aggregate resources and the template's symbolic gate counts."""
         decomp = qre.HybridQRAM.resource_decomp(
             data, num_wires, num_select_wires, num_control_wires - num_select_wires
         )
         assert decomp == expected_res
 
-        dev = qp.device("default.qubit")
-
-        @qp.transforms.decompose(max_expansion=1)
-        @qp.qnode(dev)
-        def circuit():
-            HybridQRAM(
-                data=data,
-                control_wires=range(num_control_wires),
-                target_wires=range(num_control_wires, num_control_wires + data.shape[1]),
-                work_wires=range(
-                    num_control_wires + data.shape[1],
-                    num_control_wires
-                    + data.shape[1]
-                    + num_wires
-                    - (num_control_wires + data.shape[1]),
-                ),
-                k=num_select_wires,
-            )
-
-        specs = qp.specs(circuit)()
-
-        def _match_controlled(name, op):
-            if (
-                # pylint: disable=too-many-boolean-expressions
-                name == "MultiControlledX"
-                and op.name.startswith("C(X")
-                or name == "CH"
-                and op.name.startswith("C(H")
-                or name == "2C(SWAP)"
-                and (op.name.startswith("C(C(SWAP") or op.name.startswith("C(CSWAP"))
-                or name == "CZ"
-                and op.name.startswith("C(Z")
-            ):
-                return True
-            return name == op.name
-
-        for ty, count in specs.resources.gate_types.items():
-            found = False
-            i = 0
-            total = 0
-            while i < len(expected_res):
-                if expected_res[i].gate.op_type.__name__ == ty.replace(
-                    "Pauli", ""
-                ) or _match_controlled(ty, expected_res[i].gate):
-                    total += expected_res[i].count
-                    found = True
-                i += 1
-            assert found
-            assert total == count
+        op = HybridQRAM(
+            bitstrings=data,
+            control_wires=range(num_control_wires),
+            target_wires=range(num_control_wires, num_control_wires + data.shape[1]),
+            work_wires=range(num_control_wires + data.shape[1], num_wires),
+            k=num_select_wires,
+        )
+        tape = qp.tape.QuantumScript(op.decomposition())
+        assert qp.resource.resources_from_tape(tape).quantum_operations == expected_operations
 
     @pytest.mark.parametrize(
         ("data", "num_wires", "num_select_wires", "num_control_wires"),
@@ -515,7 +508,7 @@ class TestSelectOnlyQRAM:
                         ),
                         2,
                     ),
-                    GateCount(resource_rep(qre.BasisEmbedding, {"num_wires": 2}), 1),
+                    GateCount(resource_rep(qre.BasisState, {"num_wires": 2}), 1),
                 ],
             ),
         ),
@@ -541,13 +534,13 @@ class TestSelectOnlyQRAM:
             == expected
         )
 
-        dev = qp.device("default.qubit")
+        dev = qp.device("lightning.qubit")
 
-        @qp.transforms.decompose
+        @qp.transforms._tape_decompose  # pylint: disable=protected-access
         @qp.qnode(dev)
         def circuit():
             SelectOnlyQRAM(
-                data=data,
+                bitstrings=data,
                 control_wires=range(num_control_wires),
                 target_wires=range(num_control_wires, num_control_wires + data.shape[1]),
                 select_wires=range(
@@ -557,9 +550,10 @@ class TestSelectOnlyQRAM:
                 select_value=select_value,
             )
 
-        specs = qp.specs(circuit)()
+        tape = qp.workflow.construct_tape(circuit)()
+        resources = qp.resource.resources_from_tape(tape)
 
-        for ty, count in specs.resources.gate_types.items():
+        for ty, count in resources.quantum_operations.items():
             found = False
             i = 0
             while not found and i < len(expected):
@@ -2169,17 +2163,14 @@ class TestResourceQROM:
             == expected_res
         )
 
-    # pylint: disable=protected-access
     def test_t_select_swap_width(self):
         """Test that the private function doesn't give negative or
         fractional values for the depth"""
         num_bitstrings = 8
         size_bitstring = 17
 
-        opt_width = qre.QROM._t_optimized_select_swap_width(
-            num_bitstrings,
-            size_bitstring,
-        )
+        # pylint: disable-next=protected-access
+        opt_width = qre.QROM._t_optimized_select_swap_width(num_bitstrings, size_bitstring)
         assert opt_width == 1
 
     @pytest.mark.parametrize(

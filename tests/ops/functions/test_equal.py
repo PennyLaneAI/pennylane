@@ -16,10 +16,10 @@ Unit tests for the equal function.
 Tests are divided by number of parameters and wires different operators take.
 """
 
+# pylint: disable=too-few-public-methods
+
 import itertools
 import re
-
-# pylint: disable=too-many-arguments, too-many-public-methods
 from copy import deepcopy
 from functools import partial
 
@@ -28,9 +28,9 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as npp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.drawer.label import LabelledOp
-from pennylane.fourier.mark import MarkedOp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
 from pennylane.ops import Conditional, PauliMeasure
@@ -41,7 +41,9 @@ from pennylane.ops.functions.equal import (
     assert_equal,
 )
 from pennylane.ops.op_math import Controlled, SymbolicOp
+from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.templates.subroutines import ControlledSequence
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
@@ -252,16 +254,14 @@ def test_assert_equal_types():
 
 
 def test_assert_equal_unspecified():
-    # pylint: disable=too-few-public-methods
     class RandomType:
         """dummy type"""
 
         def __init__(self):
             pass
 
-    # pylint: disable=unused-argument
     @_equal_dispatch.register
-    def _(op1: RandomType, op2, **_):
+    def _(op1: RandomType, op2, **_):  # pylint: disable=unused-argument
         """always returns false"""
         return False
 
@@ -269,7 +269,7 @@ def test_assert_equal_unspecified():
         assert_equal(RandomType(), RandomType())
 
 
-class TestEqual:
+class TestEqual:  # pylint: disable=too-many-public-methods
     def test_identity_equal(self):
         """Test that comparing two Identities always returns True regardless of wires"""
         I1 = qp.Identity()
@@ -337,7 +337,7 @@ class TestEqual:
             )
             is False
         )
-        with pytest.raises(AssertionError, match="op1 and op2 have different data."):
+        with pytest.raises(AssertionError, match=r"different (data|values)"):
             assert_equal(
                 test_operator,
                 test_operator_diff_parameter,
@@ -354,7 +354,14 @@ class TestEqual:
             )
             is False
         )
-        with pytest.raises(AssertionError, match="op1 and op2 have different wires."):
+        with pytest.raises(
+            AssertionError,
+            match=(
+                r"op1 and op2 have different wires for"
+                if issubclass(op1, Operator2)
+                else "op1 and op2 have different wires."
+            ),
+        ):
             assert_equal(
                 test_operator,
                 test_operator_diff_wire,
@@ -418,7 +425,7 @@ class TestEqual:
             is False
         )
 
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        with pytest.raises(AssertionError, match=r"(different|differ in) trainability"):
             assert_equal(
                 op1(param_qp, wires=wire),
                 op1(param_qp_1, wires=wire),
@@ -697,7 +704,6 @@ class TestEqual:
     @pytest.mark.all_interfaces
     def test_equal_op_remaining(self):  # pylint: disable=too-many-statements
         """Test optional arguments are working"""
-        # pylint: disable=too-many-statements
         wire = 0
 
         import jax
@@ -1179,7 +1185,7 @@ class TestEqual:
             is False
         )
         with pytest.raises(
-            AssertionError, match="The hyperparameters are not equal for op1 and op2."
+            AssertionError, match="op1 and op2 have different values for 'pauli_word'."
         ):
             assert_equal(
                 op1(param, "Y", wires=wire),
@@ -1333,7 +1339,7 @@ class TestEqual:
             is True
         )
 
-        with pytest.raises(AssertionError, match="Parameters have different interfaces"):
+        with pytest.raises(AssertionError, match="different interfaces"):
             assert_equal(
                 op1(pl_tensor, wires=wire),
                 op1(torch_tensor, wires=wire),
@@ -1348,6 +1354,34 @@ class TestEqual:
 
         assert qp.equal(op1, op2) is False
         with pytest.raises(AssertionError, match="op1 and op2 have different arithmetic depths"):
+            assert_equal(op1, op2)
+
+    def test_equal_subclass_returns_false(self):
+        """Test that a strict subclass is not equal to its parent operator."""
+
+        class MyPauliX(qp.X):
+            pass
+
+        op1 = qp.X(0)
+        op2 = MyPauliX(0)
+
+        assert qp.equal(op1, op2) is False
+        assert qp.equal(op2, op1) is False
+        with pytest.raises(AssertionError, match="op1 and op2 have different types"):
+            assert_equal(op1, op2)
+
+    def test_equal_identity_subclass_returns_false(self):
+        """Test that a subclass of Identity is not equal to Identity itself."""
+
+        class MyIdentity(qp.Identity):
+            pass
+
+        op1 = qp.Identity(0)
+        op2 = MyIdentity(0)
+
+        assert qp.equal(op1, op2) is False
+        assert qp.equal(op2, op1) is False
+        with pytest.raises(AssertionError, match="op1 and op2 have different types"):
             assert_equal(op1, op2)
 
     def test_equal_with_unsupported_nested_operators_returns_false(self):
@@ -1408,7 +1442,7 @@ class TestPauliErrorEqual:
     ]
     EQS = [True, False, False, False]
 
-    @pytest.mark.parametrize("args1, args2, eqs", list(zip(ARGS_ONE, ARGS_TWO, EQS)))
+    @pytest.mark.parametrize("args1, args2, eqs", list(zip(ARGS_ONE, ARGS_TWO, EQS, strict=False)))
     def test_equality(self, args1, args2, eqs):
         e1 = qp.PauliError(*args1)
         e2 = qp.PauliError(*args2)
@@ -1434,14 +1468,13 @@ class TestPauliErrorEqual:
         pes = [qp.PauliError("XY", x1, (0, 1)), qp.PauliError("XY", 0.5, (0, 1))]
 
         assert qp.equal(pes[0], pes[1]) is False
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        with pytest.raises(AssertionError, match="Parameters differ in trainability"):
             assert_equal(pes[0], pes[1])
 
         with pytest.raises(AssertionError, match="Parameters have different interfaces"):
             assert_equal(pes[0], pes[1], check_trainability=False)
 
 
-# pylint: disable=too-few-public-methods
 class TestPauliWordsEqual:
     """Tests for qp.equal with PauliSentences."""
 
@@ -1682,10 +1715,7 @@ class TestMeasurementsEqual:
         mv1 = qp.measure(0)
         mv2 = qp.measure(0)
         # qp.equal of MidMeasure checks the id
-        # pylint: disable=protected-access
-        mv2.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
-            "meas_uid"
-        ]
+        mv2.measurements[0].arguments["meas_uid"] = mv1.measurements[0].arguments["meas_uid"]
 
         assert qp.equal(mv1, mv1) is True
         assert qp.equal(mv1, mv2) is True
@@ -1702,10 +1732,7 @@ class TestMeasurementsEqual:
         mv2 = qp.measure(1)
         mv3 = qp.measure(0)
         # qp.equal of MidMeasure checks the id
-        # pylint: disable=protected-access
-        mv3.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
-            "meas_uid"
-        ]
+        mv3.measurements[0].arguments["meas_uid"] = mv1.measurements[0].arguments["meas_uid"]
 
         assert qp.equal(mv1 * mv2, mv2 * mv1) is True
         assert qp.equal(mv1 + mv2, mv3 + mv2) is True
@@ -1720,10 +1747,7 @@ class TestMeasurementsEqual:
         mv2 = qp.measure(1)
         mv3 = qp.measure(1)
         mv4 = qp.measure(0)
-        # pylint: disable=protected-access
-        mv4.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
-            "meas_uid"
-        ]
+        mv4.measurements[0].arguments["meas_uid"] = mv1.measurements[0].arguments["meas_uid"]
 
         mp1 = mp_fn(op=[mv1, mv2])
         mp2 = mp_fn(op=[mv4, mv2])
@@ -1753,10 +1777,7 @@ class TestMeasurementsEqual:
         mv2 = qp.measure(1)
         mv3 = qp.measure(1)
         mv4 = qp.measure(0)
-        # pylint: disable=protected-access
-        mv4.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
-            "meas_uid"
-        ]
+        mv4.measurements[0].arguments["meas_uid"] = mv1.measurements[0].arguments["meas_uid"]
 
         mp1 = mp_fn(op=mv1 * mv2)
         mp2 = mp_fn(op=mv4 * mv2)
@@ -1773,15 +1794,15 @@ class TestMeasurementsEqual:
     def test_abstract_mv_equality(self, mp_fn):
         """Test that equality is verified correctly for measurements collecting statistics for
         abstract mid-circuit measurement values"""
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         m1 = True
         m2 = False
 
         @jax.jit
         def eq_traced(a, b):
-            assert qp.math.is_abstract(a)
-            assert qp.math.is_abstract(b)
+            assert qp.math.is_tracer(a)
+            assert qp.math.is_tracer(b)
 
             mp1 = mp_fn(op=a)
             mp2 = mp_fn(op=a)
@@ -1809,7 +1830,7 @@ def test_unsupported_object_type_not_implemented():
         qp.equal(dev, dev)
 
 
-class TestSymbolicOpComparison:
+class TestSymbolicOpComparison:  # pylint: disable=too-many-public-methods
     """Test comparison for subclasses of SymbolicOp"""
 
     WIRES = [(5, 5, True), (6, 7, False)]
@@ -1987,7 +2008,6 @@ class TestSymbolicOpComparison:
             ):
                 assert_equal(op1, op2)
 
-    # pylint: disable=too-many-positional-arguments
     @pytest.mark.parametrize(
         ("wires1", "controls1", "wires2", "controls2", "res"),
         [
@@ -2021,28 +2041,82 @@ class TestSymbolicOpComparison:
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
     @pytest.mark.parametrize(
-        "wwt1, wwt2", [("zeroed", "zeroed"), ("borrowed", "borrowed"), ("borrowed", "zeroed")]
+        "wwt1, wwt2",
+        [
+            ("zeroed", "zeroed"),
+            ("borrowed", "borrowed"),
+            ("borrowed", "zeroed"),
+        ],
     )
-    def test_controlled_work_wires_comparison(self, wire1, wire2, res, wwt1, wwt2):
+    @pytest.mark.parametrize("ctrl_cls", [Controlled, ControlledOp2])
+    # pylint: disable-next=too-many-arguments
+    def test_controlled_work_wires_comparison(self, wire1, wire2, res, wwt1, wwt2, ctrl_cls):
         """Test that equal compares work_wires for Controlled operators"""
         base1 = qp.MultiRZ(1.23, [0, 1])
         base2 = qp.MultiRZ(1.23, [0, 1])
-        op1 = Controlled(base1, control_wires=2, work_wires=wire1, work_wire_type=wwt1)
-        op2 = Controlled(base2, control_wires=2, work_wires=wire2, work_wire_type=wwt2)
+        op1 = ctrl_cls(base1, control_wires=2, work_wires=wire1, work_wire_type=wwt1)
+        op2 = ctrl_cls(base2, control_wires=2, work_wires=wire2, work_wire_type=wwt2)
         # res is given by the wire parametrization, but is overwritten to False if the work
         # wire types differ. match is only used if res=False, and is adjusted if res was True
-        match = "op1 and op2 have different work wires."
+        match = "op1 and op2 have different wires for 'work_wires'."
         if res and wwt1 != wwt2:
             match = "op1 and op2 have different work wire types."
             res = False
-
-        assert qp.equal(op1, op2) is res
 
         if res:
             assert_equal(op1, op2)
         else:
             with pytest.raises(AssertionError, match=match):
                 assert_equal(op1, op2)
+
+        assert qp.equal(op1, op2) is res
+
+    def test_controlled2_abstract_wires_comparison(self):
+        """Tests comparing ControlledOp2 with abstract wire arguments."""
+
+        base = qp.MultiRZ(1.23, [0, 1])
+        op1 = ControlledOp2(base, control_wires=[2, 3])
+        op2 = ControlledOp2(base, control_wires=Wire[2])
+
+        with pytest.raises(AssertionError, match="Mismatched representations for control_wires"):
+            assert_equal(op1, op2)
+
+        op3 = ControlledOp2(base, control_wires=Wire[3])
+        with pytest.raises(AssertionError, match="Different numbers of abstract control_wires"):
+            assert_equal(op2, op3)
+
+    @pytest.mark.parametrize("mod, expected", [(8, True), (7, False)])
+    def test_controlled2_abstract_controlled_sequence(self, mod, expected):
+        """Test equality and graph lookups with abstract PhaseAdder bases."""
+        base1 = qp.PhaseAdder(qp.typing.Int, Wire[3], mod=8, work_wire=Wire[0])
+        base2 = qp.PhaseAdder(qp.typing.Int, Wire[3], mod=mod, work_wire=Wire[int(mod != 8)])
+        op1 = ControlledOp2(ControlledSequence(base1, control=Wire[2]), control_wires=Wire[1])
+        op2 = ControlledOp2(ControlledSequence(base2, control=Wire[2]), control_wires=Wire[1])
+
+        assert qp.equal(op1, op2) is expected
+        assert (op2 in {op1: 1}) is expected
+
+    def test_controlled2_abstract_control_values(self):
+        """Tests comparing ControlledOp2 with abstract control values."""
+
+        base = qp.MultiRZ(1.23, [0, 1])
+        op1 = ControlledOp2(base, control_wires=[2, 3], control_values=[0, 1])
+        op2 = ControlledOp2(base, control_wires=[2, 3], control_values=Bool[2])
+
+        with pytest.raises(AssertionError, match="op1 and op2 have different control values"):
+            assert_equal(op1, op2)
+
+        op3 = ControlledOp2(base, control_wires=[2, 3], control_values=Bool[2])
+        assert_equal(op2, op3)
+
+        op4 = ControlledOp2(base, control_wires=[4, 5], control_values=Bool[2])
+        with pytest.raises(AssertionError, match="op1 and op2 have different control_wires"):
+            assert_equal(op2, op4)
+
+        op1 = ControlledOp2(base, control_wires=Wire[2], control_values=[0, 1])
+        op2 = ControlledOp2(base, control_wires=Wire[2], control_values=[1, 0])
+        with pytest.raises(AssertionError, match="op1 and op2 have different control dictionaries"):
+            assert_equal(op1, op2)
 
     def test_controlled_arithmetic_depth(self):
         """The depths of controlled operators are different due to nesting"""
@@ -2108,10 +2182,7 @@ class TestSymbolicOpComparison:
         m2 = qp.measure(wire2)
         if wire1 == wire2:
             # qp.equal checks id for MidMeasure, but here we only care about them acting on the same wire
-            # pylint: disable=protected-access
-            m2.measurements[0]._hyperparameters["meas_uid"] = m1.measurements[0]._hyperparameters[
-                "meas_uid"
-            ]
+            m2.measurements[0].arguments["meas_uid"] = m1.measurements[0].arguments["meas_uid"]
         base = qp.PauliX(wire2)
         op1 = Conditional(m1, base)
         op2 = Conditional(m2, base)
@@ -2295,7 +2366,7 @@ class TestSymbolicOpComparison:
         assert qp.equal(op1, op2, check_interface=True, check_trainability=False) is False
 
         assert_equal(op1, op2, check_interface=False, check_trainability=False)
-        with pytest.raises(AssertionError, match="Parameters have different interface"):
+        with pytest.raises(AssertionError, match="different interface"):
             assert_equal(op1, op2, check_interface=True, check_trainability=False)
 
     def test_exp_base_op_comparison_with_trainability(self):
@@ -2668,145 +2739,6 @@ class TestSumComparisons:
                 assert_equal(H1, H2)
 
 
-def f1(p, t):
-    return np.polyval(p, t)
-
-
-def f2(p, t):
-    return p[0] * t**2 + p[1]
-
-
-@pytest.mark.jax
-class TestParametrizedEvolutionComparisons:
-    """Tests comparisons between ParametrizedEvolution operators"""
-
-    def test_params_comparison(self):
-        """Test that params are compared for two ParametrizedEvolution ops"""
-        coeffs = [3, f1, f2]
-        ops = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
-
-        h1 = qp.dot(coeffs, ops)
-
-        ev1 = qp.evolve(h1)
-        ev2 = qp.evolve(h1)
-
-        params1 = [[1.0, 2.0, 3.0, 4.0, 5.0], [6.0, 7.0]]
-        params2 = [[1.0, 2.0, 3.0, 4.0, 5.0], [8.0, 9.0]]
-
-        t = 3
-
-        assert qp.equal(ev1(params1, t), ev2(params1, t)) is True
-        assert qp.equal(ev1(params1, t), ev2(params2, t)) is False
-
-    def test_wires_comparison(self):
-        """Test that wires are compared for two ParametrizedEvolution ops"""
-        coeffs = [3, f1, f2]
-        ops1 = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
-        ops2 = [qp.PauliX(1), qp.PauliY(2), qp.PauliZ(3)]
-
-        h1 = qp.dot(coeffs, ops1)
-        h2 = qp.dot(coeffs, ops2)
-
-        ev1 = qp.evolve(h1)
-        ev2 = qp.evolve(h1)
-        ev3 = qp.evolve(h2)
-
-        params = [[1.0, 2.0, 3.0, 4.0, 5.0], [6.0, 7.0]]
-        t = 3
-
-        assert qp.equal(ev1(params, t), ev2(params, t)) is True
-        assert qp.equal(ev1(params, t), ev3(params, t)) is False
-
-    def test_times_comparison(self):
-        """Test that times are compared for two ParametrizedEvolution ops"""
-        coeffs = [3, f1, f2]
-        ops = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
-
-        h1 = qp.dot(coeffs, ops)
-
-        ev1 = qp.evolve(h1)
-
-        params = [[1.0, 2.0, 3.0, 4.0, 5.0], [6.0, 7.0]]
-
-        t1 = 3
-        t2 = 4
-
-        assert qp.equal(ev1(params, t1), ev1(params, t1)) is True
-        assert qp.equal(ev1(params, t1), ev1(params, t2)) is False
-
-    def test_operator_comparison(self):
-        """Test that operators are compared for two ParametrizedEvolution ops"""
-        coeffs = [3, f1, f2]
-        ops1 = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
-        ops2 = [qp.PauliZ(0), qp.PauliX(1), qp.PauliY(2)]
-
-        h1 = qp.dot(coeffs, ops1)
-        h2 = qp.dot(coeffs, ops2)
-
-        ev1 = qp.evolve(h1)
-        ev2 = qp.evolve(h1)
-        ev3 = qp.evolve(h2)
-
-        params = [[1.0, 2.0, 3.0, 4.0, 5.0], [6.0, 7.0]]
-        t = 3
-
-        assert qp.equal(ev1(params, t), ev2(params, t)) is True
-        assert qp.equal(ev1(params, t), ev3(params, t)) is False
-
-    def test_coefficients_comparison(self):
-        """Test that coefficients are compared for two ParametrizedEvolution ops"""
-        coeffs1 = [3, f1, f2]
-        coeffs2 = [3, 4, f2]
-        coeffs4 = [f1, f2]
-        coeffs5 = [f2, f1]
-        ops = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
-        ops4 = [qp.PauliX(0) @ qp.PauliX(1), qp.PauliZ(2)]
-
-        h1 = qp.dot(coeffs1, ops)
-        h2 = qp.dot(coeffs2, ops)
-        h4 = qp.dot(coeffs4, ops4)
-        h5 = qp.dot(coeffs5, ops4)
-
-        ev1 = qp.evolve(h1)
-        ev2 = qp.evolve(h1)
-        ev3 = qp.evolve(h2)
-        ev4 = qp.evolve(h4)
-        ev5 = qp.evolve(h5)
-
-        params1 = [6.0, 7.0]
-        params2 = [6.0, 7.0]
-        params3 = [[6.0, 7.0]]
-        t = 3
-
-        assert qp.equal(ev1(params1, t), ev2(params2, t)) is True
-        # Differing evolutions due to different parameters
-        assert qp.equal(ev1(params1, t), ev3(params3, t)) is False
-        # Differing evolutions due to differing coefficient lengths
-        assert qp.equal(ev1(params1, t), ev4(params1, t)) is False
-        # Differing evolutions due to different coefficients
-        assert qp.equal(ev4(params1, t), ev5(params1, t)) is False
-
-    def test_different_times(self):
-        """Test that times are compared for two ParametrizedEvolution ops"""
-        coeffs1 = [3, f1, f2]
-        ops = [qp.PauliX(0), qp.PauliY(1), qp.PauliZ(2)]
-
-        h1 = qp.dot(coeffs1, ops)
-
-        params1 = [6.0, 7.0]
-        t = 3
-
-        ev1 = qp.pulse.ParametrizedEvolution(h1, params1)
-        ev11 = qp.pulse.ParametrizedEvolution(h1, params1)
-        ev2 = qp.pulse.ParametrizedEvolution(h1, params1, t)
-        ev3 = qp.pulse.ParametrizedEvolution(h1, params1, 0.5)
-
-        assert qp.equal(ev1, ev11) is True
-        assert qp.equal(ev1, ev2) is False
-        assert qp.equal(ev1, ev3) is False
-        assert qp.equal(ev2, ev3) is False
-
-
 class TestQuantumScriptComparisons:
     tape1 = qp.tape.QuantumScript(
         [qp.PauliX(0), qp.RX(1.2, wires=0)], [qp.expval(qp.PauliZ(0))], shots=10
@@ -2875,7 +2807,7 @@ class TestBasisRotation:
         assert_equal(op, other_op, atol=1e-5)
         assert qp.equal(op, other_op, rtol=0, atol=1e-9) is False
 
-        with pytest.raises(AssertionError, match="have different data"):
+        with pytest.raises(AssertionError, match="have different values"):
             assert_equal(op, other_op, rtol=0, atol=1e-9)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op2)])
@@ -2916,20 +2848,22 @@ class TestBasisRotation:
 class TestHilbertSchmidt:
     """Test that qp.equal works with qp.HilbertSchmidt."""
 
-    # pylint: disable=no-self-argument
-
+    @staticmethod
     def v_function1(params):
         """Returns a v_function that is used in the HilbertSchmidt operator."""
         return qp.RZ(params[0], wires=1)
 
+    @staticmethod
     def v_function2(params):
         """Differs from v_function1 by operation type and used parameter."""
         return qp.RX(params[1], wires=1)
 
+    @staticmethod
     def v_function3(params):
         """Differs from v_function1 by the used wire."""
         return qp.RZ(params[0], wires=2)
 
+    @staticmethod
     def v_function4(params):
         """Differs from v_function1 by the functional parameter dependence, but
         produces the same tape at params[0]=0.2."""
@@ -2989,7 +2923,6 @@ class TestHilbertSchmidt:
     def test_non_equal_data(self, op, other_op):
         """Test that differing data is found."""
         assert qp.equal(op, other_op) is False
-        other_op.data = op.data
 
         v_ops = op.hyperparameters["V"]
         op_params = qp.tape.QuantumScript(v_ops).get_parameters()
@@ -3040,11 +2973,9 @@ class TestHilbertSchmidt:
         assert qp.equal(op, other_op, check_interface=False, check_trainability=False) is True
 
 
-# pylint: disable=too-few-public-methods
 class DepthIncreaseOperator(Operator):
     """Dummy class which increases depth by one"""
 
-    # pylint: disable=super-init-not-called
     def __init__(self, op: Operator):
         self._op = op
 
@@ -3065,7 +2996,7 @@ def test_ops_with_abstract_parameters_not_equal():
     import jax
 
     assert not jax.jit(qp.equal)(qp.RX(0.1, 0), qp.RX(0.1, 0))
-    with pytest.raises(AssertionError, match="Data contains a tracer"):
+    with pytest.raises(AssertionError, match="has one or more tracer values"):
         jax.jit(assert_equal)(qp.RX(0.1, 0), qp.RX(0.1, 0))
 
     assert not jax.jit(qp.equal)(qp.exp(qp.X(0), 0.5), qp.exp(qp.X(0), 0.5))
@@ -3152,9 +3083,29 @@ def test_select():
     assert qp.equal(op1, op2) is True
 
 
-# pylint: disable=unused-argument
-class TestCompareSubroutines:
+def test_compressed_resource_op():
+    """Test that ``CompressedResourceOp`` resource representations can be compared with ``qp.equal``."""
+    rep1 = abstractify(qp.ops.Prod(qp.X(0), qp.Y(1)))
+    rep2 = abstractify(qp.ops.Prod(qp.X(0), qp.Y(1)))
+    rep3 = abstractify(qp.ops.Prod(qp.X(0), qp.Z(1)))
+    assert isinstance(rep1, CompressedResourceOp)
 
+    # Equal resource representations compare equal.
+    qp.assert_equal(rep1, rep2)
+    assert qp.equal(rep1, rep2) is True
+
+    # Different resource representations compare unequal, with an informative message.
+    assert qp.equal(rep1, rep3) is False
+    with pytest.raises(AssertionError, match="different resource representations"):
+        qp.assert_equal(rep1, rep3)
+
+    # A resource representation is not equal to a regular operator (different types).
+    assert qp.equal(rep1, qp.X(0)) is False
+    with pytest.raises(AssertionError, match="different types"):
+        qp.assert_equal(rep1, qp.X(0))
+
+
+class TestCompareSubroutines:
     def test_different_subroutine_defs(self):
         """Test SubroutineOp are not equal if their Subroutines are not equal."""
 
@@ -3177,7 +3128,7 @@ class TestCompareSubroutines:
         """Test they are different if they have different static args."""
 
         @partial(qp.templates.Subroutine, static_argnames=("a",))
-        def f(a, wires):
+        def f(a, wires):  # pylint: disable=unused-argument
             pass
 
         op1 = qp.tape.make_qscript(f)("val1", 0)[0]
@@ -3191,7 +3142,7 @@ class TestCompareSubroutines:
         """Test they are different if their wires are different."""
 
         @partial(qp.templates.Subroutine, wire_argnames=("reg1", "reg2"))
-        def f(reg1, reg2):
+        def f(reg1, reg2):  # pylint: disable=unused-argument
             pass
 
         op1 = qp.tape.make_qscript(f)((0,), (1,))[0]
@@ -3204,7 +3155,7 @@ class TestCompareSubroutines:
         """Test that if the pytrees for an input are different, the ops are different."""
 
         @qp.templates.Subroutine
-        def f(x, wires):
+        def f(x, wires):  # pylint: disable=unused-argument
             pass
 
         op1 = qp.tape.make_qscript(f)((0.5,), 0)[0]
@@ -3225,7 +3176,7 @@ class TestCompareSubroutines:
         """Test that if there is different data, they are different operators."""
 
         @qp.templates.Subroutine
-        def f(x, wires):
+        def f(x, wires):  # pylint: disable=unused-argument
             pass
 
         op1 = qp.tape.make_qscript(f)(np.array(0.5), 0)[0]
@@ -3257,20 +3208,4 @@ class TestCompareSubroutines:
             assert_equal(op1, op3)
         assert qp.equal(op1, op4) is False
         with pytest.raises(AssertionError, match="op1 and op2 have different custom labels"):
-            assert_equal(op1, op4)
-
-    @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
-    def test_marked_op_comparison(self, base):
-        """Test that equal compares two objects of the MarkedOp class"""
-        op1 = MarkedOp(base, "my-base")
-        op2 = MarkedOp(base, "my-base")
-        op3 = MarkedOp(qp.PauliX(15), "my-base")
-        op4 = MarkedOp(base, "blah")
-
-        assert qp.equal(op1, op2) is True
-        assert qp.equal(op1, op3) is False
-        with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
-            assert_equal(op1, op3)
-        assert qp.equal(op1, op4) is False
-        with pytest.raises(AssertionError, match="op1 and op2 have different markers"):
             assert_equal(op1, op4)

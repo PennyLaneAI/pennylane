@@ -15,6 +15,8 @@
 Tests for the variance calculation on the DefaultTensor device.
 """
 
+# pylint: disable=redefined-outer-name
+
 import numpy as np
 import pytest
 
@@ -28,8 +30,6 @@ VARPHI = np.linspace(0.02, 1, 3)
 quimb = pytest.importorskip("quimb")
 
 pytestmark = pytest.mark.external
-
-# pylint: disable=too-many-arguments, redefined-outer-name
 
 
 @pytest.fixture(
@@ -47,8 +47,8 @@ def dev(request):
 
 
 def calculate_reference(tape):
-    """Calculate the reference value of the tape using DefaultQubit."""
-    ref_dev = DefaultQubit(max_workers=1)
+    """Calculate the reference value in-process using DefaultQubit."""
+    ref_dev = DefaultQubit()
     program = ref_dev.preprocess_transforms()
     tapes, transf_fn = program([tape])
     results = ref_dev.execute(tapes)
@@ -61,7 +61,7 @@ def execute(device, tape):
     return results
 
 
-@pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI)))
+@pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI, strict=False)))
 class TestVar:
     """Tests for the variance"""
 
@@ -164,6 +164,7 @@ class TestVar:
             ),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_single_wire_observables_variance(self, Obs, Op, expected_fn, theta, phi, dev):
         """Test that variance values for single wire observables are correct"""
 
@@ -308,7 +309,7 @@ class TestOperatorArithmetic:
         assert np.allclose(calculated_val, reference_val, tol)
 
 
-@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
+@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI, strict=False)))
 class TestTensorVar:
     """Test tensor variances"""
 
@@ -368,7 +369,7 @@ class TestTensorVar:
         assert np.allclose(calculated_val, reference_val, tol)
 
 
-@pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI)))
+@pytest.mark.parametrize("theta, phi", list(zip(THETA, PHI, strict=False)))
 @pytest.mark.parametrize("method", ["mps", "tn"])
 def test_multi_qubit_gates(theta, phi, method):
     """Tests a simple circuit with multi-qubit gates."""

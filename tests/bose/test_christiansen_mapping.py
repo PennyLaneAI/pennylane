@@ -144,7 +144,7 @@ class TestBoseWordMapping:
         qubit_op = christiansen_mapping(bosonic_op)
 
         expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
-        expected_op = expected_op.operation(wires)
+        expected_op = qp.pauli.to_operator(expected_op, wires)
 
         qp.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
@@ -312,7 +312,7 @@ class TestBoseSentencesMapping:
 
         assert ps_op == ps
 
-        result = ps.operation(wire_order=[0])
+        result = qp.pauli.to_operator(ps, identity_wires=[0])
         qp.assert_equal(qubit_op.simplify(), result.simplify())
 
     @pytest.mark.parametrize("bosonic_op, result", BOSE_AND_PAULI_SENTENCES)
@@ -329,7 +329,7 @@ class TestBoseSentencesMapping:
         wires = bosonic_op.wires or [0]
 
         qubit_op = christiansen_mapping(bosonic_op)
-        result = result.operation(wires)
+        result = qp.pauli.to_operator(result, wires)
 
         qp.assert_equal(qubit_op.simplify(), result.simplify())
 

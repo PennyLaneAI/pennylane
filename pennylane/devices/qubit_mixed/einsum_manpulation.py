@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Functions and variables to be utilized by qutrit mixed state simulator."""
+"""Functions and variables to be utilized by qubit mixed state simulator."""
 
 import functools
 from string import ascii_letters as alphabet
@@ -72,8 +72,7 @@ def get_einsum_mapping(
     )
 
 
-# pylint: disable=too-many-arguments
-def _map_indices_apply_channel(
+def _map_indices_apply_channel(  # pylint: disable=too-many-arguments
     *, state_indices, kraus_index, new_row_indices, row_indices, new_col_indices, col_indices
 ):
     """Map indices to einsum string

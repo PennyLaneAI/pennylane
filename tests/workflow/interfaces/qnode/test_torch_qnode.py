@@ -13,8 +13,9 @@
 # limitations under the License.
 """Integration tests for using the Torch interface with a QNode"""
 
-# pylint: disable=too-many-arguments,unexpected-keyword-arg,no-member,comparison-with-callable, no-name-in-module
-# pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-lambda-assignment, use-dict-literal
+# pylint: disable=too-many-arguments,use-dict-literal
+
+
 import numpy as np
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
@@ -513,7 +514,7 @@ class TestQNode:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        class MyU3(qp.U3):  # pylint:disable=too-few-public-methods
+        class MyU3(qp.U3):  # pylint: disable=too-few-public-methods
 
             name = "MyU3"
 
@@ -525,55 +526,47 @@ class TestQNode:
                     qp.PhaseShift(phi + lam, wires=wires),
                 ]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        def _decomp(theta, phi, delta, wires):
+            qp.Rot(delta, theta, -delta, wires)
+            qp.PhaseShift(phi + delta, wires)
 
-            @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
-            def _decomp(theta, phi, lam, wires):
-                qp.Rot(lam, theta, -lam, wires)
-                qp.PhaseShift(phi + lam, wires)
+        qp.add_decomps(MyU3, _decomp)
 
-            qp.add_decomps(MyU3, _decomp)
+        a = np.array(0.1)
+        p_val = [0.1, 0.2, 0.3]
+        p = torch.tensor(p_val, dtype=torch.float64, requires_grad=True)
 
-            a = np.array(0.1)
-            p_val = [0.1, 0.2, 0.3]
-            p = torch.tensor(p_val, dtype=torch.float64, requires_grad=True)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
+        def circuit(a, p):
+            qp.RX(a, wires=0)
+            MyU3(p[0], p[1], p[2], wires=0)
+            return qp.expval(qp.PauliX(0))
 
-            @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
-            def circuit(a, p):
-                qp.RX(a, wires=0)
-                MyU3(p[0], p[1], p[2], wires=0)
-                return qp.expval(qp.PauliX(0))
+        res = circuit(a, p)
 
-            res = circuit(a, p)
+        expected = np.cos(a) * np.cos(p_val[1]) * np.sin(p_val[0]) + np.sin(a) * (
+            np.cos(p_val[2]) * np.sin(p_val[1])
+            + np.cos(p_val[0]) * np.cos(p_val[1]) * np.sin(p_val[2])
+        )
+        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
 
-            expected = np.cos(a) * np.cos(p_val[1]) * np.sin(p_val[0]) + np.sin(a) * (
-                np.cos(p_val[2]) * np.sin(p_val[1])
-                + np.cos(p_val[0]) * np.cos(p_val[1]) * np.sin(p_val[2])
-            )
-            assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
-
-            res.backward()
-            expected = np.array(
-                [
-                    np.cos(p_val[1])
-                    * (
-                        np.cos(a) * np.cos(p_val[0])
-                        - np.sin(a) * np.sin(p_val[0]) * np.sin(p_val[2])
-                    ),
-                    np.cos(p_val[1]) * np.cos(p_val[2]) * np.sin(a)
-                    - np.sin(p_val[1])
-                    * (
-                        np.cos(a) * np.sin(p_val[0])
-                        + np.cos(p_val[0]) * np.sin(a) * np.sin(p_val[2])
-                    ),
-                    np.sin(a)
-                    * (
-                        np.cos(p_val[0]) * np.cos(p_val[1]) * np.cos(p_val[2])
-                        - np.sin(p_val[1]) * np.sin(p_val[2])
-                    ),
-                ]
-            )
-            assert np.allclose(p.grad, expected, atol=tol, rtol=0)
+        res.backward()
+        expected = np.array(
+            [
+                np.cos(p_val[1])
+                * (np.cos(a) * np.cos(p_val[0]) - np.sin(a) * np.sin(p_val[0]) * np.sin(p_val[2])),
+                np.cos(p_val[1]) * np.cos(p_val[2]) * np.sin(a)
+                - np.sin(p_val[1])
+                * (np.cos(a) * np.sin(p_val[0]) + np.cos(p_val[0]) * np.sin(a) * np.sin(p_val[2])),
+                np.sin(a)
+                * (
+                    np.cos(p_val[0]) * np.cos(p_val[1]) * np.cos(p_val[2])
+                    - np.sin(p_val[1]) * np.sin(p_val[2])
+                ),
+            ]
+        )
+        assert np.allclose(p.grad, expected, atol=tol, rtol=0)
 
 
 class TestShotsIntegration:
@@ -669,6 +662,8 @@ class TestQubitIntegration:
         with prob and expval outputs"""
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measureing probabilities with adjoint.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of probs is not supported.")
         gradient_kwargs = {}
         if diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
@@ -727,6 +722,8 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of probs is not supported.")
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measureing probabilities with adjoint.")
         kwargs = dict(
@@ -1100,6 +1097,8 @@ class TestQubitIntegration:
     def test_state(self, interface, dev, diff_method, grad_on_execution, device_vjp, tol):
         """Test that the state can be returned and differentiated"""
 
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements is not supported.")
         if dev.name == "param_shift.qubit":
             pytest.skip("parameter shift does not support measuring the state.")
         if "lightning" in getattr(dev, "name", "").lower():
@@ -1253,48 +1252,46 @@ class TestTapeExpansion:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        class PhaseShift(qp.PhaseShift):  # pylint:disable=too-few-public-methods
+        class PhaseShift(qp.PhaseShift):  # pylint: disable=too-few-public-methods
             grad_method = None
             has_generator = False
 
             def decomposition(self):
                 return [qp.RY(3 * self.data[0], wires=self.wires)]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.RY: 1})
+        def custom_decomposition(param, wires):
+            qp.RY(3 * param, wires=wires)
 
-            @qp.register_resources({qp.RY: 1})
-            def custom_decomposition(param, wires):
-                qp.RY(3 * param, wires=wires)
+        qp.add_decomps(PhaseShift, custom_decomposition)
 
-            qp.add_decomps(PhaseShift, custom_decomposition)
+        @qnode(
+            dev,
+            diff_method=diff_method,
+            grad_on_execution=grad_on_execution,
+            max_diff=2,
+            device_vjp=device_vjp,
+            interface="torch",
+            gradient_kwargs=gradient_kwargs,
+        )
+        def circuit(x):
+            qp.Hadamard(wires=0)
+            PhaseShift(x, wires=0)
+            return qp.expval(qp.PauliX(0))
 
-            @qnode(
-                dev,
-                diff_method=diff_method,
-                grad_on_execution=grad_on_execution,
-                max_diff=2,
-                device_vjp=device_vjp,
-                interface="torch",
-                gradient_kwargs=gradient_kwargs,
-            )
-            def circuit(x):
-                qp.Hadamard(wires=0)
-                PhaseShift(x, wires=0)
-                return qp.expval(qp.PauliX(0))
+        x = torch.tensor(0.5, requires_grad=True, dtype=torch.float64)
 
-            x = torch.tensor(0.5, requires_grad=True, dtype=torch.float64)
+        loss = circuit(x)
 
-            loss = circuit(x)
+        loss.backward()
+        res = x.grad
 
-            loss.backward()
-            res = x.grad
+        assert torch.allclose(res, -3 * torch.sin(3 * x))
 
-            assert torch.allclose(res, -3 * torch.sin(3 * x))
-
-            if diff_method == "parameter-shift" and dev.name != "param_shift.qubit":
-                # test second order derivatives
-                res = torch.autograd.functional.hessian(circuit, x)
-                assert torch.allclose(res, -9 * torch.cos(3 * x))
+        if diff_method == "parameter-shift" and dev.name != "param_shift.qubit":
+            # test second order derivatives
+            res = torch.autograd.functional.hessian(circuit, x)
+            assert torch.allclose(res, -9 * torch.cos(3 * x))
 
     @pytest.mark.parametrize("max_diff", [1, 2])
     def test_gradient_expansion_trainable_only(
@@ -1310,7 +1307,7 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
-        class PhaseShift(qp.PhaseShift):  # pylint:disable=too-few-public-methods
+        class PhaseShift(qp.PhaseShift):  # pylint: disable=too-few-public-methods
             grad_method = None
 
             def decomposition(self):
@@ -1663,10 +1660,8 @@ qubit_device_and_diff_method_and_grad_on_execution = [
     qubit_device_and_diff_method_and_grad_on_execution,
 )
 @pytest.mark.parametrize("shots", [None, 10000])
-class TestReturn:
+class TestReturn:  # pylint: disable=too-many-public-methods
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
-
-    # pylint:disable=too-many-public-methods
 
     def test_grad_single_measurement_param(
         self, dev, diff_method, grad_on_execution, device_vjp, shots

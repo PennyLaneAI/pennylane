@@ -18,7 +18,7 @@ import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.measurements import SampleMP
 from pennylane.ops import MidMeasure
-from pennylane.typing import PostprocessingFn
+from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 from .core import transform
 
@@ -150,7 +150,7 @@ def broadcast_expand(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
         for ops in new_ops
     )
 
-    def processing_fn(results: qp.typing.ResultBatch) -> qp.typing.Result:
+    def processing_fn(results: ResultBatch) -> Result:
         # closure variables: tape.shots, tape.batch_size, tape.measurements
 
         # The shape of the results should be as follows: results[s][m][b], where s is the shot

@@ -61,6 +61,8 @@ result object.
 """
 
 # pylint: disable=protected-access
+
+
 import inspect
 import logging
 
@@ -198,8 +200,7 @@ class ExecuteTapes(torch.autograd.Function):
         return (None,) + vjps
 
 
-# pylint: disable=unused-argument
-def execute(tapes, execute_fn, jpc, device=None):
+def execute(tapes, execute_fn, jpc, device=None):  # pylint: disable=unused-argument
     """Execute a batch of tapes with Torch parameters on a device.
 
     Args:

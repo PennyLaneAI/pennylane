@@ -19,34 +19,28 @@ import pennylane as qp
 from pennylane.workflow import get_best_diff_method
 
 
-def dummy_cv_func(x):
-    """A dummy CV function with continuous-variable operations."""
-    qp.Displacement(x, 0.1, wires=0)
-    return qp.expval(qp.X(0))
-
-
 def dummyfunc():
     """dummy func."""
     return None
 
 
-# pylint: disable=unused-argument
 class CustomDevice(qp.devices.Device):
     """A null device that just returns 0."""
 
     def __repr__(self):
         return "CustomDevice"
 
-    def execute(self, circuits, execution_config=None):
+    def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
         return (0,)
 
 
 class CustomDeviceWithDiffMethod(qp.devices.Device):
     """A device that defines a derivative."""
 
-    def execute(self, circuits, execution_config=None):
+    def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
         return 0
 
+    # pylint: disable-next=unused-argument
     def compute_derivatives(self, circuits, execution_config=None):
         """Device defines its own method to compute derivatives"""
         return 0
@@ -101,15 +95,6 @@ class TestValidation:
         qn = qp.QNode(dummyfunc, dev2)
         res2 = get_best_diff_method(qp.set_shots(qn, shots=50))()
         assert res2 == "parameter-shift"
-
-    def test_best_method_is_param_shift_cv(self):
-        """Tests that the method returns 'parameter-shift' when CV operations are in the QNode."""
-
-        dev = qp.device("default.gaussian", wires=1)
-        qn = qp.QNode(dummy_cv_func, dev, interface=None)
-
-        res = get_best_diff_method(qn)(0.5)
-        assert res == "parameter-shift"
 
     def test_best_method_with_transforms(self):
         """Test that transforms and execution parameters affect the supported differentiation method."""

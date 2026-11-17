@@ -23,7 +23,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.measurements import MeasurementTransform
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import MeasurementShapeError
 from pennylane.ops import RZ, Hadamard, I, X, Y, Z
@@ -186,7 +186,7 @@ class ClassicalShadowMP(MeasurementTransform):
             [
                 Hadamard.compute_matrix(),
                 Hadamard.compute_matrix() @ RZ.compute_matrix(-np.pi / 2),
-                I.compute_matrix(),
+                I.compute_matrix(wires=[0]),
             ]
         )
         obs = obs_list[recipes]
@@ -443,29 +443,28 @@ class ShadowExpvalMP(MeasurementTransform):
     def _unflatten(cls, data, metadata):
         return cls(data[0], **dict(metadata))
 
-    # pylint: disable=arguments-renamed
-    def __init__(
-        self,
-        H: Operator | Sequence[Operator],
-        seed: int | None = None,
-        k: int = 1,
-    ):
+    def __init__(self, H: Operator | Sequence[Operator], seed: int | None = None, k: int = 1):
         self.seed = seed
         self.H = H
         self.k = k
         super().__init__()
 
-    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(
+    def _primitive_bind_call(  # pylint: disable=arguments-renamed
         cls,
         H: Operator | Sequence,
         seed: int | None = None,
         k: int = 1,
         **kwargs,
     ):
-        if cls._obs_primitive is None:  # pragma: no cover
-            return type.__call__(cls, H=H, seed=seed, k=k, **kwargs)  # pragma: no cover
+        def _get_tracer(op):
+            if isinstance(op, Operator2):
+                if op.tracer is None:
+                    op._bind_primitive()  # pragma: no cover  # pylint: disable=protected-access
+                return op.tracer if op.tracer is not None else op
+            return op
+
+        H = _get_tracer(H)
         return cls._obs_primitive.bind(H, seed=seed, k=k, **kwargs)
 
     def process(self, tape, device):
@@ -498,7 +497,7 @@ class ShadowExpvalMP(MeasurementTransform):
             state, wire_order, shots, rng=rng
         )
         # tach-ignore
-        from pennylane.shadows import ClassicalShadow  # pylint:disable=import-outside-toplevel
+        from pennylane.shadows import ClassicalShadow  # pylint: disable=import-outside-toplevel
 
         shadow = ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
@@ -523,7 +522,7 @@ class ShadowExpvalMP(MeasurementTransform):
         bits, recipes = classical_shadow(
             wires=self.wires, seed=self.seed
         ).process_density_matrix_with_shots(state, wire_order, shots, rng=rng)
-        # tach-ignore
+        # pylint: disable-next=import-outside-toplevel # tach-ignore
         from pennylane.shadows import (  # tach-ignore pylint: disable=import-outside-toplevel
             ClassicalShadow,
         )
@@ -780,7 +779,7 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
 
         .. code-block:: python
 
-            dev = qp.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2, seed=0)
 
             ops = [qp.Hadamard(wires=0), qp.CNOT(wires=(0,1))]
             measurements = [qp.classical_shadow(wires=(0,1))]
@@ -798,7 +797,7 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
 
         .. code-block:: python
 
-            dev = qp.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2, seed=0)
 
             measurements1 = [qp.classical_shadow(wires=(0,1), seed=10)]
             tape1 = qp.tape.QuantumTape(ops, measurements1, shots=5)
@@ -818,8 +817,6 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
     return ClassicalShadowMP(wires=wires, seed=seed)
 
 
-if ShadowExpvalMP._obs_primitive is not None:  # pylint: disable=protected-access
-
-    @ShadowExpvalMP._obs_primitive.def_impl  # pylint: disable=protected-access
-    def _(H, **kwargs):
-        return type.__call__(ShadowExpvalMP, H, **kwargs)
+@ShadowExpvalMP._obs_primitive.def_impl  # pylint: disable=protected-access
+def _(H, **kwargs):
+    return type.__call__(ShadowExpvalMP, H, **kwargs)

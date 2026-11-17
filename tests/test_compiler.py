@@ -15,7 +15,7 @@
 Unit tests for the compiler subpackage.
 """
 
-# pylint: disable=import-outside-toplevel
+from functools import partial
 from unittest.mock import patch
 
 import mcm_utils
@@ -30,12 +30,11 @@ from pennylane.transforms.dynamic_one_shot import fill_in_value
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
 
-pytestmark = pytest.mark.external
+pytestmark = pytest.mark.catalyst
 
-from jax import numpy as jnp  # pylint:disable=wrong-import-order, wrong-import-position
-from jax.core import ShapedArray  # pylint:disable=wrong-import-order, wrong-import-position
-
-# pylint: disable=too-few-public-methods, too-many-public-methods
+# pylint: disable=wrong-import-position,wrong-import-order
+from jax import numpy as jnp
+from jax.core import ShapedArray
 
 
 @pytest.fixture
@@ -74,7 +73,7 @@ class TestCatalyst:
         assert not qp.compiler.available("SomeRandomCompiler")
 
         assert qp.compiler.available("catalyst")
-        assert qp.compiler.available_compilers() == ["catalyst", "cuda_quantum"]
+        assert "catalyst" in qp.compiler.available_compilers()
 
     def test_active_compiler(self):
         """Test `qp.compiler.active_compiler` inside a simple circuit"""
@@ -89,7 +88,7 @@ class TestCatalyst:
             return qp.expval(qp.PauliZ(0))
 
         assert jnp.allclose(circuit(jnp.pi, jnp.pi / 2), 1.0)
-        assert jnp.allclose(qp.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
+        assert jnp.allclose(qp.qjit(circuit, capture=False)(jnp.pi, jnp.pi / 2), -1.0)
 
     def test_active(self):
         """Test `qp.compiler.active` inside a simple circuit"""
@@ -104,7 +103,7 @@ class TestCatalyst:
             return qp.expval(qp.PauliZ(0))
 
         assert jnp.allclose(circuit(jnp.pi, jnp.pi / 2), 1.0)
-        assert jnp.allclose(qp.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
+        assert jnp.allclose(qp.qjit(circuit, capture=False)(jnp.pi, jnp.pi / 2), -1.0)
 
     @pytest.mark.usefixtures("preserve_jax_x64")
     @pytest.mark.parametrize("jax_enable_x64", [False, True])
@@ -273,20 +272,6 @@ class TestCatalyst:
 
         assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
 
-    def test_qjit_adjoint_lazy(self):
-        """Test that the lazy kwarg is supported."""
-        dev = qp.device("lightning.qubit", wires=2)
-
-        @qp.qnode(device=dev)
-        def workflow_pl(theta, wires):
-            qp.Hadamard(wires)
-            qp.adjoint(qp.RX(theta, wires=wires), lazy=False)
-            return qp.probs()
-
-        workflow_cl = qp.qjit(workflow_pl)
-
-        assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
-
     def test_control(self):
         """Test that control works with qjit."""
         dev = qp.device("lightning.qubit", wires=2)
@@ -323,7 +308,7 @@ class TestCatalyst:
         control_wire = [0]
         work_wires_ctrl = [9]
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         def func():
             return qp.ctrl(
                 qp.SemiAdder(
@@ -387,7 +372,7 @@ class TestCatalystControlFlow:
     def test_while_loop_dynamic_shapes(self):
         """Test that while loops work with default args."""
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.qnode(qp.device("lightning.qubit", wires=4))
         def f(sz):
             x = jnp.ones([sz], dtype=float)
@@ -424,7 +409,7 @@ class TestCatalystControlFlow:
         """Test nested while loops."""
         dev = qp.device("lightning.qubit", wires=1)
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.qnode(dev)
         def circuit(n, m):
             @qp.while_loop(lambda i, _: i < n)
@@ -580,6 +565,26 @@ class TestCatalystControlFlow:
         assert jnp.allclose(circuit(1.5), 1.0)
         assert jnp.allclose(circuit(jnp.pi), -1.0)
 
+    def test_cond_with_hinted_operator_types(self):
+        """Test condition with hinted operator classes and partials of them as branches"""
+        dev = qp.device("lightning.qubit", wires=1)
+
+        @qp.qjit
+        @qp.qnode(dev)
+        def circuit(x):
+            qp.cond(
+                x > 2.7,
+                qp.hint(qp.RX, {"branch-prob": 0.2}),
+                partial(qp.hint(qp.RY, {"branch-prob": 0.5}), wires=0),
+                ((x > 1.4, qp.hint(partial(qp.RZ, wires=0), {"branch-prob": 0.3})),),
+            )(x, wires=0)
+
+            return qp.expval(qp.PauliZ(0))
+
+        assert jnp.allclose(circuit(1.2), np.cos(1.2))
+        assert jnp.allclose(circuit(2.0), 1.0)
+        assert jnp.allclose(circuit(jnp.pi), -1.0)
+
     def test_cond_with_elif_interpreted(self):
         """Test condition with an elif branch in interpreted mode"""
         dev = qp.device("lightning.qubit", wires=1)
@@ -609,11 +614,11 @@ class TestCatalystControlFlow:
                 return (x + 1) ** 2
 
             @conditional.else_if(x < -2)
-            def conditional_elif():  # pylint: disable=unused-variable
+            def conditional_elif():
                 return x + 1
 
             @conditional.otherwise
-            def conditional_false_fn():  # pylint: disable=unused-variable
+            def conditional_false_fn():
                 return -(x + 1)
 
             return conditional()
@@ -870,7 +875,7 @@ class TestCatalystGrad:
         assert jnp.allclose(res[1], jnp.array([-0.43750208, 0.07000001]))
 
 
-class TestCatalystSample:
+class TestCatalystSample:  # pylint: disable=too-few-public-methods
     """Test qp.sample with Catalyst."""
 
     def test_sample_measure(self):
@@ -878,7 +883,7 @@ class TestCatalystSample:
 
         dev = qp.device("lightning.qubit", wires=1)
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit(x):
@@ -891,7 +896,7 @@ class TestCatalystSample:
         assert circuit(jnp.pi) == 1
 
 
-class TestCatalystMCMs:
+class TestCatalystMCMs:  # pylint: disable=too-few-public-methods
     """Test dynamic_one_shot with Catalyst."""
 
     @pytest.mark.parametrize(
@@ -937,7 +942,7 @@ class TestCatalystMCMs:
 
         dev = qp.device("lightning.qubit", wires=2)
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.set_shots(shots)
         @qp.qnode(dev, mcm_method="one-shot")
         def func(x, y):
@@ -965,7 +970,7 @@ class TestCatalystMCMs:
             def fname(x):
                 return format(x, f"0{len(meas_obj)}b") if isinstance(meas_obj, list) else x
 
-            results1 = {fname(int(state)): count for state, count in zip(*results1)}
+            results1 = {fname(int(state)): count for state, count in zip(*results1, strict=False)}
         if measure_f is qp.sample:
             results0 = results0[results0 != fill_in_value]
             results1 = results1[results1 != fill_in_value]

@@ -16,34 +16,23 @@ Contains the SignedOutMultiplier template.
 """
 
 from collections import defaultdict
-from collections.abc import Hashable, Iterable
-from typing import Any
 
-from pennylane import capture, math
+from jax import numpy as jnp
+
+from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_condition,
-    register_resources,
-    resource_rep,
-)
-from pennylane.ops import CNOT, Controlled, PauliX
-from pennylane.wires import Wires, WiresLike
+from pennylane.core.operator import Operator2
+from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.ops import CNOT, ctrl
+from pennylane.typing import Wire
+from pennylane.wires import Wires, WiresLike, is_abstract_qubit, validate_no_wire_overlaps
 
 from .incrementer import Incrementer
 from .out_multiplier import OutMultiplier
 from .semi_adder import SemiAdder
 
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
-
-class SignedOutMultiplier(Operator):
+class SignedOutMultiplier(Operator2):
     r"""
     Implements signed out-place multiplication
 
@@ -85,13 +74,15 @@ class SignedOutMultiplier(Operator):
 
         @qp.qnode(dev, shots=1)
         def circuit():
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=y_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            y_bin = qp.math.int_to_binary(y, len(y_wires))
+            qp.BasisState(x_bin, wires=x_wires)
+            qp.BasisState(y_bin, wires=y_wires)
             qp.SignedOutMultiplier(
                 x_wires,
                 y_wires,
                 output_wires,
-                work_wires, 
+                work_wires,
                 output_wires_zeroed=True,
             )
             return qp.sample(wires=output_wires)
@@ -104,7 +95,7 @@ class SignedOutMultiplier(Operator):
     Then we can find the magnitude by flipping the bits and adding 1. This gives us :math:`[[0 0 1 0 0 1]]`.
     The sum of these bits is :math:`2^3 + 2^0 = 9` for :math:`k=6`.
 
-    >>> print(qp.draw(qp.decompose(circuit, max_expansion=1), max_length=170)())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=1), max_length=170)())
      0: ─╭|Ψ⟩─╭●────╭X───────╭Incrementer───────────────────────╭OutMultiplier───────────────────────────────────╭X───────╭Incrementer───────────────────────╭●────┤
      1: ─├|Ψ⟩─│─────│──╭X────├Incrementer───────────────────────├OutMultiplier───────────────────────────────────│──╭X────├Incrementer───────────────────────│─────┤
      2: ─╰|Ψ⟩─│─────│──│──╭X─├Incrementer───────────────────────├OutMultiplier───────────────────────────────────│──│──╭X─├Incrementer───────────────────────│─────┤
@@ -121,6 +112,30 @@ class SignedOutMultiplier(Operator):
     13: ─────────╰X──────────│────────────╰●─╰●─╰●─├●───────────│─────────────────╰●────────────────│─────────────────────│────────────╰●─╰●─╰●─├●──────────────╰X─┤
     14: ─────────────────────├Incrementer──────────├Incrementer─├OutMultiplier──────────────────────├Incrementer──────────├Incrementer──────────├Incrementer───────┤
     15: ─────────────────────╰Incrementer──────────╰Incrementer─╰OutMultiplier──────────────────────╰Incrementer──────────╰Incrementer──────────╰Incrementer───────┤
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SignedOutMultiplier
+            :stacked:
+            :symbols: :math:`n` ``x_wires``, :math:`m` ``y_wires``, :math:`k` ``output_wires`` and
+                :math:`w` ``work_wires``
+            :example: :math:`n=m=1`, :math:`k=2`
+
+            .. decomposition-rule:: _signed_out_multiplier_decomposition_not_zeroed
+                :image: /_static/decomposition_thumbnails/signed_out_multiplier_not_zeroed.svg
+                :requires: ``output_wires_zeroed=False`` and :math:`w \geq 2k + 1` work wires
+
+                :class:`~.SignedOutMultiplier` with ``output_wires_zeroed=True`` | :math:`1` | 1
+                :class:`~.SemiAdder` | :math:`1` | 1
+
+            .. decomposition-rule:: _signed_out_multiplier_decomposition_zeroed
+                :image: /_static/decomposition_thumbnails/signed_out_multiplier_zeroed.svg
+                :requires: ``output_wires_zeroed=True`` and :math:`w \geq 2` work wires
+
+                :class:`~.CNOT` | :math:`2(n + m) + k + 5` | 11
+                :class:`~.Incrementer` with 1 control | :math:`5` | 5
+                :class:`~.OutMultiplier` | :math:`1` | 1
 
     .. details::
         :title: Theoretical background
@@ -305,12 +320,14 @@ class SignedOutMultiplier(Operator):
 
     """
 
-    resource_keys = {
-        "num_output_wires",
-        "num_work_wires",
-        "num_x_wires",
-        "num_y_wires",
-        "output_wires_zeroed",
+    wire_argnames = ("x_wires", "y_wires", "output_wires", "work_wires")
+    compilable_argnames = ("output_wires_zeroed",)
+
+    arg_specs = {
+        "x_wires": Wire[-1],
+        "y_wires": Wire[-1],
+        "output_wires": Wire[-1],
+        "work_wires": Wire[-1],
     }
 
     def __init__(
@@ -320,205 +337,181 @@ class SignedOutMultiplier(Operator):
         output_wires: WiresLike,
         work_wires: WiresLike,
         output_wires_zeroed: bool = False,
-    ):  # pylint: disable=too-many-arguments
+    ):
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
         output_wires = Wires(output_wires)
         work_wires = Wires(work_wires)
 
-        if any(wire in work_wires for wire in x_wires):
-            raise ValueError("None of the wires in work_wires should be included in x_wires.")
-        if any(wire in work_wires for wire in y_wires):
-            raise ValueError("None of the wires in work_wires should be included in y_wires.")
+        wire_args = {
+            "x_wires": x_wires,
+            "y_wires": y_wires,
+            "output_wires": output_wires,
+            "work_wires": work_wires,
+        }
+        validate_no_wire_overlaps(wire_args)
 
-        if any(wire in y_wires for wire in x_wires):
-            raise ValueError("None of the wires in y_wires should be included in x_wires.")
-        if any(wire in x_wires for wire in output_wires):
-            raise ValueError("None of the wires in x_wires should be included in output_wires.")
-        if any(wire in y_wires for wire in output_wires):
-            raise ValueError("None of the wires in y_wires should be included in output_wires.")
-
-        wires_list = [x_wires, y_wires, output_wires, work_wires]
-        wires_name = ["x_wires", "y_wires", "output_wires", "work_wires"]
-
-        for name, wires in zip(wires_name, wires_list, strict=True):
-            self.hyperparameters[name] = Wires(wires)
-
-        self.hyperparameters["output_wires_zeroed"] = output_wires_zeroed
-
-        # pylint: disable=consider-using-generator
-        all_wires = sum([self.hyperparameters[name] for name in wires_name], start=[])
-        super().__init__(wires=all_wires)
-
-    @classmethod
-    def _unflatten(cls, data: Iterable[Any], metadata: Hashable):
-        hyperparameters_dict = dict(metadata[1])
-        return cls(*data, **hyperparameters_dict)
-
-    def map_wires(self, wire_map: dict):
-        x_wires = [wire_map.get(w, w) for w in self.hyperparameters["x_wires"]]
-        y_wires = [wire_map.get(w, w) for w in self.hyperparameters["y_wires"]]
-        output_wires = [wire_map.get(w, w) for w in self.hyperparameters["output_wires"]]
-        work_wires = [wire_map.get(w, w) for w in self.hyperparameters["work_wires"]]
-        output_wires_zeroed = self.hyperparameters["output_wires_zeroed"]
-
-        return SignedOutMultiplier(
+        super().__init__(
             x_wires,
             y_wires,
             output_wires,
             work_wires,
-            output_wires_zeroed,
+            output_wires_zeroed=output_wires_zeroed,
         )
 
     @property
-    def resource_params(self) -> dict:
-        return {
-            "num_x_wires": len(self.hyperparameters["x_wires"]),
-            "num_y_wires": len(self.hyperparameters["y_wires"]),
-            "num_output_wires": len(self.hyperparameters["output_wires"]),
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-            "output_wires_zeroed": self.hyperparameters["output_wires_zeroed"],
-        }
-
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
+    def wires(self):
+        """All wires involved in the operation."""
+        return self.x_wires + self.y_wires + self.output_wires + self.work_wires
 
 
-def _zeroed_signed_out_multiplier_resources(
-    num_x_wires, num_y_wires, num_output_wires, num_work_wires, **_
+def _zeroed_signed_out_multiplier_resources(  # pylint: disable=unused-argument
+    x_wires,
+    y_wires,
+    output_wires,
+    work_wires,
+    output_wires_zeroed=False,
 ):
     """
     Computes the resources for the SignedOutMultiplier.
     """
+    num_x_wires = len(x_wires)
+    num_y_wires = len(y_wires)
+    num_output_wires = len(output_wires)
+    num_work_wires = len(work_wires)
     resources = defaultdict(int)
-
-    resources[controlled_resource_rep(PauliX, {}, 1, 0)] = (
-        (num_x_wires - 1 + num_y_wires - 1) * 2 + num_output_wires - 1
-    )
     resources[
-        controlled_resource_rep(
-            Incrementer,
-            {"num_wires": num_x_wires, "num_work_wires": num_work_wires - 2},
-            num_control_wires=1,
-        )
+        ctrl(Incrementer(Wire[num_x_wires], work_wires=Wire[num_work_wires - 2]), Wire[1])
     ] += 2
     resources[
-        resource_rep(
-            OutMultiplier,
-            num_output_wires=num_output_wires - 1,
-            num_x_wires=num_x_wires,
-            num_y_wires=num_y_wires,
-            num_work_wires=num_work_wires - 2,
+        OutMultiplier(
+            Wire[num_x_wires],
+            Wire[num_y_wires],
+            Wire[num_output_wires - 1],
             mod=2 ** (num_output_wires - 1),
+            work_wires=Wire[num_work_wires - 2],
             output_wires_zeroed=True,
-        )
-    ] = 1
-    resources[
-        controlled_resource_rep(
-            Incrementer,
-            {
-                "num_wires": num_output_wires - 1,
-                "num_work_wires": num_work_wires - 2,
-            },
-            num_control_wires=1,
         )
     ] += 1
     resources[
-        controlled_resource_rep(
-            Incrementer,
-            {"num_wires": num_y_wires, "num_work_wires": num_work_wires - 2},
-            num_control_wires=1,
-        )
+        ctrl(Incrementer(Wire[num_output_wires - 1], work_wires=Wire[num_work_wires - 2]), Wire[1])
+    ] += 1
+    resources[
+        ctrl(Incrementer(Wire[num_y_wires], work_wires=Wire[num_work_wires - 2]), Wire[1])
     ] += 2
+    resources[CNOT] = 6 + (num_x_wires + num_y_wires) * 2 + (num_output_wires - 1)
+    # Convert to a builtin dict so downstream lookups of missing gates
+    # don't accidentally insert them with a value of 0
+    return dict(resources)
 
-    resources[resource_rep(CNOT)] = 6 + (num_x_wires + num_y_wires) * 2 + (num_output_wires - 1)
 
-    return resources
-
-
-def _not_zeroed_signed_out_multiplier_resources(
-    num_x_wires, num_y_wires, num_output_wires, num_work_wires, **_
+def _not_zeroed_signed_out_multiplier_resources(  # pylint: disable=unused-argument
+    x_wires,
+    y_wires,
+    output_wires,
+    work_wires,
+    output_wires_zeroed=False,
 ):
     """
     Computes the resources for the SignedOutMultiplier.
     """
+    num_x_wires = len(x_wires)
+    num_y_wires = len(y_wires)
+    num_output_wires = len(output_wires)
+    num_work_wires = len(work_wires)
     resources = {}
 
     resources[
-        resource_rep(
-            SignedOutMultiplier,
-            num_output_wires=num_output_wires,
-            num_x_wires=num_x_wires,
-            num_y_wires=num_y_wires,
-            num_work_wires=2 + num_work_wires - (2 * num_output_wires + 1),
+        SignedOutMultiplier(
+            Wire[num_x_wires],
+            Wire[num_y_wires],
+            Wire[num_output_wires],
+            work_wires=Wire[2 + num_work_wires - (2 * num_output_wires + 1)],
             output_wires_zeroed=True,
         )
     ] = 1
 
     resources[
-        resource_rep(
-            SemiAdder,
-            num_x_wires=num_output_wires,
-            num_y_wires=num_output_wires,
-            num_work_wires=num_output_wires - 1,
-        )
+        SemiAdder(Wire[num_output_wires], Wire[num_output_wires], Wire[num_output_wires - 1])
     ] = 1
 
     return resources
 
 
 def _twos_complement_helper(input_reg, aux_wire, work_wires):
-    # Invert all bits
-    @for_loop(len(input_reg))
-    def invert(w):
-        # sign bit of 1 indicates a negative value
-        CNOT([aux_wire, input_reg[w]])
-
-    invert()  # pylint: disable=no-value-for-parameter
-
-    if capture.enabled():
-        input = jnp.append(input_reg, work_wires)
+    # Dynamically-allocated wires (``AbstractQubit``) cannot be
+    # stacked into a numeric array for ``for_loop``-based dynamic indexing, so unroll instead.
+    # Remove this fallback once dynamic-wire indexing is supported (shortcut.com/story/129521).
+    if any(is_abstract_qubit(w) for w in input_reg):
+        for wire in input_reg:
+            CNOT([aux_wire, wire])
     else:
-        input = input_reg + work_wires
+        if compiler.active() or capture.enabled():
+            input_reg_arr = math.array(input_reg, like="jax")
+        else:
+            input_reg_arr = input_reg
+
+        # Invert all bits
+        @for_loop(len(input_reg_arr))
+        def invert(w):
+            # sign bit of 1 indicates a negative value
+            CNOT([aux_wire, input_reg_arr[w]])
+
+        invert()  # pylint: disable=no-value-for-parameter
 
     # Add one
-    Controlled(
+    ctrl(
         Incrementer(
-            wires=input,
-            work_wires=work_wires,  # we can use the work wires since they are returned in a clean state
+            wires=Wires(input_reg),
+            work_wires=Wires(
+                work_wires
+            ),  # we can use the work wires since they are returned in a clean state
         ),
-        control_wires=aux_wire,
+        control=aux_wire,
         control_values=(1,),
     )
 
 
-def _not_zeroed_work_wire_condition(num_work_wires, num_output_wires, **_):
-    return num_work_wires >= 2 * num_output_wires + 1
+def _not_zeroed_work_wire_condition(  # pylint: disable=unused-argument
+    x_wires,
+    y_wires,
+    output_wires,
+    work_wires,
+    output_wires_zeroed=False,
+):
+    return len(work_wires) >= 2 * len(output_wires) + 1
 
 
-def _zeroed_work_wire_condition(num_work_wires, **_):
-    return num_work_wires >= 2
+def _zeroed_work_wire_condition(  # pylint: disable=unused-argument
+    x_wires,
+    y_wires,
+    output_wires,
+    work_wires,
+    output_wires_zeroed=False,
+):
+    return len(work_wires) >= 2
 
 
-def _zeroed_condition(output_wires_zeroed, **_):
+# pylint: disable-next=unused-argument
+def _zeroed_condition(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False):
     return output_wires_zeroed
 
 
-def _not_zeroed_condition(output_wires_zeroed, **_):
+# pylint: disable-next=unused-argument
+def _not_zeroed_condition(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False):
     return not output_wires_zeroed
 
 
 @register_condition(_zeroed_condition)
 @register_condition(_zeroed_work_wire_condition)
 @register_resources(_zeroed_signed_out_multiplier_resources)
-def _signed_out_multiplier_decomposition_zeroed(
+def _signed_out_multiplier_decomposition_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    **_,
+    output_wires_zeroed=False,
 ):
     """Computes the decomposition of the operator as a product of other operators when the output wires are zeroed."""
     if capture.enabled():
@@ -570,12 +563,12 @@ def _signed_out_multiplier_decomposition_zeroed(
 @register_condition(_not_zeroed_condition)
 @register_condition(_not_zeroed_work_wire_condition)
 @register_resources(_not_zeroed_signed_out_multiplier_resources)
-def _signed_out_multiplier_decomposition_not_zeroed(
+def _signed_out_multiplier_decomposition_not_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    **_,
+    output_wires_zeroed=False,
 ):
     """Computes the decomposition of the operator as a product of other operators."""
 

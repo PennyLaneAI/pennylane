@@ -16,9 +16,9 @@ Tests the `single_tape_support` device modifier.
 
 """
 
-from typing import Optional
+# pylint: disable=unused-argument
 
-# pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring
+
 import pennylane as qp
 from pennylane.devices.modifiers import single_tape_support
 
@@ -27,9 +27,9 @@ def test_wraps_execute():
     """Test that execute now accepts a single circuit."""
 
     @single_tape_support
-    class DummyDev(qp.devices.Device):
+    class DummyDev(qp.devices.Device):  # pylint: disable=too-few-public-methods
 
-        def execute(self, circuits, execution_config: Optional[qp.devices.ExecutionConfig] = None):
+        def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
     t = qp.tape.QuantumScript()
@@ -43,11 +43,11 @@ def test_wraps_compute_derivatives():
     @single_tape_support
     class DummyDev(qp.devices.Device):
 
-        def execute(self, circuits, execution_config: Optional[qp.devices.ExecutionConfig] = None):
+        def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
         def compute_derivatives(
-            self, circuits, execution_config: Optional[qp.devices.ExecutionConfig] = None
+            self, circuits, execution_config: qp.devices.ExecutionConfig | None = None
         ):
             return tuple("a" for _ in circuits)
 
@@ -62,11 +62,11 @@ def test_wraps_execute_and_compute_derivatives():
     @single_tape_support
     class DummyDev(qp.devices.Device):
 
-        def execute(self, circuits, execution_config: Optional[qp.devices.ExecutionConfig] = None):
+        def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
         def execute_and_compute_derivatives(
-            self, circuits, execution_config: Optional[qp.devices.ExecutionConfig] = None
+            self, circuits, execution_config: qp.devices.ExecutionConfig | None = None
         ):
             return tuple("a" for _ in circuits), tuple("b" for _ in circuits)
 
@@ -82,11 +82,11 @@ def test_wraps_compute_jvp():
     @single_tape_support
     class DummyDev(qp.devices.Device):
 
-        def execute(self, circuits, execution_config: Optional[qp.devices.ExecutionConfig] = None):
+        def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
         def compute_jvp(
-            self, circuits, tangents, execution_config: Optional[qp.devices.ExecutionConfig] = None
+            self, circuits, tangents, execution_config: qp.devices.ExecutionConfig | None = None
         ):
             assert len(tangents) == len(circuits)
             return tuple("a" for _ in circuits)
@@ -103,11 +103,11 @@ def test_wraps_execute_and_compute_jvp():
     @single_tape_support
     class DummyDev(qp.devices.Device):
 
-        def execute(self, circuits, execution_config: Optional[qp.devices.ExecutionConfig] = None):
+        def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
         def execute_and_compute_jvp(
-            self, circuits, tangents, execution_config: Optional[qp.devices.ExecutionConfig] = None
+            self, circuits, tangents, execution_config: qp.devices.ExecutionConfig | None = None
         ):
             assert len(tangents) == len(circuits)
             return tuple("a" for _ in circuits), tuple("b" for _ in circuits)
@@ -124,14 +124,14 @@ def test_wraps_compute_vjp():
     @single_tape_support
     class DummyDev(qp.devices.Device):
 
-        def execute(self, circuits, execution_config: Optional[qp.devices.ExecutionConfig] = None):
+        def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
         def compute_vjp(
             self,
             circuits,
             cotangents,
-            execution_config: Optional[qp.devices.ExecutionConfig] = None,
+            execution_config: qp.devices.ExecutionConfig | None = None,
         ):
             assert len(cotangents) == len(circuits)
             return tuple("a" for _ in circuits)
@@ -148,14 +148,14 @@ def test_wraps_execute_and_compute_vjp():
     @single_tape_support
     class DummyDev(qp.devices.Device):
 
-        def execute(self, circuits, execution_config: Optional[qp.devices.ExecutionConfig] = None):
+        def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
         def execute_and_compute_vjp(
             self,
             circuits,
             cotangents,
-            execution_config: Optional[qp.devices.ExecutionConfig] = None,
+            execution_config: qp.devices.ExecutionConfig | None = None,
         ):
             assert len(cotangents) == len(circuits)
             return tuple("a" for _ in circuits), tuple("b" for _ in circuits)

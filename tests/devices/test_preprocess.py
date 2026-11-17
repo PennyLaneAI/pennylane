@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for preprocess in devices/qubit."""
 
+# pylint: disable=too-few-public-methods
+
 import warnings
 
 import numpy as np
@@ -39,13 +41,10 @@ from pennylane.devices.preprocess import (
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import CountsMP, SampleMP
 
-# pylint: disable=too-few-public-methods
-
 
 class NoMatOp(Operation):
     """Dummy operation for expanding circuit."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
@@ -58,7 +57,6 @@ class NoMatNoDecompOp(Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
@@ -301,9 +299,7 @@ class TestValidateObservables:
 
     def test_invalid_observable(self):
         """Test that expand_fn throws an error when an observable is invalid."""
-        tape = QuantumScript(
-            ops=[qp.PauliX(0)], measurements=[qp.expval(qp.GellMann(wires=0, index=1))]
-        )
+        tape = QuantumScript(ops=[qp.PauliX(0)], measurements=[qp.expval(qp.PauliZ(0))])
         with pytest.raises(DeviceError, match=r"not supported on abc"):
             validate_observables(tape, lambda obs: obs.name == "PauliX", name="abc")
 
@@ -311,7 +307,7 @@ class TestValidateObservables:
         """Test that expand_fn throws an error when a tensor includes invalid obserables"""
         tape = QuantumScript(
             ops=[qp.PauliX(0), qp.PauliY(1)],
-            measurements=[qp.expval(qp.PauliX(0) @ qp.GellMann(wires=1, index=2))],
+            measurements=[qp.expval(qp.PauliX(0) @ qp.PauliZ(1))],
         )
         with pytest.raises(DeviceError, match="not supported on device"):
             validate_observables(tape, lambda obj: obj.name == "PauliX")
@@ -385,24 +381,23 @@ class TestValidateMeasurements:
 
 
 @qp.register_resources({qp.H: 6, qp.RX: 1})
-def dummy_rz_decomp_0(theta, wires):
+def dummy_rz_decomp_0(phi, wires):
     qp.H(wires)
     qp.H(wires)
     qp.H(wires)
-    qp.RX(theta, wires)
+    qp.RX(phi, wires)
     qp.H(wires)
     qp.H(wires)
     qp.H(wires)
 
 
 @qp.register_resources({qp.RX: 1})
-def dummy_rz_decomp_1(theta, wires):
-    qp.RX(theta, wires)
+def dummy_rz_decomp_1(phi, wires):
+    qp.RX(phi, wires)
 
 
 @qp.register_resources({qp.H: 1}, work_wires={"zeroed": 1})
-def dummy_rz_decomp_2(theta, wires):
-    # pylint: disable=unused-argument
+def dummy_rz_decomp_2(phi, wires):  # pylint: disable=unused-argument
     qp.H(wires)
 
 
@@ -421,7 +416,7 @@ class TestDecomposeTransformations:
         expanded_tape = expanded_tapes[0]
         expected = [qp.Hadamard(0), qp.PauliX(1), qp.PauliY(1), qp.RZ(0.123, wires=1)]
 
-        for op, exp in zip(expanded_tape.circuit, expected + measurements):
+        for op, exp in zip(expanded_tape.circuit, expected + measurements, strict=False):
             qp.assert_equal(op, exp)
 
         assert tape.shots == expanded_tape.shots
@@ -434,7 +429,7 @@ class TestDecomposeTransformations:
         expanded_tapes, _ = decompose(tape, lambda obj: obj.has_matrix)
         expanded_tape = expanded_tapes[0]
 
-        for op, exp in zip(expanded_tape.circuit, ops + measurements):
+        for op, exp in zip(expanded_tape.circuit, ops + measurements, strict=False):
             qp.assert_equal(op, exp)
 
     @pytest.mark.parametrize("validation_transform", (validate_measurements, validate_observables))
@@ -603,7 +598,6 @@ class TestDecomposeTransformations:
     ):
         """Test that decompose works correctly when passing through ``fixed_decomps``
         and/or ``alt_decomps`` with the graph-based decomposer."""
-        # pylint: disable=too-many-arguments
         if not qp.decomposition.enabled_graph():
             pytest.skip("This test only is expected to work with the graph-based system.")
 
@@ -717,19 +711,18 @@ class TestGraphModeExclusiveFeatures:
         def decomp_with_work_wire(wires):
             qp.X(wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
+        qp.add_decomps(MyOp, decomp_fallback, decomp_with_work_wire)
 
-            tape = qp.tape.QuantumScript([MyOp(0)])
-            device_wires = qp.wires.Wires(1)  # Only 1 wire, insufficient for 5 burnable
-            target_gates = {"Hadamard", "PauliX"}
+        tape = qp.tape.QuantumScript([MyOp(0)])
+        device_wires = qp.wires.Wires(1)  # Only 1 wire, insufficient for 5 burnable
+        target_gates = {"Hadamard", "PauliX"}
 
-            (out_tape,), _ = decompose(
-                tape,
-                lambda obj: obj.name in target_gates,
-                device_wires=device_wires,
-                target_gates=target_gates,
-            )
+        (out_tape,), _ = decompose(
+            tape,
+            lambda obj: obj.name in target_gates,
+            device_wires=device_wires,
+            target_gates=target_gates,
+        )
 
         # Should use fallback decomposition (2 Hadamards)
         assert len(out_tape.operations) == 2
@@ -754,7 +747,6 @@ class TestMeasurementsFromCountsOrSamples:
         ):
             meas_transform(tape)
 
-    # pylint: disable=unnecessary-lambda
     @pytest.mark.parametrize(
         "meas_transform", (measurements_from_counts, measurements_from_samples)
     )
@@ -789,13 +781,14 @@ class TestMeasurementsFromCountsOrSamples:
         input_measurement,
         expected_res,
         shots,
+        seed,
     ):
         """Test the test_measurements_from_samples and measurements_from_counts transforms with a
         single measurement, and compare outcome to the analytic result.
         """
 
         theta = 2.5
-        dev = qp.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4, seed=seed)
 
         tape = qp.tape.QuantumScript(
             [qp.RX(theta, 0), qp.RX(theta / 2, 1)],
@@ -829,11 +822,11 @@ class TestMeasurementsFromCountsOrSamples:
     @pytest.mark.parametrize(
         "meas_transform", [measurements_from_counts, measurements_from_samples]
     )
-    def test_with_counts_output(self, counts_kwargs, meas_transform):
+    def test_with_counts_output(self, counts_kwargs, meas_transform, seed):
         """Test that returning counts works as expected for all-wires, specific wires, or an observable,
         when using both the measurements_from_counts and measurements_from_samples transforms."""
 
-        dev = qp.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4, seed=seed)
 
         @validate_device_wires(wires=dev.wires)
         @qp.set_shots(5000)
@@ -855,7 +848,7 @@ class TestMeasurementsFromCountsOrSamples:
         # +/- 200 shots is pretty reasonable with 5000 shots total
         assert len(res) == len(expected)
         assert res.keys() == expected.keys()
-        for key in res.keys():
+        for key in res:
             assert np.isclose(res[key], expected[key], atol=200)
 
     @pytest.mark.parametrize(
@@ -908,11 +901,11 @@ class TestMeasurementsFromCountsOrSamples:
     @pytest.mark.parametrize(
         "meas_transform", [measurements_from_counts, measurements_from_samples]
     )
-    def test_counts_all_outcomes(self, counts_kwargs, all_outcomes, meas_transform):
+    def test_counts_all_outcomes(self, counts_kwargs, all_outcomes, meas_transform, seed):
         """Test that the measurements with counts when only some states have non-zero counts,
         and confirm that all_counts returns the expected entries"""
 
-        dev = qp.device("default.qubit", wires=4)
+        dev = qp.device("default.qubit", wires=4, seed=seed)
 
         @validate_device_wires(wires=dev.wires)
         @qp.set_shots(5000)
@@ -927,7 +920,7 @@ class TestMeasurementsFromCountsOrSamples:
 
         # +/- 200 shots is pretty reasonable with 5000 shots total
         assert res.keys() == expected.keys()
-        for key in res.keys():
+        for key in res:
             assert np.isclose(res[key], expected[key], atol=200)
 
     @pytest.mark.parametrize(
@@ -975,7 +968,7 @@ class TestMeasurementsFromCountsOrSamples:
         # +/- 200 shots is pretty reasonable with 5000 shots total
         assert len(counts_res) == len(counts_expected)
         assert counts_res.keys() == counts_expected.keys()
-        for key in counts_res.keys():
+        for key in counts_res:
             assert np.isclose(counts_res[key], counts_expected[key], atol=200)
 
         # # sample comparison
@@ -1026,7 +1019,7 @@ class TestDeviceResolveDynamicWires:
         [new_tape], fn = device_resolve_dynamic_wires(tape, wires=None)
 
         assert fn(("a",)) == "a"
-        for op, wire in zip(new_tape.operations, range(0, 10)):
+        for op, wire in zip(new_tape.operations, range(0, 10), strict=False):
             qp.assert_equal(op, qp.X(wire))
 
     def test_error_on_not_enough_available_wires(self):
@@ -1052,7 +1045,7 @@ class TestDeviceResolveDynamicWires:
         [new_tape], fn = device_resolve_dynamic_wires(tape, wires=wires)
 
         assert fn(("a",)) == "a"
-        for op, wire in zip(new_tape.operations, wires):
+        for op, wire in zip(new_tape.operations, wires, strict=False):
             qp.assert_equal(op, qp.X(wire))
 
     def test_min_int_non_integer_algorithmic_wires(self):

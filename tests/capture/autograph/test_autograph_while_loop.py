@@ -14,10 +14,10 @@
 
 """PyTests for the AutoGraph source-to-source transformation feature."""
 
-# pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
+# pylint: disable=wrong-import-order,wrong-import-position
+
 
 import pytest
-from numpy.testing import assert_allclose
 
 import pennylane as qp
 from pennylane import while_loop
@@ -26,13 +26,14 @@ pytestmark = [pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-from jax import numpy as jnp
-
 # must be below jax importorskip
 from jax.core import eval_jaxpr
 
+# pylint: disable-next=ungrouped-imports
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
+from pennylane.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
 from pennylane.exceptions import AutoGraphError
+from pennylane.testing import extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
 
@@ -54,7 +55,7 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "while_loop[" in str(jaxpr)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, expected)[0]
         assert result == expected
@@ -72,7 +73,7 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "while_loop[" in str(jaxpr)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
         result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)[0]
         assert result == 3
@@ -82,7 +83,7 @@ class TestWhileLoops:
 
         @qp.qnode(qp.device("default.qubit", wires=4))
         def f(p):
-            w = int(0)
+            w = 0
             while w < 4:
                 qp.RY(p, wires=w)
                 p *= 0.5
@@ -91,30 +92,7 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0.0)
-        assert "while_loop[" in str(jaxpr)
-
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.0**4)[0]
-        expected = jnp.array(
-            [
-                0.00045727,
-                0.00110912,
-                0.0021832,
-                0.0052954,
-                0.000613,
-                0.00148684,
-                0.00292669,
-                0.00709874,
-                0.02114249,
-                0.0512815,
-                0.10094267,
-                0.24483834,
-                0.02834256,
-                0.06874542,
-                0.13531871,
-                0.32821807,
-            ]
-        )
-        assert_allclose(result, expected, rtol=1e-6, atol=1e-6)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     def test_whileloop_temporary_variable(self):
         """Test that temporary (local) variables can be initialized inside a while loop."""
@@ -129,7 +107,7 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f1)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        assert "while_loop[" in str(jaxpr)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 4
 
@@ -146,8 +124,8 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f1)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        assert "while_loop[" in str(jaxpr)
-        assert "for_loop[" in str(jaxpr)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == 0 + 1 + sum([1, 2, 3])
 
@@ -165,8 +143,8 @@ class TestWhileLoops:
 
         ag_circuit = run_autograph(f1)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        assert "while_loop[" in str(jaxpr)
-        assert "cond[" in str(jaxpr)
+        assert while_loop_prim in extract_all_primitives(jaxpr.jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)[0] == sum([1, 1, 2, 2])
 

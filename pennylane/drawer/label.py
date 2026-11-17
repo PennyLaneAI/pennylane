@@ -15,11 +15,9 @@
 Contains the 'label' function for customizing operator labels.
 """
 
-# pylint: disable=unused-argument
-
-from pennylane.core.operator import Operator
-from pennylane.core.queuing import apply
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.core.apply import apply
+from pennylane.core.operator import Operator, abstractify
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.functions.equal import (
     BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
     _equal,
@@ -48,11 +46,15 @@ class LabelledOp(SymbolicOp):
 
     """
 
-    resource_keys = {"base_class", "base_params"}
+    resource_keys = {"base"}
+
+    has_decomposition = True
+
+    name = "LabelledOp"
 
     @property
     def resource_params(self) -> dict:
-        return {"base_class": type(self.base), "base_params": self.base.resource_params}
+        return {"base": abstractify(self.base)}
 
     def _flatten(self):
         hyperparameters = (("custom_label", self.hyperparameters["custom_label"]),)
@@ -102,12 +104,12 @@ class LabelledOp(SymbolicOp):
         return self.base.matrix(wire_order=wire_order)
 
 
-def _resources(base_class, base_params):
-    return {resource_rep(base_class, **base_params): 1}
+def _resources(base):
+    return {base: 1}
 
 
 @register_resources(_resources)
-def _custom_label_decomp(*params, wires, base, **_):
+def _custom_label_decomp(*params, wires, base, **_):  # pylint: disable=unused-argument
     apply(base)
 
 

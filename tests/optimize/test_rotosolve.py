@@ -15,7 +15,9 @@
 Unit tests for the ``RotosolveOptimizer``.
 """
 
-# pylint: disable=too-many-arguments,too-few-public-methods
+# pylint: disable=too-many-arguments
+
+
 import functools
 
 import pytest
@@ -31,7 +33,7 @@ def expand_num_freq(num_freq, param):
     if np.isscalar(num_freq):
         num_freq = [num_freq] * len(param)
     expanded = []
-    for _num_freq, par in zip(num_freq, param):
+    for _num_freq, par in zip(num_freq, param, strict=False):
         if np.isscalar(_num_freq) and np.isscalar(par):
             expanded.append(_num_freq)
         elif np.isscalar(_num_freq):
@@ -187,12 +189,13 @@ all_substep_kwargs = [
             classical_params,
             classical_nums_frequency,
             classical_expected_num_calls,
+            strict=False,
         )
     ),
 )
 @pytest.mark.parametrize(
     "substep_optimizer, substep_kwargs",
-    list(zip(substep_optimizers, all_substep_kwargs)),
+    list(zip(substep_optimizers, all_substep_kwargs, strict=False)),
 )
 class TestWithClassicalFunction:
     # pylint: disable=unused-argument
@@ -200,7 +203,6 @@ class TestWithClassicalFunction:
         self, fun, x_min, param, nums_freq, exp_num_calls, substep_optimizer, substep_kwargs
     ):
         """Tests that per parameter 2R+1 function calls are used for an update step."""
-        # pylint: disable=too-many-arguments
         num_calls = 0
 
         @functools.wraps(fun)
@@ -243,7 +245,9 @@ class TestWithClassicalFunction:
         if len(param) == 1:
             new_param_step = (new_param_step,)
 
-        assert all(np.allclose(p, new_p) for p, new_p in zip(param[1:], new_param_step[1:]))
+        assert all(
+            np.allclose(p, new_p) for p, new_p in zip(param[1:], new_param_step[1:], strict=False)
+        )
 
         # With trainable parameters, training should happen
         param = tuple(np.array(p, requires_grad=True) for p in param)
@@ -264,12 +268,7 @@ class TestWithClassicalFunction:
         )
 
         # Now with step_and_cost and trainable params
-        # pylint:disable=unbalanced-tuple-unpacking
-        new_param_step_and_cost, old_cost = opt.step_and_cost(
-            fun,
-            *param,
-            nums_frequency=nums_freq,
-        )
+        new_param_step_and_cost, old_cost = opt.step_and_cost(fun, *param, nums_frequency=nums_freq)
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
             new_param_step_and_cost = (new_param_step_and_cost,)
@@ -315,7 +314,15 @@ class TestWithClassicalFunction:
 
 @pytest.mark.parametrize(
     "fun, x_min, param, num_freq",
-    list(zip(classical_functions, classical_minima, classical_params, classical_nums_frequency)),
+    list(
+        zip(
+            classical_functions,
+            classical_minima,
+            classical_params,
+            classical_nums_frequency,
+            strict=False,
+        )
+    ),
 )
 def test_multiple_steps(fun, x_min, param, num_freq):
     """Tests that repeated steps execute as expected."""
@@ -372,10 +379,11 @@ classical_nums_frequency_deact = [
             classical_minima_deact,
             classical_params_deact,
             classical_nums_frequency_deact,
+            strict=False,
         )
     ),
 )
-class TestDeactivatedTrainingWithClassicalFunctions:
+class TestDeactivatedTrainingWithClassicalFunctions:  # pylint: disable=too-few-public-methods
     def test_single_step(self, fun, x_min, param, num_freq):
         """Tests convergence for easy classical functions in a single Rotosolve step
         with some arguments deactivated for training.
@@ -400,12 +408,7 @@ class TestDeactivatedTrainingWithClassicalFunctions:
             atol=1e-5,
         )
 
-        # pylint:disable=unbalanced-tuple-unpacking
-        new_param_step_and_cost, old_cost = opt.step_and_cost(
-            fun,
-            *param,
-            nums_frequency=num_freq,
-        )
+        new_param_step_and_cost, old_cost = opt.step_and_cost(fun, *param, nums_frequency=num_freq)
         # The following accounts for the unpacking functionality for length-1 param
         if len(param) == 1:
             new_param_step_and_cost = (new_param_step_and_cost,)
@@ -432,7 +435,7 @@ def scalar_qnode(x):
 
 @qp.qnode(dev)
 def array_qnode(x, y, z):
-    for _x, w in zip(x, dev.wires):
+    for _x, w in zip(x, dev.wires, strict=False):
         qp.RX(_x, wires=w)
 
     for i in range(num_wires):
@@ -484,11 +487,11 @@ qnode_spectra = [
 
 @pytest.mark.parametrize(
     "qnode, param, nums_frequency, spectra",
-    list(zip(qnodes, qnode_params, qnode_nums_frequency, qnode_spectra)),
+    list(zip(qnodes, qnode_params, qnode_nums_frequency, qnode_spectra, strict=False)),
 )
 @pytest.mark.parametrize(
     "substep_optimizer, substep_kwargs",
-    list(zip(substep_optimizers, all_substep_kwargs)),
+    list(zip(substep_optimizers, all_substep_kwargs, strict=False)),
 )
 class TestWithQNodes:
     def test_single_step(
@@ -511,7 +514,6 @@ class TestWithQNodes:
         assert (np.isscalar(new_param_step) and np.isscalar(param)) or len(new_param_step) == len(
             param
         )
-        # pylint:disable=unbalanced-tuple-unpacking
         new_param_step_and_cost, old_cost = opt.step_and_cost(
             qnode,
             *param,

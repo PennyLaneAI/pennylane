@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=no-name-in-module, no-self-use, protected-access
 """Unit tests for the GraphStatePrep module"""
 
 import networkx as nx
@@ -20,7 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice, make_graph_state
-from pennylane.ops.functions import assert_valid
+from pennylane.testing import assert_valid
 
 
 class TestGraphStatePrep:
@@ -220,7 +219,7 @@ class TestGraphStatePrep:
             assert op.name == one_qubit_ops(0).name
             assert isinstance(op.wires[0], QubitGraph)
         for op in queue[8:]:
-            assert op.name == two_qubit_ops.name
+            assert op.name == two_qubit_ops.__name__
             assert all(isinstance(w, QubitGraph) for w in op.wires)
 
     @pytest.mark.parametrize(

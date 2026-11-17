@@ -17,8 +17,6 @@ import pytest
 
 import pennylane.estimator as qre
 
-# pylint: disable=use-implicit-booleaness-not-comparison,no-self-use,too-many-arguments
-
 
 class TestMultiRZ:
     """Test the Resource MultiRZ class."""
@@ -187,7 +185,7 @@ class TestPauliRot:
 
     expected_h_count = (0, 4, 6, 6, 0)
     expected_s_count = (0, 1, 0, 1, 0)
-    params = tuple(zip(pauli_words, expected_h_count, expected_s_count))
+    params = tuple(zip(pauli_words, expected_h_count, expected_s_count, strict=False))
 
     @pytest.mark.parametrize("precision", (None, 1e-3))
     @pytest.mark.parametrize("pauli_string, expected_h_count, expected_s_count", params)

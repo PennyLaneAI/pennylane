@@ -20,30 +20,24 @@ from dataclasses import dataclass
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import (
-    CNOT,
+    CH,
     CSWAP,
+    CZ,
     RY,
     SWAP,
-    Controlled,
+    BasisState,
     Hadamard,
+    MultiControlledX,
     PauliX,
     PauliZ,
     adjoint,
     cond,
     ctrl,
 )
-from pennylane.templates import BasisEmbedding
-from pennylane.typing import TensorLike
-from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=consider-using-generator
+from pennylane.typing import Bool, Float, TensorLike, Wire
+from pennylane.wires import Wires, WiresLike, concatenate_wires
 
 
 # -----------------------------
@@ -96,7 +90,7 @@ def _node_index(level: int, prefix_value: int) -> int:
 # -----------------------------
 # Select-prefix × Bucket-Brigade with explicit bus routing
 # -----------------------------
-class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
+class BBQRAM(Operation):
     r"""Bucket-brigade QRAM with explicit bus routing using 3 wires per node. Bucket-brigade QRAM
     achieves an :math:`O(\log N)` complexity instead of the typical :math:`N`, where :math:`N` is
     the size of the classical data register being queried. For more theoretical details on how this
@@ -109,17 +103,18 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         \text{BBQRAM}|i\rangle|0\rangle = |i\rangle |b_i\rangle.
 
     Args:
-        data (TensorLike | Sequence[str]):
-            The classical data as a 2-D array.  The shape must be ``(num_data, size_data)``, where ``num_data`` is
-            :math:`2^{\texttt{len(control_wires)}}` and ``size_data = len(target_wires)``.
+        bitstrings (TensorLike | Sequence[str]):
+            The classical data as a 2-D array.  The shape must be ``(num_bitstrings, size_bitstrings)``,
+            where ``num_bitstrings`` is :math:`2^{\texttt{len(control_wires)}}` and
+            ``size_bitstrings = len(target_wires)``.
         control_wires (WiresLike):
             The register that stores the index for the entry of the classical data we want to
             access.
         target_wires (WiresLike):
             The register in which the classical data gets loaded. The size of this register must
-            equal each bitstring length in ``data``.
+            equal each bitstring length in ``bitstrings``.
         work_wires (WiresLike):
-            The additional wires required to funnel the desired entry of ``data`` into the
+            The additional wires required to funnel the desired entry of ``bitstrings`` into the
             target register. The size of the ``work_wires`` register must be
             :math:`1 + 3 ((2^\texttt{len(control_wires)}) - 1)`. More specifically, the
             ``work_wires`` register includes the bus, direction, left port and right port wires in
@@ -128,7 +123,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             For more information, consult `arXiv:0708.1879 <https://arxiv.org/pdf/0708.1879>`__.
 
     Raises:
-        ValueError: if the ``data`` are not provided, the ``data`` are of the wrong
+        ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong
             length, the ``target_wires`` are of the wrong size, or the ``work_wires`` register size is not exactly
             equal to :math:`1 + 3 ((2^\texttt{len(control_wires)}) - 1)`.
 
@@ -148,7 +143,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     .. code-block:: python
 
-        data = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
+        bitstrings = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
         bitstring_size = 3
 
     The number of wires needed to store a length-4 array is 2, which means that the
@@ -163,7 +158,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
     Now, we can define all three registers concretely and demonstrate ``BBQRAM`` in practice. In the
     following circuit, we prepare the state :math:`\vert 2 \rangle = \vert 10 \rangle` on the
     ``control_wires``, which indicates that we would like to access the second (zero-indexed) entry of
-    ``data`` (which is ``[1, 1, 0]``). The ``target_wires`` register should therefore store this
+    ``bitstrings`` (which is ``[1, 1, 0]``). The ``target_wires`` register should therefore store this
     state after ``BBQRAM`` is applied.
 
     .. code-block:: python
@@ -181,10 +176,11 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         @qp.qnode(dev)
         def bb_quantum():
             # prepare an address, e.g., |10> (index 2)
-            qp.BasisEmbedding(2, wires=reg["control"])
+            two_bin = qp.math.int_to_binary(2, len(reg["control"]))
+            qp.BasisState(two_bin, wires=reg["control"])
 
             qp.BBQRAM(
-                data,
+                bitstrings,
                 control_wires=reg["control"],
                 target_wires=reg["target"],
                 work_wires=reg["work_wires"],
@@ -213,26 +209,28 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
-        data: TensorLike | Sequence[str],
+        bitstrings: TensorLike | Sequence[str],
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
-    ):  # pylint: disable=too-many-arguments
+    ):
         control_wires = Wires(control_wires)
 
-        if isinstance(data, (list, tuple)):
-            data = math.array(data)
+        if isinstance(bitstrings, (list, tuple)):
+            bitstrings = math.array(bitstrings)
 
-        if data.shape[0] == 0:
-            raise ValueError("'data' cannot be empty.")
+        if bitstrings.shape[0] == 0:
+            raise ValueError("'bitstrings' cannot be empty.")
 
-        if isinstance(data[0], str):
-            data = math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
+        if isinstance(bitstrings[0], str):
+            bitstrings = math.array(
+                list(map(lambda bitstring: [int(bit) for bit in bitstring], bitstrings))
+            )
 
-        m = data.shape[1]
+        m = bitstrings.shape[1]
         n_k = len(control_wires)
-        if (1 << n_k) != data.shape[0]:
-            raise ValueError("data.shape[0] must be 2^(len(control_wires)).")
+        if (1 << n_k) != bitstrings.shape[0]:
+            raise ValueError("bitstrings.shape[0] must be 2^(len(control_wires)).")
 
         target_wires = Wires(target_wires)
         if m != len(target_wires):
@@ -266,7 +264,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
             "wire_manager": wire_manager,
         }
 
-        super().__init__(data, wires=all_wires)
+        super().__init__(bitstrings, wires=all_wires)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -275,22 +273,22 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
 
 def _bucket_brigade_qram_resources(num_controls, num_target_wires):
     """
-    Calculates the resources, assuming the worst case where data is all ones.
+    Calculates the resources, assuming the worst case where bitstrings are all ones.
     """
     n_k = num_controls
-    resources = defaultdict(int)
-    resources[resource_rep(SWAP)] = ((1 << n_k) - 1 + n_k) * 2 + num_target_wires * 2
-    resources[resource_rep(CSWAP)] = ((1 << n_k) - 1) * num_target_wires * 2 + (
-        ((1 << n_k) - 1 - n_k) * 2
-    )
-    resources[
-        controlled_resource_rep(
-            base_class=SWAP, base_params={}, num_control_wires=1, num_zero_control_values=1
-        )
-    ] = ((1 << n_k) - 1) * num_target_wires * 2 + (((1 << n_k) - 1 - n_k) * 2)
-    resources[resource_rep(Hadamard)] = num_target_wires * 2
-    resources[resource_rep(PauliZ)] = (1 << n_k) * num_target_wires
-    return resources
+    _ctrl_swap = ctrl(SWAP(Wire[2]), Wire[1], Bool[1])
+    n_address_swaps = (1 << n_k) - 1 + n_k
+    n_routing_swaps = ((1 << n_k) - 1) * num_target_wires + (1 << n_k) - 1 - n_k
+    return {
+        SWAP: n_address_swaps + num_target_wires * 2,
+        adjoint(SWAP(Wire[2])): n_address_swaps,
+        CSWAP: n_routing_swaps,
+        adjoint(CSWAP(Wire[3])): n_routing_swaps,
+        _ctrl_swap: n_routing_swaps,
+        adjoint(_ctrl_swap): n_routing_swaps,
+        Hadamard: num_target_wires * 2,
+        PauliZ: (1 << n_k) * num_target_wires,
+    }
 
 
 def _mark_routers_via_bus(wire_manager, n_k):
@@ -335,21 +333,19 @@ def _route_bus_down_first_k_levels(wire_manager, k_levels):
             ctrl(SWAP(wires=[in_w, L]), control=[d], control_values=[0])
 
 
-def _leaf_ops_for_bit(wire_manager, data, n_k, j):
+def _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j):
     """Apply the leaf write for target bit index j."""
-    ops = []
     for p in range(1 << n_k):
         if p % 2 == 0:
             target = wire_manager.portL(n_k - 1, p >> 1)
         else:
             target = wire_manager.portR(n_k - 1, p >> 1)
-        bit = data[p, j]
+        bit = bitstrings[p, j]
         cond(bit, PauliZ)(wires=target)
-    return ops
 
 
 @register_resources(_bucket_brigade_qram_resources, exact=False)
-def _bucket_brigade_qram_decomposition(data, wire_manager, **__):  # pylint: disable=unused-argument
+def _bucket_brigade_qram_decomposition(bitstrings, wire_manager, **__):
     bus_wire = wire_manager.bus_wire
     control_wires = wire_manager.control_wires
     n_k = len(control_wires)
@@ -360,12 +356,12 @@ def _bucket_brigade_qram_decomposition(data, wire_manager, **__):  # pylint: dis
         Hadamard(wires=[tw])
         SWAP(wires=[tw, bus_wire[0]])
         _route_bus_down_first_k_levels(wire_manager, len(control_wires))
-        _leaf_ops_for_bit(wire_manager, data, n_k, j)
-        adjoint(_route_bus_down_first_k_levels, lazy=False)(wire_manager, len(control_wires))
+        _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j)
+        adjoint(_route_bus_down_first_k_levels)(wire_manager, len(control_wires))
         SWAP(wires=[tw, bus_wire[0]])
         Hadamard(wires=[tw])
     # 3) address unloading
-    adjoint(_mark_routers_via_bus, lazy=False)(wire_manager, n_k)
+    adjoint(_mark_routers_via_bus)(wire_manager, n_k)
 
 
 add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
@@ -390,7 +386,7 @@ class HybridQRAM(Operation):
     :math:`n-k` (:math:`2^{n-k}` leaves) and reuses it :math:`2^k` times.
 
     Args:
-        data (TensorLike):
+        bitstrings (TensorLike):
             The classical data as a sequence of bitstrings. The size of the classical data must be
             :math:`2^{\texttt{len(control_wires)}}`.
         control_wires (WiresLike):
@@ -398,9 +394,9 @@ class HybridQRAM(Operation):
             access.
         target_wires (WiresLike):
             The register in which the classical data gets loaded. The size of this register must
-            equal each bitstring length in ``data``.
+            equal each bitstring length in ``bitstrings``.
         work_wires (WiresLike):
-            The additional wires required to funnel the desired entry of ``data`` into the
+            The additional wires required to funnel the desired entry of ``bitstrings`` into the
             ``target_wires`` register. The ``work_wires`` register includes the signal, bus,
             direction, left port and right port wires in that order for a tree of depth
             :math:`(n-k)`. For more details, consult
@@ -409,7 +405,7 @@ class HybridQRAM(Operation):
             The number of "select" bits taken from ``control_wires``.
 
     Raises:
-        ValueError: if the ``data`` are not provided, the ``data`` are of the wrong length, there are
+        ValueError: if the ``bitstrings`` are not provided, the ``bitstrings`` are of the wrong length, there are
             no ``control_wires``, ``k >= len(control_wires)``, the ``target_wires`` are of the wrong length, or the
             ``work_wires`` are of the wrong length.
 
@@ -429,7 +425,7 @@ class HybridQRAM(Operation):
 
     .. code-block:: python
 
-        data = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0], [0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
+        bitstrings = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0], [0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
         bitstring_size = 3
 
     The ``control_wires`` are split via the value of :math:`k`, which allows us to leverage
@@ -461,10 +457,11 @@ class HybridQRAM(Operation):
         @qp.qnode(dev)
         def hybrid_qram():
             # prepare an address, e.g., |010> (index 2)
-            qp.BasisEmbedding(2, wires=reg["control"])
+            two_bin = qp.math.int_to_binary(2, len(reg["control"]))
+            qp.BasisState(two_bin, wires=reg["control"])
 
             qp.HybridQRAM(
-                data,
+                bitstrings,
                 control_wires=reg["control"],
                 target_wires=reg["target"],
                 work_wires=reg["work"],
@@ -490,23 +487,25 @@ class HybridQRAM(Operation):
 
     def __init__(
         self,
-        data: TensorLike | Sequence[str],
+        bitstrings: TensorLike | Sequence[str],
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
         k: int,  # define the select part size, remaining part is tree part
-    ):  # pylint: disable=too-many-arguments
+    ):
 
-        if isinstance(data, (list, tuple)):
-            data = math.array(data)
+        if isinstance(bitstrings, (list, tuple)):
+            bitstrings = math.array(bitstrings)
 
-        if data.shape[0] == 0:
-            raise ValueError("'data' cannot be empty.")
+        if bitstrings.shape[0] == 0:
+            raise ValueError("'bitstrings' cannot be empty.")
 
-        if isinstance(data[0], str):
-            data = math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
+        if isinstance(bitstrings[0], str):
+            bitstrings = math.array(
+                list(map(lambda bitstring: [int(bit) for bit in bitstring], bitstrings))
+            )
 
-        m = data.shape[1]
+        m = bitstrings.shape[1]
 
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
@@ -523,8 +522,8 @@ class HybridQRAM(Operation):
         if len(target_wires) != m:
             raise ValueError("len(target_wires) must equal bitstring length.")
 
-        if data.shape[0] != (1 << n_total):
-            raise ValueError("data.shape[0] must be 2^(len(control_wires)).")
+        if bitstrings.shape[0] != (1 << n_total):
+            raise ValueError("bitstrings.shape[0] must be 2^(len(control_wires)).")
 
         # Split control_wires into select and tree parts
         select_wires = Wires(control_wires[:k])
@@ -554,7 +553,7 @@ class HybridQRAM(Operation):
 
         all_wires = list(control_wires) + list(target_wires) + list(work_wires)
 
-        super().__init__(data, wires=all_wires)
+        super().__init__(bitstrings, wires=all_wires)
 
         self._hyperparameters = {
             "select_wires": select_wires,
@@ -581,18 +580,12 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
     resources = defaultdict(int)
     num_blocks = 1 << num_select_wires
 
-    resources[resource_rep(PauliX)] += (num_select_wires <= 0) * num_blocks * 2
+    resources[PauliX] += (num_select_wires <= 0) * num_blocks * 2
 
-    resources[
-        controlled_resource_rep(
-            base_class=SWAP,
-            base_params={},
-            num_control_wires=1,
-            num_zero_control_values=0,
-        )
-    ] += (
-        (num_tree_control_wires + (1 << num_tree_control_wires) - 1) * 2 + 2 * num_target_wires
-    ) * num_blocks
+    ctrl_swap = CSWAP(Wire[3])
+    n_address_swaps = num_tree_control_wires + (1 << num_tree_control_wires) - 1
+    resources[ctrl_swap] += (n_address_swaps + 2 * num_target_wires) * num_blocks
+    resources[adjoint(ctrl_swap)] += n_address_swaps * num_blocks
 
     ccswap_count = (
         (
@@ -603,73 +596,18 @@ def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_
         * 2
     )
 
-    resources[
-        controlled_resource_rep(
-            base_class=Controlled,
-            base_params={
-                "base_class": SWAP,
-                "base_params": {},
-                "num_control_wires": 1,
-                "num_zero_control_values": 0,
-                "num_work_wires": 0,
-                "work_wire_type": "borrowed",
-            },
-            num_control_wires=1,
-            num_zero_control_values=0,
-        )
-    ] += ccswap_count
+    resources[ctrl(SWAP(Wire[2]), Wire[2])] += ccswap_count // 2
+    resources[adjoint(ctrl(SWAP(Wire[2]), Wire[2]))] += ccswap_count // 2
 
-    resources[
-        controlled_resource_rep(
-            base_class=Controlled,
-            base_params={
-                "base_class": SWAP,
-                "base_params": {},
-                "num_control_wires": 1,
-                "num_zero_control_values": 1,
-                "num_work_wires": 0,
-                "work_wire_type": "borrowed",
-            },
-            num_control_wires=1,
-            num_zero_control_values=0,
-        )
-    ] += ccswap_count
+    resources[ctrl(SWAP(Wire[2]), Wire[2], Bool[2])] += ccswap_count // 2
+    resources[adjoint(ctrl(SWAP(Wire[2]), Wire[2], Bool[2]))] += ccswap_count // 2
 
-    resources[
-        controlled_resource_rep(
-            base_class=Hadamard,
-            base_params={},
-            num_control_wires=1,
-            num_zero_control_values=0,
-        )
-    ] += (
-        num_target_wires * num_blocks * 2
-    )
+    resources[CH] += num_target_wires * num_blocks * 2
 
-    for block_index in range(num_blocks):
-        zero_control_values = [
-            (block_index >> (num_select_wires - 1 - i)) & 1 for i in range(num_select_wires)
-        ].count(0)
-        if zero_control_values == 0:
-            resources[resource_rep(CNOT)] += (num_select_wires > 0) * 2
-        else:
-            resources[
-                controlled_resource_rep(
-                    base_class=PauliX,
-                    base_params={},
-                    num_control_wires=num_select_wires,
-                    num_zero_control_values=zero_control_values,
-                )
-            ] += (num_select_wires > 0) * 2
-
-        resources[
-            controlled_resource_rep(
-                base_class=PauliZ,
-                base_params={},
-                num_control_wires=1,
-                num_zero_control_values=0,
-            )
-        ] += (1 << num_tree_control_wires) * num_target_wires
+    if num_select_wires > 0:
+        cx_rep = MultiControlledX(Wire[num_select_wires + 1], control_values=Bool[num_select_wires])
+        resources[cx_rep] += 2 * num_blocks
+    resources[CZ] += (1 << num_tree_control_wires) * num_target_wires * num_blocks
 
     return resources
 
@@ -679,9 +617,9 @@ def _bits(value: int, length: int) -> list[int]:
     return [(value >> (length - 1 - i)) & 1 for i in range(length)]
 
 
-def _tree_leaf_ops_for_bit_block_ctrl(
-    data, j, block_index, tree_wire_manager, n_tree, signal
-):  # pylint: disable=too-many-arguments
+def _tree_leaf_ops_for_bit_block_ctrl(  # pylint: disable=too-many-arguments
+    bitstrings, j, block_index, tree_wire_manager, n_tree, signal
+):
     """Leaf write for target bit j, for a given select prefix block, controlled on signal."""
 
     # For each leaf index p of the tree (n_tree bits)
@@ -694,9 +632,8 @@ def _tree_leaf_ops_for_bit_block_ctrl(
 
         # Global address index: (block_index << n_tree) + p
         addr = (block_index << n_tree) + p
-        bit = data[addr][j]
-        # pylint: disable=cell-var-from-loop
-        cond(bit, lambda: ctrl(PauliZ(wires=target), control=[signal], control_values=[1]))()
+        bit = bitstrings[addr][j]
+        cond(bit, CZ)(wires=[signal, target])
 
 
 def _tree_route_bus_down_first_k_levels_ctrl(k_levels, tree_wire_manager, signal):
@@ -710,20 +647,20 @@ def _tree_route_bus_down_first_k_levels_ctrl(k_levels, tree_wire_manager, signal
             d = tree_wire_manager.router(ell, p)
 
             # dir==1: CSWAP(d, in_w, R) — additionally controlled on signal
-            ctrl(CSWAP(wires=[d, in_w, R]), control=[signal], control_values=[1])
+            ctrl(SWAP(wires=[in_w, R]), control=[signal, d], control_values=[1, 1])
 
             # dir==0: SWAP(in_w, L) controlled on (d == 0) and signal == 1
             ctrl(
-                ctrl(SWAP(wires=[in_w, L]), control=[d], control_values=[0]),
-                control=[signal],
-                control_values=[1],
+                SWAP(wires=[in_w, L]),
+                control=[signal, d],
+                control_values=[1, 0],
             )
 
 
 def _swap_controlled_on_signal(tree_wire_manager, signal, level, k):
     origin = tree_wire_manager.control_wires[k:][level]
     target = tree_wire_manager.bus_wire[0]
-    ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
+    CSWAP(wires=[signal, origin, target])
 
 
 def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
@@ -736,11 +673,7 @@ def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
     _tree_route_bus_down_first_k_levels_ctrl(0, tree_wire_manager, signal)
 
     # deposit into dir[0, *] along active path
-    ctrl(
-        SWAP(wires=[tree_wire_manager.bus_wire[0], tree_wire_manager.router(0, 0)]),
-        control=[signal],
-        control_values=[1],
-    )
+    CSWAP(wires=[signal, tree_wire_manager.bus_wire[0], tree_wire_manager.router(0, 0)])
 
     for level in range(1, n_tree):
         # SWAP(tree_control_wires[level], bus) controlled on signal
@@ -757,12 +690,11 @@ def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
             else:
                 origin = tree_wire_manager.portR_wires[parent]
             target = tree_wire_manager.router(level, p)
-            ctrl(SWAP(wires=[origin, target]), control=[signal], control_values=[1])
+            CSWAP(wires=[signal, origin, target])
 
 
-def _block_tree_query_ops(
-    data, block_index, tree_wire_manager, n_tree, k, signal
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _block_tree_query_ops(bitstrings, block_index, tree_wire_manager, n_tree, k, signal):
     """One BBQRAM-style query of the (n_tree)-depth tree for a fixed select prefix."""
 
     # 1) address loading for the tree (controlled on signal)
@@ -771,36 +703,34 @@ def _block_tree_query_ops(
     # 2) per-target data phase, controlled on signal
     for j, tw in enumerate(tree_wire_manager.target_wires):
         # H on target
-        ctrl(Hadamard(wires=[tw]), control=[signal], control_values=[1])
+        CH(wires=[signal, tw])
 
         # Swap target <-> bus
-        ctrl(SWAP(wires=[tw, tree_wire_manager.bus_wire[0]]), control=[signal], control_values=[1])
+        CSWAP(wires=[signal, tw, tree_wire_manager.bus_wire[0]])
 
         # Route down tree
         _tree_route_bus_down_first_k_levels_ctrl(n_tree, tree_wire_manager, signal)
 
         # Leaf Z ops for this block and bit index j
-        _tree_leaf_ops_for_bit_block_ctrl(data, j, block_index, tree_wire_manager, n_tree, signal)
-
-        # Route back up
-        adjoint(_tree_route_bus_down_first_k_levels_ctrl, lazy=False)(
-            n_tree, tree_wire_manager, signal
+        _tree_leaf_ops_for_bit_block_ctrl(
+            bitstrings, j, block_index, tree_wire_manager, n_tree, signal
         )
 
+        # Route back up
+        adjoint(_tree_route_bus_down_first_k_levels_ctrl)(n_tree, tree_wire_manager, signal)
+
         # Swap back bus -> target
-        ctrl(SWAP(wires=[tw, tree_wire_manager.bus_wire[0]]), control=[signal], control_values=[1])
+        CSWAP(wires=[signal, tw, tree_wire_manager.bus_wire[0]])
 
         # Final H on target
-        ctrl(Hadamard(wires=[tw]), control=[signal], control_values=[1])
+        CH(wires=[signal, tw])
 
     # 3) address unloading for the tree (controlled on signal)
-    adjoint(_tree_mark_routers_via_bus_ctrl, lazy=False)(tree_wire_manager, n_tree, k, signal)
+    adjoint(_tree_mark_routers_via_bus_ctrl)(tree_wire_manager, n_tree, k, signal)
 
 
 @register_resources(_hybrid_qram_resources, exact=False)
-def _hybrid_qram_decomposition(
-    data, tree_wire_manager, select_wires, signal_wire, **_
-):  # pylint: disable=unused-argument, too-many-arguments
+def _hybrid_qram_decomposition(bitstrings, tree_wire_manager, select_wires, signal_wire, **_):
     k = len(select_wires)
 
     signal = signal_wire[0]
@@ -810,14 +740,15 @@ def _hybrid_qram_decomposition(
         # Multi-controlled X to turn signal on when select bits == block_index
         if k > 0:
             sel_pattern = _bits(block_index, k)
-            ctrl(PauliX(wires=signal), control=select_wires, control_values=sel_pattern)
+            mcx_wires = concatenate_wires(select_wires, [signal])
+            MultiControlledX(mcx_wires, control_values=sel_pattern)
         else:
             # No select bits: just flip signal for all addresses
             PauliX(wires=signal)
 
         # Perform one tree query, driven by lower n_tree bits, controlled on signal
         _block_tree_query_ops(
-            data,
+            bitstrings,
             block_index,
             tree_wire_manager,
             len(tree_wire_manager.control_wires[k:]),
@@ -827,7 +758,8 @@ def _hybrid_qram_decomposition(
 
         # Uncompute signal
         if k > 0:
-            ctrl(PauliX(wires=signal), control=select_wires, control_values=sel_pattern)
+            mcx_wires = concatenate_wires(select_wires, [signal])
+            MultiControlledX(mcx_wires, control_values=sel_pattern)
         else:
             PauliX(wires=signal)
 
@@ -848,7 +780,7 @@ class SelectOnlyQRAM(Operation):
         \text{SelectOnlyQRAM}|i\rangle|0\rangle = |i\rangle |b_i\rangle.
 
     Args:
-        data (TensorLike | Sequence[str]):
+        bitstrings (TensorLike | Sequence[str]):
             The classical data as a sequence of bitstrings. The size of the classical data must be
             :math:`2^{\texttt{len(select_wires)}+\texttt{len(control_wires)}}`.
         control_wires (WiresLike):
@@ -856,7 +788,7 @@ class SelectOnlyQRAM(Operation):
             access.
         target_wires (WiresLike):
             The register in which the classical data gets loaded. The size of this register must
-            equal each bitstring length in ``data``.
+            equal each bitstring length in ``bitstrings``.
         select_wires (WiresLike, optional):
             Wires used to perform the selection.
         select_value (int or None, optional):
@@ -865,7 +797,7 @@ class SelectOnlyQRAM(Operation):
             and cannot be used if no ``select_wires`` are provided.
 
     Raises:
-        ValueError: if the ``data`` are of the wrong length, a ``select_value`` is provided without
+        ValueError: if the ``bitstrings`` are of the wrong length, a ``select_value`` is provided without
              ``select_wires``, or the ``select_value`` is greater than [0, (:math:`2^{\texttt{len(select_wires)}}`) - 1].
 
     .. seealso::
@@ -885,7 +817,7 @@ class SelectOnlyQRAM(Operation):
 
     .. code-block:: python
 
-        data = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0], [0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
+        bitstrings = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0], [0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
         bitstring_size = 3
 
     Given the number of bitstrings, the values of ``control_wires`` and ``select_wires`` can be
@@ -919,10 +851,11 @@ class SelectOnlyQRAM(Operation):
         @qp.qnode(dev)
         def select_only_qram():
             # prepare an address, e.g., |010> (index 2)
-            qp.BasisEmbedding(2, wires=reg["control"])
+            two_bin = qp.math.int_to_binary(2, len(reg["control"]))
+            qp.BasisState(two_bin, wires=reg["control"])
 
             qp.SelectOnlyQRAM(
-                data,
+                bitstrings,
                 control_wires=reg["control"],
                 target_wires=reg["target"],
                 select_wires=reg["select"],
@@ -947,27 +880,28 @@ class SelectOnlyQRAM(Operation):
         "num_target_wires",
     }
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
-        data: TensorLike | Sequence[str],
+        bitstrings: TensorLike | Sequence[str],
         control_wires: WiresLike,
         target_wires: WiresLike,
         select_wires: WiresLike | None = None,
         select_value: int | None = None,
     ):
 
-        if isinstance(data, (list, tuple)):
-            data = math.array(data)
+        if isinstance(bitstrings, (list, tuple)):
+            bitstrings = math.array(bitstrings)
 
-        if data.shape[0] == 0:
-            raise ValueError("'data' cannot be empty.")
+        if bitstrings.shape[0] == 0:
+            raise ValueError("'bitstrings' cannot be empty.")
 
-        if isinstance(data[0], str):
-            data = math.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
+        if isinstance(bitstrings[0], str):
+            bitstrings = math.array(
+                list(map(lambda bitstring: [int(bit) for bit in bitstring], bitstrings))
+            )
 
         target_wires = Wires(target_wires)
-        m = data.shape[1]
+        m = bitstrings.shape[1]
         if m != len(target_wires):
             raise ValueError("len(target_wires) must equal bitstring length.")
 
@@ -976,13 +910,15 @@ class SelectOnlyQRAM(Operation):
         target_wires = Wires(target_wires)
         select_wires = Wires(select_wires) if select_wires is not None else Wires([])
 
-        # ---- Validate data ----
+        # ---- Validate bitstrings ----
         num_select = len(select_wires)
         num_controls = len(control_wires)
         n_total = num_select + num_controls
 
-        if (1 << n_total) != data.shape[0]:
-            raise ValueError("data.shape[0] must be 2^(len(select_wires)+len(control_wires)).")
+        if (1 << n_total) != bitstrings.shape[0]:
+            raise ValueError(
+                "bitstrings.shape[0] must be 2^(len(select_wires)+len(control_wires))."
+            )
 
             # Validate select_value (if provided)
         if select_value is not None:
@@ -999,7 +935,9 @@ class SelectOnlyQRAM(Operation):
             "select_value": select_value,
         }
 
-        super().__init__(data, wires=list(control_wires) + list(target_wires) + list(select_wires))
+        super().__init__(
+            bitstrings, wires=list(control_wires) + list(target_wires) + list(select_wires)
+        )
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -1022,9 +960,10 @@ def _select_only_qram_resources(
     n_total = num_control_wires + num_select_wires
 
     if select_value is not None and num_select_wires > 0:
-        resources[resource_rep(BasisEmbedding, num_wires=num_select_wires)] += 1
+        resources[BasisState(Bool[num_select_wires], Wire[num_select_wires])] += 1
 
     for addr in range(2 ** (num_select_wires + num_control_wires)):
+
         if (
             select_value is not None
             and num_select_wires > 0
@@ -1033,17 +972,9 @@ def _select_only_qram_resources(
             continue
 
         control_values = [(addr >> (n_total - 1 - i)) & 1 for i in range(n_total)]
-
-        resources[resource_rep(PauliX)] += control_values.count(0) * 2
-
-        resources[
-            controlled_resource_rep(
-                base_class=PauliX,
-                base_params={},
-                num_control_wires=n_total,
-                num_zero_control_values=0,
-            )
-        ] += num_target_wires
+        resources[PauliX] += control_values.count(0) * 2
+        x_rep = MultiControlledX(Wire[n_total + 1]) if n_total else PauliX
+        resources[x_rep] += num_target_wires
 
     return resources
 
@@ -1056,17 +987,18 @@ def _flip_controls(control_wires, control_vals):
 
 @register_resources(_select_only_qram_resources, exact=False)
 def _select_only_qram_decomposition(
-    data, select_value, select_wires, control_wires, target_wires, **_
-):  # pylint: disable=unused-argument, too-many-arguments
+    bitstrings, select_value, select_wires, control_wires, target_wires, **_
+):
     controls = select_wires + control_wires
     num_select = len(select_wires)
     n_total = num_select + len(control_wires)
+    gate = MultiControlledX if n_total else PauliX
 
     if select_value is not None and num_select > 0:
-        BasisEmbedding(select_value, wires=select_wires)
+        BasisState(math.int_to_binary(select_value, num_select), wires=select_wires)
 
     # Loop over all addresses (0 .. 2^(num_select+num_controls)-1)
-    for addr, bits in enumerate(data):
+    for addr, bits in enumerate(bitstrings):
         # If select_value is specified, only implement entries whose
         # high num_select bits (select part) match that value.
         if select_value is not None and num_select > 0:
@@ -1078,13 +1010,12 @@ def _select_only_qram_decomposition(
 
         _flip_controls(controls, control_values)
 
-        # For each bit position in the data
-        for j in range(data[0].shape[0]):
+        # For each bit position in the bitstrings
+        for j in range(bitstrings[0].shape[0]):
             # Multi-controlled X on target_wires[j],
             # controlled on controls matching `control_values`.
 
-            # pylint: disable=cell-var-from-loop
-            cond(bits[j], lambda: ctrl(PauliX(wires=target_wires[j]), control=controls))()
+            cond(bits[j], gate)(wires=concatenate_wires(controls, [target_wires[j]]))
 
         _flip_controls(controls, control_values)
 
@@ -1316,7 +1247,7 @@ def _normalize_amplitudes(amplitudes):
     """Normalize along the last axis, supporting optional batching."""
     norm = math.linalg.norm(amplitudes, axis=-1)
 
-    if not math.is_abstract(norm) and math.any(math.isclose(norm, 0.0)):
+    if not math.is_tracer(norm) and math.any(math.isclose(norm, 0.0)):
         raise ValueError("The amplitudes must have a non-zero norm.")
 
     # Follow StatePrep's pattern to deal with optional batch dimension.
@@ -1330,14 +1261,9 @@ def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
     - One controlled RY for each entry.
     """
     return {
-        resource_rep(Hadamard): num_address_wires,
-        resource_rep(PauliX): 2 * num_zero_bits,
-        controlled_resource_rep(
-            base_class=RY,
-            base_params={},
-            num_control_wires=num_address_wires,
-            num_zero_control_values=0,  # flipped to 1 already
-        ): num_entries,
+        Hadamard: num_address_wires,
+        PauliX: 2 * num_zero_bits,
+        ctrl(RY(Float, Wire[1]), Wire[num_address_wires]): num_entries,
     }
 
 

@@ -13,16 +13,12 @@
 # limitations under the License.
 """Quantum natural gradient optimizer for Jax/Catalyst interface"""
 
+import jax
+
 from pennylane import math
 from pennylane.compiler import active_compiler
 from pennylane.gradients.metric_tensor import metric_tensor
 from pennylane.workflow import QNode
-
-has_jax = True
-try:
-    import jax
-except ModuleNotFoundError:
-    has_jax = False
 
 
 class QNGOptimizerQJIT:
@@ -133,7 +129,7 @@ class QNGOptimizerQJIT:
         self.approx = approx
         self.lam = lam
 
-    def init(self, params):
+    def init(self, params):  # pylint: disable=unused-argument
         """Return the initial state of the optimizer.
 
         Args:
@@ -149,8 +145,6 @@ class QNGOptimizerQJIT:
             the ``optax``-like interface for all Jax-based quantum-specific optimizers.
 
         """
-        # pylint:disable=unused-argument
-        # pylint:disable=no-self-use
         return None
 
     def step(self, qnode, params, state, **kwargs):
@@ -199,9 +193,7 @@ class QNGOptimizerQJIT:
             import catalyst  # pylint: disable=import-outside-toplevel
 
             return catalyst.grad(qnode)(params, **kwargs)
-        if has_jax:
-            return jax.grad(qnode)(params, **kwargs)
-        raise ModuleNotFoundError("Jax is required.")  # pragma: no cover
+        return jax.grad(qnode)(params, **kwargs)
 
     @staticmethod
     def _get_value_and_grad(qnode, params, **kwargs):
@@ -214,9 +206,7 @@ class QNGOptimizerQJIT:
             import catalyst  # pylint: disable=import-outside-toplevel
 
             return catalyst.value_and_grad(qnode)(params, **kwargs)
-        if has_jax:
-            return jax.value_and_grad(qnode)(params, **kwargs)
-        raise ModuleNotFoundError("Jax is required.")  # pragma: no cover
+        return jax.value_and_grad(qnode)(params, **kwargs)
 
     def _get_metric_tensor(self, qnode, params, **kwargs):
         """Compute the metric tensor of the QNode objective function at the given point using the method specified
@@ -225,11 +215,11 @@ class QNGOptimizerQJIT:
 
         Raise a ``ValueError`` if the given objective function is not encoded as a QNode.
         """
-        # pylint: disable=not-callable
         if not isinstance(qnode, QNode):
             raise ValueError(
                 "The objective function must be encoded as a single QNode to use the Quantum Natural Gradient optimizer."
             )
+        # pylint: disable-next=not-callable
         mt = metric_tensor(qnode, approx=self.approx)(params, **kwargs)
         # reshape tensor into a matrix (acting on the flat grad vector)
         shape = math.shape(mt)

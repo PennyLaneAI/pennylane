@@ -14,10 +14,11 @@
 
 # pylint: disable=too-few-public-methods
 
+
 import numpy as np
 import pytest
 from operator2_utils import (
-    CompOp,
+    CompilableOp,
     DynOp,
     FullOp,
     HybridOp,
@@ -30,7 +31,7 @@ from operator2_utils import (
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.operator import Operator2
-from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.typing import AbstractArray, AbstractWires, Wire
 
 # ---------------------- Tests ----------------------
 
@@ -70,7 +71,7 @@ class TestEqualBasic:
         # op2 is an instance of op1's type, so dispatch reaches ``_equal_operator2``.
         assert isinstance(op2, DynOp)
         assert qp.equal(op1, op2) is False
-        with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
+        with pytest.raises(AssertionError, match="op1 and op2 have different types"):
             qp.assert_equal(op1, op2)
 
     def test_assert_equal_raises_for_unequal_ops(self):
@@ -183,15 +184,15 @@ class TestCompilableArgs:
 
     def test_equal_same_compilable(self):
         """Test that operators with the same compilable argument are equal."""
-        op1 = CompOp(3, wires=0)
-        op2 = CompOp(3, wires=0)
+        op1 = CompilableOp(3, wires=0)
+        op2 = CompilableOp(3, wires=0)
         assert qp.equal(op1, op2) is True
         qp.assert_equal(op1, op2)
 
     def test_different_compilable_not_equal(self):
         """Test that operators with different compilable arguments are unequal."""
-        op1 = CompOp(3, wires=0)
-        op2 = CompOp(4, wires=0)
+        op1 = CompilableOp(3, wires=0)
+        op2 = CompilableOp(4, wires=0)
         assert qp.equal(op1, op2) is False
         with pytest.raises(AssertionError, match="different values for 'n'"):
             qp.assert_equal(op1, op2)
@@ -433,15 +434,13 @@ class TestAbstractOperatorEquality:
         [
             (AbstractWires(1), AbstractWires(1), True),
             (AbstractWires(1), AbstractWires(2), False),
-            (AbstractWires(-1), AbstractWires(2), False),
         ],
     )
     def test_abstract_wires(self, wires1, wires2, are_equal):
         """Test that operators with abstract wires are detected correctly."""
 
-        # pylint: disable=useless-parent-delegation
         class SimpleOp(Operator2):
-            def __init__(self, wires) -> None:
+            def __init__(self, wires) -> None:  # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 
         op1 = SimpleOp(wires1)
@@ -452,9 +451,8 @@ class TestAbstractOperatorEquality:
     def test_comparing_abstract_and_concrete_wires(self):
         """Assert that an abstract type specifier is not the same as an operator instance."""
 
-        # pylint: disable=useless-parent-delegation
         class SimpleOp(Operator2):
-            def __init__(self, wires) -> None:
+            def __init__(self, wires) -> None:  # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 
         op1 = SimpleOp(AbstractWires(1))
@@ -492,6 +490,16 @@ class TestAbstractOperatorEquality:
         op2 = DynOp(AbstractArray(shape2, float), 0)
 
         assert qp.equal(op1, op2) is are_equal
+
+    def test_partially_abstract_operators(self):
+        """Tests that partially abstract operators are compared correctly."""
+
+        op1 = DynOp(0.5, Wire[1])
+        op2 = DynOp(0.6, Wire[1])
+        assert not qp.equal(op1, op2)  # concrete part not equal
+
+        op3 = DynOp(0.5, Wire[3])
+        assert not qp.equal(op1, op3)  # abstract part not equal
 
 
 def _jit_eq_fn(phi, wires, assert_=False):

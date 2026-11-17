@@ -16,21 +16,19 @@ Unit tests for the RandomLayers template.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard checks with the assert_valid function."""
 
     weights = np.array([[0.1, -2.1, 1.4]])
     op = qp.RandomLayers(weights, wires=(0, 1))
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_hyperparameters():
@@ -57,19 +55,18 @@ def test_hyperparameters():
     }
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the behavior of the flatten and unflatten methods."""
     weights = np.array([[0.1, -2.1, 1.4]])
     op = qp.RandomLayers(weights, wires=(0, 1))
 
-    data, metadata = op._flatten()
+    data, metadata = op._flatten()  # pylint: disable=protected-access
 
     assert qp.math.allclose(data[0], weights)
     # check metadata hashable
     assert hash(metadata)
 
-    new_op = type(op)._unflatten(*op._flatten())
+    new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
     qp.assert_equal(new_op, op)
     assert new_op is not op
 
@@ -92,14 +89,14 @@ class TestDecomposition:
         queue3 = op3.decomposition()
         decomp3 = op3.compute_decomposition(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
 
-        assert not all(g1.name == g2.name for g1, g2 in zip(queue1, queue2))
-        assert all(g2.name == g3.name for g2, g3 in zip(queue2, queue3))
+        assert not all(g1.name == g2.name for g1, g2 in zip(queue1, queue2, strict=False))
+        assert all(g2.name == g3.name for g2, g3 in zip(queue2, queue3, strict=False))
 
-        for op1, op2 in zip(queue1, decomp1):
+        for op1, op2 in zip(queue1, decomp1, strict=False):
             qp.assert_equal(op1, op2)
-        for op1, op2 in zip(queue2, decomp2):
+        for op1, op2 in zip(queue2, decomp2, strict=False):
             qp.assert_equal(op1, op2)
-        for op1, op2 in zip(queue3, decomp3):
+        for op1, op2 in zip(queue3, decomp3, strict=False):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("n_layers, n_rots", [(3, 4), (1, 2)])
@@ -165,7 +162,7 @@ class TestDecomposition:
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
-class TestInputs:
+class TestInputs:  # pylint: disable=too-few-public-methods
     """Test inputs and pre-processing."""
 
     def test_exception_wrong_dim(self):
@@ -185,7 +182,7 @@ class TestInputs:
             circuit(phi)
 
 
-class TestAttributes:
+class TestAttributes:  # pylint: disable=too-few-public-methods
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(
@@ -235,7 +232,7 @@ class TestInterfaces:
             qp.RZ(weights[0][2], wires=1),
         ]
 
-        for op1, op2 in zip(decomp, expected):
+        for op1, op2 in zip(decomp, expected, strict=False):
             qp.assert_equal(op1, op2)
 
     def test_autograd(self, tol):
@@ -312,33 +309,6 @@ class TestInterfaces:
         grads2 = grad_fn2(weights)
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        weights = tf.Variable(np.random.random(size=(1, 3)))
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(weights)
-        grads = tape.gradient(res, [weights])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(weights)
-        grads2 = tape2.gradient(res2, [weights])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):

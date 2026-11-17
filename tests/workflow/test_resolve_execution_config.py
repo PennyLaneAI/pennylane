@@ -14,7 +14,6 @@
 
 """Unit tests for the `_resolve_execution_config` helper function in PennyLane."""
 
-# pylint: disable=redefined-outer-name
 import pytest
 
 import pennylane as qp
@@ -47,17 +46,6 @@ def test_metric_tensor_lightning_edge_case():
     resolved_config = _resolve_execution_config(execution_config, device, [empty_tape])
 
     assert resolved_config.gradient_method == "adjoint"
-
-
-def test_param_shift_cv_kwargs():
-    """Test resolving an ExecutionConfig with parameter-shift and validating gradient keyword arguments."""
-    dev = qp.device("default.gaussian", wires=1)
-    tape = qp.tape.QuantumScript([qp.Displacement(0.5, 0.0, wires=0)])
-    execution_config = ExecutionConfig(gradient_method="parameter-shift")
-
-    resolved_config = _resolve_execution_config(execution_config, dev, [tape])
-
-    assert resolved_config.gradient_keyword_arguments["dev"] == dev
 
 
 def test_mcm_config_validation():
@@ -110,11 +98,11 @@ def test_jax_jit_interface():
     assert resolved_config.mcm_config == expected_mcm_config
 
 
-# pylint: disable=unused-argument
 def test_no_device_vjp_if_not_supported():
     """Test that an error is raised for device_vjp=True if the device does not support it."""
 
     class DummyDev(qp.devices.Device):
+        # pylint: disable=unused-argument
 
         def execute(self, circuits, execution_config=qp.devices.ExecutionConfig()):
             return 0

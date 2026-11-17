@@ -14,9 +14,18 @@
 
 # pylint: disable=too-few-public-methods,useless-parent-delegation
 
+
+import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
+
+
+class NonParametricOp(Operator2):
+    """Non parametric operator2."""
+
+    def __init__(self, wires):
+        super().__init__(wires)
 
 
 class DynOp(Operator2):
@@ -48,6 +57,19 @@ class TwoDynOp(Operator2):
         super().__init__(phi, theta, wires=wires)
 
 
+class DynOpWithMatrix(Operator2):
+    """Operator with a matrix defined."""
+
+    dynamic_argnames = ("phi", "theta", "omega")
+
+    def __init__(self, phi, theta, omega, wires):
+        super().__init__(phi, theta, omega, wires=wires)
+
+    @staticmethod
+    def compute_matrix(phi, theta, omega, wires):  # pylint: disable=unused-argument
+        return qp.Rot.compute_matrix(phi, theta, omega)
+
+
 class StaticOp(Operator2):
     """Operator with a static argument."""
 
@@ -57,13 +79,25 @@ class StaticOp(Operator2):
         super().__init__(label, wires=wires)
 
 
-class CompOp(Operator2):
+class CompilableOp(Operator2):
     """Operator with a compilable static argument."""
 
     compilable_argnames = ("n",)
 
     def __init__(self, n, wires):
         super().__init__(n, wires=wires)
+
+
+class CompilableDynOp(Operator2):
+    """Operator with a dynamic parameter, wires, and a compilable static argument."""
+
+    dynamic_argnames = ("phi",)
+    compilable_argnames = ("word",)
+
+    arg_specs = {"phi": Float, "wires": Wire[1]}
+
+    def __init__(self, phi, word, wires):
+        super().__init__(phi, word, wires=wires)
 
 
 class MultiWireOp(Operator2):
@@ -128,3 +162,11 @@ class FullOp(Operator2):
 
     def __init__(self, phi, static, hybrid, wires):
         super().__init__(phi, static, hybrid, wires=wires)
+
+
+class OpBuildsNestedOp(Operator2):
+    """Operator that builds a sub-operator based on input wires."""
+
+    def __init__(self, wires):
+        _ = NonParametricOp(wires[1])
+        super().__init__(wires)

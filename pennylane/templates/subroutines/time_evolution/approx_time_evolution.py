@@ -15,17 +15,18 @@ r"""
 Contains the ApproxTimeEvolution template.
 """
 
-# pylint: disable=protected-access
 import copy
 from collections import defaultdict
 
 from pennylane.control_flow import for_loop
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation
-from pennylane.core.queuing import QueuingManager, apply
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.core.queuing import QueuingManager
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import PauliRot
 from pennylane.ops.op_math.linear_combination import Hamiltonian
 from pennylane.pauli import PauliWord
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -161,6 +162,7 @@ class ApproxTimeEvolution(Operation):
         super().__init__(*hamiltonian.data, time, wires=wires)
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["hamiltonian"] = new_op._hyperparameters["hamiltonian"].map_wires(
@@ -174,9 +176,8 @@ class ApproxTimeEvolution(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(
-        *coeffs_and_time, wires, hamiltonian, n
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(*coeffs_and_time, wires, hamiltonian, n):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -218,7 +219,7 @@ class ApproxTimeEvolution(Operation):
         >>> ApproxTimeEvolution.compute_decomposition(
         ...     *coeffs_and_time, wires=range(num_qubits), n=trotter_steps, hamiltonian=hamiltonian
         ... )
-        [PauliRot(0.1, ZZ, wires=[0, 1]), PauliRot(0.2, X, wires=[0]), PauliRot(0.3, X, wires=[1])]
+        [PauliRot(theta=0.1, pauli_word=ZZ, wires=[0, 1]), PauliRot(theta=0.2, pauli_word=X, wires=[0]), PauliRot(theta=0.3, pauli_word=X, wires=[1])]
         """
         time = coeffs_and_time[-1]
 
@@ -245,15 +246,18 @@ def _approx_time_evolution_resources(words: tuple[PauliWord], n: int):
         for pw in words:
             if len(pw) != 0:
                 term_str = "".join(pw.values())
-                resources[resource_rep(PauliRot, pauli_word=term_str)] += 1
+                resources[PauliRot(Float, pauli_word=term_str, wires=Wire[len(term_str)])] += 1
 
     return resources
 
 
 @register_resources(_approx_time_evolution_resources)
-def _approx_time_evolution_decomposition(
-    *coeffs_and_time: list, wires: WiresLike, hamiltonian: Hamiltonian, n: int
-):  # pylint: disable=unused-argument
+def _approx_time_evolution_decomposition(  # pylint: disable=unused-argument
+    *coeffs_and_time: list,
+    wires: WiresLike,
+    hamiltonian: Hamiltonian,
+    n: int,
+):
     time = coeffs_and_time[-1]
 
     @for_loop(n)

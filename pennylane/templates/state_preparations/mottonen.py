@@ -173,7 +173,7 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
 
     if gray_code_rank == 0:
         if (
-            qp.math.is_abstract(theta)
+            qp.math.is_tracer(theta)
             or qp.math.requires_grad(theta)
             or qp.math.any(qp.math.abs(theta[..., 0]) > _ATOL)
         ):
@@ -185,7 +185,7 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
 
     # For abstract or differentiated theta we will never skip a rotation. Likewise, if there
     # is at least one non-zero angle (per batch if batched) for all rotations.
-    skip_none = qp.math.is_abstract(theta) or qp.math.requires_grad(theta)
+    skip_none = qp.math.is_tracer(theta) or qp.math.requires_grad(theta)
     if not skip_none:
         nonzero = (
             qp.math.abs(theta) > _ATOL
@@ -360,9 +360,9 @@ class MottonenStatePreparation(Operation):
                 f"state_vector must have a last axis of size {2 ** len(wires)} for {len(wires)} "
                 f"wires; got {shape[-1]}."
             )
-        if not qp.math.is_abstract(state_vector):
+        if not qp.math.is_tracer(state_vector):
             norms = qp.math.linalg.norm(state_vector, axis=-1)
-            if not qp.math.is_abstract(norms) and not qp.math.allclose(norms, 1.0, atol=1e-3):
+            if not qp.math.is_tracer(norms) and not qp.math.allclose(norms, 1.0, atol=1e-3):
                 raise ValueError(f"state_vector has to be of norm 1.0, got norm(s) {norms}")
 
         super().__init__(state_vector, wires=wires)
@@ -390,10 +390,10 @@ class MottonenStatePreparation(Operation):
         >>> ops = qp.MottonenStatePreparation.compute_decomposition(state_vector, wires=["a", "b"])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [RY(tensor(1.5708, dtype=torch.float64), wires=['a']),
-        RY(tensor(1.5708, dtype=torch.float64), wires=['b']),
-        CNOT(wires=['a', 'b']),
-        CNOT(wires=['a', 'b'])]
+        [RY(1.5707..., wires=['a']),
+         RY(1.5707..., wires=['b']),
+         CNOT(wires=['a', 'b']),
+         CNOT(wires=['a', 'b'])]
 
         """
         omega = qp.math.angle(state_vector)
@@ -425,7 +425,7 @@ class MottonenStatePreparation(Operation):
         # For real states, phases are fully captured by the signed Y angles above, so this
         # block is skipped entirely — no RZ gates or GlobalPhase needed.
         if not is_real and (
-            qp.math.is_abstract(omega)
+            qp.math.is_tracer(omega)
             or qp.math.requires_grad(omega)
             or not qp.math.allclose(omega, 0)
         ):
@@ -437,7 +437,7 @@ class MottonenStatePreparation(Operation):
                     op_list.extend(_uniform_rotation_dagger_ops(qp.RZ, alpha_z_k, control, target))
 
             global_phase = -1 * qp.math.sum(omega, axis=-1) / qp.math.shape(state_vector)[-1]
-            op_list.extend([qp.GlobalPhase(global_phase, wires=wires)])
+            op_list.extend([qp.GlobalPhase(global_phase)])
 
         return op_list
 

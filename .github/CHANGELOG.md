@@ -1,1 +1,1 @@
-The changelog has been moved to `doc/releases/changelog-dev.md`.
+The changelog has been moved to `doc/releases/changelog-dev.rst`.

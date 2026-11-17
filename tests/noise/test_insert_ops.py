@@ -23,8 +23,7 @@ from pennylane.core.qscript import QuantumScript
 from pennylane.noise.insert_ops import insert
 
 
-# pylint: disable=too-few-public-methods
-class DummyOp2(qp.core.operator.Operator2):
+class DummyOp2(qp.core.operator.Operator2):  # pylint: disable=too-few-public-methods
 
     def __init__(self, wires):
         super().__init__(wires=wires)
@@ -90,11 +89,16 @@ class TestInsert:
             qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -121,11 +125,16 @@ class TestInsert:
             qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -151,11 +160,16 @@ class TestInsert:
             qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -190,11 +204,16 @@ class TestInsert:
             qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -219,11 +238,16 @@ class TestInsert:
             qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -246,11 +270,16 @@ class TestInsert:
             qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -275,11 +304,16 @@ class TestInsert:
             qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -308,11 +342,16 @@ class TestInsert:
             qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -339,11 +378,16 @@ class TestInsert:
             qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -374,11 +418,16 @@ class TestInsert:
             qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
         tape_exp = QuantumScript.from_queue(q_tape_exp)
-        assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-        assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+        assert all(
+            o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
+        assert all(
+            o1.wires == o2.wires
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+        )
         assert all(
             np.allclose(o1.parameters, o2.parameters)
-            for o1, o2 in zip(tape.operations, tape_exp.operations)
+            for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
         )
         assert len(tape.measurements) == 1
         assert tape.observables[0].name == "Prod"
@@ -460,11 +509,15 @@ def test_insert_dev(dev_name):
         qp.expval(qp.PauliZ(0))
 
     tape_exp = QuantumScript.from_queue(q_tape_exp)
-    assert all(o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations))
-    assert all(o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations))
+    assert all(
+        o1.name == o2.name for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+    )
+    assert all(
+        o1.wires == o2.wires for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
+    )
     assert all(
         np.allclose(o1.parameters, o2.parameters)
-        for o1, o2 in zip(tape.operations, tape_exp.operations)
+        for o1, o2 in zip(tape.operations, tape_exp.operations, strict=False)
     )
     assert len(tape.measurements) == 2
     assert tape.observables[0].name == "Prod"
@@ -511,8 +564,7 @@ def test_insert_template():
 def test_insert_transform_works_with_non_qwc_obs():
     """Test that the insert transform catches and reports errors from the enclosed function."""
 
-    def op(noise_param, wires):
-        # pylint: disable=unused-argument
+    def op(noise_param, wires):  # pylint: disable=unused-argument
         qp.CRX(noise_param, wires=[0, 1])
         qp.CNOT(wires=[1, 0])
 

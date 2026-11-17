@@ -14,6 +14,8 @@
 """Tests for Subroutine and SubroutineOp"""
 
 # pylint: disable=unused-argument
+
+
 import inspect
 from collections import Counter, defaultdict
 from functools import partial
@@ -22,8 +24,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition import resource_rep
-from pennylane.ops import CNOT, Adjoint, PauliX, PauliZ
+from pennylane.core.operator import abstractify
+from pennylane.ops import CNOT, Adjoint, PauliX
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.templates import Subroutine, SubroutineOp, subroutine_resource_rep
 from pennylane.templates.core import (
     CollectedSubroutine,
@@ -31,7 +34,7 @@ from pennylane.templates.core import (
     adjoint_subroutine_resource_rep,
     change_op_basis_subroutine_resource_rep,
 )
-from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 
 
 class TestInitialization:
@@ -64,7 +67,7 @@ class TestInitialization:
 
         resources = S.compute_resources(0.5, wires=0)
         expected = defaultdict(int)
-        expected[qp.resource_rep(qp.RX)] = 1
+        expected[abstractify(qp.RX)] = 1
         assert resources == expected
 
     def test_wire_argnames(self):
@@ -165,7 +168,8 @@ def Example1SetupInputs(x, y, reg1, reg2, pauli_words):
 
 def Example1Resources(x, y, reg1, reg2, pauli_words):
     return {
-        qp.resource_rep(qp.PauliRot, pauli_word=pw): num for pw, num in Counter(pauli_words).items()
+        qp.PauliRot(Float, pauli_word=pw, wires=Wire[len(pw)]): num
+        for pw, num in Counter(pauli_words).items()
     }
 
 
@@ -205,10 +209,7 @@ def test_fallback_creating_resources_AbstractArray():
 
     @partial(Subroutine, static_argnames="rotation")
     def f(params, wires, rotation):
-        for (
-            p,
-            w,
-        ) in zip(params["a"], wires):
+        for p, w in zip(params["a"], wires, strict=True):
             qp.PauliRot(p, rotation, w)
         qp.MultiControlledX(wires)
 
@@ -216,17 +217,10 @@ def test_fallback_creating_resources_AbstractArray():
     w = AbstractWires(3)
 
     resources = f.compute_resources({"a": p}, w, "Z")
-    expected = defaultdict(int)
-    expected[qp.resource_rep(qp.PauliRot, pauli_word="Z")] = 3
-
-    r = qp.resource_rep(
-        qp.MultiControlledX,
-        num_control_wires=2,
-        num_zero_control_values=0,
-        num_work_wires=0,
-        work_wire_type="borrowed",
-    )
-    expected[r] = 1
+    expected = {
+        qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 3,
+        abstractify(qp.MultiControlledX(Wire[3], work_wires=Wire[0])): 1,
+    }
     assert resources == expected
 
 
@@ -258,19 +252,20 @@ class TestSubroutineOp:
     def test_isinstance_with_Subroutine(self):
         """Test that SubroutineOp's are instances of their corresponding Subroutine."""
 
-        # pylint: disable=isinstance-second-argument-not-valid-type
         assert isinstance(self.op1, Example1Subroutine)
 
+    # SubroutineOp exists for the tape pipeline only. It does not need to be capture compatible.
+    @pytest.mark.usefixtures("disable_capture")
     def test_basic_validity(self):
         """Test that subroutine op passes basic validity checks."""
-        qp.ops.functions.assert_valid(self.op1, skip_pickle=True)
+        qp.testing.assert_valid(self.op1, skip_pickle=True)
 
     def test_repr(self):
         """Test that SubroutineOp has a clean repr."""
 
         assert (
             repr(self.op1)
-            == "<Example1(x=0.5, y=0.6, reg1=Wires([0, 'a']), reg2=Wires(['a', 1]), pauli_words=('XY', 'YZ'))>"
+            == "<Example1(x=0.5, y=0.6, reg1=[0, 'a'], reg2=['a', 1], pauli_words=('XY', 'YZ'))>"
         )
 
     def test_set_wires(self):
@@ -321,7 +316,8 @@ class TestSubroutineOp:
 
         tape = qp.tape.QuantumScript([self.op1])
 
-        [new_tape], _ = qp.transforms.decompose(tape, gate_set={qp.PauliRot})
+        # pylint: disable-next=protected-access
+        [new_tape], _ = qp.transforms._tape_decompose(tape, gate_set={qp.PauliRot})
 
         qp.assert_equal(new_tape[0], qp.PauliRot(0.5, "XY", (0, "a")))
         qp.assert_equal(new_tape[1], qp.PauliRot(0.6, "YZ", ("a", 1)))
@@ -386,7 +382,7 @@ class TestSubroutineCapture:
     def test_setup_inputs_program_capture(self):
         """Test that setup_inputs can make inputs hashable for use with program capture."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         def my_setup_inputs(wires, pauli_words):
             return (), {"wires": wires, "pauli_words": tuple(pauli_words)}
@@ -402,9 +398,9 @@ class TestSubroutineCapture:
         jaxpr = jax.make_jaxpr(w)()
         assert jaxpr.eqns[-1].primitive == qp.capture.primitives.quantum_subroutine_prim
         inner_jaxpr = jaxpr.eqns[-1].params["jaxpr"]
-        # pylint: disable=protected-access
-        assert inner_jaxpr.eqns[-1].primitive == qp.PauliRot._primitive
-        assert inner_jaxpr.eqns[-1].params["pauli_word"] == "X"
+        assert inner_jaxpr.eqns[-1].primitive == qp.capture.primitives.operator_p
+        assert inner_jaxpr.eqns[-1].params["op_cls"] is qp.PauliRot
+        assert inner_jaxpr.eqns[-1].params["pauli_word"][0] == ("X",)
 
     def test_different_forms_of_wires(self):
         """Test that wires can be provided as literal integers, traced integers, lists, tuple, and arrays."""
@@ -463,7 +459,7 @@ class TestSubroutineCapture:
     def test_autograph_not_propagated_through(self):
         """Test that autograph would propagate through a Subroutine."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         @Subroutine
         def f(x, wires):
@@ -482,7 +478,7 @@ class TestSubroutineCapture:
     def test_manual_autograph_use(self):
         """Test that autograph can be manually applied to a Subroutine."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         @Subroutine
         @qp.capture.run_autograph
@@ -501,7 +497,7 @@ class TestSubroutineCapture:
     def test_stack_wires(self):
         """Test that wire arguments to a subroutine are stacked"""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         @Subroutine
         def f(wires):
@@ -526,7 +522,7 @@ class TestSubroutineCapture:
 
 
 @pytest.mark.capture
-class TestCollectedSubroutine:
+class TestCollectedSubroutine:  # pylint: disable=too-few-public-methods
 
     def test_no_abstract_capturing(self):
         """Test that CollectedSubroutine can't occur during an abstract evaluation."""
@@ -538,24 +534,6 @@ class TestCollectedSubroutine:
 
         with pytest.raises(NotImplementedError, match="should never be hit"):
             jax.make_jaxpr(f)()
-
-    def test_adjoint_of_subroutine_impl(self):
-        """Test that if the adjoint of a subroutine is called without make_jaxpr and capture is enabled,
-        we get the adjoint of a CollectedSubroutine."""
-
-        @Subroutine
-        def f(wires):
-            qp.X(wires)
-
-        with qp.queuing.AnnotatedQueue() as q:
-            qp.adjoint(f)(0)
-
-        [adj_op] = q.queue
-        assert isinstance(adj_op, qp.ops.Adjoint)
-        base = adj_op.base
-        assert isinstance(base, CollectedSubroutine)
-        assert base.name == "f"
-        qp.assert_equal(base.decomposition()[0], qp.X(0))
 
 
 @pytest.mark.integration
@@ -634,22 +612,6 @@ class TestTapePLIntegration:
         out2 = qp.draw(c, decimals=None)(0.5, 1.2)
         assert out2 == "0: ─╭Tester─┤  <Z>\n1: ─╰Tester─┤  <Z>"
 
-    def test_specs(self):
-        """Test that subroutines show up as gate types in specs."""
-
-        @qp.templates.Subroutine
-        def Tester(x, y, wires):
-            qp.RX(x, wires[0])
-            qp.RY(y, wires[1])
-
-        @qp.qnode(qp.device("reference.qubit", wires=2))
-        def c(x, y):
-            Tester(x, y, wires=(0, 1))
-            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
-
-        specs = qp.specs(c, level="top")(0.5, 1.2)
-        assert specs.resources.gate_types["Tester"] == 1
-
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestGraphDecomposition:
@@ -679,9 +641,8 @@ class TestGraphDecomposition:
         )
         assert rp["signature_key"] == key
 
-    # pylint: disable=too-many-statements
     def test_change_op_basis_subroutine_resource_rep_with_a_subroutine(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
+        """Test creating a ChangeOpBasis resource representation with a subroutine."""
 
         # use a non-standard order
         @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
@@ -691,14 +652,13 @@ class TestGraphDecomposition:
         x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
             partial(f, "X", AbstractArray((), dtype=int), x=x, reg2=AbstractArray((2,), dtype=int)),
-            resource_rep(qp.PauliX),
+            abstractify(qp.PauliX),
         )
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["target_op"].name == "PauliX"
-        assert rr.params["target_op"].op_type == PauliX
+        assert isinstance(rr.params["target_op"], PauliX)
+        assert rr.params["target_op"].is_fully_abstract
 
         assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["compute_op"].name == "SubroutineOp"
@@ -732,29 +692,20 @@ class TestGraphDecomposition:
         }
 
     def test_change_op_basis_subroutine_resource_rep_with_an_op_and_a_resource_rep(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis with an op and a nested resource_rep."""
+        """Test creating a ChangeOpBasis resource representation with operators."""
 
-        rr = change_op_basis_subroutine_resource_rep(
-            qp.PauliZ(0),
-            resource_rep(qp.PauliX),
-        )
-        assert isinstance(rr, qp.decomposition.CompressedResourceOp)
-        assert rr.name == "ChangeOpBasis"
-
-        assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["compute_op"].name == "PauliZ"
-        assert rr.params["compute_op"].op_type == PauliZ
-
-        assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["target_op"].name == "PauliX"
-        assert rr.params["target_op"].op_type == PauliX
-
-        assert isinstance(rr.params["uncompute_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["uncompute_op"].name == "Adjoint(PauliZ)"
-        assert rr.params["uncompute_op"].op_type == Adjoint
+        rr = change_op_basis_subroutine_resource_rep(qp.PauliZ(0), abstractify(qp.PauliX))
+        assert isinstance(rr, qp.ops.ChangeOpBasis2)
+        assert rr.name == "ChangeOpBasis2"
+        assert rr.compute_op == qp.Z(Wire[1])
+        assert rr.compute_op.is_fully_abstract
+        assert rr.target_op == qp.X(Wire[1])
+        assert rr.target_op.is_fully_abstract
+        assert rr.uncompute_op == qp.adjoint(qp.Z(Wire[1]))
+        assert rr.uncompute_op.is_fully_abstract
 
     def test_change_op_basis_subroutine_resource_rep_with_a_resource_rep_and_a_subroutine(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
+        """Test creating a ChangeOpBasis resource representation with a subroutine target."""
 
         @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
         def f(a, reg1, reg2, x):
@@ -762,14 +713,13 @@ class TestGraphDecomposition:
 
         x = {"a": AbstractArray((3,), float)}
         rr = change_op_basis_subroutine_resource_rep(
-            resource_rep(qp.PauliX), partial(f, "X", AbstractWires(0), x=x, reg2=AbstractWires(2))
+            abstractify(qp.PauliX), partial(f, "X", AbstractWires(0), x=x, reg2=AbstractWires(2))
         )
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["compute_op"].name == "PauliX"
-        assert rr.params["compute_op"].op_type == PauliX
+        assert rr.params["compute_op"] == PauliX(Wire[1])
+        assert rr.params["compute_op"].is_fully_abstract
 
         assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["target_op"].name == "SubroutineOp"
@@ -785,12 +735,12 @@ class TestGraphDecomposition:
             ),
         }
 
-        assert isinstance(rr.params["uncompute_op"], qp.decomposition.CompressedResourceOp)
+        assert isinstance(rr.params["uncompute_op"], Adjoint2)
         assert rr.params["uncompute_op"].name == "Adjoint(PauliX)"
-        assert rr.params["uncompute_op"].op_type == Adjoint
+        assert rr.params["uncompute_op"].is_fully_abstract
 
     def test_change_op_basis_subroutine_resource_rep_with_a_subroutine_uncompute(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine uncompute."""
+        """Test creating a ChangeOpBasis resource representation with a subroutine uncompute."""
 
         @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
         def f(a, reg1, reg2, x):
@@ -807,13 +757,11 @@ class TestGraphDecomposition:
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["compute_op"].name == "CNOT"
-        assert rr.params["compute_op"].op_type == CNOT
+        assert isinstance(rr.params["compute_op"], CNOT)
+        assert rr.params["compute_op"].is_fully_abstract
 
-        assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
-        assert rr.params["target_op"].name == "PauliX"
-        assert rr.params["target_op"].op_type == PauliX
+        assert isinstance(rr.params["target_op"], PauliX)
+        assert rr.params["target_op"].is_fully_abstract
 
         assert isinstance(rr.params["uncompute_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["uncompute_op"].name == "SubroutineOp"
@@ -1007,7 +955,7 @@ class TestGraphDecomposition:
 
         op = qp.adjoint(RXLayer.operator(np.array([1, 2, 3]), (1, 2, 3)))
         tape = qp.tape.QuantumScript([op])
-        new_tape = qp.decompose(tape)[0][0]
+        new_tape = qp.transforms._tape_decompose(tape)[0][0]  # pylint: disable=protected-access
         qp.assert_equal(new_tape[0], qp.RX(-3, 3))
         qp.assert_equal(new_tape[1], qp.RX(-2, 2))
         qp.assert_equal(new_tape[2], qp.RX(-1, 1))
@@ -1025,7 +973,8 @@ class TestGraphDecomposition:
 
         op = qp.ctrl(RXLayer.operator(np.array([1, 2, 3]), (1, 2, 3)), (4, 5))
         tape = qp.tape.QuantumScript([op])
-        new_tape = qp.decompose(tape, max_expansion=1)[0][0]
+        # pylint: disable-next=protected-access
+        new_tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][0]
         qp.assert_equal(new_tape[0], qp.ctrl(qp.RX(1, 1), (4, 5)))
         qp.assert_equal(new_tape[1], qp.ctrl(qp.RX(2, 2), (4, 5)))
         qp.assert_equal(new_tape[2], qp.ctrl(qp.RX(3, 3), (4, 5)))
@@ -1055,8 +1004,7 @@ class TestGraphDecomposition:
             for i in range(params.shape[0]):
                 qp.RY(params[i], wires[i])
 
-        # pylint: disable=too-few-public-methods
-        class SubroutineDemoOp(qp.operation.Operator):
+        class SubroutineDemoOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
 
             resource_keys = frozenset(())
 
@@ -1084,16 +1032,19 @@ class TestGraphDecomposition:
         op = SubroutineDemoOp(wires=(0, 1, 2))
         tape = qp.tape.QuantumScript([op])
 
-        tape_rx = qp.decompose(tape, gate_set={qp.RX})[0][0]
+        # pylint: disable-next=protected-access
+        tape_rx = qp.transforms._tape_decompose(tape, gate_set={qp.RX})[0][0]
         qp.assert_equal(tape_rx[0], qp.RX(0.0, 0))
         qp.assert_equal(tape_rx[1], qp.RX(1.0, 1))
         qp.assert_equal(tape_rx[2], qp.RX(2.0, 2))
 
-        tape_ry = qp.decompose(tape, gate_set={qp.RY})[0][0]
+        # pylint: disable-next=protected-access
+        tape_ry = qp.transforms._tape_decompose(tape, gate_set={qp.RY})[0][0]
         qp.assert_equal(tape_ry[0], qp.RY(0.0, 0))
         qp.assert_equal(tape_ry[1], qp.RY(1.0, 1))
         qp.assert_equal(tape_ry[2], qp.RY(2.0, 2))
 
+    @pytest.mark.usefixtures("disable_capture")
     def test_inexact_resources_testing(self):
         """Test that assert_valid will work on a Subroutine with inexact resources."""
 
@@ -1105,7 +1056,7 @@ class TestGraphDecomposition:
             qp.X(wires)
 
         op = f.operator(0)
-        qp.ops.functions.assert_valid(op, skip_pickle=True, skip_capture=True)
+        qp.testing.assert_valid(op, skip_pickle=True)
 
     def test_compute_resources_fallback(self):
         """Test that the compute_resources fallback allows integration with decomps by default."""
@@ -1115,14 +1066,15 @@ class TestGraphDecomposition:
             for (
                 p,
                 w,
-            ) in zip(params, wires):
+            ) in zip(params, wires, strict=False):
                 qp.PauliRot(p, rotation, w)
             qp.MultiControlledX(wires)
 
         params = np.array([0.5, 1.2, 3.4])
         wires = [0, 1, 2]
         tape = qp.tape.QuantumScript([f.operator(params, wires, "X")])
-        [decomposed], _ = qp.decompose(tape, gate_set=qp.gate_sets.ALL_OPS)
+        # pylint: disable-next=protected-access
+        [decomposed], _ = qp.transforms._tape_decompose(tape, gate_set=qp.gate_sets.ALL_OPS)
         print(decomposed.circuit)
         qp.assert_equal(decomposed[0], qp.PauliRot(0.5, "X", 0))
         qp.assert_equal(decomposed[1], qp.PauliRot(1.2, "X", 1))

@@ -15,6 +15,10 @@
 
 import math
 
+import jax
+import jax.numpy as jnp
+from jax.core import ShapedArray
+
 import pennylane as qp
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 from pennylane.core.queuing import QueuingManager
@@ -25,14 +29,6 @@ from pennylane.ops.op_math.decompositions.normal_forms import (
     _ma_normal_form,
 )
 from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega, ZSqrtTwo
-
-is_jax = True
-try:
-    import jax
-    import jax.numpy as jnp
-    from jax.core import ShapedArray
-except (ModuleNotFoundError, ImportError):  # pragma: no cover
-    is_jax = False
 
 
 def _domain_correction(theta: float) -> tuple[float, ZOmega]:
@@ -128,7 +124,6 @@ def apply_clifford_from_idx(idx, wire):
     return qp.cond(head_cond, head_fn, elifs=elifs)
 
 
-# pylint: disable=no-value-for-parameter
 def _jit_rs_decomposition(wire, decomposition_info):
     """Apply the Ross-Selinger decomposition with QJIT to the given decomposition.
 
@@ -179,7 +174,7 @@ def _jit_rs_decomposition(wire, decomposition_info):
                 true_fn=qp.cond(is_HT.astype(bool), true_fn=compose_SHT, false_fn=compose_HT),
             )()
 
-        syllable_sequence_loop()
+        syllable_sequence_loop()  # pylint: disable=no-value-for-parameter
         ops.append(syllable_sequence_loop.operation)
 
     # Rightmost Clifford operator
@@ -290,11 +285,6 @@ def rs_decomposition(
             decomposed_gates, g_phase, phase = eval_ross_algorithm(unwrapped_angle)
             g_phase = qp.math.array(g_phase, like=angle)
         else:
-            if not is_jax:
-                raise ImportError(
-                    "QJIT mode requires JAX. Please install it with `pip install jax jaxlib`."
-                )  # pragma: no cover
-
             # circular import issue when import outside of the function
             api_extensions = AvailableCompilers.names_entrypoints["catalyst"]["ops"].load()
 
@@ -337,10 +327,6 @@ def rs_decomposition(
     interface = qp.math.get_interface(angle)
     phase += qp.math.mod(g_phase, 2) * math.pi
     if is_qjit:
-        if not is_jax:
-            raise ImportError(
-                "QJIT mode requires JAX. Please install it with `pip install jax jaxlib`."
-            )  # pragma: no cover
         with jax.ensure_compile_time_eval():
             global_phase = qp.GlobalPhase(phase)
     else:

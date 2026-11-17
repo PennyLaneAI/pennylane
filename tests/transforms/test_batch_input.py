@@ -15,8 +15,6 @@
 Unit tests for the ``batch_inputs`` transform.
 """
 
-# pylint: disable=too-few-public-methods,no-value-for-parameter,comparison-with-callable
-
 import pytest
 
 import pennylane as qp
@@ -110,7 +108,7 @@ def test_value_error():
 
     dev = qp.device("default.qubit", wires=2)
 
-    class Embedding(qp.AngleEmbedding):
+    class Embedding(qp.AngleEmbedding):  # pylint: disable=too-few-public-methods
         """Variant of qp.AngleEmbedding that does not provide fixed
         ``ndim_params`` in order to allow for the detection of inconsistent
         batching in ``batch_input``."""
@@ -285,7 +283,6 @@ def test_shot_vector():
 
     assert isinstance(res, tuple)
     assert len(res) == 5
-    # pylint:disable=not-an-iterable
     assert all(shot_res.shape == (batch_size, 4) for shot_res in res)
 
 
@@ -441,63 +438,6 @@ class TestDiffSingle:
         expected = -np.sin(0.1) * torch.sum(torch.sin(input))
         assert qp.math.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_tf(self, diff_method, tol, interface):
-        """Test derivatives when using TF"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.batch_input(argnum=0)
-        @qp.qnode(dev, diff_method=diff_method, interface=interface)
-        def circuit(input, x):
-            qp.RY(input, wires=1)
-            qp.CNOT(wires=[0, 1])
-            qp.RX(x, wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-        batch_size = 3
-        input = tf.Variable(np.linspace(0.1, 0.5, batch_size), trainable=False)
-        x = tf.Variable(0.1, trainable=True)
-
-        with tf.GradientTape() as tape:
-            loss = tf.reduce_sum(circuit(input, x))
-
-        res = tape.gradient(loss, x)
-        expected = -np.sin(0.1) * tf.reduce_sum(tf.sin(input))
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-    @pytest.mark.parametrize("interface", ["auto", "tf-autograph"])
-    def test_tf_autograph(self, diff_method, tol, interface):
-        """Test derivatives when using TF and autograph"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @tf.function
-        @qp.batch_input(argnum=0)
-        @qp.qnode(dev, diff_method=diff_method, interface=interface)
-        def circuit(input, x):
-            qp.RY(input, wires=1)
-            qp.CNOT(wires=[0, 1])
-            qp.RX(x, wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-        batch_size = 3
-        input = tf.Variable(np.linspace(0.1, 0.5, batch_size), trainable=False)
-        x = tf.Variable(0.1, trainable=True, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            loss = tf.reduce_sum(circuit(input, x))
-
-        res = tape.gradient(loss, x)
-        expected = -np.sin(0.1) * tf.reduce_sum(tf.sin(input))
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
 
 class TestDiffMulti:
     """Test gradients for multiple measurements"""
@@ -591,7 +531,7 @@ class TestDiffMulti:
 
         assert isinstance(res, tuple)
         assert len(res) == 2
-        for r, exp in zip(res, expected):
+        for r, exp in zip(res, expected, strict=False):
             assert qp.math.allclose(r, exp, atol=tol)
 
         grad = jax.jacobian(circuit, argnums=1)(input, x)
@@ -611,7 +551,7 @@ class TestDiffMulti:
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
-        for g, exp in zip(grad, expected):
+        for g, exp in zip(grad, expected, strict=False):
             assert qp.math.allclose(g, exp, atol=tol, rtol=0)
 
     @pytest.mark.jax
@@ -656,7 +596,7 @@ class TestDiffMulti:
 
         assert isinstance(res, tuple)
         assert len(res) == 2
-        for r, exp in zip(res, expected):
+        for r, exp in zip(res, expected, strict=False):
             assert qp.math.allclose(r, exp, atol=tol)
 
         grad = jax.jacobian(circuit, argnums=1)(input, x)
@@ -676,7 +616,7 @@ class TestDiffMulti:
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
-        for g, exp in zip(grad, expected):
+        for g, exp in zip(grad, expected, strict=False):
             assert qp.math.allclose(g, exp, atol=tol, rtol=0)
 
     @pytest.mark.torch
@@ -717,7 +657,7 @@ class TestDiffMulti:
 
         assert isinstance(res, tuple)
         assert len(res) == 2
-        for r, exp in zip(res, expected):
+        for r, exp in zip(res, expected, strict=False):
             assert qp.math.allclose(r, exp, atol=tol)
 
         grad = torch.autograd.functional.jacobian(lambda x: circuit(input, x), x)
@@ -737,113 +677,8 @@ class TestDiffMulti:
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
-        for g, exp in zip(grad, expected):
+        for g, exp in zip(grad, expected, strict=False):
             assert qp.math.allclose(g, exp, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_tf(self, diff_method, tol, interface):
-        """Test derivatives when using TF"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.batch_input(argnum=0)
-        @qp.qnode(dev, diff_method=diff_method, interface=interface)
-        def circuit(input, x):
-            qp.RY(input, wires=0)
-            qp.RY(x, wires=0)
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
-
-        batch_size = 3
-        input = tf.Variable(np.linspace(0.1, 0.5, batch_size), trainable=False)
-        x = tf.Variable(0.1, trainable=True, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            res = circuit(input, x)
-            res = qp.math.concatenate([qp.math.expand_dims(res[0], 1), res[1]], axis=1)
-
-        expected = qp.math.transpose(
-            qp.math.stack(
-                [
-                    np.cos(input + x),
-                    np.cos((input + x) / 2) ** 2,
-                    np.zeros_like(input),
-                    np.zeros_like(input),
-                    np.sin((input + x) / 2) ** 2,
-                ]
-            )
-        )
-        assert qp.math.allclose(res, expected, atol=tol)
-
-        grad = tape.jacobian(res, x)
-        expected = qp.math.transpose(
-            qp.math.stack(
-                [
-                    -np.sin(input + x),
-                    -np.sin(input + x) / 2,
-                    np.zeros_like(input),
-                    np.zeros_like(input),
-                    np.sin(input + x) / 2,
-                ]
-            )
-        )
-        assert qp.math.allclose(grad, expected, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
-    @pytest.mark.parametrize("interface", ["auto", "tf-autograph"])
-    def test_tf_autograph(self, diff_method, tol, interface):
-        """Test derivatives when using TF and autograph"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @tf.function
-        @qp.batch_input(argnum=0)
-        @qp.qnode(dev, diff_method=diff_method, interface=interface)
-        def circuit(input, x):
-            qp.RY(input, wires=0)
-            qp.RY(x, wires=0)
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
-
-        batch_size = 3
-        input = tf.Variable(np.linspace(0.1, 0.5, batch_size), trainable=False)
-        x = tf.Variable(0.1, trainable=True, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            res = circuit(input, x)
-            res = qp.math.concatenate([qp.math.expand_dims(res[0], 1), res[1]], axis=1)
-
-        expected = qp.math.transpose(
-            qp.math.stack(
-                [
-                    np.cos(input + x),
-                    np.cos((input + x) / 2) ** 2,
-                    np.zeros_like(input),
-                    np.zeros_like(input),
-                    np.sin((input + x) / 2) ** 2,
-                ]
-            )
-        )
-        assert qp.math.allclose(res, expected, atol=tol)
-
-        grad = tape.jacobian(res, x)
-        expected = qp.math.transpose(
-            qp.math.stack(
-                [
-                    -np.sin(input + x),
-                    -np.sin(input + x) / 2,
-                    np.zeros_like(input),
-                    np.zeros_like(input),
-                    np.sin(input + x) / 2,
-                ]
-            )
-        )
-        assert qp.math.allclose(grad, expected, atol=tol, rtol=0)
 
 
 def test_unbatched_not_copied():

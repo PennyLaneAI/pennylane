@@ -17,6 +17,7 @@ import inspect
 from collections.abc import Callable, Sequence
 from functools import partial
 
+import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
@@ -37,7 +38,7 @@ with QuantumTape() as tape_circuit:
     qp.expval(qp.PauliZ(wires=0))
 
 
-def qfunc_circuit(a: qp.typing.TensorLike):
+def qfunc_circuit(a: TensorLike):
     """Qfunc circuit/"""
     qp.Hadamard(wires=0)
     qp.CNOT(wires=[0, 1])
@@ -57,7 +58,7 @@ def no_tape_transform(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transform without tape."""
     circuit = circuit.copy()
-    circuit._ops.pop(index)  # pylint:disable=protected-access
+    circuit._ops.pop(index)  # pylint: disable=protected-access
     return [circuit], lambda x: x
 
 
@@ -66,7 +67,7 @@ def no_quantum_tape_transform(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transform with wrong hinting."""
     tape = tape.copy()
-    tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)  # pylint: disable=protected-access
     return [tape], lambda x: x
 
 
@@ -105,7 +106,7 @@ def first_valid_transform(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """A valid transform."""
     tape = tape.copy()
-    tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)  # pylint: disable=protected-access
     _ = (qp.PauliX(0), qp.S(0))
     return [tape], lambda x: x
 
@@ -116,7 +117,7 @@ def second_valid_transform(
     """A valid trasnform."""
     tape1 = tape.copy()
     tape2 = tape.copy()
-    tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)  # pylint: disable=protected-access
 
     def fn(results):
         return qp.math.sum(results)
@@ -133,7 +134,7 @@ def expand_transform(
     tape: QuantumScript, index: int
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Multiple args expand fn."""
-    tape._ops.pop(index)  # pylint:disable=protected-access
+    tape._ops.pop(index)  # pylint: disable=protected-access
     return [tape], lambda x: x
 
 
@@ -213,15 +214,12 @@ class TestBoundTransform:
             qp.transform(first_valid_transform), args=[0], kwargs={}
         )
 
-        q_transform, args, kwargs, cotransform, plxpr_transform, is_informative, final_transform = (
-            container
-        )
+        q_transform, args, kwargs, cotransform, is_informative, final_transform = container
 
         assert q_transform is first_valid_transform
         assert args == (0,)
         assert kwargs == {}
         assert cotransform is None
-        assert plxpr_transform is not None  # fallback
         assert not is_informative
         assert not final_transform
 
@@ -229,7 +227,6 @@ class TestBoundTransform:
         assert container.args == (0,)
         assert not container.kwargs
         assert container.classical_cotransform is None
-        assert container.plxpr_transform is not None  # tape fallback
         assert not container.is_informative
         assert not container.is_final_transform
 
@@ -264,8 +261,7 @@ class TestBoundTransform:
 
         c = BoundTransform(first_valid_transform, is_informative=True)
 
-        # pylint: disable=protected-access
-        assert isinstance(c._transform, Transform)
+        assert isinstance(c._transform, Transform)  # pylint: disable=protected-access
         assert c.is_informative
         assert c._transform.is_informative  # pylint: disable=protected-access
 
@@ -281,8 +277,7 @@ class TestTransformExtension:
     def test_generic_register(self, explicit_type):
         """Test that generic_register can register behavior for a new object."""
 
-        # pylint: disable=too-few-public-methods
-        class Subroutine:
+        class Subroutine:  # pylint: disable=too-few-public-methods
             def __init__(self, ops):
                 self.ops = ops
 
@@ -319,9 +314,7 @@ class TestTransformExtension:
             return (tape.copy(ops=tape.operations[:3]),), lambda x: x[0]
 
         @dummy_transform.register
-        def _(
-            tape: qp.tape.QuantumScript,
-        ):  # pylint: disable=redefined-outer-name, unused-argument
+        def _(tape: qp.tape.QuantumScript):
             return (tape.copy(ops=tape.operations[:1]),), lambda x: x[0]
 
         input = qp.tape.QuantumScript([qp.X(0), qp.X(1), qp.X(2), qp.X(3), qp.X(4), qp.X(5)])
@@ -344,26 +337,24 @@ class TestTransform:  # pylint: disable=too-many-public-methods
     """Test the transform function (validate and dispatch)."""
 
     @pytest.mark.catalyst
-    @pytest.mark.external
-    def test_error_on_qjit(self):
-        """Test that an error is raised on when applying a transform to a qjit object."""
+    def test_transform_on_qjit(self):
+        """Test that applying a transform to a qjit object transforms the wrapped workflow."""
 
-        pytest.importorskip("catalyst")
+        import catalyst
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.qnode(qp.device("lightning.qubit", wires=1))
         def cost():
             qp.RY(0.1, wires=0)
-            qp.RY(0.1, wires=0)
+            qp.RY(0.2, wires=0)
             return qp.expval(qp.Z(0))
 
         dispatched_transform = qp.transform(first_valid_transform)
+        transformed = dispatched_transform(cost, index=0)
 
-        with pytest.raises(
-            TransformError,
-            match=r"Functions that are wrapped / decorated with qjit cannot subsequently",
-        ):
-            dispatched_transform(cost)
+        assert isinstance(transformed, catalyst.QJIT)
+        assert np.allclose(transformed(), np.cos(0.2))
+        assert np.allclose(cost(), np.cos(0.3))
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_integration_dispatcher_with_valid_transform(self, valid_transform):
@@ -664,9 +655,8 @@ class TestTransform:  # pylint: disable=too-many-public-methods
     def test_first_positional_arg_a_sequence(self):
         """Test that a BoundTransform is still created when the first positional arg is a sequence."""
 
-        # pylint: disable=unused-argument
         @qp.transform
-        def f(tape, param):
+        def f(tape, param):  # pylint: disable=unused-argument
             return (tape,), lambda res: res[0]
 
         bound_t = f("abcd")
@@ -734,7 +724,7 @@ class TestTransform:  # pylint: disable=too-many-public-methods
         tp2 = QuantumScript(fin_ops, [qp.expval(qp.PauliY(2) @ qp.PauliZ(1))])
         fin_batch = batch_type([tp1, tp2])
 
-        for tapeA, tapeB in zip(fin_batch, batch2):
+        for tapeA, tapeB in zip(fin_batch, batch2, strict=False):
             qp.assert_equal(tapeA, tapeB)
         assert abs(comb_postproc(result, fn1, fn2).item() - 0.5) < num_margin
 
@@ -802,14 +792,14 @@ class TestTransform:  # pylint: disable=too-many-public-methods
         """Test a device transform."""
 
         class DummyDev(qp.devices.Device):
-            # pylint: disable=unused-argument
+            # pylint: disable-next=unused-argument
             def preprocess_transforms(self, execution_config=None):
                 prog = qp.CompilePipeline()
                 prog.add_transform(qp.defer_measurements)
                 prog.add_transform(qp.compile)
                 return prog
 
-            def execute(self, circuits, execution_config=None):
+            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
                 return [0] * len(circuits)
 
         _dev = DummyDev()
@@ -841,9 +831,7 @@ class TestTransform:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_old_device_transform(self, valid_transform):
         """Test a device transform."""
-        device = qp.devices.LegacyDeviceFacade(
-            DefaultQubitLegacy(wires=2)
-        )  # pylint: disable=redefined-outer-name
+        device = qp.devices.LegacyDeviceFacade(DefaultQubitLegacy(wires=2))
 
         dispatched_transform = qp.transform(valid_transform)
         new_dev = dispatched_transform(device, index=0)
@@ -923,12 +911,12 @@ class TestTransform:  # pylint: disable=too-many-public-methods
         with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
 
             @qp.transform
-            def custom_transform(  # pylint:disable=unused-variable
+            def custom_transform(
                 tape: QuantumScript, index: int
             ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
                 """A valid transform."""
                 tape = tape.copy()
-                tape._ops.pop(index)  # pylint:disable=protected-access
+                tape._ops.pop(index)  # pylint: disable=protected-access
                 return [tape], lambda x: x
 
         with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
@@ -994,8 +982,7 @@ class TestSetupInputs:
     def test_eager_error_on_bad_input(self):
         """Test that an eager error is provided on binding a transform with bad inputs."""
 
-        # pylint: disable=unused-argument
-        def f(tape, val=1):
+        def f(tape, val=1):  # pylint: disable=unused-argument
             return (tape,), lambda res: res[0]
 
         def setup_inputs(val=1):
@@ -1012,8 +999,7 @@ class TestSetupInputs:
     def test_eager_error_on_bad_input_dispatch(self, target):
         """Test that an eager error is provided on binding a transform with bad inputs when dispatched onto various objects.."""
 
-        # pylint: disable=unused-argument
-        def f(tape, val=1):
+        def f(tape, val=1):  # pylint: disable=unused-argument
             return (tape,), lambda res: res[0]
 
         def setup_inputs(val=1):
@@ -1032,8 +1018,7 @@ class TestSetupInputs:
                 raise ValueError("not an int")
             return (x,), {}
 
-        # pylint: disable=unused-argument
-        def func(tape, x):
+        def func(tape, x):  # pylint: disable=unused-argument
             return (tape,), lambda res: res[0]
 
         t = qp.transform(func, setup_inputs=setup_inputs)

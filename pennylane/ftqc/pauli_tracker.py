@@ -263,7 +263,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: list):
         for wire in op.wires:
             _wires_used[wire] += 1
 
-        gate_offset = 4 if op.num_wires == 1 else 13
+        gate_offset = 4 if len(op.wires) == 1 else 13
         ms = mid_meas[mid_meas_offset : mid_meas_offset + gate_offset]
         by_op = []
         if isinstance(op, (S, H)):
@@ -383,7 +383,7 @@ def get_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_v
 
     **Example:**
 
-        .. code-block:: python
+        .. code-block:: python3
 
             from pennylane.ftqc import diagonalize_mcms, generate_lattice, measure_x, measure_y
             from pennylane.ftqc import GraphStatePrep

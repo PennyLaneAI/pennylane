@@ -15,32 +15,24 @@
 Tests for the Incrementer template.
 """
 
+import hint_helpers
+import jax
 import numpy as np
 import pytest
 
-from pennylane import Incrementer, decompose, device, qnode
-from pennylane.decomposition import list_decomps
+from pennylane import Incrementer, ctrl, device, qnode
 from pennylane.measurements import state
-from pennylane.ops import CNOT, Controlled, PauliX
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
+from pennylane.ops import CNOT, PauliX
 from pennylane.templates import BasisEmbedding, TemporaryAND
-
-
-@pytest.mark.jax
-@pytest.mark.parametrize(
-    "wires, work_wires",
-    [
-        ((0, 1, 2, 3, 4), (3, 4)),  # enough work wires for work wire decomp
-        ((0, 1, 2, 3), (3,)),  # not enough work wires... uses fallback
-        ((0, 1, 2), []),  # no work wires
-    ],
+from pennylane.templates.subroutines.arithmetic.incrementer import (
+    _adjoint_incrementer_bit_flips,
+    _decompose_mcxs,
 )
-def test_assert_valid(wires, work_wires):
-    op = Incrementer(wires, work_wires)
-    assert_valid(op)
+from pennylane.testing import assert_decomposable, assert_valid, plxpr_to_tape
+from pennylane.transforms import _tape_decompose as decompose
 
 
-@pytest.mark.capture
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize(
     "wires, work_wires",
     [
@@ -49,34 +41,55 @@ def test_assert_valid(wires, work_wires):
         ((0, 1, 2), []),  # no work wires
     ],
 )
-def test_decomposition_capture(wires, work_wires):
+def test_assert_valid(wires, work_wires):
     op = Incrementer(wires, work_wires)
-
-    for rule in list_decomps(Incrementer):
-        _test_decomposition_rule(op, rule)
+    assert_valid(op)
 
 
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize(
-    "wires, init_state, expected, work_wires",
+    "wires, work_wires",
     [
-        # without work wires
-        ([0, 1, 2], [0, 0, 0], [0, 0, 1], []),
-        ([0, 1, 2], [0, 0, 1], [0, 1, 0], []),
-        ([0, 1, 2], [1, 1, 0], [1, 1, 1], []),
-        ([0, 1, 2], [1, 0, 1], [1, 1, 0], []),
-        ([0, 1, 2, 3], [1, 0, 1, 1], [1, 1, 0, 0], []),
-        ([0, 1, 2, 3], [0, 0, 1, 1], [0, 1, 0, 0], []),
-        # with work wires
-        ([0, 1, 2], [1, 1, 0], [1, 1, 1], [3, 4]),  # enough work wires for our rule
-        ([0, 1, 2], [1, 0, 1], [1, 1, 0], [3, 4, 5]),  # more than enough work wires
-        ([0, 1, 2, 3], [1, 0, 1, 1], [1, 1, 0, 0], [4, 5, 6, 7, 8]),  # more than enough work wires
-        ([0, 1, 2, 3], [0, 0, 1, 1], [0, 1, 0, 0], [4, 5]),  # some work wires, but not enough
-        # negative numbers
-        ([0, 1, 2], [1, 0, 1], [1, 1, 0], []),  # -3 -> -2
-        ([0, 1, 2], [1, 1, 0], [1, 1, 1], []),  # -2 -> -1
-        ([0, 1, 2], [1, 1, 1], [0, 0, 0], [3, 4]),  # -1 -> 0
+        ((0, 1, 2), (3, 4)),  # enough work wires for work wire decomp
+        ((0, 1, 2), (3,)),  # not enough work wires... uses fallback
+        ((0, 1, 2), []),  # no work wires
     ],
 )
+def test_decomposition_rules(wires, work_wires):
+    """Test that the decomposition rules are consistent with the operator, with program
+    capture enabled and disabled."""
+    op = Incrementer(wires, work_wires)
+
+    assert_decomposable(op)
+
+
+_INCREMENT_CASES = [
+    # without work wires
+    ([0, 1, 2], [0, 0, 0], [0, 0, 1], []),
+    ([0, 1, 2], [0, 0, 1], [0, 1, 0], []),
+    ([0, 1, 2], [1, 1, 0], [1, 1, 1], []),
+    ([0, 1, 2], [1, 0, 1], [1, 1, 0], []),
+    ([0, 1, 2, 3], [1, 0, 1, 1], [1, 1, 0, 0], []),
+    ([0, 1, 2, 3], [0, 0, 1, 1], [0, 1, 0, 0], []),
+    # without work wires, carry propagating into the most significant bit (fallback path)
+    ([0, 1, 2], [0, 1, 1], [1, 0, 0], []),  # 3 -> 4
+    ([0, 1, 2], [1, 1, 1], [0, 0, 0], []),  # 7 -> 0
+    ([0, 1, 2, 3], [0, 1, 1, 1], [1, 0, 0, 0], []),  # 7 -> 8
+    # insufficient work wires, carry propagating into the most significant bit (fallback path)
+    ([0, 1, 2, 3], [0, 1, 1, 1], [1, 0, 0, 0], [4]),  # 7 -> 8
+    # with work wires
+    ([0, 1, 2], [1, 1, 0], [1, 1, 1], [3, 4]),  # enough work wires for our rule
+    ([0, 1, 2], [1, 0, 1], [1, 1, 0], [3, 4, 5]),  # more than enough work wires
+    ([0, 1, 2, 3], [1, 0, 1, 1], [1, 1, 0, 0], [4, 5, 6, 7, 8]),  # more than enough work wires
+    ([0, 1, 2, 3], [0, 0, 1, 1], [0, 1, 0, 0], [4, 5]),  # some work wires, but not enough
+    # negative numbers
+    ([0, 1, 2], [1, 0, 1], [1, 1, 0], []),  # -3 -> -2
+    ([0, 1, 2], [1, 1, 0], [1, 1, 1], []),  # -2 -> -1
+    ([0, 1, 2], [1, 1, 1], [0, 0, 0], [3, 4]),  # -1 -> 0
+]
+
+
+@pytest.mark.parametrize("wires, init_state, expected, work_wires", _INCREMENT_CASES)
 def test_correct(wires, init_state, expected, work_wires):
     """Validates that the incrementer adds one."""
     dev = device("default.qubit", wires=wires + work_wires)
@@ -87,7 +100,7 @@ def test_correct(wires, init_state, expected, work_wires):
         Incrementer(wires, work_wires)
         return state()
 
-    result = increment(wires, init_state, work_wires)
+    result = np.array(increment(wires, init_state, work_wires))
 
     expected = np.concatenate([np.array(expected), np.zeros(len(work_wires))])
 
@@ -97,11 +110,33 @@ def test_correct(wires, init_state, expected, work_wires):
     assert np.allclose(result, 0)
 
 
+@pytest.mark.parametrize("wires, init_state, forward_output, work_wires", _INCREMENT_CASES)
+def test_adjoint_decomposition_correct(wires, init_state, forward_output, work_wires):
+    """Validates that the ``Adjoint(Incrementer)`` decomposition subtracts one, mapping the
+    forward output of each increment case back to its input."""
+    dev = device("default.qubit", wires=wires + work_wires)
+    base = Incrementer(wires, work_wires)
+
+    @qnode(dev)
+    def decrement():
+        BasisEmbedding(forward_output, wires)
+        _adjoint_incrementer_bit_flips(base)
+        return state()
+
+    result = np.array(decrement())
+
+    init_state = np.concatenate([np.array(init_state), np.zeros(len(work_wires))])
+
+    value = int(2 ** np.arange(len(init_state)) @ init_state[::-1])
+    assert np.isclose(result[value], 1)
+    result[value] -= 1
+    assert np.allclose(result, 0)
+
+
 @pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize(
     "init_state, expected, work_wires, control_wires, control_values",
     [
-        # enough work wires for our rule
         (
             [0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0],
@@ -116,10 +151,6 @@ def test_correct(wires, init_state, expected, work_wires):
             [12],
             [1],
         ),
-        # not enough work wires
-        ([0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 0], [6, 7], [8], [0]),
-        ([0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 1], [6], [7], [1]),
-        # multiple control wires
         (
             [0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0],
@@ -150,23 +181,29 @@ def test_correct(wires, init_state, expected, work_wires):
         ),
     ],
 )
-def test_controlled(init_state, expected, work_wires, control_wires, control_values):
+def test_controlled_enough_work_wires(
+    init_state, expected, work_wires, control_wires, control_values
+):
+    """Test decomposition of controlled incrementer where sufficiently many work wires
+    are provided."""
     wires = [0, 1, 2, 3, 4, 5]
 
     dev = device("default.qubit", wires=wires + work_wires + control_wires)
+    gate_set = {TemporaryAND: 1, CNOT: 1, "Adjoint(TemporaryAND)": 1, PauliX: 1}
 
-    # pylint: disable=too-many-arguments
-    @decompose(gate_set={TemporaryAND: 1, CNOT: 1, "Adjoint(TemporaryAND)": 1})
+    @decompose(gate_set=gate_set, num_work_wires=0)
     @qnode(dev)
     def controlled_increment(wires, init_state, work_wires, control_wires, control_values):
         BasisEmbedding(init_state, wires)
         for control_wire, control_value in zip(control_wires, control_values, strict=True):
             if control_value:
                 PauliX(control_wire)
-        Controlled(Incrementer(wires, work_wires), control_wires)
+        ctrl(Incrementer(wires, work_wires), control_wires)
         return state()
 
-    result = controlled_increment(wires, init_state, work_wires, control_wires, control_values)
+    result = np.array(
+        controlled_increment(wires, init_state, work_wires, control_wires, control_values)
+    )
 
     expected = np.concatenate(
         [np.array(expected), np.zeros(len(work_wires)), np.array(control_values)]
@@ -177,61 +214,116 @@ def test_controlled(init_state, expected, work_wires, control_wires, control_val
     assert np.allclose(result, 0)
 
 
-@pytest.mark.capture
+@pytest.mark.usefixtures("enable_graph_decomposition")
+@pytest.mark.parametrize(
+    "init_state, expected, work_wires, control_wires, control_values",
+    [
+        ([0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 0], [6, 7], [8], [0]),
+        ([0, 0, 0, 1, 1, 0], [0, 0, 0, 1, 1, 1], [6], [7], [1]),
+    ],
+)
+def test_controlled_allocates_work_wires(
+    init_state, expected, work_wires, control_wires, control_values
+):
+    """Test decomposition of controlled incrementer where additional work wires are allocated."""
+    wires = list(range(len(init_state)))
+
+    num_alloc_wires = len(wires) + len(control_wires) - 1 - len(work_wires)
+    gate_set = {TemporaryAND: 1, CNOT: 1, "Adjoint(TemporaryAND)": 1, PauliX: 1}
+
+    @decompose(gate_set=gate_set, num_work_wires=num_alloc_wires)
+    @qnode(device("default.qubit", wires=len(wires + work_wires + control_wires) + num_alloc_wires))
+    def controlled_increment(wires, init_state, work_wires, control_wires, control_values):
+        BasisEmbedding(init_state, wires)
+        for control_wire, control_value in zip(control_wires, control_values, strict=True):
+            if control_value:
+                PauliX(control_wire)
+        ctrl(Incrementer(wires, work_wires), control_wires)
+        return state()
+
+    result = np.array(
+        controlled_increment(wires, init_state, work_wires, control_wires, control_values)
+    )
+
+    expected = np.concatenate(
+        [
+            np.array(expected),
+            np.zeros(len(work_wires)),
+            np.array(control_values),
+            np.zeros(num_alloc_wires),
+        ]
+    )
+    value = int(2 ** np.arange(len(expected)) @ expected[::-1])
+    assert np.isclose(result[value], 1)
+    result[value] -= 1
+    assert np.allclose(result, 0)
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("control_value", [0, 1])
 @pytest.mark.parametrize(
     "wires, work_wires, controls",
     [
-        # 1 control
-        # enough work wires for work wire decomp
+        # 1 control, enough work wires for the work-wire decomposition (applicable)
         ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12,)),
-        # not enough work wires... uses fallback
-        (
-            (0, 1, 2, 3, 4, 5),
-            (
-                6,
-                7,
-            ),
-            (8,),
-        ),
-        # no work wires
+        # 2 controls, enough work wires for the work-wire decomposition (applicable, needs 7)
+        ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11, 12), (13, 14)),
+        # 1 control, not enough work wires... uses fallback (inapplicable)
+        ((0, 1, 2, 3, 4, 5), (6, 7), (8,)),
+        # 1 control, no work wires (inapplicable)
         ((0, 1, 2), tuple(), (3,)),
-        # 2 controls
-        # enough work wires for work wire decomp
-        (
-            (0, 1, 2, 3, 4, 5),
-            (6, 7, 8, 9, 10, 11),
-            (
-                12,
-                13,
-            ),
-        ),
-        # not enough work wires... uses fallback
-        (
-            (0, 1, 2, 3, 4, 5),
-            (
-                6,
-                7,
-            ),
-            (
-                8,
-                9,
-            ),
-        ),
-        # no work wires
-        (
-            (0, 1, 2),
-            tuple(),
-            (
-                3,
-                4,
-            ),
-        ),
+        # 2 controls, not enough work wires... uses fallback (inapplicable)
+        ((0, 1, 2, 3, 4, 5), (6, 7), (8, 9)),
+        # 2 controls, no work wires (inapplicable)
+        ((0, 1, 2), tuple(), (3, 4)),
     ],
 )
-def test_controlled_decomposition_new(wires, work_wires, controls):
-    """Tests the decomposition rule implemented with the new system."""
-    op = Controlled(
-        Incrementer(wires, work_wires), controls, control_values=[1 for _ in range(len(controls))]
+def test_controlled_decomposition_new(wires, work_wires, controls, control_value):
+    """Tests the ``C(Incrementer)`` decomposition rule with the new system for single- and
+    multi-control shapes and both trivial (``1``) and flipped (``0``) control values, with and
+    without program capture."""
+    control_values = [control_value] * len(controls)
+
+    # Work wires only in incrementer
+    op = ctrl(Incrementer(wires, work_wires), controls, control_values=control_values)
+    assert_decomposable(op)
+    # Split work wires between incrementer and control
+    split = len(work_wires) // 2
+    op = ctrl(
+        Incrementer(wires, work_wires[:split]),
+        controls,
+        control_values=control_values,
+        work_wires=work_wires[split:],
+        work_wire_type="zeroed",
     )
-    for rule in list_decomps("C(Incrementer)"):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
+
+    # Work wires only in control
+    op = ctrl(
+        Incrementer(wires, []),
+        controls,
+        control_values=control_values,
+        work_wires=work_wires,
+        work_wire_type="zeroed",
+    )
+    assert_decomposable(op)
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize(
+    "num_wires, num_controls", [(3, 0), (5, 0), (2, 1), (4, 1), (2, 2), (4, 2), (3, 3), (4, 5)]
+)
+def test_backward_ladder_branch_prob_hint(num_wires, num_controls):
+    """Test that the conditional CNOT in the backward ladder carries a ``branch-prob`` hint that
+    reproduces the number of applied CNOTs."""
+    num_all_wires = num_wires + num_controls
+    wires = jax.numpy.arange(num_wires)
+    work_wires = jax.numpy.arange(num_all_wires, 2 * num_all_wires - 1)
+    control_wires = jax.numpy.arange(num_wires, num_all_wires) if num_controls else None
+
+    plxpr = jax.make_jaxpr(lambda: _decompose_mcxs(wires, work_wires, control_wires))()
+    ops = plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+    # The trailing CNOT outside of the backward ladder is only applied for at most one control
+    num_ladder_cnots = sum(isinstance(op, CNOT) for op in ops) - (num_controls <= 1)
+    cnot_prob = num_ladder_cnots / (num_all_wires - 2)
+    assert hint_helpers.cond_hints(plxpr.jaxpr) == [pytest.approx((cnot_prob, 1 - cnot_prob))]

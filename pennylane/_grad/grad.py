@@ -19,70 +19,58 @@ import inspect
 import numbers
 import warnings
 from collections.abc import Sequence
-from functools import lru_cache, wraps
+from functools import wraps
 
+import jax
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
 from autograd.extend import vspace
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
+from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten, treedef_tuple
 
 from pennylane import capture
 from pennylane.compiler import compiler
 
 make_vjp = unary_to_nary(_make_vjp)
 
-has_jax = True
-try:
-    import jax
-except ImportError:
-    has_jax = False
+
+jacobian_prim = capture.QpPrimitive("jacobian")
+jacobian_prim.multiple_results = True
+jacobian_prim.prim_type = "higher_order"
 
 
-# pylint: disable=unused-argument, too-many-arguments
-@lru_cache
-def _get_jacobian_prim():
-    """Create a primitive for gradient computations.
-    This primitive is used when capturing ``qp.grad``.
-    """
-    if not has_jax:  # pragma: no cover
-        return None
+@jacobian_prim.def_impl
+# pylint: disable-next=too-many-arguments,unused-argument
+def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
+    if method != "auto":  # pragma: no cover
+        raise ValueError(f"Invalid value '{method=}' without QJIT.")
+    consts = args[:n_consts]
+    args = args[n_consts:]
 
-    jacobian_prim = capture.QpPrimitive("jacobian")
-    jacobian_prim.multiple_results = True
-    jacobian_prim.prim_type = "higher_order"
+    def func(*inner_args):
+        res = jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
+        return res[0] if scalar_out else res
 
-    @jacobian_prim.def_impl
-    def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
-        if method != "auto":  # pragma: no cover
-            raise ValueError(f"Invalid value '{method=}' without QJIT.")
-        consts = args[:n_consts]
-        args = args[n_consts:]
+    if scalar_out:
+        res = jax.grad(func, argnums=argnums)(*args)
+    else:
+        res = jax.jacobian(func, argnums=argnums)(*args)
+    return jax.tree_util.tree_leaves(res)
 
-        def func(*inner_args):
-            res = jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
-            return res[0] if scalar_out else res
 
-        if scalar_out:
-            res = jax.grad(func, argnums=argnums)(*args)
-        else:
-            res = jax.jacobian(func, argnums=argnums)(*args)
-        return jax.tree_util.tree_leaves(res)
-
-    # pylint: disable=unused-argument
-    @jacobian_prim.def_abstract_eval
-    def _grad_abstract(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
-        if scalar_out and not (len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()):
-            raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
-        in_avals = tuple(args[i + n_consts] for i in argnums)
-        out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
-        return [
-            _ShapedArray(out_shape + in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
-            for out_shape in out_shapes
-            for in_aval in in_avals
-        ]
-
-    return jacobian_prim
+@jacobian_prim.def_abstract_eval
+# pylint: disable-next=too-many-arguments,unused-argument
+def _grad_abstract(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
+    if scalar_out and not (len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()):
+        raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
+    in_avals = tuple(args[i + n_consts] for i in argnums)
+    out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
+    return [
+        _ShapedArray(out_shape + in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
+        for out_shape in out_shapes
+        for in_aval in in_avals
+    ]
 
 
 def _ShapedArray(shape, dtype, weak_type=False):
@@ -133,8 +121,6 @@ def _args_and_argnums(args, argnums):
             f" positional arguments. Got {len(args)} positional arguments."
         )
 
-    from jax.tree_util import tree_flatten, treedef_tuple  # pylint: disable=import-outside-toplevel
-
     flat_args, in_trees = zip(*(tree_flatten(arg) for arg in args), strict=True)
     full_in_tree = treedef_tuple(in_trees)
 
@@ -179,9 +165,6 @@ def _setup_method(method):
 
 def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, h=None):
     """Capture-compatible gradient computation."""
-    # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten
-
     h = _setup_h(h)
     method = _setup_method(method)
     _argnums = argnums  # somehow renaming stops it from being unbound?
@@ -210,7 +193,7 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
             "h": h,
             "scalar_out": scalar_out,
         }
-        out_flat = _get_jacobian_prim().bind(
+        out_flat = jacobian_prim.bind(
             *jaxpr.consts,
             *abstract_shapes,
             *flat_inputs,
@@ -227,8 +210,7 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
     return new_func
 
 
-# pylint: disable=too-many-instance-attributes
-class grad:
+class grad:  # pylint: disable=too-many-instance-attributes
     """Returns the gradient as a callable function of hybrid quantum-classical functions.
     :func:`~.qjit` and Autograd compatible.
 
@@ -288,7 +270,6 @@ class grad:
         the arguments in ``argnums``.
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(self, func, argnums=None, h=None, method=None):
         self._forward = None
         self._grad_fn = None
@@ -305,7 +286,7 @@ class grad:
             # If the differentiable argnum is provided, we can construct
             # the gradient function at once during initialization.
             # Known pylint issue with function signatures and decorators:
-            # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
+            # pylint: disable-next=unexpected-keyword-arg,no-value-for-parameter
             self._grad_fn = self._grad_with_forward(func, argnum=self._argnums)
 
         # need to preserve input siganture for use in catalyst AOT compilation, but
@@ -345,7 +326,7 @@ class grad:
             argnums = argnums[0]
 
         # Known pylint issue with function signatures and decorators:
-        # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
+        # pylint: disable-next=unexpected-keyword-arg,no-value-for-parameter
         return self._grad_with_forward(self._func, argnum=argnums), argnums
 
     def __call__(self, *args, **kwargs):
@@ -400,7 +381,7 @@ class grad:
         """This function is a replica of ``autograd.grad``, with the only
         difference being that it returns both the gradient *and* the forward pass
         value."""
-        vjp, ans = _make_vjp(fun, x)  # pylint: disable=redefined-outer-name
+        vjp, ans = _make_vjp(fun, x)
 
         if vspace(ans).size != 1:
             raise TypeError(
@@ -442,8 +423,7 @@ def _get_argnum(args):
     return argnum
 
 
-# pylint: disable=too-few-public-methods
-class jacobian:
+class jacobian:  # pylint: disable=too-few-public-methods
     """Returns the Jacobian as a callable function of vector-valued (functions of) QNodes.
     This function is compatible with Autograd and :func:`~.qjit`.
 
@@ -657,7 +637,6 @@ class jacobian:
 
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(self, func, argnums=None, method=None, h=None):
         self._func = func
         self._argnums = argnums

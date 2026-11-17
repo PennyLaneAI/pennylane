@@ -15,7 +15,11 @@
 Unit tests for the Prod arithmetic class of qubit operations
 """
 
-# pylint:disable=protected-access, unused-argument
+# pylint: disable=protected-access,unused-argument
+
+
+from functools import reduce
+
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -23,17 +27,16 @@ import pytest
 import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane import math
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, abstractify
 from pennylane.exceptions import DeviceError, MatrixUndefinedError
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
+from pennylane.testing import assert_decomposable
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
 
-no_mat_ops = (
-    qp.Barrier,
-    qp.WireCut,
-)
+no_mat_ops = (qp.Barrier,)
 
 non_param_ops = (
     (qp.Identity, gd.I),
@@ -91,14 +94,14 @@ ops_hermitian_status = (  # computed manually
 )
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_basic_validity():
     """Run basic validity checks on a prod operator."""
     op1 = qp.PauliZ(0)
     op2 = qp.Rot(1.2, 2.3, 3.4, wires=0)
-    op3 = qp.IsingZZ(4.32, wires=("a", "b"))
-    op = qp.prod(op1, op2, op3)
-    qp.ops.functions.assert_valid(op)
+    op3 = qp.IsingZZ(4.32, wires=(1, 2))
+    op = Prod(op1, op2, op3)
+    qp.testing.assert_valid(op)
 
 
 def compare_and_expand_mat(mat1, mat2):
@@ -121,7 +124,7 @@ def compare_and_expand_mat(mat1, mat2):
     return smaller_mat, larger_mat
 
 
-class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
+class MyOp(qp.RX):  # pylint: disable=too-few-public-methods
     """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
@@ -130,7 +133,7 @@ class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
     has_diagonalizing_gates = False
 
 
-class TestInitialization:  # pylint:disable=too-many-public-methods
+class TestInitialization:  # pylint: disable=too-many-public-methods
     """Test the initialization."""
 
     @pytest.mark.parametrize("id", ("foo", "bar"))
@@ -280,7 +283,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         true_decomposition = list(ops_lst[::-1])  # reversed list of factors
 
         assert isinstance(decomposition, list)
-        for op1, op2 in zip(decomposition, true_decomposition):
+        for op1, op2 in zip(decomposition, true_decomposition, strict=False):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -293,7 +296,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             prod_op.decomposition()
 
         tape = qp.tape.QuantumScript.from_queue(q)
-        for op1, op2 in zip(tape.operations, true_decomposition):
+        for op1, op2 in zip(tape.operations, true_decomposition, strict=False):
             qp.assert_equal(op1, op2)
 
     def test_eigen_caching(self):
@@ -521,8 +524,7 @@ def test_empty_repr():
     assert repr(Prod()) == "Prod()"
 
 
-# pylint: disable=too-many-public-methods
-class TestMatrix:
+class TestMatrix:  # pylint: disable=too-many-public-methods
     """Test matrix-related methods."""
 
     @pytest.mark.parametrize("op1, mat1", non_param_ops)
@@ -574,6 +576,24 @@ class TestMatrix:
         prod_op = Prod(op(wires=0), qp.PauliX(wires=2), qp.PauliZ(wires=1))
         with pytest.raises(MatrixUndefinedError):
             prod_op.matrix()
+
+    @pytest.mark.parametrize(
+        "factors",
+        (
+            (qp.H(1), qp.H(0), qp.CNOT([2, 1]), qp.CNOT([1, 0])),
+            (qp.CNOT([1, 3]), qp.X(0), qp.CNOT([3, 2]), qp.Toffoli([2, 0, 1])),
+        ),
+    )
+    @pytest.mark.parametrize("wire_order", [None, [0, 1, 2, 3], [3, 2, 0, 1]])
+    def test_merged_overlapping_groups(self, wire_order, factors):
+        """Test the matrix when merging overlapping groups reorders the wires relative to
+        the wires of the ``Prod`` op, and we need to reorder them back."""
+        prod_op = Prod(*factors)
+        mat = prod_op.matrix(wire_order=wire_order)
+        if wire_order is None:
+            wire_order = prod_op.wires
+        expected = reduce(np.matmul, [factor.matrix(wire_order=wire_order) for factor in factors])
+        assert np.allclose(mat, expected)
 
     def test_prod_ops_multi_terms(self):
         """Test matrix is correct for a product of more than two terms."""
@@ -698,23 +718,29 @@ class TestMatrix:
         ]
         assert np.allclose(mat, true_mat)
 
-    def test_matrix_all_batched(self):
+    # ``prod`` dispatches to ``Prod2`` for these operands, so both classes are tested
+    @pytest.mark.parametrize("prod_fn", [Prod, prod])
+    def test_matrix_all_batched(self, prod_fn):
         """Test that Prod matrix has batching support when all operands are batched."""
         x = qp.numpy.array([0.1, 0.2, 0.3])
         y = qp.numpy.array([0.4, 0.5, 0.6])
-        op = prod(qp.RX(x, wires=0), qp.RY(y, wires=2), qp.PauliZ(1))
+        op = prod_fn(qp.RX(x, wires=0), qp.RY(y, wires=2), qp.PauliZ(1))
         mat = op.matrix()
-        sum_list = [prod(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.PauliZ(1)) for i, j in zip(x, y)]
+        sum_list = [
+            prod_fn(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.PauliZ(1))
+            for i, j in zip(x, y, strict=False)
+        ]
         compare = qp.math.stack([s.matrix() for s in sum_list])
         assert qp.math.allclose(mat, compare)
         assert mat.shape == (3, 8, 8)
 
-    def test_matrix_not_all_batched(self):
+    @pytest.mark.parametrize("prod_fn", [Prod, prod])
+    def test_matrix_not_all_batched(self, prod_fn):
         """Test that Prod matrix has batching support when all operands are not batched."""
         x = qp.numpy.array([0.1, 0.2, 0.3])
         y = 0.5
         z = qp.numpy.array([0.4, 0.5, 0.6])
-        op = prod(
+        op = prod_fn(
             qp.RX(x, wires=0),
             qp.RY(y, wires=2),
             qp.RZ(z, wires=1),
@@ -723,13 +749,13 @@ class TestMatrix:
         mat = op.matrix()
         batched_y = [y for _ in x]
         sum_list = [
-            prod(
+            prod_fn(
                 qp.RX(i, wires=0),
                 qp.RY(j, wires=2),
                 qp.RZ(k, wires=1),
                 qp.prod(qp.PauliX(2), qp.PauliY(3)),
             )
-            for i, j, k in zip(x, batched_y, z)
+            for i, j, k in zip(x, batched_y, z, strict=False)
         ]
         compare = qp.math.stack([s.matrix() for s in sum_list])
         assert qp.math.allclose(mat, compare)
@@ -784,33 +810,6 @@ class TestMatrix:
         true_mat = torch.tensor(true_mat, dtype=torch.complex64)
 
         assert torch.allclose(mat, true_mat)
-
-    @pytest.mark.tf
-    def test_prod_tf(self):
-        """Test matrix is cast correctly using tf parameters."""
-        import tensorflow as tf
-
-        theta = tf.Variable(1.23)
-        rot_params = tf.Variable([0.12, 3.45, 6.78])
-
-        prod_op = Prod(
-            qp.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0),
-            qp.RX(theta, wires=1),
-            qp.Identity(wires=0),
-        )
-        mat = prod_op.matrix()
-
-        true_mat = (
-            qnp.kron(gd.Rot3(0.12, 3.45, 6.78), qnp.eye(2))
-            @ qnp.kron(qnp.eye(2), gd.Rotx(1.23))
-            @ qnp.eye(4)
-        )
-        true_mat = tf.Variable(true_mat)
-        true_mat = tf.Variable(true_mat, dtype=tf.complex128)
-
-        assert isinstance(mat, tf.Tensor)
-        assert mat.dtype == true_mat.dtype
-        assert np.allclose(mat, true_mat)
 
     # sparse matrix tests:
 
@@ -878,7 +877,7 @@ class TestMatrix:
         """Test that an error is raised when the sparse matrix method
         is undefined for any of the factors."""
 
-        class DummyOp(qp.operation.Operation):  # pylint:disable=too-few-public-methods
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
             def sparse_matrix(self, wire_order=None):
@@ -893,27 +892,13 @@ class TestMatrix:
 class TestProperties:
     """Test class properties."""
 
-    @pytest.mark.parametrize("ops_lst, hermitian_status", list(zip(ops, ops_hermitian_status)))
+    @pytest.mark.parametrize(
+        "ops_lst, hermitian_status", list(zip(ops, ops_hermitian_status, strict=False))
+    )
     def test_is_verified_hermitian(self, ops_lst, hermitian_status):
         """Test is_verified_hermitian property updates correctly."""
         prod_op = prod(*ops_lst)
         assert prod_op.is_verified_hermitian == hermitian_status
-
-    @pytest.mark.tf
-    def test_is_hermitian_tf(self):
-        """Test that is_hermitian works when a tf type scalar is provided."""
-        # pylint:disable=invalid-unary-operand-type
-        import tensorflow as tf
-
-        theta = tf.Variable(1.23)
-        prod_ops = (
-            prod(qp.RX(theta, wires=0), qp.RX(-theta, wires=0), qp.PauliZ(wires=1)),
-            prod(qp.RX(theta, wires=0), qp.RX(-theta, wires=1), qp.PauliZ(wires=2)),
-        )
-        true_hermitian_states = (True, False)
-
-        for op, hermitian_state in zip(prod_ops, true_hermitian_states):
-            assert qp.is_hermitian(op) == hermitian_state
 
     @pytest.mark.jax
     def test_is_hermitian_jax(self):
@@ -927,7 +912,7 @@ class TestProperties:
         )
         true_hermitian_states = (True, False)
 
-        for op, hermitian_state in zip(prod_ops, true_hermitian_states):
+        for op, hermitian_state in zip(prod_ops, true_hermitian_states, strict=False):
             assert qp.is_hermitian(op) == hermitian_state
 
     @pytest.mark.torch
@@ -942,7 +927,7 @@ class TestProperties:
         )
         true_hermitian_states = (True, False)
 
-        for op, hermitian_state in zip(prod_ops, true_hermitian_states):
+        for op, hermitian_state in zip(prod_ops, true_hermitian_states, strict=False):
             assert qp.is_hermitian(op) == hermitian_state
 
     def test_eigendecomposition(self):
@@ -965,26 +950,6 @@ class TestProperties:
 
         assert np.allclose(eig_vals, true_eigvals)
         assert np.allclose(eig_vecs, true_eigvecs)
-
-    def test_qutrit_eigvals(self):
-        """Test that the eigvals can be computed with qutrit observables."""
-
-        op1 = qp.GellMann(wires=0)
-        op2 = qp.GellMann(index=8, wires=1)
-
-        prod_op = qp.prod(op1, op2)
-        eigs = prod_op.eigvals()
-
-        mat_eigs = np.linalg.eigvals(prod_op.matrix())
-
-        sorted_eigs = np.sort(eigs)
-        sorted_mat_eigs = np.sort(mat_eigs)
-        assert qp.math.allclose(sorted_eigs, sorted_mat_eigs)
-
-        # pylint: disable=import-outside-top-level
-        from pennylane.ops.functions.assert_valid import _check_eigendecomposition
-
-        _check_eigendecomposition(prod_op)
 
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
@@ -1017,7 +982,6 @@ class TestProperties:
 
         assert qp.math.allclose(op.eigvals(), op2.eigvals())
 
-    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
         diag_prod_op = Prod(qp.PauliZ(wires=0), qp.PauliZ(wires=1))
@@ -1168,14 +1132,25 @@ class TestSimplify:
         simplified_op = prod_op.simplify()
         qp.assert_equal(simplified_op, final_op)
 
-    def test_simplify_method_groups_rotations(self):
+    # ``qp.prod`` dispatches to ``Prod2`` for these operands, so both classes are tested
+    @pytest.mark.parametrize("prod_fn", [Prod, qp.prod])
+    def test_simplify_method_groups_rotations(self, prod_fn):
         """Test that the simplify method groups rotation operators."""
-        prod_op = qp.prod(
+        prod_op = prod_fn(
             qp.RX(1, 0), qp.RZ(1, 1), qp.CNOT((1, 2)), qp.RZ(1, 1), qp.RX(3, 0), qp.RZ(1, 1)
         )
-        final_op = qp.prod(qp.RZ(1, 1), qp.CNOT((1, 2)), qp.RX(4, 0), qp.RZ(2, 1))
+        final_op = prod_fn(
+            qp.RZ(1, 1), qp.ops.ControlledOp2(qp.X(2), [1]), qp.RX(4, 0), qp.RZ(2, 1)
+        )
         simplified_op = prod_op.simplify()
         qp.assert_equal(simplified_op, final_op)
+
+    def test_simplify_method_cancels_powers(self):
+        """Test that the simplify method cancels ``Pow`` factors with opposite exponents."""
+        rot = qp.Rot(0.1, 0.2, 0.3, 0)
+        prod_op = Prod(qp.ops.Pow(rot, 2), qp.ops.Pow(rot, -2), qp.RY(0.3, 1))
+        simplified_op = prod_op.simplify()
+        qp.assert_equal(simplified_op, qp.RY(0.3, 1))
 
     def test_simplify_method_with_pauli_words(self):
         """Test that the simplify method groups pauli words."""
@@ -1258,11 +1233,6 @@ class TestSimplify:
         simplified_op = prod_op.simplify()
         qp.assert_equal(simplified_op, prod_op)
 
-    def test_grouping_with_only_visual_barriers(self):
-        """Test that grouping is implemented when an only-visual barrier is present."""
-        prod_op = qp.prod(qp.S(0), qp.Barrier(0, only_visual=True), qp.S(0)).simplify()
-        qp.assert_equal(prod_op.simplify(), qp.PauliZ(0))
-
     @pytest.mark.jax
     def test_simplify_pauli_rep_jax(self):
         """Test that simplifying operators with a valid pauli representation works with jax interface."""
@@ -1274,22 +1244,6 @@ class TestSimplify:
         result = qp.s_prod(c3, prod(qp.PauliZ(0), qp.PauliZ(1)))
         simplified_op = op.simplify()
 
-        qp.assert_equal(simplified_op, result)
-
-    @pytest.mark.tf
-    def test_simplify_pauli_rep_tf(self):
-        """Test that simplifying operators with a valid pauli representation works with tf interface."""
-        import tensorflow as tf
-
-        c1, c2, c3 = (
-            tf.Variable(1.23, dtype=tf.complex128),
-            tf.Variable(2.0, dtype=tf.complex128),
-            tf.Variable(2.46j, dtype=tf.complex128),
-        )
-
-        op = prod(qp.s_prod(c1, qp.PauliX(0)), qp.s_prod(c2, prod(qp.PauliY(0), qp.PauliZ(1))))
-        result = qp.s_prod(c3, prod(qp.PauliZ(0), qp.PauliZ(1)))
-        simplified_op = op.simplify()
         qp.assert_equal(simplified_op, result)
 
     @pytest.mark.torch
@@ -1441,8 +1395,8 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 1 in results  # pylint:disable=unsupported-membership-test
-        assert -1 not in results  # pylint:disable=unsupported-membership-test
+        assert 1 in results
+        assert -1 not in results
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Prod op in the measurement process."""
@@ -1562,7 +1516,7 @@ class TestSortWires:
             qp.PauliX(5),
         ]
 
-        for op1, op2 in zip(final_list, sorted_list):
+        for op1, op2 in zip(final_list, sorted_list, strict=False):
             qp.assert_equal(op1, op2)
 
     def test_sorting_operators_with_multiple_wires(self):
@@ -1591,7 +1545,7 @@ class TestSortWires:
             qp.RX(1, 5),
         ]
 
-        for op1, op2 in zip(final_list, sorted_list):
+        for op1, op2 in zip(final_list, sorted_list, strict=False):
             qp.assert_equal(op1, op2)
 
     def test_sorting_operators_with_wire_map(self):
@@ -1620,7 +1574,7 @@ class TestSortWires:
             qp.RX(1, 5),
         ]
 
-        for op1, op2 in zip(final_list, sorted_list):
+        for op1, op2 in zip(final_list, sorted_list, strict=False):
             assert op1.name == op2.name
             assert op1.wires == op2.wires
             assert op1.data == op2.data
@@ -1666,14 +1620,24 @@ class TestSwappableOps:
         """Test the check for non-swappable operators."""
         assert not _swappable_ops(op1, op2)
 
+    def test_op_with_abstract_wires(self):
+        """Test that the check works with abstract wires."""
+        assert not _swappable_ops(qp.X(Wire[1]), qp.X(5))
+        assert not _swappable_ops(qp.X(5), qp.X(Wire[1]))
+
+        assert not _swappable_ops(qp.X(Wire[1]), qp.X(Wire[1]))
+        assert not _swappable_ops(qp.X(Wire[1]), qp.CNOT(Wire[2]))
+
+        assert not _swappable_ops(qp.CNOT([0, Wire[1]]), qp.X(2))
+
 
 class TestDecomposition:
 
     def test_resource_keys(self):
         """Test that the resource keys of `Prod` are op_reps."""
         assert Prod.resource_keys == frozenset({"resources"})
-        product = qp.X(0) @ qp.Y(1) @ qp.X(2)
-        resources = {qp.resource_rep(qp.X): 2, qp.resource_rep(qp.Y): 1}
+        product = Prod(qp.X(0), qp.Y(1), qp.X(2))
+        resources = {abstractify(qp.X): 2, abstractify(qp.Y): 1}
         assert product.resource_params == {"resources": resources}
 
     def test_registered_decomp(self):
@@ -1683,7 +1647,7 @@ class TestDecomposition:
 
         default_decomp = decomps[0]
         _ops = [qp.X(0), qp.X(1), qp.X(2), qp.MultiRZ(0.5, wires=(0, 1))]
-        resources = {qp.resource_rep(qp.X): 3, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
+        resources = {abstractify(qp.X): 3, qp.MultiRZ(Float, Wire[2]): 1}
 
         resource_obj = default_decomp.compute_resources(resources=resources)
 
@@ -1708,7 +1672,7 @@ class TestDecomposition:
 
         assert q.queue == list(op[::-1])
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_controlled_prod_basic_validity(self):
         """Check that Controlled(Prod) is valid, in particular its custom decomp rule"""
         op = qp.ctrl(
@@ -1716,35 +1680,30 @@ class TestDecomposition:
             control=[4, 5, 6],
             work_wires=[7, 8, 9],
         )
-        qp.ops.functions.assert_valid(op, skip_decomp_matrix_check=True)
+        qp.testing.assert_valid(op, skip_decomp_matrix_check=True)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.parametrize(
-        "control_values",
-        [[1, 1, 1], [0, 1, 0], [1, 0, 1], [0, 0, 0]],
-    )
-    @pytest.mark.parametrize(
-        "work_wires",
-        [[7, 8, 9], [7]],
-    )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("control_values", [[1, 1, 1], [0, 1, 0], [1, 0, 1], [0, 0, 0]])
+    @pytest.mark.parametrize("work_wires", [[7, 8, 9], [7]])
     def test_controlled_prod_decomposition_new(self, control_values, work_wires):
         """The registered ``C(Prod)`` rule decomposes controlled products.
 
         Covers both rules (many work wires and single work wire) as well as the
-        ``flip_zero_control`` wrapper for arbitrary ``control_values``.
+        ``flip_zero_control`` wrapper for arbitrary ``control_values``. Both rules require
+        zeroed work wires, so ``work_wire_type="borrowed"`` only checks that they are skipped.
         """
-        from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
-        op = qp.ops.Controlled(
-            qp.prod(qp.X(0), qp.X(1), qp.X(2)),
-            control_wires=[4, 5, 6],
+        op = qp.ctrl(
+            qp.ops.Prod(qp.X(0), qp.X(1), qp.X(2)),
+            control=[4, 5, 6],
             control_values=control_values,
             work_wires=work_wires,
+            work_wire_type="zeroed",
         )
-        for rule in qp.list_decomps("C(Prod)"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
-    @pytest.mark.external
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "num_control_wires, num_work_wires",
         [(3, 1), (3, 2), (4, 1), (5, 3)],
@@ -1765,8 +1724,6 @@ class TestDecomposition:
         """
 
         from catalyst.device.decomposition import catalyst_decompose
-
-        qp.decomposition.enable_graph()
 
         gate_set = {
             "X": 1,

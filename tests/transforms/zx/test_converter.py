@@ -67,6 +67,15 @@ def test_import_pyzx_error(monkeypatch):
             qp.transforms.to_zx(QuantumScript([qp.PauliX(wires=0), qp.PauliZ(wires=1)]))
 
 
+def test_pyzx_min_version_error(monkeypatch):
+    """Test that an ImportError is raised when pyzx is older than 0.10."""
+
+    monkeypatch.setattr(pyzx, "__version__", "0.9.0")
+
+    with pytest.raises(ImportError, match=r"require pyzx>=0.10"):
+        qp.transforms.to_zx(qp.PauliX(wires=0))
+
+
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestConvertersZX:
     """Test converters to_zx and from_zx."""
@@ -542,7 +551,7 @@ class TestConvertersZX:
 
         tape = qp.transforms.from_zx(graph)
         expected_op = [qp.Hadamard(wires=[1]), qp.CNOT(wires=[1, 0]), qp.Hadamard(wires=[1])]
-        for op, op_ex in zip(tape.operations, expected_op):
+        for op, op_ex in zip(tape.operations, expected_op, strict=False):
             qp.assert_equal(op, op_ex)
 
     def test_qnode_decorator(self):

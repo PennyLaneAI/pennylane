@@ -167,13 +167,14 @@ class TestPauliGroupingStrategy:
         # the indices rustworkx assigns to each observable
         standard_indices = list(range(len(observables)))
         # map between custom and standard indices
-        map_indices = dict(zip(custom_indices, standard_indices))
+        map_indices = dict(zip(custom_indices, standard_indices, strict=False))
 
         # compute observable and custom indices partitions
         observables_partitioned = groupper.partition_observables()
-        # pylint: disable=protected-access
         indices_partitioned = groupper.idx_partitions_from_graph(observables_indices=custom_indices)
-        for group_obs, group_custom_indices in zip(observables_partitioned, indices_partitioned):
+        for group_obs, group_custom_indices in zip(
+            observables_partitioned, indices_partitioned, strict=False
+        ):
             for i, custom_idx in enumerate(group_custom_indices):
                 standard_idx = map_indices[custom_idx]
                 # observable corresponding to the custom index
@@ -359,9 +360,9 @@ anticommuting_sols = [
     [[PauliX([(0, 0)]), PauliZ([(0, 0)])]],
 ]
 
-com_tuples = list(zip(observables_list, commuting_sols))
+com_tuples = list(zip(observables_list, commuting_sols, strict=False))
 
-anticom_tuples = list(zip(observables_list, anticommuting_sols))
+anticom_tuples = list(zip(observables_list, anticommuting_sols, strict=False))
 
 
 def are_partitions_equal(partition_1: list, partition_2: list) -> bool:
@@ -388,7 +389,7 @@ class TestGroupObservables:
     Tests for ``group_observables`` function using QWC, commuting, and anticommuting partitioning.
     """
 
-    qwc_tuples = list(zip(observables_list, qwc_sols))
+    qwc_tuples = list(zip(observables_list, qwc_sols, strict=False))
 
     @pytest.mark.parametrize("observables,qwc_partitions_sol", qwc_tuples)
     def test_qwc_partitioning(self, observables, qwc_partitions_sol):
@@ -440,7 +441,6 @@ class TestGroupObservables:
     def test_binary_repr_custom_wire_map(self):
         """Tests that the ``binary_repr`` method sets a custom
         wire map correctly."""
-        # pylint: disable=protected-access
 
         observables = [Identity("alice"), Identity("bob"), Identity("charlie")]
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
@@ -449,7 +449,7 @@ class TestGroupObservables:
         wire_map = {"alice": 1, "bob": 0, "charlie": 2}
         _ = grouping_instance.binary_repr(n_qubits, wire_map)
 
-        assert grouping_instance._wire_map == wire_map
+        assert grouping_instance._wire_map == wire_map  # pylint: disable=protected-access
 
     def test_return_list_coefficients(self):
         """Tests that if the coefficients are given as a list, the groups
@@ -652,26 +652,3 @@ class TestDifferentiable:
         res = group(coeffs, select_group=1, select_index=0)
         res.backward()
         assert np.allclose(coeffs.grad, [0.0, 0.0, 1.0], atol=tol)
-
-    @pytest.mark.tf
-    def test_differentiation_tf(self, tol):
-        """Test that grouping is differentiable with tf tensors as coefficient"""
-        import tensorflow as tf
-
-        obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
-
-        def group(coeffs, select=None):
-            _, grouped_coeffs = group_observables(obs, coeffs)
-            return grouped_coeffs[select]
-
-        coeffs = tf.Variable([1.0, 2.0, 3.0], dtype=tf.double)
-
-        with tf.GradientTape() as tape:
-            res = group(coeffs, select=0)
-        grad = tape.jacobian(res, [coeffs])
-        assert np.allclose(grad, pnp.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]), atol=tol)
-
-        with tf.GradientTape() as tape:
-            res = group(coeffs, select=1)
-        grad = tape.jacobian(res, [coeffs])
-        assert np.allclose(grad, pnp.array([[0.0, 0.0, 1.0]]), atol=tol)

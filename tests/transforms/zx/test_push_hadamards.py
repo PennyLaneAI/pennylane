@@ -19,14 +19,11 @@ import sys
 
 import numpy as np
 import pytest
-from packaging.version import Version
 
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript
 
-pyzx = pytest.importorskip("pyzx")
-
-_pyzx_010 = Version(pyzx.__version__) >= Version("0.10")  # pylint: disable=protected-access
+pytest.importorskip("pyzx")
 
 
 def test_import_pyzx_error(monkeypatch):
@@ -113,25 +110,13 @@ class TestPushHadamards:
         ),
     )
     def test_rotation_gates(self, rot_gate, expected_names):
-        """Test push_hadamards behavior with RX/RY rotation gates.
-
-        pyzx < 0.10 does not support rotation gates in this pipeline and raises
-        a TypeError.  pyzx >= 0.10 decomposes them into Hadamard + RZ form while
-        preserving the unitary (up to global phase).
-        """
+        """Test that RX/RY gates are decomposed into Hadamard + RZ form."""
         qs = QuantumScript(ops=[rot_gate(0.5, wires=0)])
 
-        if _pyzx_010:
-            (new_qs,), _ = qp.transforms.zx.push_hadamards(qs)
+        (new_qs,), _ = qp.transforms.zx.push_hadamards(qs)
 
-            assert [op.name for op in new_qs.operations] == expected_names
-            assert all(op.wires == qp.wires.Wires([0]) for op in new_qs.operations)
-        else:
-            with pytest.raises(
-                TypeError,
-                match=r"The input quantum circuit must be a phase-polynomial \+ Hadamard circuit.",
-            ):
-                qp.transforms.zx.push_hadamards(qs)
+        assert [op.name for op in new_qs.operations] == expected_names
+        assert all(op.wires == qp.wires.Wires([0]) for op in new_qs.operations)
 
     @pytest.mark.parametrize(
         "measurements",
@@ -194,3 +179,23 @@ class TestPushHadamards:
         state2 = reduced_circ()
 
         assert np.allclose(state1, state2)
+
+    @pytest.mark.parametrize("wires", ((0, 2, 1, 3), (2, 5), ("a", "c", "b")))
+    def test_preserves_wire_labels(self, wires):
+        """Test that noncanonical wire labels are restored after the ZX round trip."""
+        ops = [qp.H(wires[0]), qp.CNOT([wires[0], wires[1]]), qp.T(wires[1])]
+        for wire in wires[2:]:
+            ops.extend([qp.H(wire), qp.CNOT([wires[1], wire]), qp.T(wire)])
+
+        tape = QuantumScript(ops)
+        assert tuple(tape.wires) == wires
+
+        (transformed_tape,), _ = qp.transforms.zx.push_hadamards(tape)
+
+        assert set(transformed_tape.wires).issubset(wires)
+
+        expected = qp.matrix(tape, wire_order=wires)
+        actual = qp.matrix(transformed_tape, wire_order=wires)
+        product = expected @ np.conj(actual.T)
+        global_phase = product[0, 0]
+        assert np.allclose(product, global_phase * np.eye(2 ** len(wires)))

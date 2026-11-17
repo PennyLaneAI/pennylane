@@ -7,11 +7,12 @@ name = "pennylane"
 description = "PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Train a quantum computer the same way as a neural network."
 readme = "README.md"
 license =  "Apache-2.0"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dynamic = ["version"]
 dependencies = [
     "scipy",
     "networkx",
+    "jax==0.7.1",
     "rustworkx>=0.14.0",
     "autograd<1.9",
     "appdirs",
@@ -19,7 +20,6 @@ dependencies = [
     "cachetools",
     "pennylane-lightning>=0.45",
     "requests",
-    "tomlkit",
     "typing_extensions",
     "packaging",
     "diastatic-malt",
@@ -37,7 +37,6 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
@@ -46,8 +45,6 @@ classifiers = [
 ]
 [dependency-groups]
 ci = [
-    "cvxpy",
-    "cvxopt~=1.3.0; python_version < '3.14'",
     "matplotlib",
     "rich",
     "pandas",
@@ -64,14 +61,16 @@ dev = [
     "flaky>=3.7.0",
     "pytest-forked>=1.4.0",
     "pytest-split",
-    "tomlkit~=0.13",
     "rich>=13.7.1",
-    "tach==0.32.2",
+    "tach==0.35.1",
     "build",
-    "pylint~=4.0.0",
+    "pylint~=4.1.3",
     "isort~=7.0.0",
-    "black==26.3.1",
+    "black==26.10.1",
     "matplotlib",
+    "ty==0.0.99",
+    "scipy-stubs",
+    "types-networkx",
 ]
 upload-reports = [
     "pydantic==2.10.6",
@@ -79,19 +78,18 @@ upload-reports = [
     "requests==2.33.0",
 ]
 docs = [
-    "jax==0.7.1",
-    "jaxlib==0.7.1",
     "mistune==0.8.4",
     "m2r2",
     # TODO: Remove once galois becomes compatible with latest numpy
     "numpy>=2.0,<=2.2",
     "pygments-github-lexers",
-    "pyzx",
+    "pyzx>=0.10",
     "docutils==0.22",
     "sphinx==9.0",
     "sphinx-automodapi==0.22",
     "sphinx-copybutton",
     "sphinxcontrib-bibtex==2.6.3",
+    "sphinxcontrib-lightbox2==0.6.0",
     "sphinxcontrib-applehelp==2.0.0",
     "sphinxcontrib-devhelp==2.0.0",
     "sphinxcontrib-qthelp==2.0.0",
@@ -114,16 +112,17 @@ docs = [
     "openfermionpyscf"
 ]
 external-libraries = [
-    "pyzx",
+    "pyzx>=0.10",
     "stim",
     "quimb",
     "optax",
     "kahypar==1.3.5",
     "scipy-openblas32>=0.3.26",
-    "qualtran",
     "openqasm3",
     "antlr4_python3_runtime",
-    "pennylane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master"
+    "pennylane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master",
+    # ibm-cloud-sdk-core (via qiskit-ibm-runtime) caps python-dateutil<3; dateutil 3.0.0 (2026-10-21) breaks resolution
+    "python-dateutil<3",
 ]
 qchem = [
     "openfermionpyscf",
@@ -131,10 +130,6 @@ qchem = [
     "geometric",
     "scikit-learn",
     "numpy<2.4"
-]
-qcut = [
-    "kahypar==1.3.5",
-    "opt_einsum"
 ]
 doctest = [
     # Tools needed for documentation testing
@@ -144,11 +139,10 @@ doctest = [
     # Used in docstrings of tested modules
     "matplotlib",
     "torch",
-    "pyzx",
-    "jax==0.7.1",
-    "jaxlib==0.7.1",
+    "pyzx>=0.10",
     "stim",
     "quimb",
+    "triton==3.5.1; platform_system == 'Linux' and platform_machine == 'x86_64'",
 ]
 
 [[project.maintainers]]
@@ -158,9 +152,6 @@ email = "software@xanadu.ai"
 [project.urls]
 repository = "https://github.com/PennyLaneAI/pennylane"
 
-[project.optional-dependencies]
-kernels = ["cvxpy", "cvxopt"]
-
 [project.scripts]
 pl-device-test = "pennylane.devices.tests:cli"
 
@@ -168,13 +159,10 @@ pl-device-test = "pennylane.devices.tests:cli"
 # This requires a rename in the setup file of all devices, and is best done during another refactor
 [project.entry-points."pennylane.plugins"]
 "default.qubit" = "pennylane.devices:DefaultQubit"
-"default.gaussian" = "pennylane.devices:DefaultGaussian"
 "default.mixed" = "pennylane.devices.default_mixed:DefaultMixed"
 "reference.qubit" = "pennylane.devices.reference_qubit:ReferenceQubit"
 "null.qubit" = "pennylane.devices.null_qubit:NullQubit"
-"default.qutrit" = "pennylane.devices.default_qutrit:DefaultQutrit"
 "default.clifford" = "pennylane.devices.default_clifford:DefaultClifford"
-"default.qutrit.mixed" = "pennylane.devices.default_qutrit_mixed:DefaultQutritMixed"
 "default.tensor" = "pennylane.devices.default_tensor:DefaultTensor"
 
 [project.entry-points."console_scripts"]
@@ -197,11 +185,25 @@ pennylane = ["devices/tests/pytest.ini", "drawer/plot.mplstyle", "transforms/sig
 
 [tool.black]
 line-length = 100
-target-version = ["py311", "py312", "py313"]
+target-version = ["py312", "py313", "py314"]
 include = '\.pyi?$'
 
+[tool.ty]
+baseline = "ty-baseline.json"
+
+[tool.ty.environment]
+python-version = "3.12"
+python-platform = "all"
+
+[tool.ty.src]
+include = ["pennylane"]
+exclude = ["pennylane/labs", "pennylane/devices/tests"]
+
+[tool.ty.terminal]
+error-on-warning = true
+
 [tool.isort]
-py_version = 311
+py_version = 312
 profile = "black"
 line_length = 100
 known_third_party = ["autoray"]
@@ -217,12 +219,17 @@ skips = [
 ]
 
 [tool.ruff]
-# Tells ruff to only suggest/apply 3.11+ modernizations
-target-version="py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = [
-    "B905", # zip without explicit strict 
-    "UP", # enforce all 'pyupgrade' rules
-    "SIM118", # Use 'if key in dict' instead of '.keys()'
+    "B905", # Require an explicit zip strict argument.
+    "UP", # Apply Python syntax modernizations.
+    "SIM118", # Iterate over dictionaries directly.
 ]
+# Preserve runtime type aliases and shared type variables during this lint migration.
+ignore = ["UP040", "UP046", "UP047"]
+
+[tool.ruff.lint.per-file-ignores]
+# These tests exercise the legacy typing forms and their string representations.
+"tests/data/base/test_typing_util.py" = ["UP007", "UP045"]

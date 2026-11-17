@@ -21,100 +21,55 @@ import os
 import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
-from functools import lru_cache, partial, singledispatch, update_wrapper, wraps
+from functools import partial, singledispatch, update_wrapper, wraps
 from inspect import Parameter, signature
 
+import jax
+
 from pennylane import capture, math
-from pennylane.capture import autograph
+from pennylane.capture import autograph, register_custom_staging_rule
+from pennylane.capture.custom_primitives import QpPrimitive
+from pennylane.core.apply import apply
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript
-from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.exceptions import TransformError
 from pennylane.pytrees import flatten
 from pennylane.typing import ResultBatch
 
-
-@lru_cache
-def _create_transform_primitive():
-    try:
-        # pylint: disable=import-outside-toplevel
-        from pennylane.capture import register_custom_staging_rule
-        from pennylane.capture.custom_primitives import QpPrimitive
-    except ImportError:
-        return None
-
-    transform_prim = QpPrimitive("transform")
-    transform_prim.multiple_results = True
-    transform_prim.prim_type = "transform"
-
-    # pylint: disable=too-many-arguments, disable=unused-argument
-    @transform_prim.def_impl
-    def _impl(*all_args, inner_jaxpr, args_slice, consts_slice, **_):
-        args = all_args[slice(*args_slice)]
-        consts = all_args[slice(*consts_slice)]
-        return capture.eval_jaxpr(inner_jaxpr, consts, *args)
-
-    @transform_prim.def_abstract_eval
-    def _abstract_eval(*_, inner_jaxpr, **__):
-        return [out.aval for out in inner_jaxpr.outvars]
-
-    def setup_env(tracers, params):
-        args_tracers = tracers[slice(*params["args_slice"])]
-        args_vars = params["inner_jaxpr"].invars
-        env = dict(zip(args_vars, args_tracers, strict=True))
-
-        consts_tracers = tracers[slice(*params["consts_slice"])]
-        consts_vars = params["inner_jaxpr"].constvars
-        consts_env = dict(zip(consts_vars, consts_tracers, strict=True))
-        env.update(consts_env)
-        return env
-
-    register_custom_staging_rule(transform_prim, lambda params: params["inner_jaxpr"], setup_env)
-
-    return transform_prim
+transform_prim = QpPrimitive("transform")
+transform_prim.multiple_results = True
+transform_prim.prim_type = "transform"
 
 
-def _create_plxpr_fallback_transform(tape_transform):
-    # pylint: disable=import-outside-toplevel
-    try:
-        import jax
+@transform_prim.def_impl
+def _transform_prim_impl(*all_args, inner_jaxpr, args_slice, consts_slice, **_):
+    args = all_args[slice(*args_slice)]
+    consts = all_args[slice(*consts_slice)]
+    return capture.eval_jaxpr(inner_jaxpr, consts, *args)
 
-        from pennylane.tape import plxpr_to_tape  # tach-ignore
-    except ImportError:
-        return None
 
-    def plxpr_fallback_transform(jaxpr, consts, targs, tkwargs, *args):
-        # Restore tkwargs from hashable tuple to dict
-        tkwargs = dict(tkwargs)
+@transform_prim.def_abstract_eval
+def _transform_prim_abstract_eval(*_, inner_jaxpr, **__):
+    return [out.aval for out in inner_jaxpr.outvars]
 
-        def wrapper(*inner_args):
-            tape = plxpr_to_tape(jaxpr, consts, *inner_args)
-            with capture.pause():
-                tapes, _ = tape_transform(tape, *targs, **tkwargs)
 
-            if len(tapes) > 1:
-                raise TransformError(
-                    f"Cannot apply {tape_transform.__name__} transform with program "
-                    "capture enabled. Only transforms that return a single QuantumTape "
-                    "and null processing function are usable with program capture."
-                )
+def _transform_setup_env(tracers, params):
+    args_tracers = tracers[slice(*params["args_slice"])]
+    args_vars = params["inner_jaxpr"].invars
+    env = dict(zip(args_vars, args_tracers, strict=True))
 
-            for op in tapes[0].operations:
-                data, struct = jax.tree_util.tree_flatten(op)
-                jax.tree_util.tree_unflatten(struct, data)
+    consts_tracers = tracers[slice(*params["consts_slice"])]
+    consts_vars = params["inner_jaxpr"].constvars
+    consts_env = dict(zip(consts_vars, consts_tracers, strict=True))
+    env.update(consts_env)
+    return env
 
-            out = []
-            for mp in tapes[0].measurements:
-                data, struct = jax.tree_util.tree_flatten(mp)
-                out.append(jax.tree_util.tree_unflatten(struct, data))
 
-            return tuple(out)
-
-        abstracted_axes, abstract_shapes = capture.determine_abstracted_axes(args)
-        return jax.make_jaxpr(wrapper, abstracted_axes=abstracted_axes)(*abstract_shapes, *args)
-
-    return plxpr_fallback_transform
+register_custom_staging_rule(
+    transform_prim, lambda params: params["inner_jaxpr"], _transform_setup_env
+)
 
 
 def specific_apply_transform(transform, obj, *targs, **tkwargs):
@@ -130,11 +85,11 @@ def generic_apply_transform(obj, transform, *targs, **tkwargs):
     When called with an object that is not a valid dispatch target (e.g., not a QNode, tape, etc.),
     this returns a BoundTransform with the supplied args and kwargs. This enables patterns like:
 
-    >>> from pennylane.transforms import decompose, merge_rotations
-    >>> decompose(gate_set=qp.gate_sets.ALL_OPS) + merge_rotations(1e-6)
+    >>> from pennylane.transforms import _tape_decompose, merge_rotations
+    >>> _tape_decompose(gate_set=qp.gate_sets.ALL_OPS) + merge_rotations(1e-6)
     CompilePipeline(
-      [1] <decompose(gate_set=All PennyLane Gates)>,
-      [2] <merge_rotations(1e-06)>
+      [0] <_tape_decompose(gate_set=All PennyLane Gates)>,
+      [1] <merge_rotations(1e-06)>
     )
 
     where transforms are called with just configuration parameters and combined into a CompilePipeline.
@@ -192,7 +147,6 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             is queued at the end of the compile pipeline. ``is_informative`` supersedes ``final_transform``.
         use_argnum_in_expand=False (bool): Whether to use ``argnum`` of the tape to determine trainable
             parameters during the expansion transform process.
-        plxpr_transform=None (Optional[Callable]): Function for transforming plxpr. **Experimental**
 
     **Example**
 
@@ -245,7 +199,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
     >>> print(transformed_qnode.compile_pipeline)
     CompilePipeline(
-      [1] my_quantum_transform()
+      [0] my_quantum_transform()
     )
 
     If we apply ``dispatched_transform`` a second time to the :class:`pennylane.QNode`, we would add
@@ -254,8 +208,8 @@ class Transform:  # pylint: disable=too-many-instance-attributes
     >>> transformed_qnode = dispatched_transform(transformed_qnode)
     >>> print(transformed_qnode.compile_pipeline)
     CompilePipeline(
-      [1] my_quantum_transform(),
-      [2] my_quantum_transform()
+      [0] my_quantum_transform(),
+      [1] my_quantum_transform()
     )
 
     When a transformed QNode is executed, the QNode's compile pipeline is applied to the generated tape
@@ -420,13 +374,12 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         tensor<f64>
         }
         module @module_circuit {
-            module attributes {transform.with_named_sequence} {
+          module attributes {transform.with_named_sequence} {
             transform.named_sequence @__transform_main(%arg0: !transform.op<"builtin.module">) {
-                %0 = transform.apply_registered_pass "cancel-inverses" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
-                transform.yield
+              %0 = transform.apply_registered_pass "cancel-inverses" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+              transform.yield
             }
-            }
-            func.func public @circui
+            transform.named_sequence @__
 
         Transforms can have both tape-based and ``pass_name``-based definitions. For example, the
         transform below called ``my_transform`` has both definitions. In this case, the MLIR pass
@@ -443,7 +396,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         Note that any transform with only a ``pass_name`` definition *must* occur after any purely tape-based
         transform, as tape transforms occur prior to lowering to MLIR.
 
-        >>> @qp.qjit
+        >>> @qp.qjit(capture=False)
         ... @qp.defer_measurements
         ... @qp.transform(pass_name="cancel-inverses")
         ... @qp.qnode(qp.device('lightning.qubit', wires=4))
@@ -452,6 +405,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         ...     qp.X(0)
         ...     return qp.expval(qp.Z(0))
         ...
+        >>> c()
         Traceback (most recent call last):
             ...
         ValueError: <cancel-inverses()> without a tape definition occurs before tape transform <defer_measurements()>.
@@ -468,7 +422,6 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         is_informative: bool = False,
         final_transform: bool = False,
         use_argnum_in_expand: bool = False,
-        plxpr_transform=None,
     ) -> Transform:
         if os.environ.get("SPHINX_BUILD") == "1":
             # If called during a Sphinx documentation build,
@@ -491,9 +444,8 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 # NOTE: Prepend "qnode" as an argument to the docstring
                 # so that it's consistent with tape based transform signatures.
                 @wraps(setup_inputs)
-                def _modified_setup_inputs(
-                    qnode, *args, **kwargs
-                ):  # pylint: disable=unused-argument
+                # pylint: disable-next=unused-argument
+                def _modified_setup_inputs(qnode, *args, **kwargs):
                     return setup_inputs(*args, **kwargs)  # pragma: no cover
 
                 orig_sig = signature(setup_inputs)
@@ -508,8 +460,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
         return super().__new__(cls)
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         tape_transform: Callable | None = None,
         pass_name: None | str = None,
@@ -520,7 +471,6 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         is_informative: bool = False,
         final_transform: bool = False,
         use_argnum_in_expand: bool = False,
-        plxpr_transform=None,
     ):
         if tape_transform is not None and not callable(tape_transform):
             raise TransformError(
@@ -558,7 +508,6 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             )
 
         self._apply_transform = singledispatch(partial(specific_apply_transform, self))
-        self._plxpr_transform = plxpr_transform or _create_plxpr_fallback_transform(tape_transform)
 
     @property
     def pass_name(self) -> None | str:
@@ -643,7 +592,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         to more explicitly force registration for a given type.
 
         """
-        return generic_apply_transform.register(arg)  # pylint: disable=no-member
+        return generic_apply_transform.register(arg)
 
     def __call__(self, *args, **kwargs):
         if not args and not kwargs:
@@ -675,8 +624,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             )
 
         if self.expand_transform:
-            # pylint: disable=import-outside-toplevel
-            from .compile_pipeline import CompilePipeline
+            from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
 
             return CompilePipeline(self, other)
 
@@ -686,8 +634,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
     def __mul__(self, n):
         """Multiply by an integer to create a compile pipeline with this transform repeated."""
         if self.expand_transform:
-            # pylint: disable=import-outside-toplevel
-            from .compile_pipeline import CompilePipeline
+            from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
 
             return CompilePipeline(self) * n
 
@@ -719,11 +666,6 @@ class Transform:  # pylint: disable=too-many-instance-attributes
     def classical_cotransform(self):
         """The classical co-transform."""
         return self._classical_cotransform
-
-    @property
-    def plxpr_transform(self):
-        """Function for transforming plxpr."""
-        return self._plxpr_transform
 
     @property
     def is_informative(self):
@@ -781,7 +723,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         return qnode
 
 
-class BoundTransform:  # pylint: disable=too-many-instance-attributes
+class BoundTransform:
     """A transform with bound inputs.
 
     Args:
@@ -829,9 +771,9 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
 
     >>> print(bound_t * 3)
     CompilePipeline(
+      [0] merge_rotations(atol=0.0001),
       [1] merge_rotations(atol=0.0001),
-      [2] merge_rotations(atol=0.0001),
-      [3] merge_rotations(atol=0.0001)
+      [2] merge_rotations(atol=0.0001)
     )
 
     And it can be used in conjunction with both individual transforms, bound transforms, and
@@ -839,14 +781,14 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
 
     >>> print(bound_t + qp.transforms.cancel_inverses)
     CompilePipeline(
-      [1] merge_rotations(atol=0.0001),
-      [2] cancel_inverses()
+      [0] merge_rotations(atol=0.0001),
+      [1] cancel_inverses()
     )
     >>> print(bound_t + qp.transforms.cancel_inverses + bound_t)
     CompilePipeline(
-      [1] merge_rotations(atol=0.0001),
-      [2] cancel_inverses(),
-      [3] merge_rotations(atol=0.0001)
+      [0] merge_rotations(atol=0.0001),
+      [1] cancel_inverses(),
+      [2] merge_rotations(atol=0.0001)
     )
 
     """
@@ -901,7 +843,6 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
                 self._args,
                 self._kwargs,
                 self._transform.classical_cotransform,
-                self._transform.plxpr_transform,
                 self._transform.is_informative,
                 self._transform.is_final_transform,
             )
@@ -934,7 +875,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
             self._transform.expand_transform,
             args=self.args,
             kwargs=self.kwargs,
-            use_argnum=self._transform._use_argnum_in_expand,  # pylint:disable=protected-access
+            use_argnum=self._transform._use_argnum_in_expand,  # pylint: disable=protected-access
         )
 
     @property
@@ -956,14 +897,6 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     def classical_cotransform(self) -> None | Callable:
         """The stored quantum transform's classical co-transform."""
         return self._transform.classical_cotransform
-
-    @property
-    def plxpr_transform(self) -> None | Callable:
-        """The stored quantum transform's PLxPR transform.
-
-        **UNMAINTAINED AND EXPERIMENTAL**
-        """
-        return self._transform.plxpr_transform
 
     @property
     def is_informative(self) -> bool:
@@ -990,8 +923,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
             return NotImplemented
 
         # Import here to avoid circular import
-        # pylint: disable=import-outside-toplevel
-        from .compile_pipeline import CompilePipeline
+        from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
 
         if self.is_final_transform and other.is_final_transform:
             raise TransformError(
@@ -1062,11 +994,10 @@ def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
 def _capture_apply(obj, transform, *targs, **tkwargs):
     @autograph.wraps(obj)
     def qfunc_transformed(*args, **kwargs):
-        import jax  # pylint: disable=import-outside-toplevel
 
         flat_qfunc = capture.flatfn.FlatFn(obj)
         jaxpr = jax.make_jaxpr(flat_qfunc)(*args, **kwargs)
-        flat_args = jax.tree_util.tree_leaves(args)
+        flat_args = jax.tree_util.tree_leaves((args, kwargs))
 
         n_args = len(flat_args)
         n_consts = len(jaxpr.consts)
@@ -1074,7 +1005,7 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
         consts_slice = slice(n_args, n_args + n_consts)
         targs_slice = slice(n_args + n_consts, None)
 
-        results = _create_transform_primitive().bind(  # pylint: disable=protected-access
+        results = transform_prim.bind(
             *flat_args,
             *jaxpr.consts,
             *targs,

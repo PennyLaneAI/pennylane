@@ -22,9 +22,18 @@ import numpy as np
 
 from pennylane.allocation import Allocate, Deallocate, DynamicWire
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.ops import Conditional, Controlled, MeasurementValue, MidMeasure, PauliMeasure
+from pennylane.ops import (
+    Adjoint,
+    Conditional,
+    Controlled,
+    MeasurementValue,
+    MidMeasure,
+    PauliMeasure,
+)
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
+from pennylane.templates.subroutines import TemporaryAND
+from pennylane.wires import Wires
 
 
 def dynamic_wire_connections(layers: list[list], wire_map: dict) -> tuple[dict, dict]:
@@ -217,6 +226,29 @@ def convert_wire_order(tape, wire_order=None, show_all_wires=False):
     return full_wire_map, used_wire_map
 
 
+def unwrap_temporary_and(op):
+    """Return the controls, target, values, and direction of a possibly wrapped elbow.
+
+    Return ``None`` for other operations, whose usual drawing is preserved.
+    """
+    control_wires, control_values, adjoint = [], [], False
+    while isinstance(op, (Controlled, Adjoint)):
+        if isinstance(op, Controlled):
+            control_wires.extend(op.control_wires)
+            control_values.extend(op.control_values)
+        else:
+            adjoint = not adjoint
+        op = op.base
+    if not isinstance(op, TemporaryAND):
+        return None
+    return (
+        control_wires + list(op.wires[:-1]),
+        op.wires[-1],
+        control_values + list(op.control_values),
+        adjoint,
+    )
+
+
 def unwrap_controls(op):
     """Unwraps nested controlled operations for drawing.
 
@@ -230,38 +262,25 @@ def unwrap_controls(op):
     Returns:
         Wires, List: The control wires of the operation, along with any associated
         control values.
+
     """
-    # Get wires and control values of base operation; need to make a copy of
-    # control values, otherwise it will modify the list in the operation itself.
-    control_wires = getattr(op, "control_wires", [])
-    control_values = getattr(op, "hyperparameters", {}).get("control_values", None)
 
-    if isinstance(control_values, list):
-        control_values = control_values.copy()
+    control_wires = Wires([])
+    control_values = []
 
-    next_ctrl = op
-    if isinstance(op, Controlled):
-        while hasattr(next_ctrl, "base"):
-            if isinstance(next_ctrl.base, Controlled):
-                base_control_wires = getattr(next_ctrl.base, "control_wires", [])
-                control_wires += base_control_wires
+    if not isinstance(op, Controlled):
+        return control_wires, control_values, op
 
-                base_control_values = next_ctrl.base.hyperparameters.get(
-                    "control_values", [True] * len(base_control_wires)
-                )
+    control_wires = op.control_wires
+    control_values = list(op.control_values)
+    base = op.base
 
-                if control_values is not None:
-                    control_values.extend(base_control_values)
-
-            next_ctrl = next_ctrl.base
-
-    control_values = [bool(int(i)) for i in control_values] if control_values else control_values
-    return control_wires, control_values, next_ctrl
+    base_ctrl_wires, base_ctrl_values, base_base = unwrap_controls(base)
+    return control_wires + base_ctrl_wires, control_values + base_ctrl_values, base_base
 
 
-# pylint: disable=unused-argument
 @singledispatch
-def _get_meas(op, bit_map, wire_map):
+def _get_meas(op, bit_map, wire_map):  # pylint: disable=unused-argument
     return [], None
 
 
@@ -284,6 +303,8 @@ def _get_mm(op: MidMeasure | PauliMeasure, bit_map, wire_map):
 
 @_get_meas.register
 def _get_c(op: Conditional, bit_map, wire_map):
+    if len(op.wires) == 0:
+        return op.meas_val.measurements, max(wire_map.values())
     return op.meas_val.measurements, max({wire_map[w] for w in op.wires})
 
 

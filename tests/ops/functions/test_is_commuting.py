@@ -15,7 +15,6 @@
 Unittests for is_commuting
 """
 
-# pylint: disable=too-many-public-methods
 import pytest
 
 import pennylane as qp
@@ -38,29 +37,32 @@ control_base_map_data = [
 ]
 
 
-# pylint: disable=too-few-public-methods
-class DummyOp(qp.operation.Operator):
+class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
     """An operator that hasn't been seen before."""
 
 
 test_cases = [
     # things commuting with identities, global phases.
     (qp.X(0), qp.GlobalPhase(0.5), True),
-    (qp.X(0), qp.GlobalPhase(0.5, wires=(0, 1, 2)), True),
     (qp.QFT((0, 1, 2)), qp.I((0, 1, 2)), True),
-    (DummyOp((0, 1)), qp.GlobalPhase(0.5, wires=0), True),
+    (DummyOp((0, 1)), qp.GlobalPhase(0.5), True),
     # controlled versions of operators.
     (qp.ctrl(qp.QubitUnitary(np.eye(2), 0), 1), qp.Z(0), False),
     (qp.ctrl(qp.QubitUnitary(np.eye(2), 0), 1), qp.Z(1), True),
     (qp.ctrl(qp.QFT((0, 1, 2)), 3), qp.Z(3), True),
     (qp.ctrl(qp.I(0), (1, 2)), qp.RX(0.5, 0), True),
+    (qp.CRot(0.1, 0.2, 0.3, (0, 1)), qp.CRot(0.1, 0.2, 0.3, (0, 1)), True),
+    (qp.ctrl(qp.Rot(0.1, 0.2, 0.3, 1), 0), qp.CRot(0.1, 0.2, 0.3, (2, 1)), True),
+    (qp.CRot(0.1, 0.2, 0.3, (0, 1)), qp.Rot(0.1, 0.2, 0.3, 1), True),
+    (qp.ctrl(qp.Rot(0.1, 0.2, 0.3, 2), (0, 1)), qp.U2(0.4, 0.5, 2), False),
+    (qp.ctrl(qp.Rot(0.1, 0.2, 0.3, 2), (0, 1)), qp.CRot(0.3, 0.4, 0.5, (0, 2)), False),
     # adjoint versions of operators
     (qp.adjoint(qp.U1(0.5, 0)), qp.Z(0), True),
     (qp.adjoint(qp.MultiRZ(0.5, (0, 1, 2))), qp.T(0), True),
     # pow
     (qp.Z(0) ** 0.5, qp.Z(0), True),
     (qp.H(0) ** 2.5, qp.H(0), True),
-    (qp.GlobalPhase(0.5, 0) ** 0.25, qp.H(0), True),
+    (qp.GlobalPhase(0.5) ** 0.25, qp.H(0), True),
     # various things in the same group
     (qp.Permute((2, 1, 0), (0, 1, 2)), qp.SWAP((0, 1)), True),
     (qp.H(0), qp.H(0), True),
@@ -154,7 +156,7 @@ class TestControlledOps:
         assert not qp.is_commuting(op2, op1)
 
 
-class TestCommutingFunction:
+class TestCommutingFunction:  # pylint: disable=too-many-public-methods
     """Commutation function tests."""
 
     @pytest.mark.parametrize(

@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for the Adjoint operator wrapper and the adjoint constructor."""
 
+# pylint: disable=too-few-public-methods
+
 import pickle
 
 import numpy as np
@@ -20,22 +22,22 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.operator.base import Operator
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions import single_qubit_zyz_angles
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
 
 
-# pylint: disable=too-few-public-methods
 class PlainOperator(qp.operation.Operator):
     """just an operator."""
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("target", (qp.PauliZ(0), qp.Rot(1.2, 2.3, 3.4, wires=0)))
 def test_basic_validity(target):
     """Run basic operator validity fucntions."""
     op = qp.adjoint(target)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestInheritanceMixins:
@@ -60,7 +62,6 @@ class TestInheritanceMixins:
         """When the operation inherits from `Operation`, the `AdjointOperation` mixin is
         added and the Adjoint has Operation functionality."""
 
-        # pylint: disable=too-few-public-methods
         class CustomOp(qp.operation.Operation):
             num_wires = 1
             num_params = 1
@@ -100,7 +101,6 @@ class TestInheritanceMixins:
 class TestInitialization:
     """Test the initialization process and standard properties."""
 
-    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_nonparametric_ops(self):
         """Test adjoint initialization for a non parameteric operation."""
         base = qp.PauliX("a")
@@ -157,8 +157,8 @@ class TestInitialization:
 class TestProperties:
     """Test Adjoint properties."""
 
-    def test_data(self):
-        """Test base data can be get and set through Adjoint class."""
+    def test_data_is_read_only(self):
+        """Test that Adjoint data is read-only."""
         x = np.array(1.234)
 
         base = qp.RX(x, wires="a")
@@ -166,16 +166,10 @@ class TestProperties:
 
         assert adj.data == (x,)
 
-        # update parameters through adjoint
-        x_new = np.array(2.3456)
-        adj.data = (x_new,)
-        assert base.data == (x_new,)
-        assert adj.data == (x_new,)
-
-        # update base data updates Adjoint data
-        x_new2 = np.array(3.456)
-        base.data = (x_new2,)
-        assert adj.data == (x_new2,)
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'AdjointOperation' object has no setter"
+        ):
+            setattr(adj, "data", (np.array(2.3456),))
 
     def test_has_matrix_true(self):
         """Test `has_matrix` property carries over when base op defines matrix."""
@@ -203,7 +197,6 @@ class TestProperties:
         """Test `has_decomposition` property is activated because the base operation defines a
         `decomposition` method."""
 
-        # pylint: disable=too-few-public-methods
         class MyOp(qp.operation.Operation):
             num_wires = 1
 
@@ -219,7 +212,6 @@ class TestProperties:
         """Test `has_decomposition` property is not activated if the base neither
         `has_adjoint` nor `has_decomposition`."""
 
-        # pylint: disable=too-few-public-methods
         class MyOp(qp.operation.Operation):
             num_wires = 1
 
@@ -231,7 +223,6 @@ class TestProperties:
     def test_has_adjoint_true_always(self):
         """Test `has_adjoint` property to always be true, irrespective of the base."""
 
-        # pylint: disable=too-few-public-methods
         class MyOp(qp.operation.Operation):
             """Operation that does not define `adjoint` and hence has `has_adjoint=False`."""
 
@@ -261,7 +252,6 @@ class TestProperties:
         """Test `has_diagonalizing_gates` property is not activated if the base neither
         `has_adjoint` nor `has_diagonalizing_gates`."""
 
-        # pylint: disable=too-few-public-methods
         class MyOp(qp.operation.Operation):
             num_wires = 1
             has_diagonalizing_gates = False
@@ -274,7 +264,6 @@ class TestProperties:
     def test_is_verified_hermitian(self, value):
         """Test `is_verified_hermitian` property mirrors that of the base."""
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qp.operation.Operator):
             num_wires = 1
             is_verified_hermitian = value
@@ -297,7 +286,7 @@ class TestProperties:
         op = qp.dot(coeffs, paulis)
         adjoint_ps = qp.adjoint(op).pauli_rep
         assert (list(adjoint_ps.values()) == qp.math.conjugate(coeffs)).all()
-        assert (qp.adjoint(adjoint_ps.operation()).matrix() == op.matrix()).all()
+        assert (qp.adjoint(qp.pauli.to_operator(adjoint_ps)).matrix() == op.matrix()).all()
 
 
 class TestSimplify:
@@ -375,23 +364,21 @@ class TestMiscMethods:
         assert isinstance(diag_gate, qp.RY)
         assert qp.math.allclose(diag_gate.data[0], -np.pi / 4)
 
-    # pylint: disable=protected-access
     def test_flatten_unflatten(self):
         """Test the flatten and unflatten methods."""
 
-        # pylint: disable=too-few-public-methods
         class CustomOp(qp.operation.Operator):
             pass
 
         op = CustomOp(1.2, 2.3, wires=0)
         adj_op = Adjoint(op)
-        data, metadata = adj_op._flatten()
+        data, metadata = adj_op._flatten()  # pylint: disable=protected-access
         assert len(data) == 1
         assert data[0] is op
 
         assert metadata == tuple()
 
-        new_op = type(adj_op)._unflatten(*adj_op._flatten())
+        new_op = type(adj_op)._unflatten(*adj_op._flatten())  # pylint: disable=protected-access
         qp.assert_equal(adj_op, new_op)
 
 
@@ -434,7 +421,7 @@ class TestAdjointOperation:
         *angles, phase = single_qubit_zyz_angles(op)
 
         assert base_phase == phase
-        for angle1, angle2 in zip(angles, reversed(base_angles)):
+        for angle1, angle2 in zip(angles, reversed(base_angles), strict=False):
             assert angle1 == -angle2
 
     @pytest.mark.parametrize(
@@ -474,9 +461,7 @@ class TestAdjointOperationDiffInfo:
         """Make sure the grad_method property of a Adjoint op is the same as the base op."""
         assert Adjoint(op).grad_method == op.grad_method
 
-    @pytest.mark.parametrize(
-        "base", (qp.PauliX(0), qp.RX(1.234, wires=0), qp.Rotation(1.234, wires=0))
-    )
+    @pytest.mark.parametrize("base", (qp.PauliX(0), qp.RX(1.234, wires=0)))
     def test_grad_recipe(self, base):
         """Test that the grad_recipe of the Adjoint is the same as the grad_recipe of the base."""
         assert Adjoint(base).grad_recipe == base.grad_recipe
@@ -579,13 +564,6 @@ class TestMatrix:
         import torch
 
         self.check_matrix(torch.tensor(1.2345), "torch")
-
-    @pytest.mark.tf
-    def test_matrix_tf(self):
-        """Test the matrix of an adjoint opreator with a tensorflow parameter."""
-        import tensorflow as tf
-
-        self.check_matrix(tf.Variable(1.2345), "tensorflow")
 
     def test_no_matrix_defined(self, seed):
         """Test that if the base has no matrix defined, then Adjoint.matrix also raises a MatrixUndefinedError."""
@@ -691,7 +669,7 @@ class TestDecompositionExpand:
         base_decomp = base.decomposition()
         decomp = Adjoint(base).decomposition()
 
-        for adj_op, base_op in zip(decomp, reversed(base_decomp)):
+        for adj_op, base_op in zip(decomp, reversed(base_decomp), strict=False):
             assert isinstance(adj_op, Adjoint)
             assert adj_op.base.__class__ == base_op.__class__
             assert qp.math.allclose(adj_op.data, base_op.data)
@@ -703,7 +681,7 @@ class TestDecompositionExpand:
         base_tape = qp.tape.QuantumScript(base.decomposition())
         tape = qp.tape.QuantumScript(Adjoint(base).decomposition())
 
-        for base_op, adj_op in zip(reversed(base_tape), tape):
+        for base_op, adj_op in zip(reversed(base_tape), tape, strict=False):
             assert isinstance(adj_op, Adjoint)
             assert base_op.__class__ == adj_op.base.__class__
             assert qp.math.allclose(adj_op.data, base_op.data)
@@ -807,12 +785,12 @@ class TestAdjointConstructorPreconstructedOp:
         assert len(q) == 1
         assert q.queue[0] is out
 
-    def test_single_op_defined_outside_queue_eager(self):
-        """Test if base is defined outside context and the function eagerly simplifies
-        the adjoint, the base is not added to queue."""
+    def test_single_op_defined_outside_queue_symbolic(self):
+        """Test if base is defined outside context and the function constructs
+        the symbolic adjoint, the base is not added to queue."""
         base = qp.RX(1.2, wires=0)
         with qp.queuing.AnnotatedQueue() as q:
-            out = adjoint(base, lazy=False)
+            out = adjoint(base)
 
         assert len(q) == 1
         assert q.queue[0] is out
@@ -869,23 +847,17 @@ class TestAdjointConstructorDifferentCallableTypes:
         y = 2.34
         z = 3.45
         with qp.queuing.AnnotatedQueue() as q:
-            out = adjoint(func)(x, y, z)
+            adjoint(func)(x, y, z)
 
         tape = qp.tape.QuantumScript.from_queue(q)
-        assert out == tape.circuit
 
-        for op in tape:
-            assert isinstance(op, Adjoint)
-
-        # check order reversed
-        assert tape[0].base.__class__ is qp.RZ
-        assert tape[1].base.__class__ is qp.RY
-        assert tape[2].base.__class__ is qp.RX
-
-        # check parameters assigned correctly
-        assert tape[0].data == (z,)
-        assert tape[1].data == (y,)
-        assert tape[2].data == (x,)
+        expected_ops = [
+            qp.adjoint(qp.RZ(z, wires=0)),
+            qp.adjoint(qp.RY(y, wires=0)),
+            qp.adjoint(qp.RX(x, wires=0)),
+        ]
+        expected_tape = qp.tape.QuantumScript(expected_ops, [])
+        qp.assert_equal(tape, expected_tape)
 
     def test_nested_adjoint(self):
         """Test the adjoint transform on an adjoint transform."""
@@ -902,100 +874,22 @@ class TestAdjointConstructorDifferentCallableTypes:
         assert out.wires == qp.wires.Wires("b")
 
 
-class TestAdjointConstructorNonLazyExecution:
-    """Test the lazy=False keyword."""
-
-    def test_single_decomposeable_op(self):
-        """Test lazy=False for a single op that gets decomposed."""
-
-        x = 1.23
-        with qp.queuing.AnnotatedQueue() as q:
-            base = qp.RX(x, wires="b")
-            out = adjoint(base, lazy=False)
-
-        assert len(q) == 1
-        assert q.queue[0] is out
-
-        assert isinstance(out, qp.RX)
-        assert out.data == (-1.23,)
-
-    def test_single_nondecomposable_op(self):
-        """Test lazy=false for a single op that can't be decomposed."""
-        with qp.queuing.AnnotatedQueue() as q:
-            base = qp.S(0)
-            out = adjoint(base, lazy=False)
-
-        assert len(q) == 1
-        assert q.queue[0] is out
-
-        assert isinstance(out, Adjoint)
-        assert isinstance(out.base, qp.S)
-
-    def test_single_decomposable_op_function(self):
-        """Test lazy=False for a single op callable that gets decomposed."""
-        x = 1.23
-        with qp.queuing.AnnotatedQueue() as q:
-            out = adjoint(qp.RX, lazy=False)(x, wires="b")
-
-        tape = qp.tape.QuantumScript.from_queue(q)
-        assert out is tape[0]
-        assert not isinstance(out, Adjoint)
-        assert isinstance(out, qp.RX)
-        assert out.data == (-x,)
-
-    def test_single_nondecomposable_op_function(self):
-        """Test lazy=False for a single op function that can't be decomposed."""
-        with qp.queuing.AnnotatedQueue() as q:
-            out = adjoint(qp.S, lazy=False)(0)
-
-        tape = qp.tape.QuantumScript.from_queue(q)
-        assert out is tape[0]
-        assert isinstance(out, Adjoint)
-        assert isinstance(out.base, qp.S)
-
-    def test_mixed_function(self):
-        """Test lazy=False with a function that applies operations of both types."""
-        x = 1.23
-
-        def qfunc(x):
-            qp.RZ(x, wires="b")
-            qp.T("b")
-
-        with qp.queuing.AnnotatedQueue() as q:
-            out = adjoint(qfunc, lazy=False)(x)
-
-        tape = qp.tape.QuantumScript.from_queue(q)
-        assert len(tape) == len(out) == 2
-        assert isinstance(tape[0], Adjoint)
-        assert isinstance(tape[0].base, qp.T)
-
-        assert isinstance(tape[1], qp.RZ)
-        assert tape[1].data[0] == -x
-
-
 class TestAdjointConstructorOutsideofQueuing:
     """Test the behaviour of the adjoint transform when not called in a queueing context."""
 
     def test_single_op(self):
         """Test providing a single op outside of a queuing context."""
 
+        class DummyOp(Operator):
+            pass
+
         x = 1.234
-        out = adjoint(qp.RZ(x, wires=0))
+        out = adjoint(DummyOp(x, wires=0))
 
         assert isinstance(out, Adjoint)
-        assert out.base.__class__ is qp.RZ
-        assert out.data == (1.234,)
+        assert out.base.__class__ is DummyOp
+        assert out.data == (x,)
         assert out.wires == qp.wires.Wires(0)
-
-    def test_single_op_eager(self):
-        """Test a single op that can be decomposed in eager mode outside of a queuing context."""
-
-        x = 1.234
-        base = qp.RX(x, wires=0)
-        out = adjoint(base, lazy=False)
-
-        assert isinstance(out, qp.RX)
-        assert out.data == (-x,)
 
     def test_single_op_function(self):
         """Test the transform on a single op as a callable outside of a queuing context."""
@@ -1020,14 +914,6 @@ class TestAdjointConstructorOutsideofQueuing:
         assert len(out) == 2
         assert all(isinstance(op, Adjoint) for op in out)
         assert all(op.wires == qp.wires.Wires(wire) for op in out)
-
-    def test_nonlazy_op_function(self):
-        """Test non-lazy mode on a simplifiable op outside of a queuing context."""
-
-        out = adjoint(qp.PauliX, lazy=False)(0)
-
-        assert not isinstance(out, Adjoint)
-        assert isinstance(out, qp.PauliX)
 
 
 class TestAdjointConstructorIntegration:
@@ -1062,9 +948,7 @@ class TestAdjointConstructorIntegration:
         expected_res = np.sin(x)
         expected_grad = np.cos(x)
         assert qp.math.allclose(circ(x), expected_res)
-        assert qp.math.allclose(
-            autograd.grad(circ)(x), expected_grad  # pylint: disable=no-value-for-parameter
-        )
+        assert qp.math.allclose(autograd.grad(circ)(x), expected_grad)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ("backprop", "adjoint", "parameter-shift"))
@@ -1100,24 +984,3 @@ class TestAdjointConstructorIntegration:
 
         assert qp.math.allclose(y, torch.sin(x))
         assert qp.math.allclose(x.grad, torch.cos(x))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ("backprop", "adjoint", "parameter-shift"))
-    def test_gradient_tf(self, diff_method):
-        """Test gradients through the adjoint transform with tensorflow."""
-
-        import tensorflow as tf
-
-        @qp.qnode(qp.device("default.qubit", wires=1), diff_method=diff_method)
-        def circ(x):
-            adjoint(qp.RX)(x, wires=0)
-            return qp.expval(qp.PauliY(0))
-
-        x = tf.Variable(0.234, dtype=tf.float64)
-        with tf.GradientTape() as tape:
-            y = circ(x)
-
-        grad = tape.gradient(y, x)
-
-        assert qp.math.allclose(y, tf.sin(x))
-        assert qp.math.allclose(grad, tf.cos(x))

@@ -24,8 +24,6 @@ import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resources_base import Resources
 from pennylane.labs.profiler import ProfileNode, export_flame_graph_data, profile
 
-# pylint: disable=no-self-use, too-few-public-methods
-
 
 def _basic_circuit():
     """A simple quantum function which queues operators for profiling."""
@@ -138,7 +136,8 @@ def equal_resource_profile(root: ProfileNode, other_root: ProfileNode):
         len(root.children) == len(other_root.children),
     )
     if all(equality_checks) and all(
-        equal_resource_profile(c1, c2) for c1, c2 in zip(root.children, other_root.children)
+        equal_resource_profile(c1, c2)
+        for c1, c2 in zip(root.children, other_root.children, strict=False)
     ):
         return True
     return False

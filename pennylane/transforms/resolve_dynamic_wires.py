@@ -96,6 +96,12 @@ def _new_ops(operations, manager, wire_map, deallocated):
     for op in operations:
         # check name faster than isinstance
         if op.name == "Allocate":
+            state = op.hyperparameters["state"]
+            if state in (AllocateState.MAGIC_T, AllocateState.MAGIC_T_ADJ):
+                raise AllocationError(
+                    f"Magic state allocation (state={state!r}) is not supported by "
+                    "resolve_dynamic_wires. Use Catalyst compilation for magic state allocation."
+                )
             for w in op.wires:
                 wire, ops = manager.get_wire(**op.hyperparameters)
                 yield from ops
@@ -275,7 +281,7 @@ def resolve_dynamic_wires(
     if not wire_map and not deallocated:
         return (tape,), null_postprocessing
     # use private trainable params to avoid calculating them if they haven't already been set
-    # pylint: disable=protected-access
     return (
+        # pylint: disable-next=protected-access
         tape.copy(ops=new_ops, measurements=mps, trainable_params=tape._trainable_params),
     ), null_postprocessing

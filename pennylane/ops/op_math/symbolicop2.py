@@ -14,7 +14,7 @@
 
 """Defines the base class for symbolic operators."""
 
-from typing_extensions import override
+from typing import override
 
 from pennylane.core.operator import Operator2
 from pennylane.core.queuing import QueuingManager
@@ -42,7 +42,7 @@ class SymbolicOp2(Operator2, is_baseclass=True):
 
     @property
     @override
-    # pylint: disable=arguments-differ,invalid-overridden-method
+    # pylint: disable-next=arguments-differ,invalid-overridden-method
     def has_sparse_matrix(self) -> bool:
         return self.base.has_sparse_matrix
 

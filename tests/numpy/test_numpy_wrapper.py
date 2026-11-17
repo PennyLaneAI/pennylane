@@ -34,7 +34,6 @@ class TestExtractTensors:
     def test_empty_iterable(self):
         """Test that an empty iterable returns nothing"""
         res = list(np.extract_tensors([]))
-        # pylint: disable=use-implicit-booleaness-not-comparison
         assert res == []
 
     def test_iterable_with_strings(self):
@@ -420,9 +419,8 @@ class TestNumpyIntegration:
         """Test that a tensor is returned if the array ufunc method returns
         multiple results."""
 
-        class _ufunc:
-            # pylint: disable=unused-argument,too-few-public-methods
-            def __init__(self, *args, **kwargs):
+        class _ufunc:  # pylint: disable=too-few-public-methods
+            def __init__(self, *args, **kwargs):  # pylint: disable=unused-argument
                 self.nout = 2
 
             def __call__(self, *args, **kwargs):
@@ -551,7 +549,7 @@ class TestNumpyConversion:
 
         ops = tape.operations
         assert len(ops) == 4
-        for op, p in zip(ops, phi[0]):
+        for op, p in zip(ops, phi[0], strict=False):
             # Test each rotation applied
             assert op.name == "RX"
             assert op.parameters == [p]

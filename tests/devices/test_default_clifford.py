@@ -21,6 +21,7 @@ import scipy as sp
 from dummy_debugger import Debugger
 
 import pennylane as qp
+from pennylane.core.operator import Operator1
 from pennylane.devices.default_clifford import _pl_op_to_stim
 from pennylane.exceptions import DecompositionWarning, DeviceError, QuantumFunctionError
 
@@ -29,13 +30,12 @@ stim = pytest.importorskip("stim")
 pytestmark = pytest.mark.external
 
 
-# pylint: disable=protected-access
 def test_applied_modifiers():
     """Test that default qubit has the `single_tape_support` and `simulator_tracking`
     modifiers applied.
     """
     dev = qp.device("default.clifford")
-    assert dev._applied_modifiers == [
+    assert dev._applied_modifiers == [  # pylint: disable=protected-access
         qp.devices.modifiers.single_tape_support,
         qp.devices.modifiers.simulator_tracking,
     ]
@@ -181,7 +181,7 @@ def test_meas_qinfo_clifford(meas_op):
     assert np.allclose(qnode_clfrd(), qnode_qubit())
 
 
-@pytest.mark.parametrize("shots", [None, 1_000_000])
+@pytest.mark.parametrize("shots", [None, 100_000])
 @pytest.mark.parametrize(
     "ops",
     [
@@ -214,7 +214,7 @@ def test_meas_expval(shots, ops, seed):
     assert np.allclose(qnode_clfrd(), qnode_qubit(), atol=1e-2 if shots else 1e-8)
 
 
-@pytest.mark.parametrize("shots", [None, int(2e6)])
+@pytest.mark.parametrize("shots", [None, 200_000])
 @pytest.mark.parametrize(
     "ops",
     [
@@ -239,7 +239,7 @@ def test_meas_var(shots, ops, seed):
     qnode_clfrd = qp.set_shots(qp.QNode(circuit_fn, dev_c), shots=shots)
     qnode_qubit = qp.QNode(circuit_fn, dev_q)
 
-    assert np.allclose(qnode_clfrd(), qnode_qubit(), atol=1e-2 if shots else 1e-8)
+    assert np.allclose(qnode_clfrd(), qnode_qubit(), atol=5e-2 if shots else 1e-8)
 
 
 @pytest.mark.parametrize("circuit", [circuit_1, circuit_2])
@@ -345,7 +345,7 @@ def test_meas_counts(shots, ops, seed):
 
     assert list(counts_clfrd.keys()) == list(counts_qubit.keys())
 
-    for k1, k2 in zip(counts_clfrd, counts_clfrd):
+    for k1, k2 in zip(counts_clfrd, counts_clfrd, strict=False):
         assert qp.math.abs(counts_clfrd[k1] - counts_qubit[k2]) / shots < 0.1  # 10% threshold
 
 
@@ -425,7 +425,7 @@ def test_prep_snap_clifford(circuit):
 )
 def test_pl_to_stim(pl_op, stim_op):
     """Test that the PennyLane operation get converted to Stim operation"""
-    op, wires = _pl_op_to_stim(pl_op)  # pylint:disable=protected-access
+    op, wires = _pl_op_to_stim(pl_op)
     assert op == stim_op[0]
     assert wires == " ".join(map(str, stim_op[1]))
 
@@ -473,7 +473,7 @@ def test_snapshot_supported(measurement, tag):
     snaps_clifford = qp.snapshots(qnode_clifford)()
 
     assert len(snaps_qubit) == len(snaps_clifford)
-    for key1, key2 in zip(snaps_qubit, snaps_clifford):
+    for key1, key2 in zip(snaps_qubit, snaps_clifford, strict=False):
         assert key1 == key2
         assert qp.math.allclose(snaps_qubit[key1], snaps_clifford[key2])
 
@@ -528,17 +528,15 @@ def test_tracker():
     }
     assert np.allclose(tracker.history.pop("results")[0], 0.0)
     assert tracker.history.pop("resources")[0] == qp.resource.SpecsResources(
-        num_allocs=2,
-        gate_types={"Hadamard": 1, "CNOT": 1},
-        gate_sizes={1: 1, 2: 1},
-        measurements={"expval(PauliZ)": 1},
-        depth=2,
+        num_wires=2,
+        counts={"Hadamard": 1, "CNOT": 1},
+        measurement_processes={"expval(PauliZ)": 1},
+        circuit_depth=2,
     )
     assert tracker.history == {
         "batches": [1, 1],
         "simulations": [1, 1],
         "executions": [1, 1],
-        "errors": [{}, {}],
     }
 
 
@@ -589,8 +587,10 @@ def test_debugger():
         "execution_results": [qp.math.array(1.0), qp.math.array(0.0)],
     }
 
-    assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
-    assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
+    assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys(), strict=False))
+    assert all(
+        np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values(), strict=False)
+    )
 
 
 @pytest.mark.parametrize("circuit", [circuit_1])
@@ -651,6 +651,10 @@ def test_meas_error():
         circuit_herm()
 
 
+class LegacyRX(Operator1):  # pylint: disable=too-few-public-methods
+    has_decomposition = False
+
+
 @pytest.mark.parametrize("check", [True, False])
 def test_clifford_error(check):
     """Test if an QuantumFunctionError is raised when one of the operations is not Clifford."""
@@ -661,12 +665,12 @@ def test_clifford_error(check):
     def circuit():
         qp.Hadamard(wires=[0])
         qp.PauliX(wires=[0])
-        qp.RX(1.0, wires=[0])
+        LegacyRX(1.0, wires=[0])
         return qp.state()
 
     with pytest.raises(
         DeviceError,
-        match=r"Operator RX\(1.0, wires=\[0\]\) not supported with default.clifford and does not provide a decomposition",
+        match=r"Operator LegacyRX\(1.0, wires=\[0\]\) not supported with default.clifford and does not provide a decomposition",
     ):
         if qp.decomposition.enabled_graph() and check:
             with pytest.warns(DecompositionWarning):

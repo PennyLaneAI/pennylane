@@ -16,9 +16,9 @@ This submodule offers all the non-operator/ measurement custom primitives
 created in the ftqc module.
 """
 
-from .parametric_midmeasure import _create_parametrized_mid_measure_primitive
+from .parametric_midmeasure import measure_in_basis_p
 
-measure_in_basis_prim = _create_parametrized_mid_measure_primitive()
+measure_in_basis_prim = measure_in_basis_p
 
 __all__ = [
     "measure_in_basis_prim",

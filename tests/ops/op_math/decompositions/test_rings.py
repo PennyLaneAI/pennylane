@@ -18,8 +18,6 @@ import pytest
 
 from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega, ZSqrtTwo
 
-# pylint: disable=too-few-public-methods
-
 
 class TestZSqrtTwo:
     """Tests for the ZSqrtTwo class."""
@@ -35,9 +33,8 @@ class TestZSqrtTwo:
         assert z_sqrt_two.b == b
 
         assert repr(z_sqrt_two) == f"ZSqrtTwo(a={a}, b={b})"
-        # pylint:disable=condition-evals-to-constant
         assert (
-            str(z_sqrt_two)
+            str(z_sqrt_two)  # pylint: disable=condition-evals-to-constant
             == (f"{a}" if a else "" + " + " if a and b else "" + f"{b}√2" if b else "")
             or "0"
         )
@@ -123,7 +120,7 @@ class TestZOmega:
         assert z_omega.d == d
         string_repr = [
             f"{coeff} {var}".strip()
-            for coeff, var in zip([a, b, c, d], ["ω^3", "ω^2", "ω", ""])
+            for coeff, var in zip([a, b, c, d], ["ω^3", "ω^2", "ω", ""], strict=False)
             if coeff
         ]
         assert str(z_omega) == " + ".join(string_repr) if string_repr else "0"
@@ -235,7 +232,7 @@ class TestDyadicMatrix:
             _ = dyadic_matrix @ z2
 
 
-class TestSO3Matrix:
+class TestSO3Matrix:  # pylint: disable=too-few-public-methods
     """Tests for the SO3Matrix class."""
 
     def test_init_and_repr(self):

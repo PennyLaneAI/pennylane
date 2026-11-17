@@ -15,7 +15,6 @@
 Unit tests for the batch params transform.
 """
 
-# pylint:disable=comparison-with-callable
 import pytest
 
 import pennylane as qp
@@ -168,7 +167,7 @@ def test_mottonenstate_preparation(mocker):
         return qp.probs(wires=[0, 1, 2])
 
     indiv_res = []
-    for state, weight in zip(data, weights):
+    for state, weight in zip(data, weights, strict=False):
         indiv_res.append(circuit2(state, weight))
     assert np.allclose(res, indiv_res)
 
@@ -204,7 +203,7 @@ def test_qubit_state_prep(mocker):
         return qp.probs(wires=[0, 1, 2])
 
     indiv_res = []
-    for state, weight in zip(data, weights):
+    for state, weight in zip(data, weights, strict=False):
         indiv_res.append(circuit2(state, weight))
     assert np.allclose(res, indiv_res)
 
@@ -238,7 +237,6 @@ def test_multi_returns():
 
 def test_shot_vector():
     """Test that batching works for a simple circuit with a shot vector"""
-    # pylint:disable=not-an-iterable
     dev = qp.device("default.qubit", wires=3)
 
     @qp.batch_params
@@ -260,7 +258,6 @@ def test_shot_vector():
 
     assert isinstance(res, tuple)
     assert len(res) == 5
-    # pylint:disable=not-an-iterable
     assert all(shot_res.shape == (batch_size, 4) for shot_res in res)
 
 
@@ -410,66 +407,6 @@ class TestDiffSingle:
         expected = -np.sin(0.1) * torch.sin(x)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_tf(self, diff_method, tol, interface):
-        """Test derivatives when using TF"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.batch_params
-        @qp.qnode(dev, interface=interface, diff_method=diff_method)
-        def circuit(x):
-            qp.RX(x, wires=0)
-            qp.RY(0.1, wires=1)
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-        def cost(x):
-            return tf.reduce_sum(circuit(x))
-
-        batch_size = 3
-        x = tf.Variable(tf.linspace(0.1, 0.5, batch_size))
-
-        with tf.GradientTape() as tape:
-            loss = cost(x)
-
-        res = tape.gradient(loss, x)
-        expected = -np.sin(0.1) * tf.sin(x)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto", "tf-autograph"])
-    def test_tf_autograph(self, tol, interface):
-        """Test derivatives when using TF and autograph"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.batch_params
-        @qp.qnode(dev, interface=interface, diff_method="backprop")
-        def circuit(x):
-            qp.RX(x, wires=0)
-            qp.RY(0.1, wires=1)
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-        @tf.function
-        def cost(x):
-            return tf.reduce_sum(circuit(x))
-
-        batch_size = 3
-        x = tf.Variable(tf.linspace(0.1, 0.5, batch_size))
-
-        with tf.GradientTape() as tape:
-            loss = cost(x)
-
-        res = tape.gradient(loss, x)
-        expected = -np.sin(0.1) * tf.sin(x)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
 
 class TestDiffMulti:
     """Test gradients for multiple measurements"""
@@ -548,7 +485,7 @@ class TestDiffMulti:
 
         assert isinstance(res, tuple)
         assert len(res) == 2
-        for r, exp in zip(res, expected):
+        for r, exp in zip(res, expected, strict=False):
             assert qp.math.allclose(r, exp, atol=tol)
 
         grad = jax.jacobian(circuit)(x)
@@ -560,7 +497,7 @@ class TestDiffMulti:
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
-        for g, exp in zip(grad, expected):
+        for g, exp in zip(grad, expected, strict=False):
             assert qp.math.allclose(g, exp, atol=tol, rtol=0)
 
     @pytest.mark.jax
@@ -598,7 +535,7 @@ class TestDiffMulti:
 
         assert isinstance(res, tuple)
         assert len(res) == 2
-        for r, exp in zip(res, expected):
+        for r, exp in zip(res, expected, strict=False):
             assert qp.math.allclose(r, exp, atol=tol)
 
         grad = jax.jacobian(circuit)(x)
@@ -610,7 +547,7 @@ class TestDiffMulti:
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
-        for g, exp in zip(grad, expected):
+        for g, exp in zip(grad, expected, strict=False):
             assert qp.math.allclose(g, exp, atol=tol, rtol=0)
 
     @pytest.mark.torch
@@ -649,7 +586,7 @@ class TestDiffMulti:
 
         assert isinstance(res, tuple)
         assert len(res) == 2
-        for r, exp in zip(res, expected):
+        for r, exp in zip(res, expected, strict=False):
             assert qp.math.allclose(r, exp, atol=tol)
 
         grad = torch.autograd.functional.jacobian(circuit, x)
@@ -663,95 +600,8 @@ class TestDiffMulti:
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
-        for g, exp in zip(grad, expected):
+        for g, exp in zip(grad, expected, strict=False):
             assert qp.math.allclose(g, exp, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_tf(self, diff_method, tol, interface):
-        """Test derivatives when using TF"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.batch_params
-        @qp.qnode(dev, diff_method=diff_method, interface=interface)
-        def circuit(x):
-            qp.RY(x, wires=0)
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
-
-        batch_size = 3
-        x = tf.Variable(np.linspace(0.1, 0.5, batch_size))
-
-        with tf.GradientTape() as tape:
-            res = circuit(x)
-            res = qp.math.concatenate([qp.math.expand_dims(res[0], 1), res[1]], axis=1)
-
-        expected = qp.math.transpose(
-            qp.math.stack(
-                [
-                    np.cos(x),
-                    np.cos(x / 2) ** 2,
-                    np.zeros_like(x),
-                    np.zeros_like(x),
-                    np.sin(x / 2) ** 2,
-                ]
-            )
-        )
-        assert qp.math.allclose(res, expected, atol=tol)
-
-        grad = tape.jacobian(res, x)
-        expected = qp.math.stack(
-            [-np.sin(x), -np.sin(x) / 2, np.zeros_like(x), np.zeros_like(x), np.sin(x) / 2]
-        ) * qp.math.expand_dims(np.eye(batch_size), 1)
-
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_tf_autograph(self, diff_method, tol, interface):
-        """Test derivatives when using TF"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @tf.function
-        @qp.batch_params
-        @qp.qnode(dev, diff_method=diff_method, interface=interface)
-        def circuit(x):
-            qp.RY(x, wires=0)
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
-
-        batch_size = 3
-        x = tf.Variable(np.linspace(0.1, 0.5, batch_size))
-
-        with tf.GradientTape() as tape:
-            res = circuit(x)
-            res = qp.math.concatenate([qp.math.expand_dims(res[0], 1), res[1]], axis=1)
-
-        expected = qp.math.transpose(
-            qp.math.stack(
-                [
-                    np.cos(x),
-                    np.cos(x / 2) ** 2,
-                    np.zeros_like(x),
-                    np.zeros_like(x),
-                    np.sin(x / 2) ** 2,
-                ]
-            )
-        )
-        assert qp.math.allclose(res, expected, atol=tol)
-
-        grad = tape.jacobian(res, x)
-        expected = qp.math.stack(
-            [-np.sin(x), -np.sin(x) / 2, np.zeros_like(x), np.zeros_like(x), np.sin(x) / 2]
-        ) * qp.math.expand_dims(np.eye(batch_size), 1)
-
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
 
 
 def test_all_operations(mocker):

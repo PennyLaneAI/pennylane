@@ -21,7 +21,6 @@ Queuing
 
     ~QueuingManager
     ~AnnotatedQueue
-    ~apply
 
 Operator Types
 ~~~~~~~~~~~~~~
@@ -34,17 +33,40 @@ Operator Types
     ~Operator1
     ~Operator2
     ~Operation
-    ~CV
-    ~CVObservable
-    ~CVOperation
     ~Channel
     ~StatePrepBase
 
 .. currentmodule:: pennylane.core.operator
 
-.. inheritance-diagram:: Operator Operation Channel CV CVObservable CVOperation StatePrepBase
+.. inheritance-diagram:: Operator Operation Channel StatePrepBase
     :parts: 1
 
+Pauli Arithmetic
+~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.core.pauli
+.. autosummary::
+    :toctree: api
+
+    ~PauliWord
+    ~PauliSentence
+
+Utility Functions
+~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.core.apply
+
+.. autosummary::
+    :toctree: api
+
+    ~apply
+
+.. currentmodule:: pennylane.core.operator
+
+.. autosummary::
+    :toctree: api
+
+    ~abstractify
 
 Measurements
 ~~~~~~~~~~~~
@@ -98,19 +120,20 @@ Transforms
 
 """
 
-from .queuing import QueuingManager, AnnotatedQueue, apply
+from .apply import apply
+from .queuing import QueuingManager, AnnotatedQueue
+from .pauli import PauliWord, PauliSentence
 
 from .operator import (
-    CV,
     Channel,
-    CVObservable,
-    CVOperation,
     Operation,
     Operator,
     Operator1,
     Operator2,
     StatePrepBase,
     StatePrepBase2,
+    abstractify,
+    get_op_class_by_name,
 )
 from .measurements import (
     MeasurementProcess,
@@ -136,12 +159,13 @@ __all__ = [
     "Operator1",
     "Operator2",
     "Operation",
+    "abstractify",
+    "get_op_class_by_name",
     "Channel",
-    "CV",
-    "CVOperation",
-    "CVObservable",
     "StatePrepBase",
     "StatePrepBase2",
+    "PauliWord",
+    "PauliSentence",
     "MeasurementProcess",
     "StateMeasurement",
     "SampleMeasurement",

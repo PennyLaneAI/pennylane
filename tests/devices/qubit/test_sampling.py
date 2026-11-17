@@ -188,8 +188,7 @@ class TestSampleState:
         assert np.allclose(reordered_probs, random_probs, atol=APPROX_ATOL)
 
 
-# pylint: disable=too-many-public-methods
-class TestMeasureSamples:
+class TestMeasureSamples:  # pylint: disable=too-many-public-methods
     """Test that the measure_with_samples function works as expected"""
 
     def test_sample_measure(self):
@@ -381,7 +380,7 @@ class TestMeasureSamples:
         assert isinstance(result, tuple)
         assert len(result) == total_copies
 
-        for res, sh in zip(result, shots):
+        for res, sh in zip(result, shots, strict=False):
             assert isinstance(res, tuple)
             assert len(res) == 1
             res = res[0]
@@ -861,7 +860,7 @@ class TestBroadcasting:
         assert isinstance(res, tuple)
         assert len(res) == shots.num_copies
 
-        for s, r in zip(shots, res):
+        for s, r in zip(shots, res, strict=False):
             assert isinstance(r, tuple)
             assert len(r) == 1
             r = r[0]
@@ -878,7 +877,6 @@ class TestBroadcasting:
             # third batch of samples can be any of |00>, |01>, |10>, or |11>
             assert np.all(np.logical_or(r[2] == 0, r[2] == 1))
 
-    # pylint:disable = too-many-arguments
     @pytest.mark.parametrize(
         "shots",
         [
@@ -1059,7 +1057,7 @@ class TestBroadcastingPRNG:
         assert isinstance(res, tuple)
         assert len(res) == shots.num_copies
 
-        for s, r in zip(shots, res):
+        for s, r in zip(shots, res, strict=False):
             assert isinstance(r, tuple)
             assert len(r) == 1
             r = r[0]
@@ -1081,7 +1079,6 @@ class TestBroadcastingPRNG:
             # third batch of samples can be any of |00>, |01>, |10>, or |11>
             assert np.all(np.logical_or(r[2] == 0, r[2] == 1))
 
-    # pylint:disable = too-many-arguments
     @pytest.mark.parametrize(
         "shots",
         [
@@ -1368,7 +1365,7 @@ class TestSampleProbs:
         See https://github.com/PennyLaneAI/pennylane/issues/9000 for the report.
         """
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         feature_count = 2
 

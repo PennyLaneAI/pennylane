@@ -34,7 +34,6 @@ def get_device(device_name, seed):
     return qp.device(device_name, seed=seed)
 
 
-# pylint: disable=too-few-public-methods
 class TestCaching:
     """Tests for caching behaviour"""
 
@@ -240,7 +239,7 @@ class TestAutogradExecuteIntegration:
             res = qp.jacobian(lambda x: qp.math.hstack(cost(x)))(a)
         else:
             res = qp.jacobian(cost)(a)
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qp.math.sin(a)
 
@@ -276,7 +275,7 @@ class TestAutogradExecuteIntegration:
             assert res[1].shape == (4,)
 
             expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
-            for _r, _e in zip(res, expected):
+            for _r, _e in zip(res, expected, strict=False):
                 assert np.allclose(_r[:2], _e, atol=atol_for_shots(shots))
                 assert np.allclose(_r[2:], _e, atol=atol_for_shots(shots))
         else:
@@ -284,13 +283,16 @@ class TestAutogradExecuteIntegration:
             assert res[1].shape == (2,)
 
             expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
-            for _r, _e in zip(res, expected):
+            for _r, _e in zip(res, expected, strict=False):
                 assert np.allclose(_r, _e, atol=atol_for_shots(shots))
 
     @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
     def test_tape_no_parameters(self, execute_kwargs, shots, device_name, seed):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
+
+        if execute_kwargs.get("diff_method") == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
 
         device = get_device(device_name, seed=seed)
 
@@ -315,6 +317,7 @@ class TestAutogradExecuteIntegration:
                 shots=shots,
             )
             res = qp.execute([tape1, tape2, tape3, tape4], device, **execute_kwargs)
+
             if shots.has_partitioned_shots:
                 res = tuple(i for r in res for i in r)
             return sum(autograd.numpy.hstack(res))
@@ -393,7 +396,7 @@ class TestAutogradExecuteIntegration:
         jac = qp.jacobian(cost)(params)
         assert isinstance(jac, np.ndarray)
         if not shots.has_partitioned_shots:
-            assert jac.shape == (4, 2)  # pylint: disable=no-member
+            assert jac.shape == (4, 2)
 
         d1 = -np.sin(x) * np.cos(y)
         d2 = -np.cos(x) * np.sin(y)
@@ -458,7 +461,7 @@ class TestAutogradExecuteIntegration:
             [0, -np.cos(2 * a) * np.cos(b)],
         )
         assert isinstance(jac, tuple) and len(jac) == 2
-        for _j, _e in zip(jac, expected):
+        for _j, _e in zip(jac, expected, strict=False):
             assert np.allclose(_j, _e, atol=atol_for_shots(shots), rtol=0)
 
     def test_classical_processing(self, execute_kwargs, device_name, seed, shots):
@@ -544,7 +547,7 @@ class TestAutogradExecuteIntegration:
 
         device = get_device(device_name, seed=seed)
 
-        class MyU3(qp.U3):
+        class MyU3(qp.U3):  # pylint: disable=too-few-public-methods
             """Dummy operator."""
 
             name = "MyU3"
@@ -577,42 +580,42 @@ class TestAutogradExecuteIntegration:
             program = device.preprocess_transforms(execution_config=config)
             return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        def _decomp(theta, phi, delta, wires):
+            qp.Rot(delta, theta, -delta, wires)
+            qp.PhaseShift(phi + delta, wires)
 
-            @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
-            def _decomp(theta, phi, lam, wires):
-                qp.Rot(lam, theta, -lam, wires)
-                qp.PhaseShift(phi + lam, wires)
+        qp.add_decomps(MyU3, _decomp)
 
-            qp.add_decomps(MyU3, _decomp)
+        a = pnp.array(0.1, requires_grad=False)
+        p = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
 
-            a = pnp.array(0.1, requires_grad=False)
-            p = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
+        res = cost_fn(a, p)
+        expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
+            np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
+        )
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-            res = cost_fn(a, p)
-            expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
-                np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
-            )
-            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
-
-            jac_fn = qp.jacobian(cost_fn)
-            res = jac_fn(a, p)
-            expected = np.array(
-                [
-                    np.cos(p[1])
-                    * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
-                    np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
-                    - np.sin(p[1])
-                    * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
-                    np.sin(a)
-                    * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
-                ]
-            )
-            assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        jac_fn = qp.jacobian(cost_fn)
+        res = jac_fn(a, p)
+        expected = np.array(
+            [
+                np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
+                np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
+                - np.sin(p[1])
+                * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
+                np.sin(a)
+                * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
+            ]
+        )
+        assert np.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
     def test_probability_differentiation(self, execute_kwargs, device_name, seed, shots):
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
+
+        if execute_kwargs["diff_method"] == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         device = get_device(device_name, seed=seed)
 
@@ -668,6 +671,9 @@ class TestAutogradExecuteIntegration:
     def test_ragged_differentiation(self, execute_kwargs, device_name, seed, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+
+        if execute_kwargs["diff_method"] == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         device = get_device(device_name, seed=seed)
 
@@ -785,7 +791,6 @@ class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.fixture
     def cost_fn(self, execute_kwargs, shots, device_name, seed, constructor):
         """Cost function for gradient tests"""

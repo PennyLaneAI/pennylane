@@ -17,7 +17,7 @@ from functools import partial
 
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
-from pennylane.math import is_abstract
+from pennylane.math import is_tracer
 from pennylane.ops.op_math import Adjoint
 from pennylane.ops.qubit.attributes import (
     self_inverses,
@@ -35,7 +35,7 @@ def _check_equality(items1: TensorLike | Wires, items2: TensorLike | Wires) -> b
     """Checks if two data objects are equal, considering abstractness."""
 
     for d1, d2 in zip(items1, items2, strict=True):
-        if is_abstract(d1) or is_abstract(d2):
+        if is_tracer(d1) or is_tracer(d2):
             if d1 is not d2:
                 return False
         elif d1 != d2:
@@ -75,7 +75,7 @@ def _are_inverses(op1: Operator, op2: Operator) -> bool:
 
 
 def _num_shared_wires(wires1, wires2):
-    if any(is_abstract(w) for w in [*wires1, *wires2]):
+    if any(is_tracer(w) for w in [*wires1, *wires2]):
         # Rely on `id`s to check object equality instead of value equality for abstract wires
         wire_ids1 = {id(w) for w in wires1}
         wire_ids2 = {id(w) for w in wires2}
@@ -215,19 +215,19 @@ def cancel_inverses(
                 qp.Hadamard(wires=0)
                 return qp.expval(qp.PauliZ(0))
 
-        >>> print(qp.specs(circuit, level=1)())
+        >>> print(qp.specs(circuit, level=1)()) # doctest: +SKIP
         Device: lightning.qubit
         Device wires: 1
         Shots: Shots(total=None)
-        Level: cancel-inverses
+        Level: After cancel-inverses
         <BLANKLINE>
-        Wire allocations: 1
-        Total gates: 1
-        Gate counts:
-        - RX: 1
-        Measurements:
+        Quantum operations:
+        - Total: 1
+          - RX: 1
+        Measurement processes:
         - expval(PauliZ): 1
-        Depth: Not computed
+        Total wires: 1
+        Circuit Depth: Not computed
 
         Additionally, the ``cancel_inverses`` transform with ``qjit`` supports
         `loop-boundary optimization <https://pennylane.ai/compilation/loop-boundary-optimization>`_.

@@ -32,8 +32,6 @@ from pennylane.labs.estimator_beta.wires_manager.wire_counting import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=unused-argument,too-many-arguments,arguments-differ
-
 any_state = AllocateState.ANY
 
 
@@ -58,7 +56,7 @@ class AllocateOp(qre.ResourceOperator):
         return qre.CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, allocate, num_wires=0):
+    def resource_decomp(cls, allocate, num_wires=0):  # pylint: disable=unused-argument
         return [allocate]
 
 
@@ -82,7 +80,7 @@ class DeallocateOp(qre.ResourceOperator):
         return qre.CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, deallocate, num_wires=0):
+    def resource_decomp(cls, deallocate, num_wires=0):  # pylint: disable=unused-argument
         return [deallocate]
 
 
@@ -121,6 +119,7 @@ class AllocOpFree(qre.ResourceOperator):
         return qre.CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
+    # pylint: disable-next=unused-argument
     def resource_decomp(cls, num_wires, allocate, cmpr_op, deallocate=None):
         deallocate = deallocate or Deallocate(allocated_register=allocate)
         return [
@@ -233,7 +232,7 @@ class TestProcessCircuitLst:
     def test_error_marking_qubits_not_in_circuit(self):
         """Test that an error is raised if we attempt to mark qubits that haven't been
         listed by any operator in the circuit."""
-        with pytest.raises(ValueError, match=r"Attempted to mark qubits Wires\(\[5, 6\]\)"):
+        with pytest.raises(ValueError, match=r"Attempted to mark qubits \[5, 6\]"):
             _process_circuit_lst(
                 [
                     MarkClean([0, 1, 2]),

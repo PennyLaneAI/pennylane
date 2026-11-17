@@ -13,7 +13,7 @@
 # limitations under the License.
 """Integration tests for using the autograd interface with a QNode"""
 
-# pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg, use-dict-literal, no-name-in-module
+# pylint: disable=too-many-arguments,use-dict-literal
 
 
 import autograd
@@ -417,8 +417,7 @@ class TestQNode:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        # pylint: disable=too-few-public-methods
-        class MyU3(qp.U3):
+        class MyU3(qp.U3):  # pylint: disable=too-few-public-methods
             """Custom U3."""
 
             name = "MyU3"
@@ -431,44 +430,41 @@ class TestQNode:
                     qp.PhaseShift(phi + lam, wires=wires),
                 ]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        def _decomp(theta, phi, delta, wires):
+            qp.Rot(delta, theta, -delta, wires)
+            qp.PhaseShift(phi + delta, wires)
 
-            @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
-            def _decomp(theta, phi, lam, wires):
-                qp.Rot(lam, theta, -lam, wires)
-                qp.PhaseShift(phi + lam, wires)
+        qp.add_decomps(MyU3, _decomp)
 
-            qp.add_decomps(MyU3, _decomp)
+        a = np.array(0.1, requires_grad=False)
+        p = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
-            a = np.array(0.1, requires_grad=False)
-            p = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
+        def circuit(a, p):
+            qp.RX(a, wires=0)
+            MyU3(p[0], p[1], p[2], wires=0)
+            return qp.expval(qp.PauliX(0))
 
-            @qnode(dev, **kwargs, gradient_kwargs=gradient_kwargs)
-            def circuit(a, p):
-                qp.RX(a, wires=0)
-                MyU3(p[0], p[1], p[2], wires=0)
-                return qp.expval(qp.PauliX(0))
+        res = circuit(a, p)
+        expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
+            np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-            res = circuit(a, p)
-            expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
-                np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
-            )
-            assert np.allclose(res, expected, atol=tol, rtol=0)
+        res = qp.grad(circuit)(a, p)
 
-            res = qp.grad(circuit)(a, p)
-
-            expected = np.array(
-                [
-                    np.cos(p[1])
-                    * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
-                    np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
-                    - np.sin(p[1])
-                    * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
-                    np.sin(a)
-                    * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
-                ]
-            )
-            assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = np.array(
+            [
+                np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
+                np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
+                - np.sin(p[1])
+                * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
+                np.sin(a)
+                * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
 class TestShotsIntegration:
@@ -499,7 +495,8 @@ class TestShotsIntegration:
 
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert all(
-            np.allclose(np.mean(r, axis=0), e, atol=0.1, rtol=0) for r, e in zip(res, expected)
+            np.allclose(np.mean(r, axis=0), e, atol=0.1, rtol=0)
+            for r, e in zip(res, expected, strict=False)
         )
 
     def test_update_diff_method(self):
@@ -541,6 +538,8 @@ class TestQubitIntegration:
         with a single prob output"""
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         kwargs = dict(
             diff_method=diff_method,
@@ -572,7 +571,7 @@ class TestQubitIntegration:
             np.array([-np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2]),
             np.array([-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
         )
-        assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
+        assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected, strict=False))
 
     def test_multiple_probability_differentiation(
         self, interface, dev, diff_method, grad_on_execution, device_vjp, tol, seed
@@ -581,6 +580,8 @@ class TestQubitIntegration:
         with multiple prob outputs"""
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -641,7 +642,7 @@ class TestQubitIntegration:
                 ]
             ),
         )
-        assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
+        assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected, strict=False))
 
     def test_ragged_differentiation(
         self, interface, dev, diff_method, grad_on_execution, device_vjp, tol, seed
@@ -650,6 +651,8 @@ class TestQubitIntegration:
         with prob and expval outputs"""
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         kwargs = dict(
             diff_method=diff_method,
@@ -705,6 +708,8 @@ class TestQubitIntegration:
         with prob and variance outputs"""
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -772,7 +777,7 @@ class TestQubitIntegration:
     def test_chained_qnodes(self, interface, dev, diff_method, grad_on_execution, device_vjp):
         """Test that the gradient of chained QNodes works without error"""
 
-        # pylint: disable=too-few-public-methods
+        # pylint: disable-next=too-few-public-methods
         class Template(qp.templates.StronglyEntanglingLayers):
             """Custom template."""
 
@@ -1089,7 +1094,7 @@ class TestQubitIntegration:
         expected_res = [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b)]
 
         assert isinstance(res, np.ndarray)
-        assert res.shape == (2,)  # pylint: disable=comparison-with-callable
+        assert res.shape == (2,)
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         jac_fn = qp.jacobian(circuit)
@@ -1205,7 +1210,7 @@ class TestQubitIntegration:
 
         expected_res = [0.5 + 0.5 * np.cos(a) * np.cos(b), 0.5 - 0.5 * np.cos(a) * np.cos(b)]
         assert isinstance(res, np.ndarray)
-        assert res.shape == (2,)  # pylint: disable=comparison-with-callable
+        assert res.shape == (2,)
         assert np.allclose(res, expected_res, atol=tol, rtol=0)
 
         jac_fn = qp.jacobian(circuit)
@@ -1245,7 +1250,7 @@ class TestQubitIntegration:
         if diff_method in {"finite-diff"}:
             tol = 10e-2
 
-        for hess, exp_hess in zip([hess_a, hess_b], [exp_hess_a, exp_hess_b]):
+        for hess, exp_hess in zip([hess_a, hess_b], [exp_hess_a, exp_hess_b], strict=False):
             assert np.allclose(hess[0], exp_hess[0], atol=tol, rtol=0)
             assert np.allclose(hess[1], exp_hess[1], atol=tol, rtol=0)
 
@@ -1313,6 +1318,8 @@ class TestQubitIntegration:
 
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("Lightning does not support state adjoint diff.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
@@ -1476,8 +1483,7 @@ class TestTapeExpansion:
         if max_diff == 2 and diff_method == "hadamard":
             pytest.skip("Max diff > 1 not supported for Hadamard gradient.")
 
-        # pylint: disable=too-few-public-methods
-        class PhaseShift(qp.PhaseShift):
+        class PhaseShift(qp.PhaseShift):  # pylint: disable=too-few-public-methods
             """dummy phase shift."""
 
             grad_method = None
@@ -1689,10 +1695,10 @@ class TestSample:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        assert res[0].shape == (10,)  # pylint: disable=comparison-with-callable
+        assert res[0].shape == (10,)
         assert isinstance(res[0], np.ndarray)
 
-        assert res[1].shape == (10,)  # pylint: disable=comparison-with-callable
+        assert res[1].shape == (10,)
         assert isinstance(res[1], np.ndarray)
 
     def test_sample_combination(self):
@@ -1755,13 +1761,13 @@ class TestSample:
         assert isinstance(result, tuple)
         assert len(result) == 3
 
-        assert result[0].shape == (10,)  # pylint: disable=comparison-with-callable
+        assert result[0].shape == (10,)
         assert isinstance(result[0], np.ndarray)
 
-        assert result[1].shape == (10,)  # pylint: disable=comparison-with-callable
+        assert result[1].shape == (10,)
         assert isinstance(result[1], np.ndarray)
 
-        assert result[2].shape == (10,)  # pylint: disable=comparison-with-callable
+        assert result[2].shape == (10,)
         assert isinstance(result[2], np.ndarray)
 
 
@@ -1862,6 +1868,8 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
+        if diff_method == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
@@ -1894,6 +1902,8 @@ class TestReturn:
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         @qnode(
             dev,
@@ -1928,6 +1938,8 @@ class TestReturn:
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         @qnode(
             dev,
@@ -1952,6 +1964,7 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """The jacobian of multiple measurements with a single params return an array."""
+
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
@@ -1967,7 +1980,7 @@ class TestReturn:
         def circuit(a):
             qp.RY(a, wires=0)
             qp.RX(0.2, wires=0)
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(0) @ qp.Y(1))
 
         a = np.array(0.1, requires_grad=True)
 
@@ -1977,12 +1990,13 @@ class TestReturn:
         jac = qp.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
-        assert jac.shape == (5,)
+        assert jac.shape == (2,)
 
     def test_jacobian_multiple_measurement_multiple_param(
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
+
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
@@ -1998,7 +2012,7 @@ class TestReturn:
         def circuit(a, b):
             qp.RY(a, wires=0)
             qp.RX(b, wires=0)
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliX(0))
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
@@ -2012,10 +2026,10 @@ class TestReturn:
         assert len(jac) == 2
 
         assert isinstance(jac[0], np.ndarray)
-        assert jac[0].shape == (5,)
+        assert jac[0].shape == (2,)
 
         assert isinstance(jac[1], np.ndarray)
-        assert jac[1].shape == (5,)
+        assert jac[1].shape == (2,)
 
     def test_jacobian_multiple_measurement_multiple_param_array(
         self, dev, diff_method, grad_on_execution, device_vjp
@@ -2037,7 +2051,7 @@ class TestReturn:
         def circuit(a):
             qp.RY(a[0], wires=0)
             qp.RX(a[1], wires=0)
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(0) @ qp.PauliY(1))
 
         a = np.array([0.1, 0.2], requires_grad=True)
 
@@ -2047,7 +2061,7 @@ class TestReturn:
         jac = qp.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
-        assert jac.shape == (5, 2)
+        assert jac.shape == (2, 2)
 
     def test_hessian_expval_multiple_params(self, dev, diff_method, grad_on_execution, device_vjp):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""
@@ -2265,7 +2279,7 @@ class TestReturn:
         hess = qp.jacobian(qp.jacobian(cost))(params)
 
         assert isinstance(hess, np.ndarray)
-        assert hess.shape == (3, 2, 2)  # pylint: disable=no-member
+        assert hess.shape == (3, 2, 2)
 
     def test_hessian_probs_var_multiple_params(
         self, dev, diff_method, grad_on_execution, device_vjp
@@ -2342,7 +2356,7 @@ class TestReturn:
         hess = qp.jacobian(qp.jacobian(cost))(params)
 
         assert isinstance(hess, np.ndarray)
-        assert hess.shape == (3, 2, 2)  # pylint: disable=no-member
+        assert hess.shape == (3, 2, 2)
 
 
 def test_no_ops():

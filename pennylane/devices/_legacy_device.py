@@ -15,7 +15,6 @@
 This module contains the :class:`Device` abstract base class.
 """
 
-# pylint: disable=use-maxsplit-arg,protected-access
 import abc
 import warnings
 from collections import OrderedDict
@@ -40,7 +39,8 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.ops import LinearCombination, MidMeasure, Prod, Projector, SProd, Sum
-from pennylane.transforms import broadcast_expand, decompose, split_non_commuting
+from pennylane.transforms import _tape_decompose as decompose
+from pennylane.transforms import broadcast_expand, split_non_commuting
 from pennylane.wires import Wires
 
 from .tracker import Tracker
@@ -52,9 +52,9 @@ class _LegacyMeta(abc.ABCMeta):
     checking the instance of a device against a Legacy device type.
 
     To illustrate, if "dev" is of type LegacyDeviceFacade, and a user is
-    checking "isinstance(dev, qp.devices.DefaultQutrit)", the overridden
+    checking "isinstance(dev, MyLegacyDevice)", the overridden
     "__instancecheck__" will look behind the facade, and will evaluate instead
-    "isinstance(dev.target_device, qp.devices.DefaultQutrit)"
+    "isinstance(dev.target_device, MyLegacyDevice)"
     """
 
     def __instancecheck__(cls, instance):
@@ -66,6 +66,7 @@ class _LegacyMeta(abc.ABCMeta):
         return super().__instancecheck__(instance)
 
 
+# pylint: disable-next=too-many-instance-attributes,too-many-public-methods
 class Device(abc.ABC, metaclass=_LegacyMeta):
     """Abstract base class for PennyLane devices.
 
@@ -77,7 +78,6 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             expectation values of observables. Defaults to 1000 if not specified.
     """
 
-    # pylint: disable=too-many-public-methods,too-many-instance-attributes
     _capabilities = {"model": None, "supports_broadcasting": False}
     """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
@@ -88,7 +88,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
     def __init__(self, wires=1, shots=1000, *, analytic=None):
         self.shots = shots
 
-        if analytic is not None:
+        if analytic is not None:  # pragma: no cover
             msg = (
                 "The analytic argument has been replaced by shots=None. "
                 "Please use shots=None instead of analytic=True."
@@ -115,7 +115,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
     def __str__(self):
         """Verbose string representation."""
-        package = self.__module__.split(".")[0]
+        package = self.__module__.split(".")[0]  # pylint: disable=use-maxsplit-arg
         return (
             f"{self.name}\nShort name: {self.short_name}\n"
             f"Package: {package}\n"
@@ -233,7 +233,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             self._shots, self._shot_vector = shot_obj.total_shots, list(shot_obj.shot_vector)
             self._raw_shot_sequence = shots
 
-        else:
+        else:  # pragma: no cover
             raise DeviceError(
                 "Shots must be a single non-negative integer or a sequence of non-negative integers."
             )
@@ -334,8 +334,8 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         """
         try:
             mapped_wires = wires.map(self.wire_map)
-        except WireError as e:
-            raise WireError(
+        except WireError as e:  # pragma: no cover
+            raise WireError(  # pragma: no cover
                 f"Did not find some of the wires {wires} on device with wires {self.wires}."
             ) from e
 
@@ -362,7 +362,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         """
         return cls._capabilities
 
-    # pylint: disable=too-many-branches,unused-argument
+    # pylint: disable-next=too-many-branches,unused-argument
     def execute(self, queue, observables, parameters=None, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
@@ -396,7 +396,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         results = []
         if self._shot_vector is not None:
             # The following warning assumes that QubitDevice.execute is stand-alone
-            warnings.warn(
+            warnings.warn(  # pragma: no cover
                 "Specifying a list of shots is only supported for "
                 "QubitDevice based devices. Falling back to executions using all shots in the shot list."
             )
@@ -427,7 +427,9 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                     results.append(list(self.probability(wires=obs.wires).values()))
 
                 elif isinstance(mp, StateMP):
-                    raise QuantumFunctionError("Returning the state is not supported")
+                    raise QuantumFunctionError(
+                        "Returning the state is not supported"
+                    )  # pragma: no cover
 
                 else:
                     raise QuantumFunctionError(
@@ -712,16 +714,16 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             return circuits, processing_fn
 
         # Expand each of the broadcasted Hamiltonian-expanded circuits
-        expanded_tapes, expanded_fn = broadcast_expand(circuits)
+        expanded_tapes, expanded_fn = broadcast_expand(circuits)  # pragma: no cover
 
         # Chain the postprocessing functions of the broadcasted-tape expansions and the Hamiltonian
         # expansion. Note that the application order is reversed compared to the expansion order,
         # i.e. while we first applied `split_non_commuting` to the tape, we need to process the
         # results from the broadcast expansion first.
-        def total_processing(results):
+        def total_processing(results):  # pragma: no cover
             return processing_fn(expanded_fn(results))
 
-        return expanded_tapes, total_processing
+        return expanded_tapes, total_processing  # pragma: no cover
 
     def _all_multi_term_obs_supported(self, circuit):
         """Check whether all multi-term observables in the circuit are supported."""
@@ -828,7 +830,6 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         source of :meth:`execute` for more details).
         """
 
-        # pylint: disable=no-self-use
         class MockContext:
             """Mock class as a default for the with statement in execute()."""
 
@@ -883,7 +884,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             "The given observable must either be a pennylane.operation.Operator class or a string."
         )
 
-    def check_validity(self, queue, observables):
+    def check_validity(self, queue, observables):  # pylint: disable=too-many-branches
         """Checks whether the operations and observables in queue are all supported by the device.
 
         Args:

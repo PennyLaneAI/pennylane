@@ -15,8 +15,9 @@
 Unit tests for :mod:`pennylane.operation`.
 """
 
+# pylint: disable=too-few-public-methods
+
 import copy
-from typing import Callable
 
 import numpy as np
 import pytest
@@ -33,12 +34,9 @@ from pennylane.operation import (
 )
 from pennylane.ops import Prod, SProd, Sum
 from pennylane.ops.op_math.pow import PowOperation
+from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=no-self-use, no-member, protected-access, redefined-outer-name, too-few-public-methods
-# pylint: disable=too-many-public-methods, unused-argument, unnecessary-lambda-assignment, unnecessary-dunder-call
-# pylint: disable=use-implicit-booleaness-not-comparison
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -121,7 +119,7 @@ class TestOperator1:
         assert isinstance(op, Operator1)
         assert not op.has_matrix  # check it has an Operator thing
 
-    def test_instantiating_Opeartor1_on_its_own(self):
+    def test_instantiating_Operator1_on_its_own(self):
         """Test that an error is raised if someone tries to instantiate Operator1."""
 
         with pytest.raises(ValueError, match="Operator1 cannot be instantiated on its own."):
@@ -297,6 +295,20 @@ class TestOperatorConstruction:
         op2 = DummyOp((1, 2, 3), wires=0)
         assert isinstance(op2.data[0], np.ndarray)
 
+    def test_data_is_read_only(self):
+        """Test that operator data is exposed through a read-only property."""
+
+        class DummyOp(qp.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+        op = DummyOp(1.234, wires=0)
+
+        with pytest.raises(
+            AttributeError, match=r"property 'data' of '.*DummyOp' object has no setter"
+        ):
+            setattr(op, "data", (5.678,))
+
     def test_wires_by_final_argument(self):
         """Test that wires can be passed as the final positional argument."""
 
@@ -347,7 +359,7 @@ class TestOperatorConstruction:
         class MyOpOverwriteInit(qp.operation.Operation):
             num_wires = 1
 
-            def __init__(self, wires):  # pylint:disable=super-init-not-called
+            def __init__(self, wires):
                 pass
 
         op = MyOp(wires=0)
@@ -362,7 +374,7 @@ class TestOperatorConstruction:
         class MyOp(qp.operation.Operation):
             num_wires = 1
 
-            def __init__(self, wires, basis_state=None):  # pylint:disable=super-init-not-called
+            def __init__(self, wires, basis_state=None):  # pylint: disable=unused-argument
                 self._hyperparameters = {"basis_state": basis_state}
 
         state = [0, 1, 0]
@@ -403,6 +415,7 @@ class TestOperatorConstruction:
     @pytest.mark.parametrize("data,batch_size,ndim_params", [(1.1, None, 0), ([1.1, 2.2], 2, 1)])
     def test_lazy_ndim_params_and_batch_size(self, data, batch_size, ndim_params):
         """Test that ndim_params and batch_size are lazy properties."""
+        # pylint: disable=protected-access
 
         class DummyOp(Operator):
             num_wires = 1
@@ -432,7 +445,7 @@ class TestPytreeMethods:
         info = "value"
         op = CustomOp(1.2, 2.3, wires=(0, 1), info=info)
 
-        data, metadata = op._flatten()
+        data, metadata = op._flatten()  # pylint: disable=protected-access
         assert data == (1.2, 2.3)
         assert len(metadata) == 2
         assert metadata[0] == qp.wires.Wires((0, 1))
@@ -441,7 +454,7 @@ class TestPytreeMethods:
         # check metadata is hashable
         _ = {metadata: 0}
 
-        new_op = CustomOp._unflatten(*op._flatten())
+        new_op = CustomOp._unflatten(*op._flatten())  # pylint: disable=protected-access
         qp.assert_equal(op, new_op)
         assert new_op.i_got_initialized
 
@@ -512,24 +525,6 @@ class TestBroadcasting:
         assert op.ndim_params == (0, 2)
         assert op.batch_size == exp_batch_size
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
-    def test_broadcasted_params_tf(self, params, exp_batch_size):
-        r"""Test that initialization of an operator with broadcasted parameters
-        works and sets the ``batch_size`` correctly with TensorFlow parameters."""
-        import tensorflow as tf
-
-        class DummyOp(qp.operation.Operator):
-            r"""Dummy custom operator that declares ndim_params as a class property"""
-
-            ndim_params = (0, 2)
-            num_wires = 1
-
-        params = tuple(tf.Variable(p) for p in params)
-        op = DummyOp(*params, wires=0)
-        assert op.ndim_params == (0, 2)
-        assert op.batch_size == exp_batch_size
-
     @pytest.mark.torch
     @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
     def test_broadcasted_params_torch(self, params, exp_batch_size):
@@ -548,27 +543,6 @@ class TestBroadcasting:
         assert op.ndim_params == (0, 2)
         assert op.batch_size == exp_batch_size
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("jit_compile", [True, False])
-    def test_with_tf_function(self, jit_compile):
-        """Tests using tf.function with an operation works with and without
-        just in time (JIT) compilation."""
-        import tensorflow as tf
-
-        def fun(x):
-            _ = qp.RX(x, 0).batch_size
-
-        # No kwargs
-        fun0 = tf.function(fun)
-        fun0(tf.Variable(0.2))
-        fun0(tf.Variable([0.2, 0.5]))
-
-        # With kwargs
-        signature = (tf.TensorSpec(shape=None, dtype=tf.float32),)
-        fun1 = tf.function(fun, jit_compile=jit_compile, input_signature=signature)
-        fun1(tf.Variable(0.2))
-        fun1(tf.Variable([0.2, 0.5]))
-
 
 class TestHasReprProperties:
     """Test has representation properties."""
@@ -580,7 +554,7 @@ class TestHasReprProperties:
             num_wires = 1
 
             @staticmethod
-            def compute_matrix(*params, **hyperparams):
+            def compute_matrix(*params, **hyperparams):  # pylint: disable=unused-argument
                 return np.eye(2)
 
         assert MyOp.has_matrix is True
@@ -642,7 +616,7 @@ class TestHasReprProperties:
             num_params = 1
 
             @staticmethod
-            def compute_decomposition(x, wires=None):  # pylint:disable=arguments-differ
+            def compute_decomposition(x, wires=None):
                 return [qp.RX(x, wires=wires)]
 
         assert MyOp.has_decomposition is True
@@ -667,15 +641,13 @@ class TestHasReprProperties:
         class SomeRandomName(qp.operation.Operator):
             pass
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.X: 1})
+        def decomp(x, wires):
+            qp.RX(x, wires)
 
-            @qp.register_resources({qp.X: 1})
-            def decomp(x, wires):
-                qp.RX(x, wires)
+        qp.add_decomps(SomeRandomName, decomp)
 
-            qp.add_decomps(SomeRandomName, decomp)
-
-            assert SomeRandomName(0.5, wires=0).has_decomposition
+        assert SomeRandomName(0.5, wires=0).has_decomposition
 
     def test_has_decomposition_graph_decomp_multiple_conditions(self):
         """Test that operators with multiple decompositions and conditions have
@@ -696,12 +668,11 @@ class TestHasReprProperties:
         def decomp2(x, wires):
             qp.CRX(x, wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(MNBV, decomp1, decomp2)
+        qp.add_decomps(MNBV, decomp1, decomp2)
 
-            assert MNBV(0.5, wires=0).has_decomposition
-            assert MNBV(0.5, wires=(0, 1)).has_decomposition
-            assert not MNBV(0.5, wires=(0, 1, 2)).has_decomposition
+        assert MNBV(0.5, wires=0).has_decomposition
+        assert MNBV(0.5, wires=(0, 1)).has_decomposition
+        assert not MNBV(0.5, wires=(0, 1, 2)).has_decomposition
 
     def test_has_decomposition_false(self):
         """Test has_decomposition property defaults to false if neither
@@ -721,7 +692,7 @@ class TestHasReprProperties:
             num_params = 1
 
             @staticmethod
-            def compute_diagonalizing_gates(x, wires=None):  # pylint:disable=arguments-differ
+            def compute_diagonalizing_gates(x, wires=None):  # pylint: disable=unused-argument
                 return []
 
         assert MyOp.has_diagonalizing_gates is True
@@ -812,7 +783,8 @@ class TestModificationMethods:
             num_wires = 3
 
         op = DummyOp(wires=[0, 1, 2])
-        op._pauli_rep = qp.pauli.PauliSentence(  # pylint:disable=attribute-defined-outside-init
+        # pylint: disable-next=attribute-defined-outside-init,protected-access
+        op._pauli_rep = qp.pauli.PauliSentence(
             {
                 qp.pauli.PauliWord({0: "X", 1: "Y", 2: "Z"}): 1.1,
                 qp.pauli.PauliWord({0: "Z", 1: "X", 2: "Y"}): 2.2,
@@ -1068,33 +1040,6 @@ class TestObservableConstruction:
         ob = DummyObserv([1])
         assert ob.wires == qp.wires.Wires(1)
 
-    def test_tensor_n_multiple_modes(self):
-        """Checks that the TensorN operator was constructed correctly when
-        multiple modes were specified."""
-        cv_obs = qp.TensorN(wires=[0, 1])
-
-        assert isinstance(cv_obs, qp.TensorN)
-        assert cv_obs.wires == Wires([0, 1])
-        assert cv_obs.ev_order is None
-
-    def test_tensor_n_single_mode_wires_explicit(self):
-        """Checks that instantiating a TensorN when passing a single mode as a
-        keyword argument returns a NumberOperator."""
-        cv_obs = qp.TensorN(wires=[0])
-
-        assert isinstance(cv_obs, qp.NumberOperator)
-        assert cv_obs.wires == Wires([0])
-        assert cv_obs.ev_order == 2
-
-    def test_tensor_n_single_mode_wires_implicit(self):
-        """Checks that instantiating TensorN when passing a single mode as a
-        positional argument returns a NumberOperator."""
-        cv_obs = qp.TensorN(1)
-
-        assert isinstance(cv_obs, qp.NumberOperator)
-        assert cv_obs.wires == Wires([1])
-        assert cv_obs.ev_order == 2
-
     def test_repr(self):
         """Test the string representation of an observable with and without a return type."""
 
@@ -1140,7 +1085,7 @@ class TestObservableConstruction:
         assert op.is_verified_hermitian is False
 
 
-class TestOperatorIntegration:
+class TestOperatorIntegration:  # pylint: disable=too-many-public-methods
     """Integration tests for the Operator class"""
 
     def test_pow_method_with_non_numeric_power_raises_error(self):
@@ -1179,16 +1124,6 @@ class TestOperatorIntegration:
         import torch
 
         scalar = torch.tensor(5)
-        sum_op = qp.RX(1.23, 0) + scalar
-        assert isinstance(sum_op, Sum)
-        assert sum_op[1].scalar is scalar
-
-    @pytest.mark.tf
-    def test_sum_scalar_tf_tensor(self):
-        """Test the __sum__ dunder method with a scalar tf tensor."""
-        import tensorflow as tf
-
-        scalar = tf.constant(5)
         sum_op = qp.RX(1.23, 0) + scalar
         assert isinstance(sum_op, Sum)
         assert sum_op[1].scalar is scalar
@@ -1324,20 +1259,6 @@ class TestOperatorIntegration:
         assert isinstance(prod_op, SProd)
         assert prod_op.scalar is scalar
 
-    @pytest.mark.tf
-    def test_mul_scalar_tf_tensor(self):
-        """Test the __mul__ dunder method with a scalar tf tensor."""
-        import tensorflow as tf
-
-        scalar = tf.constant(5)
-        prod_op = qp.RX(1.23, 0) * scalar
-        assert isinstance(prod_op, SProd)
-        assert prod_op.scalar is scalar
-
-        prod_op = scalar * qp.RX(1.23, 0)
-        assert isinstance(prod_op, SProd)
-        assert prod_op.scalar is scalar
-
     @pytest.mark.jax
     def test_mul_scalar_jax_tensor(self):
         """Test the __mul__ dunder method with a scalar jax tensor."""
@@ -1374,7 +1295,7 @@ class TestOperatorIntegration:
 
 
 # Dummy class inheriting from Operator
-class MyOp(Operator):
+class UndefinedOp(Operator):
     num_wires = 1
 
 
@@ -1383,7 +1304,7 @@ class MyGate(Operation):
     num_wires = 1
 
 
-op = MyOp(wires=1)
+undefined_op = UndefinedOp(wires=1)
 gate = MyGate(wires=1)
 
 
@@ -1416,18 +1337,17 @@ class TestDefaultRepresentations:
         def decomp2(x, wires):
             qp.RZ(x, wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(OpWithACustomName98786, decomp1, decomp2)
+        qp.add_decomps(OpWithACustomName98786, decomp1, decomp2)
 
-            [out] = OpWithACustomName98786(0.5, wires=0).decomposition()
-            qp.assert_equal(out, qp.RX(0.5, wires=0))
+        [out] = OpWithACustomName98786(0.5, wires=0).decomposition()
+        qp.assert_equal(out, qp.RX(0.5, wires=0))
 
-            op = OpWithACustomName98786(0.5, wires=0)
-            with qp.queuing.AnnotatedQueue() as q:
-                op.decomposition()
+        op = OpWithACustomName98786(0.5, wires=0)
+        with qp.queuing.AnnotatedQueue() as q:
+            op.decomposition()
 
-            assert len(q.queue) == 1
-            qp.assert_equal(q.queue[0], qp.RX(0.5, wires=0))
+        assert len(q.queue) == 1
+        qp.assert_equal(q.queue[0], qp.RX(0.5, wires=0))
 
     def test_graph_decomposition_fallback_conditions(self):
         """Test the graph decomposition fallback is sensitive to conditions."""
@@ -1451,54 +1371,53 @@ class TestDefaultRepresentations:
         def decomp2(x, wires):
             qp.CRX(x, wires)
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(BVCX, decomp1, decomp2)
+        qp.add_decomps(BVCX, decomp1, decomp2)
 
-            [op1] = BVCX(0.5, wires=0).decomposition()
-            qp.assert_equal(op1, qp.RX(0.5, wires=0))
-            [op2] = BVCX(0.5, wires=(0, 1)).decomposition()
-            qp.assert_equal(op2, qp.CRX(0.5, wires=(0, 1)))
+        [op1] = BVCX(0.5, wires=0).decomposition()
+        qp.assert_equal(op1, qp.RX(0.5, wires=0))
+        [op2] = BVCX(0.5, wires=(0, 1)).decomposition()
+        qp.assert_equal(op2, qp.CRX(0.5, wires=(0, 1)))
 
-            with pytest.raises(qp.exceptions.DecompositionUndefinedError):
-                BVCX(0.5, wires=(0, 1, 2)).decomposition()
+        with pytest.raises(qp.exceptions.DecompositionUndefinedError):
+            BVCX(0.5, wires=(0, 1, 2)).decomposition()
 
     def test_matrix_undefined(self):
         """Tests that custom error is raised in the default matrix representation."""
         with pytest.raises(qp.operation.MatrixUndefinedError):
-            MyOp.compute_matrix()
+            UndefinedOp.compute_matrix()
         with pytest.raises(qp.operation.MatrixUndefinedError):
-            op.matrix()
+            undefined_op.matrix()
 
     def test_terms_undefined(self):
         """Tests that custom error is raised in the default terms representation."""
         with pytest.raises(qp.operation.TermsUndefinedError):
-            op.terms()
+            undefined_op.terms()
 
     def test_sparse_matrix_undefined(self):
         """Tests that custom error is raised in the default sparse matrix representation."""
         with pytest.raises(qp.operation.SparseMatrixUndefinedError):
-            MyOp.compute_sparse_matrix()
+            UndefinedOp.compute_sparse_matrix()
         with pytest.raises(qp.operation.SparseMatrixUndefinedError):
-            op.sparse_matrix()
+            undefined_op.sparse_matrix()
 
     def test_eigvals_undefined(self):
         """Tests that custom error is raised in the default eigenvalue representation."""
         with pytest.raises(qp.operation.EigvalsUndefinedError):
-            MyOp.compute_eigvals()
+            UndefinedOp.compute_eigvals()
         with pytest.raises(qp.operation.EigvalsUndefinedError):
-            op.eigvals()
+            undefined_op.eigvals()
 
     def test_diaggates_undefined(self):
         """Tests that custom error is raised in the default diagonalizing gates representation."""
         with pytest.raises(qp.operation.DiagGatesUndefinedError):
-            MyOp.compute_diagonalizing_gates(wires=[1])
+            UndefinedOp.compute_diagonalizing_gates(wires=[1])
         with pytest.raises(qp.operation.DiagGatesUndefinedError):
-            op.diagonalizing_gates()
+            undefined_op.diagonalizing_gates()
 
     def test_adjoint_undefined(self):
         """Tests that custom error is raised in the default adjoint representation."""
         with pytest.raises(qp.operation.AdjointUndefinedError):
-            op.adjoint()
+            undefined_op.adjoint()
 
     def test_generator_undefined(self):
         """Tests that custom error is raised in the default generator representation."""
@@ -1525,7 +1444,7 @@ class MyOpWithMat(Operator):
     num_wires = 1
 
     @staticmethod
-    def compute_matrix(theta):  # pylint:disable=arguments-differ
+    def compute_matrix(theta):
         return np.tensordot(theta, np.array([[0.4, 1.2], [1.2, 0.4]]), axes=0)
 
 
@@ -1561,7 +1480,7 @@ class TestChannel:
             grad_method = "F"
 
             @staticmethod
-            def compute_kraus_matrices(p):  # pylint:disable=arguments-differ
+            def compute_kraus_matrices(p):
                 K1 = np.sqrt(p) * X
                 K2 = np.sqrt(1 - p) * I
                 return [K1, K2]
@@ -1647,69 +1566,15 @@ class TestOperationDerivative:
         assert np.allclose(derivative, expected_derivative)
 
 
-class TestCVOperation:
-    """Test the CVOperation class"""
-
-    def test_wires_not_found(self):
-        """Make sure that `heisenberg_expand` method receives enough wires to actually expand"""
-
-        class DummyOp(qp.operation.CVOperation):
-            num_wires = 1
-
-        op = DummyOp(wires=1)
-
-        with pytest.raises(ValueError, match="do not exist on this device with wires"):
-            op.heisenberg_expand(np.eye(3), Wires(["a", "b"]))
-
-    def test_input_validation(self):
-        """Make sure that size of input for `heisenberg_expand` method is validated"""
-
-        class DummyOp(qp.operation.CVOperation):
-            num_wires = 1
-
-        op = DummyOp(wires=1)
-
-        with pytest.raises(ValueError, match="Heisenberg matrix is the wrong size"):
-            U_wrong_size = np.eye(1)
-            op.heisenberg_expand(U_wrong_size, op.wires)
-
-    def test_wrong_input_shape(self):
-        """Ensure that `heisenberg_expand` raises exception if it receives an array with order > 2"""
-
-        class DummyOp(qp.operation.CVOperation):
-            num_wires = 1
-
-        op = DummyOp(wires=1)
-
-        with pytest.raises(ValueError, match="Only order-1 and order-2 arrays supported"):
-            U_high_order = np.array([np.eye(3)] * 3)
-            op.heisenberg_expand(U_high_order, op.wires)
-
-    def test_supports_parameter_shift(self):
-        """Test the supports_parameter_shift property."""
-
-        class DummyOp(qp.operation.CVOperation):
-            num_wires = 1
-            grad_method = "A"
-
-            @staticmethod
-            def _heisenberg_rep(p):
-                return p  # just overwrite it?
-
-        assert DummyOp.supports_parameter_shift
-
-
 class TestStatePrepBase:
     """Test the StatePrepBase interface."""
 
     class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 
-        # pylint:disable=unused-argument,too-few-public-methods
-        def state_vector(self, wire_order=None):
+        def state_vector(self, wire_order=None):  # pylint: disable=unused-argument
             return self.parameters[0]
 
-    # pylint:disable=unused-argument,too-few-public-methods
     def test_basic_initial_state(self):
         """Tests a basic implementation of the StatePrepBase interface."""
         prep_op = self.DefaultPrep([1, 0], wires=[0])
@@ -1720,8 +1585,6 @@ class TestStatePrepBase:
 
         class NoStatePrepOp(StatePrepBase):
             """A class that is missing the state_vector implementation."""
-
-            # pylint:disable=abstract-class-instantiated
 
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             NoStatePrepOp(wires=[0])
@@ -1749,7 +1612,6 @@ class TestCriteria:
         assert not qp.operation.is_trainable(self.cnot)
 
 
-# pylint: disable=too-few-public-methods
 class MultiRot(Operator2):
     """MultiRot class used for testing purposes."""
 
@@ -1905,18 +1767,14 @@ class TestNewOpMath:
                 (1.1, X2(0)),
                 (1 + 2j, X2(0)),
                 ([3, 4j], X2(0)),
-                (lambda x: x, X2(0)),
             ],
         )
         def test_mul(self, operand, base):
             """Tests multiplying an operator by a scalar coefficient works as expected."""
             for op in [operand * base, base * operand]:
-                if isinstance(operand, Callable):
-                    assert isinstance(op, qp.pulse.ParametrizedHamiltonian)
-                else:
-                    assert isinstance(op, SProd)
-                    assert qp.math.allequal(op.scalar, operand)
-                    qp.assert_equal(op.base, base)
+                assert isinstance(op, SProd)
+                assert qp.math.allequal(op.scalar, operand)
+                qp.assert_equal(op.base, base)
 
         @pytest.mark.parametrize(
             "scalar, base",
@@ -2007,7 +1865,10 @@ class TestNewOpMath:
         def test_pow(self, power, base):
             """Tests multiplying an operator by a scalar coefficient works as expected."""
             op = base**power
-            assert isinstance(op, PowOperation)
+            if isinstance(base, Operator2):
+                assert isinstance(op, Pow2)
+            else:
+                assert isinstance(op, PowOperation)
             qp.assert_equal(op.base, base)
             assert op.z == power
 
@@ -2079,7 +1940,6 @@ def test_docstring_example_of_operator_class(tol):
     class FlipAndRotate(qp.operation.Operation):
         grad_method = "A"
 
-        # pylint: disable=too-many-arguments,too-many-positional-arguments
         def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False):
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
@@ -2098,7 +1958,7 @@ def test_docstring_example_of_operator_class(tol):
             return (0,)
 
         @staticmethod
-        def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
+        def compute_decomposition(angle, wires, do_flip):
             op_list = []
             if do_flip:
                 op_list.append(qp.PauliX(wires=wires[1]))
@@ -2143,7 +2003,6 @@ def test_custom_operator_is_jax_pytree():
     qp.assert_equal(new_op, CustomOperator(2.3, wires=0))
 
 
-# pylint: disable=unused-import,no-name-in-module
 def test_get_attr():
     """Test that importing attributes of operation work as expected"""
 
@@ -2154,7 +2013,7 @@ def test_get_attr():
         _ = qp.operation.non_existent_attr  # error is raised if non-existent attribute accessed
 
     with pytest.raises(ImportError, match=f"cannot import name '{attr_name}'"):
-        from pennylane.operation import (
+        from pennylane.operation import (  # pylint: disable=unused-import
             non_existent_attr,
         )  # error is raised if non-existent attribute imported
 

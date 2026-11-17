@@ -36,8 +36,6 @@ from pennylane.exceptions import DeviceError, WireError
 from pennylane.measurements import ExpectationMP
 from pennylane.ops import Sum
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
-from pennylane.pulse import ParametrizedEvolution
-from pennylane.typing import TensorLike
 
 ascii_letter_arr = np.array(list(ascii_letters))
 
@@ -76,7 +74,6 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-# pylint: disable=unused-argument, too-many-arguments, too-many-instance-attributes
 class DefaultQubitLegacy(QubitDevice):
     r"""Default qubit device for PennyLane.
 
@@ -203,7 +200,7 @@ class DefaultQubitLegacy(QubitDevice):
         "Evolution",
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         wires,
         *,
@@ -274,10 +271,9 @@ class DefaultQubitLegacy(QubitDevice):
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
         consecutive_wires = range(self.num_wires)
-        wire_map = zip(wires, consecutive_wires)
+        wire_map = zip(wires, consecutive_wires, strict=False)
         return dict(wire_map)
 
-    # pylint: disable=arguments-differ
     def _get_batch_size(self, tensor, expected_shape, expected_size):
         """Determine whether a tensor has an additional batch dimension for broadcasting,
         compared to an expected_shape."""
@@ -296,8 +292,7 @@ class DefaultQubitLegacy(QubitDevice):
         result = super().execute(circuit, **kwargs)
         return result
 
-    # pylint: disable=arguments-differ
-    def apply(self, operations, rotations=None, **kwargs):
+    def apply(self, operations, rotations=None, **kwargs):  # pylint: disable=unused-argument
         rotations = rotations or []
 
         # apply the circuit operations
@@ -325,8 +320,6 @@ class DefaultQubitLegacy(QubitDevice):
                         self._debugger.snapshots[operation.tag] = state_vector
                     else:
                         self._debugger.snapshots[len(self._debugger.snapshots)] = state_vector
-            elif isinstance(operation, ParametrizedEvolution):
-                self._state = self._apply_parametrized_evolution(self._state, operation)
             else:
                 self._state = self._apply_operation(self._state, operation)
 
@@ -336,18 +329,6 @@ class DefaultQubitLegacy(QubitDevice):
         # apply the circuit rotations
         for operation in rotations:
             self._state = self._apply_operation(self._state, operation)
-
-    def _apply_parametrized_evolution(self, state: TensorLike, operation: ParametrizedEvolution):
-        """Applies a parametrized evolution to the input state.
-
-        Args:
-            state (array[complex]): input state
-            operation (ParametrizedEvolution): operation to apply on the state
-        """
-        raise NotImplementedError(
-            f"The device {self.short_name} cannot execute a ParametrizedEvolution operation. "
-            "Please use the jax interface."
-        )
 
     def _apply_operation(self, state, operation):
         """Applies operations to the input state.
@@ -380,11 +361,11 @@ class DefaultQubitLegacy(QubitDevice):
 
         return self._apply_unitary(state, matrix, wires)
 
-    def _apply_global_phase(self, state, operation: qp.GlobalPhase):  # pylint: disable=no-self-use
+    def _apply_global_phase(self, state, operation: qp.GlobalPhase):
         """Applies a :class:`~.GlobalPhase` operation to the state."""
         return qp.math.exp(-1j * operation.data[0]) * state
 
-    def _apply_x(self, state, axes, **kwargs):
+    def _apply_x(self, state, axes, **kwargs):  # pylint: disable=unused-argument
         """Applies a PauliX gate by rolling 1 unit along the axis specified in ``axes``.
 
         Rolling by 1 unit along the axis means that the :math:`|0 \rangle` state with index ``0`` is
@@ -401,7 +382,7 @@ class DefaultQubitLegacy(QubitDevice):
         """
         return self._roll(state, 1, axes[0])
 
-    def _apply_y(self, state, axes, **kwargs):
+    def _apply_y(self, state, axes, **kwargs):  # pylint: disable=unused-argument
         """Applies a PauliY gate by adding a negative sign to the 1 index along the axis specified
         in ``axes``, rolling one unit along the same axis, and multiplying the result by 1j.
 
@@ -414,7 +395,7 @@ class DefaultQubitLegacy(QubitDevice):
         """
         return 1j * self._apply_x(self._apply_z(state, axes), axes)
 
-    def _apply_z(self, state, axes, **kwargs):
+    def _apply_z(self, state, axes, **kwargs):  # pylint: disable=unused-argument
         """Applies a PauliZ gate by adding a negative sign to the 1 index along the axis specified
         in ``axes``.
 
@@ -427,7 +408,7 @@ class DefaultQubitLegacy(QubitDevice):
         """
         return self._apply_phase(state, axes, -1)
 
-    def _apply_hadamard(self, state, axes, **kwargs):
+    def _apply_hadamard(self, state, axes, **kwargs):  # pylint: disable=unused-argument
         """Apply the Hadamard gate by combining the results of applying the PauliX and PauliZ gates.
 
         Args:
@@ -463,7 +444,7 @@ class DefaultQubitLegacy(QubitDevice):
             else 0.5 * ((1 + 1j) * state + (1 - 1j) * self._apply_x(state, axes))
         )
 
-    def _apply_cnot(self, state, axes, **kwargs):
+    def _apply_cnot(self, state, axes, **kwargs):  # pylint: disable=unused-argument
         """Applies a CNOT gate by slicing along the first axis specified in ``axes`` and then
         applying an X transformation along the second axis.
 
@@ -496,7 +477,7 @@ class DefaultQubitLegacy(QubitDevice):
         state_x = self._apply_x(state[sl_1], axes=target_axes)
         return self._stack([state[sl_0], state_x], axis=axes[0])
 
-    def _apply_toffoli(self, state, axes, **kwargs):
+    def _apply_toffoli(self, state, axes, **kwargs):  # pylint: disable=unused-argument
         """Applies a Toffoli gate by slicing along the axis of the greater control qubit, slicing
         each of the resulting sub-arrays along the axis of the smaller control qubit, and then applying
         an X transformation along the axis of the target qubit of the fourth sub-sub-array.
@@ -535,7 +516,7 @@ class DefaultQubitLegacy(QubitDevice):
         state_stacked_a1 = self._stack([state[sl_a1][sl_b0], state_x], axis=axes[cntrl_min])
         return self._stack([state[sl_a0], state_stacked_a1], axis=axes[cntrl_max])
 
-    def _apply_swap(self, state, axes, **kwargs):
+    def _apply_swap(self, state, axes, **kwargs):  # pylint: disable=unused-argument
         """Applies a SWAP gate by performing a partial transposition along the specified axes.
 
         Args:
@@ -550,7 +531,7 @@ class DefaultQubitLegacy(QubitDevice):
         all_axes[axes[1]] = axes[0]
         return self._transpose(state, all_axes)
 
-    def _apply_cz(self, state, axes, **kwargs):
+    def _apply_cz(self, state, axes, **kwargs):  # pylint: disable=unused-argument
         """Applies a CZ gate by slicing along the first axis specified in ``axes`` and then
         applying a Z transformation along the second axis.
 
@@ -651,13 +632,12 @@ class DefaultQubitLegacy(QubitDevice):
             # Compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
             # representation of the Pauliword
             res = qp.math.cast(qp.math.convert_like(0.0, observable.data), dtype=complex)
-            interface = qp.math.get_interface(self.state)
 
             # Note: it is important that we use the Hamiltonian's data and not the coeffs
             # attribute. This is because the .data attribute may be 'unwrapped' as required by
             # the interfaces, whereas the .coeff attribute will always be the same input dtype
             # that the user provided.
-            for op, coeff in zip(observable.ops, observable.data):
+            for op, coeff in zip(observable.ops, observable.data, strict=False):
                 # extract a scipy.sparse.coo_matrix representation of this Pauli word
                 sparse_mat = qp.prod(op).sparse_matrix(wire_order=self.wires)
                 coo = coo_matrix(sparse_mat)
@@ -669,9 +649,6 @@ class DefaultQubitLegacy(QubitDevice):
                     * self._gather(self.state, coo.col)
                 )
                 c = qp.math.convert_like(coeff, product)
-
-                if interface == "tensorflow":
-                    c = qp.math.cast(c, "complex128")
 
                 res = qp.math.convert_like(res, product) + qp.math.sum(c * product)
 
@@ -702,7 +679,7 @@ class DefaultQubitLegacy(QubitDevice):
 
         return self._real(res)
 
-    def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
+    def _get_unitary_matrix(self, unitary):
         """Return the matrix representing a unitary operation.
 
         Args:
@@ -924,7 +901,7 @@ class DefaultQubitLegacy(QubitDevice):
         # replaced by the new_indices
         new_state_indices = functools.reduce(
             lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
-            zip(affected_indices, new_indices),
+            zip(affected_indices, new_indices, strict=False),
             state_indices,
         )
 
@@ -1029,9 +1006,8 @@ class DefaultQubitLegacy(QubitDevice):
         rng = np.random.default_rng(effective_seed)
 
         basis_states = np.arange(number_of_states)
-        # pylint:disable = import-outside-toplevel
         if (
-            qp.math.is_abstract(state_probability)
+            qp.math.is_tracer(state_probability)
             and qp.math.get_interface(state_probability) == "jax"
         ):
             import jax

@@ -14,8 +14,6 @@
 
 """Tests for the transform ``qp.transform.split_to_single_terms``"""
 
-# pylint: disable=import-outside-toplevel,unnecessary-lambda
-
 import numpy as np
 import pytest
 
@@ -42,8 +40,7 @@ complex_obs_list = [
 ]
 
 
-# pylint: disable=too-few-public-methods
-class NoTermsDevice(qp.devices.DefaultQubit):
+class NoTermsDevice(qp.devices.DefaultQubit):  # pylint: disable=too-few-public-methods
     """A device that builds on default.qubit, but won't accept LinearCombination or Sum"""
 
     def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
@@ -182,7 +179,7 @@ class TestUnits:
             ),
             qp.tape.QuantumScript([qp.RY(0.5, 0)], [qp.expval(qp.Z(0)), qp.expval(qp.Y(0))]),
         ]
-        for actual_tape, expected_tape in zip(tapes, expected_tapes):
+        for actual_tape, expected_tape in zip(tapes, expected_tapes, strict=False):
             qp.assert_equal(actual_tape, expected_tape)
 
         result = ([0.1, 0.2, 0.3], [0.4, 0.2])
@@ -609,28 +606,5 @@ class TestDifferentiability:
 
         params = torch.tensor(np.pi / 4), torch.tensor(3 * np.pi / 4)
         actual = jacobian(circuit, params)
-
-        assert qp.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
-
-    @pytest.mark.tf
-    def test_trainable_hamiltonian_tensorflow(self, seed):
-        """Tests that measurements of trainable Hamiltonians are differentiable with tensorflow"""
-
-        import tensorflow as tf
-
-        dev = NoTermsDevice(wires=2, seed=seed)
-
-        @qp.qnode(dev, shots=50000)
-        def circuit(coeff1, coeff2):
-            qp.RX(np.pi / 4, wires=0)
-            qp.RY(np.pi / 4, wires=1)
-            return qp.expval(qp.Hamiltonian([coeff1, coeff2], [qp.Y(0) @ qp.Z(1), qp.X(1)]))
-
-        params = tf.Variable(np.pi / 4), tf.Variable(3 * np.pi / 4)
-
-        with tf.GradientTape() as tape:
-            cost = split_to_single_terms(circuit)(*params)
-
-        actual = tape.jacobian(cost, params)
 
         assert qp.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)

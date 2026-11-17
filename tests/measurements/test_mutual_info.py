@@ -60,7 +60,7 @@ class TestMutualInfoUnitTests:
         assert repr(m1) == "MutualInfo(wires0=[0], wires1=[1], log_base=None)"
 
     def test_hash(self):
-        """Test the hash property includes the log_base property and the separation of the wires into two subsytems."""
+        """Test the hash property includes the log_base property and the separation of the wires into two subsystems."""
         m1 = MutualInfoMP(wires=[Wires(0), Wires(1)], log_base=2)
         m2 = MutualInfoMP(wires=[Wires(0), Wires(1)], log_base=10)
         assert hash(m1) != hash(m2)
@@ -103,16 +103,13 @@ class TestMutualInfoUnitTests:
     )
     def test_process_density_matrix_mutual_info(
         self, interface, wires0, wires1, log_base, expected_mutual_info
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Test mutual information calculation for non-overlapping subsystems."""
         # Define a pure, entangled two-qubit state (|00> + |11>) / sqrt(2)
         dm = qp.math.array(
             [[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]],
             like=interface,
         )
-
-        if interface == "tensorflow":
-            dm = qp.math.cast(dm, "float64")
 
         wires = qp.wires.Wires(range(2))
 
@@ -205,7 +202,9 @@ class TestIntegration:
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
-    @pytest.mark.parametrize("params", zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
+    @pytest.mark.parametrize(
+        "params", list(zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8), strict=False))
+    )
     def test_qnode_mutual_info(self, device, interface, params):
         """Test that the measurement process for mutual information works for QNodes
         by comparing against the mutual information transform"""
@@ -262,7 +261,9 @@ class TestIntegration:
         assert np.allclose(actual, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("params", zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
+    @pytest.mark.parametrize(
+        "params", list(zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8), strict=False))
+    )
     @pytest.mark.parametrize("interface", ["jax-jit"])
     def test_qnode_mutual_info_jax_jit(self, params, interface):
         """Test that the measurement process for mutual information works for QNodes
@@ -393,42 +394,6 @@ class TestIntegration:
         actual = jax.jit(jax.grad(circuit))(param)
         assert np.allclose(actual, expected, atol=tol)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["tf"])
-    def test_qnode_grad_tf(self, param, diff_method, interface):
-        """Test that the gradient of mutual information works for QNodes
-        with the tensorflow interface"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        param = tf.Variable(param)
-
-        @qp.qnode(dev, interface=interface, diff_method=diff_method)
-        def circuit(param):
-            qp.RY(param, wires=0)
-            qp.CNOT(wires=[0, 1])
-            return qp.mutual_info(wires0=[0], wires1=[1])
-
-        if param == 0:
-            # we don't allow gradients to flow through the discontinuity at 0
-            expected = 0
-        else:
-            expected = np.sin(param) * (
-                np.log(np.cos(param / 2) ** 2) - np.log(np.sin(param / 2) ** 2)
-            )
-
-        with tf.GradientTape() as tape:
-            out = circuit(param)
-
-        # higher tolerance for finite-diff method
-        tol = 1e-8 if diff_method == "backprop" else 1e-5
-
-        actual = tape.gradient(out, param)
-        assert np.allclose(actual, expected, atol=tol)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
     @pytest.mark.parametrize("diff_method", diff_methods)
@@ -456,7 +421,7 @@ class TestIntegration:
 
         param = torch.tensor(param, requires_grad=True)
         out = circuit(param)
-        out.backward()  # pylint: disable=no-member
+        out.backward()
 
         # higher tolerance for finite-diff method
         tol = 1e-8 if diff_method == "backprop" else 1e-5

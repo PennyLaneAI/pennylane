@@ -15,8 +15,6 @@
 Unit tests for the `pennylane.draw_text` function.
 """
 
-# pylint: disable=import-outside-toplevel
-
 from copy import copy
 
 import pytest
@@ -36,6 +34,7 @@ from pennylane.drawer._add_obj import (
     _add_subroutine_mcm_grouping_symbols,
 )
 from pennylane.drawer.tape_text import _Config
+from pennylane.ops.op_math import ControlledOp2
 
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
 default_wire_layers = {i: [[-1, 10]] for i in range(4)}
@@ -73,8 +72,7 @@ tape = qp.tape.QuantumScript.from_queue(q_tape)
 def test_error_if_unsupported_object_in_tape():
     """Test an error is raised if there's an unsupported object in the tape."""
 
-    # pylint: disable=too-few-public-methods
-    class DummyObj:
+    class DummyObj:  # pylint: disable=too-few-public-methods
         wires = qp.wires.Wires(2)
 
     _tape = qp.tape.QuantumScript([DummyObj()], [])
@@ -83,7 +81,7 @@ def test_error_if_unsupported_object_in_tape():
         qp.drawer.tape_text(_tape)
 
 
-class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-positional-arguments
+class TestHelperFunctions:
     """Test helper functions for the tape text."""
 
     @pytest.mark.parametrize(
@@ -198,6 +196,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             ),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_add_cond_grouping_symbols(self, cond_op, bit_map, mv, cur_layer, args, kwargs, out):
         """Test private _add_grouping_symbols function renders as expected for Conditionals."""
         op = get_conditional_op(mv, cond_op, *args, **kwargs)
@@ -356,7 +355,9 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     def test_add_qrom(self, all_wires, expected):
         """Test adding the first operation to array of strings"""
         num_wires = sum(len(w) for w in all_wires)
-        op = qp.QROM(np.ones((2 ** len(all_wires[0]), len(all_wires[1]))), *all_wires)
+        op = qp.QROM(
+            np.ones((2 ** len(all_wires[0]), len(all_wires[1])), dtype=np.int64), *all_wires
+        )
         _wire_map = {i: i for i in range(num_wires)}
         config = _Config(
             wire_map=_wire_map, bit_map=default_bit_map, num_op_layers=num_wires, cur_layer=1
@@ -438,6 +439,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             ),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_add_cond_op(self, cond_op, bit_map, mv, args, kwargs, out):
         """Test adding the first Conditional to array of strings"""
         op = get_conditional_op(mv, cond_op, *args, **kwargs)
@@ -509,8 +511,9 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     @pytest.mark.parametrize("cls, label", [(qp.GlobalPhase, "GlobalPhase"), (qp.Identity, "I")])
     def test_add_global_op(self, wires, wire_map, cls, label):
         """Test that adding a global op works as expected."""
-        data = [0.5124][: cls.num_params]
-        op = cls(*data, wires=wires)
+        data = (0.5124,) if cls is qp.GlobalPhase else ()
+        kwargs = {} if cls is qp.GlobalPhase else {"wires": wires}
+        op = cls(*data, **kwargs)
         # Expected output does not depend on the wires of GlobalPhase but just
         # on the number of drawn wires as dictated by the config!
         n_wires = len(wire_map)
@@ -538,11 +541,13 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     )
     @pytest.mark.parametrize("wire_map", [default_wire_map, {i: i for i in range(6)}])
     @pytest.mark.parametrize("cls, label", [(qp.GlobalPhase, "GlobalPhase"), (qp.Identity, "I")])
+    # pylint: disable-next=too-many-arguments
     def test_add_controlled_global_op(self, wires, control_wires, expected, wire_map, cls, label):
         """Test that adding a controlled global op works as expected."""
         expected = copy(expected)
-        data = [0.5124][: cls.num_params]
-        op = qp.ctrl(cls(*data, wires=wires), control=control_wires)
+        data = (0.5124,) if cls is qp.GlobalPhase else ()
+        base_op = cls(*data, wires=wires) if cls is qp.Identity else cls(*data)
+        op = ControlledOp2(base_op, control_wires=control_wires)
         n_wires = len(wire_map)
         if n_wires > 4:
             expected[-1] = "├" + expected[-1][1:]
@@ -564,7 +569,7 @@ class TestEmptyTapes:
 
     def test_empty_tape_wire_order(self):
         """Test wire order and show_all_wires shows wires with empty tape."""
-        expected = "a: ───┤  \nb: ───┤  "
+        expected = "a: ───┤\nb: ───┤"
         out = tape_text(QuantumScript(), wire_order=["a", "b"], show_all_wires=True)
         assert expected == out
 
@@ -614,7 +619,7 @@ class TestDecimals:
     def test_decimals(self):
         """Test that the decimals keyword makes the operation parameters included."""
 
-        expected = "    0: ──RX(1.23)─┤  \n    a: ──RY(2.35)─┤  \n1.234: ──RZ(3.46)─┤  "
+        expected = "    0: ──RX(1.23)─┤\n    a: ──RY(2.35)─┤\n1.234: ──RZ(3.46)─┤"
 
         assert tape_text(tape, decimals=2) == expected
 
@@ -625,13 +630,13 @@ class TestDecimals:
             qp.Rot(1.2345, 2.3456, 3.4566, wires=0)
 
         tape_rot = qp.tape.QuantumScript.from_queue(q_tape_rot)
-        expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
+        expected = "0: ──Rot(1.23,2.35,3.46)─┤"
         assert tape_text(tape_rot, decimals=2) == expected
 
     def test_decimals_0(self):
         """Test decimals=0 rounds to integers"""
 
-        expected = "    0: ──RX(1)─┤  \n    a: ──RY(2)─┤  \n1.234: ──RZ(3)─┤  "
+        expected = "    0: ──RX(1)─┤\n    a: ──RY(2)─┤\n1.234: ──RZ(3)─┤"
 
         assert tape_text(tape, decimals=0) == expected
 
@@ -644,20 +649,8 @@ class TestDecimals:
             qp.Rot(torch.tensor(1.234), torch.tensor(2.345), torch.tensor(3.456), wires=0)
 
         tape_torch = qp.tape.QuantumScript.from_queue(q_tape_torch)
-        expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
+        expected = "0: ──Rot(1.23,2.35,3.46)─┤"
         assert tape_text(tape_torch, decimals=2) == expected
-
-    @pytest.mark.tf
-    def test_tensorflow_parameters(self):
-        """Test tensorflow parameters display as normal numbers."""
-        import tensorflow as tf
-
-        with qp.queuing.AnnotatedQueue() as q_tape_tf:
-            qp.Rot(tf.Variable(1.234), tf.Variable(2.345), tf.Variable(3.456), wires=0)
-
-        tape_tf = qp.tape.QuantumScript.from_queue(q_tape_tf)
-        expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
-        assert tape_text(tape_tf, decimals=2) == expected
 
     @pytest.mark.jax
     def test_jax_parameters(self):
@@ -668,7 +661,7 @@ class TestDecimals:
             qp.Rot(jnp.array(1.234), jnp.array(2.345), jnp.array(3.456), wires=0)
 
         tape_jax = qp.tape.QuantumScript.from_queue(q_tape_jax)
-        expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
+        expected = "0: ──Rot(1.23,2.35,3.46)─┤"
         assert tape_text(tape_jax, decimals=2) == expected
 
 
@@ -713,52 +706,50 @@ class TestMaxLength:
 single_op_tests_data = [
     (
         qp.MultiControlledX(wires=[0, 1, 2, 3], control_values=[0, 1, 0]),
-        "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰X─┤  ",
+        "0: ─╭○─┤\n1: ─├●─┤\n2: ─├○─┤\n3: ─╰X─┤",
     ),
     (
-        # pylint:disable=no-member
         qp.ops.op_math.Controlled(qp.PauliY(3), (0, 1, 2), [0, 1, 0]),
-        "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─╰Y─┤  ",
+        "0: ─╭○─┤\n1: ─├●─┤\n2: ─├○─┤\n3: ─╰Y─┤",
     ),
-    (qp.CNOT(wires=(0, 1)), "0: ─╭●─┤  \n1: ─╰X─┤  "),
-    (qp.Toffoli(wires=(0, 1, 2)), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
+    (qp.CNOT(wires=(0, 1)), "0: ─╭●─┤\n1: ─╰X─┤"),
+    (qp.Toffoli(wires=(0, 1, 2)), "0: ─╭●─┤\n1: ─├●─┤\n2: ─╰X─┤"),
     (
         qp.SelectPauliRot(np.array([1.0, 2.0, 3.0, 4.0]), [0, 1], 2, rot_axis="Y"),
-        "0: ─╭◑──────┤  \n1: ─├◑──────┤  \n2: ─╰RY(M0)─┤  ",
+        "0: ─╭◑──────┤\n1: ─├◑──────┤\n2: ─╰RY(M0)─┤",
     ),
     (
         qp.SelectPauliRot(np.array([1.0, 2.0, 3.0, 4.0]), [0, 1], 2, rot_axis="X"),
-        "0: ─╭◑──────┤  \n1: ─├◑──────┤  \n2: ─╰RX(M0)─┤  ",
+        "0: ─╭◑──────┤\n1: ─├◑──────┤\n2: ─╰RX(M0)─┤",
     ),
     (
         qp.SelectPauliRot(np.array([1.0, 2.0, 3.0, 4.0]), [2, 0], 1, rot_axis="Z"),
-        "2: ─╭◑──────┤  \n0: ─├◑──────┤  \n1: ─╰RZ(M0)─┤  ",
+        "2: ─╭◑──────┤\n0: ─├◑──────┤\n1: ─╰RZ(M0)─┤",
     ),
-    (qp.Barrier(wires=(0, 1, 2)), "0: ─╭||─┤  \n1: ─├||─┤  \n2: ─╰||─┤  "),
-    (qp.CSWAP(wires=(0, 1, 2)), "0: ─╭●────┤  \n1: ─├SWAP─┤  \n2: ─╰SWAP─┤  "),
+    (qp.Barrier(wires=(0, 1, 2)), "0: ─╭||─┤\n1: ─├||─┤\n2: ─╰||─┤"),
+    (qp.CSWAP(wires=(0, 1, 2)), "0: ─╭●────┤\n1: ─├SWAP─┤\n2: ─╰SWAP─┤"),
     (
         qp.DoubleExcitationPlus(1.23, wires=(0, 1, 2, 3)),
-        "0: ─╭G²₊(1.23)─┤  \n1: ─├G²₊(1.23)─┤  \n2: ─├G²₊(1.23)─┤  \n3: ─╰G²₊(1.23)─┤  ",
+        "0: ─╭G²₊(1.23)─┤\n1: ─├G²₊(1.23)─┤\n2: ─├G²₊(1.23)─┤\n3: ─╰G²₊(1.23)─┤",
     ),
-    (qp.QubitUnitary(qp.numpy.eye(4), wires=(0, 1)), "0: ─╭U(M0)─┤  \n1: ─╰U(M0)─┤  "),
-    (qp.QubitSum(wires=(0, 1, 2)), "0: ─╭Σ─┤  \n1: ─├Σ─┤  \n2: ─╰Σ─┤  "),
-    (qp.AmplitudeDamping(0.98, wires=0), "0: ──AmplitudeDamping(0.98)─┤  "),
+    (qp.QubitUnitary(qp.numpy.eye(4), wires=(0, 1)), "0: ─╭U(M0)─┤\n1: ─╰U(M0)─┤"),
+    (qp.QubitSum(wires=(0, 1, 2)), "0: ─╭Σ─┤\n1: ─├Σ─┤\n2: ─╰Σ─┤"),
+    (qp.AmplitudeDamping(0.98, wires=0), "0: ──AmplitudeDamping(0.98)─┤"),
     (
         qp.StatePrep([0, 1, 0, 0], wires=(0, 1)),
-        "0: ─╭|Ψ⟩─┤  \n1: ─╰|Ψ⟩─┤  ",
+        "0: ─╭|Ψ⟩─┤\n1: ─╰|Ψ⟩─┤",
     ),
-    (qp.Kerr(1.234, wires=0), "0: ──Kerr(1.23)─┤  "),
     (
         qp.GroverOperator(wires=(0, 1, 2)),
-        "0: ─╭GroverOperator─┤  \n1: ─├GroverOperator─┤  \n2: ─╰GroverOperator─┤  ",
+        "0: ─╭GroverOperator─┤\n1: ─├GroverOperator─┤\n2: ─╰GroverOperator─┤",
     ),
     (
         qp.adjoint(qp.RX(1.234, wires=0)),
-        "0: ──RX(1.23)†─┤  ",
+        "0: ──RX(1.23)†─┤",
     ),
     (
         qp.RX(1.234, wires=0) ** -1,
-        "0: ──RX(1.23)⁻¹─┤  ",
+        "0: ──RX(1.23)⁻¹─┤",
     ),
     (qp.expval(qp.PauliZ(0)), "0: ───┤  <Z>"),
     (qp.var(qp.PauliZ(0)), "0: ───┤  Var[Z]"),
@@ -777,15 +768,15 @@ single_op_tests_data = [
         "0: ───┤ ╭<𝓗>\n1: ───┤ ╰<𝓗>",
     ),
     # Operations (both regular and controlled) and nested multi-valued controls
-    (qp.ctrl(qp.PauliX(wires=2), control=[0, 1]), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
-    (qp.ctrl(qp.CNOT(wires=[1, 2]), control=0), "0: ─╭●─┤  \n1: ─├●─┤  \n2: ─╰X─┤  "),
+    (qp.ctrl(qp.PauliX(wires=2), control=[0, 1]), "0: ─╭●─┤\n1: ─├●─┤\n2: ─╰X─┤"),
+    (qp.ctrl(qp.CNOT(wires=[1, 2]), control=0), "0: ─╭●─┤\n1: ─├●─┤\n2: ─╰X─┤"),
     (
         qp.ctrl(qp.CRZ(0.2, wires=[1, 2]), control=[3, 0]),
-        "3: ─╭●────────┤  \n0: ─├●────────┤  \n1: ─├●────────┤  \n2: ─╰RZ(0.20)─┤  ",
+        "3: ─╭●────────┤\n0: ─├●────────┤\n1: ─├●────────┤\n2: ─╰RZ(0.20)─┤",
     ),
     (
         qp.ctrl(qp.CH(wires=[0, 3]), control=[2, 1], control_values=[False, True]),
-        "2: ─╭○─┤  \n1: ─├●─┤  \n0: ─├●─┤  \n3: ─╰H─┤  ",
+        "2: ─╭○─┤\n1: ─├●─┤\n0: ─├●─┤\n3: ─╰H─┤",
     ),
     (
         qp.ctrl(
@@ -793,15 +784,15 @@ single_op_tests_data = [
             control=0,
             control_values=[False],
         ),
-        "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─├●─┤  \n4: ─╰Y─┤  ",
+        "0: ─╭○─┤\n1: ─├●─┤\n2: ─├○─┤\n3: ─├●─┤\n4: ─╰Y─┤",
     ),
     (
         qp.TemporaryAND([3, 0, 2], control_values=(1, 0)),
-        "3: ─╭●─┤  \n0: ─├○─┤  \n2: ─╰⊕─┤  ",
+        "3: ─╭●─┤\n0: ─├○─┤\n2: ─╰⊕─┤",
     ),
     (
         qp.adjoint(qp.TemporaryAND([3, 0, 2], control_values=(0, 1))),
-        "3: ──○╮─┤  \n0: ──●┤─┤  \n2: ──⊕╯─┤  ",
+        "3: ──○╮─┤\n0: ──●┤─┤\n2: ──⊕╯─┤",
     ),
 ]
 
@@ -817,6 +808,69 @@ def test_single_ops(op, expected):
     assert tape_text(_tape, decimals=2, show_matrices=False) == expected
 
 
+@pytest.mark.parametrize("values", [(0, 0), (0, 1), (1, 0), (1, 1)])
+@pytest.mark.parametrize("adjoint", [False, True])
+@pytest.mark.parametrize("order", [[0, 1, 2], [2, 0, 1], [0, 2, 1]])
+def test_temporary_and_corners(values, adjoint, order):
+    """Controls and targets have a left or right connector, without cutting their wires."""
+    op = qp.TemporaryAND([0, 1, 2], control_values=values)
+    if adjoint:
+        op = qp.adjoint(op)
+    lines = tape_text(QuantumScript([op]), wire_order=order).splitlines()
+    symbols = {0: "●" if values[0] else "○", 1: "●" if values[1] else "○", 2: "⊕"}
+    for row, wire in enumerate(order):
+        corner = ("╮", "┤", "╯")[row] if adjoint else ("╭", "├", "╰")[row]
+        symbol = f"─{symbols[wire]}{corner}" if adjoint else f"{corner}{symbols[wire]}"
+        assert lines[row] == f"{wire}: ─{symbol}─┤"
+
+
+@pytest.mark.parametrize("outer_adjoint", [False, True])
+def test_controlled_temporary_and_adjoint(outer_adjoint):
+    """Controlled adjoints retain every control without introducing a second stem."""
+    op = qp.TemporaryAND([0, 1, 2], control_values=[0, 1])
+    op = (
+        qp.adjoint(qp.ctrl(op, 3, control_values=[0]))
+        if outer_adjoint
+        else qp.ctrl(qp.adjoint(op), 3, control_values=[0])
+    )
+    assert tape_text(QuantumScript([op]), wire_order=range(4)) == (
+        "0: ──○╮─┤\n1: ──●┤─┤\n2: ──⊕┤─┤\n3: ──○╯─┤"
+    )
+
+
+@pytest.mark.parametrize("inner_adjoint", [False, True])
+@pytest.mark.parametrize("outer_adjoint", [False, True])
+def test_nested_controlled_temporary_and(inner_adjoint, outer_adjoint):
+    """Nested controls occur once and adjoint parity determines the connector side."""
+    op = qp.TemporaryAND([0, 1, 2], control_values=[0, 1])
+    op = qp.adjoint(op) if inner_adjoint else op
+    op = qp.ctrl(op, 3, control_values=[0])
+    op = qp.adjoint(op) if outer_adjoint else op
+    op = qp.ctrl(op, 4)
+    expected = (
+        "0: ──○╮─┤\n1: ──●┤─┤\n2: ──⊕┤─┤\n3: ──○┤─┤\n4: ──●╯─┤"
+        if inner_adjoint != outer_adjoint
+        else "0: ─╭○─┤\n1: ─├●─┤\n2: ─├⊕─┤\n3: ─├○─┤\n4: ─╰●─┤"
+    )
+    assert tape_text(QuantumScript([op]), wire_order=range(5)) == expected
+
+
+@pytest.mark.parametrize("adjoint", [False, True])
+def test_temporary_and_inactive_intermediate_wire(adjoint):
+    """An elbow stem does not restore an inactive dynamic wire's horizontal line."""
+    config = _Config(
+        wire_map=default_wire_map,
+        bit_map={},
+        num_op_layers=4,
+        cur_layer=1,
+        wire_layers={**default_wire_layers, 2: [[2, 4]]},
+    )
+    op = qp.TemporaryAND([0, 1, 3])
+    op = qp.adjoint(op) if adjoint else op
+    expected = ["─●╮", "─●┤", "  │", "─⊕╯"] if adjoint else ["╭●", "├●", "│", "╰⊕"]
+    assert _add_obj(op, ["─", "─", " ", "─"], config) == expected
+
+
 class TestLayering:
     """Test operations are placed in the correct locations."""
 
@@ -829,7 +883,7 @@ class TestLayering:
             qp.PauliX(2)
 
         _tape = qp.tape.QuantumScript.from_queue(q)
-        assert tape_text(_tape) == "0: ──X─┤  \n1: ──X─┤  \n2: ──X─┤  "
+        assert tape_text(_tape) == "0: ──X─┤\n1: ──X─┤\n2: ──X─┤"
 
     def test_blocking_ops(self):
         """Test single qubit gates on same wire line up."""
@@ -840,7 +894,7 @@ class TestLayering:
             qp.PauliX(0)
 
         _tape = qp.tape.QuantumScript.from_queue(q)
-        assert tape_text(_tape) == "0: ──X──X──X─┤  "
+        assert tape_text(_tape) == "0: ──X──X──X─┤"
 
     def test_blocking_multiwire_gate(self):
         """Tests gate gets blocked by multi-wire gate."""
@@ -851,7 +905,7 @@ class TestLayering:
             qp.PauliX(1)
 
         _tape = qp.tape.QuantumScript.from_queue(q)
-        expected = "0: ──X─╭IsingXX────┤  \n1: ────│─────────X─┤  \n2: ────╰IsingXX────┤  "
+        expected = "0: ──X─╭IsingXX────┤\n1: ────│─────────X─┤\n2: ────╰IsingXX────┤"
 
         assert tape_text(_tape, wire_order=[0, 1, 2]) == expected
 
@@ -866,14 +920,14 @@ class TestLayering:
             ]
         )
         expected = (
-            "a: ─╭●───○╮─┤  \n"
-            "b: ─├●───⊕┤─┤  \n"
-            "c: ─╰⊕────│─┤  \n"
-            "d: ──●╮──○╯─┤  \n"
-            "e: ──⊕┤─╭○──┤  \n"
-            "f: ──●╯─├⊕──┤  \n"
-            "g: ─────│───┤  \n"
-            "h: ─────╰●──┤  "
+            "a: ─╭●───○╮─┤\n"
+            "b: ─├●───⊕┤─┤\n"
+            "c: ─╰⊕────│─┤\n"
+            "d: ──●╮──○╯─┤\n"
+            "e: ──⊕┤─╭○──┤\n"
+            "f: ──●╯─├⊕──┤\n"
+            "g: ─────│───┤\n"
+            "h: ─────╰●──┤"
         )
         out = tape_text(
             _tape, wire_order=["a", "b", "c", "d", "e", "f", "g", "h"], show_all_wires=True
@@ -893,18 +947,20 @@ class TestShowMatrices:
     def test_default_shows_matrix_parameters(self):
         """Test matrices numbered but not included by default."""
 
+        # fmt: off
         expected = (
             "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
-            "1: ─╰|Ψ⟩────────┤         \n"
+            "1: ─╰|Ψ⟩────────┤\n"
             "M0 = \n[[1. 0.]\n [0. 1.]]"
         )
+        # fmt: on
 
         assert tape_text(tape_matrices) == expected
 
     def test_do_not_show_matrices(self):
         """Test matrices included when requested."""
 
-        expected = "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤         "
+        expected = "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤"
 
         assert tape_text(tape_matrices, show_matrices=False) == expected
 
@@ -916,7 +972,7 @@ class TestShowMatrices:
 
         expected = (
             "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
-            "1: ─╰|Ψ⟩────────┤         \n"
+            "1: ─╰|Ψ⟩────────┤\n"
             "M0 = \n[[1. 0.]\n [0. 1.]]\n"
             "M1 = \n[[-1. -0. -0.]\n [-0. -1. -0.]\n [-0. -0. -1.]]"
         )
@@ -940,10 +996,10 @@ def test_nested_tapes():
 
     expected = (
         "0: ──Tape:0──Tape:1─┤  <Z>\n\n"
-        "Tape:0\n0: ──X──Tape:2─┤  \n\n"
-        "Tape:2\n0: ──Y─┤  \n\n"
-        "Tape:1\n0: ──Z──Tape:3─┤  \n\n"
-        "Tape:3\n0: ──X─┤  "
+        "Tape:0\n0: ──X──Tape:2─┤\n\n"
+        "Tape:2\n0: ──Y─┤\n\n"
+        "Tape:1\n0: ──Z──Tape:3─┤\n\n"
+        "Tape:3\n0: ──X─┤"
     )
 
     assert qp.draw(circ)() == expected

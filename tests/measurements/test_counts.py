@@ -170,10 +170,10 @@ class TestProcessSamples:
             assert len(result) == batch_size
             for r in result:
                 assert sum(r.values()) == shots
-                assert all("-" not in sample for sample in r.keys())
+                assert all("-" not in sample for sample in r)
         else:
             assert sum(result.values()) == shots
-            assert all("-" not in sample for sample in result.keys())
+            assert all("-" not in sample for sample in result)
 
     def test_counts_obs(self, seed):
         """Test that the counts function outputs counts of the right size for observables"""
@@ -405,8 +405,7 @@ class TestProcessSamples:
             assert r == {"0": 2}
 
 
-class TestCountsIntegration:
-    # pylint:disable=too-many-public-methods,not-an-iterable
+class TestCountsIntegration:  # pylint: disable=too-many-public-methods
 
     def test_counts_all_outcomes_with_mcm(self):
         """Test that all outcomes are present in results if requested."""
@@ -571,6 +570,7 @@ class TestCountsIntegration:
 
         circuit()
 
+    @pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator2.")
     def test_batched_counts_work_individually(self):
         """Test that each counts call operates independently"""
         n_shots = 10
@@ -623,9 +623,7 @@ class TestCountsIntegration:
     @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
     @pytest.mark.parametrize("wires, basis_state", [(None, "010"), ([2, 1], "01")])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
-    def test_counts_binned(
-        self, shot_vec, interface, wires, basis_state
-    ):  # pylint:disable=too-many-arguments
+    def test_counts_binned(self, shot_vec, interface, wires, basis_state):
         """Check all interfaces with computational basis state counts and
         different shot vectors"""
         dev = qp.device("default.qubit", wires=3)
@@ -843,6 +841,7 @@ class TestCountsIntegration:
         assert res[1] == {"00": 10}
         assert res[2] == {"00": 10, "01": 0, "10": 0, "11": 0}
 
+    @pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator2.")
     def test_batched_all_outcomes(self):
         """Tests that all_outcomes=True works with broadcasting."""
         n_shots = 10
@@ -896,6 +895,7 @@ def test_counts_no_op_finite_shots(interface, wires, basis_state):
 
 
 @pytest.mark.all_interfaces
+@pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator2.")
 @pytest.mark.parametrize("wires, basis_states", [(None, ("010", "000")), ([2, 1], ("01", "00"))])
 @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 def test_batched_counts_no_op_finite_shots(interface, wires, basis_states):
@@ -915,6 +915,7 @@ def test_batched_counts_no_op_finite_shots(interface, wires, basis_states):
 
 
 @pytest.mark.all_interfaces
+@pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator2.")
 @pytest.mark.parametrize("wires, basis_states", [(None, ("010", "000")), ([2, 1], ("01", "00"))])
 @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 def test_batched_counts_and_expval_no_op_finite_shots(interface, wires, basis_states):
@@ -939,6 +940,7 @@ def test_batched_counts_and_expval_no_op_finite_shots(interface, wires, basis_st
 
 
 @pytest.mark.all_interfaces
+@pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator2.")
 @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 def test_batched_counts_operator_finite_shots(interface):
     """Check all interfaces with observable measurement counts, batching and finite shots"""
@@ -956,6 +958,7 @@ def test_batched_counts_operator_finite_shots(interface):
 
 
 @pytest.mark.all_interfaces
+@pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator2.")
 @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 def test_batched_counts_and_expval_operator_finite_shots(interface):
     """Check all interfaces with observable measurement counts, batching and finite shots"""

@@ -17,8 +17,8 @@ Contains the BasicEntanglerLayers template.
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.core.operator import Operation, abstractify
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, RX, cond
 
 
@@ -183,10 +183,7 @@ class BasicEntanglerLayers(Operation):
 
         >>> weights = torch.tensor([[1.2, -0.4], [0.3, -0.2]])
         >>> qp.BasicEntanglerLayers.compute_decomposition(weights, wires=["a", "b"], rotation=qp.RX)
-        [RX(tensor(1.2000), wires=['a']), RX(tensor(-0.4000), wires=['b']),
-        CNOT(wires=['a', 'b']),
-        RX(tensor(0.3000), wires=['a']), RX(tensor(-0.2000), wires=['b']),
-        CNOT(wires=['a', 'b'])]
+        [RX(1.200..., wires=['a']), RX(-0.400..., wires=['b']), CNOT(wires=['a', 'b']), RX(0.300..., wires=['a']), RX(-0.200..., wires=['b']), CNOT(wires=['a', 'b'])]
         """
         # first dimension of the weights tensor (second when batching) determines
         # the number of layers
@@ -223,13 +220,13 @@ class BasicEntanglerLayers(Operation):
 
 
 def _basic_entangler_resources(repeat, num_wires, rotation):
-    resources = {resource_rep(rotation): repeat * num_wires}
+    resources = {abstractify(rotation): repeat * num_wires}
 
     if num_wires == 2:
-        resources[resource_rep(CNOT)] = repeat
+        resources[CNOT] = repeat
 
     elif num_wires > 2:
-        resources[resource_rep(CNOT)] = repeat * num_wires
+        resources[CNOT] = repeat * num_wires
 
     return resources
 

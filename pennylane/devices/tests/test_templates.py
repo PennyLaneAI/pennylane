@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests that various templates work correctly on a device."""
 
-# pylint: disable=no-self-use
-
 # Can generate a list of all templates using the following code:
 #
 # from inspect import getmembers, isclass
@@ -50,7 +48,7 @@ def check_op_supported(op, dev):
             pytest.skip("operation not supported on the device")
 
 
-class TestTemplates:  # pylint:disable=too-many-public-methods
+class TestTemplates:  # pylint: disable=too-many-public-methods
     """Test various templates."""
 
     def test_AQFT(self, device, tol, shots):
@@ -228,21 +226,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         assert np.allclose([math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=tol)
 
-    @pytest.mark.xfail(reason="most devices do not support CV")
-    def test_CVNeuralNetLayers(self, device, shots):
-        """Test the CVNeuralNetLayers template."""
-        dev = device(2)
-
-        @qp.qnode(dev, shots=shots)
-        def circuit(weights):
-            qp.CVNeuralNetLayers(*weights, wires=[0, 1])
-            return qp.expval(qp.QuadX(0))
-
-        shapes = qp.CVNeuralNetLayers.shape(n_layers=2, n_wires=2)
-        weights = [np.random.random(shape) for shape in shapes]
-
-        circuit(weights)
-
     def test_CommutingEvolution(self, device, tol, shots):
         """Test the CommutingEvolution template."""
         n_wires = 2
@@ -299,23 +282,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         res = circuit()
         expected = [0.0, 0.25, 0.5, 0.25]
         assert np.allclose(res, expected, atol=tol)
-
-    @pytest.mark.xfail(reason="most devices do not support CV")
-    def test_DisplacementEmbedding(self, device, tol, shots):
-        """Test the DisplacementEmbedding template."""
-        dev = device(3)
-
-        @qp.qnode(dev, shots=shots)
-        def circuit(feature_vector):
-            qp.DisplacementEmbedding(features=feature_vector, wires=range(3))
-            qp.QuadraticPhase(0.1, wires=1)
-            return qp.expval(qp.NumberOperator(wires=1))
-
-        X = [1, 2, 3]
-
-        res = circuit(X)
-        expected = 4.1215690638748494
-        assert np.isclose(res, expected, atol=tol)
 
     def test_FermionicDoubleExcitation(self, device, tol, shots):
         """Test the FermionicDoubleExcitation template."""
@@ -414,8 +380,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             return qp.probs()
 
         def cost_hst(V, U):
-            # pylint:disable=unsubscriptable-object
-            return 1 - hilbert_test(V, U)[0]
+            return 1 - hilbert_test(V, U)[0]  # pylint: disable=unsubscriptable-object
 
         res = cost_hst(V, U)
         expected = 1.0
@@ -433,23 +398,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         res = circuit([1.0, 2.0, 3.0])
         expected = [0.40712208, 0.32709118, 0.89125407]
         assert np.allclose(res, expected, atol=tol)
-
-    @pytest.mark.xfail(reason="most devices do not support CV")
-    def test_Interferometer(self, device, shots):
-        """Test the Interferometer template."""
-        dev = device(4)
-
-        @qp.qnode(dev, shots=shots)
-        def circuit(params):
-            qp.Interferometer(*params, wires=range(4))
-            return qp.expval(qp.Identity(0))
-
-        shapes = [[6], [6], [4]]
-        params = []
-        for shape in shapes:
-            params.append(np.random.random(shape))
-
-        _ = circuit(params)
 
     def test_LocalHilbertSchmidt(self, device, tol, shots):
         """Test the LocalHilbertSchmidt template."""
@@ -472,8 +420,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             return qp.probs()
 
         def cost_lhst(V, U):
-            # pylint:disable=unsubscriptable-object
-            return 1 - local_hilbert_test(V, U)[0]
+            return 1 - local_hilbert_test(V, U)[0]  # pylint: disable=unsubscriptable-object
 
         v_params = [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2]
         V = V_function(v_params)
@@ -682,7 +629,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             )
             return qp.probs(estimation_wires)
 
-        # pylint:disable=unsubscriptable-object
+        # pylint: disable-next=unsubscriptable-object
         phase_estimated = np.argmax(circuit()[: int(N / 2)]) / N
         res = (1 - np.cos(np.pi * phase_estimated)) / 2
         expected = 0.3086582838174551
@@ -711,24 +658,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         res = np.argmax(circuit()) / 2**n_estimation_wires
         expected = 0.125
         assert np.isclose(res, expected, atol=tol)
-
-    def test_QutritBasisStatePreparation(self, device, tol, shots):
-        """Test the QutritBasisStatePreparation template."""
-        dev = device(4)
-        if "qutrit" not in dev.name:
-            pytest.skip("QutritBasisState template only works on qutrit devices")
-
-        @qp.qnode(dev, shots=shots)
-        def circuit(basis_state, obs):
-            qp.QutritBasisStatePreparation(basis_state, wires=range(4))
-            return [qp.expval(qp.THermitian(obs, wires=i)) for i in range(4)]
-
-        basis_state = [0, 1, 1, 0]
-        obs = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
-
-        res = circuit(basis_state, obs)
-        expected = np.array([1, -1, -1, 1]) / np.sqrt(2)
-        assert np.allclose(res, expected, atol=tol)
 
     def test_RandomLayers(self, device, tol, shots):
         """Test the RandomLayers template."""
@@ -781,23 +710,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         res = circuit(init_weights, weights)
         expected = [1.0, -1.0, 1.0]
         assert np.allclose(res, expected, atol=tol)
-
-    @pytest.mark.xfail(reason="most devices do not support CV")
-    def test_SqueezingEmbedding(self, device, tol, shots):
-        """Test the SqueezingEmbedding template."""
-        dev = device(2)
-
-        @qp.qnode(dev, shots=shots)
-        def circuit(feature_vector):
-            qp.SqueezingEmbedding(features=feature_vector, wires=range(3))
-            qp.QuadraticPhase(0.1, wires=1)
-            return qp.expval(qp.NumberOperator(wires=1))
-
-        X = [1, 2, 3]
-
-        res = circuit(X)
-        expected = 13.018280763205285
-        assert np.isclose(res, expected, atol=tol)
 
     def test_StronglyEntanglingLayers(self, device, tol, shots):
         """Test the StronglyEntanglingLayers template."""
@@ -859,7 +771,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         """Test the TwoLocalSwapNetwork template."""
         dev = device(3)
 
-        def acquaintances(index, wires, param=None):  # pylint:disable=unused-argument
+        def acquaintances(index, wires, param=None):  # pylint: disable=unused-argument
             return qp.CNOT(index)
 
         @qp.qnode(dev, shots=shots)

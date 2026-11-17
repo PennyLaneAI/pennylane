@@ -19,10 +19,10 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_OutAdder():
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1]
@@ -31,7 +31,7 @@ def test_standard_validity_OutAdder():
     mod = 7
     work_wires = [6, 7]
     op = qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestOutAdder:
@@ -65,25 +65,26 @@ class TestOutAdder:
             ),
         ],
     )
-    def test_operation_result(
-        self, x_wires, y_wires, output_wires, mod, work_wires, x, y, z
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_operation_result(self, x_wires, y_wires, output_wires, mod, work_wires, x, y, z):
         """Test the correctness of the OutAdder template output."""
         dev = qp.device("default.qubit")
 
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit(x, y, z):
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=y_wires)
-            qp.BasisEmbedding(z, wires=output_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            y_bin = qp.math.int_to_binary(y, len(y_wires))
+            z_bin = qp.math.int_to_binary(z, len(output_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
+            qp.BasisEmbedding(y_bin, wires=y_wires)
+            qp.BasisEmbedding(z_bin, wires=output_wires)
             qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
             return qp.sample(wires=output_wires)
 
         if mod is None:
             mod = 2 ** len(output_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y, z)[0, :]))),
             (x + y + z) % mod,
@@ -142,9 +143,8 @@ class TestOutAdder:
             ),
         ],
     )
-    def test_wires_error(
-        self, x_wires, y_wires, output_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_wires_error(self, x_wires, y_wires, output_wires, mod, work_wires, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
@@ -212,9 +212,10 @@ class TestOutAdder:
         )
         op_list.append(qp.adjoint(qp.QFT)(wires=qft_new_output_wires))
 
-        for op1, op2 in zip(adder_decomposition, op_list):
+        for op1, op2 in zip(adder_decomposition, op_list, strict=False):
             qp.assert_equal(op1, op2)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("mod", [7, 8])
     def test_decomposition_new(self, mod):
         """Tests the decomposition rule implemented with the new system."""
@@ -224,8 +225,7 @@ class TestOutAdder:
         output_wires = [8, 9, 10]
         work_wires = [0, 1]
         op = qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-        for rule in qp.list_decomps(qp.OutAdder):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
@@ -253,12 +253,13 @@ class TestOutAdder:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=y_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            y_bin = qp.math.int_to_binary(y, len(x_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
+            qp.BasisEmbedding(y_bin, wires=y_wires)
             qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
             return qp.sample(wires=output_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))), (x + y) % mod
         )

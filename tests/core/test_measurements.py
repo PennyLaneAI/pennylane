@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the measurements module"""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 
@@ -43,8 +45,6 @@ from pennylane.measurements import (
     var,
 )
 from pennylane.wires import Wires
-
-# pylint: disable=too-few-public-methods, unused-argument
 
 
 def test_measurements_module_getattr():
@@ -182,15 +182,14 @@ valid_meausurements = [
 ]
 
 
-# pylint: disable=protected-access
 @pytest.mark.parametrize("mp", valid_meausurements)
 def test_flatten_unflatten(mp):
     """Test flatten and unflatten methods."""
 
-    data, metadata = mp._flatten()
+    data, metadata = mp._flatten()  # pylint: disable=protected-access
     assert hash(metadata)
 
-    new_mp = type(mp)._unflatten(data, metadata)
+    new_mp = type(mp)._unflatten(data, metadata)  # pylint: disable=protected-access
     qp.assert_equal(new_mp, mp)
 
 
@@ -304,18 +303,14 @@ class TestProperties:
 
         assert np.all(m.eigvals() == np.array([1, 2, 3, 4]))
 
-        # changing the observable data should be reflected
-        obs.data = [np.diag([5, 6, 7, 8])]
-        assert np.all(m.eigvals() == np.array([5, 6, 7, 8]))
-
     def test_measurement_value_eigvals(self):
         """Test that eigenvalues of the measurement process
         are correct if the internal observable is a
         MeasurementValue."""
         m0 = qp.measure(0)
-        m0.measurements[0]._hyperparameters["meas_uid"] = "abc"  # pylint: disable=protected-access
+        m0.measurements[0].arguments["meas_uid"] = "abc"
         m1 = qp.measure(1)
-        m1.measurements[0]._hyperparameters["meas_uid"] = "def"  # pylint: disable=protected-access
+        m1.measurements[0].arguments["meas_uid"] = "def"
 
         mp1 = qp.sample(op=[m0, m1])
         assert np.all(mp1.eigvals() == [0, 1, 2, 3])
@@ -342,8 +337,13 @@ class TestProperties:
     def test_observable_with_no_eigvals(self):
         """An observable with no eigenvalues defined should cause
         the eigvals method to return a NotImplementedError"""
-        obs = qp.NumberOperator(wires=0)
-        m = qp.expval(op=obs)
+
+        class DummyObs(qp.core.Operator2):
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        m = qp.expval(op=DummyObs(0))
         with pytest.raises(qp.operation.EigvalsUndefinedError):
             _ = m.eigvals()
 
@@ -376,12 +376,8 @@ class TestProperties:
         m1 = qp.measure("b")
         m2 = qp.measure(0)
         m3 = qp.measure(1)
-        m2.measurements[0]._hyperparameters["meas_uid"] = m0.measurements[0]._hyperparameters[
-            "meas_uid"
-        ]  # pylint: disable=protected-access
-        m3.measurements[0]._hyperparameters["meas_uid"] = m1.measurements[0]._hyperparameters[
-            "meas_uid"
-        ]  # pylint: disable=protected-access
+        m2.measurements[0].arguments["meas_uid"] = m0.measurements[0].arguments["meas_uid"]
+        m3.measurements[0].arguments["meas_uid"] = m1.measurements[0].arguments["meas_uid"]
 
         wire_map = {"a": 0, "b": 1}
 
@@ -410,7 +406,7 @@ class TestDiagonalizingGates:
         assert len(res) == 3
 
         expected_classes = [qp.PauliZ, qp.S, qp.Hadamard]
-        for op, c in zip(res, expected_classes):
+        for op, c in zip(res, expected_classes, strict=False):
             assert isinstance(op, c)
 
     def test_has_decomposition(self):
@@ -436,10 +432,11 @@ class TestSampleMeasurement:
         """Test the execution of a custom sampled measurement."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
+            # pylint: disable-next=unused-argument
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return qp.math.sum(samples[..., self.wires])
 
+            # pylint: disable-next=unused-argument
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
@@ -457,10 +454,11 @@ class TestSampleMeasurement:
         """Test that executing a sampled measurement with ``shots=None`` raises an error."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
+            # pylint: disable-next=unused-argument
             def process_samples(self, samples, wire_order, shot_range, bin_size):
                 return qp.math.sum(samples[..., self.wires])
 
+            # pylint: disable-next=unused-argument
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 
@@ -485,7 +483,7 @@ class TestStateMeasurement:
         """Test the execution of a custom state measurement."""
 
         class MyMeasurement(StateMeasurement):
-            def process_state(self, state, wire_order):
+            def process_state(self, state, wire_order):  # pylint: disable=unused-argument
                 return qp.math.sum(state)
 
             _shortname = "state"
@@ -505,7 +503,7 @@ class TestStateMeasurement:
         """Test that executing a state measurement with shots raises an error."""
 
         class MyMeasurement(StateMeasurement):
-            def process_state(self, state, wire_order):
+            def process_state(self, state, wire_order):  # pylint: disable=unused-argument
                 return qp.math.sum(state)
 
             _shortname = "state"
@@ -528,7 +526,7 @@ class TestStateMeasurement:
         NotImplementedError."""
 
         class MyMeasurement(StateMeasurement):
-            def process_state(self, state, wire_order):
+            def process_state(self, state, wire_order):  # pylint: disable=unused-argument
                 return qp.math.sum(state)
 
         with pytest.raises(NotImplementedError):
@@ -549,9 +547,11 @@ class TestMeasurementTransform:
                 tapes, _ = program([tape])
                 return len(tapes)
 
+            # pylint: disable-next=unused-argument
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return [True]
 
+            # pylint: disable-next=unused-argument
             def process_counts(self, counts: dict, wire_order: Wires):
                 return counts
 

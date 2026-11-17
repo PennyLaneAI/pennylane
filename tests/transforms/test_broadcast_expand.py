@@ -16,8 +16,6 @@ Unit tests for the ``broadcast_expand`` transform.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods, unused-argument
 import pytest
 
 import pennylane as qp
@@ -88,9 +86,7 @@ observables_and_exp_fns = [
 class TestBroadcastExpand:
     """Tests for the broadcast_expand transform"""
 
-    # pylint: disable=too-many-arguments
-
-    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=False)))
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     def test_expansion(self, params, size, obs, exp_fn, seed):
         """Test that the expansion works as expected."""
@@ -125,8 +121,9 @@ class TestBroadcastExpand:
 
         assert qp.math.allclose(result, expected)
 
-    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=False)))
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
+    # pylint: disable-next=too-many-arguments,unused-argument
     def test_shot_vector_expval(self, params, size, obs, exp_fn, tol_stochastic, seed):
         """Test that expansion works as expected with shot vectors"""
         ops = make_ops(*params)
@@ -144,7 +141,7 @@ class TestBroadcastExpand:
         # Note: Analytic accuracy is tested in test_expansion() above.
         # This test focuses on shot vector structure/batching behavior only.
 
-    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=False)))
     @pytest.mark.parametrize(
         "args, shapes",
         [
@@ -171,7 +168,7 @@ class TestBroadcastExpand:
             for i, _r in enumerate(r):
                 assert qp.math.shape(_r) == (size, shapes[i]) if size > 1 else (shapes[i],)
 
-    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=False)))
     @pytest.mark.parametrize(
         "args, shapes",
         [
@@ -202,7 +199,7 @@ class TestBroadcastExpand:
                     else (shots[i], *shapes[j])
                 )
 
-    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes)))
+    @pytest.mark.parametrize("params, size", list(zip(parameters, sizes, strict=False)))
     @pytest.mark.parametrize(
         "args",
         [
@@ -292,16 +289,16 @@ class TestBroadcastExpand:
         jac = qp.jacobian(cost)(*params)
         exp_jac = qp.jacobian(exp_fn)(*params)
 
-        assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
+        assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac, strict=False))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
     @pytest.mark.parametrize("use_jit", [True, False])
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
+    # pylint: disable-next=too-many-arguments
     def test_jax(self, params, obs, exp_fn, use_jit, diff_method, seed):
         """Test that the expansion works with jax and is differentiable."""
-        # pylint: disable=too-many-arguments
         import jax
 
         jax.config.update("jax_enable_x64", True)
@@ -326,39 +323,18 @@ class TestBroadcastExpand:
         exp_jac = jax.jacobian(exp_fn, argnums=[0, 1, 2])(*params)
 
         if len(obs) > 1:
-            assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac[0]))
-            assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[1], exp_jac[1]))
+            assert all(
+                qp.math.allclose(_jac, e_jac)
+                for _jac, e_jac in zip(jac[0], exp_jac[0], strict=False)
+            )
+            assert all(
+                qp.math.allclose(_jac, e_jac)
+                for _jac, e_jac in zip(jac[1], exp_jac[1], strict=False)
+            )
         else:
-            assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac))
-
-    @pytest.mark.slow
-    @pytest.mark.tf
-    @pytest.mark.parametrize("params", parameters)
-    @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    def test_tf(self, params, obs, exp_fn, seed):
-        """Test that the expansion works with TensorFlow and is differentiable."""
-        import tensorflow as tf
-
-        params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
-
-        @qp.transforms.broadcast_expand
-        @qp.qnode(get_device(seed=seed), interface="tensorflow")
-        def cost(*params):
-            make_ops(*params)
-            return tuple(qp.expval(ob) for ob in obs)
-
-        with tf.GradientTape(persistent=True) as t:
-            out = tf.stack(cost(*params))
-            exp = exp_fn(*params)
-
-        jac = t.jacobian(out, params)
-        exp_jac = t.jacobian(exp, params)
-
-        for _jac, e_jac in zip(jac, exp_jac):
-            if e_jac is None:
-                assert qp.math.allclose(_jac, 0.0)
-            else:
-                assert qp.math.allclose(_jac, e_jac)
+            assert all(
+                qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac[0], exp_jac, strict=False)
+            )
 
     @pytest.mark.torch
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
@@ -385,7 +361,7 @@ class TestBroadcastExpand:
         exp_jac = torch.autograd.functional.jacobian(exp_fn, torch_params)
 
         if len(obs) > 1:
-            assert all(qp.math.allclose(r, e) for r, e in zip(res, exp_fn(*params)))
+            assert all(qp.math.allclose(r, e) for r, e in zip(res, exp_fn(*params), strict=False))
             # Need to perform a transpose because the broadcast_expand transform pulls out the
             # broadcasting axis, which the `exp_fn` does not do.
             jac = tuple(
@@ -395,4 +371,4 @@ class TestBroadcastExpand:
             assert qp.math.allclose(res[0], exp_fn(*params))
             jac = jac[0]
 
-        assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
+        assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac, strict=False))

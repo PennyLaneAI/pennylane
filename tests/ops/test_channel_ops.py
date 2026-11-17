@@ -15,7 +15,6 @@
 Unit tests for the available built-in quantum channels.
 """
 
-# pylint: disable=too-few-public-methods
 from itertools import product
 
 import numpy as np
@@ -73,7 +72,7 @@ channels_and_args = (
 )
 
 
-class TestChannels:
+class TestChannels:  # pylint: disable=too-few-public-methods
     """Tests for the quantum channels"""
 
     @pytest.mark.parametrize(
@@ -81,7 +80,6 @@ class TestChannels:
         [
             None,
             pytest.param("autograd", marks=pytest.mark.autograd),
-            pytest.param("tensorflow", marks=pytest.mark.tf),
             pytest.param("jax", marks=pytest.mark.jax),
             pytest.param("torch", marks=pytest.mark.torch),
         ],
@@ -151,16 +149,6 @@ class TestAmplitudeDamping:
         gamma = torch.tensor(0.43, requires_grad=True)
         jac = torch.autograd.functional.jacobian(self.kraus_fn, gamma)
         assert qp.math.allclose(jac.detach().numpy(), self.expected_jac_fn(gamma.detach().numpy()))
-
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        import tensorflow as tf
-
-        gamma = tf.Variable(0.43)
-        with tf.GradientTape() as tape:
-            out = self.kraus_fn(gamma)
-        jac = tape.jacobian(out, gamma)
-        assert qp.math.allclose(jac, self.expected_jac_fn(gamma))
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
@@ -248,19 +236,8 @@ class TestGeneralizedAmplitudeDamping:
         jac = torch.autograd.functional.jacobian(self.kraus_fn, (gamma, p))
         exp_jac = self.expected_jac_fn(gamma.detach().numpy(), p.detach().numpy())
         assert len(jac) == len(exp_jac) == 2
-        for j, exp_j in zip(jac, exp_jac):
+        for j, exp_j in zip(jac, exp_jac, strict=False):
             assert qp.math.allclose(j.detach().numpy(), exp_j)
-
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        import tensorflow as tf
-
-        gamma = tf.Variable(0.43)
-        p = tf.Variable(0.3)
-        with tf.GradientTape() as tape:
-            out = self.kraus_fn(gamma, p)
-        jac = tape.jacobian(out, (gamma, p))
-        assert qp.math.allclose(jac, self.expected_jac_fn(gamma, p))
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
@@ -318,16 +295,6 @@ class TestPhaseDamping:
         gamma = torch.tensor(0.43, requires_grad=True)
         jac = torch.autograd.functional.jacobian(self.kraus_fn, gamma)
         assert qp.math.allclose(jac.detach().numpy(), self.expected_jac_fn(gamma.detach().numpy()))
-
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        import tensorflow as tf
-
-        gamma = tf.Variable(0.43)
-        with tf.GradientTape() as tape:
-            out = self.kraus_fn(gamma)
-        jac = tape.jacobian(out, gamma)
-        assert qp.math.allclose(jac, self.expected_jac_fn(gamma))
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
@@ -399,16 +366,6 @@ class TestBitFlip:
         jac = torch.autograd.functional.jacobian(self.kraus_fn, p)
         assert qp.math.allclose(jac.detach().numpy(), self.expected_jac_fn(p.detach().numpy()))
 
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        import tensorflow as tf
-
-        p = tf.Variable(0.43)
-        with tf.GradientTape() as tape:
-            out = self.kraus_fn(p)
-        jac = tape.jacobian(out, p)
-        assert qp.math.allclose(jac, self.expected_jac_fn(p))
-
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
         import jax
@@ -479,16 +436,6 @@ class TestPhaseFlip:
         p = torch.tensor(0.43, requires_grad=True)
         jac = torch.autograd.functional.jacobian(self.kraus_fn, p)
         assert qp.math.allclose(jac.detach().numpy(), self.expected_jac_fn(p.detach().numpy()))
-
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        import tensorflow as tf
-
-        p = tf.Variable(0.43)
-        with tf.GradientTape() as tape:
-            out = self.kraus_fn(p)
-        jac = tape.jacobian(out, p)
-        assert qp.math.allclose(jac, self.expected_jac_fn(p))
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
@@ -573,16 +520,6 @@ class TestDepolarizingChannel:
         jac = jacobian(self.kraus_fn_real, p) + 1j * jacobian(self.kraus_fn_imag, p)
         assert qp.math.allclose(jac, self.expected_jac_fn(p.detach().numpy()))
 
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        import tensorflow as tf
-
-        p = tf.Variable(0.43)
-        with tf.GradientTape() as tape:
-            out = self.kraus_fn(p)
-        jac = tape.jacobian(out, p)
-        assert qp.math.allclose(jac, self.expected_jac_fn(p))
-
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
         import jax
@@ -597,7 +534,9 @@ class TestDepolarizingChannel:
 class TestResetError:
     """Tests for the quantum channel ResetError"""
 
-    @pytest.mark.parametrize("p_0,p_1", list(zip([0.5, 0.1, 0.0, 0.0], [0, 0.1, 0.5, 0.0])))
+    @pytest.mark.parametrize(
+        "p_0,p_1", list(zip([0.5, 0.1, 0.0, 0.0], [0, 0.1, 0.5, 0.0], strict=False))
+    )
     def test_p0_p1_arbitrary(self, p_0, p_1, tol):
         """Test that various values of p_0 and p_1 give correct Kraus matrices"""
         op = channel.ResetError
@@ -703,19 +642,8 @@ class TestResetError:
         jac = torch.autograd.functional.jacobian(self.kraus_fn, (p0, p1))
         exp_jac = self.expected_jac_fn(p0.detach().numpy(), p1.detach().numpy())
         assert len(jac) == len(exp_jac) == 2
-        for j, exp_j in zip(jac, exp_jac):
+        for j, exp_j in zip(jac, exp_jac, strict=False):
             assert qp.math.allclose(j.detach().numpy(), exp_j)
-
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self):
-        import tensorflow as tf
-
-        p0 = tf.Variable(0.43)
-        p1 = tf.Variable(0.12)
-        with tf.GradientTape() as tape:
-            out = self.kraus_fn(p0, p1)
-        jac = tape.jacobian(out, (p0, p1))
-        assert qp.math.allclose(jac, self.expected_jac_fn(p0, p1))
 
     @pytest.mark.jax
     def test_kraus_jac_jax(self):
@@ -750,12 +678,12 @@ class TestPauliError:
                 WIRES_WRONG_PARAMS,
                 EXPECTED_ERRORS,
                 EXPECTED_MESSAGES,
+                strict=False,
             )
         ),
     )
     def test_wrong_parameters(self, operators, p, wires, error, message):
         """Test wrong parametrizations of PauliError"""
-        # pylint: disable=too-many-arguments
         with pytest.raises(error, match=message):
             channel.PauliError(operators, p, wires=wires)
 
@@ -827,7 +755,7 @@ class TestPauliError:
     ]
 
     @pytest.mark.parametrize(
-        "operators, wires, expected_Ks", list(zip(OPERATORS, WIRES, EXPECTED_KS))
+        "operators, wires, expected_Ks", list(zip(OPERATORS, WIRES, EXPECTED_KS, strict=False))
     )
     def test_kraus_matrix(self, tol, operators, wires, expected_Ks):
         """Test sevaral resulting kraus matrices for sevaral configurations"""
@@ -894,18 +822,6 @@ class TestPauliError:
         assert qp.math.allclose(
             jac_real + 1j * jac_imag, self.expected_jac_fn[ops](p.detach().numpy())
         )
-
-    @pytest.mark.parametrize("ops", ["X", "XY", "ZI"])
-    @pytest.mark.tf
-    def test_kraus_jac_tf(self, ops):
-        import tensorflow as tf
-
-        p = tf.Variable(0.43)
-        wires = list(range(len(ops)))
-        with tf.GradientTape() as tape:
-            out = qp.math.stack(channel.PauliError(ops, p, wires=wires).kraus_matrices())
-        jac = tape.jacobian(out, p)
-        assert qp.math.allclose(jac, self.expected_jac_fn[ops](p))
 
     @pytest.mark.parametrize("ops", ["X", "XY", "ZI"])
     @pytest.mark.jax
@@ -1005,13 +921,13 @@ class TestThermalRelaxationError:
                 [100e-6, 50e-6, 80e-6, np.inf],
                 [80e-6, 40e-6, 80e-6, 50e-6],
                 [20e-9, 40e-9, 40e-6, 40e-9],
+                strict=False,
             )
         ),
     )
     def test_t2_le_t1_arbitrary(self, pe, t1, t2, tg, tol):
         """Test that various values of pe, t1, t2, and tg
         for t2 <= t1 give correct Kraus matrices"""
-        # pylint: disable=too-many-arguments
 
         op = channel.ThermalRelaxationError
 
@@ -1061,13 +977,13 @@ class TestThermalRelaxationError:
                 [100e-6, 50e-6, 80e-6],
                 [120e-6, 100e-6, 90e-6],
                 [20e-9, 40e-9, 90e-6],
+                strict=False,
             )
         ),
     )
     def test_t2_g_t1_arbitrary(self, pe, t1, t2, tg, tol):
         """Test that various values of pe, t1, t2, and tg
         for t2 > t1 give correct Kraus matrices"""
-        # pylint: disable=too-many-arguments
 
         op = channel.ThermalRelaxationError
 

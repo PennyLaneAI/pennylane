@@ -18,9 +18,9 @@ Contains the hardware-efficient ParticleConservingU2 template.
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.ops import CNOT, CRX, RZ
-from pennylane.templates.embeddings import BasisEmbedding
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.ops import CNOT, CRX, RZ, BasisState
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -218,9 +218,9 @@ class ParticleConservingU2(Operation):
         >>> ops = qp.ParticleConservingU2.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [BasisEmbedding(array([0, 1]), wires=['a', 'b']),
-        RZ(tensor(0.3000), wires=['a']),
-        RZ(tensor(1.), wires=['b']),
+        [BasisState([0 1], wires=['a', 'b']),
+        RZ(0.3000..., wires=['a']),
+        RZ(1.0, wires=['b']),
         CNOT(wires=['a', 'b']),
         CRX(0.4000000059604645, wires=['b', 'a']),
         CNOT(wires=['a', 'b'])]
@@ -228,7 +228,7 @@ class ParticleConservingU2(Operation):
         nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
         nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
         n_layers = math.shape(weights)[0]
-        op_list = [BasisEmbedding(init_state, wires=wires)]
+        op_list = [BasisState(init_state, wires=wires)]
 
         for l in range(n_layers):
             for j, wires_ in enumerate(wires):
@@ -259,14 +259,12 @@ class ParticleConservingU2(Operation):
 
 
 def _particle_conserving_u2_resources(num_wires: int, n_layers: int):
-    # number of pairs of even-indexed of wires
-    num_nm_wires = num_wires - 1
-
+    num_nm_wires = num_wires - 1  # number of pairs of even-indexed of wires
     return {
-        resource_rep(BasisEmbedding, num_wires=num_wires): 1,
-        resource_rep(RZ): n_layers * num_wires,
-        resource_rep(CNOT): 2 * num_nm_wires * n_layers,
-        resource_rep(CRX): num_nm_wires * n_layers,
+        BasisState(Bool[num_wires], Wire[num_wires]): 1,
+        RZ: n_layers * num_wires,
+        CNOT: 2 * num_nm_wires * n_layers,
+        CRX: num_nm_wires * n_layers,
     }
 
 
@@ -291,11 +289,10 @@ def _particle_conserving_u2_decomposition(weights: list, wires: WiresLike, init_
             math.array(init_state, like="jax"),
         )
 
-    BasisEmbedding(init_state, wires=wires)
+    BasisState(init_state, wires=wires)
 
     @for_loop(n_layers)
     def layers_loop(l):
-
         @for_loop(len(wires))
         def rz_loop(j):
             wires_ = wires[j]

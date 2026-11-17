@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for pennylane/labs/dla/dense_util.py functionality"""
 
-# pylint: disable=no-self-use, unnecessary-lambda-assignment
 import numpy as np
 import pytest
 

@@ -13,7 +13,8 @@
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types and devices that define a shot vector."""
 
-# pylint:disable=use-implicit-booleaness-not-comparison,abstract-method
+# pylint: disable=too-few-public-methods
+
 from functools import partial
 
 import pytest
@@ -44,21 +45,18 @@ def grad_fn(tape, dev, fn=qp.gradients.param_shift, **kwargs):
     return fn(dev.execute(tapes))
 
 
-# pylint: disable=too-few-public-methods
 class RY_with_F(qp.RY):
     """Custom variant of qp.RY with grad_method "F"."""
 
     grad_method = "F"
 
 
-# pylint: disable=too-few-public-methods
 class RX_with_F(qp.RX):
     """Custom variant of qp.RX with grad_method "F"."""
 
     grad_method = "F"
 
 
-# pylint: disable=too-few-public-methods
 class RX_par_dep_recipe(qp.RX):
     """RX operation with a parameter-dependent grad recipe."""
 
@@ -103,7 +101,7 @@ class TestParamShift:
 
     @pytest.mark.parametrize("broadcast", [True, False])
     def test_no_trainable_params_tape(self, broadcast):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         shot_vec = default_shot_vector
         dev = qp.device("default.qubit", wires=2)
@@ -130,7 +128,7 @@ class TestParamShift:
             assert res.shape == (0,)
 
     def test_no_trainable_params_multiple_return_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters with multiple returns."""
         shot_vec = default_shot_vector
         dev = qp.device("default.qubit", wires=2)
@@ -369,7 +367,7 @@ class TestParamShift:
         # They are not batched together because we trust operation recipes to be condensed already
         expected_shifts = [[0, 0], [s, 0], [-s, 0], [0, s], [0, -s]]
         assert len(tapes) == 5
-        for tape, expected in zip(tapes, expected_shifts):
+        for tape, expected in zip(tapes, expected_shifts, strict=False):
             assert tape.operations[0].data[0] == x[0] + expected[0]
             assert tape.operations[1].data[0] == x[1] + expected[1]
 
@@ -385,7 +383,7 @@ class TestParamShift:
             for (
                 a,
                 b,
-            ) in zip(g, _expected):
+            ) in zip(g, _expected, strict=False):
                 assert np.allclose(a, b, atol=shot_vec_tol)
 
     @pytest.mark.slow
@@ -464,9 +462,13 @@ class TestParamShift:
         """Test that an error is raised if no grad_recipe, no parameter_frequencies
         and no generator are found."""
 
-        class RX(qp.RX):
+        class LegacyRX(qp.operation.Operation):
             """This copy of RX overwrites parameter_frequencies to report
             missing information, disabling its differentiation."""
+
+            num_params = 1
+            grad_method = "A"
+            num_wires = 1
 
             @property
             def parameter_frequencies(self):
@@ -484,7 +486,7 @@ class TestParamShift:
         x = np.array(0.654, requires_grad=True)
         shot_vec = many_shots_shot_vector
 
-        for op in [RX, NewOp]:
+        for op in [LegacyRX, NewOp]:
             with qp.queuing.AnnotatedQueue() as q:
                 op(x, wires=0)
                 qp.expval(qp.PauliZ(0))
@@ -500,21 +502,18 @@ class TestParamShift:
 # tape with `broadcast=False` (as double broadcasting is not supported).
 
 
-# The first line of pylint disable is for cost1 through cost6
-# pylint: disable=no-self-argument, not-an-iterable
-# pylint: disable=too-many-public-methods
 @pytest.mark.slow
 @pytest.mark.parametrize("broadcast", [False, True])
-class TestParameterShiftRule:
+class TestParameterShiftRule:  # pylint: disable=too-many-public-methods
     """Unit tests for the param_shift function used with a device that has a
     shot vector defined"""
 
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
     @pytest.mark.parametrize("G", [qp.RX, qp.RY, qp.RZ, qp.PhaseShift])
+    # pylint: disable-next=too-many-arguments
     def test_pauli_rotation_gradient(self, mocker, G, theta, shift, broadcast, seed):
         """Tests that the automatic gradients of Pauli rotations are correct."""
-        # pylint: disable=too-many-arguments
 
         spy = mocker.spy(qp.gradients.parameter_shift, "_get_operation_recipe")
         shot_vec = many_shots_shot_vector
@@ -543,7 +542,7 @@ class TestParameterShiftRule:
         shot_vec_manual_res = [
             tuple(comp[l] for comp in shot_vec_manual_res) for l in range(shot_vec_len)
         ]
-        for r1, r2 in zip(autograd_val, shot_vec_manual_res):
+        for r1, r2 in zip(autograd_val, shot_vec_manual_res, strict=False):
             manualgrad_val = np.subtract(*r2) / 2
             assert np.allclose(r1, manualgrad_val, atol=shot_vec_tol, rtol=0)
 
@@ -554,14 +553,12 @@ class TestParameterShiftRule:
 
         tapes, fn = qp.gradients.finite_diff(tape, h=h_val)
         numeric_val = fn(dev.execute(tapes))
-        for a_val, n_val in zip(autograd_val, numeric_val):
+        for a_val, n_val in zip(autograd_val, numeric_val, strict=False):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
 
     @pytest.mark.parametrize("theta", angles)
     @pytest.mark.parametrize("shift", [np.pi / 2, 0.3])
-    def test_Rot_gradient(
-        self, mocker, theta, shift, broadcast, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_Rot_gradient(self, mocker, theta, shift, broadcast, seed):
         """Tests that the automatic gradient of an arbitrary Euler-angle-parametrized gate is correct."""
         spy = mocker.spy(qp.gradients.parameter_shift, "_get_operation_recipe")
 
@@ -598,7 +595,7 @@ class TestParameterShiftRule:
             backward = dev.execute(tape)
 
             shot_vec_comp = []
-            for f, b in zip(forward, backward):
+            for f, b in zip(forward, backward, strict=False):
                 shot_vec_comp.append((f - b) / 2)
 
             manualgrad_val.append(tuple(shot_vec_comp))
@@ -608,7 +605,7 @@ class TestParameterShiftRule:
         manualgrad_val = [tuple(comp[l] for comp in manualgrad_val) for l in range(shot_vec_len)]
         assert len(autograd_val) == len(manualgrad_val)
 
-        for a_val, m_val in zip(autograd_val, manualgrad_val):
+        for a_val, m_val in zip(autograd_val, manualgrad_val, strict=False):
             assert isinstance(a_val, tuple)
             assert len(a_val) == num_params
             assert np.allclose(a_val, m_val, atol=shot_vec_tol, rtol=0)
@@ -616,7 +613,7 @@ class TestParameterShiftRule:
 
         tapes, fn = qp.gradients.finite_diff(tape, h=h_val)
         numeric_val = fn(dev.execute(tapes))
-        for a_val, n_val in zip(autograd_val, numeric_val):
+        for a_val, n_val in zip(autograd_val, numeric_val, strict=False):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
 
     @pytest.mark.parametrize("G", [qp.CRX, qp.CRY, qp.CRZ])
@@ -647,7 +644,7 @@ class TestParameterShiftRule:
 
         tapes, fn = qp.gradients.finite_diff(tape, h=h_val)
         numeric_val = fn(dev.execute(tapes))
-        for a_val, n_val in zip(grad, numeric_val):
+        for a_val, n_val in zip(grad, numeric_val, strict=False):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
 
     @pytest.mark.parametrize("theta", angles)
@@ -693,7 +690,7 @@ class TestParameterShiftRule:
 
         tapes, fn = qp.gradients.finite_diff(tape, h=h_val)
         numeric_val = fn(dev.execute(tapes))
-        for a_val, n_val in zip(grad, numeric_val):
+        for a_val, n_val in zip(grad, numeric_val, strict=False):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
 
     def test_gradients_agree_finite_differences(self, broadcast):
@@ -728,9 +725,9 @@ class TestParameterShiftRule:
         grad_A = grad_fn(tape, dev, broadcast=broadcast)
 
         # gradients computed with different methods must agree
-        for a_val, n_val in zip(grad_A, grad_F1):
+        for a_val, n_val in zip(grad_A, grad_F1, strict=False):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
-        for a_val, n_val in zip(grad_A, grad_F2):
+        for a_val, n_val in zip(grad_A, grad_F2, strict=False):
             assert np.allclose(a_val, n_val, atol=finite_diff_tol, rtol=0)
 
     def test_variance_gradients_agree_finite_differences(self, broadcast):
@@ -871,9 +868,7 @@ class TestParameterShiftRule:
             assert np.allclose(res[1], expval_expected[1], atol=finite_diff_tol)
 
     @pytest.mark.parametrize("RX, RY, argnum", [(RX_with_F, qp.RY, 0), (qp.RX, RY_with_F, 1)])
-    def test_fallback_probs(
-        self, RX, RY, argnum, mocker, broadcast
-    ):  # pylint:disable=too-many-arguments
+    def test_fallback_probs(self, RX, RY, argnum, mocker, broadcast):
         """Test that fallback gradient functions are correctly used with probs"""
         spy = mocker.spy(qp.gradients, "finite_diff")
         dev = qp.device("default.qubit", wires=3)
@@ -1098,7 +1093,7 @@ class TestParameterShiftRule:
             assert len(res[0]) == 2
             assert len(res[1]) == 2
 
-            for a, e in zip(res, expected):
+            for a, e in zip(res, expected, strict=False):
                 assert np.allclose(np.squeeze(np.stack(a)), e, atol=shot_vec_tol, rtol=0)
 
     def test_prob_expectation_values(self, broadcast):
@@ -1268,7 +1263,7 @@ class TestParameterShiftRule:
         assert len(tapes) == 3
 
         all_Fres = fn(dev.execute(tapes))
-        for gradF, gradA in zip(all_Fres, all_res):
+        for gradF, gradA in zip(all_Fres, all_res, strict=False):
 
             expected = 2 * np.sin(a + b) * np.cos(a + b)
             assert gradF[0] == pytest.approx(expected, abs=finite_diff_tol)
@@ -1715,7 +1710,7 @@ class TestParameterShiftRule:
         expected = np.array([2 * np.cos(a) * np.sin(a), -np.cos(b) * np.sin(a), 0])
         for gradA in all_res:
             assert isinstance(gradA, tuple)
-            for a_comp, e_comp in zip(gradA, expected):
+            for a_comp, e_comp in zip(gradA, expected, strict=False):
                 assert isinstance(a_comp, np.ndarray)
                 assert a_comp.shape == ()
                 assert np.allclose(a_comp, e_comp, atol=shot_vec_tol, rtol=0)
@@ -1785,8 +1780,8 @@ class TestParameterShiftRule:
         ).T
         for gradA in all_res:
             assert isinstance(gradA, tuple)
-            for a, e in zip(gradA, expected):
-                for a_comp, e_comp in zip(a, e):
+            for a, e in zip(gradA, expected, strict=False):
+                for a_comp, e_comp in zip(a, e, strict=False):
                     assert isinstance(a_comp, np.ndarray)
                     assert a_comp.shape == ()
                     assert np.allclose(a_comp, e_comp, atol=shot_vec_tol, rtol=0)
@@ -1843,31 +1838,37 @@ class TestParameterShiftRule:
         for gradF in all_gradF:
             assert gradF == pytest.approx(expected, abs=finite_diff_tol)
 
+    @staticmethod
     def cost1(x):
         """Perform rotation and return a scalar expectation value."""
         qp.Rot(*x, wires=0)
         return qp.expval(qp.PauliZ(0))
 
+    @staticmethod
     def cost2(x):
         """Perform rotation and return an expectation value in a 1d array."""
         qp.Rot(*x, wires=0)
         return [qp.expval(qp.PauliZ(0))]
 
+    @staticmethod
     def cost3(x):
         """Perform rotation and return two expectation value in a 1d array."""
         qp.Rot(*x, wires=0)
         return [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))]
 
+    @staticmethod
     def cost4(x):
         """Perform rotation and return probabilities."""
         qp.Rot(*x, wires=0)
         return qp.probs([0, 1])
 
+    @staticmethod
     def cost5(x):
         """Perform rotation and return probabilities in a 2d object."""
         qp.Rot(*x, wires=0)
         return [qp.probs([0, 1])]
 
+    @staticmethod
     def cost6(x):
         """Perform rotation and return two sets of probabilities in a 2d object."""
         qp.Rot(*x, wires=0)
@@ -1960,9 +1961,8 @@ class TestParameterShiftRule:
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
-            # pylint: disable=unused-argument
             @staticmethod
-            def _asarray(arr, dtype=None):
+            def _asarray(arr, dtype=None):  # pylint: disable=unused-argument
                 return np.array(arr)
 
             def __init__(self, *args, **kwargs):
@@ -2153,7 +2153,9 @@ single_scalar_output_measurements = [
     var_non_involutory,
 ]
 
-single_meas_with_shape = list(zip(single_scalar_output_measurements, [(), (4,), (), ()]))
+single_meas_with_shape = list(
+    zip(single_scalar_output_measurements, [(), (4,), (), ()], strict=False)
+)
 
 """
 Shot vectors may have some edge cases:
@@ -2245,7 +2247,7 @@ class TestReturn:
 
         expected_shapes = [(), (4,), (), ()]
         for meas_res in all_res:
-            for res, shape in zip(meas_res, expected_shapes):
+            for res, shape in zip(meas_res, expected_shapes, strict=False):
                 assert isinstance(res, np.ndarray)
                 assert res.shape == shape
 

@@ -122,13 +122,13 @@ class TestDrawableLayers:
 
         assert layers == [[ops[0]], [ops[1]], [ops[2]]]
 
-    def test_barrier_only_visual(self):
+    def test_consecutive_barriers(self):
         """Test the barrier is always drawn"""
 
         ops = [
             qp.PauliX(0),
             qp.Barrier(wires=0),
-            qp.Barrier(only_visual=True, wires=0),
+            qp.Barrier(wires=0),
             qp.PauliX(0),
         ]
         layers = drawable_layers(ops)
@@ -138,13 +138,6 @@ class TestDrawableLayers:
         """Test the barrier blocking operators"""
 
         ops = [qp.PauliX(0), qp.Barrier(wires=[0, 1]), qp.PauliX(1)]
-        layers = drawable_layers(ops)
-        assert layers == [[ops[0]], [ops[1]], [ops[2]]]
-
-    def test_wirecut_block(self):
-        """Test the wirecut blocking operators"""
-
-        ops = [qp.PauliX(0), qp.WireCut(wires=[0, 1]), qp.PauliX(1)]
         layers = drawable_layers(ops)
         assert layers == [[ops[0]], [ops[1]], [ops[2]]]
 
@@ -216,3 +209,29 @@ def test_basic_mid_measure():
     bit_map = {q.queue[0]: None}
 
     assert drawable_layers(q.queue, bit_map=bit_map) == [[q.queue[0]], [q.queue[1]]]
+
+
+def test_conditional_global_phase():
+    """Test conditional global phase operations do not break layer placement."""
+    with AnnotatedQueue() as q:
+        m0 = qp.measure(0)
+        qp.cond(m0, qp.GlobalPhase)(0.5)
+
+    bit_map = {q.queue[0]: None}
+
+    assert drawable_layers(q.queue, bit_map=bit_map) == [[q.queue[0]], [q.queue[1]]]
+
+
+@pytest.mark.parametrize("base", [qp.GlobalPhase(0.123), qp.Identity()])
+def test_conditional_controlled_global_blocks_full_layer(base):
+    """Controlled global diagrams cannot share layers with gates above their controls."""
+    with AnnotatedQueue() as q:
+        qp.H(0)
+        qp.Z(0)
+        m0 = qp.measure(2)
+        qp.cond(m0, lambda: qp.ctrl(base, control=2, control_values=[False]))()
+        qp.X(0)
+
+    layers = drawable_layers(q.queue, wire_map={0: 0, 1: 1, 2: 2}, bit_map={m0.measurements[0]: 0})
+
+    assert layers == [[q.queue[0], q.queue[2]], [q.queue[1]], [q.queue[3]], [q.queue[4]]]

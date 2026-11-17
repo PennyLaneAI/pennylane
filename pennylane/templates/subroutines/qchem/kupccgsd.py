@@ -15,7 +15,9 @@ r"""
 Contains the k-UpCCGSD template.
 """
 
-# pylint: disable-msg=too-many-arguments,protected-access,too-many-positional-arguments
+# pylint: disable=too-many-arguments
+
+
 import copy
 from collections import defaultdict
 from collections.abc import Sequence
@@ -27,8 +29,8 @@ from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.typing import TensorLike
+from pennylane.ops.qubit import BasisState
+from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .fermionic_double_excitation import FermionicDoubleExcitation
@@ -265,6 +267,7 @@ class kUpCCGSD(Operation):
         super().__init__(weights, wires=wires)
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["s_wires"] = [
@@ -290,15 +293,8 @@ class kUpCCGSD(Operation):
         }
 
     @staticmethod
-    def compute_decomposition(
-        weights,
-        wires,
-        s_wires,
-        d_wires,
-        k,
-        init_state,
-        delta_sz=None,
-    ):  # pylint: disable=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_decomposition(weights, wires, s_wires, d_wires, k, init_state, delta_sz=None):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -321,7 +317,7 @@ class kUpCCGSD(Operation):
         """
         op_list = []
 
-        op_list.append(BasisEmbedding(init_state, wires=wires))
+        op_list.append(BasisState(init_state, wires=wires))
 
         for layer in range(k):
             for i, (w1, w2) in enumerate(d_wires):
@@ -367,7 +363,7 @@ class kUpCCGSD(Operation):
 
 def _kupccgsd_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
     resources = defaultdict(int)
-    resources[resource_rep(BasisEmbedding, num_wires=num_wires)] = 1
+    resources[BasisState(Bool[num_wires], Wire[num_wires])] = 1
 
     for _ in range(k):
         for w1, w2 in d_wires:
@@ -382,7 +378,7 @@ def _kupccgsd_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
 
 
 @register_resources(_kupccgsd_resources)
-def _kupccgsd_decomposition(
+def _kupccgsd_decomposition(  # pylint: disable=unused-argument
     weights: list,
     wires: WiresLike,
     s_wires: list,
@@ -390,8 +386,8 @@ def _kupccgsd_decomposition(
     k: int,
     init_state: tuple[int],
     delta_sz: int = None,
-):  # pylint: disable=too-many-arguments, arguments-differ, unused-argument
-    BasisEmbedding(init_state, wires=wires)
+):
+    BasisState(init_state, wires=wires)
 
     @for_loop(k)
     def layer_loop(layer):

@@ -17,6 +17,8 @@ PennyLane object.
 """
 
 # pylint: disable=too-many-arguments,protected-access
+
+
 import os
 import sys
 
@@ -428,7 +430,6 @@ def test_convert_format_not_supported(terms_ref, lib_name, monkeypatch):
 
 
 invalid_ops = (
-    qp.prod(qp.PauliZ(0), qp.QuadOperator(0.1, wires=1)),
     qp.prod(qp.PauliX(0), qp.Hadamard(1)),
     qp.sum(qp.PauliZ(0), qp.Hadamard(1)),
 )
@@ -673,7 +674,7 @@ def test_integration_observable_to_vqe_cost(
 
     @qp.qnode(dev)
     def dummy_cost(params):
-        for phi, w in zip(params, dev.wires):
+        for phi, w in zip(params, dev.wires, strict=False):
             qp.RX(phi, wires=w)
         return qp.expval(vqe_observable)
 
@@ -731,7 +732,7 @@ def test_fail_import_openfermion(monkeypatch):
                 np.array([0.1 + 0.0j, 0.0]),
                 [
                     qp.prod(qp.PauliX(0)),
-                    qp.prod(qp.PauliZ(0), qp.QuadOperator(0.1, wires=1)),
+                    qp.prod(qp.PauliZ(0)),
                 ],
             )
 
@@ -781,7 +782,7 @@ def test_integration_mol_file_to_vqe_cost(
 
     @qp.qnode(dev)
     def dummy_cost(params):
-        for phi, w in zip(params, dev.wires):
+        for phi, w in zip(params, dev.wires, strict=False):
             qp.RX(phi, wires=w)
         return qp.expval(vqe_hamiltonian)
 

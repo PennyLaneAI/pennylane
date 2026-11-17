@@ -16,7 +16,8 @@ This module defines the QuantumScript object responsible for storing quantum ope
 executed by a device.
 """
 
-# pylint: disable=too-many-instance-attributes, protected-access, too-many-public-methods
+# pylint: disable=protected-access
+
 
 import contextlib
 import copy
@@ -24,7 +25,7 @@ import warnings
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Any, ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar
 
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operation, Operator, Operator2, StatePrepBase
@@ -81,7 +82,7 @@ def process_queue(
     return ops, measurements
 
 
-class QuantumScript:
+class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
     r"""The operations and measurements that represent instructions for
     execution on a quantum device.
 
@@ -110,10 +111,10 @@ class QuantumScript:
 
         qscript = QuantumScript(ops, [qp.expval(qp.Z(0))])
 
-    >>> list(qscript)
-    [BasisState(array([1, 1]), wires=[0, 'a']), RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a']), expval(Z(0))]
-    >>> qscript.operations
-    [BasisState(array([1, 1]), wires=[0, 'a']), RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
+    >>> print(list(qscript))
+    [BasisState([1 1], wires=[0, 'a']), RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a']), expval(Z(0))]
+    >>> print(qscript.operations)
+    [BasisState([1 1], wires=[0, 'a']), RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
     >>> qscript.measurements
     [expval(Z(0))]
 
@@ -121,7 +122,7 @@ class QuantumScript:
 
     >>> for op in qscript:
     ...     print(op)
-    BasisState(array([1, 1]), wires=[0, 'a'])
+    BasisState([1 1], wires=[0, 'a'])
     RX(0.432, wires=[0])
     RY(0.543, wires=[0])
     CNOT(wires=[0, 'a'])
@@ -130,8 +131,8 @@ class QuantumScript:
 
     Quantum scripts also support indexing and length determination:
 
-    >>> qscript[0]
-    BasisState(array([1, 1]), wires=[0, 'a'])
+    >>> print(qscript[0])
+    BasisState([1 1], wires=[0, 'a'])
     >>> len(qscript)
     6
 
@@ -180,14 +181,13 @@ class QuantumScript:
 
         self._trainable_params = trainable_params
         self._graph = None
-        self._specs = None
         self._batch_size = _UNSET_BATCH_SIZE
 
         self._obs_sharing_wires = None
         self._obs_sharing_wires_id = None
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
+        return f"<{self.__class__.__name__}: wires={self.wires}, params={self.num_params}>"
 
     @cached_property
     def hash(self) -> int:
@@ -392,7 +392,8 @@ class QuantumScript:
 
     @property
     def num_preps(self) -> int:
-        """Returns the index of the first operator that is not an StatePrepBase operator."""
+        """Returns the index of the first operator that is not an StatePrepBase
+        or StatePrepBase operator."""
         idx = 0
         num_ops = len(self.operations)
         while idx < num_ops and isinstance(self.operations[idx], StatePrepBase):
@@ -409,7 +410,6 @@ class QuantumScript:
     def _update(self):
         """Update all internal metadata regarding processed operations and observables"""
         self._graph = None
-        self._specs = None
         self._trainable_params = None
 
         try:
@@ -427,7 +427,7 @@ class QuantumScript:
         Returns:
             ~.Wires: wires in quantum script process
         """
-        return Wires.all_wires(dict.fromkeys(op.wires for op in self))
+        return Wires.all_wires(op.wires for op in self)
 
     @property
     def num_wires(self) -> int:
@@ -618,11 +618,11 @@ class QuantumScript:
         info = self.par_info[t_idx]
         return info["op"], info["op_idx"], info["p_idx"]
 
-    def get_parameters(
+    def get_parameters(  # pylint: disable=unused-argument
         self,
         trainable_only: bool = True,
         operations_only: bool = False,
-        **kwargs,  # pylint:disable=unused-argument
+        **kwargs,
     ) -> list[TensorLike]:
         """Return the parameters incident on the quantum script operations.
 
@@ -723,10 +723,8 @@ class QuantumScript:
         [-0.1, 0.2, 0.5]
         """
 
-        # pylint: disable=import-outside-toplevel # tach-ignore
-        from pennylane.ops.functions import (
-            bind_new_parameters,
-        )
+        # pylint: disable-next=import-outside-toplevel # tach-ignore
+        from pennylane.ops.functions import bind_new_parameters
 
         if len(params) != len(indices):
             raise ValueError("Number of provided parameters does not match number of indices")
@@ -886,7 +884,8 @@ class QuantumScript:
         Returns:
             ~.QuantumScript: the adjointed script
         """
-        from pennylane.ops import adjoint  # pylint: disable=import-outside-toplevel # tach-ignore
+        # pylint: disable-next=import-outside-toplevel
+        from pennylane.ops.op_math.adjoint import _adjoint_eager  # tach-ignore
 
         warnings.warn(
             "Using QuantumScript.adjoint is deprecated "
@@ -898,7 +897,7 @@ class QuantumScript:
         ops = self.operations[self.num_preps :]
         prep = self.operations[: self.num_preps]
         with QueuingManager.stop_recording():
-            ops_adj = [adjoint(op, lazy=False) for op in reversed(ops)]
+            ops_adj = [_adjoint_eager(op) for op in reversed(ops)]
         return self.__class__(ops=prep + ops_adj, measurements=self.measurements, shots=self.shots)
 
     # ========================================================
@@ -921,9 +920,8 @@ class QuantumScript:
         Returns:
             .CircuitGraph: the circuit graph object
         """
-        from pennylane.circuit_graph import (  # pylint: disable=import-outside-toplevel # tach-ignore
-            CircuitGraph,
-        )
+        # pylint: disable-next=import-outside-toplevel
+        from pennylane.circuit_graph import CircuitGraph  # tach-ignore
 
         if self._graph is None:
             self._graph = CircuitGraph(
@@ -936,41 +934,6 @@ class QuantumScript:
 
         return self._graph
 
-    @property
-    def specs(self) -> dict[str, Any]:
-        """Resource information about a quantum circuit.
-
-        Returns:
-            dict[str, Any]: A dictionary containing the specifications of the quantum script.
-
-        **Example**
-         >>> ops = [qp.Hadamard(0), qp.RX(0.26, 1), qp.CNOT((1,0)),
-         ...         qp.Rot(1.8, -2.7, 0.2, 0), qp.Hadamard(1), qp.CNOT((0, 1))]
-         >>> qscript = QuantumScript(ops, [qp.expval(qp.Z(0) @ qp.Z(1))])
-
-        Asking for the specs produces a dictionary of useful information about the circuit.
-        Note that this may return slightly different information than running :func:`~.pennylane.specs` on
-        a qnode directly.
-
-        >>> from pprint import pprint
-        >>> pprint(qscript.specs['resources'])
-        SpecsResources(gate_types={'CNOT': 2, 'Hadamard': 2, 'RX': 1, 'Rot': 1},
-                       gate_sizes={1: 4, 2: 2},
-                       measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
-                       num_allocs=2,
-                       depth=4)
-        """
-        if self._specs is None:
-            # pylint: disable=import-outside-toplevel # tach-ignore
-            from pennylane.resource.resource import (
-                resources_from_tape,
-            )
-
-            resources, errors = resources_from_tape(self, compute_errors=True)
-            self._specs = {"resources": resources, "shots": self.shots, "errors": errors}
-        return self._specs
-
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     def draw(
         self,
         wire_order: Iterable[Hashable] | None = None,
@@ -1050,8 +1013,7 @@ class QuantumScript:
         >>> circuit = qp.tape.QuantumScript([mcx], [qp.probs(wires=[2, 3, 6])])
         >>> mapped_circuit = circuit.map_to_standard_wires()
         >>> mapped_circuit.circuit
-        [MultiControlledX(wires=[0, 1, 2, 3], control_values=[True, True, True]),
-         probs(wires=[3, 4, 5])]
+        [MultiControlledX(wires=[0, 1, 2, 3], work_wires=[6, 5], work_wire_type=borrowed), probs(wires=[3, 4, 5])]
         >>> mapped_circuit[0].work_wires
         Wires([6, 5])
         """

@@ -16,8 +16,6 @@ Unit tests for the :func:`pennylane.math.is_independent` function.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -94,14 +92,12 @@ args_overlooked_lambdas = [
 ]
 
 
-def const_circuit(x, y):
-    # pylint: disable=unused-argument
+def const_circuit(x, y):  # pylint: disable=unused-argument
     qp.RX(0.1, wires=0)
     return qp.expval(qp.PauliZ(0))
 
 
-def dependent_circuit(x, y, z):
-    # pylint: disable=unused-argument
+def dependent_circuit(x, y, z):  # pylint: disable=unused-argument
     qp.RX(0.1, wires=0)
     qp.RY(y / 2, wires=0)
     qp.RZ(qp.math.sin(z), wires=0)
@@ -135,7 +131,9 @@ class TestIsIndependentAutograd:
             expected = tuple(
                 rng.random(np.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0] for arg in args
             )
-            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+            assert all(
+                np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args, strict=False)
+            )
 
     dev = qp.device("default.qubit", wires=1)
 
@@ -169,18 +167,24 @@ class TestIsIndependentAutograd:
         *args_dependent_lambdas,
     ]
 
-    @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
+    @pytest.mark.parametrize(
+        "func, args", list(zip(constant_functions, args_constant, strict=False))
+    )
     def test_independent(self, func, args):
         """Tests that an independent function is correctly detected as such."""
         assert is_independent(func, self.interface, args)
 
-    @pytest.mark.parametrize("func, args", zip(dependent_functions, args_dependent))
+    @pytest.mark.parametrize(
+        "func, args", list(zip(dependent_functions, args_dependent, strict=False))
+    )
     def test_dependent(self, func, args):
         """Tests that a dependent function is correctly detected as such."""
         assert not is_independent(func, self.interface, args)
 
     @pytest.mark.xfail
-    @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
+    @pytest.mark.parametrize(
+        "func, args", list(zip(overlooked_lambdas, args_overlooked_lambdas, strict=False))
+    )
     def test_overlooked_dependence(self, func, args):
         """Test that particular functions that are dependent on the input
         are overlooked."""
@@ -251,7 +255,9 @@ class TestIsIndependentJax:
             expected = tuple(
                 rng.random(np.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0] for arg in args
             )
-            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+            assert all(
+                np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args, strict=False)
+            )
 
     dev = qp.device("default.qubit", wires=1)
 
@@ -283,18 +289,24 @@ class TestIsIndependentJax:
         *args_dependent_lambdas,
     ]
 
-    @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
+    @pytest.mark.parametrize(
+        "func, args", list(zip(constant_functions, args_constant, strict=False))
+    )
     def test_independent(self, func, args):
         """Tests that an independent function is correctly detected as such."""
         assert is_independent(func, self.interface, args)
 
-    @pytest.mark.parametrize("func, args", zip(dependent_functions, args_dependent))
+    @pytest.mark.parametrize(
+        "func, args", list(zip(dependent_functions, args_dependent, strict=False))
+    )
     def test_dependent(self, func, args):
         """Tests that a dependent function is correctly detected as such."""
         assert not is_independent(func, self.interface, args)
 
     @pytest.mark.xfail
-    @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
+    @pytest.mark.parametrize(
+        "func, args", list(zip(overlooked_lambdas, args_overlooked_lambdas, strict=False))
+    )
     def test_overlooked_dependence(self, func, args):
         """Test that particular functions that are dependent on the input
         are overlooked."""
@@ -338,7 +350,9 @@ class TestIsIndependentTorch:
             expected = tuple(
                 torch.rand(np.shape(arg)) * (bounds[1] - bounds[0]) + bounds[0] for arg in args
             )
-            assert all(np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args))
+            assert all(
+                np.allclose(_exp, _rnd) for _exp, _rnd in zip(expected, _rnd_args, strict=False)
+            )
 
     dev = qp.device("default.qubit", wires=1)
 
@@ -370,7 +384,9 @@ class TestIsIndependentTorch:
 
     dependent_expect_torch_fail = [False, False, False, *lambdas_expect_torch_fail]
 
-    @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
+    @pytest.mark.parametrize(
+        "func, args", list(zip(constant_functions, args_constant, strict=False))
+    )
     def test_independent(self, func, args):
         """Tests that an independent function is correctly detected as such."""
         with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
@@ -378,7 +394,7 @@ class TestIsIndependentTorch:
 
     @pytest.mark.parametrize(
         "func, args, exp_fail",
-        zip(dependent_functions, args_dependent, dependent_expect_torch_fail),
+        list(zip(dependent_functions, args_dependent, dependent_expect_torch_fail, strict=False)),
     )
     def test_dependent(self, func, args, exp_fail):
         """Tests that a dependent function is correctly detected as such."""
@@ -389,7 +405,9 @@ class TestIsIndependentTorch:
                 assert not is_independent(func, self.interface, args)
 
     @pytest.mark.xfail
-    @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
+    @pytest.mark.parametrize(
+        "func, args", list(zip(overlooked_lambdas, args_overlooked_lambdas, strict=False))
+    )
     def test_overlooked_dependence(self, func, args):
         """Test that particular functions that are dependent on the input
         are overlooked."""
@@ -409,7 +427,7 @@ class TestIsIndependentTorch:
             assert is_independent(jac, self.interface, args, {"kw": True})
 
 
-class TestOther:
+class TestOther:  # pylint: disable=too-few-public-methods
     """Other tests for is_independent."""
 
     def test_unknown_interface(self):

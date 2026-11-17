@@ -15,6 +15,7 @@
 
 # pylint: disable=too-few-public-methods
 
+
 from functools import reduce
 
 import numpy as np
@@ -36,7 +37,6 @@ ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 BATCH_SIZE = 2
 
@@ -60,7 +60,6 @@ def get_expval(op, state):
 
 @pytest.mark.parametrize("mp", [qp.sample(), qp.counts(), qp.sample(wires=0), qp.counts(wires=0)])
 class TestCurrentlyUnsupportedCases:
-    # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self, mp, two_qubit_state):
         """Test sample-only measurements raise a NotImplementedError."""
         with pytest.raises(NotImplementedError):
@@ -144,7 +143,7 @@ class TestMeasurementDispatch:
     def test_no_sparse_matrix(self):
         """Tests Hamiltonians/Sums containing observables that do not have a sparse matrix."""
 
-        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(qp.operation.Operator):
             num_wires = 1
 
         S1 = qp.Hamiltonian([0.5, 0.5], [qp.X(0), DummyOp(wires=1)])
@@ -359,7 +358,7 @@ class TestExpValAnalytical:
                 np.kron(qp.PauliX(0).matrix(), np.eye(2)),
                 np.kron(np.eye(2), qp.PauliX(1).matrix()),
             ]
-            hamiltonian_matrix = sum(c * m for c, m in zip(obs.coeffs, matrices))
+            hamiltonian_matrix = sum(c * m for c, m in zip(obs.coeffs, matrices, strict=False))
             obs_matrix = hamiltonian_matrix
         else:
             obs_matrix = obs.matrix()
@@ -370,7 +369,7 @@ class TestExpValAnalytical:
         state = self.prepare_pure_state(theta)
 
         if isinstance(obs, qp.Hamiltonian):
-            hamiltonian_matrix = sum(c * m for c, m in zip(coeffs, matrices))
+            hamiltonian_matrix = sum(c * m for c, m in zip(coeffs, matrices, strict=False))
             res = np.trace(state @ hamiltonian_matrix)
         else:
             res = np.trace(state @ obs.matrix())
@@ -384,7 +383,7 @@ class TestExpValAnalytical:
         state = self.prepare_mixed_state(theta, weights)
 
         if isinstance(obs, qp.Hamiltonian):
-            hamiltonian_matrix = sum(c * m for c, m in zip(coeffs, matrices))
+            hamiltonian_matrix = sum(c * m for c, m in zip(coeffs, matrices, strict=False))
             res = np.trace(state @ hamiltonian_matrix)
         else:
             res = np.trace(state @ obs.matrix())
@@ -509,7 +508,7 @@ class TestBroadcasting:
         res = measure(qp.expval(observable), initial_state, is_state_batched=True)
 
         expanded_mat = np.zeros(((4, 4)), dtype=complex)
-        for coeff, summand in zip(coeffs, observables):
+        for coeff, summand in zip(coeffs, observables, strict=False):
             mat = summand.matrix()
             expanded_mat = np.add(
                 expanded_mat,
@@ -520,7 +519,7 @@ class TestBroadcasting:
         expected = []
         for i in range(BATCH_SIZE):
             expval_sum = 0.0
-            for coeff, summand in zip(coeffs, observables):
+            for coeff, summand in zip(coeffs, observables, strict=False):
                 expval_sum += coeff * get_expval(summand, two_qubit_batched_state[i])
             expected.append(expval_sum)
 
@@ -687,47 +686,7 @@ class TestSumOfTermsDifferentiability:
         assert len(coeffs.grad) == 2
         assert qp.math.allclose(coeffs.grad, coeffs_expected.grad)
 
-    @pytest.mark.tf
-    def test_tf_backprop(self):
-        """Test that backpropagation derivatives work with tensorflow with
-        Hamiltonians using new and old math."""
-        import tensorflow as tf
 
-        x = tf.Variable(self.x, dtype="float64")
-        coeffs = [8.3, 5.7]
-
-        with tf.GradientTape() as tape1:
-            out = self.f(x, coeffs)
-
-        with tf.GradientTape() as tape2:
-            expected_out = self.expected(x, coeffs)
-
-        assert qp.math.allclose(out, expected_out)
-        gradient = tape1.gradient(out, x)
-        expected_gradient = tape2.gradient(expected_out, x)
-        assert qp.math.allclose(expected_gradient, gradient)
-
-    @pytest.mark.tf
-    def test_tf_backprop_coeffs(self):
-        """Test that backpropagation derivatives work with tensorflow with
-        the coefficients of Hamiltonians using new and old math."""
-        import tensorflow as tf
-
-        coeffs = tf.Variable([8.3, 5.7], dtype="float64")
-
-        with tf.GradientTape() as tape1:
-            out = self.f(self.x, coeffs)
-
-        with tf.GradientTape() as tape2:
-            expected_out = self.expected(self.x, coeffs)
-
-        gradient = tape1.gradient(out, coeffs)
-        expected_gradient = tape2.gradient(expected_out, coeffs)
-        assert len(gradient) == 2
-        assert qp.math.allclose(expected_gradient, gradient)
-
-
-# pylint: disable=too-few-public-methods
 class TestReadoutErrors:
     """Test that readout errors are correctly applied to measurements."""
 

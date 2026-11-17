@@ -194,7 +194,7 @@ class TestSplitNonCommuting:
     ):
         """Tests that precomputed grouping of a single Hamiltonian is used."""
 
-        H.grouping_indices = grouping_indices  # pylint: disable=protected-access
+        H.grouping_indices = grouping_indices
         initial_tape = qp.tape.QuantumScript([qp.X(0)], [qp.expval(H)], shots=100)
         tapes, fn = split_non_commuting(initial_tape)
         assert len(tapes) == len(grouping_indices)
@@ -275,7 +275,7 @@ class TestSplitNonCommuting:
         )
         tapes, fn = split_non_commuting(initial_tape, grouping_strategy=None)
         assert len(tapes) == len(terms)
-        for tape, term in zip(tapes, terms):
+        for tape, term in zip(tapes, terms, strict=False):
             assert tape.measurements == [qp.expval(term)]
             assert tape.shots.total_shots == 100
             assert tape.operations == [qp.X(0)]
@@ -359,9 +359,7 @@ class TestSplitNonCommuting:
             ),
         ],
     )
-    def test_grouping_strategies(
-        self, obs, groups, results, expected_result, grouping_strategy
-    ):  # pylint: disable=too-many-arguments
+    def test_grouping_strategies(self, obs, groups, results, expected_result, grouping_strategy):
         """Tests wire-based grouping and qwc grouping."""
 
         initial_tape = qp.tape.QuantumScript(
@@ -369,7 +367,7 @@ class TestSplitNonCommuting:
         )
         tapes, fn = split_non_commuting(initial_tape, grouping_strategy=grouping_strategy)
         assert len(tapes) == len(groups)
-        for tape, group in zip(tapes, groups):
+        for tape, group in zip(tapes, groups, strict=False):
             assert tape.measurements == [qp.expval(term) for term in group]
             assert tape.shots.total_shots == 100
             assert tape.operations == [qp.X(0)]
@@ -474,7 +472,7 @@ class TestSplitNonCommuting:
             {"0": 2},
         )
         assert len(results) == len(expected)
-        for res, _expected in zip(results, expected):
+        for res, _expected in zip(results, expected, strict=False):
             if isinstance(res, np.ndarray):
                 assert np.allclose(res, _expected)
             else:
@@ -510,7 +508,7 @@ class TestSplitNonCommuting:
             [qp.probs(wires=[0, 1])],
             [qp.counts(wires=[0])],
         ]
-        for tape, group in zip(tapes, expected_groups):
+        for tape, group in zip(tapes, expected_groups, strict=False):
             assert tape.measurements == group
 
         results = fn(
@@ -536,7 +534,7 @@ class TestSplitNonCommuting:
         )
 
         assert len(results) == len(expected)
-        for res, _expected in zip(results, expected):
+        for res, _expected in zip(results, expected, strict=False):
             if isinstance(res, np.ndarray):
                 assert np.allclose(res, _expected)
             else:
@@ -555,7 +553,7 @@ class TestSplitNonCommuting:
         initial_tape = qp.tape.QuantumScript([qp.X(0)], measurements, shots=100)
         tapes, _ = split_non_commuting(initial_tape, grouping_strategy=grouping_strategy)
         assert len(tapes) == 2
-        for tape, meas in zip(tapes, measurements):
+        for tape, meas in zip(tapes, measurements, strict=False):
             assert tape.measurements == [meas]
             assert tape.shots == initial_tape.shots
             assert tape.operations == [qp.X(0)]
@@ -908,49 +906,6 @@ class TestDifferentiability:
 
         params = torch.tensor(np.pi / 4), torch.tensor(3 * np.pi / 4)
         actual = jacobian(circuit, params)
-
-        assert qp.math.allclose(actual, [-0.5, np.cos(np.pi / 4)])
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("grouping_strategy", [None, "qwc", "wires"])
-    def test_tensorflow(self, grouping_strategy):
-        """Tests that the output of ``split_non_commuting`` is differentiable with tensorflow"""
-
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-        circuit = circuit_to_test(dev, grouping_strategy=grouping_strategy)
-
-        params = tf.Variable(np.pi / 4), tf.Variable(3 * np.pi / 4)
-
-        with tf.GradientTape() as tape:
-            res = circuit(*params)
-            cost = qp.math.concatenate([res[0], qp.math.stack(res[1:])], axis=0)
-
-        grad1, grad2 = tape.jacobian(cost, params)
-
-        expected_grad_1 = expected_grad_param_0
-        expected_grad_2 = expected_grad_param_1
-
-        assert qp.math.allclose(grad1, expected_grad_1, atol=1e-7)
-        assert qp.math.allclose(grad2, expected_grad_2, atol=1e-7)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("grouping_strategy", [None, "qwc", "wires"])
-    def test_trainable_hamiltonian_tensorflow(self, grouping_strategy):
-        """Tests that measurements of trainable Hamiltonians are differentiable with tensorflow"""
-
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-        circuit = circuit_with_trainable_H(dev, grouping_strategy=grouping_strategy)
-
-        params = tf.Variable(np.pi / 4), tf.Variable(3 * np.pi / 4)
-
-        with tf.GradientTape() as tape:
-            cost = split_non_commuting(circuit, grouping_strategy=grouping_strategy)(*params)
-
-        actual = tape.jacobian(cost, params)
 
         assert qp.math.allclose(actual, [-0.5, np.cos(np.pi / 4)])
 

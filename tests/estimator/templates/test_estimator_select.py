@@ -21,8 +21,6 @@ import pytest
 
 import pennylane.estimator as qre
 
-# pylint: disable=no-self-use, too-many-arguments
-
 
 class TestSelectTHC:
     """Test the SelectTHC class."""
@@ -137,7 +135,7 @@ class TestSelectTHC:
         ),
     )
     def test_resources(self, thc_ham, num_batches, rotation_prec, selswap_depth, expected_res):
-        """Test that the resource decompostion for SelectTHC is correct."""
+        """Test that the resource decomposition for SelectTHC is correct."""
 
         select_cost = qre.estimate(
             qre.SelectTHC(
@@ -199,7 +197,7 @@ class TestSelectTHC:
             ),
         ),
     )
-    def test_controlled_resources(
+    def test_controlled_resources(  # pylint: disable=too-many-arguments
         self,
         thc_ham,
         num_batches,
@@ -209,7 +207,7 @@ class TestSelectTHC:
         num_zero_ctrl,
         expected_res,
     ):
-        """Test that the controlled resource decompostion for SelectTHC is correct."""
+        """Test that the controlled resource decomposition for SelectTHC is correct."""
 
         ctrl_select_cost = qre.estimate(
             qre.Controlled(
@@ -369,7 +367,7 @@ class TestSelectPauli:
         ),
     )
     def test_resources(self, pauli_ham, expected_res):
-        """Test that the resource decompostion for SelectPauli is correct."""
+        """Test that the resource decomposition for SelectPauli is correct."""
         op = qre.SelectPauli(pauli_ham)
         res = op.resource_decomp(pauli_ham)
         assert res == expected_res

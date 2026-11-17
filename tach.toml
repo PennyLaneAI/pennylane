@@ -75,6 +75,11 @@ layer = "core"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
+path = "pennylane.backline.runtime"
+layer = "core"
+depends_on = ["pennylane.capture"]
+
+[[modules]]
 path = "pennylane.core.measurements"
 layer = "core"
 depends_on = ["pennylane.capture",  "pennylane.math", "pennylane.wires", "pennylane.exceptions",  "pennylane.operation2", "pennylane.core.operator", "pennylane.core.queuing", "pennylane.typing", "pennylane.pytrees"]
@@ -83,6 +88,16 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 [[interfaces]]
 expose = ["MeasurementProcess", "StateMeasurement", "SampleMeasurement", "MeasurementTransform"]
 from = ["pennylane.core.measurements"]
+
+[[modules]]
+path = "pennylane.core.pauli"
+layer = "core"
+depends_on = ["pennylane.math", "pennylane.typing", "pennylane.wires", "pennylane.exceptions"]
+cannot_depend_on = ["pennylane", "pennylane.ops", "pennylane.pauli", "pennylane.core.operator", "pennylane.ftqc", "pennylane.labs"]
+
+[[interfaces]]
+expose = ["PauliWord", "PauliSentence"]
+from = ["pennylane.core.pauli"]
 
 [[modules]]
 path = "pennylane.core.shots"
@@ -105,33 +120,43 @@ from = ["pennylane.core.qscript"]
 
 [[modules]]
 path = "pennylane.core.queuing"
-depends_on = ["pennylane.exceptions"]
+depends_on = ["pennylane.capture", "pennylane.exceptions"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[interfaces]]
-expose = ["QueuingManager", "AnnotatedQueue", "apply"]
+expose = ["QueuingManager", "AnnotatedQueue", "remove_from_program"]
 from = ["pennylane.core.queuing"]
+
+[[modules]]
+path = "pennylane.core.apply"
+depends_on = ["pennylane.capture", "pennylane.core.queuing", "pennylane.pytrees"]
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+layer = "core"
+
+[[interfaces]]
+expose = ["apply"]
+from = ["pennylane.core.apply"]
 
 [[modules]]
 path = "pennylane.core.transforms"
 layer = "core"
-depends_on = ["pennylane.capture", "pennylane.math", "pennylane.core.measurements", "pennylane.core.operator", "pennylane.core.qscript", "pennylane.core.queuing", "pennylane.exceptions", "pennylane.pytrees", "pennylane.typing", "pennylane._grad"]
+depends_on = ["pennylane.capture", "pennylane.math", "pennylane.core.apply", "pennylane.core.measurements", "pennylane.core.operator", "pennylane.core.qscript", "pennylane.core.queuing", "pennylane.exceptions", "pennylane.pytrees", "pennylane.typing", "pennylane._grad"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[interfaces]]
-expose = ["transform", "Transform", "BoundTransform", "CompilePipeline"]
+expose = ["transform", "Transform", "BoundTransform", "CompilePipeline", "compile_pipeline.DEVICE_PREPROCESSING"]
 from = ["pennylane.core.transforms"]
 
 [[modules]]
 path = "pennylane.math"
-depends_on = ["pennylane._grad", "pennylane.numpy"]
+depends_on = ["pennylane._grad", "pennylane.numpy", "pennylane.typing"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[modules]]
 path = "pennylane.pytrees"
-depends_on = ["pennylane.core.queuing"]
+depends_on = []
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
@@ -143,7 +168,7 @@ layer = "core"
 
 [[modules]]
 path = "pennylane.wires"
-depends_on = ["pennylane.math", "pennylane.pytrees"]
+depends_on = ["pennylane.math", "pennylane.pytrees", "pennylane.typing"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
@@ -165,14 +190,6 @@ depends_on = []
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
-
-
-[[modules]]
-path = "pennylane.configuration"
-depends_on = []
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-layer = "core"
-
 [[modules]]
 path = "pennylane.compiler"
 depends_on = []
@@ -188,6 +205,12 @@ layer = "core"
 [[modules]]
 path = "pennylane.typing"
 depends_on = []
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+layer = "core"
+
+[[modules]]
+path = "pennylane.numeric_hamiltonians"
+depends_on = ["pennylane.math", "pennylane.typing", "pennylane.pytrees"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
@@ -227,11 +250,6 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
 path = "pennylane.optimize"
-layer = "auxiliary"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.pulse"
 layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
@@ -295,21 +313,6 @@ layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.qnn"
-layer = "tertiary"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.qaoa"
-layer = "tertiary"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.kernels"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-layer = "tertiary"
-
-[[modules]]
 path = "pennylane.data"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "tertiary"
@@ -340,11 +343,6 @@ layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.fourier"
-layer = "tertiary"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
 path = "pennylane.noise"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
@@ -355,12 +353,12 @@ layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.qcut"
+path = "pennylane.estimator"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.estimator"
+path = "pennylane.testing"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
@@ -383,7 +381,7 @@ path = "pennylane.core.operator"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[interfaces]]
-expose = ["Operator", "Operator1", "Operator2", "Operation", "CV", "CVObservable", "CVOperation", "Channel", "StatePrepBase", "StatePrepBase2", "abstractify"]
+expose = ["Operator", "Operator1", "Operator2", "Operation", "Channel", "StatePrepBase", "StatePrepBase2", "abstractify", "get_op_class_by_name"]
 from = ["pennylane.core.operator"]
 
 [[modules]]
@@ -412,8 +410,17 @@ path = "pennylane.pauli"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
+path = "pennylane.pauli.pauli_arithmetic"
+depends_on = ["pennylane.core.pauli"]
+cannot_depend_on = ["pennylane", "pennylane.ops", "pennylane.core.operator"]
+
+[[modules]]
 path = "pennylane.resource"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[interfaces]]
+expose = ["SpecsResources", "SymbolicSpecsResources", "CircuitSpecs", "resources_from_tape", "Expression", "analyze", "estimate", "specs", "track"]
+from = ["pennylane.resource"]
 
 [[modules]]
 path = "pennylane.decomposition"
@@ -426,4 +433,3 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 [[modules]]
 path = "pennylane.workflow"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-

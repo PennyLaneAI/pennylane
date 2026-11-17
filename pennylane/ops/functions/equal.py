@@ -15,7 +15,8 @@
 This module contains the qp.equal function.
 """
 
-# pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches, too-many-positional-arguments
+# pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches
+
 
 from collections.abc import Iterable
 from functools import singledispatch
@@ -25,7 +26,9 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator, Operator2
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.core.qscript import QuantumScript
+from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.measurements.mutual_info import MutualInfoMP
@@ -43,8 +46,9 @@ from pennylane.ops import (
 )
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
+from pennylane.ops.op_math.composite2 import CompositeOp2
+from pennylane.ops.op_math.controlled2 import Controlled2
+from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPrep, Select
@@ -201,7 +205,8 @@ def assert_equal(
     >>> qp.assert_equal(op1, op2)
     Traceback (most recent call last):
         ...
-    AssertionError: op1 and op2 have different data. Got (array(0.12),) and (array(1.23),)
+    AssertionError: op1 and op2 have different values for 'phi'.
+    Got 0.12 and 1.23.
 
     >>> h1 = qp.Hamiltonian([1, 2], [qp.PauliX(0), qp.PauliY(1)])
     >>> h2 = qp.Hamiltonian([1, 1], [qp.PauliX(0), qp.PauliY(1)])
@@ -315,12 +320,6 @@ def _equal_operators(
 ):
     """Default function to determine whether two Operator objects are equal."""
 
-    if isinstance(op1, qp.Identity):
-        # All Identities are equivalent, independent of wires.
-        # We already know op1 and op2 are of the same type, so no need to check
-        # that op2 is also an Identity
-        return True
-
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
 
@@ -329,6 +328,16 @@ def _equal_operators(
         # If any new operations are added with arithmetic depth > 0, a new dispatch
         # should be created for them.
         return f"op1 and op2 have arithmetic depth > 0. Got arithmetic depth {op1.arithmetic_depth}"
+
+    # Symbolic operators that compare equal across subclasses have their own dispatches.
+    if type(op1) is not type(op2):
+        return f"op1 and op2 have different types. Got {type(op1)} and {type(op2)}."
+
+    if isinstance(op1, qp.Identity):
+        # All Identities are equivalent, independent of wires.
+        # We already know op1 and op2 are of the same type, so no need to check
+        # that op2 is also an Identity
+        return True
 
     if op1.wires != op2.wires:
         return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
@@ -339,16 +348,16 @@ def _equal_operators(
             f"Got {op1.hyperparameters}\n and {op2.hyperparameters}."
         )
 
-    if any(math.is_abstract(d) for d in op1.data + op2.data):
+    if any(math.is_tracer(d) for d in op1.data + op2.data):
         # assume all tracers are independent
         return "Data contains a tracer. Abstract tracers are assumed to be unique."
     if len(op1.data) != len(op2.data):
-        return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
+        return f"op1 and op2 have different values.\nGot {op1.data} and {op2.data}"
     if not all(
         math.allclose(d1, d2, rtol=rtol, atol=atol)
         for d1, d2 in zip(op1.data, op2.data, strict=True)
     ):
-        return f"op1 and op2 have different data.\nGot {op1.data} and {op2.data}"
+        return f"op1 and op2 have different values.\nGot {op1.data} and {op2.data}"
 
     if check_trainability:
         for params1, params2 in zip(op1.data, op2.data, strict=True):
@@ -356,7 +365,7 @@ def _equal_operators(
             params2_train = math.requires_grad(params2)
             if params1_train != params2_train:
                 return (
-                    "Parameters have different trainability.\n "
+                    "Parameters differ in trainability.\n "
                     f"{params1} trainability is {params1_train} and {params2} trainability is {params2_train}"
                 )
 
@@ -383,8 +392,15 @@ def _equal_operator2(
     atol=1e-9,
 ):
     """Check equality between Operator2 instances."""
+
     if type(op1) is not type(op2):
-        return f"op1 and op2 are of different types. Got {type(op1)} and {type(op2)}."
+        return f"op1 and op2 have different types. Got {type(op1)} and {type(op2)}."
+
+    if isinstance(op1, qp.Identity):
+        # All Identities are equivalent, independent of wires.
+        # We already know op1 and op2 are of the same type, so no need to check
+        # that op2 is also an Identity
+        return True
 
     # Check static arguments
     for (sname, sval1), (_, sval2) in zip(
@@ -481,7 +497,7 @@ def _check_wire_value(wname: str, wval1: Any, wval2: Any):
 
     else:
         for w1, w2 in zip(wval1, wval2, strict=True):
-            if math.is_abstract(w1) or math.is_abstract(w2):
+            if math.is_tracer(w1) or math.is_tracer(w2):
                 unequal_wires = True
                 abstract_wires = True
                 break
@@ -510,18 +526,19 @@ def _check_dynamic_value(
     atol=1e-9,
 ):
     """Check for equality of a dynamic argument of an Operator2 instance."""
+
     is_aa1 = isinstance(dval1, AbstractArray)
     is_aa2 = isinstance(dval2, AbstractArray)
 
-    # Note: A mixed state (is_aa1 != is_aa2) is structurally impossible under normal
-    # execution because Operator2's metaclass ensures abstract operators are fully abstract
-    # and so the wires check would fail first
     if is_aa1 and is_aa2:
         if dval1 == dval2:
             return True
         return f"op1 and op2 have different AbstractArray type specifiers for {dname}: Got {dval1} and {dval2}."
 
-    if math.is_abstract(dval1) or math.is_abstract(dval2):
+    if is_aa1 != is_aa2:
+        return f"Unmatched representations for {dname}. Got {dval1} and {dval2}."
+
+    if math.is_tracer(dval1) or math.is_tracer(dval2):
         return (
             f"At least one of op1 or op2 has a tracer value for '{dname}'. Abstract "
             "tracers are assumed to be unique."
@@ -677,19 +694,19 @@ def _equal_paulisentence(
     return True
 
 
-@_equal_dispatch.register
-# pylint: disable=protected-access
-def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
-    """Determine whether two Prod or Sum objects are equal"""
+@_equal_dispatch.register(CompositeOp)
+@_equal_dispatch.register(CompositeOp2)
+def _equal_prod_and_sum(op1, op2, **kwargs):
+    """Determine whether two Prod, Sum or Prod2 objects are equal"""
     if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
         return True
 
     if len(op1.operands) != len(op2.operands):
         return f"op1 and op2 have different number of operands. Got {len(op1.operands)} and {len(op2.operands)}"
 
-    # organizes by wire indicies while respecting commutation relations
-    sorted_ops1 = op1._sort(op1.operands)
-    sorted_ops2 = op2._sort(op2.operands)
+    # organizes by wire indices while respecting commutation relations
+    sorted_ops1 = op1._sort(op1.operands)  # pylint: disable=protected-access
+    sorted_ops2 = op2._sort(op2.operands)  # pylint: disable=protected-access
 
     for o1, o2 in zip(sorted_ops1, sorted_ops2, strict=True):
         op_check = _equal(o1, o2, **kwargs)
@@ -699,22 +716,85 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     return True
 
 
-@_equal_dispatch.register
-def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
-    """Determine whether two Controlled or ControlledOp objects are equal"""
-    if op1.arithmetic_depth != op2.arithmetic_depth:
-        return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
+@_equal_dispatch.register(Controlled2)
+def _equal_controlled2(op1: Controlled2, op2: Controlled2, **kwargs):
+    """Determine whether two Controlled2 or ControlledOp2 objects are equal"""
 
-    # op.base.wires compared in return
-    if op1.work_wires != op2.work_wires:
-        return f"op1 and op2 have different work wires. Got {op1.work_wires} and {op2.work_wires}"
+    depth1 = getattr(op1, "arithmetic_depth", None)
+    depth2 = getattr(op2, "arithmetic_depth", None)
+    if depth1 is not None and depth2 is not None and depth1 != depth2:
+        return f"op1 and op2 have different arithmetic depths. Got {depth1} and {depth2}"
+
+    wire_comparison = _check_wire_value("work_wires", op1.work_wires, op2.work_wires)
+    if isinstance(wire_comparison, str):
+        return wire_comparison
 
     if op1.work_wire_type != op2.work_wire_type:
         return f"op1 and op2 have different work wire types. Got {op1.work_wire_type} and {op2.work_wire_type}"
 
-    # work wires and control_wire/control_value combinations compared here
+    base_equal_check = _equal(op1.base, op2.base, **kwargs)
+    if isinstance(base_equal_check, str):
+        return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + base_equal_check
+
+    op1_abstract_wires = isinstance(op1.control_wires, AbstractWires)
+    op2_abstract_wires = isinstance(op2.control_wires, AbstractWires)
+
+    # if one is abstract but the other one isn't
+    if op1_abstract_wires != op2_abstract_wires:
+        return f"Mismatched representations for control_wires. Got {op1.control_wires} and {op2.control_wires}"
+
+    # if both are abstract
+    if op1_abstract_wires and op1.control_wires != op2.control_wires:
+        return f"Different numbers of abstract control_wires. Got {op1.control_wires} and {op2.control_wires}"
+
+    # both control wires are concrete
+    op1_abstract_cvals = isinstance(op1.control_values, AbstractArray)
+    op2_abstract_cvals = isinstance(op2.control_values, AbstractArray)
+
+    # if one is abstract but the other one isn't
+    if op1_abstract_cvals != op2_abstract_cvals:
+        return f"op1 and op2 have different control values. Got {op1.control_values} and {op2.control_values}."
+
+    if op1_abstract_cvals:
+        # if both are abstract, they must be equal, because if the number of control wires is
+        # the same, abstract control values are guaranteed to be Bool[len(control_wires)], and
+        # this is already validated by the Controlled2 constructor. Therefore, we only need to
+        # check whether the control wires are equal (we didn't check this above because we were
+        # going to check it with control values later)
+        return (
+            op1.control_wires == op2.control_wires
+            or f"op1 and op2 have different control_wires. Got {op1.control_wires} and {op2.control_wires}"
+        )
+
+    # Check equivalence of concrete controlled values
     op1_control_dict = dict(zip(op1.control_wires, op1.control_values, strict=True))
     op2_control_dict = dict(zip(op2.control_wires, op2.control_values, strict=True))
+
+    if op1_control_dict != op2_control_dict:
+        return f"op1 and op2 have different control dictionaries. Got {op1_control_dict} and {op2_control_dict}"
+
+    return True
+
+
+@_equal_dispatch.register(Controlled)
+def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
+    """Determine whether two Controlled or ControlledOp objects are equal"""
+
+    if op1.arithmetic_depth != op2.arithmetic_depth:
+        return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
+
+    # op.base.wires compared in return
+    wire_comparison = _check_wire_value("work_wires", op1.work_wires, op2.work_wires)
+    if isinstance(wire_comparison, str):
+        return wire_comparison
+
+    if op1.work_wire_type != op2.work_wire_type:
+        return f"op1 and op2 have different work wire types. Got {op1.work_wire_type} and {op2.work_wire_type}"
+
+    # Check equivalence of concrete controlled values
+    op1_control_dict = dict(zip(op1.control_wires, op1.control_values, strict=True))
+    op2_control_dict = dict(zip(op2.control_wires, op2.control_values, strict=True))
+
     if op1_control_dict != op2_control_dict:
         return f"op1 and op2 have different control dictionaries. Got {op1_control_dict} and {op2_control_dict}"
 
@@ -728,10 +808,14 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
 @_equal_dispatch.register
 def _equal_controlled_sequence(op1: ControlledSequence, op2: ControlledSequence, **kwargs):
     """Determine whether two ControlledSequences are equal"""
-    if op1.wires != op2.wires:
-        return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
-    if op1.arithmetic_depth != op2.arithmetic_depth:
-        return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
+    control_equal_check = _check_wire_value("control", op1.control, op2.control)
+    if isinstance(control_equal_check, str):
+        return control_equal_check
+
+    depth1 = getattr(op1, "arithmetic_depth", None)
+    depth2 = getattr(op2, "arithmetic_depth", None)
+    if depth1 is not None and depth2 is not None and depth1 != depth2:
+        return f"op1 and op2 have different arithmetic depths. Got {depth1} and {depth2}"
 
     base_equal_check = _equal(op1.base, op2.base, **kwargs)
     if isinstance(base_equal_check, str):
@@ -740,9 +824,11 @@ def _equal_controlled_sequence(op1: ControlledSequence, op2: ControlledSequence,
     return True
 
 
-@_equal_dispatch.register
+@_equal_dispatch.register(Pow)
+@_equal_dispatch.register(Pow2)
 def _equal_pow(op1: Pow, op2: Pow, **kwargs):
     """Determine whether two Pow objects are equal"""
+
     check_interface, check_trainability = kwargs["check_interface"], kwargs["check_trainability"]
 
     if check_interface:
@@ -824,7 +910,7 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
                 f"{op1.coeff} trainability is {coeff1_train} and {op2.coeff} trainability is {coeff2_train}"
             )
 
-    if qp.math.is_abstract(op1.coeff) or qp.math.is_abstract(op2.coeff):
+    if qp.math.is_tracer(op1.coeff) or qp.math.is_tracer(op2.coeff):
         if op1.coeff is not op2.coeff:
             return "Data contains a tracer. Abstract tracers are assumed to be unique."
 
@@ -866,7 +952,7 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
                 f"{op1.scalar} trainability is {scalar1_train} and {op2.scalar} trainability is {scalar2_train}"
             )
 
-    if qp.math.is_abstract(op1.scalar) or qp.math.is_abstract(op2.scalar):
+    if qp.math.is_tracer(op1.scalar) or qp.math.is_tracer(op2.scalar):
         if op1.scalar is not op2.scalar:
             return "Data contains a tracer. Abstract tracers are assumed to be unique."
 
@@ -882,29 +968,6 @@ def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
         return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + equal_check
 
     return True
-
-
-@_equal_dispatch.register
-def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedEvolution, **kwargs):
-    # check times match
-    if op1.t is None or op2.t is None:
-        if not (op1.t is None and op2.t is None):
-            return False
-    elif not math.allclose(op1.t, op2.t):
-        return False
-
-    # check parameters passed to operator match
-    operator_check = _equal_operators(op1, op2, **kwargs)
-    if isinstance(operator_check, str):
-        return False
-
-    # check H.coeffs match
-    if len(op1.H.coeffs) != len(op2.H.coeffs) or len(op1.H.ops) != len(op2.H.ops):
-        return False
-    if not all(c1 == c2 for c1, c2 in zip(op1.H.coeffs, op2.H.coeffs, strict=True)):
-        return False
-
-    return all(equal(o1, o2, **kwargs) for o1, o2 in zip(op1.H.ops, op2.H.ops, strict=True))
 
 
 @_equal_dispatch.register
@@ -932,7 +995,7 @@ def _equal_measurements(
         if isinstance(op1.mv, MeasurementValue) and isinstance(op2.mv, MeasurementValue):
             return qp.equal(op1.mv, op2.mv)
 
-        if math.is_abstract(op1.mv) or math.is_abstract(op2.mv):
+        if math.is_tracer(op1.mv) or math.is_tracer(op2.mv):
             return op1.mv is op2.mv
 
         if isinstance(op1.mv, Iterable) and isinstance(op2.mv, Iterable):
@@ -1042,7 +1105,7 @@ def _equal_subroutineop(
         if (val1 := op1.bound_args.arguments[wire_arg]) != (
             val2 := op2.bound_args.arguments[wire_arg]
         ):
-            return f"op1 has value {val1} and op2 has value {val2} for register {wire_arg}"
+            return f"op1 has value {val1!r} and op2 has value {val2!r} for register {wire_arg}"
     for dynamic_arg in op1.subroutine.dynamic_argnames:
         vals1, tree1 = flatten(op1.bound_args.arguments[dynamic_arg])
         vals2, tree2 = flatten(op2.bound_args.arguments[dynamic_arg])
@@ -1130,10 +1193,9 @@ def _equal_qsvt(op1: QSVT, op2: QSVT, **kwargs):
     if len(projectors1) != len(projectors2):
         return f"op1 and op2 have a different number of projectors. Got {projectors1} and {projectors2}."
     for i, (p1, p2) in enumerate(zip(projectors1, projectors2, strict=True)):
-        try:
-            assert_equal(p1, p2, **kwargs)
-        except AssertionError as e:
-            return f"op1 and op2 have different projectors at position {i}. Got {p1} and {p2}, which differ: {e}."
+        comparer = _equal(p1, p2, **kwargs)
+        if isinstance(comparer, str):
+            return f"op1 and op2 have different projectors at position {i}. Got {p1} and {p2}, which differ: {comparer}."
     return True
 
 
@@ -1153,3 +1215,13 @@ def _equal_select(op1: Select, op2: Select, **kwargs):
         if isinstance(comparer, str):
             return f"got different operations at index {idx}: {_t1} and {_t2}. They differ because {comparer}."
     return True
+
+
+@_equal_dispatch.register
+def _equal_compressed_resource_op(op1: CompressedResourceOp, op2: CompressedResourceOp, **_):
+    """Determine whether two resource representations are equal.
+
+    Resource representations (produced by abstractifying operators for the decomposition graph)
+    appear, for example, as the target operators of an abstract ``Select``.
+    """
+    return op1 == op2 or f"op1 and op2 are different resource representations. Got {op1} and {op2}."

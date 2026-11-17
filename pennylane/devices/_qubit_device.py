@@ -15,9 +15,11 @@
 This module contains the :class:`QubitDevice` abstract base class.
 """
 
+# pylint: disable=arguments-differ,too-many-branches,arguments-renamed
+
+
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ,too-many-branches,no-member,arguments-renamed,too-many-arguments
 import abc
 import inspect
 import itertools
@@ -25,6 +27,7 @@ import logging
 import warnings
 from collections import defaultdict
 
+import jax
 import numpy as np
 
 from pennylane import math
@@ -54,6 +57,8 @@ from pennylane.measurements import (
 )
 from pennylane.operation import operation_derivative
 from pennylane.ops import MeasurementValue, MidMeasure, Rot, X, Y, Z, adjoint
+from pennylane.ops.op_math.adjoint import _adjoint_eager
+from pennylane.resource import resources_from_tape
 from pennylane.wires import Wires
 
 from ._legacy_device import Device
@@ -67,7 +72,7 @@ def _sample_to_str(sample):
     return "".join(map(str, sample))
 
 
-class QubitDevice(Device):
+class QubitDevice(Device):  # pylint: disable=too-many-public-methods
     """Abstract base class for PennyLane qubit devices.
 
     The following abstract method **must** be defined:
@@ -106,8 +111,6 @@ class QubitDevice(Device):
         r_dtype: Real floating point precision type.
         c_dtype: Complex floating point precision type.
     """
-
-    # pylint: disable=too-many-public-methods
 
     _asarray = staticmethod(np.asarray)
     _dot = staticmethod(np.dot)
@@ -182,9 +185,9 @@ class QubitDevice(Device):
     ):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
 
-        if "float" not in str(r_dtype):
+        if "float" not in str(r_dtype):  # pragma: no cover
             raise DeviceError("Real datatype must be a floating point type.")
-        if "complex" not in str(c_dtype):
+        if "complex" not in str(c_dtype):  # pragma: no cover
             raise DeviceError("Complex datatype must be a complex floating point type.")
 
         self.C_DTYPE = c_dtype
@@ -287,8 +290,8 @@ class QubitDevice(Device):
                 self.apply(diagonalizing_gates)
             self._samples = self.generate_samples()
             if is_lightning and diagonalizing_gates:  # pragma: no cover
-                # pylint: disable=bad-reversed-sequence
-                self.apply([adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
+                # pylint: disable-next=bad-reversed-sequence
+                self.apply([_adjoint_eager(g, True) for g in reversed(diagonalizing_gates)])
 
         # compute the required statistics
         if has_mcm:
@@ -318,7 +321,7 @@ class QubitDevice(Device):
                 executions=1,
                 shots=self._shots,
                 results=results,
-                resources=circuit.specs["resources"],
+                resources=resources_from_tape(circuit),
             )
             self.tracker.record()
 
@@ -573,9 +576,8 @@ class QubitDevice(Device):
             samples=self._samples, wire_order=self.wires, shot_range=shot_range, bin_size=bin_size
         )
 
-    def statistics(
-        self, circuit: QuantumScript, shot_range=None, bin_size=None
-    ):  # pylint: disable=too-many-statements
+    # pylint: disable-next=too-many-statements
+    def statistics(self, circuit: QuantumScript, shot_range=None, bin_size=None):
         """Process measurement results from circuit execution and return statistics.
 
         This includes returning expectation values, variance, samples, probabilities, states, and
@@ -664,8 +666,8 @@ class QubitDevice(Device):
                     self.apply(diagonalizing_gates)
                 result = self.probability(wires=m.wires, shot_range=shot_range, bin_size=bin_size)
                 if is_lightning and diagonalizing_gates:  # pragma: no cover
-                    # pylint: disable=bad-reversed-sequence
-                    self.apply([adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
+                    # pylint: disable-next=bad-reversed-sequence
+                    self.apply([_adjoint_eager(g, True) for g in reversed(diagonalizing_gates)])
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
                     raise QuantumFunctionError(
@@ -860,9 +862,7 @@ class QubitDevice(Device):
         shots = self.shots
 
         basis_states = np.arange(number_of_states)
-        # pylint:disable = import-outside-toplevel
-        if math.is_abstract(state_probability) and math.get_interface(state_probability) == "jax":
-            import jax
+        if math.is_tracer(state_probability) and math.get_interface(state_probability) == "jax":
 
             key = jax.random.PRNGKey(np.random.randint(0, 2**31))
             if jax.numpy.ndim(state_probability) == 2:
@@ -958,7 +958,7 @@ class QubitDevice(Device):
             Only state vector simulators support this property. Please see the
             plugin documentation for more details.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def density_matrix(self, wires):
         """Returns the reduced density matrix over the given wires.
@@ -1110,7 +1110,7 @@ class QubitDevice(Device):
                 outcomes[t] = self.generate_samples()[0][mapped_wires]
         finally:
             self.shots = original_shots
-            # pylint: disable=attribute-defined-outside-init
+            # pylint: disable-next=attribute-defined-outside-init
             self._shot_vector = original_shot_vector
 
         return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
@@ -1277,11 +1277,10 @@ class QubitDevice(Device):
         return self.estimate_probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
 
     @staticmethod
-    def _get_batch_size(tensor, expected_shape, expected_size):
+    def _get_batch_size(tensor, expected_shape, expected_size):  # pylint: disable=unused-argument
         """Determine whether a tensor has an additional batch dimension for broadcasting,
         compared to an expected_shape. As QubitDevice does not natively support broadcasting,
         it always reports no batch size, that is ``batch_size=None``"""
-        # pylint: disable=unused-argument
         return None
 
     def marginal_prob(self, prob, wires=None):
@@ -1636,6 +1635,7 @@ class QubitDevice(Device):
             QuantumFunctionError: if the input tape has measurements that are not expectation values
                 or contains a multi-parameter operation aside from :class:`~.Rot`
         """
+        # pylint: disable=no-member
         if tape.batch_size is not None:
             raise QuantumFunctionError(
                 "Parameter broadcasting is not supported with adjoint differentiation"
@@ -1643,7 +1643,7 @@ class QubitDevice(Device):
 
         # broadcasted inner product not summing over first dimension of b
         sum_axes = tuple(range(1, self.num_wires + 1))
-        # pylint: disable=unnecessary-lambda-assignment
+        # pylint: disable-next=unnecessary-lambda-assignment
         dot_product_real = lambda b, k: self._real(qpsum(self._conj(b) * k, axis=sum_axes))
 
         for m in tape.measurements:
@@ -1766,7 +1766,6 @@ class QubitDevice(Device):
         Returns:
             List[~.Operation]: the operations that diagonalize the observables
         """
-        # pylint:disable=no-self-use
         return circuit.diagonalizing_gates
 
     def _is_lightning_device(self):

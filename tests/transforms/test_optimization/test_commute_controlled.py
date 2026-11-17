@@ -268,7 +268,6 @@ class TestCommuteControlled:
     def test_push_mixed_with_matrix(self, direction):
         """Test that arbitrary gates after controlled gates on controls *and*
         targets get properly pushed."""
-        # pylint:disable=too-many-function-args
 
         def qfunc():
             qp.PauliX(wires=1)
@@ -379,39 +378,6 @@ class TestCommuteControlledInterfaces:
         transformed_result.backward()
 
         assert qp.math.allclose(original_input.grad, transformed_input.grad)
-
-        # Check operation list
-        tape = qp.workflow.construct_tape(transformed_qnode)(transformed_input)
-        ops = tape.operations
-        compare_operation_lists(ops, expected_op_list, expected_wires_list)
-
-    @pytest.mark.tf
-    def test_commute_controlled_tf(self):
-        """Test QNode and gradient in tensorflow interface."""
-        import tensorflow as tf
-
-        original_qnode = qp.QNode(qfunc_all_ops, dev)
-        transformed_qnode = qp.QNode(transformed_qfunc_all_ops, dev)
-
-        original_input = tf.Variable([0.8, -0.6])
-        transformed_input = tf.Variable([0.8, -0.6])
-
-        original_result = original_qnode(original_input)
-        transformed_result = transformed_qnode(transformed_input)
-
-        # Check that the numerical output is the same
-        assert qp.math.allclose(original_result, transformed_result)
-
-        # Check that the gradient is the same
-        with tf.GradientTape() as tape:
-            loss = original_qnode(original_input)
-        original_grad = tape.gradient(loss, original_input)
-
-        with tf.GradientTape() as tape:
-            loss = transformed_qnode(transformed_input)
-        transformed_grad = tape.gradient(loss, transformed_input)
-
-        assert qp.math.allclose(original_grad, transformed_grad)
 
         # Check operation list
         tape = qp.workflow.construct_tape(transformed_qnode)(transformed_input)

@@ -54,6 +54,8 @@ from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QROM, SelectPauliRot, TemporaryAND
 
+from .utils import unwrap_temporary_and
+
 
 def _add_cond_grouping_symbols(op, layer_str, config):
     """Adds symbols indicating the extent of a given object for conditional
@@ -61,7 +63,7 @@ def _add_cond_grouping_symbols(op, layer_str, config):
 
     mapped_wires = [config.wire_map[w] for w in op.wires]
     mapped_bits = [config.bit_map[m] for m in op.meas_val.measurements]
-    max_w = max(mapped_wires)
+    max_w = max(mapped_wires) if mapped_wires else config.n_wires - 1
     max_b = max(mapped_bits)
 
     ctrl_symbol = "╩"
@@ -188,6 +190,8 @@ def _add_cond(obj: Conditional, layer_str, config, tape_cache=None, skip_groupin
 def _add_controlled(
     obj: Controlled, layer_str, config, tape_cache=None, skip_grouping_symbols=False
 ):
+    if (elbow := unwrap_temporary_and(obj)) is not None:
+        return _add_elbow(elbow, layer_str, config)
     if isinstance(obj.base, (GlobalPhase, Identity)):
         return _add_controlled_global_op(obj, layer_str, config)
 
@@ -213,13 +217,22 @@ def _add_controlled_global_op(obj, layer_str, config):
     return layer_str
 
 
-def _add_elbow_core(obj, layer_str, config):
-    cvals = obj.hyperparameters["control_values"]
-    mapped_wires = [config.wire_map[w] for w in obj.wires]
-    layer_str[mapped_wires[0]] += "●" if cvals[0] else "○"
-    layer_str[mapped_wires[1]] += "●" if cvals[1] else "○"
-    layer_str[mapped_wires[2]] += "⊕"
-    return layer_str, mapped_wires
+def _add_elbow(elbow, layer_str, config):
+    """Draw controls and a circled-plus target with grouping on the appropriate side."""
+    controls, target, values, adjoint = elbow
+    wires = controls + [target]
+    if not adjoint:
+        layer_str = _add_grouping_symbols(wires, layer_str, config)
+    for wire, value in zip(controls, values, strict=True):
+        layer_str[config.wire_map[wire]] += "●" if value else "○"
+    layer_str[config.wire_map[target]] += "⊕"
+    if adjoint:
+        mapped_wires = {config.wire_map[wire] for wire in wires}
+        for wire in range(min(mapped_wires) + 1, max(mapped_wires)):
+            if wire not in mapped_wires:
+                layer_str[wire] += config.wire_filler(wire)
+        layer_str = _add_grouping_symbols(wires, layer_str, config, closing=True)
+    return layer_str
 
 
 @_add_obj.register
@@ -228,21 +241,7 @@ def _add_left_elbow(
 ):
     """Updates ``layer_str`` with ``op`` operation of type ``TemporaryAND``,
     also known as left elbow."""
-    if not skip_grouping_symbols:
-        layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
-    layer_str, _ = _add_elbow_core(obj, layer_str, config)
-    return layer_str
-
-
-def _add_right_elbow(obj: TemporaryAND, layer_str, config):
-    """Updates ``layer_str`` with ``op`` operation of type ``Adjoint(TemporaryAND)``,
-    also known as right elbow."""
-    layer_str, mapped_wires = _add_elbow_core(obj, layer_str, config)
-    # Fill with "─" on intermediate wires the elbow does not act on, to shift "|" correctly
-    for w in range(min(mapped_wires) + 1, max(mapped_wires)):
-        if w not in mapped_wires:
-            layer_str[w] += "─"
-    return _add_grouping_symbols(obj.wires, layer_str, config, closing=True)
+    return _add_elbow(unwrap_temporary_and(obj), layer_str, config)
 
 
 @_add_obj.register
@@ -253,14 +252,14 @@ def _add_select_pauli_rot(
     if not skip_grouping_symbols:
         layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
 
-    for w in obj.hyperparameters["control_wires"]:
+    for w in obj.control_wires:
         layer_str[config.wire_map[w]] += "◑"
 
-    base_label = f"R{obj.hyperparameters['rot_axis']}"
+    base_label = f"R{obj.rot_axis}"
     target_label = obj.label(
         decimals=config.decimals, base_label=base_label, cache=config.cache
     ).replace("\n", "")
-    for w in obj.hyperparameters["target_wire"]:
+    for w in obj.target_wire:
         layer_str[config.wire_map[w]] += target_label
 
     return layer_str
@@ -287,11 +286,9 @@ def _add_qrom(obj: QROM, layer_str, config, tape_cache=None, skip_grouping_symbo
 
 @_add_obj.register
 def _add_adjoint(obj: Adjoint, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
-    """Updates ``layer_str`` with ``op`` operation of type Adjoint. Currently
-    only differs from ``_add_op`` if the base of the adjoint op is a ``TemporaryAND``,
-    making the overall object a right elbow."""
-    if isinstance(obj.base, TemporaryAND):
-        return _add_right_elbow(obj.base, layer_str, config)
+    """Update an adjoint's text, using directional grouping for wrapped TemporaryANDs."""
+    if (elbow := unwrap_temporary_and(obj)) is not None:
+        return _add_elbow(elbow, layer_str, config)
     return _add_op(obj, layer_str, config, tape_cache, skip_grouping_symbols)
 
 

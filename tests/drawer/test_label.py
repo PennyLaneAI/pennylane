@@ -15,23 +15,32 @@
 Tests for the 'label' functionality.
 """
 
+import pytest
+
 import pennylane as qp
+from pennylane.core import Operator
+from pennylane.decomposition.resources import resource_rep
 from pennylane.drawer.label import LabelledOp, label
+from pennylane.typing import Float, Wire
+from tests.core.operator.operator2_utils import DynOp
+
+
+class CustomOp(Operator):  # pylint: disable=too-few-public-methods
+    pass
 
 
 class TestLabelledOp:
     """Tests for the 'LabelledOp' operator."""
 
-    # pylint:disable=protected-access
     def test_flatten_unflatten(self):
         """Tests the unflatten and flatten methods."""
 
         op = LabelledOp(qp.X(0), custom_label="my-x")
-        data, metadata = op._flatten()
+        data, metadata = op._flatten()  # pylint: disable=protected-access
         assert data[0] == qp.X(0)
         assert metadata[0] == ("custom_label", "my-x")
 
-        unflattened_op = LabelledOp._unflatten(data, metadata)
+        unflattened_op = LabelledOp._unflatten(data, metadata)  # pylint: disable=protected-access
         assert unflattened_op == op
 
     def test_repr(self):
@@ -56,6 +65,31 @@ class TestLabelledOp:
         op = LabelledOp(qp.X(0), custom_label="my-x")
         assert hasattr(op, "custom_label")
         assert op.custom_label == "my-x"
+
+    def test_resource_params(self):
+        """Tests the resource params of a label op."""
+
+        op = LabelledOp(CustomOp(0), custom_label="custom")
+        assert op.resource_params == {"base": resource_rep(CustomOp)}
+
+        op2 = LabelledOp(DynOp(0.5, wires=[0, 1]), custom_label="custom2")
+        assert op2.resource_params == {"base": DynOp(Float, Wire[2])}
+
+
+@pytest.mark.integration
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+@pytest.mark.parametrize("op", [CustomOp(0), DynOp(0.5, wires=[0])])
+def test_decomposition(op):
+    """Tests that the decomposition of label op works."""
+
+    @qp.transforms._tape_decompose(gate_set={type(op)})  # pylint: disable=protected-access
+    @qp.qnode(qp.device("default.qubit"))
+    def circuit():
+        qp.drawer.label(op, "foo")
+        return qp.probs()
+
+    tape = qp.workflow.construct_tape(circuit, level="user")()
+    assert tape.operations == [op]
 
 
 def test_label():

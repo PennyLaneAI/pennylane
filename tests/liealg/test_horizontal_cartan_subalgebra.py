@@ -14,8 +14,6 @@
 """Tests for pennylane/labs/dla/horizontal_cartan_subalgebra.py functionality"""
 
 import numpy as np
-
-# pylint: disable=no-self-use,too-few-public-methods,missing-class-docstring, too-many-positional-arguments, too-many-arguments
 import pytest
 from scipy.linalg import sqrtm
 
@@ -130,7 +128,9 @@ class TestChangeBasisAdRep:
         dla = [qp.X(0), qp.Y(0), qp.Z(0)]
         adj = qp.structure_constants(dla)
         coeffs = rng.random((len(dla), len(dla)))
-        skewed_dla = [qp.sum(*(c * op for c, op in zip(_coeffs, dla))) for _coeffs in coeffs]
+        skewed_dla = [
+            qp.sum(*(c * op for c, op in zip(_coeffs, dla, strict=False))) for _coeffs in coeffs
+        ]
         skewed_adj = qp.structure_constants(skewed_dla, is_orthogonal=False)
 
         basis_change = op_to_adjvec(skewed_dla, dla) @ np.linalg.pinv(op_to_adjvec(dla, dla))
@@ -145,7 +145,9 @@ class TestChangeBasisAdRep:
 
         adj = qp.structure_constants(dla, is_orthogonal=False)
         coeffs = rng.random((len(dla), len(dla)))
-        skewed_dla = [qp.sum(*(c * op for c, op in zip(_coeffs, dla))) for _coeffs in coeffs]
+        skewed_dla = [
+            qp.sum(*(c * op for c, op in zip(_coeffs, dla, strict=False))) for _coeffs in coeffs
+        ]
         skewed_adj = qp.structure_constants(skewed_dla, is_orthogonal=False)
 
         basis_change = op_to_adjvec(skewed_dla, ortho_dla) @ np.linalg.pinv(
@@ -161,7 +163,9 @@ class TestChangeBasisAdRep:
         dla = qp.lie_closure(ops)
         adj = qp.structure_constants(dla)
         coeffs = rng.random((len(dla), len(dla)))
-        skewed_dla = [qp.sum(*(c * op for c, op in zip(_coeffs, dla))) for _coeffs in coeffs]
+        skewed_dla = [
+            qp.sum(*(c * op for c, op in zip(_coeffs, dla, strict=False))) for _coeffs in coeffs
+        ]
         skewed_adj = qp.structure_constants(skewed_dla, is_orthogonal=False)
 
         basis_change = op_to_adjvec(skewed_dla, dla) @ np.linalg.pinv(op_to_adjvec(dla, dla))
@@ -175,11 +179,16 @@ class TestChangeBasisAdRep:
         ortho_dla = qp.lie_closure(ops)  # only used to create adj rep.
 
         coeffs = rng.random((len(ortho_dla), len(ortho_dla)))
-        dla = [qp.sum(*(c * op for c, op in zip(_coeffs, ortho_dla))) for _coeffs in coeffs]
+        dla = [
+            qp.sum(*(c * op for c, op in zip(_coeffs, ortho_dla, strict=False)))
+            for _coeffs in coeffs
+        ]
         adj = qp.structure_constants(dla, is_orthogonal=False)
 
         coeffs = rng.random((len(dla), len(dla)))
-        skewed_dla = [qp.sum(*(c * op for c, op in zip(_coeffs, dla))) for _coeffs in coeffs]
+        skewed_dla = [
+            qp.sum(*(c * op for c, op in zip(_coeffs, dla, strict=False))) for _coeffs in coeffs
+        ]
         skewed_adj = qp.structure_constants(skewed_dla, is_orthogonal=False)
 
         basis_change = op_to_adjvec(skewed_dla, dla) @ np.linalg.pinv(op_to_adjvec(dla, dla))
@@ -242,7 +251,12 @@ def _generate_test_cases(seed_value):
 
     # Translate test cases to qp.operation.Operations
     op_test_cases = [
-        (adj_vecs, [ps.operation() for ps in basis], [ps.operation() for ps in expected], is_ortho)
+        (
+            adj_vecs,
+            [qp.pauli.to_operator(ps) for ps in basis],
+            [qp.pauli.to_operator(ps) for ps in expected],
+            is_ortho,
+        )
         for adj_vecs, basis, expected, is_ortho in ps_test_cases
     ]
 
@@ -260,12 +274,13 @@ def _generate_test_cases(seed_value):
     return ps_test_cases, op_test_cases, dense_test_cases
 
 
-class TestData:  # pylint: disable=attribute-defined-outside-init
+class TestData:
     """A base class to provide shared, seed-dependent test case fixtures."""
 
     @pytest.fixture(autouse=True)
     def setup_test_cases(self, seed):
         """Generate test cases for the class instance."""
+        # pylint: disable-next=attribute-defined-outside-init
         self.ps_cases, self.op_cases, self.dense_cases = _generate_test_cases(seed)
 
     @pytest.fixture(params=[0, 1, 2, 3], ids=["case0", "case1", "case2", "case3"])
@@ -302,14 +317,14 @@ class TestAdjvecToOp(TestData):
         if vspace:
             basis = qp.pauli.PauliVSpace(basis)
         out = adjvec_to_op(adj_vecs, basis, is_orthogonal=False)
-        for out_op, exp_op in zip(out, expected):
+        for out_op, exp_op in zip(out, expected, strict=False):
             assert isinstance(out_op, PauliSentence)
             assert all(c.dtype == np.float64 for c in out_op.values())
             assert set(out_op) == set(exp_op)
             assert all(np.isclose(out_op[k], exp_op[k]) for k in out_op)
         if is_ortho:
             out = adjvec_to_op(adj_vecs, basis, is_orthogonal=True)
-            for out_op, exp_op in zip(out, expected):
+            for out_op, exp_op in zip(out, expected, strict=False):
                 assert isinstance(out_op, PauliSentence)
                 assert all(c.dtype == np.float64 for c in out_op.values())
                 assert set(out_op) == set(exp_op)
@@ -320,11 +335,11 @@ class TestAdjvecToOp(TestData):
         adj_vecs, basis, expected, is_ortho = op_test_case
 
         out = adjvec_to_op(adj_vecs, basis, is_orthogonal=False)
-        for out_op, exp_op in zip(out, expected):
+        for out_op, exp_op in zip(out, expected, strict=False):
             assert qp.equal(out_op.simplify(), exp_op.simplify())
         if is_ortho:
             out = adjvec_to_op(adj_vecs, basis, is_orthogonal=True)
-            for out_op, exp_op in zip(out, expected):
+            for out_op, exp_op in zip(out, expected, strict=False):
                 assert qp.equal(out_op.simplify(), exp_op.simplify())
 
     def test_with_dense(self, dense_test_case):

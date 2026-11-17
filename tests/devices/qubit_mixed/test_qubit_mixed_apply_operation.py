@@ -44,7 +44,6 @@ ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 
 
@@ -128,7 +127,7 @@ def expand_matrices(op, num_q, batch_size=0):
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-class TestOperation:  # pylint: disable=too-few-public-methods
+class TestOperation:
     """Tests that broadcasted operations (not channels) are applied correctly."""
 
     unbroadcasted_ops = [
@@ -231,7 +230,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
         """Tests that the identity operation is applied correctly to an unbatched state."""
         state_np = random_mixed_state(num_q)
         state = math.asarray(state_np, like=ml_framework)
-        op = qp.GlobalPhase(np.pi / 7, wires=0)
+        op = qp.GlobalPhase(np.pi / 7)
         res = apply_operation(op, state)
 
         assert math.allclose(res, state), f"Operation {op} failed. {res} != {state}"
@@ -382,7 +381,6 @@ class TestApplyGroverOperator:
 class TestApplyMultiControlledX:
     """Test that MultiControlledX is applied correctly to mixed states."""
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.mark.parametrize(
         "num_wires, interface, expected_method",
         [
@@ -420,7 +418,6 @@ class TestApplyMultiControlledX:
             assert not spy_einsum.called
             assert not spy_tensordot.called
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.mark.parametrize("interface", ml_frameworks_list[2:])
     @pytest.mark.parametrize(
         "num_wires, expected_method",
@@ -435,7 +432,7 @@ class TestApplyMultiControlledX:
         self, num_wires, expected_method, interface, mocker, random_mixed_state
     ):
         """Test that the correct dispatch method is used based on the number of wires
-        for torch, tensorflow, and jax."""
+        for torch and jax."""
         state = random_mixed_state(num_wires)
         # Convert to interface
         state = math.asarray(state, like=interface)
@@ -612,7 +609,7 @@ class TestApplyChannel:
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-class TestBroadcasting:  # pylint: disable=too-few-public-methods
+class TestBroadcasting:
     """Tests that broadcasted operations are applied correctly."""
 
     broadcasted_ops = [
@@ -689,7 +686,7 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         param = qp.math.asarray([0.1, 0.2, 0.3], like=ml_framework)
         state = np.ones((2, 2)) / 2
         op = qp.RX(param, 0)
-        assert op._batch_size is _UNSET_BATCH_SIZE  # pylint:disable=protected-access
+        assert op._batch_size is _UNSET_BATCH_SIZE  # pylint: disable=protected-access
         state = apply_operation_einsum(op, state)
         assert state.shape == (3, 2, 2)
         assert op.batch_size == 3
@@ -778,14 +775,7 @@ class TestSnapshot:
             expected_values = measure(qp.expval(qp.PauliZ(0)), initial_state, is_state_batched=True)
             assert math.allclose(debugger.snapshots[tag], expected_values)
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
-    @pytest.mark.parametrize(
-        "measurement",
-        [
-            qp.sample(wires=[0, 1]),
-            qp.counts(wires=[0, 1]),
-        ],
-    )
+    @pytest.mark.parametrize("measurement", [qp.sample(wires=[0, 1]), qp.counts(wires=[0, 1])])
     def test_snapshot_with_shots_and_measurement(
         self, measurement, ml_framework, state, shape, request
     ):
@@ -828,7 +818,7 @@ class TestSnapshot:
             if is_state_batched:
                 snapshot_result = snapshot_result[0]
             assert isinstance(snapshot_result, dict)
-            assert all(isinstance(k, str) for k in snapshot_result.keys())
+            assert all(isinstance(k, str) for k in snapshot_result)
             assert sum(snapshot_result.values()) == 1000
 
 

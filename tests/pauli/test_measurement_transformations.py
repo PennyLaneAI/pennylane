@@ -165,10 +165,10 @@ class TestMeasurementTransformations:
         qwc_rot, diag_qwc_grouping = diagonalize_qwc_pauli_words(qwc_grouping)
         qwc_rot_sol, diag_qwc_grouping_sol = qwc_sol_tuple
 
-        for a, b in zip(qwc_rot, qwc_rot_sol):
+        for a, b in zip(qwc_rot, qwc_rot_sol, strict=False):
             assert self.are_identical_rotation_gates(a, b)
 
-        for a, b in zip(diag_qwc_grouping, diag_qwc_grouping_sol):
+        for a, b in zip(diag_qwc_grouping, diag_qwc_grouping_sol, strict=False):
             assert are_identical_pauli_words(a, b)
 
     not_qwc_groupings = [

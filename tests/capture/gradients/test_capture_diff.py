@@ -15,6 +15,9 @@
 Tests for capturing differentiation into jaxpr.
 """
 
+# pylint: disable=wrong-import-position
+
+
 import pytest
 
 import pennylane as qp
@@ -23,8 +26,8 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import jacobian_prim, qnode_prim
+from pennylane.testing import assert_eqn_matches_op
 
 jnp = jax.numpy
 
@@ -228,7 +231,6 @@ class TestGrad:
     @pytest.mark.parametrize("diff_method", ("backprop", "parameter-shift"))
     def test_grad_of_simple_qnode(self, diff_method):
         """Test capturing the gradient of a simple qnode."""
-        # pylint: disable=protected-access
         fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
         dev = qp.device("default.qubit", wires=2)
@@ -260,9 +262,10 @@ class TestGrad:
 
         qfunc_jaxpr = qnode_eqn.params["qfunc_jaxpr"]
         # Skipping a few equations related to indexing and preprocessing
-        assert qfunc_jaxpr.eqns[2].primitive == qp.RX._primitive
-        assert qfunc_jaxpr.eqns[6].primitive == qp.RY._primitive
-        assert qfunc_jaxpr.eqns[7].primitive == qp.Z._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.RX)
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[6], qp.RY)
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[7], qp.Z)
+        # pylint: disable-next=protected-access
         assert qfunc_jaxpr.eqns[8].primitive == qp.measurements.ExpectationMP._obs_primitive
 
         assert len(qnode_eqn.outvars) == 1
@@ -318,7 +321,6 @@ class TestGrad:
     @pytest.mark.parametrize("argnums", ([0, 1, 2], [0, 2], [1], 0))
     def test_grad_qnode_with_pytrees(self, argnums):
         """Test capturing the gradient of a qnode that uses Pytrees."""
-        # pylint: disable=protected-access
         fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
         dev = qp.device("default.qubit", wires=2)
@@ -344,7 +346,10 @@ class TestGrad:
         assert jaxpr.out_avals == [jax.core.ShapedArray((), fdtype, weak_type=True)] * num_out_avals
 
         grad_eqn = jaxpr.eqns[0]
-        assert all(invar.aval == in_aval for invar, in_aval in zip(grad_eqn.invars, jaxpr.in_avals))
+        assert all(
+            invar.aval == in_aval
+            for invar, in_aval in zip(grad_eqn.invars, jaxpr.in_avals, strict=False)
+        )
         flat_argnums = tuple(
             [0, 1] * (0 in argnums) + [2] * (1 in argnums) + [3, 4, 5] * (2 in argnums)
         )
@@ -389,7 +394,8 @@ def _jac_allclose(jac1, jac2, num_axes, atol=1e-8):
     if len(jac1) != len(jac2):
         return False
     return all(
-        _jac_allclose(_jac1, _jac2, num_axes - 1, atol=atol) for _jac1, _jac2 in zip(jac1, jac2)
+        _jac_allclose(_jac1, _jac2, num_axes - 1, atol=atol)
+        for _jac1, _jac2 in zip(jac1, jac2, strict=False)
     )
 
 
@@ -462,7 +468,6 @@ class TestJacobian:
                  |
                  | (2 prod(x)/x_i * cos(x) e_i - prod(x) sin(x) e_i e_i, 2)  for i = j
         """
-        # pylint: disable=too-many-statements
         fdtype = jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
 
         def func(x):
@@ -532,7 +537,6 @@ class TestJacobian:
     @pytest.mark.parametrize("diff_method", ("backprop", "parameter-shift"))
     def test_jacobian_of_simple_qnode(self, diff_method):
         """Test capturing the gradient of a simple qnode."""
-        # pylint: disable=protected-access
         fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
         dev = qp.device("default.qubit", wires=2)
@@ -565,9 +569,10 @@ class TestJacobian:
 
         qfunc_jaxpr = qnode_eqn.params["qfunc_jaxpr"]
         # Skipping a few equations related to indexing
-        assert qfunc_jaxpr.eqns[2].primitive == qp.RX._primitive
-        assert qfunc_jaxpr.eqns[5].primitive == qp.RY._primitive
-        assert qfunc_jaxpr.eqns[6].primitive == qp.Z._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.RX)
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[5], qp.RY)
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[6], qp.Z)
+        # pylint: disable-next=protected-access
         assert qfunc_jaxpr.eqns[7].primitive == qp.measurements.ExpectationMP._obs_primitive
 
         assert len(qnode_eqn.outvars) == 2

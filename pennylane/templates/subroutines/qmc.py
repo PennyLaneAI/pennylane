@@ -15,15 +15,18 @@
 Contains the QuantumMonteCarlo template and utility functions.
 """
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-arguments
+
+
 import copy
 
 import numpy as np
 
 from pennylane import math
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import QubitUnitary
+from pennylane.typing import Complex, Wire
 from pennylane.wires import Wires
 
 from .qpe import QuantumPhaseEstimation
@@ -63,9 +66,7 @@ def probs_to_unitary(probs):
            [ 0.5   ,  0.1667,  0.1667, -0.8333]])
     """
 
-    if not math.is_abstract(
-        sum(probs)
-    ):  # skip check and error if jitting to avoid JAX tracer errors
+    if not math.is_tracer(sum(probs)):  # skip check and error if jitting to avoid JAX tracer errors
         if not math.allclose(sum(probs), 1) or min(probs) < 0:
             raise ValueError(
                 "A valid probability distribution of non-negative numbers that sum to one "
@@ -131,7 +132,7 @@ def func_to_unitary(func, M):
     unitary = np.zeros((2 * M, 2 * M))
 
     fs = [func(i) for i in range(M)]
-    if not math.is_abstract(fs[0]):  # skip check and error if jitting to avoid JAX tracer errors
+    if not math.is_tracer(fs[0]):  # skip check and error if jitting to avoid JAX tracer errors
         if min(fs) < 0 or max(fs) > 1:
             raise ValueError(
                 "func must be bounded within the interval [0, 1] for the range of input values"
@@ -340,12 +341,11 @@ class QuantumMonteCarlo(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_target_wires", "num_estimation_wires", "q_resource_rep"}
+    resource_keys = {"num_target_wires", "num_estimation_wires", "q_shape"}
 
     @classmethod
-    def _primitive_bind_call(
-        cls, probs, func, target_wires, estimation_wires
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def _primitive_bind_call(cls, probs, func, target_wires, estimation_wires):
         # handle target wires and estimation wires
         return cls._primitive.bind(
             probs,
@@ -369,9 +369,7 @@ class QuantumMonteCarlo(Operation):
         return {
             "num_target_wires": len(self.hyperparameters["target_wires"]),
             "num_estimation_wires": len(self.hyperparameters["estimation_wires"]),
-            "q_resource_rep": resource_rep(
-                QubitUnitary, num_wires=len(self.hyperparameters["target_wires"])
-            ),
+            "q_shape": math.shape(self.data[2]),
         }
 
     def __init__(self, probs, func, target_wires, estimation_wires):
@@ -397,11 +395,15 @@ class QuantumMonteCarlo(Operation):
                 f" {num_target_wires} target wires"
             )
 
-        self._hyperparameters = {"estimation_wires": estimation_wires, "target_wires": target_wires}
-
         A = probs_to_unitary(probs)
         R = func_to_unitary(func, dim_p)
         Q = make_Q(A, R)
+
+        self._hyperparameters = {
+            "estimation_wires": estimation_wires,
+            "target_wires": target_wires,
+        }
+
         super().__init__(A, R, Q, wires=wires)
 
     def map_wires(self, wire_map: dict):
@@ -419,9 +421,8 @@ class QuantumMonteCarlo(Operation):
         return 3
 
     @staticmethod
-    def compute_decomposition(
-        A, R, Q, wires, estimation_wires, target_wires
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(A, R, Q, wires, estimation_wires, target_wires):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -445,41 +446,43 @@ class QuantumMonteCarlo(Operation):
         op_list = [
             QubitUnitary(A, wires=target_wires[:-1]),
             QubitUnitary(R, wires=target_wires),
-            QuantumPhaseEstimation(Q, target_wires=target_wires, estimation_wires=estimation_wires),
+            QuantumPhaseEstimation(
+                QubitUnitary(Q, wires=target_wires), estimation_wires=estimation_wires
+            ),
         ]
 
         return op_list
 
 
-# pylint: disable=protected-access
-if QuantumMonteCarlo._primitive is not None:
-
-    @QuantumMonteCarlo._primitive.def_impl
-    def _quantum_monte_carlo_impl(probs, *wires, func, num_target_wires):
-        target_wires = wires[:num_target_wires]
-        estimation_wires = wires[num_target_wires:]
-        return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires)
+@QuantumMonteCarlo._primitive.def_impl  # pylint: disable=protected-access
+def _quantum_monte_carlo_impl(probs, *wires, func, num_target_wires):
+    target_wires = wires[:num_target_wires]
+    estimation_wires = wires[num_target_wires:]
+    return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires)
 
 
-def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_resource_rep):
+def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_shape):
     return {
-        resource_rep(QubitUnitary, num_wires=num_target_wires - 1): 1,
-        resource_rep(QubitUnitary, num_wires=num_target_wires): 1,
-        resource_rep(
-            QuantumPhaseEstimation,
-            base_resource_rep=q_resource_rep,
-            num_estimation_wires=num_estimation_wires,
+        QubitUnitary(
+            Complex[2 ** (num_target_wires - 1), 2 ** (num_target_wires - 1)],
+            wires=Wire[num_target_wires - 1],
+        ): 1,
+        QubitUnitary(
+            Complex[2**num_target_wires, 2**num_target_wires], wires=Wire[num_target_wires]
+        ): 1,
+        QuantumPhaseEstimation(
+            QubitUnitary(Complex[*q_shape], wires=Wire[num_target_wires]),
+            estimation_wires=Wire[num_estimation_wires],
         ): 1,
     }
 
 
 @register_resources(_quantum_monte_carlo_resources)
-def _quantum_monte_carlo_decomposition(
-    A, R, Q, wires, estimation_wires, target_wires
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _quantum_monte_carlo_decomposition(A, R, Q, wires, estimation_wires, target_wires):
     QubitUnitary(A, wires=target_wires[:-1])
     QubitUnitary(R, wires=target_wires)
-    QuantumPhaseEstimation(Q, target_wires=target_wires, estimation_wires=estimation_wires)
+    QuantumPhaseEstimation(QubitUnitary(Q, wires=target_wires), estimation_wires=estimation_wires)
 
 
 add_decomps(QuantumMonteCarlo, _quantum_monte_carlo_decomposition)

@@ -30,6 +30,15 @@ def test_error_if_no_available_wires():
         qp.transforms.resolve_dynamic_wires(tape)
 
 
+@pytest.mark.parametrize("state", (AllocateState.MAGIC_T, AllocateState.MAGIC_T_ADJ))
+def test_error_magic_t_state_allocation(state):
+    """Test that resolve_dynamic_wires raises for magic-T state allocations."""
+    tape = qp.tape.QuantumScript([qp.allocation.Allocate.from_num_wires(1, state=state)])
+
+    with pytest.raises(qp.exceptions.AllocationError, match="Magic state allocation"):
+        qp.transforms.resolve_dynamic_wires(tape)
+
+
 def test_error_if_use_deallocated_wire():
     """Test an error is raised if we use a deallocated wire."""
 
@@ -60,7 +69,7 @@ def test_highly_nested_min_int():
     [new_tape], fn = qp.transforms.resolve_dynamic_wires(tape, min_int=5)
 
     assert fn(("a",)) == "a"
-    for op, wire in zip(new_tape.operations, range(5, 15)):
+    for op, wire in zip(new_tape.operations, range(5, 15), strict=False):
         qp.assert_equal(op, qp.X(wire))
 
 

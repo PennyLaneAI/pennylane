@@ -21,12 +21,9 @@ from functools import reduce
 import pennylane as qp
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.typing import Bool, Wire
+from pennylane.wires import concatenate_wires
 
 
 def order_states(basis_states: list[list[int]]) -> dict[tuple[int], tuple[int]]:
@@ -109,13 +106,13 @@ def _permutation_operator(basis1, basis2, wires, work_wire):
     """
 
     ops = []
-    ops.append(qp.ctrl(qp.PauliX(work_wire), control=wires, control_values=basis1))
+    ops.append(qp.MultiControlledX(concatenate_wires(wires, work_wire), control_values=basis1))
 
     for i, b in enumerate(basis1):
         if b != basis2[i]:
             ops.append(qp.CNOT(wires=work_wire + wires[i]))
 
-    ops.append(qp.ctrl(qp.PauliX(work_wire), control=wires, control_values=basis2))
+    ops.append(qp.MultiControlledX(concatenate_wires(wires, work_wire), control_values=basis2))
 
     return ops
 
@@ -131,7 +128,7 @@ def _permutation_operator_qfunc(basis1, basis2, wires, work_wire):
         work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation.
     """
 
-    qp.ctrl(qp.PauliX(work_wire), control=wires, control_values=basis1)
+    qp.MultiControlledX(concatenate_wires(wires, work_wire), control_values=basis1)
 
     @for_loop(len(basis1))
     def apply_cnots(i):
@@ -144,7 +141,7 @@ def _permutation_operator_qfunc(basis1, basis2, wires, work_wire):
 
     apply_cnots()  # pylint: disable=no-value-for-parameter
 
-    qp.ctrl(qp.PauliX(work_wire), control=wires, control_values=basis2)
+    qp.MultiControlledX(concatenate_wires(wires, work_wire), control_values=basis2)
 
 
 class Superposition(Operation):
@@ -237,9 +234,7 @@ class Superposition(Operation):
 
     resource_keys = {"num_wires", "num_coeffs", "bases"}
 
-    def __init__(
-        self, coeffs, bases, wires, work_wire
-    ):  # pylint: disable=too-many-positional-arguments, too-many-arguments
+    def __init__(self, coeffs, bases, wires, work_wire):
 
         if not all(
             all(qp.math.isclose(i, 0.0) or qp.math.isclose(i, 1.0) for i in b) for b in bases
@@ -250,7 +245,7 @@ class Superposition(Operation):
         if len(basis_lengths) > 1:
             raise ValueError("All basis states must have the same length.")
 
-        if not qp.math.is_abstract(coeffs):
+        if not qp.math.is_tracer(coeffs):
             coeffs_norm = qp.math.linalg.norm(coeffs)
             if not qp.math.allclose(coeffs_norm, qp.math.array(1.0)):
                 raise ValueError("The input superposition must be normalized.")
@@ -324,7 +319,7 @@ class Superposition(Operation):
         [StatePrep(array([0.707..., 0.707...]), wires=[1]),
         MultiControlledX(wires=[0, 1, 2], control_values=[False, True]),
         CNOT(wires=[2, 0]),
-        Toffoli(wires=[0, 1, 2])]
+        MultiControlledX(wires=[0, 1, 2])]
 
         """
 
@@ -392,14 +387,7 @@ def _superposition_resources(num_wires, num_coeffs, bases):
 
     for basis2, basis1 in perms.items():
         if not qp.math.allclose(basis1, basis2):
-            resources[
-                controlled_resource_rep(
-                    base_class=qp.PauliX,
-                    base_params={},
-                    num_control_wires=num_wires,
-                    num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), basis1, 0),
-                )
-            ] += 1
+            resources[qp.MultiControlledX(Wire[num_wires + 1], control_values=Bool[num_wires])] += 2
 
             resources[qp.CNOT] += reduce(
                 lambda acc, ib: acc
@@ -408,22 +396,12 @@ def _superposition_resources(num_wires, num_coeffs, bases):
                 0,
             )
 
-            resources[
-                controlled_resource_rep(
-                    base_class=qp.PauliX,
-                    base_params={},
-                    num_control_wires=num_wires,
-                    num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), basis2, 0),
-                )
-            ] += 1
-
     return dict(resources)
 
 
 @register_resources(_superposition_resources)
-def _superposition_decomposition(
-    coeffs, bases, wires, target_wires, work_wire  # pylint: disable=unused-argument
-):
+# pylint: disable-next=unused-argument
+def _superposition_decomposition(coeffs, bases, wires, target_wires, work_wire):
     dic_state = dict(zip(bases, coeffs, strict=True))
     perms = order_states(bases)
     new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}

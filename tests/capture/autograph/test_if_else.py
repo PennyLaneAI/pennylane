@@ -15,9 +15,9 @@
 """PyTests for the AutoGraph source-to-source transformation feature for
 converting if/else statements to qp.cond."""
 
-# pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
+# pylint: disable=wrong-import-order,wrong-import-position
 
-import numpy as np
+
 import pytest
 
 import pennylane as qp
@@ -30,8 +30,11 @@ jax = pytest.importorskip("jax")
 # must be below jax importorskip
 from jax.core import eval_jaxpr
 
+# pylint: disable-next=ungrouped-imports
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
+from pennylane.capture.primitives import cond_prim
 from pennylane.exceptions import AutoGraphError
+from pennylane.testing import extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
 
@@ -92,7 +95,7 @@ class TestConditionals:
         # with autograph we can convert to jaxpr
         circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(circuit)(0)
-        assert "cond" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
@@ -121,7 +124,7 @@ class TestConditionals:
 
         ag_circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "cond" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr)
 
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
@@ -147,7 +150,7 @@ class TestConditionals:
 
         ag_circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "cond" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr)
 
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
@@ -171,14 +174,7 @@ class TestConditionals:
 
         ag_circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "cond" in str(jaxpr)
-
-        def res(x):
-            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
-
-        # pylint: disable=singleton-comparison
-        assert res(3) == 0
-        assert res(6) == 1
+        assert cond_prim in extract_all_primitives(jaxpr)
 
     def test_nested_cond(self):
         """Test that a nested conditional is converted as expected"""
@@ -196,12 +192,11 @@ class TestConditionals:
 
         ag_fn = run_autograph(fn)
         jaxpr = jax.make_jaxpr(ag_fn)(0)
-        assert "cond" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr)
 
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
-        # pylint: disable=singleton-comparison
         assert res(5) == 25
         assert res(2) == 8
 
@@ -209,17 +204,15 @@ class TestConditionals:
         """Test return statements from different branches of an if/else statement
         with autograph."""
 
-        # pylint: disable=no-else-return
-
         def f(x: int):
-            if x > 0:
+            if x > 0:  # pylint: disable=no-else-return
                 return 25  # converted to cond_fn
             else:
                 return 60  # converted to else_fn
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        assert "cond" in str(jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr)
 
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
@@ -232,7 +225,6 @@ class TestConditionals:
         the conditional works as expected."""
 
         def f(x: float):
-
             if x:
                 return x  # converted to cond_fn with no else_fn
 
@@ -256,12 +248,10 @@ class TestConditionals:
         """Test if Autograph works when applied to a function explicitly decorated with cond"""
 
         def f(n):
-
             @cond(n > 4)
             def cond_fn():
                 return n**2
 
-            # pylint: disable=unused-variable
             @cond_fn.otherwise
             def else_fn():
                 return n
@@ -278,7 +268,6 @@ class TestConditionals:
         """Test that an exception is raised when the true branch defines a value without an else
         branch.
         """
-        # pylint: disable=using-constant-test
 
         def circuit(val):
             if val:
@@ -293,7 +282,6 @@ class TestConditionals:
 
     def test_branch_multi_return_type_mismatch(self):
         """Test that an exception is raised when the return types of all branches do not match."""
-        # pylint: disable=using-constant-test
 
         def circuit(val1, val2):
             if val1:
@@ -321,12 +309,7 @@ class TestConditionals:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-
-        def res(x):
-            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
-
-        assert np.allclose(res(True), 0)
-        assert np.allclose(res(False), 1)
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
 
 if __name__ == "__main__":

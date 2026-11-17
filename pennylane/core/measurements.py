@@ -21,12 +21,16 @@ import copy
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Optional, Union
+from typing import Union
+
+import jax
+import jax.extend.core
 
 from pennylane import math
 from pennylane.capture import ABCCaptureMeta
 from pennylane.capture import enabled as capture_enabled
-from pennylane.core.operator.base import _get_abstract_operator  # tach-ignore
+from pennylane.capture import symbolic_array
+from pennylane.core.operator.base import AbstractOperator  # tach-ignore
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import (
     DecompositionUndefinedError,
@@ -34,9 +38,9 @@ from pennylane.exceptions import (
     PennyLaneDeprecationWarning,
     QuantumFunctionError,
 )
-from pennylane.math.utils import is_abstract
+from pennylane.math.utils import is_tracer
 from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.typing import TensorLike
+from pennylane.typing import AbstractWires, TensorLike
 from pennylane.wires import Wires
 
 # tach-ignore
@@ -45,7 +49,7 @@ from ._capture_measurements import (
     create_measurement_obs_primitive,
     create_measurement_wires_primitive,
 )
-from .operator import Operator
+from .operator import Operator, Operator2
 
 
 class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
@@ -64,9 +68,9 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
     _shortname = None
 
-    _obs_primitive: Optional["jax.extend.core.Primitive"] = None
-    _wires_primitive: Optional["jax.extend.core.Primitive"] = None
-    _mcm_primitive: Optional["jax.extend.core.Primitive"] = None
+    _obs_primitive: jax.extend.core.Primitive
+    _wires_primitive: jax.extend.core.Primitive
+    _mcm_primitive: jax.extend.core.Primitive
 
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
@@ -89,10 +93,9 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         allow being specified via an observable. But we handle the generic case here.
 
         """
-        if cls._obs_primitive is None:
-            # safety check if primitives aren't set correctly.
-            return type.__call__(cls, obs=obs, wires=wires, eigvals=eigvals, **kwargs)
         if obs is None:
+            if isinstance(wires, AbstractWires):
+                wires = [symbolic_array((), int) for _ in range(len(wires))]
             wires = () if wires is None else wires
             if eigvals is None:
                 out = cls._wires_primitive.bind(*wires, **kwargs)  # wires
@@ -101,13 +104,19 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
                 *wires, eigvals, has_eigvals=True, **kwargs
             )  # wires + eigvals
 
+        if isinstance(obs, Operator2):
+            if obs.tracer is None:
+                obs._bind_primitive()  # pylint: disable=protected-access
+            # capture on but not tracing, tracer will still be None
+            obs = obs if obs.tracer is None else obs.tracer
+
         if isinstance(obs, Operator):
             QueuingManager.remove(obs)
             # turn into abstract operator
             with QueuingManager.stop_recording():
                 obs = unflatten(*flatten(obs))
 
-        if isinstance(getattr(obs, "aval", None), _get_abstract_operator()):
+        if isinstance(getattr(obs, "aval", None), AbstractOperator):
             return cls._obs_primitive.bind(obs, **kwargs)
         if isinstance(obs, (list, tuple)):
             out = cls._mcm_primitive.bind(*obs, single_mcm=False, **kwargs)  # iterable of mcms
@@ -115,9 +124,8 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         out = cls._mcm_primitive.bind(obs, single_mcm=True, **kwargs)  # single mcm
         return tuple(out) if isinstance(out, list) else out
 
-    # pylint: disable=unused-argument
     @classmethod
-    def _abstract_eval(
+    def _abstract_eval(  # pylint: disable=unused-argument
         cls,
         n_wires: int | None = None,
         has_eigvals=False,
@@ -173,7 +181,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             # Cast sequence of measurement values to list
             self.mv = obs if getattr(obs, "name", None) == "MeasurementValue" else list(obs)
             self.obs = None
-        elif is_abstract(obs):  # Catalyst program with qp.sample(m, wires=i)
+        elif is_tracer(obs):  # Catalyst program with qp.sample(m, wires=i)
             self.mv = obs
             self.obs = None
         else:
@@ -279,11 +287,11 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         if self.obs:
             return f"{name_str}({self.obs})"
         if self._eigvals is not None:
-            return f"{name_str}(eigvals={self._eigvals}, wires={self.wires.tolist()})"
+            return f"{name_str}(eigvals={self._eigvals}, wires={self.wires})"
 
         # Todo: when tape is core the return type will always be taken from the MeasurementProcess
         name_str = self._shortname or "None"
-        return f"{name_str}(wires={self.wires.tolist()})"
+        return f"{name_str}(wires={self.wires})"
 
     def __copy__(self):
         cls = self.__class__
@@ -303,7 +311,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
         This is the union of all the Wires objects of the measurement.
         """
-        if self.mv is not None and not is_abstract(self.mv):
+        if self.mv is not None and not is_tracer(self.mv):
             if isinstance(self.mv, list):
                 return Wires.all_wires([m.wires for m in self.mv])
             return self.mv.wires
@@ -400,7 +408,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         """
         return self if self.obs is None else self.__class__(obs=self.obs.simplify())
 
-    # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):
         """Returns a copy of the current measurement process with its wires changed according to
         the given wire map.
@@ -421,6 +428,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         elif self.obs is not None:
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
         elif self._wires is not None:
+            # pylint: disable-next=protected-access
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         return new_measurement
 

@@ -103,10 +103,7 @@ class QROMStatePreparation(Operation):
         reduce the overall resource requirements on the implementation.
     """
 
-    # pylint: disable=too-many-positional-arguments
-    def __init__(
-        self, state_vector, wires, precision_wires, work_wires=None
-    ):  # pylint: disable=too-many-arguments
+    def __init__(self, state_vector, wires, precision_wires, work_wires=None):
 
         n_amplitudes = qp.math.shape(state_vector)[0]
         if n_amplitudes != 2 ** len(Wires(wires)):
@@ -168,9 +165,8 @@ class QROMStatePreparation(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(
-        state_vector, wires, input_wires, precision_wires, work_wires
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(state_vector, wires, input_wires, precision_wires, work_wires):
         r"""
         Computes the decomposition operations for the given state vector.
 
@@ -219,7 +215,7 @@ class QROMStatePreparation(Operation):
             # Apply the QROM operation to encode the thetas binary representation
             decomp_ops.append(
                 qp.QROM(
-                    data=thetas_binary,
+                    bitstrings=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires[:i],
                     work_wires=work_wires,
@@ -234,7 +230,7 @@ class QROMStatePreparation(Operation):
             # Clean wires used to store the theta values
             decomp_ops.append(
                 qp.adjoint(qp.QROM)(
-                    data=thetas_binary,
+                    bitstrings=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires[:i],
                     work_wires=work_wires,
@@ -252,7 +248,7 @@ class QROMStatePreparation(Operation):
             # Apply the QROM operation to encode the thetas binary representation
             decomp_ops.append(
                 qp.QROM(
-                    data=thetas_binary,
+                    bitstrings=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires,
                     work_wires=work_wires,
@@ -263,14 +259,14 @@ class QROMStatePreparation(Operation):
             for ind, wire in enumerate(precision_wires):
                 decomp_ops.append(
                     qp.ctrl(
-                        qp.GlobalPhase((2 * np.pi) * (-rotation_angles[ind]), wires=input_wires[0]),
+                        qp.GlobalPhase((2 * np.pi) * (-rotation_angles[ind])),
                         control=wire,
                     )
                 )
 
             decomp_ops.append(
                 qp.adjoint(qp.QROM)(
-                    data=thetas_binary,
+                    bitstrings=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires,
                     work_wires=work_wires,

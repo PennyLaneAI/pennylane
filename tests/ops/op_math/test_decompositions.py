@@ -15,8 +15,6 @@
 Tests for the QubitUnitary decomposition transforms.
 """
 
-# pylint: disable=unused-variable,unused-argument
-
 from functools import reduce
 
 import numpy as np
@@ -30,7 +28,6 @@ from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     _compute_num_cnots,
     multi_qubit_decomposition,
 )
-from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.wires import Wires
 
 
@@ -74,7 +71,7 @@ def _run_assertions(U, expected_gates, expected_params, obtained_gates):
 
     assert all(
         check_matrix_equivalence(curr_obtained_mat, curr_U, atol=1e-7)
-        for curr_obtained_mat, curr_U in zip(obtained_mat, qp.math.unwrap(U))
+        for curr_obtained_mat, curr_U in zip(obtained_mat, qp.math.unwrap(U), strict=False)
     )
 
 
@@ -151,21 +148,9 @@ class TestQubitUnitaryZYZDecomposition:
     def test_zyz_decomposition_torch(self, U, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
-        _test_decomposition(U, "ZYZ", typeof_gates_zyz, expected_params)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("U,expected_params", test_cases_zyz)
-    def test_zyz_decomposition_tf(self, U, expected_params):
-        """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
-
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-
-        U = tf.Variable(U, dtype=tf.complex128)
         _test_decomposition(U, "ZYZ", typeof_gates_zyz, expected_params)
 
     @pytest.mark.jax
@@ -173,7 +158,6 @@ class TestQubitUnitaryZYZDecomposition:
     def test_zyz_decomposition_jax(self, U, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
@@ -229,21 +213,9 @@ class TestQubitUnitaryXYXDecomposition:
     def test_xyx_decomposition_torch(self, U, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
-        _test_decomposition(U, "XYX", typeof_gates_xyx, expected_params)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("U,expected_params", test_cases_xyx)
-    def test_xyx_decomposition_tf(self, U, expected_params):
-        """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
-
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-
-        U = tf.Variable(U, dtype=tf.complex128)
         _test_decomposition(U, "XYX", typeof_gates_xyx, expected_params)
 
     @pytest.mark.jax
@@ -251,7 +223,6 @@ class TestQubitUnitaryXYXDecomposition:
     def test_xyx_decomposition_jax(self, U, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
@@ -304,21 +275,9 @@ class TestQubitUnitaryXZXDecomposition:
     def test_xzx_decomposition_torch(self, U, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
-        _test_decomposition(U, "XZX", typeof_gates_xzx, expected_params)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("U,expected_params", test_cases_xzx)
-    def test_xzx_decomposition_tf(self, U, expected_params):
-        """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
-
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-
-        U = tf.Variable(U, dtype=tf.complex128)
         _test_decomposition(U, "XZX", typeof_gates_xzx, expected_params)
 
     @pytest.mark.jax
@@ -326,7 +285,6 @@ class TestQubitUnitaryXZXDecomposition:
     def test_xzx_decomposition_jax(self, U, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
@@ -393,21 +351,9 @@ class TestQubitUnitaryZXZDecomposition:
     def test_zxz_decomposition_torch(self, U, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
-        _test_decomposition(U, "ZXZ", typeof_gates_zxz, expected_params)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("U,expected_params", test_cases_zxz)
-    def test_zxz_decomposition_tf(self, U, expected_params):
-        """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
-
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-
-        U = tf.Variable(U, dtype=tf.complex128)
         _test_decomposition(U, "ZXZ", typeof_gates_zxz, expected_params)
 
     @pytest.mark.jax
@@ -415,7 +361,6 @@ class TestQubitUnitaryZXZDecomposition:
     def test_zxz_decomposition_jax(self, U, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
@@ -460,21 +405,9 @@ class TestOneQubitRotDecomposition:
     def test_rot_decomposition_torch(self, U, expected_gates, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
-        _test_decomposition(U, "rot", expected_gates, expected_params)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("U,expected_gates,expected_params", test_cases_rot)
-    def test_rot_decomposition_tf(self, U, expected_gates, expected_params):
-        """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
-
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-
-        U = tf.Variable(U, dtype=tf.complex128)
         _test_decomposition(U, "rot", expected_gates, expected_params)
 
     @pytest.mark.jax
@@ -482,7 +415,6 @@ class TestOneQubitRotDecomposition:
     def test_rot_decomposition_jax(self, U, expected_gates, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
@@ -1094,7 +1026,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_torch(self, U, wires):
         """Test that a two-qubit operation in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
@@ -1112,49 +1043,10 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_tensor_products_torch(self, U_pair, wires):
         """Test that a two-qubit tensor product in Torch is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import torch
 
         U1 = torch.tensor(U_pair[0], dtype=torch.complex128)
         U2 = torch.tensor(U_pair[1], dtype=torch.complex128)
-        U = qp.math.kron(U1, U2)
-
-        obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-
-        tape = qp.tape.QuantumScript(obtained_decomposition)
-        obtained_matrix = qp.matrix(tape, wire_order=wires)
-
-        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
-    @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
-    def test_two_qubit_decomposition_tf(self, U, wires):
-        """Test that a two-qubit operation in Tensorflow is correctly decomposed."""
-
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-
-        U = tf.Variable(U, dtype=tf.complex128)
-
-        obtained_decomposition = two_qubit_decomposition(U, wires=wires)
-
-        tape = qp.tape.QuantumScript(obtained_decomposition)
-        obtained_matrix = qp.matrix(tape, wire_order=wires)
-
-        assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
-    @pytest.mark.parametrize("U_pair", samples_su2_su2)
-    def test_two_qubit_decomposition_tensor_products_tf(self, U_pair, wires):
-        """Test that a two-qubit tensor product in Tensorflow is correctly decomposed."""
-
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-
-        U1 = tf.Variable(U_pair[0], dtype=tf.complex128)
-        U2 = tf.Variable(U_pair[1], dtype=tf.complex128)
         U = qp.math.kron(U1, U2)
 
         obtained_decomposition = two_qubit_decomposition(U, wires=wires)
@@ -1170,7 +1062,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_jax(self, U, wires):
         """Test that a two-qubit operation in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
@@ -1188,7 +1079,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_tensor_products_jax(self, U_pair, wires):
         """Test that a two-qubit tensor product in JAX is correctly decomposed."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U1 = jax.numpy.array(U_pair[0], dtype=jax.numpy.complex128)
@@ -1208,7 +1098,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_jax_jit(self, U, wires):
         """Test that a two-qubit operation is correctly decomposed with JAX-JIT ."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
@@ -1233,7 +1122,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
     @pytest.mark.jax
     @pytest.mark.catalyst
-    @pytest.mark.external
     def test_two_qubit_decomposition_2_cnots_qjit(self):
         """Test that two_qubit_decomposition does not raise TracerArrayConversionError
         under qjit. Regression test for #9016."""
@@ -1251,7 +1139,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
             qp.RZ(angle, wires=0)
             return qp.expval(qp.Z(0))
 
-        grad_fn = qp.qjit(catalyst_grad(circuit))
+        grad_fn = qp.qjit(catalyst_grad(circuit), capture=False)
 
         # Before the fix, this raised TracerArrayConversionError inside _decompose_2_cnots
         # because np.lexsort received abstract traced arrays under qjit.
@@ -1267,7 +1155,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     def test_two_qubit_decomposition_tensor_products_jax_jit(self, U_pair, wires):
         """Test that a two-qubit tensor product is correctly decomposed with JAX-JIT."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         U1 = jax.numpy.array(U_pair[0], dtype=jax.numpy.complex128)
@@ -1366,7 +1253,6 @@ class TestTwoQubitDecompositionWarnings:
     def test_warning_parameterized_torch(self):
         """Test warning is raised for parameterized matrix with PyTorch"""
         try:
-            # pylint: disable=import-outside-toplevel
             import torch
         except ImportError:
             pytest.skip("PyTorch not installed")
@@ -1388,39 +1274,10 @@ class TestTwoQubitDecompositionWarnings:
         ):
             qnode(torch.tensor(1.0, dtype=torch.complex128, requires_grad=True))
 
-    @pytest.mark.tf
-    def test_warning_parameterized_tf(self):
-        """Test warning is raised for parameterized matrix with TensorFlow"""
-        try:
-            # pylint: disable=import-outside-toplevel
-            import tensorflow as tf
-        except ImportError:
-            pytest.skip("TensorFlow not installed")
-
-        dev = qp.device("default.qubit", wires=2)
-
-        def my_qfunc(params):
-            params = tf.cast(params, tf.complex128)
-            U = tf.eye(4, dtype=tf.complex128) * params  # Create tensor without Variable
-            with tf.GradientTape() as tape:
-                tape.watch(U)  # Explicitly watch U
-                ops = qp.ops.two_qubit_decomposition(U, wires=[0, 1])
-            for op in ops:
-                qp.apply(op)
-            return qp.expval(qp.PauliZ(0))
-
-        qnode = qp.QNode(my_qfunc, dev, interface="tf")
-
-        with pytest.warns(
-            RuntimeWarning, match="The two-qubit decomposition may not be differentiable"
-        ):
-            qnode(tf.constant(1.0))
-
     @pytest.mark.jax
     def test_warning_parameterized_jax(self):
         """Test warning is raised for parameterized matrix with JAX"""
         try:
-            # pylint: disable=import-outside-toplevel
             import jax
             import jax.numpy as jnp
         except ImportError:
@@ -1471,7 +1328,7 @@ class TestTwoQubitDecompositionWarnings:
     "U, n_wires",
     [
         (qp.matrix(qp.CRX(0.123, [0, 2]) @ qp.CRY(0.456, [1, 3])), 4),
-        (qp.QFT.compute_matrix(5), 5),
+        (qp.QFT.compute_matrix(tuple(range(5))), 5),
         (qp.GroverOperator.compute_matrix(6, []), 6),
     ],
 )
@@ -1513,48 +1370,10 @@ class TestQubitUnitaryDecompositionGraph:
 
         op = qp.QubitUnitary(U, wires=[0])
         tape = qp.tape.QuantumScript([op])
-        [decomp], _ = qp.transforms.decompose([tape], gate_set=gate_set)
+        # pylint: disable-next=protected-access
+        [decomp], _ = qp.transforms._tape_decompose([tape], gate_set=gate_set)
 
         matrix = qp.matrix(decomp)
-        assert qp.math.allclose(matrix, U, atol=1e-7)
-
-    @pytest.mark.jax
-    @pytest.mark.capture
-    @pytest.mark.parametrize(
-        "gate_set",
-        [
-            ("RX", "RY", "GlobalPhase"),
-            ("RX", "RZ", "GlobalPhase"),
-            ("RZ", "RY", "GlobalPhase"),
-            ("Rot", "GlobalPhase"),
-        ],
-    )
-    def test_single_qubit_decomposition_capture(self, gate_set):
-        """Tests that a single-qubit unitary can be decomposed with capture enabled."""
-
-        import jax
-
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-
-        # Just a random matrix
-        U = np.array(
-            [
-                [-0.28829348 - 0.78829734j, 0.30364367 + 0.45085995j],
-                [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
-            ]
-        )
-
-        @DecomposeInterpreter(gate_set=gate_set)
-        def circuit(mat):
-            qp.QubitUnitary(mat, wires=[0])
-
-        jaxpr = jax.make_jaxpr(circuit)(U)
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, U)
-        decomp = collector.state["ops"]
-
-        decomp_tape = qp.tape.QuantumScript(decomp)
-        matrix = qp.matrix(decomp_tape)
         assert qp.math.allclose(matrix, U, atol=1e-7)
 
     @pytest.mark.parametrize(
@@ -1572,42 +1391,10 @@ class TestQubitUnitaryDecompositionGraph:
 
         op = qp.QubitUnitary(U, wires=[0, 1])
         tape = qp.tape.QuantumScript([op])
-        [decomp], _ = qp.transforms.decompose([tape], gate_set=gate_set)
+        # pylint: disable-next=protected-access
+        [decomp], _ = qp.transforms._tape_decompose([tape], gate_set=gate_set)
 
         matrix = qp.matrix(decomp, wire_order=[0, 1])
-        assert qp.math.allclose(matrix, U, atol=1e-7)
-
-    @pytest.mark.jax
-    @pytest.mark.capture
-    @pytest.mark.parametrize(
-        "gate_set",
-        [
-            ("RX", "RY", "CNOT", "GlobalPhase"),
-            ("RX", "RZ", "CNOT", "GlobalPhase"),
-            ("RZ", "RY", "CNOT", "GlobalPhase"),
-            ("Rot", "CNOT", "GlobalPhase"),
-        ],
-    )
-    @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
-    def test_two_qubit_decomposition_capture(self, gate_set, U):
-        """Tests that the two-qubit unitary can be decomposed with capture enabled."""
-
-        import jax
-
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-
-        @DecomposeInterpreter(gate_set=gate_set)
-        def circuit(mat):
-            qp.QubitUnitary(mat, wires=[0, 1])
-
-        U = jax.numpy.array(U)
-        jaxpr = jax.make_jaxpr(circuit)(U)
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, U)
-        decomp = collector.state["ops"]
-
-        decomp_tape = qp.tape.QuantumScript(decomp)
-        matrix = qp.matrix(decomp_tape, wire_order=[0, 1])
         assert qp.math.allclose(matrix, U, atol=1e-7)
 
     @pytest.mark.integration
@@ -1623,10 +1410,10 @@ class TestQubitUnitaryDecompositionGraph:
     @pytest.mark.parametrize(
         "U, n_wires",
         [
-            (qp.QFT.compute_matrix(2), 2),
+            (qp.QFT.compute_matrix(tuple(range(2))), 2),
             (qp.matrix(qp.CRX(0.123, [0, 2]) @ qp.CRY(0.456, [2, 0])), 2),
             (qp.matrix(qp.CRX(0.123, [0, 2]) @ qp.CRY(0.456, [1, 3])), 4),
-            (qp.QFT.compute_matrix(5), 5),
+            (qp.QFT.compute_matrix(tuple(range(5))), 5),
             (qp.GroverOperator.compute_matrix(6, []), 6),
         ],
     )
@@ -1635,7 +1422,8 @@ class TestQubitUnitaryDecompositionGraph:
 
         op = qp.QubitUnitary(U, wires=list(range(n_wires)))
         tape = qp.tape.QuantumScript([op])
-        [decomp], _ = qp.transforms.decompose([tape], gate_set=gate_set)
+        # pylint: disable-next=protected-access
+        [decomp], _ = qp.transforms._tape_decompose([tape], gate_set=gate_set)
 
         matrix = qp.matrix(decomp, wire_order=list(range(n_wires)))
         assert qp.math.allclose(matrix, op.matrix(wire_order=list(range(n_wires))), atol=1e-7)

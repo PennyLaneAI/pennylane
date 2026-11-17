@@ -11,10 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the qp.mutual_info measurement.
 """
+
+# pylint: disable=protected-access
+
 
 from collections.abc import Sequence
 from copy import copy
@@ -54,16 +56,12 @@ class MutualInfoMP(StateMeasurement):
         self.log_base = log_base
         super().__init__(wires=wires)
 
-    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, wires: Sequence, **kwargs):
-        if cls._wires_primitive is None:  # pragma: no cover
-            # just a safety check
-            return type.__call__(cls, wires=wires, **kwargs)  # pragma: no cover
+    def _primitive_bind_call(cls, wires: Sequence, **kwargs):  # pylint: disable=arguments-differ
         return cls._wires_primitive.bind(*wires[0], *wires[1], n_wires0=len(wires[0]), **kwargs)
 
     def __repr__(self):
-        return f"MutualInfo(wires0={self.raw_wires[0].tolist()}, wires1={self.raw_wires[1].tolist()}, log_base={self.log_base})"
+        return f"MutualInfo(wires0={self.raw_wires[0]}, wires1={self.raw_wires[1]}, log_base={self.log_base})"
 
     def __hash__(self):
         """int: returns an integer hash uniquely representing the measurement process"""
@@ -109,13 +107,11 @@ class MutualInfoMP(StateMeasurement):
         )
 
 
-if MutualInfoMP._wires_primitive is not None:
-
-    @MutualInfoMP._wires_primitive.def_impl
-    def _(*all_wires, n_wires0, **kwargs):
-        wires0 = all_wires[:n_wires0]
-        wires1 = all_wires[n_wires0:]
-        return type.__call__(MutualInfoMP, wires=(wires0, wires1), **kwargs)
+@MutualInfoMP._wires_primitive.def_impl
+def _(*all_wires, n_wires0, **kwargs):
+    wires0 = all_wires[:n_wires0]
+    wires1 = all_wires[n_wires0:]
+    return type.__call__(MutualInfoMP, wires=(wires0, wires1), **kwargs)
 
 
 def mutual_info(wires0, wires1, log_base=None) -> MutualInfoMP:
@@ -173,7 +169,7 @@ def mutual_info(wires0, wires1, log_base=None) -> MutualInfoMP:
     wires1 = Wires(wires1)
 
     # the subsystems cannot overlap
-    if not any(math.is_abstract(w) for w in wires0 + wires1) and [
+    if not any(math.is_tracer(w) for w in wires0 + wires1) and [
         wire for wire in wires0 if wire in wires1
     ]:
         raise QuantumFunctionError("Subsystems for computing mutual information must not overlap.")

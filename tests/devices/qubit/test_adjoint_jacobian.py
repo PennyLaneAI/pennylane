@@ -162,14 +162,14 @@ class TestAdjointJacobian:
                 return qp.PauliX(self.wires) * 1.2
 
             @staticmethod
-            def compute_matrix(angle):  # pylint: disable=arguments-differ
+            def compute_matrix(angle):
                 """Matrix representation of MyOp, just the same as a reparametrized RX."""
                 return qp.RX.compute_matrix(-2.4 * angle)
 
         params = np.array([np.pi, np.pi / 2, np.pi / 3])
 
         qs = QuantumScript(
-            [MyOp(p, w) for p, w in zip(params, [0, 1, 2])],
+            [MyOp(p, w) for p, w in zip(params, [0, 1, 2], strict=False)],
             [qp.expval(qp.PauliZ(idx)) for idx in range(3)],
         )
         qs_valid, _ = qp.devices.preprocess.decompose(qs, adjoint_ops)
@@ -761,6 +761,7 @@ class TestAdjointVJP:
         expected = jac.T @ cotangents.T
         assert np.allclose(actual, expected, atol=tol)
 
+    @pytest.mark.pl2do(reason="complex operator params unsupported, adjoint state diff unsupported")
     @pytest.mark.parametrize(
         "cotangents",
         [
@@ -780,8 +781,8 @@ class TestAdjointVJP:
     def test_multi_param_state_batched(self, cotangents, tol):
         """Test that computing the VJP with batched cotangents for state measurements
         gives the correct results for multiple trainable parameters."""
-        x = np.array(0.654 + 0j)
-        y = np.array(1.221 + 0j)
+        x = np.array(0.654)
+        y = np.array(1.221)
 
         obs = [qp.state()]
         qs = QuantumScript([qp.RY(x, wires=[0]), qp.RX(y, wires=[1])], obs, trainable_params=[0, 1])

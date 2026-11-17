@@ -15,8 +15,6 @@
 This module contains the Clifford simulator using ``stim``.
 """
 
-# pylint: disable=no-member
-
 import concurrent.futures
 from collections.abc import Sequence
 from dataclasses import replace
@@ -200,9 +198,10 @@ def _handle_state_prep(prep, circuit, stim_circuit):
     return stim_circuit
 
 
+# Derivative entry points are optional for devices without native differentiation.
 @simulator_tracking
 @single_tape_support
-class DefaultClifford(Device):
+class DefaultClifford(Device):  # pylint: disable=abstract-method
     r"""A PennyLane device for fast simulation of Clifford circuits using
     `stim <https://github.com/quantumlib/stim/>`_.
 
@@ -399,7 +398,7 @@ class DefaultClifford(Device):
 
         * ``executions``: the number of unique circuits that would be required on quantum hardware
         * ``shots``: the number of shots
-        * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
+        * ``resources``: the :class:`~.resource.SpecsResources` for the executed circuit.
         * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions,
           such as for non-commuting measurements and batched parameters.
         * ``batches``: The number of times :meth:`~.execute` is called.
@@ -419,8 +418,7 @@ class DefaultClifford(Device):
         """The name of the device."""
         return "default.clifford"
 
-    # pylint:disable = too-many-arguments, too-many-positional-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         wires=None,
         shots=None,
@@ -475,14 +473,14 @@ class DefaultClifford(Device):
         self,
         execution_config: ExecutionConfig | None = None,
     ) -> tuple[CompilePipeline, ExecutionConfig]:
-        """This function defines the device compile pileline to be applied and an updated device configuration.
+        """This function defines the device compile pipeline to be applied and an updated device configuration.
 
         Args:
             execution_config (Union[ExecutionConfig, Sequence[ExecutionConfig]]): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
-            CompilePipeline, ExecutionConfig: A compile pileline that when called returns QuantumTapes that the device
+            CompilePipeline, ExecutionConfig: A compile pipeline that when called returns QuantumTapes that the device
             can natively execute as well as a postprocessing function to be called after execution, and a configuration with
             unset specifications filled in.
 
@@ -492,38 +490,38 @@ class DefaultClifford(Device):
         if execution_config is None:
             execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
-        compile_pileline = CompilePipeline()
+        compile_pipeline = CompilePipeline()
 
-        compile_pileline.add_transform(validate_device_wires, self.wires, name=self.name)
-        compile_pileline.add_transform(defer_measurements, allow_postselect=False)
+        compile_pipeline.add_transform(validate_device_wires, self.wires, name=self.name)
+        compile_pipeline.add_transform(defer_measurements, allow_postselect=False)
 
         # Perform circuit decomposition to the supported Clifford gate set
         if self._check_clifford:
-            compile_pileline.add_transform(
+            compile_pipeline.add_transform(
                 decompose,
                 target_gates=set(_OPERATIONS_MAP.keys()),
                 stopping_condition=operation_stopping_condition,
                 name=self.name,
             )
-            compile_pileline.add_transform(_validate_channels, name=self.name)
-        compile_pileline.add_transform(
+            compile_pipeline.add_transform(_validate_channels, name=self.name)
+        compile_pipeline.add_transform(
             validate_measurements, sample_measurements=accepted_sample_measurement, name=self.name
         )
-        compile_pileline.add_transform(
+        compile_pipeline.add_transform(
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
 
         # Validate multi processing
         max_workers = config.device_options.get("max_workers", self._max_workers)
         if max_workers:
-            compile_pileline.add_transform(validate_multiprocessing_workers, max_workers, self)
+            compile_pipeline.add_transform(validate_multiprocessing_workers, max_workers, self)
 
         # Validate derivatives
-        compile_pileline.add_transform(validate_adjoint_trainable_params)
+        compile_pipeline.add_transform(validate_adjoint_trainable_params)
         if config.gradient_method is not None:
             config = replace(config, gradient_method=None)
 
-        return compile_pileline, config
+        return compile_pipeline, config
 
     def execute(
         self,
@@ -641,7 +639,6 @@ class DefaultClifford(Device):
             ShadowExpvalMP: self._sample_expval_shadow,
         }
 
-    # pylint: disable=too-many-positional-arguments
     def _apply_snapshot(
         self,
         circuit: QuantumScript,
@@ -770,7 +767,7 @@ class DefaultClifford(Device):
         return math.reduce_dm(math.einsum("i, j->ij", state_vector, state_vector), wires)
 
     def _measure_state(self, _, tableau_simulator, **kwargs):
-        """Measure the state of the simualtor device."""
+        """Measure the state of the simulator device."""
         wires = kwargs.get("circuit").wires
         global_phase = kwargs.get("global_phase", ops.GlobalPhase(0.0))
         if self._tableau:
@@ -868,12 +865,11 @@ class DefaultClifford(Device):
         z_stabs = math.array([tableau.z_output(wire) for wire in range(len(wires))])
         return 2 ** (-self._measure_stabilizer_entropy(z_stabs, list(meas.wires), log_base=2))
 
-    # pylint: disable=protected-access
     @staticmethod
     def _measure_stabilizer_entropy(stabilizer, wires, log_base=None):
         r"""Computes the Rényi entanglement entropy using stabilizer information.
 
-        Computes the Rényi entanglement entropy :math:`S_A` for a subsytem described
+        Computes the Rényi entanglement entropy :math:`S_A` for a subsystem described
         by :math:`A`, :math:`S_A = \text{rank}(\text{proj}_A {\mathcal{S}}) - |A|`,
         where :math:`\mathcal{S}` is the stabilizer group for the system using the theory
         described in Appendix A.1.d of `arXiv:1901.08092 <https://arxiv.org/abs/1901.08092>`_.
@@ -893,7 +889,7 @@ class DefaultClifford(Device):
         if len(wires) == num_qubits:
             return 0.0
 
-        # Build a binary matrix desribing the stabilizers using the Pauli words
+        # Build a binary matrix describing the stabilizers using the Pauli words
         pauli_dict = {0: "I", 1: "X", 2: "Y", 3: "Z"}
         terms = [
             PauliWord({idx: pauli_dict[ele] for idx, ele in enumerate(row)}) for row in stabilizer
@@ -919,8 +915,7 @@ class DefaultClifford(Device):
 
         return entropy / math.log(log_base)
 
-    # pylint: disable=too-many-branches
-    def _measure_probability(self, meas, _, **kwargs):
+    def _measure_probability(self, meas, _, **kwargs):  # pylint: disable=too-many-branches
         r"""Measure the probability of each computational basis state.
 
         Computes the probability for each of the computational basis state vector iteratively
@@ -988,7 +983,7 @@ class DefaultClifford(Device):
                     cgc_states.append(list(state[meas_wires]))
             tgt_states = np.array(cgc_states)
 
-        # Maintain a representaiton of basis states to build a visit-array
+        # Maintain a representation of basis states to build a visit-array
         tgt_integs = np.array([int("".join(map(str, tgt_state)), 2) for tgt_state in tgt_states])
 
         # Iterate over the required basis states and for each of them compute the probability

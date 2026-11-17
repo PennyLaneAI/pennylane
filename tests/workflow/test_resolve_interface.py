@@ -32,21 +32,6 @@ def test_auto_with_numpy():
     assert resolved_interface == Interface.NUMPY
 
 
-@pytest.mark.tf
-def test_auto_with_tf():
-    """Test that 'auto' interface resolves to 'tf' correctly."""
-    try:
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-    except ImportError:
-        pytest.skip("TensorFlow is not installed.")
-    tapes = [
-        QuantumScript([qp.RX(tf.Variable(0.5), wires=0)], [qp.expval(qp.PauliZ(0))]),
-    ]
-    resolved_interface = _resolve_interface("auto", tapes)
-    assert resolved_interface == Interface.TF
-
-
 @pytest.mark.autograd
 def test_auto_with_autograd():
     """Test that 'auto' interface resolves to 'autograd' correctly."""
@@ -63,7 +48,6 @@ def test_auto_with_autograd():
 def test_auto_with_jax():
     """Test that 'auto' interface resolves to 'jax' correctly.."""
     try:
-        # pylint: disable=import-outside-toplevel
         import jax.numpy as jnp
     except ImportError:
         pytest.skip("JAX not installed.")
@@ -77,11 +61,9 @@ def test_auto_with_jax():
 
 def test_auto_with_unsupported_interface():
     """Test that 'auto' interface resolves to None correctly."""
-    # pylint: disable=import-outside-toplevel
     import networkx as nx
 
-    # pylint: disable=too-few-public-methods
-    class DummyCustomGraphOp(qp.operation.Operation):
+    class DummyCustomGraphOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
         """Dummy custom operation for testing purposes."""
 
         def __init__(self, graph: nx.Graph):
@@ -96,30 +78,10 @@ def test_auto_with_unsupported_interface():
     assert _resolve_interface("auto", [tape]) == Interface.NUMPY
 
 
-@pytest.mark.tf
-def test_tf_autograph():
-    """Test that 'tf' interface resolves to 'tf-autograph' in graph mode."""
-    try:
-        # pylint: disable=import-outside-toplevel
-        import tensorflow as tf
-    except ImportError:
-        pytest.skip("TensorFlow is not installed.")
-
-    # pylint: disable=not-context-manager
-    with tf.Graph().as_default():
-        tapes = [
-            QuantumScript([qp.RX(tf.constant(0.5), wires=0)], [qp.expval(qp.PauliZ(0))]),
-        ]
-        resolved_interface = _resolve_interface("tf", tapes)
-
-    assert resolved_interface == Interface.TF_AUTOGRAPH
-
-
 @pytest.mark.jax
 def test_jax():
     """Test that non-abstract JAX parameters in tapes resolve to 'jax'."""
     try:
-        # pylint: disable=import-outside-toplevel
         import jax.numpy as jnp
     except ImportError:
         pytest.skip("JAX not installed.")
@@ -128,7 +90,7 @@ def test_jax():
     tapes = [
         QuantumScript([qp.RX(x, wires=0)], [qp.expval(qp.PauliZ(0))]),
     ]
-    assert not qp.math.is_abstract(x)
+    assert not qp.math.is_tracer(x)
 
     resolved_interface_abstract = _resolve_interface("jax", tapes)
     assert resolved_interface_abstract == Interface.JAX
@@ -138,18 +100,17 @@ def test_jax():
 def test_jax_jit():
     """Test that abstract JAX parameters in tapes resolve to 'jax-jit'."""
     try:
-        # pylint: disable=import-outside-toplevel
         import jax
         import jax.numpy as jnp
     except ImportError:
         pytest.skip("JAX not installed.")
 
     param = jnp.array(0.5)
-    assert not qp.math.is_abstract(param)
+    assert not qp.math.is_tracer(param)
 
     @jax.jit
     def abstract_func(x):
-        assert qp.math.is_abstract(x)
+        assert qp.math.is_tracer(x)
         tapes = [
             QuantumScript([qp.RX(x, wires=0)], [qp.expval(qp.PauliZ(0))]),
         ]

@@ -21,7 +21,7 @@ import pennylane as qp
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.queuing import AnnotatedQueue
 from pennylane.ftqc.operations import RotXZX
-from pennylane.ops.functions import assert_valid
+from pennylane.testing import assert_valid
 from pennylane.wires import Wires
 
 
@@ -36,7 +36,7 @@ class TestRotXZX:
         assert op.wires == Wires(wires)
         assert op.data == (phi, theta, omega)
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_is_valid_op(self):
         """Assert RotXZX is a valid operator"""
         op = RotXZX(1.2, 2.3, -0.5, wires=0)
@@ -60,7 +60,7 @@ class TestRotXZX:
         else:
             ops = RotXZX.compute_decomposition(phi, theta, omega, wires=wire)
 
-        for op, expected_op in zip(ops, expected_decomp):
+        for op, expected_op in zip(ops, expected_decomp, strict=False):
             qp.assert_equal(op, expected_op)
 
     def test_adjoint(self):
@@ -71,7 +71,7 @@ class TestRotXZX:
         phi, theta, omega = np.pi / 4, 1.23, -0.5
 
         op = RotXZX(phi, theta, omega, wires=0)
-        adj_op = qp.adjoint(op, lazy=False)
+        adj_op = op.adjoint()
 
         assert isinstance(adj_op, RotXZX)
         assert adj_op.data == (-omega, -theta, -phi)

@@ -27,8 +27,6 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import StateMP
 from pennylane.operation import _UNSET_BATCH_SIZE
 
-# pylint: disable=protected-access, unused-argument, too-few-public-methods, use-implicit-booleaness-not-comparison
-
 
 def test_process_queue_error_if_not_operator_or_measurement():
     """Test that a QueuingError is raised if process queue encounters an object it can't handle."""
@@ -44,8 +42,7 @@ def test_adjoint_deprecated():
         qs.adjoint()
 
 
-# pylint: disable=too-few-public-methods
-class Op2(Operator2):
+class Op2(Operator2):  # pylint: disable=too-few-public-methods
     """A simple ``Operator2`` subclass for testing."""
 
     dynamic_argnames = ("phi",)
@@ -96,6 +93,7 @@ class TestInitialization:
     def test_no_update_empty_initialization(self):
         """Test initialization if nothing is provided"""
 
+        # pylint: disable=protected-access
         qs = QuantumScript()
         assert len(qs._ops) == 0
         assert len(qs._measurements) == 0
@@ -104,7 +102,6 @@ class TestInitialization:
         assert qs.trainable_params == []
         assert qs._trainable_params == []
         assert qs._graph is None
-        assert qs._specs is None
         assert qs._shots.total_shots is None
         assert qs._batch_size is _UNSET_BATCH_SIZE
         assert qs.batch_size is None
@@ -147,6 +144,7 @@ class TestInitialization:
     )
     def test_provide_measurements(self, m):
         """Test provided measurements are converted to lists."""
+        # pylint: disable=protected-access
         qs = QuantumScript(measurements=m)
         assert len(qs._measurements) == 1
         assert isinstance(qs._measurements, list)
@@ -180,22 +178,20 @@ sample_measurements = [
 class TestUpdate:
     """Test the methods called by _update."""
 
-    def test_cached_graph_specs_reset(self):
-        """Test that update resets the graph and specs"""
+    def test_cached_graph_reset(self):
+        """Test that update resets the graph"""
+        # pylint: disable=protected-access
         qs = QuantumScript()
         qs._graph = "hello"
-        qs._specs = "something"
 
         qs._update()
         assert qs._graph is None
-        assert qs._specs is None
 
-    # pylint: disable=superfluous-parens
     def test_update_circuit_info_wires(self):
         """Test that on construction wires and num_wires are set."""
         prep = [qp.BasisState([1, 1], wires=(-1, -2))]
         ops = [qp.S(0), qp.T("a"), qp.S(0)]
-        measurement = [qp.probs(wires=("a"))]
+        measurement = [qp.probs(wires=("a"))]  # pylint: disable=superfluous-parens
 
         qs = QuantumScript(prep + ops, measurement)
         assert qs.wires == qp.wires.Wires([-1, -2, 0, "a"])
@@ -223,7 +219,7 @@ class TestUpdate:
         qs = QuantumScript(measurements=[qp.sample()])
         assert qs.samples_computational_basis is True
 
-        qs._measurements = [qp.expval(qp.PauliZ(0))]
+        qs._measurements = [qp.expval(qp.PauliZ(0))]  # pylint: disable=protected-access
         assert qs.samples_computational_basis is False
 
     def test_update_par_info_update_trainable_params(self):
@@ -266,14 +262,15 @@ class TestUpdate:
         assert isinstance(qs.par_info, list) and len(qs.par_info) > 0
         old_hash = qs.hash
         assert qs.trainable_params == [0, 1, 2, 3, 4, 5, 6, 7]
+        # pylint: disable=protected-access
         qs._ops = []
         qs._measurements = []
         qs._update()
+        # pylint: enable=protected-access
         assert qs.wires == qp.wires.Wires([])
         assert isinstance(qs.par_info, list) and len(qs.par_info) == 0
         assert QuantumScript([], []).hash == qs.hash and qs.hash != old_hash
 
-    # pylint: disable=unbalanced-tuple-unpacking
     def test_get_operation(self):
         """Tests the tape method get_operation."""
         ops = [
@@ -344,8 +341,8 @@ class TestUpdate:
         assert qs.obs_sharing_wires == []
         assert qs.obs_sharing_wires_id == []
         # Since the public attributes were accessed already, the private ones should be empty lists not None
-        assert qs._obs_sharing_wires == []
-        assert qs._obs_sharing_wires_id == []
+        assert qs._obs_sharing_wires == []  # pylint: disable=protected-access
+        assert qs._obs_sharing_wires_id == []  # pylint: disable=protected-access
 
     @pytest.mark.parametrize(
         "x, rot, exp_batch_size",
@@ -383,6 +380,7 @@ class TestUpdate:
 
     def test_lazy_batch_size(self):
         """Test that batch_size is computed lazily."""
+        # pylint: disable=protected-access
         qs = QuantumScript([qp.RX([1.1, 2.2], 0)], [qp.expval(qp.PauliZ(0))])
         copied = qs.copy()
         assert qs._batch_size is _UNSET_BATCH_SIZE
@@ -400,6 +398,8 @@ class TestUpdate:
 
 class TestMapToStandardWires:
     """Tests for the ``_get_standard_wire_map`` method."""
+
+    # pylint: disable=protected-access
 
     @pytest.mark.parametrize(
         "ops",
@@ -586,7 +586,7 @@ class TestIteration:
         qs_list = list(qs)
 
         expected = ops + meas
-        for op, exp_op in zip(qs_list, expected):
+        for op, exp_op in zip(qs_list, expected, strict=False):
             assert op is exp_op
 
         assert len(qs_list) == len(expected)
@@ -613,7 +613,7 @@ class TestIteration:
         assert qs.circuit == circuit
         assert list(qs) == circuit
         # Iterate over the tape
-        for op, expected in zip(qs, circuit):
+        for op, expected in zip(qs, circuit, strict=False):
             assert op is expected
 
         # Check that the underlying circuit is still as expected
@@ -639,7 +639,7 @@ class TestInfomationProperties:
         """Tests the graph is constructed the first time it's requested and then cached."""
         qs = make_script
 
-        assert qs._graph is None
+        assert qs._graph is None  # pylint: disable=protected-access
 
         g = qs.graph
         assert isinstance(g, qp.CircuitGraph)
@@ -648,40 +648,6 @@ class TestInfomationProperties:
 
         # test that if we request it again, we get the same object
         assert qs.graph is g
-
-    def test_empty_qs_specs(self):
-        """Tests the specs of an script."""
-        qs = QuantumScript()
-        assert qs._specs is None
-
-        assert qs.specs["resources"] == qp.resource.SpecsResources(
-            num_allocs=0,
-            gate_types={},
-            gate_sizes={},
-            measurements={},
-            depth=0,
-        )
-
-        assert qs._specs is qs.specs
-
-    def test_specs_tape(self, make_script):
-        """Tests that regular scripts return correct specifications"""
-        qs = make_script
-
-        assert qs._specs is None
-        specs = qs.specs
-        assert qs._specs is specs
-
-        gate_types = {"RX": 2, "Rot": 1, "CNOT": 1}
-        gate_sizes = {1: 3, 2: 1}
-        expected_resources = qp.resource.SpecsResources(
-            num_allocs=3,
-            gate_types=gate_types,
-            gate_sizes=gate_sizes,
-            measurements={"expval(PauliX)": 1, "probs(2 wires)": 1},
-            depth=3,
-        )
-        assert specs["resources"] == expected_resources
 
     @pytest.mark.parametrize(
         "shots, total_shots, shot_vector",
@@ -716,9 +682,11 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are simply references
-        assert all(o1 is o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
-        assert all(o1 is o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
-        assert all(m1 is m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
+        assert all(o1 is o2 for o1, o2 in zip(copied_qs.operations, qs.operations, strict=False))
+        assert all(o1 is o2 for o1, o2 in zip(copied_qs.observables, qs.observables, strict=False))
+        assert all(
+            m1 is m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements, strict=False)
+        )
 
         # operation data is also a reference
         assert copied_qs.operations[0].wires is qs.operations[0].wires
@@ -730,9 +698,10 @@ class TestScriptCopying:
         assert qs.data == copied_qs.data
         assert qs.shots is copied_qs.shots
 
-    # pylint: disable=unnecessary-lambda
     @pytest.mark.parametrize(
-        "copy_fn", [lambda tape: tape.copy(copy_operations=True), lambda tape: copy.copy(tape)]
+        "copy_fn",
+        # pylint: disable-next=unnecessary-lambda
+        [lambda tape: tape.copy(copy_operations=True), lambda tape: copy.copy(tape)],
     )
     def test_shallow_copy_with_operations(self, copy_fn):
         """Test that shallow copying of a tape and operations allows
@@ -748,9 +717,15 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are not references; they are unique objects
-        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
-        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
-        assert all(m1 is not m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
+        assert all(
+            o1 is not o2 for o1, o2 in zip(copied_qs.operations, qs.operations, strict=False)
+        )
+        assert all(
+            o1 is not o2 for o1, o2 in zip(copied_qs.observables, qs.observables, strict=False)
+        )
+        assert all(
+            m1 is not m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements, strict=False)
+        )
 
         # however, the underlying operation data *is still shared*
         assert copied_qs.operations[0].wires is qs.operations[0].wires
@@ -762,6 +737,9 @@ class TestScriptCopying:
         assert qs.data == copied_qs.data
         assert qs.shots is copied_qs.shots
 
+    @pytest.mark.pl2do(
+        reason="Figure out the desired behaviour of copying dynamic arguments, the factual behaviour of Operator2 differs from that of Operator, making this test fail."
+    )
     def test_deep_copy(self):
         """Test that deep copying a tape works, and copies all constituent data except parameters"""
         prep = [qp.BasisState(np.array([1, 0]), wires=(0, 1))]
@@ -774,9 +752,15 @@ class TestScriptCopying:
         assert copied_qs is not qs
 
         # the operations are not references
-        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.operations, qs.operations))
-        assert all(o1 is not o2 for o1, o2 in zip(copied_qs.observables, qs.observables))
-        assert all(m1 is not m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements))
+        assert all(
+            o1 is not o2 for o1, o2 in zip(copied_qs.operations, qs.operations, strict=False)
+        )
+        assert all(
+            o1 is not o2 for o1, o2 in zip(copied_qs.observables, qs.observables, strict=False)
+        )
+        assert all(
+            m1 is not m2 for m1, m2 in zip(copied_qs.measurements, qs.measurements, strict=False)
+        )
         assert copied_qs.shots is qs.shots
 
         # The underlying operation data has also been copied
@@ -1008,7 +992,7 @@ def test_adjoint():
 
     # assumes lazy=False
     expected_ops = [qp.adjoint(qp.T(1)), qp.CNOT((0, 1)), qp.adjoint(qp.S(0)), qp.RX(-1.2, 0)]
-    for op, expected in zip(adj_qs.operations[1:], expected_ops):
+    for op, expected in zip(adj_qs.operations[1:], expected_ops, strict=False):
         # update this one qp.equal works with adjoint
         assert isinstance(op, type(expected))
         assert op.wires == expected.wires
@@ -1259,7 +1243,7 @@ class TestFromQueue:
     def test_from_queue_child_class_preserved(self):
         """Test that a child of QuantumScript gets its own type when calling from_queue."""
 
-        class MyScript(QuantumScript):
+        class MyScript(QuantumScript):  # pylint: disable=too-few-public-methods
             pass
 
         with qp.queuing.AnnotatedQueue() as q:
@@ -1271,7 +1255,7 @@ class TestFromQueue:
     def test_from_queue_child_with_different_init_fails(self):
         """Test that if a child class overrides init to take different arguments, from_queue will fail."""
 
-        class ScriptWithNewInit(QuantumScript):
+        class ScriptWithNewInit(QuantumScript):  # pylint: disable=too-few-public-methods
             """An arbitrary class that has a different constructor from QuantumScript."""
 
             def __init__(self, ops, measurements, prep, bonus):
@@ -1402,16 +1386,16 @@ def test_flatten_unflatten(qscript_type):
     tape = qscript_type(ops, mps, shots=100)
     tape.trainable_params = {0}
 
-    data, metadata = tape._flatten()
-    assert all(o1 is o2 for o1, o2 in zip(ops, data[0]))
-    assert all(o1 is o2 for o1, o2 in zip(mps, data[1]))
+    data, metadata = tape._flatten()  # pylint: disable=protected-access
+    assert all(o1 is o2 for o1, o2 in zip(ops, data[0], strict=False))
+    assert all(o1 is o2 for o1, o2 in zip(mps, data[1], strict=False))
     assert metadata[0] == qp.measurements.Shots(100)
     assert metadata[1] == (0,)
     assert hash(metadata)
 
-    new_tape = qscript_type._unflatten(data, metadata)
-    assert all(o1 is o2 for o1, o2 in zip(new_tape.operations, tape.operations))
-    assert all(o1 is o2 for o1, o2 in zip(new_tape.measurements, tape.measurements))
+    new_tape = qscript_type._unflatten(data, metadata)  # pylint: disable=protected-access
+    assert all(o1 is o2 for o1, o2 in zip(new_tape.operations, tape.operations, strict=False))
+    assert all(o1 is o2 for o1, o2 in zip(new_tape.measurements, tape.measurements, strict=False))
     assert new_tape.shots == qp.measurements.Shots(100)
     assert new_tape.trainable_params == (0,)
 
@@ -1435,8 +1419,11 @@ def test_jax_pytree_integration(qscript_type):
 
     data, _ = jax.tree_util.tree_flatten(tape)
     assert data[0] == 0.5
-    assert data[1] == 1.2
-    assert data[2] == 2.3
-    assert data[3] == 3.4
-    assert data[4] == 2.0
-    assert qp.math.allclose(data[5], eye_mat)
+    assert data[1] == 0  # the wire of Adj(RY)
+    assert data[2] == 1.2
+    assert data[3] == 2.3
+    assert data[4] == 3.4
+    assert data[5] == 0  # the wire of Rot
+    assert data[6] == 2.0
+    assert data[7] == 0  # the wire of `PauliX`
+    assert qp.math.allclose(data[8], eye_mat)

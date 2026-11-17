@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the mutual_info module"""
 
-# pylint: disable=use-implicit-booleaness-not-comparison
 import numpy as np
 import pytest
 
@@ -58,18 +57,3 @@ def test_integration_jax_jit():
     assert np.isnan(r)
     assert r.shape == ()
     assert r.dtype == np.float64
-
-
-@pytest.mark.capture
-def test_capture():
-    """Test that null measurement works with plxpr."""
-
-    @qp.qnode(qp.device("default.qubit", wires=1))
-    def c(x):
-        qp.RX(x, 0)
-        return NullMeasurement()
-
-    out = c(0.5)
-    assert np.isnan(out)
-    assert out.shape == ()
-    assert out.dtype == np.float64

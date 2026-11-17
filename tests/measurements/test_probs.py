@@ -13,8 +13,6 @@
 # limitations under the License.
 """Unit tests for the probs module"""
 
-# pylint:disable=too-many-arguments
-
 from collections.abc import Sequence
 
 import numpy as np
@@ -42,10 +40,8 @@ def fixture_init_state():
     return _init_state
 
 
-class TestProbs:
+class TestProbs:  # pylint: disable=too-many-public-methods
     """Tests for the probs function"""
-
-    # pylint:disable=too-many-public-methods
 
     def test_queue(self):
         """Test that the right measurement class is queued."""
@@ -387,9 +383,7 @@ class TestProbs:
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
-    def test_observable_is_measurement_value(
-        self, shots, phi, tol, tol_stochastic, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_observable_is_measurement_value(self, shots, phi, tol, tol_stochastic, seed):
         """Test that probs for mid-circuit measurement values
         are correct for a single measurement value."""
         dev = qp.device("default.qubit", wires=2, seed=seed)
@@ -409,14 +403,12 @@ class TestProbs:
             if not isinstance(shots, list):
                 assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
             else:
-                for r in res:  # pylint: disable=not-an-iterable
+                for r in res:
                     assert np.allclose(r, expected, atol=atol, rtol=0)
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", [0.0, np.pi / 3, np.pi])
-    def test_observable_is_measurement_value_list(
-        self, shots, phi, tol, tol_stochastic, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_observable_is_measurement_value_list(self, shots, phi, tol, tol_stochastic, seed):
         """Test that probs for mid-circuit measurement values
         are correct for a measurement value list."""
 
@@ -449,7 +441,7 @@ class TestProbs:
         if not isinstance(shots, list):
             assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
         else:
-            for r in res:  # pylint: disable=not-an-iterable
+            for r in res:
                 assert np.allclose(r, expected, atol=atol, rtol=0)
 
     def test_composite_measurement_value_not_allowed(self):
@@ -512,27 +504,6 @@ class TestProbs:
         expected = [[1.0, 0.0], [0.5, 0.5]]
         assert np.allclose(res, expected, atol=0.1, rtol=0.1)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "prep_op, expected",
-        [
-            (None, [1, 0]),
-            (qp.StatePrep([[0, 1], [1, 0]], 0), [[0, 1], [1, 0]]),
-        ],
-    )
-    def test_process_state_tf_autograph(self, prep_op, expected):
-        """Test that process_state passes when decorated with tf.function."""
-        import tensorflow as tf
-
-        wires = qp.wires.Wires([0])
-
-        @tf.function
-        def probs_from_state(state):
-            return qp.probs(wires=wires).process_state(state, wires)
-
-        state = qp.devices.qubit.create_initial_state(wires, prep_operation=prep_op)
-        assert np.allclose(probs_from_state(state), expected)
-
     @pytest.mark.autograd
     def test_numerical_analytic_diff_agree(self, tol):
         """Test that the finite difference and parameter shift rule
@@ -566,7 +537,9 @@ class TestProbs:
         assert all(_r.shape == (2**2,) for _r in res_A)
 
         # Check that they agree up to numeric tolerance
-        assert all(np.allclose(_rF, _rA, atol=tol, rtol=0) for _rF, _rA in zip(res_F, res_A))
+        assert all(
+            np.allclose(_rF, _rA, atol=tol, rtol=0) for _rF, _rA in zip(res_F, res_A, strict=False)
+        )
 
     @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
     def test_prob_generalize_param_one_qubit(self, hermitian, tol):
@@ -665,7 +638,6 @@ class TestProbs:
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])
     def test_prob_generalize_initial_state(self, hermitian, wire, init_state, tol, seed):
         """Test that the correct probability is returned."""
-        # pylint:disable=too-many-arguments
         dev = qp.device("default.qubit", wires=4)
 
         state = init_state(4, seed)
@@ -723,7 +695,6 @@ class TestProbs:
     @pytest.mark.parametrize("wire", [0, 1, 2, 3])
     def test_operation_prob(self, operation, wire, init_state, tol, seed):
         "Test the rotated probability with different wires and rotating operations."
-        # pylint:disable=too-many-arguments
         dev = qp.device("default.qubit", wires=4)
 
         state = init_state(4, seed)

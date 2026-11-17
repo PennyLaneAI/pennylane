@@ -13,12 +13,14 @@
 # limitations under the License.
 """Test autograph support for standard Python item array updates with operations."""
 
+# pylint: disable=wrong-import-position
+
+
 import pytest
 
 pytestmark = pytest.mark.capture
 jax = pytest.importorskip("jax")
 
-# pylint: disable = wrong-import-position
 import jax.numpy as jnp
 from jax import make_jaxpr
 from jax.core import eval_jaxpr
@@ -26,7 +28,7 @@ from jax.core import eval_jaxpr
 from pennylane.capture.autograph import run_autograph
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 @pytest.mark.parametrize(
     "op,expected",
     [
@@ -60,7 +62,7 @@ def test_update_array_with_operations(op, expected):
     assert jnp.array_equal(result[0], expected)
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 @pytest.mark.parametrize(
     "array_in",
     [
@@ -102,7 +104,7 @@ def test_slicing_update():
     assert jnp.array_equal(result[0], jnp.array([8, 6, 5], dtype=result[0].dtype))
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 def test_static_array_update():
     """Test that static arrays can be updated."""
 
@@ -117,7 +119,7 @@ def test_static_array_update():
     assert jnp.array_equal(result, [0, 11])
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 def test_dynamic_index():
     """Tests that a dynamic index can be used."""
 
@@ -132,7 +134,7 @@ def test_dynamic_index():
     assert jnp.array_equal(result[0], jnp.array([6, 2, 1], dtype=result[0].dtype))
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 class TestUnsupportedArrayUpdates:
     """Test that errors are thrown for unsupported cases"""
 

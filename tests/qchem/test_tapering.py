@@ -16,6 +16,8 @@ Unit tests for functions needed for qubit tapering.
 """
 
 # pylint: disable=too-many-arguments
+
+
 import functools
 
 import pytest
@@ -108,14 +110,14 @@ def test_kernel(binary_matrix, result):
 def test_generate_paulis(generators, num_qubits, result):
     r"""Test that generate_paulis returns the correct result."""
     pauli_ops = qp.paulix_ops(generators, num_qubits)
-    for p1, p2 in zip(pauli_ops, result):
+    for p1, p2 in zip(pauli_ops, result, strict=False):
         qp.assert_equal(p1, p2)
 
     # test arithmetic op compatibility:
-    generators_as_ops = [pauli_sentence(g).operation() for g in generators]
+    generators_as_ops = [qp.pauli.to_operator(pauli_sentence(g)) for g in generators]
     assert not any(isinstance(g, qp.Hamiltonian) for g in generators_as_ops)
 
-    for p1, p2 in zip(pauli_ops, result):
+    for p1, p2 in zip(pauli_ops, result, strict=False):
         qp.assert_equal(p1, p2)
 
 
@@ -139,7 +141,7 @@ def test_symmetry_generators(symbols, geometry, res_generators):
     mol = qp.qchem.Molecule(symbols, geometry)
     hamiltonian = qp.qchem.diff_hamiltonian(mol)()
     generators = qp.symmetry_generators(hamiltonian)
-    for g1, g2 in zip(generators, res_generators):
+    for g1, g2 in zip(generators, res_generators, strict=False):
         assert pauli_sentence(g1) == pauli_sentence(g2)
 
 
@@ -177,7 +179,7 @@ def test_clifford(generator, paulixops, result):
     assert pauli_sentence(u) == pauli_sentence(result)
 
     # test arithmetic op compatibility:
-    result_as_op = pauli_sentence(result).operation()
+    result_as_op = qp.pauli.to_operator(pauli_sentence(result))
 
     assert pauli_sentence(result_as_op) == pauli_sentence(u)
 
@@ -208,10 +210,10 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
     h = qp.qchem.diff_hamiltonian(mol)()
     ham_calc = qp.taper(h, generator, paulixops, paulix_sector)
     # sort Hamiltonian terms and then compare with reference
-    sorted_terms = list(sorted(zip(ham_calc.terms()[0], ham_calc.terms()[1])))
-    hamref_terms = list(zip(*ham_ref.terms()))
+    sorted_terms = list(sorted(zip(ham_calc.terms()[0], ham_calc.terms()[1], strict=False)))
+    hamref_terms = list(zip(*ham_ref.terms(), strict=False))
 
-    for term, ref_term in zip(sorted_terms, hamref_terms):
+    for term, ref_term in zip(sorted_terms, hamref_terms, strict=False):
         assert np.allclose(term[0], ref_term[0])
         assert pauli_sentence(term[1]) == pauli_sentence(ref_term[1])
 
@@ -546,7 +548,7 @@ def test_taper_excitations(
         assert len(exc_tap[idx]) == num_commuting[idx]
 
     obs_all, obs_tap = exc_obs[0] + exc_obs[1], exc_tap[0] + exc_tap[1]
-    for op_all, op_tap in zip(obs_all, obs_tap):
+    for op_all, op_tap in zip(obs_all, obs_tap, strict=False):
         if op_tap:
             excited_state = np.matmul(qp.matrix(op_all, wire_order=range(len(hf_state))), state)
             ob_tap_mat = functools.reduce(
@@ -556,7 +558,7 @@ def test_taper_excitations(
             excited_state_tapered = np.matmul(ob_tap_mat, state_tapered)
             # check if tapered excitation gates remains spin and particle-number conserving,
             # and also evolves the tapered-state to have consistent energy values
-            for obs, tap_obs in zip(observables, tapered_obs):
+            for obs, tap_obs in zip(observables, tapered_obs, strict=False):
                 expec_val = (
                     scipy.sparse.coo_matrix(excited_state)
                     @ obs.sparse_matrix(wire_order=range(len(hf_state)))
@@ -661,7 +663,7 @@ def test_consistent_taper_ops(operation, op_gen):
     taper_op2 = taper_operation(
         operation, generators, paulixops, paulix_sector, wire_order, op_gen=op_gen
     )
-    for op1, op2 in zip(taper_op1, taper_op2):
+    for op1, op2 in zip(taper_op1, taper_op2, strict=False):
         qp.assert_equal(op1.base, op2.base)
 
     with qp.queuing.AnnotatedQueue() as q_tape1:
@@ -675,9 +677,9 @@ def test_consistent_taper_ops(operation, op_gen):
 
     assert len(taper_op1) == len(taper_circuit1)
     assert len(taper_op2) == len(taper_circuit2)
-    for op1, op2 in zip(taper_circuit1, taper_op1):
+    for op1, op2 in zip(taper_circuit1, taper_op1, strict=False):
         qp.assert_equal(op1.base, op2.base)
-    for op1, op2 in zip(taper_circuit2, taper_op2):
+    for op1, op2 in zip(taper_circuit2, taper_op2, strict=False):
         qp.assert_equal(op1.base, op2.base)
 
     if taper_op1:
@@ -705,7 +707,7 @@ def test_consistent_taper_ops(operation, op_gen):
         )
         evolved_state_tapered = np.matmul(ob_tap_mat, state_tapered)
 
-        for obs, tap_obs in zip(observables, tapered_obs):
+        for obs, tap_obs in zip(observables, tapered_obs, strict=False):
             expec_val = (
                 scipy.sparse.coo_matrix(evolved_state)
                 @ scipy.sparse.coo_matrix(qp.matrix(obs, wire_order=range(len(hf_state))))
@@ -773,7 +775,7 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
             op_wires=op_wires,
             op_gen=op_gen,
         )
-        for op1, op2 in zip(taper_op_fn(params), taper_op):
+        for op1, op2 in zip(taper_op_fn(params), taper_op, strict=False):
             qp.assert_equal(op1.base, op2.base)
 
 
@@ -833,7 +835,7 @@ def test_taper_matrix_ops(operation, op_wires, op_gen):
             op_wires=op_wires,
             op_gen=functools.partial(op_gen, phi=params),
         )
-        for op1, op2 in zip(taper_op1(params), taper_op2):
+        for op1, op2 in zip(taper_op1(params), taper_op2, strict=False):
             qp.assert_equal(op1.base, op2.base)
 
 
@@ -938,7 +940,12 @@ def test_taper_wire_order(symbols, geometry):
     ],
 )
 def test_taper_jax_jit(symbols, geometry, charge):
-    r"""Test that an observable can be tapred within a jax-jit workflow."""
+    r"""Test that an observable can be tapered within a jax-jit workflow.
+
+    The supported contract is a static operator structure with traced numerical
+    coefficients. Passing a whole operator as a traced jax.jit argument makes its
+    wire labels abstract, which tapering rejects with a deliberate error.
+    """
 
     import jax
 
@@ -950,10 +957,19 @@ def test_taper_jax_jit(symbols, geometry, charge):
     paulix_sector = tuple(optimal_sector(hamiltonian, generators, molecule.n_electrons))
 
     tapered_ham1 = qp.simplify(qp.taper(hamiltonian, generators, paulixops, paulix_sector))
-    tapered_ham2 = qp.simplify(
-        jax.jit(qp.taper, static_argnums=[3])(hamiltonian, generators, paulixops, paulix_sector)
-    )
+
+    coeffs, ops = hamiltonian.terms()
+
+    @jax.jit
+    def taper_coefficients(coeffs):
+        h = qp.dot(coeffs, ops)
+        return qp.taper(h, generators, paulixops, paulix_sector)
+
+    tapered_ham2 = qp.simplify(taper_coefficients(jax.numpy.array(coeffs)))
 
     assert qp.math.get_deep_interface(tapered_ham1.terms()[0]) == "jax"
     assert qp.math.get_deep_interface(tapered_ham2.terms()[0]) == "jax"
     qp.assert_equal(tapered_ham1, tapered_ham2)
+
+    with pytest.raises(ValueError, match="wire labels are abstract"):
+        jax.jit(qp.taper, static_argnums=[3])(hamiltonian, generators, paulixops, paulix_sector)

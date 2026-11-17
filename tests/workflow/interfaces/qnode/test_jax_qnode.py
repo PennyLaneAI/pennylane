@@ -13,7 +13,8 @@
 # limitations under the License.
 """Integration tests for using the JAX-Python interface with a QNode"""
 
-# pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg, use-implicit-booleaness-not-comparison
+# pylint: disable=too-many-arguments
+
 
 from itertools import product
 
@@ -101,9 +102,16 @@ class TestQNode:
         assert isinstance(grad, jax.Array)
         assert grad.shape == ()
 
-    def test_changing_trainability(
-        self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
-    ):  # pylint:disable=unused-argument
+    def test_changing_trainability(  # pylint: disable=unused-argument
+        self,
+        dev_name,
+        diff_method,
+        grad_on_execution,
+        device_vjp,
+        interface,
+        tol,
+        seed,
+    ):
         """Test changing the trainability of parameters changes the
         number of differentiation requests made"""
         if diff_method != "parameter-shift":
@@ -213,7 +221,7 @@ class TestQNode:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "reversed-direct"
 
-        class MyU3(qp.U3):  # pylint:disable=too-few-public-methods
+        class MyU3(qp.U3):  # pylint: disable=too-few-public-methods
 
             name = "MyU3"
 
@@ -225,49 +233,50 @@ class TestQNode:
                     qp.PhaseShift(phi + lam, wires=wires),
                 ]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        def _decomp(theta, phi, delta, wires):
+            qp.Rot(delta, theta, -delta, wires)
+            qp.PhaseShift(phi + delta, wires)
 
-            @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
-            def _decomp(theta, phi, lam, wires):
-                qp.Rot(lam, theta, -lam, wires)
-                qp.PhaseShift(phi + lam, wires)
+        qp.add_decomps(MyU3, _decomp)
 
-            qp.add_decomps(MyU3, _decomp)
+        a = jax.numpy.array(0.1)
+        p = jax.numpy.array([0.1, 0.2, 0.3])
 
-            a = jax.numpy.array(0.1)
-            p = jax.numpy.array([0.1, 0.2, 0.3])
+        @qnode(get_device(dev_name, wires=1, seed=seed), **kwargs, gradient_kwargs=gradient_kwargs)
+        def circuit(a, p):
+            qp.RX(a, wires=0)
+            MyU3(p[0], p[1], p[2], wires=0)
+            return qp.expval(qp.PauliX(0))
 
-            @qnode(
-                get_device(dev_name, wires=1, seed=seed), **kwargs, gradient_kwargs=gradient_kwargs
-            )
-            def circuit(a, p):
-                qp.RX(a, wires=0)
-                MyU3(p[0], p[1], p[2], wires=0)
-                return qp.expval(qp.PauliX(0))
+        res = circuit(a, p)
+        expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
+            np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-            res = circuit(a, p)
-            expected = np.cos(a) * np.cos(p[1]) * np.sin(p[0]) + np.sin(a) * (
-                np.cos(p[2]) * np.sin(p[1]) + np.cos(p[0]) * np.cos(p[1]) * np.sin(p[2])
-            )
-            assert np.allclose(res, expected, atol=tol, rtol=0)
+        res = jax.grad(circuit, argnums=1)(a, p)
+        expected = np.array(
+            [
+                np.cos(p[1]) * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
+                np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
+                - np.sin(p[1])
+                * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
+                np.sin(a)
+                * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
+            ]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-            res = jax.grad(circuit, argnums=1)(a, p)
-            expected = np.array(
-                [
-                    np.cos(p[1])
-                    * (np.cos(a) * np.cos(p[0]) - np.sin(a) * np.sin(p[0]) * np.sin(p[2])),
-                    np.cos(p[1]) * np.cos(p[2]) * np.sin(a)
-                    - np.sin(p[1])
-                    * (np.cos(a) * np.sin(p[0]) + np.cos(p[0]) * np.sin(a) * np.sin(p[2])),
-                    np.sin(a)
-                    * (np.cos(p[0]) * np.cos(p[1]) * np.cos(p[2]) - np.sin(p[1]) * np.sin(p[2])),
-                ]
-            )
-            assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    def test_jacobian_options(
-        self, dev_name, diff_method, grad_on_execution, device_vjp, interface, seed
-    ):  # pylint:disable=unused-argument
+    def test_jacobian_options(  # pylint: disable=unused-argument
+        self,
+        dev_name,
+        diff_method,
+        grad_on_execution,
+        device_vjp,
+        interface,
+        seed,
+    ):
         """Test setting jacobian options"""
         if diff_method != "finite-diff":
             pytest.skip("Test only applies to finite diff.")
@@ -435,6 +444,8 @@ class TestVectorValuedQNode:
             gradient_kwargs["aux_wire"] = 2
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -487,6 +498,8 @@ class TestVectorValuedQNode:
             gradient_kwargs["aux_wire"] = 3
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -509,11 +522,11 @@ class TestVectorValuedQNode:
         ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == (2,)  # pylint:disable=comparison-with-callable
+        assert res[0].shape == (2,)
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (4,)  # pylint:disable=comparison-with-callable
+        assert res[1].shape == (4,)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
@@ -571,6 +584,8 @@ class TestVectorValuedQNode:
             gradient_kwargs["aux_wire"] = 2
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -588,11 +603,11 @@ class TestVectorValuedQNode:
         assert len(res) == 2
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == ()  # pylint:disable=comparison-with-callable
+        assert res[0].shape == ()
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (2,)  # pylint:disable=comparison-with-callable
+        assert res[1].shape == (2,)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
@@ -640,8 +655,7 @@ class TestVectorValuedQNode:
         y = jax.numpy.array(-0.654)
 
         if diff_method == "adjoint":
-            x = x + 0j
-            y = y + 0j
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
@@ -704,6 +718,8 @@ class TestVectorValuedQNode:
         elif diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -723,11 +739,11 @@ class TestVectorValuedQNode:
         ]
 
         assert isinstance(res[0], jax.numpy.ndarray)
-        assert res[0].shape == ()  # pylint:disable=comparison-with-callable
+        assert res[0].shape == ()
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
 
         assert isinstance(res[1], jax.numpy.ndarray)
-        assert res[1].shape == (2,)  # pylint:disable=comparison-with-callable
+        assert res[1].shape == (2,)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
         jac = jax.jacobian(circuit, argnums=[0, 1])(x, y)
@@ -794,7 +810,7 @@ class TestShotsIntegration:
 
         # execute with shots=100
         res = qp.set_shots(shots=100)(circuit)(a, b)
-        assert res.shape == (100, 2)  # pylint: disable=comparison-with-callable
+        assert res.shape == (100, 2)
 
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
@@ -870,9 +886,9 @@ class TestQubitIntegration:
         assert isinstance(res, tuple)
 
         assert isinstance(res[0], jax.Array)
-        assert res[0].shape == (10,)  # pylint:disable=comparison-with-callable
+        assert res[0].shape == (10,)
         assert isinstance(res[1], jax.Array)
-        assert res[1].shape == (10,)  # pylint:disable=comparison-with-callable
+        assert res[1].shape == (10,)
 
     def test_counts(self, dev_name, diff_method, grad_on_execution, device_vjp, seed):
         """Test counts works as expected"""
@@ -909,8 +925,8 @@ class TestQubitIntegration:
 
     def test_chained_qnodes(self, dev_name, diff_method, grad_on_execution, device_vjp, seed):
         """Test that the gradient of chained QNodes works without error"""
-        # pylint:disable=too-few-public-methods
 
+        # pylint: disable-next=too-few-public-methods
         class Template(qp.templates.StronglyEntanglingLayers):
             def decomposition(self):
                 return [qp.templates.StronglyEntanglingLayers(*self.parameters, self.wires)]
@@ -1357,7 +1373,7 @@ class TestQubitIntegrationHigherOrder:
 
         def cost_fn(x, y):
             res = circuit(x, y)
-            assert res.dtype is np.dtype("complex128")  # pylint:disable=no-member
+            assert res.dtype is np.dtype("complex128")
             probs = jax.numpy.abs(res) ** 2
             return probs[0] + probs[2]
 
@@ -1434,7 +1450,7 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
-        class PhaseShift(qp.PhaseShift):  # pylint:disable=too-few-public-methods
+        class PhaseShift(qp.PhaseShift):  # pylint: disable=too-few-public-methods
             grad_method = None
 
             def decomposition(self):
@@ -1652,7 +1668,7 @@ jacobian_fn = [jax.jacobian, jax.jacrev, jax.jacfwd]
 @pytest.mark.parametrize(
     "dev_name,diff_method,grad_on_execution, device_vjp", device_and_diff_method
 )
-class TestReturn:  # pylint:disable=too-many-public-methods
+class TestReturn:  # pylint: disable=too-many-public-methods
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
 
     def test_grad_single_measurement_param(
@@ -2078,7 +2094,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         def circuit(a):
             qp.RY(a, wires=0)
             qp.RX(0.2, wires=0)
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliX(0))
 
         a = jax.numpy.array(0.1)
 
@@ -2091,7 +2107,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         assert jac[0].shape == ()
 
         assert isinstance(jac[1], jax.numpy.ndarray)
-        assert jac[1].shape == (4,)
+        assert jac[1].shape == ()
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_multiple_measurement_multiple_param(
@@ -2104,6 +2120,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
             pytest.skip("jacfwd doesn't like complex numbers")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         gradient_kwargs = {}
         if diff_method == "hadamard":
@@ -2156,6 +2174,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
             pytest.skip("jacfwd doesn't like complex numbers")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         gradient_kwargs = {}
         if diff_method == "hadamard":

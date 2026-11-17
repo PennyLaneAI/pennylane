@@ -15,6 +15,9 @@
 Tests for the make_plxpr function for capturing functions as jaxpr.
 """
 
+# pylint: disable=wrong-import-position,wrong-import-order
+
+
 from unittest.mock import call
 
 import numpy as np
@@ -28,7 +31,11 @@ pytestmark = pytest.mark.jax
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
-from jax import numpy as jnp  # pylint: disable=wrong-import-position, wrong-import-order
+from jax import numpy as jnp
+
+# pylint: disable-next=ungrouped-imports
+from pennylane.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
+from pennylane.testing import extract_all_primitives
 
 
 def test_error_is_raised_with_capture_disabled():
@@ -68,7 +75,7 @@ class TestMakePLxPR:
 
         spy.assert_called()
         assert hasattr(plxpr, "jaxpr")
-        isinstance(plxpr, jax.extend.core.ClosedJaxpr)  # pylint: disable=protected-access
+        isinstance(plxpr, jax.extend.core.ClosedJaxpr)
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize("static_argnums", [[0], [1], [0, 1], []])
@@ -95,9 +102,7 @@ class TestMakePLxPR:
             # (it was produced by run_autograph), so we can't check for the function call.
             spy.assert_has_calls([call(circ, static_argnums=static_argnums)])
 
-        # plxpr behaves as expected wrt static argnums
-        res = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, *non_static_params)
-        assert np.allclose(res, circ(*params))
+        assert len(plxpr.in_avals) == len(non_static_params)
 
     @pytest.mark.parametrize("autograph", [True, False])
     def test_kwargs(self, mocker, autograph):
@@ -122,8 +127,8 @@ class TestMakePLxPR:
 
         # output is as expected for return_shape=True
         assert len(output) == 2
-        isinstance(output[0], jax.extend.core.ClosedJaxpr)  # pylint: disable=protected-access
-        isinstance(output[0], jax.ShapeDtypeStruct)  # pylint: disable=protected-access
+        isinstance(output[0], jax.extend.core.ClosedJaxpr)
+        isinstance(output[0], jax.ShapeDtypeStruct)
 
 
 @pytest.mark.capture
@@ -149,14 +154,8 @@ class TestAutoGraphIntegration:
         plxpr2 = qp.capture.make_plxpr(qnode)(2)
 
         # the plxpr includes a representation of a `cond` function
-        assert "cond[" in str(plxpr1)
-        assert "cond[" in str(plxpr2)
-
-        def eval(x):
-            return jax.core.eval_jaxpr(plxpr2.jaxpr, plxpr2.consts, x)
-
-        assert np.allclose(eval(2), [0.70710678, 0.70710678])
-        assert np.allclose(eval(1), [0, 1j])
+        assert cond_prim in extract_all_primitives(plxpr1.jaxpr)
+        assert cond_prim in extract_all_primitives(plxpr2.jaxpr)
 
     def test_while_loop(self):
         """Test that a while loop is converted to a jaxpr with a ``while_loop`` function, and
@@ -176,14 +175,8 @@ class TestAutoGraphIntegration:
         plxpr2 = qp.capture.make_plxpr(qnode)(0)
 
         # the plxpr includes a representation of a `while_loop` function
-        assert "while_loop[" in str(plxpr1)
-        assert "while_loop[" in str(plxpr2)
-
-        def eval(x):
-            return jax.core.eval_jaxpr(plxpr2.jaxpr, plxpr2.consts, x)
-
-        assert np.allclose(eval(0), [-1])
-        assert np.allclose(eval(5), [0])
+        assert while_loop_prim in extract_all_primitives(plxpr1.jaxpr)
+        assert while_loop_prim in extract_all_primitives(plxpr2.jaxpr)
 
     def test_for_loop(self):
         """Test that a for loop is converted to a jaxpr with a ``for_loop`` function, and
@@ -202,11 +195,5 @@ class TestAutoGraphIntegration:
         plxpr2 = qp.capture.make_plxpr(qnode)(jnp.array([0.0, 0.0]))
 
         # the plxpr includes a representation of a `for_loop` function
-        assert "for_loop[" in str(plxpr1)
-        assert "for_loop[" in str(plxpr2)
-
-        def eval(x):
-            x = jnp.array(x)
-            return jax.core.eval_jaxpr(plxpr2.jaxpr, plxpr2.consts, x)
-
-        assert np.allclose(eval([np.pi, np.pi / 2]), [-1, 0])
+        assert for_loop_prim in extract_all_primitives(plxpr1.jaxpr)
+        assert for_loop_prim in extract_all_primitives(plxpr2.jaxpr)

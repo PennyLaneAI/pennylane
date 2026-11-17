@@ -15,6 +15,8 @@
 Tests for quantum algorithmic subroutines resource operators.
 """
 
+# pylint: disable=too-many-arguments,protected-access
+
 import math
 from collections import defaultdict
 
@@ -27,8 +29,6 @@ from pennylane.labs.estimator_beta import Allocate, Deallocate
 from pennylane.labs.estimator_beta.templates import LabsQROM
 from pennylane.labs.tests.estimator_beta.utils import decomp_equal
 from pennylane.math import ceil_log2
-
-# pylint: disable=too-few-public-methods, too-many-arguments, no-self-use, protected-access, undefined-variable, unused-variable
 
 
 class TestLabsSelectPauliRot:
@@ -195,7 +195,7 @@ class TestLabsSelectPauliRot:
         assert qre.estimate(op) == expected_res
 
 
-class TestLabsQFT:
+class TestLabsQFT:  # pylint: disable=too-few-public-methods
     """Test the resource decompositions for QFT"""
 
     @pytest.mark.parametrize(
@@ -218,6 +218,8 @@ class TestLabsQFT:
                             num_zero_ctrl=0,
                         )
                     ),
+                    # Pylint cannot trace the preceding walrus assignments in this parameter list.
+                    # pylint: disable-next=used-before-assignment
                     qre.Deallocate(allocated_register=phase_grad_reg),
                 ],
             ),
@@ -252,7 +254,7 @@ class TestLabsQFT:
         assert decomp_equal(actual_decomp, expected_res)
 
 
-class TestLabsAQFT:
+class TestLabsAQFT:  # pylint: disable=too-few-public-methods
     """Test the resource decompositions for AQFT"""
 
     @pytest.mark.parametrize(
@@ -287,6 +289,7 @@ class TestLabsAQFT:
                         qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
                         1,
                     ),
+                    # pylint: disable-next=used-before-assignment
                     Deallocate(allocated_register=load_reg),
                     load_reg := Allocate(2, restored=True),
                     GateCount(resource_rep(qre.TemporaryAND), 2 * 2),
@@ -298,6 +301,7 @@ class TestLabsAQFT:
                     ),
                     Deallocate(allocated_register=load_reg),
                     GateCount(resource_rep(qre.SWAP), 2),
+                    # pylint: disable-next=used-before-assignment
                     Deallocate(allocated_register=phase_grad),
                 ],
             ),
@@ -323,6 +327,7 @@ class TestLabsAQFT:
                         qre.Adjoint.resource_rep(resource_rep(qre.TemporaryAND)),
                         1,
                     ),
+                    # pylint: disable-next=used-before-assignment
                     Deallocate(allocated_register=data_reg),
                     data_reg := Allocate(2, restored=True),
                     GateCount(resource_rep(qre.TemporaryAND), 2),
@@ -394,7 +399,7 @@ class TestLabsSelectTHC:
         ),
     )
     def test_resources(self, thc_ham, num_batches, rotation_prec, selswap_depth, expected_res):
-        """Test that the resource decompostion for SelectTHC is correct."""
+        """Test that the resource decomposition for SelectTHC is correct."""
 
         select_cost = qre.estimate(
             qre.SelectTHC(
@@ -466,7 +471,7 @@ class TestLabsSelectTHC:
         num_zero_ctrl,
         expected_res,
     ):
-        """Test that the controlled resource decompostion for SelectTHC is correct."""
+        """Test that the controlled resource decomposition for SelectTHC is correct."""
 
         ctrl_select_cost = qre.estimate(
             qre.Controlled(
@@ -611,7 +616,9 @@ class TestLabsQROMStatePreparation:
                         qre.Adjoint.resource_rep(qre.S.resource_rep()),
                         32,
                     ),
-                    Deallocate(allocated_register=load),
+                    # These registers are assigned earlier in the parametrization list.
+                    Deallocate(allocated_register=load),  # pylint: disable=used-before-assignment
+                    # pylint: disable-next=used-before-assignment
                     Deallocate(allocated_register=phase_grad),
                 ],
             ),
@@ -2144,7 +2151,7 @@ class TestLabsQROM:
                 ]
             )
         if index == 4:  # 12, 2, 5, 4, True
-            allocate_sel = qre.Allocate(ceil_log2(12 / 4) - 1, "zero", True)
+            allocate_sel = qre.Allocate(ceil_log2(12 // 4) - 1, "zero", True)
             allocate_swap = qre.Allocate((4 - 1) * 2, "any", True)
             h = qre.Hadamard.resource_rep()
 
@@ -2603,8 +2610,8 @@ class TestSelectCopyQROM:
             (100, 2, None, 4, 1, 78, 7),
             (1000, 4, 4, 2, 4, 1002, 12),
             (1000, 4, 9, 8, 1, 665, 13),
-            (1e8, 16, None, 64, 3, 10939103, 209),
-            (1e8, 16, None, 32, 8, 9375822, 269),
+            (int(1e8), 16, None, 64, 3, 10939103, 209),
+            (int(1e8), 16, None, 32, 8, 9375822, 269),
         ),  # toffoli and qubit costs computed by hand
     )
     def test_resource_decomp(

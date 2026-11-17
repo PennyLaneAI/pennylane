@@ -19,24 +19,21 @@ from functools import partial
 
 import numpy as np
 import scipy as sp
+from jax import jit
+from jax import numpy as jnp
+from jax import scipy as jsp
+from jax import value_and_grad
 
 import pennylane as qp
 
-has_jax_optax = True
+has_optax = True
 try:  # pragma: no cover
-
     import optax
-    from jax import jit
-    from jax import numpy as jnp
-    from jax import scipy as jsp
-    from jax import value_and_grad
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
-    has_jax_optax = False
-
-# pylint: disable=too-many-arguments, too-many-positional-arguments
+    has_optax = False
 
 
-def factorize(
+def factorize(  # pylint: disable=too-many-arguments
     two_electron,
     tol_factor=1.0e-5,
     tol_eigval=1.0e-5,
@@ -260,10 +257,9 @@ def factorize(
             )
 
     else:
-        if not has_jax_optax:
+        if not has_optax:
             raise ImportError(
-                "Jax and Optax libraries are required for optimizing the factors. Install them via "
-                "pip install jax optax"
+                "Optax is required for optimizing the factors. Install it via pip install optax."
             )  # pragma: no cover
 
         norm_order = {None: None, "L1": 1, "L2": 2}.get(regularization, "LX")
@@ -400,7 +396,7 @@ def _double_factorization_cholesky(
     return factors, feigvals, feigvecs
 
 
-def _double_factorization_compressed(
+def _double_factorization_compressed(  # pylint: disable=too-many-arguments
     two, optimizer, num_factors, num_steps=1000, init_params=None, prefactor=1e-5, norm_order=None
 ):
     r"""Compressed double factorization with optional regularization based on
@@ -488,6 +484,7 @@ def _double_factorization_compressed(
     return core_tensors, leaf_tensors
 
 
+# pylint: disable-next=too-many-arguments
 def _compressed_cost_fn(params, two, asym_tensors, core_tensors, norm_order, prefactor):
     """Loss function for the compressed double factorization.
 

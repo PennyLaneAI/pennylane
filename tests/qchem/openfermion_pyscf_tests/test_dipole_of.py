@@ -16,6 +16,8 @@ Unit tests for the ``dipole_of`` function.
 """
 
 # pylint: disable=too-many-arguments
+
+
 import numpy as np
 import pytest
 
@@ -232,8 +234,8 @@ def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops,
 
         r_ops = ops[i]
 
-        assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(d_ops, r_ops))
-        for o1, o2 in zip(d_ops, r_ops):
+        assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(d_ops, r_ops, strict=False))
+        for o1, o2 in zip(d_ops, r_ops, strict=False):
             qp.assert_equal(o1, o2)
 
 

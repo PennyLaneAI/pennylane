@@ -16,26 +16,30 @@ Tests for the AllSinglesDoubles template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
-@pytest.mark.jax
-def test_standard_validity():
+@pytest.mark.xfail_if_capture(reason="come back to this as we port it to Op2 [sc-128406]")
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("singles", [None, np.array([[0, 1]])])
+@pytest.mark.parametrize("doubles", [None, np.array([[0, 1, 2, 3]])])
+def test_standard_validity(singles, doubles):
     """Run standard tests of operation validity."""
+    if singles is None and doubles is None:
+        pytest.skip(reason="Not a valid configuration - both cannot be empty.")
+    weights = np.array([1.0]) if singles is None or doubles is None else np.array([1.0, 2.0])
     op = qp.AllSinglesDoubles(
-        np.array([1.0, 2.0]),
+        weights,
         np.array(list(range(4))),
         np.array([1, 1, 0, 0]),
-        singles=np.array([[0, 1]]),
-        doubles=np.array([[0, 1, 2, 3]]),
+        singles=singles,
+        doubles=doubles,
     )
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestDecomposition:
@@ -65,13 +69,12 @@ class TestDecomposition:
         ),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("weights", "wires", "hf_state", "singles", "doubles"), DECOMP_PARAMS)
     def test_decomposition_new(self, weights, wires, hf_state, singles, doubles):
         """Test the decomposition of the AllSinglesDoubles template."""
         op = qp.AllSinglesDoubles(weights, wires, hf_state, singles=singles, doubles=doubles)
-        for rule in qp.list_decomps(qp.AllSinglesDoubles):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize(
         ("singles", "doubles", "weights", "ref_gates"),
@@ -189,26 +192,8 @@ class TestDecomposition:
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
-class TestInputs:
+class TestInputs:  # pylint: disable=too-few-public-methods
     """Test inputs and pre-processing."""
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize("singles", [None, np.array([[0, 1]])])
-    @pytest.mark.parametrize("doubles", [None, np.array([[0, 1, 2, 3]])])
-    def test_optional_arguments(self, singles, doubles):
-        """Tests that optional arguments are truly optional."""
-        if singles is None and doubles is None:
-            pytest.skip(reason="Not a valid configuration - both cannot be empty.")
-
-        weights = np.array([1.0]) if singles is None or doubles is None else np.array([1.0, 2.0])
-        op = qp.AllSinglesDoubles(
-            weights,
-            np.array(list(range(4))),
-            np.array([1, 1, 0, 0]),
-            singles=singles,
-            doubles=doubles,
-        )
-        qp.ops.functions.assert_valid(op)
 
     @pytest.mark.parametrize(
         ("weights", "wires", "singles", "doubles", "hf_state", "msg_match"),
@@ -311,7 +296,7 @@ class TestInputs:
             ),
         ],
     )
-    def test_allsinglesdoubles_exceptions(
+    def test_allsinglesdoubles_exceptions(  # pylint: disable=too-many-arguments
         self, weights, wires, singles, doubles, hf_state, msg_match
     ):
         """Test that AllSinglesDoubles throws an exception if the parameters have illegal
@@ -343,7 +328,7 @@ class TestInputs:
             )
 
 
-class TestAttributes:
+class TestAttributes:  # pylint: disable=too-few-public-methods
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(
@@ -472,32 +457,6 @@ class TestInterfaces:
         grads2 = grad_fn2(weights)
 
         assert qp.math.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        weights = tf.Variable(np.random.random(size=(2,)))
-        dev = qp.device("default.qubit", wires=4)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(weights)
-        grads = tape.gradient(res, [weights])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(weights)
-        grads2 = tape2.gradient(res2, [weights])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):

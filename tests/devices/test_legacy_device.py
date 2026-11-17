@@ -15,9 +15,9 @@
 Unit tests for the :mod:`pennylane` :class:`Device` class.
 """
 
+# pylint: disable=redefined-outer-name
+
 from collections import OrderedDict
-from importlib import metadata, reload
-from sys import version_info
 
 import numpy as np
 import pytest
@@ -30,8 +30,6 @@ from pennylane.wires import Wires
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_device_paulis_and_hamiltonian = ["Hamiltonian", "PauliX", "PauliY", "PauliZ"]
-
-# pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name, missing-function-docstring
 
 
 @pytest.fixture(scope="function")
@@ -191,10 +189,9 @@ def mock_device_supporting_prod(monkeypatch):
         yield get_device
 
 
-# pylint: disable=pointless-statement
 def test_invalid_attribute_in_devices_raises_error():
     with pytest.raises(AttributeError, match="'pennylane.devices' has no attribute 'blabla'"):
-        qp.devices.blabla
+        qp.devices.blabla  # pylint: disable=pointless-statement
 
 
 def test_gradients_record():
@@ -218,8 +215,6 @@ def test_gradients_record():
 
 class TestDeviceSupportedLogic:
     """Test the logic associated with the supported operations and observables"""
-
-    # pylint: disable=no-self-use, redefined-outer-name
 
     def test_supports_operation_argument_types(self, mock_device_supporting_paulis):
         """Checks that device.supports_operations returns the correct result
@@ -287,13 +282,13 @@ class TestDeviceSupportedLogic:
         assert dev._all_multi_term_obs_supported(circuit)  # pylint: disable=protected-access
 
 
-class TestInternalFunctions:  # pylint:disable=too-many-public-methods
+class TestInternalFunctions:  # pylint: disable=too-many-public-methods
     """Test the internal functions of the abstract Device class"""
 
-    # pylint: disable=unnecessary-dunder-call
     def test_repr(self, mock_device_supporting_paulis):
         """Tests the __repr__ function"""
         dev = mock_device_supporting_paulis()
+        # pylint: disable-next=unnecessary-dunder-call
         assert "<Device device (wires=1, shots=1000) at " in dev.__repr__()
 
     def test_str(self, mock_device_supporting_paulis):
@@ -450,19 +445,17 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         lifetime is tracked by `num_executions`"""
 
         # test default Gaussian device
-        dev_gauss = qp.device("default.gaussian", wires=1)
+        dev = DefaultQubitLegacy(wires=1)
 
-        def circuit_gauss(mag_alpha, phase_alpha, phi):
-            qp.Displacement(mag_alpha, phase_alpha, wires=0)
-            qp.Rotation(phi, wires=0)
-            return qp.expval(qp.NumberOperator(0))
+        def circuit():
+            return qp.expval(qp.Z(0))
 
-        node_gauss = qp.QNode(circuit_gauss, dev_gauss)
-        num_evals_gauss = 12
+        node = qp.QNode(circuit, dev)
+        num_evals = 12
 
-        for _ in range(num_evals_gauss):
-            node_gauss(0.015, 0.02, 0.005)
-        assert dev_gauss.num_executions == num_evals_gauss
+        for _ in range(num_evals):
+            node()
+        assert dev.num_executions == num_evals
 
     @pytest.mark.parametrize(
         "depth, expanded_ops",
@@ -490,10 +483,11 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         for op, expected_op in zip(
             expanded_tape.operations[expanded_tape.num_preps :],
             expanded_ops,
+            strict=False,
         ):
             qp.assert_equal(op, expected_op)
 
-        for mp, expected_mp in zip(expanded_tape.measurements, measurements):
+        for mp, expected_mp in zip(expanded_tape.measurements, measurements, strict=False):
             qp.assert_equal(mp, expected_mp)
 
     wires_to_try = [
@@ -569,7 +563,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         """Test that default_expand_fn works with an invalid op and some measurement."""
         invalid_tape = qp.tape.QuantumScript([qp.S(0)], [qp.expval(qp.PauliZ(0))])
         expected_tape = qp.tape.QuantumScript(
-            [qp.RZ(np.pi / 2, 0), qp.GlobalPhase(-0.7853981633974483, wires=[])],
+            [qp.RZ(np.pi / 2, 0), qp.GlobalPhase(-np.pi / 4)],
             [qp.expval(qp.PauliZ(0))],
         )
         dev = mock_device_supporting_paulis(wires=1)
@@ -583,8 +577,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         assert len(recwarn) == 0
 
 
-# pylint: disable=too-few-public-methods
-class TestClassmethods:
+class TestClassmethods:  # pylint: disable=too-few-public-methods
     """Test the classmethods of Device"""
 
     def test_capabilities(self, mock_device_with_capabilities):
@@ -597,16 +590,15 @@ class TestClassmethods:
 class TestOperations:
     """Tests the logic related to operations"""
 
-    # pylint: disable=protected-access
     def test_shots_setter(self, mock_device):
         """Tests that the property setter of shots changes the number of shots."""
         dev = mock_device()
 
-        assert dev._shots == 1000
+        assert dev._shots == 1000  # pylint: disable=protected-access
 
         dev.shots = 10
 
-        assert dev._shots == 10
+        assert dev._shots == 10  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("shots", [-10, 0])
     def test_shots_setter_error(self, mock_device, shots):
@@ -620,7 +612,6 @@ class TestOperations:
         ):
             dev.shots = shots
 
-    # pylint: disable=pointless-statement
     def test_op_queue_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
         dev = mock_device()
@@ -628,7 +619,7 @@ class TestOperations:
         with pytest.raises(
             ValueError, match="Cannot access the operation queue outside of the execution context!"
         ):
-            dev.op_queue
+            dev.op_queue  # pylint: disable=pointless-statement
 
     def test_op_queue_is_filled_at_pre_measure(
         self, mock_device_with_paulis_and_methods, monkeypatch
@@ -743,7 +734,6 @@ class TestOperations:
 class TestObservables:
     """Tests the logic related to observables"""
 
-    # pylint: disable=no-self-use, redefined-outer-name, pointless-statement
     def test_obs_queue_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to op_queue outside the execution context raises the correct error"""
         dev = mock_device()
@@ -752,7 +742,7 @@ class TestObservables:
             ValueError,
             match="Cannot access the observable value queue outside of the execution context!",
         ):
-            dev.obs_queue
+            dev.obs_queue  # pylint: disable=pointless-statement
 
     def test_obs_queue_is_filled_at_pre_measure(
         self, mock_device_with_paulis_and_methods, monkeypatch
@@ -845,7 +835,6 @@ class TestObservables:
 class TestParameters:
     """Test for checking device parameter mappings"""
 
-    # pylint: disable=pointless-statement
     def test_parameters_accessed_outside_execution_context(self, mock_device):
         """Tests that a call to parameters outside the execution context raises the correct error"""
         dev = mock_device()
@@ -854,7 +843,7 @@ class TestParameters:
             ValueError,
             match="Cannot access the free parameter mapping outside of the execution context!",
         ):
-            dev.parameters
+            dev.parameters  # pylint: disable=pointless-statement
 
     def test_parameters_available_at_pre_measure(self, mock_device, monkeypatch):
         """Tests that the parameter mapping is available when pre_measure is called and that accessing
@@ -888,93 +877,12 @@ class TestParameters:
 
 
 class TestDeviceInit:
-    """Tests for device loader in __init__.py"""
-
-    def test_no_device(self):
-        """Test that an exception is raised for a device that doesn't exist"""
-
-        with pytest.raises(DeviceError, match="Device None does not exist"):
-            qp.device("None", wires=0)
-
-    def test_outdated_API(self, monkeypatch):
-        """Test that an exception is raised if plugin that targets an old API is loaded"""
-
-        with monkeypatch.context() as m:
-            m.setattr(qp.devices.device_constructor, "__version__", "0.0.1")
-            with pytest.raises(DeviceError, match="plugin requires PennyLane versions"):
-                qp.device("default.qutrit", wires=0)
-
-    def test_plugin_devices_from_devices_triggers_getattr(self, mocker):
-        spied = mocker.spy(qp.devices, "__getattr__")
-
-        qp.devices.plugin_devices
-
-        spied.assert_called_once()
-
-    def test_refresh_entrypoints(self, monkeypatch):
-        """Test that new entrypoints are found by the refresh_devices function"""
-        assert qp.plugin_devices
-
-        with monkeypatch.context() as m:
-            # remove all entry points
-            retval = {"pennylane.plugins": []} if version_info[:2] == (3, 9) else []
-            m.setattr(metadata, "entry_points", lambda **kwargs: retval)
-
-            # reimporting PennyLane within the context sets qp.plugin_devices to {}
-            reload(qp)
-            reload(qp.devices.device_constructor)
-
-            # since there are no entry points, there will be no plugin devices
-            assert not qp.plugin_devices
-
-        # outside of the context, entrypoints will now be found
-        assert not qp.plugin_devices
-        qp.refresh_devices()
-        assert qp.plugin_devices
-
-        # Test teardown: re-import PennyLane to revert all changes and
-        # restore the plugin_device dictionary
-        reload(qp)
-        reload(qp.devices.device_constructor)
-
-    def test_hot_refresh_entrypoints(self, monkeypatch):
-        """Test that new entrypoints are found by the device loader if not currently present"""
-        assert qp.plugin_devices
-
-        with monkeypatch.context() as m:
-            # remove all entry points
-            retval = {"pennylane.plugins": []} if version_info[:2] == (3, 9) else []
-            m.setattr(metadata, "entry_points", lambda **kwargs: retval)
-
-            # reimporting PennyLane within the context sets qp.plugin_devices to {}
-            reload(qp.devices)
-            reload(qp.devices.device_constructor)
-
-            m.setattr(qp.devices.device_constructor, "refresh_devices", lambda: None)
-            assert not qp.plugin_devices
-
-            # since there are no entry points, there will be no plugin devices
-            with pytest.raises(DeviceError, match="Device default.qubit does not exist"):
-                qp.device("default.qubit", wires=0)
-
-        # outside of the context, entrypoints will now be found automatically
-        assert not qp.plugin_devices
-        dev = qp.device("default.qubit", wires=0)
-        assert qp.plugin_devices
-        assert dev.name == "default.qubit"
-
-        # Test teardown: re-import PennyLane to revert all changes and
-        # restore the plugin_device dictionary
-        reload(qp)
-        reload(qp.devices.device_constructor)
 
     def test_shot_vector_property(self):
         """Tests shot vector initialization."""
-        with pytest.warns(
-            qp.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
-        ):
-            dev = qp.device("default.qutrit", wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
+        dev = DefaultQubitLegacy(wires=1, shots=[1, 3, 3, 4, 4, 4, 3])
         shot_vector = dev.shot_vector
+
         assert len(shot_vector) == 4
         assert shot_vector[0].shots == 1
         assert shot_vector[0].copies == 1
@@ -985,21 +893,22 @@ class TestDeviceInit:
         assert shot_vector[3].shots == 3
         assert shot_vector[3].copies == 1
 
-        assert dev.shots.total_shots == 22
+        assert dev.shots == 22
 
     def test_has_partitioned_shots(self):
         """Tests _has_partitioned_shots returns correct values"""
+        # pylint: disable=protected-access
         dev = DefaultQubitLegacy(wires=1, shots=100)
-        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
+        assert not dev._has_partitioned_shots()
 
         dev.shots = [10, 20]
-        assert dev._has_partitioned_shots()  # pylint:disable=protected-access
+        assert dev._has_partitioned_shots()
 
         dev.shots = 10
-        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
+        assert not dev._has_partitioned_shots()
 
         dev.shots = None
-        assert not dev._has_partitioned_shots()  # pylint:disable=protected-access
+        assert not dev._has_partitioned_shots()
 
 
 class TestBatchExecution:
@@ -1074,8 +983,8 @@ class TestBatchExecution:
 class TestGrouping:
     """Tests for the use_grouping option for devices."""
 
-    # pylint: disable=too-few-public-methods, unused-argument, missing-function-docstring, missing-class-docstring
     class SomeDevice(qp.devices.LegacyDevice):
+        # pylint: disable=unused-argument
         name = ""
         short_name = ""
         pennylane_requires = ""
@@ -1096,7 +1005,6 @@ class TestGrouping:
         def supports_observable(self, *args, **kwargs):
             return True
 
-    # pylint: disable=attribute-defined-outside-init
     @pytest.mark.parametrize("use_grouping", (True, False))
     def test_batch_transform_checks_use_grouping_property(self, use_grouping, mocker):
         """If the device specifies `use_grouping=False`, the batch transform
@@ -1106,11 +1014,11 @@ class TestGrouping:
 
         H = qp.Hamiltonian([1.0, 1.0], [qp.PauliX(0), qp.PauliY(0)], grouping_type="qwc")
         qs = qp.tape.QuantumScript(measurements=[qp.expval(H)])
-        # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         spy = mocker.spy(qp.devices._legacy_device, "split_non_commuting")
 
         dev = self.SomeDevice()
-        dev.use_grouping = use_grouping
+        dev.use_grouping = use_grouping  # pylint: disable=attribute-defined-outside-init
         new_qscripts, _ = dev.batch_transform(qs)
 
         if use_grouping:
@@ -1124,7 +1032,7 @@ class TestGrouping:
         """Tests that batch_transform does not expand Sums if they are supported."""
         H = qp.sum(qp.PauliX(0), qp.PauliY(0))
         qs = qp.tape.QuantumScript(measurements=[qp.expval(H)])
-        # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         spy = mocker.spy(qp.devices._legacy_device, "split_non_commuting")
 
         dev = self.SomeDevice(shots=None)
@@ -1137,7 +1045,7 @@ class TestGrouping:
         """Tests that batch_transform expand Sums if they are not supported."""
         H = qp.sum(qp.PauliX(0), qp.PauliY(0))
         qs = qp.tape.QuantumScript(measurements=[qp.expval(H)])
-        # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         spy = mocker.spy(qp.devices._legacy_device, "split_non_commuting")
 
         dev = self.SomeDevice()
@@ -1152,7 +1060,7 @@ class TestGrouping:
 
         H = qp.prod(qp.PauliX(0), qp.sum(qp.PauliY(0), qp.PauliZ(0)))
         qs = qp.tape.QuantumScript(measurements=[qp.expval(H)])
-        # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         spy = mocker.spy(qp.devices._legacy_device, "split_non_commuting")
 
         dev = self.SomeDevice()

@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for the gradients.param_shift_hessian module."""
 
+# pylint: disable=too-few-public-methods
+
 from itertools import product
 
 import pytest
@@ -163,7 +165,6 @@ class TestCollectRecipes:
         channel_recipe = [(-1, 0, 0), (1, 0, 1)]
         channel_recipe_2nd_order = [(0, 0, 0), (0, 0, 1)]
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qp.RX):
             """A custom RX variant with dummy gradient recipe."""
 
@@ -204,7 +205,7 @@ class TestCollectRecipes:
         """Test that a diagonal boolean argnum is considered correctly."""
         argnum = qp.math.eye(3, dtype=bool)
         diag, offdiag = _collect_recipes(self.tape, argnum, ("A",) * 3, None, None)
-        for res, exp in zip(diag, self.expected_diag_recipes):
+        for res, exp in zip(diag, self.expected_diag_recipes, strict=False):
             assert qp.math.allclose(res, exp)
         assert all(entry == (None, None, None) for entry in offdiag)
 
@@ -212,7 +213,7 @@ class TestCollectRecipes:
         """Test that a block diagonal boolean argnum is considered correctly."""
         argnum = qp.math.array([[True, True, False], [True, True, False], [False, False, True]])
         diag, offdiag = _collect_recipes(self.tape, argnum, ("A",) * 3, None, None)
-        for res, exp in zip(diag, self.expected_diag_recipes):
+        for res, exp in zip(diag, self.expected_diag_recipes, strict=False):
             assert qp.math.allclose(res, exp)
         assert qp.math.allclose(offdiag[0], self.two_term_recipe)
         assert qp.math.allclose(offdiag[1], self.four_term_recipe)
@@ -222,7 +223,7 @@ class TestCollectRecipes:
         """Test that a custom boolean argnum is considered correctly."""
         argnum = qp.math.array([[True, True, False], [True, False, True], [False, True, True]])
         diag, offdiag = _collect_recipes(self.tape, argnum, ("A",) * 3, None, None)
-        for i, (res, exp) in enumerate(zip(diag, self.expected_diag_recipes)):
+        for i, (res, exp) in enumerate(zip(diag, self.expected_diag_recipes, strict=False)):
             if i == 1:
                 assert res is None
             else:
@@ -232,7 +233,6 @@ class TestCollectRecipes:
         assert qp.math.allclose(offdiag[2], self.four_term_recipe)
 
 
-# pylint: disable=too-few-public-methods
 class TestGenerateOffDiagTapes:
     """Test some special features of `_generate_offdiag_tapes`."""
 
@@ -260,9 +260,11 @@ class TestGenerateOffDiagTapes:
         expected_pars = list(product([0.2, 0.2 + np.pi], [0.9, 0.9 + np.pi]))
         if not add_unshifted:
             expected_pars = expected_pars[1:]
-        for exp_par, h_tape in zip(expected_pars, t):
+        for exp_par, h_tape in zip(expected_pars, t, strict=False):
             assert len(h_tape.operations) == 2
-            assert all(op.__class__ == cls for op, cls in zip(h_tape.operations, orig_cls))
+            assert all(
+                op.__class__ == cls for op, cls in zip(h_tape.operations, orig_cls, strict=False)
+            )
             assert np.allclose(h_tape.get_parameters(), exp_par)
 
 
@@ -336,7 +338,7 @@ class TestParameterShiftHessian:
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
 
-        for hess, exp in zip(hessian, expected):
+        for hess, exp in zip(hessian, expected, strict=False):
             assert isinstance(hess, np.ndarray)
             assert hess.shape == ()
             assert np.allclose(hess, exp)
@@ -363,7 +365,7 @@ class TestParameterShiftHessian:
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
 
-        for hess, exp in zip(hessian, expected):
+        for hess, exp in zip(hessian, expected, strict=False):
             assert isinstance(hess, np.ndarray)
             assert hess.shape == exp.shape
             assert np.allclose(hess, exp)
@@ -390,7 +392,7 @@ class TestParameterShiftHessian:
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
 
-        for hess, exp in zip(hessian, expected):
+        for hess, exp in zip(hessian, expected, strict=False):
             assert isinstance(hess, np.ndarray)
             assert hess.shape == exp.shape
             assert np.allclose(hess, exp)
@@ -503,7 +505,7 @@ class TestParameterShiftHessian:
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
 
-        for hess, exp in zip(hessian, expected):
+        for hess, exp in zip(hessian, expected, strict=False):
             assert isinstance(hess, tuple)
             assert len(hess) == 2
             assert all(isinstance(h, tuple) for h in hess)
@@ -552,7 +554,7 @@ class TestParameterShiftHessian:
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
 
-        for hess, exp in zip(hessian, expected):
+        for hess, exp in zip(hessian, expected, strict=False):
             assert isinstance(hess, tuple)
             assert len(hess) == 2
             assert all(isinstance(h, tuple) for h in hess)
@@ -613,7 +615,7 @@ class TestParameterShiftHessian:
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
 
-        for hess, exp in zip(hessian, expected):
+        for hess, exp in zip(hessian, expected, strict=False):
             assert isinstance(hess, tuple)
             assert len(hess) == 2
             assert all(isinstance(h, tuple) for h in hess)
@@ -722,7 +724,6 @@ class TestParameterShiftHessian:
         identified to be 0, and that no tapes were generated."""
         dev = qp.device("default.qubit", wires=2)
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qp.CRZ):
             """A custom variant of qp.CRZ with zero grad_method."""
 
@@ -752,7 +753,6 @@ class TestParameterShiftHessian:
     def test_error_unsupported_op(self):
         """Test that the correct error is thrown for unsupported operations"""
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qp.CRZ):
             """A custom variant of qp.CRZ with grad_method "F"."""
 
@@ -799,8 +799,7 @@ class TestParameterShiftHessian:
             qp.gradients.param_shift_hessian(tape, argnum=argnum, off_diagonal_shifts=[])
 
 
-# pylint: disable=too-many-public-methods
-class TestParameterShiftHessianQNode:
+class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
     """Test the general functionality of the param_shift_hessian method
     with QNodes on the default interface (autograd)"""
 
@@ -912,9 +911,8 @@ class TestParameterShiftHessianQNode:
         dev = qp.device("default.qubit", wires=2)
 
         c, s = qp.gradients.generate_shift_rule((0.5, 1)).T
-        recipe = list(zip(c, np.ones_like(c), s))
+        recipe = list(zip(c, np.ones_like(c), s, strict=False))
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qp.CRX):
             """A custom variant of qp.CRX with a specific gradient recipe."""
 
@@ -1361,7 +1359,6 @@ class TestParameterShiftHessianQNode:
 
         dev = qp.device("default.qubit", wires=2)
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qp.CRZ):
             """A custom variant of qp.CRZ with grad_method "F"."""
 
@@ -1425,7 +1422,6 @@ class TestParameterShiftHessianQNode:
     def test_no_error_nondifferentiable_unsupported_operation(self):
         """Test that no error is thrown for operations that are not marked differentiable"""
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qp.CRZ):
             """A custom variant of qp.CRZ with grad_method "F"."""
 
@@ -1448,7 +1444,7 @@ class TestParameterShiftHessianQNode:
 
     @pytest.mark.autograd
     def test_no_trainable_params_qnode_autograd(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.qubit", wires=2)
@@ -1465,7 +1461,7 @@ class TestParameterShiftHessianQNode:
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.qubit", wires=2)
@@ -1480,26 +1476,9 @@ class TestParameterShiftHessianQNode:
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             qp.gradients.param_shift_hessian(circuit)(weights)
 
-    @pytest.mark.tf
-    def test_no_trainable_params_qnode_tf(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
-        parameters"""
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface="tf", diff_method="parameter-shift")
-        def circuit(weights):
-            qp.RX(weights[0], wires=0)
-            qp.RY(weights[1], wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qp.gradients.param_shift_hessian(circuit)(weights)
-
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.qubit", wires=2)
@@ -1591,7 +1570,7 @@ class TestParameterShiftHessianQNode:
         transform = [qp.math.shape(qp.gradients.param_shift_hessian(c)(x)) for c in circuits]
         expected = [(3, 3), (3, 3), (2, 3, 3), (3, 3, 4), (3, 3, 4), (2, 3, 3, 4)]
 
-        assert all(t == e for t, e in zip(transform, expected))
+        assert all(t == e for t, e in zip(transform, expected, strict=False))
 
 
 class TestParamShiftHessianWithKwargs:
@@ -1634,7 +1613,7 @@ class TestParamShiftHessianWithKwargs:
         assert np.allclose(tapes[2].get_parameters(), x + np.array([-2 * np.pi / 3, 0.0]))
         assert np.allclose(tapes[-1].get_parameters(), x + np.array([0.0, -np.pi]))
         expected_shifts = np.array([[1, 1], [1, -1], [-1, 1], [-1, -1]]) * (np.pi / 2)
-        for _tape, exp_shift in zip(tapes[3:-1], expected_shifts):
+        for _tape, exp_shift in zip(tapes[3:-1], expected_shifts, strict=False):
             assert np.allclose(_tape.get_parameters(), x + exp_shift)
 
         hessian = fn(qp.execute(tapes, dev, diff_method=qp.gradients.param_shift))
@@ -1681,12 +1660,12 @@ class TestParamShiftHessianWithKwargs:
         expected_shifts = np.array(
             [[1, 1], [1, -1], [1, 2], [1, -2], [-1, 1], [-1, -1], [-1, 2], [-1, -2]]
         ) * np.array([[np.pi / 2, 0.3]])
-        for _tape, exp_shift in zip(tapes[2:10], expected_shifts):
+        for _tape, exp_shift in zip(tapes[2:10], expected_shifts, strict=False):
             assert np.allclose(_tape.get_parameters(), x + exp_shift)
 
         # Check that the vanilla diagonal rule is used for the second diagonal entry
         shift_order = [1, -1, -2]
-        for mult, _tape in zip(shift_order, tapes[10:]):
+        for mult, _tape in zip(shift_order, tapes[10:], strict=False):
             assert np.allclose(_tape.get_parameters(), x + np.array([0.0, np.pi * mult]))
 
         hessian = fn(qp.execute(tapes, dev, diff_method=qp.gradients.param_shift))
@@ -1888,57 +1867,3 @@ class TestInterfaces:
         jax_deriv = jax.jacobian(cost_fn)(x_jax)
 
         assert np.allclose(qp.math.transpose(expected, (1, 2, 0, 3)), jax_deriv)
-
-    @pytest.mark.tf
-    @pytest.mark.slow
-    def test_hessian_transform_with_tensorflow(self):
-        """Test that the Hessian transform can be used with TensorFlow (1d -> 1d)"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, max_diff=2)
-        def circuit(x):
-            qp.RX(x[1], wires=0)
-            qp.RY(x[0], wires=0)
-            qp.CNOT(wires=[0, 1])
-            return qp.probs(wires=[0, 1])
-
-        x_np = np.array([0.1, 0.2], requires_grad=True)
-        x_tf = tf.Variable([0.1, 0.2], dtype=tf.float64)
-
-        expected = qp.jacobian(qp.jacobian(circuit))(x_np)
-        circuit.interface = "tf"
-        with tf.GradientTape():
-            hess = qp.gradients.param_shift_hessian(circuit)(x_tf)
-
-        assert np.allclose(qp.math.transpose(expected, (1, 2, 0)), hess)
-
-    @pytest.mark.tf
-    @pytest.mark.slow
-    def test_hessian_transform_is_differentiable_tensorflow(self):
-        """Test that the 3rd derivate can be calculated via auto-differentiation in Tensorflow
-        (1d -> 1d)"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, max_diff=3)
-        def circuit(x):
-            qp.RX(x[1], wires=0)
-            qp.RY(x[0], wires=0)
-            qp.CNOT(wires=[0, 1])
-            return qp.probs(wires=[0, 1])
-
-        x = np.array([0.1, 0.2], requires_grad=True)
-        x_tf = tf.Variable([0.1, 0.2], dtype=tf.float64)
-
-        expected = qp.jacobian(qp.jacobian(qp.jacobian(circuit)))(x)
-        circuit.interface = "tf"
-        with tf.GradientTape() as tf_tape:
-            hessian = qp.gradients.param_shift_hessian(circuit)(x_tf)[0]
-            hessian = qp.math.stack([qp.math.stack(row) for row in hessian])
-
-        tensorflow_deriv = tf_tape.jacobian(hessian, x_tf)
-
-        assert np.allclose(qp.math.transpose(expected, (1, 2, 0, 3)), tensorflow_deriv)

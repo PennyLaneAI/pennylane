@@ -21,11 +21,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-
-# pylint: disable=no-name-in-module
-from conftest import atol_for_shots, get_device, test_matrix
 from pennylane import numpy as pnp
 from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
+from tests.workflow.interfaces.run.conftest import atol_for_shots, get_device, test_matrix
 
 
 @pytest.mark.autograd
@@ -86,7 +84,7 @@ class TestAutogradRun:
             res = qp.jacobian(lambda x: qp.math.hstack(cost(x)))(a)
         else:
             res = qp.jacobian(cost)(a)
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qp.math.sin(a)
 
@@ -124,7 +122,7 @@ class TestAutogradRun:
             assert res[1].shape == (4,)
 
             expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
-            for _r, _e in zip(res, expected):
+            for _r, _e in zip(res, expected, strict=False):
                 assert np.allclose(_r[:2], _e, atol=atol_for_shots(shots))
                 assert np.allclose(_r[2:], _e, atol=atol_for_shots(shots))
         else:
@@ -132,5 +130,5 @@ class TestAutogradRun:
             assert res[1].shape == (2,)
 
             expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
-            for _r, _e in zip(res, expected):
+            for _r, _e in zip(res, expected, strict=False):
                 assert np.allclose(_r, _e, atol=atol_for_shots(shots))

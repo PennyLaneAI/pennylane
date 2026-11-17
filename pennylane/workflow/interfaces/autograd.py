@@ -90,15 +90,15 @@ from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qp
 from pennylane.core.qscript import QuantumScriptBatch
+from pennylane.typing import ResultBatch
 
-ExecuteFn = Callable[[QuantumScriptBatch], qp.typing.ResultBatch]
+ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-# pylint: disable=unused-argument
-def autograd_execute(
+def autograd_execute(  # pylint: disable=unused-argument
     tapes: QuantumScriptBatch,
     execute_fn: ExecuteFn,
     jpc: qp.workflow.jacobian_products.JacobianProductCalculator,
@@ -144,7 +144,7 @@ def autograd_execute(
     return _execute(parameters, tuple(tapes), execute_fn, jpc)
 
 
-def _to_autograd(result: qp.typing.ResultBatch) -> qp.typing.ResultBatch:
+def _to_autograd(result: ResultBatch) -> ResultBatch:
     """Converts an arbitrary result batch to one with autograd arrays.
     Args:
         result (ResultBatch): a nested structure of lists, tuples, dicts, and numpy arrays
@@ -159,12 +159,7 @@ def _to_autograd(result: qp.typing.ResultBatch) -> qp.typing.ResultBatch:
 
 
 @autograd.extend.primitive
-def _execute(
-    parameters,
-    tapes,
-    execute_fn,
-    jpc,
-):
+def _execute(parameters, tapes, execute_fn, jpc):  # pylint: disable=unused-argument
     """Autodifferentiable wrapper around a way of executing tapes.
 
     Args:
@@ -179,14 +174,7 @@ def _execute(
     return _to_autograd(execute_fn(tapes))
 
 
-# pylint: disable=unused-argument
-def vjp(
-    ans,
-    parameters,
-    tapes,
-    execute_fn,
-    jpc,
-):
+def vjp(ans, parameters, tapes, execute_fn, jpc):  # pylint: disable=unused-argument
     """Returns the vector-Jacobian product operator for a batch of quantum tapes.
 
     Args:

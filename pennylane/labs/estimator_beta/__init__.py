@@ -31,6 +31,8 @@ Resource Estimation
 
     ~estimate
     ~LabsResourceConfig
+    ~mark_subroutine
+    ~ResourceQfunc
 
 Qubit Tracking Functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -157,6 +159,8 @@ from .ops import (
     mcx_one_clean_aux_resource_decomp,
     mcx_one_dirty_aux_resource_decomp,
     mcx_many_clean_aux_resource_decomp,
+    mark_subroutine,
+    ResourceQfunc,
 )
 
 Adder = LabsAdder
@@ -189,13 +193,7 @@ def _(action: Deallocate):
 
 @_map_to_resource_op.register
 def _(op: qp.Adder):
-    mod = op.hyperparameters["mod"]
-    x_wires = op.hyperparameters["x_wires"]
-    return Adder(
-        len(x_wires),
-        mod,
-        wires=x_wires,
-    )
+    return Adder(len(op.x_wires), op.mod, wires=op.x_wires)
 
 
 @_map_to_resource_op.register
@@ -203,7 +201,7 @@ def _(op: qp.QROM):
     bitstrings = op.data[0]
     num_bitstrings = bitstrings.shape[0]
     size_bitstring = bitstrings.shape[1] if num_bitstrings > 0 else 0
-    op_wires = op.hyperparameters["control_wires"] + op.hyperparameters["target_wires"]
+    op_wires = op.control_wires + op.target_wires
     return LabsQROM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
@@ -279,9 +277,8 @@ def _(op: qp.MottonenStatePreparation):
 
 @_map_to_resource_op.register
 def _(op: qp.SumOfSlatersPrep):
-    from pennylane.templates.state_preparations.sum_of_slaters import (  # pylint: disable=import-outside-toplevel
-        select_sos_rows,
-    )
+    # pylint: disable-next=import-outside-toplevel
+    from pennylane.templates.state_preparations.sum_of_slaters import select_sos_rows
 
     indices = op.hyperparameters["indices"]
     n = len(op.wires)

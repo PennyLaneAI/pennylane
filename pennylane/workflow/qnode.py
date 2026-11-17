@@ -39,7 +39,7 @@ from pennylane.math import Interface
 from pennylane.typing import TensorLike
 
 from .execution import execute
-from .resolution import SupportedDiffMethods, _validate_jax_version
+from .resolution import SupportedDiffMethods
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -186,8 +186,7 @@ def _validate_diff_method(device: SupportedDeviceAPIs, diff_method: str | Transf
     )
 
 
-# pylint: disable=too-many-instance-attributes
-class QNode:
+class QNode:  # pylint: disable=too-many-instance-attributes
     r"""Represents a quantum node in the hybrid computational graph.
 
     A *quantum node* contains a `quantum function <https://docs.pennylane.ai/en/stable/introduction/circuits.html#intro-vcirc-qfunc>`__
@@ -501,8 +500,7 @@ class QNode:
         indexing of ``x`` would fail in the ``RZ`` rotation within the QNode.
     """
 
-    # pylint: disable=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         func: Callable,
         device: SupportedDeviceAPIs,
@@ -554,8 +552,6 @@ class QNode:
         self.func = func
         self.device: Device = device
         self._interface = Interface(interface)
-        if self._interface in (Interface.JAX, Interface.JAX_JIT):
-            _validate_jax_version()
         self.diff_method = diff_method
         _validate_diff_method(self.device, self.diff_method)
 
@@ -585,16 +581,23 @@ class QNode:
         self._shots: Shots = device.shots if shots == "unset" else Shots(shots)
         self._shots_override_device: bool = shots != "unset"
         self._compile_pipeline = CompilePipeline()
+        self._post_device_pipeline = CompilePipeline()
         functools.update_wrapper(self, func)
 
     def __copy__(self) -> QNode:
         copied_qnode = QNode.__new__(QNode)
         for attr, value in vars(self).items():
-            if attr not in {"execute_kwargs", "_compile_pipeline", "gradient_kwargs"}:
+            if attr not in {
+                "execute_kwargs",
+                "_compile_pipeline",
+                "_post_device_pipeline",
+                "gradient_kwargs",
+            }:
                 setattr(copied_qnode, attr, value)
 
         copied_qnode.execute_kwargs = dict(self.execute_kwargs)
         copied_qnode._compile_pipeline = CompilePipeline(self.compile_pipeline)
+        copied_qnode._post_device_pipeline = CompilePipeline(self.post_device_pipeline)
         copied_qnode.gradient_kwargs = dict(self.gradient_kwargs)
         return copied_qnode
 
@@ -640,6 +643,17 @@ class QNode:
     def compile_pipeline(self) -> CompilePipeline:
         """The compile pipeline used by the QNode."""
         return self._compile_pipeline
+
+    @property
+    def post_device_pipeline(self) -> CompilePipeline:
+        """The post-device compile pipeline used by the QNode.
+
+        .. note::
+            When `qjit` is used to compile the QNode, device-specific transformations are applied after the compile pipeline.
+            The transformations belonging to the `QNode` that need to be **applied after** the device-specific transformations
+            should be added to the post-device compile pipeline.
+        """
+        return self._post_device_pipeline
 
     def update(self, **kwargs) -> QNode:
         """Returns a new QNode instance but with updated settings (e.g., a different `diff_method`). Any settings not specified will retain their original value.
@@ -689,6 +703,7 @@ class QNode:
         >>> new_circuit(1)
         tensor(0.5403, dtype=torch.float64)
         """
+        # pylint: disable=protected-access
         if not kwargs:
             valid_params = set(self._init_args.copy()) | qp.gradients.SUPPORTED_GRADIENT_KWARGS
             raise ValueError(
@@ -719,14 +734,13 @@ class QNode:
 
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
-        # pylint: disable=protected-access
         if updated_qn.shots != old_shots:
             updated_qn._set_shots(old_shots)
         if self._shots_override_device:
             updated_qn._shots_override_device = True
 
-        # pylint: disable=protected-access
         updated_qn._compile_pipeline = CompilePipeline(self.compile_pipeline)
+        updated_qn._post_device_pipeline = CompilePipeline(self.post_device_pipeline)
         return updated_qn
 
     def update_shots(self, shots: int | Shots) -> QNode:
@@ -743,8 +757,35 @@ class QNode:
         updated_qn = copy.copy(self)
 
         # Update the shots attribute directly
+        updated_qn._set_shots(shots)  # pylint: disable=protected-access
+
+        return updated_qn
+
+    def update_pipelines(
+        self,
+        compile_pipeline: CompilePipeline,
+        post_device_pipeline: CompilePipeline | None = None,
+    ) -> QNode:
+        """Update the compile and post-device compile pipelines used by the QNode.
+
+        Args:
+            compile_pipeline (CompilePipeline): The new compile pipeline to use.
+            post_device_pipeline (CompilePipeline): The new post-device compile pipeline to use.
+
+        Returns:
+            qnode (QNode): new QNode with updated compile and post-device compile pipelines
+        """
         # pylint: disable=protected-access
-        updated_qn._set_shots(shots)
+
+        if post_device_pipeline is None:
+            post_device_pipeline = CompilePipeline()
+
+        # Create a copy of the current QNode
+        updated_qn = copy.copy(self)
+
+        # Update the compile and post-device compile pipelines
+        updated_qn._compile_pipeline = compile_pipeline
+        updated_qn._post_device_pipeline = post_device_pipeline
 
         return updated_qn
 
@@ -766,7 +807,7 @@ class QNode:
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
         # breakpoints in the circuit
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable-next=import-outside-toplevel
         from pennylane.debugging import pldb_device_manager
 
         with pldb_device_manager(self.device), AnnotatedQueue() as q:
@@ -827,10 +868,10 @@ qnode.__doc__ = QNode.__doc__
 qnode.__signature__ = inspect.signature(QNode)
 
 
-# pylint: disable=protected-access
 @Transform.generic_register
 def apply_transform_to_qnode(obj: QNode, transform, *targs, **tkwargs) -> QNode:
     """The default behavior for applying a transform to a QNode."""
+    # pylint: disable=protected-access
     targs, tkwargs = transform.setup_inputs(*targs, **tkwargs)
     if transform._custom_qnode_transform:
         return transform._custom_qnode_transform(transform, obj, targs, tkwargs)

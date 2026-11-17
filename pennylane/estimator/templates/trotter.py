@@ -48,8 +48,6 @@ from .subroutines import (
     SemiAdder,
 )
 
-# pylint: disable=arguments-differ, too-many-arguments, super-init-not-called
-
 
 class TrotterProduct(ResourceOperator):
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
@@ -134,7 +132,7 @@ class TrotterProduct(ResourceOperator):
 
     resource_keys = {"first_order_expansion", "num_steps", "order", "num_wires"}
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self,
         first_order_expansion: list,
         num_steps: int,
@@ -194,7 +192,7 @@ class TrotterProduct(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         first_order_expansion: list,
         num_steps: int,
@@ -224,12 +222,12 @@ class TrotterProduct(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ,unused-argument
         cls,
         first_order_expansion: list,
         num_steps: int,
         order: int,
-        num_wires: int,  # pylint: disable=unused-argument
+        num_wires: int,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
@@ -296,14 +294,14 @@ class TrotterCDF(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        cdf_ham (:class:`~.pennylane.estimator.compact_hamiltonian.CDFHamiltonian`):
+        cdf_ham (:class:`pennylane.estimator.compact_hamiltonian.CDFHamiltonian`):
             a compressed double factorized Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be ``1`` or an even number
         wires (list[int] | None): the wires on which the operator acts
 
     Raises:
-        TypeError: if ``cdf_ham`` is not an instance of :class:`~.CDFHamiltonian`
+        TypeError: if ``cdf_ham`` is not an instance of :class:`pennylane.estimator.compact_hamiltonian.CDFHamiltonian`
         ValueError: if ``num_steps`` is not a positive integer
         ValueError: if ``order`` is not 1 or a positive even integer
         ValueError: if the number of wires provided does not match the number of wires required by the operator
@@ -331,7 +329,7 @@ class TrotterCDF(ResourceOperator):
         calculated based on `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`_.
 
     .. seealso::
-        :class:`~.estimator.compact_hamiltonian.CDFHamiltonian`
+        :class:`pennylane.estimator.compact_hamiltonian.CDFHamiltonian`
 
     .. seealso:: :class:`~.TrotterProduct`
 
@@ -401,7 +399,7 @@ class TrotterCDF(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * cdf_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`): a compressed double factorized
+                * cdf_ham (:class:`pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`): a compressed double factorized
                   Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even.
@@ -413,14 +411,14 @@ class TrotterCDF(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls, cdf_ham: CDFHamiltonian, num_steps: int, order: int
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            cdf_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`):
+            cdf_ham (:class:`pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`):
                 a compressed double factorized Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
@@ -453,14 +451,14 @@ class TrotterCDF(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls, cdf_ham: CDFHamiltonian, num_steps: int, order: int
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            cdf_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`): a compressed double factorized
+            cdf_ham (:class:`pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`): a compressed double factorized
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
@@ -765,7 +763,7 @@ class TrotterTHC(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls, thc_ham: THCHamiltonian, num_steps: int, order: int
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
@@ -805,7 +803,7 @@ class TrotterTHC(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls, thc_ham: THCHamiltonian, num_steps: int, order: int
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
@@ -1077,7 +1075,7 @@ class TrotterVibrational(ResourceOperator):
         "coeff_precision",
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         vibration_ham: VibrationalHamiltonian,
         num_steps: int,
@@ -1138,7 +1136,7 @@ class TrotterVibrational(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         vibration_ham: VibrationalHamiltonian,
         num_steps: int,
@@ -1188,6 +1186,7 @@ class TrotterVibrational(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @staticmethod
+    # pylint: disable-next=too-many-arguments
     def _cached_terms(grid_size, taylor_degree, coeff_precision, cached_tree, path, index):
         r"""Recursive function to compute the resources for the trotterization of vibrational Hamiltonian
         while caching the coefficients."""
@@ -1312,7 +1311,7 @@ class TrotterVibrational(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         vibration_ham: VibrationalHamiltonian,
         num_steps: int,
@@ -1431,7 +1430,7 @@ class TrotterVibronic(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        vibronic_ham (:class:`~.pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`): a real-space vibronic
+        vibronic_ham (:class:`pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`): a real-space vibronic
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be ``1`` or an even number
@@ -1440,7 +1439,7 @@ class TrotterVibronic(ResourceOperator):
         wires (list[int] | None): the wires on which the operator acts.
 
     Raises:
-        TypeError: if ``vibronic_ham`` is not an instance of :class:`~.VibronicHamiltonian`
+        TypeError: if ``vibronic_ham`` is not an instance of :class:`pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
         ValueError: if ``num_steps`` is not a positive integer
         ValueError: if ``order`` is not 1 or a positive even integer
         ValueError: if the number of wires provided does not match the number of wires expected by the operator
@@ -1468,7 +1467,7 @@ class TrotterVibronic(ResourceOperator):
         based on `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`_.
 
     .. seealso::
-        :class:`~.estimator.compact_hamiltonian.VibronicHamiltonian`
+        :class:`pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
 
     .. seealso:: :class:`~.TrotterProduct`
 
@@ -1505,7 +1504,7 @@ class TrotterVibronic(ResourceOperator):
         "coeff_precision",
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         vibronic_ham: VibronicHamiltonian,
         num_steps: int,
@@ -1552,7 +1551,7 @@ class TrotterVibronic(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * vibronic_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real-space vibronic
+                * vibronic_ham (:class:`pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real-space vibronic
                   Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even
@@ -1568,7 +1567,7 @@ class TrotterVibronic(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         vibronic_ham: VibronicHamiltonian,
         num_steps: int,
@@ -1580,7 +1579,7 @@ class TrotterVibronic(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            vibronic_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real space vibronic
+            vibronic_ham (:class:`pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real space vibronic
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
@@ -1618,7 +1617,7 @@ class TrotterVibronic(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @staticmethod
-    def _cached_terms(
+    def _cached_terms(  # pylint: disable=too-many-arguments
         num_states, grid_size, taylor_degree, coeff_precision, cached_tree, path, index
     ):
         r"""Recursive function to compute the resources for the trotterization of vibronic Hamiltonian
@@ -1769,7 +1768,7 @@ class TrotterVibronic(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         vibronic_ham: VibronicHamiltonian,
         num_steps: int,
@@ -1781,7 +1780,7 @@ class TrotterVibronic(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Args:
-            vibronic_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real space vibronic
+            vibronic_ham (:class:`pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real space vibronic
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
@@ -2036,7 +2035,7 @@ class TrotterPauli(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         pauli_ham: PauliHamiltonian,
         num_steps: int,
@@ -2079,7 +2078,7 @@ class TrotterPauli(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         pauli_ham: PauliHamiltonian,
         num_steps: int,

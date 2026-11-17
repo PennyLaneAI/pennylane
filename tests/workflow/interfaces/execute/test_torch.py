@@ -35,8 +35,7 @@ def run_before_and_after_tests():
     torch.set_default_dtype(torch.float32)
 
 
-# pylint: disable=too-few-public-methods
-class TestCaching:
+class TestCaching:  # pylint: disable=too-few-public-methods
     """Tests for caching behaviour"""
 
     @pytest.mark.skip("caching is not implemented for torch")
@@ -239,7 +238,7 @@ class TestTorchExecuteIntegration:
 
         res = torch.autograd.functional.jacobian(cost, a)
         if not shots.has_partitioned_shots:
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qp.math.sin(a)
 
@@ -287,7 +286,7 @@ class TestTorchExecuteIntegration:
             assert res[0].shape == (4,)
             assert res[1].shape == (4,)
 
-            for _r, _e in zip(res, expected):
+            for _r, _e in zip(res, expected, strict=False):
                 assert torch.allclose(_r[:2], _e, atol=atol_for_shots(shots))
                 assert torch.allclose(_r[2:], _e, atol=atol_for_shots(shots))
 
@@ -295,12 +294,15 @@ class TestTorchExecuteIntegration:
             assert res[0].shape == (2,)
             assert res[1].shape == (2,)
 
-            for _r, _e in zip(res, expected):
+            for _r, _e in zip(res, expected, strict=False):
                 assert torch.allclose(_r, _e, atol=atol_for_shots(shots))
 
     def test_tape_no_parameters(self, execute_kwargs, shots, device_name, seed):
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
+
+        if execute_kwargs.get("diff_method") == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
 
         device = get_device(device_name, seed)
 
@@ -393,7 +395,7 @@ class TestTorchExecuteIntegration:
 
         jac = torch.autograd.functional.jacobian(cost, params)
         assert isinstance(jac, torch.Tensor)
-        assert jac.shape == (4, 2)  # pylint: disable=no-member
+        assert jac.shape == (4, 2)
 
         assert torch.allclose(jac[1:3], torch.tensor(0.0), atol=atol_for_shots(shots))
 
@@ -438,7 +440,7 @@ class TestTorchExecuteIntegration:
             torch.tensor([0, -torch.cos(2 * a) * torch.cos(b)]),
         )
         assert isinstance(jac, tuple) and len(jac) == 2
-        for _j, _e in zip(jac, expected):
+        for _j, _e in zip(jac, expected, strict=False):
             assert torch.allclose(_j, _e, atol=atol_for_shots(shots), rtol=0)
 
     def test_classical_processing(self, execute_kwargs, device_name, seed, shots):
@@ -523,7 +525,7 @@ class TestTorchExecuteIntegration:
 
         device = get_device(device_name, seed)
 
-        class MyU3(qp.U3):
+        class MyU3(qp.U3):  # pylint: disable=too-few-public-methods
             """Dummy operator."""
 
             name = "MyU3"
@@ -555,52 +557,53 @@ class TestTorchExecuteIntegration:
             program = device.preprocess_transforms(execution_config=config)
             return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
-        with qp.decomposition.local_decomps():
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        def _decomp(theta, phi, delta, wires):
+            qp.Rot(delta, theta, -delta, wires)
+            qp.PhaseShift(phi + delta, wires)
 
-            @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
-            def _decomp(theta, phi, lam, wires):
-                qp.Rot(lam, theta, -lam, wires)
-                qp.PhaseShift(phi + lam, wires)
+        qp.add_decomps(MyU3, _decomp)
 
-            qp.add_decomps(MyU3, _decomp)
+        a = torch.tensor(0.1, requires_grad=False)
+        p = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
 
-            a = torch.tensor(0.1, requires_grad=False)
-            p = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
+        res = cost_fn(a, p)
+        expected = torch.cos(a) * torch.cos(p[1]) * torch.sin(p[0]) + torch.sin(a) * (
+            torch.cos(p[2]) * torch.sin(p[1]) + torch.cos(p[0]) * torch.cos(p[1]) * torch.sin(p[2])
+        )
+        assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
-            res = cost_fn(a, p)
-            expected = torch.cos(a) * torch.cos(p[1]) * torch.sin(p[0]) + torch.sin(a) * (
-                torch.cos(p[2]) * torch.sin(p[1])
-                + torch.cos(p[0]) * torch.cos(p[1]) * torch.sin(p[2])
-            )
-            assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        res = torch.autograd.functional.jacobian(lambda _p: cost_fn(a, _p), p)
 
-            res = torch.autograd.functional.jacobian(lambda _p: cost_fn(a, _p), p)
-
-            expected = torch.tensor(
-                [
-                    torch.cos(p[1])
-                    * (
-                        torch.cos(a) * torch.cos(p[0])
-                        - torch.sin(a) * torch.sin(p[0]) * torch.sin(p[2])
-                    ),
-                    torch.cos(p[1]) * torch.cos(p[2]) * torch.sin(a)
-                    - torch.sin(p[1])
-                    * (
-                        torch.cos(a) * torch.sin(p[0])
-                        + torch.cos(p[0]) * torch.sin(a) * torch.sin(p[2])
-                    ),
-                    torch.sin(a)
-                    * (
-                        torch.cos(p[0]) * torch.cos(p[1]) * torch.cos(p[2])
-                        - torch.sin(p[1]) * torch.sin(p[2])
-                    ),
-                ]
-            )
-            assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
+        expected = torch.tensor(
+            [
+                torch.cos(p[1])
+                * (
+                    torch.cos(a) * torch.cos(p[0])
+                    - torch.sin(a) * torch.sin(p[0]) * torch.sin(p[2])
+                ),
+                torch.cos(p[1]) * torch.cos(p[2]) * torch.sin(a)
+                - torch.sin(p[1])
+                * (
+                    torch.cos(a) * torch.sin(p[0])
+                    + torch.cos(p[0]) * torch.sin(a) * torch.sin(p[2])
+                ),
+                torch.sin(a)
+                * (
+                    torch.cos(p[0]) * torch.cos(p[1]) * torch.cos(p[2])
+                    - torch.sin(p[1]) * torch.sin(p[2])
+                ),
+            ]
+        )
+        assert torch.allclose(res, expected, atol=atol_for_shots(shots), rtol=0)
 
     def test_probability_differentiation(self, execute_kwargs, device_name, seed, shots):
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
+
+        if execute_kwargs["diff_method"] == "adjoint":
+            pytest.xfail("adjoint diff of probs is not supported.")
+
         device = get_device(device_name, seed)
 
         def cost(x, y):
@@ -654,6 +657,10 @@ class TestTorchExecuteIntegration:
     def test_ragged_differentiation(self, execute_kwargs, device_name, seed, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+
+        if execute_kwargs["diff_method"] == "adjoint":
+            pytest.xfail("adjoint diff of probs is not supported.")
+
         device = get_device(device_name, seed)
 
         def cost(x, y):
@@ -773,7 +780,6 @@ class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.fixture
     def cost_fn(self, execute_kwargs, shots, device_name, seed, constructor):
         """Cost function for gradient tests"""

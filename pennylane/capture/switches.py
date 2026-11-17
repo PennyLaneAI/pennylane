@@ -18,28 +18,13 @@ status reporting function on whether it is enabled or not.
 
 from collections.abc import Callable
 from contextlib import contextmanager
-
-has_jax = True
-is_jax_compatible = True
-
-REQUIRED_JAX_VERSION = "0.7.1"
-
-try:
-    import jax  # pylint: disable=unused-import
-    from packaging import version
-
-    jax_version = version.parse(jax.__version__)
-    required_version = version.parse(REQUIRED_JAX_VERSION)
-    if jax_version != required_version:  # pragma: no cover
-        is_jax_compatible = False
-except ImportError:  # pragma: no cover
-    has_jax = False
-    is_jax_compatible = False
+from contextvars import ContextVar
+from functools import partial
 
 
-def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[], bool]]:
-    r"""Create three functions, corresponding to an activation switch, a deactivation switch
-    and a status query, in that order.
+def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[], bool], Callable]:
+    r"""Create four functions, corresponding to an activation switch, a deactivation switch,
+    a status query, and a context manager, in that order.
 
     .. note::
 
@@ -47,59 +32,38 @@ def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[
         can be used to make switches for any context.
     """
 
-    _FEATURE_ENABLED = False
+    _FEATURE_ENABLED = ContextVar("_FEATURE_ENABLED", default=False)
     # since this changes what happens with tracing, we need to turn the behaviour
     # off by default to preserve our ability to jit pennylane circuits.
 
     def enable_fn() -> None:
         """Enable the capturing mechanism of hybrid quantum-classical programs
         in a PennyLane Program Representation (plxpr)."""
-        if not has_jax:
-            raise ImportError("plxpr requires JAX to be installed.")
-        if not is_jax_compatible:  # pragma: no cover
-            raise ImportError(
-                f"PennyLane's program capture requires JAX=={REQUIRED_JAX_VERSION} to be installed to ensure functionality. "
-                f"You have JAX {jax.__version__} installed. "
-                f"Please pin JAX by running: pip install --upgrade jax=={REQUIRED_JAX_VERSION} jaxlib=={REQUIRED_JAX_VERSION}"
-            )
-        nonlocal _FEATURE_ENABLED
-        _FEATURE_ENABLED = True
+        _FEATURE_ENABLED.set(True)
 
     def disable_fn() -> None:
         """Disable the capturing mechanism of hybrid quantum-classical programs
         in a PennyLane Program Representation (plxpr)."""
-        nonlocal _FEATURE_ENABLED
-        _FEATURE_ENABLED = False
+        _FEATURE_ENABLED.set(False)
 
     def status_fn() -> bool:
         """Return whether the capturing mechanism of hybrid quantum-classical programs
         in a PennyLane Program Representation (plxpr) is enabled."""
-        nonlocal _FEATURE_ENABLED
-        return _FEATURE_ENABLED
+        return _FEATURE_ENABLED.get()
 
-    return enable_fn, disable_fn, status_fn
+    @contextmanager
+    def toggle_ctx_fn(new_state: bool):
+        """A context manager in which capture is enabled or disabled temporarily."""
+
+        token = _FEATURE_ENABLED.set(new_state)
+        try:
+            yield
+        finally:
+            _FEATURE_ENABLED.reset(token)
+
+    return enable_fn, disable_fn, status_fn, toggle_ctx_fn
 
 
-enable, disable, enabled = _make_switches()
+enable, disable, enabled, toggle_ctx = _make_switches()
 
-
-@contextmanager
-def pause():
-    """Temporarily stop program capture.
-
-    >>> def f():
-    ...     with qp.capture.pause():
-    ...         qp.X(0)
-    ...     return 2
-    >>> jax.make_jaxpr(f)()
-    { lambda ; . let  in (2,) }
-
-    """
-    originally_enabled = enabled()
-    if originally_enabled:
-        disable()
-    try:
-        yield
-    finally:
-        if originally_enabled:
-            enable()
+pause = partial(toggle_ctx, new_state=False)

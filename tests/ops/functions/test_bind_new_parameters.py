@@ -17,7 +17,7 @@ This module contains unit tests for ``qp.bind_parameters``.
 
 import numpy as np
 import pytest
-from gate_data import GELL_MANN, I, X, Y, Z
+from gate_data import I, X, Y, Z
 
 import pennylane as qp
 from pennylane.core import Operator2
@@ -46,17 +46,6 @@ from pennylane.wires import WiresLike
             qp.sum(qp.s_prod(-0.5, qp.Hermitian(Z, 0)), qp.PauliZ(1)),
         ),
         (
-            qp.sum(
-                qp.s_prod(0.5, qp.sum(qp.THermitian(GELL_MANN[0], 0), qp.GellMann(0, 2))),
-                qp.prod(qp.GellMann(1, 3), qp.THermitian(GELL_MANN[5], 2)),
-            ),
-            [-0.5, GELL_MANN[1], GELL_MANN[6]],
-            qp.sum(
-                qp.s_prod(-0.5, qp.sum(qp.THermitian(GELL_MANN[1], 0), qp.GellMann(0, 2))),
-                qp.prod(qp.GellMann(1, 3), qp.THermitian(GELL_MANN[6], 2)),
-            ),
-        ),
-        (
             qp.prod(qp.s_prod(1.1, qp.PauliX(0)), qp.PauliZ(1)),
             [0.1],
             qp.prod(qp.s_prod(0.1, qp.PauliX(0)), qp.PauliZ(1)),
@@ -71,17 +60,6 @@ from pennylane.wires import WiresLike
             [-0.5, Z],
             qp.prod(qp.s_prod(-0.5, qp.Hermitian(Z, 0)), qp.PauliZ(1)),
         ),
-        (
-            qp.prod(
-                qp.s_prod(0.5, qp.sum(qp.THermitian(GELL_MANN[0], 0), qp.GellMann(0, 2))),
-                qp.sum(qp.GellMann(1, 3), qp.THermitian(GELL_MANN[5], 1)),
-            ),
-            [-0.5, GELL_MANN[1], GELL_MANN[6]],
-            qp.prod(
-                qp.s_prod(-0.5, qp.sum(qp.THermitian(GELL_MANN[1], 0), qp.GellMann(0, 2))),
-                qp.sum(qp.GellMann(1, 3), qp.THermitian(GELL_MANN[6], 1)),
-            ),
-        ),
     ],
 )
 def test_composite_ops(op, new_params, expected_op):
@@ -92,7 +70,18 @@ def test_composite_ops(op, new_params, expected_op):
 
     qp.assert_equal(new_op, expected_op)
     assert new_op is not op
-    assert all(no is not o for no, o in zip(new_op.operands, op.operands))
+    assert all(no is not o for no, o in zip(new_op.operands, op.operands, strict=False))
+
+
+def test_prod2():
+    """Test that parameters nested in a Prod2 are rebound operand by operand."""
+    op = qp.ops.Prod2((qp.RZ(0.1, 0), qp.X(1), qp.RY(0.2, 2)))
+
+    new_op = bind_new_parameters(op, (0.3, 0.4))
+
+    qp.assert_equal(new_op, qp.ops.Prod2((qp.RZ(0.3, 0), qp.X(1), qp.RY(0.4, 2))))
+    assert new_op is not op
+    assert all(new_operand is not operand for new_operand, operand in zip(new_op, op, strict=False))
 
 
 @pytest.mark.parametrize(
@@ -120,8 +109,7 @@ def test_scalar_symbolic_ops(op, new_params, expected_op):
     assert new_op.base is not op.base
 
 
-# pylint: disable=too-few-public-methods
-class MultiRot(Operator2):
+class MultiRot(Operator2):  # pylint: disable=too-few-public-methods
     """MultiRot class used for testing purposes."""
 
     dynamic_argnames = ("angles",)
@@ -185,6 +173,23 @@ def test_operator_2_ops(op, new_params, expected_op):
     assert new_op is not op
 
 
+def test_operator2_rebinds_dynamic_args_by_name():
+    """Operator2 dynamic args are rebound by name, not constructor order.
+
+    ``IQPEmbedding(features, wires, n_repeats, pattern)`` has ``wires`` between
+    the two dynamic args, so a positional ``cls(*dynamic_args, wires=...)``
+    reconstruct would fail.
+    """
+
+    op = qp.IQPEmbedding([1.0, 2.0], wires=[0, 1], pattern=[[0, 1]])
+    new_op = bind_new_parameters(op, ([0.0, 0.0], np.array([[0, 1]])))
+
+    assert qp.math.allclose(new_op.arguments["features"], [0.0, 0.0])
+    assert qp.math.allclose(new_op.arguments["pattern"], [[0, 1]])
+    assert new_op.wires.labels == (0, 1)
+    assert new_op is not op
+
+
 @pytest.mark.parametrize(
     "op, new_params, expected_op",
     [
@@ -244,6 +249,31 @@ def test_controlled_sequence():
     new_op = bind_new_parameters(op, (0.5,))
     assert qp.math.allclose(new_op.data[0], 0.5)
     qp.assert_equal(new_op.base, qp.RX(0.5, wires=3))
+
+
+def test_prep_sel_prep():
+    """Test that rebinding PrepSelPrep replaces its LCU without mutating the original."""
+    lcu = qp.dot([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)])
+    op = qp.PrepSelPrep(lcu, control=0)
+
+    new_op = bind_new_parameters(op, (0.5, 0.5))
+
+    qp.assert_equal(new_op.lcu, qp.dot([0.5, 0.5], [qp.Z(2), qp.X(1) @ qp.X(2)]))
+    assert new_op is not op
+    assert new_op.lcu is not op.lcu
+    assert op.data == (0.25, 0.75)
+
+
+def test_select():
+    """Test that rebinding Select replaces its operands without mutating the original."""
+    op = qp.Select([qp.RX(0.25, wires=2), qp.RY(0.75, wires=2)], control=0)
+
+    new_op = bind_new_parameters(op, (0.5, 0.5))
+
+    qp.assert_equal(new_op, qp.Select([qp.RX(0.5, wires=2), qp.RY(0.5, wires=2)], control=0))
+    assert new_op is not op
+    assert new_op.ops[0] is not op.ops[0]
+    assert op.data == (0.25, 0.75)
 
 
 TEST_BIND_LINEARCOMBINATION = [
@@ -385,9 +415,13 @@ def test_evolution_template_ops(op, new_params, expected_op):
     # `qp.equal` fails.
     assert isinstance(new_op, type(op))
     assert new_op.arithmetic_depth == expected_op.arithmetic_depth
-    assert all(qp.math.allclose(d1, d2) for d1, d2 in zip(new_op.data, expected_op.data))
+    assert all(
+        qp.math.allclose(d1, d2) for d1, d2 in zip(new_op.data, expected_op.data, strict=False)
+    )
     assert new_op.wires == op.wires
-    for val1, val2 in zip(new_op.hyperparameters.values(), expected_op.hyperparameters.values()):
+    for val1, val2 in zip(
+        new_op.hyperparameters.values(), expected_op.hyperparameters.values(), strict=False
+    ):
         if isinstance(val1, qp.Hamiltonian):
             qp.assert_equal(val1, val2)
         else:
@@ -427,24 +461,11 @@ def test_fermionic_template_ops(op, new_params, expected_op):
             [1.23, 4.56, 7.89],
             qp.Rot(1.23, 4.56, 7.89, wires=1),
         ),
-        (
-            qp.QubitUnitary(X, wires=0),
-            [I],
-            qp.QubitUnitary(I, wires=0),
-        ),
-        (
-            qp.BasisState([0, 1], wires=[0, 1]),
-            [[1, 1]],
-            qp.BasisState([1, 1], wires=[0, 1]),
-        ),
-        (qp.GellMann(wires=0, index=4), [], qp.GellMann(wires=0, index=4)),
+        (qp.QubitUnitary(X, wires=0), [I], qp.QubitUnitary(I, wires=0)),
+        (qp.BasisState([0, 1], wires=[0, 1]), [[1, 1]], qp.BasisState([1, 1], wires=[0, 1])),
         (qp.Identity(wires=[1, 2]), [], qp.Identity(wires=[1, 2])),
         (qp.pow(qp.RX(0.123, 0), 2, lazy=False), [0.456], qp.RX(0.456, 0)),
-        (
-            qp.adjoint(qp.RX(0.123, wires=0), lazy=False),
-            [0.456],
-            qp.RX(0.456, wires=0),
-        ),
+        (qp.RX(-0.123, wires=0), [0.456], qp.RX(0.456, wires=0)),
         (qp.PCPhase(0.123, 2, wires=[0, 1]), [0.456], qp.PCPhase(0.456, 2, wires=[0, 1])),
     ],
 )
@@ -500,14 +521,35 @@ def test_conditional_ops(op, new_params, expected_op):
     assert new_op.meas_val.measurements == [mp0]
 
 
+class KeywordOnlyOperation(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+    """Operation with a constructor unsupported by the generic parameter-binding path."""
+
+    num_wires = 1
+
+    def __init__(self, *, param, wires):
+        super().__init__(param, wires=wires)
+
+
 def test_unsupported_op_copy_and_set():
     """Test that trying to use `bind_new_parameters` on an operator without
     a supported dispatcher will fall back to copying the operator and setting
-    `new_op.data` to the new parameters."""
-    op = qp.PCPhase(0.123, 2, wires=[1, 2])
+    its private parameter storage to the new parameters."""
+    op = KeywordOnlyOperation(param=0.123, wires=0)
     new_op = bind_new_parameters(op, [0.456])
 
-    expected_op = qp.PCPhase(0.456, 2, wires=[1, 2])
+    expected_op = KeywordOnlyOperation(param=0.456, wires=0)
 
     qp.assert_equal(new_op, expected_op)
+    assert new_op is not op
+
+
+def test_unsupported_op_copy_and_set_in_queue():
+    """Test that the fallback path queues the copy with its new parameters."""
+    op = KeywordOnlyOperation(param=0.123, wires=0)
+
+    with qp.queuing.AnnotatedQueue() as queue:
+        new_op = bind_new_parameters(op, [0.456])
+
+    assert queue.queue == [new_op]
+    qp.assert_equal(new_op, KeywordOnlyOperation(param=0.456, wires=0))
     assert new_op is not op

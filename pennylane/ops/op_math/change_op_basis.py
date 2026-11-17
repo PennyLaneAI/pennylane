@@ -15,21 +15,18 @@
 This submodule defines a class for compute-uncompute patterns.
 """
 
+import copy
 import inspect
 from collections import Counter, defaultdict
 from collections.abc import Callable
 from functools import reduce
 
-from pennylane import capture, math, pytrees
+from pennylane import capture, math
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core import queuing
-from pennylane.core.operator import Operator
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
-from pennylane.decomposition.resources import adjoint_resource_rep
+from pennylane.core.apply import apply
+from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
     EigvalsUndefinedError,
@@ -37,6 +34,12 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import adjoint, ctrl, prod
+from pennylane.ops.op_math.adjoint import _adjoint_eager
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.pytrees import flatten, unflatten
+from pennylane.typing import Wire
 
 from .composite import CompositeOp, handle_recursion_error
 
@@ -62,13 +65,23 @@ def _validate_callable(func: Callable) -> None:
             )
 
 
+def _is_abstract_operator(op) -> bool:
+    """Return whether ``op`` is an operator-valued JAX tracer."""
+    return math.is_tracer(op) and isinstance(op.aval, capture.AbstractOperator)
+
+
 def _apply_op_or_func(op_or_func):
     if callable(op_or_func):
         _validate_callable(op_or_func)
         op_or_func()
+    elif isinstance(op_or_func, Operator2):
+        # NOTE: An Operator2 built outside the trace context has no equation
+        # so we need to emit one.
+        if op_or_func.tracer is None:
+            op_or_func._bind_primitive()  # pylint: disable=protected-access
     elif isinstance(op_or_func, Operator):
-        type(op_or_func)._unflatten(*op_or_func._flatten())  # pylint: disable=protected-access
-    elif math.is_abstract(op_or_func):
+        apply(op_or_func)
+    elif _is_abstract_operator(op_or_func):
         pass
     else:
         raise TypeError(
@@ -87,8 +100,7 @@ def _convert_to_prod(op_or_func):
     )
 
 
-# pylint: disable=inconsistent-return-statements
-def change_op_basis(
+def change_op_basis(  # pylint: disable=inconsistent-return-statements
     compute_op: Operator | Callable,
     target_op: Operator | Callable,
     uncompute_op: Operator | Callable | None = None,
@@ -132,15 +144,15 @@ def change_op_basis(
             )
             return qp.state()
 
-        circuit2 = qp.decompose(circuit, max_expansion=1)
+        circuit2 = qp.transforms._tape_decompose(circuit, max_expansion=1)
 
     When this circuit is decomposed, the ``compute_op`` and ``uncompute_op`` are not controlled,
     resulting in a much more resource-efficient decomposition:
 
     >>> print(qp.draw(circuit2)())
-    0: ──H──────╭●────────────────┤ ╭State
-    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤ ├State
-    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤ ╰State
+    0: ──H──────╭●──────────────────────┤ ╭State
+    1: ─╭●─╭QFT─├PhaseAdder(1.00)─╭QFT†─┤ ├State
+    2: ─╰X─╰QFT─╰PhaseAdder(1.00)─╰QFT†─┤ ╰State
 
     A ``Callable`` can also be provided as an argument to ``change_op_basis``. This can be a
     function that applies a series of ``Operation`` s. Since ``change_op_basis`` requires this
@@ -167,7 +179,7 @@ def change_op_basis(
             qp.change_op_basis(compute, target)
             return qp.state()
 
-        circuit3 = qp.decompose(circuit, max_expansion=1)
+        circuit3 = qp.transforms._tape_decompose(circuit, max_expansion=1)
 
     >>> print(qp.draw(circuit3)())
     0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤ ╭State
@@ -184,18 +196,48 @@ def change_op_basis(
     """
 
     if capture.enabled():
+        # NOTE: Need to pop any eagerly constructed operators present in the traced function
+        # out of the jaxpr. This ensures that the order is kept consistent if any operators
+        # were built outside of the traced function. '_apply_op_or_func' will bind the primitives
+        # and insert them in the correct order.
+        operands = (compute_op, target_op, uncompute_op)
+        # Operator1 constructors return AbstractOperator tracers during capture, while
+        # Operator2 constructors retain Python wrappers whose ``tracer`` attributes point to
+        # their equations. If any operand is already an AbstractOperator tracer, preserve the
+        # constructor order instead of moving only the Operator2 equations.
+        if not any(_is_abstract_operator(op) for op in operands):
+            for _op in operands:
+                if isinstance(_op, Operator2) and _op.tracer is not None:
+                    pop_op_eqns((_op,))
         _apply_op_or_func(compute_op)
         _apply_op_or_func(target_op)
         if uncompute_op is not None:
             _apply_op_or_func(uncompute_op)
+        elif isinstance(compute_op, Operator2):
+            # NOTE: The new Adjoint2 will consume compute_op as a hybrid pytree argument
+            # and will pop its jaxpr equation (see pop_op_eqns). To prevent this from happening,
+            # we can feed a copy of the op to adjoint and detach its tracer as if it was
+            # removed from the jaxpr.
+            dummy = copy.copy(compute_op)
+            dummy.tracer = None
+            _apply_op_or_func(adjoint(dummy))
         else:
             _apply_op_or_func(adjoint(compute_op))
     else:
-        return ChangeOpBasis(
-            _convert_to_prod(compute_op),
-            _convert_to_prod(target_op),
-            _convert_to_prod(uncompute_op) if uncompute_op is not None else None,
-        )
+        compute = _convert_to_prod(compute_op)
+        target = _convert_to_prod(target_op)
+        uncompute = _convert_to_prod(uncompute_op) if uncompute_op is not None else None
+        if (
+            isinstance(compute, Operator2)
+            and isinstance(target, Operator2)
+            and (isinstance(uncompute, Operator2) or uncompute is None)
+        ):
+            return ChangeOpBasis2(
+                compute,
+                target,
+                uncompute,
+            )
+        return ChangeOpBasis(compute, target, uncompute)
 
 
 class ChangeOpBasis(CompositeOp):
@@ -227,11 +269,27 @@ class ChangeOpBasis(CompositeOp):
     def _flatten(self):
         return tuple(reversed(self.operands)), tuple()
 
-    # pylint: disable=arguments-differ
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, compute_op, target_op, uncompute_op=None):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
+
+        leaves, structure = flatten(
+            (compute_op, target_op, uncompute_op), is_leaf=lambda x: isinstance(x, Operator)
+        )
+
+        new_leaves = []
+        for leaf in leaves:
+            if isinstance(leaf, Operator2):
+                if leaf.tracer is None:
+                    leaf._bind_primitive()  # pylint: disable=protected-access
+                new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
+            else:
+                new_leaves.append(leaf)
+
+        compute_op, target_op, uncompute_op = unflatten(new_leaves, structure)
+
         return cls._primitive.bind(compute_op, target_op, uncompute_op)
 
     resource_keys = frozenset({"compute_op", "target_op", "uncompute_op"})
@@ -257,11 +315,11 @@ class ChangeOpBasis(CompositeOp):
     @property
     @handle_recursion_error
     def resource_params(self):
-        resources = {}
-        resources["compute_op"] = resource_rep(type(self[2]), **self[2].resource_params)
-        resources["target_op"] = resource_rep(type(self[1]), **self[1].resource_params)
-        resources["uncompute_op"] = resource_rep(type(self[0]), **self[0].resource_params)
-        return resources
+        return {
+            "compute_op": abstractify(self[2]),
+            "target_op": abstractify(self[1]),
+            "uncompute_op": abstractify(self[0]),
+        }
 
     grad_method = None
 
@@ -291,7 +349,6 @@ class ChangeOpBasis(CompositeOp):
         """
         return self[1].is_verified_hermitian
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
         return True
@@ -299,16 +356,15 @@ class ChangeOpBasis(CompositeOp):
     def decomposition(self):
         r"""Decomposition of the product operator is given by each of compute_op, target_op, compute_op† applied in succession."""
         if queuing.QueuingManager.recording():
-            _ = [queuing.apply(op) for op in reversed(self)]
+            _ = [apply(op) for op in reversed(self)]
         return list(self[::-1])
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return True
 
     def adjoint(self):
-        return ChangeOpBasis(*(adjoint(factor, lazy=False) for factor in self))
+        return ChangeOpBasis(*(_adjoint_eager(factor, update_queue=True) for factor in self))
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
@@ -332,22 +388,21 @@ def _adjoint_change_op_basis_resources(base_params, **_):
     resources[base_params["compute_op"]] += 1
     resources[base_params["uncompute_op"]] += 1
     target_op = base_params["target_op"]
-    resources[adjoint_resource_rep(target_op.op_type, target_op.params)] += 1
+    resources[_adjoint_abstract(target_op)] += 1
     return resources
 
 
-# pylint: disable=protected-access
 @register_resources(_adjoint_change_op_basis_resources)
 def _adjoint_change_op_basis_decomp(*_, base, **__):
-    pytrees.unflatten(*pytrees.flatten(base.operands[2]))
-    adjoint(pytrees.unflatten(*pytrees.flatten(base.operands[1])))
-    pytrees.unflatten(*pytrees.flatten(base.operands[0]))
+    apply(base.operands[2])
+    adjoint(apply(base.operands[1]))
+    apply(base.operands[0])
 
 
 add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
 
 
-def _controlled_change_op_basis_resources(
+def _controlled_change_op_basis_resources(  # pylint: disable=too-many-arguments,unused-argument
     *_,
     num_control_wires,
     num_zero_control_values,
@@ -356,17 +411,16 @@ def _controlled_change_op_basis_resources(
     base_class,
     base_params,
     **__,
-):  # pylint: disable=unused-argument, too-many-arguments
+):
     resources = defaultdict(int)
     resources[base_params["compute_op"]] += 1
     resources[
-        controlled_resource_rep(
-            base_params["target_op"].op_type,
-            base_params["target_op"].params,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
+        _ctrl_abstract(
+            base_params["target_op"],
+            Wire[num_control_wires],
+            Wire[num_work_wires],
+            work_wire_type,
+            num_zero_control_values,
         )
     ] += 1
     resources[base_params["uncompute_op"]] += 1
@@ -383,22 +437,21 @@ def _controlled_change_op_basis_decomposition(
     base,
     **__,
 ):
-    pytrees.unflatten(*pytrees.flatten(base.operands[2]))
+    apply(base.operands[2])
     ctrl(
-        pytrees.unflatten(*pytrees.flatten(base.operands[1])),
+        apply(base.operands[1]),
         control=control_wires,
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    pytrees.unflatten(*pytrees.flatten(base.operands[0]))
+    apply(base.operands[0])
 
 
-# pylint: disable=unused-argument
 @register_resources(_change_op_basis_resources)
-def _change_op_basis_decomp(*_, wires=None, operands, **__):
+def _change_op_basis_decomp(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
     for op in operands[::-1]:
-        pytrees.unflatten(*pytrees.flatten(op))
+        apply(op)
 
 
 add_decomps(ChangeOpBasis, _change_op_basis_decomp)

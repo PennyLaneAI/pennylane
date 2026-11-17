@@ -18,7 +18,8 @@ from enum import Enum
 from functools import lru_cache
 from typing import Any, ForwardRef, Literal, Optional, TypeVar, _SpecialForm, get_args, get_origin
 
-JSON = Optional[str | int | bool | float | dict[str, Any] | list[Any]]
+# Preserve the typing.Union origin used by runtime type inspection.
+JSON = Optional[str | int | bool | float | dict[str, Any] | list[Any]]  # noqa: UP045
 
 # Generic type variable
 T = TypeVar("T")
@@ -77,10 +78,9 @@ def get_type_str(cls: type | str | None) -> str:  # pylint: disable=too-many-ret
 
     Otherwise, returns the fully-qualified class name, including the module.
     """
-    # pylint: disable=unidiomatic-typecheck
     # Keep this check as it ensures that get_type_str(type(None)) = 'None'
     # rather than `NoneType`.
-    if cls is None or cls is type(None):
+    if cls is None or cls is type(None):  # pylint: disable=unidiomatic-typecheck
         return "None"
 
     if isinstance(cls, str):

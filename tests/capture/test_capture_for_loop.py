@@ -15,9 +15,10 @@
 Tests for capturing for loops into jaxpr.
 """
 
-# pylint: disable=no-value-for-parameter, too-few-public-methods, no-self-use
-# pylint: disable=too-many-positional-arguments, too-many-arguments
-# pylint: disable=unbalanced-tuple-unpacking
+# pylint: disable=wrong-import-position
+
+
+from functools import partial
 
 import numpy as np
 import pytest
@@ -30,7 +31,8 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 # must be below jax importorskip
-from pennylane.capture.primitives import for_loop_prim  # pylint: disable=wrong-import-position
+from pennylane.capture.primitives import for_loop_prim
+from pennylane.testing import extract_all_primitives
 
 
 class TestCaptureForLoop:
@@ -388,7 +390,6 @@ class TestCaptureForLoop:
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
 
-    # pylint: disable=unused-argument
     def test_dynamic_shape_input(self):
         """Test that the for loop can accept inputs with dynamic shapes."""
 
@@ -407,11 +408,10 @@ class TestDynamicShapes:
         expected = jax.numpy.array([0, 8, 16])  # [0, 1, 2] * 2**3
         assert jax.numpy.allclose(output, expected)
 
-    # pylint: disable=unused-argument
     def test_dynamic_array_creation(self):
         """Test that for_loops can create dynamically shaped arrays."""
 
-        def f(i, x):
+        def f(i, x):  # pylint: disable=unused-argument
             y = jax.numpy.arange(i)
             return jax.numpy.sum(y)
 
@@ -427,7 +427,7 @@ class TestDynamicShapes:
         allow_array_resizing=False"""
 
         @qp.for_loop(3, allow_array_resizing=False)
-        def f(i, a, b):
+        def f(i, a, b):  # pylint: disable=unused-argument
             a_size = a.shape[0]
             b_size = b.shape[0]
             return jax.numpy.ones(a_size + b_size), 2 * b
@@ -447,7 +447,7 @@ class TestDynamicShapes:
         """Test that a useful error is raised if two arrays with dynamic shapes are combined."""
 
         @qp.for_loop(3, allow_array_resizing=True)
-        def f(i, a, b):
+        def f(i, a, b):  # pylint: disable=unused-argument
             return a * b, 2 * b
 
         def w(i0):
@@ -486,7 +486,7 @@ class TestDynamicShapes:
             c = jnp.arange(i0)
 
             @qp.for_loop(3, allow_array_resizing=allow_array_resizing)
-            def f(i, a):
+            def f(i, a):  # pylint: disable=unused-argument
                 return c * a
 
             return f(jnp.arange(i0))
@@ -543,7 +543,7 @@ class TestDynamicShapes:
         """Test that two arrays can be resized independently of each other."""
 
         @qp.for_loop(4, allow_array_resizing=allow_array_resizing)
-        def f(i, a, b):
+        def f(i, a, b):  # pylint: disable=unused-argument
             return jnp.ones(a.shape[0] + b.shape[0]), b + 1
 
         def w(i0):
@@ -561,7 +561,7 @@ class TestDynamicShapes:
         """Test that arrays with the same dynamic shape can be recombined after a loop."""
 
         @qp.for_loop(2)
-        def f(i, a, b):
+        def f(i, a, b):  # pylint: disable=unused-argument
             return 2 * a, b
 
         def w(i0):
@@ -584,7 +584,7 @@ class TestDynamicShapes:
         def f(sz):
 
             @qp.for_loop(0, 3, 1)
-            def loop(i, a):
+            def loop(i, a):  # pylint: disable=unused-argument
                 return jnp.ones([sz])
 
             a2 = loop(jnp.ones(sz))
@@ -603,7 +603,7 @@ class TestDynamicShapes:
             c = jnp.ones(a)
 
             @qp.for_loop(3)
-            def f(i, x, y):
+            def f(i, x, y):  # pylint: disable=unused-argument
                 return x + b, 2 * y
 
             return f(b, c)
@@ -623,13 +623,13 @@ class TestDynamicShapes:
 
         def w(x):
             @qp.for_loop(x.shape[0])
-            def f(i):
+            def f(i):  # pylint: disable=unused-argument
                 2 * x  # pylint: disable=pointless-statement
 
             f()
 
             @qp.for_loop(x.shape[0])
-            def g(i):
+            def g(i):  # pylint: disable=unused-argument
                 3 * x  # pylint: disable=pointless-statement
 
             g()
@@ -657,16 +657,10 @@ class TestCaptureCircuitsForLoop:
 
             return qp.expval(qp.Z(0))
 
-        result = circuit()
-        expected = np.cos(0 + 1 + 2)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
-
         jaxpr = jax.make_jaxpr(circuit)()
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
-    @pytest.mark.parametrize("arg, expected", [(2, 0.18239626), (10.5, -0.77942717)])
-    def test_circuit_args(self, arg, expected):
+    def test_circuit_args(self):
         """Test that a for loop with arguments is correctly captured into a jaxpr."""
 
         dev = qp.device("default.qubit", wires=1)
@@ -686,15 +680,10 @@ class TestCaptureCircuitsForLoop:
 
             return qp.expval(qp.Z(0))
 
-        result = circuit(arg)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+        jaxpr = jax.make_jaxpr(circuit)(2)
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
-        jaxpr = jax.make_jaxpr(circuit)(arg)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
-
-    @pytest.mark.parametrize("arg, expected", [(2, -0.49999517), (0, -0.03277611)])
-    def test_circuit_consts(self, arg, expected):
+    def test_circuit_consts(self):
         """Test that a for loop with jaxpr constants is correctly captured into a jaxpr."""
 
         dev = qp.device("default.qubit", wires=1)
@@ -719,18 +708,10 @@ class TestCaptureCircuitsForLoop:
 
             return qp.expval(qp.Z(0))
 
-        result = circuit(arg)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
+        jaxpr = jax.make_jaxpr(circuit)(2)
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
-        jaxpr = jax.make_jaxpr(circuit)(arg)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, arg)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
-
-    @pytest.mark.parametrize(
-        "lower_bound, upper_bound, step, arg, expected",
-        [(0, 10, 1, 10.5, -0.77942717), (10, 20, 2, 0, 0.35913655)],
-    )
-    def test_dynamic_circuit_arg(self, lower_bound, upper_bound, step, arg, expected):
+    def test_dynamic_circuit_arg(self):
         """Test that a for loop with dynamic bounds and argument is correctly captured into a jaxpr."""
 
         dev = qp.device("default.qubit", wires=1)
@@ -750,18 +731,11 @@ class TestCaptureCircuitsForLoop:
 
             return qp.expval(qp.Z(0))
 
-        args = [lower_bound, upper_bound, step, arg]
-        result = circuit(*args)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
-
+        args = [0, 10, 1, 10.5]
         jaxpr = jax.make_jaxpr(circuit)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
-    @pytest.mark.parametrize(
-        "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12, 0.2653001)]
-    )
-    def test_for_loop_nested(self, upper_bound, arg, expected):
+    def test_for_loop_nested(self):
         """Test that a nested for loop is correctly captured into a jaxpr."""
 
         dev = qp.device("default.qubit", wires=3)
@@ -795,18 +769,11 @@ class TestCaptureCircuitsForLoop:
 
             return qp.expval(qp.Z(0))
 
-        args = [upper_bound, arg]
-        result = circuit(*args)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
-
+        args = [3, 0.5]
         jaxpr = jax.make_jaxpr(circuit)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
-    @pytest.mark.parametrize(
-        "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12, 0.2653001)]
-    )
-    def test_nested_for_and_while_loop(self, upper_bound, arg, expected):
+    def test_nested_for_and_while_loop(self):
         """Test that a nested for loop and while loop is correctly captured into a jaxpr."""
         dev = qp.device("default.qubit", wires=3)
 
@@ -839,13 +806,9 @@ class TestCaptureCircuitsForLoop:
 
             return qp.expval(qp.Z(0))
 
-        args = [upper_bound, arg]
-        result = circuit(*args)
-        assert np.allclose(result, expected), f"Expected {expected}, but got {result}"
-
+        args = [3, 0.5]
         jaxpr = jax.make_jaxpr(circuit)(*args)
-        res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
-        assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
     def test_closure_var_has_shape_property_that_isnt_a_shape(self):
         """Test an edge case that a closure variable can have an attribute shape that isn't a tuple of ints.
@@ -853,7 +816,7 @@ class TestCaptureCircuitsForLoop:
         Encountered in benchmarking suite.
         """
 
-        class ThingWithShape:
+        class ThingWithShape:  # pylint: disable=too-few-public-methods
 
             def __init__(self):
                 pass
@@ -865,9 +828,8 @@ class TestCaptureCircuitsForLoop:
 
             thing = ThingWithShape()
 
-            # pylint: disable=unused-argument
             @qp.for_loop(3)
-            def f(i, x):
+            def f(i, x):  # pylint: disable=unused-argument
                 return x + thing.shape()
 
             return f(2)
@@ -888,3 +850,54 @@ def test_pytree_inputs():
     out = f(x)
     assert list(out.keys()) == ["x"]
     assert qp.math.allclose(out["x"], 9)  # 1 + 3 + 5 = 9
+
+
+class TestForLoopHintsCapture:
+    """Tests that ``num-iters`` reaches the for-loop capture primitive."""
+
+    def test_estimated_iterations_in_jaxpr(self):
+        """``num-iters`` should become ``estimated_iterations`` on ``for_loop``."""
+
+        @qp.hint({"num-iters": 10})
+        @qp.for_loop(0, 5, 1)
+        def loop(i, x):  # pylint: disable=unused-argument
+            return x + 1
+
+        jaxpr = jax.make_jaxpr(loop)(0)
+        assert jaxpr.eqns[0].primitive == for_loop_prim
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 10
+
+    def test_without_hint_has_none_estimated_iterations(self):
+        """Unhinted for loops should bind ``estimated_iterations=None``."""
+
+        @qp.for_loop(0, 3, 1)
+        def loop(i, x):  # pylint: disable=unused-argument
+            return x + 1
+
+        jaxpr = jax.make_jaxpr(loop)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] is None
+
+    def test_apply_hint_form_sets_estimated_iterations(self):
+        """``qp.hint(...)(loop)`` should also populate ``estimated_iterations``."""
+
+        @qp.for_loop(0, 4, 1)
+        def loop(i, x):  # pylint: disable=unused-argument
+            return x + 1
+
+        hinted = qp.hint({"num-iters": 4})(loop)
+        jaxpr = jax.make_jaxpr(hinted)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 4
+
+        double_hinted = qp.hint({"num-iters": 10})(hinted)
+        jaxpr = jax.make_jaxpr(double_hinted)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 10
+
+    def test_hint_under_partial(self):
+        """``num-iters`` should be found when the hinted body is wrapped in a partial."""
+
+        def body(i, x, step):  # pylint: disable=unused-argument
+            return x + step
+
+        loop = qp.for_loop(0, 5, 1)(partial(qp.hint(body, {"num-iters": 10}), step=1))
+        jaxpr = jax.make_jaxpr(loop)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 10

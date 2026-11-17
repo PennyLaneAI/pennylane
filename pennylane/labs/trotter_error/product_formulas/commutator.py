@@ -76,7 +76,7 @@ class SymbolNode(ASTNode):
             raise ValueError("Number of symbols must match number of coefficients")
 
         tmp_symbol_list = []
-        for symbol, coeff in zip(symbols, coeffs):
+        for symbol, coeff in zip(symbols, coeffs, strict=False):
 
             if np.isclose(coeff, 0):
                 continue
@@ -261,7 +261,7 @@ class CommutatorNode(ASTNode):
         return self.left.leaves() + self.right.leaves()
 
 
-def _partitions_positive(m: int, n: int) -> Generator[tuple[int], None, None]:
+def _partitions_positive(m: int, n: int) -> Generator[tuple[int]]:
     """Yields tuples of m positive integers that sum to n."""
     if m <= 0 or n <= 0:
         return
@@ -311,7 +311,7 @@ def bilinear_expansion(
                 term_coeff = math.prod(item[1] for item in combo) * bch_coeff
 
                 target_map = defaultdict(list)
-                for target, (replacement_node, _) in zip(target_leaves, combo):
+                for target, (replacement_node, _) in zip(target_leaves, combo, strict=False):
                     target_map[target].append(replacement_node)
 
                 new_node = copy.deepcopy(commutator_node)
@@ -332,9 +332,8 @@ def _separate_by_order(d: dict[ASTNode, float], max_order: int) -> list[dict[AST
     return ret
 
 
-def is_mergeable(
-    node1: ASTNode, node2: ASTNode, index: int
-):  # pylint: disable=too-many-return-statements
+# pylint: disable-next=too-many-return-statements
+def is_mergeable(node1: ASTNode, node2: ASTNode, index: int):
     """
     Check if two nodes are mergeable at `index`.
 

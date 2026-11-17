@@ -222,7 +222,7 @@ obtained of a given state:
 
 .. note::
 
-    The ``__copy__`` method needs to be overriden when new arguments are added into the ``__init__``
+    The ``__copy__`` method needs to be overridden when new arguments are added into the ``__init__``
     method.
 
 The measurement process in this example uses the :func:`~pennylane.counts` function, which is a
@@ -294,7 +294,7 @@ When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444
     >>> type(mp)._unflatten(*mp._flatten())
     expval(2.0 * X(0))
     >>> jax.tree_util.tree_leaves(mp)
-    [2.0]
+    [2.0, 0]
 
 Adding your new measurement to PennyLane
 ----------------------------------------
@@ -352,9 +352,8 @@ from .vn_entropy import VnEntropyMP, vn_entropy
 from .shots import add_shots
 
 
-# pylint: disable=import-outside-toplevel
 def __getattr__(name):
-    import pennylane.ops.mid_measure as ops_measure
+    import pennylane.ops.mid_measure as ops_measure  # pylint: disable=import-outside-toplevel
 
     # from pennylane.exceptions import PennyLaneDeprecationWarning
     # import warnings
@@ -381,6 +380,7 @@ def __getattr__(name):
         #    "if you need this logic, we recommend code duplication, as it is being made private."
         #    PennyLaneDeprecationWarning,
         # )
+        # pylint: disable-next=import-outside-toplevel
         from pennylane.devices.qubit.simulate import _find_post_processed_mcms  # tach-ignore
 
         return _find_post_processed_mcms

@@ -131,7 +131,7 @@ tests_compute_jvp_single = [
     ),
 ]
 
-jacs, tangs, expects = list(zip(*tests_compute_jvp_single))
+jacs, tangs, expects = list(zip(*tests_compute_jvp_single, strict=False))
 tests_compute_jvp_multi = [
     (tuple(jacs[:3]), tangs[0], tuple(expects[:3])),  # scalar return types, scalar parameter
     (tuple(jacs[:3]), tangs[1], tuple(expects[:3])),  # scalar return types, scalar parameter
@@ -220,7 +220,7 @@ class TestComputeJVPSingle:
         jvp = qp.gradients.compute_jvp_multi(tangent, jac)
         assert isinstance(jvp, tuple)
         assert all(isinstance(_jvp, np.ndarray) for _jvp in jvp)
-        assert all(np.array_equal(_jvp, _exp) for _jvp, _exp in zip(jvp, exp))
+        assert all(np.array_equal(_jvp, _exp) for _jvp, _exp in zip(jvp, exp, strict=False))
 
     def test_jacobian_is_none_single(self):
         """A None Jacobian returns a None JVP"""
@@ -712,42 +712,6 @@ class TestJVPGradients:
         assert np.allclose(res.detach(), exp, atol=tol, rtol=0)
 
         res = torch.autograd.functional.jacobian(cost_fn, (params, tangent))[0]
-        exp = qp.jacobian(expected_jvp)(params_np, tangent_np)
-        assert np.allclose(res, exp, atol=tol, rtol=0)
-
-    # Include batch_dim!=None cases once #4462 is resolved
-    @pytest.mark.tf
-    @pytest.mark.slow
-    @pytest.mark.parametrize("batch_dim", [None])  # , 1, 3])
-    def test_tf(self, tol, batch_dim):
-        """Tests that the output of the JVP transform
-        can be differentiated using Tensorflow."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-        params_np = np.array([0.543, -0.654], requires_grad=True)
-        if batch_dim is not None:
-            params_np = np.outer(np.arange(1, 1 + batch_dim), params_np, requires_grad=True)
-        tangent_np = np.array([1.2, -0.3], requires_grad=False)
-        params = tf.Variable(params_np, dtype=tf.float64)
-        tangent = tf.constant(tangent_np, dtype=tf.float64)
-
-        def cost_fn(params, tangent):
-            with qp.queuing.AnnotatedQueue() as q:
-                ansatz(params[..., 0], params[..., 1])
-
-            tape = qp.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = qp.gradients.jvp(tape, tangent, param_shift)
-            return fn(dev.execute(tapes))
-
-        with tf.GradientTape() as t:
-            res = cost_fn(params, tangent)
-
-        exp = expected_jvp(params_np, tangent_np)
-        assert np.allclose(res, exp, atol=tol, rtol=0)
-
-        res = t.jacobian(res, params)
         exp = qp.jacobian(expected_jvp)(params_np, tangent_np)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 

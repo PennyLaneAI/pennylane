@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the the logging module"""
 
-# pylint: disable=import-outside-toplevel, protected-access, no-member
 import logging
 
 import pytest
@@ -49,7 +48,7 @@ class TestLogging:
         with caplog.at_level(logging.DEBUG):
 
             @qp.qnode(dev, diff_method=None)
-            def circuit():  # pylint: disable=unused-variable
+            def circuit():
                 qp.PauliX(wires=0)
                 return qp.expval(qp.PauliZ(0)), qp.var(qp.PauliZ(0))
 
@@ -101,7 +100,7 @@ class TestLogging:
             ),
         ]
 
-        for expected, actual in zip(log_records_expected, caplog.records[:5]):
+        for expected, actual in zip(log_records_expected, caplog.records[:5], strict=False):
             assert expected[0] in actual.name
             for msg in expected[1]:
                 assert msg in actual.getMessage()
@@ -145,49 +144,7 @@ class TestLogging:
             ),
         ]
 
-        for expected, actual in zip(log_records_expected, caplog.records[:1]):
+        for expected, actual in zip(log_records_expected, caplog.records[:1], strict=False):
             assert expected[0] in actual.name
             for exp_msg in expected[1]:
                 assert exp_msg in actual.getMessage()
-
-    def test_execution_debugging_qutrit_mixed(self, caplog):
-        """Test logging of QNode forward pass from default qutrit mixed."""
-
-        with caplog.at_level(logging.DEBUG):
-            dev = qp.device("default.qutrit.mixed", wires=2)
-            params = qp.numpy.array(0.1234)
-
-            @qp.qnode(dev, diff_method=None)
-            def circuit(params):
-                qp.TRX(params, wires=0)
-                return qp.expval(qp.GellMann(0, 3))
-
-            circuit(params)
-
-        assert len(caplog.records) == 9
-
-        log_records_expected = [
-            (
-                "pennylane.devices.default_qutrit_mixed",
-                ["Calling <__init__(self=<default.qutrit.mixed device (wires=2)"],
-            ),
-            (
-                "pennylane.workflow.qnode",
-                ["Creating QNode(func=<function TestLogging.test_execution_debugging_qutrit_mixed"],
-            ),
-            (
-                "pennylane.workflow.qnode",
-                ["Calling <construct(self=<QNode: device='<default.qutrit.mixed device (wires=2)"],
-            ),
-            (
-                "pennylane.workflow.execution",
-                [
-                    "device=<default.qutrit.mixed device (wires=2)",
-                    "diff_method=None, interface=Interface.AUTOGRAD",
-                ],
-            ),
-        ]
-
-        for expected, actual in zip(log_records_expected, caplog.records[:2]):
-            assert expected[0] in actual.name
-            assert all(msg in actual.getMessage() for msg in expected[1])

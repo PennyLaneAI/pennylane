@@ -43,6 +43,8 @@ Note that we must provide the expected output shape for the function to use pure
 """
 
 # pylint: disable=unused-argument,too-many-arguments
+
+
 from functools import partial
 
 import jax
@@ -57,7 +59,7 @@ from .jax import _NonPytreeWrapper
 Zero = jax.custom_derivatives.SymbolicZero
 
 
-def _to_jax(result: qp.typing.ResultBatch) -> qp.typing.ResultBatch:
+def _to_jax(result: ResultBatch) -> ResultBatch:
     """Converts an arbitrary result batch to one with jax arrays.
     Args:
         result (ResultBatch): a nested structure of lists, tuples, and numpy arrays

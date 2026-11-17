@@ -16,7 +16,7 @@ Contains classes used to compactly store the metadata of various Hamiltonians wh
 """
 
 import copy
-from collections.abc import Iterable
+from collections.abc import Iterable as _Iterable  # to silent Sphinx!!
 from dataclasses import dataclass
 
 
@@ -298,7 +298,7 @@ class PauliHamiltonian:
     def __init__(
         self,
         num_qubits: int,
-        pauli_terms: dict | Iterable[dict],
+        pauli_terms: dict | _Iterable[dict],
         one_norm: int | float | None = None,
     ):
         self._num_qubits = num_qubits

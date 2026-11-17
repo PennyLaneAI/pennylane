@@ -1,9 +1,10 @@
 name: Upload
 permissions:
   contents: read
+  id-token: write
 on:
   release:
-    types: [published]
+    types: [released]
 
 env:
   UV_SYSTEM_PYTHON: 1
@@ -25,6 +26,8 @@ jobs:
       use_large_runner: true
 
   upload:
+    environment:
+      name: release
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     # Make sure that the PennyLane is not released unless the tests are passing.
     needs:
@@ -44,14 +47,16 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           version: 0.9.17
-          enable-cache: true  
+          enable-cache: true
 
       - name: Build PennyLane wheel
         run: |
           uv build --wheel --out-dir dist
 
+      - uses: actions/upload-artifact@v6
+        with:
+          name: pennylane-wheel
+          path: dist/*.whl
+
       - name: Publish
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI }}

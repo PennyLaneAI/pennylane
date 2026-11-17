@@ -20,10 +20,17 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, ClassVar, Generic, Literal, TypeVar, Union, cast, get_origin
-
-# pylint doesn't think this exists
-from typing_extensions import dataclass_transform
+from typing import (
+    Any,
+    ClassVar,
+    Generic,
+    Literal,
+    TypeVar,
+    Union,
+    cast,
+    dataclass_transform,
+    get_origin,
+)
 
 from pennylane.data.base import hdf5
 from pennylane.data.base.attribute import AttributeInfo, DatasetAttribute
@@ -113,9 +120,8 @@ class _InitArg:  # pylint: disable=too-few-public-methods
     """Sentinel value returned by ``_init_arg()``."""
 
 
-def _init_arg(  # pylint: disable=unused-argument
-    default: Any, alias: str | None = None, kw_only: bool = False
-) -> Any:
+# pylint: disable-next=unused-argument
+def _init_arg(default: Any, alias: str | None = None, kw_only: bool = False) -> Any:
     """This function exists only for the benefit of the type checker. It is used to
     annotate attributes on ``Dataset`` that are not part of the data model, but
     should appear in the generated ``__init__`` method.

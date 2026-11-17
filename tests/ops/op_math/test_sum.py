@@ -15,9 +15,6 @@
 Unit tests for the Sum arithmetic class of qubit operations
 """
 
-# pylint: disable=eval-used, unused-argument
-
-
 import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
@@ -30,10 +27,7 @@ from pennylane.exceptions import MatrixUndefinedError
 from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
 
-no_mat_ops = (
-    qp.Barrier,
-    qp.WireCut,
-)
+no_mat_ops = (qp.Barrier,)
 
 non_param_ops = (
     (qp.Identity, gd.I),
@@ -87,7 +81,6 @@ def _get_pw(w, pauli_op):
     return qp.pauli.PauliWord({w: pauli_op})
 
 
-# pylint: disable=unused-argument
 def sum_using_dunder_method(*summands):
     """Helper function which computes the sum of all the summands to invoke the
     __add__ dunder method."""
@@ -207,7 +200,7 @@ class TestInitialization:
         H = qp.dot(coeffs, obs)
         _, H_ops = H.terms()
 
-        assert all(o1.wires == o2.wires for o1, o2 in zip(obs, H_ops))
+        assert all(o1.wires == o2.wires for o1, o2 in zip(obs, H_ops, strict=False))
         assert H_ops[0] == qp.prod(qp.X(w0), qp.Y(w1), qp.X(w2), qp.Z(w3))
         assert H_ops[1] == qp.prod(qp.X(w0), qp.X(w1), qp.Y(w2), qp.Z(w3))
 
@@ -274,6 +267,7 @@ class TestInitialization:
     @pytest.mark.parametrize(
         "op, coeffs_true, ops_true", SUM_TERMS_OP_PAIRS_PAULI + SUM_TERMS_OP_PAIRS_MIXEDPAULI
     )
+    # pylint: disable-next=unused-argument
     def test_terms_does_not_change_queue(self, op, coeffs_true, ops_true):
         """Test that calling Prod.terms does not queue anything."""
         with qp.queuing.AnnotatedQueue() as q:
@@ -331,7 +325,7 @@ class TestInitialization:
     @pytest.mark.parametrize("op", SUM_REPR_EVAL)
     def test_eval_sum(self, op):
         """Test that string representations of Sum can be evaluated and yield the same operator"""
-        qp.assert_equal(eval(repr(op)), op)
+        qp.assert_equal(eval(repr(op)), op)  # pylint: disable=eval-used
 
 
 class TestMatrix:
@@ -563,32 +557,6 @@ class TestMatrix:
 
         assert torch.allclose(mat, true_mat)
 
-    @pytest.mark.tf
-    def test_sum_tf(self):
-        """Test matrix is cast correctly using tf parameters."""
-        import tensorflow as tf
-
-        theta = tf.Variable(1.23)
-        rot_params = tf.Variable([0.12, 3.45, 6.78])
-
-        sum_op = Sum(
-            qp.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0),
-            qp.RX(theta, wires=1),
-            qp.Identity(wires=0),
-        )
-        mat = sum_op.matrix()
-
-        true_mat = (
-            qnp.kron(gd.Rot3(0.12, 3.45, 6.78), qnp.eye(2))
-            + qnp.kron(qnp.eye(2), gd.Rotx(1.23))
-            + qnp.eye(4)
-        )
-        true_mat = tf.Variable(true_mat)
-
-        assert isinstance(mat, tf.Tensor)
-        assert mat.dtype == true_mat.dtype
-        assert np.allclose(mat, true_mat)
-
     # sparse matrix tests:
 
     @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
@@ -636,8 +604,7 @@ class TestMatrix:
         """Test that an error is raised when the sparse matrix method
         is undefined for any of the factors."""
 
-        # pylint: disable=too-few-public-methods
-        class DummyOp(qp.operation.Operation):
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
             def sparse_matrix(self, wire_order=None):
@@ -840,9 +807,8 @@ class TestProperties:
 
     def test_flatten_unflatten(self):
         """Test that we can flatten/unflatten a Sum correctly."""
-        # pylint: disable=protected-access
         op = Sum(qp.PauliX(0), qp.PauliZ(0))
-        new_op = Sum._unflatten(*op._flatten())
+        new_op = Sum._unflatten(*op._flatten())  # pylint: disable=protected-access
 
         assert op == new_op
         assert new_op.grouping_indices is None
@@ -851,7 +817,6 @@ class TestProperties:
     @pytest.mark.parametrize("method", ("lf", "rlf"))
     def test_flatten_unflatten_with_groups(self, grouping_type, method):
         """Test that we can flatten/unflatten a Sum correctly when grouping indices are available."""
-        # pylint: disable=protected-access
         op = Sum(
             qp.PauliX(0),
             qp.s_prod(2.0, qp.PauliX(1)),
@@ -859,7 +824,7 @@ class TestProperties:
             grouping_type=grouping_type,
             method=method,
         )
-        new_op = Sum._unflatten(*op._flatten())
+        new_op = Sum._unflatten(*op._flatten())  # pylint: disable=protected-access
 
         assert new_op == op
         assert new_op.grouping_indices == op.grouping_indices
@@ -984,22 +949,6 @@ class TestSimplify:
 
         qp.assert_equal(simplified_op, result)
 
-    @pytest.mark.tf
-    def test_simplify_pauli_rep_tf(self):
-        """Test that simplifying operators with a valid pauli representation works with tf interface."""
-        import tensorflow as tf
-
-        c1, c2, c3 = tf.Variable(1.23), tf.Variable(-1.23), tf.Variable(0.5)
-
-        op = qp.sum(
-            qp.s_prod(c1, qp.PauliX(0)),
-            qp.s_prod(c2, qp.PauliX(0)),
-            qp.s_prod(c3, qp.PauliZ(1)),
-        )
-        result = qp.s_prod(c3, qp.PauliZ(1))
-        simplified_op = op.simplify()
-        qp.assert_equal(simplified_op, result)
-
     @pytest.mark.torch
     def test_simplify_pauli_rep_torch(self):
         """Test that simplifying operators with a valid pauli representation works with torch interface."""
@@ -1021,6 +970,8 @@ class TestSimplify:
 class TestSortWires:
     """Tests for the wire sorting algorithm."""
 
+    # pylint: disable=protected-access
+
     def test_sorting_operators_with_one_wire(self):
         """Test that the sorting algorithm works for operators that act on one wire."""
         op_list = [
@@ -1034,7 +985,7 @@ class TestSortWires:
             qp.X(5),
             qp.Z("ba"),
         ]
-        sorted_list = Sum._sort(op_list)  # pylint: disable=protected-access
+        sorted_list = Sum._sort(op_list)
         final_list = [
             qp.Y(0),
             qp.Y(1),
@@ -1047,7 +998,7 @@ class TestSortWires:
             qp.Z("c"),
         ]
 
-        for op1, op2 in zip(final_list, sorted_list):
+        for op1, op2 in zip(final_list, sorted_list, strict=False):
             qp.assert_equal(op1, op2)
 
     def test_sorting_operators_with_multiple_wires(self):
@@ -1066,7 +1017,7 @@ class TestSortWires:
             qp.CRY(1, [1, 2]),
             qp.X("d"),
         )
-        sorted_list = Sum._sort(op_tuple)  # pylint: disable=protected-access
+        sorted_list = Sum._sort(op_tuple)
         final_list = [
             qp.Y(0),
             qp.CRX(1, [0, 2]),
@@ -1082,7 +1033,7 @@ class TestSortWires:
             qp.X("d"),
         ]
 
-        for op1, op2 in zip(final_list, sorted_list):
+        for op1, op2 in zip(final_list, sorted_list, strict=False):
             qp.assert_equal(op1, op2)
 
     def test_sorting_operators_with_wire_map(self):
@@ -1098,9 +1049,7 @@ class TestSortWires:
             qp.Z("three"),
             qp.CRY(1, ["test", 2]),
         ]
-        sorted_list = Sum._sort(  # pylint: disable=protected-access
-            op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5}
-        )
+        sorted_list = Sum._sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
         final_list = [
             qp.Y(0),
             qp.CRX(1, ["test", 2]),
@@ -1113,7 +1062,7 @@ class TestSortWires:
             qp.X(5),
         ]
 
-        for op1, op2 in zip(final_list, sorted_list):
+        for op1, op2 in zip(final_list, sorted_list, strict=False):
             assert op1.name == op2.name
             assert op1.wires == op2.wires
             assert op1.data == op2.data
@@ -1136,8 +1085,8 @@ class TestSortWires:
             qp.PauliY(1),
             qp.PauliZ(1),
         ]
-        sorted_list = Sum._sort(mixed_list)  # pylint: disable=protected-access
-        for op1, op2 in zip(final_list, sorted_list):
+        sorted_list = Sum._sort(mixed_list)
+        for op1, op2 in zip(final_list, sorted_list, strict=False):
             qp.assert_equal(op1, op2)
 
     def test_sorting_operators_with_no_wires(self):
@@ -1145,7 +1094,7 @@ class TestSortWires:
 
         op_list = [qp.GlobalPhase(0.5), qp.X(0), qp.Y(1), qp.I(), qp.CNOT((1, 2)), qp.I()]
 
-        sorted_list = Sum._sort(op_list)  # pylint: disable=protected-access
+        sorted_list = Sum._sort(op_list)
 
         expected = [qp.GlobalPhase(0.5), qp.I(), qp.I(), qp.X(0), qp.Y(1), qp.CNOT((1, 2))]
         assert sorted_list == expected
@@ -1303,8 +1252,7 @@ class TestIntegration:
         assert tape.trainable_params == [1]
 
 
-# pylint: disable=too-few-public-methods
-class TestArithmetic:
+class TestArithmetic:  # pylint: disable=too-few-public-methods
     """Test arithmetic decomposition methods."""
 
     def test_adjoint(self):
@@ -1351,7 +1299,7 @@ class TestGrouping:
         assert op1.grouping_indices == ((0, 1), (2,))
 
         # check with qp.sum
-        sprods = [qp.s_prod(c, o) for c, o in zip(coeffs, obs)]
+        sprods = [qp.s_prod(c, o) for c, o in zip(coeffs, obs, strict=False)]
         op2 = qp.sum(*sprods, grouping_type="qwc")
         assert op2.grouping_indices == ((0, 1), (2,))
 
@@ -1411,7 +1359,7 @@ class TestGrouping:
         assert set(op1.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping during construction with qp.sum
-        sprods = [qp.s_prod(c, o) for c, o in zip(coeffs, obs)]
+        sprods = [qp.s_prod(c, o) for c, o in zip(coeffs, obs, strict=False)]
         op2 = qp.sum(*sprods, grouping_type="qwc", method="lf")
         assert set(op2.grouping_indices) == {(0, 1), (2,)}
 
@@ -1443,7 +1391,7 @@ class TestGrouping:
         assert set(op1.grouping_indices) == grouping_indices
 
         # compute grouping during construction with qp.sum
-        sprods = [qp.s_prod(c, o) for c, o in zip(coeffs, obs)]
+        sprods = [qp.s_prod(c, o) for c, o in zip(coeffs, obs, strict=False)]
         op2 = qp.sum(*sprods, grouping_type=grouping_type)
         assert set(op2.grouping_indices) == grouping_indices
 
@@ -1503,7 +1451,10 @@ class TestSupportsBroadcasting:
         y = qp.numpy.array([0.4, 0.5, 0.6])
         op = Sum(qp.RX(x, wires=0), qp.RY(y, wires=2), qp.PauliZ(1))
         mat = op.matrix()
-        sum_list = [Sum(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.PauliZ(1)) for i, j in zip(x, y)]
+        sum_list = [
+            Sum(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.PauliZ(1))
+            for i, j in zip(x, y, strict=False)
+        ]
         compare = qp.math.stack([s.matrix() for s in sum_list])
         assert qp.math.allclose(mat, compare)
         assert mat.shape == (3, 8, 8)
@@ -1518,7 +1469,7 @@ class TestSupportsBroadcasting:
         batched_y = [y for _ in x]
         sum_list = [
             Sum(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.RZ(k, wires=1))
-            for i, j, k in zip(x, batched_y, z)
+            for i, j, k in zip(x, batched_y, z, strict=False)
         ]
         compare = qp.math.stack([s.matrix() for s in sum_list])
         assert qp.math.allclose(mat, compare)

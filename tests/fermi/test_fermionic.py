@@ -32,8 +32,6 @@ from pennylane.fermi.fermionic import (
     from_string,
 )
 
-# pylint: disable=too-many-public-methods
-
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
 fw1_dag = FermiWord({(0, 1): "+", (1, 0): "-"})
 
@@ -116,7 +114,7 @@ class TestFermiWord:
     def test_missing(self):
         """Test that empty string is returned for missing key."""
         fw = FermiWord({(0, 0): "+", (1, 1): "-"})
-        assert (2, 3) not in fw.keys()
+        assert (2, 3) not in fw
         assert fw[(2, 3)] == ""
 
     def test_set_items(self):
@@ -279,7 +277,7 @@ class TestFermiWord:
         assert fw.adjoint() == fw_dag
 
 
-class TestFermiWordArithmetic:
+class TestFermiWordArithmetic:  # pylint: disable=too-many-public-methods
     WORDS_MUL = (
         (
             fw1,
@@ -695,7 +693,7 @@ class TestFermiSentence:
         new_fw = FermiWord({(0, 2): "+", (1, 3): "-"})
         fs = FermiSentence({fw: 1.0})
 
-        assert new_fw not in fs.keys()
+        assert new_fw not in fs
         assert fs[new_fw] == 0.0
 
     def test_set_items(self):
@@ -704,10 +702,10 @@ class TestFermiSentence:
         fs = FermiSentence({fw: 1.0})
 
         new_fw = FermiWord({(0, 2): "+", (1, 3): "-"})
-        assert new_fw not in fs.keys()
+        assert new_fw not in fs
 
         fs[new_fw] = 3.45
-        assert new_fw in fs.keys() and fs[new_fw] == 3.45
+        assert new_fw in fs and fs[new_fw] == 3.45
 
     tup_fs_str = (
         (
@@ -845,7 +843,7 @@ class TestFermiSentence:
         assert fs.adjoint() == fs_dag
 
 
-class TestFermiSentenceArithmetic:
+class TestFermiSentenceArithmetic:  # pylint: disable=too-many-public-methods
     tup_fs_mult = (  # computed by hand
         (
             fs1,
@@ -1247,7 +1245,7 @@ class TestFermiSentenceArithmetic:
     @pytest.mark.parametrize("string", tup_fw_string_error)
     def test_from_string_error(self, string):
         with pytest.raises(ValueError, match="Invalid character encountered in string "):
-            from_string(string)  # pylint: disable=pointless-statement
+            from_string(string)
 
     fw_string = (
         (fw1, "0+ 1-"),

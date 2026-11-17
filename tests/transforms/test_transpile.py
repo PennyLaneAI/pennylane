@@ -45,8 +45,7 @@ def build_qfunc_pauli_z(wires):
     return qfunc
 
 
-# pylint: disable=too-many-public-methods
-class TestTranspile:
+class TestTranspile:  # pylint: disable=too-many-public-methods
     """Unit tests for transpile function"""
 
     def test_transpile_invalid_coupling(self):
@@ -145,7 +144,7 @@ class TestTranspile:
 
         assert all(
             isclose(po, pt, abs_tol=np.finfo(float).eps)
-            for po, pt in zip(original_probs, transpiled_probs)
+            for po, pt in zip(original_probs, transpiled_probs, strict=False)
         )
 
     @pytest.mark.autograd

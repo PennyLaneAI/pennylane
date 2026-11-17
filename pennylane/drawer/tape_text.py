@@ -37,9 +37,8 @@ class _CurrentTotals:
     bit_totals: list[str]
 
 
-# pylint: disable=too-many-instance-attributes
 @dataclass
-class _Config:
+class _Config:  # pylint: disable=too-many-instance-attributes
     """Dataclass containing attributes needed for updating the strings to be drawn for each layer"""
 
     wire_map: dict
@@ -207,7 +206,9 @@ def _add_layer_str_to_totals(totals: _CurrentTotals, layer_str, config) -> _Curr
     # Process quantum wires - join accumulated wire strings with current layer strings
     totals.wire_totals = [
         config.wire_filler(row).join([t, s])
-        for row, t, s in zip(range(config.n_wires), totals.wire_totals, layer_str[: config.n_wires])
+        for row, t, s in zip(
+            range(config.n_wires), totals.wire_totals, layer_str[: config.n_wires], strict=False
+        )
     ]
 
     # Process classical bits - join accumulated bit strings with current layer strings
@@ -240,8 +241,7 @@ def _finalize_layers(totals: _CurrentTotals, config: _Config) -> _CurrentTotals:
     return totals
 
 
-# pylint: disable=too-many-arguments
-def tape_text(
+def tape_text(  # pylint: disable=too-many-arguments
     tape,
     wire_order=None,
     *,
@@ -485,6 +485,8 @@ def tape_text(
 
     # Recursively handle nested tapes #
     tape_totals = "\n".join(totals.finished_lines + totals.wire_totals + totals.bit_totals)
+    # Rows that hold no content in the last columns are padded to the full width above
+    tape_totals = "\n".join(line.rstrip() for line in tape_totals.split("\n"))
     current_tape_offset = cache["tape_offset"]
     cache["tape_offset"] += len(tape_cache)
     for i, nested_tape in enumerate(tape_cache):

@@ -156,7 +156,7 @@ class TestDatasetOperator:
         [
             qp.RX(1.1, 0),
             qp.FermionicSWAP(1.3, [1, "a"]),
-            qp.Toffoli([1, "a", None]),
+            qp.Toffoli([1, "a", 2]),
             qp.Hamiltonian([], []),
         ],
     )
@@ -180,7 +180,7 @@ class TestDatasetOperator:
         [
             qp.RX(1.1, 0),
             qp.FermionicSWAP(1.3, [1, "a"]),
-            qp.Toffoli([1, "a", None]),
+            qp.Toffoli([1, "a", 2]),
             qp.Hamiltonian([], []),
         ],
     )
@@ -234,7 +234,7 @@ def test_value_init_not_supported():
     """Test that a ValueError is raised if attempting to serialize an unsupported operator
     using the ``DatasetOperator`` attribute type."""
 
-    class NotSupported(Operator):  # pylint: disable=too-few-public-methods, unnecessary-ellipsis
+    class NotSupported(Operator):  # pylint: disable=too-few-public-methods
         """An operator."""
 
     with pytest.raises(

@@ -16,27 +16,25 @@ Tests for the ArbitraryUnitary template.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arbitrary_unitary import (
     _all_pauli_words_but_identity,
     _n_k_gray_code,
     _tuple_to_word,
 )
+from pennylane.testing import assert_decomposable
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard tests of operation validity."""
     shape = (3,)
     weights = np.arange(np.prod(shape), dtype=float).reshape(shape)
     op = qp.ArbitraryUnitary(weights, wires=[0])
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 # fmt: off
@@ -82,14 +80,14 @@ class TestHelpers:
     @pytest.mark.parametrize("n,k,expected_code", GRAY_CODE_TEST_DATA)
     def test_n_k_gray_code(self, n, k, expected_code):
         """Test that _n_k_gray_code produces the Gray code correctly."""
-        for expected_word, word in zip(expected_code, _n_k_gray_code(n, k)):
+        for expected_word, word in zip(expected_code, _n_k_gray_code(n, k), strict=False):
             assert expected_word == word
 
     @pytest.mark.parametrize("num_wires,expected_pauli_words", PAULI_WORD_TEST_DATA)
     def test_all_pauli_words_but_identity(self, num_wires, expected_pauli_words):
         """Test that the correct Pauli words are returned."""
         for expected_pauli_word, pauli_word in zip(
-            expected_pauli_words, _all_pauli_words_but_identity(num_wires)
+            expected_pauli_words, _all_pauli_words_but_identity(num_wires), strict=False
         ):
             assert expected_pauli_word == pauli_word
 
@@ -192,20 +190,31 @@ class TestDecomposition:
 
     DECOMP_PARAMS = [
         (np.arange(np.prod((15,)), dtype=float).reshape((15,)), range(2)),
-        (np.arange(np.prod((1, 15)), dtype=float).reshape((1, 15)), range(2)),
-        (np.arange(np.prod((2, 15)), dtype=float).reshape((2, 15)), range(2)),
+        pytest.param(
+            np.arange(np.prod((1, 15)), dtype=float).reshape((1, 15)),
+            range(2),
+            marks=pytest.mark.pl2do(
+                reason="Broadcasting support not fully implemented for Operator2"
+            ),
+        ),
+        pytest.param(
+            np.arange(np.prod((2, 15)), dtype=float).reshape((2, 15)),
+            range(2),
+            marks=pytest.mark.pl2do(
+                reason="Broadcasting support not fully implemented for Operator2"
+            ),
+        ),
         (np.random.random(size=(63,)), range(3)),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("weights", "wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, weights, wires):
         op = qp.ArbitraryUnitary(weights, wires=wires)
-        for rule in qp.list_decomps(qp.ArbitraryUnitary):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
-class TestInputs:
+class TestInputs:  # pylint: disable=too-few-public-methods
     """Test inputs and pre-processing."""
 
     @pytest.mark.parametrize("shape", [(5,), (1, 2, 3), (15, 3)])
@@ -224,7 +233,7 @@ class TestInputs:
             circuit(weights)
 
 
-class TestAttributes:
+class TestAttributes:  # pylint: disable=too-few-public-methods
     """Tests class attributes and methods."""
 
     @pytest.mark.parametrize(
@@ -348,32 +357,6 @@ class TestInterfaces:
         grads2 = grad_fn2(weights)
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        weights = tf.Variable(np.random.random(size=(15,)))
-        dev = qp.device("default.qubit", wires=2)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(weights)
-        grads = tape.gradient(res, [weights])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(weights)
-        grads2 = tape2.gradient(res2, [weights])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):

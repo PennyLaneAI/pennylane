@@ -13,23 +13,29 @@
 # limitations under the License.
 """Multiple dispatch functions"""
 
-# pylint: disable=import-outside-toplevel,too-many-return-statements
+# pylint: disable=import-outside-toplevel,wrong-import-order
+
+
 import functools
 from collections.abc import Sequence
 from operator import attrgetter
 
-# pylint: disable=wrong-import-order
+import jax
+import jax.numpy as jnp
 import numpy as onp
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
+from jax.numpy.linalg import norm as jax_norm
+from jax.numpy.linalg import svd as jax_svd
+from jax.scipy.linalg import expm as jax_expm
+from jax.scipy.special import gammainc as jax_gammainc
 from numpy import ndarray
 
-from . import single_dispatch  # pylint:disable=unused-import
+from . import single_dispatch  # pylint: disable=unused-import
 from .interface_utils import get_interface
 from .utils import cast, cast_like, requires_grad
 
 
-# pylint:disable=redefined-outer-name
 def array(*args, like=None, **kwargs):
     """Creates an array or tensor object of the target framework.
 
@@ -114,8 +120,6 @@ def multi_dispatch(argnum=None, tensor_list=None):
     >>> def custom_function(values, like, coefficient=10):
     >>>     # values is a list of vectors
     >>>     # like can force the interface (optional)
-    >>>     if like == "tensorflow":
-    >>>         # add interface-specific handling if necessary
     >>>     return coefficient * np.sum([math.dot(v,v) for v in values])
 
     We can then run
@@ -230,13 +234,12 @@ def concatenate(values, axis=0, like=None):
 
     **Example**
 
-    >>> x = tf.constant([0.6, 0.1, 0.6])
-    >>> y = tf.Variable([0.1, 0.2, 0.3])
+    >>> x = torch.tensor([0.6, 0.1, 0.6])
+    >>> y = torch.tensor([0.1, 0.2, 0.3])
     >>> z = np.array([5., 8., 101.])
     >>> concatenate([x, y, z])
-    <tf.Tensor: shape=(9,), dtype=float32, numpy=
-    array([6.00e-01, 1.00e-01, 6.00e-01, 1.00e-01, 2.00e-01, 3.00e-01,
-           5.00e+00, 8.00e+00, 1.01e+02], dtype=float32)>
+    tensor([6.0000e-01, 1.0000e-01, 6.0000e-01, 1.0000e-01, 2.0000e-01, 3.0000e-01,
+            5.0000e+00, 8.0000e+00, 1.0100e+02], dtype=torch.float64)
     """
 
     if like == "torch":
@@ -278,14 +281,6 @@ def concatenate(values, axis=0, like=None):
         else:
             values = [torch.as_tensor(t, device=torch_device) for t in values]  # pragma: no cover
 
-    if (
-        like == "tensorflow" and axis is None
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        # flatten and then concatenate zero'th dimension
-        # to reproduce numpy's behaviour
-        values = [np.flatten(np.array(t)) for t in values]
-        axis = 0
-
     return np.concatenate(values, axis=axis, like=like)
 
 
@@ -305,19 +300,17 @@ def diag(values, k=0, like=None):
 
     **Example**
 
-    >>> x = [1., 2., tf.Variable(3.)]
+    >>> x = [1., 2., torch.tensor(3.)]
     >>> qp.math.diag(x)
-    <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
-    array([[1., 0., 0.],
-           [0., 2., 0.],
-           [0., 0., 3.]], dtype=float32)>
-    >>> y = tf.Variable([0.65, 0.2, 0.1])
+    tensor([[1., 0., 0.],
+            [0., 2., 0.],
+            [0., 0., 3.]])
+    >>> y = torch.tensor([0.65, 0.2, 0.1])
     >>> qp.math.diag(y, k=-1)
-    <tf.Tensor: shape=(4, 4), dtype=float32, numpy=
-    array([[0.  , 0.  , 0.  , 0.  ],
-           [0.65, 0.  , 0.  , 0.  ],
-           [0.  , 0.2 , 0.  , 0.  ],
-           [0.  , 0.  , 0.1 , 0.  ]], dtype=float32)>
+    tensor([[0.0000, 0.0000, 0.0000, 0.0000],
+            [0.6500, 0.0000, 0.0000, 0.0000],
+            [0.0000, 0.2000, 0.0000, 0.0000],
+            [0.0000, 0.0000, 0.1000, 0.0000]])
     >>> z = torch.tensor([0.1, 0.2])
     >>> qp.math.diag(z, k=1)
     tensor([[0.0000, 0.1000, 0.0000],
@@ -343,7 +336,7 @@ def matmul(tensor1, tensor2, like=None):
 
 
 @multi_dispatch(argnum=[0, 1])
-def dot(tensor1, tensor2, like=None):
+def dot(tensor1, tensor2, like=None):  # pylint: disable=too-many-return-statements
     """Returns the matrix or dot product of two tensors.
 
     * If either tensor is 0-dimensional, elementwise multiplication
@@ -380,7 +373,7 @@ def dot(tensor1, tensor2, like=None):
 
         return np.tensordot(x, y, axes=[[-1], [-2]], like=like)
 
-    if like in {"tensorflow", "autograd"}:
+    if like == "autograd":
 
         ndim_y = len(np.shape(y))
         ndim_x = len(np.shape(x))
@@ -492,11 +485,10 @@ def ones_like(tensor, dtype=None):
     >>> x = torch.tensor([1., 2.])
     >>> ones_like(x)
     tensor([1., 1.])
-    >>> y = tf.Variable([[0], [5]])
+    >>> y = torch.tensor([[0], [5]])
     >>> ones_like(y, dtype=np.complex128)
-    <tf.Tensor: shape=(2, 1), dtype=complex128, numpy=
-    array([[1.+0.j],
-           [1.+0.j]])>
+    tensor([[1.+0.j],
+            [1.+0.j]], dtype=torch.complex128)
     """
     if dtype is not None:
         return cast(np.ones_like(tensor), dtype)
@@ -525,14 +517,13 @@ def stack(values, axis=0, like=None):
 
     **Example**
 
-    >>> x = tf.constant([0.6, 0.1, 0.6])
-    >>> y = tf.Variable([0.1, 0.2, 0.3])
+    >>> x = torch.tensor([0.6, 0.1, 0.6])
+    >>> y = torch.tensor([0.1, 0.2, 0.3])
     >>> z = np.array([5., 8., 101.])
     >>> stack([x, y, z])
-    <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
-    array([[6.00e-01, 1.00e-01, 6.00e-01],
-           [1.00e-01, 2.00e-01, 3.00e-01],
-           [5.00e+00, 8.00e+00, 1.01e+02]], dtype=float32)>
+    tensor([[6.0000e-01, 1.0000e-01, 6.0000e-01],
+            [1.0000e-01, 2.0000e-01, 3.0000e-01],
+            [5.0000e+00, 8.0000e+00, 1.0100e+02]], dtype=torch.float64)
     """
     values = np.coerce(values, like=like)
     return np.stack(values, axis=axis, like=like)
@@ -590,13 +581,6 @@ def einsum(indices, *operands, like=None, optimize=None):
     if optimize is None or like == "torch":
         # torch einsum doesn't support the optimize keyword argument
         return np.einsum(indices, *operands, like=like)
-    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        # Unpacking and casting necessary for higher order derivatives,
-        # and avoiding implicit fp32 down-conversions.
-        op1, op2 = operands
-        op1 = array(op1, like=op1[0], dtype=op1[0].dtype)
-        op2 = array(op2, like=op2[0], dtype=op2[0].dtype)
-        return np.einsum(indices, op1, op2, like=like)
     return np.einsum(indices, *operands, like=like, optimize=optimize)
 
 
@@ -652,11 +636,6 @@ def where(condition, x=None, y=None):
         interface = get_interface(condition)
         res = np.where(condition, like=interface)
 
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            return np.transpose(np.stack(res))
-
         return res
 
     interface = get_interface(condition, x, y)
@@ -696,14 +675,14 @@ def frobenius_inner_product(A, B, normalize=False, like=None):
     inner_product = np.sum(A * B)
 
     if normalize:
-        norm = np.sqrt(np.sum(A * A) * np.sum(B * B))
+        norm = np.sqrt(np.sum(A * A) * np.sum(B * B))  # pylint: disable=redefined-outer-name
         inner_product = inner_product / norm
 
     return inner_product
 
 
 @multi_dispatch(argnum=[1])
-def scatter(indices, array, new_dims, like=None):
+def scatter(indices, array, new_dims, like=None):  # pylint: disable=redefined-outer-name
     """Scatters an array into a tensor of shape new_dims according to indices.
 
     This operation is similar to scatter_element_add, except that the tensor
@@ -729,9 +708,8 @@ def scatter(indices, array, new_dims, like=None):
     return np.scatter(indices, array, new_dims, like=like)
 
 
-# pylint: disable=too-many-arguments
 @multi_dispatch(argnum=[0, 2])
-def scatter_element_add(
+def scatter_element_add(  # pylint: disable=too-many-arguments
     tensor, index, value, like=None, *, indices_are_sorted=False, unique_indices=False
 ):
     """In-place addition of a multidimensional value over various
@@ -857,12 +835,6 @@ def add(*args, like=None, **kwargs):
 @multi_dispatch()
 def iscomplex(tensor, like=None):
     """Return True if the tensor has a non-zero complex component."""
-    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        import tensorflow as tf
-
-        imag_tensor = tf.math.imag(tensor)
-        return tf.math.count_nonzero(imag_tensor) > 0
-
     if like == "torch":
         import torch
 
@@ -885,13 +857,7 @@ def expm(tensor, like=None):
     if like == "torch":
         return tensor.matrix_exp()
     if like == "jax":
-        from jax.scipy.linalg import expm as jax_expm
-
         return jax_expm(tensor)
-    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        import tensorflow as tf
-
-        return tf.linalg.expm(tensor)
     from scipy.linalg import expm as scipy_expm
 
     return scipy_expm(tensor)
@@ -901,12 +867,7 @@ def expm(tensor, like=None):
 def norm(tensor, like=None, **kwargs):
     """Compute the norm of a tensor in each interface."""
     if like == "jax":
-        from jax.numpy.linalg import norm
-
-    elif (
-        like == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        from tensorflow import norm
+        norm = jax_norm  # pylint: disable=redefined-outer-name
 
     elif like == "torch":
         from torch.linalg import norm
@@ -950,18 +911,8 @@ def svd(tensor, like=None, **kwargs):
         if ``compute_uv`` is ``True`` or ``None``, or only the singular values
         if ``compute_uv`` is ``False``
     """
-    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        from tensorflow.linalg import adjoint, svd
-
-        # Tensorflow results need some post-processing to keep it similar to other frameworks.
-
-        if kwargs.get("compute_uv", True):
-            S, U, V = svd(tensor, **kwargs)
-            return U, S, adjoint(V)
-        return svd(tensor, **kwargs)
-
     if like == "jax":
-        from jax.numpy.linalg import svd
+        svd = jax_svd  # pylint: disable=redefined-outer-name
 
     elif like == "torch":
         # Torch is deprecating torch.svd() in favour of torch.linalg.svd().
@@ -1008,12 +959,10 @@ def gammainc(m, t, like=None):
         (array[float]): value of the incomplete Gamma function
     """
     if like == "jax":
-        from jax.scipy.special import gammainc
-
-        return gammainc(m, t)
+        return jax_gammainc(m, t)
 
     if like == "autograd":
-        from autograd.scipy.special import gammainc
+        from autograd.scipy.special import gammainc  # pylint: disable=redefined-outer-name
 
         return gammainc(m, t)
 
@@ -1035,17 +984,10 @@ def detach(tensor, like=None):
         with a stopped gradient.
     """
     if like == "jax":
-        import jax
-
         return jax.lax.stop_gradient(tensor)
 
     if like == "torch":
         return tensor.detach()
-
-    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        import tensorflow as tf
-
-        return tf.stop_gradient(tensor)
 
     if like == "autograd":
         return np.to_numpy(tensor)
@@ -1054,7 +996,7 @@ def detach(tensor, like=None):
 
 
 @multi_dispatch(tensor_list=[1])
-def set_index(array, idx, val, like=None):
+def set_index(array, idx, val, like=None):  # pylint: disable=redefined-outer-name
     """Set the value at a specified index in an array.
     Calls ``array[idx]=val`` and returns the updated array unless JAX.
 
@@ -1069,16 +1011,9 @@ def set_index(array, idx, val, like=None):
     Whether the original array is modified is interface-dependent.
     """
     if like == "jax":
-        from jax import numpy as jnp
-
         # ensure array is jax array (interface may be jax because of idx or val and not array)
         jax_array = jnp.array(array)
         return jax_array.at[idx].set(val)
-
-    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        import tensorflow as tf
-
-        return tf.concat([array[:idx], val[None], array[idx + 1 :]], 0)
 
     array[idx] = val
     return array

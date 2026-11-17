@@ -69,7 +69,7 @@ See the links below for walkthroughs of each specific interface:
     </style>
     <div id="interfaces" class="container mt-2 mb-2">
         <div class="row mt-3">
-            <div class="col-lg-3 mb-2 align-items-stretch">
+            <div class="col-lg-4 mb-2 align-items-stretch">
                 <a href="interfaces/numpy.html">
                     <div class="card rounded-lg py-2" style="height:100%;">
                         <div class="d-flex justify-content-center align-items-center" style="height:100%;">
@@ -78,7 +78,7 @@ See the links below for walkthroughs of each specific interface:
                     </div>
                 </a>
             </div>
-            <div class="col-lg-3 mb-2 align-items-stretch">
+            <div class="col-lg-4 mb-2 align-items-stretch">
                 <a href="interfaces/torch.html">
                     <div class="card rounded-lg py-2" style="height:100%;">
                         <div class="d-flex justify-content-center align-items-center" style="height:100%;">
@@ -87,16 +87,7 @@ See the links below for walkthroughs of each specific interface:
                     </div>
                 </a>
             </div>
-            <div class="col-lg-3 mb-2 align-items-stretch">
-                <a href="interfaces/tf.html">
-                    <div class="card rounded-lg py-2" style="height:100%;">
-                        <div class="d-flex justify-content-center align-items-center" style="height:100%;">
-                            <img src="../_static/tensorflow.png" class="card-img-top" style="width:90%;"></img>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-lg-3 mb-2 align-items-stretch">
+            <div class="col-lg-4 mb-2 align-items-stretch">
                 <a href="interfaces/jax.html">
                     <div class="card rounded-lg py-2" style="height:100%;">
                         <div class="d-flex justify-content-center align-items-center" style="height:100%;">
@@ -107,16 +98,6 @@ See the links below for walkthroughs of each specific interface:
             </div>
         </div>
     </div>
-
-In addition to the core automatic differentiation frameworks discussed above,
-PennyLane also provides higher-level classes for converting QNodes into ``torch.nn`` layers:
-
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-
-    pennylane.qnn.TorchLayer
 
 .. warning::
 
@@ -176,22 +157,6 @@ PyTorch
 
 If you are using the :ref:`PennyLane PyTorch framework <torch_interf>`, you should import one of the native
 `PyTorch optimizers <https://pytorch.org/docs/stable/optim.html>`_ (found in ``torch.optim``).
-
-TensorFlow
-~~~~~~~~~~
-
-.. warning::
-
-    As of PennyLane v0.44, TensorFlow support is no longer maintained.
-    We recommend using the :doc:`/introduction/interfaces/jax` or :doc:`/introduction/interfaces/torch` for
-    machine learning applications to benefit from enhanced support and features. Please consult the following demos for 
-    a comprehensive guide on JAX and PyTorch: 
-    :doc:`Turning quantum nodes into Torch Layers <demo:demos/tutorial_qnn_module_torch>` and 
-    :doc:`How to optimize a QML model using JAX and Optax <demo:demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
-
-When using the :ref:`PennyLane TensorFlow framework <tf_interf>`, you will need to leverage one of
-the `TensorFlow optimizers <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/Optimizer>`_
-(found in ``tf.keras.optimizers``).
 
 JAX
 ~~~
@@ -294,11 +259,6 @@ with the number of trainable circuit parameters.
   information can be found in the documentation for :func:`qp.gradients.hadamard_grad <pennylane.gradients.hadamard_grad>`
   and the
   `original paper outlining this gradient method <https://arxiv.org/pdf/2408.05406>`__.
-
-* :func:`qp.gradients.stoch_pulse_grad <pennylane.gradients.stoch_pulse_grad>`: Use a stochastic variant of the
-  parameter-shift rule for pulse programs.
-
-* :func:`qp.gradients.pulse_odegen <pennylane.gradients.pulse_odegen>`: Combine classical processing with the parameter-shift rule for multivariate gates to differentiate pulse programs.
 
 
 Device gradients
@@ -558,9 +518,9 @@ At the moment, it takes into account the following parameters:
    circuit will be differentiable. See :ref:`State gradients <State gradients>` for details.
 5. Supported, but only when ``shots=None``. See :ref:`Backpropagation <Analytic backpropagation>` for details.
 6. Not supported. The adjoint differentiation algorithm is only implemented for analytic simulation. See
-   :ref:`Adjoint differentation <Adjoint differentation>` for details.
+   :ref:`Adjoint differentiation <Adjoint differentiation>` for details.
 7. Supported. Raises error when ``shots>0`` since the gradient is always computed analytically. See
-   :ref:`Adjoint differentation <Adjoint differentation>` for details.
+   :ref:`Adjoint differentiation <Adjoint differentiation>` for details.
 8. Supported.
 9. Not supported. The discretization of the output caused by wave function collapse is
    not differentiable. The forward pass is still supported. See :ref:`Sample gradients <Sample gradients>` for details.
@@ -574,6 +534,5 @@ At the moment, it takes into account the following parameters:
 
     interfaces/numpy
     interfaces/torch
-    interfaces/tf
     interfaces/jax
     unsupported_gradients

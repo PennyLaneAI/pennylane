@@ -27,7 +27,6 @@ import numpy as np
 from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.qscript import QuantumScriptOrBatch
-from pennylane.core.shots import Shots
 from pennylane.core.transforms import CompilePipeline
 from pennylane.decomposition import enabled_graph, has_decomp
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
@@ -195,14 +194,14 @@ class NullQubit(Device):
             circuit(params)
 
     >>> print(tracker.history["resources"][0])
-    Wire allocations: 100
-    Total gates: 10,000
-    Gate counts:
-    - Rot: 5,000
-    - CNOT: 5,000
-    Measurements:
+    Quantum operations:
+    - Total: 10,000
+      - Rot: 5,000
+      - CNOT: 5,000
+    Measurement processes:
     - expval(PauliZ): 100
-    Depth: 502
+    Total wires: 100
+    Circuit Depth: 502
 
 
     .. details::
@@ -212,7 +211,7 @@ class NullQubit(Device):
 
         * ``executions``: the number of unique circuits that would be required on quantum hardware
         * ``shots``: the number of shots
-        * ``resources``: the :class:`~.resource.Resources` for the executed circuit.
+        * ``resources``: the :class:`~.resource.SpecsResources` for the executed circuit.
         * ``simulations``: the number of simulations performed. One simulation can cover multiple QPU executions, such as for non-commuting measurements and batched parameters.
         * ``batches``: The number of times :meth:`~.execute` is called.
         * ``results``: The results of each call of :meth:`~.execute`
@@ -233,8 +232,7 @@ class NullQubit(Device):
         """The name of the device."""
         return "null.qubit"
 
-    # pylint: disable=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         wires=None,
         shots=None,
@@ -308,7 +306,6 @@ class NullQubit(Device):
         """No-op function to allow for borrowing DefaultQubit.preprocess without AttributeErrors"""
         return execution_config
 
-    # pylint: disable=cell-var-from-loop
     def preprocess(
         self, execution_config: ExecutionConfig | None = None
     ) -> tuple[CompilePipeline, ExecutionConfig]:
@@ -327,6 +324,7 @@ class NullQubit(Device):
                 original_stopping_condition = t.kwargs["stopping_condition"]
 
                 def new_stopping_condition(op):
+                    # pylint: disable-next=cell-var-from-loop
                     return not _op_has_decomp(op) or original_stopping_condition(op)
 
                 t.kwargs["stopping_condition"] = new_stopping_condition
@@ -336,6 +334,7 @@ class NullQubit(Device):
                 if original_shots_stopping_condition:
 
                     def new_shots_stopping_condition(op):
+                        # pylint: disable-next=cell-var-from-loop
                         return (not op.has_decomposition) or original_shots_stopping_condition(op)
 
                     t.kwargs["stopping_condition_shots"] = new_shots_stopping_condition
@@ -461,26 +460,6 @@ class NullQubit(Device):
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
-
-    def eval_jaxpr(
-        self,
-        jaxpr: "jax.extend.core.Jaxpr",
-        consts: list,
-        *args,
-        execution_config=None,
-        shots=Shots(None),
-    ) -> list:
-        from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
-            AbstractMeasurement,
-        )
-
-        def zeros_like(var, shots):
-            if isinstance(var.aval, AbstractMeasurement):
-                s, dtype = var.aval.abstract_eval(num_device_wires=len(self.wires), shots=shots)
-                return math.zeros(s, dtype=dtype, like="jax")
-            return math.zeros(var.aval.shape, dtype=var.aval.dtype, like="jax")
-
-        return [zeros_like(var, Shots(shots).total_shots) for var in jaxpr.outvars]
 
 
 def _op_has_decomp(op):

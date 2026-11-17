@@ -11,7 +11,9 @@ jobs:
     permissions:
       contents: write
     name: Setup the release
-    runs-on: ubuntu-24.04
+    runs-on:  
+      group: 'PennyLaneAI-Static-IP-Runners'
+      labels: ['pl-2-core-gh-runner']   
     outputs:
       rc_branch: ${{ steps.check_rc.outputs.rc_branch }}
       branch_exists: ${{ steps.check_rc.outputs.branch_exists }}
@@ -68,7 +70,8 @@ jobs:
         git config --global user.email '${{ secrets.AUTO_UPDATE_VERSION_RINGO_EMAIL }}'
         git config --global user.name "ringo-but-quantum"
         git add $GITHUB_WORKSPACE/pennylane/_version.py
-        git commit -m "[no ci] bump nightly version"
+        DEV_VERSION=$(grep __version__ "$GITHUB_WORKSPACE/pennylane/_version.py" | cut -d'"' -f2 | cut -d'-' -f2)
+        git commit -m "[no ci] bump nightly version to ${DEV_VERSION}"
         git push
 
     - name: Build wheels

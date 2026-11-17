@@ -19,10 +19,10 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_Multiplier():
     """Check the operation using the assert_valid function."""
     k = 6
@@ -30,7 +30,7 @@ def test_standard_validity_Multiplier():
     x_wires = [0, 1, 2, 3]
     work_wires = [4, 5, 6, 7, 8, 9]
     op = qp.Multiplier(k, x_wires=x_wires, mod=mod, work_wires=work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.system
@@ -78,23 +78,21 @@ class TestMultiplier:
             ),
         ],
     )
-    def test_operation_result(
-        self, k, x_wires, mod, work_wires, x
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_result(self, k, x_wires, mod, work_wires, x):
         """Test the correctness of the Multiplier template output."""
         dev = qp.device("default.qubit")
 
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit(x):
-            qp.BasisEmbedding(x, wires=x_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
             qp.Multiplier(k, x_wires, mod, work_wires)
             return qp.sample(wires=x_wires)
 
         if mod is None:
             mod = 2 ** len(x_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)[0, :]))), (x * k) % mod
         )
@@ -102,9 +100,11 @@ class TestMultiplier:
     def test_decomposition(self):
         """Test that compute_decomposition and decomposition work as expected."""
         k, x_wires, mod, work_wires = 4, [0, 1, 2], 7, [3, 4, 5, 6, 7]
-        multiplier_decomposition = qp.transforms.decompose(
-            qp.tape.QuantumScript([qp.Multiplier(k, x_wires, mod, work_wires)]), max_expansion=2
-        )[0][0].operations
+        multiplier_decomposition = (
+            qp.transforms._tape_decompose(  # pylint: disable=protected-access
+                qp.tape.QuantumScript([qp.Multiplier(k, x_wires, mod, work_wires)]), max_expansion=2
+            )[0][0].operations
+        )
 
         op_list = []
         if mod != 2 ** len(x_wires):
@@ -122,7 +122,7 @@ class TestMultiplier:
         )
         op_list.append(qp.adjoint(qp.QFT(wires=wires_aux)))
 
-        for x_wire, aux_wire in zip(x_wires, wires_aux_swap):
+        for x_wire, aux_wire in zip(x_wires, wires_aux_swap, strict=False):
             op_list.append(qp.SWAP(wires=[x_wire, aux_wire]))
         inv_k = pow(k, -1, mod)
         op_list.append(qp.QFT(wires=wires_aux))
@@ -135,7 +135,7 @@ class TestMultiplier:
         )
         op_list.append(qp.adjoint(qp.QFT(wires=wires_aux)))
 
-        for op1, op2 in zip(multiplier_decomposition, op_list):
+        for op1, op2 in zip(multiplier_decomposition, op_list, strict=False):
             qp.assert_equal(op1, op2)
 
     @pytest.mark.jax
@@ -156,11 +156,11 @@ class TestMultiplier:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():
-            qp.BasisEmbedding(x, wires=x_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
             qp.Multiplier(k, x_wires, mod, work_wires)
             return qp.sample(wires=x_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))), (x * k) % mod
         )
@@ -169,16 +169,14 @@ class TestMultiplier:
 class TestMultiplierUnit:
     """Unit tests for Multiplier"""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         ("k", "x_wire", "mod", "work_wires"), [(3, [1], 1, [2, 3, 4]), (3, [1], 2, [2, 3, 4])]
     )
-    def test_decomposition_new(
-        self, k, x_wire, mod, work_wires
-    ):  # pylint: disable=too-many-arguments
+    def test_decomposition_new(self, k, x_wire, mod, work_wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.Multiplier(k, x_wire, mod, work_wires)
-        for rule in qp.list_decomps(qp.Multiplier):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize(
         ("k", "x_wires", "mod", "work_wires", "msg_match"),
@@ -234,9 +232,7 @@ class TestMultiplierUnit:
             ),
         ],
     )
-    def test_operation_and_wires_error(
-        self, k, x_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_and_wires_error(self, k, x_wires, mod, work_wires, msg_match):
         """Test an error is raised when k or mod don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qp.Multiplier(k, x_wires, mod, work_wires)

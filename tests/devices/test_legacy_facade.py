@@ -16,6 +16,8 @@ Contains unit tests for the LegacyDeviceFacade class.
 """
 
 # pylint: disable=protected-access
+
+
 import copy
 
 import numpy as np
@@ -50,18 +52,16 @@ class DummyDevice(qp.devices.LegacyDevice):
     def reset(self):
         pass
 
-    # pylint: disable=unused-argument
-    def apply(self, operation, wires, par):
+    def apply(self, operation, wires, par):  # pylint: disable=unused-argument
         return 0.0
 
-    # pylint: disable=unused-argument
-    def expval(self, observable, wires, par):
+    def expval(self, observable, wires, par):  # pylint: disable=unused-argument
         return 0.0
 
 
 def test_double_facade_raises_error():
     """Test that a RuntimeError is raised if a facaded device is passed to constructor"""
-    dev = qp.device("default.qutrit", wires=1)
+    dev = qp.devices.LegacyDeviceFacade(DefaultQubitLegacy(wires=1))
 
     with pytest.raises(RuntimeError, match="already-facaded device can not be wrapped"):
         qp.devices.LegacyDeviceFacade(dev)
@@ -77,7 +77,7 @@ def test_error_if_not_legacy_device():
 
 def test_copy():
     """Test that copy works correctly"""
-    dev = qp.device("default.qutrit", wires=1)
+    dev = LegacyDeviceFacade(DefaultQubitLegacy(wires=1))
 
     for copied_devs in (copy.copy(dev), copy.deepcopy(dev)):
         assert copied_devs is not dev
@@ -240,15 +240,9 @@ def test_preprocessing_program():
     config = facade.setup_execution_config(circuit=tape)
     program = facade.preprocess_transforms(config)
 
-    assert (
-        program[0].tape_transform == qp.defer_measurements.tape_transform
-    )  # pylint: disable=no-member
-    assert (
-        program[1].tape_transform == legacy_device_batch_transform.tape_transform
-    )  # pylint: disable=no-member
-    assert (
-        program[2].tape_transform == legacy_device_expand_fn.tape_transform
-    )  # pylint: disable=no-member
+    assert program[0].tape_transform == qp.defer_measurements.tape_transform
+    assert program[1].tape_transform == legacy_device_batch_transform.tape_transform
+    assert program[2].tape_transform == legacy_device_expand_fn.tape_transform
 
     m0 = qp.measure(0)
     tape = qp.tape.QuantumScript(
@@ -405,7 +399,6 @@ class TestGradientSupport:
 
         gradient_method = "adjoint"
 
-        # pylint: disable=unnecessary-lambda-assignment
         class AdjointDev(DummyDevice):
             """A dummy device that supports adjoint diff"""
 

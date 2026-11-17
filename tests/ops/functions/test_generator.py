@@ -16,6 +16,8 @@ Unit tests for the qp.generator transform
 """
 
 # pylint: disable=too-few-public-methods
+
+
 from functools import reduce
 from operator import matmul
 
@@ -70,7 +72,10 @@ class HamiltonianOp(CustomOp):
     obs = [[qp.PauliX, qp.Identity], [qp.PauliX, qp.PauliY]]
 
     def generator(self):
-        obs = [reduce(matmul, [o(w) for o, w in zip(word, self.wires)]) for word in self.obs]
+        obs = [
+            reduce(matmul, [o(w) for o, w in zip(word, self.wires, strict=False)])
+            for word in self.obs
+        ]
         return qp.Hamiltonian(self.coeff, obs)
 
 
@@ -82,7 +87,10 @@ class HamiltonianOpSameCoeff(CustomOp):
     obs = [[qp.PauliX, qp.Identity], [qp.PauliX, qp.PauliY]]
 
     def generator(self):
-        obs = [reduce(matmul, [o(w) for o, w in zip(word, self.wires)]) for word in self.obs]
+        obs = [
+            reduce(matmul, [o(w) for o, w in zip(word, self.wires, strict=False)])
+            for word in self.obs
+        ]
         return qp.Hamiltonian(self.coeff, obs)
 
 
@@ -94,7 +102,10 @@ class HamiltonianOpSameAbsCoeff(CustomOp):
     obs = [[qp.PauliX, qp.Identity], [qp.PauliX, qp.PauliY]]
 
     def generator(self):
-        obs = [reduce(matmul, [o(w) for o, w in zip(word, self.wires)]) for word in self.obs]
+        obs = [
+            reduce(matmul, [o(w) for o, w in zip(word, self.wires, strict=False)])
+            for word in self.obs
+        ]
         return qp.Hamiltonian(self.coeff, obs)
 
 
@@ -157,7 +168,7 @@ class SparseOp(CustomOp):
 ###################################################################
 
 
-class TestValidation:  # pylint: disable=too-few-public-methods
+class TestValidation:
 
     def test_non_hermitian_generator(self):
         """Check that an error is raised if the generator
@@ -406,7 +417,9 @@ class TestArithmeticReturn:
         """Test a generator that returns a Hermitian observable
         is correct"""
         gen = qp.generator(HermitianOp, format="arithmetic")(0.5, wires=0)
-        expected = qp.pauli_decompose(HermitianOp.H, hide_identity=True, pauli=True).operation()
+        expected = qp.pauli.to_operator(
+            qp.pauli_decompose(HermitianOp.H, hide_identity=True, pauli=True)
+        )
 
         assert not isinstance(gen, qp.Hamiltonian)
         assert np.allclose(
@@ -418,9 +431,9 @@ class TestArithmeticReturn:
         """Test a generator that returns a SparseHamiltonian observable
         is correct"""
         gen = qp.generator(SparseOp, format="arithmetic")(0.5, wires=0)
-        expected = qp.pauli_decompose(
-            SparseOp.H.toarray(), hide_identity=True, pauli=True
-        ).operation()
+        expected = qp.pauli.to_operator(
+            qp.pauli_decompose(SparseOp.H.toarray(), hide_identity=True, pauli=True)
+        )
 
         assert not isinstance(gen, qp.Hamiltonian)
         assert np.allclose(
