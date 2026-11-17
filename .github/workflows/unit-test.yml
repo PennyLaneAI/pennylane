@@ -181,6 +181,13 @@ jobs:
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
 
+      - name: Install Catalyst and Lightning for CI
+        run: |
+          uv pip install --index-strategy unsafe-best-match --prerelease=allow --upgrade-package pennylane-catalyst --upgrade-package pennylane-lightning --extra-index-url https://test.pypi.org/simple/ --group ci-ecosystem
+          # Keep the selected ecosystem versions while restoring the PennyLane wheel under test.
+          uv pip install --no-deps dist/pennylane*.whl
+          uv pip show pennylane pennylane-catalyst pennylane-lightning
+
       - name: Create test reports directory
         run: mkdir -p ${{ env.TEST_REPORTS_DIR }}
 

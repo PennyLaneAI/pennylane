@@ -1921,6 +1921,11 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* CI selects Catalyst and Lightning through the ``ci-ecosystem`` dependency group and retains
+  them when installing the PennyLane branch under test. The editable-install metadata test now
+  isolates its PennyLane mock.
+  `(#10547) <https://github.com/PennyLaneAI/pennylane/pull/10547>`__
+
 * Added pinned local ``ty`` tooling and a diagnostic baseline for the package.
   `(#10537) <https://github.com/PennyLaneAI/pennylane/pull/10537>`__
 
