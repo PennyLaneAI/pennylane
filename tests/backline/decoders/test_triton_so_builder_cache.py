@@ -14,7 +14,8 @@
 
 """Regression tests for Triton shared-library cache keys."""
 
-# pylint: disable=protected-access,wrong-import-position,too-few-public-methods
+# pylint: disable=wrong-import-position
+
 
 import numpy as np
 import pytest
@@ -30,7 +31,7 @@ from pennylane.backline.decoders.triton.decoder_frontend import (
 from pennylane.backline.decoders.triton.persistent_kernel import _persistent_decoder_kernel
 
 
-class TestConstexprCacheKeys:
+class TestConstexprCacheKeys:  # pylint: disable=too-few-public-methods
     """Tests for constexpr hashing used by the shared-library builder."""
 
     def test_wrap_constexpr_distinguishes_decoder_tuples(self):
@@ -55,7 +56,7 @@ class TestConstexprCacheKeys:
         }
 
         def ast_hash(decoder_fns):
-            wrapped = builder._wrap_constexpr(decoder_fns)
+            wrapped = builder._wrap_constexpr(decoder_fns)  # pylint: disable=protected-access
             # builder.ASTSource, not kernel.ASTSource via create_binder(): the latter asks
             # the local machine for a target and so needs a usable GPU, which hashing an
             # AST does not.

@@ -19,8 +19,6 @@ import pytest
 import pennylane as qp
 from pennylane.measurements import PurityMP
 
-# pylint: disable=too-many-arguments
-
 
 def expected_purity_ising_xx(param):
     """Returns the analytical purity for subsystems of the IsingXX"""
@@ -238,7 +236,7 @@ class TestPurityIntegration:
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
     @pytest.mark.parametrize("interface", ["jax"])
-    def test_IsingXX_qnode_purity_grad_jax(
+    def test_IsingXX_qnode_purity_grad_jax(  # pylint: disable=too-many-arguments
         self, device, param, wires, is_partial, diff_method, interface
     ):
         """Test purity for a QNode gradient with Jax."""
@@ -285,7 +283,7 @@ class TestPurityIntegration:
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
     @pytest.mark.parametrize("interface", ["jax-jit"])
-    def test_IsingXX_qnode_purity_grad_jax_jit(
+    def test_IsingXX_qnode_purity_grad_jax_jit(  # pylint: disable=too-many-arguments
         self, device, param, wires, is_partial, diff_method, interface
     ):
         """Test purity for a QNode gradient with Jax."""
@@ -331,7 +329,7 @@ class TestPurityIntegration:
     @pytest.mark.parametrize("wires,is_partial", wires_list)
     @pytest.mark.parametrize("diff_method", diff_methods)
     @pytest.mark.parametrize("interface", ["torch"])
-    def test_IsingXX_qnode_purity_grad_torch(
+    def test_IsingXX_qnode_purity_grad_torch(  # pylint: disable=too-many-arguments
         self, device, param, wires, is_partial, diff_method, interface
     ):
         """Test purity for a QNode gradient with torch."""
@@ -349,7 +347,7 @@ class TestPurityIntegration:
 
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
         purity = circuit(param)
-        purity.backward()  # pylint: disable=no-member
+        purity.backward()
         grad_purity = param.grad
 
         assert qp.math.allclose(grad_purity, expected_grad, rtol=1e-04, atol=1e-05)

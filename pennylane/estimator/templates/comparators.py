@@ -24,8 +24,6 @@ from pennylane.estimator.resource_operator import (
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=arguments-differ,unused-argument
-
 
 class SingleQubitComparator(ResourceOperator):
     r"""Resource class for comparing the values encoded in two input qubits.
@@ -87,7 +85,7 @@ class SingleQubitComparator(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -97,7 +95,7 @@ class SingleQubitComparator(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -197,7 +195,7 @@ class TwoQubitComparator(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> dict:
+    def resource_rep(cls) -> dict:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -207,7 +205,7 @@ class TwoQubitComparator(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls):
+    def resource_decomp(cls):  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -377,7 +375,7 @@ class IntegerComparator(ResourceOperator):
         return {"value": self.value, "register_size": self.register_size, "geq": self.geq}
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls, value: int, register_size: int, geq: bool = False
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
@@ -398,6 +396,7 @@ class IntegerComparator(ResourceOperator):
         )
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, value: int, register_size: int, geq: bool = False) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
@@ -597,7 +596,7 @@ class RegisterComparator(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls, first_register: int, second_register: int, geq: bool = False
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
@@ -620,7 +619,7 @@ class RegisterComparator(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls, first_register: int, second_register: int, geq: bool = False
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the

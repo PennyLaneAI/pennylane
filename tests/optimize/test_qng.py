@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for the QNG optimizer"""
 
-# pylint: disable=too-few-public-methods
 import pytest
 import scipy as sp
 
@@ -106,7 +105,7 @@ class TestAttrsAffectingMetricTensor:
         assert not np.isclose(new_params_with_lam[1], y, atol=1e-11, rtol=0.0)
 
 
-class TestExceptions:
+class TestExceptions:  # pylint: disable=too-few-public-methods
     """Test exceptions are raised for incorrect usage"""
 
     def test_obj_func_not_a_qnode(self):

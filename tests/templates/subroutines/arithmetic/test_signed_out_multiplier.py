@@ -76,9 +76,9 @@ def twos_complement_value(bits):
         ((0, 1, 2), (3, 4, 5), (10, 11, 12, 13, 14, 15), (6, 7, 8, 9), True, 4),
     ],
 )
-def test_abstract_init(
+def test_abstract_init(  # pylint: disable=too-many-arguments
     x_wires, y_wires, output_wires, work_wires, output_wires_zeroed, expected_num_work_wires
-):  # pylint: disable=too-many-arguments
+):
     """Tests creating an abstract operator."""
     abstract_op = SignedOutMultiplier(
         Wire[len(x_wires)],
@@ -333,17 +333,15 @@ def test_decomposition_with_abstract_wires(rule_name, registers, expected_primit
         ),
     ],
 )
-def test_signed_out_multiplier_correct(
+def test_signed_out_multiplier_correct(  # pylint: disable=too-many-arguments
     x_wires, y_wires, work_wires, output_wires, init_state, zeroed
-):  # pylint: disable=too-many-arguments
+):
     """Tests with a few examples that the Template yields correct results."""
 
     dev = device("default.qubit", wires=x_wires + y_wires + work_wires + output_wires)
 
     @qnode(dev)
-    def signed_multiply(
-        x_wires, y_wires, work_wires, output_wires, init_state, zeroed
-    ):  # pylint: disable=too-many-arguments
+    def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state, zeroed):
         BasisEmbedding(
             init_state,
             x_wires + y_wires + work_wires + output_wires,

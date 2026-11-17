@@ -162,7 +162,7 @@ class TestAdjointJacobian:
                 return qp.PauliX(self.wires) * 1.2
 
             @staticmethod
-            def compute_matrix(angle):  # pylint: disable=arguments-differ
+            def compute_matrix(angle):
                 """Matrix representation of MyOp, just the same as a reparametrized RX."""
                 return qp.RX.compute_matrix(-2.4 * angle)
 

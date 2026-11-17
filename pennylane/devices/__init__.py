@@ -168,8 +168,7 @@ from ._legacy_device import Device as LegacyDevice
 from ._qubit_device import QubitDevice
 
 
-# pylint: disable=undefined-variable
 def __getattr__(name):
     if name == "plugin_devices":
-        return device_constructor.plugin_devices
+        return device_constructor.plugin_devices  # pylint: disable=undefined-variable
     raise AttributeError(f"module 'pennylane.devices' has no attribute '{name}'")

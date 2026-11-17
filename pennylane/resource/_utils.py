@@ -60,10 +60,9 @@ def unwrap_qjit_qnode(qjit, *, fn_name: str) -> QNode:
 
     ``fn_name`` is the name of the public function to report in the error message.
     """
-    # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
     try:
-        from catalyst import QJIT
+        from catalyst import QJIT  # pylint: disable=import-outside-toplevel
     except ImportError as exc:  # pragma: no cover
         raise ImportError(f"Catalyst must be installed to use {fn_name}.") from exc
 
@@ -87,7 +86,7 @@ def build_circuit_specs(original_qnode, resources, level) -> CircuitSpecs:
     )
 
 
-def preprocess_level_input(
+def preprocess_level_input(  # pylint: disable=too-many-branches
     level: str | int | list[int | str],
     compile_pipeline: "CompilePipeline",
 ) -> list[int]:
@@ -114,7 +113,6 @@ def preprocess_level_input(
         >>> preprocess_level_input("all", pipeline)
         [0, 1, 2, 3]
     """
-    # pylint: disable=too-many-branches
     if trans := [pass_ for pass_ in compile_pipeline if pass_.pass_name is None]:
         raise ValueError(
             f"Encountered the following tape transforms: {trans}."

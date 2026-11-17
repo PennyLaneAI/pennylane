@@ -15,7 +15,6 @@
 This module contains the :class:`Device` abstract base class.
 """
 
-# pylint: disable=use-maxsplit-arg,protected-access
 import abc
 import warnings
 from collections import OrderedDict
@@ -40,7 +39,7 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.ops import LinearCombination, MidMeasure, Prod, Projector, SProd, Sum
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.transforms import broadcast_expand, split_non_commuting
 from pennylane.wires import Wires
 
@@ -67,6 +66,7 @@ class _LegacyMeta(abc.ABCMeta):
         return super().__instancecheck__(instance)
 
 
+# pylint: disable-next=too-many-instance-attributes,too-many-public-methods
 class Device(abc.ABC, metaclass=_LegacyMeta):
     """Abstract base class for PennyLane devices.
 
@@ -78,7 +78,6 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             expectation values of observables. Defaults to 1000 if not specified.
     """
 
-    # pylint: disable=too-many-public-methods,too-many-instance-attributes
     _capabilities = {"model": None, "supports_broadcasting": False}
     """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
@@ -116,7 +115,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
     def __str__(self):
         """Verbose string representation."""
-        package = self.__module__.split(".")[0]
+        package = self.__module__.split(".")[0]  # pylint: disable=use-maxsplit-arg
         return (
             f"{self.name}\nShort name: {self.short_name}\n"
             f"Package: {package}\n"
@@ -363,7 +362,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         """
         return cls._capabilities
 
-    # pylint: disable=too-many-branches,unused-argument
+    # pylint: disable-next=too-many-branches,unused-argument
     def execute(self, queue, observables, parameters=None, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
@@ -831,7 +830,6 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         source of :meth:`execute` for more details).
         """
 
-        # pylint: disable=no-self-use
         class MockContext:
             """Mock class as a default for the with statement in execute()."""
 
@@ -886,7 +884,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             "The given observable must either be a pennylane.operation.Operator class or a string."
         )
 
-    def check_validity(self, queue, observables):
+    def check_validity(self, queue, observables):  # pylint: disable=too-many-branches
         """Checks whether the operations and observables in queue are all supported by the device.
 
         Args:

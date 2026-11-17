@@ -15,7 +15,6 @@
 Unit tests for the qubit matrix-based operations.
 """
 
-# pylint: disable=import-outside-toplevel
 from functools import reduce
 
 import numpy as np
@@ -1193,7 +1192,7 @@ class TestUnitaryLabels:
         assert len(cache["matrices"]) == 3
 
 
-class TestBlockEncode:  # pylint: disable=too-many-public-methods
+class TestBlockEncode:
     """Test the BlockEncode operation."""
 
     @pytest.mark.parametrize(
@@ -1257,8 +1256,8 @@ class TestBlockEncode:  # pylint: disable=too-many-public-methods
         """Test that BlockEncode outputs expected attributes for various input matrix types."""
         op = qp.BlockEncode(input_matrix, wires)
         assert np.allclose(op.parameters, input_matrix)
-        # pylint: disable=protected-access
-        assert op._norm == expected_hyperparameters["norm"]
+        assert op._norm == expected_hyperparameters["norm"]  # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         assert op._subspace == expected_hyperparameters["subspace"]
 
     @pytest.mark.parametrize(
@@ -1606,8 +1605,7 @@ class TestBlockEncode:  # pylint: disable=too-many-public-methods
         op = qp.BlockEncode(A, wires)
         assert isinstance(op.A, AbstractArray)
         assert op.A.shape == expected_shape
-        # pylint: disable=protected-access
-        assert op._subspace == expected_subspace
+        assert op._subspace == expected_subspace  # pylint: disable=protected-access
         assert not op.has_sparse_matrix
 
     def test_abstractify(self):
@@ -1615,10 +1613,9 @@ class TestBlockEncode:  # pylint: disable=too-many-public-methods
         op = qp.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1])
         abstract_op = abstractify(op)
         assert isinstance(abstract_op.A, AbstractArray)
-        # pylint: disable=protected-access
         assert abstract_op.A.shape == (2, 2)
         assert abstract_op.wires == AbstractWires(2)
-        assert abstract_op._subspace == (2, 2, 4)
+        assert abstract_op._subspace == (2, 2, 4)  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("dtype", [float, complex])
     def test_abstract_array_adjoint(self, dtype):
@@ -1626,9 +1623,8 @@ class TestBlockEncode:  # pylint: disable=too-many-public-methods
         op = qp.BlockEncode(AbstractArray((2, 3), dtype), wires=range(3))
         adj = op.adjoint()
         assert isinstance(adj.A, AbstractArray)
-        # pylint: disable=protected-access
         assert adj.A.shape == (3, 2)
-        assert adj._subspace == (3, 2, 8)
+        assert adj._subspace == (3, 2, 8)  # pylint: disable=protected-access
 
     def test_abstract_array_invalid_hilbert_space(self):
         """Test that a known abstract shape still validates the Hilbert space size."""
