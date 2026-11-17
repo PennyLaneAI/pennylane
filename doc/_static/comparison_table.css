@@ -1,0 +1,54 @@
+/* Side-by-side comparison tables, e.g. ``.. list-table:: :class: comparison-table`` */
+
+table.comparison-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: none;
+  margin: 1rem 0 2rem;
+}
+
+table.comparison-table th,
+table.comparison-table td {
+  vertical-align: top;
+  text-align: left;
+  padding: 12px 16px;
+  border: none;
+  border-bottom: 1px solid #eceff2;
+  white-space: normal;
+}
+
+table.comparison-table tbody tr {
+  background: transparent !important;
+}
+
+table.comparison-table tbody tr:last-child th,
+table.comparison-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+table.comparison-table p {
+  margin: 0;
+}
+
+/* column headers */
+/* the theme forces ``font-weight: unset !important`` on table cells */
+table.comparison-table thead th {
+  background: #f5f7f9 !important;
+  border-bottom: 1px solid #dfe3e8;
+  font-weight: 600 !important;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #4a5560 !important;
+}
+
+/* row labels */
+table.comparison-table tbody th {
+  font-weight: 600 !important;
+  color: #1d2329 !important;
+  border-right: 1px solid #eceff2;
+}
