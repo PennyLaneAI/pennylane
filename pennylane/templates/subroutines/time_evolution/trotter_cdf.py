@@ -168,7 +168,9 @@ class TrotterCDF(Operator2):
         :math:`\text{diag}(U, U^\dagger)` (control-0 branch :math:`U = e^{-iHt}`, control-1 branch :math:`U^\dagger = e^{+iHt}`).
 
         In this decomposition, each diagonal rotation block is sandwiched by ``CNOT`` gates from the control wire (an
-        ancilla-system ``ZZ`` coupling).
+        ancilla-system ``ZZ`` coupling). For real-valued leaves, the one-body block instead is a
+        complex-valued :class:`~.BasisRotation`, sandwiched by ``CNOT`` and ``CY`` gates from the
+        control wire, followed by a :class:`~.GlobalPhase` (see Implementation Details).
 
         .. code-block::
 
