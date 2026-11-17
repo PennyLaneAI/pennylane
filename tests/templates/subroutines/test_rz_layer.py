@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for the RZLayer template."""
 
+from collections import Counter
+
 import numpy as np
 import phase_gradient_helpers
 import pytest
@@ -235,6 +237,26 @@ class TestDecomposition:
         assert names.count("PhaseShift") == num_angles * num_rotations
         assert names.count("GlobalPhase") == num_angles
         assert set(decomposed.wires) == set(op.wires)
+
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize("num_angles, block_size, num_ands", [(1, 3, 1), (2, 4, 1), (1, 6, 4)])
+    def test_hwp_synthesis_qjit(self, num_angles, block_size, num_ands, seed):
+        """Test that the Hamming-weight phasing rule compiles with program capture and emits the
+        same operators as without it. The RZLayer provides all work wires the rule needs, as
+        Catalyst does not support the dynamic allocation of missing ones."""
+        pytest.importorskip("catalyst")
+        op = _random_rz_layer(num_angles, block_size, num_ands, seed)
+        wires, work_wires = list(op.arguments["wires"]), list(op.arguments["work_wires"])
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("null.qubit", wires=len(op.wires)))
+        def circuit(angles):
+            _rzlayer_hwp_synthesis(angles, wires, work_wires)
+            return qp.expval(qp.Z(0))
+
+        tape = qp.testing.decomp_rule_to_tape(op, _rzlayer_hwp_synthesis)
+        expected = Counter(o.name for o in phase_gradient_helpers.leaf_ops(tape.operations))
+        assert qp.analyze(circuit, level=0)(op.angles).resources.counts == expected
 
     @pytest.mark.parametrize("num_angles", [1, 3])
     @pytest.mark.parametrize(
