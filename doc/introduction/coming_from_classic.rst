@@ -61,10 +61,10 @@ Differences at a glance
         ``compute_decomposition``.
       - Use :func:`~pennylane.subcircuit`, or subclass
         :class:`~pennylane.core.operator.Operator2`, define many decomposition
-        rules via :func:`~.add_decomps`. See :ref:`classic_custom_operators`.
+        rules via :func:`~.add_decomps`.
     * - Supported devices
-      - Any PennyLane device, including Python devices such as
-        ``default.qubit``, plugins such as PennyLane-Qiskit, and more.
+      - Python devices such as ``default.qubit``, plugins such as
+        PennyLane-Qiskit, and more.
       - Only :doc:`devices that Catalyst supports <catalyst:dev/devices>`, such
         as ``lightning.qubit``, ``lightning.kokkos`` and ``lightning.gpu``.
         Devices must be given ``wires``. New plugin devices must follow
@@ -83,11 +83,8 @@ Differences at a glance
         supported on the quantum parts of the program, and optimization *must*
         occur via `Optax <https://optax.readthedocs.io>`__.
 
-Migrating workflows
--------------------
-
-Simple circuits
-^^^^^^^^^^^^^^^
+Defining circuits
+-----------------
 
 Here is a typical PennyLane Classic circuit:
 
@@ -153,8 +150,8 @@ The changes are:
 #. Use ``jax.numpy`` or regular NumPy for arrays (for more information on which
    data type to use and when, see :doc:`qjit`).
 
-Gradients
-^^^^^^^^^
+Taking gradients
+----------------
 
 Here is a simple PennyLane Classic circuit that we take the gradient of:
 
@@ -210,8 +207,8 @@ Alternatively, JAX differentiation methods can be called *outside* of ``qjit``.
   >>> jax.grad(circuit)(angles)
   [-1.98669331e-01  6.21609968e-01  1.16928756e-16]
 
-Optimization loops
-^^^^^^^^^^^^^^^^^^
+Optimizing circuits
+-------------------
 
 Here is a simple circuit that is optimized with ``qp.AdamOptimizer`` from
 PennyLane Classic:
@@ -278,20 +275,81 @@ performant if the entire optimization loop is placed *within* ``qjit``.
 For more information on optimization with Optax, check out our demo titled
 :doc:`demo:demos/tutorial_How_to_optimize_QML_model_using_JAX_catalyst_and_Optax`.
 
-Transforms
-^^^^^^^^^^
+Transforms and compilation passes
+---------------------------------
 
-Built-in compilation passes, such as :func:`~pennylane.decompose`,
-:func:`~pennylane.transforms.cancel_inverses` and
-:func:`~pennylane.transforms.merge_rotations`, work in PennyLane2. A transform
-that you wrote yourself with :func:`~pennylane.transform` acts on tapes, so it
-can't be applied to a compiled program: ``qjit`` raises an error saying the
-transform doesn't have a ``pass_name``. Check whether a built-in pass does what
-you need (see :doc:`compiling_circuits`). If not, please
-`tell us <https://discuss.pennylane.ai>`__ what your transform does.
+A complete list of supported transforms in PennyLane2 can be found in
+:doc:`compiling_circuits`. The following transforms from PennyLane Classic are
+*not* compatible with PennyLane2, including custom transforms implemented with
+``pennylane.transform``.
+
+.. details::
+    :title: PennyLane Classic transforms and compilation passes not compatible with PennyLane2
+
+    .. hlist::
+        :columns: 3
+
+        * `add_noise <https://docs.pennylane.ai/en/stable/code/api/pennylane.add_noise.html>`__
+        * `adjoint_metric_tensor <https://docs.pennylane.ai/en/stable/code/api/pennylane.adjoint_metric_tensor.html>`__
+        * `apply_controlled_Q <https://docs.pennylane.ai/en/stable/code/api/pennylane.apply_controlled_Q.html>`__
+        * `batch_input <https://docs.pennylane.ai/en/stable/code/api/pennylane.batch_input.html>`__
+        * `batch_params <https://docs.pennylane.ai/en/stable/code/api/pennylane.batch_params.html>`__
+        * `broadcast_expand <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.broadcast_expand.html>`__
+        * `circuit_spectrum <https://docs.pennylane.ai/en/stable/code/api/pennylane.fourier.circuit_spectrum.html>`__
+        * `clifford_t_decomposition <https://docs.pennylane.ai/en/stable/code/api/pennylane.clifford_t_decomposition.html>`__
+        * `commutation_dag <https://docs.pennylane.ai/en/stable/code/api/pennylane.commutation_dag.html>`__
+        * `commute_controlled <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.commute_controlled.html>`__
+        * `compile <https://docs.pennylane.ai/en/stable/code/api/pennylane.compile.html>`__
+        * `convert_to_mbqc_formalism <https://docs.pennylane.ai/en/stable/code/api/pennylane.ftqc.convert_to_mbqc_formalism.html>`__
+        * `convert_to_mbqc_gateset <https://docs.pennylane.ai/en/stable/code/api/pennylane.ftqc.convert_to_mbqc_gateset.html>`__
+        * `convert_to_numpy_parameters <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.convert_to_numpy_parameters.html>`__
+        * `cut_circuit <https://docs.pennylane.ai/en/stable/code/api/pennylane.cut_circuit.html>`__
+        * `cut_circuit_mc <https://docs.pennylane.ai/en/stable/code/api/pennylane.cut_circuit_mc.html>`__
+        * `decomp_inspector <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.decomp_inspector.html>`__
+        * `defer_measurements <https://docs.pennylane.ai/en/stable/code/api/pennylane.defer_measurements.html>`__
+        * `diagonalize_mcms <https://docs.pennylane.ai/en/stable/code/api/pennylane.ftqc.diagonalize_mcms.html>`__
+        * `diagonalize_measurements <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.diagonalize_measurements.html>`__
+        * `finite_diff <https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.finite_diff.html>`__
+        * `fold_global <https://docs.pennylane.ai/en/stable/code/api/pennylane.noise.fold_global.html>`__
+        * `hadamard_grad <https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.hadamard_grad.html>`__
+        * `insert <https://docs.pennylane.ai/en/stable/code/api/pennylane.noise.insert.html>`__
+        * `map_wires <https://docs.pennylane.ai/en/stable/code/api/pennylane.map_wires.html>`__
+        * `match_controlled_iX_gate <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.match_controlled_iX_gate.html>`__
+        * `match_relative_phase_toffoli <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.match_relative_phase_toffoli.html>`__
+        * `merge_amplitude_embedding <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.merge_amplitude_embedding.html>`__
+        * `metric_tensor <https://docs.pennylane.ai/en/stable/code/api/pennylane.metric_tensor.html>`__
+        * `mitigate_with_zne <https://docs.pennylane.ai/en/stable/code/api/pennylane.noise.mitigate_with_zne.html>`__
+        * `optimize_t_count <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.zx.optimize_t_count.html>`__
+        * `param_shift <https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.param_shift.html>`__
+        * `param_shift_cv <https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.param_shift_cv.html>`__
+        * `param_shift_hessian <https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.param_shift_hessian.html>`__
+        * `parity_matrix <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.parity_matrix.html>`__
+        * `pattern_matching_optimization <https://docs.pennylane.ai/en/stable/code/api/pennylane.pattern_matching_optimization.html>`__
+        * `phase_polynomial <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.phase_polynomial.html>`__
+        * `pulse_odegen <https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.pulse_odegen.html>`__
+        * `push_hadamards <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.zx.push_hadamards.html>`__
+        * `quantum_fisher <https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.quantum_fisher.html>`__
+        * `quantum_monte_carlo <https://docs.pennylane.ai/en/stable/code/api/pennylane.quantum_monte_carlo.html>`__
+        * `reduce_non_clifford <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.zx.reduce_non_clifford.html>`__
+        * `remove_barrier <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.remove_barrier.html>`__
+        * `resolve_dynamic_wires <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.resolve_dynamic_wires.html>`__
+        * `rowcol <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.rowcol.html>`__
+        * `rz_phase_gradient <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.rz_phase_gradient.html>`__
+        * `shadow_state <https://docs.pennylane.ai/en/stable/code/api/pennylane.shadows.shadow_state.html>`__
+        * `sign_expand <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.sign_expand.html>`__
+        * `single_qubit_fusion <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.single_qubit_fusion.html>`__
+        * `snapshots <https://docs.pennylane.ai/en/stable/code/api/pennylane.snapshots.html>`__
+        * `split_non_commuting <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.split_non_commuting.html>`__
+        * `spsa_grad <https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.spsa_grad.html>`__
+        * `stoch_pulse_grad <https://docs.pennylane.ai/en/stable/code/api/pennylane.gradients.stoch_pulse_grad.html>`__
+        * `to_zx <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.to_zx.html>`__
+        * `todd <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.zx.todd.html>`__
+        * `transpile <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.transpile.html>`__
+        * `undo_swaps <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.undo_swaps.html>`__
+        * `unitary_to_rot <https://docs.pennylane.ai/en/stable/code/api/pennylane.transforms.unitary_to_rot.html>`__
 
 Resource profiling
-^^^^^^^^^^^^^^^^^^
+------------------
 
 TOOD
 
@@ -301,275 +359,65 @@ Creating devices
 ----------------
 
 Devices from plugins built on the PennyLane Classic device API, such as
-third-party hardware and simulator plugins, don't work with PennyLane2 as they
-are. If you use one, keep using PennyLane Classic
-(``pip install pennylane==0.45.1``) until the plugin supports PennyLane2. If you
-develop one, see :doc:`/development/plugins` to make it work with PennyLane2.
+third-party hardware and simulator plugins, are not supported with PennyLane2.
+If you intend on developing one or migrating an existing device to be compatible
+with PennyLane2, see :doc:`/development/plugins`.
 
 .. _classic_custom_operators:
 
 Migrating custom operators
 --------------------------
 
-In PennyLane Classic, you define a custom operator by subclassing
-:class:`~pennylane.core.operator.Operation` and overriding methods such as
-``compute_decomposition``. These operators can't be compiled by PennyLane2. In
-PennyLane2, operators are :class:`~pennylane.core.operator.Operator2` instances,
-which describe their arguments in a way the compiler understands.
+In PennyLane Classic, a custom operator is made by subclassing
+``pennylane.core.operator.Operation`` and overriding methods such as
+``compute_decomposition``. These operators are not compatible with PennyLane2.
+In PennyLane2, operators are implemented in a way the ``qjit`` compiler
+understands.
 
-The quickest way to migrate a custom operator is :func:`~pennylane.subcircuit`.
-It turns a quantum function into an operator, and registers the function body
-as the operator's decomposition.
+For more information on making an operator compatible with PennyLane2, consult
+:doc:`/development/adding_operators`.
 
-Take this PennyLane Classic operator, which flips one wire and rotates
-another:
+Module removals
+---------------
 
-.. code-block:: python
-
-    import pennylane as qp
-
-    class FlipAndRotate(qp.operation.Operation):
-        grad_method = "A"
-
-        def __init__(self, angle, wire_rot, wire_flip=None, do_flip=False, id=None):
-            self._hyperparameters = {"do_flip": do_flip}
-            all_wires = qp.wires.Wires(wire_rot) + qp.wires.Wires(wire_flip)
-            super().__init__(angle, wires=all_wires, id=id)
-
-        @property
-        def num_params(self):
-            return 1
-
-        @staticmethod
-        def compute_decomposition(angle, wires, do_flip):
-            op_list = []
-            if do_flip:
-                op_list.append(qp.X(wires[1]))
-            op_list.append(qp.RX(angle, wires=wires[0]))
-            return op_list
-
-        def adjoint(self):
-            return FlipAndRotate(
-                -self.parameters[0], self.wires[0], self.wires[1],
-                do_flip=self.hyperparameters["do_flip"],
-            )
-
-        @classmethod
-        def _unflatten(cls, data, metadata):
-            wires = metadata[0]
-            hyperparams = dict(metadata[1])
-            return cls(data[0], wire_rot=wires[0], wire_flip=wires[1], do_flip=hyperparams["do_flip"])
-
-In PennyLane2, the same operator is a decorated quantum function:
-
-.. code-block:: python
-
-    import pennylane as qp
-
-    def flip_and_rotate_resources(angle, do_flip, wires):
-        if do_flip:
-            return {qp.X: 1, qp.RX: 1}
-        return {qp.RX: 1}
-
-    @qp.subcircuit(
-        dynamic_argnames=("angle",),
-        compilable_argnames=("do_flip",),
-        wire_argnames=("wires",),
-    )
-    @qp.register_resources(flip_and_rotate_resources)
-    def FlipAndRotate(angle, do_flip, wires):
-        if do_flip:
-            qp.X(wires[1])
-        qp.RX(angle, wires=wires[0])
-
->>> FlipAndRotate(0.3, True, wires=[0, 1])
-FlipAndRotate(angle=0.3, do_flip=True, wires=[0, 1])
-
-To use it in a compiled circuit, decompose it into gates the device supports
-with :func:`~pennylane.decompose`:
-
-.. code-block:: python
-
-    dev = qp.device("lightning.qubit", wires=2)
-
-    @qp.qjit
-    @qp.decompose(gate_set={"RX", "PauliX"})
-    @qp.qnode(dev)
-    def circuit(angle):
-        FlipAndRotate(angle, True, wires=[0, 1])
-        return qp.expval(qp.Z(0))
-
-Each part of the Classic operator maps to PennyLane2 as follows:
-
-.. list-table::
-    :header-rows: 1
-    :widths: 40 60
-
-    * - PennyLane Classic
-      - PennyLane2
-    * - Trainable parameters passed positionally, and ``num_params``
-      - List the arguments in ``dynamic_argnames``.
-    * - Wires passed with ``wires=``, combined in ``__init__``
-      - List each wire argument in ``wire_argnames``. The operator's wires
-        are collected from them in order.
-    * - ``_hyperparameters``
-      - List the arguments in ``compilable_argnames`` if the compiler should
-        see their values, or in ``static_argnames`` if it shouldn't. Pass them
-        as Python values, not arrays or traced values.
-    * - ``compute_decomposition``
-      - The body of the quantum function. Its resources, the gates it uses,
-        are declared with :func:`~pennylane.register_resources`.
-    * - ``_flatten`` and ``_unflatten``
-      - Not needed. The argument categories tell PennyLane2 how to rebuild the
-        operator.
-    * - ``grad_method``
-      - Not needed. Gradients are computed through the decomposition.
-    * - ``id``
-      - Removed. Operators no longer accept ``id``.
-    * - Validation in ``__init__``
-      - Subclass :class:`~pennylane.core.operator.Operator2` (below).
-    * - :func:`qp.ops.functions.assert_valid <pennylane.testing.assert_valid>`
-      - :func:`qp.testing.assert_valid <pennylane.testing.assert_valid>`.
-
-Every argument of the operator must be in exactly one of the argument
-categories. They're described in
-:ref:`Operator argument types <operator_argument_types>`.
-
-If your operator needs more than a decomposition, such as input validation, a
-matrix (``compute_matrix``) or its own ``adjoint`` or ``pow`` method, subclass
-:class:`~pennylane.core.operator.Operator2` instead, and add decompositions with
-:func:`~pennylane.add_decomps`. :doc:`/development/adding_operators` walks
-through both approaches, including operators with mid-circuit measurements and
-conditional branches.
-
-Notable breaking changes
-------------------------
-
-Removed modules
-^^^^^^^^^^^^^^^
-
-The following features of PennyLane Classic are not available in PennyLane2.
+The following modules of PennyLane Classic are not supported in PennyLane2.
 
 .. list-table::
     :header-rows: 1
     :widths: 35 65
+    :class: comparison-table
 
     * - Removed
       - What to use instead
     * - ``qp.qnn`` module, including ``TorchLayer``
       - ``qp.qnn.iqp_expval`` is now :func:`qp.math.iqp_expval
-        <pennylane.math.iqp_expval>`.
+        <pennylane.math.iqp_expval>`
+    * - TensorFlow or PyTorch interface
+      - JAX
+    * - ``qp.io`` module, including conversions to Qiskit, OpenQASM, Qualtran,
+        and more
+      - None
     * - ``qp.qaoa`` module: mixer and cost Hamiltonians, ``cost_layer``,
         ``mixer_layer`` and the ``cycle`` helpers
-      - Build the Hamiltonians and layers yourself.
+      - Build the Hamiltonians and layers yourself
         :class:`~pennylane.QAOAEmbedding` is unaffected.
     * - ``qp.pulse`` module, including ``ParametrizedHamiltonian``,
         ``ParametrizedEvolution``, ``stoch_pulse_grad`` and ``pulse_odegen``
-      - None.
+      - None
     * - ``qp.fourier`` module
-      - ``qp.fourier.reconstruct`` is now ``qp.optimize.reconstruct``.
+      - ``qp.fourier.reconstruct`` is now ``qp.optimize.reconstruct``
     * - ``qp.qcut`` module, including ``cut_circuit``, ``cut_circuit_mc`` and
         ``WireCut``
-      - None.
+      - None
     * - Continuous-variable (CV) operators, observables, templates and
         devices, including ``default.gaussian`` and ``param_shift_cv``
-      - None.
+      - None
     * - Qutrit and qudit operators and devices
-      - None. Qudit functionality remains in ``pennylane.labs``.
-    * - TensorFlow interface
-      - JAX.
-    * - Compiling with CUDA Quantum through ``qjit``
-      - None.
-    * - ``qp.Configuration``, and passing ``config`` to
-        :func:`~pennylane.device`
-      - None.
+      - None
     * - ``qp.resource.Resources``, ``ResourceOperator``, ``ErrorOperator`` and
         the ``qp.resource.error`` module
       - :func:`~pennylane.estimate`, :func:`~pennylane.analyze` and
-        :func:`~pennylane.track`. See :doc:`resource_profiling`.
-    * - Resource information of tapes
-      - :func:`~pennylane.analyze` on a ``qjit``-compiled QNode.
-    * - Plxpr transforms, and running plxpr without ``qjit``
-      - ``qp.qjit``.
-    * - ``qp.decomposition.reconstruct``
-      - None.
-    * - Python 3.11
-      - Python 3.12 or later.
-
-APIs that changed
-^^^^^^^^^^^^^^^^^
-
-If your code uses any of the following, update it as shown.
-
-.. list-table::
-    :header-rows: 1
-    :widths: 45 55
-
-    * - PennyLane Classic
-      - PennyLane2
-    * - ``circuit(x, shots=100)``
-      - ``qp.set_shots(circuit, shots=100)(x)``, or ``shots=`` in
-        :func:`~pennylane.qnode`.
-    * - ``op.data = new_data``
-      - ``qp.ops.functions.bind_new_parameters(op, new_data)``, which returns
-        a new operator.
-    * - ``id=`` on operators and measurements
-      - Removed. On ``MidMeasure``, use ``meas_uid``.
-    * - A ``generator`` property on a custom operator
-      - A ``generator()`` method.
-    * - ``Operator._queue_category = None``
-      - Override ``Operator.queue``.
-    * - ``qnode.transform_program`` and ``qp.workflow.get_transform_program``
-      - ``qnode.compile_pipeline`` and
-        :func:`qp.workflow.get_compile_pipeline
-        <pennylane.workflow.get_compile_pipeline>`.
-    * - ``BoundTransform.transform``
-      - ``BoundTransform.tape_transform``.
-    * - ``QuantumScript.expand``, ``qp.tape.expand_tape`` and
-        ``qp.transforms.create_expand_fn``
-      - :func:`~pennylane.decompose`.
-    * - :func:`~pennylane.decompose` on tapes
-      - :func:`~pennylane.decompose` is a compilation pass that runs under
-        ``qjit``.
-    * - ``qp.QuantumPhaseEstimation(matrix, target_wires=..., estimation_wires=...)``
-      - ``qp.QuantumPhaseEstimation(qp.QubitUnitary(matrix, wires=...),
-        estimation_wires=...)``
-    * - ``data=`` in :class:`~pennylane.QROM`, :class:`~pennylane.BBQRAM`,
-        :class:`~pennylane.HybridQRAM` and :class:`~pennylane.SelectOnlyQRAM`
-      - ``bitstrings=``
-    * - ``qp.IQP(..., num_wires=n)``
-      - ``qp.IQP(..., wires=range(n))``
-    * - ``pattern=`` in :class:`~pennylane.IQPEmbedding`, as pairs of wire
-        labels
-      - Pairs of indices into ``wires``. For ``wires=["z", "a", "k"]``,
-        ``[["z", "k"]]`` becomes ``[[0, 2]]``.
-    * - An integer as the state in :class:`~pennylane.BasisState`
-      - A binary array, for example from ``qp.math.int_to_binary``.
-    * - ``wires=`` in :class:`~pennylane.GlobalPhase`
-      - Removed.
-    * - ``qp.ctrl(qp.GlobalPhase(phi), control=...)``, as a ``Controlled``
-        operator
-      - Returns a :class:`~pennylane.PhaseShift` or a controlled
-        ``PhaseShift`` when all control values are ``1``.
-    * - ``return_global_phase=`` in ``qp.math`` decomposition helpers such as
-        ``zyz_rotation_angles``
-      - Removed. The global phase is always returned as the last value.
-    * - ``aux_wire=None`` in ``qp.gradients.hadamard_grad`` with
-        ``mode="reversed"`` or ``"standard"``
-      - Pass an ``aux_wire``.
-    * - ``qp.math.is_abstract``
-      - ``qp.math.is_tracer``
-    * - ``qp.ops.functions.assert_valid``
-      - :func:`qp.testing.assert_valid <pennylane.testing.assert_valid>`
-    * - ``qp.tape.plxpr_to_tape``
-      - ``qp.testing.plxpr_to_tape``
-    * - ``qp.queuing.process_queue``
-      - ``from pennylane.tape.qscript import process_queue``
-    * - ``qp.Backline.backline``
-      - ``qp.Backline.placement``
-
-PennyLane2 also requires JAX 0.7.1, and ZX transforms require
-``pyzx>=0.10``.
+        :func:`~pennylane.track`. See :doc:`resource_profiling`
 
 .. _unsupported_classic_subroutines:
 
