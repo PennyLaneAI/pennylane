@@ -1480,8 +1480,8 @@ class TestDunderMethods:
         op = Op(wires=0)
         assert repr(op) == "Op(0)"
 
-        op = Op(wires="a")
-        assert repr(op) == "Op('a')"
+        op = Op(wires=9)
+        assert repr(op) == "Op(9)"
 
     @pytest.mark.parametrize("num_wires", [1, 2])
     def test_repr_without_dynamic_args_abstract_wires(self, num_wires):
@@ -1827,26 +1827,26 @@ class TestGeneralMethods:
         """Test that ``map_wires`` maps the wires of the operator according
         to the wire map."""
         op = DynOp(0.5, wires=0)
-        new_op = op.map_wires({0: "a"})
+        new_op = op.map_wires({0: 9})
 
         # Check that the original op is unchanged
         assert op.wires == Wires([0])
         assert op.arguments["wires"] == Wires([0])
         # Check new op
-        assert new_op == DynOp(0.5, wires="a")
-        assert new_op.wires == Wires(["a"])
-        assert new_op.arguments["wires"] == Wires(["a"])
+        assert new_op == DynOp(0.5, wires=9)
+        assert new_op.wires == Wires([9])
+        assert new_op.arguments["wires"] == Wires([9])
 
     def test_map_wires_unmapped_labels_preserved(self):
         """Test that wire labels missing from the wire map are kept as-is."""
         op = DynOp(0.5, wires=[0, 1, 2])
-        new_op = op.map_wires({0: "a", 2: "c"})
+        new_op = op.map_wires({0: 9, 2: 11})
 
         assert op.wires == Wires([0, 1, 2])
         assert op.arguments["wires"] == Wires([0, 1, 2])
-        assert new_op == DynOp(0.5, wires=["a", 1, "c"])
-        assert new_op.wires == Wires(["a", 1, "c"])
-        assert new_op.arguments["wires"] == Wires(["a", 1, "c"])
+        assert new_op == DynOp(0.5, wires=[9, 1, 11])
+        assert new_op.wires == Wires([9, 1, 11])
+        assert new_op.arguments["wires"] == Wires([9, 1, 11])
 
     def test_map_wires_multiple_wire_args(self):
         """Test that ``map_wires`` maps wires across multiple wire arguments."""
@@ -1858,11 +1858,11 @@ class TestGeneralMethods:
                 super().__init__(Wires(wires), Wires(ctrl_wires))
 
         op = TwoWireOp(wires=[0, 1], ctrl_wires=[2])
-        new_op = op.map_wires({0: "a", 1: "b", 2: "c"})
+        new_op = op.map_wires({0: 9, 1: 10, 2: 11})
 
         assert op.wires == Wires([0, 1, 2])
-        assert new_op == TwoWireOp(wires=["a", "b"], ctrl_wires=["c"])
-        assert new_op.wires == Wires(["a", "b", "c"])
+        assert new_op == TwoWireOp(wires=[9, 10], ctrl_wires=[11])
+        assert new_op.wires == Wires([9, 10, 11])
 
     def test_map_wires_pytree_hybrid_wires(self):
         """Test that ``map_wires`` correctly maps pytree-structured wires inside a hybrid arg."""
@@ -1876,22 +1876,22 @@ class TestGeneralMethods:
                 super().__init__(wires=wires)
 
         op = PytreeWiresOp(wires=[[0], [1, 2]])
-        new_op = op.map_wires({0: "a", 1: "b"})
+        new_op = op.map_wires({0: 9, 1: 10})
 
         assert op.wires == Wires([0, 1, 2])
-        assert new_op == PytreeWiresOp(wires=[["a"], ["b", 2]])
-        assert new_op.wires == Wires(["a", "b", 2])
+        assert new_op == PytreeWiresOp(wires=[[9], [10, 2]])
+        assert new_op.wires == Wires([9, 10, 2])
 
     def test_map_wires_op_argument(self):
         """Test that ``map_wires`` correctly maps hybrid arguments with operator leaves."""
         op = FullOp(0.5, static="static", hybrid=[DynOp(1.5, wires=[2, 3, 4])], wires=[0, 1])
-        new_op = op.map_wires({0: "a", 2: "b", 3: "c"})
+        new_op = op.map_wires({0: 9, 2: 10, 3: 11})
 
         assert op.wires == Wires([0, 1, 2, 3, 4])
         assert new_op == FullOp(
-            0.5, static="static", hybrid=[DynOp(1.5, wires=["b", "c", 4])], wires=["a", 1]
+            0.5, static="static", hybrid=[DynOp(1.5, wires=[10, 11, 4])], wires=[9, 1]
         )
-        assert new_op.wires == Wires(["a", 1, "b", "c", 4])
+        assert new_op.wires == Wires([9, 1, 10, 11, 4])
 
     def test_map_wires_pauli_rep(self):
         """Test that ``Operator2.map_wires`` maps the ``pauli_rep`` correctly
@@ -1907,8 +1907,8 @@ class TestGeneralMethods:
                 )
 
         op = PauliRepOp(wires=[0, 1])
-        new_op = op.map_wires({0: "a", 1: "b"})
-        assert new_op.pauli_rep == PauliSentence({PauliWord({"a": "X", "b": "Y"}): 1.0})
+        new_op = op.map_wires({0: 9, 1: 10})
+        assert new_op.pauli_rep == PauliSentence({PauliWord({9: "X", 10: "Y"}): 1.0})
 
     def test_simplify_default(self):
         """Test that ``simplify`` returns the operator itself by default."""
