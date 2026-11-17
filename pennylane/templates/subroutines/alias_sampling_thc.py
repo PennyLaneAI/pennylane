@@ -469,7 +469,7 @@ class AliasSamplingTHC(Operator2):
                 :class:`~.Hadamard` | :math:`\aleph + 1` | 2
                 :class:`~.LeftQuantumComparator` | :math:`1` | 1
                 :class:`Adjoint(LeftQuantumComparator) <.LeftQuantumComparator>` | :math:`1` | 1
-                :class:`~.CSWAP` | :math:`3n + 2` | 5
+                :class:`~.SWAP` with 1 control | :math:`3n + 2` | 5
                 :class:`~.TemporaryAND` | :math:`1` | 1
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1` | 1
     """
