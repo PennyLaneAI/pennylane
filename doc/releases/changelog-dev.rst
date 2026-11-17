@@ -1071,10 +1071,13 @@ Improvements 🛠
 
 * The Select-SWAP decomposition previously attributed to :class:`~.QROM`
   (``qp.list_decomps(qp.QROM)["_qrom_decomposition"]``) is now attributed to :class:`~.QROMLoad`
-  (``qp.list_decomps(qp.QROMLoad)["_select_swap"]``). Additionally, this decomposition rule no
-  longer uses :class:`~.Select`, but instead expresses the Select block as a :class:`~.QROM` with
-  fewer controls and more target qubits. This allows for scalable compilation of this decomposition
-  rule.
+  (``qp.list_decomps(qp.QROMLoad)["_select_swap"]``). Additionally, this decomposition no longer
+  has a ``clean`` parameter that allows to leave behind a garbage state. While this parameter 
+  allowed to save resources, it could cause bugs in the produced circuits via mismatching
+  decompositions in the graph decomposition system.
+  Finally, this decomposition rule no longer uses :class:`~.Select`, but instead expresses the 
+  Select block as a :class:`~.QROM` with fewer controls and more target qubits. This allows for 
+  scalable compilation of this decomposition rule.
   `(#10207) <https://github.com/PennyLaneAI/pennylane/pull/10207>`__
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
 
