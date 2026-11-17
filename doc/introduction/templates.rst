@@ -417,6 +417,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/qrom/qrom_load_thumbnail.png
 
 .. gallery-item::
+    :description: :doc:`SelectSwap <../code/api/pennylane.SelectSwap>`
+    :figure: _static/templates/qrom/select_swap_thumbnail.png
+
+.. gallery-item::
     :description: :doc:`Bucket Brigade QRAM <../code/api/pennylane.BBQRAM>`
     :figure: _static/templates/qram/bbqram_thumbnail.png
 

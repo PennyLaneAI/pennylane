@@ -353,9 +353,9 @@ class TestHelperFunctions:
         ],
     )
     @pytest.mark.parametrize("adjoint", [False, True])
-    @pytest.mark.parametrize("op_class", [qp.QROM, qp.QROMLoad])
+    @pytest.mark.parametrize("op_class", [qp.QROM, qp.QROMLoad, qp.SelectSwap])
     def test_add_qrom(self, all_wires, expected, op_class, adjoint):
-        """Test adding a QROM or QROMLoad, or their adjoints, to array of strings"""
+        """Test adding a QROM, QROMLoad or SelectSwap, or their adjoints, to array of strings"""
         num_wires = sum(len(w) for w in all_wires)
         op = op_class(
             np.ones((2 ** len(all_wires[0]), len(all_wires[1])), dtype=np.int64), *all_wires
