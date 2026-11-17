@@ -2144,6 +2144,7 @@ class CPhaseShift00(Operator2):
         return super().label(decimals=decimals, base_label="Rϕ(00)", cache=cache)
 
     @staticmethod
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -2186,6 +2187,7 @@ class CPhaseShift00(Operator2):
         return math.diag([exp_part, 1, 1, 1])
 
     @staticmethod
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_eigvals(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -2316,6 +2318,7 @@ class CPhaseShift01(Operator2):
         return super().label(decimals=decimals, base_label="Rϕ(01)", cache=cache)
 
     @staticmethod
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -2358,6 +2361,7 @@ class CPhaseShift01(Operator2):
         return math.diag([1, exp_part, 1, 1])
 
     @staticmethod
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_eigvals(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -2485,6 +2489,7 @@ class CPhaseShift10(Operator2):
         return super().label(decimals=decimals, base_label="Rϕ(10)", cache=cache)
 
     @staticmethod
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -2527,6 +2532,7 @@ class CPhaseShift10(Operator2):
         return math.diag([1, 1, exp_part, 1])
 
     @staticmethod
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_eigvals(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
