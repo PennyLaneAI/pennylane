@@ -21,7 +21,6 @@ import jax
 import jax.numpy as jnp
 import numpy
 import pytest
-import torch
 
 import pennylane as qp
 from pennylane import numpy as np
@@ -33,8 +32,10 @@ from pennylane.gradients.parameter_shift_hessian import (
 )
 
 
+@pytest.mark.torch
 def test_preprocessing_expansion():
     """Test that the parameter-shift Hessian correctly expands templates into supported gates."""
+    import torch
 
     dev = qp.device("default.qubit")
 
@@ -1662,8 +1663,11 @@ class TestParamShiftHessianWithKwargs:
         assert np.allclose(expected, hessian)
 
     @pytest.mark.parametrize("argnum", [(0,), (1,), (0, 1)])
+    @pytest.mark.torch
     def test_with_1d_argnum(self, argnum):
         """Test that providing an argnum to indicate differentiable parameters works."""
+        import torch
+
         dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, max_diff=2, diff_method="parameter-shift")
@@ -1696,8 +1700,11 @@ class TestParamShiftHessianWithKwargs:
             qp.math.array([[False, False, True], [False, False, False], [True, False, False]]),
         ],
     )
+    @pytest.mark.torch
     def test_with_2d_argnum(self, argnum):
         """Test that providing an argnum to indicated differentiable parameters works."""
+        import torch
+
         dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, max_diff=2)
@@ -1717,8 +1724,11 @@ class TestParamShiftHessianWithKwargs:
         assert np.allclose(qp.math.toarray(hessian), expected)
 
     @pytest.mark.parametrize("argnum", [(0,), (1,), (0, 1)])
+    @pytest.mark.torch
     def test_with_argnum_and_shifts(self, argnum):
         """Test that providing an argnum to indicated differentiable parameters works."""
+        import torch
+
         diagonal_shifts = [(0.1,), (0.9, 1.1)]
         off_diagonal_shifts = [(0.4,), (0.3, 2.1)]
         dev = qp.device("default.qubit", wires=2)
@@ -1757,6 +1767,7 @@ class TestInterfaces:
     @pytest.mark.torch
     def test_hessian_transform_with_torch(self):
         """Test that the Hessian transform can be used with Torch (1d -> 1d)"""
+        import torch
 
         dev = qp.device("default.qubit", wires=2)
 
@@ -1781,6 +1792,7 @@ class TestInterfaces:
     def test_hessian_transform_is_differentiable_torch(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation in Torch
         (1d -> 1d)"""
+        import torch
 
         dev = qp.device("default.qubit", wires=2)
 
