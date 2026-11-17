@@ -281,7 +281,7 @@ class TestCaptureIQPE:
     def test_legacy_op_can_be_used_as_base(self):
         """Ensure a legacy operator still works fine under capture."""
 
-        class DummyOp(qp.core.Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(qp.core.Operator):
             pass
 
         def circuit(phi):
@@ -307,7 +307,7 @@ class TestCaptureIQPE:
         specs = qp.specs(c, level="top")()
         # NOTE: PauliX comes from the aux_wire reset
         expected_operations = {
-            "C(Pow2)": num_iters,
+            "1C(Pow2)": num_iters,
             "Hadamard": 2 * num_iters,
             "MidCircuitMeasure": num_iters,
             "PhaseShift": num_iters * (num_iters - 1) // 2,
