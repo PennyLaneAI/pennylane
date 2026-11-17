@@ -41,7 +41,7 @@ from pennylane.operation import _UNSET_BATCH_SIZE
 
 ml_frameworks_list = [
     "numpy",
-    pytest.param("autograd", marks=pytest.mark.autograd),
+    pytest.param("autograd", marks=(pytest.mark.core, pytest.mark.autograd)),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
 ]

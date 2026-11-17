@@ -547,6 +547,7 @@ class TestMatrix:
         assert qp.math.allclose(expected, mat)
         assert qp.math.get_interface(mat) == interface
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_matrix_autograd(self):
         """Test the matrix of an Adjoint operator with an autograd parameter."""
@@ -933,23 +934,6 @@ class TestAdjointConstructorIntegration:
         expected = np.array([0, -1j])
 
         assert np.allclose(res, expected)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ("backprop", "adjoint", "parameter-shift"))
-    def test_gradient_autograd(self, diff_method):
-        """Test gradients through the adjoint transform with autograd."""
-        import autograd
-
-        @qp.qnode(qp.device("default.qubit", wires=1), diff_method=diff_method)
-        def circ(x):
-            adjoint(qp.RX)(x, wires=0)
-            return qp.expval(qp.PauliY(0))
-
-        x = autograd.numpy.array(0.234)
-        expected_res = np.sin(x)
-        expected_grad = np.cos(x)
-        assert qp.math.allclose(circ(x), expected_res)
-        assert qp.math.allclose(autograd.grad(circ)(x), expected_grad)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ("backprop", "adjoint", "parameter-shift"))

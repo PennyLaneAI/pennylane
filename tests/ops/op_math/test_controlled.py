@@ -1144,25 +1144,6 @@ class TestArithmetic:
 class TestDifferentiation:
     """Tests for differentiation"""
 
-    @pytest.mark.autograd
-    def test_autograd(self, diff_method):
-        """Test differentiation using autograd"""
-
-        dev = qp.device("default.qubit", wires=2)
-        init_state = pnp.array([1.0, -1.0], requires_grad=False) / pnp.sqrt(2)
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(b):
-            qp.StatePrep(init_state, wires=0)
-            qp.ctrl(qp.RY(b, wires=1), control=0)
-            return qp.expval(qp.PauliX(0))
-
-        b = pnp.array(0.123, requires_grad=True)
-        res = qp.grad(circuit)(b)
-        expected = pnp.sin(b / 2) / 2
-
-        assert pnp.allclose(res, expected)
-
     @pytest.mark.torch
     def test_torch(self, diff_method):
         """Test differentiation using torch"""
@@ -2106,25 +2087,6 @@ class TestTapeExpansionWithControlled:
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
 class TestCtrlTransformDifferentiation:
     """Tests for differentiation"""
-
-    @pytest.mark.autograd
-    def test_autograd(self, diff_method):
-        """Test differentiation using autograd"""
-
-        dev = qp.device("default.qubit", wires=2)
-        init_state = pnp.array([1.0, -1.0], requires_grad=False) / pnp.sqrt(2)
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(b):
-            qp.StatePrep(init_state, wires=0)
-            qp.ctrl(qp.RY, control=0)(b, wires=[1])
-            return qp.expval(qp.PauliX(0))
-
-        b = pnp.array(0.123, requires_grad=True)
-        res = qp.grad(circuit)(b)
-        expected = pnp.sin(b / 2) / 2
-
-        assert pnp.allclose(res, expected)
 
     @pytest.mark.torch
     def test_torch(self, diff_method):

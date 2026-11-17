@@ -162,6 +162,7 @@ class TestBasicCircuit:
         assert np.allclose(result[0], -np.sin(phi))
         assert np.allclose(result[1], np.cos(phi))
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_autograd_results_and_backprop(self):
         """Tests execution and gradients with autograd"""
@@ -494,6 +495,7 @@ class TestDebugger:
             debugger.snapshots["final_state"], [np.cos(phi / 2), -np.sin(phi / 2) * 1j]
         )
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_debugger_autograd(self):
         """Tests debugger with autograd"""
@@ -819,6 +821,7 @@ class TestOperatorArithmetic:
         assert qp.math.allclose(results[0], -np.sin(2 * phi) - 1)
         assert qp.math.allclose(results[1], 3 * np.cos(2 * phi))
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_autograd_op_arithmetic(self):
         """Test operator arithmetic circuit with non-integer wires works with autograd."""
@@ -989,6 +992,7 @@ class TestQInfoMeasurements:
         for val1, val2 in zip(results, self.expected_results(phi)):
             assert qp.math.allclose(val1, val2)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_qinfo_autograd_execute(self):
         """Tests autograd execution with qinfo measurements."""
@@ -1003,6 +1007,7 @@ class TestQInfoMeasurements:
         for val1, val2 in zip(results, expected):
             assert qp.math.allclose(val1, val2)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_qinfo_autograd_backprop(self):
         """Tests autograd derivatives with qinfo measurements.

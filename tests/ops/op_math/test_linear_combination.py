@@ -995,6 +995,7 @@ class TestLinearCombinationArithmeticTorch:
         assert H == (H1 @ H2)
 
 
+@pytest.mark.core
 @pytest.mark.autograd
 class TestLinearCombinationArithmeticAutograd:
     """Tests creation of LinearCombinations using arithmetic

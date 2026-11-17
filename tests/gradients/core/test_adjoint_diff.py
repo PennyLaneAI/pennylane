@@ -15,6 +15,7 @@
 Tests for the ``adjoint_jacobian`` method of the :mod:`pennylane` :class:`QubitDevice` class.
 """
 
+import numpy as onp
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
@@ -104,14 +105,14 @@ class TestAdjointJacobian:
         ):
             dev.adjoint_jacobian(tape)
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.core
+    @pytest.mark.parametrize("theta", onp.linspace(-2 * np.pi, 2 * np.pi, 7))
     @pytest.mark.parametrize("G", [qp.RX, qp.RY, qp.RZ])
     def test_pauli_rotation_gradient(self, G, theta, tol, dev):
         """Tests that the automatic gradients of Pauli rotations are correct."""
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qp.StatePrep(onp.array([1.0, -1.0]) / np.sqrt(2), wires=0)
             G(theta, wires=[0])
             qp.expval(qp.PauliZ(0))
 
@@ -122,21 +123,21 @@ class TestAdjointJacobian:
 
         # compare to finite differences
         tapes, fn = qp.gradients.finite_diff(tape)
-        numeric_val = fn(qp.execute(tapes, dev, None))
+        numeric_val = fn(qp.execute(tapes, dev, None, interface="numpy"))
 
         assert isinstance(calculated_val, np.ndarray)
         assert calculated_val.shape == ()
         assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
+    @pytest.mark.core
+    @pytest.mark.parametrize("theta", onp.linspace(-2 * np.pi, 2 * np.pi, 7))
     def test_Rot_gradient(self, theta, tol, dev):
         """Tests that the device gradient of an arbitrary Euler-angle-parametrized gate is
         correct."""
-        params = np.array([theta, theta**3, np.sqrt(2) * theta])
+        params = onp.array([theta, theta**3, np.sqrt(2) * theta])
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.StatePrep(np.array([1.0, -1.0], requires_grad=False) / np.sqrt(2), wires=0)
+            qp.StatePrep(onp.array([1.0, -1.0]) / np.sqrt(2), wires=0)
             qp.Rot(*params, wires=[0])
             qp.expval(qp.PauliZ(0))
 
@@ -147,7 +148,7 @@ class TestAdjointJacobian:
 
         # compare to finite differences
         tapes, fn = qp.gradients.finite_diff(tape)
-        numeric_val = fn(qp.execute(tapes, dev, None))
+        numeric_val = fn(qp.execute(tapes, dev, None, interface="numpy"))
 
         assert isinstance(calculated_val, tuple)
         assert len(calculated_val) == 3
@@ -220,7 +221,7 @@ class TestAdjointJacobian:
 
     ops = {qp.RX, qp.RY, qp.RZ, qp.PhaseShift, qp.CRX, qp.CRY, qp.CRZ, qp.Rot}
 
-    @pytest.mark.autograd
+    @pytest.mark.core
     @pytest.mark.parametrize("obs", [qp.PauliY])
     @pytest.mark.parametrize(
         "op", [qp.RX(0.4, wires=0), qp.CRZ(1.0, wires=[0, 1]), qp.Rot(0.2, -0.1, 0.2, wires=0)]
@@ -248,7 +249,7 @@ class TestAdjointJacobian:
         tape.trainable_params = set(range(1, 1 + op.num_params))
 
         tapes, fn = qp.gradients.finite_diff(tape)
-        grad_F = fn(qp.execute(tapes, dev, None))
+        grad_F = fn(qp.execute(tapes, dev, None, interface="numpy"))
         grad_D = dev.adjoint_jacobian(tape)
 
         assert isinstance(grad_D, tuple)
@@ -262,7 +263,7 @@ class TestAdjointJacobian:
 
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
 
-    @pytest.mark.autograd
+    @pytest.mark.core
     def test_gradient_gate_with_multiple_parameters(self, tol, dev):
         """Tests that gates with multiple free parameters yield correct gradients."""
         x, y, z = [0.5, 0.3, -0.7]
@@ -278,7 +279,7 @@ class TestAdjointJacobian:
 
         grad_D = dev.adjoint_jacobian(tape)
         tapes, fn = qp.gradients.finite_diff(tape)
-        grad_F = fn(qp.execute(tapes, dev, None))
+        grad_F = fn(qp.execute(tapes, dev, None, interface="numpy"))
 
         # gradient has the correct shape and every element is nonzero
         assert isinstance(grad_D, tuple)

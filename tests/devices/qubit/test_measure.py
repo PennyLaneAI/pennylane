@@ -429,6 +429,7 @@ class TestSumOfTermsDifferentiability:
         sines = qp.math.sin(phase)
         return coeffs[0] * qp.math.prod(cosines) + coeffs[1] * qp.math.prod(sines)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("convert_to_hamiltonian", (True, False))
     @pytest.mark.parametrize(

@@ -80,7 +80,7 @@ class TestChannels:  # pylint: disable=too-few-public-methods
         "interface",
         [
             None,
-            pytest.param("autograd", marks=pytest.mark.autograd),
+            pytest.param("autograd", marks=(pytest.mark.core, pytest.mark.autograd)),
             pytest.param("jax", marks=pytest.mark.jax),
             pytest.param("torch", marks=pytest.mark.torch),
         ],
@@ -137,6 +137,7 @@ class TestAmplitudeDamping:
     def kraus_fn(x):
         return qp.math.stack(channel.AmplitudeDamping(x, wires=0).kraus_matrices())
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         gamma = pnp.array(0.43, requires_grad=True)
@@ -221,6 +222,7 @@ class TestGeneralizedAmplitudeDamping:
             channel.GeneralizedAmplitudeDamping(gamma, p, wires=0).kraus_matrices()
         )
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         gamma = pnp.array(0.43, requires_grad=True)
@@ -283,6 +285,7 @@ class TestPhaseDamping:
     def kraus_fn(x):
         return qp.math.stack(channel.PhaseDamping(x, wires=0).kraus_matrices())
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         gamma = pnp.array(0.43, requires_grad=True)
@@ -354,6 +357,7 @@ class TestBitFlip:
     def kraus_fn(x):
         return qp.math.stack(channel.BitFlip(x, wires=0).kraus_matrices())
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         p = pnp.array(0.43, requires_grad=True)
@@ -426,6 +430,7 @@ class TestPhaseFlip:
     def kraus_fn(x):
         return qp.math.stack(channel.PhaseFlip(x, wires=0).kraus_matrices())
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         p = pnp.array(0.43, requires_grad=True)
@@ -509,6 +514,7 @@ class TestDepolarizingChannel:
     def kraus_fn_imag(x):
         return qp.math.imag(qp.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices()))
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         p = pnp.array(0.43, requires_grad=True)
@@ -628,6 +634,7 @@ class TestResetError:
     def kraus_fn(p0, p1):
         return qp.math.stack(channel.ResetError(p0, p1, wires=0).kraus_matrices())
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         p0 = pnp.array(0.43, requires_grad=True)
@@ -781,6 +788,7 @@ class TestPauliError:
     }
 
     @pytest.mark.parametrize("ops", ["X", "XY", "ZI"])
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self, ops):
         p = pnp.array(0.43, requires_grad=True)

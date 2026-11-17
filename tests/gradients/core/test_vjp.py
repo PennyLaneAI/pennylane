@@ -374,6 +374,7 @@ def expected(params):
 class TestVJPGradients:
     """Gradient tests for the vjp function"""
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests that the output of the VJP transform

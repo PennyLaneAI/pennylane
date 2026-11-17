@@ -143,6 +143,7 @@ class TestBasicCircuit:
         assert len(result) == 3
         assert np.allclose(result, expected_measurements)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_autograd_results_and_backprop(self, wires):
         """Tests execution and gradients with autograd"""

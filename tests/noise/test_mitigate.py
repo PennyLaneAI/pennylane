@@ -591,15 +591,6 @@ class TestDifferentiableZNE:
         zne_val = exponential_extrapolate(x, y, asymptote=asymptote)
         assert qp.math.allclose(zne_val, A + asymptote, atol=1e-3)
 
-    @pytest.mark.autograd
-    def test_exponential_extrapolation_autograd(self):
-        """Test exponential extrapolation works with expvals stored as a numpy array."""
-        scale_factors = [1, 3, 5]
-        noise_scaled_expvals = np.array([0.9, 0.8, 0.7])
-        zne_val = exponential_extrapolate(scale_factors, noise_scaled_expvals)
-        assert isinstance(zne_val, np.ndarray)
-        assert zne_val.ndim == 0
-
     @pytest.mark.torch
     def test_exponential_extrapolation_torch(self):
         """Test exponential extrapolation works with expvals stored as a torch tensor."""
@@ -611,6 +602,16 @@ class TestDifferentiableZNE:
         assert torch.is_tensor(zne_val)
         assert zne_val.ndimension() == 0
 
+    @pytest.mark.core
+    @pytest.mark.autograd
+    def test_exponential_extrapolation_autograd(self):
+        """Test exponential extrapolation works with expvals stored as a numpy array."""
+        scale_factors = [1, 3, 5]
+        noise_scaled_expvals = np.array([0.9, 0.8, 0.7])
+        zne_val = exponential_extrapolate(scale_factors, noise_scaled_expvals)
+        assert isinstance(zne_val, np.ndarray)
+        assert zne_val.ndim == 0
+
     @pytest.mark.jax
     def test_exponential_extrapolation_jax(self):
         """Test exponential extrapolation works with expvals stored as a jax array."""
@@ -621,27 +622,6 @@ class TestDifferentiableZNE:
         zne_val = exponential_extrapolate(scale_factors, noise_scaled_expvals)
         assert isinstance(zne_val, jnp.ndarray)
         assert zne_val.ndim == 0
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
-    def test_diffability_autograd(self, extrapolate):
-        """Testing that the mitigated qnode can be differentiated and returns the correct gradient in autograd"""
-        qnode_noisy = qp.QNode(qfunc, dev_noisy)
-        qnode_ideal = qp.QNode(qfunc, dev_ideal)
-
-        scale_factors = [1.0, 2.0, 3.0]
-
-        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
-
-        theta = np.array([np.pi / 4, np.pi / 4], requires_grad=True)
-
-        res = mitigated_qnode(theta)
-        assert qp.math.allclose(res, out_ideal, atol=1e-2)
-        grad = qp.grad(mitigated_qnode)(theta)
-        grad_ideal = qp.grad(qnode_ideal)(theta)
-        assert qp.math.allclose(grad_ideal, grad_ideal_0)
-        assert qp.math.allclose(grad, grad_ideal, atol=1e-2)
-        qp.grad(qnode_noisy)(theta)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("interface", ["auto", "jax"])
@@ -725,28 +705,6 @@ class TestDifferentiableZNE:
         res_ideal.backward()
         grad_ideal = theta0.grad
         assert qp.math.allclose(grad_ideal, grad_ideal_0)
-        assert qp.math.allclose(grad, grad_ideal, atol=1e-2)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
-    def test_diffability_autograd_multi(self, extrapolate):
-        """Testing that the mitigated qnode can be differentiated and returns
-        the correct gradient in autograd for multiple measurements"""
-        qnode_noisy = qp.QNode(qfunc_multi, dev_noisy)
-        qnode_ideal = qp.QNode(qfunc_multi, dev_ideal)
-
-        scale_factors = [1.0, 2.0, 3.0]
-
-        mitigated_qnode = mitigate_with_zne(qnode_noisy, scale_factors, fold_global, extrapolate)
-
-        theta = np.array([np.pi / 4, np.pi / 6], requires_grad=True)
-
-        res = qp.math.stack(mitigated_qnode(theta))
-        assert qp.math.allclose(res, out_ideal_multi, atol=1e-2)
-
-        grad = qp.jacobian(lambda t: qp.math.stack(mitigated_qnode(t)))(theta)
-        grad_ideal = qp.jacobian(lambda t: qp.math.stack(qnode_ideal(t)))(theta)
-        assert qp.math.allclose(grad_ideal, grad_ideal_0_multi, atol=1e-6)
         assert qp.math.allclose(grad, grad_ideal, atol=1e-2)
 
     @pytest.mark.jax

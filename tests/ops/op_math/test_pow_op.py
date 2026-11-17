@@ -719,6 +719,7 @@ class TestMatrix:
         """Test the matrix method for different exponents and a float parameter."""
         assert self.check_matrix(2.34, z)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
     def test_matrix_against_shortcut_autograd(self, z):

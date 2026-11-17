@@ -310,12 +310,14 @@ class TestState:
         assert torch.allclose(state_expected, state_val)
         assert state_val.shape == (16,)
 
-    @pytest.mark.autograd
+    @pytest.mark.jax
     def test_jacobian_not_supported(self):
         """Test if an error is raised if the jacobian method is called via qp.grad"""
+        from jax import numpy as jnp
+
         dev = qp.device("default.qubit", wires=4)
 
-        @qp.qnode(dev, diff_method="parameter-shift")
+        @qp.qnode(dev, interface="jax", diff_method="parameter-shift")
         def func(x):
             for i in range(4):
                 qp.RX(x, wires=i)
@@ -330,7 +332,7 @@ class TestState:
                 "parameter-shift rule gradient transform is not supported"
             ),
         ):
-            d_func(pnp.array(0.1, requires_grad=True))
+            d_func(jnp.array(0.1))
 
     def test_no_state_capability(self, monkeypatch):
         """Test if an error is raised for devices that are not capable of returning the state.

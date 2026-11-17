@@ -1083,23 +1083,6 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
         assert all(new_tape.shots == tape.shots for new_tape in tapes)
 
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
-    @pytest.mark.autograd
-    def test_no_trainable_params_qnode_autograd(self, mode):
-        """Test that the correct output and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface="autograd")
-        def circuit(weights):
-            qp.RX(weights[0], wires=0)
-            qp.RY(weights[1], wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qp.gradients.hadamard_grad(circuit, mode=mode, aux_wire=2)(weights)
-
-    @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self, mode):
         """Test that the correct output and warning is generated in the absence of any trainable
@@ -1404,43 +1387,6 @@ class TestHadamardGradEdgeCases:
 class TestHadamardTestGradDiff:
     """Test that the transform is differentiable"""
 
-    @pytest.mark.autograd
-    def test_autograd(self, mode):
-        """Tests that the output of the hadamard gradient transform
-        can be differentiated using autograd, yielding second derivatives."""
-        dev = qp.device("default.qubit", wires=3)
-        params = np.array([0.543, -0.654], requires_grad=True)
-
-        def cost_fn_hadamard(x):
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(x[0], wires=[0])
-                qp.RY(x[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-            tape = qp.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = qp.gradients.hadamard_grad(tape, mode=mode, aux_wire=2)
-            jac = fn(dev.execute(tapes))
-            return qp.math.stack(jac)
-
-        def cost_fn_param_shift(x):
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(x[0], wires=[0])
-                qp.RY(x[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-            tape = qp.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = qp.gradients.param_shift(tape)
-            jac = fn(dev.execute(tapes))
-            return qp.math.stack(jac)
-
-        res_hadamard = qp.jacobian(cost_fn_hadamard)(params)
-        res_param_shift = qp.jacobian(cost_fn_param_shift)(params)
-        assert np.allclose(res_hadamard, res_param_shift)
-
     @pytest.mark.torch
     def test_torch(self, mode):
         """Tests that the output of the hadamard gradient transform
@@ -1479,6 +1425,44 @@ class TestHadamardTestGradDiff:
 
         assert np.allclose(res_hadamard[0].detach(), res_param_shift[0].detach())
         assert np.allclose(res_hadamard[1].detach(), res_param_shift[1].detach())
+
+    @pytest.mark.core
+    @pytest.mark.autograd
+    def test_autograd(self, mode):
+        """Tests that the output of the hadamard gradient transform
+        can be differentiated using autograd, yielding second derivatives."""
+        dev = qp.device("default.qubit", wires=3)
+        params = np.array([0.543, -0.654], requires_grad=True)
+
+        def cost_fn_hadamard(x):
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.RX(x[0], wires=[0])
+                qp.RY(x[1], wires=[1])
+                qp.CNOT(wires=[0, 1])
+                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
+
+            tape = qp.tape.QuantumScript.from_queue(q)
+            tape.trainable_params = {0, 1}
+            tapes, fn = qp.gradients.hadamard_grad(tape, mode=mode, aux_wire=2)
+            jac = fn(dev.execute(tapes))
+            return qp.math.stack(jac)
+
+        def cost_fn_param_shift(x):
+            with qp.queuing.AnnotatedQueue() as q:
+                qp.RX(x[0], wires=[0])
+                qp.RY(x[1], wires=[1])
+                qp.CNOT(wires=[0, 1])
+                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
+
+            tape = qp.tape.QuantumScript.from_queue(q)
+            tape.trainable_params = {0, 1}
+            tapes, fn = qp.gradients.param_shift(tape)
+            jac = fn(dev.execute(tapes))
+            return qp.math.stack(jac)
+
+        res_hadamard = qp.jacobian(cost_fn_hadamard)(params)
+        res_param_shift = qp.jacobian(cost_fn_param_shift)(params)
+        assert np.allclose(res_hadamard, res_param_shift)
 
     @pytest.mark.jax
     def test_jax(self, mode):

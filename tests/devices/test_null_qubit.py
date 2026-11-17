@@ -251,6 +251,7 @@ class TestBasicCircuit:
         assert qp.math.shape(dq_res) == qp.math.shape(result)
         assert qp.math.allequal(result, 0)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_autograd_results_and_backprop(self):
         """Tests execution and gradients with autograd"""
@@ -594,21 +595,6 @@ class TestExecutingBatches:
         results = self.f(dev, phi)
         self.assert_results(results)
 
-    @pytest.mark.autograd
-    def test_autograd(self):
-        """Test batches can be executed and have backprop derivatives in autograd."""
-        dev = NullQubit()
-
-        phi = qp.numpy.array(-0.629)
-        results = self.f(dev, phi)
-        self.assert_results(results)
-
-        g0 = qp.jacobian(lambda x: qp.numpy.array(self.f(dev, x)[0]))(phi)
-        assert np.array_equal(g0, np.zeros(2))
-
-        g1 = qp.jacobian(lambda x: qp.numpy.array(self.f(dev, x)[1]))(phi)
-        assert qp.math.allclose(g1, np.zeros(4))
-
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_jax(self, use_jit):
@@ -681,15 +667,6 @@ class TestSumOfTermsDifferentiability:
         cosines = qp.math.cos(phase)
         sines = qp.math.sin(phase)
         return 2.5 * qp.math.prod(cosines) + 6.2 * qp.math.prod(sines)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("style", ("sum", "hermitian"))
-    def test_autograd_backprop(self, style):
-        """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
-        dev = NullQubit()
-        x = qp.numpy.array(0.52)
-        assert self.f(dev, x, style=style) == 0
-        assert qp.grad(self.f)(dev, x, style=style) == 0
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))

@@ -212,6 +212,7 @@ class TestBasicCircuit:
         assert np.allclose(result[0], -np.sin(phi))
         assert np.allclose(result[1], np.cos(phi))
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_autograd_results_and_backprop(self, max_workers):
@@ -668,6 +669,7 @@ class TestExecutingBatches:
 
         self.nested_compare(results, expected)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_autograd(self, max_workers):
@@ -784,6 +786,7 @@ class TestSumOfTermsDifferentiability:
         sines = qp.math.sin(phase)
         return 2.5 * qp.math.prod(cosines) + 6.2 * qp.math.prod(sines)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_autograd_backprop(self, style):
@@ -1721,7 +1724,6 @@ def test_projector_dynamic_type(max_workers, n_wires):
     "interface",
     [
         "numpy",
-        pytest.param("autograd", marks=pytest.mark.autograd),
         pytest.param("torch", marks=pytest.mark.torch),
         pytest.param("jax", marks=pytest.mark.jax),
     ],

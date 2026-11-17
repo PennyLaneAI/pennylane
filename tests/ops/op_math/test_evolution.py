@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the ``Evolution`` operator."""
 
+import numpy as onp
 import pytest
 from scipy.linalg import expm
 
@@ -156,41 +157,42 @@ class TestEvolution:  # pylint: disable=too-many-public-methods
         qp.assert_equal(new_op.base, qp.PauliX(0))
         assert new_op.coeff == -12j
 
-    @pytest.mark.autograd
-    def test_sum_generator_default_gradient(self):
+    @pytest.mark.jax
+    def test_sum_generator_jax_gradient(self):
         """Backprop gradient of evolve over a composite (Sum) generator with
         scalar coefficients must match a dense matrix-exponential reference.
         Previously this path silently produced an incorrect matrix and gradient."""
+        from jax import numpy as jnp
 
-        t = np.array(0.123, requires_grad=True)
+        t = jnp.array(0.123)
 
         base = 0.5 * qp.X(0) + 0.7 * qp.Z(0)
         dev = qp.device("default.qubit", wires=1)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, interface="jax")
         def circuit(t):
             Evolution(base, t)
             return qp.expval(qp.Z(0))
 
         h_mat = qp.matrix(base, wire_order=[0])
         z_mat = qp.matrix(qp.Z(0), wire_order=[0])
-        psi0 = np.array([1.0, 0.0], dtype=complex)
+        psi0 = onp.array([1.0, 0.0], dtype=complex)
         res = circuit(t)
         grad_res = qp.grad(circuit)(t)
 
         def ref(tv):
             u = expm(-1j * tv * h_mat)
             psi = u @ psi0
-            return np.real(np.conj(psi) @ z_mat @ psi)
+            return onp.real(onp.conj(psi) @ z_mat @ psi)
 
         eps = 1e-6
-        ref_res = ref(t)
-        ref_grad = (ref(t + eps) - ref(t - eps)) / (2 * eps)
+        ref_res = ref(float(t))
+        ref_grad = (ref(float(t) + eps) - ref(float(t) - eps)) / (2 * eps)
 
         assert qp.math.allclose(res, ref_res)
         assert qp.math.allclose(grad_res, ref_grad, atol=1e-5)
 
-    @pytest.mark.autograd
+    @pytest.mark.jax
     def test_qaoa_evolve_matches_approx_time_evolution(self):
         """Reproduces the originally reported QAOA workflow at [sc-119491]: a multi-layer QAOA circuit
         built from ``qp.evolve`` of ``Sum`` cost/mixer Hamiltonians silently gave
@@ -200,6 +202,8 @@ class TestEvolution:  # pylint: disable=too-many-public-methods
         commute, so it is used as the reference for both value and gradient.
         More context about QAOA can be found at https://pennylane.ai/demos/tutorial_qaoa_intro
         """
+        from jax import numpy as jnp
+
         edges = [[0, 1], [1, 2], [0, 2], [2, 3]]
         wires = sorted({w for edge in edges for w in edge})
         num_wires = len(wires)
@@ -213,7 +217,7 @@ class TestEvolution:  # pylint: disable=too-many-public-methods
 
         dev = qp.device("default.qubit", wires=num_wires)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, interface="jax")
         def circuit_evolve(params):
             for w in range(num_wires):
                 qp.Hadamard(wires=w)
@@ -222,7 +226,7 @@ class TestEvolution:  # pylint: disable=too-many-public-methods
                 qp.evolve(mixer_ham, beta)
             return qp.expval(cost_ham)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, interface="jax")
         def circuit_ate(params):  # ate: ApproxTimeEvolution; happens to be exact here
             for w in range(num_wires):
                 qp.Hadamard(wires=w)
@@ -231,7 +235,7 @@ class TestEvolution:  # pylint: disable=too-many-public-methods
                 qp.ApproxTimeEvolution(mixer_ham, beta, n=1)
             return qp.expval(cost_ham)
 
-        params = np.array([[0.5, 0.5] for _ in range(4)], requires_grad=True)
+        params = jnp.array([[0.5, 0.5] for _ in range(4)])
 
         assert qp.math.allclose(circuit_evolve(params), circuit_ate(params))
         assert qp.math.allclose(qp.grad(circuit_evolve)(params), qp.grad(circuit_ate)(params))

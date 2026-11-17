@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-import pennylane.numpy as pnp
 from pennylane.gradients.fisher import _compute_cfim, _make_probs, classical_fisher, quantum_fisher
 
 
@@ -191,42 +190,6 @@ class TestIntegration:
 class TestInterfacesClassicalFisher:
     """Integration tests for the classical fisher information matrix CFIM"""
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("n_wires", np.arange(1, 5))
-    def test_cfim_allnonzero_autograd(self, n_wires):
-        """Integration test of classical_fisher() with autograd for examples where all probabilities are all nonzero"""
-
-        dev = qp.device("default.qubit", wires=n_wires)
-
-        @qp.qnode(dev)
-        def circ(params):
-            for i in range(n_wires):
-                qp.RX(params[0], wires=i)
-            for i in range(n_wires):
-                qp.RY(params[1], wires=i)
-            return qp.probs(wires=range(n_wires))
-
-        params = np.pi / 4 * pnp.ones(2, requires_grad=True)
-        cfim = classical_fisher(circ)(params)
-        assert np.allclose(cfim, (n_wires / 3.0) * np.ones((2, 2)))
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("n_wires", np.arange(2, 5))
-    def test_cfim_contains_zeros_autograd(self, n_wires):
-        """Integration test of classical_fisher() with autograd for examples that have 0s in the probabilities and non-zero gradient"""
-        dev = qp.device("default.qubit", wires=n_wires)
-
-        @qp.qnode(dev)
-        def circ(params):
-            qp.RZ(params[0], wires=0)
-            qp.RX(params[1], wires=1)
-            qp.RX(params[0], wires=1)
-            return qp.probs(wires=range(n_wires))
-
-        params = np.pi / 4 * pnp.ones(2, requires_grad=True)
-        cfim = classical_fisher(circ)(params)
-        assert np.allclose(cfim, np.ones((2, 2)))
-
     @pytest.mark.jax
     @pytest.mark.parametrize("n_wires", np.arange(1, 5))
     def test_cfim_allnonzero_jax(self, n_wires):
@@ -368,25 +331,6 @@ class TestInterfacesClassicalFisher:
 
 class TestDiffCFIM:
     """Testing differentiability of classical fisher info matrix (CFIM)"""
-
-    @pytest.mark.autograd
-    def test_diffability_autograd(self):
-        """Testing diffability with an analytic example for autograd. The CFIM of this single qubit is constant, so the gradient should be zero."""
-        dev = qp.device("default.qubit", wires=1)
-
-        @qp.qnode(dev)
-        def circ(params):
-            qp.RY(params, wires=0)
-            return qp.probs(wires=range(1))
-
-        params = pnp.array(np.pi / 4, requires_grad=True)
-
-        assert np.allclose(classical_fisher(circ)(params), 1)
-
-        result = np.zeros((1, 1, 1), dtype="float64")
-        result_calc = qp.jacobian(classical_fisher(circ))(params)
-
-        assert np.allclose(result, result_calc, atol=1e-6)
 
     @pytest.mark.jax
     def test_diffability_jax(self):

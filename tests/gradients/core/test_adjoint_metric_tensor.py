@@ -253,33 +253,6 @@ class TestAdjointMetricTensorTape:
     """
 
     num_wires = 3
-    interfaces = ["auto", "autograd"]
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_correct_output_tape_autograd(self, ansatz, params, interface):
-        """Test that the output is correct when using Autograd and
-        calling the adjoint metric tensor directly on a tape."""
-        expected = autodiff_metric_tensor(ansatz, 3)(*params)
-        dev = qp.device("default.qubit")
-
-        wires = ("a", "b", "c")
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(*params):
-            """Circuit with dummy output to create a QNode."""
-            ansatz(*params, wires)
-            return qp.expval(qp.PauliZ(wires[0]))
-
-        circuit(*params)
-
-        mt = qp.adjoint_metric_tensor(circuit)(*params)
-        assert qp.math.allclose(mt, expected)
-
-        tape = qp.workflow.construct_tape(circuit)(*params)
-        met_tens = qp.adjoint_metric_tensor(tape)
-        expected = qp.math.reshape(expected, qp.math.shape(met_tens))
-        assert qp.math.allclose(met_tens, expected)
 
     @pytest.mark.jax
     @pytest.mark.skip("JAX does not support forward pass execution of the metric tensor.")
@@ -345,29 +318,6 @@ class TestAdjointMetricTensorQNode:
     """
 
     num_wires = 3
-    interfaces = ["auto", "autograd"]
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
-    @pytest.mark.parametrize("interface", interfaces)
-    def test_correct_output_qnode_autograd(self, ansatz, params, interface):
-        """Test that the output is correct when using Autograd and
-        calling the adjoint metric tensor on a QNode."""
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
-        dev = qp.device("default.qubit", wires=self.num_wires)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(*params):
-            """Circuit with dummy output to create a QNode."""
-            ansatz(*params, dev.wires)
-            return qp.expval(qp.PauliZ(0))
-
-        mt = qp.adjoint_metric_tensor(circuit)(*params)
-
-        if isinstance(mt, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
-        else:
-            assert qp.math.allclose(mt, expected)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
@@ -445,27 +395,6 @@ class TestAdjointMetricTensorDifferentiability:
     """
 
     num_wires = 3
-
-    @pytest.mark.autograd
-    def test_autograd(self, ansatz, params):
-        """Test that the derivative is correct when using Autograd and
-        calling the adjoint metric tensor on a QNode."""
-        exp_fn = autodiff_metric_tensor(ansatz, self.num_wires)
-        expected = qp.jacobian(exp_fn)(*params)
-        dev = qp.device("default.qubit", wires=self.num_wires)
-
-        @qp.qnode(dev, interface="autograd")
-        def circuit(*params):
-            """Circuit with dummy output to create a QNode."""
-            ansatz(*params, dev.wires)
-            return qp.expval(qp.PauliZ(0))
-
-        mt_jac = qp.jacobian(qp.adjoint_metric_tensor(circuit))(*params)
-
-        if isinstance(mt_jac, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt_jac, expected))
-        else:
-            assert qp.math.allclose(mt_jac, expected)
 
     @pytest.mark.jax
     def test_correct_output_qnode_jax(self, ansatz, params):

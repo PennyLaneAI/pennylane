@@ -309,6 +309,7 @@ class TestQubitUnitary:
 
         assert qp.math.allclose(mat_to_pow, new_mat)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize(
         "U,num_wires", [(H, 1), (np.kron(H, H), 2), (np.tensordot([1j, -1, 1], H, axes=0), 1)]

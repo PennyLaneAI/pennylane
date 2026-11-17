@@ -697,7 +697,6 @@ class TestGradientTransformIntegration:
     @pytest.mark.parametrize(
         "interface",
         (
-            pytest.param("autograd", marks=pytest.mark.autograd),
             pytest.param("jax", marks=pytest.mark.jax),
             pytest.param("torch", marks=pytest.mark.torch),
         ),
@@ -727,29 +726,6 @@ class TestGradientTransformIntegration:
 class TestInterfaceIntegration:
     """Test that the gradient transforms are differentiable
     using each interface"""
-
-    @pytest.mark.autograd
-    def test_autograd(self, tol):
-        """Test that a gradient transform remains differentiable
-        with autograd"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.gradients.param_shift
-        @qp.qnode(dev)
-        def circuit(x):
-            qp.RY(x**2, wires=[1])
-            qp.CNOT(wires=[0, 1])
-            return qp.var(qp.PauliX(1))
-
-        x = np.array(-0.654, requires_grad=True)
-
-        res = circuit(x)
-        expected = -4 * x * np.cos(x**2) * np.sin(x**2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        res = qp.grad(circuit)(x)
-        expected = -2 * (4 * x**2 * np.cos(2 * x**2) + np.sin(2 * x**2))
-        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):

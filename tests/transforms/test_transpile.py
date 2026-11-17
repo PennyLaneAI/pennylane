@@ -147,9 +147,11 @@ class TestTranspile:  # pylint: disable=too-many-public-methods
             for po, pt in zip(original_probs, transpiled_probs)
         )
 
-    @pytest.mark.autograd
+    @pytest.mark.jax
     def test_transpile_differentiable(self):
         """test that circuit remains differentiable after transpilation"""
+        from jax import numpy as jnp
+
         dev = qp.device("default.qubit", wires=3)
 
         def circuit(parameters):
@@ -160,9 +162,11 @@ class TestTranspile:  # pylint: disable=too-many-public-methods
             return qp.expval(qp.PauliZ(0))
 
         transpiled_circ = transpile(circuit, coupling_map=[(0, 1), (1, 2)])
-        transpiled_qnode = qp.QNode(transpiled_circ, dev)
-        params = np.array([0.5, 0.1, 0.2], requires_grad=True)
-        qp.gradients.param_shift(transpiled_qnode)(params)
+        transpiled_qnode = qp.QNode(transpiled_circ, dev, interface="jax")
+        params = jnp.array([0.5, 0.1, 0.2])
+        gradient = qp.gradients.param_shift(transpiled_qnode)(params)
+        assert qp.math.shape(gradient) == (3,)
+        assert qp.math.allclose(gradient, jnp.array([-jnp.sin(params[0]), 0.0, 0.0]))
 
     def test_more_than_2_qubits_raises_anywires(self):
         """test that transpile raises an error for an operation with num_wires=None that acts on more than 2 qubits"""

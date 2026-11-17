@@ -25,7 +25,6 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.qscript import QuantumScript
 from pennylane.devices import QubitDevice
@@ -1572,17 +1571,19 @@ class TestResourcesTracker:
         ):
             assert tracked_r == expected_r
 
-    @pytest.mark.autograd
-    def test_tracker_grad(self):
+    @pytest.mark.torch
+    def test_tracker_grad_torch(self):
         """Test that the tracker can track resources through a gradient computation"""
+        import torch
+
         dev = DefaultQubitLegacy(wires=1)
 
-        @qp.qnode(dev, diff_method="parameter-shift", shots=100)
+        @qp.qnode(dev, interface="torch", diff_method="parameter-shift", shots=100)
         def circuit(x):
             qp.RX(x, wires=0)  # 2 term parameter shift
             return qp.expval(qp.PauliZ(0))
 
-        x = pnp.array(0.1, requires_grad=True)
+        x = torch.tensor(0.1, requires_grad=True)
         expected_resources = SpecsResources(
             num_wires=1,
             counts={"RX": 1},

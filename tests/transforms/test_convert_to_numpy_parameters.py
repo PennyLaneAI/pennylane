@@ -24,7 +24,7 @@ from pennylane.transforms.convert_to_numpy_parameters import (
 )
 
 ml_frameworks_list = [
-    pytest.param("autograd", marks=pytest.mark.autograd),
+    pytest.param("autograd", marks=(pytest.mark.core, pytest.mark.autograd)),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
 ]
@@ -74,6 +74,7 @@ def test_convert_arrays_to_numpy(framework, shots):
     assert new_qs.shots == qs.shots
 
 
+@pytest.mark.core
 @pytest.mark.autograd
 def test_preserves_trainable_params():
     """Test that convert_to_numpy_parameters preserves the trainable parameters property."""
@@ -84,6 +85,7 @@ def test_preserves_trainable_params():
     assert output[0].trainable_params == [0]
 
 
+@pytest.mark.core
 @pytest.mark.autograd
 def test_unwraps_arithmetic_op():
     """Test that the operator helper function can handle operator arithmetic objects."""
@@ -97,6 +99,7 @@ def test_unwraps_arithmetic_op():
     assert qp.math.get_interface(*unwrapped_op.data) == "numpy"
 
 
+@pytest.mark.core
 @pytest.mark.autograd
 def test_unwraps_arithmetic_op_measurement():
     """Test that the measurement helper function can handle operator arithmetic objects."""
@@ -112,6 +115,7 @@ def test_unwraps_arithmetic_op_measurement():
     assert qp.math.get_interface(*unwrapped_op.data) == "numpy"
 
 
+@pytest.mark.core
 @pytest.mark.autograd
 def test_unwraps_prod_observables():
     """Test that the measurement helper function can set data on a prod observable."""

@@ -23,7 +23,7 @@ import pennylane as qp
 @pytest.mark.parametrize(
     "interface",
     (
-        pytest.param("autograd", marks=pytest.mark.autograd),
+        pytest.param("autograd", marks=(pytest.mark.core, pytest.mark.autograd)),
         pytest.param("jax", marks=pytest.mark.jax),
         pytest.param("torch", marks=pytest.mark.torch),
     ),
