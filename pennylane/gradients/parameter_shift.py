@@ -950,24 +950,25 @@ def param_shift(  # pylint: disable=too-many-arguments
 
     .. code-block:: python
 
-        from pennylane import numpy as np
+        import jax
+        import jax.numpy as jnp
+        jax.config.update("jax_enable_x64", True)
+
+        import numpy as np
 
         dev = qp.device("default.qubit")
-        @qp.qnode(dev, interface="autograd", diff_method="parameter-shift")
+        @qp.qnode(dev, interface="jax", diff_method="parameter-shift")
         def circuit(params):
             qp.RX(params[0], wires=0)
             qp.RY(params[1], wires=0)
             qp.RX(params[2], wires=0)
             return qp.expval(qp.Z(0))
 
-    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> params = jnp.array([0.1, 0.2, 0.3])
     >>> qp.jacobian(circuit)(params)
-    array([-0.3875172 , -0.18884787, -0.38355704])
+    Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64)
 
-    When differentiating QNodes with multiple measurements using Autograd, the outputs of the QNode first
-    need to be stacked. The reason is that this framework only allows differentiating functions with array or
-    tensor outputs, instead of functions that output sequences. In contrast, Jax and Torch require no additional
-    post-processing.
+    JAX and PyTorch differentiate QNodes with multiple measurements without stacking their outputs.
 
     .. code-block:: python
 
@@ -1063,7 +1064,7 @@ def param_shift(  # pylint: disable=too-many-arguments
         ...     [qp.expval(qp.Z(0))],
         ...     trainable_params = [1, 2]
         ... )
-        >>> qp.gradients.param_shift(tape, argnum=1)
+        >>> _ = qp.gradients.param_shift(tape, argnum=1)
 
         The code above will differentiate the third parameter rather than the second.
 
@@ -1084,7 +1085,7 @@ def param_shift(  # pylint: disable=too-many-arguments
         .. code-block:: python
 
             shots = (10, 100, 1000)
-            dev = qp.device("default.qubit")
+            dev = qp.device("default.qubit", seed=123)
 
             @qp.set_shots(shots=shots)
             @qp.qnode(dev)
@@ -1094,11 +1095,9 @@ def param_shift(  # pylint: disable=too-many-arguments
                 qp.RX(params[2], wires=0)
                 return qp.expval(qp.Z(0)), qp.var(qp.Z(0))
 
-        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> params = jnp.array([0.1, 0.2, 0.3])
         >>> qp.gradients.param_shift(circuit)(params)
-        ((array([-0.2, -0.1, -0.4]), array([0.4, 0.2, 0.8])),
-         (array([-0.4 , -0.24, -0.43]), array([0.672 , 0.4032, 0.7224])),
-         (array([-0.399, -0.179, -0.387]), array([0.722988, 0.324348, 0.701244])))
+        ((Array([-0.4, -0.3, -0.3], dtype=float64), Array([0.8, 0.6, 0.6], dtype=float64)), (Array([-0.33, -0.22, -0.33], dtype=float64), Array([0.66, 0.44, 0.66], dtype=float64)), (Array([-0.373, -0.2  , -0.366], dtype=float64), Array([0.65648, 0.352  , 0.64416], dtype=float64)))
 
         The outermost tuple contains results corresponding to each element of the shot vector.
 
@@ -1106,7 +1105,7 @@ def param_shift(  # pylint: disable=too-many-arguments
         circuit evaluations for each operation are batched together, resulting in
         broadcasted tapes:
 
-        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> params = jnp.array([0.1, 0.2, 0.3])
         >>> ops = [qp.RX(params[0], 0), qp.RY(params[1], 0), qp.RX(params[2], 0)]
         >>> measurements = [qp.expval(qp.Z(0))]
         >>> tape = qp.tape.QuantumTape(ops, measurements)
@@ -1119,9 +1118,9 @@ def param_shift(  # pylint: disable=too-many-arguments
         The postprocessing function will know that broadcasting is used and handle the results accordingly:
 
         >>> fn(qp.execute(gradient_tapes, dev, None))
-        (tensor(-0.3875172, requires_grad=True),
-         tensor(-0.18884787, requires_grad=True),
-         tensor(-0.38355704, requires_grad=True))
+        (Array(-0.3875172, dtype=float64),
+         Array(-0.18884787, dtype=float64),
+         Array(-0.38355704, dtype=float64))
 
         An advantage of using ``broadcast=True`` is a speedup:
 
@@ -1137,11 +1136,9 @@ def param_shift(  # pylint: disable=too-many-arguments
 
         >>> number = 100
         >>> serial_call = "qp.gradients.param_shift(circuit, broadcast=False)(params)"
-        >>> timeit.timeit(serial_call, globals=globals(), number=number) / number
-        0.020183045039993887
+        >>> serial_seconds = timeit.timeit(serial_call, globals=globals(), number=number) / number
         >>> broadcasted_call = "qp.gradients.param_shift(circuit, broadcast=True)(params)"
-        >>> timeit.timeit(broadcasted_call, globals=globals(), number=number) / number
-        0.01244492811998498
+        >>> broadcasted_seconds = timeit.timeit(broadcasted_call, globals=globals(), number=number) / number
 
         This speedup grows with the number of shifts and qubits until all preprocessing and
         postprocessing overhead becomes negligible. While it will depend strongly on the details

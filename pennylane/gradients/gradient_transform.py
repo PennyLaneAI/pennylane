@@ -414,30 +414,28 @@ def contract_qjac_with_cjac(qjac, cjac, tape: QuantumScript):
     Each ``qjac`` "leaf" should (after stacking) should correspond to ``(trainable_param_idx, *measurement_process shape)``
     and each ``cjac`` "leaf" should be ``(trainable_param_idx, *qnode_argument_shape)``.
 
-    >>> @qp.qnode(qp.device('default.qubit'))
+    >>> import torch
+    >>> @qp.qnode(qp.device("default.qubit"), interface="torch")
     ... def c(x):
     ...     qp.RX(x[0]**2, 0)
     ...     qp.RY(x[1], 0)
     ...     return qp.expval(qp.Z(0)), qp.expval(qp.Y(0))
 
-    >>> x = qp.numpy.array([2.0, 3.0])
+    >>> x = torch.tensor([2.0, 3.0], dtype=torch.float64, requires_grad=True)
     >>> tape = qp.workflow.construct_tape(c)(x)
     >>> cjac = qp.gradients.classical_jacobian(c)(x)
-    >>> cjac
+    >>> qp.math.toarray(cjac[0])
     array([[4., 0.],
-        [0., 1.]])
+           [0., 1.]])
     >>> qjac = qp.gradients.param_shift(c, hybrid=False)(x)
-    >>> qjac
-    ((tensor(-0.74922879, requires_grad=True),
-    tensor(0.09224219, requires_grad=True)),
-    (tensor(0.65364362, requires_grad=True),
-    tensor(2.70003469e-17, requires_grad=True)))
-    >>> qp.gradients.gradient_transform.contract_qjac_with_cjac(qjac, cjac, tape)
-    (tensor([-2.99691517,  0.09224219], requires_grad=True),
-    tensor([2.61457448e+00, 2.70003469e-17], requires_grad=True))
-    >>> qp.gradients.param_shift(c)(x)
-    (tensor([-2.99691517,  0.09224219], requires_grad=True),
-    tensor([2.61457448e+00, 2.70003469e-17], requires_grad=True))
+    >>> np.array([[qp.math.toarray(value) for value in row] for row in qjac])
+    array([[-0.74922879,  0.09224219],
+           [ 0.65364362,  0.        ]])
+    >>> contracted = qp.gradients.gradient_transform.contract_qjac_with_cjac(qjac, cjac, tape)
+    >>> tuple(qp.math.toarray(value) for value in contracted)
+    (array([-2.99691517,  0.09224219]), array([2.61457448, 0.        ]))
+    >>> tuple(qp.math.toarray(value) for value in qp.gradients.param_shift(c)(x))
+    (array([-2.99691517,  0.09224219]), array([2.61457448, 0.        ]))
 
     """
     if (

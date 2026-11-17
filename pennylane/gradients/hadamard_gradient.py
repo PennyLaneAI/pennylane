@@ -156,6 +156,9 @@ def hadamard_grad(
     to use during autodifferentiation:
 
     >>> import jax
+    >>> import jax.numpy as jnp
+    >>> import torch
+    >>> jax.config.update("jax_enable_x64", True)
     >>> dev = qp.device("default.qubit")
     >>> @qp.qnode(dev, diff_method="hadamard", gradient_kwargs={"mode": "standard", "aux_wire": 1})
     ... def circuit(params):
@@ -165,8 +168,8 @@ def hadamard_grad(
     ...     return qp.expval(qp.Z(0)), qp.probs(wires=0)
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
-    (Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64), Array([[-0.1937586 , -0.09442393, -0.19177853],
-           [ 0.1937586 ,  0.09442393,  0.19177853]], dtype=float64))
+    (Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64), Array([[-0.1937586 , -0.09442394, -0.19177852],
+           [ 0.1937586 ,  0.09442394,  0.19177852]], dtype=float64))
 
     .. details::
         :title: Usage Details
@@ -181,7 +184,7 @@ def hadamard_grad(
             ...     qp.evolve(qp.X(0) @ qp.X(1) + qp.Z(0) @ qp.Z(1) + qp.H(0), x )
             ...     return qp.expval(qp.Z(0))
             ...
-            >>> print( qp.draw(qp.gradients.hadamard_grad(circuit, aux_wire=2))(qp.numpy.array(0.5)) )
+            >>> print( qp.draw(qp.gradients.hadamard_grad(circuit, aux_wire=2))(torch.tensor(0.5, dtype=torch.float64, requires_grad=True)) )
             0: ─╭Exp(-0.50j 𝓗)─╭X────┤ ╭<Z@Y>
             1: ─╰Exp(-0.50j 𝓗)─│─────┤ │
             2: ──H─────────────╰●──H─┤ ╰<Z@Y>
@@ -210,9 +213,9 @@ def hadamard_grad(
         ...     qp.RY(params[1], wires=0)
         ...     qp.RX(params[2], wires=0)
         ...     return qp.expval(qp.Z(0))
-        >>> params = qp.numpy.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> params = jnp.array([0.1, 0.2, 0.3])
         >>> qp.gradients.hadamard_grad(circuit, mode="auto", aux_wire=1)(params)
-        tensor([-0.3875172 , -0.18884787, -0.38355704], requires_grad=True)
+        Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64)
 
         This quantum gradient transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
@@ -247,7 +250,7 @@ def hadamard_grad(
 
         >>> dev = qp.device("default.qubit")
         >>> fn(qp.execute(gradient_tapes, dev, None))
-        [np.float64(-0.3875172020222171), np.float64(-0.18884787122715604), np.float64(-0.38355704238148114)]
+        [Array(-0.3875172, dtype=float64), Array(-0.18884787, dtype=float64), Array(-0.38355704, dtype=float64)]
 
         This transform can be registered directly as the quantum gradient transform
         to use during autodifferentiation:
@@ -261,7 +264,7 @@ def hadamard_grad(
         ...     return qp.expval(qp.Z(0))
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
-        Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64)
+        Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64)
 
         If you use custom wires on your device, and you want to use the "standard" or "reversed" modes, you need to pass an auxiliary wire.
 
@@ -269,14 +272,14 @@ def hadamard_grad(
         >>> dev = qp.device("default.qubit", wires=dev_wires)
         >>> gradient_kwargs = {"aux_wire": "c"}
         >>> @qp.qnode(dev, interface="jax", diff_method="hadamard", gradient_kwargs=gradient_kwargs)
-        >>> def circuit(params):
+        ... def circuit(params):
         ...    qp.RX(params[0], wires="a")
         ...    qp.RY(params[1], wires="a")
         ...    qp.RX(params[2], wires="a")
         ...    return qp.expval(qp.Z("a"))
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
-        Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64)
+        Array([-0.3875172 , -0.18884787, -0.38355704], dtype=float64)
 
     .. details::
         :title: Variants of the standard hadamard gradient
@@ -299,7 +302,7 @@ def hadamard_grad(
             ...     return qp.expval(qp.Z(0))
             ...
             >>> grad = qp.gradients.hadamard_grad(circuit, mode='reversed', aux_wire=2)
-            >>> print(qp.draw(grad)(qp.numpy.array(0.5)))
+            >>> print(qp.draw(grad)(torch.tensor(0.5, dtype=torch.float64, requires_grad=True)))
             0: ─╭Exp(-0.50j 𝓗)─╭Z────┤ ╭<(-1.00*𝓗)@Y>
             1: ─╰Exp(-0.50j 𝓗)─│─────┤ ├<(-1.00*𝓗)@Y>
             2: ──H─────────────╰●──H─┤ ╰<(-1.00*𝓗)@Y>
@@ -312,7 +315,7 @@ def hadamard_grad(
         .. code-block:: pycon
 
             >>> grad = qp.gradients.hadamard_grad(circuit, mode='direct')
-            >>> print(qp.draw(grad)(qp.numpy.array(0.5)))
+            >>> print(qp.draw(grad)(torch.tensor(0.5, dtype=torch.float64, requires_grad=True)))
             0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j X)─┤  <Z>
             1: ─╰Exp(-0.50j 𝓗)────────────────┤
             <BLANKLINE>
@@ -346,7 +349,7 @@ def hadamard_grad(
         .. code-block:: pycon
 
             >>> grad = qp.gradients.hadamard_grad(circuit, mode='reversed-direct')
-            >>> print(qp.draw(grad)(qp.numpy.array(0.5)))
+            >>> print(qp.draw(grad)(torch.tensor(0.5, dtype=torch.float64, requires_grad=True)))
             0: ─╭Exp(-0.50j 𝓗)──Exp(-0.79j Z)─┤ ╭<-1.00*𝓗>
             1: ─╰Exp(-0.50j 𝓗)────────────────┤ ╰<-1.00*𝓗>
             <BLANKLINE>
@@ -380,7 +383,7 @@ def hadamard_grad(
         ...     qp.evolve(qp.X(0) @ qp.X(1), x)
         ...     return qp.expval(qp.Z(0) @ qp.Z(1) + qp.Y(0))
         >>> grad = qp.gradients.hadamard_grad(circuit, mode='auto')
-        >>> print(qp.draw(grad)(qp.numpy.array(0.5)))
+        >>> print(qp.draw(grad)(torch.tensor(0.5, dtype=torch.float64, requires_grad=True)))
         0: ─╭Exp(-0.50j X@X)─╭Exp(-0.79j X@X)─┤ ╭<𝓗>
         1: ─╰Exp(-0.50j X@X)─╰Exp(-0.79j X@X)─┤ ╰<𝓗>
         <BLANKLINE>
@@ -388,7 +391,7 @@ def hadamard_grad(
         1: ─╰Exp(-0.50j X@X)─╰Exp(0.79j X@X)─┤ ╰<𝓗>
 
         >>> grad = qp.gradients.hadamard_grad(circuit, mode='reversed-direct')
-        >>> print(qp.draw(grad)(qp.numpy.array(0.5)))
+        >>> print(qp.draw(grad)(torch.tensor(0.5, dtype=torch.float64, requires_grad=True)))
         0: ─╭Exp(-0.50j X@X)─╭Exp(-0.79j Z@Z)─┤ ╭<-1.00*X@X>
         1: ─╰Exp(-0.50j X@X)─╰Exp(-0.79j Z@Z)─┤ ╰<-1.00*X@X>
         <BLANKLINE>
@@ -400,6 +403,7 @@ def hadamard_grad(
         <BLANKLINE>
         0: ─╭Exp(-0.50j X@X)──Exp(0.79j Y)─┤ ╭<-1.00*X@X>
         1: ─╰Exp(-0.50j X@X)───────────────┤ ╰<-1.00*X@X>
+
     """
 
     modes = {

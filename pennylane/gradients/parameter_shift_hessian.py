@@ -469,7 +469,7 @@ def param_shift_hessian(
     For second-order derivatives of more complicated cost functions, please consider using your
     chosen autodifferentiation framework directly, by chaining gradient computations:
 
-    >>> qp.jacobian(qp.grad(cost))(weights)
+    For a scalar cost function, ``qp.jacobian(qp.grad(cost))`` computes its second derivative.
 
     Args:
         tape (QNode or QuantumTape): quantum circuit to differentiate
@@ -516,17 +516,21 @@ def param_shift_hessian(
     This works best if no classical processing is applied within the
     QNode to operation parameters.
 
+    >>> import torch
     >>> dev = qp.device("default.qubit")
-    >>> @qp.qnode(dev)
+    >>> @qp.qnode(dev, interface="torch")
     ... def circuit(x):
     ...     qp.RX(x[0], wires=0)
     ...     qp.CRY(x[1], wires=[0, 1])
     ...     return qp.expval(qp.Z(0) @ qp.Z(1))
 
-    >>> x = np.array([0.5, 0.2], requires_grad=True)
-    >>> qp.gradients.param_shift_hessian(circuit)(x)
-    ((array(-0.86883595), array(0.04762358)),
-     (array(0.04762358), array(0.05998862)))
+    >>> x = torch.tensor([0.5, 0.2], dtype=torch.float64, requires_grad=True)
+    >>> hessian = qp.gradients.param_shift_hessian(circuit)(x)
+    >>> np.array([[qp.math.toarray(value) for value in row] for row in hessian[0]])
+    array([[-0.86883595,  0.04762358],
+           [ 0.04762358,  0.05998862]])
+
+    The outer tuple contains one Hessian for the single differentiable QNode argument ``x``.
 
     .. details::
         :title: Usage Details
@@ -539,11 +543,12 @@ def param_shift_hessian(
         >>> hessian_tapes, postproc_fn = qp.gradients.param_shift_hessian(tape)
         >>> len(hessian_tapes)
         13
-        >>> all(isinstance(tape, qp.tape.QuantumTape) for tape in hessian_tapes)
+        >>> all(isinstance(tape, qp.tape.QuantumScript) for tape in hessian_tapes)
         True
-        >>> postproc_fn(qp.execute(hessian_tapes, dev, None))
-        ((array(-0.86883595), array(0.04762358)),
-         (array(0.04762358), array(0.05998862)))
+        >>> result = postproc_fn(qp.execute(hessian_tapes, dev, interface="torch", diff_method=None))
+        >>> np.array([[qp.math.toarray(value) for value in row] for row in result])
+        array([[-0.86883595,  0.04762358],
+               [ 0.04762358,  0.05998862]])
 
         The Hessian tapes can be inspected via their draw function, which reveals the different
         gate arguments generated from parameter-shift rules (we only draw the first four out of
@@ -565,8 +570,9 @@ def param_shift_hessian(
         Here we choose them based on the parameters ``x`` themselves, mostly yielding multiples of
         the original parameters in the shifted tapes.
 
-        >>> diag_shifts = [(x[0] / 2,), (x[1] / 2, x[1])]
-        >>> offdiag_shifts = [(x[0],), (x[1], 2 * x[1])]
+        >>> x_values = qp.math.toarray(x)
+        >>> diag_shifts = [(x_values[0] / 2,), (x_values[1] / 2, x_values[1])]
+        >>> offdiag_shifts = [(x_values[0],), (x_values[1], 2 * x_values[1])]
         >>> hessian_tapes, postproc_fn = qp.gradients.param_shift_hessian(
         ...     tape, diagonal_shifts=diag_shifts, off_diagonal_shifts=offdiag_shifts
         ... )
@@ -574,9 +580,9 @@ def param_shift_hessian(
         ...     print(qp.drawer.tape_text(h_tape, decimals=1))
         0: ──RX(0.5)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
-        0: ──RX(0.0)─╭●───────┤ ╭<Z@Z>
-        1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
         0: ──RX(1.0)─╭●───────┤ ╭<Z@Z>
+        1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
+        0: ──RX(0.0)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
         0: ──RX(1.0)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.4)─┤ ╰<Z@Z>
@@ -594,9 +600,10 @@ def param_shift_hessian(
         if ``tape`` is a ``QNode`` and if it is a ``QuantumTape``.
 
         >>> hessian_tapes, postproc_fn = qp.gradients.param_shift_hessian(tape, argnum=(1,))
-        >>> postproc_fn(qp.execute(hessian_tapes, dev, None))
-        ((tensor(0., requires_grad=True), tensor(0., requires_grad=True)),
-         (tensor(0., requires_grad=True), array(0.05998862)))
+        >>> result = postproc_fn(qp.execute(hessian_tapes, dev, interface="torch", diff_method=None))
+        >>> np.array([[qp.math.toarray(value) for value in row] for row in result])
+        array([[0.        , 0.        ],
+               [0.        , 0.05998862]])
 
     """
     # Perform input validation before generating tapes.

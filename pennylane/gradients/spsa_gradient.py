@@ -187,16 +187,20 @@ def spsa_grad(  # pylint: disable=too-many-arguments
     This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>`
     objects:
 
+    >>> import jax
+    >>> import jax.numpy as jnp
+    >>> jax.config.update("jax_enable_x64", True)
+    >>> dev = qp.device("default.qubit")
     >>> @qp.qnode(dev)
     ... def circuit(params):
     ...     qp.RX(params[0], wires=0)
     ...     qp.RY(params[1], wires=0)
     ...     qp.RX(params[2], wires=0)
     ...     return qp.expval(qp.Z(0)), qp.var(qp.Z(0))
-    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-    >>> qp.gradients.spsa_grad(circuit)(params)
-    (tensor([ 0.18488771, -0.18488771, -0.18488771], requires_grad=True),
-     tensor([-0.33357922,  0.33357922,  0.33357922], requires_grad=True))
+    >>> params = jnp.array([0.1, 0.2, 0.3])
+    >>> qp.gradients.spsa_grad(circuit, sampler_rng=123)(params)
+    (Array([ 0.18488771, -0.18488771, -0.18488771], dtype=float64),
+     Array([-0.33357922,  0.33357922,  0.33357922], dtype=float64))
 
     Note that the SPSA gradient is a statistical estimator that uses a given number of
     function evaluations that does not depend on the number of parameters. While this
@@ -211,15 +215,15 @@ def spsa_grad(  # pylint: disable=too-many-arguments
         can be controlled with the keyword argument ``num_directions``. For the QNode above,
         a more precise gradient estimation from ``num_directions=20`` directions yields
 
-        >>> qp.gradients.spsa_grad(circuit, num_directions=20)(params)
-        (tensor([-0.53976776, -0.34385475, -0.46106048], requires_grad=True),
-         tensor([0.97386303, 0.62039169, 0.83185731], requires_grad=True))
+        >>> qp.gradients.spsa_grad(circuit, num_directions=20, sampler_rng=123)(params)
+        (Array([-0.36804628, -0.15088818, -0.30703575], dtype=float64),
+         Array([0.66403868, 0.27223638, 0.55396188], dtype=float64))
 
         We may compare this to the more precise values obtained from finite differences:
 
         >>> qp.gradients.finite_diff(circuit)(params)
-        (tensor([-0.38751724, -0.18884792, -0.38355708], requires_grad=True),
-         tensor([0.69916868, 0.34072432, 0.69202365], requires_grad=True))
+        (Array([-0.38751724, -0.18884792, -0.38355708], dtype=float64),
+         Array([0.69916868, 0.34072432, 0.69202365], dtype=float64))
 
         As we can see, the SPSA output is a rather coarse approximation to the true
         gradient, and this although the parameter-shift rule for three parameters uses
@@ -236,7 +240,7 @@ def spsa_grad(  # pylint: disable=too-many-arguments
         >>> ops = [qp.RX(params[0], 0), qp.RY(params[1], 0), qp.RX(params[2], 0)]
         >>> measurements = [qp.expval(qp.Z(0)), qp.var(qp.Z(0))]
         >>> tape = qp.tape.QuantumTape(ops, measurements)
-        >>> gradient_tapes, fn = qp.gradients.spsa_grad(tape)
+        >>> gradient_tapes, fn = qp.gradients.spsa_grad(tape, sampler_rng=123)
         >>> gradient_tapes
         [<QuantumScript: wires=[0], params=3>, <QuantumScript: wires=[0], params=3>]
 
@@ -252,7 +256,7 @@ def spsa_grad(  # pylint: disable=too-many-arguments
         ...     [qp.expval(qp.Z(0))],
         ...     trainable_params = [1, 2]
         ... )
-        >>> qp.gradients.spsa_grad(tape, argnum=1)
+        >>> _ = qp.gradients.spsa_grad(tape, argnum=1)
 
         The code above will differentiate the third parameter rather than the second.
 
@@ -261,29 +265,29 @@ def spsa_grad(  # pylint: disable=too-many-arguments
 
         >>> dev = qp.device("default.qubit")
         >>> fn(qp.execute(gradient_tapes, dev, None))
-        ((tensor(0.18488771, requires_grad=True),
-          tensor(-0.18488771, requires_grad=True),
-          tensor(-0.18488771, requires_grad=True)),
-         (tensor(-0.33357922, requires_grad=True),
-          tensor(0.33357922, requires_grad=True),
-          tensor(0.33357922, requires_grad=True)))
+        ((Array(0.18488771, dtype=float64),
+          Array(-0.18488771, dtype=float64),
+          Array(-0.18488771, dtype=float64)),
+         (Array(-0.33357922, dtype=float64),
+          Array(0.33357922, dtype=float64),
+          Array(0.33357922, dtype=float64)))
 
         This gradient transform is compatible with devices that use shot vectors for execution.
 
         >>> shots = (10, 100, 1000)
-        >>> dev = qp.device("default.qubit")
+        >>> dev = qp.device("default.qubit", seed=123)
         >>> @qp.set_shots(shots=shots)
-        >>> @qp.qnode(dev)
+        ... @qp.qnode(dev)
         ... def circuit(params):
         ...     qp.RX(params[0], wires=0)
         ...     qp.RY(params[1], wires=0)
         ...     qp.RX(params[2], wires=0)
         ...     return qp.expval(qp.Z(0)), qp.var(qp.Z(0))
-        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qp.gradients.spsa_grad(circuit, h=1e-2)(params)
-        ((array([ 10.,  10., -10.]), array([-18., -18.,  18.])),
-         (array([-5., -5.,  5.]), array([ 8.9,  8.9, -8.9])),
-         (array([ 1.5,  1.5, -1.5]), array([-2.667, -2.667,  2.667])))
+        >>> params = jnp.array([0.1, 0.2, 0.3])
+        >>> qp.gradients.spsa_grad(circuit, h=1e-2, sampler_rng=123)(params)
+        ((Array([0., 0., 0.], dtype=float64), Array([0., 0., 0.], dtype=float64)),
+         (Array([ 6., -6., -6.], dtype=float64), Array([-11.28,  11.28,  11.28], dtype=float64)),
+         (Array([-1.4,  1.4,  1.4], dtype=float64), Array([ 2.5088, -2.5088, -2.5088], dtype=float64)))
 
         The outermost tuple contains results corresponding to each element of the shot vector,
         as is also visible by the increasing precision.
