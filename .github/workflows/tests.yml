@@ -26,7 +26,7 @@ jobs:
   # Temporary dependency until Catalyst #3470 is available in the nightly wheels.
   catalyst-wheel:
     if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     permissions:
       actions: read
       contents: read
