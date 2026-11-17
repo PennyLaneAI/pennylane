@@ -56,6 +56,25 @@ class TestDifferentiation:
         """Floating scalar leaves are compared through the JAX interface."""
         _check_differentiation(op)
 
+    @pytest.mark.parametrize("angles", [(0.1, 0.2, 0.3), (1.1, 2.2, 3.3)])
+    def test_default_jax_precision(self, angles):
+        """Validation uses double precision and restores the caller's JAX setting."""
+        import jax
+
+        with jax.experimental.disable_x64():
+            _check_differentiation(qp.Rot(*angles, wires=0))
+            assert not jax.config.x64_enabled
+
+    @pytest.mark.parametrize("interface", ["numpy", "jax"])
+    def test_float32_parameters(self, interface):
+        """Validation promotes existing single-precision values before differentiation."""
+        import jax
+
+        with jax.experimental.disable_x64():
+            angle = qp.math.asarray(0.5, like=interface, dtype="float32")
+            _check_differentiation(qp.RX(angle, wires=0))
+            assert not jax.config.x64_enabled
+
     def test_integer_metadata_does_not_execute(self, mocker):
         """Static integer-only operators need no differentiation or large state allocation."""
         device = mocker.patch("pennylane.testing.operators.device")
