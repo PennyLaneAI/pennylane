@@ -22,7 +22,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.numeric_hamiltonians import CGFHamiltonian
-from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ, PhaseShift
+from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math import ctrl
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
@@ -30,8 +30,6 @@ from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import WiresLike
 
 from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
-
-# pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
 
 
 class TrotterCGF(Operator2):
@@ -98,10 +96,10 @@ class TrotterCGF(Operator2):
     .. code-block:: python
 
         registers = qp.registers({"hadamard": 1, "system": M * N})
-        gate_set = {"Hadamard", "BasisRotation", "RZ", "CNOT", "PhaseShift", "ForLoop"}
+        gate_set = {"Hadamard", "BasisRotation", "CRZ", "C(IsingZZ)", "CNOT", "PhaseShift", "GlobalPhase"}
 
         @qp.qjit
-        @qp.transforms._tape_decompose(gate_set=gate_set)
+        @qp.decompose(gate_set=gate_set)
         @qp.qnode(qp.device("lightning.qubit", wires=1 + M * N))
         def trotter_circuit():
             qp.H(registers["hadamard"])
@@ -123,8 +121,7 @@ class TrotterCGF(Operator2):
 
     Or check the quantum resources required for this task. Because the (default) controlled
     decomposition is a genuine controlled unitary, each diagonal rotation is individually
-    controlled via ``ctrl(RZ(...))`` and ``ctrl(IsingZZ(...))`` (showing up here as
-    :class:`~.CRZ` and controlled :class:`~.IsingZZ`). Note that the order of the keys in
+    controlled via :class:`~.CRZ` and ``ctrl(IsingZZ(...))``. Note that the order of the keys in
     the ``quantum_operations`` dictionary is not guaranteed, so we sort it before printing:
 
     >>> specs = qp.specs(trotter_circuit)()["resources"].quantum_operations
@@ -133,6 +130,25 @@ class TrotterCGF(Operator2):
 
     The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing into
     :class:`~.PhaseShift` and :class:`~.SingleExcitation` on ``lightning.qubit``.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.TrotterCGF
+            :stacked:
+            :symbols: :math:`M` modes with :math:`N` modals each, :math:`L` two-body fragments and
+                :math:`n` = ``num_trotter_steps``
+            :example: the Hamiltonian above, :math:`M=2`, :math:`N=3`, :math:`L=1`, :math:`n=1`. Note that all expressions below assume :math:`n \gt 0`
+
+            .. decomposition-rule:: _trotter_cgf_decomposition
+                :image: /_static/decomposition_thumbnails/trotter_cgf_second_order.svg
+                :where: the counts are upper bounds, as basis rotations that are the identity are
+                    skipped
+
+                :class:`~.BasisRotation` on :math:`N` wires | :math:`M(2Ln + 2)` | 8
+                :class:`~.IsingZZ` | :math:`((2L-1)n + 1)\, \frac{M(M-1)}{2} N^2 + nMN` | 18
+                :class:`~.RZ` | :math:`nMN` | 6
+                :class:`~.GlobalPhase` | :math:`1` | 1
 
     .. details ::
         :title: Usage Details
@@ -228,9 +244,8 @@ class TrotterCGF(Operator2):
         :class:`~.BasisRotation`, so only one basis rotation is emitted per mode per boundary. The
         leaves are assumed real orthogonal (they are merged by transpose, not adjoint). Each leaf is
         first normalized to determinant :math:`+1` (negating one orbital line, a no-op on
-        :math:`\tilde{n}_{lp}`) so that :class:`~.BasisRotation`'s real-orthogonal sign gauge is
-        consistent across fragments; otherwise leaves with mixed determinants realize a different
-        Hamiltonian.
+        :math:`\tilde{n}_{lp}`) so that no :class:`~.BasisRotation` needs a determinant-correcting
+        phase flip.
 
         **3. One-body diagonal**
         The one-body generator is :math:`D_0 = \sum_{l,p} \epsilon_{lp}\, n_{lp}`, with
@@ -397,7 +412,7 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
                         IsingZZ(_angle(q), [wire_lp, wire_mq])
 
                     CNOT([control_wires[0], wire_lp])
-                    _q_loop()
+                    _q_loop()  # pylint: disable=no-value-for-parameter
                     CNOT([control_wires[0], wire_lp])
                 else:
 
@@ -411,9 +426,9 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
                         else:
                             ctrl(IsingZZ(angle, zz_wires), control=control_wires)
 
-                    _q_loop()
+                    _q_loop()  # pylint: disable=no-value-for-parameter
 
-            _p_loop()
+            _p_loop()  # pylint: disable=no-value-for-parameter
 
 
 def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_wires, double_phase):
@@ -438,9 +453,9 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
             angle = -2.0 * Z_one_body[l, l, p, p] * first_order_time_step
             _emit_one_body_rz(angle, wire_lp, control_wires, double_phase)
 
-        modal_loop()
+        modal_loop()  # pylint: disable=no-value-for-parameter
 
-    mode_loop()
+    mode_loop()  # pylint: disable=no-value-for-parameter
 
 
 def _energy_shift(hamiltonian):
@@ -506,20 +521,22 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
         resources[CNOT] += num_twobody_blocks * num_pairs * 2 * n_states
         resources[RZ] += 1
     else:
-        # Genuine controlled: one-body ``ctrl(RZ(...))``, two-body ``ctrl(IsingZZ(...))``; the
+        # Genuine controlled: one-body ``CRZ(...)``, two-body ``ctrl(IsingZZ(...))``; the
         # global phase becomes a PhaseShift on the control wire. There are no bare IsingZZ/RZ gates.
-        resources[ctrl(RZ(Float, wires=Wire[1]), control=Wire[1])] += num_onebody_rotations
+        resources[CRZ] += num_onebody_rotations
         resources[ctrl(IsingZZ(Float, wires=Wire[2]), control=Wire[1])] += num_twobody_rotations
         resources[PhaseShift] += 1
 
     return dict(resources)
 
 
+# pylint: disable-next=unused-argument
 def _trotter_cgf_resources(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
     return _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control=False)
 
 
 @register_resources(_trotter_cgf_resources, exact=False)
+# pylint: disable-next=unused-argument
 def _trotter_cgf_decomposition(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
     # ``double_phase`` only affects the controlled decomposition; the base operator is
     # always the plain (uncontrolled) e^{-iHt} circuit.
@@ -539,8 +556,12 @@ def _trotter_cgf_decomposition(evolution_time, num_trotter_steps, hamiltonian, w
 add_decomps(TrotterCGF, _trotter_cgf_decomposition)
 
 
-def _controlled_trotter_cgf_resource(
-    base, control_wires, control_values, work_wires, work_wire_type
+def _controlled_trotter_cgf_resource(  # pylint: disable=unused-argument
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,
 ):
     return _cgf_resource_counts(
         base.arguments["num_trotter_steps"],
@@ -552,6 +573,7 @@ def _controlled_trotter_cgf_resource(
 
 @register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
 @register_resources(_controlled_trotter_cgf_resource, exact=False)
+# pylint: disable-next=unused-argument
 def _controlled_trotter_cgf_decomp(base, control_wires, control_values, work_wires, work_wire_type):
     evolution_time = base.arguments["evolution_time"]
     num_trotter_steps = base.arguments["num_trotter_steps"]

@@ -140,8 +140,7 @@ def _find_affine_subspace_isometry(basis_states, n_qubits, n_subspace):
     return circuit, bijection
 
 
-# pylint: disable-next=too-many-instance-attributes
-class PUIsometryFinder:
+class PUIsometryFinder:  # pylint: disable=too-many-instance-attributes
     r"""Classical algorithm that finds the isometry circuit and bijection for
     :class:`~.PartialUnaryStatePreparation`. The goal is to compute an isometry that maps
     given computational basis states :math:`\{|\ell\rangle\}_{\ell \in L}` to unique states in
@@ -816,6 +815,31 @@ class PartialUnaryStatePreparation(Operator2):
     We used just ``160`` ``QROM``\ s instead of ``1207``, and as their size is dictated only by the
     number of indices :math:`|L|`, it is the same between the two decompositions.
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PartialUnaryStatePreparation
+            :stacked:
+            :symbols: :math:`D = |L| \geq 2` entries in ``indices`` and a subspace register of
+                :math:`m = \lceil \log_2 D \rceil` wires
+            :example: the ``coefficients`` and ``indices`` used above with :math:`D=10`
+
+            .. decomposition-rule:: _partial_unary_state_prep
+                :image: /_static/decomposition_thumbnails/partial_unary_state_prep.svg
+                :lightbox:
+                :where: :math:`N_P`, :math:`N_F`, :math:`N_S` and :math:`N_T` are the numbers of
+                    partial unary iterators, fan-outs, SWAPs and Toffolis in the isometry circuit
+                    found by :class:`~.PUIsometryFinder` (data dependent), respectively. If the indices form an
+                    affine subspace, the isometry instead consists of :class:`~.X`,
+                    :class:`~.CNOT` and :class:`~.SWAP` gates only
+
+                :class:`~.MultiplexerStatePreparation` on :math:`m` wires | :math:`1` | 1
+                :class:`~.QROM` | :math:`N_P` | 5
+                :class:`~.MultiX` | :math:`2 N_P + 2 N_T` | 10
+                :class:`~.MultiX` with 1 control | :math:`N_F` | 10
+                :class:`~.SWAP` | :math:`N_S` | 0
+                :class:`~.MultiControlledX` with 2 controls | :math:`N_T` | 0
+
     """
 
     dynamic_argnames = ("coefficients",)
@@ -866,7 +890,6 @@ def _partial_unary_state_prep_resources(coefficients, wires, indices, work_wires
     """Compute the resources for the partial unary iteration state preparation technique.
     These resource counts are numerically obtained heuristics, extended to guarantee all
     resource reps that may appear are included at least once."""
-    # pylint: disable=unused-argument
     num_entries = len(indices)
     num_wires = 1 if isinstance(wires, int) else len(wires)
     if num_entries == 1:
@@ -967,6 +990,22 @@ def _branch_probs(circuit):
     return type_probs, batch_probs
 
 
+def _partial_unary_dense_state(coefficients, bijection, n_subspace):
+    """Place coefficients in the dense subspace using a gather supported by Catalyst."""
+    # TODO: Revisit using qp.math.scatter instead when Catalyst supports it without sorted/unique index guarantees [sc-135792]
+    num_entries = len(bijection)
+    # Reverse the static mapping so each dense position selects its coefficient.
+    # E.g., destinations [2, 0, 1] need coefficient indices [1, 2, 0].
+    inverse = {bijection[i]: i for i in range(num_entries)}
+
+    # Unoccupied positions select the appended zero at index num_entries.
+    padded_coefficients = math.concatenate([coefficients, math.zeros_like(coefficients[:1])])
+    gather_indices = [inverse.get(i, num_entries) for i in range(2**n_subspace)]
+
+    # E.g., [a, b, c, 0] gathered at [1, 2, 0, 3] gives [b, c, a, 0].
+    return math.take(padded_coefficients, gather_indices, axis=0)
+
+
 def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
     """Compute the decomposition of the partial unary iteration state preparation technique.
     This core method is used by the two rules below, which only differ by the work
@@ -993,10 +1032,7 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
     nonsubspace_wires = Wires(wires[n_subspace:])
 
     # Step 1: Dense state preparation
-    ids = np.array([bijection[i] for i in range(num_entries)])
-    dense_state = math.scatter(
-        ids, coefficients, 2**n_subspace, like=math.get_interface(coefficients)
-    )
+    dense_state = _partial_unary_dense_state(coefficients, bijection, n_subspace)
     _, cast_dtype = math.get_abstract_and_cast_dtype(coefficients)
     qp.MultiplexerStatePreparation(math.cast(dense_state, cast_dtype), subspace_wires)
 
@@ -1043,7 +1079,6 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
         Each branch of the conditional then reads out only the entries it needs, and discards
         the padded zeros. The data type of the array depends on the number of qubits :math:`n`.
         """
-        # pylint: disable=cell-var-from-loop
 
         _type, *data = circuit[i]
 
@@ -1121,8 +1156,8 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
     main_loop()  # pylint: disable=no-value-for-parameter
 
 
+# pylint: disable-next=unused-argument
 def _partial_unary_state_prep_work_wires(coefficients, wires, indices, work_wires):
-    # pylint: disable=unused-argument
     work_wires = [] if work_wires is None else list(work_wires)
     num_entries = len(indices)
     is_affine = _is_affine_subspace(indices, max(math.ceil_log2(num_entries), 1))

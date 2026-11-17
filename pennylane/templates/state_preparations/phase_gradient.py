@@ -27,7 +27,13 @@ from pennylane.exceptions import WireError
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires, WiresLike
 
-from .phase_gradient_decomp_data import GLOBAL_PHASES, INITIAL_PPRS, PI_OVER_8_PPRS
+from .phase_gradient_decomp_data import (
+    CLIFFORD_T_GLOBAL_PHASES,
+    CLIFFORD_T_SEQUENCES,
+    GLOBAL_PHASES,
+    INITIAL_PPRS,
+    PI_OVER_8_PPRS,
+)
 
 
 class PhaseGradientStatePrep(StatePrepBase2):
@@ -45,8 +51,14 @@ class PhaseGradientStatePrep(StatePrepBase2):
     catalytic resource state for implementing rotation gates.
     See the `compilation hub <https://pennylane.ai/compilation/phase-gradient>`__ for more details.
 
-    .. seealso:: Compiling :class:`~.RZ` gates to phase gradient operations with
+    .. seealso::
+
+        Compiling :class:`~.RZ` gates to phase-gradient operations with
         :func:`~.transforms.rz_phase_gradient`.
+
+        Preparation of this state with Clifford gates, adders, and mid-circuit measurements via
+        `Jones distillation <https://arxiv.org/abs/1303.3066>`__ with
+        :func:`~.transforms.decompositions.make_phase_gradient_distillation_decomp`.
 
     .. note::
 
@@ -75,7 +87,27 @@ class PhaseGradientStatePrep(StatePrepBase2):
 
     The decomposition is supported on up to 30 wires and consists of :class:`~.PPR_8` gates,
     at most one :class:`~.PPR_2` or :class:`~.PPR_4` gate per wire, and a :class:`~.GlobalPhase`.
+    A second decomposition, also supported on up to 30 wires, consists of :class:`~.Hadamard`,
+    :class:`~.S`, :class:`~.T`, Pauli gates, and a :class:`~.GlobalPhase`, with as many
+    :class:`~.T` gates as there are :class:`~.PPR_8` gates in the first decomposition.
 
+    Alternatively, the Jones distillation rule uses Clifford gates, :class:`~.SemiAdder`, and
+    mid-circuit measurements and supports any number of wires. Construct it and pass it to
+    ``fixed_decomps``:
+
+    >>> qp.decomposition.enable_graph()
+    >>> registers = qp.registers({"grad": 5, "aux": 5, "work": 4})
+    >>> rule = qp.transforms.decompositions.make_phase_gradient_distillation_decomp(
+    ...     registers["aux"], registers["work"], mode="postselect"
+    ... )
+    >>> @qp.transforms.decompose(
+    ...     gate_set={"Hadamard", "PauliZ", "Adjoint(S)", "SemiAdder", "MidMeasure"},
+    ...     fixed_decomps={qp.PhaseGradientStatePrep: rule},
+    ... )
+    ... @qp.qnode(qp.device("null.qubit", wires=14))
+    ... def distilled_circuit():
+    ...     qp.PhaseGradientStatePrep(registers["grad"])
+    ...     return qp.state()
     """
 
     arg_specs = {"wires": Wire[-1]}
@@ -158,7 +190,30 @@ def _phase_gradient_state_prep_ppr_decomposition(wires: WiresLike):
     qp.GlobalPhase(sum(GLOBAL_PHASES[: len(wires)]))
 
 
+def _phase_gradient_state_prep_clifford_t_resources(wires: AbstractWires):
+    counts = Counter("".join(CLIFFORD_T_SEQUENCES[: len(wires)]))
+    resources = {getattr(qp, gate): count for gate, count in counts.items()}
+    resources[qp.GlobalPhase] = 1
+    return resources
+
+
+@register_condition(lambda wires: len(wires) <= len(CLIFFORD_T_SEQUENCES))
+@register_resources(_phase_gradient_state_prep_clifford_t_resources)
+def _phase_gradient_state_prep_clifford_t_decomposition(wires: WiresLike):
+    # Wire j is prepared by the gates in ``CLIFFORD_T_SEQUENCES[j]``, which are obtained from the
+    # PPR decomposition and contain one T gate per π/8 PPR. Together with the global phase
+    # given by summing ``CLIFFORD_T_GLOBAL_PHASES`` over the wires, the state prepared on 30 wires
+    # deviates from the phase gradient state by less than 1e-12 in the 2-norm.
+
+    num_wires = len(wires)
+    for wire, sequence in zip(wires, CLIFFORD_T_SEQUENCES[:num_wires], strict=True):
+        for gate in sequence:
+            getattr(qp, gate)(wire)
+    qp.GlobalPhase(sum(CLIFFORD_T_GLOBAL_PHASES[:num_wires]))
+
+
 add_decomps(
     PhaseGradientStatePrep,
     _phase_gradient_state_prep_ppr_decomposition,
+    _phase_gradient_state_prep_clifford_t_decomposition,
 )

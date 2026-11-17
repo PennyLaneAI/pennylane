@@ -394,15 +394,13 @@ class CDFHamiltonian(NumericHamiltonian):
 
         super().__post_init__()
 
-    def normalize_leaf_determinant(self) -> "CDFHamiltonian":
-        r"""Force every leaf to determinant ``+1`` so :class:`~.BasisRotation`'s real-orthogonal sign
-        gauge is identical across fragments.
+    def normalize_leaf_determinant(self) -> CDFHamiltonian:
+        r"""Force every leaf to determinant ``+1`` so that no :class:`~.BasisRotation` needs a
+        determinant-correcting phase flip.
 
-        :class:`~.BasisRotation` realizes a real orthogonal ``leaf`` only up to a determinant-dependent
-        :math:`\pm 1` gauge, so leaves with *mixed* determinants -- e.g. an ``eigh`` one-body leaf with
-        ``det = -1`` next to ``expm`` two-body leaves with ``det = +1``, as produced by
-        :func:`~pennylane.qchem.factorize` for many molecules -- would be rotated into inconsistent bases
-        and realize a different Hamiltonian. Here :math:`v` is a single column of the leaf, i.e. one of
+        :func:`~pennylane.qchem.factorize` produces leaves with *mixed* determinants for many
+        molecules, e.g. an ``eigh`` one-body leaf with ``det = -1`` next to ``expm`` two-body leaves
+        with ``det = +1``. Here :math:`v` is a single column of the leaf, i.e. one of
         the fragment's diagonalizing orbitals; the fragment only depends on it through the projector
         :math:`|v\rangle\langle v|` (the number operator built from that orbital), and negating the
         column leaves this projector unchanged since :math:`|-v\rangle\langle -v| = |v\rangle\langle v|`.
@@ -568,14 +566,12 @@ class CGFHamiltonian(NumericHamiltonian):
 
         super().__post_init__()
 
-    def normalize_leaf_determinant(self) -> "CGFHamiltonian":
-        r"""Force every per-mode leaf to determinant ``+1`` so :class:`~.BasisRotation`'s real-orthogonal
-        sign gauge is identical across fragments.
+    def normalize_leaf_determinant(self) -> CGFHamiltonian:
+        r"""Force every per-mode leaf to determinant ``+1`` so that no :class:`~.BasisRotation` needs a
+        determinant-correcting phase flip.
 
-        :class:`~.BasisRotation` realizes a real orthogonal leaf only up to a determinant-dependent
-        :math:`\pm 1` gauge, so leaves with *mixed* determinants (e.g. an ``eigh`` one-body leaf with
-        ``det = -1`` next to ``expm`` two-body leaves with ``det = +1``) would be rotated into
-        inconsistent bases and realize a different Hamiltonian. Negating one orbital line leaves the
+        Leaves may come with *mixed* determinants (e.g. an ``eigh`` one-body leaf with ``det = -1``
+        next to ``expm`` two-body leaves with ``det = +1``). Negating one orbital line leaves the
         projector :math:`|v\rangle\langle v|`, and hence the fragment, unchanged, so this is a physical
         no-op. The orbital is stored on the *columns* of the one-body leaf and on the *rows* of the
         two-body leaves, so the two sectors negate a column and a row respectively.
@@ -590,7 +586,7 @@ class CGFHamiltonian(NumericHamiltonian):
 
         return replace(self, leaf_tensors=math.concatenate([one_body, two_body], axis=0))
 
-    def align_one_body_leaf(self) -> "CGFHamiltonian":
+    def align_one_body_leaf(self) -> CGFHamiltonian:
         """Transpose the one-body leaf so both sectors share the scaffolding's row convention.
 
         The scaffolding assumes each ``leaf_tensors[nu][l]`` stores its per-mode diagonalizing

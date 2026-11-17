@@ -99,15 +99,32 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
+* PyQuil and Qualtran interoperability has been removed from ``qp.io`` and the top-level
+  PennyLane namespace. The removed APIs are ``from_pyquil``, ``from_quil``, ``from_quil_file``,
+  ``FromBloq``, ``ToBloq``, ``to_bloq``, and ``bloq_registers``.
+
+  - Removed in releases after v0.45
+
+* The ``pennylane.kernels`` module has been removed, including ``kernel_matrix``,
+  ``square_kernel_matrix``, ``polarity``, ``target_alignment``, ``threshold_matrix``,
+  ``displace_matrix``, ``flip_matrix``, ``closest_psd_matrix`` and
+  ``mitigate_depolarizing_noise``. The ``kernels`` installation extra has also been removed.
+
+  - Removed in releases after v0.45
+
+* The ``pennylane.qnn`` module has been removed, including ``TorchLayer``.
+  ``pennylane.qnn.iqp_expval`` has been moved to :func:`pennylane.math.iqp_expval`.
+
+  - Removed in releases after v0.45
+
 * The ``pennylane.qaoa`` module has been removed, including the mixer Hamiltonians
   (``x_mixer``, ``xy_mixer``, ``bit_flip_mixer``), the cost Hamiltonians (``maxcut``,
   ``max_independent_set``, ``min_vertex_cover``, ``max_clique``, ``max_weight_cycle``,
   ``bit_driver``, ``edge_driver``), the ansatz layers (``cost_layer``, ``mixer_layer``)
   and the ``pennylane.qaoa.cycle`` helpers. :class:`~.QAOAEmbedding` is unaffected.
-  
+
   - Removed in releases after v0.45
 
-* Maintenance support for the ``tensorflow`` interface has been removed. Future versions of 
 * The ``pennylane.pulse`` module has been removed. This includes ``ParametrizedHamiltonian`` and
   ``ParametrizedEvolution``, as well as the ``stoch_pulse_grad`` and ``pulse_odegen``
   pulse-level gradient transforms.
@@ -221,8 +238,9 @@ Completed deprecation cycles
     qp.fourier.mark(qp.RX(0.5, wires=0), "x0")
 
 * The :func:`~pennylane.workflow.get_transform_program` function has been removed.
-  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
-  of a QNode.
+  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the compile pipeline
+  of a :func:`~pennylane.qjit`'d QNode. For a QNode that is not qjit'd, use ``qnode.compile_pipeline`` for the user
+  transforms, or :func:`~pennylane.workflow.construct_batch` to inspect the tapes at the gradient or device level.
 
   - Deprecated in v0.45
   - Removed in v0.46
@@ -529,7 +547,7 @@ Completed deprecation cycles
   - Removed in v0.42
 
 * The ``KerasLayer`` class in ``qml.qnn.keras`` has been removed because Keras 2 is no longer actively maintained.
-  Please consider using a different machine learning framework, like :doc:`PyTorch <demo:demos/tutorial_qnn_module_torch>`
+  Please consider using a different machine learning framework, like :doc:`PyTorch </introduction/interfaces/torch>`
   or :doc:`JAX <demo:demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
 
   - Deprecated in v0.41

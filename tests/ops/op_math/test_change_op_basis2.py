@@ -15,7 +15,8 @@
 Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
 
-# pylint:disable=protected-access, unused-argument
+# pylint: disable=protected-access
+
 
 import re
 from functools import partial, reduce
@@ -129,7 +130,7 @@ def test_change_op_basis_concrete_legacy_operand_capture():
     # Building with capture paused yields a concrete legacy operator rather than a tracer, so
     # ``_apply_op_or_func`` takes the ``isinstance(op, Operator)`` -> ``apply`` branch.
     with qp.capture.pause():
-        legacy_op = qp.ControlledSequence(qp.RX(0.1, 0), control=1)
+        legacy_op = qp.AngleEmbedding(np.array([0.1]), wires=[0])
 
     def circuit():
         qp.change_op_basis(legacy_op, qp.X(2), qp.X(2))
@@ -137,7 +138,7 @@ def test_change_op_basis_concrete_legacy_operand_capture():
     jaxpr = jax.make_jaxpr(circuit)()
 
     names = [eqn.primitive.name for eqn in jaxpr.eqns]
-    assert names.count("ControlledSequence") == 1
+    assert names.count("AngleEmbedding") == 1
 
 
 @pytest.mark.capture
@@ -150,13 +151,13 @@ def test_change_op_basis_abstract_legacy_operand_capture():
     # ``_apply_op_or_func`` takes the ``_is_abstract_operator`` -> ``pass`` branch (the equation is
     # already in the jaxpr from construction and must not be re-emitted).
     def circuit():
-        legacy_op = qp.ControlledSequence(qp.RX(0.1, 0), control=1)
+        legacy_op = qp.AngleEmbedding(np.array([0.1]), wires=[0])
         qp.change_op_basis(legacy_op, qp.X(2), qp.X(2))
 
     jaxpr = jax.make_jaxpr(circuit)()
 
     names = [eqn.primitive.name for eqn in jaxpr.eqns]
-    assert names.count("ControlledSequence") == 1
+    assert names.count("AngleEmbedding") == 1
 
 
 @pytest.mark.capture
@@ -298,7 +299,7 @@ def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
     assert tape.operations == [compute_op(0), target_op(1), expected_uncompute]
 
 
-class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
+class MyOp(qp.RX):  # pylint: disable=too-few-public-methods
     """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
@@ -307,7 +308,7 @@ class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
     has_diagonalizing_gates = False
 
 
-class TestInitialization:  # pylint:disable=too-many-public-methods
+class TestInitialization:
     """Test the initialization."""
 
     def test_init_change_op_basis_op(self):
@@ -392,7 +393,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert change_op_basis_op.has_diagonalizing_gates is False
 
 
-class TestProperties:  # pylint: disable=too-few-public-methods
+class TestProperties:
     """Test class properties."""
 
     @pytest.mark.parametrize("ops_lst", list(ops))
@@ -642,7 +643,7 @@ def test_callable_validation_doesnt_hide_bugs_with_typeerror():
         change_op_basis(f, qp.Y(0))
 
 
-def blah(a, b, c=3):
+def blah(a, b, c=3):  # pylint: disable=unused-argument
     pass
 
 

@@ -20,16 +20,15 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.templates.subroutines.arithmetic.adder import _adder_arithmetic_decomposition
-from pennylane.testing import assert_decomposable
+from pennylane.testing import assert_valid_decomp_rule
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_standard_validity_Adder():
+@pytest.mark.parametrize("mod, work_wires", [(11, [4, 5]), (16, [])])
+def test_standard_validity_Adder(mod, work_wires):
     """Check the operation using the assert_valid function."""
     k = 6
-    mod = 11
     x_wires = [0, 1, 2, 3]
-    work_wires = [4, 5]
     op = qp.Adder(k, x_wires=x_wires, mod=mod, work_wires=work_wires)
     qp.testing.assert_valid(op)
 
@@ -98,6 +97,13 @@ class TestAdder:
                 3,
             ),
             (
+                1,
+                [0, 1, 2],
+                7,
+                [3, 4, 5],
+                3,
+            ),
+            (
                 6,
                 [0, 1, 2, 3],
                 None,
@@ -106,9 +112,7 @@ class TestAdder:
             ),
         ],
     )
-    def test_operation_result(
-        self, k, x_wires, mod, work_wires, x
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_result(self, k, x_wires, mod, work_wires, x):
         """Test the correctness of the PhaseAdder template output."""
         dev = qp.device("default.qubit")
 
@@ -123,7 +127,6 @@ class TestAdder:
         if mod is None:
             mod = 2 ** len(x_wires)
 
-        # pylint: disable=bad-reversed-sequence
         out = list(circuit(x)[0, :])
         result = sum(bit * (2**i) for i, bit in enumerate(reversed(out)))
         assert np.allclose(result, (x + k) % mod)
@@ -143,19 +146,17 @@ class TestAdder:
                 [0, 1, 2, 3, 4],
                 12,
                 [4, 5],
-                "None of the wires in work_wires should be included in x_wires.",
+                "x_wires and work_wires must not overlap",
             ),
         ],
     )
-    def test_operation_and_test_wires_error(
-        self, k, x_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_and_test_wires_error(self, k, x_wires, mod, work_wires, msg_match):
         """Test that proper errors are raised"""
 
         with pytest.raises(ValueError, match=msg_match):
             qp.Adder(k, x_wires, mod, work_wires)
 
-    @pytest.mark.parametrize("work_wires", [None, [3], [3, 4, 5]])
+    @pytest.mark.parametrize("work_wires", [None, [], [3]])
     def test_validation_of_num_work_wires(self, work_wires):
         """Test that when mod is not 2**len(x_wires), validation confirms two
         work wires are present, while any work wires are accepted for mod=2**len(x_wires)"""
@@ -185,9 +186,7 @@ class TestAdder:
             ),
         ],
     )
-    def test_types_error(
-        self, k, x_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_types_error(self, k, x_wires, mod, work_wires, msg_match):
         """Test errors are raised"""
         with pytest.raises(ValueError, match=msg_match):
             qp.Adder(k, x_wires, mod, work_wires)
@@ -242,17 +241,17 @@ class TestAdder:
         mat1, mat2 = qp.matrix(ctrl_op1, wire_order), qp.matrix(ctrl_op2, wire_order)
         assert qp.math.allclose(mat1, mat2)
 
-    @pytest.mark.xfail_if_capture(reason="Needs PhaseAdder to be Op2 [sc-130164]", strict=False)
     @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("rule", qp.list_decomps(qp.Adder), ids=lambda rule: rule.name)
     @pytest.mark.parametrize("mod", [7, 8])
-    def test_decomposition_new(self, mod):
+    def test_decomposition_new(self, rule, mod):
         """Tests the decomposition rules implemented with the new system."""
 
         k = 4
         x_wires = [2, 3, 4]
         work_wires = [0, 1]
         op = qp.Adder(k, x_wires, mod, work_wires)
-        assert_decomposable(op)
+        assert_valid_decomp_rule(op, rule)
 
     @pytest.mark.parametrize(
         ("k", "x_wires", "mod", "work_wires"),
@@ -269,9 +268,7 @@ class TestAdder:
         all_wires = x_wires + work_wires
         mat_op = qp.matrix(op, wire_order=all_wires)
 
-        mat_arith = qp.matrix(_adder_arithmetic_decomposition, wire_order=all_wires)(
-            *op.data, wires=op.wires, **op.hyperparameters
-        )
+        mat_arith = qp.matrix(_adder_arithmetic_decomposition, wire_order=all_wires)(**op.arguments)
 
         assert qp.math.allclose(mat_op, mat_arith)
 
@@ -303,6 +300,5 @@ class TestAdder:
             qp.Adder(k, x_wires, mod, work_wires)
             return qp.sample(wires=x_wires)
 
-        # pylint: disable=bad-reversed-sequence
         result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :])))
         assert jax.numpy.allclose(result, (x + k) % mod)

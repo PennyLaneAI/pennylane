@@ -21,8 +21,7 @@ from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CZ, X, Z, ctrl
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import AbstractArray, Wire
+from pennylane.typing import AbstractArray, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -68,6 +67,22 @@ class FlipSign(Operator2):
 
     >>> circuit()
     array([ 0.5+0.j,  0.5+0.j, -0.5+0.j,  0.5+0.j])
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.FlipSign
+            :stacked:
+            :symbols: :math:`n` wires and basis state :math:`b=(b_0, \dots, b_{n-1})` (``state``)
+            :example: :math:`n=3`, :math:`b=(1, 0, 0)`
+
+            .. decomposition-rule:: _flip_sign_decomposition
+                :image: /_static/decomposition_thumbnails/flip_sign_controlled_z.svg
+                :where: the controls are on :math:`|b_0 \cdots b_{n-2}\rangle`, and
+                    :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
+
+                :class:`~.Z` with :math:`n-1` controls | :math:`1` | 1
+                :class:`~.X` | :math:`2[b_{n-1} = 0]` | 2
 
     """
 
@@ -120,12 +135,11 @@ def _flip_sign_resources(state: tuple[int], wires: WiresLike, work_wires: WiresL
     elif num_ctrl_wires == 1 and state[0]:
         res = {CZ: 1}
     else:
-        num_zeros = num_ctrl_wires - sum(state[:-1])
         res = {
-            _ctrl_abstract(
-                Z,
-                Wire[num_ctrl_wires],
-                num_zero_control_values=num_zeros,
+            ctrl(
+                Z(Wire[1]),
+                control=Wire[num_ctrl_wires],
+                control_values=Bool[num_ctrl_wires],
                 work_wires=Wire[len(work_wires)],
                 work_wire_type="zeroed",
             ): 1

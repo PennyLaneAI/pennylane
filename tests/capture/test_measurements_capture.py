@@ -15,7 +15,9 @@
 Tests for capturing measurements.
 """
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,wrong-import-position
+
+
 import numpy as np
 import pytest
 
@@ -37,7 +39,6 @@ from pennylane.measurements import (
 
 jax = pytest.importorskip("jax")
 
-# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import AbstractMeasurement
 from pennylane.testing import assert_eqn_matches_op
 
@@ -318,9 +319,8 @@ class TestCounts:
         assert len(jaxpr.outvars) == 3
 
 
-# pylint: disable=unnecessary-lambda
 creation_funcs = [
-    lambda: qp.state(),
+    lambda: qp.state(),  # pylint: disable=unnecessary-lambda
     lambda: qp.density_matrix(wires=(0, 1)),
     lambda: qp.expval(qp.X(0)),
     lambda: ExpectationMP(wires=qp.wires.Wires((0, 1)), eigvals=np.array([-1.0, -0.5, 0.5, 1.0])),
@@ -434,8 +434,7 @@ class TestExpvalVar:
     def test_capture_operator2(self, m_type, defined_outside):
         """Test that the expectation value of an observable can be captured."""
 
-        # pylint: disable=too-few-public-methods
-        class PauliX(qp.core.Operator2):
+        class PauliX(qp.core.Operator2):  # pylint: disable=too-few-public-methods
             """Operator2 version of X."""
 
             def __init__(self, wires):

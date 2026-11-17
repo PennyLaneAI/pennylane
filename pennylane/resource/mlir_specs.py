@@ -30,60 +30,15 @@ from .resource import SpecsResources
 _RESOURCE_ANALYSIS_PREFIX = "pennylane_specs_analysis_pass"
 
 
-def _execute_analysis_pass(
-    new_qnode,
-    compile_options,
-    *args,
-    **kwargs,
-):
-    """
-    Helper function to compile the QNode with the resource analysis pass inserted, which will output
-    the necessary JSON files for MLIR analysis.
-
-    This function will stop compilation before lowering to LLVM, avoiding the typical Catalyst
-    compilation strategy.
-    """
-    # pylint: disable=import-outside-toplevel,protected-access
-    try:
-        from catalyst import QJIT
-    except ImportError as e:  # pragma: no cover
-        raise ImportError(
-            "Catalyst must be installed to use specs with QJIT-compiled QNodes. "
-            "Please install Catalyst and try again."
-        ) from e
-
-    new_qjit = QJIT(new_qnode, compile_options=compile_options)
-
-    # Force a compilation, which will output the necessary JSON files
-    # This code snippet is adapted from the source code of `QJIT.jit_compile`
-    if new_qjit.mlir_module is None:
-        new_qjit.workspace = new_qjit._get_workspace()
-        new_qjit.jaxed_function = None
-        if (
-            new_qjit.compiled_function and new_qjit.compiled_function.shared_object
-        ):  # pragma: no cover
-            new_qjit.compiled_function.shared_object.close()
-
-        new_qjit.jaxpr, new_qjit.out_type, new_qjit.out_treedef, new_qjit.c_sig = new_qjit.capture(
-            args, **kwargs
-        )
-
-        new_qjit.mlir_module = new_qjit.generate_ir()
-
-    # Force resolution of this property to finish going through all MLIR passes
-    if new_qjit.mlir_opt is None:  # pragma: no cover
-        raise ValueError(
-            "Specs failed to compile the QNode with the specified passes for MLIR analysis."
-        )
-
-
-def resources_from_analysis_pass(
+def resources_from_analysis_pass(  # pylint: disable=too-many-arguments,too-many-statements
     qjit,
     original_qnode,
     level: int | tuple[int] | list[int],
     level_to_markers: dict[int, list[str]],
     level_to_name: dict[int, str],
     *args,
+    analysis_pass_name: str = "resource-analysis",
+    analysis_pass_kwargs: dict | None = None,
     **kwargs,
 ) -> dict[str, SpecsResources | list[SpecsResources]]:
     """
@@ -107,14 +62,18 @@ def resources_from_analysis_pass(
         level_to_name (dict[int, str]): mapping from level number to the name to use for that level
             in the output. Note that this argument is mutated by this function
         *args: the arguments to pass to the QNode when compiling
+        analysis_pass_name: the name of the analysis pass to use
+        analysis_pass_kwargs: the keyword arguments to pass to the analysis pass
         **kwargs: the keyword arguments to pass to the QNode when compiling
     Returns:
         dict[str, SpecsResources | list[SpecsResources]]: A mapping from level name to the
             corresponding resource information.
     """
 
-    # pylint: disable=protected-access,too-many-arguments,too-many-statements
+    from catalyst import QJIT  # pylint: disable=import-outside-toplevel
 
+    analysis_pass_kwargs = analysis_pass_kwargs or {}
+    # pylint: disable-next=protected-access
     iter_pipeline = copy.deepcopy(original_qnode._compile_pipeline)
     new_compile_pipeline = CompilePipeline()
     new_post_device_pipeline = CompilePipeline()
@@ -141,8 +100,8 @@ def resources_from_analysis_pass(
             level_to_name[0] = (
                 ", ".join(level_to_markers[0]) if 0 in level_to_markers else "Before MLIR Passes"
             )
-            new_compile_pipeline += transform(pass_name="resource-analysis")(
-                output_json=True, output_fname=fname
+            new_compile_pipeline += transform(pass_name=analysis_pass_name)(
+                output_json=True, output_fname=fname, **analysis_pass_kwargs
             )
 
         for i, comp_pass in enumerate(iter_pipeline, start=1):
@@ -183,16 +142,18 @@ def resources_from_analysis_pass(
             new_compile_pipeline, post_device_pipeline=new_post_device_pipeline
         )
 
-        compile_options.target = "mlir"
-        compile_options.lower_to_llvm = False
+        compile_options.target = "mlir_opt"
+        # Otherwise, QNodes without arguments would also be compiled when the QJIT object is created
+        compile_options.enable_aot_compilation = False
         if compile_options.pipelines is None:
             # If the user has not explicitly chosen a pipeline, prevent unnecessary work by
             # limiting which passes are applied to just the necessary ones. In this case, only
-            # the set of user-specified transforms (the quantum-compilation-stage) are run
-            compile_options.pipelines = [("pipe", ["quantum-compilation-stage"])]
+            # the passes up to and including the user-specified transforms (the
+            # user-transform-stage) are run
+            compile_options.pipelines = [("pipe", ["user-transform-stage"])]
 
         # Partially compile the QNode, producing JSON data with resource info
-        _execute_analysis_pass(new_qnode, compile_options, *args, **kwargs)
+        QJIT(new_qnode, compile_options=compile_options).aot_compile(*args, **kwargs)
 
         results = {}
 

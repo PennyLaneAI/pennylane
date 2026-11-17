@@ -271,8 +271,7 @@ class TestTemporaryAND:
 
         @qp.set_shots(1)
         @qp.qnode(qp.device("default.qubit", wires=wires))
-        # pylint: disable-next=protected-access
-        @qp.transforms._tape_decompose(
+        @qp.transforms._tape_decompose(  # pylint: disable=protected-access
             gate_set=gate_set,
             fixed_decomps={"Adjoint(TemporaryAND)": rule},
         )
@@ -367,7 +366,7 @@ class TestTemporaryAND:
         exp_probs = qp.math.array([1, 0, 1, 0, 1, 0, 1, 0]) / 4
         flip = 2 * int(cvals[0]) + int(cvals[1])
         exp_probs[2 * flip : 2 * flip + 2] = [0, 0.25]
-        qjit_circuit = qp.qjit(circuit)
+        qjit_circuit = qp.qjit(circuit, capture=False)
         values = qp.math.array(cvals, like="jax")
         out = circuit(values)
         qjit_out = qjit_circuit(values)

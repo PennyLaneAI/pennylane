@@ -79,7 +79,26 @@ class IQP(Operator2):
     0: ─╭IQP─┤  <Z>
     1: ─╰IQP─┤  <Z>
 
-    .. seealso:: :doc:`IQP tutorial <demo:demos/tutorial_iqp_circuit_optimization_jax>`
+    .. seealso:: :func:`pennylane.math.iqp_expval`,
+        :doc:`IQP tutorial <demo:demos/tutorial_iqp_circuit_optimization_jax>`
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.IQP
+            :stacked:
+            :symbols: :math:`n` wires and :math:`G` generators in total in ``pattern``
+            :example: :math:`n=2`, ``pattern=[[[0]], [[1]], [[0, 1]]]`` (meaning the number of generators :math:`G = 3`), ``spin_sym=True``
+
+            .. decomposition-rule:: _instantaneous_quantum_polynomial_decomposition
+                :image: /_static/decomposition_thumbnails/iqp_multirz.svg
+                :where: the Pauli word ``"YX...X"`` acts on all :math:`n` wires: one Y, then
+                    :math:`n - 1` X's
+
+                :class:`PPR_4(1, "YX...X") <.PPR_4>` | :math:`1` if ``spin_sym=True`` | 1
+                :class:`~.Hadamard` | :math:`2n` | 4
+                :class:`~.MultiRZ` on the wires of a generator | :math:`G` (one per generator) | 3
+
     """
 
     dynamic_argnames = ("weights",)
@@ -113,8 +132,8 @@ class IQP(Operator2):
 
         super().__init__(weights, wires=wires, pattern=pattern, spin_sym=spin_sym)
 
-    # pylint: disable=arguments-differ
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_matrix(weights, wires, pattern, spin_sym) -> TensorLike:
         num_wires = len(Wires(wires))
         layers = []
@@ -132,9 +151,8 @@ class IQP(Operator2):
         return reduce(math.matmul, layers[::-1])
 
 
-def _instantaneous_quantum_polynomial_resources(
-    weights, wires, pattern, spin_sym
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _instantaneous_quantum_polynomial_resources(weights, wires, pattern, spin_sym):
     num_wires = len(wires)
     resources = defaultdict(int)
     if spin_sym:

@@ -16,7 +16,9 @@ This submodule contains the operation SpecialUnitary and
 its utility functions.
 """
 
-# pylint: disable=arguments-differ, import-outside-toplevel
+# pylint: disable=arguments-differ
+
+
 from functools import lru_cache, reduce
 from itertools import product
 from typing import Literal
@@ -606,7 +608,7 @@ class SpecialUnitary(Operation):
             jac = jax.jacobian(self.compute_matrix, argnums=0, holomorphic=True)(theta, num_wires)
 
         elif interface == "torch":
-            import torch
+            import torch  # pylint: disable=import-outside-toplevel
 
             rjac, ijac = torch.autograd.functional.jacobian(split_matrix, theta)
             jac = rjac + 1j * ijac
@@ -720,6 +722,14 @@ class SpecialUnitary(Operation):
         return SpecialUnitary(-self.data[0], wires=self.wires)
 
 
+@register_resources({SpecialUnitary: 1})
+def _adjoint_special_unitary(theta, wires, **__):
+    SpecialUnitary(-theta, wires=wires)
+
+
+add_decomps("Adjoint(SpecialUnitary)", _adjoint_special_unitary)
+
+
 class TmpPauliRot(PauliRot):
     r"""A custom version of ``PauliRot`` that is inserted with rotation angle zero when
     decomposing ``SpecialUnitary``. The differentiation logic makes use of the gradient
@@ -782,3 +792,11 @@ def _tmp_paulirot_decomp(theta: TensorLike, wires: WiresLike, pauli_word: str):
 
 
 add_decomps(TmpPauliRot, _tmp_paulirot_decomp)
+
+
+@register_resources(lambda base: _tmp_paulirot_decomp_resources(**base.arguments))
+def _adjoint_tmp_paulirot(base):
+    PauliRot(-base.theta, pauli_word=base.pauli_word, wires=base.wires)
+
+
+add_decomps("Adjoint(TmpPauliRot)", _adjoint_tmp_paulirot)

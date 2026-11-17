@@ -21,13 +21,13 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
-from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
-from pennylane.typing import AbstractArray, Float, TensorLike, Wire
+from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 
@@ -38,7 +38,7 @@ def _identity_matrix(n_wires):
 
 
 @lru_cache
-def _identity_sparse_matrix(n_wires, format):  # pylint: disable=redefined-builtin
+def _identity_sparse_matrix(n_wires, format):
     """Cached sparse identity matrix, keyed on the number of wires rather than the wire labels."""
     return sparse.eye(int(2**n_wires), format=format)
 
@@ -77,7 +77,7 @@ class Identity(Operator2):
 
     def __init__(self, wires: WiresLike = ()):
         super().__init__(wires=wires)
-        self._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({}): 1.0})
+        self._pauli_rep = PauliSentence({PauliWord({}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
@@ -265,7 +265,7 @@ class GlobalPhase(Operator2):
     wire_argnames = ()
     arg_specs = {"phi": Float}
 
-    def __init__(self, phi):  # pylint: disable=unused-argument
+    def __init__(self, phi):
         super().__init__(phi)
 
     @staticmethod
@@ -336,9 +336,8 @@ class GlobalPhase(Operator2):
         return qp.math.exp(-1j * phi) * sparse.eye(2**n_wires, format=format)
 
     @staticmethod
-    def compute_diagonalizing_gates(
-        phi, wires=()
-    ):  # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_diagonalizing_gates(phi, wires=()):
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -384,9 +383,8 @@ class GlobalPhase(Operator2):
         return qp.s_prod(-1, qp.I())
 
 
-def _controlled_g_phase_resource(
-    base, control_wires, control_values, work_wires, work_wire_type
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _controlled_g_phase_resource(base, control_wires, control_values, work_wires, work_wire_type):
     num_control_wires = len(control_wires)
     num_work_wires = len(work_wires)
 
@@ -400,62 +398,16 @@ def _controlled_g_phase_resource(
     # NOTE: Take average case scenario for number of X required for zero control values
     resources[qp.X] = num_control_wires
 
-    if num_control_wires == 2:
-        resources[qp.ControlledPhaseShift] = 1
-        return resources
-
     resources[
         qp.ctrl(
             abstractify(qp.PhaseShift),
             control=Wire[num_control_wires - 1],
             work_wires=Wire[num_work_wires],
+            work_wire_type=work_wire_type,
         )
     ] = 1
 
     return resources
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_g_phase(
-    base: GlobalPhase, control, control_values, work_wires=None, work_wire_type="borrowed"
-):
-    r"""
-    Custom controlled global phase dispatch.
-
-    A :class:`~.GlobalPhase` applies the phase :math:`e^{-i\phi}` to the whole state regardless of
-    any qubit's state, so it has no target wires. Controlling it applies :math:`e^{-i\phi}` only
-    when the control qubit is in the :math:`|1\rangle` state, which acts on that qubit as
-
-    .. math::
-
-        \begin{bmatrix}
-            1 & 0 \\
-            0 & e^{-i \phi}
-        \end{bmatrix}.
-
-    This equals :math:`\text{PhaseShift}(-\phi)`, since
-    :math:`\text{PhaseShift}(\theta) = \text{diag}(1, e^{i\theta})`, so a single-controlled global
-    phase reduces to a phase shift on the control qubit. For multiple controls, the phase shift on
-    the last control is itself controlled by the remaining controls.
-    """
-
-    if not _is_empty_or_all_true(control_values):
-        return NotImplemented
-
-    phi = base.phi
-    if not isinstance(phi, AbstractArray):
-        phi = -phi
-
-    if len(control) == 1:
-        # The global phase becomes a phase shift on the single control wire.
-        return qp.PhaseShift(phi, control[-1])
-    # For multiple controls, a phase shift on the last control wire, controlled by the rest.
-    return qp.ctrl(
-        qp.PhaseShift(phi, control[-1]),
-        control=control[:-1],
-        work_wires=work_wires,
-        work_wire_type=work_wire_type,
-    )
 
 
 @register_resources(_controlled_g_phase_resource, exact=False)

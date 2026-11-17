@@ -20,8 +20,6 @@ import pytest
 import pennylane.estimator as qre
 from pennylane.estimator import resource_rep
 
-# pylint: disable=too-many-arguments, no-self-use
-
 
 class TestQubitizeTHC:
     """Test the QubitizeTHC class."""
@@ -221,7 +219,7 @@ class TestQubitizeTHC:
             ),
         ),
     )
-    def test_control_resources(
+    def test_control_resources(  # pylint: disable=too-many-arguments
         self, thc_ham, prep_op, select_op, num_ctrl_wires, num_zero_ctrl, expected_res
     ):
         """Test that the controlled resource decomposition for QubitizeTHC is correct."""

@@ -44,13 +44,11 @@ from .support import (
 
 has_rich = False
 try:
-    import rich  # pylint:disable=unused-import
+    import rich  # pylint: disable=unused-import
 
     has_rich = True
 except ImportError:
     pass
-
-# pylint:disable=protected-access,redefined-outer-name
 
 
 pytestmark = pytest.mark.data
@@ -91,8 +89,7 @@ _data_struct = {
 }
 
 
-# pylint:disable=unused-argument
-def get_mock(url, timeout=1.0):
+def get_mock(url, timeout=1.0):  # pylint: disable=unused-argument
     """Return the foldermap or data_struct according to URL"""
     resp = MagicMock(ok=True)
     resp.json.return_value = _folder_map if "foldermap" in url else _data_struct
@@ -100,7 +97,7 @@ def get_mock(url, timeout=1.0):
 
 
 @pytest.fixture(autouse=True)
-def mock_requests_get(request, monkeypatch, mock_get_args):
+def mock_requests_get(request, monkeypatch, mock_get_args):  # pylint: disable=redefined-outer-name
     """Patches `requests.get()` in the data_manager module so that
     it returns mock JSON data for the foldermap and data struct."""
 
@@ -139,8 +136,7 @@ def httpserver_listen_address():
     return ("localhost", 8888)
 
 
-# pylint:disable=unused-argument
-# pylint:disable=dangerous-default-value
+# pylint: disable-next=unused-argument,dangerous-default-value
 def post_mock(url, json, timeout=1.0, headers={"content-type": "application/json"}):
     """Return mocked get response depending on json content."""
     resp = MagicMock(ok=True)
@@ -151,8 +147,7 @@ def post_mock(url, json, timeout=1.0, headers={"content-type": "application/json
     return resp
 
 
-# pylint:disable=unused-argument
-def graphql_mock(url, query, variables=None):
+def graphql_mock(url, query, variables=None):  # pylint: disable=unused-argument
     """Return the JSON according to the query."""
     if "ListAttributes" in query:
         if variables["datasetClassId"] == "mqt-bench":
@@ -174,8 +169,7 @@ def graphql_mock(url, query, variables=None):
     return json_data
 
 
-# pylint:disable=unused-argument
-def graphql_mock_qchem(url, query, variables=None):
+def graphql_mock_qchem(url, query, variables=None):  # pylint: disable=unused-argument
     """Return the JSON according to the query."""
     if "ListAttributes" in query:
         json_data = _list_attrs_resp
@@ -188,12 +182,12 @@ def graphql_mock_qchem(url, query, variables=None):
     return json_data
 
 
-def get_dataset_urls_mock(class_id, parameters):
+def get_dataset_urls_mock(class_id, parameters):  # pylint: disable=unused-argument
     """Returns an empty response for the ``get_dataset_urls`` function."""
     return []
 
 
-def head_mock(url, timeout=None):
+def head_mock(url, timeout=None):  # pylint: disable=unused-argument
     """Return a fake header stating content-length is 1."""
     return NamedTuple("Head", headers=dict)(headers={"Content-Length": 10000})
 
@@ -211,11 +205,11 @@ def submit_download_mock(_self, _fetch_and_save, filename, dest_folder):
     content = os.path.splitext(os.path.basename(filename))[0]
     if content.split("_")[-1] == "full":
         content = {"molecule": content}
+    # pylint: disable-next=protected-access
     qp.data.Dataset._write_file(content, os.path.join(dest_folder, filename))
 
 
-# pylint:disable=unused-argument
-def wait_mock_fixture(_futures, return_when=None):
+def wait_mock_fixture(_futures, return_when=None):  # pylint: disable=unused-argument
     """Patch to avoid raising exceptions after collecting threads."""
     return MagicMock(done=[])
 
@@ -236,6 +230,8 @@ class TestLoadInteractive:
     Test the load_interactive function for various inputs. Side-effect args are ordered as:
     [data name, *params, attributes, Force, Folder, continue]
     """
+
+    # pylint: disable=unused-argument,redefined-outer-name
 
     @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
     @pytest.mark.parametrize(
@@ -269,21 +265,13 @@ class TestLoadInteractive:
             ),
         ],
     )
-    def test_load_interactive_success(
-        self,
-        mock_input,
-        mock_sleep,
-        mock_load,
-        side_effect,
-    ):  # pylint:disable=too-many-arguments, redefined-outer-name
+    def test_load_interactive_success(self, mock_input, mock_sleep, mock_load, side_effect):
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
         assert isinstance(qp.data.load_interactive(), qp.data.Dataset)
 
     @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
-    def test_load_interactive_without_confirm(
-        self, mock_input, _mock_sleep, mock_load
-    ):  # pylint:disable=redefined-outer-name
+    def test_load_interactive_without_confirm(self, mock_input, _mock_sleep, mock_load):
         """Test that load_interactive returns None if the user doesn't confirm."""
         mock_input.side_effect = [
             "qspin",
@@ -317,8 +305,13 @@ class TestLoadInteractive:
         ],
     )
     def test_load_interactive_invalid_inputs(
-        self, mock_input, _mock_sleep, mock_load, side_effect, error_message
-    ):  # pylint: disable=redefined-outer-name
+        self,
+        mock_input,
+        _mock_sleep,
+        mock_load,
+        side_effect,
+        error_message,
+    ):
         """Test that load_interactive raises errors as expected."""
         mock_input.side_effect = side_effect
         with pytest.raises(ValueError, match=error_message):
@@ -363,7 +356,7 @@ class TestMiscHelpers:
         assert qp.data.list_data_names() == ["other", "qchem", "qspin"]
 
     @patch.object(requests, "get", get_mock)
-    def test_list_datasets(self, tmp_path):
+    def test_list_datasets(self, tmp_path):  # pylint: disable=unused-argument
         """Test that list_datasets returns either the S3 foldermap, or the local tree."""
         assert qp.data.list_datasets() == {
             "qspin": {"Heisenberg": {"closed": {"chain": ["1x4"]}}},
@@ -405,7 +398,7 @@ class TestMiscHelpers:
 
 @pytest.fixture
 def mock_download_dataset(monkeypatch):
-    # pylint:disable=too-many-arguments
+    # pylint: disable-next=unused-argument,too-many-arguments
     def mock(data_path, dest, attributes, force, block_size, pbar_task):
         dset = Dataset.open(Path(dest), "w")
         if attributes:
@@ -418,7 +411,6 @@ def mock_download_dataset(monkeypatch):
     return mock
 
 
-# pylint: disable=too-many-arguments
 @patch.object(pennylane.data.data_manager, "head", head_mock)
 @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
 @pytest.mark.usefixtures("mock_download_dataset")
@@ -435,6 +427,7 @@ def mock_download_dataset(monkeypatch):
 )
 @pytest.mark.parametrize("progress_bar", [True, False])
 @pytest.mark.parametrize("attributes", [None, ["molecule"]])
+# pylint: disable-next=too-many-arguments
 def test_load(tmp_path, data_name, params, expect_paths, progress_bar, attributes):
     """Test that load fetches the correct datasets at the
     expected paths."""
@@ -453,7 +446,6 @@ def test_load(tmp_path, data_name, params, expect_paths, progress_bar, attribute
     }
 
 
-# pylint: disable=too-many-arguments
 @patch.object(pennylane.data.data_manager, "head", head_mock)
 @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
 @pytest.mark.usefixtures("mock_download_dataset")
@@ -515,9 +507,9 @@ def test_load_except(monkeypatch, tmp_path):
     "attributes, dest_exists, called_partial",
     [(["x"], True, True), (["x"], False, True), (None, True, True), (None, False, False)],
 )
-def test_download_dataset_full_or_partial(
+def test_download_dataset_full_or_partial(  # pylint: disable=too-many-arguments
     download_full, download_partial, attributes, dest_exists, force, called_partial
-):  # pylint: disable=too-many-arguments
+):
     """Test that _download_dataset calls ``_download_partial()`` if ``attributes`` is not None,
     or the dataset already exists at ``dest``, and that it only calls ``_download_full()`` if
     the dataset does not exist at ``dest`` and ``attributes`` is None.
@@ -526,7 +518,7 @@ def test_download_dataset_full_or_partial(
     dest = MagicMock()
     dest.exists.return_value = dest_exists
 
-    pennylane.data.data_manager._download_dataset(
+    pennylane.data.data_manager._download_dataset(  # pylint: disable=protected-access
         "dataset/path", attributes=attributes, dest=dest, force=force, block_size=1, pbar_task=None
     )
 
@@ -545,7 +537,7 @@ def test_download_dataset_full_call(download_full, force):
     dest.exists.return_value = False
     pbar_task = MagicMock()
 
-    pennylane.data.data_manager._download_dataset(
+    pennylane.data.data_manager._download_dataset(  # pylint: disable=protected-access
         f"{GRAPHQL_URL}/dataset/path",
         attributes=None,
         dest=dest,
@@ -571,7 +563,7 @@ def test_download_dataset_partial_call(download_partial, attributes, force):
     dest.exists.return_value = True
     pbar_task = MagicMock()
 
-    pennylane.data.data_manager._download_dataset(
+    pennylane.data.data_manager._download_dataset(  # pylint: disable=protected-access
         f"{GRAPHQL_URL}/dataset/path",
         attributes=attributes,
         dest=dest,
@@ -595,7 +587,7 @@ def test_download_dataset_partial_call(download_partial, attributes, force):
 def test_download_full(tmp_path):
     """Tests that _download_dataset will fetch the dataset file
     at ``s3_url`` into ``dest``."""
-    pennylane.data.data_manager._download_full(
+    pennylane.data.data_manager._download_full(  # pylint: disable=protected-access
         f"{GRAPHQL_URL}/dataset/path", tmp_path / "dataset", block_size=1, pbar_task=None
     )
 
@@ -610,7 +602,7 @@ def test_download_full_with_progress(tmp_path):
     at ``s3_url`` into ``dest`` and call the ``update`` method
     of the progress bar task."""
     pbar_task = MagicMock()
-    pennylane.data.data_manager._download_full(
+    pennylane.data.data_manager._download_full(  # pylint: disable=protected-access
         "dataset/path", tmp_path / "dataset", block_size=4, pbar_task=pbar_task
     )
 
@@ -638,7 +630,7 @@ def test_download_partial_dest_not_exists(
         pennylane.data.data_manager, "open_hdf5_s3", MagicMock(return_value=remote_dataset.bind)
     )
 
-    pennylane.data.data_manager._download_partial(
+    pennylane.data.data_manager._download_partial(  # pylint: disable=protected-access
         "dataset/path",
         dest=tmp_path / "dataset",
         attributes=attributes,
@@ -681,7 +673,7 @@ def test_download_partial_dest_exists(tmp_path, monkeypatch, attributes, overwri
     local_dataset.x = "local_value"
     local_dataset.close()
 
-    pennylane.data.data_manager._download_partial(
+    pennylane.data.data_manager._download_partial(  # pylint: disable=protected-access
         "dataset/path",
         dest=tmp_path / "dataset",
         attributes=attributes,
@@ -705,7 +697,7 @@ def test_download_partial_no_check_remote(open_hdf5_s3, tmp_path):
 
     local_dataset.close()
 
-    pennylane.data.data_manager._download_partial(
+    pennylane.data.data_manager._download_partial(  # pylint: disable=protected-access
         "dataset_url",
         tmp_path / "dataset",
         ["x", "y"],

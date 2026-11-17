@@ -21,6 +21,7 @@ import scipy as sp
 
 import pennylane as qp
 from pennylane.core.queuing import QueuingManager
+from pennylane.ops.op_math.adjoint import _adjoint_eager
 
 
 def _SU2_transform(matrix):
@@ -191,7 +192,7 @@ def _approximate_set(basis_gates, max_length=10):
             gtrie_ids[depth], gtrie_mat[depth], gtrie_gph[depth], gtrie_sum[depth], strict=True
         ):
             # Get the last operation in the current node
-            last_op = qp.adjoint(node[-1], lazy=False) if node else None
+            last_op = _adjoint_eager(node[-1], update_queue=True) if node else None
 
             # Now attempt extending the current node with each gate in the basis set.
             for op in basis:
@@ -376,7 +377,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
                     c_n1_ids, c_n1_mat = _solovay_kitaev(c_n, i, c_n1_ids, c_n1_mat)
 
                 # Get the adjoints C' --> C'.adjoint()
-                c_n1_ids_adj = [qp.adjoint(gate, lazy=False) for gate in reversed(c_n1_ids)]
+                c_n1_ids_adj = [_adjoint_eager(gate, True) for gate in reversed(c_n1_ids)]
                 c_n1_mat_adj = qp.math.conj(qp.math.transpose(c_n1_mat))
 
                 # Store the decompositions and matrices for C'

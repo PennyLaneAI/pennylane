@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for the ``Prod2`` operator."""
 
-# pylint: disable=import-outside-toplevel
-
 from functools import reduce
 
 import numpy as np
@@ -121,7 +119,7 @@ class TestInitialization:
 
     def test_mcm_operands_raises(self):
         """Test that a product of mid-circuit measurements raises an error."""
-        m = qp.measurements.MidMeasureMP(qp.wires.Wires([0]))
+        m = qp.ops.MidMeasure(qp.wires.Wires([0]))
         with pytest.raises(ValueError, match="mid-circuit measurements"):
             Prod2([qp.X(1), m])
 
@@ -400,7 +398,7 @@ class TestSimplify:
         qp.assert_equal(simplified, qp.RY(0.3, 1))
 
 
-class TestValidity:  # pylint: disable=too-few-public-methods
+class TestValidity:
     """Standard validity checks."""
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -479,7 +477,6 @@ class TestAbstractOperands:
 
 
 @pytest.mark.capture
-# pylint: disable-next=too-few-public-methods
 class TestCapture:
     """Test that Prod2 integrates with program capture."""
 

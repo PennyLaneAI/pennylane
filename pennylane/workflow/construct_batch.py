@@ -27,7 +27,6 @@ from .resolution import _resolve_execution_config
 
 if TYPE_CHECKING:
     from pennylane.core.qscript import QuantumScriptBatch
-    from pennylane.qnn.torch import TorchLayer
     from pennylane.typing import PostprocessingFn
 
     from .qnode import QNode
@@ -136,24 +135,38 @@ def _get_inner_transform_slice(
     return slice(start, stop, level.step)
 
 
-def construct_batch(
-    qnode: QNode | TorchLayer,
-    level: str | int | slice = "user",
-) -> Callable:
+def construct_batch(qnode: QNode, level: str | int | slice = "user") -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
 
     Args:
         qnode (QNode): the qnode we want to get the tapes and post-processing for.
         level (str, int, slice): An indication of what transforms to apply before
-            drawing. Check :func:`~.workflow.get_compile_pipeline` for more
-            information on the allowed values and usage details of this argument.
+            constructing the batch. Defaults to ``"user"``.
+
+            * ``"top"``: No transforms are applied.
+            * ``"user"``: Only the transforms manually applied by the user.
+            * ``"gradient"``: The user-applied transforms, followed by the transform that
+              expands the trainable operations for the gradient method, if any.
+            * ``"device"``: All the transforms, including the gradient and device preprocessing
+              transforms, i.e. the tapes that the device executes.
+            * ``str``: The ``label`` of a :func:`~.marker`, to apply all transforms up to the
+              location of that marker.
+            * ``int``: The number of transforms to apply from the start of the compile pipeline,
+              e.g. ``level=0`` applies no transforms.
+            * ``slice``: A specific range of transforms, using standard 0-based Pythonic indexing.
+
+            .. note::
+
+                These levels count each gradient and device preprocessing transform separately,
+                and support ``"gradient"``. This differs from :func:`~.workflow.get_compile_pipeline`,
+                :func:`~.analyze`, :func:`~pennylane.estimate` and :func:`~.track`, where the device
+                preprocessing is a single level. Therefore, an ``int`` or ``slice`` level past the
+                user-applied transforms can select different transforms in these functions.
 
     Returns:
         Callable:
             A function with the same call signature as the initial quantum function.
             This function returns a batch (tuple) of tapes and postprocessing function.
-
-    .. seealso:: :func:`pennylane.workflow.get_compile_pipeline` to inspect the contents of the transform program for a specified level.
 
     .. details::
         :title: Usage Details
@@ -231,18 +244,11 @@ def construct_batch(
 
     """
     _validate_level(level)
-    is_torch_layer = type(qnode).__name__ == "TorchLayer"
     user_program = qnode.compile_pipeline
     num_user_transforms = len(user_program)
 
     def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         """Create a batch of tapes and a post processing function."""
-        if is_torch_layer:
-            x = args[0]
-            kwargs = {
-                **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
-            }
-
         initial_tape = make_qscript(qnode.func, shots=qnode.shots)(*args, **kwargs)
         params = initial_tape.get_parameters(trainable_only=False)
         initial_tape.trainable_params = math.get_trainable_indices(params)

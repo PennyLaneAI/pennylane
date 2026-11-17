@@ -22,7 +22,9 @@ variants selected by the ``double_phase`` flag: the default (``False``) genuine 
 unitary and the (``True``) double-phase Hadamard-test circuit of Fig. 6 of arXiv:2506.15784.
 """
 
-# pylint: disable=too-many-arguments, redefined-outer-name, too-few-public-methods, wrong-import-position, protected-access
+# pylint: disable=redefined-outer-name,wrong-import-position
+
+
 import itertools
 import warnings
 
@@ -48,7 +50,7 @@ from pennylane.templates.subroutines.time_evolution.trotter_cgf import (
 from pennylane.testing import assert_decomposable
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
-from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  # pylint: disable=no-name-in-module
+from tests.templates.subroutines.time_evolution.trotter_test_helpers import (
     CATALYST_GATE_SET_DOUBLE_PHASE,
     CATALYST_GATE_SET_GENUINE,
     _single_z,
@@ -505,8 +507,7 @@ class TestDecomposition:
         columns of the one-body leaf and the rows of the two-body leaves). The template
         normalizes leaf determinants internally, so the circuit is invariant under this flip
         even when it yields mixed determinants (as an ``eigh`` one-body leaf with ``det = -1``
-        next to ``expm`` two-body leaves would). Without the normalization ``BasisRotation``'s
-        real-orthogonal sign gauge would realize a different Hamiltonian."""
+        next to ``expm`` two-body leaves would)."""
         rng = np.random.default_rng(seed)
         num_modes, n_states, L = 2, 3, 2
         core = rng.normal(size=(L + 1, num_modes, num_modes, n_states, n_states)) * 0.4
@@ -754,9 +755,8 @@ class TestIntegration:
         )
         registers = qp.registers({"hadamard": 1, "system": M * N})
 
-        @qp.qjit
-        # pylint: disable-next=protected-access
-        @qp.transforms._tape_decompose(gate_set=target_gates)
+        @qp.qjit(capture=False)
+        @qp.transforms._tape_decompose(gate_set=target_gates)  # pylint: disable=protected-access
         @qp.qnode(qp.device("lightning.qubit"))
         def trotter_circuit():
             qp.H(registers["hadamard"])

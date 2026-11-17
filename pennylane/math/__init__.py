@@ -83,6 +83,7 @@ from .multi_dispatch import (
     unwrap,
     where,
 )
+from .iqp import iqp_expval
 from .quantum import (
     cov_matrix,
     dm_from_state_vector,
@@ -228,11 +229,9 @@ def is_real_obj_or_close(obj):
     return False
 
 
-class NumpyMimic(ar.autoray.AutoNamespace):
+class NumpyMimic(ar.autoray.AutoNamespace):  # pylint: disable=too-few-public-methods
     """Subclass of the Autoray NumpyMimic class in order to support
     the NumPy fft submodule"""
-
-    # pylint: disable=too-few-public-methods
 
     def __getattribute__(self, fn):
         if fn == "fft":
@@ -291,6 +290,7 @@ __all__ = [
     "get_trainable_indices",
     "grad",
     "int_to_binary",
+    "iqp_expval",
     "in_backprop",
     "is_tracer",
     "is_complex_dtype",

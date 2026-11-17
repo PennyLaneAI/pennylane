@@ -20,11 +20,9 @@ import numpy as np
 
 from pennylane.qchem.openfermion_pyscf import _import_pyscf
 
-# pylint: disable=import-outside-toplevel, unused-variable, too-many-instance-attributes, too-many-arguments
-
 
 @dataclass
-class VibrationalPES:
+class VibrationalPES:  # pylint: disable=too-many-instance-attributes
     r"""Data class to store information needed to construct a vibrational Hamiltonian for a molecule.
 
     Args:
@@ -95,7 +93,7 @@ class VibrationalPES:
     (3, 3, 3, 5, 5, 5, 3)
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         freqs=None,
         grid=None,
@@ -135,7 +133,7 @@ def _harmonic_analysis(scf_result, method="rhf"):
 
     """
     pyscf = _import_pyscf()
-    from pyscf.hessian import thermo
+    from pyscf.hessian import thermo  # pylint: disable=import-outside-toplevel
 
     method = method.strip().lower()
     if method not in ["rhf", "uhf"]:
@@ -183,7 +181,7 @@ def _single_point(molecule, method="rhf"):
 def _import_geometric():
     """Import geometric."""
     try:
-        import geometric
+        import geometric  # pylint: disable=import-outside-toplevel
     except ImportError as Error:
         raise ImportError(
             "This feature requires geometric. It can be installed with: pip install geometric."
@@ -216,9 +214,9 @@ def optimize_geometry(molecule, method="rhf"):
            [ 0.        ,  0.        ,  1.40277116]])
 
     """
-    pyscf = _import_pyscf()
-    geometric = _import_geometric()
-    from pyscf.geomopt.geometric_solver import optimize
+    pyscf = _import_pyscf()  # pylint: disable=unused-variable
+    geometric = _import_geometric()  # pylint: disable=unused-variable
+    from pyscf.geomopt.geometric_solver import optimize  # pylint: disable=import-outside-toplevel
 
     scf_res = _single_point(molecule, method)
     geom_eq = optimize(scf_res, maxsteps=100)

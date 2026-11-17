@@ -20,7 +20,7 @@ from typing import Any, Literal
 import jax
 
 from pennylane import capture, math
-from pennylane.capture import FlatFn, HintedCallable, apply_hint, enabled
+from pennylane.capture import FlatFn, HintedCallable, apply_hint
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.capture.hint import get_hints, process_hints
@@ -388,9 +388,8 @@ register_custom_staging_rule(
 )
 
 
-# pylint: disable=too-many-arguments, unused-argument
 @for_loop_prim.def_impl
-def _for_loop_impl(
+def _for_loop_impl(  # pylint: disable=too-many-arguments,unused-argument
     start,
     stop,
     step,
@@ -419,15 +418,15 @@ def _for_loop_impl(
     return fn_res
 
 
-# pylint: disable=unused-argument
 @for_loop_prim.def_abstract_eval
+# pylint: disable-next=unused-argument
 def _for_loop_abstract_eval(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
     args_slice = slice(*args_slice)
     abstract_shapes_slice = slice(*abstract_shapes_slice)
     return args[abstract_shapes_slice] + args[args_slice]
 
 
-class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-arguments
+class ForLoopCallable:  # pylint: disable=too-few-public-methods
     """Base class to represent a for loop. This class
     when called with an initial state will execute the while
     loop via the Python interpreter.
@@ -448,7 +447,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         start,
         stop,
@@ -597,7 +596,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             isinstance(self.stop, int) and isinstance(self.start, int) and self.stop == self.start
         )
 
-        if enabled() and not start_equals_stop:
+        if capture.enabled() and not start_equals_stop:
             return self._call_capture_enabled(*init_state)
         return self._call_capture_disabled(*init_state)
 

@@ -14,6 +14,8 @@
 
 """Unit tests for the data structures used for resource estimation in the decomposition module."""
 
+# pylint: disable=too-few-public-methods
+
 import pytest
 
 import pennylane as qp
@@ -27,12 +29,11 @@ from pennylane.decomposition.resources import (
     resource_rep,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import _pow_abstract
-from pennylane.typing import Float, Wire
+from pennylane.typing import Bool, Float, Wire
 
 
-class DummyRX(Operator1):  # pylint: disable=too-few-public-methods
+class DummyRX(Operator1):
     """A dummy RX that still inherits from Operator1."""
 
 
@@ -111,13 +112,17 @@ class TestResources:
         assert repr(resources) == "<num_gates=3, gate_counts={DummyRX: 2, S: 1}, weighted_cost=5.0>"
 
 
-class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+class DummyOp(qp.operation.Operator):
     resource_keys = {"foo", "bar"}
 
 
 @pytest.mark.unit
 class TestCompressedResourceOp:
     """Unit tests for the CompressedResourceOp data structure."""
+
+    def test_mid_measure_name(self):
+        """The resource name agrees with the operator's canonical name."""
+        assert CompressedResourceOp(qp.ops.MidMeasure).name == "MidMeasure"
 
     def test_initialization(self):
         """Tests creating a CompressedResourceOp object."""
@@ -180,7 +185,7 @@ class TestCompressedResourceOp:
     def test_hash_list_params(self):
         """Tests when the resource params contains a list."""
 
-        class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qp.operation.Operator):
             resource_keys = {"foo", "bar"}
 
             @property
@@ -267,7 +272,7 @@ class TestCompressedResourceOp:
         [
             (abstractify(DummyRX), "DummyRX"),
             (_adjoint_abstract(DummyRX), "Adjoint(DummyRX)"),
-            (_ctrl_abstract(qp.T, Wire[1]), "C(T)"),
+            (qp.ctrl(qp.T(Wire[1]), control=Wire[1], control_values=Bool[1]), "C(T)"),
             (pow_resource_rep(DummyRX, {}, 2), "Pow(DummyRX)"),
         ],
     )
@@ -286,7 +291,7 @@ class TestResourceRep:
         with pytest.raises(TypeError, match="op_type must be a type of Operator"):
             resource_rep(int)
 
-        class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qp.operation.Operator):
             resource_keys = {}
 
             @property

@@ -95,6 +95,29 @@ class GQSP(Operator2):
         [0.03 -0.089j 0.387+0.198j]]
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.GQSP
+            :stacked:
+            :symbols: :math:`U=` ``unitary``, polynomial degree :math:`d` (``angles`` of shape
+                ``(3, d+1)``) and shift :math:`s`
+            :example: :math:`d=1`, :math:`s=0`
+
+            .. decomposition-rule:: _GQSP_decomposition
+                :image: /_static/decomposition_thumbnails/gqsp_signal_processing.svg
+                :where: :math:`a = \min(\max(-s, 0), d)` is the number of controlled unitaries
+                    absorbing a negative shift, and :math:`[\cdot]` is 1 if the condition holds
+                    and 0 otherwise
+
+                :class:`~.X` | :math:`2(d+1)` | 4
+                :class:`~.U3` | :math:`d+1` | 2
+                :class:`~.Z` | :math:`d+1` | 2
+                :math:`U` with 1 control on :math:`|0\rangle` | :math:`d-a` | 1
+                :math:`U^\dagger` with 1 control | :math:`a` | 0
+                :math:`U^{s}` | :math:`[s > 0]` | 0
+                :math:`(U^\dagger)^{-s-d}` | :math:`[s < -d]` | 0
+
+    .. details::
         :title: Usage Details
 
         **Shifting the polynomial**
@@ -140,10 +163,9 @@ class GQSP(Operator2):
 
     arg_specs = {"angles": Float[3, -1], "control": Wire[1], "work_wires": Wire[-1]}
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self, unitary, angles, control, work_wires=None, work_wire_type="borrowed", shift=0
     ):
-        # pylint: disable=too-many-arguments
         work_wires = Wires(()) if work_wires is None else work_wires
         _validate_work_wire_type(work_wire_type)
         if isinstance(shift, bool) or not isinstance(shift, (int, np.integer)):
@@ -163,9 +185,8 @@ def _num_shifted_ctrl_ops(shift, num_ctrl_ops):
     return num_absorbed, shift + num_absorbed
 
 
-def _GQSP_resources(
-    unitary, angles, control, work_wires, work_wire_type, shift
-):  # pylint: disable=unused-argument,too-many-arguments
+# pylint: disable-next=too-many-arguments,unused-argument
+def _GQSP_resources(unitary, angles, control, work_wires, work_wire_type, shift):
     num_iters = angles.shape[1]
     num_absorbed, remaining = _num_shifted_ctrl_ops(shift, num_iters - 1)
     unitary = abstractify(unitary)
@@ -190,9 +211,8 @@ def _GQSP_resources(
 
 
 @register_resources(_GQSP_resources)
-def _GQSP_decomposition(
-    unitary, angles, control, work_wires, work_wire_type, shift
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _GQSP_decomposition(unitary, angles, control, work_wires, work_wire_type, shift):
     if compiler.active() or capture.enabled():
         angles = math.array(angles, like="jax")
 
@@ -242,8 +262,8 @@ def _GQSP_decomposition(
         )
         _signal_processing_rotation(i)
 
-    shifted_gqsp_loop()  # pylint:disable= no-value-for-parameter
-    gqsp_loop()  # pylint:disable= no-value-for-parameter
+    shifted_gqsp_loop()  # pylint: disable=no-value-for-parameter
+    gqsp_loop()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(GQSP, _GQSP_decomposition)

@@ -10,7 +10,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 
 r"""
 This module contains the abstract base classes for defining PennyLane
@@ -156,6 +155,7 @@ from .operator2 import Operator2, StatePrepBase2
 from .channel import Channel
 from .state_prep import StatePrepBase
 from .utils import abstractify
+from .operator2 import get_op_class_by_name
 
 __all__ = [
     "Operator",
@@ -166,4 +166,5 @@ __all__ = [
     "Operator1",
     "StatePrepBase2",
     "abstractify",
+    "get_op_class_by_name",
 ]

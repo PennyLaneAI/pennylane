@@ -25,8 +25,6 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as npp
-
-# pylint: disable=too-few-public-methods,too-many-public-methods
 from pennylane.core.operator import Operator1, Operator2
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.qubit import RX as old_loc_RX
@@ -146,7 +144,7 @@ def multi_dot_broadcasted(matrices):
     return reduce(dot_broadcasted, matrices)
 
 
-class TestSparseOperators:
+class TestSparseOperators:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize("op", SPARSE_OPERATIONS)
     def test_validity(self, op):
         """Test that the operations are valid."""
@@ -180,10 +178,10 @@ class TestOperations:
         copied_op = copy.copy(op)
         np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
     def test_flatten_unflatten(self, op):
         """Test that the flatten and unflatten methods work as expected."""
+        # pylint: disable=protected-access
         _, metadata = op._flatten()
         assert hash(metadata)
 
@@ -265,7 +263,7 @@ class TestOperations:
             _ = qp.PCPhase(phi, dim=dim, wires=0)
 
 
-class TestParameterFrequencies:
+class TestParameterFrequencies:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
         if not op.has_generator:
@@ -288,7 +286,7 @@ class TestParameterFrequencies:
         assert np.allclose(freqs, freqs_from_gen, atol=tol)
 
 
-class TestDecompositions:
+class TestDecompositions:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize(
         "phi",
         [
@@ -685,6 +683,45 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("angle", [0.0, -0.1234, 0.6931])
+    @pytest.mark.parametrize("control_values", [[True], [False], [True, True], [False, True]])
+    @pytest.mark.parametrize(
+        "work_wires, work_wire_type", [([], "borrowed"), ([5], "borrowed"), ([5], "zeroed")]
+    )
+    def test_controlled_isingzz_decomposition(
+        self, angle, control_values, work_wires, work_wire_type
+    ):
+        """Test the controlled IsingZZ rule's gates, matrix, and resource counts."""
+        from pennylane.ops.qubit.parametric_ops_multi_qubit import controlled_ising_zz
+
+        control_wires = list(range(len(control_values)))
+        op = qp.ctrl(
+            qp.IsingZZ(angle, wires=[3, 2]),
+            control=control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+        rule = qp.list_decomps("C(IsingZZ)")[controlled_ising_zz.name]
+        tape = decomp_rule_to_tape(op, rule)
+        flips = [qp.X(wire) for wire, value in zip(control_wires, control_values) if not value]
+        expected = [
+            *flips,
+            qp.CNOT(wires=[3, 2]),
+            qp.ctrl(
+                qp.RZ(angle, wires=2),
+                control=control_wires,
+                work_wires=work_wires,
+                work_wire_type=work_wire_type,
+            ),
+            qp.CNOT(wires=[3, 2]),
+            *flips,
+        ]
+        assert len(tape.operations) == len(expected)
+        for actual, expected_op in zip(tape.operations, expected):
+            qp.assert_equal(actual, expected_op)
+        assert_valid_decomp_rule(op, rule)
+
     @pytest.mark.integration
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_isingzz_decomposition_graph(self):
@@ -725,8 +762,7 @@ class TestDecompositions:
         tape = qp.tape.QuantumScript([op], [])
         expected_matrix = qp.matrix(tape, wire_order=[2, 3, 4])
 
-        # pylint: disable-next=protected-access
-        [decomp], _ = qp.transforms._tape_decompose(
+        [decomp], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
             tape,
             gate_set={
                 qp.CNOT,
@@ -754,8 +790,7 @@ class TestDecompositions:
         tape = qp.tape.QuantumScript([op], [])
         expected_matrix = qp.matrix(tape, wire_order=[0, 1, 2, control])
 
-        # pylint: disable-next=protected-access
-        [decomp], _ = qp.transforms._tape_decompose(
+        [decomp], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
             tape, gate_set={qp.CNOT, qp.RZ, qp.GlobalPhase, qp.PauliX}
         )
         gates = decomp.operations
@@ -767,6 +802,61 @@ class TestDecompositions:
 
         mat = qp.matrix(decomp, wire_order=[0, 1, 2, control])
         assert qp.math.allclose(mat, expected_matrix)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("base_type", [qp.PhaseShift, qp.U1])
+    @pytest.mark.parametrize("control_values", [[], [0], [1], [1, 1], [0, 1, 0]])
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_controlled_phase_shift_with_work_wires_decomposable(
+        self, base_type, control_values, work_wire_type, request
+    ):
+        """Tests that the decomposition rules of a controlled phase shift with work wires
+        are valid."""
+        if control_values == [] and qp.capture.enabled():
+            request.applymarker(
+                pytest.mark.xfail(
+                    reason="Empty control registers are currently not supported [sc-137261]",
+                    strict=True,
+                )
+            )
+        num_controls = len(control_values)
+        op = qp.ctrl(
+            base_type(0.3, 0),
+            control=list(range(1, 1 + num_controls)),
+            control_values=control_values,
+            work_wires=list(range(1 + num_controls, 1 + 2 * num_controls)),
+            work_wire_type=work_wire_type,
+        )
+        assert_decomposable(op)
+
+    @pytest.mark.catalyst
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize("base_type", [qp.PhaseShift, qp.U1])
+    @pytest.mark.parametrize("num_controls", [1, 2, 3])
+    def test_controlled_phase_shift_single_phase_with_work_wires(self, base_type, num_controls):
+        """Tests that a controlled phase shift with one zeroed work wire per control wire
+        decomposes into a single PhaseShift on a work wire, computed with a TemporaryAND
+        ladder, without allocating work wires."""
+        control = list(range(1, 1 + num_controls))
+        work_wires = list(range(1 + num_controls, 1 + 2 * num_controls))
+
+        @qp.qjit(enable_aot_compilation=False)
+        @qp.decompose(gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", "PhaseShift", "PauliX"})
+        @qp.qnode(qp.device("null.qubit", wires=1 + 2 * num_controls))
+        def circuit():
+            qp.ctrl(
+                base_type(0.3, 0), control=control, work_wires=work_wires, work_wire_type="zeroed"
+            )
+            return qp.state()
+
+        resources = qp.analyze(circuit)().resources.quantum_operations
+        expected = {
+            "TemporaryAND": num_controls,
+            "Adjoint(TemporaryAND)": num_controls,
+            "PauliX": 2 * num_controls,
+            "PhaseShift": 1,
+        }
+        assert resources == expected
 
     two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, [1, 2]), (3, [1, 3]), (4, [9, 0])]
     five_wire_pcphases = [(i, [0, 1, 3, 2, 7]) for i in range(2**5)]
@@ -814,8 +904,7 @@ class TestDecompositions:
         tape = qp.tape.QuantumScript([qp.PCPhase(0.123, 12, wires=[0, 1, 2, 3, 4, 5, 6, 7, 8])], [])
         expected_matrix = qp.matrix(tape, wire_order=[0, 1, 2, 3, 4, 5, 6, 7, 8])
 
-        # pylint: disable-next=protected-access
-        [decomp], _ = qp.transforms._tape_decompose(
+        [decomp], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
             tape, gate_set={qp.RX, qp.RY, qp.RZ, qp.CNOT, qp.X, qp.Toffoli, qp.GlobalPhase}
         )
         mat = qp.matrix(decomp, wire_order=[0, 1, 2, 3, 4, 5, 6, 7, 8])
@@ -845,7 +934,7 @@ class TestDecompositions:
 pswap_angles = list(np.linspace(-np.pi, np.pi, 11)) + [np.linspace(-1, 1, 11)]
 
 
-class TestMatrix:
+class TestMatrix:  # pylint: disable=too-many-public-methods
     def test_phase_shift(self, tol):
         """Test phase shift is correct"""
 
@@ -2507,7 +2596,7 @@ PAULI_ROT_MATRIX_TEST_DATA = [
 ]
 
 
-class TestPauliRot:
+class TestPauliRot:  # pylint: disable=too-many-public-methods
     """Test the PauliRot operation."""
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -2571,11 +2660,10 @@ class TestPauliRot:
             (np.pi / 11, "IIIXYZ", "XYZ", [0, 1, 2, 3, 4, 5], [3, 4, 5]),
         ],
     )
-    def test_PauliRot_matrix_identity(
+    def test_PauliRot_matrix_identity(  # pylint: disable=too-many-arguments
         self, theta, pauli_word, compressed_pauli_word, wires, compressed_wires, tol
     ):
         """Test PauliRot matrix correctly accounts for identities."""
-        # pylint: disable=too-many-arguments, too-many-positional-arguments
 
         res = qp.PauliRot.compute_matrix(theta, pauli_word)
         expected = qp.math.expand_matrix(
@@ -3844,7 +3932,13 @@ class TestParametricPow:
         pow_op = op.pow(n)
 
         assert len(pow_op) == 1
-        assert pow_op[0].__class__ is op.__class__
+        if isinstance(op, qp.ops.Controlled2):
+            assert isinstance(pow_op[0], qp.ops.ControlledOp2)
+            assert pow_op[0].base.__class__ is op.base.__class__
+            assert pow_op[0].control_wires == op.control_wires
+            assert qp.math.allequal(pow_op[0].control_values, op.control_values)
+        else:
+            assert pow_op[0].__class__ is op.__class__
         assert all((qp.math.allclose(d1, d2 * n) for d1, d2 in zip(pow_op[0].data, op.data)))
 
     @pytest.mark.parametrize("op", pow_parametric_ops)
@@ -3858,7 +3952,6 @@ class TestParametricPow:
         assert qp.math.allclose(qp.math.linalg.matrix_power(op_mat, n), pow_mat)
 
 
-# pylint:disable = use-implicit-booleaness-not-comparison
 def test_diagonalization_static_global_phase():
     """Test the static compute_diagonalizing_gates method for the GlobalPhase operation."""
     assert qp.GlobalPhase.compute_diagonalizing_gates(0.123, wires=1) == []

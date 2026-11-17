@@ -18,6 +18,7 @@ Tests for ``qp.testing.assert_valid_decomp_rule``, ``qp.testing.assert_decomposa
 
 # pylint: disable=too-few-public-methods
 
+
 import numpy as np
 import pytest
 
@@ -38,6 +39,26 @@ def _cnot_to_cz(wires):
 def _assert_ops_equal(ops, expected):
     for op, exp in zip(ops, expected, strict=True):
         qp.assert_equal(op, exp, check_interface=False)
+
+
+def _nested_capture_cnot_rule(resources, exact=True):
+    """Build a CNOT rule whose Hadamards are nested two subroutine levels deep."""
+
+    @qp.capture.subroutine
+    def hadamard(wire):
+        qp.H(wire)
+
+    @qp.capture.subroutine
+    def controlled_x(wires):
+        hadamard(wires[1])
+        qp.CZ(wires)
+        hadamard(wires[1])
+
+    @qp.register_resources(resources, exact=exact)
+    def rule(wires):
+        controlled_x(wires)
+
+    return rule
 
 
 class TestDecompRuleToTape:
@@ -145,8 +166,7 @@ class TestAssertValidDecompositionRule:
             assert_valid_decomp_rule(op, rule)
 
     def test_bad_new_decomposition_rule_exact(self):
-        """Test that an informative error is raised if the
-        claimed-to-be-exact resources of a decomposition rule are not correct."""
+        """Exact estimates must match each gate count; unused gates may have a zero count."""
 
         class MyOp(Operator):
             num_wires = 2
@@ -171,9 +191,10 @@ class TestAssertValidDecompositionRule:
         assert_valid_decomp_rule(op, rule_zero_count)
 
     def test_bad_new_decomposition_rule_inexact(self):
-        """Test that an informative error is raised if the
-        decomposition contains an operator type that is not accounted for in
-        the resource function even when exact=False."""
+        """Even inexact estimates must include every gate type used by the decomposition.
+
+        This test checks for missing gate types, not underestimated gate counts.
+        """
 
         class MyOp(Operator):
             num_wires = 2
@@ -226,7 +247,7 @@ class TestAssertValidDecompositionRule:
             def loop(i):
                 qp.S(i)
 
-            loop()  # pylint: disable=no-value-for-parameter
+            loop()
 
         assert_valid_decomp_rule(MyOp([0, 1, 2]), rule)
 
@@ -240,9 +261,73 @@ class TestAssertValidDecompositionRule:
             def loop(i):
                 OneWireDynOp(phi, wires=i)
 
-            loop()  # pylint: disable=no-value-for-parameter
+            loop()
 
         assert_valid_decomp_rule(OneWireDynOp(0.5, wires=0), rule)
+
+    @pytest.mark.capture
+    def test_nested_capture_subroutine_resources(self):
+        """Nested captured subroutines contribute their contained gate counts."""
+        rule = _nested_capture_cnot_rule({qp.H: 2, qp.CZ: 1})
+        assert_valid_decomp_rule(qp.CNOT([0, 1]), rule)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        "resources, exact, message",
+        [
+            ({qp.H: 1, qp.CZ: 1}, True, r"Hadamard :\s+2  !=  1"),
+            (
+                {qp.H: 2},
+                False,
+                r"The resources is missing gates in the actual decomposition: \['CZ'\]",
+            ),
+        ],
+    )
+    def test_nested_capture_subroutine_invalid_resources(self, resources, exact, message):
+        """Counts and missing gate types inside subroutines remain validated."""
+        rule = _nested_capture_cnot_rule(resources, exact=exact)
+        with pytest.raises(AssertionError, match=message):
+            assert_valid_decomp_rule(qp.CNOT([0, 1]), rule)
+
+    @pytest.mark.capture
+    def test_nested_capture_subroutine_matrix_check(self):
+        """Matching counts do not hide a subroutine that implements the wrong unitary."""
+        rule = _nested_capture_cnot_rule({qp.H: 2, qp.CZ: 1})
+        with pytest.raises(
+            AssertionError, match="decomposition must produce the same matrix as the operator"
+        ):
+            assert_valid_decomp_rule(qp.CZ([0, 1]), rule)
+
+    @pytest.mark.capture
+    def test_capture_subroutine_mcm_skips_matrix_check(self, mocker):
+        """A measurement inside a captured subroutine is counted without a matrix check."""
+
+        @qp.capture.subroutine
+        def measure(wires):
+            qp.measure(wires[0])
+
+        @qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1})
+        def rule(wires):
+            measure(wires)
+
+        spy = mocker.spy(qp.ops.functions, "matrix")
+        assert_valid_decomp_rule(qp.H(0), rule)
+        spy.assert_not_called()
+
+    def test_subroutine_operator_resources_are_not_expanded(self):
+        """A tape-mode SubroutineOp remains a resource in its own right."""
+
+        @qp.templates.Subroutine
+        def hadamard(wires):
+            qp.H(wires)
+
+        resource = qp.templates.subroutine_resource_rep(hadamard, wires=Wire[1])
+
+        @qp.register_resources({resource: 1})
+        def rule(wires):
+            hadamard(wires)
+
+        assert_valid_decomp_rule(qp.H(0), rule)
 
 
 class MyOneWireOp(Operator):

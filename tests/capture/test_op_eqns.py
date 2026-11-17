@@ -13,9 +13,10 @@
 """Tests for ``pop_op_eqns``, which deletes the plxpr equation of an operator
 that has been consumed by another operator (e.g. ``CNOT`` consuming ``X``)."""
 
-import jax
+# pylint: disable=wrong-import-order
 
-# pylint: disable=protected-access, wrong-import-position, wrong-import-order
+
+import jax
 import pytest
 from jax._src.interpreters.partial_eval import JaxprStackFrame
 
@@ -81,7 +82,7 @@ def test_skips_op_without_tracer():
         (lambda: qp.CNOT([0, 1]), ["CNOT"]),
         (lambda: qp.adjoint(qp.S(0)), ["S"]),
         (lambda: qp.ctrl(qp.RX(0.5, 0), [1, 2]), ["RX"]),
-        (lambda: qp.adjoint(qp.ctrl(qp.Hadamard(0), 1)), ["CH"]),
+        (lambda: qp.adjoint(qp.ctrl(qp.Hadamard(0), 1)), ["Hadamard"]),
         (lambda: [qp.CNOT([0, 1]) for _ in range(5)], ["CNOT"] * 5),
     ],
 )
