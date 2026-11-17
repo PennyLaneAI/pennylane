@@ -357,21 +357,21 @@ def finite_diff(  # pylint: disable=too-many-arguments,too-many-statements
     This transform can be registered directly as the quantum gradient transform
     to use during autodifferentiation:
 
+    >>> import jax
+    >>> import jax.numpy as jnp
+    >>> jax.config.update("jax_enable_x64", True)
     >>> dev = qp.device("default.qubit")
-    >>> @qp.qnode(dev, interface="autograd", diff_method="finite-diff")
+    >>> @qp.qnode(dev, interface="jax", diff_method="finite-diff")
     ... def circuit(params):
     ...     qp.RX(params[0], wires=0)
     ...     qp.RY(params[1], wires=0)
     ...     qp.RX(params[2], wires=0)
     ...     return qp.expval(qp.Z(0))
-    >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+    >>> params = jnp.array([0.1, 0.2, 0.3])
     >>> qp.jacobian(circuit)(params)
-    array([-0.38751725, -0.18884792, -0.38355708])
+    Array([-0.38751724, -0.18884792, -0.38355708], dtype=float64)
 
-    When differentiating QNodes with multiple measurements using Autograd, the outputs of the QNode first
-    need to be stacked. The reason is that this framework only allows differentiating functions with array or
-    tensor outputs, instead of functions that output sequences. In contrast, Jax and Torch require no additional
-    post-processing.
+    JAX and PyTorch differentiate QNodes with multiple measurements without stacking their outputs.
 
     >>> import jax
     >>> dev = qp.device("default.qubit")
@@ -383,8 +383,7 @@ def finite_diff(  # pylint: disable=too-many-arguments,too-many-statements
     ...     return qp.expval(qp.Z(0)), qp.var(qp.Z(0))
     >>> params = jax.numpy.array([0.1, 0.2, 0.3])
     >>> jax.jacobian(circuit)(params)
-    (Array([-0.38751727, -0.18884793, -0.3835571 ], dtype=float32),
-     Array([0.6991687 , 0.34072432, 0.6920237 ], dtype=float32))
+    (Array([-0.38751724, -0.18884792, -0.38355708], dtype=float64), Array([0.69916868, 0.34072432, 0.69202365], dtype=float64))
 
 
     .. details::
@@ -401,10 +400,10 @@ def finite_diff(  # pylint: disable=too-many-arguments,too-many-statements
         ...     qp.RY(params[1], wires=0)
         ...     qp.RX(params[2], wires=0)
         ...     return qp.expval(qp.Z(0)), qp.var(qp.Z(0))
-        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> params = jnp.array([0.1, 0.2, 0.3])
         >>> qp.gradients.finite_diff(circuit)(params)
-        (tensor([-0.38751724, -0.18884792, -0.38355708], requires_grad=True),
-         tensor([0.69916868, 0.34072432, 0.69202365], requires_grad=True))
+        (Array([-0.38751724, -0.18884792, -0.38355708], dtype=float64),
+         Array([0.69916868, 0.34072432, 0.69202365], dtype=float64))
 
         This quantum gradient transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
@@ -432,7 +431,7 @@ def finite_diff(  # pylint: disable=too-many-arguments,too-many-statements
         ...     [qp.expval(qp.Z(0))],
         ...     trainable_params = [1, 2]
         ... )
-        >>> qp.gradients.finite_diff(tape, argnum=1)
+        >>> _ = qp.gradients.finite_diff(tape, argnum=1)
 
         The code above will differentiate the third parameter rather than the second.
 
@@ -440,17 +439,17 @@ def finite_diff(  # pylint: disable=too-many-arguments,too-many-statements
 
         >>> dev = qp.device("default.qubit")
         >>> fn(qp.execute(gradient_tapes, dev, None))
-        ((tensor(-0.56464251, requires_grad=True),
-          tensor(-0.56464251, requires_grad=True),
-          tensor(-0.56464251, requires_grad=True)),
-         (tensor(0.93203912, requires_grad=True),
-          tensor(0.93203912, requires_grad=True),
-          tensor(0.93203912, requires_grad=True)))
+        ((Array(-0.56464251, dtype=float64),
+          Array(-0.56464251, dtype=float64),
+          Array(-0.56464251, dtype=float64)),
+         (Array(0.93203912, dtype=float64),
+          Array(0.93203912, dtype=float64),
+          Array(0.93203912, dtype=float64)))
 
         This gradient transform is compatible with devices that use shot vectors for execution.
 
         >>> shots = (10, 100, 1000)
-        >>> dev = qp.device("default.qubit")
+        >>> dev = qp.device("default.qubit", seed=123)
         >>> @qp.set_shots(shots=shots)
         ... @qp.qnode(dev)
         ... def circuit(params):
@@ -458,11 +457,9 @@ def finite_diff(  # pylint: disable=too-many-arguments,too-many-statements
         ...     qp.RY(params[1], wires=0)
         ...     qp.RX(params[2], wires=0)
         ...     return qp.expval(qp.Z(0)), qp.var(qp.Z(0))
-        >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        >>> params = jnp.array([0.1, 0.2, 0.3])
         >>> qp.gradients.finite_diff(circuit, h=0.1)(params)
-        ((array([-2., -2.,  0.]), array([3.6, 3.6, 0. ])),
-         (array([1. , 0.2, 0.4]), array([-1.78 , -0.34 , -0.688])),
-         (array([-0.9 , -0.22, -0.48]), array([1.5498 , 0.3938 , 0.84672])))
+        ((Array([ 0.,  0., -4.], dtype=float64), Array([0. , 0. , 6.4], dtype=float64)), (Array([-1.4, -1. , -1.8], dtype=float64), Array([2.604, 1.9  , 3.276], dtype=float64)), (Array([-0.04, -0.02,  0.22], dtype=float64), Array([ 0.07024,  0.03516, -0.39204], dtype=float64)))
 
         The outermost tuple contains results corresponding to each element of the shot vector.
     """
