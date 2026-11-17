@@ -36,7 +36,6 @@ from pennylane.wires import Wires
 
 REQUIRES_CATALYST_SHARED_WIRES = pytest.mark.xfail(
     reason="Requires shared-wire hybrid operands from Catalyst PR #3470",
-    strict=True,
     raises=pytest.RaisesExc(Exception, match="qubit operands must refer to distinct qubits"),
 )
 

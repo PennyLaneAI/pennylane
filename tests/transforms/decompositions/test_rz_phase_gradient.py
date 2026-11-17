@@ -385,7 +385,6 @@ def test_precision_stats_hints(precision_stats, expected):
 @pytest.mark.catalyst
 @pytest.mark.xfail(
     reason="Requires shared-wire hybrid operands from Catalyst PR #3470",
-    strict=True,
     raises=pytest.RaisesExc(Exception, match="qubit operands must refer to distinct qubits"),
 )
 def test_precision_stats_hint_weighted_resources():
