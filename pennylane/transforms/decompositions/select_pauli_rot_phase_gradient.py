@@ -46,8 +46,7 @@ def _select_pauli_rot_phase_gradient(  # pylint: disable=too-many-arguments
     precision = len(angle_wires)
     binary_int = qp.math.binary_decimals(phis, precision, unit=4 * np.pi)
 
-    # The SemiAdder needs the work wires in |0>, so the data loading needs to clean them up.
-    load = partial(qp.QROMLoad, binary_int, control_wires, angle_wires, work_wires, clean=True)
+    load = partial(qp.QROMLoad, binary_int, control_wires, angle_wires, work_wires)
 
     def fanout():
         for wire in phase_grad_wires:
@@ -283,7 +282,6 @@ def make_selectpaulirot_to_phase_gradient_decomp(
             control_wires=Wire[num_control_wires],
             target_wires=Wire[p],
             work_wires=Wire[len(work_wires)],
-            clean=True,
         )
 
         # 2. MultiControlledX with one control (the runtime control value is zero).

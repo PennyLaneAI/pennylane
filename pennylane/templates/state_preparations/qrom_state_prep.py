@@ -219,7 +219,6 @@ class QROMStatePreparation(Operation):
                     target_wires=precision_wires,
                     control_wires=input_wires[:i],
                     work_wires=work_wires,
-                    clean=False,
                 )
             )
 
@@ -234,7 +233,6 @@ class QROMStatePreparation(Operation):
                     target_wires=precision_wires,
                     control_wires=input_wires[:i],
                     work_wires=work_wires,
-                    clean=False,
                 )
             )
 
@@ -252,7 +250,6 @@ class QROMStatePreparation(Operation):
                     target_wires=precision_wires,
                     control_wires=input_wires,
                     work_wires=work_wires,
-                    clean=False,
                 )
             )
 
@@ -270,7 +267,6 @@ class QROMStatePreparation(Operation):
                     target_wires=precision_wires,
                     control_wires=input_wires,
                     work_wires=work_wires,
-                    clean=False,
                 )
             )
 
