@@ -1903,10 +1903,33 @@ Breaking changes 💔
   `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
 
 * The Autograd interface has been removed. QNodes support NumPy, JAX, and PyTorch;
-  the NumPy interface does not support automatic differentiation. Quantum optimization
-  workflows that relied on Autograd gradients must use native JAX or PyTorch optimizers,
-  or supply native gradients through an optimizer's ``grad_fn`` argument where available.
+  the NumPy interface does not support automatic differentiation. Automatic interface
+  inference also rejects ``pennylane.numpy`` tensors, including those with
+  ``requires_grad=False``. For forward execution, select ``interface="numpy"`` or convert
+  legacy inputs with ``numpy.asarray``. A NumPy QNode can also use
+  :func:`~.transforms.convert_to_numpy_parameters` to convert its circuit parameters.
+  Quantum optimization workflows can use native JAX or PyTorch optimizers, or supply native
+  gradients through an optimizer's ``grad_fn`` argument where available.
+  :class:`~.ShotAdaptiveOptimizer` also supports eager native JAX and PyTorch inputs.
   `(#10551) <https://github.com/PennyLaneAI/pennylane/pull/10551>`__
+
+  .. code-block:: python
+
+      import numpy as np
+      import pennylane as qp
+      from pennylane import numpy as pnp
+
+      @qp.qnode(qp.device("default.qubit"), interface="numpy")
+      def circuit(theta):
+          qp.RX(theta, 0)
+          return qp.expval(qp.Z(0))
+
+      legacy_theta = pnp.array(0.2, requires_grad=False)
+
+  .. code-block:: pycon
+
+      >>> round(float(circuit(np.asarray(legacy_theta))), 8)
+      0.98006658
 
 Deprecations 👋
 ~~~~~~~~~~~~~~~
