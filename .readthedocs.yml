@@ -13,10 +13,13 @@ build:
     - graphviz
   jobs:
     post_install:
-      - pip install --extra-index-url https://test.pypi.org/simple/ pennylane-catalyst --pre
       # torch version must match pyproject.toml [dependency-groups] docs
       - pip install 'torch~=2.9.0' --index-url https://download.pytorch.org/whl/cpu
       - pip install --group docs
+      - pip install --upgrade --pre --extra-index-url https://test.pypi.org/simple/ --group ci-ecosystem
+      # Keep the selected ecosystem versions while restoring the PennyLane checkout under test.
+      - pip install --no-deps .
+      - pip show pennylane pennylane-catalyst pennylane-lightning
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:

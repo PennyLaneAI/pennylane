@@ -71,7 +71,12 @@ def test_about_shows_editable_location(monkeypatch, capsys):
 
     im = importlib.import_module("importlib.metadata")
     monkeypatch.setattr(about, "metadata", im)
-    monkeypatch.setattr(im, "distribution", lambda _name: Dist())
+    original_distribution = im.distribution
+    monkeypatch.setattr(
+        im,
+        "distribution",
+        lambda name: Dist() if name.lower() == "pennylane" else original_distribution(name),
+    )
     monkeypatch.setattr(about, "_pkg_location", lambda: "/site-packages/pennylane")
 
     about.about()
