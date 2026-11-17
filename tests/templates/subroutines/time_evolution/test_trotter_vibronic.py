@@ -1082,7 +1082,6 @@ class TestNumericalCorrectness:
         expected = -(theta(1) - theta(0))  # arg(e^{-i theta_1} conj(e^{-i theta_0}))
         assert np.isclose(np.exp(1j * measured), np.exp(1j * expected))
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_kinetic_aqft_with_phase_gradient_rotations(self):
         """Test that the ``AQFT`` of the kinetic fragment may be decomposed into phase-gradient
         rotations that reuse the coefficient wires as angle wires, which requires the coefficient

@@ -866,7 +866,6 @@ class TestMeasurementQROM:
         assert for_loop_prim in extract_all_primitives(plxpr.jaxpr)
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         ("num_bitstrings", "num_extra_controls", "adjoint", "dtype"),
         [

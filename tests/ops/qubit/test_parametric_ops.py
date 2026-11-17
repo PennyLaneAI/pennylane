@@ -829,7 +829,6 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         assert_decomposable(op)
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("base_type", [qp.PhaseShift, qp.U1])
     @pytest.mark.parametrize("num_controls", [1, 2, 3])
     def test_controlled_phase_shift_single_phase_with_work_wires(self, base_type, num_controls):

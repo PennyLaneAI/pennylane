@@ -605,7 +605,6 @@ class TestDecompositions:
         )
         assert_decomposable(op)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "base, num_controls, num_work_wires",
         [
