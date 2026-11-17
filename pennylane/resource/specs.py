@@ -20,8 +20,9 @@ from collections.abc import Callable, Iterable
 from functools import partial
 
 from pennylane.workflow import QNode
+from pennylane.workflow.get_compile_pipeline import unwrap_qjit_qnode
 
-from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial, unwrap_qjit_qnode
+from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial
 from .analyze import _run_resource_analysis
 from .resource import CircuitSpecs
 from .track import _run_with_resource_tracking
@@ -247,8 +248,8 @@ def specs(
         Shots: Shots(total=None)
         Levels:
         - 0: Before MLIR Passes
-        - 1: cancel-inverses
-        - 2: merge-rotations
+        - 1: After cancel-inverses
+        - 2: After merge-rotations
         <BLANKLINE>
         ↓Metric         Level→ |  0 |  1 |  2
         -------------------------------------
@@ -314,8 +315,8 @@ def specs(
         Shots: Shots(total=None)
         Levels:
         - 0: Before MLIR Passes
-        - 1: split-non-commuting
-        - 2: cancel-inverses
+        - 1: After split-non-commuting
+        - 2: After cancel-inverses
         <BLANKLINE>
         ↓Metric         Level→ |    0 |  1-a |  1-b |  2-a |  2-b
         ---------------------------------------------------------

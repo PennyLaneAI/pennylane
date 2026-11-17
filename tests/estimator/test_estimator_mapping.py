@@ -516,7 +516,7 @@ class TestMapToResourceOp:
                 "cache": 2 * k,
                 "coefficients": b,
                 "phase_gradient": b,
-                "work": max(n - 1, 2 * k, 2 * b + 2),
+                "work": max(n - 1, b + 1, 2 * k + 2),
             }
         )
         operator = qp.TrotterVibronic(
@@ -574,7 +574,7 @@ class TestMapToResourceOp:
                 "cache": 2 * k,
                 "coefficients": b,
                 "phase_gradient": b,
-                "work": max(n - 1, 2 * k, 2 * b + 2),
+                "work": max(n - 1, b + 1, 2 * k + 2),
             }
         )
         operator = qp.TrotterVibronic(
@@ -609,7 +609,7 @@ class TestMapToResourceOp:
                 "cache": 2 * k,
                 "coefficients": b,
                 "phase_gradient": b,
-                "work": max(n - 1, 2 * k, 2 * b + 2),
+                "work": max(n - 1, b + 1, 2 * k + 2),
             }
         )
         operator = qp.TrotterVibronic(

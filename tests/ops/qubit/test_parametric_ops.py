@@ -182,10 +182,11 @@ class TestOperations:
     @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
     def test_flatten_unflatten(self, op):
         """Test that the flatten and unflatten methods work as expected."""
-        _, metadata = op._flatten()  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        _, metadata = op._flatten()
         assert hash(metadata)
 
-        new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
+        new_op = type(op)._unflatten(*op._flatten())
         qp.assert_equal(op, new_op)
 
     @pytest.mark.jax
@@ -802,6 +803,61 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
 
         mat = qp.matrix(decomp, wire_order=[0, 1, 2, control])
         assert qp.math.allclose(mat, expected_matrix)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("base_type", [qp.PhaseShift, qp.U1])
+    @pytest.mark.parametrize("control_values", [[], [0], [1], [1, 1], [0, 1, 0]])
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_controlled_phase_shift_with_work_wires_decomposable(
+        self, base_type, control_values, work_wire_type, request
+    ):
+        """Tests that the decomposition rules of a controlled phase shift with work wires
+        are valid."""
+        if control_values == [] and qp.capture.enabled():
+            request.applymarker(
+                pytest.mark.xfail(
+                    reason="Empty control registers are currently not supported [sc-137261]",
+                    strict=True,
+                )
+            )
+        num_controls = len(control_values)
+        op = qp.ctrl(
+            base_type(0.3, 0),
+            control=list(range(1, 1 + num_controls)),
+            control_values=control_values,
+            work_wires=list(range(1 + num_controls, 1 + 2 * num_controls)),
+            work_wire_type=work_wire_type,
+        )
+        assert_decomposable(op)
+
+    @pytest.mark.catalyst
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize("base_type", [qp.PhaseShift, qp.U1])
+    @pytest.mark.parametrize("num_controls", [1, 2, 3])
+    def test_controlled_phase_shift_single_phase_with_work_wires(self, base_type, num_controls):
+        """Tests that a controlled phase shift with one zeroed work wire per control wire
+        decomposes into a single PhaseShift on a work wire, computed with a TemporaryAND
+        ladder, without allocating work wires."""
+        control = list(range(1, 1 + num_controls))
+        work_wires = list(range(1 + num_controls, 1 + 2 * num_controls))
+
+        @qp.qjit(enable_aot_compilation=False)
+        @qp.decompose(gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", "PhaseShift", "PauliX"})
+        @qp.qnode(qp.device("null.qubit", wires=1 + 2 * num_controls))
+        def circuit():
+            qp.ctrl(
+                base_type(0.3, 0), control=control, work_wires=work_wires, work_wire_type="zeroed"
+            )
+            return qp.state()
+
+        resources = qp.analyze(circuit)().resources.quantum_operations
+        expected = {
+            "TemporaryAND": num_controls,
+            "Adjoint(TemporaryAND)": num_controls,
+            "PauliX": 2 * num_controls,
+            "PhaseShift": 1,
+        }
+        assert resources == expected
 
     two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, [1, 2]), (3, [1, 3]), (4, [9, 0])]
     five_wire_pcphases = [(i, [0, 1, 3, 2, 7]) for i in range(2**5)]
