@@ -89,18 +89,19 @@ class QROMStatePreparation(Operation):
         >>> circuit()
         array([0.5 , 0.  , 0.25, 0.25])
 
-    .. seealso:: :class:`~.QROMLoad`, :class:`~.BBQRAM`
+    .. seealso:: :class:`~.SelectSwap`, :class:`~.BBQRAM`
 
     .. details::
         :title: Usage Details
 
-        The ``precision_wires`` are used as the target wires in the underlying ``QROMLoad`` operations.
+        The ``precision_wires`` are used as the target wires in the underlying ``SelectSwap`` operations.
         The number of ``precision_wires`` determines the precision with which the rotation angles of the
         template are encoded. This means that the binary representation of the angle is truncated up to
         the :math:`m`-th digit, where :math:`m` is the number of precision wires given. See  Eq. 5 in
         `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_ for more details.
-        The ``work_wires`` correspond to auxiliary qubits that can be specified in :class:`~.QROMLoad` to
-        reduce the overall resource requirements on the implementation.
+        The ``work_wires`` correspond to auxiliary qubits that can be specified in :class:`~.SelectSwap` to
+        reduce the overall resource requirements on the implementation. They are left in a garbage
+        state while the angles are loaded, and cleaned up again when unloading them.
     """
 
     def __init__(self, state_vector, wires, precision_wires, work_wires=None):
@@ -214,7 +215,7 @@ class QROMStatePreparation(Operation):
             ]
             # Apply the QROM operation to encode the thetas binary representation
             decomp_ops.append(
-                qp.QROMLoad(
+                qp.SelectSwap(
                     bitstrings=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires[:i],
@@ -228,7 +229,7 @@ class QROMStatePreparation(Operation):
 
             # Clean wires used to store the theta values
             decomp_ops.append(
-                qp.adjoint(qp.QROMLoad)(
+                qp.adjoint(qp.SelectSwap)(
                     bitstrings=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires[:i],
@@ -245,7 +246,7 @@ class QROMStatePreparation(Operation):
 
             # Apply the QROM operation to encode the thetas binary representation
             decomp_ops.append(
-                qp.QROMLoad(
+                qp.SelectSwap(
                     bitstrings=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires,
@@ -262,7 +263,7 @@ class QROMStatePreparation(Operation):
                 )
 
             decomp_ops.append(
-                qp.adjoint(qp.QROMLoad)(
+                qp.adjoint(qp.SelectSwap)(
                     bitstrings=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires,
