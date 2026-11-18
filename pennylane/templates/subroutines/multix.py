@@ -13,6 +13,9 @@
 # limitations under the License.
 """Contains the MultiX template."""
 
+from functools import partial
+from math import pi
+
 import numpy as np
 from scipy import sparse
 
@@ -22,7 +25,8 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
-from pennylane.ops import CNOT, Hadamard, PauliX, adjoint, cond
+from pennylane.ops import CNOT, GlobalPhase, Hadamard, PauliX, PauliZ, adjoint, cond
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_involutory
 from pennylane.ops.op_math.prod2 import _multi_temporary_and_all_ones
@@ -86,6 +90,15 @@ class MultiX(Operator2):
                 :image: /_static/decomposition_thumbnails/multix_conditional_x.svg
 
                 :class:`~.X` | :math:`\sum_i b_i \leq n` (one per :math:`b_i=1`) | 2
+
+        With one control wire, ``C(MultiX)`` also has a lattice-surgery decomposition
+        using three :func:`~.pauli_measure` operations and one auxiliary qubit initialized
+        in :math:`|0\rangle` and consumed in :math:`|+\rangle`. The measurements are
+        :math:`Z_c X_a`, :math:`Z_a \bigotimes_i X_i^{b_i}`, and :math:`X_a`, followed
+        by conditional Pauli and global-phase corrections. Both control values and
+        dynamically supplied bitstrings are supported; traced bitstrings require
+        numeric target wire labels. Resource estimates include each possible width
+        of the second measurement, although only one is executed.
     """
 
     dynamic_argnames = ("bitstring",)
@@ -443,3 +456,65 @@ def _controlled_multix_ladder(base, control_wires, work_wires, work_wire_type, *
 
 
 add_decomps("C(MultiX)", flip_zero_control2(_controlled_multix_ladder))
+
+
+def _measure_z_multix(work_wire, bitstring, wires):
+    """Measure Z on a work wire jointly with X on the targets selected by the bitstring."""
+    if not math.is_tracer(bitstring):
+        targets = [wire for wire, bit in zip(wires, bitstring) if bit]
+        return pauli_measure("Z" + "X" * len(targets), [work_wire, *targets])
+
+    # PauliMeasure requires a static word and number of wires. Group selected targets
+    # first, then choose a measurement of fixed width, as in QROM's masked measurement.
+    selected = math.array(wires, like="jax")[math.argsort(math.logical_not(bitstring))]
+    weight = math.sum(bitstring)
+    num_targets = len(bitstring)
+
+    def measure_width(width):
+        return pauli_measure("Z" + "X" * width, [work_wire, *selected[:width]])
+
+    return cond(
+        weight == 0,
+        partial(measure_width, 0),
+        partial(measure_width, num_targets),
+        elifs=tuple(
+            (weight == width, partial(measure_width, width)) for width in range(1, num_targets)
+        ),
+    )()
+
+
+def _controlled_multix_lattice_surgery_ppm_resources(base, *_, **__):
+    resources = {
+        PauliMeasure("Z" + "X" * width, wires=Wire[width + 1]): 1
+        for width in range(len(base.wires) + 1)
+    }
+    resources[PauliMeasure("ZX", wires=Wire[2])] += 1
+    resources[PauliMeasure("X", wires=Wire[1])] = 1
+    resources[PauliX] = 2
+    resources[PauliZ] = 2
+    resources[base] = 1
+    resources[GlobalPhase] = 1
+    return resources
+
+
+@register_condition(lambda control_wires, **_: len(control_wires) == 1)
+@register_resources(
+    _controlled_multix_lattice_surgery_ppm_resources,
+    work_wires={"burnable": 1},
+    exact=False,
+)
+def _controlled_multix_lattice_surgery_ppm(base, control_wires, control_values, **_):
+    """Implement a single-control MultiX with three PPMs and one consumed auxiliary qubit."""
+    cond(math.logical_not(control_values[0]), PauliX)(control_wires[0])
+    with allocate(1, state="zero", restored=False) as work_wires:
+        m0 = pauli_measure("ZX", [control_wires[0], work_wires[0]])
+        m1 = _measure_z_multix(work_wires[0], base.bitstring, base.wires)
+        m2 = pauli_measure("X", work_wires)
+        cond(m1, PauliZ)(control_wires[0])
+        cond(m0 != m2, MultiX)(base.bitstring, wires=base.wires)
+        cond(m1 & (m0 != m2), GlobalPhase)(pi)
+        cond(m2, PauliZ)(work_wires[0])  # Leave the auxiliary qubit in |+>.
+    cond(math.logical_not(control_values[0]), PauliX)(control_wires[0])
+
+
+add_decomps("C(MultiX)", _controlled_multix_lattice_surgery_ppm)
