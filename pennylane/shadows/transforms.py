@@ -176,10 +176,10 @@ def shadow_state(
           dtype=complex64)
     >>> onp.random.seed(123)
     >>> qp.math.toarray(qp.jacobian(lambda x: qp.math.real(circuit(x)))(x))
-    array([[-0.23055 , -0.002325,  0.003   , -0.227925],
-           [ 0.00825 ,  0.234375,  0.2295  ,  0.0015  ],
-           [-0.005625,  0.231075,  0.229725,  0.00135 ],
-           [-0.2331  , -0.002325,  0.00285 , -0.239025]])
+    array([[-2.30550e-01,  5.62500e-03,  2.25000e-04, -2.29725e-01],
+           [ 5.62500e-03,  2.30550e-01,  2.29725e-01, -1.57500e-03],
+           [ 2.25000e-04,  2.29725e-01,  2.37900e-01,  2.47500e-03],
+           [-2.29725e-01, -1.57500e-03,  2.47500e-03, -2.37900e-01]])
     """
     tapes, fn = (
         _shadow_state_diffable(tape, wires) if diffable else _shadow_state_undiffable(tape, wires)

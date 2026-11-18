@@ -689,7 +689,7 @@ def shadow_expval(
         >>> print(qp.math.toarray(circuit(x, Hs)))
         [ 1.8783  0.0096 -0.0174  0.0138]
         >>> print(qp.math.toarray(qp.jacobian(circuit)(x, Hs)))
-        [-0.4851  0.006   0.0036  0.0015]
+        [-0.4851 -0.0063 -0.0099  0.0006]
     """
     seed = seed or np.random.randint(2**30)
     return ShadowExpvalMP(H=H, seed=seed, k=k)
