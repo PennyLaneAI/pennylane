@@ -221,21 +221,23 @@ def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
     assert tape.operations[0].operands == (expected_uncompute, target_op(1), compute_op(0))
 
 
+@qp.subcircuit(dynamic_argnames=("angle",))
+@qp.register_resources({qp.RX: 1, qp.H: 1})
+def BasisCompute(angle, wires):
+    """Basis-change operand shared by the parametrized capture cases."""
+    qp.RX(angle, wires)
+    qp.H(wires)
+
+
 @pytest.mark.capture
 @pytest.mark.parametrize("constructor", (change_op_basis, ChangeOpBasis2))
 @pytest.mark.parametrize("explicit_uncompute", (False, True))
 def test_subcircuit_capture(constructor, explicit_uncompute):
     """Subcircuits retain their parameters inside a single captured basis change."""
 
-    @qp.subcircuit(dynamic_argnames=("angle",))
-    @qp.register_resources({qp.RX: 1, qp.H: 1})
-    def Compute(angle, wires):
-        qp.RX(angle, wires)
-        qp.H(wires)
-
     def circuit(angle, wire):
-        compute = Compute(angle, wires=wire)
-        uncompute = qp.adjoint(Compute(angle, wires=wire)) if explicit_uncompute else None
+        compute = BasisCompute(angle, wires=wire)
+        uncompute = qp.adjoint(BasisCompute(angle, wires=wire)) if explicit_uncompute else None
         return constructor(compute, qp.RZ(2 * angle, wire), uncompute)
 
     jaxpr = qp.capture.make_plxpr(circuit)(0.2, 1)
@@ -244,9 +246,9 @@ def test_subcircuit_capture(constructor, explicit_uncompute):
     assert isinstance(result, ChangeOpBasis2)
     assert len(jaxpr.eqns) == 2  # classical multiplication and the composite operator
     with qp.capture.pause():
-        qp.assert_equal(result.compute_op, Compute(0.4, wires=0))
+        qp.assert_equal(result.compute_op, BasisCompute(0.4, wires=0))
         qp.assert_equal(result.target_op, qp.RZ(0.8, 0), check_interface=False)
-        qp.assert_equal(result.uncompute_op, qp.adjoint(Compute(0.4, wires=0)))
+        qp.assert_equal(result.uncompute_op, qp.adjoint(BasisCompute(0.4, wires=0)))
 
 
 @pytest.mark.capture
