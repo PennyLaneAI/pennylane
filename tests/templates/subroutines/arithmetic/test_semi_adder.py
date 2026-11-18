@@ -523,13 +523,8 @@ class TestControlledSemiAdderPPM:
             work_wire_type="borrowed",
         )
         assert rule.exact_resources is False
-        num_temporary_ands = sum(
-            count for op, count in resources.gate_counts.items() if isinstance(op, TemporaryAND)
-        )
-        assert num_temporary_ands == num_controls - 1
         assert (
             sum(count for op, count in resources.gate_counts.items() if isinstance(op, qp.PPR_8))
-            + 4 * num_temporary_ands
             == 8 * num_y + 4 * num_controls - 8
         )
         assert (
@@ -764,10 +759,10 @@ class TestControlledSemiAdderPPM:
             assert qp.math.allclose(circuit(), expected)
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize("num_provided", [0, 2])
+    @pytest.mark.parametrize("num_provided", [0, 2, 5])
     @pytest.mark.parametrize("num_controls", [1, 2, 3])
     def test_compiled_allocation(self, num_provided, num_controls):
-        """Compile allocation inside an explicitly invoked rule."""
+        """Compile control ladders with provided, allocated or mixed work registers."""
         num_wires = num_controls + 3 + num_provided
         base = qp.SemiAdder(
             [num_controls],

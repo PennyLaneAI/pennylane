@@ -26,7 +26,7 @@ from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_con
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
-from .temporary_and import TemporaryAND
+from .temporary_and import TemporaryAND, _temporary_and_ppr
 
 
 def _left_block(wires: list):
@@ -767,11 +767,10 @@ def _controlled_semi_adder_ppm_resources(base, control_wires, *_, **__):
     num_carries = num_bits - 1
     num_control_flags = len(control_wires) - 1
     return {
-        TemporaryAND: num_control_flags,
-        PPR_8(1, "Y", Wire[1]): num_carries + num_bits,
-        PPR_8(-1, "ZY", Wire[2]): num_bits,
+        PPR_8(1, "Y", Wire[1]): num_carries + num_bits + num_control_flags,
+        PPR_8(-1, "ZY", Wire[2]): num_bits + 2 * num_control_flags,
         PPR_8(-1, "ZZY", Wire[3]): 2 * num_carries + num_bits,
-        PPR_8(1, "ZZY", Wire[3]): num_carries,
+        PPR_8(1, "ZZY", Wire[3]): num_carries + num_control_flags,
         PPR_8(1, "ZZZY", Wire[4]): num_bits,
         PauliMeasure("X", wires=Wire[1]): 3 * num_bits - 1 + num_control_flags,
         PauliMeasure("Z", wires=Wire[1]): 3 * num_bits - 1 + num_control_flags,
@@ -812,7 +811,10 @@ def _controlled_semi_adder_ppm(
             num_ladder_wires : num_ladder_wires + num_controls - 1
         ]
         for i in range(num_controls - 1):
-            TemporaryAND([control_chain[i], control_wires[i + 1], control_chain[i + 1]])
+            # Inline the PPR rule: native template lowering cannot span allocated registers.
+            _temporary_and_ppr(
+                [control_chain[i], control_wires[i + 1], control_chain[i + 1]], [True, True]
+            )
 
         _ppm_controlled_ladder(base, control_chain[-1], zeroed_wires)
 
