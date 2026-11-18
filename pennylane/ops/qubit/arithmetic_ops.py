@@ -31,7 +31,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.symbolic_decomposition import pow_involutory, self_adjoint_legacy
 from pennylane.typing import FlatPytree, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, WiresSequenceLike
 
 
 class QubitCarry(Operation):
@@ -169,7 +169,7 @@ class QubitCarry(Operation):
 
     @staticmethod
     # pylint: disable-next=arguments-differ
-    def compute_decomposition(wires: WiresLike) -> list[qp.operation.Operator]:
+    def compute_decomposition(wires: WiresSequenceLike) -> list[qp.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -200,7 +200,7 @@ def _qubitcarry_to_cnot_toffoli_resources():
 
 
 @register_resources(_qubitcarry_to_cnot_toffoli_resources)
-def _qubitcarry_to_cnot_toffolis(wires: WiresLike, **__):
+def _qubitcarry_to_cnot_toffolis(wires: WiresSequenceLike, **__):
     qp.Toffoli(wires=wires[1:])
     qp.CNOT(wires=[wires[1], wires[2]])
     qp.Toffoli(wires=[wires[0], wires[2], wires[3]])
@@ -327,7 +327,7 @@ class QubitSum(Operation):
 
     @staticmethod
     # pylint: disable-next=arguments-differ
-    def compute_decomposition(wires: WiresLike) -> qp.operation.Operator:
+    def compute_decomposition(wires: WiresSequenceLike) -> qp.operation.Operator:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -361,7 +361,7 @@ def _qubitsum_to_cnots_resources():
 
 
 @register_resources(_qubitsum_to_cnots_resources)
-def _qubitsum_to_cnots(wires: WiresLike, **__):
+def _qubitsum_to_cnots(wires: WiresSequenceLike, **__):
     qp.CNOT(wires=[wires[1], wires[2]])
     qp.CNOT(wires=[wires[0], wires[2]])
 
@@ -431,7 +431,7 @@ class IntegerComparator(Operation):
     def __init__(
         self,
         value: int,
-        wires: WiresLike,
+        wires: WiresSequenceLike,
         geq: bool = True,
         work_wires: WiresLike | None = None,
     ):
@@ -560,7 +560,7 @@ class IntegerComparator(Operation):
     @staticmethod
     def compute_decomposition(  # pylint: disable=arguments-differ,unused-argument
         value: int,
-        wires: WiresLike,
+        wires: WiresSequenceLike,
         geq: bool = True,
         work_wires: WiresLike | None = None,
         **kwargs,

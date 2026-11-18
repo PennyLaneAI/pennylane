@@ -20,7 +20,7 @@ from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import PauliRot
 from pennylane.typing import Float, Wire
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresSequenceLike
 
 _PAULIS = ["I", "X", "Y", "Z"]
 
@@ -160,7 +160,7 @@ def _arbitrary_unitary_resources(num_wires: int) -> dict:
 
 
 @register_resources(_arbitrary_unitary_resources)
-def _arbitrary_unitary_decomposition(weights: list, wires: WiresLike, **_):
+def _arbitrary_unitary_decomposition(weights: list, wires: WiresSequenceLike, **_):
     words = list(_all_pauli_words_but_identity(len(wires)))
 
     for i, word in enumerate(words):

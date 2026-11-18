@@ -1925,6 +1925,7 @@ Internal changes ⚙️
   to improve ty compatibility.
   `(#10537) <https://github.com/PennyLaneAI/pennylane/pull/10537>`__
   `(#10540) <https://github.com/PennyLaneAI/pennylane/pull/10540>`__
+  `(#10550) <https://github.com/PennyLaneAI/pennylane/pull/10550>`__
 
 * Adding trusted publishing PyPI uploads.
   `(#10513) <https://github.com/PennyLaneAI/pennylane/pull/10513>`__
@@ -1932,9 +1933,6 @@ Internal changes ⚙️
 * Removed leftover array-interface selection from QSVT iterative angle solvers now that
   JAX is always available.
   `(#10216) <https://github.com/PennyLaneAI/pennylane/pull/10216>`__
-
-* Added pinned local ``ty`` tooling and a diagnostic baseline for the package.
-  `(#10537) <https://github.com/PennyLaneAI/pennylane/pull/10537>`__
 
 * :class:`~.Barrier` now uses a dedicated program-capture primitive while retaining
   the ``Operator2`` argument format and operator reconstruction behavior.

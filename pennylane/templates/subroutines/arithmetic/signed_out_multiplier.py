@@ -25,7 +25,13 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, ctrl
 from pennylane.typing import Wire
-from pennylane.wires import Wires, WiresLike, is_abstract_qubit, validate_no_wire_overlaps
+from pennylane.wires import (
+    Wires,
+    WiresLike,
+    WiresSequenceLike,
+    is_abstract_qubit,
+    validate_no_wire_overlaps,
+)
 
 from .incrementer import Incrementer
 from .out_multiplier import OutMultiplier
@@ -507,10 +513,10 @@ def _not_zeroed_condition(x_wires, y_wires, output_wires, work_wires, output_wir
 @register_condition(_zeroed_work_wire_condition)
 @register_resources(_zeroed_signed_out_multiplier_resources)
 def _signed_out_multiplier_decomposition_zeroed(  # pylint: disable=unused-argument
-    x_wires: WiresLike,
-    y_wires: WiresLike,
-    output_wires: WiresLike,
-    work_wires: WiresLike,
+    x_wires: WiresSequenceLike,
+    y_wires: WiresSequenceLike,
+    output_wires: WiresSequenceLike,
+    work_wires: WiresSequenceLike,
     output_wires_zeroed=False,
 ):
     """Computes the decomposition of the operator as a product of other operators when the output wires are zeroed."""
@@ -566,8 +572,8 @@ def _signed_out_multiplier_decomposition_zeroed(  # pylint: disable=unused-argum
 def _signed_out_multiplier_decomposition_not_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
-    output_wires: WiresLike,
-    work_wires: WiresLike,
+    output_wires: WiresSequenceLike,
+    work_wires: WiresSequenceLike,
     output_wires_zeroed=False,
 ):
     """Computes the decomposition of the operator as a product of other operators."""

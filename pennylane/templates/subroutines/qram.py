@@ -37,7 +37,7 @@ from pennylane.ops import (
     ctrl,
 )
 from pennylane.typing import Bool, Float, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike, concatenate_wires
+from pennylane.wires import Wires, WiresLike, WiresSequenceLike, concatenate_wires
 
 
 # -----------------------------
@@ -212,7 +212,7 @@ class BBQRAM(Operation):
         bitstrings: TensorLike | Sequence[str],
         control_wires: WiresLike,
         target_wires: WiresLike,
-        work_wires: WiresLike,
+        work_wires: WiresSequenceLike,
     ):
         control_wires = Wires(control_wires)
 

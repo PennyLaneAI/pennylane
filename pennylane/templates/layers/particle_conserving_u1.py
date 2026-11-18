@@ -23,10 +23,10 @@ from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, CZ, BasisState, CRot, PhaseShift
 from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresSequenceLike
 
 
-def decompose_ua(phi, wires=None):
+def decompose_ua(phi, wires):
     r"""Appends the circuit decomposing the controlled application of the unitary
     :math:`U_A(\phi)`
 
@@ -379,7 +379,7 @@ def _particle_conserving_u1_resources(n_layers: int, num_wires: int):
     }
 
 
-def _decompose_ua_qfunc(phi: float, wires: WiresLike):
+def _decompose_ua_qfunc(phi: float, wires: WiresSequenceLike):
     r"""Appends the circuit decomposing the controlled application of the unitary
     :math:`U_A(\phi)`
 
@@ -417,7 +417,9 @@ def _decompose_ua_qfunc(phi: float, wires: WiresLike):
 
 
 @register_resources(_particle_conserving_u1_resources)
-def _particle_conserving_u1_decomposition(weights: list, wires: WiresLike, init_state: tuple[int]):
+def _particle_conserving_u1_decomposition(
+    weights: list, wires: WiresSequenceLike, init_state: tuple[int]
+):
     nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
     nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
     n_layers = math.shape(weights)[0]

@@ -23,7 +23,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RZ, H, MultiRZ
 from pennylane.typing import Float, Int, Wire
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresSequenceLike
 
 
 class IQPEmbedding(Operator2):
@@ -228,7 +228,7 @@ def _iqp_embedding_resources(features, wires, n_repeats, pattern):
 
 
 @register_resources(_iqp_embedding_resources, exact=False)
-def _iqp_embedding_decomposition(features, wires: WiresLike, n_repeats, pattern):
+def _iqp_embedding_decomposition(features, wires: WiresSequenceLike, n_repeats, pattern):
 
     if capture.enabled() or compiler.active():
         wires = math.array(wires, like="jax")

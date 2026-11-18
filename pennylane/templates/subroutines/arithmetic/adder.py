@@ -27,7 +27,13 @@ from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint import adjoint
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Int, Wire
-from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
+from pennylane.wires import (
+    Wires,
+    WiresLike,
+    WiresSequenceLike,
+    concatenate_wires,
+    validate_no_wire_overlaps,
+)
 
 from .phase_adder import PhaseAdder
 
@@ -190,7 +196,7 @@ class Adder(Operator2):
 
 
 def _adder_decomposition_resources(
-    k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike
+    k: int, x_wires: WiresSequenceLike, mod: int, work_wires: WiresLike
 ) -> dict:
     # pylint: disable=unused-argument
     num_x_wires = len(x_wires)
@@ -207,7 +213,9 @@ def _adder_decomposition_resources(
 
 
 @register_resources(_adder_decomposition_resources)
-def _adder_decomposition(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike):
+def _adder_decomposition(
+    k: int, x_wires: WiresSequenceLike, mod: int, work_wires: WiresSequenceLike
+):
     if mod == 2 ** len(x_wires):
         change_op_basis(QFT(x_wires), PhaseAdder(k, x_wires, mod))
         return
@@ -242,7 +250,7 @@ def _add_constant_resources(num_wires: int, num_control: int = 0) -> dict:
 
 
 def _adder_arithmetic_resources(
-    k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike
+    k: int, x_wires: WiresSequenceLike, mod: int, work_wires: WiresLike
 ) -> dict:
     # pylint: disable=unused-argument
     num_x_wires = len(x_wires)

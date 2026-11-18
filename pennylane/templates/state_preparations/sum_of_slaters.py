@@ -24,7 +24,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike, WiresSequenceLike
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
 r"""This is a data container for preprocessed SumOfSlatersPrep data.
@@ -991,10 +991,10 @@ class SumOfSlatersPrep(Operator2):
         coefficients: TensorLike,
         wires: WiresLike,
         indices: tuple | None,
-        enumeration_wires: WiresLike = (),
-        identification_wires: WiresLike = (),
-        qrom_work_wires: WiresLike = (),
-        mcx_cache_wires: WiresLike = (),
+        enumeration_wires: WiresSequenceLike = (),
+        identification_wires: WiresSequenceLike = (),
+        qrom_work_wires: WiresSequenceLike = (),
+        mcx_cache_wires: WiresSequenceLike = (),
     ):
         n = 1 if isinstance(wires, int) else len(wires)
         num_entries = coefficients.shape[0]

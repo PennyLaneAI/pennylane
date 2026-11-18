@@ -28,7 +28,7 @@ from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Int, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, WiresSequenceLike
 
 from .phase_adder import PhaseAdder
 
@@ -199,7 +199,7 @@ class Multiplier(Operation):
 
     @staticmethod
     # pylint: disable-next=arguments-differ
-    def compute_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike):
+    def compute_decomposition(k, x_wires: WiresSequenceLike, mod, work_wires: WiresSequenceLike):
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -281,7 +281,9 @@ def _multiplier_decomposition_resources(
 
 
 @register_resources(_multiplier_decomposition_resources)
-def _multiplier_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
+def _multiplier_decomposition(
+    k, x_wires: WiresSequenceLike, mod, work_wires: WiresSequenceLike, **__
+):
     if mod != 2 ** len(x_wires):
         work_wire_aux = work_wires[:1]
         wires_aux = work_wires[1:]

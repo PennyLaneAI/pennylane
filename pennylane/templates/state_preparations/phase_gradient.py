@@ -25,7 +25,7 @@ from pennylane.core.operator import StatePrepBase2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.exceptions import WireError
 from pennylane.typing import AbstractWires, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, WiresSequenceLike
 
 from .phase_gradient_decomp_data import (
     CLIFFORD_T_GLOBAL_PHASES,
@@ -171,7 +171,7 @@ def _phase_gradient_state_prep_ppr_resources(wires: AbstractWires):
 
 @register_condition(lambda wires: len(wires) <= len(PI_OVER_8_PPRS))
 @register_resources(_phase_gradient_state_prep_ppr_resources)
-def _phase_gradient_state_prep_ppr_decomposition(wires: WiresLike):
+def _phase_gradient_state_prep_ppr_decomposition(wires: WiresSequenceLike):
     # Wire j is prepared in the state (|0> + exp(-i pi / 2**j)|1>) / sqrt(2) by the PPR
     # ``INITIAL_PPRS[j]`` (angle denominator, Pauli word; no gate if ``None``), followed by the π/8
     # PPRs in ``PI_OVER_8_PPRS[j]``, where upper (lower) case letters denote PPRs with angle π/8
@@ -199,7 +199,7 @@ def _phase_gradient_state_prep_clifford_t_resources(wires: AbstractWires):
 
 @register_condition(lambda wires: len(wires) <= len(CLIFFORD_T_SEQUENCES))
 @register_resources(_phase_gradient_state_prep_clifford_t_resources)
-def _phase_gradient_state_prep_clifford_t_decomposition(wires: WiresLike):
+def _phase_gradient_state_prep_clifford_t_decomposition(wires: WiresSequenceLike):
     # Wire j is prepared by the gates in ``CLIFFORD_T_SEQUENCES[j]``, which are obtained from the
     # PPR decomposition and contain one T gate per π/8 PPR. Together with the global phase
     # given by summing ``CLIFFORD_T_GLOBAL_PHASES`` over the wires, the state prepared on 30 wires

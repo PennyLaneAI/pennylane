@@ -21,10 +21,10 @@ from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, CRX, RZ, BasisState
 from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresSequenceLike
 
 
-def u2_ex_gate(phi, wires=None):
+def u2_ex_gate(phi, wires):
     r"""Implements the two-qubit exchange gate :math:`U_{2,\mathrm{ex}}` proposed in
     `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_ to build particle-conserving VQE ansatze
     for Quantum Chemistry simulations.
@@ -269,7 +269,9 @@ def _particle_conserving_u2_resources(num_wires: int, n_layers: int):
 
 
 @register_resources(_particle_conserving_u2_resources)
-def _particle_conserving_u2_decomposition(weights: list, wires: WiresLike, init_state: tuple[int]):
+def _particle_conserving_u2_decomposition(
+    weights: list, wires: WiresSequenceLike, init_state: tuple[int]
+):
     nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
     nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
     n_layers = math.shape(weights)[0]

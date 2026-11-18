@@ -21,7 +21,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT
 from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.wires import Wires, WiresLike, WiresSequenceLike, validate_no_wire_overlaps
 
 from ..multix import MultiX
 from .out_multiplier import _c_add_sub, _c_add_sub_resources
@@ -299,8 +299,8 @@ def _out_square_with_adder_zeroed_resources(  # pylint: disable=unused-argument
 @register_condition(_out_square_with_adder_zeroed_condition)
 @register_resources(_out_square_with_adder_zeroed_resources, name="out_square_with_adder")
 def _out_square_with_adder_zeroed(  # pylint: disable=unused-argument
-    x_wires: WiresLike,
-    output_wires: WiresLike,
+    x_wires: WiresSequenceLike,
+    output_wires: WiresSequenceLike,
     work_wires: WiresLike,
     output_wires_zeroed: bool = False,
 ):
@@ -396,8 +396,8 @@ def _shifted_adder(x_wires, output_wires, work_wires):
 @register_condition(_out_square_with_caddsub_condition)
 @register_resources(_out_square_with_caddsub_resources)
 def _out_square_with_caddsub(
-    x_wires: WiresLike,
-    output_wires: WiresLike,
+    x_wires: WiresSequenceLike,
+    output_wires: WiresSequenceLike,
     work_wires: WiresLike,
     output_wires_zeroed: bool = False,
 ):

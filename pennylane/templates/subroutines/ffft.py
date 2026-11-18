@@ -26,7 +26,7 @@ from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import FermionicSWAP, PauliZ, pow
 from pennylane.ops.op_math.pow2 import _pow_abstract
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike, WiresSequenceLike
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -137,7 +137,7 @@ class FFFT(Operator):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, wires: WiresLike):
+    def __init__(self, wires: WiresSequenceLike):
         if len(wires) <= 1:
             raise ValueError("The number of wires must be at least 2 for the FFFT algorithm.")
         if not math.log2(len(wires)).is_integer():
@@ -183,7 +183,7 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
 
 
 @register_resources(_fast_fermionic_fourier_transform_resources)
-def _fast_fermionic_fourier_transform_decomposition(*_, wires: WiresLike, **__):
+def _fast_fermionic_fourier_transform_decomposition(*_, wires: WiresSequenceLike, **__):
     if capture.enabled():
         wires = math.array(wires, like="jax")
 
@@ -193,7 +193,7 @@ def _fast_fermionic_fourier_transform_decomposition(*_, wires: WiresLike, **__):
     _recursive_decompose(wires)
 
 
-def _recursive_decompose(wires: WiresLike):
+def _recursive_decompose(wires: WiresSequenceLike):
     # base case is that we have two wires
     if len(wires) == 2:
         TwoWireFFT(wires)

@@ -24,7 +24,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
 from pennylane.typing import AbstractWires, Wire
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike, WiresSequenceLike
 
 
 class QFT(Operator2):
@@ -146,7 +146,7 @@ class QFT(Operator2):
         super().__init__(wires)
 
     @staticmethod
-    def compute_matrix(wires: WiresLike):  # pylint: disable=arguments-differ
+    def compute_matrix(wires: WiresSequenceLike):  # pylint: disable=arguments-differ
         return np.fft.ifft(np.eye(2 ** len(wires)), norm="ortho")
 
 
@@ -160,7 +160,7 @@ def _qft_decomposition_resources(wires: AbstractWires):
 
 
 @register_resources(_qft_decomposition_resources)
-def _qft_decomposition(wires: WiresLike):
+def _qft_decomposition(wires: WiresSequenceLike):
     num_wires = len(wires)
     shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
     if compiler.active() or capture.enabled():

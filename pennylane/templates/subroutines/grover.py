@@ -23,7 +23,7 @@ from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import GlobalPhase, Hadamard, MultiControlledX, PauliZ
 from pennylane.typing import Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, WiresSequenceLike
 
 
 class GroverOperator(Operation):
@@ -147,7 +147,7 @@ class GroverOperator(Operation):
 
     @staticmethod
     # pylint: disable-next=arguments-differ,unused-argument
-    def compute_decomposition(wires: WiresLike, work_wires: WiresLike, **kwargs):
+    def compute_decomposition(wires: WiresSequenceLike, work_wires: WiresLike, **kwargs):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

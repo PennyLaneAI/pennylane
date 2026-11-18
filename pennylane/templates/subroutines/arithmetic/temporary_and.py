@@ -26,7 +26,7 @@ from pennylane.decomposition import (
 )
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import AbstractArray, Bool, Wire
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike, WiresSequenceLike
 
 
 class TemporaryAND(Operator2):
@@ -259,7 +259,7 @@ def _temporary_and_resources(*_, **__):
 
 
 @register_resources(_temporary_and_resources, exact=False)
-def _temporary_and(wires: WiresLike, control_values: Sequence[bool]):
+def _temporary_and(wires: WiresSequenceLike, control_values: Sequence[bool]):
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
 
@@ -306,7 +306,7 @@ def _temporary_and_ppr_resources(*_, **__):
 
 
 @register_resources(_temporary_and_ppr_resources, exact=False)
-def _temporary_and_ppr(wires: WiresLike, control_values: Sequence[bool]):
+def _temporary_and_ppr(wires: WiresSequenceLike, control_values: Sequence[bool]):
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
     ops.PPR_8(1, "ZZY", wires)

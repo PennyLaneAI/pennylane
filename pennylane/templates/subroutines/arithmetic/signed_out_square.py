@@ -22,7 +22,7 @@ from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import X
 from pennylane.templates.subroutines.arithmetic import OutSquare, SemiAdder
 from pennylane.typing import Bool, Wire
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike, WiresSequenceLike
 
 from ..multix import MultiX
 from .out_square import _SquareArithmeticOp
@@ -320,8 +320,8 @@ def _signed_out_square_resources(
 
 @register_resources(_signed_out_square_resources, name="signed_square_from_unsigned_square")
 def _signed_out_square(
-    x_wires: WiresLike,
-    output_wires: WiresLike,
+    x_wires: WiresSequenceLike,
+    output_wires: WiresSequenceLike,
     work_wires: WiresLike,
     output_wires_zeroed: bool,
 ):

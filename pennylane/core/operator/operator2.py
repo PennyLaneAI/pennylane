@@ -59,7 +59,7 @@ from pennylane.typing import (
     TensorLike,
     _AbstractWireTypeFactory,
 )
-from pennylane.wires import AbstractQubit, Wires, WiresLike
+from pennylane.wires import AbstractQubit, Wires, WiresLike, WiresSequenceLike
 
 from .base import _UNSET_BATCH_SIZE, AbstractOperator, Operator
 from .meta import OperatorMeta
@@ -2335,7 +2335,7 @@ class StatePrepBase2(Operator2, is_baseclass=True):
     """An interface for state-prep operations."""
 
     @abstractmethod
-    def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
+    def state_vector(self, wire_order: WiresSequenceLike | None = None) -> TensorLike:
         """
         Returns the initial state vector for a circuit given a state preparation.
 

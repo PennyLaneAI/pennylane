@@ -30,7 +30,13 @@ from pennylane.templates.subroutines.controlled_sequence import ControlledSequen
 from pennylane.templates.subroutines.multix import MultiX
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Bool, Int, Wire
-from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
+from pennylane.wires import (
+    Wires,
+    WiresLike,
+    WiresSequenceLike,
+    concatenate_wires,
+    validate_no_wire_overlaps,
+)
 
 from .incrementer import Incrementer
 from .phase_adder import PhaseAdder
@@ -386,9 +392,9 @@ def _out_multiplier_with_qft_condition(  # pylint: disable=too-many-arguments,un
 def _out_multiplier_with_qft(  # pylint: disable=too-many-arguments
     x_wires: WiresLike,
     y_wires: WiresLike,
-    output_wires: WiresLike,
+    output_wires: WiresSequenceLike,
     mod,
-    work_wires: WiresLike,
+    work_wires: WiresSequenceLike,
     output_wires_zeroed: bool,
 ):
 
@@ -478,9 +484,9 @@ def _out_multiplier_with_adder_condition(  # pylint: disable=too-many-arguments,
 @register_condition(_out_multiplier_with_adder_condition)
 @register_resources(_out_multiplier_with_adder_resources)
 def _out_multiplier_with_adder(  # pylint: disable=too-many-arguments,unused-argument
-    x_wires: WiresLike,
-    y_wires: WiresLike,
-    output_wires: WiresLike,
+    x_wires: WiresSequenceLike,
+    y_wires: WiresSequenceLike,
+    output_wires: WiresSequenceLike,
     mod,
     work_wires: WiresLike,
     output_wires_zeroed: bool,
@@ -839,9 +845,9 @@ def _out_multiplier_with_cache_resources(  # pylint: disable=too-many-arguments,
 def _out_multiplier_with_cache(  # pylint: disable=too-many-arguments,unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
-    output_wires: WiresLike,
+    output_wires: WiresSequenceLike,
     mod: None,
-    work_wires: WiresLike,
+    work_wires: WiresSequenceLike,
     output_wires_zeroed,
 ):
     r"""Decompose ``OutMultiplier`` with ``output_wires_zeroed=False`` into two ``OutMultiplier``\ s

@@ -27,7 +27,7 @@ from pennylane.ops import adjoint, ctrl
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Int, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, WiresSequenceLike
 
 from .phase_adder import PhaseAdder
 
@@ -387,7 +387,7 @@ class OutPoly(Operation):
         input_registers,
         output_wires: WiresLike,
         mod=None,
-        work_wires: WiresLike = (),
+        work_wires: WiresSequenceLike = (),
         **kwargs,
     ):
         r"""Representation of the operator as a product of other operators (static method).
@@ -504,7 +504,7 @@ def _out_poly_decomposition(  # pylint: disable=unused-argument
     input_registers,
     output_wires: WiresLike,
     mod=None,
-    work_wires: WiresLike = (),
+    work_wires: WiresSequenceLike = (),
     **kwargs,
 ):
     registers_wires = [*input_registers, output_wires]
