@@ -15,7 +15,9 @@ r"""
 Contains the AllSinglesDoubles template.
 """
 
-# pylint: disable=too-many-arguments,protected-access
+# pylint: disable=protected-access
+
+
 import copy
 from collections.abc import Sequence
 
@@ -173,9 +175,8 @@ class AllSinglesDoubles(Operation):
         super().__init__(weights, wires=wires)
 
     @classmethod
-    def _primitive_bind_call(
-        cls, weights, wires, hf_state, singles=None, doubles=None
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def _primitive_bind_call(cls, weights, wires, hf_state, singles=None, doubles=None):
         singles = math.array(singles) if singles is not None else math.array(((),))
         doubles = math.array(doubles) if doubles is not None else math.array(((),))
         wires = math.array(wires)
@@ -205,9 +206,8 @@ class AllSinglesDoubles(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(
-        weights, wires, hf_state, singles, doubles
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(weights, wires, hf_state, singles, doubles):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

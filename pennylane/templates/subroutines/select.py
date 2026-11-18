@@ -153,6 +153,40 @@ class Select(Operator2):
     Note how the first (second) control node of the second (third) operator was skipped.
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.Select
+            :stacked:
+            :symbols: :math:`K` operators :math:`U_j=` ``ops[j]``, :math:`c\geq 2` control wires,
+                :math:`w` work wires and ``partial=False``
+            :example: :math:`K=4`, :math:`c=2`
+
+            .. decomposition-rule:: _select_decomp_multi_control
+                :image: /_static/decomposition_thumbnails/select_multi_control.svg
+
+                :math:`U_j` with :math:`c` controls | :math:`K` (one per :math:`U_j`) | 4
+
+            .. decomposition-rule:: _select_decomp_unary
+                :image: /_static/decomposition_thumbnails/select_unary.svg
+                :requires: :math:`w \geq c - 1` work wires
+                :where: :math:`N = c + K - 2 - \mathrm{wt}(K-1) - [K > 2^{c-1}]`, with
+                    :math:`\mathrm{wt}` the number of ones in the binary representation, and
+                    :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
+
+                :class:`~.TemporaryAND` | :math:`N` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`N` | 1
+                :class:`~.CNOT` | :math:`K - 1` :math:`+ [K > 2^{c-1}]` :math:`- [K > 2^{c-2}]` | 3
+                :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`[K > 2^{c-2}]` | 1
+                :math:`U_j` with 1 control | :math:`K` (one per :math:`U_j`) | 4
+
+            .. decomposition-rule:: _select_decomp_multi_control_work_wire
+                :image: /_static/decomposition_thumbnails/select_multi_control_work_wire.svg
+                :requires: :math:`w \geq 1` work wire
+
+                :class:`~.MultiControlledX` with :math:`c` controls | :math:`2K` | 8
+                :math:`U_j` with 1 control | :math:`K` (one per :math:`U_j`) | 4
+
+    .. details::
         :title: Unary iterator decomposition
 
         Generically, ``Select`` is decomposed into one multi-controlled operator for each target
@@ -614,7 +648,6 @@ def _select_resources_unary_not_partial(ops, num_control_wires, num_work_wires):
     return dict(resources)
 
 
-# pylint: disable=unused-argument
 def _select_resources_unary(ops, control, work_wires, partial):
     num_control_wires = len(control)
     num_work_wires = len(work_wires)
@@ -841,8 +874,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     return ops_decomp
 
 
-# pylint: disable=unused-argument
-def _unary_condition(ops, control, work_wires, partial):
+def _unary_condition(ops, control, work_wires, partial):  # pylint: disable=unused-argument
     return len(work_wires) >= len(control) - 1
 
 
@@ -961,8 +993,7 @@ def _select_multi_control_work_wire_resources(ops, control, work_wires, partial)
     return dict(resources)
 
 
-# pylint: disable=unused-argument
-def _work_wire_condition(ops, control, work_wires, partial):
+def _work_wire_condition(ops, control, work_wires, partial):  # pylint: disable=unused-argument
     return len(work_wires) >= 1
 
 

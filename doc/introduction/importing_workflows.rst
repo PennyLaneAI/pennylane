@@ -7,9 +7,9 @@ Importing workflows
 ===================
 
 PennyLane supports importing quantum circuits and operations that were
-constructed using another framework. This includes circuits defined using `Qiskit <https://www.ibm.com/quantum/qiskit>`__,
-`OpenQASM <https://arxiv.org/abs/1707.03429>`_, and `Quil
-<https://docs.rigetti.com/qcs/guides/quil>`_.
+constructed using another framework. This includes circuits defined using
+`Qiskit <https://www.ibm.com/quantum/qiskit>`__ and
+`OpenQASM <https://arxiv.org/abs/1707.03429>`_.
 
 .. note::
 
@@ -35,12 +35,9 @@ and optimize the circuit using :ref:`quantum-specific optimizers <intro_ref_opt>
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.from_pyquil
     ~pennylane.from_qasm
     ~pennylane.from_qasm3
     ~pennylane.from_qiskit
-    ~pennylane.from_quil
-    ~pennylane.from_quil_file
 
 :html:`</div>`
 
@@ -200,49 +197,6 @@ The result is as follows:
 >>> print(qp.draw(pl_circuit_from_oq)())
 0: ──H─╭●─┤  <Y>
 1: ────╰X─┤  Var[Z]
-
-Quil
-~~~~
-
-PennyLane also offers convenience functions for importing circuits from `pyQuil
-<https://pyquil-docs.rigetti.com/en/stable/index.html>`__ or Quil representations. Both of these
-require the `PennyLane-Rigetti <https://docs.pennylane.ai/projects/rigetti/en/stable/>`__ plugin.
-
-We begin with a familiar pyQuil `Program
-<https://pyquil-docs.rigetti.com/en/stable/apidocs/pyquil.quil.html#pyquil.quil.Program>`__:
-
-.. code-block:: python
-
-    import pyquil
-
-    pq_program = pyquil.Program()
-    pq_program += pyquil.gates.H(0)
-    pq_program += pyquil.gates.CNOT(0, 1)
-
-This ``Program`` can be converted into a PennyLane quantum function using the
-:func:`~pennylane.from_pyquil` function:
-
-.. code-block:: python
-
-    import pennylane as qp
-
-    pl_qfunc_from_pq = qp.from_pyquil(pq_program)
-
-    @qp.qnode(qp.device("default.qubit"))
-    def pl_circuit_from_pq():
-        pl_qfunc_from_pq(wires=[0, 1])
-        return qp.expval(qp.Y(0)), qp.var(qp.Z(1))
-
-The resulting PennyLane circuit is:
-
->>> print(qp.draw(pl_circuit_from_pq)())
-0: ──H─╭●─┤  <Y>
-1: ────╰X─┤  Var[Z]
-
-.. note::
-
-    Quantum circuits expressed in Quil can be imported in a similar way using
-    :func:`~pennylane.from_quil`.
 
 Importing quantum operators
 ---------------------------

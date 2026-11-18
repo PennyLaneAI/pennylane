@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from copy import copy
 from functools import cached_property, lru_cache
 from itertools import chain
@@ -251,8 +251,7 @@ class EllipseState:
         e2.b *= (-1) ** k
         return EllipseState(e1, e2), k
 
-    # pylint: disable=too-many-branches
-    def reduce_skew(self) -> tuple[GridOp, EllipseState]:
+    def reduce_skew(self) -> tuple[GridOp, EllipseState]:  # pylint: disable=too-many-branches
         """Reduce the skew of the state.
 
         This uses Step Lemma described in Appendix A.6 of arXiv:1403.2975.
@@ -350,7 +349,6 @@ class GridOp:
         to an element being :math:`a = a_0 + a_1 / \sqrt{2}`.
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         a: tuple[int, int],
@@ -592,7 +590,7 @@ class GridIterator:
         """Return a string representation of the grid iterator."""
         return f"GridIterator(theta={self.theta}, epsilon={self.epsilon}, max_trials={self.max_trials})"
 
-    def __iter__(self) -> Iterable[tuple[ZOmega, int]]:
+    def __iter__(self) -> Iterator[tuple[ZOmega, int]]:
         """Iterate over the solutions to the scaled grid problem."""
         # Warm start for an initial guess, where 14 is kmin for 1e-3.
         k, i_ = min(self.kmin, 14), 6  # Give 6 trials for warm start.
@@ -715,8 +713,7 @@ class GridIterator:
             if e1.contains(x1, y1) and e2.contains(x2, y2):
                 yield solution
 
-    # pylint:disable = too-many-arguments, too-many-branches
-    def solve_upright_problem(
+    def solve_upright_problem(  # pylint: disable=too-many-branches
         self,
         state: EllipseState,
         bbox1: tuple[float],
@@ -889,6 +886,7 @@ class GridIterator:
             if math.ceil(lower_bound_a) == math.floor(upper_bound_a):
                 a = int(math.ceil(lower_bound_a))
                 # Check if the solution satisfies both bounds on x and y.
+                # pylint: disable-next=chained-comparison
                 if (x0_scaled + y0_scaled <= 2 * a) and (2 * a <= x1_scaled + y1_scaled):
                     alpha, beta = a + b * _SQRT2, a - b * _SQRT2
                     # Check if the consecutive solutions are within the desired bounds.

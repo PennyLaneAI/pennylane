@@ -58,7 +58,9 @@ class ChangeOpBasis2(CompositeOp2):
     .. seealso:: :func:`~.change_op_basis`
     """
 
-    def __init__(self, compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
+    def __init__(
+        self, compute_op: Operator, target_op: Operator, uncompute_op: Operator | None = None
+    ):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
             self._init_args["uncompute_op"] = uncompute_op
@@ -171,13 +173,13 @@ def _change_op_basis_abstract(compute_op, target_op, uncompute_op):
     return change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
 
 
-def _controlled_change_op_basis_resources(
+def _controlled_change_op_basis_resources(  # pylint: disable=unused-argument
     base,
     control_wires,
     control_values,
     work_wires,
     work_wire_type,
-):  # pylint: disable=unused-argument
+):
     resources = defaultdict(int)
     resources[base.compute_op] += 1
     resources[

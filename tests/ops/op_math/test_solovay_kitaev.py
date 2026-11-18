@@ -241,7 +241,6 @@ def test_exception_with_qjit():
     """Test operation wire exception in Solovay-Kitaev"""
     pytest.importorskip("catalyst")
     pytest.importorskip("jax")
-    # pylint: disable=import-outside-toplevel
     import jax.numpy as jnp
     from catalyst import qjit
 
@@ -254,7 +253,6 @@ def test_exception_with_qjit():
 def test_exception_with_jit():
     """Test operation wire exception in Solovay-Kitaev"""
     pytest.importorskip("jax")
-    # pylint: disable=import-outside-toplevel
     import jax.numpy as jnp
     from jax import jit
 

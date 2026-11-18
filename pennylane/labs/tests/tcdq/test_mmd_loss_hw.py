@@ -11,8 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-arguments,too-few-public-methods
 """Reference and regression tests for the qudit MMD loss."""
+
+# pylint: disable=too-many-arguments
+
 
 import itertools
 from dataclasses import replace
@@ -368,7 +370,7 @@ class TestUnbiasedMmdSquared:
         assert np.isclose(float(r1), float(r2), atol=1e-10)
 
 
-class TestExactQuditMMDConsistency:
+class TestExactQuditMMDConsistency:  # pylint: disable=too-few-public-methods
     """Validate kernel-matrix and operator-decomposition exact MMD^2 agree."""
 
     @pytest.mark.parametrize(

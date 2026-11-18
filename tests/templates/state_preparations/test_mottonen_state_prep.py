@@ -16,8 +16,6 @@ Unit tests for the ArbitraryStatePreparation template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -443,7 +441,7 @@ class TestInputs:
             qp.MottonenStatePreparation(state_vector, 2)
 
 
-class TestGradient:
+class TestGradient:  # pylint: disable=too-few-public-methods
     """Tests gradients."""
 
     # TODO: Currently the template fails for more elaborate gradient

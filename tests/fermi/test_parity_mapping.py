@@ -459,7 +459,7 @@ def test_parity_transform_fermi_word_operation(fermionic_op, n_qubits, result):
     qubit_op = parity_transform(fermionic_op, n_qubits)
 
     expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
-    expected_op = expected_op.operation(wires)
+    expected_op = qp.pauli.to_operator(expected_op, wires)
 
     qp.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
@@ -532,7 +532,7 @@ def test_fermi_sentence_identity():
 
     assert ps_op == ps
 
-    result = ps.operation(wire_order=[0])
+    result = qp.pauli.to_operator(ps, identity_wires=[0])
     qp.assert_equal(qubit_op.simplify(), result.simplify())
 
 
@@ -633,7 +633,7 @@ def test_parity_transform_for_fermi_sentence_operation(fermionic_op, n_qubits, r
     wires = fermionic_op.wires or [0]
 
     qubit_op = parity_transform(fermionic_op, n_qubits)
-    result = result.operation(wires)
+    result = qp.pauli.to_operator(result, wires)
 
     qp.assert_equal(qubit_op.simplify(), result.simplify())
 
