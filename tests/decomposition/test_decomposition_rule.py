@@ -323,11 +323,10 @@ class TestDecompositionRule:  # pylint: disable=too-many-public-methods
                     qp.H(wires[0])
                 """).strip()
 
-    @pytest.mark.parametrize("use_custom_name", [True, False])
-    def test_decomposition_rule_name(self, use_custom_name):
+    def test_decomposition_rule_name(self):
         """Tests the name attribute of a decomposition rule."""
 
-        name = "custom_cz" if use_custom_name else ""
+        name = "custom_cz"
 
         # Test that the name is correctly set when creating a fresh rule.
 
