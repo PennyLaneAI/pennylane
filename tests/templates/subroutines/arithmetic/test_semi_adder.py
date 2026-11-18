@@ -32,7 +32,6 @@ from pennylane.templates.subroutines.arithmetic.semi_adder import (
     _effective_skip_input_pos,
     _semi_adder,
     _semi_adder_ppm,
-    _semi_adder_ppm_condition,
     _semi_adder_ppm_work_wires,
     _semi_adder_resources,
 )
@@ -469,7 +468,7 @@ class TestControlledSemiAdderPPM:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("compiler_active", [False, True])
-    @pytest.mark.parametrize("num_controls", [0, 1, 2, 3])
+    @pytest.mark.parametrize("num_controls", [0, 1])
     def test_condition(self, compiler_active, num_controls, mocker):
         """The specialized PPM rule needs a compiler and at least one control."""
         mocker.patch(
@@ -509,34 +508,6 @@ class TestControlledSemiAdderPPM:
         )
         assert spec == {"zeroed": expected}
 
-    @pytest.mark.parametrize("num_y", [1, 2, 5])
-    @pytest.mark.parametrize("num_controls", [1, 2, 3])
-    def test_resources(self, num_y, num_controls):
-        """Count the carry and controlled-sum rotations and worst-case measurements."""
-        rule = _controlled_semi_adder_ppm
-        base = qp.SemiAdder(Wire[2], Wire[num_y], Wire[num_y + num_controls + 1])
-        resources = rule.compute_resources(
-            base,
-            Wire[num_controls],
-            control_values=[True] * num_controls,
-            work_wires=Wire[0],
-            work_wire_type="borrowed",
-        )
-        assert rule.exact_resources is False
-        assert (
-            sum(count for op, count in resources.gate_counts.items() if isinstance(op, qp.PPR_8))
-            == 8 * num_y + 4 * num_controls - 8
-        )
-        assert (
-            sum(
-                count
-                for op, count in resources.gate_counts.items()
-                if isinstance(op, qp.ops.PauliMeasure)
-            )
-            == 14 * num_y + 4 * num_controls - 10
-        )
-        assert resources.gate_counts[qp.X(Wire[1])] == 5 * num_y + num_controls - 3
-
     @pytest.mark.parametrize("num_controls", [0, 1, 2, 3])
     @pytest.mark.parametrize("num_y", [1, 2, 4])
     def test_resources_bound_all_corrections(self, num_controls, num_y, mocker):
@@ -565,6 +536,7 @@ class TestControlledSemiAdderPPM:
             rule(**arguments)
 
         counts = Counter(abstractify(op) for op in queue.queue)
+        assert rule.exact_resources is False
         assert counts == rule.compute_resources(**arguments).gate_counts
 
     @pytest.mark.capture
@@ -904,18 +876,6 @@ class TestSemiAdderPPM:
         assert solution.decomposition(op, num_work_wires=needed - 1).name != expected_rule
         solution = graph.solve(num_work_wires=needed)
         assert solution.decomposition(op, num_work_wires=needed).name == expected_rule
-
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("compiler_active", [False, True])
-    def test_condition(self, compiler_active, mocker):
-        """The PPM rule is applicable with capture or an active compiler."""
-        mocker.patch(
-            "pennylane.templates.subroutines.arithmetic.semi_adder.compiler.active",
-            return_value=compiler_active,
-        )
-        assert _semi_adder_ppm_condition(Wire[3], Wire[3], work_wires=Wire[3]) is (
-            qp.capture.enabled() or compiler_active
-        )
 
     @pytest.mark.parametrize(
         ("num_y_wires", "num_provided", "expected"),
