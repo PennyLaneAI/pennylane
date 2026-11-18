@@ -6703,164 +6703,6 @@
         "lineCount": 1
       }
     ],
-    "pennylane/io/qualtran_io.py": [
-      {
-        "rule": "import-not-found",
-        "startColumn": 11,
-        "endColumn": 15,
-        "lineCount": 1
-      },
-      {
-        "rule": "import-not-found",
-        "startColumn": 11,
-        "endColumn": 25,
-        "lineCount": 1
-      },
-      {
-        "rule": "import-not-found",
-        "startColumn": 9,
-        "endColumn": 17,
-        "lineCount": 1
-      },
-      {
-        "rule": "import-not-found",
-        "startColumn": 9,
-        "endColumn": 44,
-        "lineCount": 1
-      },
-      {
-        "rule": "import-not-found",
-        "startColumn": 9,
-        "endColumn": 23,
-        "lineCount": 1
-      },
-      {
-        "rule": "unresolved-attribute",
-        "startColumn": 22,
-        "endColumn": 46,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 36,
-        "endColumn": 47,
-        "lineCount": 1
-      },
-      {
-        "rule": "no-matching-overload",
-        "startColumn": 32,
-        "endColumn": 53,
-        "lineCount": 1
-      },
-      {
-        "rule": "no-matching-overload",
-        "startColumn": 16,
-        "endColumn": 17,
-        "lineCount": 4
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 43,
-        "endColumn": 68,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 38,
-        "endColumn": 86,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 36,
-        "endColumn": 43,
-        "lineCount": 1
-      },
-      {
-        "rule": "import-not-found",
-        "startColumn": 9,
-        "endColumn": 40,
-        "lineCount": 1
-      },
-      {
-        "rule": "import-not-found",
-        "startColumn": 9,
-        "endColumn": 54,
-        "lineCount": 1
-      },
-      {
-        "rule": "import-not-found",
-        "startColumn": 9,
-        "endColumn": 27,
-        "lineCount": 1
-      },
-      {
-        "rule": "import-not-found",
-        "startColumn": 9,
-        "endColumn": 48,
-        "lineCount": 1
-      },
-      {
-        "rule": "import-not-found",
-        "startColumn": 9,
-        "endColumn": 53,
-        "lineCount": 1
-      },
-      {
-        "rule": "import-not-found",
-        "startColumn": 9,
-        "endColumn": 40,
-        "lineCount": 1
-      },
-      {
-        "rule": "no-matching-overload",
-        "startColumn": 15,
-        "endColumn": 42,
-        "lineCount": 1
-      },
-      {
-        "rule": "no-matching-overload",
-        "startColumn": 15,
-        "endColumn": 42,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-method-override",
-        "startColumn": 8,
-        "endColumn": 42,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-property-type-override",
-        "startColumn": 8,
-        "endColumn": 18,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 18,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "no-matching-overload",
-        "startColumn": 24,
-        "endColumn": 17,
-        "lineCount": 3
-      },
-      {
-        "rule": "no-matching-overload",
-        "startColumn": 25,
-        "endColumn": 17,
-        "lineCount": 3
-      },
-      {
-        "rule": "invalid-parameter-default",
-        "startColumn": 35,
-        "endColumn": 62,
-        "lineCount": 1
-      }
-    ],
     "pennylane/io/to_openqasm.py": [
       {
         "rule": "invalid-overload",
@@ -12691,7 +12533,13 @@
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
-        "endColumn": 53,
+        "endColumn": 41,
+        "lineCount": 1
+      },
+      {
+        "rule": "unsupported-operator",
+        "startColumn": 28,
+        "endColumn": 36,
         "lineCount": 1
       },
       {
@@ -12703,67 +12551,7 @@
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
-        "endColumn": 54,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 28,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-method-override",
-        "startColumn": 8,
-        "endColumn": 90,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 23,
-        "endColumn": 30,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 23,
-        "endColumn": 30,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 23,
-        "endColumn": 27,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-return-type",
-        "startColumn": 15,
-        "endColumn": 25,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 29,
-        "endColumn": 42,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-method-override",
-        "startColumn": 8,
-        "endColumn": 52,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-return-type",
-        "startColumn": 15,
-        "endColumn": 66,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 30,
-        "endColumn": 46,
+        "endColumn": 58,
         "lineCount": 1
       },
       {
@@ -12787,7 +12575,13 @@
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
-        "endColumn": 53,
+        "endColumn": 41,
+        "lineCount": 1
+      },
+      {
+        "rule": "unsupported-operator",
+        "startColumn": 28,
+        "endColumn": 36,
         "lineCount": 1
       },
       {
@@ -12799,67 +12593,7 @@
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
-        "endColumn": 54,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 28,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-method-override",
-        "startColumn": 8,
-        "endColumn": 90,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 23,
-        "endColumn": 30,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 23,
-        "endColumn": 30,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 23,
-        "endColumn": 27,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-return-type",
-        "startColumn": 15,
-        "endColumn": 25,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 29,
-        "endColumn": 42,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-method-override",
-        "startColumn": 8,
-        "endColumn": 52,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-return-type",
-        "startColumn": 15,
-        "endColumn": 66,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 30,
-        "endColumn": 46,
+        "endColumn": 58,
         "lineCount": 1
       },
       {
@@ -12883,7 +12617,13 @@
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
-        "endColumn": 53,
+        "endColumn": 41,
+        "lineCount": 1
+      },
+      {
+        "rule": "unsupported-operator",
+        "startColumn": 28,
+        "endColumn": 36,
         "lineCount": 1
       },
       {
@@ -12895,55 +12635,7 @@
       {
         "rule": "invalid-method-override",
         "startColumn": 8,
-        "endColumn": 54,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 28,
-        "endColumn": 36,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-method-override",
-        "startColumn": 8,
-        "endColumn": 90,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 23,
-        "endColumn": 30,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 23,
-        "endColumn": 30,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 23,
-        "endColumn": 27,
-        "lineCount": 1
-      },
-      {
-        "rule": "invalid-return-type",
-        "startColumn": 15,
-        "endColumn": 25,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 29,
-        "endColumn": 42,
-        "lineCount": 1
-      },
-      {
-        "rule": "unsupported-operator",
-        "startColumn": 30,
-        "endColumn": 46,
+        "endColumn": 58,
         "lineCount": 1
       },
       {
@@ -13270,6 +12962,12 @@
         "rule": "invalid-assignment",
         "startColumn": 4,
         "endColumn": 33,
+        "lineCount": 1
+      },
+      {
+        "rule": "no-matching-overload",
+        "startColumn": 8,
+        "endColumn": 44,
         "lineCount": 1
       },
       {
@@ -15146,14 +14844,6 @@
         "rule": "invalid-argument-type",
         "startColumn": 68,
         "endColumn": 85,
-        "lineCount": 1
-      }
-    ],
-    "pennylane/qchem/vibrational/christiansen_utils.py": [
-      {
-        "rule": "import-not-found",
-        "startColumn": 11,
-        "endColumn": 15,
         "lineCount": 1
       }
     ],
@@ -17075,6 +16765,30 @@
         "startColumn": 26,
         "endColumn": 55,
         "lineCount": 1
+      },
+      {
+        "rule": "invalid-argument-type",
+        "startColumn": 37,
+        "endColumn": 54,
+        "lineCount": 1
+      },
+      {
+        "rule": "invalid-argument-type",
+        "startColumn": 23,
+        "endColumn": 30,
+        "lineCount": 1
+      },
+      {
+        "rule": "not-subscriptable",
+        "startColumn": 20,
+        "endColumn": 30,
+        "lineCount": 1
+      },
+      {
+        "rule": "no-matching-overload",
+        "startColumn": 12,
+        "endColumn": 41,
+        "lineCount": 1
       }
     ],
     "pennylane/templates/subroutines/fable.py": [
@@ -18295,7 +18009,19 @@
       {
         "rule": "invalid-argument-type",
         "startColumn": 25,
-        "endColumn": 26,
+        "endColumn": 40,
+        "lineCount": 1
+      },
+      {
+        "rule": "no-matching-overload",
+        "startColumn": 4,
+        "endColumn": 61,
+        "lineCount": 1
+      },
+      {
+        "rule": "no-matching-overload",
+        "startColumn": 4,
+        "endColumn": 62,
         "lineCount": 1
       },
       {
@@ -18341,9 +18067,9 @@
         "lineCount": 1
       },
       {
-        "rule": "invalid-assignment",
+        "rule": "no-matching-overload",
         "startColumn": 12,
-        "endColumn": 58,
+        "endColumn": 31,
         "lineCount": 1
       },
       {
@@ -19140,8 +18866,14 @@
       },
       {
         "rule": "possibly-missing-submodule",
-        "startColumn": 13,
-        "endColumn": 21,
+        "startColumn": 14,
+        "endColumn": 22,
+        "lineCount": 1
+      },
+      {
+        "rule": "possibly-missing-submodule",
+        "startColumn": 43,
+        "endColumn": 51,
         "lineCount": 1
       },
       {

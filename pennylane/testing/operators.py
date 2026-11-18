@@ -451,8 +451,12 @@ def _check_capture(op):
         return op
 
     jaxpr = jax.make_jaxpr(test_fn)(*data)
-    new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
-    op_funcs.assert_equal(op, new_op)
+    results = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)
+    if isinstance(op, ops.Barrier):
+        assert jaxpr.eqns[-1].primitive is ops.meta.barrier_p
+        assert results == []
+    else:
+        op_funcs.assert_equal(op, results[0])
 
     leaves = jax.tree_util.tree_leaves(jaxpr.eqns[-1].params)
     error_msg = "capture params cannot contain tracers"
