@@ -254,10 +254,7 @@ class SemiAdder(Operator2):
     The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4` where :math:`4 \mod 2^2 = 0`.
 
     The PPM decompositions require capture or an active compiler and ``len(y_wires) + 1``
-    zeroed work wires, plus one per control. Direct calls to the rules allocate missing
-    work wires. Supply these wires explicitly when using :func:`~.decompose`; its native
-    graph pass cannot yet allocate them.
-
+    zeroed work wires, plus one per control. 
     .. details::
         :title: Available decompositions
 
