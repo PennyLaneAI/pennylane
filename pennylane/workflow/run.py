@@ -91,6 +91,7 @@ def _construct_ml_execution_pipeline(
         execute_fn,
         config.gradient_method,
         config.gradient_keyword_arguments,
+        cache_full_jacobian=config.interface == Interface.TORCH,
     )
     for _ in range(1, config.derivative_order):
         ml_boundary_execute = _get_ml_boundary_execute(config)
@@ -104,6 +105,7 @@ def _construct_ml_execution_pipeline(
             execute_fn,
             config.gradient_method,
             config.gradient_keyword_arguments,
+            cache_full_jacobian=config.interface == Interface.TORCH,
         )
 
     return jpc, execute_fn
