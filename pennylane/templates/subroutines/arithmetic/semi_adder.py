@@ -26,7 +26,7 @@ from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_con
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
-from .temporary_and import TemporaryAND, _temporary_and_ppr
+from .temporary_and import TemporaryAND
 
 
 def _left_block(wires: list):
@@ -253,57 +253,9 @@ class SemiAdder(Operator2):
 
     The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4` where :math:`4 \mod 2^2 = 0`.
 
-    .. details::
-        :title: Pauli product measurement decompositions
-
-        The PPM decompositions of ``SemiAdder`` and its controlled versions follow
-        the carry ladders in Figures 2 and 4 of
-        `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
-
-        Each carry requires four :class:`~.PPR_8` rotations. Parity updates and carry
-        erasure use PPMs. The controlled rule adds four rotations per output bit;
-        multiple controls use a ladder of :class:`~.TemporaryAND` operations.
-
-        For nonempty input registers, ``n = len(y_wires)`` and ``m`` controls, the
-        requirements are as follows, using the PPR decomposition of the temporary
-        ANDs in the control ladder. Direct PPM counts are upper bounds, taking
-        the correction branch at each carry or temporary-AND readout, before any
-        further decomposition of ``PPR_8`` rotations or Pauli corrections.
-
-        .. list-table::
-            :header-rows: 1
-
-            * - Rule
-              - Zeroed work qubits
-              - ``PPR_8`` rotations
-              - Direct PPMs, at most
-            * - ``SemiAdder``
-              - :math:`n+1`
-              - :math:`4(n-1)`
-              - :math:`10n-6`
-            * - Single-control ``SemiAdder``
-              - :math:`n+2`
-              - :math:`8n-4`
-              - :math:`14n-6`
-            * - ``SemiAdder`` with :math:`m \geq 1` controls
-              - :math:`n+m+1`
-              - :math:`8n+4m-8`
-              - :math:`14n+4m-10`
-
-        These rules require program capture or an active compiler because their
-        conditional branches contain measurements. When using :func:`~.decompose`,
-        provide the full work-wire count explicitly: its native graph pass does not
-        yet support selecting rules that allocate additional work wires.
-
-        To select the PPM rules explicitly, pass the following dictionary as
-        ``fixed_decomps`` to :func:`~.decompose`:
-
-        .. code-block:: python
-
-            ppm_rules = {
-                "SemiAdder": "_semi_adder_ppm",
-                "C(SemiAdder)": "flip_zero_ctrl_values(_controlled_semi_adder_ppm)",
-            }
+    The PPM decompositions require capture or an active compiler and ``len(y_wires) + 1``
+    zeroed work wires, plus one per control. Supply these wires explicitly when using
+    :func:`~.decompose`; its native graph pass cannot yet allocate them.
 
     .. details::
         :title: Available decompositions
@@ -499,15 +451,7 @@ def _ppm_left_block(wires):
 
 
 def _ppm_last_block(wires):
-    """Wires are input carry, input bit, target bit, shared auxiliary qubit. No output carry.
-
-    Both CNOTs of the last block share the same target, and
-
-    .. math:: \\Lambda(Z_{c_k}, X_{t_k}) \\Lambda(Z_{i_k}, X_{t_k})
-        = \\Lambda(Z_{i_k} Z_{c_k}, X_{t_k}),
-
-    so a single gadget is enough here.
-    """
+    """Update the last sum bit with a single parity-controlled X, then reset the auxiliary."""
     ck, ik, tk, aux = wires
 
     # Lambda(Z_ck Z_ik | X_tk), auxiliary qubit |0> -> |+>
@@ -560,7 +504,6 @@ def _ppm_ladder(x_wires, y_wires, work_wires):
         _ppm_right_block([carries[i], x_wires[i], y_wires[i], carries[i + 1]])
 
 
-
 def _semi_adder_ppm_work_wires(y_wires=None, work_wires=(), **_):
     """The carries, the shared auxiliary qubit and one wire held at |0>."""
     return {"zeroed": max(len(y_wires) + 1 - len(work_wires), 0)}
@@ -574,13 +517,7 @@ def _semi_adder_ppm_condition(x_wires=None, y_wires=None, **_):
 
 
 def _semi_adder_ppm_resources(y_wires=None, **_):
-    """Counts on the branch where every right block needs its correction.
-
-    Each of the ``num_blocks`` left blocks contributes one ``Y`` and three ``ZZY``
-    rotations and the six measurements of its two gadgets; the single last block
-    contributes one gadget plus the reset of the auxiliary qubit; each right block
-    contributes its ``X`` readout and the three measurements of its correction.
-    """
+    """Upper bounds with every right block taking its correction branch."""
     num_blocks = len(y_wires) - 1
     return {
         PPR_8(1, "Y", Wire[1]): num_blocks,
@@ -606,44 +543,11 @@ def _semi_adder_ppm_resources(y_wires=None, **_):
 @register_condition(_semi_adder_ppm_condition)
 @register_resources(_semi_adder_ppm_resources, work_wires=_semi_adder_ppm_work_wires, exact=False)
 def _semi_adder_ppm(x_wires, y_wires, work_wires=None):
-    """The ladder of `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_ written with
-    Pauli product rotations and Pauli product measurements.
-
-    Each carry uses four pi/8 rotations. Parity updates use a Pauli-controlled-Pauli
-
-    .. math:: \\Lambda(P_c | P_t) = \\Pi_{+P_c} \\otimes I + \\Pi_{-P_c} \\otimes P_t,
-
-    which takes three Pauli product measurements, an auxiliary qubit and a few classically
-    conditioned Pauli corrections. The gadget flips the auxiliary qubit between ``|0>`` and
-    ``|+>``, so each left block spends two of them and hands the auxiliary qubit back in
-    ``|0>``, while the last block runs a single gadget and resets the auxiliary qubit.
-
-    Requires ``len(y_wires) + 1`` work wires, all of them returned to ``|0>``: the
-    ``len(y_wires) - 1`` carries, the shared gadget auxiliary qubit and one wire held at
-    ``|0>``. That last wire stands in for the missing input carry of the first block and for
-    the missing bits of ``x``, so that every block is the same circuit.
-
-    For three output bits, the blocks run in the following order (indices are little
-    endian). ``L`` computes a carry and updates a sum bit; ``R`` erases that carry::
-
-        c0 = 0 -- L0 --> c1 -- L1 --> c2 -- last(x2, y2)
-                   |            |
-                 R0(c1) <---- R1(c2)
-
-    ``L0`` and ``L1`` each return the shared auxiliary to zero. The last block resets
-    it after its single gadget; ``R1`` and ``R0`` use their own output carry as auxiliary.
-    """
-    # TODO: the extra |0> wire only exists to keep the first block and the blocks past the end
-    # of ``x`` identical to the rest. Specialising those blocks would remove it, bringing the
-    # requirement down to the len(y_wires) - 1 carries plus the shared auxiliary qubit.
+    """Gidney's Fig. 2 in PPRs and PPMs, using ``len(y_wires) + 1`` zeroed work wires."""
     work_wires = [] if work_wires is None else list(work_wires)
     num_missing = max(len(y_wires) + 1 - len(work_wires), 0)
-    # The right ladder restores the work wires to zero, so they can be borrowed and
-    # returned; the context manager deallocates them once the ladder is done with them.
     with allocate(num_missing, restored=True) as new_wires:
         _ppm_ladder(x_wires, y_wires, work_wires + list(new_wires))
-
-
 
 
 add_decomps(SemiAdder, _semi_adder, _semi_adder_ppm)
@@ -651,13 +555,7 @@ add_decomps(SemiAdder, _semi_adder, _semi_adder_ppm)
 
 # pylint: disable-next=unused-argument
 def _ctrl_semi_adder_resource(base, control_wires, control_values, work_wires, work_wire_type):
-    r"""
-    Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
-
-    ``control_values`` is unused: this resource function is only ever registered wrapped in
-    ``flip_zero_control``, which normalizes control values to all-ones (accounting for any
-    zero-valued controls itself via extra ``X`` gates) before this function ever runs.
-    """
+    """Resources for Gidney's Fig. 4, with control values normalized by ``flip_zero_control``."""
     x_wires = base.x_wires
     y_wires = base.y_wires
     base_work_wires = base.work_wires
@@ -665,14 +563,8 @@ def _ctrl_semi_adder_resource(base, control_wires, control_values, work_wires, w
     num_y_wires = len(y_wires)
 
     num_control_wires = len(control_wires)
-    # Note: don't re-wrap `work_wires` in `Wires(...)` here -- it may already be an
-    # `AbstractWires` instance (when this resource function runs on abstractified
-    # arguments), and `Wires(some_abstract_wires)` would wrap it as a single opaque
-    # element instead of preserving its length. `len()` alone works on both.
     num_extra_work_wires = 0 if work_wires is None else len(work_wires)
-    # The base's own work_wires beyond the (num_y_wires - 1) consumed by the ladders
-    # are available, in addition to any extra work_wires passed to `ctrl`, to the ctrl-CNOTs.
-    # Clamped at 0: if the base has too few, the ladders allocate and none are left over here.
+    # The ctrl-CNOTs can use base work wires left over from the carry ladder.
     num_extra_work_wires_from_base = max(len(base_work_wires) - (num_y_wires - 1), 0)
     num_work_wires = num_extra_work_wires + num_extra_work_wires_from_base
     work_wire_type = resolve_work_wire_type(
@@ -854,7 +746,6 @@ def _ppm_controlled_ladder(base, control, work_wires):
     cond(outcome == 1, X)(aux)
 
 
-
 def _controlled_semi_adder_ppm_condition(base, control_wires, **_):
     """Conditional measurements require capture or a compiler and nonempty registers."""
     return len(control_wires) > 0 and _semi_adder_ppm_condition(base.x_wires, base.y_wires)
@@ -876,10 +767,11 @@ def _controlled_semi_adder_ppm_resources(base, control_wires, *_, **__):
     num_carries = num_bits - 1
     num_control_flags = len(control_wires) - 1
     return {
-        PPR_8(1, "Y", Wire[1]): num_carries + num_bits + num_control_flags,
-        PPR_8(-1, "ZY", Wire[2]): num_bits + 2 * num_control_flags,
+        TemporaryAND: num_control_flags,
+        PPR_8(1, "Y", Wire[1]): num_carries + num_bits,
+        PPR_8(-1, "ZY", Wire[2]): num_bits,
         PPR_8(-1, "ZZY", Wire[3]): 2 * num_carries + num_bits,
-        PPR_8(1, "ZZY", Wire[3]): num_carries + num_control_flags,
+        PPR_8(1, "ZZY", Wire[3]): num_carries,
         PPR_8(1, "ZZZY", Wire[4]): num_bits,
         PauliMeasure("X", wires=Wire[1]): 3 * num_bits - 1 + num_control_flags,
         PauliMeasure("Z", wires=Wire[1]): 3 * num_bits - 1 + num_control_flags,
@@ -904,41 +796,9 @@ def _controlled_semi_adder_ppm_resources(base, control_wires, *_, **__):
 def _controlled_semi_adder_ppm(
     base, control_wires, work_wires=None, work_wire_type="borrowed", **_
 ):
-    r"""The controlled version of Gidney's Fig. 4 in PPRs and PPMs.
+    """Gidney's Fig. 4 in PPRs and PPMs, with a TemporaryAND ladder for multiple controls.
 
-    Commuting the carry fan-out through the temporary AND leaves the four rotated
-    axes of ``_ppm_controlled_left_block``. Its data bits remain unchanged, so the
-    carry readout is corrected by
-    :math:`Z_c\Lambda(Z_c Z_i \mid Z_c Z_t)` before the target is modified.
-    The two controlled sum updates combine into a temporary AND of the external
-    control with the parity :math:`c \oplus i`, costing four more pi/8 PPRs.
-
-    The shared gadget auxiliary alternates between ``|0>`` and ``|+>`` and only
-    needs one final reset. Each erased carry or sum flag supplies the auxiliary
-    for its own correction. For ``n = len(base.y_wires)`` and one control, this gives
-    ``8n - 4`` non-Clifford PPRs and at most ``14n - 6`` direct PPMs.
-
-    With ``m`` controls, a chain of ``m - 1`` temporary ANDs computes their conjunction.
-    The ladder uses the final flag as its control, then the flags are erased in reverse
-    order with measurement-dependent corrections. Decomposing these ANDs with
-    ``_temporary_and_ppr`` gives ``8n + 4m - 8`` PPRs
-    and at most ``14n + 4m - 10`` direct PPMs. The expected direct PPM count is
-    ``12n + 3m - 8``, including the resets when no correction is needed.
-
-    The ``flip_zero_control`` wrapper normalizes the control values to one. This rule uses
-    ``n + m + 1`` zeroed work wires and restores them all. Borrowed
-    control work wires are untouched; zeroed control work wires can supplement
-    those supplied to the base operator.
-
-    For three output bits, ``L`` computes carries without changing the data,
-    ``E`` erases a carry, and ``S`` applies the controlled sum update::
-
-        step:   L0 --> L1 --> S2 --> E1 --> S1 --> E0 --> S0 --> reset
-        aux:     +      0      +      +      0      0      +       0
-
-    The second row gives the shared auxiliary state after each step, starting from
-    ``|0>``. Only ``L`` and ``S`` toggle it. Each ``E`` and the temporary AND erasure
-    inside ``S`` use the wire they erase as their own auxiliary.
+    Uses ``len(base.y_wires) + len(control_wires) + 1`` zeroed work wires and restores them.
     """
     zeroed_wires = list(base.work_wires)
     if work_wire_type == "zeroed" and work_wires is not None:
@@ -952,17 +812,12 @@ def _controlled_semi_adder_ppm(
             num_ladder_wires : num_ladder_wires + num_controls - 1
         ]
         for i in range(num_controls - 1):
-            # Inline the registered rule: native template lowering cannot span multiple registers.
-            _temporary_and_ppr(
-                [control_chain[i], control_wires[i + 1], control_chain[i + 1]], [True, True]
-            )
+            TemporaryAND([control_chain[i], control_wires[i + 1], control_chain[i + 1]])
 
         _ppm_controlled_ladder(base, control_chain[-1], zeroed_wires)
 
         for i in reversed(range(num_controls - 1)):
             _ppm_erase_and(control_chain[i], [control_wires[i + 1]], control_chain[i + 1])
-
-
 
 
 add_decomps(

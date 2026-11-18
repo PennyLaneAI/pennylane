@@ -523,8 +523,13 @@ class TestControlledSemiAdderPPM:
             work_wire_type="borrowed",
         )
         assert rule.exact_resources is False
+        num_temporary_ands = sum(
+            count for op, count in resources.gate_counts.items() if isinstance(op, TemporaryAND)
+        )
+        assert num_temporary_ands == num_controls - 1
         assert (
             sum(count for op, count in resources.gate_counts.items() if isinstance(op, qp.PPR_8))
+            + 4 * num_temporary_ands
             == 8 * num_y + 4 * num_controls - 8
         )
         assert (
@@ -655,6 +660,18 @@ class TestControlledSemiAdderPPM:
 
         @qp.qjit(capture=True)
         @qp.transforms.to_ppr
+        @qp.decompose(
+            gate_set={
+                "PPR_8",
+                "PauliMeasure",
+                "PauliX",
+                "PauliZ",
+                "GlobalPhase",
+                "RY",
+                "RZ",
+                "CNOT",
+            }
+        )
         @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
         def circuit():
             prepare()
@@ -680,6 +697,7 @@ class TestControlledSemiAdderPPM:
 
         @qp.qjit(capture=True)
         @qp.transforms.to_ppr
+        @qp.decompose(gate_set={"PPR_8", "PauliMeasure", "PauliX", "PauliZ", "GlobalPhase"})
         @qp.qnode(qp.device("lightning.qubit", wires=11))
         def circuit():
             # Both controls are on, x = 3, and y = 2.
@@ -717,6 +735,19 @@ class TestControlledSemiAdderPPM:
 
         @qp.qjit(capture=True)
         @qp.transforms.to_ppr
+        @qp.decompose(
+            gate_set={
+                "PPR_8",
+                "PauliMeasure",
+                "PauliX",
+                "PauliZ",
+                "GlobalPhase",
+                "RY",
+                "RZ",
+                "CNOT",
+                "Hadamard",
+            }
+        )
         @qp.qnode(qp.device("lightning.qubit", wires=11))
         def circuit():
             prepare()
@@ -736,11 +767,7 @@ class TestControlledSemiAdderPPM:
     @pytest.mark.parametrize("num_provided", [0, 2])
     @pytest.mark.parametrize("num_controls", [1, 2, 3])
     def test_compiled_allocation(self, num_provided, num_controls):
-        """Compile allocation inside an explicitly invoked rule.
-
-        This tests Catalyst lowering of captured allocation primitives; selecting
-        a rule that needs allocation through the decomposition graph is separate.
-        """
+        """Compile allocation inside an explicitly invoked rule."""
         num_wires = num_controls + 3 + num_provided
         base = qp.SemiAdder(
             [num_controls],
@@ -750,6 +777,7 @@ class TestControlledSemiAdderPPM:
 
         @qp.qjit(capture=True)
         @qp.transforms.to_ppr
+        @qp.decompose(gate_set={"PPR_8", "PauliMeasure", "PauliX", "PauliZ", "GlobalPhase"})
         @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
         def circuit():
             for wire in range(num_controls + 1):
