@@ -37,15 +37,18 @@ New features since last release
 
   .. code-block:: python
 
+      bitstrings = ["010", "111", "110", "000"]
+      xor_updates = ["001", "011", "101", "111"]
+
       @qp.qjit
       @qp.set_shots(1)
       @qp.qnode(qp.device("lightning.qubit", wires=8))
       def circuit():
           qp.BasisState([1, 0], wires=[0, 1])
           # target wires 2, 3, 4 start in |000>
-          qp.QROMLoad(["010", "111", "110", "000"], [0, 1], [2, 3, 4], work_wires=[5, 6, 7])
+          qp.QROMLoad(bitstrings, [0, 1], [2, 3, 4], work_wires=[5, 6, 7])
           # target wires now hold |110>
-          qp.QROM(["001", "011", "101", "111"], [0, 1], [2, 3, 4], work_wires=[5])
+          qp.QROM(xor_updates, [0, 1], [2, 3, 4], work_wires=[5])
           return qp.sample(wires=[2, 3, 4])
 
   .. code-block:: pycon
@@ -64,17 +67,21 @@ New features since last release
       def circuit():
           qp.BasisState([1, 0], wires=[0, 1])
           # target wires 2, 3, 4 start in |000>
-          qp.SelectSwap(["010", "111", "110", "000"], [0, 1], [2, 3, 4], work_wires=[5, 6, 7])
+          qp.SelectSwap(bitstrings, [0, 1], [2, 3, 4], work_wires=[5, 6, 7])
           # target wires now hold |110>, let's control a bit flip on that state
-          qp.ctrl(qp.X(8), control=[2, 3, 4], control_values=[1, 1, 0], work_wires=[5, 6, 7], work_wire_type="borrowed")
+          work_wire_specs = {"work_wires": [5, 6, 7], "work_wire_type": "borrowed"}
+          qp.ctrl(qp.X(8), control=[2, 3, 4], control_values=[1, 1, 0], **work_wire_specs)
           # Unload the target wires, cleaning up the work wires as well
-          qp.adjoint(qp.SelectSwap(["010", "111", "110", "000"], [0, 1], [2, 3, 4], work_wires=[5, 6, 7]))
+          qp.adjoint(qp.SelectSwap(bitstrings, [0, 1], [2, 3, 4], work_wires=[5, 6, 7]))
           return qp.sample(wires=[2, 3, 4]), qp.sample(wires=[5, 6, 7]), qp.sample(wires=[8])
 
   .. code-block:: pycon
 
-      >>> print(circuit())
-      (Array([[0, 0, 0]], dtype=int64), Array([[0, 0, 0]], dtype=int64), Array([[1]], dtype=int64))
+      >>> output = circuit()
+      >>> print(f"Target:  {output[0]}\nWork:    {output[1]}\nFlipped: {output[2]}")
+      Target:  [[0 0 0]]
+      Work:    [[0 0 0]]
+      Flipped: [[1]]
 
   The bitstring has been unloaded from the target wires, and the work wires have been cleaned. The
   wire ``8`` has been flipped in the meantime.
