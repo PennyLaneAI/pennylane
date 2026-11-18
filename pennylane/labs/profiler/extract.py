@@ -33,10 +33,8 @@ from pennylane.workflow.qnode import QNode
 
 from .resource_profile import ProfileNode, add_dicts
 
-# pylint: disable=too-many-arguments
 
-
-def profile(
+def profile(  # pylint: disable=too-many-arguments
     workflow: Callable | ResourceOperator | Resources | QNode,
     gate_set: set[str] | None = None,
     zeroed_wires: int = 0,
@@ -137,7 +135,7 @@ def profile(
 
 
 @singledispatch
-def _profile_resources_dispatch(
+def _profile_resources_dispatch(  # pylint: disable=too-many-arguments
     workflow: Callable | ResourceOperator | Resources | QNode,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
@@ -152,7 +150,7 @@ def _profile_resources_dispatch(
 
 
 @_profile_resources_dispatch.register
-def _profile_from_qfunc(
+def _profile_from_qfunc(  # pylint: disable=too-many-arguments
     workflow: Callable,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
@@ -211,7 +209,7 @@ def _profile_from_qfunc(
 
 
 @_profile_resources_dispatch.register
-def _profile_from_resource(
+def _profile_from_resource(  # pylint: disable=too-many-arguments
     workflow: Resources,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
@@ -261,7 +259,7 @@ def _profile_from_resource(
 
 
 @_profile_resources_dispatch.register
-def _profile_from_resource_operator(
+def _profile_from_resource_operator(  # pylint: disable=too-many-arguments
     workflow: ResourceOperator,
     gate_set: set[str] | None = None,
     zeroed: int = 0,
@@ -282,7 +280,7 @@ def _profile_from_resource_operator(
 
 
 @_profile_resources_dispatch.register
-def _profile_from_pl_ops(
+def _profile_from_pl_ops(  # pylint: disable=too-many-arguments
     workflow: Operation,
     gate_set: set[str] | None = None,
     zeroed: int = 0,

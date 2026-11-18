@@ -92,9 +92,7 @@ def _reset(wires):
         qp.cond(qp.pauli_measure("Z", wire), qp.X)(wire)
 
 
-def _distillation_attempt(
-    level, output_wires, scratch_wires, register_sizes, mode
-):  # pylint: disable=too-many-arguments
+def _distillation_attempt(level, output_wires, scratch_wires, register_sizes, mode):
     """Prepare two children and perform one symmetric Jones distillation attempt."""
     output_size = register_sizes[level]
     child_size = register_sizes[level - 1]
@@ -237,7 +235,7 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
 
     **Example**
 
-    The rule is passed to :func:`qp.decompose` via ``fixed_decomps``:
+    Register the rule and select it by name in :func:`qp.decompose` via ``fixed_decomps``:
 
     .. code-block:: python
 
@@ -257,7 +255,7 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
         qp.add_decomps(qp.PhaseGradientStatePrep, rule)
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=gate_set, fixed_decomps={qp.PhaseGradientStatePrep: rule})
+        @qp.decompose(gate_set=gate_set, fixed_decomps={qp.PhaseGradientStatePrep: rule.name})
         @qp.qnode(qp.device("lightning.qubit", wires=8))
         def circuit():
             qp.PhaseGradientStatePrep(registers["grad"])

@@ -26,15 +26,12 @@ from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import spsa_grad
 from pennylane.gradients.spsa_gradient import _rademacher_sampler
 
-# pylint:disable = use-implicit-booleaness-not-comparison,abstract-method
 
-
-def coordinate_sampler(indices, num_params, idx, rng=None):
+def coordinate_sampler(indices, num_params, idx, rng=None):  # pylint: disable=unused-argument
     """Return a single canonical basis vector, corresponding
     to the index ``indices[idx]``. This is a sequential coordinate sampler
     that allows to exactly reproduce derivatives, instead of using SPSA in the
     intended way."""
-    # pylint: disable=unused-argument
     idx = idx % len(indices)
     direction = np.zeros(num_params)
     direction[indices[idx]] = 1.0
@@ -136,24 +133,19 @@ class TestSpsaGradient:
 
     def test_sampler_argument(self, seed):
         """Make sure that custom samplers can be created as defined in the docs of spsa_grad."""
+        # pylint: disable=unused-argument
 
-        def sampler_required_kwarg(
-            indices, num_params, *args, rng
-        ):  # pylint:disable=unused-argument
+        def sampler_required_kwarg(indices, num_params, *args, rng):
             direction = np.zeros(num_params)
             direction[indices] = rng.choice([-1, 0, 1], size=len(indices))
             return direction
 
-        def sampler_required_arg_or_kwarg(
-            indices, num_params, idx_rep, rng
-        ):  # pylint:disable=unused-argument
+        def sampler_required_arg_or_kwarg(indices, num_params, idx_rep, rng):
             direction = np.zeros(num_params)
             direction[indices] = rng.choice([-1, 0, 1], size=len(indices))
             return direction
 
-        def sampler_required_arg(
-            indices, num_params, foo, idx_rep, rng, /
-        ):  # pylint:disable=unused-argument
+        def sampler_required_arg(indices, num_params, foo, idx_rep, rng, /):
             """This should fail since spsa_grad passes rng as a kwarg."""
             direction = np.zeros(num_params)
             direction[indices] = rng.choice([-1, 0, 1], size=len(indices))
@@ -563,10 +555,8 @@ class TestSpsaGradient:
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
-        class SpecialObservable(qp.operation.Operator):
+        class SpecialObservable(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             """SpecialObservable"""
-
-            # pylint:disable=too-few-public-methods
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""
@@ -575,7 +565,6 @@ class TestSpsaGradient:
         class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device class supporting SpecialObservable."""
 
-            # pylint:disable=too-few-public-methods
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})

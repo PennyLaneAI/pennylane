@@ -14,7 +14,8 @@
 
 """Tests for Triton decoder helper utilities."""
 
-# pylint: disable=protected-access,wrong-import-position,broad-exception-caught
+# pylint: disable=wrong-import-position
+
 
 import math
 
@@ -27,7 +28,7 @@ import triton.language as tl
 def _has_cuda_target() -> bool:
     try:
         return triton.runtime.driver.active.get_current_target().backend == "cuda"
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return False
 
 

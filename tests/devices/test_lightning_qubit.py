@@ -90,11 +90,9 @@ def test_finite_shots(seed):
     assert np.allclose(circ0(), circ1(), rtol=0.01)
 
 
-class TestDtypePreserved:
+class TestDtypePreserved:  # pylint: disable=too-few-public-methods
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
-
-    # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize(
         "c_dtype",

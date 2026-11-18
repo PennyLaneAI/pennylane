@@ -24,8 +24,6 @@ from pennylane.labs.estimator_beta.wires_manager.base_classes import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=too-many-arguments
-
 
 class TestAllocate:
     """Test the methods and attributes of the Allocate class"""

@@ -18,8 +18,7 @@ This file provides a dummy debugger for device tests.
 import pennylane as qp
 
 
-# pylint: disable=too-few-public-methods
-class Debugger:
+class Debugger:  # pylint: disable=too-few-public-methods
     """A dummy debugger class"""
 
     def __init__(self):

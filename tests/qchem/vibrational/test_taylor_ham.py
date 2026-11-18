@@ -37,8 +37,6 @@ from pennylane.qchem.vibrational.taylor_ham import (
     taylor_hamiltonian,
 )
 from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
-
-# pylint: disable=no-name-in-module
 from tests.qchem.vibrational.test_ref_files.pes_object import (
     expected_coeffs_x_arr,
     expected_coeffs_y_arr,
@@ -100,13 +98,12 @@ with h5py.File(os.path.join(ref_dir, "H2S_non_loc.hdf5"), "r") as f:
 
 def test_import_sklearn(monkeypatch):
     """Test if an ImportError is raised by _import_sklearn function."""
-    # pylint: disable=protected-access
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "sklearn", None)
 
         with pytest.raises(ImportError, match="This feature requires sklearn"):
-            vibrational.taylor_ham._import_sklearn()
+            vibrational.taylor_ham._import_sklearn()  # pylint: disable=protected-access
 
 
 def test_taylor_anharmonic():
@@ -382,7 +379,6 @@ def test_taylor_kinetic():
     assert expected_taylor_kin == list(taylor_kin.items())
 
 
-# pylint: disable=too-many-arguments
 @pytest.mark.parametrize(
     (
         "taylor_1D_coeffs",
@@ -414,7 +410,7 @@ def test_taylor_kinetic():
         ),
     ],
 )
-def test_taylor_bosonic(
+def test_taylor_bosonic(  # pylint: disable=too-many-arguments
     taylor_1D_coeffs,
     taylor_2D_coeffs,
     ref_freqs,
@@ -608,7 +604,6 @@ def test_threemode_degs():
 @pytest.mark.usefixtures("skip_if_no_sklearn_support")
 def test_taylor_coeffs():
     """Test that the computer taylor coeffs for Hamiltonian are accurate"""
-    # pylint: disable=unbalanced-tuple-unpacking
     taylor_coeffs_1D, taylor_coeffs_2D, _ = taylor_coeffs(pes_object_3D, 4, 2)
     assert np.allclose(abs(taylor_coeffs_1D), abs(taylor_1D), atol=1e-8)
     assert np.allclose(abs(taylor_coeffs_2D), abs(taylor_2D), atol=1e-8)

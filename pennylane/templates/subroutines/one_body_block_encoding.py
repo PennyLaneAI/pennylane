@@ -276,7 +276,7 @@ class OneBodyBlockEncoding(Operator2):
         prep_wires: WiresLike,
         system_wires: WiresLike,
         work_wires: WiresLike,
-    ):  # pylint: disable=too-many-arguments
+    ):
         _validate_op_matrix(op_matrix)
         norbs = len(op_matrix)
 
@@ -335,7 +335,7 @@ def _split_prep_wires(prep_wires, norbs):
 
 def _one_body_block_encoding_resources(
     op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires
-):  # pylint: disable=too-many-arguments,unused-argument
+):
     norbs = len(op_matrix)
     absmu, n_neg, _ = _block_encoding_data(op_matrix)
     n_prep, n_work, n_system = len(prep_wires), len(work_wires), len(system_wires)
@@ -385,7 +385,7 @@ def _one_body_block_encoding_resources(
 @register_resources(_one_body_block_encoding_resources)
 def _one_body_block_encoding_decomp(
     op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires, **_
-):  # pylint: disable=too-many-arguments
+):
     norbs = len(op_matrix)
     absmu, n_neg, unitary_matrix = _block_encoding_data(op_matrix)
 

@@ -41,7 +41,6 @@ class PauliMeasure(Operator2):
 
     compilable_argnames = ("pauli_word", "postselect", "meas_uid")
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         pauli_word: str,
