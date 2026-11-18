@@ -350,6 +350,7 @@ tested_modified_templates = [
     qp.TTN,
     qp.QROM,
     qp.QROMLoad,
+    qp.SelectSwap,
     qp.PhaseAdder,
     qp.Adder,
     qp.SemiAdder,
@@ -495,7 +496,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
                 "cache": 2 * k,
                 "coefficients": b,
                 "phase_gradient": b,
-                "work": max(n - 1, 2 * k, 2 * b + 2),
+                "work": max(n - 1, b + 1, 2 * k + 2),
             }
         )
 
@@ -1160,9 +1161,9 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.HybridQRAM(**kwargs))
 
-    @pytest.mark.parametrize("cls", [qp.QROM, qp.QROMLoad])
+    @pytest.mark.parametrize("cls", [qp.QROM, qp.QROMLoad, qp.SelectSwap])
     def test_qrom(self, cls):
-        """Test the primitive bind call of QROM and QROMLoad."""
+        """Test the primitive bind call of QROM, QROMLoad and SelectSwap."""
 
         kwargs = {
             "bitstrings": ((0,), (1,)),

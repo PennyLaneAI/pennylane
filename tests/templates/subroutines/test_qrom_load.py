@@ -60,7 +60,6 @@ BITSTRINGS = (
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
-@pytest.mark.parametrize("clean", [True, False])
 @pytest.mark.parametrize(
     "work_wires",
     [
@@ -69,9 +68,9 @@ BITSTRINGS = (
         [6, 7, 8, 9, 10, 11],  # Select-SWAP with a work wire for the CSWAPs
     ],
 )
-def test_assert_valid_qrom_load(work_wires, clean):
+def test_assert_valid_qrom_load(work_wires):
     """Run standard validity tests."""
-    op = qp.QROMLoad(BITSTRINGS, [0, 1, 2], [3, 4, 5], work_wires, clean=clean)
+    op = qp.QROMLoad(BITSTRINGS, [0, 1, 2], [3, 4, 5], work_wires)
     qp.testing.assert_valid(op, skip_differentiation=True)
 
 
@@ -93,7 +92,7 @@ class TestQROMLoad:
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
-        ("bitstrings", "target_wires", "control_wires", "work_wires", "clean"),
+        ("bitstrings", "target_wires", "control_wires", "work_wires"),
         [
             (
                 np.array(
@@ -107,7 +106,6 @@ class TestQROMLoad:
                 np.array([0, 1, 2]),
                 np.array([3, 4]),
                 None,
-                False,
             ),
             (
                 np.array(
@@ -121,28 +119,24 @@ class TestQROMLoad:
                 np.array([0, 1, 2]),
                 np.array([3, 4]),
                 None,
-                True,
             ),
             (
                 [[1, 1], [0, 1], [0, 0], [1, 0]],
                 [0, 1],
                 [2, 3],
                 [4, 5],
-                True,
             ),
             (
                 [[1, 1], [0, 1], [0, 0], [1, 0]],
                 [0, 1],
                 [2, 3],
                 [4, 5, 6, 7, 8, 9],
-                True,
             ),
             (
                 np.array([[0, 1], [0, 1], [0, 0], [0, 0]]),
                 np.array(["a", "b"]),
                 np.array([2, 3]),
                 np.array([4, 5, 6]),
-                False,
             ),
             (
                 np.array(
@@ -156,7 +150,6 @@ class TestQROMLoad:
                 np.array([0, 1, "b"]),
                 np.array([2, 3]),
                 None,
-                False,
             ),
             (
                 np.array(
@@ -170,7 +163,6 @@ class TestQROMLoad:
                 np.array([0, 1, "b", "d"]),
                 np.array([2, 3]),
                 np.array(["a", 5, 6, 7]),
-                True,
             ),
             # Single bitstring with multiple controls and work wires (num_blocks=1 unary path).
             (
@@ -178,25 +170,22 @@ class TestQROMLoad:
                 [0, 1],
                 [2, 3],
                 [4],
-                True,
             ),
             (
                 np.array([[1, 0, 1]]),
                 np.array([0, 1, 2]),
                 np.array([3, 4, 5]),
                 np.array([6]),
-                True,
             ),
             (
                 [[0, 1]],
                 [0, 1],
                 [2, 3, 4],
                 [5, 6],
-                False,
             ),
         ],
     )
-    def test_operation_result(self, bitstrings, target_wires, control_wires, work_wires, clean):
+    def test_operation_result(self, bitstrings, target_wires, control_wires, work_wires):
         """Test the correctness of the QROMLoad template output."""
         dev = qp.device("default.qubit")
 
@@ -212,7 +201,7 @@ class TestQROMLoad:
         @qp.qnode(dev)
         def circuit(j):
             qp.BasisEmbedding(qp.math.int_to_binary(j, len(control_wires)), wires=control_wires)
-            qp.QROMLoad(bitstrings, control_wires, target_wires, work_wires, clean)
+            qp.QROMLoad(bitstrings, control_wires, target_wires, work_wires)
             return qp.sample(wires=target_wires)
 
         num_bitstrings = len(bitstrings)
@@ -221,8 +210,8 @@ class TestQROMLoad:
             assert np.allclose(circuit(j), [int(bit) for bit in expected])
 
     @pytest.mark.parametrize("work_wires", [[6, 7, 8, 9, 10, 11], [6, 7, 8, 9, 10, 11, 12]])
-    def test_clean_with_excess_select_work_wires(self, work_wires):
-        """Test that the ``clean=True`` Select-SWAP decomposition is correct when more work wires
+    def test_select_swap_with_excess_select_work_wires(self, work_wires):
+        """Test that the Select-SWAP decomposition is correct when more work wires
         are provided than the cost-optimal depth uses."""
         bitstrings = [[(i // 3) % 2] for i in range(32)]
         control_wires = [0, 1, 2, 3, 4]
@@ -232,7 +221,7 @@ class TestQROMLoad:
         @qp.qnode(dev)
         def circuit(j):
             qp.BasisEmbedding(qp.math.int_to_binary(j, len(control_wires)), wires=control_wires)
-            qp.QROMLoad(bitstrings, control_wires, target_wires, work_wires, clean=True)
+            qp.QROMLoad(bitstrings, control_wires, target_wires, work_wires)
             return qp.probs(wires=target_wires), qp.probs(wires=work_wires)
 
         for j, bitstring in enumerate(bitstrings):
@@ -241,8 +230,7 @@ class TestQROMLoad:
             assert np.isclose(work_probs[0], 1.0)
 
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-    @pytest.mark.parametrize("clean", [True, False])
-    def test_adjoint_unloads(self, clean, seed):
+    def test_adjoint_unloads(self, seed):
         """Test that the adjoint of ``QROMLoad`` unloads the data again, returning the target and
         work wires to the zero state."""
         rng = np.random.default_rng(seed)
@@ -254,18 +242,17 @@ class TestQROMLoad:
         def circuit():
             for wire in wires["control_wires"]:
                 qp.Hadamard(wire)
-            qp.QROMLoad(bitstrings, **wires, clean=clean)
-            qp.adjoint(qp.QROMLoad(bitstrings, **wires, clean=clean))
+            qp.QROMLoad(bitstrings, **wires)
+            qp.adjoint(qp.QROMLoad(bitstrings, **wires))
             return qp.probs(wires=wires["target_wires"] + wires["work_wires"])
 
         assert np.isclose(circuit()[0], 1.0)
 
-    @pytest.mark.parametrize("clean", [True, False])
-    def test_fallback_always_applicable(self, clean, seed):
+    def test_fallback_always_applicable(self, seed):
         """Test that the plain QROM fallback is applicable even if Select-SWAP is."""
         bitstrings = np.random.default_rng(seed).integers(0, 2, size=(32, 1))
         wires = qp.registers({"control_wires": 5, "target_wires": 1, "work_wires": 5})
-        op = qp.QROMLoad(bitstrings, **wires, clean=clean)
+        op = qp.QROMLoad(bitstrings, **wires)
         assert _select_swap.is_applicable(**op.arguments)
         assert _qrom_load_to_qrom.is_applicable(**op.arguments)
 
@@ -277,7 +264,6 @@ class TestQROMLoad:
             control_wires=[0, 1, 2, 3, 4],
             target_wires=[5],
             work_wires=[6, 7, 8, 9, 10],
-            clean=True,
         ).decomposition()
 
         # Four bitstrings are loaded in parallel, into the target wire and three work wires
@@ -295,69 +281,31 @@ class TestQROMLoad:
         for op1, op2 in zip(qrom_decomposition, expected_gates):
             qp.assert_equal(op1, op2)
 
-    def test_decomposition_not_clean(self):
-        """Test that the Select block of the decomposition with ``clean=False`` is a ``QROMLoad``
-        with ``clean=True``, because its target wires are zeroed and the CSWAPs borrow its work
-        wires as zeroed wires."""
-        bitstrings = [[(i // 3) % 2] for i in range(32)]
-        qrom_decomposition = qp.QROMLoad(
-            bitstrings,
-            control_wires=[0, 1, 2, 3, 4],
-            target_wires=[5],
-            work_wires=[6, 7, 8, 9, 10],
-            clean=False,
-        ).decomposition()
-
-        columns = [sum(bitstrings[4 * i : 4 * i + 4], []) for i in range(8)]
-        nested_load = qp.QROMLoad(
-            columns,
-            control_wires=[0, 1, 2],
-            target_wires=[5, 6, 7, 8],
-            work_wires=[9, 10],
-            clean=True,
-        )
-        cswaps = [
-            qp.ctrl(qp.SWAP(wires), control=c, work_wires=[9], work_wire_type="zeroed")
-            for c, wires in [(3, [6, 8]), (3, [5, 7]), (4, [5, 6])]
-        ]
-        expected_gates = [nested_load] + cswaps
-
-        assert len(qrom_decomposition) == len(expected_gates)
-        for op1, op2 in zip(qrom_decomposition, expected_gates):
-            qp.assert_equal(op1, op2)
-
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
-        ("num_bitstrings", "control_wires", "target_wires", "work_wires", "clean"),
+        ("num_bitstrings", "control_wires", "target_wires", "work_wires"),
         [
-            (1, [], [0], [1], True),
-            (1, [0], [1], [], True),
-            (1, [0], [1], [], False),
-            (2, [0], [1], [], True),
-            (2, [0], [1], [], False),
-            (4, [2, 3], [0, 1], [4, 5, 6, 7, 8, 9], True),
-            (3, [0, 1], [2], [3], True),
-            (4, [0, 1], [2], [], False),
-            (3, [0, 1], [2], [3, 4], False),
-            (8, [0, 1, 2], [3, 4], [5, 6, 7, 8, 9, 10, 11], False),
-            (8, [0, 1, 2], [3, 4], [5], True),
-            (8, [0, 1, 2], [3, 4], [5, 6], True),
-            (8, [0, 1, 2], [3, 4], [5, 6], False),
-            (7, [0, 1, 2], [3, 4], [5, 6, 7, 8, 9, 10, 11], False),
-            (5, [0, 1, 2], [3, 4], [5], True),
-            (2, [0, 1, 2], [3, 4], [5, 6], True),
-            (6, [0, 1, 2], [3, 4], [5, 6], False),
-            (1, [0, 1], [2, 3], [4], True),
-            (1, [0, 1, 2], [3, 4, 5], [6], True),
-            (1, [0, 1, 2, 6], [3, 4, 5], [7, 8, 9], True),
-            (1, [0, 1, 2, 6], [3, 4, 5], [7, 8, 9], False),
-            (11, [0, 1, 2, 3], [4, 5], [6, 7], True),
-            (5, [0, 1, 2, 3], [4], [], False),
+            (1, [], [0], [1]),
+            (1, [0], [1], []),
+            (2, [0], [1], []),
+            (1, [0, 1], [2, 3], [4]),
+            (3, [0, 1], [2], [3]),
+            (3, [0, 1], [2], [3, 4]),
+            (4, [0, 1], [2], []),
+            (4, [2, 3], [0, 1], [4, 5, 6, 7, 8, 9]),
+            (8, [0, 1, 2], [3, 4], [5, 6, 7, 8, 9, 10, 11]),
+            (8, [0, 1, 2], [3, 4], [5]),
+            (8, [0, 1, 2], [3, 4], [5, 6]),
+            (7, [0, 1, 2], [3, 4], [5, 6, 7, 8, 9, 10, 11]),
+            (5, [0, 1, 2], [3, 4], [5]),
+            (6, [0, 1, 2], [3, 4], [5, 6]),
+            (1, [0, 1, 2], [3, 4, 5], [6]),
+            (1, [0, 1, 2, 6], [3, 4, 5], [7, 8, 9]),
+            (5, [0, 1, 2, 3], [4], []),
+            (11, [0, 1, 2, 3], [4, 5], [6, 7]),
         ],
     )
-    def test_decomposition_new(  # pylint: disable=too-many-arguments
-        self, num_bitstrings, control_wires, target_wires, work_wires, clean, seed
-    ):
+    def test_decomposition_new(self, num_bitstrings, control_wires, target_wires, work_wires, seed):
         """Tests the decomposition rule implemented with the new system."""
         rng = np.random.default_rng(seed)
         bitstrings = rng.integers(0, 2, size=(num_bitstrings, len(target_wires)))
@@ -366,7 +314,6 @@ class TestQROMLoad:
             control_wires=control_wires,
             target_wires=target_wires,
             work_wires=work_wires,
-            clean=clean,
         )
         assert_decomposable(op)
 
@@ -391,15 +338,9 @@ class TestQROMLoad:
         jax.make_jaxpr(build_and_decompose)(bitstrings, control_wires, target_wires, work_wires)
 
     @pytest.mark.capture
-    @pytest.mark.parametrize(
-        ("wire_lens", "clean"),
-        [
-            ({"control_wires": 1, "target_wires": 1, "work_wires": 0}, False),
-            ({"control_wires": 5, "target_wires": 1, "work_wires": 5}, True),
-        ],
-    )
-    def test_decomposition_rule_capture_dynamic_wires(self, wire_lens, clean):
+    def test_decomposition_rule_capture_dynamic_wires(self):
         """Test that the Select-SWAP decomposition rule can be captured with dynamic wires."""
+        wire_lens = {"control_wires": 5, "target_wires": 1, "work_wires": 5}
         registers = qp.registers(wire_lens)
         kwargs = {
             "bitstrings": qp.math.zeros(
@@ -413,9 +354,8 @@ class TestQROMLoad:
             },
         }
 
-        # ``clean`` is compilable and is therefore static when Catalyst captures this rule.
         # pylint: disable-next=protected-access
-        rule = qp.capture.subroutine(partial(_select_swap._impl, clean=clean))
+        rule = qp.capture.subroutine(_select_swap._impl)
         _ = jax.make_jaxpr(rule)(**kwargs)
 
     @pytest.mark.capture
@@ -500,29 +440,13 @@ def test_wrong_wires_error(bitstrings, control_wires, target_wires, msg_match):
         qp.QROMLoad(bitstrings, control_wires, target_wires, work_wires=None)
 
 
-def test_none_work_wires_case():
-    """Test that clean version is not applied if work wires are not used"""
-
-    gates_clean = qp.QROMLoad(
-        np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=True
-    ).decomposition()
-    gates_not_clean = qp.QROMLoad(
-        np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=False
-    ).decomposition()
-
-    assert gates_clean == gates_not_clean
-
-
-@pytest.mark.parametrize("clean", [True, False])
-def test_too_many_work_wires_case(clean):
+def test_too_many_work_wires_case():
     """Test that QROMLoad does not use more work wires than the cost-optimal depth requires."""
     bitstrings = np.array([[1], [0], [1], [1]] * 8)
     control_wires = [0, 1, 2, 3, 4]
-    gates_few_work = qp.QROMLoad(
-        bitstrings, control_wires, [5], list(range(6, 11)), clean=clean
-    ).decomposition()
+    gates_few_work = qp.QROMLoad(bitstrings, control_wires, [5], list(range(6, 11))).decomposition()
     gates_many_work = qp.QROMLoad(
-        bitstrings, control_wires, [5], list(range(6, 21)), clean=clean
+        bitstrings, control_wires, [5], list(range(6, 21))
     ).decomposition()
 
     assert len(gates_few_work) == len(gates_many_work)
@@ -560,8 +484,7 @@ def test_calculate_select_swap_sizes(num_bitstrings, n_ctrl, n_target, n_work, e
         num_work_wires=n_work,
     )
     assert output == expected
-    # These cases do not depend on whether the work wires are cleaned up
-    assert _calculate_select_swap_sizes(num_bitstrings, n_ctrl, n_target, n_work, False) == output
+    assert _calculate_select_swap_sizes(num_bitstrings, n_ctrl, n_target, n_work) == output
 
     # Extra validation on top of hardcoded expected values
     (
@@ -582,50 +505,29 @@ def test_calculate_select_swap_sizes(num_bitstrings, n_ctrl, n_target, n_work, e
     assert num_work_wires_select >= new_n_ctrl - 1
 
 
-@pytest.mark.parametrize(
-    ("num_bitstrings", "n_ctrl", "n_target", "n_work", "expected"),
-    [
-        (16, 4, 1, 3, {True: (4, 3, 0, 1, 1), False: (3, 2, 1, 1, 2)}),
-        (8, 3, 2, 4, {True: (3, 4, 0, 1, 1), False: (2, 2, 2, 1, 2)}),
-        # For clean=False, depth 4 would fit, but is not cheaper than depth 2
-        (14, 4, 2, 10, {True: (4, 10, 0, 1, 1), False: (3, 8, 2, 1, 2)}),
-        (256, 8, 2, 10, {True: (8, 10, 0, 1, 1), False: (7, 8, 2, 1, 2)}),
-        (64, 6, 1, 9, {True: (4, 6, 3, 1, 4), False: (3, 2, 7, 1, 8)}),
-        (256, 8, 1, 18, {True: (5, 11, 7, 1, 8), False: (4, 3, 15, 1, 16)}),
-    ],
-)
-def test_calculate_select_swap_sizes_clean(num_bitstrings, n_ctrl, n_target, n_work, expected):
-    """Test that the cost-optimal depth is smaller for ``clean=True``, because the Select-SWAP
-    circuit is applied twice whereas the plain QROM fallback is applied once."""
-    for clean in (True, False):
-        sizes = _calculate_select_swap_sizes(num_bitstrings, n_ctrl, n_target, n_work, clean)
-        assert sizes == expected[clean]
-
-
 def test_cswap_work_wire_always_available():
     """Test that the cost-optimal Select-SWAP decomposition always leaves an idle work wire for
     the controlled SWAPs, which the cost model relies on to count them as elbow pairs."""
     for n_ctrl in range(1, 8):
-        for num_bitstrings, n_target, n_work, clean in product(
-            range(1, 2**n_ctrl + 1), range(1, 4), range(20), [True, False]
+        for num_bitstrings, n_target, n_work in product(
+            range(1, 2**n_ctrl + 1), range(1, 4), range(20)
         ):
             *_, num_work_wires_cswap, depth = _calculate_select_swap_sizes(
-                num_bitstrings, n_ctrl, n_target, n_work, clean
+                num_bitstrings, n_ctrl, n_target, n_work
             )
             assert depth == 1 or num_work_wires_cswap == 1
 
 
-@pytest.mark.parametrize("clean", [True, False])
 @pytest.mark.parametrize(
     "sizes", [(21, 5, 1, 5), (32, 5, 1, 5), (64, 6, 1, 9), (64, 6, 2, 20), (256, 8, 2, 11)]
 )
-def test_select_swap_t_count(sizes, clean, seed):
+def test_select_swap_t_count(sizes, seed):
     """Test that the Select-SWAP decomposition, if applicable, uses fewer T gates than a plain
     QROM."""
     num_bitstrings, n_ctrl, n_target, n_work = sizes
     bitstrings = numpy.random.default_rng(seed).integers(0, 2, size=(num_bitstrings, n_target))
     wires = qp.registers({"control_wires": n_ctrl, "target_wires": n_target, "work_wires": n_work})
-    op = qp.QROMLoad(bitstrings, **wires, clean=clean)
+    op = qp.QROMLoad(bitstrings, **wires)
     assert _select_swap.is_applicable(**op.arguments)
     # Weigh T gates heavily so that the graph minimizes the T count, which is what we compare
     gate_set = {"T": 100, "Adjoint(T)": 100, "H": 1, "S": 1, "Adjoint(S)": 1, "CNOT": 1, "X": 1}
@@ -712,7 +614,7 @@ class TestAdjointQROMLoadMeasurement:
 
     def test_condition(self, mocker):
         """Test that the rule requires an active compiler with program capture, at least one
-        control wire, and ``clean=True``, but no work wires."""
+        control wire, but no work wires."""
         op = qp.adjoint(qp.QROMLoad(Bool[4, 2], Wire[2], Wire[2], Wire[1]))
         assert not _adjoint_qrom_load_measurement.is_applicable(base=op.base)
         with qp.capture.toggle_ctx(True):

@@ -52,7 +52,13 @@ from pennylane.ops import (
 )
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
-from pennylane.templates.subroutines import QROM, QROMLoad, SelectPauliRot, TemporaryAND
+from pennylane.templates.subroutines import (
+    QROM,
+    QROMLoad,
+    SelectPauliRot,
+    SelectSwap,
+    TemporaryAND,
+)
 
 from .utils import unwrap_temporary_and
 
@@ -267,9 +273,14 @@ def _add_select_pauli_rot(
 
 @_add_obj.register
 def _add_qrom(
-    obj: QROM | QROMLoad, layer_str, config, tape_cache=None, skip_grouping_symbols=False
+    obj: QROM | QROMLoad | SelectSwap,
+    layer_str,
+    config,
+    tape_cache=None,
+    skip_grouping_symbols=False,
 ):
-    """Updates ``layer_str`` with ``op`` operation of type ``QROM`` or ``QROMLoad``."""
+    """Updates ``layer_str`` with ``op`` operation of type ``QROM``, ``QROMLoad`` or
+    ``SelectSwap``."""
     return _add_qrom_core(obj, obj, layer_str, config, skip_grouping_symbols)
 
 
@@ -296,10 +307,10 @@ def _add_qrom_core(obj, qrom, layer_str, config, skip_grouping_symbols=False):
 def _add_adjoint(obj: Adjoint, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
     """Updates ``layer_str`` with ``op`` operation of type Adjoint. Currently
     only differs from ``_add_op`` if the base of the adjoint op is a ``TemporaryAND``,
-    making the overall object a right elbow, or a ``QROM`` or ``QROMLoad``."""
+    making the overall object a right elbow, or a ``QROM``, ``QROMLoad`` or ``SelectSwap``."""
     if (elbow := unwrap_temporary_and(obj)) is not None:
         return _add_elbow(elbow, layer_str, config)
-    if isinstance(obj.base, (QROM, QROMLoad)):
+    if isinstance(obj.base, (QROM, QROMLoad, SelectSwap)):
         return _add_qrom_core(obj, obj.base, layer_str, config, skip_grouping_symbols)
     return _add_op(obj, layer_str, config, tape_cache, skip_grouping_symbols)
 

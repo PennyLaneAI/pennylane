@@ -4,17 +4,35 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* The new :class:`~.QROMLoad` operator loads bitstrings into a target register that starts in the all-zero
-  state. Unlike :class:`~.QROM`, which XORs the bitstrings onto arbitrary target states, it can use
-  extra work wires for the cheaper Select-SWAP decomposition. It picks the number of bitstrings to
-  load in parallel that minimizes the cost, and its controlled ``SWAP`` gates borrow an idle work
-  wire. Use its adjoint to unload the data again. With ``qjit(capture=True)`` and ``clean=True``,
-  the adjoint is decomposed with the measurement-based uncomputation from Appendix C of
-  `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, which reduces its Toffoli cost to
-  roughly :math:`2\sqrt{L}` for :math:`L` bitstrings, given enough work wires.
-  The phase gradient
-  decomposition from :func:`~.make_selectpaulirot_to_phase_gradient_decomp` now loads the rotation
-  angles with ``QROMLoad``.
+* :class:`~.QROM` has been divided by splitting off two new operators, :class:`~.QROMLoad` and
+  :class:`~.SelectSwap`, for the specific scenario of zeroed target wires, i.e., for data
+  loading rather than XORing. The latter is now done by :class:`~.QROM`. 
+  Use the three operators as follows:
+
+  .. list-table::
+      :header-rows: 1
+      :stub-columns: 1
+
+      * -
+        - Work wires reset
+        - Work wires not reset
+      * - Target wires zeroed
+        - :class:`~.QROMLoad`
+        - :class:`~.SelectSwap`
+      * - Target wires not zeroed
+        - :class:`~.QROM`
+        - currently not supported
+
+  Note that :class:`~.QROMLoad` also has a decomposition using Select-SWAP, but is not allowed to
+  leave the work wires in a garbage state. When using :class:`~.SelectSwap` for data loading, it
+  can only be unloaded with ``Adjoint(SelectSwap)`` and the work wires are dirty between loading
+  and unloading.
+  The promise of zeroed target wires and the permission to leave a garbage state behind lead to 
+  reduced quantum resources, so that ``SelectSwap`` is cheaper than ``QROMLoad``, which is cheaper
+  than ``QROM``.
+  In addition, ``Adjoint(QROMLoad)`` has a new decomposition based on measurement-based uncomputation from
+  Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, which reduces its Toffoli 
+  cost to roughly :math:`2\sqrt{L}` for :math:`L` bitstrings, given enough work wires.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
   `(#10363) <https://github.com/PennyLaneAI/pennylane/pull/10363>`__
 
@@ -38,6 +56,32 @@ New features since last release
 
       >>> print(circuit())
       [[0 1 1]]
+
+  If we want to load with ``SelectSwap``, we need to use it for unloading as well, and can only
+  use the work wires as dirty, or borrowed, wires inbetween.
+
+  .. code-block:: python
+
+      @qp.qjit
+      @qp.set_shots(1)
+      @qp.qnode(qp.device("lightning.qubit", wires=9))
+      def circuit():
+          qp.BasisState([1, 0], wires=[0, 1])
+          # target wires 2, 3, 4 start in |000>
+          qp.SelectSwap(["010", "111", "110", "000"], [0, 1], [2, 3, 4], work_wires=[5, 6, 7])
+          # target wires now hold |110>, let's control a bit flip on that state
+          qp.ctrl(qp.X(8), control=[2, 3, 4], control_values=[1, 1, 0], work_wires=[5, 6, 7], work_wire_type="borrowed")
+          # Unload the target wires, cleaning up the work wires as well
+          qp.adjoint(qp.SelectSwap(["010", "111", "110", "000"], [0, 1], [2, 3, 4], work_wires=[5, 6, 7]))
+          return qp.sample(wires=[2, 3, 4]), qp.sample(wires=[5, 6, 7]), qp.sample(wires=[8])
+
+  .. code-block:: pycon
+
+      >>> print(circuit())
+      (Array([[0, 0, 0]], dtype=int64), Array([[0, 0, 0]], dtype=int64), Array([[1]], dtype=int64))
+
+  The bitstring has been unloaded from the target wires, and the work wires have been cleaned. The
+  wire ``8`` has been flipped in the meantime.
 
 * A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
   `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
@@ -252,6 +296,7 @@ New features since last release
   `(#10138) <https://github.com/PennyLaneAI/pennylane/pull/10138>`__
   `(#10120) <https://github.com/PennyLaneAI/pennylane/pull/10120>`__
   `(#10340) <https://github.com/PennyLaneAI/pennylane/pull/10340>`__
+  `(#10450) <https://github.com/PennyLaneAI/pennylane/pull/10450>`__
 
 * Three new operators called :class:`pennylane.PPR_2`, :class:`pennylane.PPR_4` and
   :class:`pennylane.PPR_8` have been added, which represent the Pauli product rotations
@@ -930,6 +975,12 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
+  powers that can simplify eagerly for faster execution, while the other uses nested
+  loops to keep the captured intermediate representation compact. Both variants include
+  resource counts.
+  `(#10529) <https://github.com/PennyLaneAI/pennylane/pull/10529>`__
+
 * Controlled :class:`~.SWAP` and :class:`~.PauliZ` operators now use their work wires when
   decomposed. The decompositions into :class:`~.CSWAP` (one control wire) and :class:`~.CCZ`
   (two control wires) are now separate decomposition rules, and the decompositions via
@@ -1068,10 +1119,11 @@ Improvements 🛠
 
 * The Select-SWAP decomposition previously attributed to :class:`~.QROM`
   (``qp.list_decomps(qp.QROM)["_qrom_decomposition"]``) is now attributed to :class:`~.QROMLoad`
-  (``qp.list_decomps(qp.QROMLoad)["_select_swap"]``). Additionally, this decomposition rule no
-  longer uses :class:`~.Select`, but instead expresses the Select block as a :class:`~.QROM` with
-  fewer controls and more target qubits. This allows for scalable compilation of this decomposition
-  rule.
+  (``qp.list_decomps(qp.QROMLoad)["_select_swap"]``), and its ``clean=False`` variant has been
+  split off into the operator :class:`~.SelectSwap`. 
+  Additionally, this decomposition rule no longer uses :class:`~.Select`, but
+  a :class:`~.QROM` with fewer controls and more target qubits instead. This allows for 
+  scalable compilation of this decomposition rule.
   `(#10207) <https://github.com/PennyLaneAI/pennylane/pull/10207>`__
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
 
@@ -1440,6 +1492,11 @@ Improvements 🛠
   levels are documented in a single place in :func:`~.workflow.get_compile_pipeline`.
   `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
+* The levels printed by :func:`~.analyze` are now labelled ``After <pass name>`` (e.g.,
+  ``Level: After merge-rotations``), since they describe the circuit after that pass has been
+  applied. The keys of ``CircuitSpecs.resources`` are unchanged.
+  `(#10493) <https://github.com/PennyLaneAI/pennylane/pull/10493>`__
+
 Labs: a place for unified and rapid prototyping of research software 🧪
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1574,8 +1631,8 @@ Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
 * :class:`~.QROM` no longer takes a ``clean`` argument and no longer has a Select-SWAP
-  decomposition, which requires a target register in the zero state. Use :class:`~.QROMLoad`
-  instead if the target wires start in the zero state, and drop the ``clean`` argument otherwise.
+  decomposition, which is available for :class:`~.QROMLoad` and :class:`~.SelectSwap` instead.
+  See the corresponding entry under "New features" for when to use which of the three operators.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
 
 * :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly: use
@@ -1914,6 +1971,15 @@ Breaking changes 💔
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
+* PyQuil and Qualtran interoperability has been removed from ``qp.io`` and the top-level
+  PennyLane namespace. The removed APIs are ``from_pyquil``, ``from_quil``, ``from_quil_file``,
+  ``FromBloq``, ``ToBloq``, ``to_bloq``, and ``bloq_registers``.
+  `(#10498) <https://github.com/PennyLaneAI/pennylane/pull/10498>`__
+
+* :class:`~.Barrier` no longer accepts ``only_visual``. Barriers are preserved by
+  simplification and separate compilation into blocks.
+  `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
+
 Deprecations 👋
 ~~~~~~~~~~~~~~~
 
@@ -1943,6 +2009,20 @@ Deprecations 👋
 
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
+
+* Adding trusted publishing PyPI uploads.
+  `(#10513) <https://github.com/PennyLaneAI/pennylane/pull/10513>`__
+
+* Removed leftover array-interface selection from QSVT iterative angle solvers now that
+  JAX is always available.
+  `(#10216) <https://github.com/PennyLaneAI/pennylane/pull/10216>`__
+
+* Added pinned local ``ty`` tooling and a diagnostic baseline for the package.
+  `(#10537) <https://github.com/PennyLaneAI/pennylane/pull/10537>`__
+
+* :class:`~.Barrier` now uses a dedicated program-capture primitive while retaining
+  the ``Operator2`` argument format and operator reconstruction behavior.
+  `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
 
 * Updated Pylint to 4.1.3, cleaned up suppression scope and formatting, and made unnecessary
   suppressions fail lint. Labs tests now consistently use the test lint configuration.
@@ -2046,7 +2126,8 @@ Internal changes ⚙️
     - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
       :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`,
       :class:`~.GlobalPhase`, :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`, :class:`~.RX`, :class:`~.CRX`,
-      :class:`~.RY`, :class:`~.CRY`, :class:`~.QubitUnitary`, :class:`~.ControlledQubitUnitary`
+      :class:`~.RY`, :class:`~.CRY`, :class:`~.QubitUnitary`, :class:`~.ControlledQubitUnitary`,
+      :class:`~.CPhaseShift00`, :class:`~.CPhaseShift01`, :class:`~.CPhaseShift10`
 
     `(#9998) <https://github.com/PennyLaneAI/pennylane/pull/9998>`__
     `(#9857) <https://github.com/PennyLaneAI/pennylane/pull/9857>`__
@@ -2067,6 +2148,7 @@ Internal changes ⚙️
     `(#10041) <https://github.com/PennyLaneAI/pennylane/pull/10041>`__
     `(#10072) <https://github.com/PennyLaneAI/pennylane/pull/10072>`__
     `(#10149) <https://github.com/PennyLaneAI/pennylane/pull/10149>`__
+    `(#10494) <https://github.com/PennyLaneAI/pennylane/pull/10494>`__
 
   - Templates are ported:
 
@@ -2391,6 +2473,11 @@ Internal changes ⚙️
 Documentation 📝
 ~~~~~~~~~~~~~~~~
 
+* The documentation of :attr:`~.Node.init_args` now describes ``peer=``, the ``config`` key with
+  which an RDMA :class:`~.Coprocessor` names the kind of controller it answers, and the
+  ``backend`` argument of :class:`~.Controller` lists the default and FPGA backends.
+  `(#10530) <https://github.com/PennyLaneAI/pennylane/pull/10530>`__
+
 * The ``level`` argument of :func:`~.drawer.draw`, :func:`~.drawer.draw_mpl`,
   :func:`~.workflow.construct_tape` and :func:`~.noise.add_noise` is now documented in
   :func:`~.workflow.construct_batch`.
@@ -2466,10 +2553,15 @@ Documentation 📝
   `(#10433) <https://github.com/PennyLaneAI/pennylane/pull/10433>`__
   `(#10436) <https://github.com/PennyLaneAI/pennylane/pull/10436>`__
   `(#10453) <https://github.com/PennyLaneAI/pennylane/pull/10453>`__
+  `(#10435) <https://github.com/PennyLaneAI/pennylane/pull/10435>`__
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed the measurement-based decomposition of :class:`~.QROM` to support dynamic
+  bitstrings with ``qjit(capture=True)``, including padding for extra control wires.
+  Its inner traversal now uses :func:`~.for_loop` instead of recursion.
+  `(#10501) <https://github.com/PennyLaneAI/pennylane/pull/10501>`__
 * Fixed a precision loss in :func:`~pennylane.math.decomposition.givens_decomposition` and
   the complex-valued decomposition of :class:`~.BasisRotation` for unitaries close to the identity.
   `(#10518) <https://github.com/PennyLaneAI/pennylane/pull/10518>`__
@@ -2810,6 +2902,7 @@ Contributors ✍️
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire,
 Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,

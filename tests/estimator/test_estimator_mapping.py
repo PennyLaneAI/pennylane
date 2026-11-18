@@ -293,7 +293,17 @@ class TestMapToResourceOp:
                     control_wires=[0, 1],
                     target_wires=[2, 3],
                     work_wires=[4],
-                    clean=False,
+                ),
+                re_temps.QROM(
+                    num_bitstrings=3, size_bitstring=2, restored=True, wires=[0, 1, 2, 3, 4]
+                ),
+            ),
+            (
+                qtemps.SelectSwap(
+                    bitstrings=[[0, 1], [1, 1], [1, 0]],
+                    control_wires=[0, 1],
+                    target_wires=[2, 3],
+                    work_wires=[4],
                 ),
                 re_temps.QROM(
                     num_bitstrings=3, size_bitstring=2, restored=False, wires=[0, 1, 2, 3, 4]
@@ -530,7 +540,7 @@ class TestMapToResourceOp:
                 "cache": 2 * k,
                 "coefficients": b,
                 "phase_gradient": b,
-                "work": max(n - 1, 2 * k, 2 * b + 2),
+                "work": max(n - 1, b + 1, 2 * k + 2),
             }
         )
         operator = qp.TrotterVibronic(
@@ -588,7 +598,7 @@ class TestMapToResourceOp:
                 "cache": 2 * k,
                 "coefficients": b,
                 "phase_gradient": b,
-                "work": max(n - 1, 2 * k, 2 * b + 2),
+                "work": max(n - 1, b + 1, 2 * k + 2),
             }
         )
         operator = qp.TrotterVibronic(
@@ -623,7 +633,7 @@ class TestMapToResourceOp:
                 "cache": 2 * k,
                 "coefficients": b,
                 "phase_gradient": b,
-                "work": max(n - 1, 2 * k, 2 * b + 2),
+                "work": max(n - 1, b + 1, 2 * k + 2),
             }
         )
         operator = qp.TrotterVibronic(

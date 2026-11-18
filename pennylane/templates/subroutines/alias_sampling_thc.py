@@ -469,7 +469,7 @@ class AliasSamplingTHC(Operator2):
                 :class:`~.Hadamard` | :math:`\aleph + 1` | 2
                 :class:`~.LeftQuantumComparator` | :math:`1` | 1
                 :class:`Adjoint(LeftQuantumComparator) <.LeftQuantumComparator>` | :math:`1` | 1
-                :class:`~.CSWAP` | :math:`3n + 2` | 5
+                :class:`~.SWAP` with 1 control | :math:`3n + 2` | 5
                 :class:`~.TemporaryAND` | :math:`1` | 1
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1` | 1
     """
@@ -576,7 +576,6 @@ def _alias_sampling_thc_resources(  # pylint: disable=too-many-arguments,unused-
         control_wires=Wire[n_d - 1],
         target_wires=Wire[n_qrom_target],
         work_wires=Wire[n_qrom_work],
-        clean=True,
     )
     out_sq = OutSquare(Wire[n], Wire[n_d], Wire[n_d], output_wires_zeroed=True)
     adder_0 = SemiAdder(Wire[n], Wire[n_d], Wire[n_d - 1])

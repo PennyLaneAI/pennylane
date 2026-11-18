@@ -48,18 +48,16 @@ def test_qrom_mapping():
     assert mapped.select_swap_depth == 1
 
 
-@pytest.mark.parametrize("clean", [True, False])
-def test_qrom_load_mapping(clean):
+def test_qrom_load_mapping():
     """Test that the QROMLoad operator gets mapped correctly"""
     qrom = QROMLoad(
         bitstrings=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
         control_wires=[0, 1],
         target_wires=[2, 3, 4],
         work_wires=[5, 6, 7],
-        clean=clean,
     )
 
     # pylint: disable-next=protected-access
     mapped = pl_qre.resource_mapping._map_to_resource_op(qrom)
     assert isinstance(mapped, qre.LabsQROM)
-    assert mapped.borrow_qubits is not clean
+    assert mapped.borrow_qubits is False  # We don't support the garbage-state version of SelectSWAP

@@ -496,7 +496,6 @@ def _alias_sampling_resources(probs, mu, target_wires, temp_wires, work_wires):
         control_wires=Wire[n_target],
         target_wires=Wire[logL + mu],
         work_wires=Wire[max(n_work - 1, 0)],
-        clean=True,
     )
     lqc = LeftQuantumComparator(Wire[mu], Wire[mu], Wire[1], Wire[max(mu - 1, 0)], comparator="<=")
     return {
@@ -522,7 +521,6 @@ def _alias_sampling_decomp(probs, mu, target_wires, temp_wires, work_wires, **_)
         control_wires=list(target_wires),
         target_wires=list(alt_wires) + list(keep_wires),
         work_wires=work_wires[1:],
-        clean=True,
     )
     LeftQuantumComparator(keep_wires, sigma_wires, flag, cmp_work, comparator="<=")
 
