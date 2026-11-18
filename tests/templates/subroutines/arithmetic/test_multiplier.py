@@ -97,7 +97,7 @@ class TestMultiplier:
         )
 
     def test_decomposition(self):
-        """Test that compute_decomposition and decomposition work as expected."""
+        """Test that decomposition works as expected."""
         k, x_wires, mod, work_wires = 4, [0, 1, 2], 7, [3, 4, 5, 6, 7]
         multiplier_decomposition = (
             # pylint: disable-next=protected-access

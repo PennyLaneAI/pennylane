@@ -462,3 +462,12 @@ class TestFable:
         op = qp.FABLE(matrix, wires=range(3), tol=0)
 
         assert_decomposable(op)
+
+
+def test_decomposition_rule_multiple_trailing_cnots():
+    """Test the decomposition rule when several CNOTs remain after the rotation loop,
+    which requires the final loop to carry its ``nots`` state between iterations."""
+    matrix = np.random.default_rng(0).uniform(-1, 1, (4, 4)) / 4
+    op = qp.FABLE(matrix, wires=range(5), tol=0.01)
+
+    assert_decomposable(op)

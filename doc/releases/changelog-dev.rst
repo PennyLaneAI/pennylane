@@ -1886,6 +1886,9 @@ Breaking changes 💔
   Remove calls to these functions and use graph-based decomposition directly.
   The :func:`~pennylane.transforms.decompose` and :func:`~pennylane.transforms._tape_decompose`
   transforms now require ``gate_set``.
+  The ``compute_decomposition`` methods of :class:`~.AmplitudeAmplification`,
+  :class:`~.Multiplier`, :class:`~.OutAdder`, and :class:`~.QAOAEmbedding` have been removed;
+  ``op.decomposition()`` now uses their registered decomposition rules.
   `(#10510) <https://github.com/PennyLaneAI/pennylane/pull/10510>`__
 
 * PyQuil and Qualtran interoperability has been removed from ``qp.io`` and the top-level
@@ -2487,6 +2490,9 @@ Bug fixes 🐛
 * Fixed a precision loss in :func:`~pennylane.math.decomposition.givens_decomposition` and
   the complex-valued decomposition of :class:`~.BasisRotation` for unitaries close to the identity.
   `(#10518) <https://github.com/PennyLaneAI/pennylane/pull/10518>`__
+* Fixed the decomposition rule of :class:`~.FABLE` raising an ``AttributeError`` when more
+  than one ``CNOT`` remains to be applied after the rotation loop.
+  `(#10510) <https://github.com/PennyLaneAI/pennylane/pull/10510>`__
 
 * Fixed a bug where AutoGraph raised an error for ``for`` loops over static iterables
   that cannot be converted to arrays, such as lists of strings. These loops, including
