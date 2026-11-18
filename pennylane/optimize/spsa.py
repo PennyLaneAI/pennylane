@@ -103,7 +103,7 @@ class SPSAOptimizer:
     >>> H = qp.Hamiltonian(coeffs, obs)
     >>> num_qubits = 4
     >>> dev = qp.device("default.qubit", wires=num_qubits)
-    >>> @qp.qnode(dev)
+    >>> @qp.qnode(dev, interface="numpy")
     ... def cost(params, num_qubits=1):
     ...     qp.BasisState(np.array([1, 1, 0, 0]), wires=range(num_qubits))
     ...     for i in range(num_qubits):
@@ -115,53 +115,20 @@ class SPSAOptimizer:
     ...
     >>> params = np.random.normal(0, np.pi, (num_qubits, 3), requires_grad=True)
 
-    Once constructed, the cost function can be passed directly to the
-    ``step`` or ``step_and_cost`` function of the optimizer:
+    The derivative-free optimizer can store PennyLane NumPy arrays while the QNode executes
+    with the NumPy interface. Pass the cost function to ``step`` or ``step_and_cost``:
 
-    >>> max_iterations = 100
+    >>> max_iterations = 2
     >>> opt = qp.SPSAOptimizer(maxiter=max_iterations)
     >>> for _ in range(max_iterations):
     ...     params, energy = opt.step_and_cost(cost, params, num_qubits=num_qubits)
-    >>> print(energy)
-    -0.4294539602541956
+    >>> params.shape
+    (4, 3)
+    >>> bool(np.isfinite(energy))
+    True
 
-    The algorithm provided by SPSA does not rely on built-in automatic differentiation capabilities of the interface being used
-    and therefore the optimizer can be used in more complex hybrid classical-quantum workflows with other interfaces, such as PyTorch:
-
-    .. code-block:: python
-
-        import torch
-        n_qubits = 1
-        max_iterations = 20
-        dev = qp.device("default.qubit", wires=n_qubits)
-
-        @qp.qnode(dev, interface="torch")
-        def layer_fn_spsa(inputs, weights):
-            qp.AngleEmbedding(inputs, wires=range(n_qubits))
-            qp.BasicEntanglerLayers(weights, wires=range(n_qubits))
-            return qp.expval(qp.Z(0))
-
-        opt = qp.SPSAOptimizer(maxiter=max_iterations)
-
-        def fn(params, tensor_in, tensor_out):
-            for _ in range(max_iterations):
-                # Some classical steps before the quantum computation
-                params_a, layer_res = opt.step_and_cost(layer_fn_spsa,
-                                torch.tensor(tensor_in),
-                                torch.tensor(params))
-                params = params_a[0]
-                tensor_out = layer_res
-                # Some classical steps after the quantum computation
-            return layer_res
-
-        tensor_in = torch.tensor([0.27507603], dtype=torch.float64)
-        tensor_out = torch.tensor([0], dtype=torch.float64)
-        params = torch.tensor([[3.97507603],
-            [3.12950603],
-            [1.00854038],
-            [1.25907603]], dtype=torch.float64)
-        loss = fn(params, tensor_in, tensor_out)
-        print(loss)  # tensor(..., dtype=torch.float64)
+    This example uses quantum forward evaluations to approximate the gradient without
+    building an automatic differentiation graph.
     """
 
     # pylint: disable-next=too-many-arguments

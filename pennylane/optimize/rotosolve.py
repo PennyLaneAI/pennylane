@@ -151,9 +151,10 @@ class RotosolveOptimizer:
     .. warning::
 
         ``RotosolveOptimizer`` will only update parameters that are *explicitly*
-        marked as trainable. This can be done via ``requires_grad`` if using Autograd
-        or PyTorch. ``RotosolveOptimizer`` is not yet implemented to work in a stable
-        manner with JAX.
+        marked as trainable. This can be done via ``requires_grad`` on PennyLane NumPy arrays
+        or PyTorch tensors. ``RotosolveOptimizer`` is not yet implemented to work in a stable
+        manner with JAX. The example below stores PennyLane NumPy parameters and explicitly
+        uses the NumPy interface for quantum execution.
 
     Args:
         substep_optimizer (str or callable): optimizer to use for the substeps of Rotosolve
@@ -207,12 +208,12 @@ class RotosolveOptimizer:
 
     Next, we create a QNode we wish to optimize:
 
-    .. code-block :: python
+    .. code-block:: python
 
         dev = qp.device('default.qubit', wires=3)
 
-        @qp.qnode(dev)
-        def cost_function(rot_param, layer_par, crot_param, rot_weights=None, crot_weights=None):
+        @qp.qnode(dev, interface="numpy")
+        def cost_function(rot_param, layer_par, crot_param):
             for i, par in enumerate(rot_param * rot_weights):
                 qp.RX(par, wires=i)
             for w in dev.wires:
@@ -236,7 +237,7 @@ class RotosolveOptimizer:
     ``crot_param`` enter the QNode are integer-valued.
     The number of frequencies per parameter are summarized in ``nums_frequency``.
 
-    .. code-block :: python
+    .. code-block:: python
 
         from pennylane import numpy as np
 
@@ -255,8 +256,8 @@ class RotosolveOptimizer:
         }
 
     The keyword argument ``requires_grad`` can be used to determine whether the respective
-    parameter should be optimized or not, following the behaviour of gradient computations and
-    gradient-based optimizers when using Autograd or Torch.
+    parameter should be optimized or not. The fixed weights are captured by the QNode rather
+    than passed as optimizer arguments.
 
     Now we carry out the optimization.
     The minimized cost of the intermediate univariate reconstructions can
@@ -270,17 +271,15 @@ class RotosolveOptimizer:
     ...         *param,
     ...         nums_frequency=nums_frequency,
     ...         full_output=True,
-    ...         rot_weights=rot_weights,
-    ...         crot_weights=crot_weights,
     ...     )
-    ...     print(f"Cost before step: {cost}")
+    ...     print(f"Cost before step: {cost:.6f}")
     ...     print(f"Minimization substeps: {np.round(sub_cost, 6)}")
     ...     cost_rotosolve.extend(sub_cost)
-    Cost before step: 0.04200821039253547
+    Cost before step: 0.042008
     Minimization substeps: [-0.230905 -0.863336 -0.980072 -0.980072 -1.       -1.       -1.      ]
-    Cost before step: -0.9999999990681161
+    Cost before step: -1.000000
     Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
-    Cost before step: -0.9999999999999996
+    Cost before step: -1.000000
     Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
 
     The optimized values for the parameters are now stored in ``param``
@@ -297,6 +296,7 @@ class RotosolveOptimizer:
     >>> crot_weights = np.array([0.5, 1.0, 1.5], requires_grad=False)
     >>> spectra = {
     ...     "rot_param": {(0,): [-0.4, 0.0, 0.4], (1,): [-0.8, 0.0, 0.8], (2,): [-1.2, 0.0, 1.2]},
+    ...     "layer_par": {(): [-3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0]},
     ...     "crot_param": {
     ...         (0,): [-0.5, -0.25, 0.0, 0.25, 0.5],
     ...         (1,): [-1.0, -0.5, 0.0, 0.5, 1.0],
@@ -314,21 +314,17 @@ class RotosolveOptimizer:
     ...         *param,
     ...         spectra=spectra,
     ...         full_output=True,
-    ...         rot_weights = rot_weights,
-    ...         crot_weights = crot_weights,
     ...     )
-    ...     print(f"Cost before step: {cost}")
+    ...     print(f"Cost before step: {cost:.6f}")
     ...     print(f"Minimization substeps: {np.round(sub_cost, 6)}")
-    Cost before step: 0.09299359486191039
-    Minimization substeps: [-0.268008 -0.713209 -0.24993  -0.871989 -0.907672 -0.907892 -0.940474]
-    Cost before step: -0.9404742138557066
-    Minimization substeps: [-0.940474 -1.       -1.       -1.       -1.       -1.       -1.      ]
-    Cost before step: -1.0
+    Cost before step: 0.092994
+    Minimization substeps: [-0.268008 -0.876533 -0.995005 -0.995005 -1.       -1.       -1.      ]
+    Cost before step: -1.000000
+    Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
+    Cost before step: -1.000000
     Minimization substeps: [-1. -1. -1. -1. -1. -1. -1.]
 
-    As we can see, while the optimization got a bit harder and the optimizer takes a bit longer
-    to converge than previously, Rotosolve was able to adapt to the more complicated
-    dependence on the input arguments and still found the global minimum successfully.
+    The optimized cost reaches approximately -1 for these noninteger frequencies as well.
     """
 
     def __init__(self, substep_optimizer="brute", substep_kwargs=None):

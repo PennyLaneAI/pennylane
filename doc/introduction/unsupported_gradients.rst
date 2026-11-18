@@ -20,20 +20,27 @@ An exception is raised if this configuration is used:
 
 .. code-block:: python
 
+    import jax
+    import jax.numpy as jnp
+
+    jax.config.update("jax_enable_x64", True)
+
     def print_grad():
         dev = qp.device('default.qubit', wires=1)
 
         @qp.set_shots(shots=None)
-        @qp.qnode(dev, diff_method='device')
+        @qp.qnode(dev, interface="jax", diff_method='device')
         def circuit(x):
             qp.RX(x[0], wires=0)
             return qp.expval(qp.Z(wires=0))
 
-        x = np.array([0.1], requires_grad=True)
+        x = jnp.array([0.1])
         print(qp.grad(circuit)(x))
 
 >>> print_grad()
-QuantumFunctionError: Device <default.qubit device (wires=1) at 0x11ad22bf0> does not support device with requested circuit.
+Traceback (most recent call last):
+    ...
+pennylane.exceptions.QuantumFunctionError: Device ... does not support device with requested circuit.
 
 .. _Analytic backpropagation:
 
@@ -41,10 +48,7 @@ Backpropagation
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 The backpropagation algorithm is analytic by nature, and hence passing ``shots=None``
-is the only supported configuration when ``diff_method="backprop"`` is used. Though
-it is possible to always use the analytic gradient even when ``shots>0`` (as is the case
-with adjoint differentiation, see next section), in the current state of the code this would
-break other things.
+is the only supported configuration when ``diff_method="backprop"`` is used.
 
 Currently an exception is raised if this invalid configuration is used:
 
@@ -54,16 +58,19 @@ Currently an exception is raised if this invalid configuration is used:
         dev = qp.device('default.qubit', wires=1)
 
         @qp.set_shots(shots=100)
-        @qp.qnode(dev, diff_method='backprop')
+        @qp.qnode(dev, interface="jax", diff_method='backprop')
         def circuit(x):
             qp.RX(x[0], wires=0)
             return qp.expval(qp.Z(wires=0))
 
-        x = np.array([0.1], requires_grad=True)
+        x = jnp.array([0.1])
         print(qp.grad(circuit)(x))
 
 >>> print_grad()
-QuantumFunctionError: Device <default.qubit device (wires=1, shots=100) at 0x119d6e8c0> does not support backprop with requested circuit.
+Traceback (most recent call last):
+    ...
+pennylane.exceptions.QuantumFunctionError: Device ... does not support backprop with requested circuit.
+...
 
 Changing to ``shots=None`` allows computing the analytic gradient:
 
@@ -73,12 +80,12 @@ Changing to ``shots=None`` allows computing the analytic gradient:
         dev = qp.device('default.qubit', wires=1)
 
         @qp.set_shots(shots=None)
-        @qp.qnode(dev, diff_method='backprop')
+        @qp.qnode(dev, interface="jax", diff_method='backprop')
         def circuit(x):
             qp.RX(x[0], wires=0)
             return qp.expval(qp.Z(wires=0))
 
-        x = np.array([0.1], requires_grad=True)
+        x = jnp.array([0.1])
         print(qp.grad(circuit)(x))
 
 >>> print_grad()
@@ -101,40 +108,43 @@ In particular, the following code works as expected:
         dev = qp.device('default.qubit', wires=1)
 
         @qp.set_shots(shots=None)
-        @qp.qnode(dev, diff_method='adjoint')
+        @qp.qnode(dev, interface="jax", diff_method='adjoint')
         def circuit(x):
             qp.RX(x[0], wires=0)
             return qp.expval(qp.Z(wires=0))
 
-        x = np.array([0.1], requires_grad=True)
+        x = jnp.array([0.1])
         print(qp.grad(circuit)(x))
 
 >>> print_grad()
 [-0.09983342]
 
-``default.qubit`` can differentiate any other measurement process as long as it
-is in the Z measurement basis. In this case, we recommend using the device-provided vjp
-(``device_vjp=True``) for improved performance scaling. This algorithm works
-best when the final cost function only has a scalar value.
+For a scalar cost function, ``device_vjp=True`` allows the device to compute
+vector-Jacobian products without constructing the full Jacobian. The following
+example obtains probabilities as expectation values of computational-basis projectors.
+Adjoint differentiation on ``lightning.qubit`` also supports expectation values.
 
-``lightning.qubit`` only supports expectation values.
+.. code-block:: python
 
-.. code-block:: python 
-
-    @qp.qnode(qp.device('default.qubit'), diff_method="adjoint", device_vjp=True)
+    @qp.qnode(
+        qp.device('default.qubit'), interface="jax", diff_method="adjoint", device_vjp=True
+    )
     def circuit(x):
-        qp.IsingXX(x, wires=(0,1))
-        return qp.probs(wires=(0,1))
+        qp.IsingXX(x, wires=(0, 1))
+        return tuple(
+            qp.expval(qp.Projector(bits, wires=(0, 1)))
+            for bits in [[0, 0], [0, 1], [1, 0], [1, 1]]
+        )
 
     def cost(x):
-        probs = circuit(x)
-        target = np.array([0, 0, 0, 1])
-        return qp.math.norm(probs-target)
+        probs = jnp.stack(circuit(x))
+        target = jnp.array([0, 0, 0, 1])
+        return jnp.linalg.norm(probs - target)
 
->>> qp.grad(cost)(qp.numpy.array(0.1))
--0.07059288589999416
+>>> float(qp.grad(cost)(jnp.array(0.1)))
+-0.07059288589999413
 
-Furthermore, the adjoint differentiation algorithm is analytic by nature. If the an execution
+Furthermore, the adjoint differentiation algorithm is analytic by nature. If an execution
 has ``shots>0``, an error is raised:
 
 .. code-block:: python
@@ -143,111 +153,78 @@ has ``shots>0``, an error is raised:
         dev = qp.device('default.qubit', wires=1)
 
         @qp.set_shots(shots=100)
-        @qp.qnode(dev, diff_method='adjoint')
+        @qp.qnode(dev, interface="jax", diff_method='adjoint')
         def circuit(x):
             qp.RX(x[0], wires=0)
             return qp.expval(qp.Z(wires=0))
 
-        x = np.array([0.1], requires_grad=True)
+        x = jnp.array([0.1])
         print(qp.grad(circuit)(x))
 
 >>> print_grad_ok()
-DeviceError: Finite shots are not supported with adjoint + default.qubit
+Traceback (most recent call last):
+    ...
+pennylane.exceptions.QuantumFunctionError: Device ... does not support adjoint with requested circuit.
+...
 
 .. _State gradients:
 
 State gradients
 ~~~~~~~~~~~~~~~~
 
-In general, the state of a quantum circuit will be complex-valued, so differentiating
-the state directly is not possible without the use of
-`complex analysis <https://en.wikipedia.org/wiki/Holomorphic_function>`__. Though complex
-gradients can be implemented for most "simple" functions, this is not supported in Autograd
-but is done in JAX and PyTorch.
-
-Instead, in Autograd, real scalar-valued post-processing should be performed on the output state to allow
-the auto-differentiation frameworks to backpropagate through them. For example, the following
-code uses a scalar cost function dependent on the output state:
+Quantum states are complex-valued. A real scalar cost function can be differentiated
+with respect to real circuit parameters using backpropagation:
 
 .. code-block:: python
 
     def state_scalar_grad():
         dev = qp.device('default.qubit', wires=1)
 
-        @qp.set_shots(shots=None)
-        @qp.qnode(dev, diff_method='backprop')
+        @qp.qnode(dev, interface="jax", diff_method='backprop')
         def circuit(x):
             qp.RX(x[0], wires=0)
             return qp.state()
 
         def cost_fn(x):
             out = circuit(x)
-            return np.abs(out[0])
+            return jnp.abs(out[0])
 
-        x = np.array([0.1], requires_grad=True)
+        x = jnp.array([0.1])
         print(qp.grad(cost_fn)(x))
 
 >>> state_scalar_grad()
 [-0.02498958]
 
-However, changing from differentiating the scalar cost to differentiating the state
-directly will fail with an error:
+To obtain derivatives of every state amplitude with respect to real parameters,
+differentiate its real and imaginary parts separately:
 
 .. code-block:: python
 
     def state_vector_grad():
         dev = qp.device('default.qubit', wires=1)
 
-        @qp.set_shots(shots=None)
-        @qp.qnode(dev, diff_method='backprop')
+        @qp.qnode(dev, interface="jax", diff_method='backprop')
         def circuit(x):
             qp.RX(x[0], wires=0)
             return qp.state()
 
-        x = np.array([0.1], requires_grad=True)
-        print(qp.jacobian(circuit)(x))
+        def real_imag_state(x):
+            psi = circuit(x)
+            return jnp.stack((jnp.real(psi), jnp.imag(psi)))
+
+        x = jnp.array([0.1])
+        jacobian = jax.jacobian(real_imag_state)(x)
+        print(np.round(np.asarray(jacobian), 8) + 0.0)
 
 >>> state_vector_grad()
-Traceback (most recent call last):
-  ...
-  File "C:\Python38\lib\site-packages\numpy\core\fromnumeric.py", line 57, in _wrapfunc
-    return bound(*args, **kwds)
-ValueError: cannot reshape array of size 4 into shape (2,1)
+[[[-0.02498958]
+  [ 0.        ]]
+<BLANKLINE>
+ [[ 0.        ]
+  [-0.49937513]]]
 
-Using a different interface that supports complex differentiation will fix this error:
-
-.. code-block:: python
-
-    def state_vector_grad_jax():
-        dev = qp.device('default.qubit', wires=1)
-
-        @qp.set_shots(shots=None)
-        @qp.qnode(dev, interface='jax', diff_method='backprop')
-        def circuit(x):
-            qp.RX(x[0], wires=0)
-            return qp.state()
-
-        x = jnp.array([0.1], dtype=np.complex64)
-        print(jax.jacrev(circuit, holomorphic=True)(x))
-
-    def state_vector_grad_torch():
-        dev = qp.device('default.qubit', wires=1)
-
-        @qp.set_shots(shots=None)
-        @qp.qnode(dev, interface='torch', diff_method='backprop')
-        def circuit(x):
-            qp.RX(x[0], wires=0)
-            return qp.state()
-
-        x = torch.tensor([0.1], requires_grad=True, dtype=torch.complex64)
-        print(torch.autograd.functional.jacobian(circuit, (x,)))
-
->>> state_vector_grad_jax()
-[[-0.02498958+0.j        ]
- [ 0.        -0.49937513j]]
->>> state_vector_grad_torch()
-(tensor([[-0.0250+0.0000j],
-        [ 0.0000+0.4994j]]),)
+The first axis selects the real or imaginary part, the second selects the state
+amplitude, and the final axis selects the input parameter.
 
 .. _Sample gradients:
 
@@ -258,43 +235,37 @@ In PennyLane, samples are drawn from the eigenvalues of an observable, or from t
 computational basis states if no observable is provided. This process is not differentiable
 in general, so no gradient flow backwards through the sampling is allowed.
 
-Currently, attempting to compute the gradient in this scenario will not raise an
-error, but the results will be incorrect:
+Attempting to differentiate integer-valued samples with JAX raises an error:
 
 .. code-block:: python
 
     def sample_backward():
-        dev = qp.device('default.qubit', wires=1)
+        dev = qp.device('default.qubit', wires=1, seed=123)
 
         @qp.set_shots(shots=5)
-        @qp.qnode(dev)
+        @qp.qnode(dev, interface="jax")
         def circuit(x):
             qp.RX(x[0], wires=0)
             return qp.sample(wires=0)
 
-        x = np.array([np.pi / 2])
+        x = jnp.array([np.pi / 2])
         print(qp.jacobian(circuit)(x))
 
 >>> sample_backward()
-[[[0.5]]
-<BLANKLINE>
- [[0.5]]
-<BLANKLINE>
- [[0.5]]
-<BLANKLINE>
- [[0.5]]
-<BLANKLINE>
- [[0.5]]]
+Traceback (most recent call last):
+    ...
+TypeError: Custom JVP rule must produce primal and tangent outputs with corresponding shapes and dtypes...
+...
 
 The forward pass is supported and will work as expected:
 
 .. code-block:: python
 
     def sample_forward():
-        dev = qp.device('default.qubit', wires=1)
+        dev = qp.device('default.qubit', wires=1, seed=123)
 
         @qp.set_shots(shots=20)
-        @qp.qnode(dev)
+        @qp.qnode(dev, interface="numpy")
         def circuit(x):
             qp.RX(x[0], wires=0)
             return qp.sample(wires=0)
@@ -303,23 +274,23 @@ The forward pass is supported and will work as expected:
         print(circuit(x))
 
 >>> sample_forward()
-[[0]
+[[1]
  [0]
  [0]
  [0]
- [1]
- [1]
- [0]
- [0]
- [1]
- [1]
- [1]
- [1]
  [0]
  [1]
  [1]
  [0]
  [1]
+ [1]
+ [1]
  [0]
+ [1]
  [0]
+ [1]
+ [1]
+ [1]
+ [0]
+ [1]
  [1]]

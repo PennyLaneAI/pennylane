@@ -250,24 +250,24 @@ The new gate can be used with PennyLane devices.
 
 .. code-block:: python
 
-    from pennylane import numpy as np
+    import torch
 
     dev = qp.device("default.qubit", wires=["q1", "q2", "q3"])
 
-    @qp.qnode(dev)
+    @qp.qnode(dev, interface="torch")
     def circuit(angle):
         FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
         return qp.expval(qp.PauliZ("q1"))
 
->>> a = np.array(3.14)
->>> circuit(a)
--0.9999987318946099
+>>> a = torch.tensor(3.14, dtype=torch.float64, requires_grad=True)
+>>> round(circuit(a).item(), 8)
+-0.99999873
 
 If all gates used in the decomposition have gradient recipes defined,
 we can even compute gradients of circuits that use the new gate without any extra effort.
 
->>> qp.grad(circuit)(a)
--0.0015926529164868282
+>>> round(qp.grad(circuit)(a).item(), 8)
+-0.00159265
 
 .. note::
 

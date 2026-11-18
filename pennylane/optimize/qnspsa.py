@@ -98,34 +98,28 @@ class QNSPSAOptimizer:  # pylint: disable=too-many-instance-attributes
             the cost values in the last ``history_length`` steps (default value: 5).
         seed (int): seed for the random sampling (default value: None).
 
-    **Examples:**
+    **Example:**
 
-    For VQE/VQE-like problems, the objective function can be defined within a qnode:
+    Define a QNode with the NumPy interface for the optimizer's derivative-free forward
+    evaluations:
 
-    >>> num_qubits = 2
-    >>> dev = qp.device("default.qubit", wires=num_qubits)
-    >>> @qp.qnode(dev)
+    >>> dev = qp.device("default.qubit", wires=2)
+    >>> @qp.qnode(dev, interface="numpy")
     ... def cost(params):
     ...     qp.RX(params[0], wires=0)
     ...     qp.CRY(params[1], wires=[0, 1])
     ...     return qp.expval(qp.Z(0) @ qp.Z(1))
 
-    Once constructed, the qnode can be passed directly to the ``step`` or ``step_and_cost``
-    function of the optimizer.
+    The optimizer can retain PennyLane NumPy parameter storage while quantum execution uses
+    NumPy. A fixed seed makes the sampled update directions reproducible:
 
-    >>> from pennylane import numpy as np
-    >>> params = np.random.rand(2)
-    >>> opt = QNSPSAOptimizer(stepsize=5e-2)
-    >>> for i in range(51):
-    >>>     params, loss = opt.step_and_cost(cost, params)
-    >>>     if i % 10 == 0:
-    ...         print(f"Step {i}: cost = {loss:.4f}")
-    Step 0: cost = 0.9987
-    Step 10: cost = 0.9841
-    Step 20: cost = 0.8921
-    Step 30: cost = 0.0910
-    Step 40: cost = -0.9369
-    Step 50: cost = -0.9984
+    >>> params = qp.numpy.array([0.5, 0.5], requires_grad=True)
+    >>> opt = qp.QNSPSAOptimizer(stepsize=5e-2, seed=1967)
+    >>> for i in range(2):
+    ...     params, loss = opt.step_and_cost(cost, params)
+    ...     print(f"Step {i}: cost = {float(loss):.6f}")
+    Step 0: cost = 0.885076
+    Step 1: cost = 0.873309
     """
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -224,7 +218,7 @@ class QNSPSAOptimizer:  # pylint: disable=too-many-instance-attributes
             all_tensor_dirs.append(tensor_dirs)
 
         # nosemgrep
-        raw_results = execute(all_grad_tapes + all_metric_tapes, cost.device)
+        raw_results = execute(all_grad_tapes + all_metric_tapes, cost.device, interface="numpy")
         grads = [
             self._post_process_grad(raw_results[2 * i : 2 * i + 2], all_grad_dirs[i])
             for i in range(self.resamplings)
@@ -436,7 +430,11 @@ class QNSPSAOptimizer:  # pylint: disable=too-many-instance-attributes
         program = cost.device.preprocess_transforms()
 
         loss_curr, loss_next = execute(
-            [tape_loss_curr, tape_loss_next], cost.device, None, transform_program=program
+            [tape_loss_curr, tape_loss_next],
+            cost.device,
+            None,
+            interface="numpy",
+            transform_program=program,
         )
 
         # self.k has been updated earlier

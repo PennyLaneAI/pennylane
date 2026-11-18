@@ -134,6 +134,29 @@ def get_metric_from_single_input_qnode(params, finite_diff_step, tensor_dirs):
     return metric_tensor_expected
 
 
+@pytest.mark.parametrize("blocking", [False, True])
+def test_numpy_execution_with_optimizer_arrays(blocking, seed):
+    """Optimizer storage arrays need no retired interface during internal forward batches."""
+    dev = qp.device("default.qubit")
+
+    @qp.qnode(dev, interface="numpy")
+    def cost(params):
+        qp.RY(params[0], 0)
+        return qp.expval(qp.Z(0))
+
+    opt = qp.QNSPSAOptimizer(stepsize=0.05, blocking=blocking, seed=seed)
+    params = np.array([0.3], requires_grad=True)
+    initial_cost = cost(params)
+    for _ in range(2):
+        previous_cost = cost(params)
+        params, reported_cost = opt.step_and_cost(cost, params)
+        assert np.allclose(reported_cost, previous_cost)
+        assert params.shape == (1,)
+        assert params.requires_grad
+
+    assert cost(params) < initial_cost
+
+
 @pytest.mark.parametrize("finite_diff_step", [1e-3, 1e-2, 1e-1])
 class TestQNSPSAOptimizer:
     def test_gradient_from_single_input(self, finite_diff_step, seed):

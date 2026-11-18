@@ -349,13 +349,14 @@ observed.
 Adding log-statements to the interface execution pipelines
 ----------------------------------------------------------
 
-Similarly, for autograd (Torch also), we can run examples that
-tie-into the execution pipeline for devices without backprop supports:
+For PyTorch, we can inspect the execution pipeline for devices that use
+adjoint differentiation:
 
 .. code-block:: python
 
     import pennylane as qp
     import logging
+    import torch
 
     qp.logging.enable_logging()
 
@@ -369,7 +370,7 @@ tie-into the execution pipeline for devices without backprop supports:
        dev = qp.device(dev_name, wires=num_wires)
 
        @qp.set_shots(shots=num_shots)
-       @qp.qnode(dev, diff_method="adjoint")
+       @qp.qnode(dev, interface="torch", diff_method="adjoint")
        def my_circuit(param):
            qp.RX(param, wires=0)
            qp.CNOT(wires=[0, 1])
@@ -381,7 +382,7 @@ tie-into the execution pipeline for devices without backprop supports:
 
        return res
 
-    par = qp.numpy.array([0.1,0.2])
+    par = torch.tensor([0.1, 0.2], dtype=torch.float64, requires_grad=True)
 
     logger.info(f"Running circuit with par={par[0]}")
     circuit(par[0])
@@ -394,9 +395,8 @@ By using ``lightning.qubit`` we can now treat the execution environment
 as a black-box, and see the log-level messages as they hit the custom
 functions as part of the execution pipeline.
 
-The above features have been added for PyTorch, JAX and
-autograd, and should produce a sufficient level of detail in the
-execution messages.
+The above features are available for PyTorch and JAX, and show the
+interface execution messages.
 
 
 Log formatting
