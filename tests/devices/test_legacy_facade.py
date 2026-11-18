@@ -75,6 +75,36 @@ def test_error_if_not_legacy_device():
         LegacyDeviceFacade(target)
 
 
+@pytest.mark.parametrize("interface", ["numpy", None])
+@pytest.mark.parametrize("requires_grad", [True, False])
+def test_numpy_forward_with_legacy_parameters(interface, requires_grad):
+    """Legacy capability probing permits explicit NumPy forward execution."""
+    dev = LegacyDeviceFacade(DefaultQubitLegacy(wires=1))
+
+    @qp.qnode(dev, interface=interface)
+    def circuit(angle):
+        qp.RX(angle, 0)
+        return qp.expval(qp.Z(0))
+
+    angle = qp.numpy.array(0.4, requires_grad=requires_grad)
+    assert circuit.diff_method == "best"
+    assert qp.math.allclose(circuit(angle), np.cos(0.4))
+
+
+@pytest.mark.parametrize("requires_grad", [True, False])
+def test_legacy_parameters_still_reject_automatic_interface(requires_grad):
+    """The capability probe does not restore automatic Autograd execution."""
+    dev = LegacyDeviceFacade(DefaultQubitLegacy(wires=1))
+
+    @qp.qnode(dev)
+    def circuit(angle):
+        qp.RX(angle, 0)
+        return qp.expval(qp.Z(0))
+
+    with pytest.raises(ValueError, match="'autograd' is not a valid Interface"):
+        circuit(qp.numpy.array(0.4, requires_grad=requires_grad))
+
+
 def test_copy():
     """Test that copy works correctly"""
     dev = LegacyDeviceFacade(DefaultQubitLegacy(wires=1))
