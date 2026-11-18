@@ -9,9 +9,19 @@ New features since last release
   loading rather than XORing. The latter is now done by :class:`~.QROM`. 
   Use the three operators as follows:
 
-                            |   Work wires reset  |   Work wires not reset  |
-  Target wires zeroed       | :class:`~.QROMLoad` |  :class:`~.SelectSwap`  |
-  Target wires not zeroed   | :class:`~.QROM`     | currently not supported |
+  .. list-table::
+      :header-rows: 1
+      :stub-columns: 1
+
+      * -
+        - Work wires reset
+        - Work wires not reset
+      * - Target wires zeroed
+        - :class:`~.QROMLoad`
+        - :class:`~.SelectSwap`
+      * - Target wires not zeroed
+        - :class:`~.QROM`
+        - currently not supported
 
   Note that :class:`~.QROMLoad` also has a decomposition using Select-SWAP, but is not allowed to
   leave the work wires in a garbage state. When using :class:`~.SelectSwap` for data loading, it
@@ -1617,9 +1627,8 @@ Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
 * :class:`~.QROM` no longer takes a ``clean`` argument and no longer has a Select-SWAP
-  decomposition, which requires a target register in the zero state. Use :class:`~.QROMLoad`
-  instead if the target wires start in the zero state, and drop the ``clean`` argument otherwise.
-  If you used ``clean=False`` with a zeroed target register, use :class:`~.SelectSwap` instead.
+  decomposition, which is available for :class:`~.QROMLoad` and :class:`~.SelectSwap` instead.
+  See the corresponding entry under "New features" for when to use which of the three operators.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
 
 * :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly: use
