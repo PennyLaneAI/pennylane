@@ -78,6 +78,28 @@ class TestPrivateHelpers:
     def decomposer(op):
         return op.decomposition()
 
+    def test_custom_decomposer_removes_global_phase(self, mocker):
+        """A custom device decomposer can remove an unsupported global phase."""
+        phase = qp.GlobalPhase(0.3)
+        # An empty decomposition removes the phase.
+        decomposer = mocker.Mock(return_value=[])
+
+        with warnings.catch_warnings():
+            # The fallback must run before the GlobalPhase warning.
+            warnings.simplefilter("error")
+            operations = list(
+                _operator_decomposition_gen(
+                    phase,
+                    # Reject the phase to force decomposition.
+                    acceptance_function=lambda op: False,
+                    custom_decomposer=decomposer,
+                    strict=True,
+                )
+            )
+
+        decomposer.assert_called_once_with(phase)
+        assert operations == []
+
     @pytest.mark.parametrize("op", (qp.PauliX(0), qp.RX(1.2, wires=0), qp.QFT(wires=range(3))))
     def test_operator_decomposition_gen_accepted_operator(self, op):
         """Test the _operator_decomposition_gen function on an operator that is accepted."""

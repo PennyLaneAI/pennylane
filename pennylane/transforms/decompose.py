@@ -609,6 +609,14 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
             if num_work_wires is not None:
                 num_work_wires -= op_rule.get_work_wire_spec(**params).total
 
+        elif custom_decomposer is not None:
+            try:
+                decomp = custom_decomposer(op)
+            except DecompositionUndefinedError as e:
+                raise DecompositionUndefinedError(
+                    f"Operator {op} not supported and does not provide a decomposition."
+                ) from e
+
         elif isinstance(op, GlobalPhase):
             warnings.warn(
                 "GlobalPhase is not assumed to have a decomposition. "
@@ -618,14 +626,6 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
                 "from pennylane.decomposition, and assign it to GlobalPhase."
             )
             yield op
-
-        elif custom_decomposer is not None:
-            try:
-                decomp = custom_decomposer(op)
-            except DecompositionUndefinedError as e:
-                raise DecompositionUndefinedError(
-                    f"Operator {op} not supported and does not provide a decomposition."
-                ) from e
 
         elif op.has_decomposition:
             decomp = op.decomposition()
