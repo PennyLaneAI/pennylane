@@ -259,7 +259,9 @@ class ChangeOpBasis(CompositeOp):
     .. seealso:: :func:`~.change_op_basis`
     """
 
-    def __init__(self, compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
+    def __init__(
+        self, compute_op: Operator, target_op: Operator, uncompute_op: Operator | None = None
+    ):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
         super().__init__(uncompute_op, target_op, compute_op)

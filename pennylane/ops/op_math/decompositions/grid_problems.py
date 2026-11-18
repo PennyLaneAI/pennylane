@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from copy import copy
 from functools import cached_property, lru_cache
 from itertools import chain
@@ -590,7 +590,7 @@ class GridIterator:
         """Return a string representation of the grid iterator."""
         return f"GridIterator(theta={self.theta}, epsilon={self.epsilon}, max_trials={self.max_trials})"
 
-    def __iter__(self) -> Iterable[tuple[ZOmega, int]]:
+    def __iter__(self) -> Iterator[tuple[ZOmega, int]]:
         """Iterate over the solutions to the scaled grid problem."""
         # Warm start for an initial guess, where 14 is kmin for 1e-3.
         k, i_ = min(self.kmin, 14), 6  # Give 6 trials for warm start.
