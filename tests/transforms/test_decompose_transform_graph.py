@@ -70,6 +70,20 @@ def test_decompose_setup_inputs():
 
 
 @pytest.mark.unit
+def test_decompose_requires_gate_set():
+    """The public transform rejects an explicit None gate set."""
+    with pytest.raises(TypeError, match="The gate_set argument is required\\."):
+        qp.decompose(gate_set=None)
+
+
+@pytest.mark.unit
+def test_resolve_gate_set_requires_gate_set_with_stopping_condition():
+    """A stopping condition cannot replace the target gate set."""
+    with pytest.raises(TypeError, match="The gate_set argument is required\\."):
+        _resolve_gate_set(gate_set=None, stopping_condition=lambda op: op.name == "RX")
+
+
+@pytest.mark.unit
 @pytest.mark.parametrize("excluded", [None, {}, {qp.CRX: ["_crx_to_ppr"]}])
 def test_decompose_exclusions(excluded):
     """The public transform preserves provided exclusions and omits unset options."""
