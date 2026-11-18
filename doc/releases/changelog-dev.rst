@@ -1881,14 +1881,17 @@ Breaking changes 💔
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
-* Graph-based decomposition is now always enabled. The ``qp.decomposition.enable_graph``,
+* Graph-based decomposition is now always enabled, and the ``qp.decomposition.enable_graph``,
   ``disable_graph``, ``enabled_graph``, and ``toggle_graph_ctx`` functions have been removed.
-  Remove calls to these functions and use graph-based decomposition directly.
-  The :func:`~pennylane.transforms.decompose` and :func:`~pennylane.transforms._tape_decompose`
-  transforms now require ``gate_set``.
-  The ``compute_decomposition`` methods of :class:`~.AmplitudeAmplification`,
-  :class:`~.Multiplier`, :class:`~.OutAdder`, and :class:`~.QAOAEmbedding` have been removed;
-  ``op.decomposition()`` now uses their registered decomposition rules.
+
+  As a result:
+
+  * :func:`~pennylane.transforms.decompose` and :func:`~pennylane.transforms._tape_decompose`
+    now require a ``gate_set`` argument.
+  * The ``compute_decomposition`` methods of :class:`~.AmplitudeAmplification`,
+    :class:`~.Multiplier`, :class:`~.OutAdder`, and :class:`~.QAOAEmbedding` have been removed.
+    ``op.decomposition()`` now uses their registered decomposition rules.
+
   `(#10510) <https://github.com/PennyLaneAI/pennylane/pull/10510>`__
 
 * PyQuil and Qualtran interoperability has been removed from ``qp.io`` and the top-level
