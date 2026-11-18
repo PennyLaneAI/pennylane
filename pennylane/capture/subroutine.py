@@ -34,6 +34,7 @@ Note that this explanation will probably get out of date.
 import copy
 
 import jax
+import jax._src.pjit
 from jax._src.pjit import jit_p as pjit_p
 
 from .autograph import wraps
