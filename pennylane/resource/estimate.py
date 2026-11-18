@@ -45,18 +45,6 @@ from .resource import CircuitSpecs
 
 _DECOMPOSE_PASS = "graph-decomposition"
 
-# Passes of the transforms that estimate can skip without a warning: they only remove, merge or
-# reorder gates, or split the measurements, so skipping them does not add gate types, though
-# merge-rotations can merge Pauli product rotations into a larger angle.
-# Any other transform may introduce new gate types.
-# The pass names are not read from the transforms, which are plain functions in docs builds.
-# TODO: let each transform declare whether it is safe to skip, instead of listing them here.
-_SAFE_TO_SKIP_TRANSFORMS = frozenset(
-    {"cancel-inverses", "merge-rotations", "combine-global-phases", "split-to-single-terms"}
-)
-
-_GRIDSYNTH_ROTATIONS = ("RZ", "PhaseShift", "Adjoint(RZ)", "Adjoint(PhaseShift)")
-
 
 def _decompose_kwargs(bound_transform) -> dict:
     """Return the arguments of a decomposition that ``estimate`` uses."""
@@ -96,40 +84,34 @@ def _device_gate_set(qnode) -> dict[str, float]:
 
 def _target_level(target, pipeline: CompilePipeline) -> int | None:
     """Return the level number of ``target`` in ``pipeline``, or ``None`` if ``target`` is a gate
-    set. A marker label takes priority over a gate with the same name."""
+    set."""
     if target is None or isinstance(target, bool):
         raise ValueError(
             f"Invalid target={target!r}, expected a gate set or a level of the compile pipeline."
         )
-    if isinstance(target, slice):
+    if isinstance(target, slice) or (isinstance(target, str) and target in ("all-user", "all")):
         raise ValueError(
             f"Invalid target={target!r}, which selects several levels of the compile pipeline."
         )
-    if isinstance(target, str):
-        if target in ("all-user", "all"):
-            raise ValueError(
-                f"Invalid target={target!r}, which selects several levels of the compile pipeline."
-            )
-        if target not in ("top", "user", "device", "gradient", "all-mlir") and (
-            target not in pipeline.markers
-        ):
-            return None
-    elif not is_int_level(target):
+    if not (isinstance(target, str) or is_int_level(target)):
         return None
     try:
         return level_to_number(target, pipeline)
     except ValueError as exc:
-        raise ValueError(f"Invalid target={target!r}: {exc}") from None
+        message = f"Invalid target={target!r}: {exc}"
+        # Removed level names are not gate names either
+        if isinstance(target, str) and target not in ("gradient", "all-mlir"):
+            message += f" To use {target!r} as a gate set, pass target={{{target!r}}}."
+        raise ValueError(message) from None
 
 
-def _estimate_passes(qnode, target) -> tuple[CompilePipeline, dict | None, list[tuple]]:
+def _estimate_passes(qnode, target) -> tuple[CompilePipeline, dict | None, list[str]]:
     """Return the decompositions to apply to ``qnode`` before estimating the resources at
-    ``target``, the arguments of the decomposition to estimate, and the skipped transforms that
-    may change the gates.
+    ``target``, the arguments of the decomposition to estimate, and the pass names of the skipped
+    transforms.
 
     The arguments are ``None`` if no decomposition is estimated, so that the resources are those
-    at level 0. Each skipped transform comes with whether the estimated resources are the gates
-    that it would act on, which is the case if no decomposition comes after it."""
+    at level 0."""
     pipeline = qnode.compile_pipeline
     target_level = _target_level(target, pipeline)
     if target_level is None:
@@ -151,66 +133,37 @@ def _estimate_passes(qnode, target) -> tuple[CompilePipeline, dict | None, list[
     check_no_tape_transforms(pipeline[:target_level])
     transforms = list(pipeline)[:target_level]
     is_device_level = target_level == device_level(pipeline)
-    decompose_positions = [
-        position
-        for position, bound_transform in enumerate(transforms)
-        if bound_transform.pass_name == _DECOMPOSE_PASS
-    ]
-    decompositions = [transforms[position] for position in decompose_positions]
-    last_position = decompose_positions[-1] if decompose_positions else -1
+    positions = [i for i, t in enumerate(transforms) if t.pass_name == _DECOMPOSE_PASS]
+    decompositions = [transforms[i] for i in positions]
 
-    # Only the decompositions are applied or estimated, so the other transforms are skipped
-    def skipped(device_decomposition: bool) -> list[tuple]:
-        return [
-            (bound_transform, position > last_position and not device_decomposition)
-            for position, bound_transform in enumerate(transforms)
-            if bound_transform.pass_name != _DECOMPOSE_PASS
-            and bound_transform.pass_name not in _SAFE_TO_SKIP_TRANSFORMS
-        ]
+    # Only the decompositions are applied or estimated, so the other transforms before the
+    # estimated decomposition are skipped
+    def skipped(stop: int) -> list[str]:
+        return list(
+            dict.fromkeys(t.pass_name for t in transforms[:stop] if t.pass_name != _DECOMPOSE_PASS)
+        )
 
     if not decompositions:
         if is_device_level:
-            return CompilePipeline(), {"gate_set": _device_gate_set(qnode)}, skipped(True)
-        return CompilePipeline(), None, skipped(False)
+            return CompilePipeline(), {"gate_set": _device_gate_set(qnode)}, skipped(target_level)
+        # "user" and markers can also be at level 0, e.g. without any transform
+        if not (target == "top" or (is_int_level(target) and target == 0)):
+            warnings.warn(
+                f"qp.estimate found no qp.decompose transform before target={target!r}, so the "
+                "resources are those of the circuit without any decomposition. Use "
+                'target="device" or a gate set as target to decompose the gates.',
+                UserWarning,
+            )
+        return CompilePipeline(), None, []
 
     last_kwargs = _decompose_kwargs(decompositions[-1])
     if is_device_level:
         device_gate_set = _device_gate_set(qnode)
         # The device preprocessing decomposes any gate outside the device gate set
         if not set(GateSet(last_kwargs["gate_set"])) <= set(GateSet(device_gate_set)):
-            return CompilePipeline(decompositions), {"gate_set": device_gate_set}, skipped(True)
-    return CompilePipeline(decompositions[:-1]), last_kwargs, skipped(False)
-
-
-# TODO: once estimate supports levels other than "top", suggest qp.estimate with that level
-# instead of qp.analyze, here, in _missing_rule_message and in the docstring of estimate.
-def _warn_skipped_transforms(gate_changing: list[tuple], target, resources) -> None:
-    """Warn that the transforms in ``gate_changing``, which may change the gates, are skipped in
-    the ``resources`` estimated for ``target``. For ``gridsynth``, the warning gives the number
-    of rotations it would approximate, if the ``resources`` are the gates it would act on."""
-    for bound_transform, acts_on_resources in gate_changing:
-        name = bound_transform.pass_name
-        if name != "gridsynth" or not acts_on_resources:
-            warnings.warn(
-                f"qp.estimate skips the transform {name} for target={target!r}, although it may "
-                "change the gates. The resources do not include the gates that it introduces. "
-                "Use qp.analyze at that level to include them.",
-                UserWarning,
-            )
-            continue
-        num_rotations = sum(
-            specs.quantum_operations.get(rotation, 0)
-            for specs in (resources if isinstance(resources, list) else [resources])
-            for rotation in _GRIDSYNTH_ROTATIONS
-        )
-        if num_rotations:
-            warnings.warn(
-                f"qp.estimate skips the transform gridsynth for target={target!r}, so "
-                f"{num_rotations} RZ and PhaseShift gates are not approximated in the "
-                f"Clifford+T basis with epsilon={bound_transform.kwargs['epsilon']:g}. Use "
-                "qp.analyze at that level to include the gates of gridsynth.",
-                UserWarning,
-            )
+            device_kwargs = {"gate_set": device_gate_set}
+            return CompilePipeline(decompositions), device_kwargs, skipped(target_level)
+    return CompilePipeline(decompositions[:-1]), last_kwargs, skipped(positions[-1])
 
 
 def _missing_rule_op(exc: Exception) -> str | None:
@@ -235,30 +188,36 @@ def _failing_decomposition(
     return None
 
 
-def _missing_rule_message(op: str, target, pipeline: CompilePipeline, gate_changing: list) -> str:
-    """Return the error message for an operator ``op`` that cannot be decomposed into the gate set
-    of ``target``."""
+def _gate_names(gate_set) -> list[str]:
+    """Return the sorted gate names of ``gate_set``, in any form accepted by ``qp.decompose``."""
+    return sorted(GateSet(decompose(gate_set=gate_set).kwargs["gate_set"]))
+
+
+# TODO: once estimate supports levels other than "top", suggest qp.estimate with that level
+# instead of qp.analyze, here and in the docstring of estimate.
+def _missing_rule_message(
+    op: str, target, gate_set, pipeline: CompilePipeline, skipped: list[str]
+) -> str:
+    """Return the error message for an operator ``op`` that cannot be decomposed into the
+    ``gate_set`` estimated for ``target``."""
     if _target_level(target, pipeline) is not None:
         message = (
             f"Decomposition rule not found for operator {op}: it cannot be decomposed into the "
-            f"gate set at target={target!r}."
+            f"gate set {_gate_names(gate_set)} at target={target!r}."
         )
-        if gate_changing:
+        if skipped:
+            transforms = "the transform" if len(skipped) == 1 else "the transforms"
             message += (
-                f" qp.estimate skips the transform {gate_changing[0][0].pass_name}, which "
-                "may be needed to reach it. Use qp.analyze at that level instead."
+                f" qp.estimate skips {transforms} {', '.join(skipped)}, which may be needed to "
+                "reach it. Use qp.analyze at that level instead."
             )
         return message
     message = (
         f"Decomposition rule not found for operator {op}: it cannot be decomposed into the target "
         f"gate set. Add {op} to the target, or use a gate set it can be decomposed into."
     )
-    if isinstance(target, str):
-        message += (
-            f" target={target!r} is not a level of the compile pipeline, so it is the name of the "
-            "only gate in the target gate set."
-        )
-    elif levels := [name for name in target if _is_level_name(name, pipeline)]:
+    gate_names = target if isinstance(target, Iterable) else (target,)
+    if levels := [name for name in gate_names if _is_level_name(name, pipeline)]:
         message += (
             f" The target gate set contains {', '.join(map(repr, levels))}, which is a gate name "
             "here. To use a level of the compile pipeline as target, pass it on its own, such as "
@@ -275,7 +234,8 @@ def _is_level_name(name, pipeline: CompilePipeline) -> bool:
 
 
 def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
-    """Decompose a qjit'd QNode at ``level`` into the ``target`` gate set and return its specs."""
+    """Project the resources of a qjit'd QNode at ``level`` onto ``target``, a gate set or a
+    level of its compile pipeline, and return its specs."""
     original_qnode = unwrap_qjit_qnode(func, fn_name="qp.estimate")
     from catalyst.utils.exceptions import CompileError  # pylint: disable=import-outside-toplevel
 
@@ -303,7 +263,7 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
             "qp.estimate requires program capture. Compile the QNode with qp.qjit(capture=True)."
         )
 
-    decompositions, decompose_kwargs, gate_changing = _estimate_passes(original_qnode, target)
+    decompositions, decompose_kwargs, skipped = _estimate_passes(original_qnode, target)
     # The compile pipeline is replaced by the decompositions to apply before the estimate
     estimate_qnode = original_qnode.update_pipelines(
         decompositions,
@@ -333,15 +293,16 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
                 op, failing_kwargs = failing
                 raise ValueError(
                     f"Decomposition rule not found for operator {op}: it cannot be decomposed "
-                    f"into the gate set {failing_kwargs['gate_set']} of a qp.decompose transform "
-                    f"before target={target!r}."
+                    f"into the gate set {_gate_names(failing_kwargs['gate_set'])} of a "
+                    f"qp.decompose transform before target={target!r}."
                 ) from None
             raise ValueError(
-                _missing_rule_message(op, target, compile_pipeline, gate_changing)
+                _missing_rule_message(
+                    op, target, decompose_kwargs["gate_set"], compile_pipeline, skipped
+                )
             ) from None
 
     resources = next(iter(resources.values()))
-    _warn_skipped_transforms(gate_changing, target, resources)
     return build_circuit_specs(original_qnode, resources, "top")
 
 
@@ -349,7 +310,7 @@ def estimate(
     qnode,
     level: str | int | slice = "top",
     *,
-    target: str | int | Iterable[type | str] | dict[type | str, float] = "device",
+    target: str | int | Iterable[type | str] | dict[type | str, float] = "user",
 ) -> Callable[..., CircuitSpecs]:
     r"""Provides a resource estimate of a quantum circuit with respect to the provided compilation target,
     via rapid analysis of decomposition pathways.
@@ -367,11 +328,11 @@ def estimate(
             ``target``. See :func:`~.workflow.get_compile_pipeline` for accepted values.
             Currently, only ``"top"``, ``0``, or the label of a marker placed before all
             transforms are supported. Defaults to ``"top"``.
-        target (str | int | Iterable[type | str] | dict[type | str, float]): The gate set to
-            project the resources onto, in any form accepted by the ``gate_set`` argument of
-            :func:`~.decompose`, or a single level of the compile pipeline: ``"top"``,
-            ``"user"``, ``"device"``, a marker label, or an ``int``. Any other ``str`` is the name
-            of a gate, as in :func:`~.decompose`. Defaults to ``"device"``.
+        target (str | int | Iterable[type | str] | dict[type | str, float]): The target onto
+            which the resources are projected: either a gate set or a single level of the
+            :class:`~.CompilePipeline`. See :func:`~.decompose` and
+            :func:`~.workflow.get_compile_pipeline` for the accepted gate sets and levels,
+            respectively. Defaults to ``"user"``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
@@ -422,40 +383,48 @@ def estimate(
     Since :func:`~.cancel_inverses` is ignored, both ``PauliX`` gates are counted. The ``CZ`` gate
     is decomposed into ``Hadamard`` and ``CNOT`` gates.
 
+    The gate set can also weight each gate by its cost, as in :func:`~.decompose`. With
+    ``ControlledPhaseShift`` at the same cost as the other gates, the ``CZ`` gate becomes a single
+    ``ControlledPhaseShift``:
+
+    >>> gate_set = {"PauliX": 1, "Hadamard": 1, "CNOT": 1, "RX": 1, "ControlledPhaseShift": 1}
+    >>> qp.estimate(circuit, target=gate_set)(1.23).resources.quantum_operations
+    {'ControlledPhaseShift': 1, 'PauliX': 2, 'RX': 1}
+
+    With a higher cost for ``ControlledPhaseShift``, the ``Hadamard`` and ``CNOT`` gates are
+    cheaper:
+
+    >>> gate_set["ControlledPhaseShift"] = 10
+    >>> qp.estimate(circuit, target=gate_set)(1.23).resources.quantum_operations
+    {'CNOT': 1, 'Hadamard': 2, 'PauliX': 2, 'RX': 1}
+
     .. details::
         :title: Pipeline levels as target
 
-        Instead of a gate set, ``target`` can be a single level of the compile pipeline, as given
-        by :func:`~.workflow.get_compile_pipeline`. The resources are then projected onto the
-        gates at that level:
+        Instead of a gate set, ``target`` can be a single ``level`` of the compile pipeline, as
+        given by :func:`~.workflow.get_compile_pipeline`. The resources are then projected onto
+        the gate set expected at that level:
 
-        * Before the device level, the gates are those of the last :func:`~.decompose` transform
-          before that level. If there is none, the resources are those at level 0, without any
-          decomposition.
-        * At the device level, as with the default ``target="device"``, the gates are those of
-          the last :func:`~.decompose` transform if the device supports all of them. Otherwise,
-          they are further decomposed into the gates supported by the QNode's device.
+        * If the ``target`` precedes ``target="device"``, the gate set is determined by the last
+          :func:`~.decompose` transform before the specified ``target``. If there is no such
+          transform, the resources are those at ``target="top"``, with a warning for any
+          ``target`` other than ``"top"`` or ``0``.
+        * With ``target="device"``, the gate set is determined by the device's supported gates.
+          If the last :func:`~.decompose` transform specifies exclusively device-supported gates,
+          that gate set is used as-is. Otherwise, the gates are further projected onto the gate
+          set supported by the QNode's device.
 
         Only the :func:`~.decompose` transforms are applied. The other transforms are skipped, as
         with ``level="top"``, and so are the device preprocessing transforms, such as
         :func:`~.transforms.split_non_commuting`. Therefore, the resources can differ from those
-        of :func:`~.analyze` at that level:
-
-        * Transforms that only remove, merge or reorder gates, such as :func:`~.cancel_inverses`,
-          :func:`~.merge_rotations` or :func:`~.combine_global_phases`, are skipped without a
-          warning. They do not add gate types, but the gate counts can be higher.
-        * Other transforms are skipped with a warning, since they may introduce new gates. For
-          example, the ``RZ`` and ``PhaseShift`` gates that :func:`~.transforms.gridsynth` would
-          approximate in the Clifford+T basis are left as they are, and the warning gives their
-          number and the ``epsilon`` of :func:`~.transforms.gridsynth`.
-
-        To include the skipped transforms, use :func:`~.analyze` at that level instead.
+        of :func:`~.analyze` at that level. For example, the gate counts can be higher without
+        :func:`~.cancel_inverses`, and the gates that :func:`~.transforms.gridsynth` would
+        approximate in the Clifford+T basis are left as they are. To include the skipped
+        transforms, use :func:`~.analyze` at that level instead.
 
         The resources can also differ from those of :func:`~.analyze` because ``estimate`` uses
         the resources that the decomposition rules declare, which can be upper bounds of the
         gates that they apply.
-
-        A marker label takes priority over a gate with the same name.
 
         For example, ``lightning.qubit`` does not support ``QFT``:
 
@@ -469,7 +438,7 @@ def estimate(
                 qp.QFT(wires=[0, 1])
                 return qp.probs()
 
-        >>> qp.estimate(circuit)().resources.quantum_operations
+        >>> qp.estimate(circuit, target="device")().resources.quantum_operations
         {'ControlledPhaseShift': 1, 'Hadamard': 2, 'SWAP': 1}
 
         The following circuit has two :func:`~.decompose` transforms, followed by
@@ -496,18 +465,17 @@ def estimate(
         >>> qp.estimate(circuit, target=2)().resources.quantum_operations
         {'CNOT': 5, 'GlobalPhase': 3, 'RY': 2, 'RZ': 5}
 
-        ``"user"`` comes after :func:`~.transforms.gridsynth`, which is skipped, so the gates are
-        those of the last :func:`~.decompose` transform. The same holds for ``"device"``, since
-        ``lightning.qubit`` supports all of them:
+        The default ``target="user"`` comes after :func:`~.transforms.gridsynth`, which is
+        skipped, so the gates are those of the last :func:`~.decompose` transform. The same holds
+        for ``"device"``, since ``lightning.qubit`` supports all of them:
 
-        >>> qp.estimate(circuit, target="user")().resources.quantum_operations
-        {'CNOT': 5, 'GlobalPhase': 3, 'RY': 2, 'RZ': 5}
         >>> qp.estimate(circuit)().resources.quantum_operations
         {'CNOT': 5, 'GlobalPhase': 3, 'RY': 2, 'RZ': 5}
+        >>> qp.estimate(circuit, target="device")().resources.quantum_operations
+        {'CNOT': 5, 'GlobalPhase': 3, 'RY': 2, 'RZ': 5}
 
-        Both raise a ``UserWarning`` that says how many ``RZ`` and ``PhaseShift`` gates are not
-        approximated in the Clifford+T basis. :func:`~.analyze` at ``level="user"`` includes the
-        gates of :func:`~.transforms.gridsynth`.
+        The ``RZ`` gates are not approximated in the Clifford+T basis. :func:`~.analyze` at
+        ``level="user"`` includes the gates of :func:`~.transforms.gridsynth`.
 
     .. details::
         :title: Custom decomposition rules

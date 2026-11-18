@@ -24,7 +24,6 @@ import pytest
 import pennylane as qp
 from pennylane.core.shots import Shots
 from pennylane.resource import CircuitSpecs, SpecsResources
-from pennylane.resource.estimate import _SAFE_TO_SKIP_TRANSFORMS
 
 catalyst = pytest.importorskip("catalyst")
 
@@ -43,9 +42,8 @@ def cz_with_ry(wires, **_):
     qp.RY(np.pi / 2, wires[1])
 
 
-# A pass that estimate does not know whether it changes the gates. It is never run, since
-# estimate skips it, so it does not need to exist in Catalyst.
-gate_changing_transform = qp.transform(pass_name="gate-changing-pass")
+# A pass that is never run, since estimate skips it, so it does not need to exist in Catalyst.
+custom_transform = qp.transform(pass_name="custom-pass")
 
 
 @qp.register_resources({qp.RY: 1, qp.X: 1})
@@ -398,6 +396,22 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         with pytest.raises(ValueError, match="Decomposition rule not found for operator RX"):
             qp.estimate(circuit, target={"Hadamard", "CNOT"})(0.5)
 
+    def test_single_gate_type_target(self, circuit):
+        """Test that a single gate type is a gate set with one gate, as in qp.decompose, and that
+        the error for an unreachable one names the operator."""
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
+        def swap_circuit():
+            qp.SWAP([0, 1])
+            return qp.probs()
+
+        specs = qp.estimate(swap_circuit, target=qp.CNOT)()
+        assert specs.resources.quantum_operations == {"CNOT": 3}
+
+        with pytest.raises(ValueError, match="Decomposition rule not found for operator .*: it"):
+            qp.estimate(circuit, target=qp.CNOT)(0.5)
+
     def test_other_compile_errors(self, circuit, monkeypatch):
         """Test that compile errors unrelated to a missing decomposition rule are raised as they
         are."""
@@ -590,14 +604,16 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
 
         assert specs.resources.counts == {"Hadamard": 4, "CNOT": 1, "RX": 1}
 
-    def test_target_device_is_default(self, circuit):
-        """Test that the default target is the gate set of the device, which supports every
-        operation in the circuit."""
+    def test_target_user_is_default(self, qnode):
+        """Test that the default target is the "user" level, as the default level of
+        qp.analyze."""
+
+        circuit = qp.qjit(qp.transforms.decompose(qnode, gate_set=TARGET))
 
         specs = qp.estimate(circuit)(0.5)
 
-        assert specs == qp.estimate(circuit, target="device")(0.5)
-        assert specs.resources.quantum_operations == {"Hadamard": 2, "CZ": 1, "RX": 1}
+        assert specs == qp.estimate(circuit, target="user")(0.5)
+        assert specs.resources.quantum_operations == {"Hadamard": 4, "CNOT": 1, "RX": 1}
 
     @pytest.mark.parametrize("target", [2, np.int64(2)])
     def test_device_level_target(self, circuit, target):
@@ -652,14 +668,39 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
 
         assert specs.resources.quantum_operations == {"Hadamard": 4, "CNOT": 1, "RX": 1}
 
-    @pytest.mark.parametrize("target", ["top", "user", 0, 1])
-    def test_level_target_without_decompose(self, circuit, target):
-        """Test that a level before the device level without a decompose transform before it
-        gives the resources at level 0."""
+    @pytest.mark.parametrize("target", ["top", 0])
+    def test_level_zero_target(self, circuit, target):
+        """Test that level 0 as target gives the resources at level 0 without a warning."""
 
-        specs = qp.estimate(circuit, target=target)(0.5)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
+            specs = qp.estimate(circuit, target=target)(0.5)
 
         assert specs.resources == qp.analyze(circuit, level=0)(0.5).resources
+
+    @pytest.mark.parametrize("target", ["user", 1])
+    def test_level_target_without_decompose(self, circuit, target):
+        """Test that a level before the device level without a decompose transform before it
+        gives the resources at level 0, with a warning."""
+
+        with pytest.warns(UserWarning, match="found no qp.decompose transform before target="):
+            specs = qp.estimate(circuit, target=target)(0.5)
+
+        assert specs.resources == qp.analyze(circuit, level=0)(0.5).resources
+        assert specs.resources.quantum_operations == {"Hadamard": 2, "CZ": 1, "RX": 1}
+
+    @pytest.mark.parametrize("with_marker", [False, True])
+    def test_default_target_without_transforms(self, qnode, with_marker):
+        """Test that the default target and a marker target warn without a decompose transform,
+        even at level 0."""
+
+        circuit = qp.qjit(qp.marker(qnode, "start") if with_marker else qnode)
+        kwargs = {"target": "start"} if with_marker else {}
+        target = kwargs.get("target", "user")
+
+        with pytest.warns(UserWarning, match=f"found no qp.decompose .* target='{target}'"):
+            specs = qp.estimate(circuit, **kwargs)(0.5)
+
         assert specs.resources.quantum_operations == {"Hadamard": 2, "CZ": 1, "RX": 1}
 
     @pytest.mark.parametrize(
@@ -703,7 +744,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             qp.QFT(wires=[0, 1])
             return qp.sample()
 
-        specs = qp.estimate(circuit)()
+        specs = qp.estimate(circuit, target="device")()
 
         expected = qp.analyze(circuit, level="device")().resources.quantum_operations
         assert specs.resources.quantum_operations == expected
@@ -714,7 +755,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
 
         circuit = qp.qjit(qp.transforms.decompose(qnode, gate_set=TARGET))
 
-        specs = qp.estimate(circuit)(0.5)
+        specs = qp.estimate(circuit, target="device")(0.5)
 
         assert specs.resources.quantum_operations == {"Hadamard": 4, "CNOT": 1, "RX": 1}
 
@@ -729,120 +770,48 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             qp.CNOT([0, 1])
             return qp.probs()
 
-        specs = qp.estimate(circuit)()
+        specs = qp.estimate(circuit, target="device")()
 
         assert specs.resources.quantum_operations == {"ControlledPhaseShift": 1, "Hadamard": 2}
         expected = qp.analyze(circuit, level="device")().resources.quantum_operations
         assert specs.resources.quantum_operations == expected
 
     @pytest.mark.parametrize("target", ["user", 2, "device"])
-    def test_gate_changing_transform_after_decompose(self, qnode, target):
-        """Test that a transform that may change the gates is skipped with a warning at every
-        target level after it."""
-
-        circuit = qp.transforms.decompose(qnode, gate_set=TARGET)
-        circuit = qp.qjit(gate_changing_transform(circuit))
-
-        with pytest.warns(UserWarning, match="skips the transform gate-changing-pass for"):
-            specs = qp.estimate(circuit, target=target)(0.5)
-
-        assert specs.resources.quantum_operations == {"Hadamard": 4, "CNOT": 1, "RX": 1}
-
-    @pytest.mark.parametrize("target", ["user", 2, "device"])
     def test_gridsynth_after_decompose(self, target):
-        """Test that the rotations that gridsynth would approximate are left as they are, with a
-        warning that gives their number and the epsilon of gridsynth."""
+        """Test that the rotations that gridsynth would approximate are left as they are, without
+        a warning."""
 
         @qp.qjit
-        @partial(qp.transforms.gridsynth, epsilon=1e-3)
+        @qp.transforms.gridsynth
         @qp.decompose(gate_set={"RZ", "Hadamard", "CNOT", "GlobalPhase"})
         @qp.qnode(qp.device("lightning.qubit", wires=2))
         def circuit(x):
             qp.CRX(x, [0, 1])
             return qp.probs()
 
-        match = "so 2 RZ and PhaseShift gates are not approximated .* with epsilon=0.001"
-        with pytest.warns(UserWarning, match=match):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
             specs = qp.estimate(circuit, target=target)(0.5)
 
         assert specs.resources.quantum_operations == {"CNOT": 2, "Hadamard": 2, "RZ": 2}
 
-    def test_gridsynth_counts_adjoint_rotations(self):
-        """Test that the warning for gridsynth also counts the adjoint rotations, which are
-        reported under their own names."""
-
-        @qp.qjit
-        @qp.transforms.gridsynth
-        @qp.qnode(qp.device("lightning.qubit", wires=1))
-        def circuit(x):
-            qp.adjoint(qp.RZ(x, 0))
-            qp.RZ(x, 0)
-            qp.adjoint(qp.PhaseShift(x, 0))
-            return qp.probs()
-
-        with pytest.warns(UserWarning, match="so 3 RZ and PhaseShift gates are not approximated"):
-            qp.estimate(circuit, target="user")(0.5)
-
-    def test_safe_to_skip_transforms_are_pass_names(self):
-        """Test that the transforms that are safe to skip are the pass names of transforms."""
-
-        transforms = (
-            qp.transforms.cancel_inverses,
-            qp.transforms.merge_rotations,
-            qp.transforms.combine_global_phases,
-            qp.transforms.split_to_single_terms,
-        )
-        assert _SAFE_TO_SKIP_TRANSFORMS == {transform.pass_name for transform in transforms}
-
-    @pytest.mark.parametrize("target", ["user", "device"])
-    def test_gridsynth_before_decompose(self, target):
-        """Test that the warning for gridsynth does not count the rotations if a decompose
-        transform comes after it, since gridsynth would not act on the rotations of that
-        decomposition."""
-
-        @qp.qjit
-        @qp.decompose(gate_set={"RZ", "Hadamard", "CNOT", "GlobalPhase"})
-        @qp.transforms.gridsynth
-        @qp.qnode(qp.device("lightning.qubit", wires=1))
-        def circuit(x):
-            qp.RX(x, 0)
-            return qp.probs()
-
-        with warnings.catch_warnings(record=True) as record:
-            warnings.simplefilter("always")
-            specs = qp.estimate(circuit, target=target)(0.5)
-
-        messages = [str(w.message) for w in record if "skips the transform" in str(w.message)]
-        assert len(messages) == 1
-        assert "gridsynth" in messages[0] and "although it may change the gates" in messages[0]
-        assert specs.resources.quantum_operations == {"Hadamard": 2, "RZ": 1}
-
-    def test_gridsynth_without_rotations(self, qnode):
-        """Test that gridsynth is skipped without a warning if no rotation is left for it."""
-
-        circuit = qp.transforms.decompose(qnode, gate_set=TARGET)
-        circuit = qp.qjit(qp.transforms.gridsynth(circuit))
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", UserWarning)
-            specs = qp.estimate(circuit, target="user")(0.5)
-
-        assert specs.resources.quantum_operations == {"Hadamard": 4, "CNOT": 1, "RX": 1}
-
     def test_unreachable_target_after_gridsynth(self):
         """Test that the error for a level target that can only be reached with a skipped
-        transform names the transform."""
+        transform names the skipped transforms."""
 
         @qp.qjit
         @qp.decompose(gate_set={"Hadamard", "S", "T", "CNOT", "GlobalPhase"})
+        @qp.transforms.cancel_inverses
         @qp.transforms.gridsynth
+        @qp.transforms.cancel_inverses
         @qp.decompose(gate_set={"RZ", "Hadamard", "CNOT", "GlobalPhase"})
         @qp.qnode(qp.device("null.qubit", wires=2))
         def circuit(x):
             qp.CRX(x, [0, 1])
             return qp.probs()
 
-        with pytest.raises(ValueError, match="skips the transform gridsynth, which may be needed"):
+        match = "skips the transforms cancel-inverses, gridsynth, which may be needed"
+        with pytest.raises(ValueError, match=match):
             qp.estimate(circuit, target="user")(0.5)
 
     @pytest.mark.parametrize(
@@ -851,12 +820,13 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             qp.transforms.combine_global_phases,
             qp.transforms.split_to_single_terms,
             catalyst.passes.cancel_inverses,
+            custom_transform,
         ],
     )
-    @pytest.mark.parametrize("target", ["user", "device"])
-    def test_gate_set_preserving_transform_after_decompose(self, qnode, transform, target):
-        """Test that a transform that keeps the gate set can come after the last decompose
-        transform."""
+    @pytest.mark.parametrize("target", ["user", 2, "device"])
+    def test_transform_after_decompose(self, qnode, transform, target):
+        """Test that a transform other than gridsynth after the last decompose transform is
+        skipped without a warning."""
 
         circuit = qp.qjit(transform(qp.transforms.decompose(qnode, gate_set=TARGET)))
 
@@ -874,23 +844,26 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         ],
     )
     @pytest.mark.parametrize("target", ["user", "device"])
-    def test_gate_changing_transform_not_after_last_decompose(
-        self, qnode, with_decompose, counts, target
-    ):
-        """Test that a transform that may change the gates is skipped with a warning if there is
-        no decompose transform before it, or if a decompose transform comes after it."""
+    def test_transform_not_after_last_decompose(self, qnode, with_decompose, counts, target):
+        """Test that a transform is skipped without a warning of its own if there is no decompose
+        transform before it, or if a decompose transform comes after it."""
 
         circuit = qnode
         if with_decompose:
             circuit = qp.transforms.decompose(circuit, gate_set=TARGET)
-        circuit = gate_changing_transform(circuit)
+        circuit = custom_transform(circuit)
         if with_decompose:
             circuit = qp.transforms.decompose(circuit, gate_set=TARGET)
         circuit = qp.qjit(circuit)
 
-        with pytest.warns(UserWarning, match="skips the transform gate-changing-pass"):
+        with warnings.catch_warnings(record=True) as record:
+            warnings.simplefilter("always")
             specs = qp.estimate(circuit, target=target)(0.5)
 
+        messages = [str(w.message) for w in record if issubclass(w.category, UserWarning)]
+        no_decompose = target == "user" and not with_decompose
+        assert len(messages) == no_decompose
+        assert all("found no qp.decompose transform" in message for message in messages)
         assert specs.resources.quantum_operations == counts
 
     @pytest.mark.parametrize("target", ["user", 2, "device"])
@@ -914,26 +887,6 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         specs = qp.estimate(circuit, target=1)(0.5)
         assert specs.resources.quantum_operations == {"Hadamard": 4, "CNOT": 1, "RX": 1}
 
-    def test_gridsynth_with_dynamic_loop(self):
-        """Test that the warning for gridsynth gives a symbolic number of rotations for a loop
-        with a runtime number of iterations."""
-
-        @qp.qjit(capture=True)
-        @qp.transforms.gridsynth
-        @qp.qnode(qp.device("null.qubit", wires=1))
-        def circuit(n):
-            @qp.for_loop(n)
-            def loop(i):
-                qp.RZ(0.3 * i, 0)
-
-            loop()
-            return qp.probs()
-
-        with pytest.warns(UserWarning, match="skips the transform gridsynth .*, so a RZ and"):
-            specs = qp.estimate(circuit, target="user")(3)
-
-        assert specs.resources.subs(a=3).quantum_operations == {"RZ": 3}
-
     @pytest.mark.parametrize("target", ["user", "device"])
     def test_catalyst_graph_decomposition(self, qnode, target):
         """Test that Catalyst's graph_decomposition pass is a decompose transform."""
@@ -944,13 +897,29 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
 
         assert specs.resources.quantum_operations == {"Hadamard": 4, "CNOT": 1, "RX": 1}
 
-    def test_unreachable_level_target(self, qnode):
+    @pytest.mark.parametrize("transform_after", [False, True])
+    def test_unreachable_level_target(self, qnode, transform_after):
         """Test that the error for a level target whose gate set cannot be reached names the
-        target."""
+        gate set and the target, but not the transforms after the last decompose transform,
+        which cannot help reach it."""
 
-        circuit = qp.qjit(qp.transforms.decompose(qnode, gate_set={"Hadamard", "CNOT"}))
+        circuit = qp.transforms.decompose(qnode, gate_set={"Hadamard", "CNOT"})
+        if transform_after:
+            circuit = qp.transforms.gridsynth(circuit)
+        circuit = qp.qjit(circuit)
 
-        with pytest.raises(ValueError, match="into the gate set at target='user'.$"):
+        match = r"into the gate set \['CNOT', 'Hadamard'\] at target='user'.$"
+        with pytest.raises(ValueError, match=match):
+            qp.estimate(circuit, target="user")(0.5)
+
+    def test_unreachable_level_target_after_transform(self, qnode):
+        """Test that the error for a level target that cannot be reached names the skipped
+        transform before the last decompose transform."""
+
+        circuit = qp.transforms.cancel_inverses(qnode)
+        circuit = qp.qjit(qp.transforms.decompose(circuit, gate_set={"Hadamard", "CNOT"}))
+
+        with pytest.raises(ValueError, match="skips the transform cancel-inverses, which may"):
             qp.estimate(circuit, target="user")(0.5)
 
     def test_unreachable_gate_set_before_level_target(self):
@@ -965,7 +934,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             qp.CNOT([0, 1])
             return qp.probs()
 
-        match = "operator CNOT: .* into the gate set .*RX.* of a qp.decompose transform before"
+        match = r"operator CNOT: .* into the gate set \['RX'\] of a qp.decompose transform before"
         with pytest.raises(ValueError, match=match):
             qp.estimate(circuit, target="user")()
 
@@ -979,7 +948,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         )
 
         with pytest.raises(NotImplementedError, match="could not find the gate set of the device"):
-            qp.estimate(circuit)(0.5)
+            qp.estimate(circuit, target="device")(0.5)
 
     def test_multi_controlled_gates_match_analyze(self):
         """Test that target="device" keeps the number of control wires of multi-controlled
@@ -992,27 +961,10 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             qp.ctrl(qp.RX(x, 3), [0, 1, 2])
             return qp.probs()
 
-        specs = qp.estimate(circuit)(0.1)
+        specs = qp.estimate(circuit, target="device")(0.1)
 
         assert specs.resources.quantum_operations == {"2C(RX)": 1, "3C(RX)": 1}
         expected = qp.analyze(circuit, level="device")(0.1).resources.quantum_operations
-        assert specs.resources.quantum_operations == expected
-
-    def test_pauli_product_ops_match_analyze(self):
-        """Test that the ops outside the decomposition graph, such as Pauli product measurements,
-        keep their names and weights, as qp.analyze does."""
-
-        @qp.qjit(capture=True)
-        @qp.qnode(qp.device("null.qubit", wires=2))
-        def circuit():
-            qp.H(0)
-            qp.pauli_measure("ZX", wires=[0, 1])
-            return qp.probs()
-
-        specs = qp.estimate(circuit, target={"Hadamard"})()
-
-        assert specs.resources.quantum_operations == {"Hadamard": 1, "PPM-w2": 1}
-        expected = qp.analyze(circuit, level=0)().resources.quantum_operations
         assert specs.resources.quantum_operations == expected
 
     def test_marker_target(self, qnode):
@@ -1022,16 +974,18 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         circuit = qp.marker(circuit, "after_cancel")
         circuit = qp.qjit(qp.transforms.decompose(circuit, gate_set=TARGET))
 
-        specs = qp.estimate(circuit, target="after_cancel")(0.5)
+        with pytest.warns(UserWarning, match="found no qp.decompose transform"):
+            specs = qp.estimate(circuit, target="after_cancel")(0.5)
 
         assert specs.resources.quantum_operations == {"Hadamard": 2, "CZ": 1, "RX": 1}
 
-    def test_marker_takes_priority_over_gate_name(self, qnode):
-        """Test that a marker label as target takes priority over a gate with the same name."""
+    def test_marker_target_with_gate_name(self, qnode):
+        """Test that a marker label as target is a level even if it is also a gate name."""
 
         circuit = qp.qjit(qp.transforms.decompose(qp.marker(qnode, "CNOT"), gate_set=TARGET))
 
-        specs = qp.estimate(circuit, target="CNOT")(0.5)
+        with pytest.warns(UserWarning, match="found no qp.decompose transform"):
+            specs = qp.estimate(circuit, target="CNOT")(0.5)
 
         assert specs.resources.quantum_operations == {"Hadamard": 2, "CZ": 1, "RX": 1}
 
@@ -1044,17 +998,20 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
 
     @pytest.mark.parametrize("target", ["gradient", "all-mlir"])
     def test_removed_level_target(self, circuit, target):
-        """Test that an error is raised for a level name that is no longer supported."""
+        """Test that an error is raised for a level name that is no longer supported, without
+        suggesting it as a gate name."""
 
-        with pytest.raises(ValueError, match="no longer supported"):
+        with pytest.raises(ValueError, match="no longer supported.$"):
             qp.estimate(circuit, target=target)(0.5)
 
-    def test_unknown_gate_name_target(self, circuit):
-        """Test that the error for a gate name target that is not a gate says that it is not a
-        level."""
+    @pytest.mark.parametrize("target", ["devices", "CNOT"])
+    def test_unknown_level_name_target(self, circuit, target):
+        """Test that an error is raised for a string target that is not a level, even if it is a
+        gate name, and that it says how to use it as a gate set."""
 
-        with pytest.raises(ValueError, match="target='devices' is not a level of the compile"):
-            qp.estimate(circuit, target="devices")(0.5)
+        match = rf"Invalid target='{target}': Marker name .* pass target={{'{target}'}}.$"
+        with pytest.raises(ValueError, match=match):
+            qp.estimate(circuit, target=target)(0.5)
 
     def test_level_name_in_gate_set_target(self, circuit):
         """Test that the error for a gate set target that contains a level name says how to use
@@ -1078,20 +1035,6 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
 
         with pytest.raises(ValueError, match=f"Invalid target={target}: .* from 0 to 2"):
             qp.estimate(circuit, target=target)(0.5)
-
-    def test_gate_name_target(self):
-        """Test that a string other than "device" and "user" is the name of the only gate in the
-        target gate set, as in qp.decompose."""
-
-        @qp.qjit
-        @qp.qnode(qp.device("lightning.qubit", wires=2))
-        def circuit():
-            qp.SWAP([0, 1])
-            return qp.probs()
-
-        specs = qp.estimate(circuit, target="CNOT")()
-
-        assert specs.resources.quantum_operations == {"CNOT": 3}
 
     def test_error_with_non_qjit(self):
         """Test that an error is raised if the QNode is not qjit'd."""
