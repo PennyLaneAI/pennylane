@@ -114,7 +114,7 @@ class ResourceConfig:
     def __init__(self) -> None:
         _DEFAULT_PRECISION = 1e-9
         _DEFAULT_PHASEGRAD_PRECISION = 1e-6
-        self.resource_op_precisions = {
+        self.resource_op_precisions: dict[type[ResourceOperator], dict[str, float | None]] = {
             RX: {"precision": _DEFAULT_PRECISION},
             RY: {"precision": _DEFAULT_PRECISION},
             RZ: {"precision": _DEFAULT_PRECISION},
