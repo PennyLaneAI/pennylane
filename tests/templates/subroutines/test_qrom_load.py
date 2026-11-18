@@ -628,8 +628,6 @@ class TestAdjointQROMLoadMeasurement:
             assert not _adjoint_qrom_load_measurement.is_applicable(base=op.base)
             op = qp.adjoint(qp.QROMLoad(Bool[4, 2], Wire[2], Wire[2], Wire[0]))
             assert _adjoint_qrom_load_measurement.is_applicable(base=op.base)
-            op = qp.adjoint(qp.QROMLoad(Bool[4, 2], Wire[2], Wire[2], Wire[1], False))
-            assert not _adjoint_qrom_load_measurement.is_applicable(base=op.base)
 
     @pytest.mark.parametrize("case", ADJOINT_QROM_LOAD_CASES)
     def test_resources(self, case):

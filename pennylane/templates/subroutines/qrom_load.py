@@ -583,16 +583,32 @@ def _one_hot_swap_triples(address_wires, one_hot_wires):
     ]
 
 
-def _adjoint_qrom_load_measurement_resources(base):
-    num_bitstrings = len(base.bitstrings)
-    num_control_wires = len(base.control_wires)
-    num_targets = len(base.target_wires)
-    num_aux_wires = num_targets + len(base.work_wires)
+def _measure_and_reset_resources(num_wires):
+    return {
+        PauliMeasure("X", wires=Wire[1]): num_wires,
+        PauliMeasure("Z", wires=Wire[1]): num_wires,
+        X: num_wires,
+    }
+
+
+def _measure_and_reset(wires):
+    r"""Measure each wire in the :math:`X` basis and reset it to :math:`|0\rangle`, returning the
+    outcomes of the :math:`X`-basis measurements."""
+    outcomes = []
+    for wire in wires:
+        outcome = pauli_measure("X", wire)
+        outcomes.append(outcome)
+        m_reset = pauli_measure("Z", wire)
+        cond(m_reset, X)(wire)
+    return outcomes
+
+
+def _phase_fixup_resources(num_entries, num_control_wires, num_aux_wires):
     num_one_hot_address = _adjoint_qrom_load_one_hot_size(
-        num_bitstrings, num_control_wires, num_aux_wires
+        num_entries, num_control_wires, num_aux_wires
     )
     k = 2**num_one_hot_address
-    num_columns = -(-num_bitstrings // k)
+    num_columns = -(-num_entries // k)
 
     fixup_qrom = QROM(
         Bool[num_columns, k],
@@ -601,15 +617,70 @@ def _adjoint_qrom_load_measurement_resources(base):
         Wire[num_aux_wires - k],
     )
     return {
-        PauliMeasure("X", wires=Wire[1]): num_targets,
-        PauliMeasure("Z", wires=Wire[1]): num_targets,
-        X: num_targets + 2,
+        X: 2,
         TemporaryAND: k - 1,
         CNOT: 2 * (k - 1),
         H: 2 * k,
         fixup_qrom: 1,
         qp_ops.adjoint(TemporaryAND(Wire[3])): k - 1,
     }
+
+
+def _phase_fixup(fixups, control_wires, aux_wires):
+    r"""Apply the phase :math:`(-1)^{f_i}` to each address :math:`i` of the control register,
+    for the bits :math:`f_i` in ``fixups``, and none to addresses beyond.
+
+    A :class:`~.QROM` of the fixup table over the most-significant address bits targets a one-hot
+    encoding of the :math:`n` least-significant address bits in :math:`k=2^n` auxiliary wires
+    that are prepared in the :math:`|\pm\rangle` states (Figure 6 of
+    `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__). The one-hot encoding is computed
+    with ``TemporaryAND`` gates and uncomputed with their adjoints (Figures 8 to 10). The first
+    :math:`k` auxiliary wires make up the one-hot register, and the remaining ones are passed on
+    to the ``QROM``. All auxiliary wires must be in the :math:`|0\rangle` state.
+    """
+    num_entries, num_control_wires = len(fixups), len(control_wires)
+    num_one_hot_address = _adjoint_qrom_load_one_hot_size(
+        num_entries, num_control_wires, len(aux_wires)
+    )
+    k = 2**num_one_hot_address
+    num_columns = -(-num_entries // k)
+
+    fixups = math.concatenate(
+        [fixups, math.zeros(num_columns * k - num_entries, dtype=int, like=fixups)]
+    )
+    fixup_table = math.cast(math.reshape(fixups, (num_columns, k)), bool)
+
+    high_wires = control_wires[: num_control_wires - num_one_hot_address]
+    low_wires = control_wires[num_control_wires - num_one_hot_address :]
+
+    one_hot_wires = list(aux_wires[:k])
+    triples = _one_hot_swap_triples(low_wires, one_hot_wires)
+
+    X(one_hot_wires[0])
+    for control, x, y in triples:
+        TemporaryAND([control, x, y])
+        CNOT([y, x])
+
+    for wire in one_hot_wires:
+        H(wire)
+    QROM(fixup_table, high_wires, one_hot_wires, aux_wires[k:])
+    for wire in one_hot_wires:
+        H(wire)
+
+    for control, x, y in reversed(triples):
+        CNOT([y, x])
+        qp_ops.adjoint(TemporaryAND)(wires=[control, x, y])
+    X(one_hot_wires[0])
+
+
+def _adjoint_qrom_load_measurement_resources(base):
+    num_targets = len(base.target_wires)
+    resources = _phase_fixup_resources(
+        len(base.bitstrings), len(base.control_wires), num_targets + len(base.work_wires)
+    )
+    for op, count in _measure_and_reset_resources(num_targets).items():
+        resources[op] = resources.get(op, 0) + count
+    return resources
 
 
 @register_condition(
@@ -653,49 +724,10 @@ def _adjoint_qrom_load_measurement(base):
     :math:`X` measurements.
     """
     bitstrings = math.cast(base.bitstrings, int)
-    control_wires, target_wires = base.control_wires, base.target_wires
-    aux_wires = Wires(target_wires) + Wires(base.work_wires)
-    num_bitstrings, num_control_wires = len(bitstrings), len(control_wires)
-    num_one_hot_address = _adjoint_qrom_load_one_hot_size(
-        num_bitstrings, num_control_wires, len(aux_wires)
-    )
-    k = 2**num_one_hot_address
-    num_columns = -(-num_bitstrings // k)
-
-    outcomes = []
-    for wire in target_wires:
-        outcome = pauli_measure("X", wire)
-        outcomes.append(outcome)
-        m_reset = pauli_measure("Z", wire)
-        cond(m_reset, X)(wire)
-
+    target_wires = base.target_wires
+    outcomes = _measure_and_reset(target_wires)
     fixups = math.dot(bitstrings, math.cast(math.stack(outcomes), int)) % 2
-    fixups = math.concatenate(
-        [fixups, math.zeros(num_columns * k - num_bitstrings, dtype=int, like=fixups)]
-    )
-    fixup_table = math.cast(math.reshape(fixups, (num_columns, k)), bool)
-
-    high_wires = control_wires[: num_control_wires - num_one_hot_address]
-    low_wires = control_wires[num_control_wires - num_one_hot_address :]
-
-    one_hot_wires = list(aux_wires[:k])
-    triples = _one_hot_swap_triples(low_wires, one_hot_wires)
-
-    X(one_hot_wires[0])
-    for control, x, y in triples:
-        TemporaryAND([control, x, y])
-        CNOT([y, x])
-
-    for wire in one_hot_wires:
-        H(wire)
-    QROM(fixup_table, high_wires, one_hot_wires, aux_wires[k:])
-    for wire in one_hot_wires:
-        H(wire)
-
-    for control, x, y in reversed(triples):
-        CNOT([y, x])
-        qp_ops.adjoint(TemporaryAND)(wires=[control, x, y])
-    X(one_hot_wires[0])
+    _phase_fixup(fixups, base.control_wires, Wires(target_wires) + Wires(base.work_wires))
 
 
 add_decomps(QROMLoad, _select_swap, _qrom_load_to_qrom)
