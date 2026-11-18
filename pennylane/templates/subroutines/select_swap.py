@@ -248,18 +248,14 @@ def _select_swap(bitstrings, control_wires, target_wires, work_wires):
 
 
 def _swap_permutations(depth):
-    """For each value ``l`` of the SWAP control wires, the permutation ``perm`` of a column of
+    """For each value ``l`` of the SWAP control wires, the permutation ``perms[l]`` of a column of
     ``depth`` bitstrings applied by the SWAP network of ``_swap_ops``, which moves bitstring
-    ``perm[p]`` of the column into position ``p``."""
-    log_depth = depth.bit_length() - 1
-    perms = []
-    for l in range(depth):
-        perm = list(range(depth))
-        for i in range(log_depth - 1, -1, -1):
-            if (l >> i) & 1:
-                for j in range(2**i):
-                    perm[j], perm[j + 2**i] = perm[j + 2**i], perm[j]
-        perms.append(perm)
+    ``perms[l, p]`` of the column into position ``p``. The SWAP layer controlled on bit ``i`` of
+    ``l`` exchanges the first two blocks of ``2**i`` positions."""
+    perms = math.tile(math.arange(depth), (depth, 1))
+    for i in reversed(range(depth.bit_length() - 1)):
+        swapped = (math.arange(depth) >> i) & 1 == 1
+        perms[swapped, : 2 ** (i + 1)] = math.roll(perms[swapped, : 2 ** (i + 1)], 2**i, axis=1)
     return perms
 
 
@@ -313,7 +309,7 @@ def _adjoint_select_swap_measurement(base):
     parities = math.dot(bitstrings, math.transpose(outcomes))
     padding = math.zeros((num_columns * depth - num_bitstrings, depth), dtype=int, like=parities)
     parities = math.reshape(math.concatenate([parities, padding]), (num_columns, depth, depth))
-    perms = math.array(_swap_permutations(depth))
+    perms = _swap_permutations(depth)
     fixups = math.sum(parities[:, perms, math.arange(depth)], axis=-1) % 2
 
     _phase_fixup(
