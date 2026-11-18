@@ -204,7 +204,7 @@ def _rzlayer_hwp_synthesis(angles, wires, work_wires):
         work_wires = [*work_wires, *extra_work_wires]
 
         def _block(i):
-            block_wires = wires[i * block_size : (i + 1) * block_size]
+            block_wires = [wires[i * block_size + j] for j in range(block_size)]
             hw_wires = block_wires[:num_hw_wires]
             out_wires = [hw_wires[-1], *work_wires[: num_hw_wires.bit_length() - 1]]
 

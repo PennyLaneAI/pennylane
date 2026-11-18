@@ -11,13 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the private in-place Hamming-weight helpers."""
+"""Tests for the private in-place Hamming-weight helper."""
 
 from collections import Counter
 from functools import partial
 
 import numpy as np
-import phase_gradient_helpers
 import pytest
 
 import pennylane as qp
@@ -27,65 +26,65 @@ from pennylane.templates.subroutines.arithmetic.hamming_weight import _hamming_w
 GATE_COUNTS = [(1, 0, 0), (2, 1, 1), (3, 1, 5), (4, 3, 7), (5, 3, 11), (6, 4, 16), (7, 4, 20)]
 
 
-def _registers(n):
-    """Input wires, work wires, and the wires holding the Hamming weight, least significant bit
-    first, for n input bits."""
+def _hamming_weight_circuit(n):
+    """Quantum function that copies the Hamming weight of ``n`` wires in a uniform superposition
+    onto output wires, least significant bit first, computing and uncomputing it with
+    :func:`~._hamming_weight` in a :func:`~.change_op_basis`, and returns the probabilities of
+    the input, work and output wires."""
     wires = list(range(n))
     work_wires = list(range(n, 2 * n - n.bit_count()))
-    return wires, work_wires, [wires[-1], *work_wires[: n.bit_length() - 1]]
+    out_wires = [wires[-1], *work_wires[: n.bit_length() - 1]]
+    copy_wires = list(range(2 * n - n.bit_count(), 2 * n - n.bit_count() + n.bit_length()))
 
+    def copy_out():
+        for out_wire, copy_wire in zip(out_wires, copy_wires):
+            qp.CNOT([out_wire, copy_wire])
 
-@pytest.mark.parametrize("n", range(1, 8))
-def test_outputs_hold_hamming_weight(n):
-    """Test that the last input wire and the first work wires hold the Hamming weight of every
-    basis input, least significant bit first."""
-    wires, work_wires, out_wires = _registers(n)
-    num_wires = len(wires) + len(work_wires)
-
-    ops = phase_gradient_helpers.record(_hamming_weight, wires, work_wires)
-    x_bits = qp.math.int_to_binary(np.arange(2**n), n)
-    inputs = np.hstack([x_bits, np.zeros((2**n, len(work_wires)), dtype=int)])
-    outputs = phase_gradient_helpers.basis_outputs(ops, num_wires, inputs)
-    weights = outputs[:, out_wires] @ 2 ** np.arange(len(out_wires))
-    assert np.array_equal(weights, x_bits.sum(axis=1))
-
-
-@pytest.mark.usefixtures("enable_and_disable_capture")
-@pytest.mark.parametrize("n", range(2, 8))
-def test_change_op_basis_uncomputes(n):
-    """Test that a target applied in a ``change_op_basis`` with the Hamming-weight circuit as
-    compute block (default uncompute) sees the Hamming weight, and that the inputs and the work
-    wires are restored, on every basis input. For n = 1, the compute block would be empty."""
-    wires, work_wires, out_wires = _registers(n)
-    num_work, num_out = len(work_wires), len(out_wires)
-    num_wires = n + num_work + num_out
-
-    def qfunc(wires, work_wires, copy_wires):
-        def copy_out():
-            out_wires = [wires[-1], *work_wires[: num_out - 1]]
-            for out_wire, copy_wire in zip(out_wires, copy_wires):
-                qp.CNOT([out_wire, copy_wire])
-
+    def circuit():
+        for wire in wires:
+            qp.H(wire)
         qp.change_op_basis(partial(_hamming_weight, wires, work_wires), copy_out)
+        return qp.probs(wires=wires + work_wires + copy_wires)
 
-    copy_wires = list(range(n + num_work, num_wires))
-    ops = phase_gradient_helpers.record(qfunc, wires, work_wires, copy_wires)
-    x_bits = qp.math.int_to_binary(np.arange(2**n), n)
-    inputs = np.hstack([x_bits, np.zeros((2**n, num_work + num_out), dtype=int)])
-    outputs = phase_gradient_helpers.basis_outputs(ops, num_wires, inputs)
-    weight_bits = qp.math.int_to_binary(x_bits.sum(axis=1), num_out)[:, ::-1]
-    zeros = np.zeros((2**n, num_work), dtype=int)
-    assert np.array_equal(outputs, np.hstack([x_bits, zeros, weight_bits]))
+    return circuit
+
+
+def _expected_probs(n):
+    """Uniform probabilities of the inputs ``x``, zeroed work wires and the Hamming weight of
+    ``x``, least significant bit first."""
+    num_work, num_out = n - n.bit_count(), n.bit_length()
+    probs = np.zeros(2 ** (n + num_work + num_out))
+    for x in range(2**n):
+        probs[(x << num_work + num_out) + int(f"{x.bit_count():0{num_out}b}"[::-1], 2)] = 2**-n
+    return probs
+
+
+@pytest.mark.parametrize("n", range(2, 8))
+def test_computes_and_uncomputes_hamming_weight(n):
+    """Test that the Hamming weight ends up on the last input wire and the first work wires, and
+    that its uncomputation restores the inputs and the work wires, for all basis inputs at once.
+    For n = 1, the compute block would be empty."""
+    circuit = qp.qnode(qp.device("default.qubit"))(_hamming_weight_circuit(n))
+    assert np.allclose(circuit(), _expected_probs(n))
+
+
+@pytest.mark.catalyst
+def test_qjit():
+    """Test that the Hamming-weight circuit compiles and computes the Hamming weight with qjit."""
+    pytest.importorskip("catalyst")
+    n = 5
+    num_wires = int(np.log2(len(_expected_probs(n))))
+    dev = qp.device("lightning.qubit", wires=num_wires)
+    circuit = qp.qjit(qp.qnode(dev)(_hamming_weight_circuit(n)), capture=True)
+    assert np.allclose(circuit(), _expected_probs(n))
 
 
 @pytest.mark.parametrize("n, num_ands, num_cnots", GATE_COUNTS)
 def test_gate_counts(n, num_ands, num_cnots):
     """Test that the circuit uses n - popcount(n) ANDs, each with its own work wire as target, and
     5n - 4 * n.bit_length() - popcount(n) CNOTs, and no other gates."""
-    wires, work_wires, _ = _registers(n)
-    assert len(work_wires) == num_ands
-
-    ops = qp.tape.make_qscript(_hamming_weight)(wires, work_wires).operations
+    work_wires = list(range(n, n + num_ands))
+    ops = qp.tape.make_qscript(_hamming_weight)(range(n), work_wires).operations
     counts = Counter(type(op) for op in ops)
     assert set(counts) <= {qp.TemporaryAND, qp.CNOT}
     assert (counts[qp.TemporaryAND], counts[qp.CNOT]) == (num_ands, num_cnots)

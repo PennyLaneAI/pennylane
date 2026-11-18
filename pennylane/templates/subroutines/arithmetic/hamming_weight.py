@@ -84,7 +84,7 @@ def _hamming_weight(wires, work_wires):
      CNOT(wires=[1, 2]), CNOT(wires=[0, 2])]
 
     """
-    log_n = len(wires).bit_length()
+    log_n = len(wires).bit_length() - 1
     out_wires, spare_wires = work_wires[:log_n], work_wires[log_n:]
     for j in range(log_n):
         *addends, total = wires
