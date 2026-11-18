@@ -833,6 +833,24 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         mat = qp.matrix(decomp, wire_order=[2, 3, 4])
         assert qp.math.allclose(mat, expected_matrix)
 
+    @pytest.mark.catalyst
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_isingzz_qjit_without_toffoli(self):
+        """Captured controlled IsingZZ compiles and can be analyzed without Toffoli (#10357)."""
+        gate_set = {qp.CNOT, qp.RZ, qp.GlobalPhase, qp.PauliX}
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("null.qubit", wires=5))
+        def circuit(angle):
+            qp.ctrl(qp.IsingZZ(angle, wires=[2, 3]), control=[4])
+            return qp.state()
+
+        operations = qp.analyze(circuit, level="user")(0.6931).resources.quantum_operations
+        assert operations["CNOT"] > 0
+        assert operations["RZ"] > 0
+        assert set(operations).issubset({"CNOT", "RZ", "GlobalPhase", "PauliX"})
+
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_multirz_decomposition_graph(self):
         r"""Controlling ``MultiRZ`` should control only the inner ``RZ``, leaving the conjugating
