@@ -22,7 +22,6 @@ import pennylane as qp
 from pennylane.transforms import decomp_inspector
 
 
-# pylint: disable=protected-access
 class TestInspectDecompGraph:
     """Tests the decomp_inspector transform."""
 

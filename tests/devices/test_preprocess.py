@@ -597,7 +597,6 @@ class TestDecomposeTransformations:
     ):
         """Test that decompose works correctly when passing through ``fixed_decomps``
         and/or ``alt_decomps`` with the graph-based decomposer."""
-        # pylint: disable=too-many-arguments
 
         # Mock a simple target gate set
         target_gates = {"Hadamard": 1, "RX": 5, "RY": 5, "PhaseShift": 5, "GlobalPhase": 0}

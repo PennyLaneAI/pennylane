@@ -57,7 +57,7 @@ def test_resources():
 
 
 @pytest.mark.system
-class TestCorrectness:  # pylint: disable=too-few-public-methods
+class TestCorrectness:
     """Tests the correctness of the template in a qnode."""
 
     @pytest.mark.parametrize(

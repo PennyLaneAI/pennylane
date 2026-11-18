@@ -767,7 +767,6 @@ class TestControlledSelectTHC:
 
     def test_control_reaches_only_the_reflection(self):
         """The QROM loads and the phase-gradient additions stay uncontrolled."""
-        # pylint: disable=protected-access
         ntot, _, args = self._case(3)
         control = ntot
 

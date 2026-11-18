@@ -103,7 +103,7 @@ class EdgeType:  # pylint: disable=too-few-public-methods
 
 @partial(transform, is_informative=True)
 @_needs_pyzx
-def to_zx(tape, expand_measurements=False):  # pylint: disable=too-many-statements
+def to_zx(tape, expand_measurements=False):
     """This transform converts a PennyLane quantum tape to a ZX-Graph in the `PyZX framework <https://pyzx.readthedocs.io/en/latest/>`_.
     The graph can be optimized and transformed by well-known ZX-calculus reductions.
 

@@ -1234,7 +1234,7 @@ def test_measurement_shape_matches_default_qubit(mp, x, shots):
     assert qp.math.shape(res) == qp.math.shape(target)
 
 
-class TestNullQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
+class TestNullQubitGraphModeExclusive:
     """Tests for NullQubit features that require graph mode enabled.
     The legacy decomposition mode should not be able to run these tests.
     NOTE: All tests in this suite will auto-enable graph mode via fixture.

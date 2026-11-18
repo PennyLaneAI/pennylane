@@ -324,6 +324,7 @@ class NullQubit(Device):
                 original_stopping_condition = t.kwargs["stopping_condition"]
 
                 def new_stopping_condition(op):
+                    # pylint: disable-next=cell-var-from-loop
                     return not has_decomp(op) or original_stopping_condition(op)
 
                 t.kwargs["stopping_condition"] = new_stopping_condition
