@@ -254,8 +254,9 @@ class SemiAdder(Operator2):
     The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4` where :math:`4 \mod 2^2 = 0`.
 
     The PPM decompositions require capture or an active compiler and ``len(y_wires) + 1``
-    zeroed work wires, plus one per control. Supply these wires explicitly when using
-    :func:`~.decompose`; its native graph pass cannot yet allocate them.
+    zeroed work wires, plus one per control. Direct calls to the rules allocate missing
+    work wires. Supply these wires explicitly when using :func:`~.decompose`; its native
+    graph pass cannot yet allocate them.
 
     .. details::
         :title: Available decompositions
@@ -486,6 +487,8 @@ def _ppm_ladder(x_wires, y_wires, work_wires):
     num_y_wires = len(y_wires)
 
     aux = work_wires[num_y_wires - 1]
+    # TODO: Specialize the first carry and missing-input blocks in both PPM ladders
+    # to remove the dedicated zero wire.
     zero = work_wires[num_y_wires]
 
     # Turn wires from big endian to little endian.
@@ -509,11 +512,9 @@ def _semi_adder_ppm_work_wires(y_wires=None, work_wires=(), **_):
     return {"zeroed": max(len(y_wires) + 1 - len(work_wires), 0)}
 
 
-def _semi_adder_ppm_condition(x_wires=None, y_wires=None, **_):
+def _semi_adder_ppm_condition(*_, **__):
     """Measurements inside conditional branches require capture or an active compiler."""
-    if not (capture.enabled() or compiler.active()):
-        return False
-    return len(x_wires) > 0 and len(y_wires) > 0
+    return capture.enabled() or compiler.active()
 
 
 def _semi_adder_ppm_resources(y_wires=None, **_):
@@ -543,7 +544,16 @@ def _semi_adder_ppm_resources(y_wires=None, **_):
 @register_condition(_semi_adder_ppm_condition)
 @register_resources(_semi_adder_ppm_resources, work_wires=_semi_adder_ppm_work_wires, exact=False)
 def _semi_adder_ppm(x_wires, y_wires, work_wires=None):
-    """Gidney's Fig. 2 in PPRs and PPMs, using ``len(y_wires) + 1`` zeroed work wires."""
+    """Gidney's Fig. 2 in PPRs and PPMs, using ``len(y_wires) + 1`` zeroed work wires.
+
+    For three output bits, with bit 0 least significant, the block order is::
+
+        left(0) --> left(1) --> last(2) --> right(1) --> right(0)
+
+    Each left block writes a sum bit and the next carry; each right block erases
+    that carry. Left/last blocks share one auxiliary, while right blocks reuse
+    their outgoing carry. The work wires also include one wire held at zero.
+    """
     work_wires = [] if work_wires is None else list(work_wires)
     num_missing = max(len(y_wires) + 1 - len(work_wires), 0)
     with allocate(num_missing, restored=True) as new_wires:
@@ -747,7 +757,7 @@ def _ppm_controlled_ladder(base, control, work_wires):
 
 
 def _controlled_semi_adder_ppm_condition(base, control_wires, **_):
-    """Conditional measurements require capture or a compiler and nonempty registers."""
+    """The PPM rule requires capture or an active compiler and at least one control."""
     return len(control_wires) > 0 and _semi_adder_ppm_condition(base.x_wires, base.y_wires)
 
 
@@ -797,6 +807,15 @@ def _controlled_semi_adder_ppm(
 ):
     """Gidney's Fig. 4 in PPRs and PPMs, with a TemporaryAND ladder for multiple controls.
 
+    For three output bits, with bit 0 least significant, the block order is::
+
+        carry(0) --> carry(1) --> sum(2) --> erase(1) --> sum(1) --> erase(0) --> sum(0)
+
+    Carry blocks leave both input registers unchanged. Each lower sum reuses the
+    outgoing carry erased immediately before it for its temporary AND; the top
+    sum has a separate work wire. Control flags are computed before this sequence
+    and erased afterwards. The shared auxiliary is reset after the final sum.
+
     Uses ``len(base.y_wires) + len(control_wires) + 1`` zeroed work wires and restores them.
     """
     zeroed_wires = list(base.work_wires)
@@ -811,7 +830,8 @@ def _controlled_semi_adder_ppm(
             num_ladder_wires : num_ladder_wires + num_controls - 1
         ]
         for i in range(num_controls - 1):
-            # Inline the PPR rule: native template lowering cannot span allocated registers.
+            # Reuse the existing PPR rule directly: native lowering of TemporaryAND cannot
+            # combine allocated and existing wire registers yet.
             _temporary_and_ppr(
                 [control_chain[i], control_wires[i + 1], control_chain[i + 1]], [True, True]
             )

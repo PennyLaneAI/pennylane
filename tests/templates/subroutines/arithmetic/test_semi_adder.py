@@ -761,8 +761,8 @@ class TestControlledSemiAdderPPM:
     @pytest.mark.catalyst
     @pytest.mark.parametrize("num_provided", [0, 2, 5])
     @pytest.mark.parametrize("num_controls", [1, 2, 3])
-    def test_compiled_allocation(self, num_provided, num_controls):
-        """Compile control ladders with provided, allocated or mixed work registers."""
+    def test_direct_rule_compiled_allocation(self, num_provided, num_controls):
+        """Direct rule calls compile with provided, allocated or mixed work registers."""
         num_wires = num_controls + 3 + num_provided
         base = qp.SemiAdder(
             [num_controls],
@@ -778,6 +778,7 @@ class TestControlledSemiAdderPPM:
             for wire in range(num_controls + 1):
                 qp.X(wire)
             qp.X(num_controls + 2)
+            # Invoke the rule directly; native graph decomposition cannot allocate these wires.
             _controlled_semi_adder_ppm(base, Wires(range(num_controls)))
             return qp.probs(wires=range(num_wires))
 
@@ -875,8 +876,8 @@ class TestSemiAdderPPM:
 
     @pytest.mark.capture
     @pytest.mark.parametrize("num_controls", [0, 1, 2, 3])
-    def test_graph_selects_ppm_with_allocated_work_wires(self, num_controls):
-        """A base with only carry wires can use PPM when the graph has enough spare wires."""
+    def test_graph_selects_ppm_with_spare_work_wire_budget(self, num_controls):
+        """Graph planning selects PPM when the spare work-wire budget is sufficient."""
         base = qp.SemiAdder(
             range(num_controls, num_controls + 2),
             range(num_controls + 2, num_controls + 4),
@@ -904,9 +905,17 @@ class TestSemiAdderPPM:
         solution = graph.solve(num_work_wires=needed)
         assert solution.decomposition(op, num_work_wires=needed).name == expected_rule
 
-    def test_condition_without_compiler(self):
-        """Test that the PPM decomposition is not applicable without an active compiler."""
-        assert _semi_adder_ppm_condition(Wire[3], Wire[3], work_wires=Wire[3]) is False
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("compiler_active", [False, True])
+    def test_condition(self, compiler_active, mocker):
+        """The PPM rule is applicable with capture or an active compiler."""
+        mocker.patch(
+            "pennylane.templates.subroutines.arithmetic.semi_adder.compiler.active",
+            return_value=compiler_active,
+        )
+        assert _semi_adder_ppm_condition(Wire[3], Wire[3], work_wires=Wire[3]) is (
+            qp.capture.enabled() or compiler_active
+        )
 
     @pytest.mark.parametrize(
         ("num_y_wires", "num_provided", "expected"),
