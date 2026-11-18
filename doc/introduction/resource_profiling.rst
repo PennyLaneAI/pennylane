@@ -237,6 +237,6 @@ Circuit Depth: 6
 Additional resources
 --------------------
 
-For other ways to inspect a circuit, such as circuit drawing and debugging, see
-:doc:`inspecting circuits <inspecting_circuits>`. For more details on decompositions and on
-specifying a gate set, see :doc:`compiling circuits <compiling_circuits>`.
+For debugging compiled programs, see :doc:`inspecting circuits <inspecting_circuits>`. For more
+details on decompositions and on specifying a gate set, see
+:doc:`compiling circuits <compiling_circuits>`.
