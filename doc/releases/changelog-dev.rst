@@ -902,7 +902,7 @@ Improvements 🛠
   convention: by default, only the first positional argument is differentiated.
   :class:`~.GradientDescentOptimizer` and its subclasses raise an error for JAX parameters
   and point to native JAX optimizers such as Optax.
-  `(#XXXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXXX>`__
+  `(#10560) <https://github.com/PennyLaneAI/pennylane/pull/10560>`__
 
 * :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
   powers that can simplify eagerly for faster execution, while the other uses nested
