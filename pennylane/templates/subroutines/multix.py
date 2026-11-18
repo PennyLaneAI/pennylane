@@ -27,6 +27,7 @@ from pennylane.decomposition import add_decomps, register_condition, register_re
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.ops import CNOT, GlobalPhase, Hadamard, PauliX, PauliZ, adjoint, cond
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
+from pennylane.ops.op_math.controlled2 import _make_controlled_decomp
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_involutory
 from pennylane.ops.op_math.prod2 import _multi_temporary_and_all_ones
@@ -91,14 +92,9 @@ class MultiX(Operator2):
 
                 :class:`~.X` | :math:`\sum_i b_i \leq n` (one per :math:`b_i=1`) | 2
 
-        With one control wire, ``C(MultiX)`` also has a lattice-surgery decomposition
-        using three :func:`~.pauli_measure` operations and one auxiliary qubit initialized
-        in :math:`|0\rangle` and consumed in :math:`|+\rangle`. The measurements are
-        :math:`Z_c X_a`, :math:`Z_a \bigotimes_i X_i^{b_i}`, and :math:`X_a`, followed
-        by conditional Pauli and global-phase corrections. Both control values and
-        dynamically supplied bitstrings are supported; traced bitstrings require
-        numeric target wire labels. Resource estimates include each possible width
-        of the second measurement, although only one is executed.
+        Single-control ``C(MultiX)`` supports a lattice-surgery decomposition using three
+        :func:`~.pauli_measure` operations and one consumed auxiliary qubit. Both control
+        values are supported; traced bitstrings require numeric target wire labels.
     """
 
     dynamic_argnames = ("bitstring",)
@@ -455,20 +451,10 @@ def _controlled_multix_ladder(base, control_wires, work_wires, work_wire_type, *
         _multix_ladder_fanout(base, control_wires, work_wires=available + list(allocated))
 
 
-def _controlled_multix_resources(base, **_):
-    return {CNOT: len(base.wires), PauliX: 2}
-
-
-@register_condition(lambda control_wires, **_: len(control_wires) == 1)
-@register_resources(_controlled_multix_resources, exact=False)
-def _controlled_multix(base, control_wires, control_values, **_):
-    """Decompose a single-control MultiX into CNOTs without auxiliary wires."""
-    cond(math.logical_not(control_values[0]), PauliX)(control_wires[0])
-    for i, wire in enumerate(base.wires):
-        cond(base.bitstring[i], CNOT)(wires=[control_wires[0], wire])
-    cond(math.logical_not(control_values[0]), PauliX)(control_wires[0])
-
-
+# Keep the existing unitary fallback ahead of the PPM alternative.
+_controlled_multix = _make_controlled_decomp(_multix_decomposition)
+_controlled_multix.name = "_controlled_multix"
+_controlled_multix.add_condition(lambda control_wires, **_: len(control_wires) == 1)
 add_decomps("C(MultiX)", flip_zero_control2(_controlled_multix_ladder), _controlled_multix)
 
 
@@ -478,23 +464,17 @@ def _measure_z_multix(work_wire, bitstring, wires):
         targets = [wire for wire, bit in zip(wires, bitstring) if bit]
         return pauli_measure("Z" + "X" * len(targets), [work_wire, *targets])
 
-    # PauliMeasure requires a static word and number of wires. Group selected targets
-    # first, then choose a measurement of fixed width, as in QROM's masked measurement.
+    # Each branch has a fixed measurement width, with selected targets grouped first.
     selected = math.array(wires, like="jax")[math.argsort(math.logical_not(bitstring))]
     weight = math.sum(bitstring)
-    num_targets = len(bitstring)
-
-    def measure_width(width):
-        return pauli_measure("Z" + "X" * width, [work_wire, *selected[:width]])
-
-    return cond(
-        weight == 0,
-        partial(measure_width, 0),
-        partial(measure_width, num_targets),
-        elifs=tuple(
-            (weight == width, partial(measure_width, width)) for width in range(1, num_targets)
-        ),
-    )()
+    measurement = partial(pauli_measure, "Z", [work_wire])
+    for width in range(1, len(bitstring) + 1):
+        measurement = cond(
+            weight == width,
+            partial(pauli_measure, "Z" + "X" * width, [work_wire, *selected[:width]]),
+            measurement,
+        )
+    return measurement()
 
 
 def _controlled_multix_lattice_surgery_ppm_resources(base, *_, **__):

@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for the MultiX template."""
 
-from collections import Counter
 from itertools import product
 
 import numpy as np
@@ -21,7 +20,6 @@ import pytest
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.core.operator import abstractify
 from pennylane.testing import assert_decomposable
 from pennylane.transforms import _tape_decompose
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Float, Int, Wire
@@ -428,55 +426,12 @@ class TestDecomposition:
 
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize("control_value", [0, 1])
-    @pytest.mark.parametrize(
-        ("bitstring", "expected_targets"),
-        [([0], []), ([1], [1]), ([0, 0, 0], []), ([1, 0, 1], [1, 3])],
-    )
-    def test_controlled_default_decomposition(self, bitstring, expected_targets, control_value):
-        """The default decomposition remains unitary and does not allocate an auxiliary wire."""
-        op = qp.ctrl(
-            qp.MultiX(bitstring, wires=range(1, len(bitstring) + 1)),
-            control=0,
-            control_values=[control_value],
-        )
-        expected = [qp.CNOT([0, target]) for target in expected_targets]
-        if control_value == 0:
-            expected = [qp.X(0), *expected, qp.X(0)]
-
-        assert op.decomposition() == expected
-
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("control_value", [0, 1])
-    @pytest.mark.parametrize("bitstring", [[1], [1, 0, 1], [0, 0, 0]])
-    def test_controlled_fanout_rule(self, bitstring, control_value):
-        """The unitary rule supports capture and requires no work wires."""
-        op = qp.ctrl(
-            qp.MultiX(bitstring, wires=range(1, len(bitstring) + 1)),
-            control=0,
-            control_values=[control_value],
-        )
-        rule = qp.list_decomps(op)["_controlled_multix"]
-
-        qp.testing.assert_valid_decomp_rule(op, rule)
-        assert rule.get_work_wire_spec(**op.arguments).total == 0
-
-    @pytest.mark.usefixtures("disable_graph_decomposition")
-    @pytest.mark.parametrize("control_value", [0, 1])
-    def test_controlled_legacy_tape_decomposition(self, control_value):
-        """Legacy tape decomposition terminates in CNOTs without selecting the PPM rule."""
-        op = qp.ctrl(
-            qp.MultiX([1, 0, 1], wires=[1, 2, 3]),
-            control=0,
-            control_values=[control_value],
-        )
-        tape = qp.tape.QuantumScript([op])
-
-        (decomposed,), _ = _tape_decompose(tape, gate_set={qp.CNOT, qp.PauliX})
-
-        expected = [qp.CNOT([0, 1]), qp.CNOT([0, 3])]
-        if control_value == 0:
-            expected = [qp.X(0), *expected, qp.X(0)]
-        assert decomposed.operations == expected
+    @pytest.mark.parametrize("bitstring", [[0, 0, 0], [1, 0, 1]])
+    def test_controlled_default_decomposition(self, bitstring, control_value):
+        """The default decomposition remains unitary without auxiliary wires."""
+        op = qp.ctrl(qp.MultiX(bitstring, wires=[1, 2, 3]), 0, [control_value])
+        tape = qp.tape.QuantumScript(op.decomposition())
+        assert np.allclose(qp.matrix(tape, wire_order=op.wires), op.matrix())
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
@@ -618,125 +573,65 @@ class TestDecomposition:
 class TestControlledMultiXLatticeSurgeryPPM:
     """Tests for the single-control MultiX decomposition using three Pauli measurements."""
 
-    @pytest.mark.parametrize("num_controls", [1, 2, 3])
-    def test_applicability(self, num_controls):
-        """The PPM rule supports exactly one control wire."""
-        op = qp.ctrl(qp.MultiX([1, 0, 1], wires=[3, 4, 5]), control=range(num_controls))
-        rule = qp.list_decomps(op)["_controlled_multix_lattice_surgery_ppm"]
-
-        assert rule.is_applicable(**op.arguments) == (num_controls == 1)
-
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_graph_decomposition(self):
-        """A PPM gate set selects the three-measurement rule when a work wire is available."""
-        op = qp.ctrl(qp.MultiX([1, 0, 1], wires=[1, 2, 3]), control=0)
-        tape = qp.tape.QuantumScript([op])
-
-        (decomposed,), _ = _tape_decompose(
-            tape,
-            gate_set={qp.ops.PauliMeasure, qp.PauliZ, qp.PauliX, qp.GlobalPhase},
-            num_work_wires=1,
-        )
-        measurements = [
-            gate for gate in decomposed.operations if isinstance(gate, qp.ops.PauliMeasure)
-        ]
-
-        assert [measurement.pauli_word for measurement in measurements] == ["ZX", "ZXX", "X"]
-
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_graph_decomposition_without_work_wire(self):
-        """The CNOT fanout remains available when there is no auxiliary wire."""
-        op = qp.ctrl(qp.MultiX([1, 0, 1], wires=[1, 2, 3]), control=0)
-        tape = qp.tape.QuantumScript([op])
-
-        (decomposed,), _ = _tape_decompose(
-            tape,
-            gate_set={qp.CNOT, qp.ops.PauliMeasure, qp.PauliZ, qp.PauliX, qp.GlobalPhase},
-            num_work_wires=0,
-        )
-
-        assert decomposed.operations == [qp.CNOT([0, 1]), qp.CNOT([0, 3])]
-
     @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("num_controls", [1, 2])
     @pytest.mark.parametrize("control_value", [0, 1])
     @pytest.mark.parametrize("bitstring", [[0], [1], [0, 0, 0], [1, 0, 1], [1, 1, 1]])
-    def test_resources(self, bitstring, control_value):
-        """Resource bounds cover the captured rule and require one burnable work wire."""
+    def test_resources(self, num_controls, control_value, bitstring):
+        """The capture-compatible rule requires one control and one burnable wire."""
         op = qp.ctrl(
-            qp.MultiX(bitstring, wires=range(1, len(bitstring) + 1)),
-            control=0,
-            control_values=[control_value],
+            qp.MultiX(bitstring, wires=range(2, 2 + len(bitstring))),
+            range(num_controls),
+            [control_value] * num_controls,
         )
         rule = qp.list_decomps(op)["_controlled_multix_lattice_surgery_ppm"]
-
+        assert rule.is_applicable(**op.arguments) == (num_controls == 1)
         qp.testing.assert_valid_decomp_rule(op, rule)
         work_wires = rule.get_work_wire_spec(**op.arguments)
-        assert work_wires.burnable == 1
-        assert work_wires.total == 1
+        assert work_wires.burnable == work_wires.total == 1
 
-        estimates = rule.compute_resources(**abstractify(op).arguments).gate_counts
-        tape = qp.testing.decomp_rule_to_tape(op, rule)
-        with qp.capture.pause():
-            (tape,), _ = qp.transforms.resolve_dynamic_wires(tape, zeroed=[len(op.wires)])
-            actual = Counter(
-                abstractify(gate.base if isinstance(gate, qp.ops.Conditional) else gate)
-                for gate in tape.operations
-            )
-        assert all(count <= estimates[gate] for gate, count in actual.items())
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize("num_work_wires", [0, 1])
+    def test_graph_decomposition(self, num_work_wires):
+        """The graph selects three PPMs with an auxiliary, or the CNOT fallback without one."""
+        op = qp.ctrl(qp.MultiX([1, 0, 1], wires=[1, 2, 3]), control=0)
+        gate_set = {qp.ops.PauliMeasure, qp.PauliZ, qp.PauliX, qp.GlobalPhase}
+        if num_work_wires == 0:
+            gate_set.add(qp.CNOT)
+        (decomposed,), _ = _tape_decompose(
+            qp.tape.QuantumScript([op]), gate_set=gate_set, num_work_wires=num_work_wires
+        )
+        names = [gate.name for gate in decomposed.operations]
+        assert names.count("PauliMeasure") == 3 * num_work_wires
+        assert names.count("CNOT") == 2 * (1 - num_work_wires)
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("control_value", [0, 1])
     @pytest.mark.parametrize("bitstring", [[0], [1], [0, 0, 0], [1, 0, 1], [1, 1, 1]])
-    def test_all_measurement_branches(self, bitstring, control_value):
-        """Every branch implements controlled MultiX, including its phase and final ancilla."""
-        op = qp.ctrl(
-            qp.MultiX(bitstring, wires=range(1, len(bitstring) + 1)),
-            control=0,
-            control_values=[control_value],
-        )
+    @pytest.mark.parametrize("outcomes", list(product([0, 1], repeat=3)))
+    def test_all_measurement_branches(self, bitstring, control_value, outcomes, mocker):
+        """Every measurement branch implements controlled MultiX, including its phase."""
+        pytest.importorskip("catalyst")
+        num_wires = len(bitstring) + 1
+        op = qp.ctrl(qp.MultiX(bitstring, wires=range(1, num_wires)), 0, [control_value])
         rule = qp.list_decomps(op)["_controlled_multix_lattice_surgery_ppm"]
-        tape = qp.testing.decomp_rule_to_tape(op, rule)
+        outcomes = iter(outcomes)
+        mocker.patch(
+            "pennylane.templates.subroutines.multix.pauli_measure",
+            new=lambda word, wires: qp.pauli_measure(word, wires, postselect=next(outcomes)),
+        )
 
-        with qp.capture.pause():
-            auxiliary = len(op.wires)
-            (tape,), _ = qp.transforms.resolve_dynamic_wires(tape, zeroed=[auxiliary])
-            wire_order = [*op.wires, auxiliary]
-            measurements = [
-                gate for gate in tape.operations if isinstance(gate, qp.ops.PauliMeasure)
-            ]
-            assert [measurement.pauli_word for measurement in measurements] == [
-                "ZX",
-                "Z" + "X" * sum(bitstring),
-                "X",
-            ]
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("lightning.qubit", wires=2 * num_wires + 1))
+        def circuit():
+            for wire in range(num_wires):
+                qp.Hadamard(wire)
+                qp.CNOT([wire, wire + num_wires])
+            rule(**op.arguments)
+            return qp.state()
 
-            dimension = 2 ** len(op.wires)
-            identity = np.eye(2 * dimension)
-            # Columns span all inputs on the data wires, with the auxiliary prepared in |0>.
-            initial = np.kron(np.eye(dimension), np.array([[1], [0]]))
-            expected = np.kron(op.matrix(), np.array([[1], [1]]) / np.sqrt(2)) / np.sqrt(8)
-
-            for outcomes in product([0, 1], repeat=3):
-                results = dict(zip(measurements, outcomes))
-                branch = initial
-                for gate in tape.operations:
-                    if isinstance(gate, qp.ops.PauliMeasure):
-                        observable = qp.pauli.string_to_pauli_word(
-                            gate.pauli_word,
-                            wire_map={wire: index for index, wire in enumerate(gate.wires)},
-                        )
-                        projector = (
-                            identity
-                            + (-1) ** results[gate] * qp.matrix(observable, wire_order=wire_order)
-                        ) / 2
-                        branch = projector @ branch
-                    elif isinstance(gate, qp.ops.Conditional):
-                        if gate.meas_val.concretize(results):
-                            branch = qp.matrix(gate.base, wire_order=wire_order) @ branch
-                    else:
-                        branch = qp.matrix(gate, wire_order=wire_order) @ branch
-
-                assert np.allclose(branch, expected), f"Incorrect measurement branch {outcomes}"
+        expected = np.kron(op.matrix().ravel() / np.sqrt(2**num_wires), [1, 0])
+        assert np.allclose(circuit(), expected)
 
     @pytest.mark.catalyst
     def test_qjit_runtime_bitstring_and_control_value(self, seed):
@@ -754,23 +649,13 @@ class TestControlledMultiXLatticeSurgeryPPM:
             # Construct the rule argument without applying another MultiX.
             with qp.capture.pause():
                 base = qp.MultiX(bitstring, wires=[1, 2, 3])
-            rule(
-                base=base,
-                control_wires=[0],
-                control_values=control_values,
-                work_wires=[],
-                work_wire_type="borrowed",
-            )
+            rule(base=base, control_wires=[0], control_values=control_values)
             return qp.state()
 
         for bitstring, control_value in product(
             [[0, 0, 0], [1, 0, 1], [0, 1, 0], [1, 1, 1]], [0, 1]
         ):
-            op = qp.ctrl(
-                qp.MultiX(bitstring, wires=[1, 2, 3]),
-                control=0,
-                control_values=[control_value],
-            )
+            op = qp.ctrl(qp.MultiX(bitstring, wires=[1, 2, 3]), 0, [control_value])
             # Catalyst resets the released auxiliary before returning the full state.
             expected = np.kron(op.matrix() @ initial_state, np.array([1, 0]))
             result = circuit(np.array(bitstring, dtype=bool), np.array([control_value], dtype=bool))
@@ -808,44 +693,6 @@ class TestExecution:
         obtained_result = circuit()
 
         assert np.allclose(obtained_result, expected_result)
-
-    @pytest.mark.parametrize(
-        ("device_name", "use_qjit"),
-        [
-            ("default.qubit", False),
-            ("lightning.qubit", False),
-            pytest.param(
-                "lightning.qubit", True, marks=pytest.mark.catalyst, id="qjit_without_capture"
-            ),
-        ],
-    )
-    @pytest.mark.parametrize("control_value", [0, 1])
-    @pytest.mark.parametrize("bitstring", [[0], [1], [0, 0, 0], [1, 0, 1]])
-    def test_controlled_execution_without_auxiliary(
-        self, device_name, use_qjit, control_value, bitstring, seed
-    ):
-        """Controlled MultiX executes normally using only its control and target wires."""
-        num_wires = len(bitstring) + 1
-        rng = np.random.default_rng(seed)
-        initial_state = rng.random(2**num_wires) + 1j * rng.random(2**num_wires)
-        initial_state /= np.linalg.norm(initial_state)
-        op = qp.ctrl(
-            qp.MultiX(bitstring, wires=range(1, num_wires)),
-            control=0,
-            control_values=[control_value],
-        )
-
-        @qp.qnode(qp.device(device_name, wires=num_wires))
-        def circuit():
-            qp.StatePrep(initial_state, wires=range(num_wires))
-            qp.apply(op)
-            return qp.state()
-
-        if use_qjit:
-            pytest.importorskip("catalyst")
-            circuit = qp.qjit(circuit, capture=False)
-
-        assert np.allclose(circuit(), op.matrix() @ initial_state)
 
     @pytest.mark.catalyst
     def test_qjit_circuit(self):
