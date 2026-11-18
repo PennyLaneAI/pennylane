@@ -25,8 +25,8 @@ over the other could be preferred. More information on compiling circuits with
 How circuits are constructed
 ----------------------------
 
-1. Quantum functions
-^^^^^^^^^^^^^^^^^^^^
+Quantum functions
+^^^^^^^^^^^^^^^^^
 
 The first step in constructing an executable quantum circuit is by defining a
 special Python function called a *quantum function*. For example:
@@ -56,8 +56,8 @@ do quantum functions.
 Additionally, quantum functions can accept classical input arguments and contain
 control-flow like ``for`` loops, ``while`` loops, and ``if`` statements.
 
-2. Devices
-^^^^^^^^^^
+Devices
+^^^^^^^
 
 A quantum circuit has to run on a device, be it real hardware or a simulator.
 All devices that are compatible with PennyLane2 can be found at
@@ -73,8 +73,8 @@ wires in the circuit and ``short.name`` is an identifier (or short name) for the
 desired device. For example, the Lightning Qubit C++ simulator's short name is
 ``lightning.qubit``.
 
-3. Decorate with qp.qnode, compile with qp.qjit
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Decorate with qp.qnode, compile with qp.qjit
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Together, a quantum function and a device are used to create a *quantum node*,
 or QNode object, which wraps the quantum function and binds it to the device.
