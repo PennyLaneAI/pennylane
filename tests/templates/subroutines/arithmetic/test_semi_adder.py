@@ -481,25 +481,31 @@ class TestControlledSemiAdderPPM:
         )
 
     @pytest.mark.parametrize(
-        "case",
+        ("num_controls", "num_y", "expected"),
+        [(1, 1, 3), (1, 3, 5), (2, 1, 4)],
+    )
+    def test_work_wire_requirement(self, num_controls, num_y, expected):
+        """Without provided work wires, the rule needs num_y + num_controls + 1 clean wires."""
+        base = qp.SemiAdder(Wire[2], Wire[num_y])
+        spec = _controlled_semi_adder_ppm_work_wires(base, Wire[num_controls])
+        assert spec == {"zeroed": expected}
+
+    @pytest.mark.parametrize(
+        ("num_controls", "num_base", "num_extra", "work_wire_type", "expected"),
         [
-            (1, 1, 0, 0, "borrowed", 3),
-            (1, 3, 0, 0, "zeroed", 5),
-            (1, 3, 2, 1, "zeroed", 2),
-            (1, 3, 2, 3, "zeroed", 0),
-            (1, 3, 2, 3, "borrowed", 3),
-            (1, 3, 7, 3, "borrowed", 0),
-            (2, 1, 0, 0, "zeroed", 4),
-            (2, 3, 2, 3, "zeroed", 1),
-            (2, 3, 2, 3, "borrowed", 4),
-            (3, 3, 2, 5, "zeroed", 0),
-            (3, 3, 7, 3, "borrowed", 0),
+            pytest.param(1, 2, 1, "zeroed", 2, id="partial-clean"),
+            pytest.param(1, 2, 3, "zeroed", 0, id="enough-clean"),
+            pytest.param(1, 2, 3, "borrowed", 3, id="borrowed-excluded"),
+            pytest.param(1, 7, 3, "borrowed", 0, id="surplus-base"),
+            pytest.param(2, 2, 3, "zeroed", 1, id="two-controls-clean"),
+            pytest.param(2, 2, 3, "borrowed", 4, id="two-controls-borrowed"),
+            pytest.param(3, 2, 5, "zeroed", 0, id="three-controls-clean"),
+            pytest.param(3, 7, 3, "borrowed", 0, id="three-controls-surplus-base"),
         ],
     )
-    def test_work_wires(self, case):
+    def test_work_wires(self, num_controls, num_base, num_extra, work_wire_type, expected):
         """Borrowed control work wires cannot replace the clean PPM work wires."""
-        num_controls, num_y, num_base, num_extra, work_wire_type, expected = case
-        base = qp.SemiAdder(Wire[2], Wire[num_y], Wire[num_base])
+        base = qp.SemiAdder(Wire[2], Wire[3], Wire[num_base])
         spec = _controlled_semi_adder_ppm_work_wires(
             base=base,
             control_wires=Wire[num_controls],
@@ -521,52 +527,64 @@ class TestControlledSemiAdderPPM:
         mocker.patch(f"{module}.pauli_measure", side_effect=record_measurement)
         # Exercise every correction independently to check the declared upper bound.
         mocker.patch(f"{module}.cond", side_effect=lambda _, correction, *args: correction)
-        x_wires = Wires(range(num_controls, num_controls + num_y))
-        y_wires = Wires(range(num_controls + num_y, num_controls + 2 * num_y))
-        work_wires = Wires(range(num_controls + 2 * num_y, 2 * num_controls + 3 * num_y + 1))
-        base = qp.SemiAdder(x_wires, y_wires, work_wires)
-        rule = _controlled_semi_adder_ppm if num_controls else _semi_adder_ppm
-        arguments = (
-            {"base": base, "control_wires": Wires(range(num_controls))}
-            if num_controls
-            else {"x_wires": x_wires, "y_wires": y_wires, "work_wires": work_wires}
+        wires = qp.registers(
+            {
+                "control": num_controls,
+                "x": num_y,
+                "y": num_y,
+                "work": num_y + num_controls + 1,
+            }
         )
+        if num_controls:
+            rule = _controlled_semi_adder_ppm
+            arguments = (
+                qp.SemiAdder(wires["x"], wires["y"], wires["work"]),
+                wires["control"],
+            )
+            resources = rule.compute_resources(*arguments)
+        else:
+            rule = _semi_adder_ppm
+            arguments = (wires["x"], wires["y"], wires["work"])
+            resources = rule.compute_resources(y_wires=wires["y"])
 
         with qp.queuing.AnnotatedQueue() as queue:
-            rule(**arguments)
+            rule(*arguments)
 
         counts = Counter(abstractify(op) for op in queue.queue)
         assert rule.exact_resources is False
-        assert counts == rule.compute_resources(**arguments).gate_counts
+        assert counts == resources.gate_counts
 
     @pytest.mark.capture
     @pytest.mark.parametrize(
-        "case",
+        ("num_controls", "num_base", "num_extra", "work_wire_type", "expected"),
         [
-            (1, 0, 0, "borrowed", 4),
-            (1, 1, 2, "zeroed", 1),
-            (1, 1, 2, "borrowed", 3),
-            (1, 4, 0, "zeroed", 0),
-            (2, 0, 0, "zeroed", 5),
-            (2, 1, 2, "borrowed", 4),
-            (3, 1, 2, "zeroed", 3),
-            (3, 6, 0, "zeroed", 0),
+            pytest.param(1, 0, 0, "borrowed", 4, id="allocate-all"),
+            pytest.param(1, 1, 2, "zeroed", 1, id="combine-clean"),
+            pytest.param(1, 1, 2, "borrowed", 3, id="ignore-borrowed"),
+            pytest.param(1, 4, 0, "zeroed", 0, id="all-provided"),
+            pytest.param(2, 0, 0, "zeroed", 5, id="two-controls-allocate-all"),
+            pytest.param(2, 1, 2, "borrowed", 4, id="two-controls-ignore-borrowed"),
+            pytest.param(3, 1, 2, "zeroed", 3, id="three-controls-combine-clean"),
+            pytest.param(3, 6, 0, "zeroed", 0, id="three-controls-all-provided"),
         ],
     )
-    def test_allocation(self, case):
+    def test_allocation(self, num_controls, num_base, num_extra, work_wire_type, expected):
         """Capture allocates only the missing clean wires and marks them restored."""
         import jax
 
-        num_controls, num_base, num_extra, work_wire_type, expected = case
-        base = qp.SemiAdder(
-            range(num_controls, num_controls + 2),
-            range(num_controls + 2, num_controls + 4),
-            list(range(num_controls + 4, num_controls + 4 + num_base)),
+        wires = qp.registers(
+            {
+                "control": num_controls,
+                "x": 2,
+                "y": 2,
+                "base_work": num_base,
+                "extra_work": num_extra,
+            }
         )
-        extra = list(range(num_controls + 4 + num_base, num_controls + 4 + num_base + num_extra))
+        base = qp.SemiAdder(wires["x"], wires["y"], wires["base_work"])
         rule = partial(_controlled_semi_adder_ppm, work_wire_type=work_wire_type)
         jaxpr = jax.make_jaxpr(qp.capture.subroutine(rule))(
-            base=base, control_wires=Wires(range(num_controls)), work_wires=extra
+            base=base, control_wires=wires["control"], work_wires=wires["extra_work"]
         )
         eqns = jaxpr.eqns[0].params["jaxpr"].eqns
         allocations = [eqn for eqn in eqns if eqn.primitive.name == "allocate"]
@@ -598,12 +616,16 @@ class TestControlledSemiAdderPPM:
     )
     def test_coherent_control(self, num_x, num_y, control_values):
         """Preserve all relative phases and restore all ancillas on entangled inputs."""
-        control_wires = list(range(len(control_values)))
-        x_wires = list(range(len(control_wires), len(control_wires) + num_x))
-        y_wires = list(range(len(control_wires) + num_x, len(control_wires) + num_x + num_y))
-        data_wires = control_wires + x_wires + y_wires
-        work_wires = list(range(len(data_wires), len(data_wires) + num_y + len(control_wires) + 1))
-        num_wires = len(data_wires) + len(work_wires)
+        wires = qp.registers(
+            {
+                "control": len(control_values),
+                "x": num_x,
+                "y": num_y,
+                "work": num_y + len(control_values) + 1,
+            }
+        )
+        data_wires = wires["control"] + wires["x"] + wires["y"]
+        num_wires = len(data_wires) + len(wires["work"])
 
         def prepare():
             for index, wire in enumerate(data_wires):
@@ -617,13 +639,13 @@ class TestControlledSemiAdderPPM:
             prepare()
             qp.ctrl(
                 _semi_adder,
-                control=control_wires,
+                control=wires["control"],
                 control_values=control_values,
-            )(x_wires, y_wires, work_wires[: num_y - 1])
+            )(wires["x"], wires["y"], wires["work"][: num_y - 1])
             return qp.state()
 
         rule = qp.list_decomps("C(SemiAdder)")["flip_zero_ctrl_values(_controlled_semi_adder_ppm)"]
-        base = qp.SemiAdder(x_wires, y_wires, work_wires)
+        base = qp.SemiAdder(wires["x"], wires["y"], wires["work"])
 
         @qp.qjit(capture=True)
         @qp.transforms.to_ppr
@@ -644,7 +666,7 @@ class TestControlledSemiAdderPPM:
             prepare()
             rule(
                 base,
-                control_wires=Wires(control_wires),
+                control_wires=wires["control"],
                 control_values=control_values,
                 work_wires=[],
                 work_wire_type="zeroed",
@@ -679,8 +701,8 @@ class TestControlledSemiAdderPPM:
             return qp.probs(wires=range(11))
 
         # |11> |11> |01> |00000>: overflow is discarded and every work wire is reset.
-        expected = int("11110100000", 2)
-        assert qp.math.allclose(circuit(), qp.math.eye(1, 2**11, expected)[0])
+        expected_bits = "11" + "11" + "01" + "00000"
+        assert qp.math.isclose(circuit()[int(expected_bits, 2)], 1.0, rtol=0)
 
     @pytest.mark.catalyst
     def test_borrowed_control_work_wire(self):
@@ -688,11 +710,12 @@ class TestControlledSemiAdderPPM:
         base = qp.SemiAdder([2, 3], [4, 5], [6, 7, 8, 9])
 
         def prepare():
-            for wire in range(6):
-                qp.RY(0.31 + 0.17 * wire, wires=wire)
-                qp.RZ(0.23 + 0.19 * wire, wires=wire)
-            qp.H(10)
-            qp.CNOT([10, 0])
+            # Entangle the borrowed wire with the first control; set control 1 and x = y = 1.
+            qp.H(0)
+            qp.CNOT([0, 10])
+            qp.X(1)
+            qp.X(3)
+            qp.X(5)
 
         @qp.qnode(qp.device("default.qubit", wires=11))
         def reference():
@@ -709,8 +732,6 @@ class TestControlledSemiAdderPPM:
                 "PauliX",
                 "PauliZ",
                 "GlobalPhase",
-                "RY",
-                "RZ",
                 "CNOT",
                 "Hadamard",
             }
@@ -735,28 +756,25 @@ class TestControlledSemiAdderPPM:
     @pytest.mark.parametrize("num_controls", [1, 2, 3])
     def test_direct_rule_compiled_allocation(self, num_provided, num_controls):
         """Direct rule calls compile with provided, allocated or mixed work registers."""
-        num_wires = num_controls + 3 + num_provided
-        base = qp.SemiAdder(
-            [num_controls],
-            [num_controls + 1, num_controls + 2],
-            list(range(num_controls + 3, num_wires)),
-        )
+        wires = qp.registers({"control": num_controls, "x": 1, "y": 2, "work": num_provided})
+        num_wires = len(wires["control"] + wires["x"] + wires["y"] + wires["work"])
+        base = qp.SemiAdder(wires["x"], wires["y"], wires["work"])
 
         @qp.qjit(capture=True)
         @qp.transforms.to_ppr
         @qp.decompose(gate_set={"PPR_8", "PauliMeasure", "PauliX", "PauliZ", "GlobalPhase"})
         @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
         def circuit():
-            for wire in range(num_controls + 1):
+            # All controls are on and x = y = 1.
+            for wire in wires["control"] + wires["x"] + wires["y"][-1:]:
                 qp.X(wire)
-            qp.X(num_controls + 2)
             # Invoke the rule directly; native graph decomposition cannot allocate these wires.
-            _controlled_semi_adder_ppm(base, Wires(range(num_controls)))
+            _controlled_semi_adder_ppm(base, wires["control"])
             return qp.probs(wires=range(num_wires))
 
         # All controls |1>, addend |1>, sum |10> and clean provided work wires.
-        expected = qp.math.eye(1, 2**num_wires, (2 ** (num_controls + 3) - 2) * 2**num_provided)[0]
-        assert qp.math.allclose(circuit(), expected)
+        expected_bits = "1" * num_controls + "1" + "10" + "0" * num_provided
+        assert qp.math.isclose(circuit()[int(expected_bits, 2)], 1.0, rtol=0)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("control_values", [[True], [True, True], [False, True, False]])
@@ -807,8 +825,10 @@ class TestControlledSemiAdderPPM:
     )
     def test_compiled_graph_decomposition(self, control_values, initial_controls, expected_sum):
         """Compile the public controlled operator through the registered PPM rule."""
-        num_controls = len(control_values)
-        num_wires = 2 * num_controls + 7
+        wires = qp.registers(
+            {"control": len(control_values), "x": 2, "y": 2, "work": len(control_values) + 3}
+        )
+        num_wires = len(wires["control"] + wires["x"] + wires["y"] + wires["work"])
         gate_set = {
             "PPR_8": 2,
             "PauliMeasure": 1,
@@ -822,25 +842,21 @@ class TestControlledSemiAdderPPM:
         @qp.decompose(gate_set=gate_set)
         @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
         def circuit():
-            for wire, value in enumerate(initial_controls):
+            for wire, value in zip(wires["control"], initial_controls):
                 if value:
                     qp.X(wire)
-            qp.X(num_controls + 1)
+            qp.X(wires["x"][-1])
             qp.ctrl(
-                qp.SemiAdder(
-                    range(num_controls, num_controls + 2),
-                    range(num_controls + 2, num_controls + 4),
-                    range(num_controls + 4, num_wires),
-                ),
-                control=range(num_controls),
+                qp.SemiAdder(wires["x"], wires["y"], wires["work"]),
+                control=wires["control"],
                 control_values=control_values,
             )
             return qp.probs(wires=range(num_wires))
 
         # Include every control, the addend, the sum and all clean work wires.
-        bits = initial_controls + [0, 1, 0, expected_sum] + [0] * (num_controls + 3)
-        expected = sum(bit * 2**index for index, bit in enumerate(reversed(bits)))
-        assert qp.math.allclose(circuit(), qp.math.eye(1, 2**num_wires, expected)[0])
+        control_bits = "".join(str(bit) for bit in initial_controls)
+        expected_bits = control_bits + "01" + f"0{expected_sum}" + "0" * len(wires["work"])
+        assert qp.math.isclose(circuit()[int(expected_bits, 2)], 1.0, rtol=0)
 
 
 class TestSemiAdderPPM:
