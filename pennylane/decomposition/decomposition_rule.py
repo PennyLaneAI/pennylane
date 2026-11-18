@@ -148,7 +148,7 @@ def register_name(
 
     .. warning::
 
-        This function is intended only for use as a decorator, before the rule is registered
+        This function is intended only for use before the rule is registered
         with an operator. Do not rename a rule after registration: registered collections retain
         the original name, so lookup by the new name will fail.
 
