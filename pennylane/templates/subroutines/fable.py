@@ -303,7 +303,6 @@ def _fable_decomposition(input_matrix, wires, tol=0):
     def outer_nots_loop(m, nots):
         c_wire = list(nots.keys())[m]
         CNOT([c_wire] + auxilliary)
-        return nots
 
     outer_nots_loop(nots)
 
