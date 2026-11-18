@@ -9,6 +9,8 @@ Inspecting circuits
 A :func:`~pennylane.qjit`-compiled program does not run in Python, so Python's ``print`` statements
 and debuggers only run once, while the program is compiled. Instead, PennyLane provides tools that
 run as part of the compiled program, as well as access to the compiled program itself.
+To profile the resources of a circuit, such as its gate counts, see
+:doc:`resource profiling <resource_profiling>`.
 
 Printing values at runtime
 --------------------------
