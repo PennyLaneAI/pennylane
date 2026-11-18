@@ -340,7 +340,7 @@ def select_thc_wires(M, N, beth, num_batches=1):
     }
 
 
-def _select_basis_resources(
+def _select_basis_resources(  # pylint: disable=too-many-arguments
     rotation_data, system_wires, control_wires, gradient_wires, angle_wires, work_wires
 ):
     """Return the routing, QROM and loaded-rotation resources of one basis change."""
@@ -383,7 +383,7 @@ def _select_basis_resources(
     wire_argnames=("system_wires", "control_wires", "gradient_wires", "angle_wires", "work_wires"),
 )
 @register_resources(_select_basis_resources)
-def _SelectTHCBasis(
+def _SelectTHCBasis(  # pylint: disable=too-many-arguments
     rotation_data: tuple,
     system_wires: WiresLike,
     control_wires: WiresLike,
