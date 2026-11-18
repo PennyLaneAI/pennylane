@@ -896,6 +896,14 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* :func:`~.grad` and :func:`~.jacobian` now use JAX to differentiate functions of JAX arrays
+  outside of :func:`~.qjit`. For example, ``qp.grad(lambda x: x**2)(jax.numpy.array(2.0))``
+  returns a JAX gradient. As within :func:`~.qjit`, JAX inputs follow JAX's ``argnums``
+  convention: by default, only the first positional argument is differentiated.
+  :class:`~.GradientDescentOptimizer` and its subclasses raise an error for JAX parameters
+  and point to native JAX optimizers such as Optax.
+  `(#XXXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXXX>`__
+
 * :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
   powers that can simplify eagerly for faster execution, while the other uses nested
   loops to keep the captured intermediate representation compact. Both variants include
