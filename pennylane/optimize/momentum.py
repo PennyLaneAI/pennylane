@@ -37,10 +37,6 @@ class MomentumOptimizer(GradientDescentOptimizer):
         stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.01).
         momentum (float): the user-defined hyperparameter :math:`m` (default value: 0.9).
 
-    .. note::
-
-        When using ``torch`` or ``jax`` interfaces, refer to :doc:`Gradients and training </introduction/interfaces>` for suitable optimizers.
-
     """
 
     def __init__(self, stepsize=0.01, momentum=0.9):
