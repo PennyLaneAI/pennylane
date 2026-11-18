@@ -18,7 +18,7 @@ from functools import partial
 from pennylane import capture, compiler, math
 from pennylane.allocation import allocate
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import RZ, GlobalPhase, PhaseShift
 from pennylane.ops.op_math import ChangeOpBasis2, change_op_basis, prod
@@ -87,8 +87,7 @@ class RZLayer(Operator2):
             .. decomposition-rule:: _rzlayer_hwp_synthesis
                 :image: /_static/decomposition_thumbnails/rz_layer_hwp_synthesis.svg
                 :lightbox:
-                :requires: :math:`m \geq 3` and :math:`a` work wires, of which
-                    :math:`\max(a - w, 0)` are allocated
+                :requires: :math:`m \geq 3` and :math:`a` work wires
                 :where: :math:`n = m - 1` if :math:`m` is a power of two and :math:`n = m`
                     otherwise, :math:`a = n - \operatorname{popcount}(n)`, and
                     :math:`\ell(x) = \lfloor \log_2 x \rfloor + 1` is the number of bits of
@@ -156,8 +155,10 @@ def _rzlayer_individual(angles, wires, **_):
 
 
 def _hwp_num_hw_wires(block_size):
-    """Number of wires of a block whose Hamming weight the synthesis rule computes: all of them,
-    or all but the last one, which is then rotated separately. Prefers fewer rotations, then
+    """Helper method for Hamming-weight-phasing (HWP).
+
+    Number of wires per block for which the synthesis rule computes the Hamming weight:
+    either all of them or one less, which is then rotated separately. Prefers fewer rotations, then
     fewer ANDs."""
 
     def _cost(num_hw_wires):
@@ -168,11 +169,12 @@ def _hwp_num_hw_wires(block_size):
 
 
 def _rzlayer_hwp_synthesis_resources(angles, wires, **_):
+    """Resources of the Hamming-weight-phasing (HWP) decomposition."""
     block_size = len(wires) // len(angles)
     num_hw_wires = _hwp_num_hw_wires(block_size)
     compute_op = _hamming_weight_resource_rep(num_hw_wires)
     num_rotations = num_hw_wires.bit_length() + block_size - num_hw_wires
-    target_op = prod(*[abstractify(PhaseShift)] * num_rotations)
+    target_op = prod(*[PhaseShift(Float, Wire[1])] * num_rotations)
     return {ChangeOpBasis2(compute_op, target_op): len(angles), GlobalPhase: len(angles)}
 
 
@@ -185,23 +187,24 @@ def _rzlayer_hwp_synthesis_work_wires(angles, wires, work_wires):
 @register_condition(lambda angles, wires, **_: len(wires) // len(angles) >= 3)
 @register_resources(_rzlayer_hwp_synthesis_resources, work_wires=_rzlayer_hwp_synthesis_work_wires)
 def _rzlayer_hwp_synthesis(angles, wires, work_wires):
-    """Hamming-weight phasing: :math:`m` rotations ``RZ(theta)`` equal
-    ``GlobalPhase(m * theta / 2)`` and ``PhaseShift(2**j * theta)`` on bit :math:`j` of the
-    Hamming weight of their wires."""
+    """Hamming-weight phasing (HWP) decomposition: :math:`m` rotations ``RZ(theta)`` equal
+    ``PhaseShift(2**j * theta)`` on bit :math:`j` of the Hamming weight of their wires and
+    a ``GlobalPhase(m * theta / 2)``."""
     block_size = len(wires) // len(angles)
     num_hw_wires = _hwp_num_hw_wires(block_size)
     num_work = num_hw_wires - num_hw_wires.bit_count()
+    work_wires = work_wires[:num_work]
     if capture.enabled() or compiler.active():
         angles = math.array(angles, like="jax")
         wires = math.array(wires, like="jax")
 
     # Each block uncomputes its Hamming weight, which returns the work wires to zero, so all blocks
     # share them
-    with allocate(max(num_work - len(work_wires), 0), restored=True) as extra_work_wires:
-        work_wires = [*work_wires, *extra_work_wires][:num_work]
+    with allocate(num_work - len(work_wires), restored=True) as extra_work_wires:
+        work_wires = [*work_wires, *extra_work_wires]
 
         def _block(i):
-            block_wires = [wires[i * block_size + j] for j in range(block_size)]
+            block_wires = wires[i * block_size : (i + 1) * block_size]
             hw_wires = block_wires[:num_hw_wires]
             out_wires = [hw_wires[-1], *work_wires[: num_hw_wires.bit_length() - 1]]
 

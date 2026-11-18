@@ -44,14 +44,33 @@ def _hamming_weight(wires, work_wires):
     their carry, of weight :math:`2^{j+1}`, onto a zeroed work wire. For an even number of bits
     of weight :math:`2^j`, a half adder adds the remaining one. Each adder uses one
     :class:`~.TemporaryAND`, for a total of ``n - popcount(n)`` work wires and ANDs, where
-    ``n = len(wires)``.
+    ``n = len(wires)``. For example, for 6 wires we get:
+
+    .. code-block:: text
+
+                  ┌─── full adder ──┐ ┌─── full adder ──┐ ┌ half adder ┐ ┌─── full adder ──┐
+        wires[0]: ─╭X────╭●───────╭●─────────────────────────────────────────────────────────┤
+        wires[1]: ─╰●─╭●─│──╭●─╭●─│──────────────────────────────────────────────────────────┤
+        wires[2]: ────│──│──│──│──│────╭X────╭●───────╭●─────────────────────────────────────┤
+        wires[3]: ────│──│──│──│──│────╰●─╭●─│──╭●─╭●─│──────────────────────────────────────┤
+        wires[4]: ────│──│──│──│──│───────│──│──│──│──│────╭●─╭●─────────────────────────────┤
+        wires[5]: ────╰X─├●─│──╰X─╰X──────╰X─├●─│──╰X─╰X───├●─╰X─────────────────────────────┤ bit 0
+         work[0]: ───────│──│────────────────│──│──────────╰⊕────────────────╭X─╭●────╭X─╭X──┤ bit 1
+         work[1]: ───────│──│────────────────│──│────────────────────────────│──├⊕─╭X─│──│───┤ bit 2
+         work[2]: ───────╰⊕─╰X───────────────│──│─────────────────────────╭X─│──╰●─│──│──╰●──┤
+         work[3]: ───────────────────────────╰⊕─╰X────────────────────────╰●─╰●────╰●─╰●─────┤
+
+    The gates with a ``⊕`` target are :class:`~.TemporaryAND` gates, all others are
+    :class:`~.CNOT` gates.
 
     Bit :math:`0` of the Hamming weight ends up on ``wires[-1]``, and bit :math:`j>0` on
-    ``work_wires[j - 1]``. All other wires are left in garbage states, so that callers uncompute
-    the circuit, e.g., by using it as the compute block of :func:`~.change_op_basis`.
+    ``work_wires[j - 1]``. All other wires are left in garbage states, so that this helper
+    method must be used in conjunction with its adjoint to return the system wires to their previous
+    state, and only specific operations (e.g. phases) are allowed between ``_hamming_weight``
+    and its uncomputation.
 
     Args:
-        wires (Sequence): the input wires
+        wires (Sequence): the ``n`` input wires
         work_wires (Sequence): at least ``n - popcount(n)`` work wires in the zero state
 
     **Example**
@@ -63,10 +82,11 @@ def _hamming_weight(wires, work_wires):
     >>> qp.tape.make_qscript(_hamming_weight)([0, 1, 2], [3]).operations
     [CNOT(wires=[1, 0]), CNOT(wires=[1, 2]), TemporaryAND(wires=[0, 2, 3]), CNOT(wires=[1, 3]),
      CNOT(wires=[1, 2]), CNOT(wires=[0, 2])]
+
     """
-    num_bits = len(wires).bit_length()
-    out_wires, spare_wires = work_wires[: num_bits - 1], work_wires[num_bits - 1 :]
-    for j in range(num_bits - 1):
+    log_n = len(wires).bit_length()
+    out_wires, spare_wires = work_wires[:log_n], work_wires[log_n:]
+    for j in range(log_n):
         *addends, total = wires
         num_adders = len(wires) // 2
         carry_wires = [*spare_wires[: num_adders - 1], out_wires[j]]
