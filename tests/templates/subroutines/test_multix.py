@@ -426,6 +426,58 @@ class TestDecomposition:
 
         assert_decomposable(op)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    @pytest.mark.parametrize("control_value", [0, 1])
+    @pytest.mark.parametrize(
+        ("bitstring", "expected_targets"),
+        [([0], []), ([1], [1]), ([0, 0, 0], []), ([1, 0, 1], [1, 3])],
+    )
+    def test_controlled_default_decomposition(self, bitstring, expected_targets, control_value):
+        """The default decomposition remains unitary and does not allocate an auxiliary wire."""
+        op = qp.ctrl(
+            qp.MultiX(bitstring, wires=range(1, len(bitstring) + 1)),
+            control=0,
+            control_values=[control_value],
+        )
+        expected = [qp.CNOT([0, target]) for target in expected_targets]
+        if control_value == 0:
+            expected = [qp.X(0), *expected, qp.X(0)]
+
+        assert op.decomposition() == expected
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("control_value", [0, 1])
+    @pytest.mark.parametrize("bitstring", [[1], [1, 0, 1], [0, 0, 0]])
+    def test_controlled_fanout_rule(self, bitstring, control_value):
+        """The unitary rule supports capture and requires no work wires."""
+        op = qp.ctrl(
+            qp.MultiX(bitstring, wires=range(1, len(bitstring) + 1)),
+            control=0,
+            control_values=[control_value],
+        )
+        rule = qp.list_decomps(op)["_controlled_multix"]
+
+        qp.testing.assert_valid_decomp_rule(op, rule)
+        assert rule.get_work_wire_spec(**op.arguments).total == 0
+
+    @pytest.mark.usefixtures("disable_graph_decomposition")
+    @pytest.mark.parametrize("control_value", [0, 1])
+    def test_controlled_legacy_tape_decomposition(self, control_value):
+        """Legacy tape decomposition terminates in CNOTs without selecting the PPM rule."""
+        op = qp.ctrl(
+            qp.MultiX([1, 0, 1], wires=[1, 2, 3]),
+            control=0,
+            control_values=[control_value],
+        )
+        tape = qp.tape.QuantumScript([op])
+
+        (decomposed,), _ = _tape_decompose(tape, gate_set={qp.CNOT, qp.PauliX})
+
+        expected = [qp.CNOT([0, 1]), qp.CNOT([0, 3])]
+        if control_value == 0:
+            expected = [qp.X(0), *expected, qp.X(0)]
+        assert decomposed.operations == expected
+
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         ("control_values", "gate_set", "expected"),
@@ -756,6 +808,44 @@ class TestExecution:
         obtained_result = circuit()
 
         assert np.allclose(obtained_result, expected_result)
+
+    @pytest.mark.parametrize(
+        ("device_name", "use_qjit"),
+        [
+            ("default.qubit", False),
+            ("lightning.qubit", False),
+            pytest.param(
+                "lightning.qubit", True, marks=pytest.mark.catalyst, id="qjit_without_capture"
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("control_value", [0, 1])
+    @pytest.mark.parametrize("bitstring", [[0], [1], [0, 0, 0], [1, 0, 1]])
+    def test_controlled_execution_without_auxiliary(
+        self, device_name, use_qjit, control_value, bitstring, seed
+    ):
+        """Controlled MultiX executes normally using only its control and target wires."""
+        num_wires = len(bitstring) + 1
+        rng = np.random.default_rng(seed)
+        initial_state = rng.random(2**num_wires) + 1j * rng.random(2**num_wires)
+        initial_state /= np.linalg.norm(initial_state)
+        op = qp.ctrl(
+            qp.MultiX(bitstring, wires=range(1, num_wires)),
+            control=0,
+            control_values=[control_value],
+        )
+
+        @qp.qnode(qp.device(device_name, wires=num_wires))
+        def circuit():
+            qp.StatePrep(initial_state, wires=range(num_wires))
+            qp.apply(op)
+            return qp.state()
+
+        if use_qjit:
+            pytest.importorskip("catalyst")
+            circuit = qp.qjit(circuit, capture=False)
+
+        assert np.allclose(circuit(), op.matrix() @ initial_state)
 
     @pytest.mark.catalyst
     def test_qjit_circuit(self):

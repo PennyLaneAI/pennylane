@@ -455,7 +455,21 @@ def _controlled_multix_ladder(base, control_wires, work_wires, work_wire_type, *
         _multix_ladder_fanout(base, control_wires, work_wires=available + list(allocated))
 
 
-add_decomps("C(MultiX)", flip_zero_control2(_controlled_multix_ladder))
+def _controlled_multix_resources(base, **_):
+    return {CNOT: len(base.wires), PauliX: 2}
+
+
+@register_condition(lambda control_wires, **_: len(control_wires) == 1)
+@register_resources(_controlled_multix_resources, exact=False)
+def _controlled_multix(base, control_wires, control_values, **_):
+    """Decompose a single-control MultiX into CNOTs without auxiliary wires."""
+    cond(math.logical_not(control_values[0]), PauliX)(control_wires[0])
+    for i, wire in enumerate(base.wires):
+        cond(base.bitstring[i], CNOT)(wires=[control_wires[0], wire])
+    cond(math.logical_not(control_values[0]), PauliX)(control_wires[0])
+
+
+add_decomps("C(MultiX)", flip_zero_control2(_controlled_multix_ladder), _controlled_multix)
 
 
 def _measure_z_multix(work_wire, bitstring, wires):
