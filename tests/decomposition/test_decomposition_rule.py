@@ -85,6 +85,23 @@ class TestDecompositionRule:  # pylint: disable=too-many-public-methods
         with pytest.raises(TypeError, match="name"):
             register_resources({qp.CNOT: 1}, **{"name": "to_cnot"})
 
+    @pytest.mark.parametrize("name", ["", " ", "\t\n", None, 1, False, [], {}])
+    def test_register_name_rejects_invalid_names(self, name):
+        """Invalid names fail clearly without modifying an existing rule."""
+
+        def rule(wires):
+            qp.CNOT(wires=wires)
+
+        error = ValueError if isinstance(name, str) else TypeError
+        message = "must not be blank" if isinstance(name, str) else "must be strings"
+        with pytest.raises(error, match=message):
+            register_name(name, rule)
+
+        named_rule = register_name("public", register_resources({qp.CNOT: 1}, rule))
+        with pytest.raises(error, match=message):
+            register_name(name, named_rule)
+        assert named_rule.name == "public"
+
     @pytest.mark.parametrize("name_first", [False, True])
     def test_register_name_preserves_metadata(self, name_first):
         """Naming and resource registration can be applied in either order."""

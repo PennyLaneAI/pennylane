@@ -108,7 +108,7 @@ Args:
         return qp.expval(qp.Z(0))
 
 To exclude a registered rule from this pass, supply its name or callable in
-``exclude_decomps``, for example ``exclude_decomps={qp.CRX: ["_crx_to_h_crz"]}``.
+``exclude_decomps``, for example ``exclude_decomps={qp.CRX: ["to_h_crz"]}``.
 Use :func:`~pennylane.decomposition.list_decomps` to inspect the available rules.
 
 """

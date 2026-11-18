@@ -153,14 +153,16 @@ def register_name(
         the original name, so lookup by the new name will fail.
 
     Args:
-        name (str): public rule name, which must not start with an underscore
+        name (str): non-blank public rule name, which must not start with an underscore
         qfunc (Callable): quantum function or rule to name. If ``None``, returns a decorator.
 
     Returns:
         DecompositionRule: The named rule, preserving its resources and conditions.
 
     Raises:
-        ValueError: If the rule is already registered with an operator.
+        TypeError: If the name is not a string.
+        ValueError: If the name is blank or starts with an underscore, or the rule is already
+            registered with an operator.
 
     **Example**
 
@@ -183,6 +185,11 @@ def register_name(
     >>> qp.list_decomps(qp.SWAP)["custom_swap_to_cnot"]
     DecompositionRule(name=custom_swap_to_cnot)
     """
+
+    if not isinstance(name, str):
+        raise TypeError("Decomposition rule names must be strings.")
+    if not name.strip():
+        raise ValueError("Decomposition rule names must not be blank.")
 
     def _decorator(rule: Callable) -> DecompositionRule:
         if isinstance(rule, DecompositionRule):
