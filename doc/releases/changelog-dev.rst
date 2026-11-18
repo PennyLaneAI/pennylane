@@ -4,14 +4,22 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* The new :class:`~.QROMLoad` operator loads bitstrings into a target register that starts in the all-zero
-  state. Unlike :class:`~.QROM`, which XORs the bitstrings onto arbitrary target states, it can use
-  extra work wires for the cheaper Select-SWAP decomposition. It picks the number of bitstrings to
-  load in parallel that minimizes the cost, and its controlled ``SWAP`` gates borrow an idle work
-  wire. Use its adjoint to unload the data again.
-  The phase gradient
-  decomposition from :func:`~.make_selectpaulirot_to_phase_gradient_decomp` now loads the rotation
-  angles with ``QROMLoad``.
+* :class:`~.QROM` has been divided by splitting off two new operators, :class:`~.QROMLoad` and
+  :class:`~.SelectSwap`, for the specific scenario of zeroed target wires, i.e., for data
+  loading rather than XORing. The latter is now done by :class:`~.QROM`. 
+  Use the three operators as follows:
+
+                            |   Work wires reset  |   Work wires not reset  |
+  Target wires zeroed       | :class:`~.QROMLoad` |  :class:`~.SelectSwap`  |
+  Target wires not zeroed   | :class:`~.QROM`     | currently not supported |
+
+  Note that :class:`~.QROMLoad` also has a decomposition using Select-SWAP, but is not allowed to
+  leave the work wires in a garbage state. When using :class:`~.SelectSwap` for data loading, it
+  can only be unloaded with ``adjoint(SelectSwap)`` and the work wires are dirty between loading
+  and unloading.
+  The promise of zeroed target wires and the permission to leave a garbage state behind lead to 
+  reduced quantum resources, so that ``SelectSwap`` is cheaper than ``QROMLoad``, which is cheaper
+  than ``QROM``.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
 
   For example, we may use ``QROMLoad`` on a zeroed target register, but need ``QROM`` to XOR more
@@ -35,11 +43,31 @@ New features since last release
       >>> print(circuit())
       [[0 1 1]]
 
-* The new :class:`~.SelectSwap` operator loads bitstrings into a zeroed target register like
-  :class:`~.QROMLoad`, but leaves its work wires in a garbage state instead of cleaning them up.
-  This makes it less than half as expensive. Use its adjoint, with the garbage left untouched,
-  to unload the data and clean up the work wires again.
-  `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
+  If we want to load with ``SelectSwap``, we need to use it for unloading as well, and can only
+  use the work wires as dirty, or borrowed, wires inbetween.
+
+  .. code-block:: python
+
+      @qp.qjit
+      @qp.set_shots(1)
+      @qp.qnode(qp.device("lightning.qubit", wires=9))
+      def circuit():
+          qp.BasisState([1, 0], wires=[0, 1])
+          # target wires 2, 3, 4 start in |000>
+          qp.SelectSwap(["010", "111", "110", "000"], [0, 1], [2, 3, 4], work_wires=[5, 6, 7])
+          # target wires now hold |110>, let's control a bit flip on that state
+          qp.ctrl(qp.X(8), control=[2, 3, 4], control_values=[1, 1, 0], work_wires=[5, 6, 7], work_wire_type="borrowed")
+          # Unload the target wires, cleaning up the work wires as well
+          qp.adjoint(qp.SelectSwap(["010", "111", "110", "000"], [0, 1], [2, 3, 4], work_wires=[5, 6, 7]))
+          return qp.sample(wires=[2, 3, 4]), qp.sample(wires=[5, 6, 7]), qp.sample(wires=[8])
+
+  .. code-block:: pycon
+
+      >>> print(circuit())
+      (Array([[0, 0, 0]], dtype=int64), Array([[0, 0, 0]], dtype=int64), Array([[1]], dtype=int64))
+
+  The bitstring has been unloaded from the target wires, and the work wires have been cleaned. The
+  wire ``8`` has been flipped in the meantime.
 
 * A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
   `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
@@ -1077,13 +1105,10 @@ Improvements 🛠
 
 * The Select-SWAP decomposition previously attributed to :class:`~.QROM`
   (``qp.list_decomps(qp.QROM)["_qrom_decomposition"]``) is now attributed to :class:`~.QROMLoad`
-  (``qp.list_decomps(qp.QROMLoad)["_select_swap"]``). Additionally, this decomposition no longer
-  has a ``clean`` parameter that allows to leave behind a garbage state. While this parameter 
-  allowed to save resources, it could cause bugs in the produced circuits via mismatching
-  decompositions in the graph decomposition system. The garbage-leaving variant is now available
-  as the separate operator :class:`~.SelectSwap`.
-  Finally, this decomposition rule no longer uses :class:`~.Select`, but instead expresses the 
-  Select block as a :class:`~.QROM` with fewer controls and more target qubits. This allows for 
+  (``qp.list_decomps(qp.QROMLoad)["_select_swap"]``), and its ``clean=False`` variant has been
+  split off into the operator :class:`~.SelectSwap`. 
+  Additionally, this decomposition rule no longer uses :class:`~.Select`, but
+  a :class:`~.QROM` with fewer controls and more target qubits instead. This allows for 
   scalable compilation of this decomposition rule.
   `(#10207) <https://github.com/PennyLaneAI/pennylane/pull/10207>`__
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
