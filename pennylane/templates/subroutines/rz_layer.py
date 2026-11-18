@@ -35,14 +35,13 @@ class RZLayer(Operator2):
         \operatorname{RZLayer}(\boldsymbol{\theta}) = \prod_{i=0}^{k-1} \prod_{j=0}^{m-1}
         R_Z(\theta_i)_{\texttt{wires}[im+j]}.
 
-    The block size :math:`m` is fixed by the shapes of ``angles`` and ``wires``, so that
-    decompositions can exploit equal angles without inspecting their values.
+    Note that the block size :math:`m` is fixed by the shapes of ``angles`` and ``wires``.
 
     Args:
         angles (TensorLike): one-dimensional array of :math:`k\geq 1` rotation angles
         wires (WiresLike): the :math:`km` wires the rotations act on
         work_wires (WiresLike): auxiliary wires in the zero state that decompositions may use and
-            return to the zero state. They are included in ``op.wires``. Defaults to ``()``.
+            return to the zero state. Defaults to ``()``.
 
     Raises:
         ValueError: if ``angles`` is not one-dimensional or empty, if the number of wires is not
@@ -50,12 +49,12 @@ class RZLayer(Operator2):
 
     **Example**
 
-    Two angles on four wires apply the first angle to the wires ``0, 1`` and the second angle
-    to the wires ``2, 3``:
+    Two angles on six wires apply the first angle to the wires ``0, 1, 2`` and the second angle
+    to the wires ``3, 4, 5``:
 
-    >>> op = qp.RZLayer([0.1, 0.2], wires=[0, 1, 2, 3])
+    >>> op = qp.RZLayer([0.1, 0.2], wires=[0, 1, 2, 3, 4, 5])
     >>> op.decomposition()
-    [RZ(0.1, wires=[0]), RZ(0.1, wires=[1]), RZ(0.2, wires=[2]), RZ(0.2, wires=[3])]
+    [RZ(0.1, wires=[0]), RZ(0.1, wires=[1]), RZ(0.1, wires=[2]), RZ(0.2, wires=[3]), RZ(0.2, wires=[4]), RZ(0.2, wires=[5])]
 
     With one angle per wire, every wire gets its own angle:
 
@@ -121,11 +120,7 @@ class RZLayer(Operator2):
         return RZLayer(-self.angles, **self.wire_args)
 
 
-def _rzlayer_individual_resources(wires, **_):
-    return {RZ: len(wires)}
-
-
-@register_resources(_rzlayer_individual_resources)
+@register_resources(lambda wires, **_: {RZ: len(wires)})
 def _rzlayer_individual(angles, wires, **_):
     block_size = len(wires) // len(angles)
     if capture.enabled() or compiler.active():
