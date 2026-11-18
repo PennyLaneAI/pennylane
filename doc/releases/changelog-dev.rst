@@ -908,6 +908,12 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
+  powers that can simplify eagerly for faster execution, while the other uses nested
+  loops to keep the captured intermediate representation compact. Both variants include
+  resource counts.
+  `(#10529) <https://github.com/PennyLaneAI/pennylane/pull/10529>`__
+
 * Controlled :class:`~.SWAP` and :class:`~.PauliZ` operators now use their work wires when
   decomposed. The decompositions into :class:`~.CSWAP` (one control wire) and :class:`~.CCZ`
   (two control wires) are now separate decomposition rules, and the decompositions via
@@ -1888,6 +1894,11 @@ Breaking changes 💔
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
+* PyQuil and Qualtran interoperability has been removed from ``qp.io`` and the top-level
+  PennyLane namespace. The removed APIs are ``from_pyquil``, ``from_quil``, ``from_quil_file``,
+  ``FromBloq``, ``ToBloq``, ``to_bloq``, and ``bloq_registers``.
+  `(#10498) <https://github.com/PennyLaneAI/pennylane/pull/10498>`__
+
 * :class:`~.Barrier` no longer accepts ``only_visual``. Barriers are preserved by
   simplification and separate compilation into blocks.
   `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
@@ -1926,6 +1937,21 @@ Internal changes ⚙️
   :func:`~pennylane.estimate` now inserts the requested analysis pass at every level, instead of
   ``resource-analysis`` at every level other than 0.
   `(#10541) <https://github.com/PennyLaneAI/pennylane/pull/10541>`__
+
+* Added pinned local ``ty`` tooling and a diagnostic baseline for the package. Performs fixes
+  to improve ty compatibility.
+  `(#10537) <https://github.com/PennyLaneAI/pennylane/pull/10537>`__
+  `(#10540) <https://github.com/PennyLaneAI/pennylane/pull/10540>`__
+
+* Adding trusted publishing PyPI uploads.
+  `(#10513) <https://github.com/PennyLaneAI/pennylane/pull/10513>`__
+
+* Removed leftover array-interface selection from QSVT iterative angle solvers now that
+  JAX is always available.
+  `(#10216) <https://github.com/PennyLaneAI/pennylane/pull/10216>`__
+
+* Added pinned local ``ty`` tooling and a diagnostic baseline for the package.
+  `(#10537) <https://github.com/PennyLaneAI/pennylane/pull/10537>`__
 
 * :class:`~.Barrier` now uses a dedicated program-capture primitive while retaining
   the ``Operator2`` argument format and operator reconstruction behavior.
@@ -2033,7 +2059,8 @@ Internal changes ⚙️
     - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
       :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`,
       :class:`~.GlobalPhase`, :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`, :class:`~.RX`, :class:`~.CRX`,
-      :class:`~.RY`, :class:`~.CRY`, :class:`~.QubitUnitary`, :class:`~.ControlledQubitUnitary`
+      :class:`~.RY`, :class:`~.CRY`, :class:`~.QubitUnitary`, :class:`~.ControlledQubitUnitary`,
+      :class:`~.CPhaseShift00`, :class:`~.CPhaseShift01`, :class:`~.CPhaseShift10`
 
     `(#9998) <https://github.com/PennyLaneAI/pennylane/pull/9998>`__
     `(#9857) <https://github.com/PennyLaneAI/pennylane/pull/9857>`__
@@ -2054,6 +2081,7 @@ Internal changes ⚙️
     `(#10041) <https://github.com/PennyLaneAI/pennylane/pull/10041>`__
     `(#10072) <https://github.com/PennyLaneAI/pennylane/pull/10072>`__
     `(#10149) <https://github.com/PennyLaneAI/pennylane/pull/10149>`__
+    `(#10494) <https://github.com/PennyLaneAI/pennylane/pull/10494>`__
 
   - Templates are ported:
 
@@ -2463,6 +2491,10 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed the measurement-based decomposition of :class:`~.QROM` to support dynamic
+  bitstrings with ``qjit(capture=True)``, including padding for extra control wires.
+  Its inner traversal now uses :func:`~.for_loop` instead of recursion.
+  `(#10501) <https://github.com/PennyLaneAI/pennylane/pull/10501>`__
 * Fixed a precision loss in :func:`~pennylane.math.decomposition.givens_decomposition` and
   the complex-valued decomposition of :class:`~.BasisRotation` for unitaries close to the identity.
   `(#10518) <https://github.com/PennyLaneAI/pennylane/pull/10518>`__
@@ -2803,6 +2835,7 @@ Contributors ✍️
 
 This release contains contributions from (in alphabetical order):
 
+Runor Agbaire,
 Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,
