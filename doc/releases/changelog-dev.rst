@@ -896,6 +896,14 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* :class:`~.TrotterCDF` now fuses the one-body evolution with the basis rotations around it into
+  a single complex-valued :class:`~.BasisRotation`. Half of the two-qubit
+  :class:`~.SingleExcitation` gates of the one-body block become single-qubit
+  :class:`~.PhaseShift` gates; for real-valued leaves, the number of rotation gates stays the same.
+  This applies to uncontrolled ``TrotterCDF`` and double-phase-controlled ``TrotterCDF`` with
+  real-valued leaves.
+  `(#10362) <https://github.com/PennyLaneAI/pennylane/pull/10362>`__
+
 * :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
   powers that can simplify eagerly for faster execution, while the other uses nested
   loops to keep the captured intermediate representation compact. Both variants include

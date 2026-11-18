@@ -27,6 +27,7 @@ TROTTER_GATE_SET = {
     "RZ",
     "IsingZZ",
     "CNOT",
+    "CY",
     "GlobalPhase",
     "PhaseShift",
     "StatePrep",
@@ -36,7 +37,16 @@ TROTTER_GATE_SET = {
 # compiles the controlled evolution into (controlled) PhaseShift/RZ rotations, while the
 # double-phase variant keeps bare IsingZZ rotations sandwiched by CNOTs.
 CATALYST_GATE_SET_GENUINE = {"Hadamard", "BasisRotation", "RZ", "CNOT", "PhaseShift", "ForLoop"}
-CATALYST_GATE_SET_DOUBLE_PHASE = {"Hadamard", "BasisRotation", "RZ", "CNOT", "IsingZZ", "ForLoop"}
+CATALYST_GATE_SET_DOUBLE_PHASE = {
+    "Hadamard",
+    "BasisRotation",
+    "RZ",
+    "CNOT",
+    "CY",
+    "IsingZZ",
+    "GlobalPhase",
+    "ForLoop",
+}
 
 
 def random_orthogonal(n, rng):
@@ -190,8 +200,8 @@ def assert_resource_counts_match(resources, operations):
     def resource_name(resource):
         return resource.__name__ if isinstance(resource, type) else resource.name
 
-    expected = Counter(
-        {resource_name(resource): count for resource, count in resources.items() if count}
-    )
+    expected = Counter()
+    for resource, count in resources.items():
+        expected[resource_name(resource)] += count
     actual = Counter(op.name for op in operations)
     assert actual == expected

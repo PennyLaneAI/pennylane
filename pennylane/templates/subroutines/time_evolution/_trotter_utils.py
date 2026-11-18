@@ -53,6 +53,7 @@ def _run_trotter_steps(  # pylint: disable=too-many-arguments
     apply_one_body_diagonal,
     merge_leaves,
     transpose_leaf,
+    apply_fused_one_body=None,
 ):
     r"""Emit the second-order Trotter step sequence and the trailing basis rotation.
 
@@ -96,6 +97,10 @@ def _run_trotter_steps(  # pylint: disable=too-many-arguments
             basis rotations telescope into one.
         transpose_leaf (callable): ``(U) -> U``. Inverse of a leaf, for the trailing basis
             rotation that closes the final fragment.
+        apply_fused_one_body (callable | None): Optional qfunc ``(wires, control_wires,
+            double_phase)`` that applies the full one-body evolution in the frame of the last
+            two-body fragment. It replaces the basis rotations into and out of the one-body frame
+            and the one-body diagonal layer.
     """
     U_tensor = hamiltonian.leaf_tensors
     Z_tensor = hamiltonian.core_tensors
@@ -131,18 +136,37 @@ def _run_trotter_steps(  # pylint: disable=too-many-arguments
 
         for_loop(2, num_two_body_fragments + 1)(two_body_fragment)(1)
 
-        U = merge_leaves(U_tensor[num_two_body_fragments], U_tensor[0])
-        apply_system_basis_rotation(U, wires)
-        apply_one_body_diagonal(
-            Z_tensor[0], wires, first_order_time_step, control_wires, double_phase
-        )
+        if apply_fused_one_body is None:
+            U = merge_leaves(U_tensor[num_two_body_fragments], U_tensor[0])
+            apply_system_basis_rotation(U, wires)
+            apply_one_body_diagonal(
+                Z_tensor[0], wires, first_order_time_step, control_wires, double_phase
+            )
 
-        # Carry the index of the fragment whose inverse was most recently applied.
-        # For L=1 there is no reverse two-body loop, so the preceding frame is H0.
-        prev_fragment_idx = for_loop(num_two_body_fragments, 1, -1)(two_body_fragment)(0)
+            # Carry the index of the fragment whose inverse was most recently applied.
+            # For L=1 there is no reverse two-body loop, so the preceding frame is H0.
+            prev_fragment_idx = for_loop(num_two_body_fragments, 1, -1)(two_body_fragment)(0)
+        else:
+            # The fused block stays in the frame of the last two-body fragment, so we skip the
+            # basis rotation and start the reverse loop with that fragment's diagonal layer.
+            apply_fused_one_body(wires, control_wires, double_phase)
+            prev_fragment_idx = num_two_body_fragments
+            if num_two_body_fragments > 1:
+                apply_two_body_diagonal(
+                    Z_tensor[num_two_body_fragments],
+                    wires,
+                    first_order_time_step,
+                    control_wires,
+                    double_phase,
+                )
+                prev_fragment_idx = for_loop(num_two_body_fragments - 1, 1, -1)(two_body_fragment)(
+                    num_two_body_fragments
+                )
 
-        U = merge_leaves(U_tensor[prev_fragment_idx], U_tensor[1])
-        apply_system_basis_rotation(U, wires)
+        # For L=1 with a fused block, we already are in the frame of fragment 1.
+        if apply_fused_one_body is None or num_two_body_fragments > 1:
+            U = merge_leaves(U_tensor[prev_fragment_idx], U_tensor[1])
+            apply_system_basis_rotation(U, wires)
         # End internal steps with a full fragment-1 block and the final step with a half block.
         endpoint_time_step = math.where(
             step_idx < num_trotter_steps - 1,
