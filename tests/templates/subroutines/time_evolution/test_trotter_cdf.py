@@ -41,6 +41,7 @@ from pennylane.numeric_hamiltonians import CDFHamiltonian
 from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
     _apply_system_basis_rotation,
     _apply_two_body_diagonal_with_work_wires,
+    _BasisRotationFromAngles,
     _cdf_resource_counts,
     _controlled_trotter_cdf_decomp,
     _energy_shift,
@@ -459,7 +460,21 @@ class TestResourceRule:
         core = np.zeros((num_fragments + 1, num_orbitals, num_orbitals))
         leaf = np.stack([np.eye(num_orbitals)] * (num_fragments + 1))
         ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.0)
-        resources = _cdf_resource_counts(num_steps, ham, has_control, double_phase, num_work_wires)
+        prepared = (
+            qp.TrotterCDF(0.4, num_steps, ham, range(2 * num_orbitals)).arguments[
+                "_basis_rotations"
+            ]
+            if has_control
+            else None
+        )
+        resources = _cdf_resource_counts(
+            num_steps,
+            ham,
+            has_control,
+            double_phase,
+            num_work_wires,
+            _basis_rotations=prepared,
+        )
         num_system_wires = 2 * num_orbitals
         trace_wires = tuple(range(num_system_wires + int(has_control) + num_work_wires))
 
@@ -808,7 +823,7 @@ class TestControlledDecomposition:
         # One-body terms emit ``CRZ`` (PennyLane's single-control shortcut for ``ctrl(RZ)``);
         # two-body terms emit ``ControlledOp2`` wrapping ``IsingZZ``.
         assert {type(op).__name__ for op in ops} == {
-            "BasisRotation",
+            "_BasisRotationFromAngles",
             "CRZ",
             "PhaseShift",
             "ControlledOp2",
@@ -986,7 +1001,12 @@ class TestDoublePhaseControlledDecomposition:
             jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
 
         ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
-        assert {type(op).__name__ for op in ops} == {"BasisRotation", "CNOT", "RZ", "IsingZZ"}
+        assert {type(op).__name__ for op in ops} == {
+            "_BasisRotationFromAngles",
+            "CNOT",
+            "RZ",
+            "IsingZZ",
+        }
 
     def test_double_phase_controlled_matches_expm(self, diagonal_hamiltonian_cdf):
         """With double_phase=True, ctrl(TrotterCDF) realizes diag(U, U^dagger): for an
@@ -1129,3 +1149,105 @@ class TestIntegration:
             return qp.expval(qp.X(registers["hadamard"]))
 
         assert not np.isclose(trotter_circuit(), 0)
+
+
+class TestPreparedBasisRotations:
+    """Fixed leaf tensors prepare a shared schedule before the Trotter loops."""
+
+    @staticmethod
+    def hamiltonian(num_fragments):
+        """Small nonidentity leaves with nonzero one-body evolution."""
+        leaves = []
+        for index in range(num_fragments + 1):
+            angle = 0.17 * (index + 1)
+            leaves.append(
+                np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+            )
+        core = np.zeros((num_fragments + 1, 2, 2))
+        core[0] = np.diag([-0.4, 0.7])
+        return CDFHamiltonian(core, np.stack(leaves), 0.0)
+
+    @pytest.mark.parametrize("num_fragments", [1, 3])
+    @pytest.mark.parametrize("num_steps", [1, 5])
+    def test_factorization_count_and_shared_spin_angles(
+        self, monkeypatch, num_fragments, num_steps
+    ):
+        """Factorization count is independent of the number of steps and spin channels."""
+        original = qp.math.decomposition.givens_decomposition
+        calls = []
+
+        def counted(matrix):
+            calls.append(matrix.copy())
+            return original(matrix)
+
+        monkeypatch.setattr(qp.math.decomposition, "givens_decomposition", counted)
+        ham = self.hamiltonian(num_fragments)
+        op = qp.TrotterCDF(0.4, num_steps, ham, range(4))
+        assert len(calls) == 2 * num_fragments + 2
+        assert op.arguments["hamiltonian"] is ham
+        rotations = [
+            operation
+            for operation in op.decomposition()
+            if isinstance(operation, _BasisRotationFromAngles)
+        ]
+        assert len(rotations) == 4 * num_fragments * num_steps + 4
+        assert len(calls) == 2 * num_fragments + 2
+        for alpha, beta in zip(rotations[::2], rotations[1::2], strict=True):
+            assert np.shares_memory(alpha.arguments["angles"], beta.arguments["angles"])
+
+    def test_jax_leaves_keep_runtime_factorization(self):
+        """JAX leaves retain the original path and the same quantum evolution."""
+        ham = self.hamiltonian(1)
+        dynamic = CDFHamiltonian(ham.core_tensors, jax.numpy.asarray(ham.leaf_tensors), 0.0)
+        op = qp.TrotterCDF(0.4, 2, dynamic, range(4))
+        assert op.arguments["_basis_rotations"] is None
+        assert op.arguments["hamiltonian"].leaf_tensors is dynamic.leaf_tensors
+        assert np.allclose(qp.matrix(op), qp.matrix(qp.TrotterCDF(0.4, 2, ham, range(4))))
+
+    def test_prepared_rotations_preserve_time_derivative(self):
+        """Preparing constant leaves does not detach the evolution-time parameter."""
+        ham = self.hamiltonian(1)
+
+        @qp.qnode(qp.device("default.qubit", wires=4), interface="jax")
+        def objective(time):
+            qp.PauliX(0)
+            qp.TrotterCDF(time, 2, ham, range(4))
+            return qp.expval(qp.PauliZ(0))
+
+        derivative = jax.grad(objective)(0.23)
+        delta = 1e-5
+        expected = (objective(0.23 + delta) - objective(0.23 - delta)) / (2 * delta)
+        assert np.isfinite(derivative)
+        assert np.allclose(derivative, expected, atol=1e-7)
+        assert not np.isclose(derivative, 0)
+
+    @pytest.mark.catalyst
+    def test_capture_has_no_runtime_givens(self, monkeypatch, tmp_path):
+        """Prepared angles survive capture and remove runtime factorization."""
+        from catalyst.debug import get_compilation_stage
+
+        monkeypatch.chdir(tmp_path)
+        ham = self.hamiltonian(2)
+
+        @qp.qnode(qp.device("null.qubit", wires=5))
+        def circuit(time):
+            qp.TrotterCDF(time, 3, ham, range(4))
+            return qp.expval(qp.PauliZ(0))
+
+        pipeline = qp.CompilePipeline(
+            qp.decompose(
+                gate_set={"SingleExcitation", "RZ", "IsingZZ", "CRZ", "GlobalPhase", "PhaseShift"}
+            )
+        )
+        compiled = qp.qjit(
+            pipeline(circuit),
+            capture=True,
+            target="mlir_opt",
+            keep_intermediate=True,
+            enable_aot_compilation=False,
+        )
+        compiled.aot_compile(np.array(0.4))
+        lowered = get_compilation_stage(compiled, "QuantumCompilationStage")
+        assert "_right_givens" not in lowered
+        assert "_left_givens" not in lowered
+        assert "givens_matrix" not in lowered
