@@ -13,8 +13,6 @@
 # limitations under the License.
 """Unit tests for density matrices functions."""
 
-# pylint: disable=import-outside-toplevel
-
 import numpy as onp
 import pytest
 
@@ -183,7 +181,6 @@ class TestDensityMatrixFromStateVectors:
 
     def test_reduce_statevector_jax_jit(self):
         """Test jitting the density matrix from state vector function."""
-        # pylint: disable=protected-access
         from jax import jit
 
         state_vector = jnp.array([1, 0, 0, 0])
@@ -195,7 +192,6 @@ class TestDensityMatrixFromStateVectors:
 
     def test_wrong_shape_jax_jit(self):
         """Test jitting the density matrix from state vector with wrong shape."""
-        # pylint: disable=protected-access
         from jax import jit
 
         state_vector = jnp.array([1, 0, 0])
@@ -278,7 +274,6 @@ class TestDensityMatrixFromMatrix:
     @pytest.mark.parametrize("wires", multiple_wires_list)
     def test_reduce_dm_check(self, density_matrix, wires):
         """Test the density matrix from matrices for single wires with state checking"""
-        # pylint: disable=protected-access
         returned_density_matrix = fn.quantum.reduce_dm(
             density_matrix, indices=wires, check_state=True
         )
@@ -329,7 +324,6 @@ class TestDensityMatrixFromMatrix:
 
     def test_wrong_shape_jax_jit(self):
         """Test jitting the density matrix from state vector with wrong shape."""
-        # pylint: disable=protected-access
         from jax import jit
 
         state_vector = jnp.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])

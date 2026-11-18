@@ -15,6 +15,8 @@
 Tests for quantum algorithmic subroutines resource operators.
 """
 
+# pylint: disable=too-many-arguments
+
 import math
 
 import numpy as np
@@ -27,8 +29,6 @@ from pennylane.estimator.resource_config import ResourceConfig
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.templates import HybridQRAM, SelectOnlyQRAM
 from pennylane.wires import Wires
-
-# pylint: disable=no-self-use,too-many-arguments
 
 
 class TestResourceOutOfPlaceSquare:
@@ -536,8 +536,7 @@ class TestSelectOnlyQRAM:
 
         dev = qp.device("lightning.qubit")
 
-        # pylint: disable-next=protected-access
-        @qp.transforms._tape_decompose
+        @qp.transforms._tape_decompose  # pylint: disable=protected-access
         @qp.qnode(dev)
         def circuit():
             SelectOnlyQRAM(
@@ -2164,17 +2163,14 @@ class TestResourceQROM:
             == expected_res
         )
 
-    # pylint: disable=protected-access
     def test_t_select_swap_width(self):
         """Test that the private function doesn't give negative or
         fractional values for the depth"""
         num_bitstrings = 8
         size_bitstring = 17
 
-        opt_width = qre.QROM._t_optimized_select_swap_width(
-            num_bitstrings,
-            size_bitstring,
-        )
+        # pylint: disable-next=protected-access
+        opt_width = qre.QROM._t_optimized_select_swap_width(num_bitstrings, size_bitstring)
         assert opt_width == 1
 
     @pytest.mark.parametrize(

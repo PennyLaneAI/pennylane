@@ -14,8 +14,6 @@
 
 """Tests for backline coprocessor functions."""
 
-# pylint: disable=too-few-public-methods
-
 import importlib
 import sys
 
@@ -181,7 +179,7 @@ class TestCssBpDecoder:
         assert len(set(captured["qualnames"])) == 2
 
 
-class TestTritonSubmoduleImportGuards:
+class TestTritonSubmoduleImportGuards:  # pylint: disable=too-few-public-methods
     """Each triton submodule raises a helpful ImportError when triton is missing.
 
     Every submodule under ``pennylane.backline.decoders.triton`` wraps its

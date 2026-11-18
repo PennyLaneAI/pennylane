@@ -32,6 +32,7 @@ from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
     _decomp_contains_mcm,
+    _get_registered_decomps,
     _list_decomps,
     get_fixed_decomp,
     list_decomps,
@@ -51,8 +52,6 @@ from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Wire
 from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
 
 from .symbolicop2 import SymbolicOp2
-
-# pylint: disable=unused-argument,protected-access,no-value-for-parameter
 
 
 def _setup_control_values(control_values, num_control_wires):
@@ -155,7 +154,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
         return obj
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         base: Operator,
         control_wires: WiresLike,
@@ -289,7 +288,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_matrix(base, control_wires, control_values, **_):
         base_matrix = base.matrix()
         interface = math.get_interface(base_matrix)
@@ -320,7 +319,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_sparse_matrix(base, control_wires, control_values, format="csr", **_):
         target_matrix = _get_sparse_matrix(base)
 
@@ -337,7 +336,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
     def compute_eigvals(base, control_wires, control_values=None, **_):
         base_eigvals = math.asarray(base.eigvals())
         num_target_wires = len(base.wires)
@@ -379,8 +378,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @property
     @override
-    # pylint: disable=invalid-overridden-method,arguments-differ
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return self.base.has_adjoint
 
     @override
@@ -409,20 +407,17 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @property
     @override
-    # pylint: disable=invalid-overridden-method,arguments-differ
-    def has_diagonalizing_gates(self):
+    def has_diagonalizing_gates(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return self.base.has_diagonalizing_gates
 
     @staticmethod
     @override
-    # pylint: disable=arguments-differ
-    def compute_diagonalizing_gates(base, **_):
+    def compute_diagonalizing_gates(base, **_):  # pylint: disable=arguments-differ
         return base.diagonalizing_gates()
 
     @property
     @override
-    # pylint: disable=invalid-overridden-method,arguments-differ
-    def has_generator(self):
+    def has_generator(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return self.base.has_generator
 
     @override
@@ -487,7 +482,7 @@ def _bool_array_to_int(arr: list[bool]):
 # There are a couple of reasons for defining this as a distinct subclass of Controlled2 instead
 # of having just a single Controlled2 class that serve both as a base class interface and a
 # concrete operator type. See the PR description of #9647 for more details.
-class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
+class ControlledOp2(Controlled2):
     """Represents a controlled version of an arbitrary base operator.
 
     Args:
@@ -520,7 +515,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
     # signature of Controlled2.__new__, which is just (*args, **kwargs). When __new__ is
     # overridden with a different signature, we must override __init__ so that the signature
     # of the __init__ is correctly retrieved as the signature of the operator subclass.
-    def __init__(  # pylint: disable=too-many-arguments,useless-parent-delegation
+    def __init__(
         self,
         base: Operator,
         control_wires: WiresLike,
@@ -567,8 +562,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
             return
 
         if self.base.tracer is None:
-            # pylint: disable=protected-access
-            self.base._bind_primitive()
+            self.base._bind_primitive()  # pylint: disable=protected-access
             # NOTE: `self.base.tracer` can still be `None` if we're not in a tracing context.
             # In that case, there is nothing to do, so return early.
             if self.base.tracer is None:
@@ -640,8 +634,8 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     if isinstance(op.base, Adjoint2):
         return DecompCollection([flip_control_adjoint])
 
-    # Get custom rules registered for this controlled operator.
-    custom_rules = _list_decomps.dispatch(object)(op)
+    # Retrieve only rules registered directly for this controlled operator.
+    custom_rules = _get_registered_decomps(to_name(op))
 
     # The specialized ChangeOpBasis rule leaves the compute and uncompute operations
     # uncontrolled, so it must always take precedence over general controlled fallbacks.
@@ -674,6 +668,7 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
     def _condition_fn(base, *_, **__):
         return base_rule.is_applicable(**base.arguments)
 
+    # pylint: disable-next=unused-argument
     def _resource_fn(base, control_wires, control_values, work_wires, work_wire_type):
         base_counts = base_rule.compute_resources(**base.arguments).gate_counts
         # TODO: we need a better startegy for control values, but for now
@@ -686,6 +681,7 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
         return gate_counts
 
     def _wrap_work_wire_spec(base_rule):
+        # pylint: disable=protected-access
 
         if isinstance(base_rule._work_wire_spec, dict):
             return base_rule._work_wire_spec
@@ -714,16 +710,16 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
         def _x_flips(i):
             qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_cwires[i])
 
-        _x_flips()
+        _x_flips()  # pylint: disable=no-value-for-parameter
         non_traced_args, traced_args = get_traced_and_non_traced_args(base)
-        impl = partial(base_rule._impl, **non_traced_args)
+        impl = partial(base_rule._impl, **non_traced_args)  # pylint: disable=protected-access
         qp.ctrl(
             impl,
             control=control_wires,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )(**traced_args)
-        _x_flips()
+        _x_flips()  # pylint: disable=no-value-for-parameter
 
     _impl._source = (
         dedent(_impl._source).strip()
@@ -762,6 +758,7 @@ def flip_control_adjoint(base, control_wires, control_values, work_wires, work_w
     )
 
 
+# pylint: disable-next=unused-argument
 def _to_controlled_qu_resource(base, control_wires, control_values, work_wires, work_wire_type):
     num_control_wires = len(control_wires)
     return {
@@ -775,6 +772,7 @@ def _to_controlled_qu_resource(base, control_wires, control_values, work_wires, 
     }
 
 
+@register_condition(lambda base, *_, **__: base.has_matrix and len(base.wires) == 1)
 @register_resources(_to_controlled_qu_resource)
 def to_controlled_unitary(base, control_wires, control_values, work_wires, work_wire_type):
     """Convert a controlled operator to a controlled qubit unitary."""
@@ -806,11 +804,10 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         gate_counts[qp.X] = base_x_count + len(control_values)
         return gate_counts
 
-    # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
-        work_wires=rule._work_wire_spec,
+        work_wires=rule._work_wire_spec,  # pylint: disable=protected-access
         exact=False,
         name=name or f"flip_zero_ctrl_values({rule.name})",
     )
@@ -830,7 +827,7 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         def _x_flips(i):
             qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_cwires[i])
 
-        _x_flips()
+        _x_flips()  # pylint: disable=no-value-for-parameter
         rule(
             base,
             control_wires,
@@ -838,7 +835,7 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
-        _x_flips()
+        _x_flips()  # pylint: disable=no-value-for-parameter
 
     base_source = rule._source
     _impl._source = (
@@ -859,6 +856,7 @@ def _ctrl_single_work_wire_resource(base, control_wires, *_, **__):
     }
 
 
+@register_condition(lambda base, control_wires, *_, **__: len(control_wires) > 2)
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
 def _ctrl_single_work_wire(base, control_wires, *_, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
@@ -891,7 +889,7 @@ def _ctrl_many_zeroed_work_wires_condition(control_wires, work_wires, work_wire_
 @register_condition(_ctrl_many_zeroed_work_wires_condition)
 @register_resources(_ctrl_many_zeroed_work_wires_resource)
 def _ctrl_many_zeroed_work_wires(base, control_wires, work_wires, *_, **__):
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable-next=import-outside-toplevel
     from pennylane.ops.op_math.prod2 import _multi_temporary_and_all_ones
 
     effective_control = _multi_temporary_and_all_ones(control_wires, work_wires)

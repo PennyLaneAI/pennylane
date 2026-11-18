@@ -171,13 +171,13 @@ def _change_op_basis_abstract(compute_op, target_op, uncompute_op):
     return change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
 
 
-def _controlled_change_op_basis_resources(
+def _controlled_change_op_basis_resources(  # pylint: disable=unused-argument
     base,
     control_wires,
     control_values,
     work_wires,
     work_wire_type,
-):  # pylint: disable=unused-argument
+):
     resources = defaultdict(int)
     resources[base.compute_op] += 1
     resources[

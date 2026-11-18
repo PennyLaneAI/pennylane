@@ -63,8 +63,8 @@ jobs:
 
       - name: Run Pylint (source files)
         if: always()
-        run: python -m pylint --rcfile .pylintrc $(find pennylane -name "*.py")
+        run: python -m pylint -rn -sn --rcfile=.pylintrc $(find pennylane -name "*.py" ! -path "pennylane/labs/tests/*")
 
       - name: Run Pylint (test files)
         if: always()
-        run: python -m pylint --rcfile tests/.pylintrc $(find tests -name "*.py")
+        run: python -m pylint -rn -sn --rcfile=tests/.pylintrc $(find tests pennylane/labs/tests -name "*.py")

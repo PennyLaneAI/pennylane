@@ -220,3 +220,18 @@ def test_conditional_global_phase():
     bit_map = {q.queue[0]: None}
 
     assert drawable_layers(q.queue, bit_map=bit_map) == [[q.queue[0]], [q.queue[1]]]
+
+
+@pytest.mark.parametrize("base", [qp.GlobalPhase(0.123), qp.Identity()])
+def test_conditional_controlled_global_blocks_full_layer(base):
+    """Controlled global diagrams cannot share layers with gates above their controls."""
+    with AnnotatedQueue() as q:
+        qp.H(0)
+        qp.Z(0)
+        m0 = qp.measure(2)
+        qp.cond(m0, lambda: qp.ctrl(base, control=2, control_values=[False]))()
+        qp.X(0)
+
+    layers = drawable_layers(q.queue, wire_map={0: 0, 1: 1, 2: 2}, bit_map={m0.measurements[0]: 0})
+
+    assert layers == [[q.queue[0], q.queue[2]], [q.queue[1]], [q.queue[3]], [q.queue[4]]]

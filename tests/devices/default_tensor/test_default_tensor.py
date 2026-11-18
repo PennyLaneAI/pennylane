@@ -266,7 +266,7 @@ def test_kahypar_warning_not_raised(recwarn):
     """Test that a warning is not raised if the user does not have kahypar installed when initializing the
     default.tensor device"""
     try:
-        import kahypar  # pylint: disable=import-outside-toplevel, unused-import
+        import kahypar  # pylint: disable=unused-import
 
         pytest.skip(reason="Test is for when kahypar is not installed")
     except ImportError:
@@ -681,7 +681,7 @@ class TestGraphModeExclusiveFeatures:  # pylint: disable=too-few-public-methods
         """Test that decompositions requiring more work wires than available are discarded."""
 
         # Create a mock operation with different decomposition options
-        class MyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyOp(qp.operation.Operator):
             num_wires = 1
 
         # Fallback decomposition (no work wires needed)

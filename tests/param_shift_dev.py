@@ -20,9 +20,10 @@ import dataclasses
 import pennylane as qp
 
 
-# pylint: disable=unused-argument
 class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):
     """This device provides derivatives via parameter shift."""
+
+    # pylint: disable=unused-argument
 
     name = "param_shift.qubit"
 

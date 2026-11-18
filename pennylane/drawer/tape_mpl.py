@@ -38,6 +38,7 @@ from .utils import (
     default_bit_map,
     transform_deferred_measurements_tape,
     unwrap_controls,
+    unwrap_temporary_and,
 )
 
 if TYPE_CHECKING:
@@ -70,6 +71,11 @@ def _add_operation_to_drawer(op: Operator, drawer: MPLDrawer, layer: int, config
         Adds a depiction of ``op`` to ``drawer``
 
     """
+    if (elbow := unwrap_temporary_and(op)) is not None:
+        controls, target, values, adjoint = elbow
+        drawer.elbow(layer, controls + [target], control_values=values, adjoint=adjoint)
+        return
+
     op_control_wires, control_values, base = unwrap_controls(op)
     is_global_op = isinstance(base, (ops.GlobalPhase, ops.Identity))
     op_wires = list(range(drawer.n_wires)) if len(op.wires) == 0 or is_global_op else op.wires
@@ -164,15 +170,29 @@ def _(op: ops.PauliMeasure, drawer, layer, _):
     drawer.pauli_measure(layer, op.pauli_word, op.wires, op.postselect)
 
 
+def _conditional_frame_wires(op: Operator, n_wires: int) -> Sequence[int]:
+    """Return the wires of a conditional diagram needing an outer boundary."""
+    if not isinstance(op, ops.Conditional):
+        return ()
+    control_wires, _, base = unwrap_controls(op.base)
+    # Controls, SWAP crosses, and TemporaryAND symbols need a shared boundary
+    # to show that the classical condition applies to the whole operation.
+    if (
+        not control_wires
+        and not isinstance(op.base, ops.SWAP)
+        and unwrap_temporary_and(op.base) is None
+    ):
+        return ()
+    if isinstance(base, (ops.GlobalPhase, ops.Identity)):
+        return range(n_wires)
+    return op.wires
+
+
 @_add_operation_to_drawer.register
 def _(op: ops.Conditional, drawer, layer, config) -> None:
-    drawer.box_gate(
-        layer,
-        list(op.wires),
-        op.base.label(decimals=config.decimals),
-        box_options={"zorder": 4},
-        text_options={"zorder": 5},
-    )
+    _add_operation_to_drawer(op.base, drawer, layer, config)
+    if wires := _conditional_frame_wires(op, drawer.n_wires):
+        drawer.conditional_frame(layer, wires)
     sorted_bits = sorted([config.bit_map[m] for m in op.meas_val.measurements])
     for b in sorted_bits[:-1]:
         erase_right = layer < config.cwire_layers[b][-1][-1]
@@ -193,6 +213,12 @@ def _get_measured_wires(measurements, wires) -> set:
 
 
 def _add_classical_wires(drawer, layers, cwire_layers, cwire_wires):
+    frame_endpoints = {}
+    for layer, layer_ops in enumerate(layers):
+        for op in layer_ops:
+            if wires := _conditional_frame_wires(op, drawer.n_wires):
+                frame_endpoints[layer, max(op.wires)] = max(wires) + drawer.conditional_frame_offset
+
     for cwire, layer_ids_per_cwire in cwire_layers.items():
         for layer_ids, layer_wires in zip(layer_ids_per_cwire, cwire_wires[cwire], strict=True):
             xs, ys = [], []
@@ -201,6 +227,7 @@ def _add_classical_wires(drawer, layers, cwire_layers, cwire_wires):
             if len_diff > 0:
                 layer_wires += [cwire + drawer.n_wires] * len_diff
             for l, w in zip(layer_ids, layer_wires, strict=True):
+                w = frame_endpoints.get((l, w), w)
                 if l < len(layers) and _ppm_controlled(layers[l]):
                     l -= drawer.ppm_offset
                 xs.extend([l, l, l])
@@ -210,13 +237,10 @@ def _add_classical_wires(drawer, layers, cwire_layers, cwire_wires):
 
 
 def _ppm_controlled(layer):
-    last_op = layer[0]
-    last_wire = max(last_op.wires)
-    for op in layer[1:]:
-        if (wire := max(op.wires)) > last_wire:
-            last_wire = wire
-            last_op = op
-    return isinstance(last_op, PauliMeasure)
+    wired_ops = [op for op in layer if len(op.wires) > 0]
+    if not wired_ops:
+        return False
+    return isinstance(max(wired_ops, key=lambda op: max(op.wires)), PauliMeasure)
 
 
 def _get_measured_bits(measurements, bit_map, offset):
@@ -337,8 +361,7 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
     ]
 
 
-# pylint: disable=too-many-arguments
-def tape_mpl(
+def tape_mpl(  # pylint: disable=too-many-arguments
     tape: QuantumScript,
     wire_order: Sequence | None = None,
     show_all_wires: bool = False,

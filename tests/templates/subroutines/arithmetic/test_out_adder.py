@@ -65,9 +65,8 @@ class TestOutAdder:
             ),
         ],
     )
-    def test_operation_result(
-        self, x_wires, y_wires, output_wires, mod, work_wires, x, y, z
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_operation_result(self, x_wires, y_wires, output_wires, mod, work_wires, x, y, z):
         """Test the correctness of the OutAdder template output."""
         dev = qp.device("default.qubit")
 
@@ -86,7 +85,6 @@ class TestOutAdder:
         if mod is None:
             mod = 2 ** len(output_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y, z)[0, :]))),
             (x + y + z) % mod,
@@ -145,9 +143,8 @@ class TestOutAdder:
             ),
         ],
     )
-    def test_wires_error(
-        self, x_wires, y_wires, output_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_wires_error(self, x_wires, y_wires, output_wires, mod, work_wires, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
@@ -218,7 +215,6 @@ class TestOutAdder:
         for op1, op2 in zip(adder_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
-    @pytest.mark.xfail_if_capture(reason="Needs PhaseAdder to be Op2 [sc-130164]", strict=False)
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("mod", [7, 8])
     def test_decomposition_new(self, mod):
@@ -264,7 +260,6 @@ class TestOutAdder:
             qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
             return qp.sample(wires=output_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))), (x + y) % mod
         )

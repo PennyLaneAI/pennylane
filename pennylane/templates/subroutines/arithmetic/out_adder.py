@@ -19,14 +19,13 @@ from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
-    resource_rep,
 )
 from pennylane.ops import Prod2, change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.typing import Wire
+from pennylane.typing import Int, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
@@ -162,7 +161,7 @@ class OutAdder(Operation):
         output_wires: WiresLike,
         mod=None,
         work_wires: WiresLike = (),
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
@@ -196,8 +195,7 @@ class OutAdder(Operation):
         for key in ["x_wires", "y_wires", "output_wires", "work_wires"]:
             self.hyperparameters[key] = Wires(locals()[key])
 
-        # pylint: disable=consider-using-generator
-        all_wires = sum(
+        all_wires = sum(  # pylint: disable=consider-using-generator
             [self.hyperparameters[key] for key in ["x_wires", "y_wires", "output_wires"]], start=[]
         )
         if num_work_wires != 0:
@@ -251,9 +249,8 @@ class OutAdder(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(
-        x_wires, y_wires, output_wires, mod, work_wires
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires):
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -270,7 +267,7 @@ class OutAdder(Operation):
         >>> ops = qp.OutAdder.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [(Adjoint(QFT(wires=[5, 6]))) @ ((ControlledSequence(PhaseAdder(wires=[5, 6]), control=[2, 3])) @ (ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]))) @ QFT(wires=[5, 6])]
+        [(Adjoint(QFT(wires=[5, 6]))) @ ((ControlledSequence(PhaseAdder(k=1, x_wires=[5, 6], mod=4, work_wire=[]), control=[2, 3])) @ (ControlledSequence(PhaseAdder(k=1, x_wires=[5, 6], mod=4, work_wire=[]), control=[0, 1]))) @ QFT(wires=[5, 6])]
 
         """
         if mod != 2 ** len(output_wires) and mod is not None:
@@ -293,11 +290,11 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
     num_qft_wires = num_output_wires if mod == 2**num_output_wires else num_output_wires + 1
     target_ops = [
         ControlledSequence(
-            base=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
+            base=PhaseAdder(Int, Wire[num_qft_wires], mod, Wire[int(mod != 2**num_qft_wires)]),
             control=Wire[num_y_wires],
         ),
         ControlledSequence(
-            base=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
+            base=PhaseAdder(Int, Wire[num_qft_wires], mod, Wire[int(mod != 2**num_qft_wires)]),
             control=Wire[num_x_wires],
         ),
     ]
