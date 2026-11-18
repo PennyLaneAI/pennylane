@@ -1882,8 +1882,9 @@ Breaking changes 💔
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
-* :func:`~.change_op_basis` now preserves the basis-change operator during program capture and
-  requires operator instances as inputs. Convert quantum functions with :func:`~.subcircuit`
+* :func:`~.change_op_basis` now preserves the basis-change operator during program capture.
+  With program capture enabled, inputs must be operator instances; callables remain supported
+  when capture is disabled. For capture, convert quantum functions with :func:`~.subcircuit`
   and instantiate the resulting operator class before passing it to ``change_op_basis``.
   `(#10511) <https://github.com/PennyLaneAI/pennylane/pull/10511>`__
 
