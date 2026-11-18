@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.templates.state_preparations.arbitrary_state_preparation import (
     _state_preparation_pauli_words,
 )
@@ -284,30 +283,6 @@ class TestInterfaces:
         res = circuit(weights_tuple)
         res2 = circuit2(weights_tuple)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-    @pytest.mark.autograd
-    def test_autograd(self, tol):
-        """Tests the autograd interface."""
-
-        weights = np.random.random(size=(6,))
-        weights = pnp.array(weights, requires_grad=True)
-
-        dev = qp.device("default.qubit", wires=2)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        grad_fn = qp.grad(circuit)
-        grads = grad_fn(weights)
-
-        grad_fn2 = qp.grad(circuit2)
-        grads2 = grad_fn2(weights)
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.jax
     def test_jax(self, tol):

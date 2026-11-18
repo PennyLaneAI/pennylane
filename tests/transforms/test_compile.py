@@ -417,30 +417,6 @@ expected_wires_list = [
 class TestCompileInterfaces:
     """Test that the top-level compile function works across all interfaces."""
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
-    def test_compile_autograd(self, diff_method):
-        """Test QNode and gradient in autograd interface."""
-
-        original_qnode = qp.QNode(qfunc_emb, dev_3wires, diff_method=diff_method)
-        transformed_qnode = qp.QNode(transformed_qfunc_emb, dev_3wires, diff_method=diff_method)
-
-        x = np.array([0.1, 0.2, 0.3], requires_grad=False)
-        params = np.ones((2, 3))
-
-        # Check that the numerical output is the same
-        assert qp.math.allclose(original_qnode(x, params), transformed_qnode(x, params))
-
-        # Check that the gradient is the same
-        assert qp.math.allclose(
-            qp.grad(original_qnode)(x, params), qp.grad(transformed_qnode)(x, params)
-        )
-
-        # Check operation list
-        tape = qp.workflow.construct_tape(transformed_qnode)(x, params)
-        ops = tape.operations
-        compare_operation_lists(ops, expected_op_list, expected_wires_list)
-
     @pytest.mark.torch
     def test_compile_torch(self):
         """Test QNode and gradient in torch interface."""

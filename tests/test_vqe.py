@@ -21,7 +21,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
 
 
 def generate_cost_fn(ansatz, hamiltonian, device, **kwargs):
@@ -261,7 +260,7 @@ class TestVQE:
     @pytest.mark.torch
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_torch(self, shots, seed):  # pylint: disable=unused-argument
+    def test_optimize_torch(self, shots, seed):
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the Torch interface."""
 
@@ -277,6 +276,7 @@ class TestVQE:
             dev,
             interface="torch",
             diff_method="parameter-shift",
+            shots=shots,
         )
         cost2 = generate_cost_fn(
             qp.templates.StronglyEntanglingLayers,
@@ -284,6 +284,7 @@ class TestVQE:
             dev,
             interface="torch",
             diff_method="parameter-shift",
+            shots=shots,
         )
 
         shape = qp.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
@@ -304,108 +305,6 @@ class TestVQE:
         assert exec_no_opt == 8  # Number of wire-based groups
 
         assert np.allclose(c1, c2, atol=1e-1)
-
-    @pytest.mark.autograd
-    @pytest.mark.slow
-    @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_autograd(self, shots, seed):
-        """Test that a Hamiltonian cost function is the same with and without
-        grouping optimization when using the autograd interface."""
-
-        dev = qp.device("default.qubit", wires=4)
-
-        hamiltonian1 = copy.copy(big_hamiltonian)
-        hamiltonian2 = copy.copy(big_hamiltonian)
-        hamiltonian1.compute_grouping()
-
-        cost = generate_cost_fn(
-            qp.templates.StronglyEntanglingLayers,
-            hamiltonian1,
-            dev,
-            interface="autograd",
-            diff_method="parameter-shift",
-            shots=shots,
-        )
-        cost2 = generate_cost_fn(
-            qp.templates.StronglyEntanglingLayers,
-            hamiltonian2,
-            dev,
-            interface="autograd",
-            diff_method="parameter-shift",
-            shots=shots,
-        )
-
-        shape = qp.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        _rng = np.random.default_rng(seed)
-        w = _rng.random(shape)
-
-        with qp.Tracker(dev) as tracker:
-            c1 = cost(w)
-        exec_opt = tracker.totals["executions"]
-
-        with tracker:
-            c2 = cost2(w)
-        exec_no_opt = tracker.totals["executions"]
-
-        assert exec_opt == 5  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 8
-
-        assert np.allclose(c1, c2, atol=1e-1)
-
-    @pytest.mark.autograd
-    def test_optimize_multiple_terms_autograd(self, seed):
-        """Test that a Hamiltonian cost function is the same with and without
-        grouping optimization when using the autograd interface, even when
-        there are non-unique Hamiltonian terms."""
-
-        dev = qp.device("default.qubit", wires=5)
-        obs = [
-            qp.PauliZ(wires=[2]) @ qp.PauliZ(wires=[4]),  # <---- These two terms
-            qp.PauliZ(wires=[4]) @ qp.PauliZ(wires=[2]),  # <---- are equal
-            qp.PauliZ(wires=[1]),
-            qp.PauliZ(wires=[2]),
-            qp.PauliZ(wires=[1]) @ qp.PauliZ(wires=[2]),
-            qp.PauliZ(wires=[2]) @ qp.PauliZ(wires=[0]),
-            qp.PauliZ(wires=[3]) @ qp.PauliZ(wires=[1]),
-            qp.PauliZ(wires=[4]) @ qp.PauliZ(wires=[3]),
-        ]
-
-        coeffs = (np.random.rand(len(obs)) - 0.5) * 2
-        hamiltonian1 = qp.Hamiltonian(coeffs, obs)
-        hamiltonian2 = qp.Hamiltonian(coeffs, obs)
-        hamiltonian1.compute_grouping()
-
-        cost = generate_cost_fn(
-            qp.templates.StronglyEntanglingLayers,
-            hamiltonian1,
-            dev,
-            interface="autograd",
-            diff_method="parameter-shift",
-        )
-        cost2 = generate_cost_fn(
-            qp.templates.StronglyEntanglingLayers,
-            hamiltonian2,
-            dev,
-            interface="autograd",
-            diff_method="parameter-shift",
-        )
-
-        shape = qp.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
-        _rng = np.random.default_rng(seed)
-        w = _rng.random(shape)
-
-        with qp.Tracker(dev) as tracker:
-            c1 = cost(w)
-        exec_opt = tracker.totals["executions"]
-
-        with tracker:
-            c2 = cost2(w)
-        exec_no_opt = tracker.totals["executions"]
-
-        assert exec_opt == 1  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 4  # number of wire-based groups
-
-        assert np.allclose(c1, c2)
 
     @pytest.mark.torch
     def test_optimize_multiple_terms_torch(self, seed):
@@ -462,11 +361,13 @@ class TestVQE:
 
         assert np.allclose(c1, c2)
 
-    @pytest.mark.autograd
-    def test_optimize_grad(self):
+    @pytest.mark.torch
+    def test_optimize_grad_grouping(self):
         """Test that the gradient of a Hamiltonian cost function is accessible
         and correct when using observable grouping optimization and the
-        autograd interface."""
+        Torch interface."""
+        import torch
+
         dev = qp.device("default.qubit", wires=4)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
@@ -490,8 +391,8 @@ class TestVQE:
         # TODO: This is another case of a magic number in the sense that no other number allows
         #       this test to pass. This is likely because the expected `big_hamiltonian_grad`
         #       was calculated using this exact seed. This test needs to be revisited.
-        _rng = pnp.random.default_rng(1967)
-        w = _rng.uniform(low=0, high=2 * np.pi, size=shape, requires_grad=True)
+        _rng = np.random.default_rng(1967)
+        w = torch.tensor(_rng.uniform(low=0, high=2 * np.pi, size=shape), requires_grad=True)
 
         with qp.Tracker(dev) as tracker:
             dc = qp.grad(cost)(w)
@@ -502,15 +403,17 @@ class TestVQE:
         exec_no_opt = tracker.totals["executions"]
 
         assert exec_no_opt > exec_opt
-        assert np.allclose(dc, big_hamiltonian_grad)
-        assert np.allclose(dc2, big_hamiltonian_grad)
+        assert np.allclose(dc.detach().numpy(), big_hamiltonian_grad)
+        assert np.allclose(dc2.detach().numpy(), big_hamiltonian_grad)
 
-    @pytest.mark.autograd
+    @pytest.mark.torch
     @pytest.mark.parametrize("opt", [True, False])
-    def test_grad_zero_hamiltonian(self, opt):
+    def test_grad_zero_hamiltonian_torch(self, opt):
         """Test that the gradient of a Hamiltonian cost function is accessible
         and correct when using observable grouping optimization and the
-        autograd interface, with a zero Hamiltonian."""
+        Torch interface, with a zero Hamiltonian."""
+        import torch
+
         dev = qp.device("default.qubit", wires=4)
         hamiltonian = qp.Hamiltonian([0], [qp.PauliX(0)])
         if opt:
@@ -524,10 +427,10 @@ class TestVQE:
         )
 
         shape = qp.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        w = pnp.random.random(shape, requires_grad=True)
+        w = torch.tensor(np.random.random(shape), requires_grad=True)
 
         dc = qp.grad(cost)(w)
-        assert np.allclose(dc, 0)
+        assert np.allclose(dc.detach().numpy(), 0)
 
     @pytest.mark.torch
     @pytest.mark.slow
@@ -726,28 +629,14 @@ class TestNewVQE:
         assert res[0] == circuit1()
         assert res[1] == circuit1()
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "best"])
-    def test_grad_autograd(self, diff_method, tol):
-        """Tests the VQE gradient in the autograd interface."""
-        dev = qp.device("default.qubit", wires=4)
-        H = big_hamiltonian
-        w = pnp.array(PARAMS, requires_grad=True)
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(w):
-            qp.templates.StronglyEntanglingLayers(w, wires=range(4))
-            return qp.expval(H)
-
-        dc = qp.grad(circuit)(w)
-        assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
-
-    @pytest.mark.autograd
-    def test_grad_zero_hamiltonian(self, tol):
+    @pytest.mark.torch
+    def test_grad_zero_hamiltonian_torch(self, tol):
         """Tests the VQE gradient for a "zero" Hamiltonian."""
+        import torch
+
         dev = qp.device("default.qubit", wires=4)
         H = qp.Hamiltonian([0], [qp.PauliX(0)])
-        w = pnp.array(PARAMS, requires_grad=True)
+        w = torch.tensor(PARAMS, requires_grad=True)
 
         @qp.qnode(dev, diff_method="parameter-shift")
         def circuit(w):
@@ -755,7 +644,7 @@ class TestNewVQE:
             return qp.expval(H)
 
         dc = qp.grad(circuit)(w)
-        assert np.allclose(dc, 0, atol=tol)
+        assert np.allclose(dc.detach().numpy(), 0, atol=tol)
 
     @pytest.mark.torch
     @pytest.mark.slow
@@ -824,35 +713,6 @@ class TestNewVQE:
 
 class TestInterfaces:
     """Tests for VQE with interfaces."""
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("interface", ["autograd"])
-    def test_gradient_autograd(self, tol, interface):
-        """Tests for the Autograd interface (and the NumPy interface for
-        backward compatibility)"""
-        dev = qp.device("default.qubit", wires=1)
-
-        def ansatz(params, **kwargs):  # pylint: disable=unused-argument
-            qp.RX(params[0], wires=0)
-            qp.RY(params[1], wires=0)
-
-        coeffs = [0.2, 0.5]
-        observables = [qp.PauliX(0), qp.PauliY(0)]
-
-        H = qp.Hamiltonian(coeffs, observables)
-        a, b = 0.54, 0.123
-        params = np.array([a, b])
-
-        cost = generate_cost_fn(ansatz, H, dev, interface=interface)
-        dcost = qp.grad(cost, argnums=[0])
-        res = dcost(params)
-
-        expected = [
-            -coeffs[0] * np.sin(a) * np.sin(b) - coeffs[1] * np.cos(a),
-            coeffs[0] * np.cos(a) * np.cos(b),
-        ]
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_gradient_torch(self, tol):

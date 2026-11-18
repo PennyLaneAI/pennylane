@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.testing import assert_decomposable
 
 FEATURES = [
@@ -367,22 +366,6 @@ class TestInterfaces:
         res2 = circuit2(tuple(features), pad_with)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-    @pytest.mark.autograd
-    def test_autograd(self, tol, features, pad_with, normalize):
-        """Tests autograd tensors."""
-
-        features = pnp.array(features, requires_grad=True)
-
-        dev = qp.device("default.qubit")
-
-        circuit = qp.QNode(circuit_template, dev, interface="autograd")
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(features, pad_with, normalize)
-        res2 = circuit2(features, pad_with)
-
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
     @pytest.mark.jax
     def test_jax(self, tol, features, pad_with, normalize):
         """Tests jax tensors."""
@@ -451,23 +434,6 @@ int_features = [
 @pytest.mark.parametrize("dtype", ["int8", "uint8", "int32", "float32", "int64", "float64"])
 class TestInterfaceDtypes:
     """Unit tests to verify that AmplitudeEmbedding works correctly for features with all dtypes"""
-
-    @pytest.mark.autograd
-    def test_autograd(self, tol, features, pad_with, dtype):
-        """Tests autograd tensors."""
-
-        dtype = getattr(pnp, dtype)
-        features = pnp.array(features, dtype=dtype)
-
-        dev = qp.device("default.qubit")
-
-        circuit = qp.QNode(circuit_template, dev, interface="autograd")
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(features, pad_with, normalize=True)
-        res2 = circuit2(features, pad_with, normalize=True)
-
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
     @pytest.mark.jax
     def test_jax(self, tol, features, pad_with, dtype):

@@ -21,7 +21,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.typing import Bool, Float, Wire
 
 
@@ -834,29 +833,6 @@ def circuit_decomposed(weights):
 class TestInterfaces:
     """Tests that the GateFabric template is compatible with all interfaces, including the computation
     of gradients."""
-
-    @pytest.mark.autograd
-    def test_autograd(self, tol):
-        """Tests the autograd interface."""
-
-        weights = pnp.random.random(size=(1, 1, 2), requires_grad=True)
-
-        dev = qp.device("default.qubit", wires=4)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        grad_fn = qp.grad(circuit)
-        grads = grad_fn(weights)
-
-        grad_fn2 = qp.grad(circuit2)
-        grads2 = grad_fn2(weights)
-
-        assert qp.math.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.jax
     def test_jax(self, tol):

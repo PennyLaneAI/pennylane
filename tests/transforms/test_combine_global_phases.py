@@ -111,23 +111,6 @@ def test_combine_global_phases():
     assert np.allclose(original_state, transformed_state)
 
 
-@pytest.mark.autograd
-def test_differentiability_autograd():
-    """Test that the output of the ``combine_global_phases`` transform is differentiable with autograd"""
-    import pennylane.numpy as pnp
-
-    dev = qp.device("default.qubit", wires=3)
-    original_qnode = qp.QNode(original_qfunc, device=dev)
-    transformed_qnode = combine_global_phases(original_qnode)
-
-    phi1 = pnp.array(0.25)
-    phi2 = pnp.array(-0.6)
-    grad1, grad2 = qp.jacobian(transformed_qnode)(phi1, phi2)
-
-    assert qp.math.isclose(grad1, 0.0)
-    assert qp.math.isclose(grad2, 0.0)
-
-
 @pytest.mark.jax
 @pytest.mark.parametrize("use_jit", [False, True])
 def test_differentiability_jax(use_jit):

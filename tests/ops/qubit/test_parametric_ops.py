@@ -1996,37 +1996,6 @@ class TestGrad:
 
     native_configuration = [[device, method, float(phi)] for device, method, phi in configuration]
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_pswap_autograd_grad(self, tol, dev_name, diff_method, phi):
-        """Test the gradient with Autograd for the gate PSWAP."""
-
-        if diff_method in {"adjoint"}:
-            # PSWAP does not have a generator defined
-            pytest.skip("PSWAP does not support adjoint")
-
-        dev = qp.device(dev_name, wires=2)
-
-        psi_0 = 0.1
-        psi_1 = 0.2
-        psi_2 = 0.3
-        psi_3 = 0.4
-
-        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
-        norm = np.linalg.norm(init_state)
-        init_state /= norm
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(phi):
-            qp.StatePrep(init_state, wires=[0, 1])
-            qp.PSWAP(phi, wires=[0, 1])
-            return qp.expval(qp.PauliY(0))
-
-        expected = 2 * np.cos(phi) * (psi_0 * psi_1 - psi_3 * psi_2) / norm**2
-
-        res = qp.grad(circuit)(phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_pswap_torch_grad(self, tol, dev_name, diff_method, phi):
@@ -2099,10 +2068,12 @@ class TestGrad:
         res = jax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_isingxx_autograd_grad(self, tol, dev_name, diff_method, phi):
+    @pytest.mark.torch
+    @pytest.mark.parametrize("dev_name,diff_method,phi", native_configuration)
+    def test_isingxx_torch_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingXX."""
+        import torch
+
         dev = qp.device(dev_name, wires=2)
 
         psi_0 = 0.1
@@ -2110,7 +2081,7 @@ class TestGrad:
         psi_2 = 0.3
         psi_3 = 0.4
 
-        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+        init_state = np.array([psi_0, psi_1, psi_2, psi_3])
         norm = np.linalg.norm(init_state)
         init_state /= norm
 
@@ -2132,13 +2103,15 @@ class TestGrad:
             )
         )
 
-        res = qp.grad(circuit)(phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        res = qp.grad(circuit)(torch.tensor(phi, dtype=torch.float64, requires_grad=True))
+        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_isingyy_autograd_grad(self, tol, dev_name, diff_method, phi):
+    @pytest.mark.torch
+    @pytest.mark.parametrize("dev_name,diff_method,phi", native_configuration)
+    def test_isingyy_torch_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingYY."""
+        import torch
+
         dev = qp.device(dev_name, wires=2)
 
         psi_0 = 0.1
@@ -2146,7 +2119,7 @@ class TestGrad:
         psi_2 = 0.3
         psi_3 = 0.4
 
-        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+        init_state = np.array([psi_0, psi_1, psi_2, psi_3])
         norm = np.linalg.norm(init_state)
         init_state /= norm
 
@@ -2168,13 +2141,15 @@ class TestGrad:
             )
         )
 
-        res = qp.grad(circuit)(phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        res = qp.grad(circuit)(torch.tensor(phi, dtype=torch.float64, requires_grad=True))
+        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_isingzz_autograd_grad(self, tol, dev_name, diff_method, phi):
+    @pytest.mark.torch
+    @pytest.mark.parametrize("dev_name,diff_method,phi", native_configuration)
+    def test_isingzz_torch_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingZZ."""
+        import torch
+
         dev = qp.device(dev_name, wires=2)
 
         psi_0 = 0.1
@@ -2182,7 +2157,7 @@ class TestGrad:
         psi_2 = 0.3
         psi_3 = 0.4
 
-        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+        init_state = np.array([psi_0, psi_1, psi_2, psi_3])
         norm = np.linalg.norm(init_state)
         init_state /= norm
 
@@ -2192,17 +2167,17 @@ class TestGrad:
             qp.IsingZZ(phi, wires=[0, 1])
             return qp.expval(qp.PauliX(0))
 
-        phi = npp.array(phi, requires_grad=True)
-
         expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
-        res = qp.grad(circuit)(phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        res = qp.grad(circuit)(torch.tensor(phi, dtype=torch.float64, requires_grad=True))
+        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_isingxy_autograd_grad(self, tol, dev_name, diff_method, phi):
-        """Test the gradient with Autograd for the gate IsingXY."""
+    @pytest.mark.torch
+    @pytest.mark.parametrize("dev_name,diff_method,phi", native_configuration)
+    def test_isingxy_torch_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient with Torch for the gate IsingXY."""
+        import torch
+
         dev = qp.device(dev_name, wires=2)
 
         psi_0 = 0.1
@@ -2210,7 +2185,7 @@ class TestGrad:
         psi_2 = 0.3
         psi_3 = 0.4
 
-        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+        init_state = np.array([psi_0, psi_1, psi_2, psi_3])
         norm = np.linalg.norm(init_state)
         init_state /= norm
 
@@ -2220,36 +2195,10 @@ class TestGrad:
             qp.IsingXY(phi, wires=[0, 1])
             return qp.expval(qp.PauliZ(0))
 
-        phi = npp.array(phi, requires_grad=True)
-
         expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * np.sin(phi)
 
-        res = qp.grad(circuit)(phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("dev_name,diff_method", device_methods)
-    @pytest.mark.parametrize("wires", [(0, 1), (1, 0)])
-    def test_globalphase_autograd_grad(self, tol, dev_name, diff_method, wires):
-        """Test the gradient with Autograd for a controlled GlobalPhase."""
-
-        dev = qp.device(dev_name, wires=2)
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(x):
-            qp.Identity(wires[0])
-            qp.GlobalPhase(x)
-            qp.Hadamard(wires[1])
-            qp.ctrl(qp.GlobalPhase(x), control=wires[1])
-            qp.Hadamard(wires[1])
-            return qp.expval(qp.PauliZ(wires[1]))
-
-        phi = npp.array(2.1, requires_grad=True)
-
-        expected = [-0.8632093]
-
-        res = qp.grad(circuit)(phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        res = qp.grad(circuit)(torch.tensor(phi, dtype=torch.float64, requires_grad=True))
+        assert np.allclose(res.detach().numpy(), expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)

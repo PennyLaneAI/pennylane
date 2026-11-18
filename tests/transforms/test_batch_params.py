@@ -339,30 +339,6 @@ def test_multi_returns_shot_vector():
 class TestDiffSingle:
     """Test gradients for a single measurement"""
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-    def test_autograd(self, diff_method, tol):
-        """Test derivatives when using autograd"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.batch_params
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(x):
-            qp.RX(x, wires=0)
-            qp.RY(0.1, wires=1)
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-        def cost(x):
-            return np.sum(circuit(x))
-
-        batch_size = 3
-        x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-
-        res = qp.grad(cost)(x)
-        expected = -np.sin(0.1) * np.sin(x)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
     @pytest.mark.parametrize("interface", ["auto", "jax"])
@@ -455,47 +431,6 @@ class TestDiffSingle:
 
 class TestDiffMulti:
     """Test gradients for multiple measurements"""
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
-    def test_autograd(self, diff_method, tol):
-        """Test derivatives when using autograd"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.batch_params
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(x):
-            qp.RY(x, wires=0)
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
-
-        def cost(x):
-            res = circuit(x)
-            return qp.math.concatenate([qp.math.expand_dims(res[0], 1), res[1]], axis=1)
-
-        batch_size = 3
-        x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-
-        res = cost(x)
-        expected = qp.math.transpose(
-            qp.math.stack(
-                [
-                    np.cos(x),
-                    np.cos(x / 2) ** 2,
-                    np.zeros_like(x),
-                    np.zeros_like(x),
-                    np.sin(x / 2) ** 2,
-                ]
-            )
-        )
-        assert qp.math.allclose(res, expected, atol=tol)
-
-        grad = qp.jacobian(cost)(x)
-        expected = qp.math.stack(
-            [-np.sin(x), -np.sin(x) / 2, np.zeros_like(x), np.zeros_like(x), np.sin(x) / 2]
-        ) * qp.math.expand_dims(np.eye(batch_size), 1)
-
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])

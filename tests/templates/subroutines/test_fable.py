@@ -165,6 +165,7 @@ class TestFable:
         assert qp.math.allclose(qp.matrix(circuit_default), qp.matrix(circuit_jax))
         assert qp.math.get_interface(qp.matrix(circuit_jax)) == "jax"
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_autograd(self, input_matrix):
         """Test that the Fable operator matrix is correct for autograd."""
@@ -297,54 +298,6 @@ class TestFable:
             ValueError, match="JIT is not supported for tolerance values greater than 0."
         ):
             circuit_jax(input_matrix_jax)
-
-    @pytest.mark.autograd
-    def test_fable_autograd(self, input_matrix):
-        """Test that FABLE is differentiable when using autograd."""
-        dev = qp.device("default.qubit")
-
-        delta = 0.001
-        input_matrix = np.array(
-            [
-                [-0.5, -0.4, 0.6, 0.7],
-                [0.9, 0.9, 0.8, 0.9],
-                [0.8, 0.7, 0.9, 0.8],
-                [0.9, 0.7, 0.8, 0.3],
-            ]
-        )
-        input_positive_delta = np.array(
-            [
-                [-0.5 + delta, -0.4, 0.6, 0.7],
-                [0.9, 0.9, 0.8, 0.9],
-                [0.8, 0.7, 0.9, 0.8],
-                [0.9, 0.7, 0.8, 0.3],
-            ]
-        )
-        input_negative_delta = np.array(
-            [
-                [-0.5 - delta, -0.4, 0.6, 0.7],
-                [0.9, 0.9, 0.8, 0.9],
-                [0.8, 0.7, 0.9, 0.8],
-                [0.9, 0.7, 0.8, 0.3],
-            ]
-        )
-
-        input_autograd_positive_delta = pnp.array(input_positive_delta)
-        input_autograd_negative_delta = pnp.array(input_negative_delta)
-        input_autograd = pnp.array(input_matrix)
-
-        @qp.qnode(dev, diff_method="backprop")
-        def circuit_autograd(input_matrix):
-            qp.FABLE(input_matrix, wires=range(5), tol=0)
-            return qp.expval(qp.PauliZ(wires=0))
-
-        grad_fn = qp.grad(circuit_autograd)
-        gradient_numeric = (
-            circuit_autograd(input_autograd_positive_delta)
-            - circuit_autograd(input_autograd_negative_delta)
-        ) / (2 * delta)
-        gradient_autograd = grad_fn(input_autograd)
-        assert np.allclose(gradient_numeric, gradient_autograd[0, 0], rtol=0.001)
 
     def test_default_lightning_devices(self, input_matrix):
         """Test that FABLE executes with the default.qubit and lightning.qubit simulators."""
