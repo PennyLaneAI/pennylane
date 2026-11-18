@@ -164,9 +164,13 @@ def register_name(
 
     **Example**
 
+    Name a custom rule before registering it with an operator, then look it up by name.
+
     .. code-block:: python
 
-        @qp.register_name("to_cnot")
+        import pennylane as qp
+
+        @qp.register_name("custom_swap_to_cnot")
         @qp.register_resources({qp.CNOT: 3})
         def swap_to_cnot(wires):
             qp.CNOT(wires=wires)
@@ -174,7 +178,10 @@ def register_name(
             qp.CNOT(wires=wires)
 
     >>> swap_to_cnot.name
-    'to_cnot'
+    'custom_swap_to_cnot'
+    >>> qp.add_decomps(qp.SWAP, swap_to_cnot)
+    >>> qp.list_decomps(qp.SWAP)["custom_swap_to_cnot"]
+    DecompositionRule(name=custom_swap_to_cnot)
     """
 
     def _decorator(rule: Callable) -> DecompositionRule:
