@@ -260,14 +260,59 @@ def test_expvalD(symbols, geometry, charge, d_ref):
             qp.DoubleExcitation(0.0, wires=[0, 1, 2, 3])
             qp.DoubleExcitation(0.0, wires=[0, 1, 4, 5])
             d_qubit = qchem.dipole_moment(mol)(*args)[idx]
-            coeffs, ops = d_qubit.terms()
-            return qp.expval(qp.Hamiltonian(qp.math.toarray(coeffs), ops))
+            assert qp.math.get_interface(*d_qubit.data) == "numpy"
+            return qp.expval(d_qubit)
 
         return circuit
 
     for i in range(3):  # loop on x, y, z components
         d = dipole(mol, i)(*args)
         assert np.allclose(d, d_ref[i])
+
+
+@pytest.mark.parametrize("factory", ["dipole_moment", "molecular_dipole"])
+def test_frozen_dipole_observables_execute_directly(factory):
+    """Frozen dipole producers preserve the numeric observable in default execution."""
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4]], requires_grad=False)
+    molecule = qchem.Molecule(["H", "H"], geometry)
+    observables = (
+        qchem.dipole_moment(molecule)()
+        if factory == "dipole_moment"
+        else qchem.molecular_dipole(molecule)
+    )
+    state = np.zeros(16)
+    state[0b1100] = 1.0
+    dev = qp.device("default.qubit", wires=4)
+
+    @qp.qnode(dev)
+    def circuit(observable):
+        qp.BasisState(qchem.hf_state(2, 4), wires=range(4))
+        return qp.expval(observable)
+
+    for observable in observables:
+        assert qp.math.get_interface(*observable.data) == "numpy"
+        expected = np.vdot(state, qp.matrix(observable, wire_order=range(4)) @ state)
+        assert circuit(observable) == pytest.approx(complex(expected), rel=0, abs=1e-12)
+
+
+def test_explicit_dipole_parameters_preserve_classical_gradient():
+    """Explicit chemistry parameters retain a classical coefficient derivative."""
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4]], requires_grad=False)
+    alpha = np.array([[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]])
+
+    def cost(exponents):
+        molecule = qchem.Molecule(["H", "H"], geometry, alpha=exponents)
+        observable = qchem.dipole_moment(molecule)(exponents)[2]
+        coefficients = qp.math.stack(observable.terms()[0])
+        return qp.math.sum(coefficients**2)
+
+    gradient = qp.grad(cost)(alpha)
+    displacement = np.zeros(alpha.shape)
+    displacement[0, 0] = 1e-4
+    finite_difference = (cost(alpha + displacement) - cost(alpha - displacement)) / 2e-4
+
+    assert gradient.shape == alpha.shape
+    assert gradient[0, 0] == pytest.approx(float(finite_difference), rel=1e-4, abs=1e-7)
 
 
 def test_gradient_expvalD():
