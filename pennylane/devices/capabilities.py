@@ -21,7 +21,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from itertools import repeat
-from typing import TypedDict, cast
+from typing import TypedDict, cast, get_type_hints
 
 from pennylane.core.operator import Operator
 from pennylane.exceptions import InvalidCapabilitiesError, QuantumFunctionError
@@ -231,17 +231,6 @@ class _CompilationOptions(TypedDict, total=False):
     supported_mcm_methods: list[str]
 
 
-VALID_COMPILATION_OPTIONS = {
-    "qjit_compatible",
-    "runtime_code_generation",
-    "dynamic_qubit_management",
-    "overlapping_observables",
-    "non_commuting_observables",
-    "initial_state_prep",
-    "supported_mcm_methods",
-}
-
-
 def _get_toml_section(document: dict, path: str, prefix: str = "") -> dict:
     """Retrieves a section from a TOML document using a given path.
 
@@ -385,7 +374,7 @@ def _get_compilation_options(document: dict, prefix: str = "") -> _CompilationOp
 
     section = _get_toml_section(document, "compilation", prefix)
 
-    if unknowns := set(section) - VALID_COMPILATION_OPTIONS:
+    if unknowns := set(section) - set(get_type_hints(_CompilationOptions)):
         raise InvalidCapabilitiesError(
             f"The compilation section has unknown options: {list(unknowns)}"
         )
