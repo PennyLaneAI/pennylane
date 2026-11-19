@@ -60,7 +60,9 @@ class ChangeOpBasis2(CompositeOp2):
     RZ(0.3, wires=[0])
     """
 
-    def __init__(self, compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
+    def __init__(
+        self, compute_op: Operator, target_op: Operator, uncompute_op: Operator | None = None
+    ):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
             self._init_args["uncompute_op"] = uncompute_op

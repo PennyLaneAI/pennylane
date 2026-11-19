@@ -14,7 +14,7 @@
 A tool for capturing dummy arrays that can be used for resource estimation.
 """
 
-import jax
+import jax.core
 from jax.numpy import dtype as jnp_dtype
 
 from pennylane.typing import AbstractArray
