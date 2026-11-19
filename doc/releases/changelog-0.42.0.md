@@ -588,7 +588,7 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   [(#7383)](https://github.com/PennyLaneAI/pennylane/pull/7383)
 
 * With graph-based decomposition enabled with :func:`~.decomposition.enable_graph`, a new decorator 
-  called :func:`~.decomposition.decomposition_rule` can be used to bind a condition to a
+  called :func:`~.decomposition.register_condition` can be used to bind a condition to a 
   decomposition rule denoting when it is applicable.
   [(#7439)](https://github.com/PennyLaneAI/pennylane/pull/7439)
 
@@ -609,10 +609,8 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   def _zyz_condition(num_wires):
     return num_wires == 1
 
-  @qml.decomposition_rule(
-      condition=_zyz_condition,
-      resources={qml.RZ: 2, qml.RY: 1, qml.GlobalPhase: 1},
-  )
+  @qml.register_condition(_zyz_condition)
+  @qml.register_resources({qml.RZ: 2, qml.RY: 1, qml.GlobalPhase: 1})
   def zyz_decomposition(U, wires, **__):
       # Assumes that U is a 2x2 unitary matrix
       phi, theta, omega, phase = zyz_rotation_angles(U, return_global_phase=True)
@@ -659,11 +657,11 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
     [(#7499)](https://github.com/PennyLaneAI/pennylane/pull/7499)
 
     ```python
-    @qml.decomposition_rule(resources={qml.RY: 1})
+    @qml.register_resources({qml.RY: 1})
     def my_adjoint_ry(phi, wires, **_):
         qml.RY(-phi, wires=wires)
 
-    @qml.decomposition_rule(resources={qml.RX: 1})
+    @qml.register_resources({qml.RX: 1})
     def my_adjoint_rx(phi, wires, **__):
         qml.RX(-phi, wires)
 

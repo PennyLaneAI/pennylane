@@ -20,7 +20,8 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator, Operator2
 from pennylane.decomposition import (
     add_decomps,
-    decomposition_rule,
+    register_name,
+    register_resources,
 )
 from pennylane.ops import adjoint
 from pennylane.ops import pow as qp_pow
@@ -199,7 +200,8 @@ def _qpe_standard_resources(unitary, estimation_wires):
     return gate_count
 
 
-@decomposition_rule(name="controlled_powers_inverse_qft", resources=_qpe_standard_resources)
+@register_name("controlled_powers_inverse_qft")
+@register_resources(_qpe_standard_resources)
 def _qpe_standard(unitary, estimation_wires):
     if compiler.active() or capture.enabled():
         estimation_wires = math.array(estimation_wires, like="jax")

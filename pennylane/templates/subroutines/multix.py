@@ -22,7 +22,9 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
-    decomposition_rule,
+    register_condition,
+    register_name,
+    register_resources,
 )
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.ops import CNOT, Hadamard, PauliX, adjoint, cond
@@ -344,7 +346,8 @@ def _multix_standard_resources(
 
 
 # Decomposition function for MultiX
-@decomposition_rule(name="to_x", resources=_multix_standard_resources, exact=False)
+@register_name("to_x")
+@register_resources(_multix_standard_resources, exact=False)
 def _multix_standard(bitstring: TensorLike, wires: WiresLike) -> None:
     # Dynamically-allocated wires (``AbstractQubit`` handles, e.g. from ``qp.allocate``) cannot
     # be stacked into a numeric array for ``for_loop``-based dynamic indexing, so unroll instead
@@ -429,10 +432,10 @@ def _controlled_multix_ladder_standard_work_wires(control_wires, work_wires, wor
     return {"zeroed": max(0, num_needed - num_available)}
 
 
-@decomposition_rule(
-    name="ancilla_fanout",
-    condition=lambda control_wires, **_: len(control_wires) > 1 and not compiler.active(),
-    resources=_controlled_multix_ladder_standard_resources,
+@register_condition(lambda control_wires, **_: len(control_wires) > 1 and not compiler.active())
+@register_name("ancilla_fanout")
+@register_resources(
+    _controlled_multix_ladder_standard_resources,
     work_wires=_controlled_multix_ladder_standard_work_wires,
     exact=False,
 )

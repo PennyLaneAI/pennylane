@@ -233,7 +233,8 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
                 resources[qp.Rot] = 1
                 return resources
 
-            @qp.decomposition_rule(name="my_op_decomp", resources=_my_op_resources)
+            @qp.register_name("my_op_decomp")
+            @qp.register_resources(_my_op_resources)
             def _my_op_decomp(pauli_string, angle_array, wires, rot_wire):
                 wire_map = {wires[i]: i for i in range(len(wires))}
                 for wire, pauli in zip(wires, pauli_string):
@@ -243,7 +244,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
             qp.add_decomps(MyOp, _my_op_decomp)
 
         Resource functions are "registered" to the decomposition rule by decorating with
-        :func:`~pennylane.decomposition_rule`. Adding the decomposition rule to the operator officially is
+        :func:`~pennylane.register_resources`. Adding the decomposition rule to the operator officially is
         done via :func:`~pennylane.add_decomps`. To verify, we can inspect that the decomposition rule
         created as been added to ``MyOp`` as follows.
 
@@ -428,7 +429,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
 
         The decomposition graph goes by the reported type, so real and complex inputs will look
         like the same operator and share one rule. To let them decompose differently, leave the argument
-        out of ``arg_specs`` and give each rule a ``decomposition_rule`` that checks the type. For
+        out of ``arg_specs`` and give each rule a ``register_condition`` that checks the type. For
         a concrete example see ``BasisRotation``.
     """
 

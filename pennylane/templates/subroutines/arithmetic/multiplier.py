@@ -20,7 +20,8 @@ import numpy as np
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
-    decomposition_rule,
+    register_name,
+    register_resources,
 )
 from pennylane.ops import SWAP, adjoint, change_op_basis, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
@@ -280,7 +281,8 @@ def _multiplier_standard_resources(
     return resources
 
 
-@decomposition_rule(name="fourier_phase_adders", resources=_multiplier_standard_resources)
+@register_name("fourier_phase_adders")
+@register_resources(_multiplier_standard_resources)
 def _multiplier_standard(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
     if mod != 2 ** len(x_wires):
         work_wire_aux = work_wires[:1]

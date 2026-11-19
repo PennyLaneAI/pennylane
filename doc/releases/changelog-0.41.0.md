@@ -42,7 +42,7 @@ new features are available:
     <pennylane.decomposition.decomposition_rule.DecompositionRule at 0x136da9f00>]
   >>> decomp_rule = qml.list_decomps(qml.CRX)[0]
   >>> print(decomp_rule, "\n")
-  @decomposition_rule(resources=_crx_to_rx_cz_resources)
+  @register_resources(_crx_to_rx_cz_resources)
   def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
       qml.RX(phi / 2, wires=wires[1])
       qml.CZ(wires=wires)
@@ -63,13 +63,13 @@ decomposition rule is that which is most resource efficient (results in the smal
 
   * Defining a quantum function that represents the decomposition.
   * Adding resource requirements (gate counts) to the above quantum function by decorating it with the 
-    new :func:`qml.decomposition_rule <pennylane.decomposition_rule>` function, which requires a dictionary
+    new :func:`qml.register_resources <pennylane.register_resources>` function, which requires a dictionary 
     mapping operator types present in the quantum function to their number of occurrences.
 
   ```python
   qml.decomposition.enable_graph()
 
-  @qml.decomposition_rule(resources={qml.H: 2, qml.CZ: 1})
+  @qml.register_resources({qml.H: 2, qml.CZ: 1})
   def my_cnot(wires):
       qml.H(wires=wires[1])
       qml.CZ(wires=wires)
@@ -83,7 +83,7 @@ decomposition rule is that which is most resource efficient (results in the smal
   ```pycon
   >>> my_new_rule = qml.list_decomps(qml.CNOT)[-1]
   >>> print(my_new_rule)
-  @qml.decomposition_rule(resources={qml.H: 2, qml.CZ: 1})
+  @qml.register_resources({qml.H: 2, qml.CZ: 1})
   def my_cnot(wires):
       qml.H(wires=wires[1])
       qml.CZ(wires=wires)
@@ -114,7 +114,7 @@ decomposition rule is that which is most resource efficient (results in the smal
           qml.resource_rep(qml.MultiRZ, num_wires=3): 2
       }
   
-  @qml.decomposition_rule(resources=resource_fn)
+  @qml.register_resources(resource_fn)
   def my_decomp(theta, wires):
       qml.MultiRZ(theta, wires=wires[:3])
       qml.MultiRZ(theta, wires=wires[1:])
@@ -122,7 +122,7 @@ decomposition rule is that which is most resource efficient (results in the smal
   ```
 
   More information for defining complex decomposition rules can be found in the documentation for 
-  :func:`qml.decomposition_rule <pennylane.decomposition_rule>`.
+  :func:`qml.register_resources <pennylane.register_resources>`.
 
 * The :func:`qml.transforms.decompose <pennylane.transforms.decompose>` transform works when the new 
   decompositions system is enabled and offers the ability to inject new decomposition rules for operators
@@ -143,13 +143,13 @@ decomposition rule is that which is most resource efficient (results in the smal
   ```python
   qml.decomposition.enable_graph()
 
-  @qml.decomposition_rule(resources={qml.CNOT: 2, qml.RX: 1})
+  @qml.register_resources({qml.CNOT: 2, qml.RX: 1})
   def my_isingxx(phi, wires, **__):
       qml.CNOT(wires=wires)
       qml.RX(phi, wires=[wires[0]])
       qml.CNOT(wires=wires)
 
-  @qml.decomposition_rule(resources={qml.H: 2, qml.CZ: 1})
+  @qml.register_resources({qml.H: 2, qml.CZ: 1})
   def my_cnot(wires, **__):
       qml.H(wires=wires[1])
       qml.CZ(wires=wires)

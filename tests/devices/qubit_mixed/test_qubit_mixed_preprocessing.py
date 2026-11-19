@@ -85,7 +85,8 @@ class NoMatNoDecompOp(qp.operation.Operation):  # pylint: disable=too-few-public
 def custom_decomps():
     """Locally register decomposition rules."""
 
-    @qp.decomposition_rule(name="custom_rule_no_mat_op", resources={qp.X: 1, qp.Y: 1})
+    @qp.register_name("custom_rule_no_mat_op")
+    @qp.register_resources({qp.X: 1, qp.Y: 1})
     def custom_rule_no_mat_op(wires):
         qp.X(wires)
         qp.Y(wires)

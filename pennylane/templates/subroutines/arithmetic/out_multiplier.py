@@ -21,7 +21,9 @@ from pennylane import capture, compiler, math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
-    decomposition_rule,
+    register_condition,
+    register_name,
+    register_resources,
 )
 from pennylane.ops import H, MultiControlledX, X, adjoint, change_op_basis, ctrl, prod
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -380,11 +382,9 @@ def _out_multiplier_with_qft_condition(  # pylint: disable=too-many-arguments,un
     return mod == 2 ** len(output_wires) or len(work_wires) >= 2
 
 
-@decomposition_rule(
-    name="with_qft",
-    condition=_out_multiplier_with_qft_condition,
-    resources=_out_multiplier_with_qft_resources,
-)
+@register_condition(_out_multiplier_with_qft_condition)
+@register_name("with_qft")
+@register_resources(_out_multiplier_with_qft_resources)
 def _out_multiplier_with_qft(  # pylint: disable=too-many-arguments
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -477,11 +477,9 @@ def _out_multiplier_with_adder_condition(  # pylint: disable=too-many-arguments,
     return mod == 2 ** k and len(work_wires) >= min_num_work_wires
 
 
-@decomposition_rule(
-    name="with_adder",
-    condition=_out_multiplier_with_adder_condition,
-    resources=_out_multiplier_with_adder_resources,
-)
+@register_condition(_out_multiplier_with_adder_condition)
+@register_name("with_adder")
+@register_resources(_out_multiplier_with_adder_resources)
 def _out_multiplier_with_adder(  # pylint: disable=too-many-arguments,unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -702,11 +700,9 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
         ctrl(MultiX([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
 
 
-@decomposition_rule(
-    name="with_caddsub",
-    condition=_out_multiplier_with_caddsub_condition,
-    resources=_out_multiplier_with_caddsub_resources,
-)
+@register_condition(_out_multiplier_with_caddsub_condition)
+@register_name("with_caddsub")
+@register_resources(_out_multiplier_with_caddsub_resources)
 def _out_multiplier_with_caddsub(  # pylint: disable=too-many-arguments,unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -842,11 +838,9 @@ def _out_multiplier_with_cache_resources(  # pylint: disable=too-many-arguments,
     }
 
 
-@decomposition_rule(
-    name="with_cache",
-    condition=_out_multiplier_with_cache_condition,
-    resources=_out_multiplier_with_cache_resources,
-)
+@register_condition(_out_multiplier_with_cache_condition)
+@register_name("with_cache")
+@register_resources(_out_multiplier_with_cache_resources)
 def _out_multiplier_with_cache(  # pylint: disable=too-many-arguments,unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -889,11 +883,9 @@ def _out_multiplier_swapped_standard_resources(  # pylint: disable=too-many-argu
     return {swapped: 1}
 
 
-@decomposition_rule(
-    name="swap_factors",
-    condition=_out_multiplier_swapped_condition,
-    resources=_out_multiplier_swapped_standard_resources,
-)
+@register_condition(_out_multiplier_swapped_condition)
+@register_name("swap_factors")
+@register_resources(_out_multiplier_swapped_standard_resources)
 # pylint: disable-next=too-many-arguments
 def _out_multiplier_swapped_standard(
     x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed

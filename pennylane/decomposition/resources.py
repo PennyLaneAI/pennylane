@@ -36,7 +36,7 @@ class CompressedResourceOp:
         doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using :func:`~pennylane.decomposition_rule`.
+        declares its required resources using :func:`~pennylane.register_resources`.
 
     The ``CompressedResourceOp`` is a lightweight data structure that contains an operator type
     and a set of parameters that affects the resource requirement of this operator. If the
@@ -234,7 +234,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         doing decompositions is generally more resource efficient and accommodates multiple alternative
         decomposition rules for an operator. In this new system, custom decomposition rules are
         defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using :func:`~pennylane.decomposition_rule`.
+        declares its required resources using :func:`~pennylane.register_resources`.
 
     Args:
         op_type: the operator class to create a resource representation for.

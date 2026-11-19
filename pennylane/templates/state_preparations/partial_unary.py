@@ -1168,9 +1168,9 @@ def _partial_unary_state_prep_standard_work_wires(coefficients, wires, indices, 
     return {"zeroed": need_to_allocate}
 
 
-@qp.decomposition_rule(
-    name="partial_unary_isometry",
-    resources=_partial_unary_state_prep_standard_resources,
+@qp.register_name("partial_unary_isometry")
+@qp.register_resources(
+    _partial_unary_state_prep_standard_resources,
     work_wires=_partial_unary_state_prep_standard_work_wires,
     exact=False,
 )

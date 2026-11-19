@@ -507,7 +507,8 @@ def _prod_standard_resources(resources):
     return resources
 
 
-@qp.decomposition_rule(name="expand_factors", resources=_prod_standard_resources)
+@qp.register_name("expand_factors")
+@qp.register_resources(_prod_standard_resources)
 def _prod_standard(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
     for op in reversed(operands):
         qp.apply(op)
@@ -534,15 +535,13 @@ def _controlled_product_with_work_wires_resources(
     return dict(resources)
 
 
-@qp.decomposition_rule(
-    name="with_work_wires",
-    condition=lambda num_control_wires, num_work_wires, work_wire_type, **_: (
-        num_control_wires >= 2
-        and num_work_wires >= num_control_wires - 1
-        and work_wire_type == "zeroed"
-    ),
-    resources=_controlled_product_with_work_wires_resources,
+@qp.register_condition(
+    lambda num_control_wires, num_work_wires, work_wire_type, **_: num_control_wires >= 2
+    and num_work_wires >= num_control_wires - 1
+    and work_wire_type == "zeroed"
 )
+@qp.register_name("with_work_wires")
+@qp.register_resources(_controlled_product_with_work_wires_resources)
 def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **__):
     """Decomposition of ``C(Prod)`` with at least ``num_control_wires - 1`` work wires.
 
@@ -573,13 +572,13 @@ def _controlled_product_with_one_work_wire_resources(
     return dict(resources)
 
 
-@qp.decomposition_rule(
-    name="with_one_work_wire",
-    condition=lambda num_control_wires, num_work_wires, work_wire_type, **_: (
-        num_control_wires >= 2 and num_work_wires >= 1 and work_wire_type == "zeroed"
-    ),
-    resources=_controlled_product_with_one_work_wire_resources,
+@qp.register_condition(
+    lambda num_control_wires, num_work_wires, work_wire_type, **_: num_control_wires >= 2
+    and num_work_wires >= 1
+    and work_wire_type == "zeroed"
 )
+@qp.register_name("with_one_work_wire")
+@qp.register_resources(_controlled_product_with_one_work_wire_resources)
 def _controlled_product_with_one_work_wire(*_, control_wires, work_wires, base, **__):
     """Decomposition of ``C(Prod)`` with a single zeroed work wire.
 

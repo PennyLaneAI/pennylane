@@ -26,7 +26,9 @@ from pennylane import capture, compiler, math, ops, templates
 from pennylane.core import queuing
 from pennylane.core.apply import apply
 from pennylane.decomposition.decomposition_rule import (
-    decomposition_rule,
+    register_condition,
+    register_name,
+    register_resources,
 )
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.math.decomposition import (
@@ -300,12 +302,9 @@ def make_one_qubit_unitary_decomposition(su2_rule, su2_resource, name=""):
     name = name or su2_rule.name
 
     # Resources are not exact because the global phase or rotations might be skipped
-    @decomposition_rule(
-        name=name,
-        condition=lambda U, wires, **_: len(wires) == 1,
-        resources=_resource_fn,
-        exact=False,
-    )
+    @register_condition(lambda U, wires, **_: len(wires) == 1)
+    @register_name(name)
+    @register_resources(_resource_fn, exact=False)
     def _impl(U, wires, **__):
         if sparse.issparse(U):
             U = U.todense()
@@ -405,12 +404,9 @@ def _qubit_unitary_two_qubit_resources(*_, **__):
     }
 
 
-@decomposition_rule(
-    name="two_qubit",
-    condition=lambda U, wires, **_: len(wires) == 2,
-    resources=_qubit_unitary_two_qubit_resources,
-    exact=False,
-)
+@register_name("two_qubit")
+@register_condition(lambda U, wires, **_: len(wires) == 2)
+@register_resources(_qubit_unitary_two_qubit_resources, exact=False)
 def _qubit_unitary_two_qubit(U, wires, **_):
     """The decomposition rule for a two-qubit unitary."""
 
@@ -456,11 +452,9 @@ def _qubit_unitary_multi_qubit_resources(U, wires, **_):  # pylint: disable=unus
     }
 
 
-@decomposition_rule(
-    name="multi_qubit",
-    condition=lambda U, wires, **_: len(wires) > 2,
-    resources=_qubit_unitary_multi_qubit_resources,
-)
+@register_name("multi_qubit")
+@register_condition(lambda U, wires, **_: len(wires) > 2)
+@register_resources(_qubit_unitary_multi_qubit_resources)
 def _qubit_unitary_multi_qubit(U, wires, **__):
     """The decomposition rule for a multi-qubit unitary."""
 

@@ -641,7 +641,8 @@ class TestHasReprProperties:
         class SomeRandomName(qp.operation.Operator):
             pass
 
-        @qp.decomposition_rule(name="decomp", resources={qp.X: 1})
+        @qp.register_name("decomp")
+        @qp.register_resources({qp.X: 1})
         def decomp(x, wires):
             qp.RX(x, wires)
 
@@ -658,19 +659,15 @@ class TestHasReprProperties:
             def resource_params(self):
                 return {"num_wires": len(self.wires)}
 
-        @qp.decomposition_rule(
-            name="decomp1",
-            condition=lambda num_wires: num_wires == 1,
-            resources={qp.RX: 1},
-        )
+        @qp.register_condition(lambda num_wires: num_wires == 1)
+        @qp.register_name("decomp1")
+        @qp.register_resources({qp.RX: 1})
         def decomp1(x, wires):
             qp.RX(x, wires)
 
-        @qp.decomposition_rule(
-            name="decomp2",
-            condition=lambda num_wires: num_wires == 2,
-            resources={qp.CRX: 1},
-        )
+        @qp.register_condition(lambda num_wires: num_wires == 2)
+        @qp.register_name("decomp2")
+        @qp.register_resources({qp.CRX: 1})
         def decomp2(x, wires):
             qp.CRX(x, wires)
 
@@ -1335,11 +1332,13 @@ class TestDefaultRepresentations:
         class OpWithACustomName98786(qp.operation.Operator):
             pass
 
-        @qp.decomposition_rule(name="decomp1", resources={qp.RX: 1})
+        @qp.register_name("decomp1")
+        @qp.register_resources({qp.RX: 1})
         def decomp1(x, wires):
             qp.RX(x, wires)
 
-        @qp.decomposition_rule(name="decomp2", resources={qp.RZ: 1})
+        @qp.register_name("decomp2")
+        @qp.register_resources({qp.RZ: 1})
         def decomp2(x, wires):
             qp.RZ(x, wires)
 
@@ -1367,19 +1366,15 @@ class TestDefaultRepresentations:
             def resource_params(self):
                 return {"num_wires": len(self.wires)}
 
-        @qp.decomposition_rule(
-            name="decomp1",
-            condition=lambda num_wires: num_wires == 1,
-            resources={qp.RX: 1},
-        )
+        @qp.register_condition(lambda num_wires: num_wires == 1)
+        @qp.register_name("decomp1")
+        @qp.register_resources({qp.RX: 1})
         def decomp1(x, wires):
             qp.RX(x, wires)
 
-        @qp.decomposition_rule(
-            name="decomp2",
-            condition=lambda num_wires: num_wires == 2,
-            resources={qp.CRX: 1},
-        )
+        @qp.register_condition(lambda num_wires: num_wires == 2)
+        @qp.register_name("decomp2")
+        @qp.register_resources({qp.CRX: 1})
         def decomp2(x, wires):
             qp.CRX(x, wires)
 

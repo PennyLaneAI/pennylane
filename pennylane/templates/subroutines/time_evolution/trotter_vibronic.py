@@ -23,7 +23,7 @@ from pennylane.allocation import allocate
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, decomposition_rule
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.numeric_hamiltonians import VibronicHamiltonian
 from pennylane.ops import CNOT, Hadamard, adjoint, cond
 from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
@@ -685,11 +685,11 @@ def _trotter_vibronic_standard_work_wires(  # pylint: disable=too-many-arguments
     return {"zeroed": num_alloc}
 
 
-@decomposition_rule(
-    name="vibronic_trotter_steps",
-    resources=_trotter_vibronic_standard_resources,
-    work_wires=_trotter_vibronic_standard_work_wires,
+@register_name("vibronic_trotter_steps")
+@register_resources(
+    _trotter_vibronic_standard_resources,
     exact=False,
+    work_wires=_trotter_vibronic_standard_work_wires,
 )
 def _trotter_vibronic_standard(  # pylint: disable=too-many-arguments
     evolution_time,

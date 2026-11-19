@@ -30,7 +30,9 @@ from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
-    decomposition_rule,
+    register_condition,
+    register_name,
+    register_resources,
 )
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
@@ -349,7 +351,8 @@ def _prod2_standard_resources(operands, _init_pauli_rep=None):
     return dict(Counter(abstractify(op) for op in operands))
 
 
-@decomposition_rule(name="expand_factors", resources=_prod2_standard_resources)
+@register_name("expand_factors")
+@register_resources(_prod2_standard_resources)
 def _prod2_standard(operands, _init_pauli_rep=None):
     for op in reversed(operands):
         apply(op)
@@ -406,15 +409,13 @@ def _multi_temporary_and_all_ones(
     return work_wires[num_needed - 1]
 
 
-@decomposition_rule(
-    name="with_work_wires",
-    condition=lambda control_wires, work_wires, work_wire_type, **_: (
-        len(control_wires) >= 2
-        and len(work_wires) >= len(control_wires) - 1
-        and work_wire_type == "zeroed"
-    ),
-    resources=_controlled_prod2_with_work_wires_resources,
+@register_condition(
+    lambda control_wires, work_wires, work_wire_type, **_: len(control_wires) >= 2
+    and len(work_wires) >= len(control_wires) - 1
+    and work_wire_type == "zeroed"
 )
+@register_name("with_work_wires")
+@register_resources(_controlled_prod2_with_work_wires_resources)
 # pylint: disable-next=unused-argument
 def _controlled_prod2_with_work_wires(base, control_wires, control_values, work_wires, **_):
     """Decomposition of ``C(Prod2)`` with at least ``num_control_wires - 1`` zeroed work wires.
@@ -441,13 +442,13 @@ def _controlled_prod2_with_one_work_wire_resources(base, control_wires, work_wir
     return dict(resources)
 
 
-@decomposition_rule(
-    name="with_one_work_wire",
-    condition=lambda control_wires, work_wires, work_wire_type, **_: (
-        len(control_wires) >= 2 and len(work_wires) >= 1 and work_wire_type == "zeroed"
-    ),
-    resources=_controlled_prod2_with_one_work_wire_resources,
+@register_condition(
+    lambda control_wires, work_wires, work_wire_type, **_: len(control_wires) >= 2
+    and len(work_wires) >= 1
+    and work_wire_type == "zeroed"
 )
+@register_name("with_one_work_wire")
+@register_resources(_controlled_prod2_with_one_work_wire_resources)
 # pylint: disable-next=unused-argument
 def _controlled_prod2_with_one_work_wire(base, control_wires, control_values, work_wires, **_):
     """Decomposition of ``C(Prod2)`` with a single zeroed work wire.

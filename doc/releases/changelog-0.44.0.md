@@ -1507,7 +1507,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   are not executable by Catalyst.
   [(#8894)](https://github.com/PennyLaneAI/pennylane/pull/8894)
 
-* The code example in the documentation for ``qml.decomposition.decomposition_rule`` has been
+* The code example in the documentation for ``qml.decomposition.register_resources`` has been
   updated to adhere to renamed keyword arguments and default behaviour of ``num_work_wires``.
   [(#8550)](https://github.com/PennyLaneAI/pennylane/pull/8550)
 

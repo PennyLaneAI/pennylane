@@ -2426,7 +2426,8 @@ class TestGraphDecomposition:
             def compute_decomposition(phi, wires):
                 return [qp.RZ(phi, wires=wires[0])]
 
-        @qp.decomposition_rule(name="use_rx", resources={qp.RX: 1})
+        @qp.register_name("use_rx")
+        @qp.register_resources({qp.RX: 1})
         def use_rx(phi, wires, **__):
             qp.RX(phi, wires=wires[0])
 
@@ -2445,7 +2446,8 @@ class TestGraphDecomposition:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        @qp.decomposition_rule(name="use_rx", resources={qp.RX: 1})
+        @qp.register_name("use_rx")
+        @qp.register_resources({qp.RX: 1})
         def use_rx(phi, wires, **__):
             qp.RX(phi, wires=wires)
 
@@ -2470,7 +2472,8 @@ class TestGraphDecomposition:
             def __init__(self, phi, label, wires):
                 super().__init__(phi, label, wires=wires)
 
-        @qp.decomposition_rule(name="rule", resources={qp.RX: 1, qp.RY: 1})
+        @qp.register_name("rule")
+        @qp.register_resources({qp.RX: 1, qp.RY: 1})
         def rule(phi, label, wires, **__):
             captured["phi"] = phi
             captured["label"] = label
@@ -2511,7 +2514,8 @@ class TestGraphDecomposition:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        @qp.decomposition_rule(name="rule", resources={qp.RX: 1, qp.RY: 1})
+        @qp.register_name("rule")
+        @qp.register_resources({qp.RX: 1, qp.RY: 1})
         def rule(phi, wires, **__):
             qp.RX(phi, wires=wires[0])
             qp.RY(phi, wires=wires[0])
@@ -2534,7 +2538,8 @@ class TestGraphDecomposition:
             def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
-        @qp.decomposition_rule(name="rule", resources={qp.RX: 1})
+        @qp.register_name("rule")
+        @qp.register_resources({qp.RX: 1})
         def rule(phi, wires, **__):
             qp.RX(phi, wires=wires[0])
 
@@ -2560,7 +2565,8 @@ class TestGraphDecomposition:
         assert Op.has_decomposition is False
         assert Op(0.5, wires=0).has_decomposition is False
 
-        @qp.decomposition_rule(name="rule", resources={qp.RX: 1})
+        @qp.register_name("rule")
+        @qp.register_resources({qp.RX: 1})
         def rule(phi, wires, **__):
             qp.RX(phi, wires=wires[0])
 

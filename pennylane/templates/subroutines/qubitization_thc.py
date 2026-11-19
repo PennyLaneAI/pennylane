@@ -17,7 +17,7 @@ import numpy as np
 
 from pennylane import capture
 from pennylane.core.operator import Operator2, abstractify
-from pennylane.decomposition import add_decomps, decomposition_rule
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import GlobalPhase, Hadamard, Z, change_op_basis
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -578,10 +578,8 @@ def _qubitization_thc_standard_resources(  # pylint: disable=too-many-arguments
     }
 
 
-@decomposition_rule(
-    name="thc_prepare_select_reflection",
-    resources=_qubitization_thc_standard_resources,
-)
+@register_name("thc_prepare_select_reflection")
+@register_resources(_qubitization_thc_standard_resources)
 def _qubitization_thc_standard(  # pylint: disable=too-many-arguments
     zeta,
     t_ell,

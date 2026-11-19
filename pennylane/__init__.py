@@ -42,7 +42,9 @@ from pennylane import allocation
 from pennylane.allocation import allocate, deallocate
 from pennylane import decomposition
 from pennylane.decomposition import (
-    decomposition_rule,
+    register_name,
+    register_resources,
+    register_condition,
     add_decomps,
     list_decomps,
     exclude_decomps,

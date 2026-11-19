@@ -21,7 +21,7 @@ import numpy as np
 
 from pennylane import capture, math
 from pennylane.core.operator import Operator2, abstractify
-from pennylane.decomposition import add_decomps, decomposition_rule
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import (
     CNOT,
     SWAP,
@@ -764,7 +764,8 @@ def _select_thc_standard_resources(  # pylint: disable=too-many-arguments
     return resources
 
 
-@decomposition_rule(name="selected_basis_rotations", resources=_select_thc_standard_resources)
+@register_name("selected_basis_rotations")
+@register_resources(_select_thc_standard_resources)
 def _select_thc_standard(  # pylint: disable=too-many-arguments
     chi,
     t_eigenvectors,

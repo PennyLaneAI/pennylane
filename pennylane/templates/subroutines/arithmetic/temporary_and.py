@@ -22,7 +22,8 @@ from pennylane import math, ops
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
-    decomposition_rule,
+    register_name,
+    register_resources,
 )
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import AbstractArray, Bool, Wire
@@ -258,11 +259,8 @@ def _temporary_and_to_clifford_t_resources(*_, **__):
     return resources
 
 
-@decomposition_rule(
-    name="to_clifford_t",
-    resources=_temporary_and_to_clifford_t_resources,
-    exact=False,
-)
+@register_name("to_clifford_t")
+@register_resources(_temporary_and_to_clifford_t_resources, exact=False)
 def _temporary_and_to_clifford_t(wires: WiresLike, control_values: Sequence[bool]):
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
@@ -295,7 +293,8 @@ def _toffoli_with_cvals(wires, cvals):
     ops.cond(math.logical_not(cvals[1]), ops.X)(wires[1])
 
 
-@decomposition_rule(name="to_toffoli", resources={ops.Toffoli: 1, ops.X: _number_xs}, exact=False)
+@register_name("to_toffoli")
+@register_resources({ops.Toffoli: 1, ops.X: _number_xs}, exact=False)
 def _temporary_and_to_toffoli(wires: WiresLike, control_values: Sequence[bool]):
     _toffoli_with_cvals(wires, control_values)
 
@@ -309,7 +308,8 @@ def _temporary_and_to_ppr_resources(*_, **__):
     }
 
 
-@decomposition_rule(name="to_ppr", resources=_temporary_and_to_ppr_resources, exact=False)
+@register_name("to_ppr")
+@register_resources(_temporary_and_to_ppr_resources, exact=False)
 def _temporary_and_to_ppr(wires: WiresLike, control_values: Sequence[bool]):
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
@@ -335,11 +335,8 @@ def _adjoint_temporary_and_measurement_resources(*_, **__):
     }
 
 
-@decomposition_rule(
-    name="measurement",
-    resources=_adjoint_temporary_and_measurement_resources,
-    exact=False,
-)
+@register_name("measurement")
+@register_resources(_adjoint_temporary_and_measurement_resources, exact=False)
 def _adjoint_temporary_and_measurement(base):
     r"""The implementation of adjoint TemporaryAND by mid-circuit measurements
     as found in https://arxiv.org/abs/1805.03662."""
@@ -353,9 +350,9 @@ def _adjoint_temporary_and_measurement(base):
     ops.cond(math.logical_not(cvals[1]), ops.X)(base.wires[1])
 
 
-@decomposition_rule(
-    name="to_ppm",
-    resources={
+@register_name("to_ppm")
+@register_resources(
+    {
         ops.PauliMeasure("X", Wire[1]): 1,
         ops.PauliMeasure("Z", Wire[1]): 1,
         ops.CZ: 1,
@@ -382,7 +379,8 @@ def _adjoint_temporary_and_to_ppm(base):
     ops.cond(math.logical_not(cvals[1]), ops.X)(base.wires[1])
 
 
-@decomposition_rule(name="to_toffoli", resources={ops.Toffoli: 1, ops.X: _number_xs}, exact=False)
+@register_name("to_toffoli")
+@register_resources({ops.Toffoli: 1, ops.X: _number_xs}, exact=False)
 def _adjoint_temporary_and_to_toffoli(base):
     _toffoli_with_cvals(base.wires, base.control_values)
 

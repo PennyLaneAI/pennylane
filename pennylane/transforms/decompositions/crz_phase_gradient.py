@@ -220,11 +220,8 @@ def make_crz_to_phase_gradient_decomp(
             resources[ChangeOpBasis2(compute_op, target_op, uncompute_op)] = 1
         return resources
 
-    @qp.decomposition_rule(
-        name="phase_gradient",
-        resources=_crz_phase_gradient_standard_resources,
-        exact=False,
-    )
+    @qp.register_name("phase_gradient")
+    @qp.register_resources(_crz_phase_gradient_standard_resources, exact=False)
     def _crz_phase_gradient_standard(phi, wires):
         dispatch(
             phi,

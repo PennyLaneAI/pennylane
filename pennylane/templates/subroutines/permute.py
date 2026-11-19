@@ -22,7 +22,7 @@ from jax import numpy as jnp
 
 from pennylane import capture
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, decomposition_rule
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import SWAP, cond
 from pennylane.wires import Wires
 
@@ -251,7 +251,8 @@ def _permute_standard_resources(wires, permutation):
     return dict(resources)
 
 
-@decomposition_rule(name="swap_network", resources=_permute_standard_resources)
+@register_name("swap_network")
+@register_resources(_permute_standard_resources)
 def _permute_standard(wires, permutation):
     # Temporary storage to keep track as we permute
     working_order = wires.tolist()

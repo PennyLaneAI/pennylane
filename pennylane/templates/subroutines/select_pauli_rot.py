@@ -21,7 +21,8 @@ from pennylane import capture, math
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
-    decomposition_rule,
+    register_name,
+    register_resources,
 )
 from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
@@ -166,7 +167,8 @@ def _select_pauli_rot_standard_resources(angles, control_wires, target_wire, rot
 
 
 # Not exact resources because rotations might be skipped based on angles
-@decomposition_rule(name="gray_code", resources=_select_pauli_rot_standard_resources, exact=False)
+@register_name("gray_code")
+@register_resources(_select_pauli_rot_standard_resources, exact=False)
 def _select_pauli_rot_standard(angles, control_wires, target_wire, rot_axis):
     r"""Decomposes the SelectPauliRot"""
 

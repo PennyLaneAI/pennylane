@@ -24,7 +24,8 @@ from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
-    decomposition_rule,
+    register_name,
+    register_resources,
     resource_rep,
 )
 from pennylane.ops import GlobalPhase, StatePrep, change_op_basis
@@ -228,7 +229,8 @@ def _prepselprep_standard_resources(op_reps, num_control):
     return resources
 
 
-@decomposition_rule(name="state_prep_select", resources=_prepselprep_standard_resources)
+@register_name("state_prep_select")
+@register_resources(_prepselprep_standard_resources)
 def _prepselprep_standard(*_, wires, lcu, control, target_wires):  # pylint: disable=unused-argument
     coeffs, ops, phases = _get_new_terms(lcu)
     sqrt_coeffs = math.sqrt(coeffs)

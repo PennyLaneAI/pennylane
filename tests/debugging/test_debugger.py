@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.debugging import debug_expval, debug_probs, debug_state
-from pennylane.decomposition import add_decomps, decomposition_rule
+from pennylane.decomposition import add_decomps, register_name, register_resources
 
 
 class _DecomposingOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
@@ -35,7 +35,8 @@ class _DecomposingOp(qp.operation.Operation):  # pylint: disable=too-few-public-
         return [qp.RY(0.5, wires=wires), qp.RX(0.5, wires=wires)]
 
 
-@decomposition_rule(name="ry_rx_decompose", resources={qp.RY: 1, qp.RX: 1})
+@register_name("ry_rx_decompose")
+@register_resources({qp.RY: 1, qp.RX: 1})
 def _ry_rx_decompose(wires, **__):
     qp.RY(0.5, wires=wires)
     qp.RX(0.5, wires=wires)

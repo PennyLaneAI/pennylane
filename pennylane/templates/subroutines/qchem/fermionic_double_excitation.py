@@ -26,7 +26,7 @@ from jax import numpy as jnp
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, decomposition_rule
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -1054,10 +1054,8 @@ def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
     RX(np.pi / 2, wires=p)
 
 
-@decomposition_rule(
-    name="jordan_wigner_rotations",
-    resources=_fermionic_double_excitation_standard_resources,
-)
+@register_name("jordan_wigner_rotations")
+@register_resources(_fermionic_double_excitation_standard_resources)
 # pylint: disable-next=unused-argument
 def _fermionic_double_excitation_standard(weight, wires, wires1, wires2):
     s = wires1[0]

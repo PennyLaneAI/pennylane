@@ -29,7 +29,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator2, abstractify
-from pennylane.decomposition import add_decomps, decomposition_rule
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
@@ -455,7 +455,8 @@ add_decomps(
 )
 
 
-@decomposition_rule(name="conjugate_transpose", resources=lambda base: {abstractify(base): 1})
+@register_name("conjugate_transpose")
+@register_resources(lambda base: {abstractify(base): 1})
 def _adjoint_qubit_unitary_standard(base):
     U = base.U
     U = U.conjugate().transpose() if sp.sparse.issparse(U) else math.moveaxis(math.conj(U), -2, -1)
@@ -474,7 +475,8 @@ def _matrix_pow(U, z):
     return vecs @ math.diag(eigs**z) @ math.linalg.inv(vecs)
 
 
-@decomposition_rule(name="matrix_power", resources=lambda base, z: {abstractify(base): 1})
+@register_name("matrix_power")
+@register_resources(lambda base, z: {abstractify(base): 1})
 def _pow_qubit_unitary_standard(base, z):
     QubitUnitary(_matrix_pow(base.U, z), wires=base.wires)
 
@@ -502,10 +504,8 @@ def _controlled_qubit_unitary_standard_resources(
     }
 
 
-@decomposition_rule(
-    name="to_controlled_qubit_unitary",
-    resources=_controlled_qubit_unitary_standard_resources,
-)
+@register_name("to_controlled_qubit_unitary")
+@register_resources(_controlled_qubit_unitary_standard_resources)
 def _controlled_qubit_unitary_standard(
     base, control_wires, control_values, work_wires, work_wire_type
 ):
@@ -692,7 +692,8 @@ def _diagonal_qubit_unitary_recursive_resources(D, wires):  # pylint: disable=un
     }
 
 
-@decomposition_rule(name="recursive", resources=_diagonal_qubit_unitary_recursive_resources)
+@register_name("recursive")
+@register_resources(_diagonal_qubit_unitary_recursive_resources)
 def _diagonal_qubit_unitary_recursive(D, wires):
     angles = math.angle(D)
     diff = angles[..., 1::2] - angles[..., ::2]
@@ -717,11 +718,8 @@ def _diagonal_qubit_unitary_auxiliary_resources(D, wires):  # pylint: disable=un
     }
 
 
-@decomposition_rule(
-    name="auxiliary",
-    resources=_diagonal_qubit_unitary_auxiliary_resources,
-    work_wires={"zeroed": 1},
-)
+@register_name("auxiliary")
+@register_resources(_diagonal_qubit_unitary_auxiliary_resources, work_wires={"zeroed": 1})
 def _diagonal_qubit_unitary_auxiliary(D, wires, **_):
     angles = -2 * math.angle(D)
     with qp.allocate(1, "zero", restored=True) as aux_wire:
@@ -733,7 +731,8 @@ add_decomps(
 )
 
 
-@decomposition_rule(name="conjugate_diagonal", resources=lambda base: {abstractify(base): 1})
+@register_name("conjugate_diagonal")
+@register_resources(lambda base: {abstractify(base): 1})
 def _adjoint_diagonal_unitary_standard(base):
     DiagonalQubitUnitary(math.conj(base.D), wires=base.wires)
 
@@ -741,7 +740,8 @@ def _adjoint_diagonal_unitary_standard(base):
 add_decomps("Adjoint(DiagonalQubitUnitary)", _adjoint_diagonal_unitary_standard)
 
 
-@decomposition_rule(name="power_diagonal", resources=lambda base, z: {abstractify(base): 1})
+@register_name("power_diagonal")
+@register_resources(lambda base, z: {abstractify(base): 1})
 def _pow_diagonal_unitary_standard(base, z):
     DiagonalQubitUnitary(math.cast(base.D, np.complex128) ** z, wires=base.wires)
 
@@ -922,7 +922,8 @@ def _adjoint_block_encode_standard_resources(base):
     return {abstractify(base.adjoint()): 1}
 
 
-@decomposition_rule(name="adjoint_matrix", resources=_adjoint_block_encode_standard_resources)
+@register_name("adjoint_matrix")
+@register_resources(_adjoint_block_encode_standard_resources)
 def _adjoint_block_encode_standard(base):
     base.adjoint()
 

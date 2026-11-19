@@ -21,7 +21,7 @@ from jax import numpy as jnp
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, decomposition_rule
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import BasisState, DoubleExcitation, OrbitalRotation, cond
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
@@ -327,7 +327,8 @@ def _gate_fabric_standard_resources(n_layers, num_wires, len_wire_pattern, inclu
     }
 
 
-@decomposition_rule(name="excitation_orbital_layers", resources=_gate_fabric_standard_resources)
+@register_name("excitation_orbital_layers")
+@register_resources(_gate_fabric_standard_resources)
 def _gate_fabric_standard(weights, wires, init_state, include_pi):
     if isinstance(wires, Wires):
         wires = wires.labels

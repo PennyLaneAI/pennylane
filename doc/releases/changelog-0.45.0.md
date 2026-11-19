@@ -260,7 +260,7 @@ are now available! With this release, you can query the solutions of the graph-b
 understand how PennyLane decomposed a circuit, why specific rules where chosen over others, and more.
 
 * It is now possible to assign custom names to decomposition rules using the ``name`` argument in
-  :func:`qp.decomposition_rule <pennylane.decomposition.decomposition_rule>`, making it easier to
+  :func:`qp.register_resources <pennylane.decomposition.register_resources>`, making it easier to
   identify specific decomposition rules.
   [(#9257)](https://github.com/PennyLaneAI/pennylane/pull/9257)
 
@@ -269,7 +269,8 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
 
   qp.decomposition.enable_graph()
 
-  @qp.decomposition_rule(name='my_cz_rule', resources={qp.CNOT: 1, qp.H: 2})
+  @qp.register_name('my_cz_rule')
+  @qp.register_resources({qp.CNOT: 1, qp.H: 2})
   def cz_to_h_cnot(wires):
       qp.H(wires[1])
       qp.CNOT(wires)
@@ -515,7 +516,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   [(#8998)](https://github.com/PennyLaneAI/pennylane/pull/8998)
 
   ```python
-  @qp.decomposition_rule(resources={qp.CNOT: 1, qp.H: 2})
+  @qp.register_resources({qp.CNOT: 1, qp.H: 2})
   def custom_decomp(wires):
       qp.H(wires[1])
       qp.CNOT(wires)
@@ -1020,7 +1021,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
 
   - Decomposition rules for :class:`~.SemiAdder` now require those arguments.
   - When registering a resource function
-    (:func:`qp.decomposition_rule <pennylane.decomposition_rule>`) to a decomposition rule of an
+    (:func:`qp.register_resources <pennylane.register_resources>`) to a decomposition rule of an
     operator that contains :class:`~.SemiAdder`, the resource representation of :class:`~.SemiAdder`
     must also receive these new arguments.
   - These changes are relevant only with :func:`~.decomposition.enable_graph`.
@@ -1145,7 +1146,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
   the same result would now be obtained using:
 
   ```python
-  @qp.decomposition.decomposition_rule(resources={qp.H: 2, qp.CZ: 1})
+  @qp.decomposition.register_resources({qp.H: 2, qp.CZ: 1})
   def _custom_cnot_decomposition(wires, **_):
       qp.Hadamard(wires=wires[1])
       qp.CZ(wires=[wires[0], wires[1]])

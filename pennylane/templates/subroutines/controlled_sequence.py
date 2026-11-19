@@ -21,7 +21,7 @@ from pennylane import capture, compiler, math
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import abstractify
-from pennylane.decomposition import add_decomps, decomposition_rule
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops.op_math import SymbolicOp2, ctrl, pow
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
@@ -177,10 +177,8 @@ def _ctrl_seq_execution_optimized_decomposition_resources(base, control) -> dict
     )
 
 
-@decomposition_rule(
-    name="controlled_powers",
-    resources=_ctrl_seq_execution_optimized_decomposition_resources,
-)
+@register_name("controlled_powers")
+@register_resources(_ctrl_seq_execution_optimized_decomposition_resources)
 def _ctrl_seq_execution_optimized_decomposition(*_, base=None, control=None, **__):
     """
     A decomposition optimized for execution time, over IR size and compilation time.
@@ -212,10 +210,8 @@ def _ctrl_seq_ir_optimized_resources(base, control) -> dict:
     return {controlled_base: 2 ** len(control) - 1}
 
 
-@decomposition_rule(
-    name="looped_controlled_repetitions",
-    resources=_ctrl_seq_ir_optimized_resources,
-)
+@register_name("looped_controlled_repetitions")
+@register_resources(_ctrl_seq_ir_optimized_resources)
 def _ctrl_seq_ir_optimized_decomposition(*_, base=None, control=None, **__):
     """
     A decomposition optimized for IR size and compilation time, over execution time.

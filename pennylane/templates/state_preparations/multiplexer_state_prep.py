@@ -16,8 +16,8 @@ r"""Contains the MultiplexerStatePreparation template."""
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, decomposition_rule
-from pennylane.decomposition.decomposition_rule import decomposition_rule
+from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition.decomposition_rule import register_condition
 from pennylane.templates.state_preparations.mottonen import _get_alpha_y
 from pennylane.typing import AbstractArray, Complex, Float, Wire
 from pennylane.wires import Wires
@@ -149,11 +149,9 @@ def _multiplexer_state_prep_real_resources(state_vector, wires, check=False) -> 
     return _select_pauli_rot_resources(len(wires))
 
 
-@decomposition_rule(
-    name="real",
-    condition=lambda state_vector, **_: not math.is_complex_dtype(state_vector),
-    resources=_multiplexer_state_prep_real_resources,
-)
+@register_condition(lambda state_vector, **_: not math.is_complex_dtype(state_vector))
+@register_name("real")
+@register_resources(_multiplexer_state_prep_real_resources)
 def _multiplexer_state_prep_real(state_vector, wires, **_):
     r"""Decomposition of MultiplexerStatePreparation for a real-valued state vector."""
     _select_pauli_rots(state_vector, wires)
@@ -170,12 +168,9 @@ def _multiplexer_state_prep_complex_resources(state_vector, wires, check=False) 
     return resources
 
 
-@decomposition_rule(
-    name="complex",
-    condition=lambda state_vector, **_: math.is_complex_dtype(state_vector),
-    resources=_multiplexer_state_prep_complex_resources,
-    exact=False,
-)
+@register_condition(lambda state_vector, **_: math.is_complex_dtype(state_vector))
+@register_name("complex")
+@register_resources(_multiplexer_state_prep_complex_resources, exact=False)
 def _multiplexer_state_prep_complex(state_vector, wires, **_):
     r"""Decomposition of MultiplexerStatePreparation for a complex-valued state vector."""
 

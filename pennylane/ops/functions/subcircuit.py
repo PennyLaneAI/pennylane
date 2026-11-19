@@ -28,7 +28,7 @@ def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator2]:
 
     if not isinstance(qfunc, DecompositionRule):
         raise TypeError(
-            "The provided quantum function must register resources using 'qp.decomposition_rule'."
+            "The provided quantum function must register resources using 'qp.register_resources'."
         )
 
     # 'self' shouldn't be in signature(OpClass), but it should be in
@@ -78,7 +78,7 @@ def subcircuit(  # pylint: disable=too-many-arguments
 
     The quantum function decorated with `subcircuit` can be any valid quantum
     function, provided that nothing is returned from it (e.g., terminal measurements are
-    not allowed) and that it has resources registered to it via :func:`~pennylane.decomposition_rule`.
+    not allowed) and that it has resources registered to it via :func:`~pennylane.register_resources`.
 
     The decorated quantum function will automatically be registered as an :class:`~.Operator2`
     subclass with a single decomposition rule that corresponds to the quantum function body.
@@ -86,7 +86,7 @@ def subcircuit(  # pylint: disable=too-many-arguments
 
     Args:
         qfunc (DecompositionRule): a quantum function whose resources have been registered with
-            :func:`~pennylane.decomposition_rule`
+            :func:`~pennylane.register_resources`
 
     Keyword Args:
         dynamic_argnames (Sequence[str]): names of the arguments that are dynamic data of the
@@ -110,7 +110,7 @@ def subcircuit(  # pylint: disable=too-many-arguments
         ``wire_argnames``, ``compilable_argnames``, ``hybrid_argnames`` or ``static_argnames``.
         See :class:`~.Operator2` for details on how arguments are classified.
 
-    .. seealso:: :class:`~.Operator2`, :func:`~pennylane.decomposition_rule`
+    .. seealso:: :class:`~.Operator2`, :func:`~pennylane.register_resources`
 
     **Example**
 
@@ -121,7 +121,8 @@ def subcircuit(  # pylint: disable=too-many-arguments
     .. code-block:: python
 
         @qp.subcircuit(dynamic_argnames=("phi",))
-        @qp.decomposition_rule(name="MyOp", resources={qp.H: 1, qp.RZ: 1})
+        @qp.register_name("MyOp")
+        @qp.register_resources({qp.H: 1, qp.RZ: 1})
         def MyOp(phi, wires):
             qp.H(wires)
             qp.RZ(phi, wires)

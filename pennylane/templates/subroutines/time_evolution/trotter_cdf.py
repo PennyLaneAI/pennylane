@@ -24,7 +24,9 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
-    decomposition_rule,
+    register_condition,
+    register_name,
+    register_resources,
 )
 from pennylane.numeric_hamiltonians import CDFHamiltonian
 from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift
@@ -717,11 +719,8 @@ def _trotter_cdf_standard_resources(  # pylint: disable=too-many-arguments,unuse
     )
 
 
-@decomposition_rule(
-    name="double_factorized_steps",
-    resources=_trotter_cdf_standard_resources,
-    exact=False,
-)
+@register_name("double_factorized_steps")
+@register_resources(_trotter_cdf_standard_resources, exact=False)
 def _trotter_cdf_standard(  # pylint: disable=too-many-arguments,unused-argument
     evolution_time,
     num_trotter_steps,
@@ -764,12 +763,9 @@ def _controlled_trotter_cdf_standard_resources(  # pylint: disable=unused-argume
     )
 
 
-@decomposition_rule(
-    name="controlled_double_factorized_steps",
-    condition=lambda base, control_wires, *_, **__: len(control_wires) == 1,
-    resources=_controlled_trotter_cdf_standard_resources,
-    exact=False,
-)
+@register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
+@register_name("controlled_double_factorized_steps")
+@register_resources(_controlled_trotter_cdf_standard_resources, exact=False)
 def _controlled_trotter_cdf_standard(
     base,
     control_wires,
@@ -828,13 +824,11 @@ def _controlled_trotter_cdf_standard(
     PhaseShift(-phi, control_wires)
 
 
-@decomposition_rule(
-    name="multi_control",
-    condition=lambda base, **kwargs: (
-        not base.arguments["double_phase"]
-        and ctrl_many_zeroed_work_wires.is_applicable(base=base, **kwargs)
-    ),
-    resources=lambda *args, **kwargs: ctrl_many_zeroed_work_wires.compute_resources(
+@register_condition(ctrl_many_zeroed_work_wires.is_applicable)
+@register_condition(lambda base, **_: not base.arguments["double_phase"])
+@register_name("multi_control")
+@register_resources(
+    lambda *args, **kwargs: ctrl_many_zeroed_work_wires.compute_resources(
         *args, **kwargs
     ).gate_counts,
     exact=False,

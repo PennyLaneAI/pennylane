@@ -317,9 +317,9 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         return change_basis_rep_basis_adapted
 
     # The resources are inexact if conditional branches are used
-    @qp.decomposition_rule(
-        name="phase_gradient",
-        resources=_select_pauli_rot_phase_gradient_standard_resources,
+    @qp.register_name("phase_gradient")
+    @qp.register_resources(
+        _select_pauli_rot_phase_gradient_standard_resources,
         exact=precisions == {precision},
     )
     def _select_pauli_rot_phase_gradient_standard(

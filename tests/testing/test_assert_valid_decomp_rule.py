@@ -29,7 +29,8 @@ from pennylane.typing import Wire
 from tests.core.operator.operator2_utils import OneWireDynOp
 
 
-@qp.decomposition_rule(name="cnot_to_cz", resources={qp.H: 2, qp.CZ: 1})
+@qp.register_name("cnot_to_cz")
+@qp.register_resources({qp.H: 2, qp.CZ: 1})
 def _cnot_to_cz(wires):
     qp.H(wires[1])
     qp.CZ(wires)
@@ -54,7 +55,7 @@ def _nested_capture_cnot_rule(resources, exact=True):
         qp.CZ(wires)
         hadamard(wires[1])
 
-    @qp.decomposition_rule(resources=resources, exact=exact)
+    @qp.register_resources(resources, exact=exact)
     def rule(wires):
         controlled_x(wires)
 
@@ -79,7 +80,8 @@ class TestDecompRuleToTape:
     def test_operator2_dynamic_args(self, capture):
         """Test that the dynamic arguments of an Operator2 reach the rule."""
 
-        @qp.decomposition_rule(name="rule", resources={OneWireDynOp: 2})
+        @qp.register_name("rule")
+        @qp.register_resources({OneWireDynOp: 2})
         def rule(phi, wires):
             OneWireDynOp(phi, wires=wires)
             OneWireDynOp(2 * phi, wires=wires)
@@ -99,7 +101,8 @@ class TestDecompRuleToTape:
                 super().__init__(phi, wires=wires)
                 self.hyperparameters["n"] = n
 
-        @qp.decomposition_rule(name="rule", resources={qp.RX: 2})
+        @qp.register_name("rule")
+        @qp.register_resources({qp.RX: 2})
         def rule(phi, wires, n):
             for _ in range(n):
                 qp.RX(phi, wires)
@@ -130,10 +133,8 @@ class TestAssertValidDecompositionRule:
             qp.Y(wires[0])
             qp.Y(wires[1])
 
-        rule_float_counts = qp.decomposition_rule(
-            rule,
-            name="rule",
-            resources={qp.X: 2.0, qp.Y: 3.0},
+        rule_float_counts = qp.register_name(
+            "rule", qp.register_resources({qp.X: 2.0, qp.Y: 3.0})(rule)
         )
         with pytest.raises(
             AssertionError,
@@ -141,7 +142,9 @@ class TestAssertValidDecompositionRule:
         ):
             assert_valid_decomp_rule(op, rule_float_counts)
 
-        rule_float_counts = qp.decomposition_rule(rule, name="rule", resources={qp.X: 2, qp.Y: 3.0})
+        rule_float_counts = qp.register_name(
+            "rule", qp.register_resources({qp.X: 2, qp.Y: 3.0})(rule)
+        )
         with pytest.raises(
             AssertionError,
             match="Resource count for 'PauliY' in 'MyOp' decomp rule 'rule' must be an integer",
@@ -161,7 +164,7 @@ class TestAssertValidDecompositionRule:
             qp.X(wires[0])
             qp.X(wires[1])
 
-        rule = qp.decomposition_rule(rule, name="rule", resources={qp.X: numpy_int(2)})
+        rule = qp.register_name("rule", qp.register_resources({qp.X: numpy_int(2)})(rule))
 
         with pytest.raises(
             AssertionError,
@@ -183,18 +186,18 @@ class TestAssertValidDecompositionRule:
             qp.Y(wires[0])
             qp.Y(wires[1])
 
-        rule_wrong_numbers = qp.decomposition_rule(rule, name="rule", resources={qp.X: 2, qp.Y: 3})
+        rule_wrong_numbers = qp.register_name(
+            "rule", qp.register_resources({qp.X: 2, qp.Y: 3})(rule)
+        )
         with pytest.raises(AssertionError, match=r"PauliY :      2  !=  3$"):
             assert_valid_decomp_rule(op, rule_wrong_numbers)
 
-        rule_wrong_ops = qp.decomposition_rule(rule, name="rule", resources={qp.X: 2, qp.Z: 2})
+        rule_wrong_ops = qp.register_name("rule", qp.register_resources({qp.X: 2, qp.Z: 2})(rule))
         with pytest.raises(AssertionError, match=r"PauliY :\s+2  !=  0\n  PauliZ :\s+0  !=  2$"):
             assert_valid_decomp_rule(op, rule_wrong_ops)
 
-        rule_zero_count = qp.decomposition_rule(
-            rule,
-            name="rule",
-            resources={qp.X: 2, qp.Y: 2, qp.Z: 0},
+        rule_zero_count = qp.register_name(
+            "rule", qp.register_resources({qp.X: 2, qp.Y: 2, qp.Z: 0})(rule)
         )
         assert_valid_decomp_rule(op, rule_zero_count)
 
@@ -213,11 +216,8 @@ class TestAssertValidDecompositionRule:
             qp.Y(wires[0])
             qp.Y(wires[1])
 
-        rule_wrong_ops = qp.decomposition_rule(
-            rule,
-            name="rule",
-            resources={qp.X: 2, qp.Z: 2},
-            exact=False,
+        rule_wrong_ops = qp.register_name(
+            "rule", qp.register_resources({qp.X: 2, qp.Z: 2}, exact=False)(rule)
         )
         op = MyOp([0, 1])
         with pytest.raises(
@@ -241,10 +241,8 @@ class TestAssertValidDecompositionRule:
         def mcm_rule(wires):
             qp.ops.measure(wires[0])
 
-        rule = qp.decomposition_rule(
-            mcm_rule,
-            name="mcm_rule",
-            resources={qp.ops.MidMeasure(wires=Wire[1]): 1},
+        rule = qp.register_name(
+            "mcm_rule", qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1})(mcm_rule)
         )
 
         spy = mocker.spy(qp.ops.functions, "matrix")
@@ -258,7 +256,8 @@ class TestAssertValidDecompositionRule:
         class MyOp(Operator):
             num_wires = 3
 
-        @qp.decomposition_rule(name="rule", resources={qp.S: 3})
+        @qp.register_name("rule")
+        @qp.register_resources({qp.S: 3})
         def rule(wires):  # pylint: disable=unused-argument
             @qp.for_loop(3)
             def loop(i):
@@ -272,7 +271,8 @@ class TestAssertValidDecompositionRule:
     def test_new_decomposition_rule_capture_operator2(self):
         """Operator2 dynamic and wire arguments are forwarded as capture inputs."""
 
-        @qp.decomposition_rule(name="rule", resources={OneWireDynOp: 3})
+        @qp.register_name("rule")
+        @qp.register_resources({OneWireDynOp: 3})
         def rule(phi, wires):  # pylint: disable=unused-argument
             @qp.for_loop(3)
             def loop(i):
@@ -323,7 +323,7 @@ class TestAssertValidDecompositionRule:
         def measure(wires):
             qp.measure(wires[0])
 
-        @qp.decomposition_rule(resources={qp.ops.MidMeasure(wires=Wire[1]): 1})
+        @qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1})
         def rule(wires):
             measure(wires)
 
@@ -340,7 +340,7 @@ class TestAssertValidDecompositionRule:
 
         resource = qp.templates.subroutine_resource_rep(hadamard, wires=Wire[1])
 
-        @qp.decomposition_rule(resources={resource: 1})
+        @qp.register_resources({resource: 1})
         def rule(wires):
             hadamard(wires)
 
@@ -353,17 +353,21 @@ class MyOneWireOp(Operator):
     num_wires = 1
 
 
-@qp.decomposition_rule(name="never_applicable", condition=lambda: False, resources={qp.Y: 5})
+@qp.register_condition(lambda: False)
+@qp.register_name("never_applicable")
+@qp.register_resources({qp.Y: 5})
 def _never_applicable(wires):
     raise NotImplementedError
 
 
-@qp.decomposition_rule(name="to_x", resources={qp.X: 1})
+@qp.register_name("to_x")
+@qp.register_resources({qp.X: 1})
 def _to_x(wires):
     qp.X(wires)
 
 
-@qp.decomposition_rule(name="to_x_bad_resources", resources={qp.X: 2})
+@qp.register_name("to_x_bad_resources")
+@qp.register_resources({qp.X: 2})
 def _to_x_bad_resources(wires):
     qp.X(wires)
 

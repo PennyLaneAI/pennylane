@@ -215,7 +215,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         import pennylane as qp
 
-        @qp.decomposition_rule(name="my_cz", resources={qp.H: 2, qp.CNOT: 1})
+        @qp.register_name("my_cz")
+        @qp.register_resources({qp.H: 2, qp.CNOT: 1})
         def my_cz(wires):
             qp.H(wires=wires[1])
             qp.CNOT(wires=wires)
@@ -786,7 +787,7 @@ def _validate_rule(rule):
     if not isinstance(rule, DecompositionRule):
         raise TypeError(
             f"{rule.__name__} is missing a resource estimate! A quantum function must be "
-            "decorated with @qp.decomposition_rule to be used as a decomposition rule."
+            "decorated with @qp.register_resources to be used as a decomposition rule."
         )
     return rule
 

@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, decomposition_rule
+from pennylane.decomposition import add_decomps, register_name, register_resources
 from pennylane.ops import (
     CH,
     CSWAP,
@@ -344,11 +344,8 @@ def _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j):
         cond(bit, PauliZ)(wires=target)
 
 
-@decomposition_rule(
-    name="router_swap_tree",
-    resources=_bucket_brigade_qram_standard_resources,
-    exact=False,
-)
+@register_name("router_swap_tree")
+@register_resources(_bucket_brigade_qram_standard_resources, exact=False)
 def _bucket_brigade_qram_standard(bitstrings, wire_manager, **__):
     bus_wire = wire_manager.bus_wire
     control_wires = wire_manager.control_wires
@@ -733,11 +730,8 @@ def _block_tree_query_ops(bitstrings, block_index, tree_wire_manager, n_tree, k,
     adjoint(_tree_mark_routers_via_bus_ctrl)(tree_wire_manager, n_tree, k, signal)
 
 
-@decomposition_rule(
-    name="block_tree_queries",
-    resources=_hybrid_qram_standard_resources,
-    exact=False,
-)
+@register_name("block_tree_queries")
+@register_resources(_hybrid_qram_standard_resources, exact=False)
 def _hybrid_qram_standard(bitstrings, tree_wire_manager, select_wires, signal_wire, **_):
     k = len(select_wires)
 
@@ -993,11 +987,8 @@ def _flip_controls(control_wires, control_vals):
             PauliX(control_wires[i])
 
 
-@decomposition_rule(
-    name="controlled_data_loading",
-    resources=_select_only_qram_standard_resources,
-    exact=False,
-)
+@register_name("controlled_data_loading")
+@register_resources(_select_only_qram_standard_resources, exact=False)
 def _select_only_qram_standard(
     bitstrings, select_value, select_wires, control_wires, target_wires, **_
 ):
@@ -1279,7 +1270,8 @@ def _ffqram_standard_resources(num_zero_bits, num_address_wires, num_entries):
     }
 
 
-@decomposition_rule(name="controlled_amplitude_rotations", resources=_ffqram_standard_resources)
+@register_name("controlled_amplitude_rotations")
+@register_resources(_ffqram_standard_resources)
 def _ffqram_standard(amplitudes, wires, address, **_):
     address_wires = wires[:-1]
     reg_wire = wires[-1]

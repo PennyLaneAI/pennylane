@@ -19,7 +19,7 @@ import functools
 from collections import Counter
 
 import pennylane as qp
-from pennylane import decomposition_rule
+from pennylane import register_name, register_resources
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps
@@ -168,10 +168,8 @@ def _arbitrary_state_preparation_standard_resources(num_wires):
     )
 
 
-@decomposition_rule(
-    name="pauli_rotations",
-    resources=_arbitrary_state_preparation_standard_resources,
-)
+@register_name("pauli_rotations")
+@register_resources(_arbitrary_state_preparation_standard_resources)
 def _arbitrary_state_preparation_standard(weights, wires, **_):
     pauli_words = _state_preparation_pauli_words(len(wires))
 

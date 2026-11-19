@@ -22,7 +22,9 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
-    decomposition_rule,
+    register_condition,
+    register_name,
+    register_resources,
 )
 from pennylane.numeric_hamiltonians import CGFHamiltonian
 from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift
@@ -543,11 +545,8 @@ def _trotter_cgf_standard_resources(
     return _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control=False)
 
 
-@decomposition_rule(
-    name="compressed_factorized_steps",
-    resources=_trotter_cgf_standard_resources,
-    exact=False,
-)
+@register_name("compressed_factorized_steps")
+@register_resources(_trotter_cgf_standard_resources, exact=False)
 # pylint: disable-next=unused-argument
 def _trotter_cgf_standard(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
     # ``double_phase`` only affects the controlled decomposition; the base operator is
@@ -583,12 +582,9 @@ def _controlled_trotter_cgf_standard_resources(  # pylint: disable=unused-argume
     )
 
 
-@decomposition_rule(
-    name="controlled_compressed_factorized_steps",
-    condition=lambda base, control_wires, *_, **__: len(control_wires) == 1,
-    resources=_controlled_trotter_cgf_standard_resources,
-    exact=False,
-)
+@register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
+@register_name("controlled_compressed_factorized_steps")
+@register_resources(_controlled_trotter_cgf_standard_resources, exact=False)
 def _controlled_trotter_cgf_standard(
     base,
     control_wires,

@@ -23,7 +23,9 @@ from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
-    decomposition_rule,
+    register_condition,
+    register_name,
+    register_resources,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
@@ -1407,12 +1409,14 @@ def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
         encoding()
 
 
-@decomposition_rule(
-    name="sparse_state_isometry",
-    condition=lambda coefficients, wires, indices, *_, **__: indices is not None,
-    resources=_sos_state_prep_standard_resources,
-    work_wires=_sos_state_prep_standard_work_wires,
+@register_condition(
+    lambda coefficients, wires, indices, *_, **__: indices is not None
+)  # indices must be known
+@register_name("sparse_state_isometry")
+@register_resources(
+    _sos_state_prep_standard_resources,
     exact=False,
+    work_wires=_sos_state_prep_standard_work_wires,
 )
 def _sos_state_prep_standard(  # pylint: disable=too-many-arguments
     coefficients,
