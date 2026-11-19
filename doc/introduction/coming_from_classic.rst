@@ -150,6 +150,8 @@ The changes are:
 #. Use ``jax.numpy`` or regular NumPy for arrays (for more information on which
    data type to use and when, see :doc:`qjit`).
 
+.. _gradients:
+
 Taking gradients
 ----------------
 
