@@ -417,7 +417,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
                 "wires": AbstractWires(-1),
             }
 
-            def __init__(self, phi, wires):  # pylint: disable=useless-parent-delegation
+            def __init__(self, phi, wires):
                 super().__init__(phi, wires=wires)
 
         assert Op.has_fixed_sig is False
