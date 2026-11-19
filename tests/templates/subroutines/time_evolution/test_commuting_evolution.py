@@ -236,6 +236,7 @@ class TestGradients:
         assert op.grad_method is None
         assert op.grad_recipe == [None] * (len(H.data) + 1)
 
+    @pytest.mark.jax
     def test_two_term_case(self):
         """Tests the parameter shift rules for `CommutingEvolution` equal the
         finite difference result for a two term shift rule case."""
@@ -252,13 +253,16 @@ class TestGradients:
             qp.CommutingEvolution(hamiltonian, time, frequencies)
             return qp.expval(qp.PauliZ(0))
 
-        x_vals = np.linspace(-np.pi, np.pi, num=10)
+        import jax.numpy as jnp
+
+        x_vals = jnp.linspace(-np.pi, np.pi, num=10)
 
         grads_finite_diff = [qp.gradients.finite_diff(circuit)(x) for x in x_vals]
         grads_param_shift = [qp.gradients.param_shift(circuit)(x) for x in x_vals]
 
         assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
 
+    @pytest.mark.jax
     def test_four_term_case(self):
         """Tests the parameter shift rules for `CommutingEvolution` equal the
         finite difference result for a four term shift rule case."""
@@ -277,38 +281,48 @@ class TestGradients:
             qp.CommutingEvolution(hamiltonian, time, frequencies)
             return qp.expval(qp.PauliZ(0))
 
-        x_vals = [np.array(x, requires_grad=True) for x in np.linspace(-np.pi, np.pi, num=10)]
+        import jax.numpy as jnp
+
+        x_vals = jnp.linspace(-np.pi, np.pi, num=10)
 
         grads_finite_diff = [qp.gradients.finite_diff(circuit)(x) for x in x_vals]
         grads_param_shift = [qp.gradients.param_shift(circuit)(x) for x in x_vals]
 
         assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
 
+    @pytest.mark.jax
     def test_differentiable_hamiltonian(self):
         """Tests correct gradients are produced when the Hamiltonian is differentiable."""
 
         n_wires = 2
         dev = qp.device("default.qubit", wires=n_wires)
         obs = [qp.PauliX(0) @ qp.PauliY(1), qp.PauliY(0) @ qp.PauliX(1)]
-        diff_coeffs = np.array([1.0, -1.0], requires_grad=True)
+        import jax.numpy as jnp
+
+        diff_coeffs = jnp.array([1.0, -1.0])
         frequencies = (2, 4)
 
         def parametrized_hamiltonian(coeffs):
             return qp.Hamiltonian(coeffs, obs)
 
+        from pennylane.transforms import _tape_decompose
+
+        @_tape_decompose(gate_set={qp.PauliX, qp.PauliRot})
         @qp.qnode(dev)
         def circuit(time, coeffs):
             qp.PauliX(0)
             qp.CommutingEvolution(parametrized_hamiltonian(coeffs), time, frequencies)
             return qp.expval(qp.PauliZ(0))
 
-        x_vals = [np.array(x, requires_grad=True) for x in np.linspace(-np.pi, np.pi, num=10)]
+        x_vals = jnp.linspace(-np.pi, np.pi, num=10)
 
         grads_finite_diff = [
-            np.hstack(qp.gradients.finite_diff(circuit)(x, diff_coeffs)) for x in x_vals
+            np.hstack(qp.gradients.finite_diff(circuit, argnums=(0, 1))(x, diff_coeffs))
+            for x in x_vals
         ]
         grads_param_shift = [
-            np.hstack(qp.gradients.param_shift(circuit)(x, diff_coeffs)) for x in x_vals
+            np.hstack(qp.gradients.param_shift(circuit, argnums=(0, 1))(x, diff_coeffs))
+            for x in x_vals
         ]
 
         assert np.isclose(grads_finite_diff, grads_param_shift, atol=1e-6).all()

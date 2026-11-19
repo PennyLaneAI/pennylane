@@ -114,23 +114,6 @@ class TestMergeAmplitudeEmbedding:
 class TestMergeAmplitudeEmbeddingInterfaces:
     """Test that merging amplitude embedding operations works in all interfaces."""
 
-    @pytest.mark.autograd
-    def test_merge_amplitude_embedding_autograd(self):
-        """Test QNode in autograd interface."""
-
-        def qfunc(amplitude):
-            qp.AmplitudeEmbedding(amplitude, wires=0)
-            qp.AmplitudeEmbedding(amplitude, wires=1)
-            return qp.state()
-
-        dev = qp.device("default.qubit", wires=2)
-        optimized_qfunc = qp.transforms.merge_amplitude_embedding(qfunc)
-        optimized_qnode = qp.QNode(optimized_qfunc, dev)
-
-        amplitude = np.array([0.0, 1.0], requires_grad=True)
-        # Check the state |11> is being generated.
-        assert optimized_qnode(amplitude)[-1] == 1
-
     @pytest.mark.torch
     def test_merge_amplitude_embedding_torch(self):
         """Test QNode in torch interface."""

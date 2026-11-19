@@ -719,6 +719,7 @@ class TestMatrix:
         """Test the matrix method for different exponents and a float parameter."""
         assert self.check_matrix(2.34, z)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
     def test_matrix_against_shortcut_autograd(self, z):
@@ -920,6 +921,7 @@ class TestIntegration:
         "diff_method", ("parameter-shift", "finite-diff", "adjoint", "backprop")
     )
     @pytest.mark.parametrize("z", (2, -2, 0.5))
+    @pytest.mark.jax
     def test_gradient_pow_rx(self, diff_method, z):
         """Test execution and gradients for a decomposable power operator."""
 
@@ -928,7 +930,7 @@ class TestIntegration:
             Pow(base=qp.RX(x, wires=0), z=z)
             return qp.expval(qp.PauliY(0))
 
-        x = qp.numpy.array(1.234, requires_grad=True)
+        x = jnp.array(1.234)
 
         expected = -pnp.sin(x * z)
         assert qp.math.allclose(circuit(x, z), expected)
@@ -946,7 +948,7 @@ class TestIntegration:
             Pow(qp.RX(x, wires=0), 2.5)
             return qp.expval(qp.PauliY(0))
 
-        x = qp.numpy.array([1.234, 2.34, 3.456])
+        x = np.array([1.234, 2.34, 3.456])
         res = circuit(x)
 
         expected = -pnp.sin(x * 2.5)

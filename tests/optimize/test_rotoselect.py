@@ -29,7 +29,7 @@ class TestRotoselectOptimizer:
     """Test the Rotoselect (gradient-free) optimizer"""
 
     @pytest.mark.parametrize("params", [[1.7, 2.2], [-1.42, 0.1], [0.05, -0.8]])
-    def test_step_and_cost_autograd_rotoselect(self, params):
+    def test_step_and_cost_rotoselect(self, params):
         """Test that the correct cost is returned via the step_and_cost method for the
         Rotoselect momentum optimizer"""
         rotoselect_opt = RotoselectOptimizer()
@@ -44,12 +44,14 @@ class TestRotoselectOptimizer:
             generators[1](params[1], wires=1)
             qp.CNOT(wires=[0, 1])
 
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def circuit_1(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
             return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))
 
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def circuit_2(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
             return qp.expval(qp.PauliX(0))
@@ -88,12 +90,14 @@ class TestRotoselectOptimizer:
             generators[1](params[1], wires=1)
             qp.CNOT(wires=[0, 1])
 
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def circuit_1(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
             return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))
 
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def circuit_2(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
             return qp.expval(qp.PauliX(0))
@@ -142,12 +146,14 @@ class TestRotoselectOptimizer:
             generators[1](params[1], wires=1)
             qp.CNOT(wires=[0, 1])
 
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def circuit_1(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
             return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliY(1))
 
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def circuit_2(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
             return qp.expval(qp.PauliX(0))

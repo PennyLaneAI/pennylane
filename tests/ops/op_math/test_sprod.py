@@ -16,6 +16,7 @@
 from copy import copy
 
 import gate_data as gd  # a file containing matrix rep of each gate
+import jax.numpy as jnp
 import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
@@ -358,7 +359,6 @@ class TestMatrix:
     @pytest.mark.jax
     def test_batching_jax(self):
         """Test that SProd matrix has batching support with the jax interface."""
-        import jax.numpy as jnp
 
         x = jnp.array([-1, -2, -3])
         y = jnp.array([1, 2, 3])
@@ -501,7 +501,6 @@ class TestMatrix:
     @pytest.mark.jax
     def test_sprod_jax(self):
         """Test matrix is cast correctly using jax parameters."""
-        import jax.numpy as jnp
 
         coeff = jnp.array(1.23)
         rot_params = jnp.array([0.12, 3.45, 6.78])
@@ -580,7 +579,6 @@ class TestSparseMatrix:
     @pytest.mark.parametrize("op", sparse_ops)
     def test_sparse_matrix_jax_scalar(self, scalar, op):
         """Test the sparse_matrix representation of scaled ops when scalar is a jax array."""
-        import jax.numpy as jnp
 
         scalar = jnp.array(scalar)
         sprod_op = SProd(scalar, op)
@@ -676,7 +674,6 @@ class TestProperties:
     @pytest.mark.jax
     def test_is_verified_hermitian_jax(self):
         """Test that is_verified_hermitian works when a jax type scalar is provided."""
-        import jax.numpy as jnp
 
         coeffs = (jnp.array(1.23), jnp.array(1.23 + 1.2j))
         true_hermitian_states = (True, False)
@@ -819,7 +816,6 @@ class TestSimplify:
     @pytest.mark.jax
     def test_simplify_pauli_rep_jax(self):
         """Test that simplifying operators with a valid pauli representation works with jax interface."""
-        import jax.numpy as jnp
 
         c1, c2, c3 = jnp.array(1.23), jnp.array(2.0), jnp.array(2.46)
 
@@ -959,6 +955,7 @@ class TestIntegration:
         assert 1.23 in results
         assert -1.23 not in results
 
+    @pytest.mark.jax
     def test_differentiable_scalar(self):
         """Test that the gradient can be computed of the scalar when a SProd op
         is used in the measurement process."""
@@ -969,12 +966,13 @@ class TestIntegration:
             qp.PauliX(wires=0)
             return qp.expval(SProd(scalar, qp.Hadamard(wires=0)))
 
-        scalar = qnp.array(1.23, requires_grad=True)
+        scalar = jnp.array(1.23)
         grad = qp.grad(circuit)(scalar)
 
         true_grad = -1 / qnp.sqrt(2)
         assert qnp.allclose(grad, true_grad)
 
+    @pytest.mark.jax
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a SProd op in the measurement process."""
         sprod_op = SProd(100, qp.Hadamard(0))
@@ -985,7 +983,7 @@ class TestIntegration:
             qp.RX(weights[0], wires=0)
             return qp.expval(sprod_op)
 
-        weights = qnp.array([0.1], requires_grad=True)
+        weights = jnp.array([0.1])
         grad = qp.grad(circuit)(weights)
 
         true_grad = 100 * -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
@@ -1014,8 +1012,6 @@ class TestIntegration:
     def test_jax(self, diff_method):
         """Test that interface parameters can be unwrapped to numpy. This will occur when parameter-shift
         is requested for a given interface."""
-
-        from jax import numpy as jnp
 
         dev = qp.device("default.qubit", wires=1)
 

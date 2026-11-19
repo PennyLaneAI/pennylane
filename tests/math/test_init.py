@@ -53,6 +53,7 @@ class TestIsRealObjOrClose:
         x = np.array(data, dtype=dtype)
         assert qp.math.is_real_obj_or_close(x) is exp_output
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_autograd(self, data, dtype, exp_output):
         """Test with Autograd."""

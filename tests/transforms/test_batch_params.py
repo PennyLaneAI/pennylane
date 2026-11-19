@@ -15,18 +15,20 @@
 Unit tests for the batch params transform.
 """
 
+import numpy as onp
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
 
 
+@pytest.mark.torch
 def test_simple_circuit(mocker):
     """Test that batching works for a simple circuit"""
     dev = qp.device("default.qubit", wires=3)
 
     @qp.batch_params
-    @qp.qnode(dev, interface="autograd")
+    @qp.qnode(dev, interface="torch")
     def circuit(data, x, weights):
         qp.templates.AmplitudeEmbedding(data, wires=[0, 1, 2], normalize=True)
         qp.RX(x, wires=0)
@@ -35,9 +37,13 @@ def test_simple_circuit(mocker):
         return qp.probs(wires=[0, 2])
 
     batch_size = 5
-    data = np.random.random((batch_size, 8))
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+    data = onp.random.random((batch_size, 8))
+    x = onp.linspace(0.1, 0.5, batch_size)
+    weights = onp.ones((batch_size, 10, 3, 3))
+
+    data = qp.math.asarray(data, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+    weights = qp.math.asarray(weights, like="torch", dtype="float64", requires_grad=True)
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, x, weights)
@@ -45,12 +51,13 @@ def test_simple_circuit(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
+@pytest.mark.torch
 def test_simple_circuit_one_batch(mocker):
     """Test that batching works for a simple circuit when the batch size is 1"""
     dev = qp.device("default.qubit", wires=3)
 
     @qp.batch_params
-    @qp.qnode(dev, interface="autograd")
+    @qp.qnode(dev, interface="torch")
     def circuit(data, x, weights):
         qp.templates.AmplitudeEmbedding(data, wires=[0, 1, 2], normalize=True)
         qp.RX(x, wires=0)
@@ -59,9 +66,13 @@ def test_simple_circuit_one_batch(mocker):
         return qp.probs(wires=[0, 2])
 
     batch_size = 1
-    data = np.random.random((batch_size, 8))
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+    data = onp.random.random((batch_size, 8))
+    x = onp.linspace(0.1, 0.5, batch_size)
+    weights = onp.ones((batch_size, 10, 3, 3))
+
+    data = qp.math.asarray(data, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+    weights = qp.math.asarray(weights, like="torch", dtype="float64", requires_grad=True)
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, x, weights)
@@ -69,14 +80,15 @@ def test_simple_circuit_one_batch(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
+@pytest.mark.torch
 def test_simple_circuit_with_prep(mocker):
     """Test that batching works for a simple circuit with a state preparation"""
     dev = qp.device("default.qubit", wires=3)
 
-    init_state = np.array([0, 0, 0, 0, 1, 0, 0, 0], requires_grad=False)
+    init_state = onp.array([0, 0, 0, 0, 1, 0, 0, 0])
 
     @qp.batch_params
-    @qp.qnode(dev, interface="autograd")
+    @qp.qnode(dev, interface="torch")
     def circuit(data, x, weights):
         qp.StatePrep(init_state, wires=[0, 1, 2])
         qp.RX(x, wires=0)
@@ -86,9 +98,13 @@ def test_simple_circuit_with_prep(mocker):
         return qp.probs(wires=[0, 2])
 
     batch_size = 5
-    data = np.random.random((batch_size,))
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+    data = onp.random.random((batch_size,))
+    x = onp.linspace(0.1, 0.5, batch_size)
+    weights = onp.ones((batch_size, 10, 3, 3))
+
+    data = qp.math.asarray(data, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+    weights = qp.math.asarray(weights, like="torch", dtype="float64", requires_grad=True)
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, x, weights)
@@ -96,19 +112,22 @@ def test_simple_circuit_with_prep(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
+@pytest.mark.torch
 def test_basic_entangler_layers(mocker):
     """Test that batching works for BasicEngtanglerLayers"""
     dev = qp.device("default.qubit", wires=2)
 
     @qp.batch_params
-    @qp.qnode(dev, interface="autograd")
+    @qp.qnode(dev, interface="torch")
     def circuit(weights):
         qp.templates.BasicEntanglerLayers(weights, wires=[0, 1])
         qp.RY(0.2, wires=1)
         return qp.probs(wires=[0, 1])
 
     batch_size = 5
-    weights = np.random.random((batch_size, 2, 2))
+    weights = onp.random.random((batch_size, 2, 2))
+
+    weights = qp.math.asarray(weights, like="torch", dtype="float64", requires_grad=True)
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(weights)
@@ -116,19 +135,22 @@ def test_basic_entangler_layers(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
+@pytest.mark.torch
 def test_angle_embedding(mocker):
     """Test that batching works for AngleEmbedding"""
     dev = qp.device("default.qubit", wires=3)
 
     @qp.batch_params
-    @qp.qnode(dev, interface="autograd")
+    @qp.qnode(dev, interface="torch")
     def circuit(data):
         qp.templates.AngleEmbedding(data, wires=[0, 1, 2])
         qp.RY(0.2, wires=1)
         return qp.probs(wires=[0, 2])
 
     batch_size = 5
-    data = np.random.random((batch_size, 3))
+    data = onp.random.random((batch_size, 3))
+
+    data = qp.math.asarray(data, like="torch", dtype="float64", requires_grad=True)
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(data)
@@ -136,12 +158,13 @@ def test_angle_embedding(mocker):
     assert len(spy.call_args[0][0]) == batch_size
 
 
+@pytest.mark.torch
 def test_mottonenstate_preparation(mocker):
     """Test that batching works for MottonenStatePreparation"""
     dev = qp.device("default.qubit", wires=3)
 
     @qp.batch_params
-    @qp.qnode(dev, interface="autograd")
+    @qp.qnode(dev, interface="torch")
     def circuit(data, weights):
         qp.templates.MottonenStatePreparation(data, wires=[0, 1, 2])
         qp.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
@@ -150,9 +173,12 @@ def test_mottonenstate_preparation(mocker):
     batch_size = 3
 
     # create a batched input statevector
-    data = np.random.random((batch_size, 2**3))
-    data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
-    weights = np.random.random((batch_size, 10, 3, 3))
+    data = onp.random.random((batch_size, 2**3))
+    data /= onp.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
+    weights = onp.random.random((batch_size, 10, 3, 3))
+
+    data = qp.math.asarray(data, like="torch", dtype="float64", requires_grad=True)
+    weights = qp.math.asarray(weights, like="torch", dtype="float64", requires_grad=True)
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, weights)
@@ -169,15 +195,16 @@ def test_mottonenstate_preparation(mocker):
     indiv_res = []
     for state, weight in zip(data, weights):
         indiv_res.append(circuit2(state, weight))
-    assert np.allclose(res, indiv_res)
+    assert onp.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
+@pytest.mark.torch
 def test_qubit_state_prep(mocker):
     """Test that batching works for StatePrep"""
     dev = qp.device("default.qubit", wires=3)
 
     @qp.batch_params
-    @qp.qnode(dev, interface="autograd")
+    @qp.qnode(dev, interface="torch")
     def circuit(data, weights):
         qp.StatePrep(data, wires=[0, 1, 2])
         qp.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
@@ -186,9 +213,12 @@ def test_qubit_state_prep(mocker):
     batch_size = 3
 
     # create a batched input statevector
-    data = np.random.random((batch_size, 2**3))
-    data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
-    weights = np.random.random((batch_size, 10, 3, 3))
+    data = onp.random.random((batch_size, 2**3))
+    data /= onp.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
+    weights = onp.random.random((batch_size, 10, 3, 3))
+
+    data = qp.math.asarray(data, like="torch", dtype="float64", requires_grad=True)
+    weights = qp.math.asarray(weights, like="torch", dtype="float64", requires_grad=True)
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, weights)
@@ -205,9 +235,10 @@ def test_qubit_state_prep(mocker):
     indiv_res = []
     for state, weight in zip(data, weights):
         indiv_res.append(circuit2(state, weight))
-    assert np.allclose(res, indiv_res)
+    assert onp.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
+@pytest.mark.torch
 def test_multi_returns():
     """Test that batching works for a simple circuit with multiple returns"""
     dev = qp.device("default.qubit", wires=3)
@@ -222,9 +253,13 @@ def test_multi_returns():
         return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 2])
 
     batch_size = 6
-    data = np.random.random((batch_size, 8))
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+    data = onp.random.random((batch_size, 8))
+    x = onp.linspace(0.1, 0.5, batch_size)
+    weights = onp.ones((batch_size, 10, 3, 3))
+
+    data = qp.math.asarray(data, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+    weights = qp.math.asarray(weights, like="torch", dtype="float64", requires_grad=True)
 
     res = circuit(data, x, weights)
 
@@ -235,6 +270,7 @@ def test_multi_returns():
     assert res[1].shape == (batch_size, 4)
 
 
+@pytest.mark.torch
 def test_shot_vector():
     """Test that batching works for a simple circuit with a shot vector"""
     dev = qp.device("default.qubit", wires=3)
@@ -250,9 +286,13 @@ def test_shot_vector():
         return qp.probs(wires=[0, 2])
 
     batch_size = 6
-    data = np.random.random((batch_size, 3))
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+    data = onp.random.random((batch_size, 3))
+    x = onp.linspace(0.1, 0.5, batch_size)
+    weights = onp.ones((batch_size, 10, 3, 3))
+
+    data = qp.math.asarray(data, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+    weights = qp.math.asarray(weights, like="torch", dtype="float64", requires_grad=True)
 
     res = circuit(data, x, weights)
 
@@ -261,6 +301,7 @@ def test_shot_vector():
     assert all(shot_res.shape == (batch_size, 4) for shot_res in res)
 
 
+@pytest.mark.torch
 def test_multi_returns_shot_vector():
     """Test that batching works for a simple circuit with multiple returns
     and with a shot vector"""
@@ -277,9 +318,13 @@ def test_multi_returns_shot_vector():
         return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 2])
 
     batch_size = 6
-    data = np.random.random((batch_size, 3))
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-    weights = np.ones((batch_size, 10, 3, 3), requires_grad=True)
+    data = onp.random.random((batch_size, 3))
+    x = onp.linspace(0.1, 0.5, batch_size)
+    weights = onp.ones((batch_size, 10, 3, 3))
+
+    data = qp.math.asarray(data, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+    weights = qp.math.asarray(weights, like="torch", dtype="float64", requires_grad=True)
 
     res = circuit(data, x, weights)
 
@@ -293,30 +338,6 @@ def test_multi_returns_shot_vector():
 
 class TestDiffSingle:
     """Test gradients for a single measurement"""
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-    def test_autograd(self, diff_method, tol):
-        """Test derivatives when using autograd"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.batch_params
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(x):
-            qp.RX(x, wires=0)
-            qp.RY(0.1, wires=1)
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-        def cost(x):
-            return np.sum(circuit(x))
-
-        batch_size = 3
-        x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-
-        res = qp.grad(cost)(x)
-        expected = -np.sin(0.1) * np.sin(x)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
@@ -410,47 +431,6 @@ class TestDiffSingle:
 
 class TestDiffMulti:
     """Test gradients for multiple measurements"""
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
-    def test_autograd(self, diff_method, tol):
-        """Test derivatives when using autograd"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.batch_params
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(x):
-            qp.RY(x, wires=0)
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
-
-        def cost(x):
-            res = circuit(x)
-            return qp.math.concatenate([qp.math.expand_dims(res[0], 1), res[1]], axis=1)
-
-        batch_size = 3
-        x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-
-        res = cost(x)
-        expected = qp.math.transpose(
-            qp.math.stack(
-                [
-                    np.cos(x),
-                    np.cos(x / 2) ** 2,
-                    np.zeros_like(x),
-                    np.zeros_like(x),
-                    np.sin(x / 2) ** 2,
-                ]
-            )
-        )
-        assert qp.math.allclose(res, expected, atol=tol)
-
-        grad = qp.jacobian(cost)(x)
-        expected = qp.math.stack(
-            [-np.sin(x), -np.sin(x) / 2, np.zeros_like(x), np.zeros_like(x), np.sin(x) / 2]
-        ) * qp.math.expand_dims(np.eye(batch_size), 1)
-
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
@@ -604,12 +584,13 @@ class TestDiffMulti:
             assert qp.math.allclose(g, exp, atol=tol, rtol=0)
 
 
+@pytest.mark.torch
 def test_all_operations(mocker):
     """Test that a batch dimension can be added to all operations"""
     dev = qp.device("default.qubit", wires=3)
 
     @qp.batch_params(all_operations=True)
-    @qp.qnode(dev, interface="autograd")
+    @qp.qnode(dev, interface="torch")
     def circuit(x, weights):
         qp.RX(x, wires=0)
         qp.RY([0.2, 0.3, 0.3], wires=1)
@@ -617,8 +598,12 @@ def test_all_operations(mocker):
         return qp.probs(wires=[0, 2])
 
     batch_size = 3
-    x = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
-    weights = np.ones((batch_size, 10, 3, 3), requires_grad=False)
+    x = qp.math.asarray(
+        np.linspace(0.1, 0.5, batch_size), like="torch", dtype="float64", requires_grad=True
+    )
+    weights = qp.math.asarray(
+        np.ones((batch_size, 10, 3, 3)), like="torch", dtype="float64", requires_grad=False
+    )
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(x, weights)

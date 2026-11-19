@@ -294,7 +294,13 @@ def test_excitation_integration_with_uccsd(weights, singles, doubles, expected):
 
     @qp.qnode(dev)
     def circuit(weights):
-        UCCSD(weights, wires, s_wires=s_wires, d_wires=d_wires, init_state=np.array([1, 1, 0, 0]))
+        UCCSD(
+            qp.math.toarray(weights),
+            wires,
+            s_wires=s_wires,
+            d_wires=d_wires,
+            init_state=qp.math.array([1, 1, 0, 0], like="numpy"),
+        )
         return [qp.expval(qp.PauliZ(w)) for w in range(n)]
 
     res = circuit(weights)
@@ -347,6 +353,7 @@ def test_hf_state_basis(electrons, symbols, geometry, charge):
 
     mol = qp.qchem.Molecule(symbols, geometry, charge)
     h_ferm = qchem.fermionic_hamiltonian(mol)()
+    assert qp.math.get_interface(*h_ferm.values()) == "numpy"
     qubits = len(h_ferm.wires)
 
     state_occ = qchem.hf_state(electrons, qubits, basis="occupation_number")
@@ -364,8 +371,9 @@ def test_hf_state_basis(electrons, symbols, geometry, charge):
         qp.BasisState(hf_state, wires=range(qubits))
         return qp.expval(h)
 
-    assert circuit(state_occ, h_occ) == circuit(state_parity, h_parity)
-    assert circuit(state_occ, h_occ) == circuit(state_bk, h_bk)
+    energy = circuit(state_occ, h_occ)
+    assert circuit(state_parity, h_parity) == pytest.approx(energy, abs=1e-12, rel=0)
+    assert circuit(state_bk, h_bk) == pytest.approx(energy, abs=1e-12, rel=0)
 
 
 @pytest.mark.parametrize(

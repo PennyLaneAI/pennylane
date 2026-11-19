@@ -17,6 +17,9 @@
 
 from itertools import product
 
+import jax
+import jax.numpy as jnp
+import numpy
 import pytest
 
 import pennylane as qp
@@ -29,8 +32,10 @@ from pennylane.gradients.parameter_shift_hessian import (
 )
 
 
+@pytest.mark.torch
 def test_preprocessing_expansion():
     """Test that the parameter-shift Hessian correctly expands templates into supported gates."""
+    import torch
 
     dev = qp.device("default.qubit")
 
@@ -43,12 +48,14 @@ def test_preprocessing_expansion():
 
     hessian_qnode = qp.gradients.param_shift_hessian(circuit)
 
-    params = qp.numpy.array(
+    params = torch.tensor(
         [[[0.37237552, 0.12791554, 0.52721226], [-0.3707729, 1.75044345, 0.37902089]]],
+        dtype=torch.float64,
         requires_grad=True,
     )
     result = hessian_qnode(params)
-    assert result.shape == (1, 2, 3, 1, 2, 3)
+    assert isinstance(result, tuple) and len(result) == 1
+    assert result[0].shape == (1, 2, 3, 1, 2, 3)
 
 
 class TestProcessArgnum:
@@ -275,7 +282,7 @@ class TestParameterShiftHessian:
         and single expectation value output"""
         dev = qp.device("default.qubit", wires=2)
 
-        x = np.array(0.1, requires_grad=True)
+        x = numpy.array(0.1)
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RY(x, wires=0)
@@ -286,7 +293,7 @@ class TestParameterShiftHessian:
         expected = -np.cos(x)
 
         tapes, fn = qp.gradients.param_shift_hessian(tape)
-        hessian = fn(qp.execute(tapes, dev, diff_method=None))
+        hessian = fn(qp.execute(tapes, dev, interface=None, diff_method=None))
 
         assert isinstance(hessian, np.ndarray)
         assert hessian.shape == ()
@@ -297,7 +304,7 @@ class TestParameterShiftHessian:
         and single probability output"""
         dev = qp.device("default.qubit", wires=2)
 
-        x = np.array(0.1, requires_grad=True)
+        x = numpy.array(0.1)
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RY(x, wires=0)
@@ -305,10 +312,10 @@ class TestParameterShiftHessian:
             qp.probs(wires=[0, 1])
 
         tape = qp.tape.QuantumScript.from_queue(q)
-        expected = 0.5 * np.cos(x) * np.array([-1, 0, 0, 1])
+        expected = 0.5 * np.cos(x) * numpy.array([-1, 0, 0, 1])
 
         tapes, fn = qp.gradients.param_shift_hessian(tape)
-        hessian = fn(qp.execute(tapes, dev, diff_method=None))
+        hessian = fn(qp.execute(tapes, dev, interface=None, diff_method=None))
 
         assert isinstance(hessian, np.ndarray)
         assert hessian.shape == (4,)
@@ -319,7 +326,7 @@ class TestParameterShiftHessian:
         and multiple expval outputs"""
         dev = qp.device("default.qubit", wires=2)
 
-        x = np.array(0.1, requires_grad=True)
+        x = numpy.array(0.1)
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RY(x, wires=0)
@@ -331,7 +338,7 @@ class TestParameterShiftHessian:
         expected = (-np.cos(x), -np.cos(x) / np.sqrt(2))
 
         tapes, fn = qp.gradients.param_shift_hessian(tape)
-        hessian = fn(qp.execute(tapes, dev, diff_method=None))
+        hessian = fn(qp.execute(tapes, dev, interface=None, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
@@ -346,7 +353,7 @@ class TestParameterShiftHessian:
         and both expval and probability outputs"""
         dev = qp.device("default.qubit", wires=2)
 
-        x = np.array(0.1, requires_grad=True)
+        x = numpy.array(0.1)
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RY(x, wires=0)
@@ -355,10 +362,10 @@ class TestParameterShiftHessian:
             qp.probs(wires=[0, 1])
 
         tape = qp.tape.QuantumScript.from_queue(q)
-        expected = (-np.cos(x), 0.5 * np.cos(x) * np.array([-1, 0, 0, 1]))
+        expected = (-np.cos(x), 0.5 * np.cos(x) * numpy.array([-1, 0, 0, 1]))
 
         tapes, fn = qp.gradients.param_shift_hessian(tape)
-        hessian = fn(qp.execute(tapes, dev, diff_method=None))
+        hessian = fn(qp.execute(tapes, dev, interface=None, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
@@ -373,7 +380,7 @@ class TestParameterShiftHessian:
         and multiple probability outputs"""
         dev = qp.device("default.qubit", wires=2)
 
-        x = np.array(0.1, requires_grad=True)
+        x = numpy.array(0.1)
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RY(x, wires=0)
@@ -382,10 +389,13 @@ class TestParameterShiftHessian:
             qp.probs(wires=[0, 1])
 
         tape = qp.tape.QuantumScript.from_queue(q)
-        expected = (0.5 * np.cos(x) * np.array([-1, 1]), 0.5 * np.cos(x) * np.array([-1, 0, 0, 1]))
+        expected = (
+            0.5 * np.cos(x) * numpy.array([-1, 1]),
+            0.5 * np.cos(x) * numpy.array([-1, 0, 0, 1]),
+        )
 
         tapes, fn = qp.gradients.param_shift_hessian(tape)
-        hessian = fn(qp.execute(tapes, dev, diff_method=None))
+        hessian = fn(qp.execute(tapes, dev, interface=None, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
@@ -400,7 +410,7 @@ class TestParameterShiftHessian:
         and single expectation value output"""
         dev = qp.device("default.qubit", wires=2)
 
-        x = np.array([0.1, 0.4], requires_grad=True)
+        x = numpy.array([0.1, 0.4])
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RY(x[0], wires=0)
@@ -412,7 +422,7 @@ class TestParameterShiftHessian:
         expected = ((-np.cos(x[0]), 0), (0, 0))
 
         tapes, fn = qp.gradients.param_shift_hessian(tape)
-        hessian = fn(qp.execute(tapes, dev, diff_method=None))
+        hessian = fn(qp.execute(tapes, dev, interface=None, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
@@ -429,7 +439,7 @@ class TestParameterShiftHessian:
         and single probability output"""
         dev = qp.device("default.qubit", wires=2)
 
-        x = np.array([0.1, 0.4], requires_grad=True)
+        x = numpy.array([0.1, 0.4])
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RY(x[0], wires=0)
@@ -446,17 +456,17 @@ class TestParameterShiftHessian:
         ]
         expected = (
             (
-                0.5 * np.cos(x[0]) * np.array([-a[2], -a[3], a[3], a[2]]),
-                0.25 * np.sin(x[0]) * np.sin(x[1]) * np.array([1, -1, 1, -1]),
+                0.5 * np.cos(x[0]) * numpy.array([-a[2], -a[3], a[3], a[2]]),
+                0.25 * np.sin(x[0]) * np.sin(x[1]) * numpy.array([1, -1, 1, -1]),
             ),
             (
-                0.25 * np.sin(x[0]) * np.sin(x[1]) * np.array([1, -1, 1, -1]),
-                0.5 * np.cos(x[1]) * np.array([-a[0], a[0], a[1], -a[1]]),
+                0.25 * np.sin(x[0]) * np.sin(x[1]) * numpy.array([1, -1, 1, -1]),
+                0.5 * np.cos(x[1]) * numpy.array([-a[0], a[0], a[1], -a[1]]),
             ),
         )
 
         tapes, fn = qp.gradients.param_shift_hessian(tape)
-        hessian = fn(qp.execute(tapes, dev, diff_method=None))
+        hessian = fn(qp.execute(tapes, dev, interface=None, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
@@ -473,7 +483,7 @@ class TestParameterShiftHessian:
         and multiple expval outputs"""
         dev = qp.device("default.qubit", wires=2)
 
-        x = np.array([0.1, 0.4], requires_grad=True)
+        x = numpy.array([0.1, 0.4])
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RY(x[0], wires=0)
@@ -498,7 +508,7 @@ class TestParameterShiftHessian:
         )
 
         tapes, fn = qp.gradients.param_shift_hessian(tape)
-        hessian = fn(qp.execute(tapes, dev, diff_method=None))
+        hessian = fn(qp.execute(tapes, dev, interface=None, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
@@ -516,7 +526,7 @@ class TestParameterShiftHessian:
         and both expval and probability outputs"""
         dev = qp.device("default.qubit", wires=2)
 
-        x = np.array([0.1, 0.4], requires_grad=True)
+        x = numpy.array([0.1, 0.4])
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RY(x[0], wires=0)
@@ -536,18 +546,18 @@ class TestParameterShiftHessian:
             ((-np.cos(x[0]), 0), (0, 0)),
             (
                 (
-                    0.5 * np.cos(x[0]) * np.array([-a[2], -a[3], a[3], a[2]]),
-                    0.25 * np.sin(x[0]) * np.sin(x[1]) * np.array([1, -1, 1, -1]),
+                    0.5 * np.cos(x[0]) * numpy.array([-a[2], -a[3], a[3], a[2]]),
+                    0.25 * np.sin(x[0]) * np.sin(x[1]) * numpy.array([1, -1, 1, -1]),
                 ),
                 (
-                    0.25 * np.sin(x[0]) * np.sin(x[1]) * np.array([1, -1, 1, -1]),
-                    0.5 * np.cos(x[1]) * np.array([-a[0], a[0], a[1], -a[1]]),
+                    0.25 * np.sin(x[0]) * np.sin(x[1]) * numpy.array([1, -1, 1, -1]),
+                    0.5 * np.cos(x[1]) * numpy.array([-a[0], a[0], a[1], -a[1]]),
                 ),
             ),
         )
 
         tapes, fn = qp.gradients.param_shift_hessian(tape)
-        hessian = fn(qp.execute(tapes, dev, diff_method=None))
+        hessian = fn(qp.execute(tapes, dev, interface=None, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
@@ -568,7 +578,7 @@ class TestParameterShiftHessian:
         and multiple probability outputs"""
         dev = qp.device("default.qubit", wires=2)
 
-        x = np.array([0.1, 0.4], requires_grad=True)
+        x = numpy.array([0.1, 0.4])
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RY(x[0], wires=0)
@@ -587,28 +597,28 @@ class TestParameterShiftHessian:
         expected = (
             (
                 (
-                    0.5 * np.cos(x[0]) * np.cos(x[1]) * np.array([-1, 1]),
-                    0.5 * np.sin(x[0]) * np.sin(x[1]) * np.array([1, -1]),
+                    0.5 * np.cos(x[0]) * np.cos(x[1]) * numpy.array([-1, 1]),
+                    0.5 * np.sin(x[0]) * np.sin(x[1]) * numpy.array([1, -1]),
                 ),
                 (
-                    0.5 * np.sin(x[0]) * np.sin(x[1]) * np.array([1, -1]),
-                    0.5 * np.cos(x[0]) * np.cos(x[1]) * np.array([-1, 1]),
+                    0.5 * np.sin(x[0]) * np.sin(x[1]) * numpy.array([1, -1]),
+                    0.5 * np.cos(x[0]) * np.cos(x[1]) * numpy.array([-1, 1]),
                 ),
             ),
             (
                 (
-                    0.5 * np.cos(x[0]) * np.array([-a[2], -a[3], a[3], a[2]]),
-                    0.25 * np.sin(x[0]) * np.sin(x[1]) * np.array([1, -1, 1, -1]),
+                    0.5 * np.cos(x[0]) * numpy.array([-a[2], -a[3], a[3], a[2]]),
+                    0.25 * np.sin(x[0]) * np.sin(x[1]) * numpy.array([1, -1, 1, -1]),
                 ),
                 (
-                    0.25 * np.sin(x[0]) * np.sin(x[1]) * np.array([1, -1, 1, -1]),
-                    0.5 * np.cos(x[1]) * np.array([-a[0], a[0], a[1], -a[1]]),
+                    0.25 * np.sin(x[0]) * np.sin(x[1]) * numpy.array([1, -1, 1, -1]),
+                    0.5 * np.cos(x[1]) * numpy.array([-a[0], a[0], a[1], -a[1]]),
                 ),
             ),
         )
 
         tapes, fn = qp.gradients.param_shift_hessian(tape)
-        hessian = fn(qp.execute(tapes, dev, diff_method=None))
+        hessian = fn(qp.execute(tapes, dev, interface=None, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 2
@@ -629,7 +639,7 @@ class TestParameterShiftHessian:
         but not all parameters trainable"""
         dev = qp.device("default.qubit", wires=2)
 
-        x = np.array([0.1, 0.4, 0.7], requires_grad=True)
+        x = numpy.array([0.1, 0.4, 0.7])
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RY(x[0], wires=0)
@@ -642,7 +652,7 @@ class TestParameterShiftHessian:
         expected = ((0, 0, 0), (0, 0, 0), (0, 0, -np.cos(x[2] + x[0])))
 
         tapes, fn = qp.gradients.param_shift_hessian(tape, argnum=(1, 2))
-        hessian = fn(qp.execute(tapes, dev, diff_method=None))
+        hessian = fn(qp.execute(tapes, dev, interface=None, diff_method=None))
 
         assert isinstance(hessian, tuple)
         assert len(hessian) == 3
@@ -658,7 +668,7 @@ class TestParameterShiftHessian:
         """Test that an error is raised when computing the gradient of a tape
         that returns state"""
 
-        x = np.array(0.1, requires_grad=True)
+        x = numpy.array(0.1)
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RY(x, wires=0)
@@ -674,7 +684,7 @@ class TestParameterShiftHessian:
         """Test that an error is raised when computing the gradient of a tape
         that returns variance"""
 
-        x = np.array(0.1, requires_grad=True)
+        x = numpy.array(0.1)
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RY(x, wires=0)
@@ -727,7 +737,7 @@ class TestParameterShiftHessian:
 
             grad_method = "0"
 
-        x = np.array(0.1, requires_grad=True)
+        x = numpy.array(0.1)
 
         with qp.queuing.AnnotatedQueue() as q:
             DummyOp(x, wires=[0, 1])
@@ -745,7 +755,7 @@ class TestParameterShiftHessian:
         assert isinstance(res, tuple)
         assert len(res) == num_measurements
         assert all(
-            isinstance(r, np.ndarray) and np.allclose(r, np.array([0, 0, 0, 0])) for r in res
+            isinstance(r, np.ndarray) and np.allclose(r, numpy.array([0, 0, 0, 0])) for r in res
         )
 
     def test_error_unsupported_op(self):
@@ -756,7 +766,7 @@ class TestParameterShiftHessian:
 
             grad_method = "F"
 
-        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        x = numpy.array([0.1, 0.2, 0.3])
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RX(x[0], wires=0)
@@ -799,7 +809,7 @@ class TestParameterShiftHessian:
 
 class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
     """Test the general functionality of the param_shift_hessian method
-    with QNodes on the default interface (autograd)"""
+    with QNodes on the JAX interface"""
 
     def test_single_two_term_gate(self):
         """Test that the correct hessian is calculated for a QNode with single RX operator
@@ -813,7 +823,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.CNOT(wires=[0, 1])
             return qp.expval(qp.PauliZ(0))
 
-        x = np.array(0.1, requires_grad=True)
+        x = jnp.array(0.1)
 
         expected = qp.jacobian(qp.grad(circuit))(x)
         hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -834,7 +844,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.CNOT(wires=[0, 1])
             return qp.expval(qp.PauliZ(0))
 
-        x = np.array(0.1, requires_grad=True)
+        x = jnp.array(0.1)
 
         expected = qp.jacobian(qp.grad(circuit))(x)
         hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -853,7 +863,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.RX(x[1], wires=1)
             return qp.expval(qp.PauliZ(0))
 
-        x = np.array([0.1, 0.2], requires_grad=True)
+        x = jnp.array([0.1, 0.2])
 
         expected = qp.jacobian(qp.grad(circuit))(x)
         hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -873,7 +883,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.RX(x[1], wires=1)
             return qp.expval(qp.PauliZ(0))
 
-        x = np.array([0.1, 0.2], requires_grad=True)
+        x = jnp.array([0.1, 0.2])
 
         expected = qp.jacobian(qp.grad(circuit))(x)
         hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -894,7 +904,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.CNOT(wires=[0, 1])
             return qp.expval(qp.PauliZ(0))
 
-        x = np.array(0.1, requires_grad=True)
+        x = jnp.array(0.1)
 
         expected = qp.jacobian(qp.grad(circuit))(x)
         hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -909,7 +919,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
         dev = qp.device("default.qubit", wires=2)
 
         c, s = qp.gradients.generate_shift_rule((0.5, 1)).T
-        recipe = list(zip(c, np.ones_like(c), s))
+        recipe = list(zip(c, jnp.ones_like(c), s))
 
         class DummyOp(qp.CRX):
             """A custom variant of qp.CRX with a specific gradient recipe."""
@@ -923,7 +933,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.CNOT(wires=[0, 1])
             return qp.expval(qp.PauliZ(0))
 
-        x = np.array(0.1, requires_grad=True)
+        x = jnp.array(0.1)
 
         expected = qp.jacobian(qp.grad(circuit))(x)
         hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -942,7 +952,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.CNOT(wires=[0, 1])
             return qp.probs(wires=[0, 1])
 
-        x = np.array(0.1, requires_grad=True)
+        x = jnp.array(0.1)
 
         expected = qp.jacobian(qp.jacobian(circuit))(x)
         hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -963,7 +973,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.RY(x[2], wires=1)
             return qp.expval(qp.PauliZ(1))
 
-        x = np.array([0.1, 0.2, -0.8], requires_grad=True)
+        x = jnp.array([0.1, 0.2, -0.8])
 
         expected = qp.jacobian(qp.jacobian(circuit))(x)
         hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -984,7 +994,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.RY(x[2], wires=1)
             return qp.probs(wires=1)
 
-        x = np.array([0.1, 0.2, -0.8], requires_grad=True)
+        x = jnp.array([0.1, 0.2, -0.8])
 
         expected = qp.jacobian(qp.jacobian(circuit))(x)
         hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -1005,7 +1015,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.Rot(x[0], x[1], x[2], wires=1)
             return qp.probs(wires=[0, 1])
 
-        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        x = jnp.array([0.1, 0.2, 0.3])
         shape = (3, 3, 4)  # (num_args, num_args, num_output_vals)
 
         hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -1026,7 +1036,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.Rot(x[0], x[1], x[2], wires=1)
             return qp.probs(wires=[0, 1])
 
-        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        x = jnp.array([0.1, 0.2, 0.3])
 
         expected = qp.jacobian(qp.jacobian(circuit))(x)
         hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -1046,7 +1056,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.RZ(x[2] / x[0] - x[1], wires=1)
             return qp.probs(wires=[0, 1])
 
-        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        x = jnp.array([0.1, 0.2, 0.3])
 
         expected = qp.jacobian(qp.jacobian(circuit))(x)
         hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -1069,7 +1079,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
         def cost(x):
             return qp.math.stack(circuit(x))
 
-        x = np.ones([2], requires_grad=True)
+        x = jnp.ones([2])
 
         expected = qp.jacobian(qp.jacobian(cost))(x)
         hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -1094,7 +1104,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
         def cost(x):
             return qp.math.stack(circuit(x))
 
-        x = np.ones([1, 3], requires_grad=True)
+        x = jnp.ones([1, 3])
 
         expected = qp.jacobian(qp.jacobian(cost))(x)
         hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -1117,15 +1127,15 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
         def wrapper(X):
             return circuit(*X)
 
-        x = np.array(0.1, requires_grad=True)
-        y = np.array(0.5, requires_grad=True)
-        z = np.array(0.3, requires_grad=True)
+        x = jnp.array(0.1)
+        y = jnp.array(0.5)
+        z = jnp.array(0.3)
         X = qp.math.stack([x, y, z])
 
         expected = qp.jacobian(qp.jacobian(wrapper))(X)
         expected = tuple(expected[:, i, i] for i in range(3))
-        circuit.interface = "autograd"
-        hessian = qp.gradients.param_shift_hessian(circuit)(x, y, z)
+        circuit.interface = "jax"
+        hessian = qp.gradients.param_shift_hessian(circuit, argnums=[0, 1, 2])(x, y, z)
 
         assert np.allclose(expected, hessian)
 
@@ -1145,16 +1155,16 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
         def wrapper(X):
             return circuit(*X)
 
-        x = np.array([0.1, 0.3], requires_grad=True)
-        y = np.array([0.5, 0.7], requires_grad=True)
-        z = np.array([0.3, 0.2], requires_grad=True)
+        x = jnp.array([0.1, 0.3])
+        y = jnp.array([0.5, 0.7])
+        z = jnp.array([0.3, 0.2])
         X = qp.math.stack([x, y, z])
 
         expected = qp.jacobian(qp.jacobian(wrapper))(X)
         expected = tuple(expected[:, i, :, i] for i in range(3))
 
-        circuit.interface = "autograd"
-        hessian = qp.gradients.param_shift_hessian(circuit)(x, y, z)
+        circuit.interface = "jax"
+        hessian = qp.gradients.param_shift_hessian(circuit, argnums=[0, 1, 2])(x, y, z)
 
         assert np.allclose(qp.math.transpose(expected, (0, 2, 3, 1)), hessian)
 
@@ -1174,16 +1184,16 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
         def wrapper(X):
             return circuit(*X)
 
-        x = np.array([[0.1, 0.3], [0.2, 0.4]], requires_grad=True)
-        y = np.array([[0.5, 0.7], [0.2, 0.4]], requires_grad=True)
-        z = np.array([[0.3, 0.2], [0.2, 0.4]], requires_grad=True)
+        x = jnp.array([[0.1, 0.3], [0.2, 0.4]])
+        y = jnp.array([[0.5, 0.7], [0.2, 0.4]])
+        z = jnp.array([[0.3, 0.2], [0.2, 0.4]])
         X = qp.math.stack([x, y, z])
 
         expected = qp.jacobian(qp.jacobian(wrapper))(X)
         expected = tuple(expected[:, i, :, :, i] for i in range(3))
 
-        circuit.interface = "autograd"
-        hessian = qp.gradients.param_shift_hessian(circuit)(x, y, z)
+        circuit.interface = "jax"
+        hessian = qp.gradients.param_shift_hessian(circuit, argnums=[0, 1, 2])(x, y, z)
 
         assert np.allclose(qp.math.transpose(expected, (0, 2, 3, 4, 5, 1)), hessian)
 
@@ -1204,14 +1214,14 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
         def cost(x, y, z):
             return qp.math.stack(circuit(x, y, z))
 
-        x = np.array(0.1, requires_grad=True)
-        y = np.array([[0.5, 0.6], [0.2, 0.1]], requires_grad=True)
-        z = np.array([0.3, 0.4], requires_grad=True)
+        x = jnp.array(0.1)
+        y = jnp.array([[0.5, 0.6], [0.2, 0.1]])
+        z = jnp.array([0.3, 0.4])
 
         expected = tuple(
             qp.jacobian(qp.jacobian(cost, argnums=i), argnums=i)(x, y, z) for i in range(3)
         )
-        hessian = qp.gradients.param_shift_hessian(circuit)(x, y, z)
+        hessian = qp.gradients.param_shift_hessian(circuit, argnums=[0, 1, 2])(x, y, z)
 
         assert np.allclose(expected[0], hessian[0])
         assert np.allclose(qp.math.transpose(expected[1], (0, 2, 3, 4, 5, 1)), hessian[1])
@@ -1234,7 +1244,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.CNOT(wires=[0, 1])
             return qp.probs(wires=[0, 1])
 
-        x = np.array([-0.4, 0.9, 0.1], requires_grad=True)
+        x = jnp.array([-0.4, 0.9, 0.1])
 
         expected = qp.jacobian(qp.jacobian(circuit))(x)
         hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -1253,7 +1263,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.CNOT(wires=[0, 1])
             return qp.probs(wires=[0, 1])
 
-        x = np.array([0.1, 0.2], requires_grad=True)
+        x = jnp.array([0.1, 0.2])
 
         expected = qp.jacobian(qp.jacobian(qp.jacobian(circuit)))(x)
 
@@ -1284,7 +1294,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.CNOT(wires=[0, 1])
             return qp.expval(qp.PauliZ(1))
 
-        x = np.array(0.1, requires_grad=True)
+        x = jnp.array(0.1)
 
         with qp.Tracker(dev) as tracker:
             hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -1310,7 +1320,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.RY(x[1], wires=0)
             return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
-        x = np.array([0.1, 0.2], requires_grad=True)
+        x = jnp.array([0.1, 0.2])
 
         with qp.Tracker(dev) as tracker:
             hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -1338,7 +1348,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.RZ(x[2], wires=1)
             return qp.probs(wires=[0, 1])
 
-        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        x = jnp.array([0.1, 0.2, 0.3])
 
         with qp.Tracker(dev) as tracker:
             hessian = qp.gradients.param_shift_hessian(circuit)(x)
@@ -1369,7 +1379,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             DummyOp(x[2], wires=[0, 1])
             return qp.probs(wires=1)
 
-        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        x = jnp.array([0.1, 0.2, 0.3])
 
         with pytest.raises(
             ValueError,
@@ -1389,7 +1399,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.CRZ(x[2], wires=[0, 1])
             return qp.var(qp.PauliZ(1))
 
-        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        x = jnp.array([0.1, 0.2, 0.3])
 
         with pytest.raises(
             ValueError,
@@ -1409,7 +1419,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.CRZ(x[2], wires=[0, 1])
             return qp.state()
 
-        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
+        x = jnp.array([0.1, 0.2, 0.3])
 
         with pytest.raises(
             ValueError,
@@ -1434,28 +1444,11 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             DummyOp(z, wires=[0, 1])
             return qp.probs(wires=1)
 
-        x = np.array(0.1, requires_grad=True)
-        y = np.array(0.2, requires_grad=True)
-        z = np.array(0.3, requires_grad=False)
+        x = jnp.array(0.1)
+        y = jnp.array(0.2)
+        z = jnp.array(0.3)
 
-        qp.gradients.param_shift_hessian(circuit)(x, y, z)
-
-    @pytest.mark.autograd
-    def test_no_trainable_params_qnode_autograd(self):
-        """Test that the correct output and warning is generated in the absence of any trainable
-        parameters"""
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface="autograd", diff_method="parameter-shift")
-        def circuit(weights):
-            qp.RX(weights[0], wires=0)
-            qp.RY(weights[1], wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qp.gradients.param_shift_hessian(circuit)(weights)
+        qp.gradients.param_shift_hessian(circuit, argnums=[0, 1])(x, y, z)
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
@@ -1501,10 +1494,10 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.Rot(*params, wires=0)
             return qp.probs([2, 3])
 
-        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = jnp.array([0.5, 0.5, 0.5])
 
         result = qp.gradients.param_shift_hessian(circuit)(params)
-        assert np.allclose(result, np.zeros((3, 3, 4)), atol=0, rtol=0)
+        assert np.allclose(result, jnp.zeros((3, 3, 4)), atol=0, rtol=0)
 
         tapes, _ = qp.gradients.param_shift_hessian(qp.workflow.construct_tape(circuit)(params))
         assert tapes == []
@@ -1521,7 +1514,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.CNOT(wires=[0, 1])
             return qp.probs(wires=1)
 
-        x = np.array([0.1, 0.2], requires_grad=True)
+        x = jnp.array([0.1, 0.2])
 
         res = circuit(x)
 
@@ -1562,7 +1555,7 @@ class TestParameterShiftHessianQNode:  # pylint: disable=too-many-public-methods
             qp.Rot(*x, wires=0)
             return [qp.probs([0, 1]), qp.probs([2, 3])]
 
-        x = np.random.rand(3)
+        x = jnp.asarray(np.random.rand(3))
         circuits = [qp.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         transform = [qp.math.shape(qp.gradients.param_shift_hessian(c)(x)) for c in circuits]
@@ -1593,12 +1586,12 @@ class TestParamShiftHessianWithKwargs:
             qp.CNOT(wires=[0, 1])
             return qp.probs(wires=0)
 
-        x = np.array([0.6, -0.2], requires_grad=True)
+        x = jnp.array([0.6, -0.2])
 
         expected = qp.math.transpose(qp.jacobian(qp.jacobian(circuit))(x), (1, 2, 0))
-        tapes, fn = qp.gradients.param_shift_hessian(
-            qp.workflow.construct_tape(circuit)(x), diagonal_shifts=diagonal_shifts
-        )
+        tape = qp.workflow.construct_tape(circuit)(x)
+        tape.trainable_params = list(range(len(tape.get_parameters(trainable_only=False))))
+        tapes, fn = qp.gradients.param_shift_hessian(tape, diagonal_shifts=diagonal_shifts)
 
         # We expect the following tapes:
         # - 1 without shifts (used for second diagonal),
@@ -1607,14 +1600,14 @@ class TestParamShiftHessianWithKwargs:
         # - 1 for second diagonal.
         assert len(tapes) == 1 + 2 + 4 + 1
         assert np.allclose(tapes[0].get_parameters(), x)
-        assert np.allclose(tapes[1].get_parameters(), x + np.array([2 * np.pi / 3, 0.0]))
-        assert np.allclose(tapes[2].get_parameters(), x + np.array([-2 * np.pi / 3, 0.0]))
-        assert np.allclose(tapes[-1].get_parameters(), x + np.array([0.0, -np.pi]))
-        expected_shifts = np.array([[1, 1], [1, -1], [-1, 1], [-1, -1]]) * (np.pi / 2)
+        assert np.allclose(tapes[1].get_parameters(), x + jnp.array([2 * jnp.pi / 3, 0.0]))
+        assert np.allclose(tapes[2].get_parameters(), x + jnp.array([-2 * jnp.pi / 3, 0.0]))
+        assert np.allclose(tapes[-1].get_parameters(), x + jnp.array([0.0, -jnp.pi]))
+        expected_shifts = jnp.array([[1, 1], [1, -1], [-1, 1], [-1, -1]]) * (jnp.pi / 2)
         for _tape, exp_shift in zip(tapes[3:-1], expected_shifts):
             assert np.allclose(_tape.get_parameters(), x + exp_shift)
 
-        hessian = fn(qp.execute(tapes, dev, diff_method=qp.gradients.param_shift))
+        hessian = fn(qp.execute(tapes, dev, interface="jax", diff_method=qp.gradients.param_shift))
 
         assert np.allclose(expected, hessian)
 
@@ -1636,12 +1629,12 @@ class TestParamShiftHessianWithKwargs:
             qp.CNOT(wires=[0, 1])
             return qp.probs(wires=0)
 
-        x = np.array([0.6, -0.2], requires_grad=True)
+        x = jnp.array([0.6, -0.2])
 
         expected = qp.math.transpose(qp.jacobian(qp.jacobian(circuit))(x), (1, 2, 0))
-        tapes, fn = qp.gradients.param_shift_hessian(
-            qp.workflow.construct_tape(circuit)(x), off_diagonal_shifts=off_diagonal_shifts
-        )
+        tape = qp.workflow.construct_tape(circuit)(x)
+        tape.trainable_params = list(range(len(tape.get_parameters(trainable_only=False))))
+        tapes, fn = qp.gradients.param_shift_hessian(tape, off_diagonal_shifts=off_diagonal_shifts)
 
         # We expect the following tapes:
         # - 1 without shifts (used for diagonals),
@@ -1652,26 +1645,29 @@ class TestParamShiftHessianWithKwargs:
         assert np.allclose(tapes[0].get_parameters(), x)
 
         # Check that the vanilla diagonal rule is used for the first diagonal entry
-        assert np.allclose(tapes[1].get_parameters(), x + np.array([-np.pi, 0.0]))
+        assert np.allclose(tapes[1].get_parameters(), x + jnp.array([-jnp.pi, 0.0]))
 
         # Check that the provided off-diagonal shift values are used
-        expected_shifts = np.array(
+        expected_shifts = jnp.array(
             [[1, 1], [1, -1], [1, 2], [1, -2], [-1, 1], [-1, -1], [-1, 2], [-1, -2]]
-        ) * np.array([[np.pi / 2, 0.3]])
+        ) * jnp.array([[jnp.pi / 2, 0.3]])
         for _tape, exp_shift in zip(tapes[2:10], expected_shifts):
             assert np.allclose(_tape.get_parameters(), x + exp_shift)
 
         # Check that the vanilla diagonal rule is used for the second diagonal entry
         shift_order = [1, -1, -2]
         for mult, _tape in zip(shift_order, tapes[10:]):
-            assert np.allclose(_tape.get_parameters(), x + np.array([0.0, np.pi * mult]))
+            assert np.allclose(_tape.get_parameters(), x + jnp.array([0.0, jnp.pi * mult]))
 
-        hessian = fn(qp.execute(tapes, dev, diff_method=qp.gradients.param_shift))
+        hessian = fn(qp.execute(tapes, dev, interface="jax", diff_method=qp.gradients.param_shift))
         assert np.allclose(expected, hessian)
 
     @pytest.mark.parametrize("argnum", [(0,), (1,), (0, 1)])
+    @pytest.mark.torch
     def test_with_1d_argnum(self, argnum):
         """Test that providing an argnum to indicate differentiable parameters works."""
+        import torch
+
         dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, max_diff=2, diff_method="parameter-shift")
@@ -1684,9 +1680,9 @@ class TestParamShiftHessianWithKwargs:
         def wrapper(X):
             return circuit(*X)
 
-        X = np.array([0.6, -0.2], requires_grad=True)
+        X = torch.tensor([0.6, -0.2], dtype=torch.float64, requires_grad=True)
 
-        expected = qp.jacobian(qp.jacobian(wrapper))(X)
+        expected = qp.math.toarray(qp.jacobian(qp.jacobian(wrapper))(X))
         # Extract "diagonal" across arguments
         expected = np.array([np.diag(sub) for i, sub in enumerate(expected)])
         # Set non-argnum argument entries to 0
@@ -1694,7 +1690,7 @@ class TestParamShiftHessianWithKwargs:
             if i not in argnum:
                 expected[:, i] = 0.0
         hessian = qp.gradients.param_shift_hessian(circuit, argnum=argnum)(*X)
-        assert np.allclose(hessian, expected.T)
+        assert np.allclose(qp.math.toarray(hessian), expected.T)
 
     @pytest.mark.parametrize(
         "argnum",
@@ -1704,8 +1700,11 @@ class TestParamShiftHessianWithKwargs:
             qp.math.array([[False, False, True], [False, False, False], [True, False, False]]),
         ],
     )
+    @pytest.mark.torch
     def test_with_2d_argnum(self, argnum):
         """Test that providing an argnum to indicated differentiable parameters works."""
+        import torch
+
         dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, max_diff=2)
@@ -1716,17 +1715,20 @@ class TestParamShiftHessianWithKwargs:
             qp.CRY(par[2], wires=[0, 1])
             return qp.probs(wires=[0, 1])
 
-        par = np.array([0.6, -0.2, 0.8], requires_grad=True)
+        par = torch.tensor([0.6, -0.2, 0.8], dtype=torch.float64, requires_grad=True)
 
-        expected = qp.jacobian(qp.jacobian(circuit))(par)
+        expected = qp.math.toarray(qp.jacobian(qp.jacobian(circuit))(par))
         # Set non-argnum argument entries to 0
         expected = qp.math.transpose(expected * qp.math.array(argnum, dtype=float)[None], (1, 2, 0))
         hessian = qp.gradients.param_shift_hessian(circuit, argnum=argnum)(par)
-        assert np.allclose(hessian, expected)
+        assert np.allclose(qp.math.toarray(hessian), expected)
 
     @pytest.mark.parametrize("argnum", [(0,), (1,), (0, 1)])
+    @pytest.mark.torch
     def test_with_argnum_and_shifts(self, argnum):
         """Test that providing an argnum to indicated differentiable parameters works."""
+        import torch
+
         diagonal_shifts = [(0.1,), (0.9, 1.1)]
         off_diagonal_shifts = [(0.4,), (0.3, 2.1)]
         dev = qp.device("default.qubit", wires=2)
@@ -1741,9 +1743,9 @@ class TestParamShiftHessianWithKwargs:
         def wrapper(X):
             return circuit(*X)
 
-        X = np.array([0.6, -0.2], requires_grad=True)
+        X = torch.tensor([0.6, -0.2], dtype=torch.float64, requires_grad=True)
 
-        expected = qp.jacobian(qp.jacobian(wrapper))(X)
+        expected = qp.math.toarray(qp.jacobian(qp.jacobian(wrapper))(X))
         # Extract "diagonal" across arguments
         expected = np.array([np.diag(sub) for i, sub in enumerate(expected)])
         # Set non-argnum argument entries to 0
@@ -1755,7 +1757,7 @@ class TestParamShiftHessianWithKwargs:
         hessian = qp.gradients.param_shift_hessian(
             circuit, argnum=argnum, diagonal_shifts=d_shifts, off_diagonal_shifts=od_shifts
         )(*X)
-        assert np.allclose(hessian, expected.T)
+        assert np.allclose(qp.math.toarray(hessian), expected.T)
 
 
 class TestInterfaces:
@@ -1815,7 +1817,6 @@ class TestInterfaces:
     @pytest.mark.slow
     def test_hessian_transform_with_jax(self):
         """Test that the Hessian transform can be used with JAX (1d -> 1d)"""
-        import jax
 
         dev = qp.device("default.qubit", wires=2)
 
@@ -1826,7 +1827,7 @@ class TestInterfaces:
             qp.CNOT(wires=[0, 1])
             return qp.probs(wires=[0, 1])
 
-        x_np = np.array([0.1, 0.2], requires_grad=True)
+        x_np = jnp.array([0.1, 0.2])
         x_jax = jax.numpy.array([0.1, 0.2])
 
         expected = qp.jacobian(qp.jacobian(circuit))(x_np)
@@ -1840,7 +1841,6 @@ class TestInterfaces:
     def test_hessian_transform_is_differentiable_jax(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation in JAX
         (1d -> 1d)"""
-        import jax
 
         dev = qp.device("default.qubit", wires=2)
 
@@ -1851,7 +1851,7 @@ class TestInterfaces:
             qp.CNOT(wires=[0, 1])
             return qp.probs(wires=[0, 1])
 
-        x = np.array([0.1, 0.2], requires_grad=True)
+        x = jnp.array([0.1, 0.2])
         x_jax = jax.numpy.array([0.1, 0.2])
 
         expected = qp.jacobian(qp.jacobian(qp.jacobian(circuit)))(x)

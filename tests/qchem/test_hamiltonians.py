@@ -15,6 +15,7 @@
 Unit tests for functions needed for computing the Hamiltonian.
 """
 
+import jax.numpy as jnp
 import numpy as np
 import pytest
 
@@ -30,14 +31,46 @@ from pennylane.fermi import from_string
     [
         np.array([[0.0, 0.0, -0.6614], [0.0, 0.0, 0.6614]]),
         np.array([0.0, 0.0, -0.6614, 0.0, 0.0, 0.6614]),
+        pnp.array([[0.0, 0.0, -0.6614], [0.0, 0.0, 0.6614]], requires_grad=False),
     ],
 )
 def test_molecular_hamiltonian_numpy_data(coordinates):
     """Test that if numpy data is used with molecular hamiltonian, that numpy data is outputted."""
     symbols = ["H", "H"]
 
-    H, _ = qp.qchem.molecular_hamiltonian(symbols, coordinates)
+    H, qubits = qp.qchem.molecular_hamiltonian(symbols, coordinates)
     assert all(qp.math.get_interface(d) == "numpy" for d in H.data)
+
+    @qp.qnode(qp.device("default.qubit", wires=qubits))
+    def circuit():
+        qp.BasisState(qp.qchem.hf_state(2, qubits), wires=range(qubits))
+        return qp.expval(H)
+
+    state = np.zeros(2**qubits)
+    state[0b1100] = 1.0
+    expected = np.vdot(state, qp.matrix(H) @ state)
+    assert circuit() == pytest.approx(expected, abs=1e-12, rel=0)
+
+
+def test_explicit_molecular_parameters_preserve_classical_gradient():
+    """Explicit trainable parameters retain the classical chemistry derivative."""
+    geometry = pnp.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.4]], requires_grad=False)
+    alpha = pnp.array([[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]])
+
+    def cost(exponents):
+        observable, _ = qchem.molecular_hamiltonian(
+            ["H", "H"], geometry, alpha=exponents, args=[exponents]
+        )
+        coefficients = qp.math.stack(observable.terms()[0])
+        return qp.math.sum(coefficients**2)
+
+    gradient = qp.grad(cost)(alpha)
+    displacement = np.zeros(alpha.shape)
+    displacement[0, 0] = 1e-4
+    finite_difference = (cost(alpha + displacement) - cost(alpha - displacement)) / 2e-4
+
+    assert gradient.shape == alpha.shape
+    assert gradient[0, 0] == pytest.approx(float(finite_difference), rel=1e-4, abs=1e-7)
 
 
 @pytest.mark.torch
@@ -375,44 +408,39 @@ def test_gradient_expvalH():
     r"""Test that the gradient of expval(H) computed with ``qp.grad`` is equal to the value
     obtained with the finite difference method."""
     symbols = ["H", "H"]
-    geometry = (
-        pnp.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]], requires_grad=False)
-        / 0.529177210903
-    )
-    alpha = pnp.array(
+    geometry = jnp.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]]) / 0.529177210903
+    alpha = jnp.array(
         [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-        requires_grad=True,
     )
 
     mol = qchem.Molecule(symbols, geometry, alpha=alpha)
-    args = [alpha]
+    args = [geometry, mol.coeff, mol.alpha]
     dev = qp.device("default.qubit", wires=4)
 
-    def energy(mol):
-        @qp.qnode(dev)
+    def energy():
+        @qp.qnode(dev, interface="jax")
         def circuit(*args):
             qp.PauliX(0)
             qp.PauliX(1)
             qp.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
-            h_qubit = qchem.diff_hamiltonian(mol)(*args)
+            molecule = qchem.Molecule(symbols, args[0], coeff=args[1], alpha=args[2])
+            h_qubit = qchem.diff_hamiltonian(molecule)(*args)
             return qp.expval(h_qubit)
 
         return circuit
 
-    grad_qp = qp.grad(energy(mol), argnums=0)(*args)
+    grad_qp = qp.grad(energy(), argnums=2)(*args)
 
-    alpha_1 = pnp.array(
+    alpha_1 = jnp.array(
         [[3.42515091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-        requires_grad=False,
     )  # alpha[0][0] -= 0.0001
 
-    alpha_2 = pnp.array(
+    alpha_2 = jnp.array(
         [[3.42535091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-        requires_grad=False,
     )  # alpha[0][0] += 0.0001
 
-    e_1 = energy(mol)(*[alpha_1])
-    e_2 = energy(mol)(*[alpha_2])
+    e_1 = energy()(geometry, mol.coeff, alpha_1)
+    e_2 = energy()(geometry, mol.coeff, alpha_2)
 
     grad_finitediff = (e_2 - e_1) / 0.0002
 

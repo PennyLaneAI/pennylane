@@ -89,9 +89,8 @@ def from_qiskit(quantum_circuit, measurements=None):
             my_qfunc(wires=["a", "b"])
             return qp.expval(qp.Z("a")), qp.var(qp.Z("b"))
 
-    >>> circuit()
-    (tensor(0.70738827, requires_grad=True),
-    tensor(0.99999937, requires_grad=True))
+    >>> tuple(round(float(value), 8) for value in circuit())
+    (0.70738827, 0.99999937)
 
     The measurements can also be passed directly to the function when creating the
     quantum function, making it possible to create a PennyLane circuit with
@@ -99,9 +98,8 @@ def from_qiskit(quantum_circuit, measurements=None):
 
     >>> measurements = [qp.expval(qp.Z(0)), qp.var(qp.Z(1))]
     >>> circuit = qp.QNode(qp.from_qiskit(qc, measurements), dev)
-    >>> circuit()
-    (tensor(0.70738827, requires_grad=True),
-    tensor(0.99999937, requires_grad=True))
+    >>> tuple(round(float(value), 8) for value in circuit())
+    (0.70738827, 0.99999937)
 
     .. note::
 
@@ -127,8 +125,8 @@ def from_qiskit(quantum_circuit, measurements=None):
            measurements = qp.from_qiskit(qc)()
            return [qp.expval(m) for m in measurements]
 
-    >>> circuit()
-    [tensor(1., requires_grad=True), tensor(0., requires_grad=True)]
+    >>> [float(value) for value in circuit()]
+    [1.0, 0.0]
 
     .. note::
 
@@ -169,22 +167,23 @@ def from_qiskit(quantum_circuit, measurements=None):
         .. code-block:: python
 
             import pennylane as qp
-            from pennylane import numpy as np
+            import jax.numpy as jnp
 
             dev = qp.device("default.qubit")
 
             qfunc = qp.from_qiskit(qc, measurements=qp.expval(qp.Z(0)))
-            circuit = qp.QNode(qfunc, dev)
+            circuit = qp.QNode(qfunc, dev, interface="jax")
 
         Now, ``circuit`` has a signature of ``(x, y)``. The parameters are ordered alphabetically.
 
-        >>> x = np.pi / 4
-        >>> y = 0
-        >>> circuit(x, y)
-        tensor(0.70710678, requires_grad=True)
+        >>> x = jnp.array(np.pi / 4)
+        >>> y = jnp.array(0.0)
+        >>> round(float(circuit(x, y)), 6)
+        0.707107
 
-        >>> qp.grad(circuit, argnum=[0, 1])(np.pi/4, np.pi/6)
-        (array(-0.61237244), array(-0.35355339))
+        >>> gradients = qp.grad(circuit, argnums=(0, 1))(x, jnp.array(np.pi / 6))
+        >>> tuple(round(float(value), 6) for value in gradients)
+        (-0.612372, -0.353553)
 
         The ``QuantumCircuit`` may also be parametrized with a ``ParameterVector``. These can be
         similarly converted:
@@ -206,8 +205,8 @@ def from_qiskit(quantum_circuit, measurements=None):
                 return qp.expval(qp.Z(0))
 
         >>> angles = [3.1, 0.45]
-        >>> circuit(angles)
-        tensor(-0.89966835, requires_grad=True)
+        >>> round(float(circuit(angles)), 8)
+        -0.89966835
 
 
     .. details::
@@ -247,8 +246,8 @@ def from_qiskit(quantum_circuit, measurements=None):
                 # return the expectation value of one of the mid-circuit measurements, and a terminal measurement
                 return qp.expval(mid_measure0), qp.expval(m1)
 
-        >>> circuit()
-        (tensor(0.5, requires_grad=True), tensor(0.5, requires_grad=True))
+        >>> tuple(float(value) for value in circuit())
+        (0.5, 0.5)
 
         .. note::
 

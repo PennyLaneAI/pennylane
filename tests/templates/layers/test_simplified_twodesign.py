@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.testing import assert_decomposable
 
 
@@ -242,33 +241,6 @@ class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
 
-    @pytest.mark.autograd
-    def test_autograd(self, tol):
-        """Tests the autograd interface."""
-
-        weights = np.random.random(size=(1, 2, 2))
-        weights = pnp.array(weights, requires_grad=True)
-        initial_weights = np.random.random(size=(3,))
-        initial_weights = pnp.array(initial_weights, requires_grad=True)
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(initial_weights, weights)
-        res2 = circuit2(initial_weights, weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        grad_fn = qp.grad(circuit)
-        grads = grad_fn(initial_weights, weights)
-
-        grad_fn2 = qp.grad(circuit2)
-        grads2 = grad_fn2(initial_weights, weights)
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-        assert np.allclose(grads[1], grads2[1], atol=tol, rtol=0)
-
     @pytest.mark.jax
     def test_jax(self, tol):
         """Tests the jax interface."""
@@ -288,10 +260,10 @@ class TestInterfaces:
         res2 = circuit2(initial_weights, weights)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-        grad_fn = jax.grad(circuit)
+        grad_fn = jax.grad(circuit, argnums=(0, 1))
         grads = grad_fn(initial_weights, weights)
 
-        grad_fn2 = jax.grad(circuit2)
+        grad_fn2 = jax.grad(circuit2, argnums=(0, 1))
         grads2 = grad_fn2(initial_weights, weights)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)

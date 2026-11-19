@@ -115,10 +115,11 @@ class TestExecutionConfig:
         assert config.mcm_config.postselect_mode == "fill-shots"
         assert config.mcm_config is mcm  # Should be the same instance
 
-    def test_invalid_interface(self):
+    @pytest.mark.parametrize("interface", ["nonsense", "autograd"])
+    def test_invalid_interface(self, interface):
         """Tests that unknown frameworks raise a ValueError."""
-        with pytest.raises(ValueError, match="'nonsense' is not a valid Interface."):
-            _ = ExecutionConfig(interface="nonsense")
+        with pytest.raises(ValueError, match=f"'{interface}' is not a valid Interface."):
+            _ = ExecutionConfig(interface=interface)
 
     @pytest.mark.parametrize("option", (True, False, None))
     def test_valid_grad_on_execution(self, option):

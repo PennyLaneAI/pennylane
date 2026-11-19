@@ -118,13 +118,14 @@ class TestRotGateFusion:
         reshaped_angles_2 = np.reshape(angles_2, (-1, 3) if np.ndim(angles_2) > 1 else (3,))
         self.run_interface_test(reshaped_angles_1, reshaped_angles_2)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("angles_1, angles_2", generic_test_angles)
     def test_full_rot_fusion_autograd(self, angles_1, angles_2):
         """Test that the fusion of two Rot gates has the same effect as
         applying the Rots sequentially, in Autograd."""
 
-        angles_1, angles_2 = qp.numpy.array(angles_1), qp.numpy.array(angles_1)
+        angles_1, angles_2 = qp.numpy.array(angles_1), qp.numpy.array(angles_2)
         self.run_interface_test(angles_1, angles_2)
 
     @pytest.mark.torch
@@ -269,6 +270,7 @@ class TestRotGateFusion:
         self.run_jacobian_test(all_angles, jacobian, is_batched=False, array_fn=array_fn)
 
     @pytest.mark.slow
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_jacobian_autograd(self):
         """Test the Jacobian of the rotation angle fusion with Autograd.

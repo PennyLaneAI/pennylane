@@ -17,6 +17,7 @@ Unit tests for the metric tensor transform.
 
 import importlib
 
+import jax.numpy as jnp
 import pytest
 from scipy.linalg import block_diag
 
@@ -115,6 +116,7 @@ class TestMetricTensor:
         assert tapes[2].operations[0].data == (1,)
         assert tapes[2].operations[1].data == (2,)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     def test_multirz_decomposition(self, diff_method):
         """Test that the MultiRZ gate is correctly decomposed"""
@@ -126,8 +128,8 @@ class TestMetricTensor:
             qp.MultiRZ(b, wires=[0, 1, 2])
             return qp.expval(qp.PauliX(0))
 
-        params = np.array([0.1, 0.2], requires_grad=True)
-        result = qp.metric_tensor(circuit, approx="block-diag")(*params)
+        params = jnp.array([0.1, 0.2])
+        result = qp.metric_tensor(circuit, approx="block-diag", argnums=(0, 1))(*params)
         assert isinstance(result, tuple) and len(result) == 2
         assert qp.math.shape(result[0]) == ()
         assert qp.math.shape(result[1]) == ()
@@ -234,6 +236,7 @@ class TestMetricTensor:
         # PauliY decomp
         self.assert_Y_decomp(tapes[3].operations[10:13])
 
+    @pytest.mark.jax
     def test_evaluate_diag_metric_tensor(self, tol):
         """Test that a diagonal metric tensor evaluates correctly for
         block-diagonal and diagonal setting."""
@@ -249,7 +252,7 @@ class TestMetricTensor:
 
         circuit = qp.QNode(circuit, dev)
 
-        abc = np.array([0.432, 0.12, -0.432], requires_grad=True)
+        abc = jnp.array([0.432, 0.12, -0.432])
         a, b, _ = abc
 
         # evaluate metric tensor
@@ -266,6 +269,7 @@ class TestMetricTensor:
         assert qp.math.allclose(g_diag, np.diag(expected), atol=tol, rtol=0)
         assert qp.math.allclose(g_blockdiag, np.diag(expected), atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_template_integration(self):
         """Test that the metric tensor transform acts on QNodes
         correctly when the QNode contains a template"""
@@ -276,10 +280,11 @@ class TestMetricTensor:
             qp.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
             return qp.probs(wires=[0, 1])
 
-        weights = np.ones([2, 3, 3], dtype=np.float64, requires_grad=True)
+        weights = jnp.ones([2, 3, 3], dtype=np.float64)
         res = qp.metric_tensor(circuit, approx="block-diag")(weights)
         assert res.shape == (2, 3, 3, 2, 3, 3)
 
+    @pytest.mark.jax
     def test_evaluate_diag_metric_tensor_classical_processing(self, tol):
         """Test that a diagonal metric tensor evaluates correctly
         when the QNode includes classical processing."""
@@ -298,11 +303,11 @@ class TestMetricTensor:
 
         circuit = qp.QNode(circuit, dev)
 
-        a = np.array([0.432, 0.1], requires_grad=True)
-        b = np.array(0.12, requires_grad=True)
+        a = jnp.array([0.432, 0.1])
+        b = jnp.array(0.12)
 
         # evaluate metric tensor
-        g = qp.metric_tensor(circuit, approx="block-diag")(a, b)
+        g = qp.metric_tensor(circuit, approx="block-diag", argnums=(0, 1))(a, b)
         assert isinstance(g, tuple)
         assert len(g) == 2
         assert g[0].shape == (len(a), len(a))
@@ -353,15 +358,15 @@ class TestMetricTensor:
 
         return dev, final, non_parametrized_layer, a, b, c
 
+    @pytest.mark.jax
     def test_evaluate_block_diag_metric_tensor(self, sample_circuit, tol):
         """Test that a block-diagonal metric tensor evaluates correctly,
         by comparing it to a known analytic result as well as numerical
         computation."""
         dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
 
-        params = np.array(
+        params = jnp.array(
             [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272],
-            requires_grad=True,
         )
 
         G = qp.metric_tensor(circuit, approx="block-diag")(params)
@@ -492,13 +497,13 @@ class TestMetricTensor:
 
         assert qp.math.allclose(G, block_diag(G1, G3, G2), atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_evaluate_diag_approx_metric_tensor(self, sample_circuit, tol):
         """Test that a metric tensor under the diagonal approximation evaluates
         correctly."""
         dev, circuit, non_parametrized_layer, a, b, c = sample_circuit
-        params = np.array(
+        params = jnp.array(
             [-0.282203, 0.145554, 0.331624, -0.163907, 0.57662, 0.081272],
-            requires_grad=True,
         )
 
         G = qp.metric_tensor(circuit, approx="diag")(params)
@@ -597,7 +602,7 @@ class TestMetricTensor:
         "interface,array_cls",
         [
             pytest.param("jax", "array", marks=pytest.mark.jax),
-            pytest.param("autograd", "array", marks=pytest.mark.autograd),
+            pytest.param("numpy", "array", marks=pytest.mark.core),
             pytest.param("torch", "Tensor", marks=pytest.mark.torch),
         ],
     )
@@ -606,8 +611,6 @@ class TestMetricTensor:
         the desired outcome."""
         if interface == "jax":
             interface_name = "jax.numpy"
-        elif interface == "autograd":
-            interface_name = "numpy"
         else:
             interface_name = interface
 
@@ -715,25 +718,6 @@ class TestMetricTensor:
             [qp.Hadamard, qp.Hadamard, qp.IsingXX, qp.IsingXX, qp.IsingZZ],
         ]
         assert [[type(op) for op in tape.operations] for tape in tapes] == expected_ops
-
-    @pytest.mark.autograd
-    @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
-    @pytest.mark.parametrize("interface", ["auto", "autograd"])
-    def test_no_trainable_params_qnode_autograd(self, interface):
-        """Test that the correct output and warning is generated in the absence of any trainable
-        parameters"""
-
-        dev = qp.device("default.qubit", wires=3)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(weights):
-            qp.RX(weights[0], wires=0)
-            qp.RY(weights[1], wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qp.metric_tensor(circuit)(weights)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["auto", "torch"])
@@ -954,8 +938,7 @@ fubini_params = [
 
 
 def autodiff_metric_tensor(ansatz, num_wires):
-    """Compute the metric tensor by full state vector
-    differentiation via autograd."""
+    """Compute an independent metric tensor by differentiating the full state vector."""
     dev = qp.device("default.qubit", wires=num_wires)
 
     @qp.qnode(dev)
@@ -967,32 +950,33 @@ def autodiff_metric_tensor(ansatz, num_wires):
         state = qnode(*params)
 
         def rqnode(*params):
-            return np.real(qnode(*params))
+            return qp.math.real(qnode(*params))
 
         def iqnode(*params):
-            return np.imag(qnode(*params))
+            return qp.math.imag(qnode(*params))
 
-        rjac = qp.jacobian(rqnode)(*params)
-        ijac = qp.jacobian(iqnode)(*params)
+        argnums = tuple(range(len(params))) if len(params) > 1 else 0
+        rjac = qp.jacobian(rqnode, argnums=argnums)(*params)
+        ijac = qp.jacobian(iqnode, argnums=argnums)(*params)
 
         if isinstance(rjac, tuple):
             out = []
             for rc, ic in zip(rjac, ijac):
                 c = rc + 1j * ic
-                psidpsi = np.tensordot(np.conj(state), c, axes=([0], [0]))
+                psidpsi = qp.math.tensordot(qp.math.conj(state), c, axes=([0], [0]))
                 out.append(
-                    np.real(
-                        np.tensordot(np.conj(c), c, axes=([0], [0]))
-                        - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
+                    qp.math.real(
+                        qp.math.tensordot(qp.math.conj(c), c, axes=([0], [0]))
+                        - qp.math.tensordot(qp.math.conj(psidpsi), psidpsi, axes=0)
                     )
                 )
             return tuple(out)
 
         jac = rjac + 1j * ijac
-        psidpsi = np.tensordot(np.conj(state), jac, axes=([0], [0]))
-        return np.real(
-            np.tensordot(np.conj(jac), jac, axes=([0], [0]))
-            - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
+        psidpsi = qp.math.tensordot(qp.math.conj(state), jac, axes=([0], [0]))
+        return qp.math.real(
+            qp.math.tensordot(qp.math.conj(jac), jac, axes=([0], [0]))
+            - qp.math.tensordot(qp.math.conj(psidpsi), psidpsi, axes=0)
         )
 
     return mt
@@ -1024,31 +1008,9 @@ class TestFullMetricTensor:
 
         qjit_res = qp.qjit(qp.metric_tensor(circuit), capture=False)(x)
 
-        cost_autograd = autodiff_metric_tensor(ansatz, num_wires=3)(qp.numpy.array(x))
+        cost_native = autodiff_metric_tensor(ansatz, num_wires=3)(x)
 
-        assert qp.math.allclose(qjit_res, cost_autograd)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
-    @pytest.mark.parametrize("interface", ["auto", "autograd"])
-    @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
-    def test_correct_output_autograd(self, dev_name, ansatz, params, interface):
-
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
-        dev = qp.device(dev_name, wires=self.num_wires + 1)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(*params):
-            """Circuit with dummy output to create a QNode."""
-            ansatz(*params, dev.wires[:-1])
-            return qp.expval(qp.PauliZ(0))
-
-        mt = qp.metric_tensor(circuit, approx=None)(*params)
-
-        if isinstance(mt, tuple):
-            assert all(qp.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
-        else:
-            assert qp.math.allclose(mt, expected)
+        assert qp.math.allclose(qjit_res, cost_native)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
@@ -1057,7 +1019,6 @@ class TestFullMetricTensor:
     @pytest.mark.parametrize("use_jit", [False, True])
     def test_correct_output_jax(self, dev_name, ansatz, params, interface, use_jit):
         import jax
-        from jax import numpy as jnp
 
         if ansatz == fubini_ansatz2:
             pytest.xfail("Issue involving trainable indices to be resolved.")
@@ -1066,10 +1027,9 @@ class TestFullMetricTensor:
 
         jax.config.update("jax_enable_x64", True)
 
+        params = tuple(jnp.array(p) for p in params)
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qp.device(dev_name, wires=self.num_wires + 1)
-
-        params = tuple(jnp.array(p) for p in params)
 
         @qp.qnode(dev, interface=interface)
         def circuit(*params):
@@ -1093,7 +1053,6 @@ class TestFullMetricTensor:
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_jax_argnum_error(self, dev_name, ansatz, params, interface):
-        from jax import numpy as jnp
 
         dev = qp.device(dev_name, wires=self.num_wires + 1)
 
@@ -1118,10 +1077,9 @@ class TestFullMetricTensor:
     def test_correct_output_torch(self, dev_name, ansatz, params, interface):
         import torch
 
+        params = tuple(torch.tensor(p, dtype=torch.float64, requires_grad=True) for p in params)
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qp.device(dev_name, wires=self.num_wires + 1)
-
-        params = tuple(torch.tensor(p, dtype=torch.float64, requires_grad=True) for p in params)
 
         @qp.qnode(dev, interface=interface)
         def circuit(*params):
@@ -1226,35 +1184,6 @@ class TestDifferentiabilityDiag:
 
     dev = qp.device("default.qubit", wires=3)
 
-    @pytest.mark.autograd
-    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
-    @pytest.mark.parametrize("interface", ["auto", "autograd"])
-    def test_autograd_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
-        """Test metric tensor differentiability in the autograd interface"""
-        circuit = self.get_circuit(ansatz)
-        qnode = qp.QNode(circuit, self.dev, interface=interface, diff_method=diff_method)
-        qnode(*weights)
-
-        def cost_diag(*weights):
-            mt = qp.metric_tensor(qnode, approx="block-diag")(*weights)
-            if isinstance(mt, tuple):
-                diag = qp.math.hstack(
-                    [qp.math.diag(_mt) if len(qp.math.shape(_mt)) == 2 else _mt for _mt in mt]
-                )
-
-            else:
-                diag = qp.math.diag(mt)
-            return diag
-
-        jac = qp.jacobian(cost_diag)(*weights)
-        if isinstance(jac, tuple):
-            assert all(
-                qp.math.allclose(j, e, atol=tol, rtol=0)
-                for j, e in zip(jac, expected_diag_jac(*weights))
-            )
-        else:
-            assert qp.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_jax_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
@@ -1263,7 +1192,6 @@ class TestDifferentiabilityDiag:
             pytest.skip("Does not support parameter-shift")
 
         import jax
-        from jax import numpy as jnp
 
         circuit = self.get_circuit(ansatz)
         qnode = qp.QNode(circuit, self.dev, interface=interface, diff_method=diff_method)
@@ -1332,30 +1260,6 @@ class TestDifferentiability:
 
     dev = qp.device("default.qubit", wires=3)
 
-    @pytest.mark.autograd
-    @pytest.mark.filterwarnings("ignore:Attempted to compute the gradient")
-    @pytest.mark.parametrize("interface", ["auto", "autograd"])
-    def test_autograd(self, diff_method, tol, ansatz, weights, interface):
-        """Test metric tensor differentiability in the autograd interface"""
-        circuit = self.get_circuit(ansatz)
-        qnode = qp.QNode(circuit, self.dev, interface=interface, diff_method=diff_method)
-
-        def cost_full(*weights):
-            return np.array(qp.metric_tensor(qnode, approx=None)(*weights))
-
-        def _cost_full(*weights):
-            return np.array(autodiff_metric_tensor(ansatz, 3)(*weights))
-
-        _c = _cost_full(*weights)
-        c = cost_full(*weights)
-        assert all(
-            qp.math.allclose(_sub_c, sub_c, atol=tol, rtol=0) for _sub_c, sub_c in zip(_c, c)
-        )
-        for argnum in range(len(weights)):
-            expected_full = qp.jacobian(_cost_full, argnums=argnum)(*weights)
-            jac = qp.jacobian(cost_full, argnums=argnum)(*weights)
-            assert qp.math.allclose(expected_full, jac, atol=tol, rtol=0)
-
     @pytest.mark.jax
     def test_jax(self, diff_method, tol, ansatz, weights):
         """Test metric tensor differentiability in the JAX interface"""
@@ -1371,12 +1275,12 @@ class TestDifferentiability:
             return qp.metric_tensor(qnode, approx=None)(*weights)
 
         weights_jax = tuple(jax.numpy.array(w) for w in weights)
-        _cost_full_autograd = autodiff_metric_tensor(ansatz, num_wires=3)
-        v1 = _cost_full_autograd(*weights)
+        reference = autodiff_metric_tensor(ansatz, num_wires=3)
+        v1 = reference(*weights_jax)
         v2 = cost_full(*weights_jax)
         assert qp.math.allclose(v1, v2, atol=tol, rtol=0)
         jac = jax.jacobian(cost_full)(*weights_jax)
-        expected_full = qp.jacobian(_cost_full_autograd)(*weights)
+        expected_full = qp.jacobian(reference)(*weights_jax)
         assert qp.math.allclose(expected_full, jac, atol=tol, rtol=0)
 
     @pytest.mark.torch
@@ -1392,19 +1296,21 @@ class TestDifferentiability:
         cost_full = qp.metric_tensor(qnode, approx=None)
         _cost_full = autodiff_metric_tensor(ansatz, num_wires=3)
         jac = torch.autograd.functional.jacobian(cost_full, weights_t)
-        expected_full = qp.jacobian(_cost_full)(*weights)
+        expected_full = qp.jacobian(_cost_full)(*weights_t)
         assert qp.math.allclose(
-            _cost_full(*weights), cost_full(*weights_t).detach().numpy(), atol=tol, rtol=0
+            _cost_full(*weights_t), cost_full(*weights_t).detach().numpy(), atol=tol, rtol=0
         )
         if isinstance(jac, tuple) and len(jac) != 1:
             assert all(
-                qp.math.allclose(j.detach().numpy(), e, atol=tol, rtol=0)
+                qp.math.allclose(j.detach().numpy(), qp.math.toarray(e), atol=tol, rtol=0)
                 for j, e in zip(jac, expected_full)
             )
         else:
             if isinstance(jac, tuple) and len(jac) == 1:
                 jac = jac[0]
-            assert qp.math.allclose(jac.detach().numpy(), expected_full, atol=tol, rtol=0)
+            assert qp.math.allclose(
+                jac.detach().numpy(), qp.math.toarray(expected_full), atol=tol, rtol=0
+            )
 
 
 @pytest.mark.parametrize("approx", [True, False, "Invalid", 2])
@@ -1434,6 +1340,7 @@ def test_generator_no_expval(monkeypatch):
             qp.metric_tensor(tape, approx="block-diag")
 
 
+@pytest.mark.jax
 def test_error_missing_aux_wire():
     """Tests that a special error is raised if the requested (or default, if not given)
     auxiliary wire for the Hadamard test is missing."""
@@ -1448,20 +1355,21 @@ def test_error_missing_aux_wire():
         qp.RZ(z, wires="wire2")
         return qp.expval(qp.PauliZ("wire2"))
 
-    x = np.array(0.5, requires_grad=True)
-    z = np.array(0.1, requires_grad=True)
+    x = jnp.array(0.5)
+    z = jnp.array(0.1)
 
     with pytest.raises(
         qp.wires.WireError, match="The device has no free wire for the auxiliary wire."
     ):
-        qp.metric_tensor(circuit, approx=None)(x, z)
+        qp.metric_tensor(circuit, approx=None, argnums=(0, 1))(x, z)
 
 
+@pytest.mark.jax
 def test_error_not_available_aux_wire():
     """Tests that a special error is raised if aux wires is not available."""
 
     dev = qp.device("default.qubit", wires=1)
-    x = np.array(0.5, requires_grad=True)
+    x = jnp.array(0.5)
 
     @qp.qnode(dev)
     def circuit(x):
@@ -1475,14 +1383,15 @@ def test_error_not_available_aux_wire():
         qp.metric_tensor(circuit, aux_wire=404)(x)
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize("allow_nonunitary", [True, False])
 def test_error_generator_not_registered(allow_nonunitary):
     """Tests that an error is raised if an operation doe not have a
     controlled-generator operation registered."""
     dev = qp.device("default.qubit", wires=qp.wires.Wires(["wire1", "wire2", "wire3"]))
 
-    x = np.array(0.5, requires_grad=True)
-    z = np.array(0.1, requires_grad=True)
+    x = jnp.array(0.5)
+    z = jnp.array(0.1)
 
     class RX(qp.RX):  # pylint: disable=too-few-public-methods
         def generator(self):
@@ -1495,12 +1404,17 @@ def test_error_generator_not_registered(allow_nonunitary):
         return qp.expval(qp.PauliZ("wire2"))
 
     if allow_nonunitary:
-        qp.metric_tensor(circuit1, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
+        qp.metric_tensor(circuit1, approx=None, argnums=(0, 1), allow_nonunitary=allow_nonunitary)(
+            x, z
+        )
     else:
         with pytest.raises(ValueError, match="Generator for operation"):
-            qp.metric_tensor(circuit1, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
+            qp.metric_tensor(
+                circuit1, approx=None, argnums=(0, 1), allow_nonunitary=allow_nonunitary
+            )(x, z)
 
 
+@pytest.mark.jax
 def test_expand_metric_tensor():
     """Tests _expand_metric_tensor works with and without allowed non-unitaries."""
     allow_nonunitary = [True, False]
@@ -1508,8 +1422,8 @@ def test_expand_metric_tensor():
 
     dev = qp.device("default.qubit", wires=qp.wires.Wires(["wire1", "wire2", "wire3"]))
 
-    x = np.array(0.5, requires_grad=True)
-    z = np.array(0.1, requires_grad=True)
+    x = jnp.array(0.5)
+    z = jnp.array(0.1)
 
     @qp.qnode(dev)
     def circuit(x, z):
@@ -1519,11 +1433,14 @@ def test_expand_metric_tensor():
         return qp.expval(qp.PauliZ("wire1"))
 
     for allow in allow_nonunitary:
-        res.append(qp.metric_tensor(circuit, approx=None, allow_nonunitary=allow)(x, z))
+        res.append(
+            qp.metric_tensor(circuit, approx=None, argnums=(0, 1), allow_nonunitary=allow)(x, z)
+        )
 
     assert qp.numpy.allclose(res[0], res[1])
 
 
+@pytest.mark.jax
 def test_no_error_missing_aux_wire_not_used():
     """Tests that a no error is raised if the requested (or default, if not given)
     auxiliary wire for the Hadamard test is missing but it is not used, either
@@ -1551,15 +1468,18 @@ def test_no_error_missing_aux_wire_not_used():
         qp.RZ(z, wires="wire2")
         return qp.expval(qp.PauliZ("wire2"))
 
-    x = np.array(0.5, requires_grad=True)
-    z = np.array(0.1, requires_grad=True)
+    x = jnp.array(0.5)
+    z = jnp.array(0.1)
 
-    qp.metric_tensor(circuit_single_block, approx=None)(x, z)
-    qp.metric_tensor(circuit_single_block, approx=None, aux_wire="aux_wire")(x, z)
-    qp.metric_tensor(circuit_multi_block, approx="block-diag")(x, z)
-    qp.metric_tensor(circuit_multi_block, approx="block-diag", aux_wire="aux_wire")(x, z)
+    qp.metric_tensor(circuit_single_block, approx=None, argnums=(0, 1))(x, z)
+    qp.metric_tensor(circuit_single_block, approx=None, argnums=(0, 1), aux_wire="aux_wire")(x, z)
+    qp.metric_tensor(circuit_multi_block, approx="block-diag", argnums=(0, 1))(x, z)
+    qp.metric_tensor(circuit_multi_block, approx="block-diag", argnums=(0, 1), aux_wire="aux_wire")(
+        x, z
+    )
 
 
+@pytest.mark.jax
 def test_raises_circuit_that_uses_missing_wire():
     """Test that an error in the original circuit is reraised properly and not caught. This avoids
     accidentally catching relevant errors, which can lead to a recursion error."""
@@ -1574,7 +1494,7 @@ def test_raises_circuit_that_uses_missing_wire():
         qp.RX(x[1], 0)
         return qp.expval(qp.PauliZ(0))
 
-    x = np.array([1.3, 0.2])
+    x = jnp.array([1.3, 0.2])
     with pytest.raises(qp.wires.WireError, match=r"no free wire"):
         qp.metric_tensor(circuit)(x)
 

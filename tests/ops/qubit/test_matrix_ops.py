@@ -309,6 +309,7 @@ class TestQubitUnitary:
 
         assert qp.math.allclose(mat_to_pow, new_mat)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize(
         "U,num_wires", [(H, 1), (np.kron(H, H), 2), (np.tensordot([1j, -1, 1], H, axes=0), 1)]
@@ -1431,8 +1432,12 @@ class TestBlockEncode:
             (range(2), pnp.diag([0.2, 0.3]), 4 * pnp.diag([0.2, 0])),
         ],
     )
+    @pytest.mark.jax
     def test_blockencode_grad(self, method, wires, input_matrix, expected_result):
         """Test that BlockEncode is differentiable."""
+        from jax import numpy as jnp
+
+        input_matrix = jnp.array(input_matrix)
         dev = qp.device("default.qubit", wires=wires)
 
         @qp.qnode(dev, diff_method=method)

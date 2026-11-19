@@ -116,17 +116,20 @@ class TestTensorExpval:
 
         assert np.allclose(res, expected, **tolerance)
 
-    @pytest.mark.autograd
+    @pytest.mark.jax
     def test_paulix_tensor_pauliy_gradient(self, shots, theta, phi, varphi, tolerance, seed):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
+        from jax import numpy as jnp
+
         dev = qp.device("default.qubit", wires=3, seed=seed)
 
         @qp.set_shots(shots)
-        @qp.qnode(dev)
+        @qp.qnode(dev, interface="jax")
         def circuit(a, b, c):
             ansatz(a, b, c)
             return expval(qp.PauliX(0) @ qp.PauliY(2))
 
+        theta, phi, varphi = (jnp.asarray(value) for value in (theta, phi, varphi))
         dcircuit = qp.grad(circuit, 0)
         res = dcircuit(theta, phi, varphi)
         expected = np.cos(theta) * np.sin(phi) * np.sin(varphi)

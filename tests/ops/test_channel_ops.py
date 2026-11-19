@@ -17,6 +17,7 @@ Unit tests for the available built-in quantum channels.
 
 from itertools import product
 
+import jax.numpy as jnp
 import numpy as np
 import pytest
 
@@ -79,7 +80,7 @@ class TestChannels:  # pylint: disable=too-few-public-methods
         "interface",
         [
             None,
-            pytest.param("autograd", marks=pytest.mark.autograd),
+            pytest.param("autograd", marks=(pytest.mark.core, pytest.mark.autograd)),
             pytest.param("jax", marks=pytest.mark.jax),
             pytest.param("torch", marks=pytest.mark.torch),
         ],
@@ -136,6 +137,7 @@ class TestAmplitudeDamping:
     def kraus_fn(x):
         return qp.math.stack(channel.AmplitudeDamping(x, wires=0).kraus_matrices())
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         gamma = pnp.array(0.43, requires_grad=True)
@@ -220,6 +222,7 @@ class TestGeneralizedAmplitudeDamping:
             channel.GeneralizedAmplitudeDamping(gamma, p, wires=0).kraus_matrices()
         )
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         gamma = pnp.array(0.43, requires_grad=True)
@@ -282,6 +285,7 @@ class TestPhaseDamping:
     def kraus_fn(x):
         return qp.math.stack(channel.PhaseDamping(x, wires=0).kraus_matrices())
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         gamma = pnp.array(0.43, requires_grad=True)
@@ -319,15 +323,16 @@ class TestBitFlip:
         expected_K1 = np.sqrt(p) * X
         assert np.allclose(op(p, wires=0).kraus_matrices()[1], expected_K1, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_grad_bitflip(self, angle):
         """Test that analytical gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 
         dev = qp.device("default.mixed", wires=1)
-        prob = pnp.array(0.5, requires_grad=True)
+        prob = jnp.array(0.5)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, interface="jax", diff_method="parameter-shift")
         def circuit(p):
             qp.RX(angle, wires=0)
             qp.BitFlip(p, wires=0)
@@ -352,6 +357,7 @@ class TestBitFlip:
     def kraus_fn(x):
         return qp.math.stack(channel.BitFlip(x, wires=0).kraus_matrices())
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         p = pnp.array(0.43, requires_grad=True)
@@ -390,15 +396,16 @@ class TestPhaseFlip:
         assert np.allclose(op(p, wires=0).kraus_matrices()[1], expected_K1, atol=tol, rtol=0)
 
     # TODO: bring back angle 0 when the bug fixed https://github.com/PennyLaneAI/pennylane/pull/6684#issuecomment-2552123064
+    @pytest.mark.jax
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7)[1:])
     def test_jacobian_phaseflip(self, angle):
         """Test that analytical gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 
         dev = qp.device("default.mixed", wires=1)
-        prob = pnp.array(0.5, requires_grad=True)
+        prob = jnp.array(0.5)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, interface="jax", diff_method="parameter-shift")
         def circuit(p):
             qp.RX(angle, wires=0)
             qp.PhaseFlip(p, wires=0)
@@ -423,6 +430,7 @@ class TestPhaseFlip:
     def kraus_fn(x):
         return qp.math.stack(channel.PhaseFlip(x, wires=0).kraus_matrices())
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         p = pnp.array(0.43, requires_grad=True)
@@ -462,15 +470,16 @@ class TestDepolarizingChannel:
         expected = np.sqrt(p / 3) * X
         assert np.allclose(op(0.1, wires=0).kraus_matrices()[1], expected, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_grad_depolarizing(self, angle):
         """Test that analytical gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 
         dev = qp.device("default.mixed", wires=1)
-        prob = pnp.array(0.5, requires_grad=True)
+        prob = jnp.array(0.5)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, interface="jax", diff_method="parameter-shift")
         def circuit(p):
             qp.RX(angle, wires=0)
             qp.DepolarizingChannel(p, wires=0)
@@ -505,6 +514,7 @@ class TestDepolarizingChannel:
     def kraus_fn_imag(x):
         return qp.math.imag(qp.math.stack(channel.DepolarizingChannel(x, wires=0).kraus_matrices()))
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         p = pnp.array(0.43, requires_grad=True)
@@ -566,21 +576,22 @@ class TestResetError:
         with pytest.raises(ValueError, match="must be in the interval"):
             channel.ResetError(1.0, 1.0, wires=0).kraus_matrices()
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_grad_reset_error(self, angle):
         """Test that gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 
         dev = qp.device("default.mixed", wires=1)
-        p_0, p_1 = pnp.array([0.0, 0.5], requires_grad=True)
+        p_0, p_1 = jnp.array([0.0, 0.5])
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, interface="jax", diff_method="parameter-shift")
         def circuit(p_0, p_1):
             qp.RX(angle, wires=0)
             qp.ResetError(p_0, p_1, wires=0)
             return qp.expval(qp.PauliZ(0))
 
-        gradient = np.squeeze(qp.grad(circuit)(p_0, p_1))
+        gradient = np.squeeze(qp.grad(circuit, argnums=(0, 1))(p_0, p_1))
         assert np.allclose(
             gradient,
             np.array(
@@ -623,6 +634,7 @@ class TestResetError:
     def kraus_fn(p0, p1):
         return qp.math.stack(channel.ResetError(p0, p1, wires=0).kraus_matrices())
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self):
         p0 = pnp.array(0.43, requires_grad=True)
@@ -776,6 +788,7 @@ class TestPauliError:
     }
 
     @pytest.mark.parametrize("ops", ["X", "XY", "ZI"])
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self, ops):
         p = pnp.array(0.43, requires_grad=True)
@@ -1047,15 +1060,16 @@ class TestThermalRelaxationError:
         with pytest.raises(ValueError, match="Invalid gate_time"):
             channel.ThermalRelaxationError(0.3, 100e-6, 100e-6, -20e-9, wires=0).kraus_matrices()
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
     def test_grad_thermal_relaxation_error(self, angle):
         """Test that gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
 
         dev = qp.device("default.mixed", wires=1)
-        pe = pnp.array(0.0, requires_grad=True)
+        pe = jnp.array(0.0)
 
-        @qp.qnode(dev)
+        @qp.qnode(dev, interface="jax", diff_method="parameter-shift")
         def circuit(pe):
             qp.RX(angle, wires=0)
             qp.ThermalRelaxationError(pe, 120e-6, 100e-6, 20e-9, wires=0)

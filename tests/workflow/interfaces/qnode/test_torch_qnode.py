@@ -113,7 +113,7 @@ class TestQNode:
         qnode_kwargs = {
             "diff_method": diff_method,
             "grad_on_execution": grad_on_execution,
-            "interface": "autograd",
+            "interface": "numpy",
             "device_vjp": device_vjp,
         }
         if diff_method == "hadamard":
@@ -125,13 +125,10 @@ class TestQNode:
             qp.RX(0.2, wires=0)
             return qp.expval(qp.PauliZ(0))
 
-        from pennylane import numpy as anp
-
-        a = anp.array(0.1, requires_grad=True)
+        a = np.array(0.1)
 
         res1 = circuit(a)
-        grad_fn = qp.grad(circuit)
-        grad1 = grad_fn(a)
+        grad1 = -np.sin(a) * np.cos(0.2)
 
         # switch to Torch interface
         circuit.interface = interface

@@ -66,7 +66,7 @@ class TestValidation:
         assert res == "device"
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["jax", "torch", "autograd"])
+    @pytest.mark.parametrize("interface", ["jax", "torch"])
     def test_best_method_is_backprop(self, interface):
         """Test that the method for determining the best diff method
         for the default.qubit device and a valid interface returns back-propagation"""
@@ -96,15 +96,17 @@ class TestValidation:
         res2 = get_best_diff_method(qp.set_shots(qn, shots=50))()
         assert res2 == "parameter-shift"
 
+    @pytest.mark.torch
     def test_best_method_with_transforms(self):
         """Test that transforms and execution parameters affect the supported differentiation method."""
+        import torch
 
         @qp.qnode(qp.device("lightning.qubit", wires=2))
         def circuit(x):
             qp.RX(x, 0)
             return qp.expval(qp.Z(0))
 
-        x = qp.numpy.array(0.5)
+        x = torch.tensor(0.5, requires_grad=True)
 
         original_method = get_best_diff_method(circuit)(x)
         metric_tensor_method = get_best_diff_method(qp.metric_tensor(circuit))(x)

@@ -91,13 +91,17 @@ Utility functions
 Registering autodifferentiation gradients
 -----------------------------------------
 
-All PennyLane QNodes are automatically differentiable, and can be included
+QNodes using JAX or PyTorch are automatically differentiable and can be included
 seamlessly within an autodiff pipeline. When creating a :class:`QNode <pennylane.QNode>`, the
 strategy for determining the optimal differentiation strategy is *automated*,
 and takes into account the circuit, device, autodiff framework, and metadata
 (such as whether a finite number of shots are used).
 
 .. code-block:: python
+
+    import jax
+    import jax.numpy as jnp
+    jax.config.update("jax_enable_x64", True)
 
     dev = qp.device("default.qubit")
 
@@ -155,18 +159,18 @@ framework.
         qp.RX(weights[2], wires=1)
         return qp.probs(wires=1)
 
->>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
+>>> weights = jnp.array([0.1, 0.2, 0.3])
 >>> circuit(weights)
-tensor([0.9658079, 0.0341921], requires_grad=True)
+Array([0.9658079, 0.0341921], dtype=float64)
 >>> qp.gradients.param_shift(circuit)(weights)
-tensor([[-0.04673668, -0.09442394, -0.14409127],
-        [ 0.04673668,  0.09442394,  0.14409127]], requires_grad=True)
+Array([[-0.04673668, -0.09442394, -0.14409127],
+        [ 0.04673668,  0.09442394,  0.14409127]], dtype=float64)
 
 Comparing this to autodifferentiation:
 
 >>> qp.jacobian(circuit)(weights)
-array([[-0.04673668, -0.09442394, -0.14409127],
-       [ 0.04673668,  0.09442394,  0.14409127]])
+Array([[-0.04673668, -0.09442394, -0.14409127],
+       [ 0.04673668,  0.09442394,  0.14409127]], dtype=float64)
 
 Quantum gradient transforms can also be applied as decorators to QNodes,
 if *only* gradient information is needed. Evaluating the QNode will then
@@ -186,8 +190,8 @@ automatically return the gradient:
         return qp.probs(wires=1)
 
 >>> decorated_circuit(weights)
-tensor([[-0.04673668, -0.09442394, -0.14409127],
-        [ 0.04673668,  0.09442394,  0.14409127]], requires_grad=True)
+Array([[-0.04673668, -0.09442394, -0.14409127],
+        [ 0.04673668,  0.09442394,  0.14409127]], dtype=float64)
 
 .. note::
 
@@ -202,10 +206,13 @@ tensor([[-0.04673668, -0.09442394, -0.14409127],
     **gate** arguments, not QNode arguments---pass ``hybrid=False``
     when applying the transform:
 
-    >>> qp.gradients.param_shift(circuit, hybrid=False)(weights)
-    (tensor([-0.04673668,  0.04673668], requires_grad=True),
-     tensor([-0.09442394,  0.09442394], requires_grad=True),
-     tensor([-0.14409127,  0.14409127], requires_grad=True))
+    >>> import torch
+    >>> trainable_weights = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64, requires_grad=True)
+    >>> qjac = qp.gradients.param_shift(circuit, hybrid=False)(trainable_weights)
+    >>> tuple(qp.math.toarray(part) for part in qjac)
+    (array([-0.04673668,  0.04673668]),
+     array([-0.09442394,  0.09442394]),
+     array([-0.14409127,  0.14409127]))
 
 
 Differentiating gradient transforms and higher-order derivatives
@@ -226,17 +233,17 @@ gradients to be computed:
         qp.RX(weights[2], wires=1)
         return qp.expval(qp.Z(1))
 
->>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
+>>> weights = jnp.array([0.1, 0.2, 0.3])
 >>> circuit(weights)
-tensor(0.9316158, requires_grad=True)
+Array(0.9316158, dtype=float64)
 >>> qp.gradients.param_shift(circuit)(weights)  # gradient
-tensor([-0.09347337, -0.18884787, -0.28818254], requires_grad=True)
+Array([-0.09347337, -0.18884787, -0.28818254], dtype=float64)
 >>> def stacked_output(weights):
-...     return qp.numpy.stack(qp.gradients.param_shift(circuit)(weights))
+...     return jnp.stack(qp.gradients.param_shift(circuit)(weights))
 >>> qp.jacobian(stacked_output)(weights)  # hessian
-array([[-0.9316158 ,  0.01894799,  0.0289147 ],
+Array([[-0.9316158 ,  0.01894799,  0.0289147 ],
        [ 0.01894799, -0.9316158 ,  0.05841749],
-       [ 0.0289147 ,  0.05841749, -0.9316158 ]])
+       [ 0.0289147 ,  0.05841749, -0.9316158 ]], dtype=float64)
 
 Another way to compute higher-order derivatives is by passing the ``max_diff`` and
 ``diff_method`` arguments to the QNode and by successive differentiation:
@@ -251,11 +258,11 @@ Another way to compute higher-order derivatives is by passing the ``max_diff`` a
         qp.RX(weights[2], wires=1)
         return qp.expval(qp.Z(1))
 
->>> weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
+>>> weights = jnp.array([0.1, 0.2, 0.3])
 >>> qp.jacobian(qp.jacobian(circuit))(weights)  # hessian
-array([[-0.9316158 ,  0.01894799,  0.0289147 ],
+Array([[-0.9316158 ,  0.01894799,  0.0289147 ],
        [ 0.01894799, -0.9316158 ,  0.05841749],
-       [ 0.0289147 ,  0.05841749, -0.9316158 ]])
+       [ 0.0289147 ,  0.05841749, -0.9316158 ]], dtype=float64)
 
 Note that the ``max_diff`` argument only applies to gradient transforms and that its default value is ``1``; failing to
 set its value correctly may yield incorrect results for higher-order derivatives. Also, passing
@@ -269,7 +276,7 @@ a datastructure representing variational quantum algorithms:
 
 .. code-block:: python
 
-    weights = np.array([0.1, 0.2, 0.3], requires_grad=True)
+    weights = jnp.array([0.1, 0.2, 0.3])
 
     ops = [
         qp.RX(weights[0], wires=0),
@@ -286,12 +293,12 @@ define the gradient:
 
 >>> gradient_tapes, fn = qp.gradients.param_shift(tape)
 >>> gradient_tapes
-[<QuantumTape: wires=[0, 1], params=3>,
- <QuantumTape: wires=[0, 1], params=3>,
- <QuantumTape: wires=[0, 1], params=3>,
- <QuantumTape: wires=[0, 1], params=3>,
- <QuantumTape: wires=[0, 1], params=3>,
- <QuantumTape: wires=[0, 1], params=3>]
+[<QuantumScript: wires=[0, 1], params=3>,
+ <QuantumScript: wires=[0, 1], params=3>,
+ <QuantumScript: wires=[0, 1], params=3>,
+ <QuantumScript: wires=[0, 1], params=3>,
+ <QuantumScript: wires=[0, 1], params=3>,
+ <QuantumScript: wires=[0, 1], params=3>]
 
 This can be useful if the underlying circuits representing the gradient
 computation need to be analyzed.
@@ -301,9 +308,9 @@ the gradient:
 
 >>> dev = qp.device("default.qubit")
 >>> fn(qp.execute(gradient_tapes, dev, None))
-(tensor(-0.09347337, requires_grad=True),
- tensor(-0.18884787, requires_grad=True),
- tensor(-0.28818254, requires_grad=True))
+(Array(-0.09347337, dtype=float64),
+ Array(-0.18884787, dtype=float64),
+ Array(-0.28818254, dtype=float64))
 
 Note that the post-processing function ``fn`` returned by the
 gradient transform is applied to the flat list of results returned
@@ -321,7 +328,7 @@ can be created:
     from pennylane.core.qscript import QuantumScriptBatch
     from pennylane.typing import PostprocessingFn
 
-    @transform
+    @qp.transform
     def my_custom_gradient(tape: qp.tape.QuantumScript, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         ...
         return gradient_tapes, processing_fn

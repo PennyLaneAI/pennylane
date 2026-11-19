@@ -25,7 +25,6 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
-from pennylane import numpy as pnp
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.qscript import QuantumScript
 from pennylane.devices import QubitDevice
@@ -158,6 +157,26 @@ def _working_get_batch_size(tensor, expected_shape, expected_size):
         return size // expected_size
 
     return None
+
+
+@pytest.mark.parametrize(
+    "dtype, values, expected",
+    [
+        (np.int32, [2, -3], [[0, 0, 2], [-3, 0, 0]]),
+        (np.float32, [0.5, -2.25], [[0, 0, 0.5], [-2.25, 0, 0]]),
+        (np.complex64, [0.5 + 0.75j, -2.25j], [[0, 0, 0.5 + 0.75j], [-2.25j, 0, 0]]),
+    ],
+)
+def test_scatter_preserves_dtype_and_zero_fills(dtype, values, expected):
+    """Scatter preserves numeric types and places values in an otherwise zero array."""
+    indices = (np.array([0, 1], dtype=np.int32), np.array([2, 0], dtype=np.int64))
+    values = np.array(values, dtype=dtype)
+
+    result = QubitDevice._scatter(indices, values, (2, 3))
+
+    assert result.shape == (2, 3)
+    assert result.dtype == values.dtype
+    np.testing.assert_array_equal(result, np.array(expected, dtype=dtype))
 
 
 def test_notimplemented_circuit_hash(mock_qubit_device):
@@ -1552,17 +1571,19 @@ class TestResourcesTracker:
         ):
             assert tracked_r == expected_r
 
-    @pytest.mark.autograd
-    def test_tracker_grad(self):
+    @pytest.mark.torch
+    def test_tracker_grad_torch(self):
         """Test that the tracker can track resources through a gradient computation"""
+        import torch
+
         dev = DefaultQubitLegacy(wires=1)
 
-        @qp.qnode(dev, diff_method="parameter-shift", shots=100)
+        @qp.qnode(dev, interface="torch", diff_method="parameter-shift", shots=100)
         def circuit(x):
             qp.RX(x, wires=0)  # 2 term parameter shift
             return qp.expval(qp.PauliZ(0))
 
-        x = pnp.array(0.1, requires_grad=True)
+        x = torch.tensor(0.1, requires_grad=True)
         expected_resources = SpecsResources(
             num_wires=1,
             counts={"RX": 1},

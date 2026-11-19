@@ -124,6 +124,7 @@ class TestDotSum:
         ):
             qp.dot([], [])
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("dtype", (float, complex))
     def test_dot_autograd(self, dtype):
@@ -317,6 +318,7 @@ class TestDotPauliSentence:
         h.simplify()
         qp.assert_equal(h_ps, h)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_dot_autograd(self):
         """Test the dot function with the autograd interface."""

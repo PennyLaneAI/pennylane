@@ -15,6 +15,8 @@
 Tests for the gradients.spsa_gradient module.
 """
 
+import jax
+import jax.numpy as jnp
 import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
@@ -184,7 +186,7 @@ class TestSpsaGradient:
 
         expected_message = "The argument sampler_rng is expected to be a NumPy PRNG"
         with pytest.raises(ValueError, match=expected_message):
-            qp.grad(circuit)(pnp.array(1.0))
+            qp.grad(circuit)(jnp.array(1.0))
 
     def test_trainable_batched_tape_raises(self):
         """Test that an error is raised for a broadcasted/batched tape if the broadcasted
@@ -325,22 +327,6 @@ class TestSpsaGradient:
         assert res[0].shape == (0,)
         assert res[1].shape == (0,)
 
-    @pytest.mark.autograd
-    def test_no_trainable_params_qnode_autograd(self):
-        """Test that the correct output and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev)
-        def circuit(weights):
-            qp.RX(weights[0], wires=0)
-            qp.RY(weights[1], wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            spsa_grad(circuit)(weights)
-
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
         """Test that the correct output and warning is generated in the absence of any trainable
@@ -383,11 +369,11 @@ class TestSpsaGradient:
             qp.Rot(*params, wires=0)
             return qp.probs([2, 3])
 
-        params = pnp.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = jnp.array([0.5, 0.5, 0.5])
 
         result = spsa_grad(circuit)(params)
 
-        assert isinstance(result, np.ndarray)
+        assert isinstance(result, jax.Array)
         assert result.shape == (4, 3)
         assert np.allclose(result, 0)
 
@@ -402,7 +388,7 @@ class TestSpsaGradient:
             qp.Rot(*params, wires=0)
             return qp.expval(qp.PauliZ(wires=2)), qp.probs([2, 3])
 
-        params = pnp.array([0.5, 0.5, 0.5], requires_grad=True)
+        params = jnp.array([0.5, 0.5, 0.5])
 
         result = spsa_grad(circuit)(params)
 
@@ -410,7 +396,7 @@ class TestSpsaGradient:
         assert len(result) == 2
 
         for r, exp_shape in zip(result, [(3,), (4, 3)]):
-            assert isinstance(r, np.ndarray)
+            assert isinstance(r, jax.Array)
             assert r.shape == exp_shape
             assert np.allclose(r, 0)
 
@@ -514,7 +500,7 @@ class TestSpsaGradient:
             qp.Rot(*x, wires=0)
             return qp.probs([0, 1]), qp.probs([2, 3])
 
-        x = pnp.random.rand(3)
+        x = jnp.asarray(np.random.rand(3))
         circuits = [qp.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
 
         transform = [qp.math.shape(spsa_grad(c)(x)) for c in circuits]
@@ -588,21 +574,30 @@ class TestSpsaGradient:
 
         dev = DeviceSupportingSpecialObservable(wires=1, shots=None)
 
-        @qp.qnode(dev, diff_method="spsa")
+        @qp.qnode(dev, interface="numpy", diff_method=None)
         def qnode(x):
             qp.RY(x, wires=0)
             return qp.expval(SpecialObservable(wires=0))
 
-        @qp.qnode(dev, diff_method="spsa")
+        @qp.qnode(dev, interface="numpy", diff_method=None)
         def reference_qnode(x):
             qp.RY(x, wires=0)
             return qp.expval(qp.PauliZ(wires=0))
 
-        par = pnp.array(0.2, requires_grad=True)
-        assert np.isclose(qnode(par).item().val, reference_qnode(par).item())
-        assert np.isclose(
-            qp.jacobian(qnode)(par).item().val, qp.jacobian(reference_qnode)(par).item()
+        par = 0.2
+        assert np.isclose(qnode(par).item().val, qp.math.toarray(reference_qnode(par)).item())
+
+        tape = qp.workflow.construct_tape(qnode)(par)
+        reference_tape = qp.workflow.construct_tape(reference_qnode)(par)
+        tape.trainable_params = [0]
+        reference_tape.trainable_params = [0]
+        tapes, postprocessing = qp.gradients.spsa_grad(tape)
+        reference_tapes, reference_postprocessing = qp.gradients.spsa_grad(reference_tape)
+        result = postprocessing(qp.execute(tapes, dev, interface=None, diff_method=None))
+        expected = reference_postprocessing(
+            qp.execute(reference_tapes, dev, interface=None, diff_method=None)
         )
+        assert np.isclose(result.item().val, expected.item())
 
 
 @pytest.mark.parametrize("approx_order", [2, 4])
@@ -981,73 +976,6 @@ class TestSpsaGradientIntegration:
 class TestSpsaGradientDifferentiation:
     """Test that the transform is differentiable"""
 
-    @pytest.mark.autograd
-    def test_autograd(self, sampler, num_directions, atol, seed):
-        """Tests that the output of the SPSA gradient transform
-        can be differentiated using autograd, yielding second derivatives."""
-        dev = qp.device("default.qubit", wires=2)
-        params = pnp.array([0.543, -0.654], requires_grad=True)
-        rng = np.random.default_rng(seed)
-
-        def cost_fn(x):
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(x[0], wires=[0])
-                qp.RY(x[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-            tape = qp.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = spsa_grad(
-                tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
-            )
-            jac = pnp.array(fn(dev.execute(tapes)))
-            if sampler is coordinate_sampler:
-                jac *= 2
-            return jac
-
-        res = qp.jacobian(cost_fn)(params)
-        x, y = params
-        expected = np.array(
-            [
-                [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
-                [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
-            ]
-        )
-
-        assert np.allclose(res, expected, atol=atol, rtol=0)
-
-    @pytest.mark.autograd
-    def test_autograd_ragged(self, sampler, num_directions, atol, seed):
-        """Tests that the output of the SPSA gradient transform
-        of a ragged tape can be differentiated using autograd, yielding second derivatives."""
-        dev = qp.device("default.qubit", wires=2)
-        params = pnp.array([0.543, -0.654], requires_grad=True)
-        rng = np.random.default_rng(seed)
-
-        def cost_fn(x):
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(x[0], wires=[0])
-                qp.RY(x[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0))
-                qp.probs(wires=[1])
-
-            tape = qp.tape.QuantumScript.from_queue(q)
-            tape.trainable_params = {0, 1}
-            tapes, fn = spsa_grad(
-                tape, n=1, num_directions=num_directions, sampler=sampler, sampler_rng=rng
-            )
-            jac = fn(dev.execute(tapes))
-            if sampler is coordinate_sampler:
-                jac = tuple(tuple(2 * _j for _j in _jac) for _jac in jac)
-            return jac[1][0]
-
-        x, y = params
-        res = qp.jacobian(cost_fn)(params)[0]
-        expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
-        assert np.allclose(res, expected, atol=atol, rtol=0)
-
     @pytest.mark.torch
     def test_torch(self, sampler, num_directions, atol, seed):
         """Tests that the output of the SPSA gradient transform
@@ -1092,8 +1020,6 @@ class TestSpsaGradientDifferentiation:
     def test_jax(self, sampler, num_directions, atol, seed):
         """Tests that the output of the SPSA gradient transform
         can be differentiated using JAX, yielding second derivatives."""
-        import jax
-        from jax import numpy as jnp
 
         dev = qp.device("default.qubit", wires=2)
         params = jnp.array([0.543, -0.654])

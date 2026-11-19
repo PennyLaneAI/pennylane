@@ -15,6 +15,7 @@
 
 import pytest
 import scipy as sp
+from legacy_optimizer_native import native_gradient, native_metric_tensor
 
 import pennylane as qp
 from pennylane import numpy as np
@@ -53,7 +54,8 @@ class TestOptimize:
         step_and_cost method for the MomentumQNG optimizer"""
         dev = qp.device("default.qubit", wires=1)
 
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def circuit(params):
             qp.RX(params[0], wires=0)
             qp.RY(params[1], wires=0)
@@ -70,25 +72,36 @@ class TestOptimize:
         accum = np.zeros_like(var)
 
         for _ in range(4):
-            var1, res = opt1.step_and_cost(circuit, var1)
-            var2 = opt2.step(circuit, var2)
+            var1, res = opt1.step_and_cost(
+                circuit,
+                var1,
+                grad_fn=native_gradient(circuit),
+                metric_tensor_fn=native_metric_tensor(circuit, approx=opt1.approx),
+            )
+            var2 = opt2.step(
+                circuit,
+                var2,
+                grad_fn=native_gradient(circuit),
+                metric_tensor_fn=native_metric_tensor(circuit, approx=opt2.approx),
+            )
             # Analytic expressions
             mt = np.array([0.25, (np.cos(2 * var[0]) + 1) / 8])
             assert np.allclose(circuit(var), res)
             assert np.allclose(opt1.metric_tensor, np.diag(mt))
             assert np.allclose(opt2.metric_tensor, np.diag(mt))
-            accum = rho * accum + stepsize * qp.grad(circuit)(var) / mt
+            accum = rho * accum + stepsize * native_gradient(circuit)(var) / mt
             var -= accum
             assert np.allclose([var1, var2], var)
 
-    def test_step_and_cost_autograd_with_gen_hamiltonian(self):
+    def test_step_and_cost_native_hooks_with_gen_hamiltonian(self):
         """Test that the correct cost and step is returned after 8 optimization steps via the
         step_and_cost method for the MomentumQNG optimizer when the generator
         of an operator is a Hamiltonian"""
 
         dev = qp.device("default.qubit", wires=4)
 
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def circuit(params):
             qp.DoubleExcitation(params[0], wires=[0, 1, 2, 3])
             qp.RY(params[1], wires=0)
@@ -107,13 +120,23 @@ class TestOptimize:
         expected_mt = np.array([1 / 16, 1 / 4])
 
         for _ in range(4):
-            var1, res = opt1.step_and_cost(circuit, var1)
-            var2 = opt2.step(circuit, var2)
+            var1, res = opt1.step_and_cost(
+                circuit,
+                var1,
+                grad_fn=native_gradient(circuit),
+                metric_tensor_fn=native_metric_tensor(circuit, approx=opt1.approx),
+            )
+            var2 = opt2.step(
+                circuit,
+                var2,
+                grad_fn=native_gradient(circuit),
+                metric_tensor_fn=native_metric_tensor(circuit, approx=opt2.approx),
+            )
             # Analytic expressions
             assert np.allclose(circuit(var), res)
             assert np.allclose(opt1.metric_tensor, np.diag(expected_mt))
             assert np.allclose(opt2.metric_tensor, np.diag(expected_mt))
-            accum = momentum * accum + stepsize * qp.grad(circuit)(var) / expected_mt
+            accum = momentum * accum + stepsize * native_gradient(circuit)(var) / expected_mt
             var -= accum
             assert np.allclose([var1, var2], var)
 
@@ -130,7 +153,8 @@ class TestOptimize:
 
         if split_input:
 
-            @qp.qnode(dev)
+            @qp.transforms.convert_to_numpy_parameters
+            @qp.qnode(dev, interface="numpy")
             def circuit(params_0, params_1):
                 qp.RX(params_0, wires=0)
                 qp.RY(params_1, wires=0)
@@ -139,7 +163,8 @@ class TestOptimize:
             args = var
         else:
 
-            @qp.qnode(dev)
+            @qp.transforms.convert_to_numpy_parameters
+            @qp.qnode(dev, interface="numpy")
             def circuit(params):
                 qp.RX(params[0], wires=0)
                 qp.RY(params[1], wires=0)
@@ -158,11 +183,21 @@ class TestOptimize:
 
         args1 = args2 = args3 = args4 = args
 
-        # With autograd gradient function
-        grad_fn1 = qp.grad(circuit)
+        # With a native gradient supplied through the explicit hook
+        grad_fn1 = native_gradient(circuit)
         for _ in range(4):
-            args1, cost1 = opt1.step_and_cost(circuit, *args1, grad_fn=grad_fn1)
-            args2 = opt2.step(circuit, *args2, grad_fn=grad_fn1)
+            args1, cost1 = opt1.step_and_cost(
+                circuit,
+                *args1,
+                grad_fn=grad_fn1,
+                metric_tensor_fn=native_metric_tensor(circuit, approx=opt1.approx),
+            )
+            args2 = opt2.step(
+                circuit,
+                *args2,
+                grad_fn=grad_fn1,
+                metric_tensor_fn=native_metric_tensor(circuit, approx=opt2.approx),
+            )
             if not split_input:
                 args1 = (args1,)
                 args2 = (args2,)
@@ -172,11 +207,21 @@ class TestOptimize:
 
         # With more custom gradient function, forward has to be computed explicitly.
         def grad_fn2(*args):
-            return np.array(qp.grad(circuit)(*args))
+            return np.array(native_gradient(circuit)(*args))
 
         for _ in range(4):
-            args3, cost2 = opt3.step_and_cost(circuit, *args3, grad_fn=grad_fn2)
-            args4 = opt4.step(circuit, *args4, grad_fn=grad_fn2)
+            args3, cost2 = opt3.step_and_cost(
+                circuit,
+                *args3,
+                grad_fn=grad_fn2,
+                metric_tensor_fn=native_metric_tensor(circuit, approx=opt3.approx),
+            )
+            args4 = opt4.step(
+                circuit,
+                *args4,
+                grad_fn=grad_fn2,
+                metric_tensor_fn=native_metric_tensor(circuit, approx=opt4.approx),
+            )
 
             # Compute expected metric tensor, update step etc
             expected_mt_diag = np.array([0.25, (np.cos(var[0]) ** 2) / 4])
@@ -211,14 +256,15 @@ class TestOptimize:
 
         dev = qp.device("default.qubit")
 
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def circuit(x, y):
             """A cost function with two arguments."""
             qp.RX(x, 0)
             qp.RY(-y, 0)
             return qp.expval(qp.Z(0))
 
-        grad_fn = qp.grad(circuit)
+        grad_fn = native_gradient(circuit)
 
         params = np.array(0.2, requires_grad=False), np.array(-0.8, requires_grad=False)
         params[trainable_idx].requires_grad = True
@@ -226,13 +272,23 @@ class TestOptimize:
 
         params1 = params2 = params3 = params
 
-        # Without manually provided functions
+        # With the baseline native gradient and metric hooks
         for _ in range(4):
-            params1, cost1 = opt.step_and_cost(circuit, *params1)
+            params1, cost1 = opt.step_and_cost(
+                circuit,
+                *params1,
+                grad_fn=native_gradient(circuit),
+                metric_tensor_fn=native_metric_tensor(circuit, approx=opt.approx),
+            )
 
         opt = qp.MomentumQNGOptimizer(stepsize=0.01, momentum=0.9)
         for _ in range(4):
-            params2 = opt.step(circuit, *params2)
+            params2 = opt.step(
+                circuit,
+                *params2,
+                grad_fn=native_gradient(circuit),
+                metric_tensor_fn=native_metric_tensor(circuit, approx=opt.approx),
+            )
 
         accum = np.zeros_like(params[0]), np.zeros_like(params[1])
 
@@ -264,7 +320,8 @@ class TestOptimize:
         and correct cost after a few steps"""
         dev = qp.device("default.qubit", wires=1)
 
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def circuit(params):
             qp.RX(params[0], wires=0)
             qp.RY(params[1], wires=0)
@@ -286,7 +343,12 @@ class TestOptimize:
         dtheta = np.zeros_like(init_params)
 
         for _ in range(num_steps):
-            theta_new = opt.step(circuit, theta)
+            theta_new = opt.step(
+                circuit,
+                theta,
+                grad_fn=native_gradient(circuit),
+                metric_tensor_fn=native_metric_tensor(circuit, approx=opt.approx),
+            )
 
             # check metric tensor
             res = opt.metric_tensor
@@ -313,7 +375,8 @@ class TestOptimize:
 
         H = qp.Hamiltonian(coeffs=coeffs, observables=obs_list)
 
-        @qp.qnode(dev)
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(dev, interface="numpy")
         def circuit(x, y, wires=0):
             qp.RX(x, wires=wires)
             qp.RY(y, wires=wires)
@@ -339,7 +402,13 @@ class TestOptimize:
 
         for _ in range(num_steps):
             theta = np.array([x, y])
-            x, y = opt.step(circuit, x, y)
+            x, y = opt.step(
+                circuit,
+                x,
+                y,
+                grad_fn=native_gradient(circuit),
+                metric_tensor_fn=native_metric_tensor(circuit, approx=opt.approx),
+            )
 
             # check metric tensor
             res = opt.metric_tensor

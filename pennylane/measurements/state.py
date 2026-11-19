@@ -200,12 +200,13 @@ def state() -> StateMP:
         ...     qp.RY(x, wires=[0])
         ...     return qp.state()
         >>> def cost(x):
-        ...     return np.abs(test(x)[0])
-        >>> x = pnp.array(0.54, requires_grad=True)
-        >>> cost(x)
-        tensor(0.963..., requires_grad=True)
-        >>> qp.grad(cost)(x)
-        tensor(-0.13..., requires_grad=True)
+        ...     return qp.math.abs(test(x)[0])
+        >>> import jax.numpy as jnp
+        >>> x = jnp.array(0.54)
+        >>> print(cost(x))
+        0.963...
+        >>> print(qp.grad(cost)(x))
+        -0.13...
     """
     return StateMP()
 

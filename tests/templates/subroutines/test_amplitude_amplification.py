@@ -164,22 +164,6 @@ class TestDifferentiability:
 
     params = np.array([0.9, 0.1])
 
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("shots", [None, 50000])
-    def test_qnode_autograd(self, shots, seed):
-        """Test that the QNode executes with Autograd."""
-
-        dev = qp.device("default.qubit", wires=3, seed=seed)
-        diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qp.set_shots(
-            qp.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method), shots=shots
-        )
-
-        params = qp.numpy.array(self.params, requires_grad=True)
-        res = qp.grad(qnode)(params)
-        assert qp.math.shape(res) == (2,)
-        assert np.allclose(res, self.exp_grad, atol=0.01)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("shots", [None, 50000])

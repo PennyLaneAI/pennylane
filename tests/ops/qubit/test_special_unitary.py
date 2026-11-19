@@ -322,7 +322,7 @@ n_and_theta = [(1, theta_1), (2, theta_2)]
 
 interfaces = [
     None,
-    pytest.param("autograd", marks=pytest.mark.autograd),
+    pytest.param("autograd", marks=(pytest.mark.core, pytest.mark.autograd)),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
 ]
@@ -701,19 +701,6 @@ class TestSpecialUnitaryIntegration:
         assert qp.math.shape(res) == ()
         assert qp.math.isclose(res, self.exp)
 
-    @pytest.mark.autograd
-    def test_qnode_autograd(self, dev_fn):
-        """Test that the QNode executes with Autograd.
-        Neither hardware-ready nor autodiff gradients are available in Autograd."""
-
-        dev = dev_fn(wires=2)
-        qnode = qp.QNode(self.circuit, dev, interface="autograd")
-
-        x = qp.numpy.array(self.x, requires_grad=True)
-        res = qnode(x)
-        assert qp.math.shape(res) == ()
-        assert qp.math.isclose(res, self.exp)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("shots, atol", [(None, 1e-6), (10000, 1e-1)])
@@ -817,6 +804,7 @@ class TestTmpPauliRot:
         assert op.decomposition() == []
         assert TmpPauliRot.compute_decomposition(0.0, wires, word) == []
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_decomposition_at_zero_autograd(self):
         """Test that the decomposition is a PauliRot if the theta value is trainable."""

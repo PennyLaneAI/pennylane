@@ -32,16 +32,32 @@ def test_auto_with_numpy():
     assert resolved_interface == Interface.NUMPY
 
 
-@pytest.mark.autograd
-def test_auto_with_autograd():
-    """Test that 'auto' interface resolves to 'autograd' correctly."""
+@pytest.mark.parametrize("requires_grad", [True, False])
+def test_auto_rejects_autograd(requires_grad):
+    """Test that 'auto' rejects the removed Autograd interface."""
 
-    x = pnp.array([0.5], requires_grad=True)
+    x = pnp.array([0.5], requires_grad=requires_grad)
     tapes = [
         QuantumScript([qp.RX(x, wires=0)], [qp.expval(qp.PauliZ(0))]),
     ]
-    resolved_interface = _resolve_interface("auto", tapes)
-    assert resolved_interface == Interface.AUTOGRAD
+    with pytest.raises(ValueError, match="'autograd' is not a valid Interface."):
+        _resolve_interface("auto", tapes)
+
+
+@pytest.mark.parametrize("interface", ["numpy", None])
+@pytest.mark.parametrize("requires_grad", [True, False])
+def test_explicit_numpy_with_legacy_parameters(interface, requires_grad):
+    """Explicit forward execution accepts legacy arrays without selecting Autograd."""
+
+    @qp.qnode(qp.device("default.qubit"), interface=interface)
+    def circuit(angle):
+        qp.RX(angle, 0)
+        return qp.expval(qp.Z(0))
+
+    result = circuit(pnp.array(0.4, requires_grad=requires_grad))
+
+    assert qp.math.allclose(result, qp.math.cos(0.4))
+    assert circuit.interface == "numpy"
 
 
 @pytest.mark.jax
@@ -119,10 +135,11 @@ def test_jax_jit():
     abstract_func(param)
 
 
-def test_unsupported():
+@pytest.mark.parametrize("interface", ["unsupported_interface", "autograd"])
+def test_unsupported(interface):
     """Test that an unsupported interface raises an error."""
     tapes = [
         QuantumScript([qp.RX(0.5, wires=0)], [qp.expval(qp.PauliZ(0))]),
     ]
     with pytest.raises(ValueError, match="'.*' is not a valid Interface."):
-        _resolve_interface("unsupported_interface", tapes)
+        _resolve_interface(interface, tapes)

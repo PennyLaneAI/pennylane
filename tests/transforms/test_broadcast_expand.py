@@ -44,8 +44,8 @@ parameters = [
     (0.2, np.array([0.1]), np.array([-0.3])),
     (
         0.2,
-        pnp.array([0.1, 0.3], requires_grad=True),
-        pnp.array([-0.3, 2.1], requires_grad=False),
+        np.array([0.1, 0.3]),
+        np.array([-0.3, 2.1]),
     ),
 ]
 sizes = [3, 1, 2]
@@ -266,30 +266,6 @@ class TestBroadcastExpand:
 
             # same instance of RY
             assert t.operations[1] is tape.operations[1]
-
-    @pytest.mark.autograd
-    @pytest.mark.filterwarnings("ignore:Output seems independent of input")
-    @pytest.mark.parametrize("params", parameters)
-    @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    def test_autograd(self, params, obs, exp_fn, diff_method, seed):
-        """Test that the expansion works with autograd and is differentiable."""
-        params = tuple(pnp.array(p, requires_grad=True) for p in params)
-
-        @qp.transforms.broadcast_expand
-        @qp.qnode(get_device(seed=seed), interface="autograd", diff_method=diff_method)
-        def cost(*params):
-            make_ops(*params)
-            return qp.math.stack([qp.expval(ob) for ob in obs])
-
-        expected = exp_fn(*params)
-
-        assert qp.math.allclose(cost(*params), expected)
-
-        jac = qp.jacobian(cost)(*params)
-        exp_jac = qp.jacobian(exp_fn)(*params)
-
-        assert all(qp.math.allclose(_jac, e_jac) for _jac, e_jac in zip(jac, exp_jac))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("params", parameters)

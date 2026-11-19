@@ -230,13 +230,11 @@ class TestCommutationDAG:
         for i, edge in enumerate(dag.get_edges()):
             assert edges[i] == edge
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_dag_parameters_autograd(self):
         "Test a the DAG and its attributes for autograd parameters."
 
-        dev = qp.device("default.qubit", wires=3)
-
-        @qp.qnode(dev)
         def circuit(x, y, z):
             qp.RX(x, wires=0)
             qp.RX(y, wires=0)

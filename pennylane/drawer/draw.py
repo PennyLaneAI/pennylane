@@ -190,7 +190,7 @@ def draw(  # pylint: disable=too-many-arguments
 
         .. code-block:: python
 
-            from pennylane import numpy as np
+            import torch
 
             @qp.gradients.param_shift(shifts=[(0.1,)])
             @qp.qnode(qp.device('default.qubit', wires=1))
@@ -198,7 +198,8 @@ def draw(  # pylint: disable=too-many-arguments
                 qp.RX(x, wires=0)
                 return qp.expval(qp.Z(0))
 
-        >>> print(qp.draw(transformed_circuit)(np.array(1.0, requires_grad=True)))
+        >>> angle = torch.tensor(1.0, dtype=torch.float64, requires_grad=True)
+        >>> print(qp.draw(transformed_circuit)(angle))
         0: ──RX(1.10)─┤  <Z>
         0: ──RX(0.90)─┤  <Z>
 
@@ -233,7 +234,7 @@ def draw(  # pylint: disable=too-many-arguments
                 return qp.expval(qp.PauliX(0))
 
             order = [2, 1, 0]
-            weights = qp.numpy.array([[1.0, 20]])
+            weights = np.array([[1.0, 20]])
 
         One can print the circuit without any transforms applied by passing ``level="top"`` or ``level=0``:
 

@@ -227,9 +227,11 @@ class TrotterProduct(Operation):
                 # Measure some quantity
                 return qp.expval(qp.Z(0) @ qp.Z(1))
 
-        >>> args = qp.numpy.array([1.23, 4.5, 0.1])
-        >>> qp.grad(my_circ)(*tuple(args))
-        (tensor(0.077..., requires_grad=True), tensor(0.015..., requires_grad=True), tensor(1.642..., requires_grad=True))
+        >>> import jax.numpy as jnp
+        >>> args = jnp.array([1.23, 4.5, 0.1])
+        >>> grads = qp.grad(my_circ, argnums=(0, 1, 2))(*tuple(args))
+        >>> tuple(np.asarray(g, dtype=float) for g in grads)
+        (array(0.077...), array(0.015...), array(1.642...))
 
     """
 

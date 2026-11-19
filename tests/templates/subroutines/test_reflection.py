@@ -179,27 +179,6 @@ class TestIntegration:
 
     # NOTE: the finite shot test of the results has a 3% chance to fail
     # due to the random nature of the sampling. Hence we just pin the salt
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("shots", [None, 50000])
-    def test_qnode_autograd(self, shots, seed):
-        """Test that the QNode executes with Autograd."""
-
-        dev = qp.device("default.qubit", wires=3, seed=seed)
-        diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qp.set_shots(
-            qp.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method), shots=shots
-        )
-
-        x = qp.numpy.array(self.x, requires_grad=True)
-        res = qnode(x)
-        assert qp.math.shape(res) == (8,)
-
-        assert np.allclose(res, self.exp_result, atol=0.005)
-
-        res = qp.jacobian(qnode)(x)
-        assert np.shape(res) == (8,)
-
-        assert np.allclose(res, self.exp_jac, atol=0.005)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])

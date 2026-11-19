@@ -22,10 +22,10 @@ PennyLane object.
 import os
 import sys
 
+import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as np
 from pennylane import qchem
 
 openfermion = pytest.importorskip("openfermion")

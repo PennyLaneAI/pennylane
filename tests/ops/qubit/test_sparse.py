@@ -15,6 +15,7 @@
 Unit tests for the SparseHamiltonian observable.
 """
 
+import jax.numpy as jnp
 import numpy as np
 import pytest
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
@@ -207,6 +208,7 @@ class TestSparse:
         assert np.allclose(res_dynamic, sparse_hamiltonian, atol=tol, rtol=0)
         assert np.allclose(res_static, sparse_hamiltonian, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_sparse_diffmethod_error(self):
         """Test that an error is raised when the observable is SparseHamiltonian and the
         differentiation method is not parameter-shift."""
@@ -220,9 +222,10 @@ class TestSparse:
         with pytest.raises(
             QuantumFunctionError, match="does not support backprop with requested circuit."
         ):
-            qp.grad(circuit, argnums=0)(0.5)
+            qp.grad(circuit, argnums=0)(jnp.array(0.5))
 
     @pytest.mark.parametrize("qubits, hamiltonian, expected_output", [(4, H_hydrogen, -0.18092703)])
+    @pytest.mark.jax
     def test_sparse_gradient(self, qubits, hamiltonian, expected_output, tol):
         """Tests that gradients are computed correctly for a SparseHamiltonian observable."""
         dev = qp.device("default.qubit", wires=qubits)
@@ -236,7 +239,9 @@ class TestSparse:
             qp.DoubleExcitation(param, wires=[0, 1, 2, 3])
             return qp.expval(qp.SparseHamiltonian(hamiltonian, wires=range(qubits)))
 
-        assert np.allclose(qp.grad(circuit, argnums=0)(0.0), expected_output, atol=tol, rtol=0)
+        assert np.allclose(
+            qp.grad(circuit, argnums=0)(jnp.array(0.0)), expected_output, atol=tol, rtol=0
+        )
 
     def test_sparse_no_all_wires_error(self, tol):
         """Tests that SparseHamiltonian can be used as expected when the operator wires don't cover

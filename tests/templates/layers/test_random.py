@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as pnp
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -234,29 +233,6 @@ class TestInterfaces:
 
         for op1, op2 in zip(decomp, expected):
             qp.assert_equal(op1, op2)
-
-    def test_autograd(self, tol):
-        """Tests the autograd interface."""
-
-        weights = np.random.random(size=(1, 3))
-        weights = pnp.array(weights, requires_grad=True)
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        grad_fn = qp.grad(circuit)
-        grads = grad_fn(weights)
-
-        grad_fn2 = qp.grad(circuit2)
-        grads2 = grad_fn2(weights)
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.jax
     def test_jax(self, tol):

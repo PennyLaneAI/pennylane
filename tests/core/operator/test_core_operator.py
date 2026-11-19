@@ -490,6 +490,7 @@ class TestBroadcasting:
         assert op.ndim_params == (0, 2)
         assert op.batch_size == exp_batch_size
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
     def test_broadcasted_params_autograd(self, params, exp_batch_size):

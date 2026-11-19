@@ -167,13 +167,16 @@ class TestLevelExpansionStrategy:
             ((8, "device"), (8, 5, 5)),
         ],
     )
+    @pytest.mark.torch
     def test_equivalent_levels(self, transforms_circuit, levels, expected_metadata):
         """Test that the level keyword controls what operations are drawn."""
+        import torch
+
         var1, var2 = levels
         expected_lines, expected_patches, expected_texts = expected_metadata
 
         order = [2, 1, 0]
-        weights = pnp.array([[1.0, 20]])
+        weights = torch.tensor([[1.0, 20]], requires_grad=True)
 
         _, ax1 = qp.draw_mpl(transforms_circuit, level=var1)(weights, order)
         _, ax2 = qp.draw_mpl(transforms_circuit, level=var2)(weights, order)

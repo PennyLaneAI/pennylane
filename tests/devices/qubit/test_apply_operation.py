@@ -39,7 +39,7 @@ apply_operation_module = importlib.import_module("pennylane.devices.qubit.apply_
 
 ml_frameworks_list = [
     "numpy",
-    pytest.param("autograd", marks=pytest.mark.autograd),
+    pytest.param("autograd", marks=(pytest.mark.core, pytest.mark.autograd)),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
 ]
@@ -622,6 +622,7 @@ class TestRXCalcGrad:
         assert qp.math.allclose(g[0], g_expected0)
         assert qp.math.allclose(g[1], g_expected1)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.xfail(reason="differentiating complex values through RX not supported.")
     def test_rx_grad_autograd(self, method):
@@ -943,6 +944,7 @@ class TestApplyGroverOperator:
             assert np.allclose(out, expected_via_mat)
             assert np.allclose(out, expected_via_kernel)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("op_wires, state_wires", [(2, 2), (3, 3), (9, 9), (3, 5), (9, 13)])
     @pytest.mark.parametrize("batch_dim", [None, 1, 3])
@@ -1081,6 +1083,7 @@ class TestMultiControlledXKernel:
         exp_out[..., 1, :, :, 1, 1] = np.roll(exp_out[..., 1, :, :, 1, 1], 1, -2)
         assert qp.math.allclose(out, exp_out)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("batch_dim", [None, 1, 3])
     def test_with_autograd(self, batch_dim):
@@ -1232,6 +1235,7 @@ class TestNumpyFastPathAutograd:
     """Regression tests ensuring the numpy fast path in _apply_operation_default
     does not trigger under autograd, which would break gradient tracking."""
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_rx_autograd_gradient_component0(self):
         """Test RX gradient through result[0]: Re(cos(phi/2)).
@@ -1250,6 +1254,7 @@ class TestNumpyFastPathAutograd:
         expected_grad = -0.5 * np.sin(0.5 / 2)
         assert np.allclose(grad, expected_grad, atol=1e-6)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_rx_autograd_gradient_component1(self):
         """Test RX gradient through result[1]: Im(-i*sin(phi/2)) = -sin(phi/2).
@@ -1268,6 +1273,7 @@ class TestNumpyFastPathAutograd:
         expected_grad = -0.5 * np.cos(0.5 / 2)
         assert np.allclose(grad, expected_grad, atol=1e-6)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_ry_autograd_gradient_component0(self):
         """Test RY gradient through result[0]: cos(phi/2).
@@ -1287,6 +1293,7 @@ class TestNumpyFastPathAutograd:
         expected_grad = -0.5 * np.sin(0.5 / 2)
         assert np.allclose(grad, expected_grad, atol=1e-6)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_ry_autograd_gradient_component1(self):
         """Test RY gradient through result[1]: Re(sin(phi/2)).
@@ -1305,6 +1312,7 @@ class TestNumpyFastPathAutograd:
         expected_grad = 0.5 * np.cos(0.5 / 2)
         assert np.allclose(grad, expected_grad, atol=1e-6)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_rz_autograd_gradient_works(self):
         """Test that RZ with autograd params on numpy state produces correct gradients."""
@@ -1321,6 +1329,7 @@ class TestNumpyFastPathAutograd:
         expected_grad = -0.5 * np.sin(0.5 / 2)
         assert np.allclose(grad, expected_grad, atol=1e-6)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_hadamard_autograd_does_not_break(self):
         """Test that Hadamard on autograd state works correctly."""
@@ -1330,6 +1339,7 @@ class TestNumpyFastPathAutograd:
         inv_sqrt2 = 1 / np.sqrt(2)
         assert qp.math.allclose(result, [inv_sqrt2, inv_sqrt2])
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_default_fastpath_skips_autograd_params(self):
         """Test that _apply_operation_default does not use numpy fast path
@@ -1578,6 +1588,7 @@ class TestStateBatchedKernels:
         expected = apply_operation_einsum(op, state, is_state_batched=True)
         assert qp.math.allclose(result, expected)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_rz_state_batched_autograd(self):
         """Test RZ kernel with batched autograd state."""
@@ -1697,6 +1708,7 @@ class TestMixedInterfaceParams:
         expected = torch.tensor([np.exp(-0.25j), 0.0], dtype=torch.complex128)
         assert qp.math.allclose(result, expected, atol=1e-7)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_rx_autograd_state_numpy_param(self):
         """Test RX with autograd state and plain numpy param.
@@ -1711,6 +1723,7 @@ class TestMixedInterfaceParams:
         expected = np.array([c + 0j, -1j * s])
         assert qp.math.allclose(result, expected, atol=1e-7)
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_ry_numpy_state_autograd_param(self):
         """Test RY with numpy state and autograd param (gradient tracking).

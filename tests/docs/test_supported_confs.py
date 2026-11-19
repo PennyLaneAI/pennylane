@@ -24,10 +24,10 @@ A configuration is specified by:
 A configuration is supported if gradients can be computed for the
 QNode without an exception being raised."""
 
+import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as np
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 
 pytestmark = pytest.mark.all_interfaces
@@ -37,8 +37,8 @@ F = pytest.importorskip("torch.autograd.functional")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-interfaces = [None, "autograd", "jax", "torch"]
-diff_interfaces = ["autograd", "jax", "torch"]
+interfaces = [None, "jax", "torch"]
+diff_interfaces = ["jax", "torch"]
 shots_list = [None, 100]
 
 # Each of these tuples contain:
@@ -127,9 +127,7 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs, gradient_k
             return qp.expval(qp.PauliZ(wires=single_meas_wire))
         if return_type == "Hermitian":
             return qp.expval(
-                qp.Hermitian(
-                    np.array([[1.0, 0.0], [0.0, -1.0]], requires_grad=False), wires=single_meas_wire
-                )
+                qp.Hermitian(np.array([[1.0, 0.0], [0.0, -1.0]]), wires=single_meas_wire)
             )
         if return_type == "Projector":
             return qp.expval(qp.Projector(np.array([1]), wires=single_meas_wire))
@@ -151,8 +149,6 @@ def get_variable(interface, wire_specs, complex=False):
 
     if interface is None:
         return np.array([0.1] * num_wires)
-    if interface == "autograd":
-        return np.array([0.1] * num_wires, requires_grad=True)
     if interface == "jax":
         # complex dtype is required for JAX when holomorphic gradient is used
         return jnp.array([0.1] * num_wires, dtype=np.complex128 if complex else None)
@@ -187,7 +183,6 @@ def get_density_matrix_cost_fn(circuit):
     return cost_fn
 
 
-# pylint: disable-next=too-many-return-statements
 def compute_gradient(x, interface, circuit, return_type, complex=False):
     """Return an interface-specific gradient or jacobian using the
     provided parameters:
@@ -210,10 +205,6 @@ def compute_gradient(x, interface, circuit, return_type, complex=False):
     else:
         cost_fn = circuit
 
-    if interface == "autograd":
-        if return_type in grad_return_cases:
-            return qp.grad(cost_fn)(x)
-        return qp.jacobian(cost_fn)(x)
     if interface == "jax":
         if return_type in grad_return_cases:
             return jax.grad(cost_fn)(x)
@@ -503,16 +494,6 @@ class TestSupportedConfs:
         circuit = get_qnode(interface, diff_method, "Sample", 100, wire_specs)
         x = get_variable(interface, wire_specs)
         circuit(x)
-
-    @pytest.mark.parametrize("wire_specs", wire_specs_list)
-    def test_autograd_state_backprop(self, wire_specs):
-        """Test gradient of state directly fails for autograd interface"""
-        msg = "cannot reshape array of size .*"
-
-        with pytest.raises(ValueError, match=msg):
-            circuit = get_qnode("autograd", "backprop", "StateVector", None, wire_specs)
-            x = get_variable("autograd", wire_specs)
-            compute_gradient(x, "autograd", circuit, "StateVector")
 
     @pytest.mark.parametrize("interface", ["jax", "torch"])
     @pytest.mark.parametrize("wire_specs", wire_specs_list)

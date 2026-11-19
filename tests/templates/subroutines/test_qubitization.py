@@ -17,10 +17,10 @@ Tests for the Qubitization template.
 
 import copy
 
+import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as np
 from pennylane.testing import assert_decomposable
 
 
@@ -170,18 +170,6 @@ class TestDifferentiability:
     exp_grad = np.array([0.41177729, -0.21262358, 1.64370464, -0.74256522])
 
     params = np.array([0.4, 0.5, 0.1, 0.3])
-
-    @pytest.mark.autograd
-    def test_qnode_autograd(self):
-        """Test that the QNode executes with Autograd."""
-
-        dev = qp.device("default.qubit")
-        qnode = qp.QNode(self.circuit, dev, interface="autograd")
-
-        params = qp.numpy.array(self.params, requires_grad=True)
-        res = qp.grad(qnode)(params)
-        assert qp.math.shape(res) == (4,)
-        assert np.allclose(res, self.exp_grad, atol=1e-5)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (False, True))

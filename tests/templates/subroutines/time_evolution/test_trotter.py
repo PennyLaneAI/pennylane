@@ -21,10 +21,10 @@ Tests for the TrotterProduct template and helper functions.
 import copy
 from functools import partial, reduce
 
+import numpy as qnp
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
 from pennylane.templates.subroutines.time_evolution.trotter import (
     TrotterizedQfunc,
@@ -750,67 +750,6 @@ class TestIntegration:
 
         state = circ(time, coeffs)
         assert allclose(expected_state, state, atol=1e-5)  # float 32 precision issues
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("time", (0.5, 1, 2))
-    def test_autograd_execute(self, time):
-        """Test that the gate executes correctly in the autograd interface."""
-        time = qnp.array(time)
-        coeffs = qnp.array([1.23, -0.45])
-        terms = [qp.PauliX(0), qp.PauliZ(0)]
-
-        dev = qp.device("reference.qubit", wires=2)
-
-        @qp.qnode(dev)
-        def circ(time, coeffs):
-            h = qp.dot(coeffs, terms)
-            qp.TrotterProduct(h, time, n=2, order=2)
-            return qp.state()
-
-        initial_state = qnp.array([1.0, 0.0, 0.0, 0.0])
-
-        expected_product_sequence = _generate_simple_decomp(coeffs, terms, time, order=2, n=2)
-
-        expected_state = (
-            reduce(
-                lambda x, y: x @ y,
-                [qp.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
-            )
-            @ initial_state
-        )
-
-        state = circ(time, coeffs)
-        assert qnp.allclose(expected_state, state)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
-    def test_autograd_gradient(self, order, n):
-        """Test that the gradient is computed correctly"""
-        time = qnp.array(1.5)
-        coeffs = qnp.array([1.23, -0.45])
-        terms = [qp.PauliX(0), qp.PauliZ(0)]
-
-        dev = qp.device("reference.qubit", wires=1)
-
-        @qp.qnode(dev)
-        def circ(time, coeffs):
-            h = qp.dot(coeffs, terms)
-            qp.TrotterProduct(h, time, n=n, order=order)
-            return qp.expval(qp.Hadamard(0))
-
-        @qp.qnode(dev)
-        def reference_circ(time, coeffs):
-            decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
-
-            for op in decomp[::-1]:
-                qp.apply(op)
-
-            return qp.expval(qp.Hadamard(0))
-
-        measured_time_grad, measured_coeff_grad = qp.grad(circ)(time, coeffs)
-        reference_time_grad, reference_coeff_grad = qp.grad(reference_circ)(time, coeffs)
-        assert allclose(measured_time_grad, reference_time_grad)
-        assert allclose(measured_coeff_grad, reference_coeff_grad)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
@@ -1671,12 +1610,15 @@ class TestTrotterizedQfuncIntegration:
     @pytest.mark.parametrize("order", (1, 2, 4))
     @pytest.mark.parametrize("reverse", (True, False))
     @pytest.mark.parametrize("method", ("backprop", "parameter-shift"))
+    @pytest.mark.jax
     def test_gradient(self, n, order, reverse, method):
         """Test that the gradient is computed correctly"""
-        time = qnp.array(0.1)
+        from jax import numpy as jnp
+
+        time = jnp.array(0.1)
         wires = ["aux1", "aux2", 0, 1, "target"]
-        arg1 = qnp.array(2.34)
-        arg2 = qnp.array(-6.78)
+        arg1 = jnp.array(2.34)
+        arg2 = jnp.array(-6.78)
         kwargs = {"kwarg1": True, "kwarg2": 1}
 
         def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
@@ -1721,12 +1663,12 @@ class TestTrotterizedQfuncIntegration:
 
             return qp.expval(qp.Hadamard(wires[0]))
 
-        measured_time_grad, measured_arg1_grad, measured_arg2_grad = qp.grad(circ)(
-            time, arg1, arg2, wires, **kwargs
-        )
-        reference_time_grad, reference_arg1_grad, reference_arg2_grad = qp.grad(reference_circ)(
-            time, arg1, arg2, wires
-        )
+        measured_time_grad, measured_arg1_grad, measured_arg2_grad = qp.grad(
+            circ, argnums=(0, 1, 2)
+        )(time, arg1, arg2, wires, **kwargs)
+        reference_time_grad, reference_arg1_grad, reference_arg2_grad = qp.grad(
+            reference_circ, argnums=(0, 1, 2)
+        )(time, arg1, arg2, wires)
         assert allclose(measured_time_grad, reference_time_grad)
         assert allclose(measured_arg1_grad, reference_arg1_grad)
         assert allclose(measured_arg2_grad, reference_arg2_grad)

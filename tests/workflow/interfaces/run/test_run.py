@@ -66,7 +66,7 @@ class TestNoInterfaceRequired:
 
 
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "jax-jit", "jax", "torch"])
+@pytest.mark.parametrize("interface", ["jax-jit", "jax", "torch"])
 def test_grad_on_execution_error(interface):
     """Tests that a ValueError is raised if the config uses grad_on_execution."""
     inner_tp = CompilePipeline()

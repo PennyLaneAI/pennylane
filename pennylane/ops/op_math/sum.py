@@ -204,9 +204,9 @@ class Sum(CompositeOp):
                 qp.RX(weights[2], wires=1)
                 return qp.expval(sum_op)
 
-        >>> import pennylane.numpy as pnp
-        >>> weights = pnp.array([0.1, 0.2, 0.3], requires_grad=True)
-        >>> qp.grad(circuit)(weights)
+        >>> import jax.numpy as jnp
+        >>> weights = jnp.array([0.1, 0.2, 0.3])
+        >>> np.asarray(qp.grad(circuit)(weights), dtype=float)
         array([-0.093..., -0.188..., -0.288...])
     """
 

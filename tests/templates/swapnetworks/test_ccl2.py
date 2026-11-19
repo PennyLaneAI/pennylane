@@ -15,10 +15,10 @@
 Tests for the TwoLocalSwapNetwork template.
 """
 
+import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as np
 
 
 def test_flatten_unflatten():
@@ -345,29 +345,6 @@ class TestInterfaces:
 
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)
 
-    @pytest.mark.autograd
-    def test_autograd(self, tol):
-        """Test the autograd interface."""
-
-        weights = qp.numpy.random.random(size=(6), requires_grad=True)
-
-        dev = qp.device("default.qubit", wires=4)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        grad_fn = qp.grad(circuit)
-        grads = grad_fn(weights)
-
-        grad_fn2 = qp.grad(circuit2)
-        grads2 = grad_fn2(weights)
-
-        assert np.allclose(grads, grads2, atol=tol, rtol=0)
-
     @pytest.mark.jax
     def test_jax(self, tol):
         """Test the jax interface."""
@@ -451,6 +428,7 @@ class TestInterfaces:
 class TestGradient:  # pylint: disable=too-few-public-methods
     """Test that the parameter-shift rule for this template matches that of backprop."""
 
+    @pytest.mark.jax
     def test_ps_rule_gradient(self, tol):
         """Test parameter-shift rule gradient."""
 
@@ -459,7 +437,9 @@ class TestGradient:  # pylint: disable=too-few-public-methods
         backprop_grad = qp.grad(qp.QNode(circuit_template, dev, diff_method="backprop"))
         ps_rule_grad = qp.grad(qp.QNode(circuit_template, dev, diff_method="parameter-shift"))
 
-        weights = qp.numpy.array([0.55, 0.72, 0.6, 0.54, 0.42, 0.65], requires_grad=True)
+        import jax.numpy as jnp
+
+        weights = jnp.array([0.55, 0.72, 0.6, 0.54, 0.42, 0.65])
         res = backprop_grad(weights)
         res2 = ps_rule_grad(weights)
         assert qp.math.allclose(res, res2, atol=tol, rtol=0)

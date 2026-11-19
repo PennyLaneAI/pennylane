@@ -238,6 +238,9 @@ def metric_tensor(  # pylint: disable=too-many-arguments
 
         For example,
 
+        >>> import jax
+        >>> import jax.numpy as jnp
+        >>> jax.config.update("jax_enable_x64", True)
         >>> from jax import numpy as jnp
         >>> @qp.qnode(qp.device('lightning.qubit', wires=4))
         ... def c(x, y):
@@ -245,18 +248,21 @@ def metric_tensor(  # pylint: disable=too-many-arguments
         ...     qp.RY(y, 0)
         ...     return qp.expval(qp.Z(0))
         ...
-        >>> qp.qjit(qp.metric_tensor(c))(jnp.array(0.5), jnp.array(0.6))
+        >>> qp.qjit(qp.metric_tensor(c), capture=False)(jnp.array(0.5), jnp.array(0.6))
         Array([[0.25      , 0.        ],
                 [0.        , 0.07298165]], dtype=float64)
         >>> qp.metric_tensor(c, argnums=(0,1))(jnp.array(0.5), jnp.array(0.6))
         (Array(1., dtype=float64), Array(0.07298165, dtype=float64))
-        >>> qp.metric_tensor(c, hybrid=False)(qp.numpy.array(0.5), qp.numpy.array(0.6))
+        >>> tape = qp.tape.QuantumScript([qp.RX(1.0, 0), qp.RY(0.6, 0)], [qp.expval(qp.Z(0))])
+        >>> tape.trainable_params = [0, 1]
+        >>> tapes, processing = qp.metric_tensor(tape)
+        >>> processing(qp.execute(tapes, qp.device("default.qubit", wires=2), interface=None))
         array([[0.25      , 0.        ],
-                [0.        , 0.07298165]])
+               [0.        , 0.07298165]])
 
-        Here you can see that the ``qjit`` and ``hybrid=False`` options did not postprocess
-        the metric tensor to match the shape of the arguments, and they do not include the factor
-        of ``4`` from the derivative of ``2*x``.
+        The compiled and tape-based results use gate-parameter coordinates and exclude
+        classical preprocessing. The QNode result includes the factor of ``4`` from
+        differentiating ``2*x``.
 
 
     The flag ``allow_nonunitary`` should be set to ``True`` whenever the device with
@@ -277,7 +283,7 @@ def metric_tensor(  # pylint: disable=too-many-arguments
 
         dev = qp.device("default.qubit", wires=3)
 
-        @qp.qnode(dev, interface="autograd")
+        @qp.qnode(dev, interface="jax")
         def circuit(weights):
             qp.RX(weights[0], wires=0)
             qp.RY(weights[1], wires=0)
@@ -290,12 +296,12 @@ def metric_tensor(  # pylint: disable=too-many-arguments
     metric tensor of this QNode:
 
     >>> mt_fn = qp.metric_tensor(circuit)
-    >>> weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
+    >>> weights = jnp.array([0.1, 0.2, 0.4, 0.5])
     >>> mt_fn(weights)
-    tensor([[ 0.25  ,  0.    , -0.0497, -0.0497],
-            [ 0.    ,  0.2475,  0.0243,  0.0243],
-            [-0.0497,  0.0243,  0.0123,  0.0123],
-            [-0.0497,  0.0243,  0.0123,  0.0123]], requires_grad=True)
+    Array([[ 0.25      ,  0.        , -0.04966733, -0.04966733],
+           [ 0.        ,  0.24750832,  0.02433865,  0.02433865],
+           [-0.04966733,  0.02433865,  0.01226071,  0.01226071],
+           [-0.04966733,  0.02433865,  0.01226071,  0.01226071]],      dtype=float64)
 
     In order to save cost, one might want to compute only the block-diagonal part of
     the metric tensor, which requires significantly fewer executions of quantum functions
@@ -303,26 +309,26 @@ def metric_tensor(  # pylint: disable=too-many-arguments
     ``approx`` keyword:
 
     >>> mt_fn = qp.metric_tensor(circuit, approx="block-diag")
-    >>> weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
+    >>> weights = jnp.array([0.1, 0.2, 0.4, 0.5])
     >>> mt_fn(weights)
-    tensor([[0.25  , 0.    , 0.    , 0.    ],
-            [0.    , 0.2475, 0.    , 0.    ],
-            [0.    , 0.    , 0.0123, 0.0123],
-            [0.    , 0.    , 0.0123, 0.0123]], requires_grad=True)
+    Array([[0.25      , 0.        , 0.        , 0.        ],
+           [0.        , 0.24750832, 0.        , 0.        ],
+           [0.        , 0.        , 0.01226071, 0.01226071],
+           [0.        , 0.        , 0.01226071, 0.01226071]], dtype=float64)
 
     These blocks are given by parameter groups that belong to groups of commuting gates.
 
     The tensor can be further restricted to the diagonal via ``approx="diag"``. However,
     this will not save further quantum function evolutions but only classical postprocessing.
 
-    The returned metric tensor is also fully differentiable in all interfaces.
+    The returned metric tensor is differentiable with JAX and PyTorch.
     For example, we can compute the gradient of the Frobenius norm of the metric tensor
     with respect to the QNode ``weights`` :
 
     >>> norm_fn = lambda x: qp.math.linalg.norm(mt_fn(x), ord="fro")
     >>> grad_fn = qp.grad(norm_fn)
     >>> grad_fn(weights)
-    array([-0.0282246 ,  0.01340413,  0.        ,  0.        ])
+    Array([-0.0282246 ,  0.01340413,  0.        ,  0.        ], dtype=float64)
 
     .. details::
         :title: Usage Details
@@ -332,7 +338,7 @@ def metric_tensor(  # pylint: disable=too-many-arguments
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the metric tensor are directly returned:
 
-        >>> params = np.array([1.7, 1.0, 0.5], requires_grad=True)
+        >>> params = jnp.array([1.7, 1.0, 0.5])
         >>> ops = [
         ...     qp.RX(params[0], wires=0),
         ...     qp.RY(params[1], wires=0),
@@ -343,12 +349,7 @@ def metric_tensor(  # pylint: disable=too-many-arguments
         >>> tape = qp.tape.QuantumTape(ops, measurements)
         >>> tapes, fn = qp.metric_tensor(tape)
         >>> tapes
-        [<QuantumTape: wires=[0, 1], params=0>,
-         <QuantumTape: wires=[0, 1], params=1>,
-         <QuantumTape: wires=[0, 1], params=3>,
-         <QuantumTape: wires=[2, 0], params=1>,
-         <QuantumTape: wires=[2, 0, 1], params=2>,
-         <QuantumTape: wires=[2, 0, 1], params=2>]
+        [<QuantumScript: wires=[0, 1], params=0>, <QuantumScript: wires=[0, 1], params=1>, <QuantumScript: wires=[0, 1], params=2>, <QuantumScript: wires=[2, 0], params=1>, <QuantumScript: wires=[2, 0, 1], params=2>, <QuantumScript: wires=[2, 0, 1], params=2>]
 
         This can be useful if the underlying circuits representing the metric tensor
         computation need to be analyzed. We clearly can distinguish the first three
@@ -360,9 +361,9 @@ def metric_tensor(  # pylint: disable=too-many-arguments
 
         >>> dev = qp.device("default.qubit", wires=3)
         >>> fn(qp.execute(tapes, dev, None))
-        tensor([[ 0.25      ,  0.        ,  0.42073549],
+        Array([[ 0.25      ,  0.        ,  0.42073549],
                 [ 0.        ,  0.00415023, -0.26517488],
-                [ 0.42073549, -0.26517488,  0.24878844]], requires_grad=True)
+                [ 0.42073549, -0.26517488,  0.24878844]], dtype=float64)
 
         The first term of the off block-diagonal entries of the full metric tensor are
         computed with Hadamard tests. This first term reads
@@ -387,38 +388,34 @@ def metric_tensor(  # pylint: disable=too-many-arguments
 
             The ``argnum`` argument can be used to restrict the parameters which are taken into account
             for computing the metric tensor.
-            When the metric tensor of a QNode is computed, the ordering of the parameters has to be
-            specified as they appear in the corresponding QuantumTape.
+            On a tape, indices follow its trainable gate parameters. Native JAX QNodes instead
+            use ``argnums`` to select differentiable QNode arguments.
 
         **Example**
 
-        Consider the following QNode in which parameters are used out of order:
+        Consider a tape in which entries of ``weights`` are used out of order:
 
         .. code-block:: python
 
-            dev = qp.device("default.qubit")
-            @qp.qnode(dev, interface="autograd")
-            def circuit(weights):
-                qp.RX(weights[1], wires=0)
-                qp.RY(weights[0], wires=0)
-                qp.CNOT(wires=[0, 1])
-                qp.RZ(weights[2], wires=1)
-                qp.RZ(weights[3], wires=0)
-                return qp.expval(qp.Z(0))
-
-            weights = np.array([0.1, 0.2, 0.4, 0.5], requires_grad=True)
-            mt = qp.metric_tensor(circuit, argnum=(0, 2, 3))(weights)
+            weights = np.array([0.1, 0.2, 0.4, 0.5])
+            tape = qp.tape.QuantumScript(
+                [qp.RX(weights[1], 0), qp.RY(weights[0], 0), qp.CNOT([0, 1]),
+                 qp.RZ(weights[2], 1), qp.RZ(weights[3], 0)],
+                [qp.expval(qp.Z(0))],
+                trainable_params=[0, 1, 2, 3],
+            )
+            tapes, processing = qp.metric_tensor(tape, argnum=(0, 2, 3))
+            mt = processing(qp.execute(tapes, qp.device("default.qubit", wires=3), interface=None))
 
         >>> print(mt)
-        [[ 0.          0.          0.          0.        ]
-         [ 0.          0.25       -0.02495835 -0.02495835]
-         [ 0.         -0.02495835  0.01226071  0.01226071]
-         [ 0.         -0.02495835  0.01226071  0.01226071]]
+        [[ 0.25        0.         -0.02495835 -0.02495835]
+         [ 0.          0.          0.          0.        ]
+         [-0.02495835  0.          0.01226071  0.01226071]
+         [-0.02495835  0.          0.01226071  0.01226071]]
 
-        Because the 0-th element of ``weights`` appears second in the QNode and therefore in the
-        underlying tape, it is the 1st tape parameter.
-        By setting ``argnum = (0, 2, 3)`` we exclude the 0-th element of ``weights`` from the computation
-        of the metric tensor and not the 1st element, as one might expect.
+        The 0-th element of ``weights`` supplies the second gate parameter, so it has tape index ``1``.
+        Setting ``argnum=(0, 2, 3)`` excludes that gate parameter. The resulting rows and columns follow
+        tape parameter order, rather than the original ``weights`` order.
     """
     if not tape.trainable_params:
         warnings.warn(

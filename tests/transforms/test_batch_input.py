@@ -15,6 +15,7 @@
 Unit tests for the ``batch_inputs`` transform.
 """
 
+import numpy as onp
 import pytest
 
 import pennylane as qp
@@ -34,8 +35,8 @@ def test_simple_circuit():
         return qp.expval(qp.PauliZ(1))
 
     batch_size = 5
-    inputs = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
-    weights = np.random.uniform(-np.pi, np.pi, (2,))
+    inputs = onp.random.uniform(0, onp.pi, (batch_size, 2))
+    weights = onp.random.uniform(-onp.pi, onp.pi, (2,))
 
     res = circuit(inputs, weights)
     assert res.shape == (batch_size,)
@@ -54,8 +55,8 @@ def test_simple_circuit_one_batch():
         return qp.expval(qp.PauliZ(1))
 
     batch_size = 1
-    inputs = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
-    weights = np.random.uniform(-np.pi, np.pi, (2,))
+    inputs = onp.random.uniform(0, onp.pi, (batch_size, 2))
+    weights = onp.random.uniform(-onp.pi, onp.pi, (2,))
 
     res = circuit(inputs, weights)
     assert res.shape == (batch_size,)
@@ -68,15 +69,15 @@ def test_simple_circuit_with_prep():
     @qp.batch_input(argnum=1)
     @qp.qnode(dev)
     def circuit(inputs, weights):
-        qp.StatePrep(np.array([0, 0, 1, 0]), wires=[0, 1])
+        qp.StatePrep(onp.array([0, 0, 1, 0]), wires=[0, 1])
         qp.RX(inputs, wires=0)
         qp.RY(weights[0], wires=0)
         qp.RY(weights[1], wires=1)
         return qp.expval(qp.PauliZ(1))
 
     batch_size = 5
-    inputs = np.random.uniform(0, np.pi, (batch_size,), requires_grad=False)
-    weights = np.random.uniform(-np.pi, np.pi, (2,))
+    inputs = onp.random.uniform(0, onp.pi, (batch_size,))
+    weights = onp.random.uniform(-onp.pi, onp.pi, (2,))
 
     res = circuit(inputs, weights)
     assert res.shape == (batch_size,)
@@ -96,7 +97,7 @@ def test_circuit_non_param_operator_before_batched_operator():
 
     batch_size = 3
 
-    input = np.linspace(0.1, 0.5, batch_size, requires_grad=False)
+    input = onp.linspace(0.1, 0.5, batch_size)
 
     res = circuit(input)
 
@@ -127,14 +128,15 @@ def test_value_error():
         return qp.expval(qp.PauliZ(1))
 
     batch_size = 5
-    input1 = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
-    input2 = np.random.uniform(0, np.pi, (4, 1), requires_grad=False)
-    weights = np.random.uniform(-np.pi, np.pi, (2,))
+    input1 = onp.random.uniform(0, onp.pi, (batch_size, 2))
+    input2 = onp.random.uniform(0, onp.pi, (4, 1))
+    weights = onp.random.uniform(-onp.pi, onp.pi, (2,))
 
     with pytest.raises(ValueError, match="Batch dimension for all gate arguments"):
         circuit(input1, input2, weights)
 
 
+@pytest.mark.torch
 def test_batch_input_with_trainable_parameters_raises_error():
     """Test that using the batch_input method with trainable parameters raises a ValueError."""
     dev = qp.device("default.qubit", wires=2)
@@ -149,7 +151,7 @@ def test_batch_input_with_trainable_parameters_raises_error():
 
     batch_size = 3
 
-    input = np.linspace(0.1, 0.5, batch_size, requires_grad=True)
+    input = qp.math.array(onp.linspace(0.1, 0.5, batch_size), like="torch", requires_grad=True)
 
     with pytest.raises(
         ValueError,
@@ -165,7 +167,7 @@ def test_mottonenstate_preparation(mocker):
     dev = qp.device("default.qubit", wires=3)
 
     @qp.batch_input(argnum=0)
-    @qp.qnode(dev, interface="autograd")
+    @qp.qnode(dev, interface="numpy")
     def circuit(data, weights):
         qp.templates.MottonenStatePreparation(data, wires=[0, 1, 2])
         qp.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
@@ -174,11 +176,11 @@ def test_mottonenstate_preparation(mocker):
     batch_size = 3
 
     # create a batched input statevector
-    data = np.random.random((batch_size, 2**3), requires_grad=False)
-    data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
+    data = onp.random.random((batch_size, 2**3))
+    data /= onp.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
 
     # weights is not batched
-    weights = np.random.random((10, 3, 3), requires_grad=True)
+    weights = onp.random.random((10, 3, 3))
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, weights)
@@ -195,7 +197,7 @@ def test_mottonenstate_preparation(mocker):
     indiv_res = []
     for state in data:
         indiv_res.append(circuit2(state, weights))
-    assert np.allclose(res, indiv_res)
+    assert onp.allclose(res, indiv_res)
 
 
 def test_qubit_state_prep(mocker):
@@ -204,7 +206,7 @@ def test_qubit_state_prep(mocker):
     dev = qp.device("default.qubit", wires=3)
 
     @qp.batch_input(argnum=0)
-    @qp.qnode(dev, interface="autograd")
+    @qp.qnode(dev, interface="numpy")
     def circuit(data, weights):
         qp.StatePrep(data, wires=[0, 1, 2])
         qp.templates.StronglyEntanglingLayers(weights, wires=[0, 1, 2])
@@ -213,11 +215,11 @@ def test_qubit_state_prep(mocker):
     batch_size = 3
 
     # create a batched input statevector
-    data = np.random.random((batch_size, 2**3), requires_grad=False)
-    data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
+    data = onp.random.random((batch_size, 2**3))
+    data /= onp.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
 
     # weights is not batched
-    weights = np.random.random((10, 3, 3), requires_grad=True)
+    weights = onp.random.random((10, 3, 3))
 
     spy = mocker.spy(circuit.device, "execute")
     res = circuit(data, weights)
@@ -235,7 +237,7 @@ def test_qubit_state_prep(mocker):
     for state in data:
         indiv_res.append(circuit2(state, weights))
 
-    assert np.allclose(res, indiv_res)
+    assert onp.allclose(res, indiv_res)
 
 
 def test_multi_returns():
@@ -251,8 +253,8 @@ def test_multi_returns():
         return qp.expval(qp.PauliZ(1)), qp.probs(wires=[0, 1])
 
     batch_size = 6
-    inputs = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
-    weights = np.random.uniform(-np.pi, np.pi, (2,))
+    inputs = onp.random.uniform(0, onp.pi, (batch_size, 2))
+    weights = onp.random.uniform(-onp.pi, onp.pi, (2,))
 
     res = circuit(inputs, weights)
     assert isinstance(res, tuple)
@@ -276,8 +278,8 @@ def test_shot_vector():
         return qp.probs(wires=[0, 1])
 
     batch_size = 6
-    inputs = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
-    weights = np.random.uniform(-np.pi, np.pi, (2,))
+    inputs = onp.random.uniform(0, onp.pi, (batch_size, 2))
+    weights = onp.random.uniform(-onp.pi, onp.pi, (2,))
 
     res = circuit(inputs, weights)
 
@@ -301,8 +303,8 @@ def test_multi_returns_shot_vector():
         return qp.expval(qp.PauliZ(1)), qp.probs(wires=[0, 1])
 
     batch_size = 6
-    inputs = np.random.uniform(0, np.pi, (batch_size, 2), requires_grad=False)
-    weights = np.random.uniform(-np.pi, np.pi, (2,))
+    inputs = onp.random.uniform(0, onp.pi, (batch_size, 2))
+    weights = onp.random.uniform(-onp.pi, onp.pi, (2,))
 
     res = circuit(inputs, weights)
 
@@ -316,32 +318,6 @@ def test_multi_returns_shot_vector():
 
 class TestDiffSingle:
     """Test gradients for a single measurement"""
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-    def test_autograd(self, diff_method, tol):
-        """Test derivatives when using autograd"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.batch_input(argnum=0)
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(input, x):
-            qp.RY(input, wires=1)
-            qp.CNOT(wires=[0, 1])
-            qp.RX(x, wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-        batch_size = 3
-
-        def cost(input, x):
-            return np.sum(circuit(input, x))
-
-        input = np.linspace(0.1, 0.5, batch_size, requires_grad=False)
-        x = np.array(0.1, requires_grad=True)
-
-        res = qp.grad(cost)(input, x)
-        expected = -np.sin(0.1) * sum(np.sin(input))
-        assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
@@ -441,56 +417,6 @@ class TestDiffSingle:
 
 class TestDiffMulti:
     """Test gradients for multiple measurements"""
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
-    def test_autograd(self, diff_method, tol):
-        """Test derivatives when using autograd"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.batch_input(argnum=0)
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(input, x):
-            qp.RY(input, wires=0)
-            qp.RY(x, wires=0)
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
-
-        def cost(input, x):
-            res = circuit(input, x)
-            return qp.math.concatenate([qp.math.expand_dims(res[0], 1), res[1]], axis=1)
-
-        batch_size = 3
-        input = np.linspace(0.1, 0.5, batch_size, requires_grad=False)
-        x = np.array(0.1, requires_grad=True)
-
-        res = cost(input, x)
-        expected = qp.math.transpose(
-            qp.math.stack(
-                [
-                    np.cos(input + x),
-                    np.cos((input + x) / 2) ** 2,
-                    np.zeros_like(input),
-                    np.zeros_like(input),
-                    np.sin((input + x) / 2) ** 2,
-                ]
-            )
-        )
-        assert qp.math.allclose(res, expected, atol=tol)
-
-        grad = qp.jacobian(lambda x: cost(input, x))(x)
-        expected = qp.math.transpose(
-            qp.math.stack(
-                [
-                    -np.sin(input + x),
-                    -np.sin(input + x) / 2,
-                    np.zeros_like(input),
-                    np.zeros_like(input),
-                    np.sin(input + x) / 2,
-                ]
-            )
-        )
-        assert qp.math.allclose(grad, expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])

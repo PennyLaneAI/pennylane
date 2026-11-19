@@ -653,6 +653,7 @@ class TestJVPGradients:
     """Gradient tests for the jvp function"""
 
     # Include batch_dim!=None cases once #4462 is resolved
+    @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("batch_dim", [None])  # , 1, 3])
     def test_autograd(self, tol, batch_dim):

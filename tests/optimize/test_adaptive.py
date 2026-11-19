@@ -15,15 +15,14 @@
 Unit tests for the ``AdaptiveOptimizer``.
 """
 
-import copy
-
+import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 
 symbols = ["H", "H", "H"]
-geometry = np.array(
+geometry = pnp.array(
     [[0.01076341, 0.04449877, 0.0], [0.98729513, 1.63059094, 0.0], [1.87262415, -0.00815842, 0.0]],
     requires_grad=False,
 )
@@ -33,11 +32,10 @@ hf_state = np.array([1, 1, 0, 0, 0, 0])
 dev = qp.device("default.qubit", wires=qubits)
 
 energy_h3p_hf = -1.2465499384199534
-energy_first_step = -1.2613740231522113
-energy_h3p = -1.274397672040264
 
 
-@qp.qnode(dev)
+@qp.transforms.convert_to_numpy_parameters
+@qp.qnode(dev, interface="numpy")
 def initial_circuit():
     qp.BasisState(hf_state, wires=range(qubits))
     return qp.expval(H)
@@ -56,91 +54,11 @@ def initial_circuit():
 )
 def test_private_circuit(circuit, params, gates, energy_ref):
     r"""Test that _circuit returns the correct output."""
-    qnode = qp.QNode(qp.AdaptiveOptimizer._circuit, dev)  # pylint: disable=protected-access
+    private_circuit = qp.AdaptiveOptimizer._circuit  # pylint: disable=protected-access
+    qnode = qp.QNode(private_circuit, dev, interface="numpy")
+    qnode = qp.transforms.convert_to_numpy_parameters(qnode)
     energy = qnode(params, gates, circuit.func)
     assert np.allclose(energy, energy_ref)
-
-
-pool_exc = [
-    qp.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 3]),
-    qp.DoubleExcitation(np.array(0.0), wires=[0, 1, 2, 5]),
-    qp.DoubleExcitation(np.array(0.0), wires=[0, 1, 3, 4]),
-    qp.DoubleExcitation(np.array(0.0), wires=[0, 1, 4, 5]),
-    qp.SingleExcitation(np.array(0.0), wires=[0, 2]),
-    qp.SingleExcitation(np.array(0.0), wires=[0, 4]),
-    qp.SingleExcitation(np.array(0.0), wires=[1, 3]),
-    qp.SingleExcitation(np.array(0.0), wires=[1, 5]),
-]
-
-
-@pytest.mark.parametrize(
-    "circuit, energy_ref, pool",
-    [
-        (initial_circuit, energy_first_step, pool_exc),
-    ],
-)
-def test_step(circuit, energy_ref, pool):
-    """Test that step function returns the correct cost."""
-    opt = qp.AdaptiveOptimizer()
-    circuit = opt.step(circuit, pool)
-    energy = circuit()
-    assert np.allclose(energy, energy_ref)
-
-
-@pytest.mark.slow
-@pytest.mark.parametrize(
-    "circuit, energy_ref, pool",
-    [
-        (initial_circuit, energy_h3p, pool_exc),
-    ],
-)
-def test_step_and_cost_drain(circuit, energy_ref, pool):
-    """Test that step_and_cost function returns the correct results when drain_pool is True."""
-    opt = qp.AdaptiveOptimizer()
-    for _ in range(4):
-        circuit, energy, _ = opt.step_and_cost(circuit, copy.copy(pool), drain_pool=True)
-
-    tape = qp.workflow.construct_tape(circuit)()
-    selected_excitations = [op.wires for op in tape.operations[1:]]
-
-    assert np.allclose(energy, energy_ref)
-    # assert that the operator pool is drained, no repeated gates in the circuit
-    assert len(set(selected_excitations)) == len(selected_excitations)
-
-
-@pytest.mark.slow
-@pytest.mark.parametrize(
-    "circuit, energy_ref, pool",
-    [
-        (initial_circuit, energy_h3p, pool_exc),
-    ],
-)
-def test_step_and_cost_nodrain(circuit, energy_ref, pool):
-    """Test that step_and_cost function returns the correct results when drain_pool is False."""
-    opt = qp.AdaptiveOptimizer()
-    for _ in range(4):
-        circuit, energy, _ = opt.step_and_cost(circuit, pool, drain_pool=False)
-
-    tape = qp.workflow.construct_tape(circuit)()
-    selected_excitations = [op.wires for op in tape.operations[1:]]
-
-    assert np.allclose(energy, energy_ref, rtol=1e-4)
-    # assert that the operator pool is not drained, there are repeated gates in the circuit
-    assert len(set(selected_excitations)) < len(selected_excitations)
-
-
-@pytest.mark.parametrize("circuit", [initial_circuit])
-def test_largest_gradient(circuit):
-    """Test that step function selects the gate with the largest gradient."""
-
-    opt = qp.AdaptiveOptimizer()
-    circuit = opt.step(circuit, pool_exc)
-    tape = qp.workflow.construct_tape(circuit)()
-    selected_gate = tape.operations[-1]
-
-    #  the reference gate is obtained manually
-    assert selected_gate.name == "DoubleExcitation"
-    assert tape.operations[-1].wires == qp.wires.Wires([0, 1, 4, 5])
 
 
 @pytest.mark.parametrize(
@@ -164,45 +82,90 @@ def test_append_gate(circuit):
     assert isinstance(fn(final_circuit), qp.tape.QuantumScript)
 
 
-@qp.qnode(dev)
-def qubit_rotation_circuit():
-    return qp.expval(qp.PauliZ(0))
+class TestGateSelection:
+    """Test circuit growth with deterministic data at the quantum derivative boundary."""
 
+    @staticmethod
+    def _qnode():
+        @qp.transforms.convert_to_numpy_parameters
+        @qp.qnode(qp.device("default.qubit", wires=2), interface="numpy", diff_method=None)
+        def circuit():
+            qp.RY(0.2, 0)
+            return qp.expval(qp.Z(0))
 
-@pytest.mark.parametrize(
-    "circuit",
-    [qubit_rotation_circuit],
-)
-def test_qubit_rotation(circuit):
-    """Test that step function returns correct results for a qubit rotation circuit."""
+        return circuit
 
-    pool = [qp.RX(np.array([1.0]), wires=0), qp.RZ(np.array([1.0]), wires=0)]
-    opt = qp.AdaptiveOptimizer(param_steps=20)
-    circuit = opt.step(circuit, pool, params_zero=False)
-    expval = circuit()
-    tape = qp.workflow.construct_tape(circuit)()
+    @pytest.mark.parametrize("params_zero", [True, False])
+    @pytest.mark.parametrize(
+        "drain_pool, gradients, selected_index",
+        [(False, [-4.0, -2.0, 0.5], 0), (True, [-2.0, 0.5], 1)],
+    )
+    def test_selection_and_parameter_updates(
+        self, mocker, params_zero, drain_pool, gradients, selected_index
+    ):
+        """Drain by gate name and wires, select by magnitude, and optimize the selected seed."""
+        circuit = self._qnode()
+        original_func = circuit.func
+        pool = [qp.RY(0.4, 0), qp.RY(0.6, 1), qp.RX(0.8, 0)]
+        selected_gate = pool[selected_index]
+        pool_gradient = mocker.Mock(return_value=np.array(gradients))
+        gradient_factory = mocker.patch(
+            "pennylane.optimize.adaptive.grad", return_value=pool_gradient
+        )
+        parameter_gradient = mocker.Mock(
+            side_effect=[np.array([0.5]), np.array([-0.25])], forward=None
+        )
+        mocker.patch(
+            "pennylane.optimize.gradient_descent.get_gradient", return_value=parameter_gradient
+        )
+        opt = qp.AdaptiveOptimizer(param_steps=2, stepsize=0.2)
 
-    #  rotation around X with np.pi gives expval(Z) = -1
-    assert np.allclose(expval, -1)
-    qp.assert_equal(tape.operations[-1], qp.RX(np.array([np.pi]), wires=0))
+        grown, cost, largest_gradient = opt.step_and_cost(
+            circuit, pool, drain_pool=drain_pool, params_zero=params_zero
+        )
 
+        gradient_factory.assert_called_once_with(grown)
+        pool_gradient.assert_called_once()
+        candidates = pool[1:] if drain_pool else pool
+        assert pool_gradient.call_args.kwargs["gates"] == candidates
+        assert pool_gradient.call_args.kwargs["initial_circuit"] is original_func
+        assert np.allclose(
+            pool_gradient.call_args.args[0], [gate.parameters[0] for gate in candidates]
+        )
+        seed = 0.0 if params_zero else selected_gate.parameters[0]
+        assert parameter_gradient.call_count == 2
+        assert np.allclose(parameter_gradient.call_args_list[0].args[0], [seed])
+        assert np.allclose(parameter_gradient.call_args_list[1].args[0], [seed - 0.1])
+        for call in parameter_gradient.call_args_list:
+            assert call.kwargs["gates"] == [selected_gate]
+            assert call.kwargs["initial_circuit"] is original_func
 
-@pytest.mark.parametrize(
-    "interface, diff_method",
-    [
-        ("autograd", "parameter-shift"),
-    ],
-)
-def test_circuit_args(interface, diff_method):
-    """Test that step_and_cost function uses the correct arguments of the initial circuit."""
+        tape = qp.workflow.construct_tape(grown)()
+        qp.assert_equal(tape.operations[0], qp.RY(0.2, 0))
+        qp.assert_equal(tape.operations[-1], type(selected_gate)(seed - 0.05, selected_gate.wires))
+        assert np.allclose(cost, np.cos(0.2))
+        assert largest_gradient == (2.0 if drain_pool else 4.0)
+        assert grown is not circuit
+        assert grown.device is circuit.device
+        assert grown.interface == circuit.interface == "numpy"
+        assert grown.diff_method is circuit.diff_method is None
+        assert circuit.func is original_func
+        assert len(qp.workflow.construct_tape(circuit)().operations) == 1
+        assert [gate.parameters[0] for gate in pool] == [0.4, 0.6, 0.8]
 
-    @qp.qnode(dev, interface=interface, diff_method=diff_method)
-    def circuit():
-        qp.BasisState(np.array([1, 1, 0, 0]), wires=range(4))
-        return qp.expval(qp.PauliZ(0))
+    @pytest.mark.parametrize("params_zero", [True, False])
+    def test_step_returns_grown_qnode(self, mocker, params_zero):
+        """The step wrapper preserves the requested parameter initialization."""
+        circuit = self._qnode()
+        pool = [qp.RX(0.7, 0)]
+        mocker.patch(
+            "pennylane.optimize.adaptive.grad",
+            return_value=mocker.Mock(return_value=np.array([0.5])),
+        )
+        opt = qp.AdaptiveOptimizer(param_steps=0)
 
-    opt = qp.AdaptiveOptimizer()
-    circuit, _, _ = opt.step_and_cost(circuit, pool_exc)
+        grown = opt.step(circuit, pool, params_zero=params_zero)
 
-    assert circuit.interface == interface
-    assert circuit.diff_method == diff_method
+        tape = qp.workflow.construct_tape(grown)()
+        qp.assert_equal(tape.operations[-1], qp.RX(0.0 if params_zero else 0.7, 0))
+        assert np.allclose(grown(), np.cos(0.2) * np.cos(0.0 if params_zero else 0.7))

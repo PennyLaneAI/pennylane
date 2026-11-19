@@ -75,6 +75,36 @@ def test_error_if_not_legacy_device():
         LegacyDeviceFacade(target)
 
 
+@pytest.mark.parametrize("interface", ["numpy", None])
+@pytest.mark.parametrize("requires_grad", [True, False])
+def test_numpy_forward_with_legacy_parameters(interface, requires_grad):
+    """Legacy capability probing permits explicit NumPy forward execution."""
+    dev = LegacyDeviceFacade(DefaultQubitLegacy(wires=1))
+
+    @qp.qnode(dev, interface=interface)
+    def circuit(angle):
+        qp.RX(angle, 0)
+        return qp.expval(qp.Z(0))
+
+    angle = qp.numpy.array(0.4, requires_grad=requires_grad)
+    assert circuit.diff_method == "best"
+    assert qp.math.allclose(circuit(angle), np.cos(0.4))
+
+
+@pytest.mark.parametrize("requires_grad", [True, False])
+def test_legacy_parameters_still_reject_automatic_interface(requires_grad):
+    """The capability probe does not restore automatic Autograd execution."""
+    dev = LegacyDeviceFacade(DefaultQubitLegacy(wires=1))
+
+    @qp.qnode(dev)
+    def circuit(angle):
+        qp.RX(angle, 0)
+        return qp.expval(qp.Z(0))
+
+    with pytest.raises(ValueError, match="'autograd' is not a valid Interface"):
+        circuit(qp.numpy.array(0.4, requires_grad=requires_grad))
+
+
 def test_copy():
     """Test that copy works correctly"""
     dev = LegacyDeviceFacade(DefaultQubitLegacy(wires=1))
@@ -468,14 +498,17 @@ class TestGradientSupport:
         assert processed_config.use_device_gradient is True
         assert processed_config.grad_on_execution is True
 
+    @pytest.mark.torch
     def test_no_backprop_with_sparse_hamiltonian(self):
         """Test that backpropagation is not supported with SparseHamiltonian."""
 
+        import torch
+
         class BackpropDevice(DummyDevice):
-            _capabilities = {"passthru_interface": "autograd"}
+            _capabilities = {"passthru_interface": "torch"}
 
         H = qp.SparseHamiltonian(qp.X.compute_sparse_matrix(), wires=0)
-        x = qp.numpy.array(0.1)
+        x = torch.tensor(0.1, requires_grad=True)
         tape = qp.tape.QuantumScript([qp.RX(x, 0)], [qp.expval(H)])
         dev = LegacyDeviceFacade(BackpropDevice())
         assert not dev.supports_derivatives(ExecutionConfig(gradient_method="backprop"), tape)
@@ -487,7 +520,7 @@ class TestGradientSupport:
         """Test that if the passthru interface is set, no substitution occurs."""
 
         class BackpropDevice(DummyDevice):
-            _capabilities = {"passthru_interface": "autograd"}
+            _capabilities = {"passthru_interface": "torch"}
 
         dev = LegacyDeviceFacade(BackpropDevice(wires=2, shots=None))
 

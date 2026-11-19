@@ -24,10 +24,7 @@ import jax
 import numpy as np
 import scipy.sparse as sp
 
-from pennylane import capture, math
-from pennylane import numpy as pnp
-from pennylane import ops, pytrees
-from pennylane._grad import jacobian
+from pennylane import capture, math, ops, pytrees
 from pennylane.allocation import Allocate
 from pennylane.core import apply, queuing
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
@@ -517,18 +514,31 @@ def _check_differentiation(op):
     if op.num_params == 0:
         return
 
-    data, struct = pytrees.flatten(op)
+    with jax.experimental.enable_x64():
+        data, struct = pytrees.flatten(op)
+        params = list(data)
+        argnums = []
+        for index, value in enumerate(data):
+            array = math.toarray(value)
+            kind = np.asarray(array).dtype.kind
+            if kind in ("f", "c"):
+                dtype = np.float64 if kind == "f" else np.complex128
+                params[index] = jax.numpy.asarray(array, dtype=dtype)
+                argnums.append(index)
+        if not argnums:
+            return
 
-    def circuit(*args):
-        apply(pytrees.unflatten(args, struct))
-        return probs(wires=op.wires)
+        def circuit(*args):
+            apply(pytrees.unflatten(args, struct))
+            return probs(wires=op.wires)
 
-    qnode_ref = QNode(circuit, device("default.qubit"), diff_method="backprop")
-    qnode_ps = QNode(circuit, device("default.qubit"), diff_method="parameter-shift")
+        qnode_ref = QNode(circuit, device("default.qubit"), interface="jax", diff_method="backprop")
+        qnode_ps = QNode(
+            circuit, device("default.qubit"), interface="jax", diff_method="parameter-shift"
+        )
 
-    params = [x if isinstance(x, int) else pnp.array(x) for x in data]
-    ps = jacobian(qnode_ps)(*params)
-    expected_bp = jacobian(qnode_ref)(*params)
+        ps = jax.jacobian(qnode_ps, argnums=tuple(argnums))(*params)
+        expected_bp = jax.jacobian(qnode_ref, argnums=tuple(argnums))(*params)
 
     error_msg = (
         "Parameter-shift does not produce the same Jacobian as with backpropagation. "
@@ -536,11 +546,8 @@ def _check_differentiation(op):
         "of backpropagation, in which case, this test can be skipped for this operator."
     )
 
-    if isinstance(ps, tuple):
-        for actual, expected in zip(ps, expected_bp, strict=True):
-            assert math.allclose(actual, expected), error_msg
-    else:
-        assert math.allclose(ps, expected_bp), error_msg
+    for actual, expected in zip(ps, expected_bp, strict=True):
+        assert math.allclose(actual, expected), error_msg
 
 
 def _check_wires(op, skip_wire_mapping):
@@ -661,7 +668,7 @@ def assert_valid(  # pylint: disable=too-many-arguments
                 self._data = data
                 super().__init__(wires=wires)
 
-        op = MyOp(pnp.array(0.5), wires=0)
+        op = MyOp(np.array(0.5), wires=0)
 
     >>> assert_valid(op)
     Traceback (most recent call last):

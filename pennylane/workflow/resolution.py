@@ -75,6 +75,8 @@ def _resolve_interface(interface: str | Interface | None, tapes: QuantumScriptBa
         try:
             interface = Interface(interface)
         except ValueError:
+            if interface == "autograd":
+                raise
             # If the interface is not recognized, default to numpy, like networkx
             interface = Interface.NUMPY
 
@@ -257,11 +259,11 @@ def _resolve_execution_config(
     # workflow still needs to know if jax-jit is used
     interface = _resolve_interface(execution_config.interface, tapes)
     finite_shots = any(tape.shots for tape in tapes)
-    mcm_interface = (
-        _resolve_interface(Interface.AUTO, tapes)
-        if execution_config.interface == Interface.NUMPY
-        else interface
-    )
+    mcm_interface = interface
+    if interface == Interface.NUMPY:
+        params = [param for tape in tapes for param in tape.get_parameters(trainable_only=False)]
+        if get_interface(*params) == "jax":
+            mcm_interface = _get_jax_interface_name()
     mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
 
     updated_values["interface"] = interface

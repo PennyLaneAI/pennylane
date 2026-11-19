@@ -245,7 +245,9 @@ def sample(
                 qp.RX(angle, wires=0)
                 return qp.sample(qp.PauliX(0))
 
-            angle = qp.numpy.array(0.1)
+            import jax.numpy as jnp
+
+            angle = jnp.array(0.1)
             res = qp.jacobian(circuit)(angle)
 
         Consider using :func:`~pennylane.expval` and a sequence of single shots, like this:
@@ -263,7 +265,7 @@ def sample(
             def cost(angle):
                 return qp.math.hstack(circuit(angle))
 
-            angle = qp.numpy.array(0.1)
+            angle = jnp.array(0.1)
             res = qp.jacobian(cost)(angle)
 
     **Example**

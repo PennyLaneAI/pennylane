@@ -17,6 +17,7 @@
 
 import pickle
 
+import jax.numpy as jnp
 import numpy as np
 import pytest
 
@@ -546,6 +547,7 @@ class TestMatrix:
         assert qp.math.allclose(expected, mat)
         assert qp.math.get_interface(mat) == interface
 
+    @pytest.mark.core
     @pytest.mark.autograd
     def test_matrix_autograd(self):
         """Test the matrix of an Adjoint operator with an autograd parameter."""
@@ -554,7 +556,6 @@ class TestMatrix:
     @pytest.mark.jax
     def test_matrix_jax(self):
         """Test the matrix of an adjoint operator with a jax parameter."""
-        import jax.numpy as jnp
 
         self.check_matrix(jnp.array(1.2345), "jax")
 
@@ -716,13 +717,14 @@ class TestIntegration:
     @pytest.mark.parametrize(
         "diff_method", ("parameter-shift", "finite-diff", "adjoint", "backprop")
     )
+    @pytest.mark.jax
     def test_gradient_adj_rx(self, diff_method):
         @qp.qnode(qp.device("default.qubit", wires=1), diff_method=diff_method)
         def circuit(x):
             Adjoint(qp.RX(x, wires=0))
             return qp.expval(qp.PauliY(0))
 
-        x = np.array(1.2345, requires_grad=True)
+        x = jnp.array(1.2345)
 
         res = circuit(x)
         expected = np.sin(x)
@@ -742,7 +744,7 @@ class TestIntegration:
             Adjoint(qp.RX(x, wires=0))
             return qp.expval(qp.PauliY(0))
 
-        x = qp.numpy.array([1.234, 2.34, 3.456])
+        x = qp.math.asarray([1.234, 2.34, 3.456], like="numpy")
         res = circuit(x)
 
         expected = np.sin(x)
@@ -932,23 +934,6 @@ class TestAdjointConstructorIntegration:
         expected = np.array([0, -1j])
 
         assert np.allclose(res, expected)
-
-    @pytest.mark.autograd
-    @pytest.mark.parametrize("diff_method", ("backprop", "adjoint", "parameter-shift"))
-    def test_gradient_autograd(self, diff_method):
-        """Test gradients through the adjoint transform with autograd."""
-        import autograd
-
-        @qp.qnode(qp.device("default.qubit", wires=1), diff_method=diff_method)
-        def circ(x):
-            adjoint(qp.RX)(x, wires=0)
-            return qp.expval(qp.PauliY(0))
-
-        x = autograd.numpy.array(0.234)
-        expected_res = np.sin(x)
-        expected_grad = np.cos(x)
-        assert qp.math.allclose(circ(x), expected_res)
-        assert qp.math.allclose(autograd.grad(circ)(x), expected_grad)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ("backprop", "adjoint", "parameter-shift"))

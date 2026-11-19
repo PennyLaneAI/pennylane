@@ -26,6 +26,7 @@ import pennylane as qp
 from pennylane import numpy as np
 
 
+@pytest.mark.torch
 def test_partial_evaluation():
     """Test partial evaluation matches individual full evaluations"""
     dev = qp.device("default.qubit", wires=2)
@@ -45,6 +46,9 @@ def test_partial_evaluation():
     # the batched argument to the new partial circuit
     x = np.random.uniform(size=batch_size)
 
+    y = qp.math.asarray(y, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+
     batched_partial_circuit = qp.batch_partial(circuit, y=y)
     res = batched_partial_circuit(x)
 
@@ -53,9 +57,10 @@ def test_partial_evaluation():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y))
 
-    assert np.allclose(res, indiv_res)
+    assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
+@pytest.mark.torch
 def test_partial_evaluation_kwargs():
     """Test partial evaluation matches individual full evaluations
     when the keyword syntax is used to call the partial object"""
@@ -76,6 +81,9 @@ def test_partial_evaluation_kwargs():
     # the batched argument to the new partial circuit
     x = np.random.uniform(size=batch_size)
 
+    y = qp.math.asarray(y, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+
     batched_partial_circuit = qp.batch_partial(circuit, y=y)
     res = batched_partial_circuit(x=x)
 
@@ -84,9 +92,10 @@ def test_partial_evaluation_kwargs():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y))
 
-    assert np.allclose(res, indiv_res)
+    assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
+@pytest.mark.torch
 def test_partial_evaluation_multi_args():
     """Test partial evaluation matches individual full evaluations
     for multiple pre-supplied arguments"""
@@ -109,6 +118,10 @@ def test_partial_evaluation_multi_args():
     # the batched argument to the new partial circuit
     x = np.random.uniform(size=batch_size)
 
+    y = qp.math.asarray(y, like="torch", dtype="float64", requires_grad=True)
+    z = qp.math.asarray(z, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+
     batched_partial_circuit = qp.batch_partial(circuit, y=y, z=z)
     res = batched_partial_circuit(x)
 
@@ -117,9 +130,10 @@ def test_partial_evaluation_multi_args():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y, z))
 
-    assert np.allclose(res, indiv_res)
+    assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
+@pytest.mark.torch
 def test_partial_evaluation_nonnumeric1():
     """Test partial evaluation matches individual full evaluations
     for non-numeric pre-supplied arguments"""
@@ -141,6 +155,9 @@ def test_partial_evaluation_nonnumeric1():
     # the batched argument to the new partial circuit
     x = np.random.uniform(size=batch_size)
 
+    y = qp.math.asarray(y, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+
     batched_partial_circuit = qp.batch_partial(circuit, y=y, measurement=measurement)
     res = batched_partial_circuit(x)
 
@@ -149,9 +166,10 @@ def test_partial_evaluation_nonnumeric1():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y, measurement))
 
-    assert np.allclose(res, indiv_res)
+    assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
+@pytest.mark.torch
 def test_partial_evaluation_nonnumeric2():
     """Test partial evaluation matches individual full evaluations
     for non-numeric pre-supplied arguments"""
@@ -168,10 +186,13 @@ def test_partial_evaluation_nonnumeric2():
 
     # the partial arguments to construct a new circuit with
     y = np.random.uniform(size=2)
-    func = np.cos
+    func = qp.math.cos
 
     # the batched argument to the new partial circuit
     x = np.random.uniform(size=batch_size)
+
+    y = qp.math.asarray(y, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
 
     batched_partial_circuit = qp.batch_partial(circuit, y=y, func=func)
     res = batched_partial_circuit(x)
@@ -181,9 +202,10 @@ def test_partial_evaluation_nonnumeric2():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y, func))
 
-    assert np.allclose(res, indiv_res)
+    assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
+@pytest.mark.torch
 def test_partial_evaluation_nonnumeric3():
     """Test partial evaluation matches individual full evaluations
     for non-numeric pre-supplied arguments"""
@@ -205,6 +227,9 @@ def test_partial_evaluation_nonnumeric3():
     # the batched argument to the new partial circuit
     x = np.random.uniform(size=batch_size)
 
+    y = qp.math.asarray(y, like="torch", dtype="float64", requires_grad=True)
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+
     batched_partial_circuit = qp.batch_partial(circuit, y=y, op=op)
     res = batched_partial_circuit(x)
 
@@ -213,43 +238,7 @@ def test_partial_evaluation_nonnumeric3():
     for x_indiv in x:
         indiv_res.append(circuit(x_indiv, y, op))
 
-    assert np.allclose(res, indiv_res)
-
-
-@pytest.mark.autograd
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"])
-def test_partial_evaluation_autograd(diff_method):
-    """Test gradient of partial evaluation matches gradients of
-    individual full evaluations using autograd"""
-    dev = qp.device("default.qubit", wires=2)
-
-    @qp.qnode(dev, diff_method=diff_method)
-    def circuit(x, y):
-        qp.RX(x, wires=0)
-        qp.RY(y[..., 0], wires=0)
-        qp.RY(y[..., 1], wires=1)
-        return qp.expval(qp.PauliZ(wires=0) @ qp.PauliZ(wires=1))
-
-    batch_size = 4
-
-    # the partial argument to construct a new circuit with
-    y = np.random.uniform(size=2)
-
-    # the batched argument to the new partial circuit
-    x = np.random.uniform(size=batch_size, requires_grad=True)
-
-    batched_partial_circuit = qp.batch_partial(circuit, y=y)
-
-    # we could also sum over the batch dimension and use the regular
-    # gradient instead of the jacobian, but either works
-    grad = np.diagonal(qp.jacobian(batched_partial_circuit)(x))
-
-    # check the results against individually executed circuits
-    indiv_grad = []
-    for x_indiv in x:
-        indiv_grad.append(qp.grad(circuit, argnums=0)(x_indiv, y))
-
-    assert np.allclose(grad, indiv_grad)
+    assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
 @pytest.mark.jax
@@ -337,6 +326,7 @@ def test_partial_evaluation_torch(diff_method):
     assert np.allclose(grad, indiv_grad)
 
 
+@pytest.mark.torch
 def test_lambda_evaluation():
     """Test lambda argument replacement matches individual full evaluations"""
     dev = qp.device("default.qubit", wires=2)
@@ -357,10 +347,14 @@ def test_lambda_evaluation():
     y = np.random.uniform(size=2)
 
     # the second partial argument as a function of the inputs
-    fn = lambda y0: y + y0 * np.ones(2)
+    fn = lambda y0: y + y0 * qp.math.ones_like(y)
 
     # values for the second argument
     y0 = np.random.uniform(size=batch_size)
+
+    x = qp.math.asarray(x, like="torch", dtype="float64", requires_grad=True)
+    y = qp.math.asarray(y, like="torch", dtype="float64", requires_grad=True)
+    y0 = qp.math.asarray(y0, like="torch", dtype="float64", requires_grad=True)
 
     batched_partial_circuit = qp.batch_partial(circuit, x=x, preprocess={"y": fn})
     res = batched_partial_circuit(y0)
@@ -368,53 +362,9 @@ def test_lambda_evaluation():
     # check the results against individually executed circuits
     indiv_res = []
     for y0_indiv in y0:
-        indiv_res.append(circuit(x, y + y0_indiv * np.ones(2)))
+        indiv_res.append(circuit(x, y + y0_indiv * qp.math.ones_like(y)))
 
-    assert np.allclose(res, indiv_res)
-
-
-@pytest.mark.autograd
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"])
-def test_lambda_evaluation_autograd(diff_method):
-    """Test gradient of lambda argument replacement matches
-    gradients of individual full evaluations using autograd"""
-    dev = qp.device("default.qubit", wires=2)
-
-    @qp.qnode(dev, diff_method=diff_method)
-    def circuit(x, y):
-        qp.RX(x, wires=0)
-        qp.RY(y[..., 0], wires=0)
-        qp.RY(y[..., 1], wires=1)
-        return qp.expval(qp.PauliZ(wires=0) @ qp.PauliZ(wires=1))
-
-    batch_size = 4
-
-    # the first partial argument
-    x = np.random.uniform(size=())
-
-    # the base value of the second partial argument
-    y = np.random.uniform(size=2)
-
-    # the second partial argument as a function of the inputs
-    fn = lambda y0: y + y0 * np.ones(2)
-
-    # values for the second argument
-    y0 = np.random.uniform(size=batch_size, requires_grad=True)
-
-    batched_partial_circuit = qp.batch_partial(circuit, x=x, preprocess={"y": fn})
-
-    # we could also sum over the batch dimension and use the regular
-    # gradient instead of the jacobian, but either works
-    grad = qp.math.diagonal(qp.jacobian(batched_partial_circuit)(y0))
-
-    # check the results against individually executed circuits
-    indiv_grad = []
-    for y0_indiv in y0:
-        grad_wrt_second_arg = qp.grad(circuit, argnums=1)(x, y + y0_indiv * np.ones(2))
-        grad_wrt_y0 = qp.math.sum(grad_wrt_second_arg)
-        indiv_grad.append(grad_wrt_y0)
-
-    assert np.allclose(grad, indiv_grad)
+    assert np.allclose(qp.math.unwrap(res), qp.math.unwrap(indiv_res))
 
 
 @pytest.mark.jax
