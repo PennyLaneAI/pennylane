@@ -195,7 +195,7 @@ class TestResolveDiffMethod:
     def test_hadamard_device_wires(self):
         """Test that device wires are added to the gradient keyword args."""
 
-        dev = qp.device("default.qubit", wires=("a", "b"))
+        dev = qp.device("default.qubit", wires=(2, 3))
         initial_config = ExecutionConfig(gradient_method="hadamard")
         processed = _resolve_diff_method(initial_config, dev)
         assert processed.gradient_method == qp.gradients.hadamard_grad

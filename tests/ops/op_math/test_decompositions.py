@@ -52,7 +52,7 @@ def _run_assertions(U, expected_gates, expected_params, obtained_gates):
 
         # Check the wire that the gates act on
         if not isinstance(gate, qp.GlobalPhase):
-            assert gate.wires == Wires("a"), "Incorrect wire"
+            assert gate.wires == Wires(9), "Incorrect wire"
 
         # Check gate parameters
         assert qp.math.allclose(
@@ -62,7 +62,7 @@ def _run_assertions(U, expected_gates, expected_params, obtained_gates):
         ), f"Incorrect gate parameters\n{qp.math.unwrap(gate.parameters)}\n{expected_params[i]}"
 
     obtained_mat = reduce(
-        qp.math.matmul, [op.matrix(wire_order=["a"]) for op in reversed(obtained_gates)]
+        qp.math.matmul, [op.matrix(wire_order=[9]) for op in reversed(obtained_gates)]
     )
 
     if len(obtained_mat.shape) == 2:
@@ -78,12 +78,10 @@ def _run_assertions(U, expected_gates, expected_params, obtained_gates):
 def _test_decomposition(U, rotation_type, expected_gates, expected_params):
     """Tests the unitary decomposition transforms"""
 
-    obtained_gates = one_qubit_decomposition(U, Wires("a"), rotation_type, return_global_phase=True)
+    obtained_gates = one_qubit_decomposition(U, Wires(9), rotation_type, return_global_phase=True)
     _run_assertions(U, expected_gates, expected_params, obtained_gates)
 
-    obtained_gates = one_qubit_decomposition(
-        U, Wires("a"), rotation_type, return_global_phase=False
-    )
+    obtained_gates = one_qubit_decomposition(U, Wires(9), rotation_type, return_global_phase=False)
     _run_assertions(U, expected_gates[:-1], expected_params[:-1], obtained_gates)
 
 
@@ -392,7 +390,7 @@ class TestOneQubitRotDecomposition:
 
         U = qp.Rot(1.2, 1.2, 1.2, wires=0).matrix()
         with pytest.raises(ValueError):
-            one_qubit_decomposition(U, Wires("a"), "nonsense string", return_global_phase=True)
+            one_qubit_decomposition(U, Wires(9), "nonsense string", return_global_phase=True)
 
     @pytest.mark.parametrize("U,expected_gates,expected_params", test_cases_rot)
     def test_one_qubit_decomposition_rot(self, U, expected_gates, expected_params):
@@ -945,7 +943,7 @@ class TestTwoQubitUnitaryDecomposition:
         A, B = qp.math.decomposition.su2su2_to_tensor_products(true_matrix)
         assert check_matrix_equivalence(qp.math.kron(A, B), true_matrix)
 
-    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+    @pytest.mark.parametrize("wires", [[0, 1], [9, 10], [3, 2], [12, 0]])
     @pytest.mark.parametrize("U", samples_3_cnots)
     def test_two_qubit_decomposition_3_cnots(self, U, wires):
         """Test that a two-qubit matrix using 3 CNOTs is correctly decomposed."""
@@ -964,7 +962,7 @@ class TestTwoQubitUnitaryDecomposition:
         # test matrices were copied in here with reduced precision.
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
-    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+    @pytest.mark.parametrize("wires", [[0, 1], [9, 10], [3, 2], [12, 0]])
     @pytest.mark.parametrize("U", samples_2_cnots)
     def test_two_qubit_decomposition_2_cnots(self, U, wires):
         """Test that a two-qubit matrix using 2 CNOTs isolation is correctly decomposed."""
@@ -981,7 +979,7 @@ class TestTwoQubitUnitaryDecomposition:
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
-    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+    @pytest.mark.parametrize("wires", [[0, 1], [9, 10], [3, 2], [12, 0]])
     @pytest.mark.parametrize("U", samples_1_cnot)
     def test_two_qubit_decomposition_1_cnot(self, U, wires):
         """Test that a two-qubit matrix using one CNOT is correctly decomposed."""
@@ -998,7 +996,7 @@ class TestTwoQubitUnitaryDecomposition:
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
-    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+    @pytest.mark.parametrize("wires", [[0, 1], [9, 10], [3, 2], [12, 0]])
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_two_qubit_decomposition_tensor_products(self, U_pair, wires):
         """Test that a two-qubit tensor product matrix is correctly decomposed."""
@@ -1021,7 +1019,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
     """Test the decomposition in the non-autograd interfaces."""
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+    @pytest.mark.parametrize("wires", [[0, 1], [9, 10], [3, 2], [12, 0]])
     @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
     def test_two_qubit_decomposition_torch(self, U, wires):
         """Test that a two-qubit operation in Torch is correctly decomposed."""
@@ -1038,7 +1036,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+    @pytest.mark.parametrize("wires", [[0, 1], [9, 10], [3, 2], [12, 0]])
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_two_qubit_decomposition_tensor_products_torch(self, U_pair, wires):
         """Test that a two-qubit tensor product in Torch is correctly decomposed."""
@@ -1057,7 +1055,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+    @pytest.mark.parametrize("wires", [[0, 1], [9, 10], [3, 2], [12, 0]])
     @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
     def test_two_qubit_decomposition_jax(self, U, wires):
         """Test that a two-qubit operation in JAX is correctly decomposed."""
@@ -1074,7 +1072,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+    @pytest.mark.parametrize("wires", [[0, 1], [9, 10], [3, 2], [12, 0]])
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_two_qubit_decomposition_tensor_products_jax(self, U_pair, wires):
         """Test that a two-qubit tensor product in JAX is correctly decomposed."""
@@ -1093,7 +1091,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+    @pytest.mark.parametrize("wires", [[0, 1], [9, 10], [3, 2], [12, 0]])
     @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
     def test_two_qubit_decomposition_jax_jit(self, U, wires):
         """Test that a two-qubit operation is correctly decomposed with JAX-JIT ."""
@@ -1150,7 +1148,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
             grad_fn(jnp.array(0.5))
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
+    @pytest.mark.parametrize("wires", [[0, 1], [9, 10], [3, 2], [12, 0]])
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_two_qubit_decomposition_tensor_products_jax_jit(self, U_pair, wires):
         """Test that a two-qubit tensor product is correctly decomposed with JAX-JIT."""

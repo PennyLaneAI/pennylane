@@ -76,8 +76,8 @@ class TestFromOpenFermion:
     OPS_WIRES = (
         (
             (openfermion.QubitOperator("X0", 1.2) + openfermion.QubitOperator("Z1", 2.4)),
-            ({0: "a", 1: 2}),
-            qp.ops.LinearCombination([1.2, 2.4], [qp.X("a"), qp.Z(2)]),
+            ({0: 7, 1: 2}),
+            qp.ops.LinearCombination([1.2, 2.4], [qp.X(7), qp.Z(2)]),
         ),
     )
 
@@ -88,10 +88,10 @@ class TestFromOpenFermion:
         qp.assert_equal(converted_pl_op, pl_op)
 
     OPS_FERMI = (
-        ((openfermion.FermionOperator("0^ 1")), ({0: "a", 1: 2})),
+        ((openfermion.FermionOperator("0^ 1")), ({0: 7, 1: 2})),
         (
             (openfermion.FermionOperator("0^ 1") + openfermion.FermionOperator("3^ 4^")),
-            ({0: "a", 3: 2}),
+            ({0: 7, 3: 2}),
         ),
     )
 
@@ -296,9 +296,9 @@ class TestToOpenFermion:
 
     MAPPED_OPS = (
         (
-            (1.2 * qp.X("a") + 2.4 * qp.Z(2)),
+            (1.2 * qp.X(7) + 2.4 * qp.Z(2)),
             (openfermion.QubitOperator("X0", 1.2) + openfermion.QubitOperator("Z1", 2.4)),
-            ({"a": 0, 2: 1}),
+            ({7: 0, 2: 1}),
         ),
     )
 
@@ -335,10 +335,10 @@ class TestToOpenFermion:
             )
 
     OPS_FERMI_WIRE = (
-        ((qp.FermiWord({(0, 0): "+", (1, 1): "-"})), ({0: "a", 1: 2})),
+        ((qp.FermiWord({(0, 0): "+", (1, 1): "-"})), ({0: 7, 1: 2})),
         (
             (qp.FermiSentence({qp.FermiWord({(0, 0): "+", (1, 1): "-"}): 1.2})),
-            ({0: "a", 1: 2}),
+            ({0: 7, 1: 2}),
         ),
     )
 
