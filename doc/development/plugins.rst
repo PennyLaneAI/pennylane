@@ -195,7 +195,7 @@ macOS) by following Catalyst's
 The configuration file is a `TOML file <https://toml.io/en/>`__ that tells the
 compiler what a ``QuantumDevice`` supports. When compiling a program,
 PennyLane2 decomposes operations and transforms instructions into ones the
-device declares in the TOML file, and raises an error for anything that remains
+device declares in the TOML configuration file, and raises an error for anything that remains
 unsupported.
 
 Below is an example configuration file, with inline descriptions of each field.
