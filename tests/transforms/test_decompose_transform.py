@@ -371,11 +371,11 @@ class TestPrivateHelpers:
         def stopping_condition(op):
             return op.has_matrix
 
-        op = NoMatOp("a")
+        op = NoMatOp(11)
         casted_to_list = list(_operator_decomposition_gen(op, stopping_condition))
         assert len(casted_to_list) == 2
-        qp.assert_equal(casted_to_list[0], qp.PauliX("a"))
-        qp.assert_equal(casted_to_list[1], qp.PauliY("a"))
+        qp.assert_equal(casted_to_list[0], qp.PauliX(11))
+        qp.assert_equal(casted_to_list[1], qp.PauliY(11))
 
     def test_operator_decomposition_gen_decomposed_operator_ragged_nesting(self):
         """Test that _operator_decomposition_gen handles a decomposition that requires different depths of decomposition."""
@@ -391,14 +391,14 @@ class TestPrivateHelpers:
             def decomposition(self):
                 return [NoMatOp(self.wires), qp.S(self.wires), qp.adjoint(NoMatOp(self.wires))]
 
-        op = RaggedDecompositionOp("a")
+        op = RaggedDecompositionOp(11)
         final_decomp = list(_operator_decomposition_gen(op, stopping_condition))
         assert len(final_decomp) == 5
-        qp.assert_equal(final_decomp[0], qp.PauliX("a"))
-        qp.assert_equal(final_decomp[1], qp.PauliY("a"))
-        qp.assert_equal(final_decomp[2], qp.S("a"))
-        qp.assert_equal(final_decomp[3], qp.adjoint(qp.PauliY("a")))
-        qp.assert_equal(final_decomp[4], qp.adjoint(qp.PauliX("a")))
+        qp.assert_equal(final_decomp[0], qp.PauliX(11))
+        qp.assert_equal(final_decomp[1], qp.PauliY(11))
+        qp.assert_equal(final_decomp[2], qp.S(11))
+        qp.assert_equal(final_decomp[3], qp.adjoint(qp.PauliY(11)))
+        qp.assert_equal(final_decomp[4], qp.adjoint(qp.PauliX(11)))
 
     def test_operator_decomposition_gen_max_depth_reached(self):
         """Tests whether max depth reached flag gets activated"""
