@@ -17,14 +17,24 @@ This submodule contains the template SelectSwap.
 
 from collections.abc import Sequence
 
+from pennylane import capture, math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import SWAP, ctrl
 from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .qrom import preprocess_qrom_inputs
-from .qrom_load import QROMLoad, _calculate_select_swap_sizes, _select_ops, _swap_ops
+from .qrom_load import (
+    QROMLoad,
+    _calculate_select_swap_sizes,
+    _measure_and_reset,
+    _measure_and_reset_resources,
+    _phase_fixup,
+    _phase_fixup_resources,
+    _select_ops,
+    _swap_ops,
+)
 
 
 class SelectSwap(Operator2):
@@ -53,6 +63,10 @@ class SelectSwap(Operator2):
 
     To unload the data again, apply ``qp.adjoint`` of ``SelectSwap`` with the same wires. This
     requires the garbage state of the work wires to be left untouched in the meantime.
+    Unloading with ``Adjoint(SelectSwap)`` can be decomposed with the measurement-based
+    uncomputation from Appendix C of [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__],
+    which measures the garbage together with the target register instead of undoing the SWAPs.
+    For long bitstrings, this is cheaper than undoing the SWAPs before uncomputing ``QROMLoad``.
 
     .. warning::
 
@@ -123,6 +137,30 @@ class SelectSwap(Operator2):
 
                 :class:`~.QROMLoad` with :math:`\lceil L/k \rceil` bitstrings of length :math:`kn` on :math:`c - j` control wires | :math:`1` | 1
                 :class:`~.SWAP` with 1 control | :math:`n(k - 1)` | 3
+
+            .. decomposition-rule:: _adjoint_select_swap_measurement
+                :image: /_static/decomposition_thumbnails/select_swap_adjoint_measurement.svg
+                :lightbox:
+                :region: adjoint
+                :requires: program capture, as with :func:`qjit(capture=True) <.qjit>`,
+                    and :math:`c \geq 1` control wires
+                :where: the :math:`nk` target and work wires holding the :math:`k` bitstrings
+                    loaded in parallel, with :math:`k` as for ``_select_swap``, are measured and
+                    reset. Then, the :math:`s` least-significant control wires are encoded into a
+                    one-hot register of :math:`m = 2^s` auxiliary wires, taken from the target
+                    and work wires, with :math:`s \leq \min(c, \lfloor \log_2 (n + w) \rfloor)`
+                    chosen to minimize the estimated T-count, and
+                    :math:`L' = k \lceil L/k \rceil`
+
+                :class:`~.QROM` with :math:`\lceil L'/m \rceil` bitstrings of length :math:`m` on :math:`c - s` control wires and :math:`n + w - m` work wires | :math:`1` | 1
+                :func:`PauliMeasure("X") <.pauli_measure>` | :math:`nk` | 4
+                :func:`PauliMeasure("Z") <.pauli_measure>` | :math:`nk` | 4
+                :class:`~.PauliX` (conditional) | :math:`nk` | 4
+                :class:`~.PauliX` | :math:`2` | 2
+                :class:`~.TemporaryAND` | :math:`m - 1` | 3
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`m - 1` | 3
+                :class:`~.CNOT` | :math:`2(m - 1)` | 6
+                :class:`~.Hadamard` | :math:`2m` | 8
 
     """
 
@@ -209,4 +247,73 @@ def _select_swap(bitstrings, control_wires, target_wires, work_wires):
     _swap_ops(control_wires[num_control_wires_select:], swap_wires, target_wires, cswap_work_wires)
 
 
+def _swap_permutations(depth):
+    """For each value ``l`` of the SWAP control wires, the permutation ``perms[l]`` of a column of
+    ``depth`` bitstrings applied by the SWAP network of ``_swap_ops``, which moves bitstring
+    ``perms[l, p]`` of the column into position ``p``. The SWAP layer controlled on bit ``i`` of
+    ``l`` exchanges the first two blocks of ``2**i`` positions."""
+    perms = math.tile(math.arange(depth), (depth, 1))
+    for i in reversed(range(depth.bit_length() - 1)):
+        swapped = (math.arange(depth) >> i) & 1 == 1
+        perms[swapped, : 2 ** (i + 1)] = math.roll(perms[swapped, : 2 ** (i + 1)], 2**i, axis=1)
+    return perms
+
+
+def _adjoint_select_swap_measurement_resources(base):
+    *_, depth = _select_swap_sizes(
+        base.bitstrings, base.control_wires, base.target_wires, base.work_wires
+    )
+    num_targets = len(base.target_wires)
+    num_entries = depth * -(-len(base.bitstrings) // depth)
+    resources = _phase_fixup_resources(
+        num_entries, len(base.control_wires), num_targets + len(base.work_wires)
+    )
+    for op, count in _measure_and_reset_resources(depth * num_targets).items():
+        resources[op] += count
+    return resources
+
+
+@register_condition(lambda base: capture.enabled() and len(base.control_wires) > 0)
+@register_resources(_adjoint_select_swap_measurement_resources, exact=False)
+def _adjoint_select_swap_measurement(base):
+    r"""Uncomputation of SelectSwap with measurements and a phase fixup, following Appendix C of
+    `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__.
+
+    After ``SelectSwap``, the :math:`k` columns of :math:`n` wires made up of the target wires and
+    the first :math:`n(k-1)` work wires hold the :math:`k` bitstrings that were loaded in
+    parallel, permuted by the SWAP network depending on the least-significant address bits. All
+    other work wires are in the :math:`|0\rangle` state.
+
+    These :math:`nk` wires are measured in the :math:`X` basis and reset to :math:`|0\rangle`.
+    With outcomes :math:`m_p` on column :math:`p`, this leaves the phase
+    :math:`(-1)^{\sum_p m_p\cdot b_{\pi_i(p)}}` on each address :math:`i`, where
+    :math:`b_{\pi_i(p)}` is the bitstring that ``SelectSwap`` moved into column :math:`p`.
+    Unlike when inverting the SWAP network first, this phase depends on all address bits, and it
+    is undone with the same phase fixup as in the measurement-based uncomputation of
+    :class:`~.QROMLoad`, with all target and work wires as auxiliary wires.
+    """
+    bitstrings = math.cast(base.bitstrings, int)
+    target_wires, work_wires = base.target_wires, base.work_wires
+    num_bitstrings, num_targets = len(bitstrings), len(target_wires)
+    _, _, num_work_wires_swap, _, depth = _select_swap_sizes(
+        bitstrings, base.control_wires, target_wires, work_wires
+    )
+    num_columns = -(-num_bitstrings // depth)
+
+    outcomes = _measure_and_reset(Wires(target_wires) + Wires(work_wires[:num_work_wires_swap]))
+    outcomes = math.reshape(math.cast(math.stack(outcomes), int), (depth, num_targets))
+
+    # parities[h, q, p] is the parity of bitstring q of column h when it is moved into position p
+    parities = math.dot(bitstrings, math.transpose(outcomes))
+    padding = math.zeros((num_columns * depth - num_bitstrings, depth), dtype=int, like=parities)
+    parities = math.reshape(math.concatenate([parities, padding]), (num_columns, depth, depth))
+    perms = _swap_permutations(depth)
+    fixups = math.sum(parities[:, perms, math.arange(depth)], axis=-1) % 2
+
+    _phase_fixup(
+        math.reshape(fixups, (-1,)), base.control_wires, Wires(target_wires) + Wires(work_wires)
+    )
+
+
 add_decomps(SelectSwap, _select_swap)
+add_decomps("Adjoint(SelectSwap)", _adjoint_select_swap_measurement)
