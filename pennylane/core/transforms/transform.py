@@ -43,7 +43,6 @@ transform_prim.multiple_results = True
 transform_prim.prim_type = "transform"
 
 
-# pylint: disable=too-many-arguments, disable=unused-argument
 @transform_prim.def_impl
 def _transform_prim_impl(*all_args, inner_jaxpr, args_slice, consts_slice, **_):
     args = all_args[slice(*args_slice)]
@@ -375,13 +374,12 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         tensor<f64>
         }
         module @module_circuit {
-            module attributes {transform.with_named_sequence} {
+          module attributes {transform.with_named_sequence} {
             transform.named_sequence @__transform_main(%arg0: !transform.op<"builtin.module">) {
-                %0 = transform.apply_registered_pass "cancel-inverses" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
-                transform.yield
+              %0 = transform.apply_registered_pass "cancel-inverses" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+              transform.yield
             }
-            }
-            func.func public @circui
+            transform.named_sequence @__
 
         Transforms can have both tape-based and ``pass_name``-based definitions. For example, the
         transform below called ``my_transform`` has both definitions. In this case, the MLIR pass
@@ -398,7 +396,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         Note that any transform with only a ``pass_name`` definition *must* occur after any purely tape-based
         transform, as tape transforms occur prior to lowering to MLIR.
 
-        >>> @qp.qjit
+        >>> @qp.qjit(capture=False)
         ... @qp.defer_measurements
         ... @qp.transform(pass_name="cancel-inverses")
         ... @qp.qnode(qp.device('lightning.qubit', wires=4))
@@ -446,9 +444,8 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 # NOTE: Prepend "qnode" as an argument to the docstring
                 # so that it's consistent with tape based transform signatures.
                 @wraps(setup_inputs)
-                def _modified_setup_inputs(
-                    qnode, *args, **kwargs
-                ):  # pylint: disable=unused-argument
+                # pylint: disable-next=unused-argument
+                def _modified_setup_inputs(qnode, *args, **kwargs):
                     return setup_inputs(*args, **kwargs)  # pragma: no cover
 
                 orig_sig = signature(setup_inputs)
@@ -463,8 +460,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
 
         return super().__new__(cls)
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         tape_transform: Callable | None = None,
         pass_name: None | str = None,
@@ -596,7 +592,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         to more explicitly force registration for a given type.
 
         """
-        return generic_apply_transform.register(arg)  # pylint: disable=no-member
+        return generic_apply_transform.register(arg)
 
     def __call__(self, *args, **kwargs):
         if not args and not kwargs:
@@ -628,8 +624,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             )
 
         if self.expand_transform:
-            # pylint: disable=import-outside-toplevel
-            from .compile_pipeline import CompilePipeline
+            from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
 
             return CompilePipeline(self, other)
 
@@ -639,8 +634,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
     def __mul__(self, n):
         """Multiply by an integer to create a compile pipeline with this transform repeated."""
         if self.expand_transform:
-            # pylint: disable=import-outside-toplevel
-            from .compile_pipeline import CompilePipeline
+            from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
 
             return CompilePipeline(self) * n
 
@@ -729,7 +723,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         return qnode
 
 
-class BoundTransform:  # pylint: disable=too-many-instance-attributes
+class BoundTransform:
     """A transform with bound inputs.
 
     Args:
@@ -881,7 +875,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
             self._transform.expand_transform,
             args=self.args,
             kwargs=self.kwargs,
-            use_argnum=self._transform._use_argnum_in_expand,  # pylint:disable=protected-access
+            use_argnum=self._transform._use_argnum_in_expand,  # pylint: disable=protected-access
         )
 
     @property
@@ -929,8 +923,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
             return NotImplemented
 
         # Import here to avoid circular import
-        # pylint: disable=import-outside-toplevel
-        from .compile_pipeline import CompilePipeline
+        from .compile_pipeline import CompilePipeline  # pylint: disable=import-outside-toplevel
 
         if self.is_final_transform and other.is_final_transform:
             raise TransformError(

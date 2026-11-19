@@ -22,8 +22,6 @@ from pennylane.resource._utils import (
     preprocess_level_input,
 )
 
-# pylint: disable=redefined-outer-name
-
 
 @pytest.fixture
 def example_pipeline():
@@ -66,6 +64,7 @@ def test_make_level_name_unique():
         (["top", "user"], [0, 6], False),
     ],
 )
+# pylint: disable-next=redefined-outer-name
 def test_preprocess_levels(level, output, expect_warnings, example_pipeline):
     """Test that _preprocess_level_input works correctly"""
 
@@ -82,7 +81,7 @@ def test_preprocess_levels(level, output, expect_warnings, example_pipeline):
         assert preprocess_level_input(level, example_pipeline) == output
 
 
-def test_preprocess_levels_invalid(example_pipeline):
+def test_preprocess_levels_invalid(example_pipeline):  # pylint: disable=redefined-outer-name
     # Device level is 1 on empty pipeline, so 2 is out of bounds
     with pytest.raises(ValueError, match="out of bounds"):
         preprocess_level_input(2, qp.CompilePipeline())

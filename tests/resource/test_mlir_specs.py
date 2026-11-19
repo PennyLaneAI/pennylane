@@ -13,8 +13,6 @@
 # limitations under the License.
 """Unit tests for the specs transform"""
 
-# pylint: disable=invalid-sequence-index
-
 import pytest
 
 import pennylane as qp

@@ -17,8 +17,6 @@ not depend on any parameters.
 """
 
 from collections.abc import Hashable, Sequence
-
-# pylint: disable=arguments-differ
 from copy import copy
 from typing import Literal
 
@@ -142,6 +140,7 @@ class Snapshot(Operation):
     grad_method = None
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, tag=None, measurement=None, shots="workflow"):
         if measurement is None:
             return cls._primitive.bind(measurement=measurement, tag=tag, shots=shots)

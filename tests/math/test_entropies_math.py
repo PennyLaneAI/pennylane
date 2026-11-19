@@ -14,6 +14,8 @@
 """Unit tests for differentiable quantum entropies."""
 
 # pylint: disable=too-many-arguments
+
+
 import pytest
 
 import pennylane as qp

@@ -15,8 +15,6 @@
 This submodule defines a strategy structure for defining custom plxpr interpreters
 """
 
-# pylint: disable=no-self-use
-
 from collections.abc import Callable, Sequence
 from copy import copy
 from functools import partial, wraps
@@ -426,8 +424,8 @@ class PlxprInterpreter:
         return wrapper
 
 
-# pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.broadcast_in_dim_p)
+# pylint: disable-next=unused-argument
 def _(self, x, *dyn_shape, shape, broadcast_dimensions, sharding):
     """Handle the broadcast_in_dim primitive created by jnp.ones, jnp.zeros, jnp.full
 
@@ -453,8 +451,8 @@ def _(self, x, *dyn_shape, shape, broadcast_dimensions, sharding):
     )
 
 
-# pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.iota_p)
+# pylint: disable-next=unused-argument
 def _iota_primitive(self, *dyn_shape, dimension, dtype, shape, sharding):
     """Handle the iota primitive created by jnp.arange
 
@@ -485,19 +483,18 @@ def handle_adjoint_transform(self, *invals, jaxpr, n_consts):
     )
 
 
-# pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(ctrl_transform_prim)
-def handle_ctrl_transform(
+def handle_ctrl_transform(  # pylint: disable=too-many-arguments
     self,
     *invals,
     n_control,
     jaxpr,
-    work_wires,
     n_consts,
+    n_work_wires,
     work_wire_type="borrowed",
 ):
     """Interpret a ctrl transform primitive."""
-    controls_start = len(invals) - 2 * n_control
+    controls_start = len(invals) - n_work_wires - 2 * n_control
     consts = invals[:n_consts]
     args = invals[n_consts:controls_start]
     jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
@@ -508,14 +505,14 @@ def handle_ctrl_transform(
         *invals[controls_start:],
         n_control=n_control,
         jaxpr=jaxpr.jaxpr,
-        work_wires=work_wires,
+        n_work_wires=n_work_wires,
         work_wire_type=work_wire_type,
         n_consts=len(jaxpr.consts),
     )
 
 
 @PlxprInterpreter.register_primitive(for_loop_prim)
-def handle_for_loop(
+def handle_for_loop(  # pylint: disable=too-many-arguments
     self,
     start,
     stop,
@@ -589,7 +586,7 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice, estima
 
 
 @PlxprInterpreter.register_primitive(while_loop_prim)
-def handle_while_loop(
+def handle_while_loop(  # pylint: disable=too-many-arguments
     self,
     *invals,
     jaxpr_body_fn,
@@ -629,8 +626,8 @@ def handle_while_loop(
     )
 
 
-# pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(qnode_prim)
+# pylint: disable-next=too-many-arguments
 def handle_qnode(self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, n_consts):
     """Handle a qnode primitive."""
     shots, invals = invals[:shots_len], invals[shots_len:]
@@ -739,13 +736,12 @@ def _pjit_primitive(self, *invals, jaxpr, **params):
 
 
 @FlattenedInterpreter.register_primitive(quantum_subroutine_prim)
-def _quantum_subroutine_eval(self, *invals, jaxpr, **params):
+def _quantum_subroutine_eval(self, *invals, jaxpr, **params):  # pylint: disable=unused-argument
     return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
 
-# pylint: disable=unused-argument
 @FlattenedInterpreter.register_primitive(while_loop_prim)
-def flatten_while_loop(
+def flatten_while_loop(  # pylint: disable=too-many-arguments,unused-argument
     self,
     *invals,
     jaxpr_body_fn,
@@ -775,10 +771,14 @@ def flatten_while_loop(
 FlattenedHigherOrderPrimitives[while_loop_prim] = flatten_while_loop
 
 
-# pylint: disable=unused-argument
 @FlattenedInterpreter.register_primitive(cond_prim)
-def flattened_cond(
-    self, *invals, jaxpr_branches, consts_slices, args_slice, estimated_probabilities
+def flattened_cond(  # pylint: disable=unused-argument
+    self,
+    *invals,
+    jaxpr_branches,
+    consts_slices,
+    args_slice,
+    estimated_probabilities,
 ):
     """Handle the cond primitive by a flattened python strategy."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
@@ -803,9 +803,8 @@ def flattened_cond(
 FlattenedHigherOrderPrimitives[cond_prim] = flattened_cond
 
 
-# pylint: disable=unused-argument
 @FlattenedInterpreter.register_primitive(for_loop_prim)
-def flattened_for(
+def flattened_for(  # pylint: disable=too-many-arguments,unused-argument
     self,
     start,
     stop,
