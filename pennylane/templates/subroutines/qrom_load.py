@@ -537,28 +537,28 @@ def _qrom_load_to_qrom(bitstrings, control_wires, target_wires, work_wires):
 
 
 def _adjoint_qrom_load_one_hot_size(num_bitstrings, num_control_wires, num_aux_wires):
-    """Number of least-significant address bits ``n`` that are encoded into a one-hot register of
-    ``k = 2**n`` auxiliary wires for the phase fixup of ``Adjoint(QROMLoad)``.
+    """Number of least-significant address bits ``j`` that are encoded into a one-hot register of
+    ``k = 2**j`` auxiliary wires for the phase fixup of ``Adjoint(QROMLoad)``.
 
-    The fixup ``QROM`` uses unary iteration over the remaining ``num_control_wires - n`` address
+    The fixup ``QROM`` uses unary iteration over the remaining ``num_control_wires - j`` address
     bits with the remaining ``num_aux_wires - k`` auxiliary wires as work wires. Each work wire it
     lacks for a full iteration tree adds a control to every load, which costs far more than a
-    larger one-hot register saves. Therefore, ``n`` first minimizes this shortfall for unary iteration
+    larger one-hot register saves. Therefore, ``j`` first minimizes this shortfall for unary iteration
     and then the T-count, estimated as 4 per ``TemporaryAND`` and 7 per Toffoli in the loads.
     Without shortfall, this approximately minimizes the Toffoli cost ``ceil(L / k) + k`` from
     Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__.
     """
 
-    def cost(n):
-        k = 2**n
+    def cost(j):
+        k = 2**j
         num_columns = -(-num_bitstrings // k)
         num_fixup_work = num_aux_wires - k
-        shortfall = max(0, num_control_wires - n - 1 - num_fixup_work)
+        shortfall = max(0, num_control_wires - j - 1 - num_fixup_work)
         fixup = _qrom_unary_iteration_resources(
-            Bool[num_columns, k], Wire[num_control_wires - n], Wire[k], Wire[num_fixup_work]
+            Bool[num_columns, k], Wire[num_control_wires - j], Wire[k], Wire[num_fixup_work]
         )
         num_elbows = k - 1 + fixup.get(TemporaryAND, 0)
-        return shortfall, 4 * num_elbows + 7 * shortfall * num_columns * k, n
+        return shortfall, 4 * num_elbows + 7 * shortfall * num_columns * k, j
 
     # The cost estimate creates abstract operators, which must not end up in a captured program.
     with capture.pause(), QueuingManager.stop_recording():
@@ -637,7 +637,7 @@ def _phase_fixup(fixups, control_wires, aux_wires):
      It has its independent resource function above to allow for reuse in ``SelectSwap``.
 
     A :class:`~.QROM` of the fixup table over the most-significant address bits targets a one-hot
-    encoding of the :math:`n` least-significant address bits in :math:`k=2^n` auxiliary wires
+    encoding of the :math:`j` least-significant address bits in :math:`k=2^j` auxiliary wires
     that are prepared in the :math:`|\pm\rangle` states (Figure 6 of
     `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__). The one-hot encoding is computed
     with ``TemporaryAND`` gates and uncomputed with their adjoints (Figures 8 to 10). The first
@@ -701,7 +701,7 @@ def _adjoint_qrom_load_measurement(base):
     Measuring the target wires in the :math:`X` basis with outcomes :math:`m` leaves the phase
     :math:`(-1)^{m\cdot b_j}` on each address. This phase is undone with a :class:`~.QROM` of the
     measurement-dependent fixup table over the most-significant address bits, targeting a one-hot
-    encoding of the :math:`n` least-significant address bits in :math:`k=2^n` auxiliary wires
+    encoding of the :math:`j` least-significant address bits in :math:`k=2^j` auxiliary wires
     that are prepared in the :math:`|\pm\rangle` states (Figure 6). The one-hot encoding is
     computed with ``TemporaryAND`` gates and uncomputed with their adjoints (Figures 8 to 10).
     The auxiliary wires are the reset target wires, followed by the work wires, and the remaining

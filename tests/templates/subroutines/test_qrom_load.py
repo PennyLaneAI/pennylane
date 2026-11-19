@@ -618,11 +618,9 @@ class TestAdjointQROMLoadMeasurement:
         assert size == expected
 
     def test_condition(self):
-        """Test that the rule requires program capture and at least one control wire, but no
-        active compiler, which is not active yet when ``qjit`` selects decomposition rules, and
-        no work wires."""
+        """Test that the rule requires program capture and at least one control wire, but no work
+        wires."""
         op = qp.QROMLoad(Bool[4, 2], Wire[2], Wire[2], Wire[1])
-        assert not qp.compiler.active()
         assert not _adjoint_qrom_load_measurement.is_applicable(base=op)
         with qp.capture.toggle_ctx(True):
             assert _adjoint_qrom_load_measurement.is_applicable(base=op)

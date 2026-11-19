@@ -30,7 +30,8 @@ New features since last release
   The promise of zeroed target wires and the permission to leave a garbage state behind lead to 
   reduced quantum resources, so that ``SelectSwap`` is cheaper than ``QROMLoad``, which is cheaper
   than ``QROM``.
-  In addition, ``Adjoint(QROMLoad)`` has a new decomposition based on measurement-based uncomputation from
+  In addition, ``Adjoint(QROMLoad)`` and ``Adjoint(SelectSwap)`` have new decompositions based on 
+  measurement-based uncomputation from
   Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, which reduces its Toffoli 
   cost to roughly :math:`2\sqrt{L}` for :math:`L` bitstrings, given enough work wires.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__

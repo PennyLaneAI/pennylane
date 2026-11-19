@@ -211,10 +211,8 @@ class TestAdjointSelectSwapMeasurement:
         assert _adjoint_select_swap_measurement in qp.list_decomps("Adjoint(SelectSwap)")
 
     def test_condition(self):
-        """Test that the rule requires program capture and at least one control wire, but no
-        active compiler, which is not active yet when ``qjit`` selects decomposition rules."""
+        """Test that the rule requires program capture and at least one control wire."""
         op = qp.SelectSwap(Bool[4, 2], Wire[2], Wire[2], Wire[2])
-        assert not qp.compiler.active()
         assert not _adjoint_select_swap_measurement.is_applicable(base=op)
         with qp.capture.toggle_ctx(True):
             assert _adjoint_select_swap_measurement.is_applicable(base=op)
