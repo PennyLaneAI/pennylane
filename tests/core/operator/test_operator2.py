@@ -70,7 +70,7 @@ class TestOperatorRegistry:
     def test_user_defined_subclass(self):
         """A custom operator is registered without constructing an instance."""
 
-        # pylint: disable=super-init-not-called
+        
         class RegistryCustomOp(Operator2):
             """A user-defined operator with a wire argument."""
 
@@ -86,7 +86,7 @@ class TestOperatorRegistry:
         class RegistryParentOp(Operator2):
             """A user-defined parent operator."""
 
-            # pylint: disable=super-init-not-called
+            
 
             def __init__(self, wires):
                 raise AssertionError("Registration must not instantiate the operator")
@@ -105,7 +105,7 @@ class TestOperatorRegistry:
         class RegistryDuplicateOp(Operator2):
             """The first operator registered under this name."""
 
-            # pylint: disable=super-init-not-called
+            
             def __init__(self, wires):
                 raise AssertionError("Registration must not instantiate the operator")
 
@@ -118,7 +118,7 @@ class TestOperatorRegistry:
             class RegistryDuplicateOp(Operator2):  # pylint: disable=function-redefined
                 """A different operator with the same name."""
 
-                # pylint: disable=super-init-not-called
+                
                 def __init__(self, wires):
                     raise AssertionError("Registration must not instantiate the operator")
 
