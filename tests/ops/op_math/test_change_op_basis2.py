@@ -283,7 +283,7 @@ def test_symbolic_capture(wrapper):
     assert isinstance(tape.operations[0].base, ChangeOpBasis2)
 
 
-class MyOp(qp.RX):  # pylint: disable=too-few-public-methods
+class MyOp(qp.RX):
     """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
@@ -601,6 +601,30 @@ class TestDecomposition:
         """Test the generated adjoint rule with an asymmetric explicit uncompute operator."""
         op = qp.adjoint(ChangeOpBasis2(qp.S(0), qp.T(1), qp.SX(2)))
         assert_decomposable(op)
+
+    def test_adjoint_with_explicit_uncompute_is_inverse(self):
+        """Test that the adjoint inverts an asymmetric explicit uncompute operator."""
+        ops_lst = [qp.S(0), qp.CNOT([0, 1]), qp.SX(0)]
+        op = ChangeOpBasis2(*ops_lst)
+        expected = qp.matrix(qp.tape.QuantumScript(ops_lst), wire_order=[0, 1]).conj().T
+
+        rule = qp.list_decomps(qp.adjoint(op))["_adjoint_change_op_basis_decomp"]
+        decomp = qp.testing.decomp_rule_to_tape(qp.adjoint(op), rule)
+        assert np.allclose(qp.matrix(decomp, wire_order=[0, 1]), expected)
+        assert np.allclose(qp.matrix(op.adjoint(), wire_order=[0, 1]), expected)
+
+    def test_adjoint_decomposition_preserves_change_op_basis(self):
+        """Test that the adjoint rule emits a basis change, so that controlling it later
+        only controls the inverted target operator."""
+        op = qp.adjoint(ChangeOpBasis2(qp.H(0), qp.T(0)))
+        rule = qp.list_decomps(op)["_adjoint_change_op_basis_decomp"]
+        qp.testing.assert_valid_decomp_rule(op, rule)
+
+        [gate] = qp.testing.decomp_rule_to_tape(op, rule).operations
+        assert isinstance(gate, ChangeOpBasis2)
+        qp.assert_equal(gate.compute_op, qp.H(0))
+        qp.assert_equal(gate.target_op, qp.adjoint(qp.T(0)))
+        qp.assert_equal(gate.uncompute_op, qp.adjoint(qp.H(0)))
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_on_tape(self, ops_lst):
