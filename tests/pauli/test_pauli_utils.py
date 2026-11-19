@@ -614,7 +614,7 @@ class TestPauliGroup:
 
     def test_two_qubit_pauli_group(self):
         """Test that the two-qubit Pauli group is constructed correctly."""
-        # With no wire map; ordering is based on construction from binary representation
+        # Ordering follows the binary representation, with wires relabeled by wire_map
         wire_map = {7: 0, 12: 1}
 
         expected_pg_2 = [

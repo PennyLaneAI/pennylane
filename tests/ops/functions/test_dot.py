@@ -202,7 +202,7 @@ class TestDotSum:
         (
             [1.0, 2.0, 3.0],
             [pw3, pw4, ps2],
-        ),  # comparisons for Sum objects with string valued wires
+        ),  # comparisons for Sum objects on wires 6, 7, and 8
     )
 
     @pytest.mark.parametrize("coeff, ops", data_words_and_sentences_pauli_false)
@@ -232,7 +232,7 @@ class TestDotSum:
             [1.0, 2.0, 3.0, 1j],
             [pw3, pw4, ps2, op3],
             qp.sum(qp.s_prod(3.0 * 1 + 1 + 1j, op3), qp.s_prod(3 * 2.0 + 2, op4)),
-        ),  # string valued wires
+        ),  # wires 6, 7, and 8
     )
 
     @pytest.mark.parametrize("coeff, ops, res", data_op_words_and_sentences_pauli_false)

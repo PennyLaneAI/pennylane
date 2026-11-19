@@ -497,7 +497,7 @@ pw3 = PauliWord({6: "Y", 7: "Z"})
 op_pairs = (
     (pw1, qp.prod(qp.PauliX(0), qp.PauliZ(1))),
     (pw2, qp.prod(qp.PauliY(0), qp.PauliZ(1))),
-    # (pw3, qp.prod(qp.PauliY("a"), qp.PauliZ("b"))), # uncomment after fix 5041
+    # (pw3, qp.prod(qp.PauliY(6), qp.PauliZ(7))), # uncomment after fix 5041
 )
 
 
@@ -521,7 +521,7 @@ class TestPauliWordPauliSentence:
         """Test that a PauliWord is correctly transformed using qp.matrix"""
         # needs fix https://github.com/PennyLaneAI/pennylane/pull/5041
         # once fixed, uncomment the last line in op_pairs above, i.e. add
-        # (pw3, qp.prod(qp.PauliY("a"), qp.PauliZ("b"))),
+        # (pw3, qp.prod(qp.PauliY(6), qp.PauliZ(7))),
         pw, op = pw3, qp.prod(qp.PauliY(6), qp.PauliZ(7))
         res = qp.matrix(PauliSentence({pw: 0.5}), wire_order=[6, 7])
         true_res = qp.matrix(qp.s_prod(0.5, op))
