@@ -124,6 +124,8 @@ compilation pipelines with :class:`~.CompilePipeline`.
 For more details on :class:`~.CompilePipeline` and available compilation passes,
 visit `the compilation documentation <../code/qp_transforms.html#transforms-for-circuit-compilation>`_.
 
+.. _circuit_decomp:
+
 Circuit decomposition
 ---------------------
 
