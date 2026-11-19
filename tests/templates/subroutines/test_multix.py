@@ -605,33 +605,37 @@ class TestControlledMultiXLatticeSurgeryPPM:
         assert names.count("PauliMeasure") == 3 * num_work_wires
         assert names.count("CNOT") == 2 * (1 - num_work_wires)
 
-    @pytest.mark.catalyst
     @pytest.mark.parametrize("control_value", [0, 1])
     @pytest.mark.parametrize("bitstring", [[0], [1], [0, 0, 0], [1, 0, 1], [1, 1, 1]])
     @pytest.mark.parametrize("outcomes", list(product([0, 1], repeat=3)))
     def test_all_measurement_branches(self, bitstring, control_value, outcomes, mocker):
-        """Every measurement branch implements controlled MultiX, including its phase."""
-        pytest.importorskip("catalyst")
+        """Every branch has the correct map, phase, probability, and final auxiliary state."""
         num_wires = len(bitstring) + 1
         op = qp.ctrl(qp.MultiX(bitstring, wires=range(1, num_wires)), 0, [control_value])
         rule = qp.list_decomps(op)["_controlled_multix_lattice_surgery_ppm"]
         outcomes = iter(outcomes)
+
+        # Catalyst does not preserve pauli_measure's postselect argument under capture.
+        def measure_branch(word, wires):
+            outcome = next(outcomes)
+            with qp.QueuingManager.stop_recording():
+                observable = qp.matrix(qp.pauli.string_to_pauli_word(word))
+            projector = (qp.math.eye(len(observable)) + (-1) ** outcome * observable) / 2
+            qp.Hermitian(projector, wires=wires)
+            return outcome
+
         mocker.patch(
             "pennylane.templates.subroutines.multix.pauli_measure",
-            new=lambda word, wires: qp.pauli_measure(word, wires, postselect=next(outcomes)),
+            new=measure_branch,
         )
+        tape = qp.tape.make_qscript(rule)(**op.arguments)
+        (tape,), _ = qp.transforms.resolve_dynamic_wires(tape, zeroed=[num_wires])
 
-        @qp.qjit(capture=True)
-        @qp.qnode(qp.device("lightning.qubit", wires=2 * num_wires + 1))
-        def circuit():
-            for wire in range(num_wires):
-                qp.Hadamard(wire)
-                qp.CNOT([wire, wire + num_wires])
-            rule(**op.arguments)
-            return qp.state()
-
-        expected = np.kron(op.matrix().ravel() / np.sqrt(2**num_wires), [1, 0])
-        assert np.allclose(circuit(), expected)
+        # Select every data input with the auxiliary initially in |0>.
+        actual = qp.matrix(tape, wire_order=range(num_wires + 1))[:, ::2]
+        # Each branch has probability 1/8 and leaves the auxiliary in |+>.
+        expected = qp.math.kron(op.matrix(), qp.math.array([[1], [1]]) / 4)
+        assert qp.math.allclose(actual, expected)
 
     @pytest.mark.catalyst
     def test_qjit_runtime_bitstring_and_control_value(self, seed):
