@@ -493,8 +493,7 @@ jobs:
       - default-dependency-versions
       - warnings-as-errors-setup
     strategy:
-      # Temporary: collect all graph-decomposition migration failures.
-      fail-fast: false
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).catalyst-tests
