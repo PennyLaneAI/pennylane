@@ -12,7 +12,7 @@
 # limitations under the License.
 """Basic unit tests for ``Operator2``."""
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access, too-few-public-methods
 
 
 # TODO: [sc-120817] Add interface tests
