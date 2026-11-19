@@ -19,7 +19,7 @@ import pytest
 import pennylane as qp
 from pennylane.templates.subroutines.alias_sampling import _build_alias_tables
 from pennylane.templates.subroutines.alias_sampling_thc import _build_thc_pairs, _lcu_signs
-from pennylane.templates.subroutines.qubitization_thc import _THCPrepare, _THCSelect
+from pennylane.templates.subroutines.qubitization_thc import _THCPrepare
 from pennylane.testing import assert_valid
 
 
@@ -178,7 +178,10 @@ class TestQubitizationTHC:
         sandwich = tape.operations[0]
         assert isinstance(sandwich, qp.ops.ChangeOpBasis2)
         assert sandwich.compute_op.__class__ is _THCPrepare
-        assert sandwich.target_op.__class__ is _THCSelect
+        assert isinstance(sandwich.target_op, qp.ops.Prod2)
+        selection, sign = sandwich.target_op.operands
+        assert isinstance(selection, qp.SelectTHC)
+        assert isinstance(sign, qp.Z)
         for operand in (sandwich.compute_op, sandwich.target_op):
             assert_valid(operand, skip_differentiation=True)
 

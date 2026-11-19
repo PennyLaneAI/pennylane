@@ -59,7 +59,7 @@ from pennylane.templates.subroutines.arithmetic.out_adder import _OutAdderTarget
 from pennylane.templates.subroutines.arithmetic.out_multiplier import _OutMultiplierHadamards
 from pennylane.templates.subroutines.arithmetic.phase_adder import _PhaseAdderBasis
 from pennylane.templates.subroutines.arithmetic.temporary_and import _TemporaryANDBasis
-from pennylane.templates.subroutines.qubitization_thc import _THCPrepare, _THCSelect
+from pennylane.templates.subroutines.qubitization_thc import _THCPrepare
 from pennylane.templates.subroutines.select_pauli_rot import (
     _SelectPauliRotYBasis,
     _SelectPauliRotYBasisInverse,
@@ -124,7 +124,6 @@ def _subcircuit_instances():
             ),
             {},
         ),
-        (_THCSelect(qp.X(0), [1]), {}),
         (_SelectTHCBasis((1, (), ()), [0, 1], [2, 3], [4, 5], []), {}),
         (_THCIndexSwaps([0], [1], [2, 3, 4], []), {}),
     ]

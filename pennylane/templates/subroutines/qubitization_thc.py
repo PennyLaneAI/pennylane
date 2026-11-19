@@ -16,7 +16,6 @@
 import numpy as np
 
 from pennylane import capture
-from pennylane.core.apply import apply
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import GlobalPhase, Hadamard, Z, change_op_basis
@@ -519,19 +518,6 @@ def _THCPrepare(
         Hadamard(wire)
 
 
-def _thc_select_resources(selection, **_):
-    """Return the signed THC selection resources."""
-    return {selection: 1, Z: 1}
-
-
-@subcircuit(hybrid_argnames=("selection",), wire_argnames=("sign_wire",))
-@register_resources(_thc_select_resources)
-def _THCSelect(selection: Operator2, sign_wire: WiresLike):
-    """Apply the coefficient sign and THC selection oracle."""
-    Z(sign_wire)
-    apply(selection)
-
-
 def _prepare_select(  # pylint: disable=too-many-arguments
     M,
     N,
@@ -563,26 +549,23 @@ def _prepare_select(  # pylint: disable=too-many-arguments
     # PREPARE and PREPARE^dagger, so it cannot sit inside ``prepare``: the adjoint would
     # square the sign away and the walk would block encode the coefficient *magnitudes*
     # instead.
-    select = _THCSelect(
-        SelectTHC(
-            chi,
-            t_eigenvectors,
-            beth,
-            system_wires,
-            list(index_wires),
-            [
-                registers["success_flag"],
-                registers["edge_flag"],
-                registers["swap_flag"],
-                spin_wires[0],
-                spin_wires[1],
-            ],
-            gradient_wires,
-            work_wires,
-            num_batches=num_batches,
-        ),
-        sign_wire,
-    )
+    select = SelectTHC(
+        chi,
+        t_eigenvectors,
+        beth,
+        system_wires,
+        list(index_wires),
+        [
+            registers["success_flag"],
+            registers["edge_flag"],
+            registers["swap_flag"],
+            spin_wires[0],
+            spin_wires[1],
+        ],
+        gradient_wires,
+        work_wires,
+        num_batches=num_batches,
+    ) @ Z(sign_wire)
 
     return change_op_basis(prepare, select)
 
