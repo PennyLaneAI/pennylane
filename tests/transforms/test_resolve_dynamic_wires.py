@@ -79,10 +79,10 @@ def test_map_measurement_on_dynamic_wires():
     alloc_op = qp.allocation.Allocate.from_num_wires(1, state=AllocateState.ZERO)
     tape = qp.tape.QuantumScript([alloc_op], [qp.probs(wires=alloc_op.wires)])
 
-    [new_tape], fn = qp.transforms.resolve_dynamic_wires(tape, zeroed=("a",))
-    assert fn(("a",)) == "a"
+    [new_tape], fn = qp.transforms.resolve_dynamic_wires(tape, zeroed=(4,))
+    assert fn((4,)) == 4
 
-    expected = qp.tape.QuantumScript([], [qp.probs(wires="a")])
+    expected = qp.tape.QuantumScript([], [qp.probs(wires=4)])
     qp.assert_equal(new_tape, expected)
 
 
@@ -106,10 +106,10 @@ class TestFirstExtraction:
             [alloc_op, qp.X(alloc_op.wires), qp.allocation.Deallocate(alloc_op.wires)]
         )
 
-        [new_tape], _ = qp.transforms.resolve_dynamic_wires(tape, zeroed=("a",), any_state=("b",))
+        [new_tape], _ = qp.transforms.resolve_dynamic_wires(tape, zeroed=(4,), any_state=(6,))
 
         assert len(new_tape.operations) == 1
-        qp.assert_equal(new_tape[0], qp.X("a"))
+        qp.assert_equal(new_tape[0], qp.X(4))
 
     def test_use_any_state_as_any_state(self):
         """Test that an any_state wire is used when one is requested and available."""
@@ -119,10 +119,10 @@ class TestFirstExtraction:
             [alloc_op, qp.X(alloc_op.wires), qp.allocation.Deallocate(alloc_op.wires)]
         )
 
-        [new_tape], _ = qp.transforms.resolve_dynamic_wires(tape, zeroed=("a",), any_state=("b",))
+        [new_tape], _ = qp.transforms.resolve_dynamic_wires(tape, zeroed=(4,), any_state=(6,))
 
         assert len(new_tape.operations) == 1
-        qp.assert_equal(new_tape[0], qp.X("b"))
+        qp.assert_equal(new_tape[0], qp.X(6))
 
     def test_use_zeroed_if_no_any_state_available(self):
         """Test that a zeroed wire is provided if no any_state wire is available"""
@@ -132,10 +132,10 @@ class TestFirstExtraction:
             [alloc_op, qp.X(alloc_op.wires), qp.allocation.Deallocate(alloc_op.wires)]
         )
 
-        [new_tape], _ = qp.transforms.resolve_dynamic_wires(tape, zeroed=("a",))
+        [new_tape], _ = qp.transforms.resolve_dynamic_wires(tape, zeroed=(4,))
 
         assert len(new_tape.operations) == 1
-        qp.assert_equal(new_tape[0], qp.X("a"))
+        qp.assert_equal(new_tape[0], qp.X(4))
 
     def test_reset_any_state_if_no_zeroed_available(self):
         """Test that an any_state wire is reset and provided if no zeroed wire is available."""
@@ -145,11 +145,11 @@ class TestFirstExtraction:
             [alloc_op, qp.X(alloc_op.wires), qp.allocation.Deallocate(alloc_op.wires)]
         )
 
-        [new_tape], _ = qp.transforms.resolve_dynamic_wires(tape, any_state=("a",))
+        [new_tape], _ = qp.transforms.resolve_dynamic_wires(tape, any_state=(4,))
 
         assert len(new_tape) == 2
         assert isinstance(new_tape[0], qp.ops.MidMeasure)
-        assert new_tape[0].wires == qp.wires.Wires(("a",))
+        assert new_tape[0].wires == qp.wires.Wires((4,))
         assert new_tape[0].reset
 
     def test_no_reset_if_forbidden(self):
@@ -178,9 +178,9 @@ class TestReuse:
             [alloc1, qp.X(alloc1.wires), dealloc1, alloc2, qp.Y(alloc2.wires), dealloc2]
         )
 
-        [new_tape], _ = qp.transforms.resolve_dynamic_wires(tape, zeroed=("a",))
+        [new_tape], _ = qp.transforms.resolve_dynamic_wires(tape, zeroed=(4,))
 
-        expected = qp.tape.QuantumScript([qp.X("a"), qp.Y("a")])
+        expected = qp.tape.QuantumScript([qp.X(4), qp.Y(4)])
 
         qp.assert_equal(new_tape, expected)
 
@@ -196,9 +196,9 @@ class TestReuse:
             [alloc1, qp.X(alloc1.wires), dealloc1, alloc2, qp.Y(alloc2.wires), dealloc2]
         )
 
-        [new_tape], _ = qp.transforms.resolve_dynamic_wires(tape, zeroed=("a",))
+        [new_tape], _ = qp.transforms.resolve_dynamic_wires(tape, zeroed=(4,))
 
-        expected = qp.tape.QuantumScript([qp.X("a"), qp.Y("a")])
+        expected = qp.tape.QuantumScript([qp.X(4), qp.Y(4)])
 
         qp.assert_equal(new_tape, expected)
 
@@ -214,14 +214,14 @@ class TestReuse:
             [alloc1, qp.X(alloc1.wires), dealloc1, alloc2, qp.Y(alloc2.wires), dealloc2]
         )
 
-        [new_tape], _ = qp.transforms.resolve_dynamic_wires(tape, zeroed=("a",))
+        [new_tape], _ = qp.transforms.resolve_dynamic_wires(tape, zeroed=(4,))
 
         assert len(new_tape) == 3
-        qp.assert_equal(new_tape[0], qp.X("a"))
-        qp.assert_equal(new_tape[2], qp.Y("a"))
+        qp.assert_equal(new_tape[0], qp.X(4))
+        qp.assert_equal(new_tape[2], qp.Y(4))
 
         assert isinstance(new_tape[1], qp.ops.MidMeasure)
-        assert new_tape[1].wires == qp.wires.Wires(("a",))
+        assert new_tape[1].wires == qp.wires.Wires((4,))
         assert new_tape[1].reset
 
     def test_error_if_no_zeroed_wires_left_no_reset(self):
@@ -237,7 +237,7 @@ class TestReuse:
         )
 
         with pytest.raises(qp.exceptions.AllocationError, match="no wires left to allocate."):
-            qp.transforms.resolve_dynamic_wires(tape, zeroed=("a",), allow_resets=False)
+            qp.transforms.resolve_dynamic_wires(tape, zeroed=(4,), allow_resets=False)
 
     def test_no_resets_min_int(self):
         """Test that if a min_int is specified along with allow_resets=False, then fresh wires keep getting added."""
