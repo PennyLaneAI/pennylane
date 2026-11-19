@@ -19,10 +19,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.ops.op_math.composite2 import CompositeOp2
-from pennylane.templates.subroutines.select_pauli_rot import (
-    _SelectPauliRotYBasis,
-    _SelectPauliRotYBasisInverse,
-)
+from pennylane.templates.subroutines.select_pauli_rot import _SelectPauliRotYBasis
 from pennylane.transforms.decompositions.crz_phase_gradient import _CRZPhaseGradientCompute
 from pennylane.transforms.decompositions.select_pauli_rot_phase_gradient import (
     _SelectPauliRotPhaseGradientCompute,
@@ -42,7 +39,6 @@ def leaf_ops(ops):
             _CRZPhaseGradientCompute,
             _SelectPauliRotPhaseGradientCompute,
             _SelectPauliRotYBasis,
-            _SelectPauliRotYBasisInverse,
         ):
             with qp.capture.pause():
                 decomposition = op.decomposition()

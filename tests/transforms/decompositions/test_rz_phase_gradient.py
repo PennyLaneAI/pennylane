@@ -158,7 +158,9 @@ def test_phase_gradient_capture_reuses_dynamic_inputs(rotation, seed):
         elif rotation in ("X", "Y", "Z"):
             if rotation == "Y":
                 assert basis_change.compute_op.name == "_SelectPauliRotYBasis"
-                assert basis_change.uncompute_op.name == "_SelectPauliRotYBasisInverse"
+                assert basis_change.uncompute_op.name == "_SelectPauliRotYBasis"
+                assert basis_change.compute_op.arguments["reverse"] is False
+                assert basis_change.uncompute_op.arguments["reverse"] is True
             if rotation in ("X", "Y"):
                 basis_change = basis_change.target_op
             assert basis_change.compute_op.name == "_SelectPauliRotPhaseGradientCompute"

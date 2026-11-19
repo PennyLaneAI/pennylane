@@ -25,7 +25,6 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.templates.subroutines.select_pauli_rot import (
     _SelectPauliRotYBasis,
-    _SelectPauliRotYBasisInverse,
     _UniformRZ,
     decompose_select_pauli_rot,
 )
@@ -218,14 +217,12 @@ class TestSelectPauliRot:
             for op1, op2 in zip(decomp_1, decomp_2):
                 decomposition.extend(
                     op1.decomposition()
-                    if type(op1)
-                    in (_UniformRZ, _SelectPauliRotYBasis, _SelectPauliRotYBasisInverse)
+                    if type(op1) in (_UniformRZ, _SelectPauliRotYBasis)
                     else [op1]
                 )
                 decomposition_2.extend(
                     op2.decomposition()
-                    if type(op2)
-                    in (_UniformRZ, _SelectPauliRotYBasis, _SelectPauliRotYBasisInverse)
+                    if type(op2) in (_UniformRZ, _SelectPauliRotYBasis)
                     else [op2]
                 )
 
@@ -293,7 +290,9 @@ class TestSelectPauliRot:
             assert_decomposable(basis_change.target_op)
             if axis == "Y":
                 assert basis_change.compute_op.name == "_SelectPauliRotYBasis"
-                assert basis_change.uncompute_op.name == "_SelectPauliRotYBasisInverse"
+                assert basis_change.uncompute_op.name == "_SelectPauliRotYBasis"
+                assert basis_change.compute_op.arguments["reverse"] is False
+                assert basis_change.uncompute_op.arguments["reverse"] is True
                 assert_decomposable(basis_change.compute_op)
                 assert_decomposable(basis_change.uncompute_op)
             with qp.capture.pause():

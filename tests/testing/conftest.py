@@ -62,7 +62,6 @@ from pennylane.templates.subroutines.arithmetic.temporary_and import _TemporaryA
 from pennylane.templates.subroutines.qubitization_thc import _THCPrepare
 from pennylane.templates.subroutines.select_pauli_rot import (
     _SelectPauliRotYBasis,
-    _SelectPauliRotYBasisInverse,
     _UniformRZ,
 )
 from pennylane.templates.subroutines.select_thc import _SelectTHCBasis, _THCIndexSwaps
@@ -102,8 +101,8 @@ def _subcircuit_instances():
         (_TemporaryANDBasis([0, 1]), {}),
         # The legacy differentiator cannot evaluate this helper's captured loop.
         (_UniformRZ(np.array([0.2, 0.3]), [0], [1]), {"skip_differentiation": True}),
-        (_SelectPauliRotYBasis([0]), {}),
-        (_SelectPauliRotYBasisInverse([0]), {}),
+        (_SelectPauliRotYBasis([0], reverse=False), {}),
+        (_SelectPauliRotYBasis([0], reverse=True), {}),
         # Boolean angle tables cannot be replaced by arbitrary floating-point parameters.
         (
             _CRZPhaseGradientCompute(jax.numpy.array([True]), [0, 1], [2], [3]),
