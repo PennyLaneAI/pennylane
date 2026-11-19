@@ -18,7 +18,7 @@ This module contains core quantum operations supported by PennyLane -
 such as gates, state preparations and observables.
 """
 
-# Built-in operator modules use this factory during initialization.
+# Import the decorator before the operator modules that use it.
 from .subcircuit import subcircuit
 
 from .channel import *
