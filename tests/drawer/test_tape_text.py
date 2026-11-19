@@ -33,7 +33,7 @@ from pennylane.drawer._add_obj import (
     _add_obj,
     _add_subroutine_mcm_grouping_symbols,
 )
-from pennylane.drawer.tape_text import _Config
+from pennylane.drawer.tape_text import _Config, _initialize_wire_and_bit_totals
 from pennylane.ops.op_math import ControlledOp2
 
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
@@ -83,6 +83,33 @@ def test_error_if_unsupported_object_in_tape():
 
 class TestHelperFunctions:
     """Test helper functions for the tape text."""
+
+    @pytest.mark.parametrize("show_wire_labels", [True, False])
+    @pytest.mark.parametrize("continuation", [True, False])
+    @pytest.mark.parametrize("reuse_line", [True, False])
+    def test_initialize_totals_with_dynamic_wires(self, show_wire_labels, continuation, reuse_line):
+        """Initialize one text row per drawing line, including when dynamic wires share a line."""
+        wire1, wire2 = qp.allocation.DynamicWire(), qp.allocation.DynamicWire()
+        config = _Config(
+            wire_map={0: 0, wire1: 1, wire2: 1 if reuse_line else 2},
+            bit_map={default_mid_measure_1: 0},
+            num_op_layers=4,
+        )
+
+        wire_totals, bit_totals = _initialize_wire_and_bit_totals(
+            config, show_wire_labels, continuation
+        )
+
+        prefix = "··· " if continuation else ""
+        dynamic_rows = 1 if reuse_line else 2
+        if show_wire_labels:
+            expected = ["0: " + prefix] + ["   " + prefix] * dynamic_rows
+            expected_bits = [" " * (3 + len(prefix))]
+        else:
+            expected = [prefix] * (1 + dynamic_rows)
+            expected_bits = [prefix]
+        assert wire_totals == expected
+        assert bit_totals == expected_bits
 
     @pytest.mark.parametrize(
         "op, out",

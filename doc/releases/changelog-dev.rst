@@ -2473,6 +2473,9 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed text drawer row initialization when dynamic wires reuse a drawing line.
+  `(#9587) <https://github.com/PennyLaneAI/pennylane/pull/9587>`__
+
 * Fixed the measurement-based decomposition of :class:`~.QROM` to support dynamic
   bitstrings with ``qjit(capture=True)``, including padding for extra control wires.
   Its inner traversal now uses :func:`~.for_loop` instead of recursion.

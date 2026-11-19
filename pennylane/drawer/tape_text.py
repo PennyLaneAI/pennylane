@@ -103,7 +103,7 @@ def _initialize_wire_and_bit_totals(
     prefix = "··· " if continuation else ""
 
     if show_wire_labels:
-        wire_totals = [" "] * len(config.wire_map)
+        wire_totals = [" "] * config.n_wires
         for wire, line in config.wire_map.items():
             if isinstance(wire, DynamicWire):
                 wire_totals[line] = prefix

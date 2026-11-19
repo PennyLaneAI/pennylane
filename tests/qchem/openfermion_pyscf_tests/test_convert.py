@@ -674,7 +674,8 @@ def test_integration_observable_to_vqe_cost(
 
     @qp.qnode(dev)
     def dummy_cost(params):
-        for phi, w in zip(params, dev.wires, strict=True):
+        # Custom mappings can include unused device wires beyond the parameterized wires.
+        for phi, w in zip(params, dev.wires, strict=False):
             qp.RX(phi, wires=w)
         return qp.expval(vqe_observable)
 
@@ -782,7 +783,8 @@ def test_integration_mol_file_to_vqe_cost(
 
     @qp.qnode(dev)
     def dummy_cost(params):
-        for phi, w in zip(params, dev.wires, strict=True):
+        # Custom mappings can include unused device wires beyond the parameterized wires.
+        for phi, w in zip(params, dev.wires, strict=False):
             qp.RX(phi, wires=w)
         return qp.expval(vqe_hamiltonian)
 
