@@ -38,7 +38,7 @@ from .composite2 import CompositeOp2
 
 
 class ChangeOpBasis2(CompositeOp2):
-    """Composite operator representing a compute-uncompute pattern of version-2 operators.
+    """Composite operator representing a compute-uncompute pattern of ``Operator2``\ s.
 
     Args:
         compute_op (~.Operator2): operator applied before the target
@@ -48,8 +48,6 @@ class ChangeOpBasis2(CompositeOp2):
 
     .. note::
         The factors are stored and iterated in matrix-product order: uncompute, target, compute.
-        Program capture preserves this composite operator, including operands created with
-        :func:`~.subcircuit`.
 
     .. seealso:: :func:`~.change_op_basis`, :class:`~.ops.op_math.ChangeOpBasis`
 

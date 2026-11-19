@@ -1502,11 +1502,12 @@ class TestInspectDecomps:
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 class TestChangeOpBasisResources:
-    """Resource dependencies retain the composites emitted by decomposition rules."""
+    """Test that resource dependencies retain the composites emitted by decomposition rules."""
 
     @pytest.mark.parametrize("kind", ["product", "legacy", "nested", "symbolic", "nested_product"])
     def test_compute_resources_preserves_composite(self, kind):
-        """Keep nested and wrapped basis changes as graph dependencies in both capture modes."""
+        """Tests that nested and wrapped basis changes are kept as graph dependencies
+        in both capture modes."""
         x_rep, y_rep, z_rep, h_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z, qp.H))
         inner = ChangeOpBasis2(x_rep, y_rep, x_rep)
         if kind == "product":

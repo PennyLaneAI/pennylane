@@ -170,7 +170,7 @@ def test_change_op_basis_raises():
 @pytest.mark.parametrize("position", range(3))
 @pytest.mark.parametrize("invalid", ("X", 1, [0]))
 def test_non_operator_capture(position, invalid):
-    """Invalid operands fail before construction of the captured composite."""
+    """Test that invalid operands fail before construction of the captured composite."""
 
     def circuit():
         operands = [qp.X(0), qp.Y(0), qp.X(0)]
@@ -184,7 +184,7 @@ def test_non_operator_capture(position, invalid):
 @pytest.mark.capture
 @pytest.mark.parametrize("position", (0, 1))
 def test_missing_required_operator_capture(position):
-    """Only the uncompute operand may be None."""
+    """Test that only the uncompute operand may be None."""
 
     def circuit():
         operands = [qp.X(0), qp.Y(0)]
@@ -199,7 +199,7 @@ def test_missing_required_operator_capture(position):
 @pytest.mark.parametrize("position", range(3))
 @pytest.mark.parametrize("kind", ("function", "partial", "operator_class"))
 def test_callable_capture(position, kind):
-    """Reject callables in every operand without running their bodies."""
+    """Test that callables in every operand are rejected without running their bodies."""
 
     def quantum_function():
         raise AssertionError("The callable must not be executed.")
@@ -248,7 +248,7 @@ def test_change_op_basis_with_mixed_types():
 )
 @pytest.mark.capture
 def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
-    """Legacy and version-2 operands remain inside one captured basis-change operator."""
+    """Test that legacy and Operator2 remain inside one captured basis-change operator."""
 
     def circuit():
         uncompute = uncompute_op(0) if uncompute_op else None
@@ -270,7 +270,7 @@ def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
 @pytest.mark.capture
 @pytest.mark.parametrize("legacy_position", range(3))
 def test_prebuilt_mixed_operands_can_be_retraced(legacy_position):
-    """Prebuilt operands must not retain operator tracers between captured programs."""
+    """Test that prebuilt operands do not retain operator tracers between captured programs."""
     with qp.capture.pause():
         operands = [qp.RX(0.2, 0), qp.RY(0.4, 1), qp.RX(-0.2, 0)]
         operands[legacy_position] = X1(1)
@@ -517,7 +517,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("ops_lst", ops)
     @pytest.mark.capture
     def test_decomposition_new_capture(self, ops_lst):
-        """Prebuilt operands remain inside the captured basis-change operator."""
+        """Test that prebuilt operands remain inside the captured basis-change operator."""
 
         jaxpr = qp.capture.make_plxpr(lambda: change_op_basis(*ops_lst))()
         tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)

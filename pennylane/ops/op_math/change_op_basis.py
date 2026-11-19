@@ -90,7 +90,7 @@ def change_op_basis(
         compute_op (~.Operator or Callable): operator applied before the target
         target_op (~.Operator or Callable): operator applied in the changed basis
         uncompute_op (~.Operator or Callable or None): Operator applied after the target.
-            ``None`` uses the adjoint of ``compute_op``.
+            If ``None`` (the default), the adjoint of ``compute_op`` is used.
 
     Returns:
         ~ops.op_math.ChangeOpBasis or ~ops.op_math.ChangeOpBasis2: the operator representing the
@@ -209,7 +209,7 @@ def change_op_basis(
                 )
             if not (isinstance(op, Operator) or _is_abstract_operator(op)):
                 raise TypeError(
-                    "The parameters to change_op_basis must be Operator when using program "
+                    "The parameters to change_op_basis must be of type Operator when using program "
                     f"capture, not {type(op)}"
                 )
         compute, target, uncompute = compute_op, target_op, uncompute_op
