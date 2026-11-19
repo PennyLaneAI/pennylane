@@ -49,6 +49,17 @@ class LeftFullAdder(_AdderBlock):
     .. math::
 
         |c, x, y, 0\rangle \mapsto |c, x\oplus c, y\oplus c, \operatorname{maj}(c, x, y)\rangle.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: "LeftFullAdder"
+
+            .. decomposition-rule:: _left_full_adder
+                :image: /_static/decomposition_thumbnails/left_full_adder_decomp.svg
+
+                :class:`~.TemporaryAND` | :math:`1`
+                :class:`~.CNOT` | :math:`3`
     """
 
     arg_specs = {"wires": Wire[4]}
@@ -77,6 +88,17 @@ class RightFullAdder(_AdderBlock):
 
         |c, x\oplus c, y\oplus c, \operatorname{maj}(c, x, y)\rangle
         \mapsto |c, x, x\oplus y\oplus c, 0\rangle.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: "RightFullAdder"
+
+            .. decomposition-rule:: _right_full_adder
+                :image: /_static/decomposition_thumbnails/right_full_adder_decomp.svg
+
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1`
+                :class:`~.CNOT` | :math:`3`
     """
 
     arg_specs = {"wires": Wire[4]}
@@ -104,6 +126,17 @@ class RightHalfAdder(_AdderBlock):
     .. math::
 
         |c, y, c\cdot y\rangle \mapsto |c, y\oplus c, 0\rangle.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: "RightHalfAdder"
+
+            .. decomposition-rule:: _right_half_adder
+                :image: /_static/decomposition_thumbnails/right_half_adder_decomp.svg
+
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1`
+                :class:`~.CNOT` | :math:`1`
     """
 
     arg_specs = {"wires": Wire[3]}
@@ -157,6 +190,20 @@ class CtrlRightFullAdder(_CtrlRightAdderBlock):
     :class:`~.RightFullAdder`.
 
     The ``work_wires`` and ``work_wire_type`` are passed on to the controlled ``CNOT``.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: "CtrlRightFullAdder"
+            :symbols: :math:`c` ``control_wires``
+            :example: :math:`c=1`
+
+            .. decomposition-rule:: _ctrl_right_full_adder
+                :image: /_static/decomposition_thumbnails/ctrl_right_full_adder_decomp.svg
+
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1` | 1
+                :class:`~.CNOT` | :math:`3` | 3
+                :class:`~.CNOT` with :math:`c` controls | :math:`1` | 1
     """
 
     arg_specs = {"control_wires": Wire[-1], "wires": Wire[4], "work_wires": Wire[-1]}
@@ -194,6 +241,19 @@ class CtrlRightHalfAdder(_CtrlRightAdderBlock):
     :class:`~.TemporaryAND`.
 
     The ``work_wires`` and ``work_wire_type`` are passed on to the controlled ``CNOT``.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: "CtrlRightHalfAdder"
+            :symbols: :math:`c` ``control_wires``
+            :example: :math:`c=1`
+
+            .. decomposition-rule:: _ctrl_right_half_adder
+                :image: /_static/decomposition_thumbnails/ctrl_right_half_adder_decomp.svg
+
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1` | 1
+                :class:`~.CNOT` with :math:`c` controls | :math:`1` | 1
     """
 
     arg_specs = {"control_wires": Wire[-1], "wires": Wire[3], "work_wires": Wire[-1]}
