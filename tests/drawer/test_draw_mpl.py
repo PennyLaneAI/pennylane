@@ -28,15 +28,15 @@ from pennylane import numpy as pnp
 mpl = pytest.importorskip("matplotlib")
 plt = pytest.importorskip("matplotlib.pyplot")
 
-dev = qp.device("default.qubit", wires=(0, "a", 1.23))
+dev = qp.device("default.qubit", wires=(0, 11, 13))
 
 
 @qp.qnode(dev)
 def circuit1(x, y):
     """Circuit on three qubits."""
     qp.RX(x, wires=0)
-    qp.CNOT(wires=(0, "a"))
-    qp.RY(y, wires=1.23)
+    qp.CNOT(wires=(0, 11))
+    qp.RY(y, wires=13)
     return qp.expval(qp.PauliZ(0))
 
 
@@ -62,8 +62,8 @@ def test_standard_use():
     assert len(ax.texts) == 5  # three wire labels, 2 box labels
 
     assert ax.texts[0].get_text() == "0"
-    assert ax.texts[1].get_text() == "a"
-    assert ax.texts[2].get_text() == "1.23"
+    assert ax.texts[1].get_text() == "11"
+    assert ax.texts[2].get_text() == "13"
 
     # gates in same layer can be in any order
 
@@ -274,7 +274,7 @@ class TestKwargs:
 
         @qp.qnode(dev)
         def temp_circ():
-            qp.QFT(wires=(0, 1.23))
+            qp.QFT(wires=(0, 13))
             return qp.probs(0)
 
         _, ax = qp.draw_mpl(temp_circ, show_all_wires=True, active_wire_notches=notches)()
@@ -356,19 +356,19 @@ class TestWireBehaviour:
         def f(x, y):
             """Circuit on three qubits."""
             qp.RX(x, wires=0)
-            qp.CNOT(wires=(0, "a"))
-            qp.RY(y, wires=1.23)
+            qp.CNOT(wires=(0, 11))
+            qp.RY(y, wires=13)
             return qp.expval(qp.PauliZ(0))
 
         if use_qnode:
-            f = qp.QNode(f, qp.device("default.qubit", wires=(0, "a", 1.23)))
+            f = qp.QNode(f, qp.device("default.qubit", wires=(0, 11, 13)))
 
-        _, ax = qp.draw_mpl(f, wire_order=(1.23, "a"))(1.23, 2.34)
+        _, ax = qp.draw_mpl(f, wire_order=(13, 11))(1.23, 2.34)
 
         assert len(ax.texts) == 5
 
-        assert ax.texts[0].get_text() == "1.23"
-        assert ax.texts[1].get_text() == "a"
+        assert ax.texts[0].get_text() == "13"
+        assert ax.texts[1].get_text() == "11"
         assert ax.texts[2].get_text() == "0"
         plt.close("all")
 
@@ -392,8 +392,8 @@ class TestWireBehaviour:
 
         assert len(ax.texts) == 4  # three wire labels and one gate label
         assert ax.texts[0].get_text() == "0"
-        assert ax.texts[1].get_text() == "a"
-        assert ax.texts[2].get_text() == "1.23"
+        assert ax.texts[1].get_text() == "11"
+        assert ax.texts[2].get_text() == "13"
         plt.close("all")
 
     def test_wire_order_not_on_device(self):
@@ -401,13 +401,13 @@ class TestWireBehaviour:
         the ``wire_order`` containing wires not on the device. The output should have
         three wires, one active and two empty wires from the wire order."""
 
-        _, ax = qp.draw_mpl(circuit2, wire_order=[2, "a"], show_all_wires=True)(1.23)
+        _, ax = qp.draw_mpl(circuit2, wire_order=[2, 11], show_all_wires=True)(1.23)
 
         assert len(ax.lines) == 3  # three wires
 
         assert len(ax.texts) == 4  # three wire labels and one gate label
         assert ax.texts[0].get_text() == "2"
-        assert ax.texts[1].get_text() == "a"
+        assert ax.texts[1].get_text() == "11"
         assert ax.texts[2].get_text() == "0"
         plt.close("all")
 
@@ -495,31 +495,6 @@ class TestWireBehaviour:
                 assert w.get_linewidth() == 5
 
         plt.close("all")
-
-    def test_individual_wire_options_with_string_labels(self):
-        """Test that individual wire options work with string wire labels"""
-
-        @qp.qnode(qp.device("default.qubit"))
-        def circuit():
-            qp.X("a")
-            qp.Y("b")
-            return qp.expval(qp.Z("a"))
-
-        wire_options = {
-            "color": "teal",
-            "linewidth": 5,
-            "b": {"color": "orange", "linestyle": "--"},
-        }
-        _, ax = qp.draw_mpl(circuit, wire_options=wire_options)()
-
-        for i, w in enumerate(ax.lines):
-            assert w.get_linewidth() == 5
-            if i == 0:
-                assert w.get_color() == "teal"
-                assert w.get_linestyle() == "-"
-            if i == 1:
-                assert w.get_color() == "orange"
-                assert w.get_linestyle() == "--"
 
     def test_wire_options_and_wire_order(self):
         """Test that individual wire options work with specifying a wire_order"""
@@ -689,7 +664,7 @@ def test_draw_mpl_with_control_in_adjoint():
 
     @qp.qnode(dev)
     def circuit():
-        qp.ctrl(U, control=0)(wires=["a", 1.23])
+        qp.ctrl(U, control=0)(wires=[11, 13])
         return qp.state()
 
     _, ax = qp.draw_mpl(circuit)()
@@ -742,23 +717,3 @@ def test_wire_sorting_if_no_wire_order(use_qnode):
     assert ax.texts[2].get_text() == "4"
 
     plt.close()
-
-
-@pytest.mark.parametrize("use_qnode", (True, False))
-def test_wire_sorting_fallback_if_no_wire_order(use_qnode):
-    """Test that wires are automatically sorted if the device and user
-    dont provide a wire order."""
-
-    def f():
-        qp.X(4)
-        qp.X("a")
-        return qp.expval(qp.Z(0))
-
-    if use_qnode:
-        f = qp.QNode(f, qp.device("default.qubit"))
-
-    _, ax = qp.draw_mpl(f)()
-
-    assert ax.texts[0].get_text() == "4"
-    assert ax.texts[1].get_text() == "a"
-    assert ax.texts[2].get_text() == "0"

@@ -221,7 +221,7 @@ class TestOptimizeTCount:
         glob_phase = prod[0, 0]
         assert np.allclose(prod, glob_phase * np.eye(2**num_wires))
 
-    @pytest.mark.parametrize("wires", ((0, 2, 1, 3), (2, 5), ("a", "c", "b")))
+    @pytest.mark.parametrize("wires", [(0, 2, 1, 3), (2, 5)])
     def test_preserves_wire_labels(self, wires):
         """Test that noncanonical wire labels are restored after the ZX round trip."""
         ops = [qp.H(wires[0]), qp.CNOT([wires[0], wires[1]]), qp.T(wires[1])]

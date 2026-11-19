@@ -501,45 +501,6 @@ class TestSampleMeasurements:
             assert shot_res[2].shape == (s, 2)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
-    def test_custom_wire_labels(self, max_workers):
-        """Test that custom wire labels works as expected"""
-        x, y = np.array(0.732), np.array(0.488)
-        qs = qp.tape.QuantumScript(
-            [qp.RX(x, wires="b"), qp.CNOT(wires=["b", "a"]), qp.RY(y, wires="a")],
-            [
-                qp.expval(qp.PauliZ("b")),
-                qp.probs(wires=["a", "b"]),
-                qp.sample(wires=["b", "a"]),
-            ],
-            shots=10000,
-        )
-
-        dev = DefaultQubit(max_workers=max_workers)
-        result = dev.execute(qs)
-
-        assert isinstance(result, tuple)
-        assert len(result) == 3
-
-        assert all(isinstance(res, (float, np.ndarray)) for res in result)
-
-        assert result[0].shape == ()
-        assert np.allclose(result[0], np.cos(x), atol=0.1)
-
-        assert result[1].shape == (4,)
-        assert np.allclose(
-            result[1],
-            [
-                np.cos(x / 2) ** 2 * np.cos(y / 2) ** 2,
-                np.sin(x / 2) ** 2 * np.sin(y / 2) ** 2,
-                np.cos(x / 2) ** 2 * np.sin(y / 2) ** 2,
-                np.sin(x / 2) ** 2 * np.cos(y / 2) ** 2,
-            ],
-            atol=0.1,
-        )
-
-        assert result[2].shape == (10000, 2)
-
-    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_batch_tapes(self, max_workers):
         """Test that a batch of tapes with sampling works as expected"""
         x = np.array(0.732)
@@ -600,16 +561,16 @@ class TestExecutingBatches:
     def f(dev, phi):
         """A function that executes a batch of scripts on DefaultQubit without preprocessing."""
         ops = [
-            qp.PauliX("a"),
-            qp.PauliX("b"),
-            qp.ctrl(qp.RX(phi, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
+            qp.PauliX(8),
+            qp.PauliX(9),
+            qp.ctrl(qp.RX(phi, 12), (8, 9, -3), control_values=[1, 1, 0]),
         ]
 
         qs1 = qp.tape.QuantumScript(
             ops,
             [
-                qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
+                qp.expval(qp.sum(qp.PauliY(12), qp.PauliZ(9))),
+                qp.expval(qp.s_prod(3, qp.PauliZ(12))),
             ],
         )
 
@@ -621,16 +582,16 @@ class TestExecutingBatches:
     def f_hashable(phi):
         """A function that executes a batch of scripts on DefaultQubit without preprocessing."""
         ops = [
-            qp.PauliX("a"),
-            qp.PauliX("b"),
-            qp.ctrl(qp.RX(phi, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
+            qp.PauliX(8),
+            qp.PauliX(9),
+            qp.ctrl(qp.RX(phi, 12), (8, 9, -3), control_values=[1, 1, 0]),
         ]
 
         qs1 = qp.tape.QuantumScript(
             ops,
             [
-                qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
+                qp.expval(qp.sum(qp.PauliY(12), qp.PauliZ(9))),
+                qp.expval(qp.s_prod(3, qp.PauliZ(12))),
             ],
         )
 

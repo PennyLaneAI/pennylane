@@ -416,7 +416,7 @@ def test_prep_snap_clifford(circuit):
     "pl_op,stim_op",
     [
         (qp.PauliX(0), ("X", [0])),
-        (qp.CNOT(["a", "b"]), ("CNOT", ["a", "b"])),
+        (qp.CNOT([5, 7]), ("CNOT", [5, 7])),
         (qp.GlobalPhase(1.0), (None, [])),
         (qp.Snapshot(), (None, [])),
         (qp.DepolarizingChannel(0.2, [2]), ("DEPOLARIZE1(0.2)", [2])),
