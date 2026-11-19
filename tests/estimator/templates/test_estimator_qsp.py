@@ -15,8 +15,8 @@
 
 import pytest
 
-import pennylane.estimator as qre
-from pennylane.estimator.resource_operator import CompressedResourceOp, ResourceOperator
+import pennylane2.estimator as qre
+from pennylane2.estimator.resource_operator import CompressedResourceOp, ResourceOperator
 
 
 class DummyOp(ResourceOperator):

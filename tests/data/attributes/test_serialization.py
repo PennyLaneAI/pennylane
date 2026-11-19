@@ -21,19 +21,19 @@ from typing import Any
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.shots import Shots
-from pennylane.data.attributes.serialization import pytree_structure_dump, pytree_structure_load
-from pennylane.ops import PauliX, Prod, Sum
-from pennylane.pytrees import PyTreeStructure, flatten, is_pytree, leaf, unflatten
-from pennylane.pytrees.pytrees import (
+import pennylane2 as qp
+from pennylane2.core.shots import Shots
+from pennylane2.data.attributes.serialization import pytree_structure_dump, pytree_structure_load
+from pennylane2.ops import PauliX, Prod, Sum
+from pennylane2.pytrees import PyTreeStructure, flatten, is_pytree, leaf, unflatten
+from pennylane2.pytrees.pytrees import (
     _register_pytree_with_pennylane,
     flatten_registrations,
     type_to_typename,
     typename_to_type,
     unflatten_registrations,
 )
-from pennylane.wires import Wires
+from pennylane2.wires import Wires
 
 
 class CustomNode:  # pylint: disable=too-few-public-methods

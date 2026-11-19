@@ -17,7 +17,7 @@ Unit tests for qp.grad and qp.jacobian
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 
 def test_informative_error_on_bad_shape():

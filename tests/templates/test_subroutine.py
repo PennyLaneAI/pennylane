@@ -23,18 +23,18 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import abstractify
-from pennylane.ops import CNOT, Adjoint, PauliX
-from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.templates import Subroutine, SubroutineOp, subroutine_resource_rep
-from pennylane.templates.core import (
+import pennylane2 as qp
+from pennylane2.core.operator import abstractify
+from pennylane2.ops import CNOT, Adjoint, PauliX
+from pennylane2.ops.op_math.adjoint2 import Adjoint2
+from pennylane2.templates import Subroutine, SubroutineOp, subroutine_resource_rep
+from pennylane2.templates.core import (
     CollectedSubroutine,
     _make_signature_key,
     adjoint_subroutine_resource_rep,
     change_op_basis_subroutine_resource_rep,
 )
-from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
+from pennylane2.typing import AbstractArray, AbstractWires, Float, Wire
 
 
 class TestInitialization:

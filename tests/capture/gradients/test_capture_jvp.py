@@ -19,7 +19,7 @@ from functools import partial
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -27,7 +27,7 @@ jax = pytest.importorskip("jax")
 
 jnp = pytest.importorskip("jax.numpy")
 
-from pennylane.capture.primitives import jvp_prim  # pylint: disable=wrong-import-position
+from pennylane2.capture.primitives import jvp_prim  # pylint: disable=wrong-import-position
 
 
 class TestErrors:

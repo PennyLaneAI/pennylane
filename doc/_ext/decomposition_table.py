@@ -54,9 +54,9 @@ from sphinxcontrib import lightbox2
 # for each region, the symbolic operator name used in the fixed_decomps key, e.g.
 # "Adjoint(Hadamard)", and the PennyLane function that creates such a region
 REGIONS = {
-    "adjoint": ("Adjoint", "pennylane.adjoint"),
-    "controlled": ("Controlled", "pennylane.ctrl"),
-    "pow": ("Pow", "pennylane.pow"),
+    "adjoint": ("Adjoint", "pennylane2.adjoint"),
+    "controlled": ("Controlled", "pennylane2.ctrl"),
+    "pow": ("Pow", "pennylane2.pow"),
 }
 
 
@@ -187,7 +187,7 @@ class DecompositionTable(SphinxDirective):
                 "Each circuit shows one example of the rule."
             )
         caption_parts.append(
-            "Use a rule when decomposing with :func:`qp.decompose <pennylane.decompose>`:"
+            "Use a rule when decomposing with :func:`qp.decompose <pennylane2.decompose>`:"
         )
 
         inline_nodes, parsing_messages = self.state.inline_text(

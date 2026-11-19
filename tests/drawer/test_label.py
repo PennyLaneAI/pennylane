@@ -17,11 +17,11 @@ Tests for the 'label' functionality.
 
 import pytest
 
-import pennylane as qp
-from pennylane.core import Operator
-from pennylane.decomposition.resources import resource_rep
-from pennylane.drawer.label import LabelledOp, label
-from pennylane.typing import Float, Wire
+import pennylane2 as qp
+from pennylane2.core import Operator
+from pennylane2.decomposition.resources import resource_rep
+from pennylane2.drawer.label import LabelledOp, label
+from pennylane2.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp
 
 

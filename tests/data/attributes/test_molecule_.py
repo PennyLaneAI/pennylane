@@ -18,9 +18,9 @@ Tests for the ``DatasetMolecule`` attribute type.
 import numpy as np
 import pytest
 
-from pennylane.data.attributes.molecule import DatasetMolecule
-from pennylane.data.base.typing_util import get_type_str
-from pennylane.qchem import Molecule
+from pennylane2.data.attributes.molecule import DatasetMolecule
+from pennylane2.data.base.typing_util import get_type_str
+from pennylane2.qchem import Molecule
 
 pytestmark = pytest.mark.data
 

@@ -26,25 +26,25 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as npp
-from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.decomposition.resources import CompressedResourceOp
-from pennylane.drawer.label import LabelledOp
-from pennylane.measurements import ExpectationMP
-from pennylane.measurements.probs import ProbabilityMP
-from pennylane.ops import Conditional, PauliMeasure
-from pennylane.ops.functions.equal import (
+import pennylane2 as qp
+from pennylane2 import numpy as npp
+from pennylane2.core.operator import Operator, Operator2, abstractify
+from pennylane2.decomposition.resources import CompressedResourceOp
+from pennylane2.drawer.label import LabelledOp
+from pennylane2.measurements import ExpectationMP
+from pennylane2.measurements.probs import ProbabilityMP
+from pennylane2.ops import Conditional, PauliMeasure
+from pennylane2.ops.functions.equal import (
     BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
     OPERANDS_MISMATCH_ERROR_MESSAGE,
     _equal_dispatch,
     assert_equal,
 )
-from pennylane.ops.op_math import Controlled, SymbolicOp
-from pennylane.ops.op_math.controlled2 import ControlledOp2
-from pennylane.templates.subroutines import ControlledSequence
-from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires
+from pennylane2.ops.op_math import Controlled, SymbolicOp
+from pennylane2.ops.op_math.controlled2 import ControlledOp2
+from pennylane2.templates.subroutines import ControlledSequence
+from pennylane2.typing import Bool, Wire
+from pennylane2.wires import Wires
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
     qp.RX,

@@ -42,13 +42,13 @@ Summary of the update
 * The underlying system for performing arithmetic with operators has been changed. Arithmetic can be carried out using
   standard Python operations like ``+``, ``*`` and ``@`` or via arithmetic functions located in :mod:`~.op_math`.
 
-* You can now easily access Pauli operators via :obj:`~.pennylane.I`, :obj:`~.pennylane.X`, :obj:`~.pennylane.Y`, and :obj:`~.pennylane.Z`.
+* You can now easily access Pauli operators via :obj:`~.pennylane2.I`, :obj:`~.pennylane2.X`, :obj:`~.pennylane2.Y`, and :obj:`~.pennylane2.Z`.
 
-  >>> from pennylane import I, X, Y, Z
+  >>> from pennylane2 import I, X, Y, Z
   >>> X(0)
   X(0)
 
-  The original long-form names :class:`~.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, and :class:`~.PauliZ` remain available and are functionally equivalent to :obj:`~.pennylane.I`, :obj:`~.pennylane.X`, :obj:`~.pennylane.Y`, and :obj:`~.pennylane.Z`, but
+  The original long-form names :class:`~.Identity`, :class:`~.PauliX`, :class:`~.PauliY`, and :class:`~.PauliZ` remain available and are functionally equivalent to :obj:`~.pennylane2.I`, :obj:`~.pennylane2.X`, :obj:`~.pennylane2.Y`, and :obj:`~.pennylane2.Z`, but
   use of the short-form names is now recommended.
 
 * Operators in PennyLane can have a backend Pauli representation, which can be used to perform faster operator arithmetic. Now, the Pauli
@@ -60,9 +60,9 @@ Summary of the update
   1.0 * X(0)
   + 1.0 * Y(0)
   >>> type(op.pauli_rep)
-  <class 'pennylane.core.pauli.PauliSentence'>
+  <class 'pennylane2.core.pauli.PauliSentence'>
 
-  You can transform the :class:`~.pennylane.pauli.PauliSentence` back to a suitable :class:`~.pennylane.operation.Operator` via :func:`~pennylane.pauli.to_operator`.
+  You can transform the :class:`~.pennylane2.pauli.PauliSentence` back to a suitable :class:`~.pennylane2.operation.Operator` via :func:`~pennylane2.pauli.to_operator`.
 
   >>> qp.pauli.to_operator(op.pauli_rep)
   X(0) + Y(0)
@@ -113,12 +113,12 @@ Summary of the update
     +--------------------------------------------+----------------------+---------------------------+
 
 
-    The three main new opmath classes :class:`~.pennylane.ops.op_math.SProd`, :class:`~.pennylane.ops.op_math.Prod`, and :class:`~.pennylane.ops.op_math.Sum` have already been around for a while.
-    E.g., :func:`~.pennylane.dot` has always returned a :class:`~.pennylane.ops.op_math.Sum` instance.
+    The three main new opmath classes :class:`~.pennylane2.ops.op_math.SProd`, :class:`~.pennylane2.ops.op_math.Prod`, and :class:`~.pennylane2.ops.op_math.Sum` have already been around for a while.
+    E.g., :func:`~.pennylane2.dot` has always returned a :class:`~.pennylane2.ops.op_math.Sum` instance.
 
     **Usage**
 
-    Besides the python operators, you can also use the constructors :func:`~.pennylane.s_prod`, :func:`~.pennylane.prod`, and :func:`~.pennylane.sum`.
+    Besides the python operators, you can also use the constructors :func:`~.pennylane2.s_prod`, :func:`~.pennylane2.prod`, and :func:`~.pennylane2.sum`.
     For composite operators, we can access their constituents via the ``op.operands`` attribute.
 
     >>> op = qp.sum(X(0), X(1), X(2))
@@ -126,7 +126,7 @@ Summary of the update
     (X(0), X(1), X(2))
 
     In case all terms are composed of operators with a valid ``pauli_rep``, then the composite
-    operator also has a valid ``pauli_rep`` in terms of a :class:`~.pennylane.pauli.PauliSentence` instance. This is often handy for fast
+    operator also has a valid ``pauli_rep`` in terms of a :class:`~.pennylane2.pauli.PauliSentence` instance. This is often handy for fast
     arithmetic processing.
 
     >>> op.pauli_rep
@@ -134,7 +134,7 @@ Summary of the update
     + 1.0 * X(1)
     + 1.0 * X(2)
 
-    Further, composite operators can be simplified using :func:`~.pennylane.simplify` or the ``op.simplify()`` method.
+    Further, composite operators can be simplified using :func:`~.pennylane2.simplify` or the ``op.simplify()`` method.
 
     >>> op = 0.5 * X(0) + 0.5 * Y(0) - 1.5 * X(0) - 0.5 * Y(0) # no simplification by default
     >>> op.simplify()
@@ -163,15 +163,15 @@ Summary of the update
 
     **qp.Hamiltonian**
 
-    The classes :class:`~.pennylane.operation.Tensor` and :class:`~.pennylane.ops.Hamiltonian` have been removed.
+    The classes :class:`~.pennylane2.operation.Tensor` and :class:`~.pennylane2.ops.Hamiltonian` have been removed.
     The familiar ``qp.Hamiltonian`` can still be used, which dispatches to ``LinearCombination`` and offers the same
     usage and functionality but with different implementation details.
 
-    >>> import pennylane as qp
-    >>> from pennylane import X
+    >>> import pennylane2 as qp
+    >>> from pennylane2 import X
     >>> H = qp.Hamiltonian([0.5, 0.5], [X(0), X(1)])
     >>> type(H)
-    pennylane.ops.op_math.linear_combination.LinearCombination
+    pennylane2.ops.op_math.linear_combination.LinearCombination
 
 .. _Troubleshooting_opmath:
 
@@ -189,7 +189,7 @@ To help identify a fix, select the option below that describes your situation.
 
     * Check explicit use of the legacy :class:`~Tensor` class. If you find it in your script it can just be changed from ``Tensor(*terms)`` to ``qp.prod(*terms)`` with the same call signature.
 
-    * Check explicit use of the ``op.obs`` attribute, where ``op`` is some operator. This is how the terms of a tensor product are accessed in :class:`~.pennylane.operation.Tensor` instances. Use ``op.operands`` instead.
+    * Check explicit use of the ``op.obs`` attribute, where ``op`` is some operator. This is how the terms of a tensor product are accessed in :class:`~.pennylane2.operation.Tensor` instances. Use ``op.operands`` instead.
 
       .. code-block:: python
 
@@ -226,16 +226,16 @@ To help identify a fix, select the option below that describes your situation.
 
     >>> op = 0.5 * (X(0) @ X(1)) + 0.5 * (Y(0) @ Y(1))
     >>> type(op)
-    pennylane.ops.op_math.sum.Sum
+    pennylane2.ops.op_math.sum.Sum
 
     >>> op.operands
     (0.5 * (X(0) @ X(1)), 0.5 * (Y(0) @ Y(1)))
 
     >>> type(op.operands[0]), type(op.operands[1])
-    (pennylane.ops.op_math.sprod.SProd, pennylane.ops.op_math.sprod.SProd)
+    (pennylane2.ops.op_math.sprod.SProd, pennylane2.ops.op_math.sprod.SProd)
 
     >>> op.operands[0].scalar, op.operands[0].base, type(op.operands[0].base)
-    (0.5, X(0) @ X(1), pennylane.ops.op_math.prod.Prod)
+    (0.5, X(0) @ X(1), pennylane2.ops.op_math.prod.Prod)
 
     We could construct an equivalent operator with a different nesting structure.
 
@@ -244,14 +244,14 @@ To help identify a fix, select the option below that describes your situation.
     ((0.5 * X(0)) @ X(1), (0.5 * Y(0)) @ Y(1))
 
     >>> type(op.operands[0]), type(op.operands[1])
-    (pennylane.ops.op_math.prod.Prod, pennylane.ops.op_math.prod.Prod)
+    (pennylane2.ops.op_math.prod.Prod, pennylane2.ops.op_math.prod.Prod)
 
     >>> op.operands[0].operands
     (0.5 * X(0), X(1))
 
     >>> type(op.operands[0].operands[0]), type(op.operands[0].operands[1])
-    (pennylane.ops.op_math.sprod.SProd,
-     pennylane.ops.qubit.non_parametric_ops.PauliX)
+    (pennylane2.ops.op_math.sprod.SProd,
+     pennylane2.ops.qubit.non_parametric_ops.PauliX)
     
     There is yet another way to construct the same, equivalent, operator.
     We can bring all of them to the same format by using ``op.simplify()``, which brings the operator down to 

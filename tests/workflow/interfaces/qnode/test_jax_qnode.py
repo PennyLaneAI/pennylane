@@ -21,10 +21,10 @@ from itertools import product
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import qnode
-from pennylane.devices import DefaultQubit
-from pennylane.exceptions import DeviceError
+import pennylane2 as qp
+from pennylane2 import qnode
+from pennylane2.devices import DefaultQubit
+from pennylane2.exceptions import DeviceError
 
 
 def get_device(device_name, wires, seed):

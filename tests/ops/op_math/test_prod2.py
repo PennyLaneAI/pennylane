@@ -19,14 +19,14 @@ import numpy as np
 import pytest
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
 
-import pennylane as qp
-from pennylane.core.operator import Operator2
-from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.ops.op_math import prod
-from pennylane.ops.op_math.prod import Prod
-from pennylane.ops.op_math.prod2 import Prod2
-from pennylane.testing import assert_decomposable
-from pennylane.typing import Float, Wire
+import pennylane2 as qp
+from pennylane2.core.operator import Operator2
+from pennylane2.exceptions import SparseMatrixUndefinedError
+from pennylane2.ops.op_math import prod
+from pennylane2.ops.op_math.prod import Prod
+from pennylane2.ops.op_math.prod2 import Prod2
+from pennylane2.testing import assert_decomposable
+from pennylane2.typing import Float, Wire
 from tests.core.operator.operator2_utils import NonParametricOp
 
 
@@ -484,7 +484,7 @@ class TestCapture:
         """Test that a ValidOp can be captured into and reconstructed from jaxpr."""
         import jax
 
-        from pennylane.testing import assert_eqn_matches_op
+        from pennylane2.testing import assert_eqn_matches_op
 
         def qfunc():
             return Prod2((qp.RX(1.2, wires=0), qp.PauliZ(0)))

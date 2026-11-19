@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Test the pennylane drawer with Catalyst."""
+"""Test the pennylane2 drawer with Catalyst."""
 
 # pylint: disable=protected-access
 
@@ -20,7 +20,7 @@ from functools import partial
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 catalyst = pytest.importorskip("catalyst")
 mpl = pytest.importorskip("matplotlib")

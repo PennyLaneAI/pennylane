@@ -15,8 +15,8 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane.transforms.decompositions import gridsynth
+import pennylane2 as qp
+from pennylane2.transforms.decompositions import gridsynth
 
 
 class TestGridsynth:

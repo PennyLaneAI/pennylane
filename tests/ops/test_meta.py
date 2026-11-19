@@ -16,10 +16,10 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import Snapshot
-from pennylane.decomposition import gate_sets
-from pennylane.transforms import _tape_decompose as decompose
+import pennylane2 as qp
+from pennylane2 import Snapshot
+from pennylane2.decomposition import gate_sets
+from pennylane2.transforms import _tape_decompose as decompose
 
 
 class TestBarrier:

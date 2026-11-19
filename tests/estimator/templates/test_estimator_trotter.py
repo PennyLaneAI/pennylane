@@ -19,10 +19,10 @@ from collections import defaultdict
 
 import pytest
 
-import pennylane.estimator as qre
-from pennylane.estimator import GateCount, resource_rep
-from pennylane.estimator.resource_operator import CompressedResourceOp
-from pennylane.wires import Wires
+import pennylane2.estimator as qre
+from pennylane2.estimator import GateCount, resource_rep
+from pennylane2.estimator.resource_operator import CompressedResourceOp
+from pennylane2.wires import Wires
 
 
 class TestResourceTrotterProduct:

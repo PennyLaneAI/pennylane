@@ -6,7 +6,7 @@
 Dynamic quantum circuits
 ========================
 
-.. currentmodule:: pennylane.measure
+.. currentmodule:: pennylane2.measure
 
 PennyLane allows using measurements in the middle of a quantum circuit.
 Such measurements are called mid-circuit measurements and can be used to
@@ -20,7 +20,7 @@ Mid-circuit measurements
 ************************
 
 The function to perform a mid-circuit measurement in PennyLane is
-:func:`~.pennylane.measure`, and can be used as follows:
+:func:`~.pennylane2.measure`, and can be used as follows:
 
 .. code-block:: python
 
@@ -36,7 +36,7 @@ The function to perform a mid-circuit measurement in PennyLane is
         return qp.probs(wires=[0]), qp.expval(m_0)
 
 See the following sections for details on
-:func:`~.pennylane.measure`, :func:`~.pennylane.cond`, and statistics
+:func:`~.pennylane2.measure`, :func:`~.pennylane2.cond`, and statistics
 of mid-circuit measurements, as well as information about simulation
 strategies and how to configure them :ref:`further below <simulation_techniques>`.
 Additional information can be found in the documentation of the individual
@@ -49,7 +49,7 @@ Resetting qubits
 ****************
 
 Wires can be reused after making mid-circuit measurements. Moreover, a measured wire can be
-reset to the :math:`|0 \rangle` state by setting ``reset=True`` in :func:`~.pennylane.measure`:
+reset to the :math:`|0 \rangle` state by setting ``reset=True`` in :func:`~.pennylane2.measure`:
 
 .. code-block:: python3
 
@@ -73,7 +73,7 @@ Postselecting mid-circuit measurements
 **************************************
 
 PennyLane also supports postselecting on mid-circuit measurement outcomes by specifying the
-``postselect`` keyword argument of :func:`~.pennylane.measure`. By default, postselection
+``postselect`` keyword argument of :func:`~.pennylane2.measure`. By default, postselection
 discards outcomes that do not match the ``postselect`` argument.
 For example, specifying ``postselect=1`` is equivalent to projecting the state vector onto
 the :math:`|1\rangle` state, i.e., disregarding all outcomes where :math:`|0\rangle` is measured:
@@ -108,9 +108,9 @@ Conditional operators
 *********************
 
 Users can create conditional operators controlled on mid-circuit measurements using
-:func:`~.pennylane.cond`. The condition for a conditional operator may simply be
-the measured value returned by a :func:`~.pennylane.measure` call, or we may construct a boolean
-condition based on such values and pass it to :func:`~.pennylane.cond`:
+:func:`~.pennylane2.cond`. The condition for a conditional operator may simply be
+the measured value returned by a :func:`~.pennylane2.measure` call, or we may construct a boolean
+condition based on such values and pass it to :func:`~.pennylane2.cond`:
 
 .. code-block:: python
 
@@ -130,7 +130,7 @@ condition based on such values and pass it to :func:`~.pennylane.cond`:
     >>> qnode_conditional_op_on_zero(*pars)
     tensor([0.88660045, 0.11339955], requires_grad=True)
 
-For more examples, refer to the :func:`~.pennylane.cond` documentation
+For more examples, refer to the :func:`~.pennylane2.cond` documentation
 and the :doc:`how-to on creating dynamic circuits with mid-circuit measurements <demo:demos/tutorial_how_to_create_dynamic_mcm_circuits>`.
 
 .. _mid_circuit_measurements_statistics:
@@ -163,11 +163,11 @@ Executing this ``QNode``:
 
 Users can also collect statistics on mid-circuit measurements manipulated using arithmetic/boolean operators.
 This works for both unary and binary operators. To see a full list of supported operators, refer to the
-:func:`~.pennylane.measure` documentation. An example for collecting such statistics is shown below:
+:func:`~.pennylane2.measure` documentation. An example for collecting such statistics is shown below:
 
 .. code-block:: python3
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     dev = qp.device("default.qubit")
 
@@ -194,7 +194,7 @@ measurement values to the measurement process:
 
 .. code-block:: python3
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     dev = qp.device("default.qubit")
 
@@ -292,7 +292,7 @@ and the parameter-shift rule are supported if no postselection is used.
 :math:`{}^2` In principle, parameter-shift differentiation is supported as long as no
 postselection is used. Parameters within conditionally applied operations will
 fall back to finite differences, so a proper value for ``h`` should be provided (see
-:func:`~.pennylane.gradients.finite_diff`).
+:func:`~.pennylane2.gradients.finite_diff`).
 
 The strengths and weaknesses of the simulation techniques differ strongly and the best
 technique will depend on details of the simulation workflow. As a rule of thumb:
@@ -317,7 +317,7 @@ Deferred measurements
 A quantum function with mid-circuit measurements can be executed via the
 `deferred measurement principle <https://en.wikipedia.org/wiki/Deferred_Measurement_Principle>`__.
 In PennyLane, this technique is available via ``mcm_method="deferred"`` or as the
-transform :func:`~.pennylane.defer_measurements`.
+transform :func:`~.pennylane2.defer_measurements`.
 
 The deferred measurement principle provides a powerful method to simulate
 mid-circuit measurements, conditional operations and measurement statistics
@@ -356,7 +356,7 @@ operations become (quantumly) controlled operations.
     the number of measurements that can be used both on classical simulators and quantum hardware.
 
     Postselection with deferred measurements is only supported on
-    :class:`~.pennylane.devices.DefaultQubit`.
+    :class:`~.pennylane2.devices.DefaultQubit`.
 
 
 .. _one_shot_transform:
@@ -368,12 +368,12 @@ Devices that natively support mid-circuit measurements can evaluate dynamic circ
 by executing them one shot at a time, sampling a dynamic execution path for each shot.
 
 In PennyLane, this technique is available via the QNode argument ``mcm_method="one-shot"``
-or as the transform :func:`~.pennylane.dynamic_one_shot`.
-As the name suggests, this transform only works for a :class:`~.pennylane.QNode` executing
+or as the transform :func:`~.pennylane2.dynamic_one_shot`.
+As the name suggests, this transform only works for a :class:`~.pennylane2.QNode` executing
 with finite shots and it requires the device to support mid-circuit measurements natively.
 
-The :func:`~.pennylane.dynamic_one_shot` transform is usually advantageous compared
-with the :func:`~.pennylane.defer_measurements` transform in the
+The :func:`~.pennylane2.dynamic_one_shot` transform is usually advantageous compared
+with the :func:`~.pennylane2.defer_measurements` transform in the
 many-mid-circuit-measurements and few-shots limit. This is because, unlike the
 deferred measurement principle, the method does not need an additional wire for every
 mid-circuit measurement in the circuit.
@@ -399,10 +399,10 @@ it is not a transform.
 The tree-traversal algorithm combines the exponential savings of memory of the one-shot
 approach with sampling efficiency of deferred measurements.
 Neglecting overheads, simulating all branches requires the same
-amount of computations as :func:`~.pennylane.defer_measurements`, but without the
+amount of computations as :func:`~.pennylane2.defer_measurements`, but without the
 :math:`O(2^{n_{MCM}})` memory cost. To save time, a copy of the state vector
 is made at every mid-circuit measurement, requiring :math:`n_{MCM}+1` state
-vectors, an exponential improvement over :func:`~.pennylane.defer_measurements`.
+vectors, an exponential improvement over :func:`~.pennylane2.defer_measurements`.
 Since the counts of many nodes come out to be zero for shot-based simulations,
 it is often possible to ignore entire sub-trees, thereby reducing the computational
 cost.
@@ -428,11 +428,11 @@ Configuring mid-circuit measurements
 
 As described above, there are multiple simulation techniques for circuits with
 mid-circuit measurements in PennyLane. They can be configured when initializing a
-:class:`~pennylane.QNode`, using the following keywords:
+:class:`~pennylane2.QNode`, using the following keywords:
 
 * ``mcm_method``: Sets the method used for applying mid-circuit measurements.
   The three techniques described above can be specified with ``"deferred"``,
-  ``"one-shot"``, and ``"tree-traversal"``. When using :func:`~pennylane.qjit`,
+  ``"one-shot"``, and ``"tree-traversal"``. When using :func:`~pennylane2.qjit`,
   there is the additional option ``"single-branch-statistics"``, which
   explores a single branch of the execution tree at random. If not provided,
   the method is selected by the device. For ``default.qubit`` and ``lightning.qubit``,
@@ -478,6 +478,6 @@ mid-circuit measurements in PennyLane. They can be configured when initializing 
         samples directly.
 
       * When using ``jax.jit``, the combination ``"deferred"`` and ``"hw-like"`` is not supported,
-        due to limitations of the :func:`~pennylane.defer_measurements` transform. This behaviour
+        due to limitations of the :func:`~pennylane2.defer_measurements` transform. This behaviour
         will change in the future.
 

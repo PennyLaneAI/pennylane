@@ -22,14 +22,14 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 from scipy.sparse import csr_matrix
 
-import pennylane as qp
-from pennylane import QNode
-from pennylane import numpy as pnp
-from pennylane import qnode
-from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.resource import SpecsResources
-from pennylane.typing import PostprocessingFn
+import pennylane2 as qp
+from pennylane2 import QNode
+from pennylane2 import numpy as pnp
+from pennylane2 import qnode
+from pennylane2.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.resource import SpecsResources
+from pennylane2.typing import PostprocessingFn
 
 
 def dummyfunc():

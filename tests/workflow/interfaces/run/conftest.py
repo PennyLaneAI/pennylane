@@ -19,9 +19,9 @@ from dataclasses import replace
 
 from param_shift_dev import ParamShiftDerivativesDevice
 
-import pennylane as qp
-from pennylane.core.shots import Shots
-from pennylane.devices import ExecutionConfig
+import pennylane2 as qp
+from pennylane2.core.shots import Shots
+from pennylane2.devices import ExecutionConfig
 
 
 def atol_for_shots(shots):

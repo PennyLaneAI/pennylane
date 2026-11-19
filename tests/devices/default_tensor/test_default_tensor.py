@@ -22,12 +22,12 @@ import pytest
 from scipy.linalg import expm
 from scipy.sparse import csr_matrix
 
-import pennylane as qp
-from pennylane.devices import ExecutionConfig
-from pennylane.devices.default_tensor import _operations, stopping_condition
-from pennylane.exceptions import DeviceError, WireError
-from pennylane.math.decomposition import givens_decomposition
-from pennylane.typing import TensorLike
+import pennylane2 as qp
+from pennylane2.devices import ExecutionConfig
+from pennylane2.devices.default_tensor import _operations, stopping_condition
+from pennylane2.exceptions import DeviceError, WireError
+from pennylane2.math.decomposition import givens_decomposition
+from pennylane2.typing import TensorLike
 
 quimb = pytest.importorskip("quimb")
 

@@ -20,9 +20,9 @@ import numpy as np
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
-import pennylane as qp
-from pennylane import qnode
-from pennylane.devices import DefaultQubit
+import pennylane2 as qp
+from pennylane2 import qnode
+from pennylane2.devices import DefaultQubit
 
 pytestmark = pytest.mark.torch
 
@@ -125,7 +125,7 @@ class TestQNode:
             qp.RX(0.2, wires=0)
             return qp.expval(qp.PauliZ(0))
 
-        from pennylane import numpy as anp
+        from pennylane2 import numpy as anp
 
         a = anp.array(0.1, requires_grad=True)
 

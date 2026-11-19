@@ -37,8 +37,8 @@ jobs:
       run: |
         git config --global user.email '${{ secrets.AUTO_UPDATE_VERSION_RINGO_EMAIL }}'
         git config --global user.name "ringo-but-quantum"
-        git add $GITHUB_WORKSPACE/pennylane/_version.py
-        DEV_VERSION=$(grep __version__ "$GITHUB_WORKSPACE/pennylane/_version.py" | cut -d'"' -f2 | cut -d'-' -f2)
+        git add $GITHUB_WORKSPACE/pennylane2/_version.py
+        DEV_VERSION=$(grep __version__ "$GITHUB_WORKSPACE/pennylane2/_version.py" | cut -d'"' -f2 | cut -d'-' -f2)
         git commit -m "[no ci] bump nightly version to ${DEV_VERSION}"
         git push
 

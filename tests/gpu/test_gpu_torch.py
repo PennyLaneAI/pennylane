@@ -17,7 +17,7 @@ Unit tests for PyTorch GPU support.
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 pytestmark_gpu = pytest.mark.gpu
 pytestmark_torch = pytest.mark.torch

@@ -19,8 +19,8 @@ from typing import Any
 
 import pytest
 
-import pennylane as qp
-from pennylane.backline import (
+import pennylane2 as qp
+from pennylane2.backline import (
     Controller,
     Coprocessor,
     CoprocessorFunction,
@@ -465,7 +465,7 @@ class TestPlacement:
 
     def test_unknown_transport_raises(self, monkeypatch):
         """A transport neither built in nor known to Catalyst's registry is rejected."""
-        monkeypatch.setattr("pennylane.backline.transports._catalyst_transports", set)
+        monkeypatch.setattr("pennylane2.backline.transports._catalyst_transports", set)
         ctrl = qp.Controller(name="fpga")
         with pytest.raises(ValueError, match="unknown transport"):
             Placement(controller=ctrl, transport="does-not-exist")
@@ -473,7 +473,7 @@ class TestPlacement:
     def test_a_transport_from_catalysts_registry_is_accepted(self, monkeypatch):
         """A backend package's transport needs no PennyLane change."""
         monkeypatch.setattr(
-            "pennylane.backline.transports._catalyst_transports", lambda: {"example"}
+            "pennylane2.backline.transports._catalyst_transports", lambda: {"example"}
         )
         assert (
             Placement(controller=qp.Controller(name="c"), transport="example").transport.name
@@ -482,7 +482,7 @@ class TestPlacement:
 
     def test_without_catalyst_any_transport_is_left_to_the_compiler(self, monkeypatch):
         """With no registry to ask, the name is checked when the program is compiled."""
-        monkeypatch.setattr("pennylane.backline.transports._catalyst_transports", lambda: None)
+        monkeypatch.setattr("pennylane2.backline.transports._catalyst_transports", lambda: None)
         assert (
             Placement(controller=qp.Controller(name="c"), transport="example").transport.name
             == "example"
@@ -495,7 +495,7 @@ class TestPlacement:
         assert qp.Coprocessor(coprocessor_fn="decoder", backend="example").backend == "example"
 
     def test_not_exported_at_top_level(self):
-        """Placement is reached via pennylane.backline, not the top-level namespace."""
+        """Placement is reached via pennylane2.backline, not the top-level namespace."""
         assert not hasattr(qp, "Placement")
         assert "Placement" in backline_module.__all__
 

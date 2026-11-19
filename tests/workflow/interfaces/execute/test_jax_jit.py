@@ -16,10 +16,10 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import execute
-from pennylane.gradients import param_shift
-from pennylane.typing import TensorLike
+import pennylane2 as qp
+from pennylane2 import execute
+from pennylane2.gradients import param_shift
+from pennylane2.typing import TensorLike
 
 pytestmark = pytest.mark.jax
 
@@ -908,7 +908,7 @@ class TestJitAllCounts:
 
     def test_counts_without_all_outcomes_raises_vjp(self):
         """Test that counts without all_outcomes riases NotImplementedError in the VJP path."""
-        from pennylane.workflow.interfaces.jax_jit import jax_jit_vjp_execute
+        from pennylane2.workflow.interfaces.jax_jit import jax_jit_vjp_execute
 
         tape = qp.tape.QuantumScript([qp.RX(0.1, 0)], [qp.counts(wires=0)], shots=50)
         dev = qp.device("default.qubit", wires=1)

@@ -18,10 +18,10 @@ from unittest.mock import MagicMock
 
 from cachetools import LRUCache
 
-import pennylane as qp
-from pennylane.core.transforms import BoundTransform, CompilePipeline
-from pennylane.devices import ExecutionConfig
-from pennylane.workflow._setup_transform_program import _setup_transform_program
+import pennylane2 as qp
+from pennylane2.core.transforms import BoundTransform, CompilePipeline
+from pennylane2.devices import ExecutionConfig
+from pennylane2.workflow._setup_transform_program import _setup_transform_program
 
 
 def null_postprocessing(results):

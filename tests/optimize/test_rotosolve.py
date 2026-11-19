@@ -23,10 +23,10 @@ import functools
 import pytest
 from scipy.optimize import shgo
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.optimize import RotosolveOptimizer
-from pennylane.optimize.qng import _flatten_np, _unflatten_np
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.optimize import RotosolveOptimizer
+from pennylane2.optimize.qng import _flatten_np, _unflatten_np
 
 
 def expand_num_freq(num_freq, param):

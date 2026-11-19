@@ -8,11 +8,11 @@ potentially add them to PennyLane.
 
 Note that in PennyLane, a circuit ansatz consisting of multiple gates is also an operator --- one whose
 action is defined by specifying a representation as a combination of other operators.
-For historical reasons, you find circuit ansaetze in the ``pennylane/template/`` folder,
-while all other operations are found in ``pennylane/ops/``.
+For historical reasons, you find circuit ansaetze in the ``pennylane2/template/`` folder,
+while all other operations are found in ``pennylane2/ops/``.
 
 The base classes to construct new operators, :class:`~.Operator` and
-corresponding subclasses, are found in ``pennylane/operations.py``.
+corresponding subclasses, are found in ``pennylane2/operations.py``.
 
 .. note::
 
@@ -134,7 +134,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
 
 
     class FlipAndRotate(qp.operation.Operation):
@@ -250,7 +250,7 @@ The new gate can be used with PennyLane devices.
 
 .. code-block:: python
 
-    from pennylane import numpy as np
+    from pennylane2 import numpy as np
 
     dev = qp.device("default.qubit", wires=["q1", "q2", "q3"])
 
@@ -301,7 +301,7 @@ which fulfill a specific property.
 
 For example, we can create a new attribute, ``pauli_ops``, like so:
 
->>> from pennylane.ops.qubits.attributes import Attribute
+>>> from pennylane2.ops.qubits.attributes import Attribute
 >>> pauli_ops = Attribute(["PauliX", "PauliY", "PauliZ"])
 
 We can check either a string or an Operation for inclusion in this set:
@@ -317,7 +317,7 @@ and ``self_inverses`` that are used in compilation transforms. For example,
 suppose you have created a new operation ``MyGate``, which you know to be its
 own inverse. Adding it to the set, like so
 
->>> from pennylane.ops.qubits.attributes import self_inverses
+>>> from pennylane2.ops.qubits.attributes import self_inverses
 >>> self_inverses.add("MyGate")
 
 Attributes can also be queried by devices to use special tricks that allow more efficient
@@ -325,7 +325,7 @@ implementations. The onus is on the contributors of new operators to add them to
 
 .. note::
 
-    The attributes for qubit gates are currently found in ``pennylane/ops/qubit/attributes.py``.
+    The attributes for qubit gates are currently found in ``pennylane2/ops/qubit/attributes.py``.
     
     Included attributes are listed in the ``Operation``
     `documentation <https://pennylane.readthedocs.io/en/latest/code/qp_operation.html#operation-attributes>`__.
@@ -334,9 +334,9 @@ Adding your new operator to PennyLane
 #####################################
 
 If you want PennyLane to natively support your new operator, you have to make a Pull Request that adds it
-to the appropriate folder in ``pennylane/ops/``. The
+to the appropriate folder in ``pennylane2/ops/``. The
 tests are added to a file of a similar name and location in ``tests/ops/``. If your operator defines an
-ansatz, add it to the appropriate subfolder in ``pennylane/templates/``.
+ansatz, add it to the appropriate subfolder in ``pennylane2/templates/``.
 
 The new operation may have to be imported in the module's ``__init__.py`` file in order to be imported correctly.
 
@@ -350,7 +350,7 @@ to the correct section in ``doc/introduction/templates.rst``:
 .. code-block::
 
   .. gallery-item::
-    :link: ../code/api/pennylane.templates.<templ_type>.MyNewTemplate.html
+    :link: ../code/api/pennylane2.templates.<templ_type>.MyNewTemplate.html
     :description: MyNewTemplate
     :figure: ../_static/templates/<templ_type>/my_new_template.png
 

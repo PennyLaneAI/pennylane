@@ -15,10 +15,10 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.shots import Shots
-from pennylane.gradients import param_shift
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.shots import Shots
+from pennylane2.gradients import param_shift
 
 _x = np.arange(12).reshape((2, 3, 2))
 

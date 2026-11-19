@@ -17,7 +17,7 @@ Unit tests for reference qubit.
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 
 @pytest.mark.parametrize(

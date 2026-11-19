@@ -4,6 +4,6 @@ qp.core.queuing
 Overview
 --------
 
-.. currentmodule:: pennylane.core.queuing
+.. currentmodule:: pennylane2.core.queuing
 
-.. automodule:: pennylane.core.queuing
+.. automodule:: pennylane2.core.queuing

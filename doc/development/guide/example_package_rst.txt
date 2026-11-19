@@ -3,4 +3,4 @@ qp.package_name
 
 .. rubric:: Modules
 
-.. automodule:: pennylane.package_name
+.. automodule:: pennylane2.package_name

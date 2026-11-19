@@ -18,7 +18,7 @@ Test the qp.math.grad and qp.math.jacobian functions.
 import numpy as np
 import pytest
 
-from pennylane import math
+from pennylane2 import math
 
 pytestmark = pytest.mark.all_interfaces
 

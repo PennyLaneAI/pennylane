@@ -10,7 +10,7 @@ This module contains functions and classes for creating and manipulating bosonic
 BoseWord and BoseSentence
 ---------------------------
 
-.. currentmodule:: pennylane
+.. currentmodule:: pennylane2
 
 .. autosummary::
     :toctree: api
@@ -21,7 +21,7 @@ BoseWord and BoseSentence
 Mapping to qubit operators
 --------------------------
 
-.. currentmodule:: pennylane.bose
+.. currentmodule:: pennylane2.bose
 
 .. autosummary::
     :toctree: api

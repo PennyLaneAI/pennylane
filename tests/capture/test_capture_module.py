@@ -17,7 +17,7 @@ Tests capture module imports and access.
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 jax = pytest.importorskip("jax")
 

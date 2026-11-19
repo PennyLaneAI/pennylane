@@ -16,7 +16,7 @@ For adding a plugin that inherits from the legacy interface, see :doc:`/developm
 PennyLane allows external quantum libraries to take advantage of the automatic differentiation
 ability of PennyLane via plugins. Writing your own plugin is a simple and easy process. In this section, we discuss
 the methods and concepts involved in the device interface. To see an implementation of a
-minimal device, we recommend looking at the implementation in ``pennylane/devices/reference_qubit.py``.
+minimal device, we recommend looking at the implementation in ``pennylane2/devices/reference_qubit.py``.
 
 Creating your device
 --------------------
@@ -25,8 +25,8 @@ In order to define a custom device, you only need to override the :meth:`~.devic
 
 .. code-block:: python
 
-    from pennylane.devices import Device, ExecutionConfig
-    from pennylane.core.qscript import QuantumScript, QuantumScriptOrBatch
+    from pennylane2.devices import Device, ExecutionConfig
+    from pennylane2.core.qscript import QuantumScript, QuantumScriptOrBatch
 
     class MyDevice(Device):
         """My Documentation."""
@@ -60,7 +60,7 @@ For example:
 
     circuit()
 
-This execute method works in tandem with the optional :meth:`Device.preprocess_transforms <pennylane.devices.Device.preprocess_transforms>`
+This execute method works in tandem with the optional :meth:`Device.preprocess_transforms <pennylane2.devices.Device.preprocess_transforms>`
 and :meth:`Device.setup_execution_config`, described below in more detail. Preprocessing transforms
 turns generic circuits into ones supported by the device or raises an error if the circuit is invalid.
 Execution produces numerical results from those supported circuits.
@@ -78,7 +78,7 @@ In a more minimal example, for any initial batch of quantum tapes and a config o
 Shots
 -----
 
-While the workflow default for shots is specified by :attr:`Device.shots <pennylane.devices.Device.shots>`, the device itself should use
+While the workflow default for shots is specified by :attr:`Device.shots <pennylane2.devices.Device.shots>`, the device itself should use
 the number of shots specified in the :attr:`~.QuantumScript.shots` property for each quantum tape.
 By pulling shots dynamically for each circuit, users can efficiently distribute a shot budget across batch of
 circuits.
@@ -166,7 +166,7 @@ Once a program is created, individual transforms can be added to the program wit
 
 .. code-block:: python
 
-    from pennylane.devices.preprocess import validate_device_wires, validate_measurements, decompose
+    from pennylane2.devices.preprocess import validate_device_wires, validate_measurements, decompose
 
     program.add_transform(validate_device_wires, wires=qp.wires.Wires((0,1,2)), name="my_device")
     program.add_transform(validate_measurements, name="my_device")
@@ -218,25 +218,25 @@ AttributeError: 'DensityMatrixMP' object has no attribute 'process_samples'
 Devices may define their own transforms following the description in the :ref:`transforms` module,
 or can include in-built transforms such as:
 
-* :func:`pennylane.defer_measurements`
-* :func:`pennylane.dynamic_one_shot`
-* :func:`pennylane.transforms.broadcast_expand`
-* :func:`pennylane.transforms.split_non_commuting`
-* :func:`pennylane.transforms.transpile`
-* :func:`pennylane.transforms.diagonalize_measurements`
-* :func:`pennylane.transforms.split_to_single_terms`
-* :func:`pennylane.devices.preprocess.decompose`
-* :func:`pennylane.devices.preprocess.validate_observables`
-* :func:`pennylane.devices.preprocess.validate_measurements`
-* :func:`pennylane.devices.preprocess.validate_device_wires`
-* :func:`pennylane.devices.preprocess.validate_multiprocessing_workers`
-* :func:`pennylane.devices.preprocess.validate_adjoint_trainable_params`
-* :func:`pennylane.devices.preprocess.no_sampling`
+* :func:`pennylane2.defer_measurements`
+* :func:`pennylane2.dynamic_one_shot`
+* :func:`pennylane2.transforms.broadcast_expand`
+* :func:`pennylane2.transforms.split_non_commuting`
+* :func:`pennylane2.transforms.transpile`
+* :func:`pennylane2.transforms.diagonalize_measurements`
+* :func:`pennylane2.transforms.split_to_single_terms`
+* :func:`pennylane2.devices.preprocess.decompose`
+* :func:`pennylane2.devices.preprocess.validate_observables`
+* :func:`pennylane2.devices.preprocess.validate_measurements`
+* :func:`pennylane2.devices.preprocess.validate_device_wires`
+* :func:`pennylane2.devices.preprocess.validate_multiprocessing_workers`
+* :func:`pennylane2.devices.preprocess.validate_adjoint_trainable_params`
+* :func:`pennylane2.devices.preprocess.no_sampling`
 
 Custom Device Decompositions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :func:`pennylane.devices.preprocess.decompose` transform is typically required as part of the compile pipeline that
+The :func:`pennylane2.devices.preprocess.decompose` transform is typically required as part of the compile pipeline that
 decomposes unsupported operations to the device's native gate set. To define this transform a stopping condition needs
 to be specified. This is a function mapping an operator to a boolean that determines whether the operator should be decomposed.
 
@@ -245,7 +245,7 @@ can be specified like so:
 
 .. code-block:: python
 
-    from pennylane.devices.preprocess import decompose
+    from pennylane2.devices.preprocess import decompose
 
     def stopping_condition(op):
         return op.name in {"CNOT", "RX", "RZ"}
@@ -285,9 +285,9 @@ to execute a circuit written in terms of ``CNOT`` s. Then, we can define a decom
     )
 
 There is also an experimental graph-based decomposition algorithm (activated via
-:func:`qp.decomposition.enable_graph() <pennylane.decomposition.enable_graph>`) that can
+:func:`qp.decomposition.enable_graph() <pennylane2.decomposition.enable_graph>`) that can
 be leveraged when overriding the decompositions of certain operators. To make your device
-compatible with this new system, the ``target_gates`` kwarg in the :func:`pennylane.devices.preprocess.decompose` transform
+compatible with this new system, the ``target_gates`` kwarg in the :func:`pennylane2.devices.preprocess.decompose` transform
 needs to be specified as part of the compile pipeline. Note that the stopping condition function
 defines whether an operator should be decomposed, while the ``target_gates`` defines the set of operator
 types that the graph-based decomposition algorithm needs to target.
@@ -323,20 +323,20 @@ Device Capabilities
 
 Optionally, you can add a ``config_filepath`` class variable pointing to your configuration file.
 This file should be a `toml file <https://toml.io/en/>`_ that describes which gates and features are
-supported by your device, i.e., what the :meth:`~pennylane.devices.Device.execute` method accepts.
+supported by your device, i.e., what the :meth:`~pennylane2.devices.Device.execute` method accepts.
 
 .. code-block:: python
 
     from os import path
-    from pennylane.devices import Device
+    from pennylane2.devices import Device
 
     class MyDevice(Device):
         """My Documentation."""
 
         config_filepath = path.join(path.dirname(__file__), "relative/path/to/config.toml")
 
-This configuration file will be loaded into another class variable :attr:`~pennylane.devices.Device.capabilities`
-that is used in the default implementation of :meth:`~pennylane.devices.Device.preprocess_transforms`
+This configuration file will be loaded into another class variable :attr:`~pennylane2.devices.Device.capabilities`
+that is used in the default implementation of :meth:`~pennylane2.devices.Device.preprocess_transforms`
 if you choose not to override it yourself as described above. Note that this file must be declared as
 package data as instructed at the end of :ref:`this section <packaging>`.
 
@@ -620,7 +620,7 @@ to handle each stage in the process.
 PennyLane does provide some helper functions to assist in executing
 circuits. Any ``StateMeasurement`` has ``process_state`` and ``process_density_matrix`` methods for
 classical post-processing of a state vector or density matrix, and ``SampleMeasurement``'s implement
-both ``process_samples`` and ``process_counts``. The ``pennylane.devices.qubit`` module also contains
+both ``process_samples`` and ``process_counts``. The ``pennylane2.devices.qubit`` module also contains
 functions that implement parts of a Python-based statevector simulation.
 
 Suppose you are accessing hardware that can only return raw samples. Here, we use the ``mp.process_samples``
@@ -649,8 +649,8 @@ Device Modifiers
 
 PennyLane currently provides two device modifiers.
 
-* :func:`pennylane.devices.modifiers.single_tape_support`
-* :func:`pennylane.devices.modifiers.simulator_tracking`
+* :func:`pennylane2.devices.modifiers.single_tape_support`
+* :func:`pennylane2.devices.modifiers.simulator_tracking`
 
 For example, with a custom device we can add simulator-style tracking and the ability
 to handle a single circuit. See the documentation for each modifier for more details.
@@ -691,7 +691,7 @@ The device tracker stores and records information when tracking mode is turned o
 the number of executions, number of shots, number of batches, or remote simulator cost for users to interact with
 in a customizable way.
 
-Three aspects of the :class:`~pennylane.Tracker` class are relevant to plugin designers:
+Three aspects of the :class:`~pennylane2.Tracker` class are relevant to plugin designers:
 
 * The boolean ``active`` attribute that denotes whether or not to update and record
 * ``update`` method which accepts keyword-value pairs and stores the information
@@ -727,7 +727,7 @@ number of execute and derivative batches, and number of derivatives.
 
 While this is the recommended usage, the ``update`` and ``record`` methods can be called at any location
 within the device. While the above example tracks executions, shots, and batches, the
-:meth:`~pennylane.devices.Tracker.update` method can accept any combination of
+:meth:`~pennylane2.devices.Tracker.update` method can accept any combination of
 keyword-value pairs.  For example, a device could also track cost and a job ID via:
 
 .. code-block:: python
@@ -748,7 +748,7 @@ which allows the device to be initialized in the following way:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
     dev1 = qp.device(name)
 
 where ``name`` is a string that uniquely identifies the device. The ``name``
@@ -764,7 +764,7 @@ following keyword argument to the ``setup()`` function in your ``setup.py`` file
         'example.mydevice1 = MyModule.MySubModule:MyDevice1'
         'example.mydevice2 = MyModule.MySubModule:MyDevice2'
     ],
-    setup(entry_points={'pennylane.plugins': devices_list})
+    setup(entry_points={'pennylane2.plugins': devices_list})
 
 where
 

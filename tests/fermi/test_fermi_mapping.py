@@ -15,12 +15,12 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane.fermi.conversion import jordan_wigner
-from pennylane.fermi.fermionic import FermiSentence, FermiWord
-from pennylane.ops import Identity, SProd
-from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.pauli.conversion import pauli_sentence
+import pennylane2 as qp
+from pennylane2.fermi.conversion import jordan_wigner
+from pennylane2.fermi.fermionic import FermiSentence, FermiWord
+from pennylane2.ops import Identity, SProd
+from pennylane2.pauli import PauliSentence, PauliWord
+from pennylane2.pauli.conversion import pauli_sentence
 
 FERMI_WORDS_AND_OPS = [
     (

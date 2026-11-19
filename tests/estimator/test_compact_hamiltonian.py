@@ -17,14 +17,14 @@ This module contains tests for the compact Hamiltonian dataclasses used in resou
 
 import pytest
 
-import pennylane.estimator as qre
-from pennylane.estimator import (
+import pennylane2.estimator as qre
+from pennylane2.estimator import (
     CDFHamiltonian,
     THCHamiltonian,
     VibrationalHamiltonian,
     VibronicHamiltonian,
 )
-from pennylane.estimator.compact_hamiltonian import (
+from pennylane2.estimator.compact_hamiltonian import (
     _sort_and_freeze,
     _validate_pauli_terms,
 )

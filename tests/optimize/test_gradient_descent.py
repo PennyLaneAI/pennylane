@@ -17,9 +17,9 @@ Unit tests for the ``GradientDescentOptimizer``.
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.optimize import GradientDescentOptimizer
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.optimize import GradientDescentOptimizer
 
 univariate = [
     (np.sin, np.cos),

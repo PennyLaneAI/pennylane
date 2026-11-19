@@ -15,9 +15,9 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane import qnode
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2 import qnode
 
 pytestmark = pytest.mark.autograd
 

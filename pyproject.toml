@@ -3,7 +3,7 @@ requires = ["setuptools>=75.8.1"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pennylane"
+name = "pennylane2"
 description = "PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Train a quantum computer the same way as a neural network."
 readme = "README.md"
 license =  "Apache-2.0"
@@ -153,20 +153,20 @@ email = "software@xanadu.ai"
 repository = "https://github.com/PennyLaneAI/pennylane"
 
 [project.scripts]
-pl-device-test = "pennylane.devices.tests:cli"
+pl2-device-test = "pennylane2.devices.tests:cli"
 
-# TODO: rename entry point 'pennylane.plugins' to 'pennylane.devices'.
+# TODO: rename entry point 'pennylane2.plugins' to 'pennylane2.devices'.
 # This requires a rename in the setup file of all devices, and is best done during another refactor
-[project.entry-points."pennylane.plugins"]
-"default.qubit" = "pennylane.devices:DefaultQubit"
-"default.mixed" = "pennylane.devices.default_mixed:DefaultMixed"
-"reference.qubit" = "pennylane.devices.reference_qubit:ReferenceQubit"
-"null.qubit" = "pennylane.devices.null_qubit:NullQubit"
-"default.clifford" = "pennylane.devices.default_clifford:DefaultClifford"
-"default.tensor" = "pennylane.devices.default_tensor:DefaultTensor"
+[project.entry-points."pennylane2.plugins"]
+"default.qubit" = "pennylane2.devices:DefaultQubit"
+"default.mixed" = "pennylane2.devices.default_mixed:DefaultMixed"
+"reference.qubit" = "pennylane2.devices.reference_qubit:ReferenceQubit"
+"null.qubit" = "pennylane2.devices.null_qubit:NullQubit"
+"default.clifford" = "pennylane2.devices.default_clifford:DefaultClifford"
+"default.tensor" = "pennylane2.devices.default_tensor:DefaultTensor"
 
 [project.entry-points."console_scripts"]
-"pl-device-test" = "pennylane.devices.tests:cli"
+"pl2-device-test" = "pennylane2.devices.tests:cli"
 
 [tool.setuptools]
 include-package-data = true
@@ -174,14 +174,15 @@ py-modules = []
 
 [tool.setuptools.packages.find]
 where = ["."]
+include = ["pennylane2", "pennylane2.*"]
 
 [tool.setuptools.dynamic]
-version = {attr = "pennylane._version.__version__"}
+version = {attr = "pennylane2._version.__version__"}
 
 [tool.setuptools_scm]
 
 [tool.setuptools.package-data]
-pennylane = ["devices/tests/pytest.ini", "drawer/plot.mplstyle", "transforms/sign_expand/sign_expand_data.json"]
+pennylane2 = ["devices/tests/pytest.ini", "drawer/plot.mplstyle", "transforms/sign_expand/sign_expand_data.json"]
 
 [tool.black]
 line-length = 100
@@ -196,8 +197,8 @@ python-version = "3.12"
 python-platform = "all"
 
 [tool.ty.src]
-include = ["pennylane"]
-exclude = ["pennylane/labs", "pennylane/devices/tests"]
+include = ["pennylane2"]
+exclude = ["pennylane2/labs", "pennylane2/devices/tests"]
 
 [tool.ty.terminal]
 error-on-warning = true
@@ -207,13 +208,13 @@ py_version = 312
 profile = "black"
 line_length = 100
 known_third_party = ["autoray"]
-known_first_party = ["pennylane"]
+known_first_party = ["pennylane2"]
 skip = ["__init__.py"]
 filter_files = true
 
 [tool.bandit]
-targets = "pennylane"
-exclude_dirs = ["tests", "pennylane/labs/tests"]
+targets = "pennylane2"
+exclude_dirs = ["tests", "pennylane2/labs/tests"]
 skips = [
-    "B101", # We are okay with using asserts in source code as we do not compile optimized bytecode of pennylane
+    "B101", # We are okay with using asserts in source code as we do not compile optimized bytecode of pennylane2
 ]

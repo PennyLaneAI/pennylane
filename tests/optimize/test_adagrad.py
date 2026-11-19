@@ -17,8 +17,8 @@ Unit tests for the ``AdagradOptimizer``.
 
 import pytest
 
-from pennylane import numpy as np
-from pennylane.optimize import AdagradOptimizer
+from pennylane2 import numpy as np
+from pennylane2.optimize import AdagradOptimizer
 
 
 class TestAdagradOptimizer:

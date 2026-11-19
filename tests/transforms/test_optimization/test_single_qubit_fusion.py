@@ -18,10 +18,10 @@ Unit tests for the optimization transform ``single_qubit_fusion``.
 import pytest
 from utils import check_matrix_equivalence, compare_operation_lists
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.transforms.optimization import single_qubit_fusion
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.transforms.optimization import single_qubit_fusion
+from pennylane2.wires import Wires
 
 
 class TestSingleQubitFusion:

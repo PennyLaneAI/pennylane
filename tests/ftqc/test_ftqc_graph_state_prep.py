@@ -17,9 +17,9 @@ import networkx as nx
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.ftqc import GraphStatePrep, QubitGraph, generate_lattice, make_graph_state
-from pennylane.testing import assert_valid
+import pennylane2 as qp
+from pennylane2.ftqc import GraphStatePrep, QubitGraph, generate_lattice, make_graph_state
+from pennylane2.testing import assert_valid
 
 
 class TestGraphStatePrep:

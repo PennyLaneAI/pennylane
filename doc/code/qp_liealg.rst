@@ -1,4 +1,4 @@
 qp.liealg
 ==========
 
-.. automodule:: pennylane.liealg
+.. automodule:: pennylane2.liealg

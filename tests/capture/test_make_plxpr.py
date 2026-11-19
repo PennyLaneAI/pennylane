@@ -23,8 +23,8 @@ from unittest.mock import call
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.capture import make_plxpr
+import pennylane2 as qp
+from pennylane2.capture import make_plxpr
 
 pytestmark = pytest.mark.jax
 
@@ -34,8 +34,8 @@ jax = pytest.importorskip("jax")
 from jax import numpy as jnp
 
 # pylint: disable-next=ungrouped-imports
-from pennylane.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
-from pennylane.testing import extract_all_primitives
+from pennylane2.capture.primitives import cond_prim, for_loop_prim, while_loop_prim
+from pennylane2.testing import extract_all_primitives
 
 
 def test_error_is_raised_with_capture_disabled():

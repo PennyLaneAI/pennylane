@@ -21,8 +21,8 @@ import numpy as np
 import pytest
 from scipy.stats import unitary_group
 
-import pennylane as qp
-from pennylane.ops.qubit.attributes import Attribute, has_unitary_generator
+import pennylane2 as qp
+from pennylane2.ops.qubit.attributes import Attribute, has_unitary_generator
 
 # Dummy attribute
 new_attribute = Attribute(["PauliX", "PauliY", "PauliZ", "Hadamard", "RZ"])

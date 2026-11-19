@@ -1,8 +1,8 @@
 """Convenience gate representations for testing"""
 
-import pennylane as qp
-from pennylane import math
-from pennylane import numpy as np
+import pennylane2 as qp
+from pennylane2 import math
+from pennylane2 import numpy as np
 
 # ========================================================
 #  fixed gates

@@ -16,11 +16,11 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.measurements import SampleMeasurement, StateMeasurement
-from pennylane.devices import ExecutionConfig, NullQubit, preprocess
-from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.measurements import (
+import pennylane2 as qp
+from pennylane2.core.measurements import SampleMeasurement, StateMeasurement
+from pennylane2.devices import ExecutionConfig, NullQubit, preprocess
+from pennylane2.exceptions import PennyLaneDeprecationWarning
+from pennylane2.measurements import (
     ClassicalShadowMP,
     ShadowExpvalMP,
 )

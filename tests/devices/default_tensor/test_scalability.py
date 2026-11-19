@@ -18,7 +18,7 @@ Unit tests for the DefaultTensor class.
 import numpy as np
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 quimb = pytest.importorskip("quimb")
 

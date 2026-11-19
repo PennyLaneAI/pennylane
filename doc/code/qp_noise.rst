@@ -14,7 +14,7 @@ as :class:`~.BooleanFn` objects, to :ref:`quantum function <intro_vcirc_qfunc>`-
 that contain the noisy operations to be applied, but without any return statements. Additional
 noise-related metadata can also be supplied to construct a noise model using:
 
-.. currentmodule:: pennylane
+.. currentmodule:: pennylane2
 
 .. autosummary::
     :toctree: api
@@ -41,7 +41,7 @@ Boolean functions
 Each :class:`~.BooleanFn` in the noise model is evaluated on the operations of a given
 quantum circuit. One can construct standard Boolean functions using the following helpers:
 
-.. currentmodule:: pennylane.noise
+.. currentmodule:: pennylane2.noise
 
 .. autosummary::
     :toctree: api
@@ -65,7 +65,7 @@ False
 Arbitrary Boolean functions can also be defined by wrapping the functional form
 of custom conditions with the following decorator:
 
-.. currentmodule:: pennylane
+.. currentmodule:: pennylane2
 
 .. autosummary::
     :toctree: api
@@ -107,7 +107,7 @@ to the ``RX`` gate:
 A common use case is to have a single-operation :ref:`noise channel <intro_ref_ops_channels>`
 whose wires are the same as the preceding operation. This can be constructed using:
 
-.. currentmodule:: pennylane.noise
+.. currentmodule:: pennylane2.noise
 
 .. autosummary::
     :toctree: api
@@ -170,7 +170,7 @@ API overview
 The following are the ``BooleanFn`` objects created by calling the helper functions
 above, such as :func:`~.op_eq`. These objects do not need to be instantiated directly
 
-.. currentmodule:: pennylane.noise.conditionals
+.. currentmodule:: pennylane2.noise.conditionals
 
 .. autosummary::
     :toctree: api
@@ -184,7 +184,7 @@ above, such as :func:`~.op_eq`. These objects do not need to be instantiated dir
 Bitwise operations like ``And`` and ``Or`` are represented with the following classes in the
 :mod:`boolean_fn` module:
 
-.. currentmodule:: pennylane.boolean_fn
+.. currentmodule:: pennylane2.boolean_fn
 
 .. autosummary::
     :toctree: api
@@ -202,18 +202,18 @@ but are just located in different modules.
 
 **Noise Conditionals:**
 
-.. inheritance-diagram:: pennylane.noise.conditionals
+.. inheritance-diagram:: pennylane2.noise.conditionals
     :parts: 1
 
 **Boolean Fn conditionals:**
 
-.. inheritance-diagram:: pennylane.boolean_fn
+.. inheritance-diagram:: pennylane2.boolean_fn
     :parts: 1
 
 Noise transforms
 ^^^^^^^^^^^^^^^^
 
-.. currentmodule:: pennylane.noise
+.. currentmodule:: pennylane2.noise
 
 .. autosummary::
     :toctree: api

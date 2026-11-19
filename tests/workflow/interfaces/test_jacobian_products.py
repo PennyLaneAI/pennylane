@@ -24,10 +24,10 @@ import pytest
 from cachetools import LRUCache
 from param_shift_dev import ParamShiftDerivativesDevice
 
-import pennylane as qp
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.measurements import Shots
-from pennylane.workflow.jacobian_products import (
+import pennylane2 as qp
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.measurements import Shots
+from pennylane2.workflow.jacobian_products import (
     DeviceDerivatives,
     DeviceJacobianProducts,
     JacobianProductCalculator,
@@ -188,7 +188,7 @@ class TestBasics:
             r" gradient_method='adjoint', gradient_keyword_arguments={},"
             r" device_options={}, interface=<Interface.NUMPY: 'numpy'>, derivative_order=1,"
             r" mcm_config=MCMConfig(mcm_method=None, postselect_mode=None), convert_to_numpy=True,"
-            r" executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)>"
+            r" executor_backend=<class 'pennylane2.concurrency.executors.native.multiproc.MPPoolExec'>)>"
         )
 
         assert repr(jpc) == expected
@@ -208,7 +208,7 @@ class TestBasics:
             r" gradient_method='adjoint', gradient_keyword_arguments={}, device_options={},"
             r" interface=<Interface.NUMPY: 'numpy'>, derivative_order=1,"
             r" mcm_config=MCMConfig(mcm_method=None, postselect_mode=None), convert_to_numpy=True,"
-            r" executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)>"
+            r" executor_backend=<class 'pennylane2.concurrency.executors.native.multiproc.MPPoolExec'>)>"
         )
 
         assert repr(jpc) == expected

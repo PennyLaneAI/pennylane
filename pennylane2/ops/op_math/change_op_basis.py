@@ -1,0 +1,460 @@
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This submodule defines a class for compute-uncompute patterns.
+"""
+
+import copy
+import inspect
+from collections import Counter, defaultdict
+from collections.abc import Callable
+from functools import reduce
+
+from pennylane2 import capture, math
+from pennylane2.capture.op_eqns import pop_op_eqns
+from pennylane2.core import queuing
+from pennylane2.core.apply import apply
+from pennylane2.core.operator import Operator, Operator2, abstractify
+from pennylane2.decomposition import add_decomps, register_resources
+from pennylane2.exceptions import (
+    DiagGatesUndefinedError,
+    EigvalsUndefinedError,
+    MatrixUndefinedError,
+    SparseMatrixUndefinedError,
+)
+from pennylane2.ops.op_math import adjoint, ctrl, prod
+from pennylane2.ops.op_math.adjoint import _adjoint_eager
+from pennylane2.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane2.ops.op_math.change_op_basis2 import ChangeOpBasis2
+from pennylane2.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane2.pytrees import flatten, unflatten
+from pennylane2.typing import Wire
+
+from .composite import CompositeOp, handle_recursion_error
+
+
+def _validate_callable(func: Callable) -> None:
+    """Validates that a callable has no unbound mandatory parameters."""
+    sig = inspect.signature(func)
+
+    for param in sig.parameters.values():
+        # The function,
+        #
+        # def f(*args, **kwargs):
+        #     pass
+        #
+        # technically doesn't have any required parameters.
+        if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+            continue
+
+        # If param has no default we can early exit
+        if param.default is inspect.Parameter.empty:
+            raise TypeError(
+                "change_op_basis requires that Callable inputs have no unbound mandatory parameters. Please use functools.partial to bind them."
+            )
+
+
+def _is_abstract_operator(op) -> bool:
+    """Return whether ``op`` is an operator-valued JAX tracer."""
+    return math.is_tracer(op) and isinstance(op.aval, capture.AbstractOperator)
+
+
+def _apply_op_or_func(op_or_func):
+    if callable(op_or_func):
+        _validate_callable(op_or_func)
+        op_or_func()
+    elif isinstance(op_or_func, Operator2):
+        # NOTE: An Operator2 built outside the trace context has no equation
+        # so we need to emit one.
+        if op_or_func.tracer is None:
+            op_or_func._bind_primitive()  # pylint: disable=protected-access
+    elif isinstance(op_or_func, Operator):
+        apply(op_or_func)
+    elif _is_abstract_operator(op_or_func):
+        pass
+    else:
+        raise TypeError(
+            f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
+        )
+
+
+def _convert_to_prod(op_or_func):
+    if callable(op_or_func):
+        _validate_callable(op_or_func)
+        return prod(op_or_func)()
+    if isinstance(op_or_func, Operator):
+        return op_or_func
+    raise TypeError(
+        f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
+    )
+
+
+def change_op_basis(  # pylint: disable=inconsistent-return-statements
+    compute_op: Operator | Callable,
+    target_op: Operator | Callable,
+    uncompute_op: Operator | Callable | None = None,
+):
+    """Construct an operator that represents the product of the
+    operators provided; particularly a compute-uncompute pattern.
+
+    Args:
+        compute_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
+        target_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
+        uncompute_op (None | :class:`~.Operator` | Callable): An optional single operator or ``Callable`` with no inputs that applies quantum
+            operations. ``None`` corresponds to ``uncompute_op=qp.adjoint(compute_op)``.
+
+    Returns:
+        ~ops.op_math.ChangeOpBasis: the operator representing the compute-uncompute pattern.
+
+    Raises:
+        TypeError: if any arguments are not ``Callable`` s or :class:`~.Operator` s, or a ``Callable`` argument has input parameters.
+
+    **Example**
+
+    Consider the following example involving a ``change_op_basis``. The compute, uncompute pattern
+    is composed of a Quantum Fourier Transform (``QFT``), followed by a ``PhaseAdder``, and finally
+    an inverse ``QFT``.
+
+    .. code-block:: python
+
+        import pennylane2 as qp
+        from functools import partial
+
+        qp.decomposition.enable_graph()
+
+        dev = qp.device("default.qubit")
+        @qp.qnode(dev)
+        def circuit():
+            qp.H(0)
+            qp.CNOT([1,2])
+            qp.ctrl(
+                qp.change_op_basis(qp.QFT([1,2]), qp.PhaseAdder(1, x_wires=[1,2])),
+                control=0
+            )
+            return qp.state()
+
+        circuit2 = qp.transforms._tape_decompose(circuit, max_expansion=1)
+
+    When this circuit is decomposed, the ``compute_op`` and ``uncompute_op`` are not controlled,
+    resulting in a much more resource-efficient decomposition:
+
+    >>> print(qp.draw(circuit2)())
+    0: ──H──────╭●──────────────────────┤ ╭State
+    1: ─╭●─╭QFT─├PhaseAdder(1.00)─╭QFT†─┤ ├State
+    2: ─╰X─╰QFT─╰PhaseAdder(1.00)─╰QFT†─┤ ╰State
+
+    A ``Callable`` can also be provided as an argument to ``change_op_basis``. This can be a
+    function that applies a series of ``Operation`` s. Since ``change_op_basis`` requires this
+    ``Callable`` to have no input arguments, ``functools.partial`` can be used to absorb any
+    necessary parameters.
+
+    .. code-block:: python
+
+        def my_compute_op(a, reg1, reg2):
+            qp.BasisState(np.zeros(len(reg2)), reg2)
+            qp.QFT(reg1)
+            qp.RX(a, reg1[0])
+
+        def my_target_op(wires):
+            qp.PauliX(wires[0])
+
+        dev = qp.device("default.qubit")
+
+        @qp.qnode(dev)
+        def circuit():
+            # Use partial to absorb any input parameters
+            compute = partial(my_compute_op, 0.1, [0], [1])
+            target = partial(my_target_op, [0])
+            qp.change_op_basis(compute, target)
+            return qp.state()
+
+        circuit3 = qp.transforms._tape_decompose(circuit, max_expansion=1)
+
+    >>> print(qp.draw(circuit3)())
+    0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤ ╭State
+    1: ─╰RX(0.10)@QFT@|Ψ⟩────╰(RX(0.10)@QFT@|Ψ⟩)†─┤ ╰State
+
+    .. warning::
+
+        There is limited support for passing callables to ``change_op_basis`` when program capture
+        is enabled. Specifically, passing callables to ``qp.adjoint(qp.change_op_basis)(...)`` and
+        ``qp.ctrl(qp.change_op_basis, control=...)(...)`` are not supported with ``@qp.qjit(capture=True)``
+
+    .. seealso:: :class:`~.ops.op_math.ChangeOpBasis`
+
+    """
+
+    if capture.enabled():
+        # NOTE: Need to pop any eagerly constructed operators present in the traced function
+        # out of the jaxpr. This ensures that the order is kept consistent if any operators
+        # were built outside of the traced function. '_apply_op_or_func' will bind the primitives
+        # and insert them in the correct order.
+        operands = (compute_op, target_op, uncompute_op)
+        # Operator1 constructors return AbstractOperator tracers during capture, while
+        # Operator2 constructors retain Python wrappers whose ``tracer`` attributes point to
+        # their equations. If any operand is already an AbstractOperator tracer, preserve the
+        # constructor order instead of moving only the Operator2 equations.
+        if not any(_is_abstract_operator(op) for op in operands):
+            for _op in operands:
+                if isinstance(_op, Operator2) and _op.tracer is not None:
+                    pop_op_eqns((_op,))
+        _apply_op_or_func(compute_op)
+        _apply_op_or_func(target_op)
+        if uncompute_op is not None:
+            _apply_op_or_func(uncompute_op)
+        elif isinstance(compute_op, Operator2):
+            # NOTE: The new Adjoint2 will consume compute_op as a hybrid pytree argument
+            # and will pop its jaxpr equation (see pop_op_eqns). To prevent this from happening,
+            # we can feed a copy of the op to adjoint and detach its tracer as if it was
+            # removed from the jaxpr.
+            dummy = copy.copy(compute_op)
+            dummy.tracer = None
+            _apply_op_or_func(adjoint(dummy))
+        else:
+            _apply_op_or_func(adjoint(compute_op))
+    else:
+        compute = _convert_to_prod(compute_op)
+        target = _convert_to_prod(target_op)
+        uncompute = _convert_to_prod(uncompute_op) if uncompute_op is not None else None
+        if (
+            isinstance(compute, Operator2)
+            and isinstance(target, Operator2)
+            and (isinstance(uncompute, Operator2) or uncompute is None)
+        ):
+            return ChangeOpBasis2(
+                compute,
+                target,
+                uncompute,
+            )
+        return ChangeOpBasis(compute, target, uncompute)
+
+
+class ChangeOpBasis(CompositeOp):
+    """
+    Composite operator representing a compute-uncompute pattern of operators, which constitutes changing the basis in
+    which an operator is applied.
+
+    Args:
+        compute_op (:class:`~.Operator`): A single operator or product that applies quantum operations.
+        target_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
+        uncompute_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
+            Default is uncompute_op=qp.adjoint(compute_op).
+
+    Returns:
+        (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.
+
+    .. note::
+        When a ``ChangeOpBasis`` operator is iterated over, its factors are iterated in the reverse order. This is to
+        have a similar behaviour to ``Prod`` which applies its factors in reverse order.
+
+    .. seealso:: :func:`~.change_op_basis`
+    """
+
+    def __init__(
+        self, compute_op: Operator, target_op: Operator, uncompute_op: Operator | None = None
+    ):
+        if uncompute_op is None:
+            uncompute_op = adjoint(compute_op)
+        super().__init__(uncompute_op, target_op, compute_op)
+
+    def _flatten(self):
+        return tuple(reversed(self.operands)), tuple()
+
+    @classmethod
+    # pylint: disable-next=arguments-differ
+    def _primitive_bind_call(cls, compute_op, target_op, uncompute_op=None):
+        if uncompute_op is None:
+            uncompute_op = adjoint(compute_op)
+
+        leaves, structure = flatten(
+            (compute_op, target_op, uncompute_op), is_leaf=lambda x: isinstance(x, Operator)
+        )
+
+        new_leaves = []
+        for leaf in leaves:
+            if isinstance(leaf, Operator2):
+                if leaf.tracer is None:
+                    leaf._bind_primitive()  # pylint: disable=protected-access
+                new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
+            else:
+                new_leaves.append(leaf)
+
+        compute_op, target_op, uncompute_op = unflatten(new_leaves, structure)
+
+        return cls._primitive.bind(compute_op, target_op, uncompute_op)
+
+    resource_keys = frozenset({"compute_op", "target_op", "uncompute_op"})
+
+    has_matrix = False
+    has_sparse_matrix = False
+
+    _op_symbol = "@"
+    _math_op = staticmethod(math.prod)
+
+    def matrix(self, wire_order=None):
+        raise MatrixUndefinedError
+
+    def sparse_matrix(self, wire_order=None, format="csr"):
+        raise SparseMatrixUndefinedError
+
+    def diagonalizing_gates(self):
+        raise DiagGatesUndefinedError
+
+    def eigvals(self):
+        raise EigvalsUndefinedError
+
+    @property
+    @handle_recursion_error
+    def resource_params(self):
+        return {
+            "compute_op": abstractify(self[2]),
+            "target_op": abstractify(self[1]),
+            "uncompute_op": abstractify(self[0]),
+        }
+
+    grad_method = None
+
+    @classmethod
+    def _sort(cls, op_list: list, wire_map: dict = None) -> list[Operator]:
+        """
+        We do not sort the ops. The order is guaranteed to matter since if the compute operator
+        and the base operator commute, the pattern would simplify to just being the base operator.
+
+        Args:
+            op_list (List[.Operator]): list of operators to be sorted
+            wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
+                Defaults to None.
+
+        Returns:
+            List[.Operator]: sorted list of operators
+        """
+        return op_list
+
+    @property
+    def is_verified_hermitian(self):
+        """Check if the product operator is hermitian.
+
+        Note, this check is not exhaustive. There can be hermitian operators for which this check
+        yields false, which ARE hermitian. So a false result only implies that a more explicit check
+        must be performed.
+        """
+        return self[1].is_verified_hermitian
+
+    @property
+    def has_decomposition(self):
+        return True
+
+    def decomposition(self):
+        r"""Decomposition of the product operator is given by each of compute_op, target_op, compute_op† applied in succession."""
+        if queuing.QueuingManager.recording():
+            _ = [apply(op) for op in reversed(self)]
+        return list(self[::-1])
+
+    @property
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
+        return True
+
+    def adjoint(self):
+        return ChangeOpBasis(*(_adjoint_eager(factor, update_queue=True) for factor in self))
+
+    def _build_pauli_rep(self):
+        """PauliSentence representation of the Product of operations."""
+        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands[::-1]]):
+            return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
+        return None
+
+
+def _change_op_basis_resources(compute_op, target_op, uncompute_op):
+    resources = Counter()
+
+    resources[compute_op] += 1
+    resources[target_op] += 1
+    resources[uncompute_op] += 1
+
+    return resources
+
+
+def _adjoint_change_op_basis_resources(base_params, **_):
+    resources = defaultdict(int)
+    resources[base_params["compute_op"]] += 1
+    resources[base_params["uncompute_op"]] += 1
+    target_op = base_params["target_op"]
+    resources[_adjoint_abstract(target_op)] += 1
+    return resources
+
+
+@register_resources(_adjoint_change_op_basis_resources)
+def _adjoint_change_op_basis_decomp(*_, base, **__):
+    apply(base.operands[2])
+    adjoint(apply(base.operands[1]))
+    apply(base.operands[0])
+
+
+add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
+
+
+def _controlled_change_op_basis_resources(  # pylint: disable=too-many-arguments,unused-argument
+    *_,
+    num_control_wires,
+    num_zero_control_values,
+    num_work_wires,
+    work_wire_type,
+    base_class,
+    base_params,
+    **__,
+):
+    resources = defaultdict(int)
+    resources[base_params["compute_op"]] += 1
+    resources[
+        _ctrl_abstract(
+            base_params["target_op"],
+            Wire[num_control_wires],
+            Wire[num_work_wires],
+            work_wire_type,
+            num_zero_control_values,
+        )
+    ] += 1
+    resources[base_params["uncompute_op"]] += 1
+    return resources
+
+
+@register_resources(_controlled_change_op_basis_resources)
+def _controlled_change_op_basis_decomposition(
+    *_,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,
+    base,
+    **__,
+):
+    apply(base.operands[2])
+    ctrl(
+        apply(base.operands[1]),
+        control=control_wires,
+        control_values=control_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+    apply(base.operands[0])
+
+
+@register_resources(_change_op_basis_resources)
+def _change_op_basis_decomp(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
+    for op in operands[::-1]:
+        apply(op)
+
+
+add_decomps(ChangeOpBasis, _change_op_basis_decomp)
+add_decomps("C(ChangeOpBasis)", _controlled_change_op_basis_decomposition)

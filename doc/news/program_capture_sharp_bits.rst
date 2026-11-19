@@ -18,7 +18,7 @@ structured control flow, and dynamicism.
 This new feature unlocks better performance, more functional and dynamic workflows, 
 and smoother integration with just-in-time compilation frameworks like 
 `Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ 
-(via the :func:`~.pennylane.qjit` decorator) and JAX-jit.
+(via the :func:`~.pennylane2.qjit` decorator) and JAX-jit.
 
 Internally, program capture is supported by representing hybrid programs via a new 
 intermediate representation (IR) called ``plxpr``, rather than a quantum tape. The 
@@ -53,7 +53,7 @@ Device wires
 With program capture enabled, all devices that Catalyst supports require 
 that ``wires`` be specified at device instantiation.
 
->>> import pennylane as qp
+>>> import pennylane2 as qp
 >>> @qp.qjit(capture=True)
 ... @qp.qnode(qp.device('lightning.qubit'))
 ... def circuit():
@@ -65,7 +65,7 @@ NotImplementedError: devices must specify wires for integration with program cap
 
 .. code-block:: python 
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     @qp.qjit(capture=True)
     @qp.qnode(qp.device('lightning.qubit', wires=1))
@@ -91,7 +91,7 @@ please consult their respective documentation pages for information on gradient 
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
     import jax.numpy as jnp 
 
     dev = qp.device('lightning.qubit', wires=1)
@@ -126,7 +126,7 @@ in quantum operations, and will result in an error:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
     import jax.numpy as jnp
 
     dev = qp.device('lightning.qubit', wires=["a", "b", "c"])
@@ -143,7 +143,7 @@ TypeError: Argument 'a' of type <class 'str'> is not a valid JAX type
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
     import jax.numpy as jnp
 
     dev = qp.device('lightning.qubit', wires=[0, 1, 2])
@@ -168,7 +168,7 @@ For example, the positional argument in ``qp.QubitUnitary`` can't be a ``list``:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     my_unitary = [[1, 0], [0, 1]]
 
@@ -188,7 +188,7 @@ But a ``list`` can be passed to ``qp.QubitUnitary`` as a keyword argument:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     my_unitary = [[1, 0], [0, 1]]
 
@@ -207,7 +207,7 @@ Using a ``jax.numpy.array`` as the positional argument gives expected behaviour:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
     import jax
 
     my_unitary = jax.numpy.array([[1, 0], [0, 1]])
@@ -236,7 +236,7 @@ For instance, consider this example with ``RZ``:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
     import jax.numpy as jnp
 
     dev = qp.device("lightning.qubit", wires=1)
@@ -260,7 +260,7 @@ expected:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
     import jax.numpy as jnp
 
     dev = qp.device("lightning.qubit", wires=1)
@@ -287,31 +287,31 @@ In general, if a transform that is available in PennyLane only has a tape-compat
 definition, we do not recommend using it with ``@qjit(capture=True)``, though no 
 errors may occur. Currently, this includes:
 
-* :func:`~.pennylane.transforms.combine_global_phases`
-* :func:`~.pennylane.transforms.commute_controlled`
-* :func:`~.pennylane.transforms.merge_amplitude_embedding`
-* :func:`~.pennylane.transforms.pattern_matching_optimization`
-* :func:`~.pennylane.transforms.match_relative_phase_toffoli`
-* :func:`~.pennylane.transforms.match_controlled_iX_gate`
-* :func:`~.pennylane.transforms.remove_barrier`
-* :func:`~.pennylane.transforms.single_qubit_fusion`
-* :func:`~.pennylane.transforms.transpile`
-* :func:`~.pennylane.transforms.unitary_to_rot`
-* :func:`~.pennylane.transforms.rz_phase_gradient`
-* :func:`~.pennylane.transforms.zx.optimize_t_count`
-* :func:`~.pennylane.transforms.zx.push_hadamards`
-* :func:`~.pennylane.transforms.zx.reduce_non_clifford`
-* :func:`~.pennylane.transforms.zx.todd`
-* :func:`~.pennylane.add_noise`
-* :func:`~.pennylane.transforms.undo_swaps`
-* :func:`~.pennylane.transforms.rowcol`
-* :func:`~.pennylane.map_wires`
-* Custom tape transforms created with :func:`~.pennylane.transform`.
+* :func:`~.pennylane2.transforms.combine_global_phases`
+* :func:`~.pennylane2.transforms.commute_controlled`
+* :func:`~.pennylane2.transforms.merge_amplitude_embedding`
+* :func:`~.pennylane2.transforms.pattern_matching_optimization`
+* :func:`~.pennylane2.transforms.match_relative_phase_toffoli`
+* :func:`~.pennylane2.transforms.match_controlled_iX_gate`
+* :func:`~.pennylane2.transforms.remove_barrier`
+* :func:`~.pennylane2.transforms.single_qubit_fusion`
+* :func:`~.pennylane2.transforms.transpile`
+* :func:`~.pennylane2.transforms.unitary_to_rot`
+* :func:`~.pennylane2.transforms.rz_phase_gradient`
+* :func:`~.pennylane2.transforms.zx.optimize_t_count`
+* :func:`~.pennylane2.transforms.zx.push_hadamards`
+* :func:`~.pennylane2.transforms.zx.reduce_non_clifford`
+* :func:`~.pennylane2.transforms.zx.todd`
+* :func:`~.pennylane2.add_noise`
+* :func:`~.pennylane2.transforms.undo_swaps`
+* :func:`~.pennylane2.transforms.rowcol`
+* :func:`~.pennylane2.map_wires`
+* Custom tape transforms created with :func:`~.pennylane2.transform`.
 
 Drawing circuits
 ----------------
 
-Using :func:`~.pennylane.draw` or :func:`~.pennylane.draw_mpl` with program capture 
+Using :func:`~.pennylane2.draw` or :func:`~.pennylane2.draw_mpl` with program capture
 and Catalyst may not produce correct results due to the dynamic nature of compiled
 programs. Instead, it is recommended to use :func:`catalyst.draw_graph`, which 
 will accurately depict the dynamicism of programs compiled with ``@qjit(capture=True)``.
@@ -320,12 +320,12 @@ Autograph and Pythonic control flow
 -----------------------------------
 
 Autograph is a feature that allows for users to use standard Pythonic control flow
-like ``for``, ``while``, etc., instead of :func:`~.pennylane.for_loop` and :func:`~.pennylane.while_loop` 
+like ``for``, ``while``, etc., instead of :func:`~.pennylane2.for_loop` and :func:`~.pennylane2.while_loop`
 and still have program structure preserved. This can be accessed with ``qjit(capture=True, autograph=True)``:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     @qp.qjit(capture=True, autograph=True)
     @qp.qnode(qp.device("lightning.qubit", wires=2))
@@ -373,7 +373,7 @@ Instead, it is best practice to `use jax.vmap <https://docs.jax.dev/en/latest/_a
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
     import jax
     import jax.numpy as jnp
 
@@ -401,7 +401,7 @@ then a ``False`` branch much be provided that returns the same generic type:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     @qp.qjit(capture=True)
     @qp.qnode(qp.device("lightning.qubit", wires=2))
@@ -423,7 +423,7 @@ is ``False``, a ``false_fn`` must be provided:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     @qp.qjit(capture=True)
     @qp.qnode(qp.device("lightning.qubit", wires=2))
@@ -447,7 +447,7 @@ That, or the ``true_fn`` itself can be an operator type:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     @qp.qjit(capture=True)
     @qp.qnode(qp.device("lightning.qubit", wires=2))
@@ -464,12 +464,12 @@ Array(0., dtype=float64)
 Calculating operator matrices in QNodes
 ---------------------------------------
 
-The matrix of an operator cannot be computed with :func:`~.pennylane.matrix` within
+The matrix of an operator cannot be computed with :func:`~.pennylane2.matrix` within
 a QNode, and will raise an error:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     dev = qp.device("lightning.qubit", wires=1)
 

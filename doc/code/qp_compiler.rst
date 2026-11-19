@@ -1,6 +1,6 @@
 qp.compiler
 ============
 
-.. currentmodule:: pennylane.compiler
+.. currentmodule:: pennylane2.compiler
 
-.. automodule:: pennylane.compiler
+.. automodule:: pennylane2.compiler

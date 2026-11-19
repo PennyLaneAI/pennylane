@@ -33,14 +33,14 @@ from operator2_utils import (
 jax = pytest.importorskip("jax")
 from jax.core import ShapedArray
 
-import pennylane as qp
-from pennylane import apply
-from pennylane.capture import PlxprInterpreter
-from pennylane.capture.primitives import AbstractOperator, operator_p, symbolic_array_prim
-from pennylane.pytrees import unflatten
-from pennylane.testing import find_eqns
-from pennylane.typing import Float, Int, Wire
-from pennylane.wires import AbstractQubit
+import pennylane2 as qp
+from pennylane2 import apply
+from pennylane2.capture import PlxprInterpreter
+from pennylane2.capture.primitives import AbstractOperator, operator_p, symbolic_array_prim
+from pennylane2.pytrees import unflatten
+from pennylane2.testing import find_eqns
+from pennylane2.typing import Float, Int, Wire
+from pennylane2.wires import AbstractQubit
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 

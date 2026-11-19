@@ -19,16 +19,16 @@ from itertools import product
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.operator import abstractify
-from pennylane.templates.subroutines.arithmetic.signed_out_square import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.operator import abstractify
+from pennylane2.templates.subroutines.arithmetic.signed_out_square import (
     OutSquare,
     SignedOutSquare,
     _signed_out_square_resources,
 )
-from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
-from pennylane.typing import Wire
+from pennylane2.testing import assert_decomposable, assert_valid_decomp_rule
+from pennylane2.typing import Wire
 
 
 @pytest.mark.parametrize("output_wires_zeroed", [False, True])

@@ -22,15 +22,15 @@ from typing import override
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core import Operator2
-from pennylane.decomposition.decomposition_rule import register_resources
-from pennylane.operation import abstractify
-from pennylane.ops.op_math.controlled import Controlled, ControlledOp
-from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2, _make_controlled_decomp
-from pennylane.testing.operators import _check_eigendecomposition
-from pennylane.typing import Bool, Float, Wire
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.core import Operator2
+from pennylane2.decomposition.decomposition_rule import register_resources
+from pennylane2.operation import abstractify
+from pennylane2.ops.op_math.controlled import Controlled, ControlledOp
+from pennylane2.ops.op_math.controlled2 import Controlled2, ControlledOp2, _make_controlled_decomp
+from pennylane2.testing.operators import _check_eigendecomposition
+from pennylane2.typing import Bool, Float, Wire
+from pennylane2.wires import Wires
 from tests.core.operator.operator2_utils import CompilableOp, DynOp, NonParametricOp, OneWireDynOp
 
 
@@ -115,7 +115,7 @@ class TestControlled2:
 
         import jax
 
-        from pennylane.testing import assert_eqn_matches_op
+        from pennylane2.testing import assert_eqn_matches_op
 
         def circuit():
             CustomControlled([0, 1])

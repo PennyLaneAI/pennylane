@@ -38,6 +38,6 @@ jobs:
 
       - name: Run tach
         run: |
-          tach report pennylane/labs
-          tach report pennylane/ftqc
+          tach report pennylane2/labs
+          tach report pennylane2/ftqc
           tach check

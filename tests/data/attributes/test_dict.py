@@ -18,7 +18,7 @@ Tests for the ``DatasetDict`` attribute type.
 import numpy as np
 import pytest
 
-from pennylane.data.attributes import DatasetDict
+from pennylane2.data.attributes import DatasetDict
 
 pytestmark = pytest.mark.data
 

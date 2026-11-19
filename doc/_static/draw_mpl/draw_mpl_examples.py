@@ -22,8 +22,8 @@ for developers when making any change that might impact the resulting figures.
 import pathlib
 import matplotlib.pyplot as plt
 import numpy as np
-import pennylane as qp
-from pennylane import draw_mpl
+import pennylane2 as qp
+from pennylane2 import draw_mpl
 
 folder = pathlib.Path(__file__).parent
 

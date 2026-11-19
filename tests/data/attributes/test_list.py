@@ -20,7 +20,7 @@ from itertools import combinations
 import numpy as np
 import pytest
 
-from pennylane.data import DatasetList
+from pennylane2.data import DatasetList
 
 pytestmark = pytest.mark.data
 

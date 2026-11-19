@@ -25,24 +25,24 @@ Hence, they usually take a data sample such as a feature vector as an argument. 
 trainable parameters, and they may be constructed from repeated layers.
 
 .. gallery-item::
-    :description: :doc:`AmplitudeEmbedding <../code/api/pennylane.AmplitudeEmbedding>`
+    :description: :doc:`AmplitudeEmbedding <../code/api/pennylane2.AmplitudeEmbedding>`
     :figure: _static/templates/embeddings/amplitude.png
 
 .. gallery-item::
-    :description: :doc:`AngleEmbedding <../code/api/pennylane.AngleEmbedding>`
+    :description: :doc:`AngleEmbedding <../code/api/pennylane2.AngleEmbedding>`
     :figure: _static/templates/embeddings/angle.png
 
 .. gallery-item::
-    :description: :doc:`BasisEmbedding <../code/api/pennylane.BasisEmbedding>`
+    :description: :doc:`BasisEmbedding <../code/api/pennylane2.BasisEmbedding>`
     :figure: _static/templates/embeddings/basis.png
 
 
 .. gallery-item::
-    :description: :doc:`IQPEmbedding <../code/api/pennylane.IQPEmbedding>`
+    :description: :doc:`IQPEmbedding <../code/api/pennylane2.IQPEmbedding>`
     :figure: _static/templates/embeddings/iqp.png
 
 .. gallery-item::
-    :description: :doc:`QAOAEmbedding <../code/api/pennylane.QAOAEmbedding>`
+    :description: :doc:`QAOAEmbedding <../code/api/pennylane2.QAOAEmbedding>`
     :figure: _static/templates/embeddings/qaoa.png
 
 .. raw:: html
@@ -56,22 +56,22 @@ Layer templates
 
 Layer architectures define sequences of trainable gates that are repeated like the layers in a
 neural network. Note that arbitrary templates or operations can also be repeated using the
-:func:`~pennylane.layer` function.
+:func:`~pennylane2.layer` function.
 
 .. gallery-item::
-    :description: :doc:`RandomLayers <../code/api/pennylane.RandomLayers>`
+    :description: :doc:`RandomLayers <../code/api/pennylane2.RandomLayers>`
     :figure: _static/templates/layers/random.png
 
 .. gallery-item::
-    :description: :doc:`StronglyEntanglingLayers <../code/api/pennylane.StronglyEntanglingLayers>`
+    :description: :doc:`StronglyEntanglingLayers <../code/api/pennylane2.StronglyEntanglingLayers>`
     :figure: _static/templates/layers/strongly_entangling.png
 
 .. gallery-item::
-    :description: :doc:`SimplifiedTwoDesign <../code/api/pennylane.SimplifiedTwoDesign>`
+    :description: :doc:`SimplifiedTwoDesign <../code/api/pennylane2.SimplifiedTwoDesign>`
     :figure: _static/templates/layers/simplified_two_design.png
 
 .. gallery-item::
-    :description: :doc:`BasicEntanglerLayers <../code/api/pennylane.BasicEntanglerLayers>`
+    :description: :doc:`BasicEntanglerLayers <../code/api/pennylane2.BasicEntanglerLayers>`
     :figure: _static/templates/layers/basic_entangler.png
 
 .. raw:: html
@@ -88,47 +88,47 @@ state. In contrast to embeddings that can in principle be used anywhere in a cir
 state preparation is typically used as the first operation.
 
 .. gallery-item::
-    :description: :doc:`MottonenStatePreparation <../code/api/pennylane.MottonenStatePreparation>`
+    :description: :doc:`MottonenStatePreparation <../code/api/pennylane2.MottonenStatePreparation>`
     :figure: _static/templates/state_preparations/mottonen.png
 
 .. gallery-item::
-    :description: :doc:`ArbitraryStatePreparation <../code/api/pennylane.ArbitraryStatePreparation>`
+    :description: :doc:`ArbitraryStatePreparation <../code/api/pennylane2.ArbitraryStatePreparation>`
     :figure: _static/templates/subroutines/arbitrarystateprep.png
 
 .. gallery-item::
-    :description: :doc:`CosineWindow <../code/api/pennylane.CosineWindow>`
+    :description: :doc:`CosineWindow <../code/api/pennylane2.CosineWindow>`
     :figure: _static/templates/state_preparations/thumbnail_cosine_window.png
 
 .. gallery-item::
-    :description: :doc:`QROMStatePreparation <../code/api/pennylane.QROMStatePreparation>`
+    :description: :doc:`QROMStatePreparation <../code/api/pennylane2.QROMStatePreparation>`
     :figure: _static/templates/state_preparations/thumbnail_qrom.png
 
 .. gallery-item::
-    :description: :doc:`MPSPrep <../code/api/pennylane.MPSPrep>`
+    :description: :doc:`MPSPrep <../code/api/pennylane2.MPSPrep>`
     :figure: _static/templates/tensornetworks/MPS_template.png
 
 .. gallery-item::
-    :description: :doc:`MultiplexerStatePreparation <../code/api/pennylane.MultiplexerStatePreparation>`
+    :description: :doc:`MultiplexerStatePreparation <../code/api/pennylane2.MultiplexerStatePreparation>`
     :figure: _static/templates/state_preparations/multiplexerSP_template.png
 
 .. gallery-item::
-    :description: :doc:`SumOfSlatersPrep <../code/api/pennylane.SumOfSlatersPrep>`
+    :description: :doc:`SumOfSlatersPrep <../code/api/pennylane2.SumOfSlatersPrep>`
     :figure: _static/templates/state_preparations/sumofslatersprep_template.png
 
 .. gallery-item::
-    :description: :doc:`PartialUnaryStatePreparation <../code/api/pennylane.PartialUnaryStatePreparation>`
+    :description: :doc:`PartialUnaryStatePreparation <../code/api/pennylane2.PartialUnaryStatePreparation>`
     :figure: _static/templates/state_preparations/partialunarystatepreparation_template.png
 
 .. gallery-item::
-    :description: :doc:`UniformPrep <../code/api/pennylane.UniformPrep>`
+    :description: :doc:`UniformPrep <../code/api/pennylane2.UniformPrep>`
     :figure: _static/templates/state_preparations/uniformprep.png
 
 .. gallery-item::
-    :description: :doc:`AliasSampling <../code/api/pennylane.AliasSampling>`
+    :description: :doc:`AliasSampling <../code/api/pennylane2.AliasSampling>`
     :figure: _static/templates/state_preparations/aliassampling.png
 
 .. gallery-item::
-    :description: :doc:`PhaseGradientStatePrep <../code/api/pennylane.PhaseGradientStatePrep>`
+    :description: :doc:`PhaseGradientStatePrep <../code/api/pennylane2.PhaseGradientStatePrep>`
     :figure: _static/templates/state_preparations/phasegradientstateprep_template.png
 
 
@@ -145,63 +145,63 @@ Quantum arithmetic templates enable in-place and out-place modular operations su
 as addition, multiplication and exponentiation.
 
 .. gallery-item::
-    :description: :doc:`PhaseAdder <../code/api/pennylane.PhaseAdder>`
+    :description: :doc:`PhaseAdder <../code/api/pennylane2.PhaseAdder>`
     :figure: _static/templates/arithmetic/phaseadder.png
 
 .. gallery-item::
-    :description: :doc:`Adder <../code/api/pennylane.Adder>`
+    :description: :doc:`Adder <../code/api/pennylane2.Adder>`
     :figure: _static/templates/arithmetic/adder.png
 
 .. gallery-item::
-    :description: :doc:`SemiAdder <../code/api/pennylane.SemiAdder>`
+    :description: :doc:`SemiAdder <../code/api/pennylane2.SemiAdder>`
     :figure: _static/templates/arithmetic/semiadder.png
 
 .. gallery-item::
-    :description: :doc:`Incrementer <../code/api/pennylane.Incrementer>`
+    :description: :doc:`Incrementer <../code/api/pennylane2.Incrementer>`
     :figure: _static/templates/arithmetic/adder.png
 
 .. gallery-item::
-    :description: :doc:`OutAdder <../code/api/pennylane.OutAdder>`
+    :description: :doc:`OutAdder <../code/api/pennylane2.OutAdder>`
     :figure: _static/templates/arithmetic/outadder.png
 
 .. gallery-item::
-    :description: :doc:`Multiplier <../code/api/pennylane.Multiplier>`
+    :description: :doc:`Multiplier <../code/api/pennylane2.Multiplier>`
     :figure: _static/templates/arithmetic/multiplier.png
 
 .. gallery-item::
-    :description: :doc:`OutMultiplier <../code/api/pennylane.OutMultiplier>`
+    :description: :doc:`OutMultiplier <../code/api/pennylane2.OutMultiplier>`
     :figure: _static/templates/arithmetic/outmultiplier.png
 
 .. gallery-item::
-    :description: :doc:`SignedOutMultiplier <../code/api/pennylane.SignedOutMultiplier>`
+    :description: :doc:`SignedOutMultiplier <../code/api/pennylane2.SignedOutMultiplier>`
     :figure: _static/templates/arithmetic/signedoutmultiplier.png
 
 .. gallery-item::
-    :description: :doc:`OutSquare <../code/api/pennylane.OutSquare>`
+    :description: :doc:`OutSquare <../code/api/pennylane2.OutSquare>`
     :figure: _static/templates/arithmetic/outsquare.png
 
 .. gallery-item::
-    :description: :doc:`SignedOutSquare <../code/api/pennylane.SignedOutSquare>`
+    :description: :doc:`SignedOutSquare <../code/api/pennylane2.SignedOutSquare>`
     :figure: _static/templates/arithmetic/signedoutsquare.png
 
 .. gallery-item::
-    :description: :doc:`ModExp <../code/api/pennylane.ModExp>`
+    :description: :doc:`ModExp <../code/api/pennylane2.ModExp>`
     :figure: _static/templates/arithmetic/modexp.png
 
 .. gallery-item::
-    :description: :doc:`IntegerComparator <../code/api/pennylane.IntegerComparator>`
+    :description: :doc:`IntegerComparator <../code/api/pennylane2.IntegerComparator>`
     :figure: _static/templates/arithmetic/integercomparator.png
 
 .. gallery-item::
-    :description: :doc:`LeftClassicalComparator <../code/api/pennylane.LeftClassicalComparator>`
+    :description: :doc:`LeftClassicalComparator <../code/api/pennylane2.LeftClassicalComparator>`
     :figure: _static/templates/arithmetic/leftclassicalcomparator.png
 
 .. gallery-item::
-    :description: :doc:`LeftQuantumComparator <../code/api/pennylane.LeftQuantumComparator>`
+    :description: :doc:`LeftQuantumComparator <../code/api/pennylane2.LeftQuantumComparator>`
     :figure: _static/templates/arithmetic/leftquantumcomparator.png
 
 .. gallery-item::
-    :description: :doc:`OutPoly <../code/api/pennylane.OutPoly>`
+    :description: :doc:`OutPoly <../code/api/pennylane2.OutPoly>`
     :figure: _static/templates/arithmetic/outpoly.png
 
 
@@ -216,31 +216,31 @@ Quantum chemistry templates define various quantum circuits used in variational 
 like VQE to perform quantum chemistry simulations.
 
 .. gallery-item::
-    :description: :doc:`AllSinglesDoubles <../code/api/pennylane.AllSinglesDoubles>`
+    :description: :doc:`AllSinglesDoubles <../code/api/pennylane2.AllSinglesDoubles>`
     :figure: _static/templates/subroutines/all_singles_doubles.png
 
 .. gallery-item::
-    :description: :doc:`Basis Rotation <../code/api/pennylane.BasisRotation>`
+    :description: :doc:`Basis Rotation <../code/api/pennylane2.BasisRotation>`
     :figure: _static/templates/subroutines/basis_rotation.jpeg
 
 .. gallery-item::
-    :description: :doc:`GateFabric <../code/api/pennylane.GateFabric>`
+    :description: :doc:`GateFabric <../code/api/pennylane2.GateFabric>`
     :figure: _static/templates/layers/gate_fabric_layer.png
 
 .. gallery-item::
-    :description: :doc:`UCCSD <../code/api/pennylane.UCCSD>`
+    :description: :doc:`UCCSD <../code/api/pennylane2.UCCSD>`
     :figure: _static/templates/subroutines/uccsd.png
 
 .. gallery-item::
-    :description: :doc:`k-UpCCGSD <../code/api/pennylane.kUpCCGSD>`
+    :description: :doc:`k-UpCCGSD <../code/api/pennylane2.kUpCCGSD>`
     :figure: _static/templates/subroutines/kupccgsd.png
 
 .. gallery-item::
-    :description: :doc:`ParticleConservingU1 <../code/api/pennylane.ParticleConservingU1>`
+    :description: :doc:`ParticleConservingU1 <../code/api/pennylane2.ParticleConservingU1>`
     :figure: _static/templates/layers/particle_conserving_u1_thumbnail.png
 
 .. gallery-item::
-    :description: :doc:`ParticleConservingU2 <../code/api/pennylane.ParticleConservingU2>`
+    :description: :doc:`ParticleConservingU2 <../code/api/pennylane2.ParticleConservingU2>`
     :figure: _static/templates/layers/particle_conserving_u2.png
 
 .. raw:: html
@@ -256,15 +256,15 @@ Tensor-network templates create quantum circuit architectures where circuit bloc
 can be broadcast with the shape and connectivity of tensor networks.
 
 .. gallery-item::
-    :description: :doc:`Matrix Product State <../code/api/pennylane.MPS>`
+    :description: :doc:`Matrix Product State <../code/api/pennylane2.MPS>`
     :figure: _static/templates/tensornetworks/MPS_template.png
 
 .. gallery-item::
-    :description: :doc:`Tree Tensor Network <../code/api/pennylane.TTN>`
+    :description: :doc:`Tree Tensor Network <../code/api/pennylane2.TTN>`
     :figure: _static/templates/tensornetworks/TTN_template.png
 
 .. gallery-item::
-    :description: :doc:`Multi-scale Entanglement Renormalization Ansatz <../code/api/pennylane.MERA>`
+    :description: :doc:`Multi-scale Entanglement Renormalization Ansatz <../code/api/pennylane2.MERA>`
     :figure: _static/templates/tensornetworks/MERA_template.png
 
 .. raw:: html
@@ -278,7 +278,7 @@ Swap network templates perform qubit routing with linear cost, providing a quadr
 circuit depth for carrying out all pair-wise interactions between qubits.
 
 .. gallery-item::
-    :description: :doc:`Canonical 2-Complete Linear Swap Network <../code/api/pennylane.TwoLocalSwapNetwork>`
+    :description: :doc:`Canonical 2-Complete Linear Swap Network <../code/api/pennylane2.TwoLocalSwapNetwork>`
     :figure: _static/templates/swap_networks/ccl2.jpeg
 
 .. raw:: html
@@ -293,151 +293,151 @@ Other subroutines
 Other useful templates which do not belong to the previous categories can be found here.
 
 .. gallery-item::
-    :description: :doc:`Instantaneous Quantum Polynomial Circuit (IQP) <../code/api/pennylane.IQP>`
+    :description: :doc:`Instantaneous Quantum Polynomial Circuit (IQP) <../code/api/pennylane2.IQP>`
     :figure: _static/templates/subroutines/iqp.png
 
 .. gallery-item::
-    :description: :doc:`Grover Diffusion Operator <../code/api/pennylane.GroverOperator>`
+    :description: :doc:`Grover Diffusion Operator <../code/api/pennylane2.GroverOperator>`
     :figure: _static/templates/subroutines/grover.svg
 
 .. gallery-item::
-    :description: :doc:`Reflection Operator <../code/api/pennylane.Reflection>`
+    :description: :doc:`Reflection Operator <../code/api/pennylane2.Reflection>`
     :figure: _static/templates/subroutines/reflection.png
 
 .. gallery-item::
-    :description: :doc:`Amplitude Amplification <../code/api/pennylane.AmplitudeAmplification>`
+    :description: :doc:`Amplitude Amplification <../code/api/pennylane2.AmplitudeAmplification>`
     :figure: _static/templates/subroutines/ampamp.png
 
 .. gallery-item::
-    :description: :doc:`FermionicSingleExcitation <../code/api/pennylane.FermionicSingleExcitation>`
+    :description: :doc:`FermionicSingleExcitation <../code/api/pennylane2.FermionicSingleExcitation>`
     :figure: _static/templates/subroutines/single_excitation_unitary.png
 
 .. gallery-item::
-    :description: :doc:`FermionicDoubleExcitation <../code/api/pennylane.FermionicDoubleExcitation>`
+    :description: :doc:`FermionicDoubleExcitation <../code/api/pennylane2.FermionicDoubleExcitation>`
     :figure: _static/templates/subroutines/double_excitation_unitary.png
 
 .. gallery-item::
-    :description: :doc:`ArbitraryUnitary <../code/api/pennylane.ArbitraryUnitary>`
+    :description: :doc:`ArbitraryUnitary <../code/api/pennylane2.ArbitraryUnitary>`
     :figure: _static/templates/subroutines/arbitraryunitary.png
 
 .. gallery-item::
-  :description: :doc:`ApproxTimeEvolution <../code/api/pennylane.ApproxTimeEvolution>`
+  :description: :doc:`ApproxTimeEvolution <../code/api/pennylane2.ApproxTimeEvolution>`
   :figure: _static/templates/subroutines/approx_time_evolution.png
 
 .. gallery-item::
-  :description: :doc:`QDrift <../code/api/pennylane.QDrift>`
+  :description: :doc:`QDrift <../code/api/pennylane2.QDrift>`
   :figure: _static/templates/subroutines/qdrift.png
 
 .. gallery-item::
-  :description: :doc:`TrotterProduct <../code/api/pennylane.TrotterProduct>`
+  :description: :doc:`TrotterProduct <../code/api/pennylane2.TrotterProduct>`
   :figure: _static/templates/subroutines/trotter_product.png
 
 .. gallery-item::
-  :description: :doc:`TrotterCDF <../code/api/pennylane.TrotterCDF>`
+  :description: :doc:`TrotterCDF <../code/api/pennylane2.TrotterCDF>`
   :figure: _static/templates/subroutines/trotter_product.png
 
 .. gallery-item::
-  :description: :doc:`TrotterCGF <../code/api/pennylane.TrotterCGF>`
+  :description: :doc:`TrotterCGF <../code/api/pennylane2.TrotterCGF>`
   :figure: _static/templates/subroutines/trotter_product.png
 
 .. gallery-item::
-  :description: :doc:`TrotterVibronic <../code/api/pennylane.TrotterVibronic>`
+  :description: :doc:`TrotterVibronic <../code/api/pennylane2.TrotterVibronic>`
   :figure: _static/templates/subroutines/trotter_product.png
 
 .. gallery-item::
-  :description: :doc:`Permute <../code/api/pennylane.Permute>`
+  :description: :doc:`Permute <../code/api/pennylane2.Permute>`
   :figure: _static/templates/subroutines/permute.png
 
 .. gallery-item::
-  :description: :doc:`QuantumPhaseEstimation <../code/api/pennylane.QuantumPhaseEstimation>`
+  :description: :doc:`QuantumPhaseEstimation <../code/api/pennylane2.QuantumPhaseEstimation>`
   :figure: _static/templates/subroutines/qpe.svg
 
 .. gallery-item::
-  :description: :doc:`QuantumMonteCarlo <../code/api/pennylane.QuantumMonteCarlo>`
+  :description: :doc:`QuantumMonteCarlo <../code/api/pennylane2.QuantumMonteCarlo>`
   :figure: _static/templates/subroutines/qmc.svg
 
 .. gallery-item::
-    :description: :doc:`QuantumFourierTransform <../code/api/pennylane.QFT>`
+    :description: :doc:`QuantumFourierTransform <../code/api/pennylane2.QFT>`
     :figure: _static/templates/subroutines/qft.svg
 
 .. gallery-item::
-    :description: :doc:`Approximate QFT<../code/api/pennylane.AQFT>`
+    :description: :doc:`Approximate QFT<../code/api/pennylane2.AQFT>`
     :figure: _static/templates/subroutines/aqft.png
 
 .. gallery-item::
-    :description: :doc:`CommutingEvolution <../code/api/pennylane.CommutingEvolution>`
+    :description: :doc:`CommutingEvolution <../code/api/pennylane2.CommutingEvolution>`
     :figure: _static/templates/subroutines/commuting_evolution.png
 
 .. gallery-item::
-    :description: :doc:`HilbertSchmidt <../code/api/pennylane.HilbertSchmidt>`
+    :description: :doc:`HilbertSchmidt <../code/api/pennylane2.HilbertSchmidt>`
     :figure: _static/templates/subroutines/hst.png
 
 .. gallery-item::
-    :description: :doc:`LocalHilbertSchmidt <../code/api/pennylane.LocalHilbertSchmidt>`
+    :description: :doc:`LocalHilbertSchmidt <../code/api/pennylane2.LocalHilbertSchmidt>`
     :figure: _static/templates/subroutines/lhst.png
 
 .. gallery-item::
-    :description: :doc:`FlipSign operator<../code/api/pennylane.FlipSign>`
+    :description: :doc:`FlipSign operator<../code/api/pennylane2.FlipSign>`
     :figure: _static/templates/subroutines/flip_sign.png
 
 .. gallery-item::
-    :description: :doc:`QSVT<../code/api/pennylane.QSVT>`
+    :description: :doc:`QSVT<../code/api/pennylane2.QSVT>`
     :figure: _static/templates/subroutines/qsvt.png
 
 .. gallery-item::
-    :description: :doc:`GQSP<../code/api/pennylane.GQSP>`
+    :description: :doc:`GQSP<../code/api/pennylane2.GQSP>`
     :figure: _static/templates/subroutines/gqsp.png
 
 .. gallery-item::
-    :description: :doc:`Select<../code/api/pennylane.Select>`
+    :description: :doc:`Select<../code/api/pennylane2.Select>`
     :figure: _static/templates/subroutines/select_cropped.png
 
 .. gallery-item::
-    :description: :doc:`ControlledSequence<../code/api/pennylane.ControlledSequence>`
+    :description: :doc:`ControlledSequence<../code/api/pennylane2.ControlledSequence>`
     :figure: _static/templates/subroutines/small_ctrl.png
 
 .. gallery-item::
-    :description: :doc:`FABLE <../code/api/pennylane.FABLE>`
+    :description: :doc:`FABLE <../code/api/pennylane2.FABLE>`
     :figure: _static/templates/subroutines/fable.png
 
 .. gallery-item::
-    :description: :doc:`Qubitization <../code/api/pennylane.Qubitization>`
+    :description: :doc:`Qubitization <../code/api/pennylane2.Qubitization>`
     :figure: _static/templates/qubitization/thumbnail_qubitization.png
 
 .. gallery-item::
-    :description: :doc:`OneBodyBlockEncoding <../code/api/pennylane.OneBodyBlockEncoding>`
+    :description: :doc:`OneBodyBlockEncoding <../code/api/pennylane2.OneBodyBlockEncoding>`
     :figure: _static/templates/subroutines/onebodyblockencoding.png
 
 .. gallery-item::
-    :description: :doc:`QROM <../code/api/pennylane.QROM>`
+    :description: :doc:`QROM <../code/api/pennylane2.QROM>`
     :figure: _static/templates/qrom/qrom_thumbnail.png
 
 .. gallery-item::
-    :description: :doc:`Bucket Brigade QRAM <../code/api/pennylane.BBQRAM>`
+    :description: :doc:`Bucket Brigade QRAM <../code/api/pennylane2.BBQRAM>`
     :figure: _static/templates/qram/bbqram_thumbnail.png
 
 .. gallery-item::
-    :description: :doc:`Select Only QRAM <../code/api/pennylane.SelectOnlyQRAM>`
+    :description: :doc:`Select Only QRAM <../code/api/pennylane2.SelectOnlyQRAM>`
     :figure: _static/templates/qram/select_qram_thumbnail.png
 
 .. gallery-item::
-    :description: :doc:`Hybrid QRAM <../code/api/pennylane.HybridQRAM>`
+    :description: :doc:`Hybrid QRAM <../code/api/pennylane2.HybridQRAM>`
     :figure: _static/templates/qram/hybrid_qram_thumbnail.png
 
 .. gallery-item::
-    :description: :doc:`Flip Flop QRAM <../code/api/pennylane.FFQRAM>`
+    :description: :doc:`Flip Flop QRAM <../code/api/pennylane2.FFQRAM>`
     :figure: _static/templates/qram/ffqram_thumbnail.png
 
 .. gallery-item::
-    :description: :doc:`PrepSelPrep <../code/api/pennylane.PrepSelPrep>`
+    :description: :doc:`PrepSelPrep <../code/api/pennylane2.PrepSelPrep>`
     :figure: _static/templates/prepselprep/prepselprep.png
 
 .. gallery-item::
-    :description: :doc:`SelectPauliRot <../code/api/pennylane.SelectPauliRot>`
+    :description: :doc:`SelectPauliRot <../code/api/pennylane2.SelectPauliRot>`
     :figure: _static/templates/subroutines/select_pauli_rot_cropped.png
 
 .. gallery-item::
-    :description: :doc:`TemporaryAND <../code/api/pennylane.TemporaryAND>`
+    :description: :doc:`TemporaryAND <../code/api/pennylane2.TemporaryAND>`
     :figure: _static/templates/subroutines/temporary_and.png
 
 .. raw:: html
@@ -455,9 +455,9 @@ The shape can for example be used to construct random weights at the beginning o
 
 .. code-block:: python
 
-    import pennylane as qp
-    from pennylane.templates import BasicEntanglerLayers
-    from pennylane import numpy as np
+    import pennylane2 as qp
+    from pennylane2.templates import BasicEntanglerLayers
+    from pennylane2 import numpy as np
 
     n_wires = 3
     dev = qp.device('default.qubit', wires=n_wires)
@@ -484,7 +484,7 @@ statement:
 
 .. code-block:: python
 
-    from pennylane import numpy as np
+    from pennylane2 import numpy as np
 
     def MyTemplate(a, b, wires):
         c = np.sin(a) + b
@@ -505,7 +505,7 @@ statement:
 
     Make sure that classical processing is compatible with the autodifferentiation library you are using. For example,
     if ``MyTemplate`` is to be used with the torch framework, we would have to change ``np.sin`` to ``torch.sin``.
-    PennyLane's :mod:`math <pennylane.math>` library contains some advanced functionality for
+    PennyLane's :mod:`math <pennylane2.math>` library contains some advanced functionality for
     framework-agnostic processing.
 
 As suggested by the camel-case naming, built-in templates in PennyLane are classes. Classes are more complex
@@ -522,4 +522,4 @@ gates to a set of wires. You can import this function both via
 
 .. autosummary::
 
-    pennylane.layer
+    pennylane2.layer

@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the :mod:`pennylane.data.base.typing_util` functions.
+Tests for the :mod:`pennylane2.data.base.typing_util` functions.
 """
 
 from typing import Optional, Union
 
 import pytest
 
-import pennylane as qp
-from pennylane.data.base.typing_util import UNSET, get_type, get_type_str, resolve_special_type
-from pennylane.qchem import Molecule
+import pennylane2 as qp
+from pennylane2.data.base.typing_util import UNSET, get_type, get_type_str, resolve_special_type
+from pennylane2.qchem import Molecule
 
 pytestmark = pytest.mark.data
 
@@ -31,12 +31,12 @@ pytestmark = pytest.mark.data
     [
         (list, "list"),
         (list, "list"),
-        (Molecule, "pennylane.qchem.molecule.Molecule"),
+        (Molecule, "pennylane2.qchem.molecule.Molecule"),
         ("nonsense", "nonsense"),
         (list[int], "list[int]"),
         (list[tuple[int, "str"]], "list[tuple[int, str]]"),
         (Optional[int], "Union[int, None]"),
-        (Union[int, "str", Molecule], "Union[int, str, pennylane.qchem.molecule.Molecule]"),
+        (Union[int, "str", Molecule], "Union[int, str, pennylane2.qchem.molecule.Molecule]"),
         (str, "str"),
         (type[str], "type[str]"),
         (Union[list[list[int]], str], "Union[list[list[int]], str]"),

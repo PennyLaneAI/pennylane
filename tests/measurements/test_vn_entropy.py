@@ -18,10 +18,10 @@ import copy
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.exceptions import DeviceError
-from pennylane.measurements.vn_entropy import VnEntropyMP
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.exceptions import DeviceError
+from pennylane2.measurements.vn_entropy import VnEntropyMP
+from pennylane2.wires import Wires
 
 
 def expected_entropy_ising_xx(param):

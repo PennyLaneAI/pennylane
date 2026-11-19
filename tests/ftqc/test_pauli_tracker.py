@@ -18,9 +18,9 @@ import random
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.ftqc import RotXZX, get_byproduct_corrections
-from pennylane.ftqc.pauli_tracker import (
+import pennylane2 as qp
+from pennylane2.ftqc import RotXZX, get_byproduct_corrections
+from pennylane2.ftqc.pauli_tracker import (
     _parse_mid_measurements,
     commute_clifford_op,
     pauli_prod,

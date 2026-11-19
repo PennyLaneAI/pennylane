@@ -21,10 +21,10 @@ import pytest
 from numpy.linalg import matrix_power
 from numpy.polynomial.chebyshev import Chebyshev
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.queuing import AnnotatedQueue
-from pennylane.templates.subroutines.qsvt import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.queuing import AnnotatedQueue
+from pennylane2.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
     _poly_func_scipy,
@@ -34,8 +34,8 @@ from pennylane.templates.subroutines.qsvt import (
     _W_of_x,
     _z_rotation,
 )
-from pennylane.testing import assert_decomposable
-from pennylane.transforms import _tape_decompose as decompose
+from pennylane2.testing import assert_decomposable
+from pennylane2.transforms import _tape_decompose as decompose
 
 
 def qfunc(A):

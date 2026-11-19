@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :func:`pennylane.template.layer` function.
+Unit tests for the :func:`pennylane2.template.layer` function.
 Integration tests should be placed into ``test_templates.py``.
 """
 
 import pytest
 
-import pennylane as qp
-from pennylane import layer
-from pennylane.exceptions import PennyLaneDeprecationWarning
+import pennylane2 as qp
+from pennylane2 import layer
+from pennylane2.exceptions import PennyLaneDeprecationWarning
 
 
 def ConstantCircuit():

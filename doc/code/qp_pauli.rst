@@ -4,16 +4,16 @@ qp.pauli
 Overview
 --------
 
-.. currentmodule:: pennylane.pauli
+.. currentmodule:: pennylane2.pauli
 
 This module defines functions and classes for generating and manipulating
 elements of the Pauli group. It also contains a subpackage :mod:`pauli/grouping`
 for Pauli-word partitioning functionality used in measurement optimization.
 
-.. currentmodule:: pennylane.pauli
+.. currentmodule:: pennylane2.pauli
 
-.. automodapi:: pennylane.pauli
-    :allowed-package-names: pennylane
+.. automodapi:: pennylane2.pauli
+    :allowed-package-names: pennylane2
     :no-heading:
     :no-main-docstr:
     :no-inherited-members:
@@ -23,23 +23,23 @@ PauliWord and PauliSentence
 ---------------------------
 
 The single-qubit Pauli group consists of the four single-qubit Pauli operations
-:class:`~pennylane.Identity`, :class:`~pennylane.PauliX`,
-:class:`~pennylane.PauliY` , and :class:`~pennylane.PauliZ`. The :math:`n`-qubit
+:class:`~pennylane2.Identity`, :class:`~pennylane2.PauliX`,
+:class:`~pennylane2.PauliY` , and :class:`~pennylane2.PauliZ`. The :math:`n`-qubit
 Pauli group is constructed by taking all possible :math:`N`-fold tensor products
 of these elements. Elements of the :math:`n`-qubit Pauli group are known as
 Pauli words, and have the form :math:`P_J = \otimes_{i=1}^{n}\sigma_i^{(J)}`,
 where :math:`\sigma_i^{(J)}` is one of the Pauli operators
-(:class:`~pennylane.PauliX`, :class:`~pennylane.PauliY`,
-:class:`~pennylane.PauliZ`) or identity (:class:`~pennylane.Identity`) acting on
+(:class:`~pennylane2.PauliX`, :class:`~pennylane2.PauliY`,
+:class:`~pennylane2.PauliZ`) or identity (:class:`~pennylane2.Identity`) acting on
 the :math:`i^{th}` qubit. The full :math:`n`-qubit Pauli group has size
 :math:`4^n` (neglecting the four possible global phases that may arise from
 multiplication of its elements).
 
-:class:`~pennylane.pauli.PauliWord` is a lightweight class which uses a dictionary
-approach to represent Pauli words. A :class:`~pennylane.pauli.PauliWord` can be
+:class:`~pennylane2.pauli.PauliWord` is a lightweight class which uses a dictionary
+approach to represent Pauli words. A :class:`~pennylane2.pauli.PauliWord` can be
 instantiated by passing a dictionary of wires and their associated Pauli operators.
 
->>> from pennylane.pauli import PauliWord
+>>> from pennylane2.pauli import PauliWord
 >>> pw1 = PauliWord({0:"X", 1:"Z"})  # X@Z
 >>> pw2 = PauliWord({0:"Y", 1:"Z"})  # Y@Z
 >>> pw1, pw2
@@ -56,7 +56,7 @@ array([[ 0,  0,  1,  0],
        [ 1,  0,  0,  0],
        [ 0, -1,  0,  0]])
 
-The :class:`~pennylane.pauli.PauliSentence` class represents linear combinations of
+The :class:`~pennylane2.pauli.PauliSentence` class represents linear combinations of
 Pauli words. Using a similar dictionary based approach we can efficiently add, multiply
 and extract the matrix of operators in this representation.
 
@@ -82,14 +82,14 @@ array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
 
 .. note::
 
-    :class:`~pennylane.pauli.PauliWord` and :class:`~pennylane.pauli.PauliSentence`
+    :class:`~pennylane2.pauli.PauliWord` and :class:`~pennylane2.pauli.PauliSentence`
     store algebraic representations of Pauli operators. Use
-    :func:`~pennylane.pauli.to_operator` to construct PennyLane
-    :class:`~pennylane.core.operator.Operator` instances:
+    :func:`~pennylane2.pauli.to_operator` to construct PennyLane
+    :class:`~pennylane2.core.operator.Operator` instances:
 
     .. code-block:: pycon
 
-        >>> from pennylane.core.operator import Operator
+        >>> from pennylane2.core.operator import Operator
         >>> word = qp.pauli.PauliWord({0: "X", 1: "Z"})
         >>> word_op = qp.pauli.to_operator(word)
         >>> isinstance(word_op, Operator)
@@ -107,8 +107,8 @@ array([[ 0. +0.j,  0. +0.j,  0.5+0.j,  0. +0.j],
     including the identity used to represent zero. It does not reorder or extend
     the wires of non-identity terms.
 
-We can intuitively use Pauli arithmetic to construct Hamiltonians consisting of :class:`~pennylane.pauli.PauliWord`
-and :class:`~pennylane.pauli.PauliSentence` objects like the spin-1/2 XXZ model Hamiltonian,
+We can intuitively use Pauli arithmetic to construct Hamiltonians consisting of :class:`~pennylane2.pauli.PauliWord`
+and :class:`~pennylane2.pauli.PauliSentence` objects like the spin-1/2 XXZ model Hamiltonian,
 
 .. math:: H_\text{XXZ} = \sum_j [J^\bot (X_j X_{j+1} + Y_j Y_{j+1}) + J^\text{ZZ} Z_j Z_{j+1} + h Z_j].
 
@@ -142,7 +142,7 @@ We can also displace the Hamiltonian by an arbitrary amount. Here, for example, 
 Graph colouring
 ---------------
 
-.. automodapi:: pennylane.pauli.grouping.graph_colouring
+.. automodapi:: pennylane2.pauli.grouping.graph_colouring
     :no-heading:
     :no-inherited-members:
 
@@ -150,7 +150,7 @@ Graph colouring
 Grouping observables
 --------------------
 
-Pauli words can be used for expressing a qubit :class:`~pennylane.Hamiltonian`.
+Pauli words can be used for expressing a qubit :class:`~pennylane2.Hamiltonian`.
 A qubit Hamiltonian has the form :math:`H_{q} = \sum_{J} C_J P_J` where
 :math:`C_{J}` are numerical coefficients, and :math:`P_J` are Pauli words.
 

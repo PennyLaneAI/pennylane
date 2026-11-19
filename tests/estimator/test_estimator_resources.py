@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 
 import pytest
 
-from pennylane.estimator.resources_base import Resources
+from pennylane2.estimator.resources_base import Resources
 
 
 @dataclass(frozen=True)
@@ -250,13 +250,13 @@ class TestResources:
 
         with pytest.raises(
             TypeError,
-            match="Cannot multiply Resources object with <class 'pennylane.estimator.resources_base.Resources'>.",
+            match="Cannot multiply Resources object with <class 'pennylane2.estimator.resources_base.Resources'>.",
         ):
             res.multiply_series(res)  # Can only multiply a Resources instance with an int
 
         with pytest.raises(
             TypeError,
-            match="Cannot multiply Resources object with <class 'pennylane.estimator.resources_base.Resources'>.",
+            match="Cannot multiply Resources object with <class 'pennylane2.estimator.resources_base.Resources'>.",
         ):
             res.multiply_parallel(res)  # Can only multiply a Resources instance with an int
 

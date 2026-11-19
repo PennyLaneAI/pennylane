@@ -19,13 +19,13 @@ import sys
 import numpy as np
 import pytest
 
-from pennylane.concurrency.executors.backends import (
+from pennylane2.concurrency.executors.backends import (
     ExecBackends,
     create_executor,
     get_executor,
     get_supported_backends,
 )
-from pennylane.concurrency.executors.native import (
+from pennylane2.concurrency.executors.native import (
     MPPoolExec,
     ProcPoolExec,
     SerialExec,

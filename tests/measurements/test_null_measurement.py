@@ -16,8 +16,8 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.measurements.null_measurement import NullMeasurement
+import pennylane2 as qp
+from pennylane2.measurements.null_measurement import NullMeasurement
 
 
 @pytest.mark.parametrize(

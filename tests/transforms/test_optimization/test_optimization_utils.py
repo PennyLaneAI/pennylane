@@ -19,9 +19,9 @@ from itertools import product
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.transforms.optimization.optimization_utils import find_next_gate, fuse_rot_angles
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.transforms.optimization.optimization_utils import find_next_gate, fuse_rot_angles
 
 sample_op_list = [
     qp.Hadamard(wires=5),

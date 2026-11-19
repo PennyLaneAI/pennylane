@@ -18,9 +18,9 @@ Tests for debugger helpers in the debugging module.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.debugging import debug_expval, debug_probs, debug_state
-from pennylane.decomposition import add_decomps, register_resources
+import pennylane2 as qp
+from pennylane2.debugging import debug_expval, debug_probs, debug_state
+from pennylane2.decomposition import add_decomps, register_resources
 
 
 class _DecomposingOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods

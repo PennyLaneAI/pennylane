@@ -20,10 +20,10 @@ import pytest
 import scipy as sp
 from dummy_debugger import Debugger
 
-import pennylane as qp
-from pennylane.core.operator import Operator1
-from pennylane.devices.default_clifford import _pl_op_to_stim
-from pennylane.exceptions import DecompositionWarning, DeviceError, QuantumFunctionError
+import pennylane2 as qp
+from pennylane2.core.operator import Operator1
+from pennylane2.devices.default_clifford import _pl_op_to_stim
+from pennylane2.exceptions import DecompositionWarning, DeviceError, QuantumFunctionError
 
 stim = pytest.importorskip("stim")
 

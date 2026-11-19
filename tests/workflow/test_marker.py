@@ -15,8 +15,8 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane.core.transforms.compile_pipeline import ProtectedLevel
+import pennylane2 as qp
+from pennylane2.core.transforms.compile_pipeline import ProtectedLevel
 
 jax = pytest.importorskip("jax")
 pytestmark = [pytest.mark.jax, pytest.mark.capture]

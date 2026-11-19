@@ -19,11 +19,11 @@ import numpy as np
 import pytest
 from scipy import sparse
 
-import pennylane as qp
-from pennylane import math
-from pennylane.decomposition.decomposition_rule import _fix_decomp
-from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
-from pennylane.ops.op_math.decompositions.controlled_decompositions import (
+import pennylane2 as qp
+from pennylane2 import math
+from pennylane2.decomposition.decomposition_rule import _fix_decomp
+from pennylane2.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
+from pennylane2.ops.op_math.decompositions.controlled_decompositions import (
     _bisect_compute_a,
     _bisect_compute_b,
     _ctrl_decomp_bisect_md,
@@ -33,7 +33,7 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     decompose_mcx_two_workers,
     decompose_mcx_with_no_worker,
 )
-from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
+from pennylane2.testing import assert_decomposable, assert_valid_decomp_rule
 
 cw5 = tuple(list(range(1, 1 + n)) for n in range(2, 6))
 

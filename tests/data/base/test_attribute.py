@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for :mod:`pennylane.data.base.attribute`.
+Tests for :mod:`pennylane2.data.base.attribute`.
 """
 
 # pylint: disable=unused-argument,unused-variable
@@ -25,7 +25,7 @@ from typing import Any
 import numpy as np
 import pytest
 
-from pennylane.data.attributes import (
+from pennylane2.data.attributes import (
     DatasetArray,
     DatasetList,
     DatasetNone,
@@ -35,14 +35,14 @@ from pennylane.data.attributes import (
     DatasetString,
     DatasetTuple,
 )
-from pennylane.data.base.attribute import (
+from pennylane2.data.base.attribute import (
     UNSET,
     AttributeInfo,
     DatasetAttribute,
     attribute,
     match_obj_type,
 )
-from pennylane.data.base.hdf5 import HDF5Group, create_group
+from pennylane2.data.base.hdf5 import HDF5Group, create_group
 
 pytestmark = pytest.mark.data
 

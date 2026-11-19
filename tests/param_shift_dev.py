@@ -17,7 +17,7 @@ This file provides a device that calculates derivatives via parameter shift.
 
 import dataclasses
 
-import pennylane as qp
+import pennylane2 as qp
 
 
 class ParamShiftDerivativesDevice(qp.devices.DefaultQubit):

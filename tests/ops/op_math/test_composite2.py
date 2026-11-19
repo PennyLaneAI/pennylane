@@ -21,16 +21,16 @@ from collections.abc import Sequence
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import math
-from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.core.pauli import PauliWord
-from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.ops.op_math import CompositeOp2
-from pennylane.queuing import AnnotatedQueue
-from pennylane.testing import assert_valid
-from pennylane.typing import Float, Wire
-from pennylane.wires import WiresLike
+import pennylane2 as qp
+from pennylane2 import math
+from pennylane2.core.operator import Operator, Operator2, abstractify
+from pennylane2.core.pauli import PauliWord
+from pennylane2.exceptions import DecompositionUndefinedError
+from pennylane2.ops.op_math import CompositeOp2
+from pennylane2.queuing import AnnotatedQueue
+from pennylane2.testing import assert_valid
+from pennylane2.typing import Float, Wire
+from pennylane2.wires import WiresLike
 
 ops = (
     (qp.PauliX(wires=0), qp.PauliZ(wires=0), qp.Hadamard(wires=0)),
@@ -610,7 +610,7 @@ class TestCapture:  # pylint: disable=too-few-public-methods
         """Test that a ValidOp can be captured into and reconstructed from jaxpr."""
         import jax
 
-        from pennylane.testing import assert_eqn_matches_op
+        from pennylane2.testing import assert_eqn_matches_op
 
         def qfunc():
             return ValidOp((qp.RX(1.2, wires=0), qp.PauliZ(0)))

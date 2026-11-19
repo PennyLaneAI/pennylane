@@ -19,18 +19,18 @@ from functools import partial
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.ops import CNOT, adjoint
-from pennylane.templates.subroutines.arithmetic.semi_adder import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.ops import CNOT, adjoint
+from pennylane2.templates.subroutines.arithmetic.semi_adder import (
     _controlled_semi_adder,
     _effective_skip_input_pos,
     _semi_adder,
     _semi_adder_resources,
 )
-from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
-from pennylane.testing import assert_decomposable
-from pennylane.typing import Wire
+from pennylane2.templates.subroutines.arithmetic.temporary_and import TemporaryAND
+from pennylane2.testing import assert_decomposable
+from pennylane2.typing import Wire
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

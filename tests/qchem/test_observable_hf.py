@@ -17,10 +17,10 @@ Unit tests for functions needed for computing the Hamiltonian.
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane import qchem
-from pennylane.fermi import from_string
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2 import qchem
+from pennylane2.fermi import from_string
 
 
 @pytest.mark.parametrize(

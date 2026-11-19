@@ -22,9 +22,9 @@ from itertools import chain
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.optimize.reconstruct import (
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.optimize.reconstruct import (
     _prepare_jobs,
     _reconstruct_equ,
     _reconstruct_gen,

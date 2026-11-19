@@ -20,11 +20,11 @@ import autograd.numpy
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
-from pennylane.measurements import ClassicalShadowMP
-from pennylane.measurements.classical_shadow import ShadowExpvalMP
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.exceptions import DeviceError, PennyLaneDeprecationWarning
+from pennylane2.measurements import ClassicalShadowMP
+from pennylane2.measurements.classical_shadow import ShadowExpvalMP
 
 
 def get_circuit(wires, shots, seed_recipes, interface="autograd", device="default.qubit"):

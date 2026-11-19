@@ -20,8 +20,8 @@ import pytest
 from dummy_debugger import Debugger
 from scipy.stats import unitary_group
 
-import pennylane as qp
-from pennylane import (
+import pennylane2 as qp
+from pennylane2 import (
     CNOT,
     ISWAP,
     AmplitudeDamping,
@@ -32,12 +32,12 @@ from pennylane import (
     ResetError,
     math,
 )
-from pennylane.devices.qubit_mixed import apply_operation, measure
-from pennylane.devices.qubit_mixed.apply_operation import (
+from pennylane2.devices.qubit_mixed import apply_operation, measure
+from pennylane2.devices.qubit_mixed.apply_operation import (
     apply_operation_einsum,
     apply_operation_tensordot,
 )
-from pennylane.operation import _UNSET_BATCH_SIZE
+from pennylane2.operation import _UNSET_BATCH_SIZE
 
 ml_frameworks_list = [
     "numpy",

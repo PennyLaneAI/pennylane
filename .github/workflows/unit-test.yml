@@ -75,7 +75,7 @@ on:
         type: string
         default: ''
       additional_pip_packages_post:
-        description: Additional packages to install after pennylane. Values will be passed to pip install {value}
+        description: Additional packages to install after pennylane2. Values will be passed to pip install {value}
         required: false
         type: string
         default: ''
@@ -163,7 +163,7 @@ jobs:
         shell: bash
         run: |
           uv build --wheel  
-          uv pip install dist/pennylane*.whl
+          uv pip install dist/pennylane2*.whl
 
       - name: Install additional PIP packages (Post PennyLane Install)
         shell: bash
@@ -226,7 +226,7 @@ jobs:
           include-hidden-files: true
 
       - name: Adjust coverage file for Codecov
-        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane2\//g' coverage.xml)
 
       - name: Upload Coverage File
         uses: actions/upload-artifact@v6

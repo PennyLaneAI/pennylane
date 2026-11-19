@@ -17,18 +17,18 @@ Tests for the OutSquare template.
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.operator import abstractify
-from pennylane.ops.op_math import Adjoint
-from pennylane.templates.subroutines.arithmetic.out_square import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.operator import abstractify
+from pennylane2.ops.op_math import Adjoint
+from pennylane2.templates.subroutines.arithmetic.out_square import (
     OutSquare,
     _out_square_with_adder_zeroed,
     _out_square_with_caddsub,
 )
-from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
-from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
-from pennylane.typing import Wire
+from pennylane2.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
+from pennylane2.testing import assert_decomposable, assert_valid_decomp_rule
+from pennylane2.typing import Wire
 
 
 @pytest.mark.parametrize("output_wires_zeroed", [False, True])

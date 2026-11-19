@@ -16,17 +16,17 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.templates.subroutines import SelectTHC, select_thc_wires
-from pennylane.templates.subroutines.select_thc import (
+import pennylane2 as qp
+from pennylane2.templates.subroutines import SelectTHC, select_thc_wires
+from pennylane2.templates.subroutines.select_thc import (
     _angle_batches,
     _apply_loaded_rotation,
     _build_qrom_givens_data,
     _cascade_angles,
     _select_half,
 )
-from pennylane.testing import assert_valid
-from pennylane.typing import AbstractWires
+from pennylane2.testing import assert_valid
+from pennylane2.typing import AbstractWires
 
 
 def _static_matrix(matrix):

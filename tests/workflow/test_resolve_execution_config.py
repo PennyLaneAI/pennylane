@@ -16,10 +16,10 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane.devices import ExecutionConfig, MCMConfig
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.workflow.resolution import _resolve_execution_config
+import pennylane2 as qp
+from pennylane2.devices import ExecutionConfig, MCMConfig
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.workflow.resolution import _resolve_execution_config
 
 
 def test_resolve_execution_config_with_gradient_method():

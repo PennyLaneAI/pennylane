@@ -1,6 +1,6 @@
 qp.core.operator
 ================
 
-.. currentmodule:: pennylane.core.operator
+.. currentmodule:: pennylane2.core.operator
 
-.. automodule:: pennylane.core.operator
+.. automodule:: pennylane2.core.operator

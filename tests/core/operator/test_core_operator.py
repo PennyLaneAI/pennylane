@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for :mod:`pennylane.operation`.
+Unit tests for :mod:`pennylane2.operation`.
 """
 
 # pylint: disable=too-few-public-methods
@@ -23,20 +23,20 @@ import numpy as np
 import pytest
 from gate_data import CNOT, I, Toffoli, X
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.core.operator import Operation, Operator, Operator1, Operator2, StatePrepBase
-from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.gradients import parameter_frequencies
-from pennylane.operation import (
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.core.operator import Operation, Operator, Operator1, Operator2, StatePrepBase
+from pennylane2.exceptions import PennyLaneDeprecationWarning
+from pennylane2.gradients import parameter_frequencies
+from pennylane2.operation import (
     _UNSET_BATCH_SIZE,
     operation_derivative,
 )
-from pennylane.ops import Prod, SProd, Sum
-from pennylane.ops.op_math.pow import PowOperation
-from pennylane.ops.op_math.pow2 import Pow2
-from pennylane.typing import TensorLike
-from pennylane.wires import Wires, WiresLike
+from pennylane2.ops import Prod, SProd, Sum
+from pennylane2.ops.op_math.pow import PowOperation
+from pennylane2.ops.op_math.pow2 import Pow2
+from pennylane2.typing import TensorLike
+from pennylane2.wires import Wires, WiresLike
 
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
@@ -2008,16 +2008,16 @@ def test_get_attr():
 
     attr_name = "non_existent_attr"
     with pytest.raises(
-        AttributeError, match=f"module 'pennylane.operation' has no attribute '{attr_name}'"
+        AttributeError, match=f"module 'pennylane2.operation' has no attribute '{attr_name}'"
     ):
         _ = qp.operation.non_existent_attr  # error is raised if non-existent attribute accessed
 
     with pytest.raises(ImportError, match=f"cannot import name '{attr_name}'"):
-        from pennylane.operation import (  # pylint: disable=unused-import
+        from pennylane2.operation import (  # pylint: disable=unused-import
             non_existent_attr,
         )  # error is raised if non-existent attribute imported
 
-    from pennylane.operation import StatePrep
+    from pennylane2.operation import StatePrep
 
     assert (
         StatePrep is qp.operation.StatePrepBase

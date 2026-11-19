@@ -19,11 +19,11 @@
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane import qnode
-from pennylane.devices import DefaultQubit
-from pennylane.exceptions import DeviceError
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2 import qnode
+from pennylane2.devices import DefaultQubit
+from pennylane2.exceptions import DeviceError
 
 
 def get_device(device_name, wires, seed):
@@ -3401,7 +3401,7 @@ class TestSinglePrecision:
 
     def test_type_conversion_fallback(self):
         """Test that if the type isn't int, float, or complex, we still have a fallback."""
-        from pennylane.workflow.interfaces.jax_jit import _jax_dtype
+        from pennylane2.workflow.interfaces.jax_jit import _jax_dtype
 
         assert _jax_dtype(bool) == jax.numpy.dtype(bool)
 

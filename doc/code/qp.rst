@@ -1,8 +1,8 @@
 qp
 ===
 
-.. currentmodule:: pennylane
+.. currentmodule:: pennylane2
 
-.. automodapi:: pennylane
+.. automodapi:: pennylane2
     :no-heading:
     :include-all-objects:

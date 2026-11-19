@@ -23,7 +23,7 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -31,8 +31,8 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 # must be below jax importorskip
-from pennylane.capture.primitives import for_loop_prim
-from pennylane.testing import extract_all_primitives
+from pennylane2.capture.primitives import for_loop_prim
+from pennylane2.testing import extract_all_primitives
 
 
 class TestCaptureForLoop:
@@ -174,7 +174,7 @@ class TestCaptureForLoop:
 
     def test_for_loop_grad(self):
         """Test simple for-loop primitive with gradient."""
-        from pennylane.capture.primitives import jacobian_prim
+        from pennylane2.capture.primitives import jacobian_prim
 
         @qp.qnode(qp.device("default.qubit", wires=2))
         def inner_func(x):

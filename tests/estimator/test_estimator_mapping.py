@@ -19,13 +19,13 @@ operator.
 import numpy as np
 import pytest
 
-import pennylane as qp
-import pennylane.estimator as re_ops
-import pennylane.estimator.templates as re_temps
-import pennylane.ops as qops
-import pennylane.templates as qtemps
-from pennylane.core.operator import Operation
-from pennylane.estimator.resource_mapping import _map_term_trotter, _map_to_resource_op
+import pennylane2 as qp
+import pennylane2.estimator as re_ops
+import pennylane2.estimator.templates as re_temps
+import pennylane2.ops as qops
+import pennylane2.templates as qtemps
+from pennylane2.core.operator import Operation
+from pennylane2.estimator.resource_mapping import _map_term_trotter, _map_to_resource_op
 
 
 class TestMapToResourceOp:
@@ -775,8 +775,8 @@ class TestMapToResourceOp:
     def test_map_trotter_cdf(self):
         """Test that TrotterCDF maps to its estimator resource operator, inferring the
         CDF Hamiltonian dimensions (num_orbitals, num_fragments) from the tensor shapes."""
-        import pennylane.estimator.compact_hamiltonian as re_ham
-        import pennylane.numeric_hamiltonians as ham
+        import pennylane2.estimator.compact_hamiltonian as re_ham
+        import pennylane2.numeric_hamiltonians as ham
 
         num_orbitals, num_two_body = 2, 1
         hamiltonian = ham.CDFHamiltonian(
@@ -817,7 +817,7 @@ class TestMapToResourceOp:
 
     def test_map_alias_sampling_thc(self):
         """Test that AliasSamplingTHC maps to estimator PrepTHC."""
-        import pennylane.estimator.compact_hamiltonian as re_ham
+        import pennylane2.estimator.compact_hamiltonian as re_ham
 
         M, N, aleph = 2, 2, 3
         sizes = qp.alias_sampling_thc_wires(M, N, aleph)
@@ -837,7 +837,7 @@ class TestMapToResourceOp:
 
     def test_map_select_thc(self):
         """Test that SelectTHC maps to its estimator resource operator."""
-        import pennylane.estimator.compact_hamiltonian as re_ham
+        import pennylane2.estimator.compact_hamiltonian as re_ham
 
         M, N, beth, num_batches = 2, 4, 3, 1
         wires = qp.registers(qp.select_thc_wires(M, N, beth, num_batches))

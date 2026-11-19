@@ -24,8 +24,8 @@ import numpy as np
 import pytest
 from packaging.version import Version
 
-import pennylane as qp
-from pennylane.exceptions import PennyLaneDeprecationWarning  # pylint: disable=unused-import
+import pennylane2 as qp
+from pennylane2.exceptions import PennyLaneDeprecationWarning  # pylint: disable=unused-import
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
@@ -179,13 +179,13 @@ def enable_disable_dynamic_shapes():
     """Enable dynamic shapes and apply JAX patches for the duration of a test.
 
     JAX 0.7.x requires patches to fix AssertionError in trace.frame.add_eqn
-    when using dynamic shapes. See pennylane/capture/jax_patches.py for details.
+    when using dynamic shapes. See pennylane2/capture/jax_patches.py for details.
     """
     jax.config.update("jax_dynamic_shapes", True)
     try:
         if Version(jax.__version__) >= Version("0.7.0"):
-            from pennylane.capture.jax_patches import get_jax_patches
-            from pennylane.capture.patching import Patcher
+            from pennylane2.capture.jax_patches import get_jax_patches
+            from pennylane2.capture.patching import Patcher
 
             # Apply patches using Patcher context manager for this test
             patches = get_jax_patches()

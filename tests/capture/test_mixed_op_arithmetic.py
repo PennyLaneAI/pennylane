@@ -21,7 +21,7 @@ AbstractOperator arithmetic instead of the scalar/Identity branch. Scalar
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 jax = pytest.importorskip("jax")
 

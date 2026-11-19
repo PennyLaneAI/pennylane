@@ -19,12 +19,12 @@ observables in measurements on a tape.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import Hadamard, X, Y, Z
-from pennylane.core.qscript import QuantumScript
-from pennylane.measurements import ExpectationMP, SampleMP, VarianceMP
-from pennylane.pauli import diagonalize_qwc_pauli_words
-from pennylane.transforms.diagonalize_measurements import (
+import pennylane2 as qp
+from pennylane2 import Hadamard, X, Y, Z
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.measurements import ExpectationMP, SampleMP, VarianceMP
+from pennylane2.pauli import diagonalize_qwc_pauli_words
+from pennylane2.transforms.diagonalize_measurements import (
     _check_if_diagonalizing,
     _diagonalize_all_pauli_obs,
     _diagonalize_observable,

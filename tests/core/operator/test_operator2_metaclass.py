@@ -18,12 +18,12 @@ import numpy as np
 import pytest
 from operator2_utils import CompilableOp, DynOp, StaticOp
 
-import pennylane as qp
-from pennylane.core.operator import Operator2
-from pennylane.core.operator.operator2 import operator_p
-from pennylane.testing import find_eqns
-from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.core.operator import Operator2
+from pennylane2.core.operator.operator2 import operator_p
+from pennylane2.testing import find_eqns
+from pennylane2.typing import AbstractArray, Bool, Complex, Float, Int, Wire
+from pennylane2.wires import Wires
 
 
 class DynCanonOp(Operator2):

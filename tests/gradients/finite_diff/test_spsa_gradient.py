@@ -20,11 +20,11 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 from scipy import stats
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.gradients import spsa_grad
-from pennylane.gradients.spsa_gradient import _rademacher_sampler
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.gradients import spsa_grad
+from pennylane2.gradients.spsa_gradient import _rademacher_sampler
 
 
 def coordinate_sampler(indices, num_params, idx, rng=None):  # pylint: disable=unused-argument

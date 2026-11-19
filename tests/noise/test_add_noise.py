@@ -19,10 +19,10 @@ import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qp
-from pennylane.core.qscript import QuantumScript
-from pennylane.core.transforms import BoundTransform, CompilePipeline
-from pennylane.noise.add_noise import _get_transform_program, add_noise
+import pennylane2 as qp
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.core.transforms import BoundTransform, CompilePipeline
+from pennylane2.noise.add_noise import _get_transform_program, add_noise
 
 
 class TestAddNoise:

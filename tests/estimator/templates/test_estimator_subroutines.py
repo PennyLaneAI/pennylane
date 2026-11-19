@@ -22,13 +22,13 @@ import math
 import numpy as np
 import pytest
 
-import pennylane as qp
-import pennylane.estimator as qre
-from pennylane.estimator import GateCount, resource_rep
-from pennylane.estimator.resource_config import ResourceConfig
-from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.templates import HybridQRAM, SelectOnlyQRAM
-from pennylane.wires import Wires
+import pennylane2 as qp
+import pennylane2.estimator as qre
+from pennylane2.estimator import GateCount, resource_rep
+from pennylane2.estimator.resource_config import ResourceConfig
+from pennylane2.estimator.wires_manager import Allocate, Deallocate
+from pennylane2.templates import HybridQRAM, SelectOnlyQRAM
+from pennylane2.wires import Wires
 
 
 class TestResourceOutOfPlaceSquare:

@@ -16,7 +16,7 @@
 import numpy as np
 import pytest
 
-from pennylane import math
+from pennylane2 import math
 
 jnp = pytest.importorskip("jax.numpy")
 

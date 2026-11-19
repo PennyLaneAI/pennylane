@@ -24,21 +24,21 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
 
-import pennylane as qp
-from pennylane import QNode
-from pennylane import numpy as pnp
-from pennylane import qnode
-from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
-from pennylane.decomposition.decomposition_rule import null_decomp
-from pennylane.exceptions import (
+import pennylane2 as qp
+from pennylane2 import QNode
+from pennylane2 import numpy as pnp
+from pennylane2 import qnode
+from pennylane2.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane2.decomposition.decomposition_rule import null_decomp
+from pennylane2.exceptions import (
     DecompositionWarning,
     DeviceError,
     PennyLaneDeprecationWarning,
     QuantumFunctionError,
 )
-from pennylane.typing import PostprocessingFn
-from pennylane.workflow.qnode import _make_execution_config
-from pennylane.workflow.set_shots import set_shots
+from pennylane2.typing import PostprocessingFn
+from pennylane2.workflow.qnode import _make_execution_config
+from pennylane2.workflow.set_shots import set_shots
 
 
 def dummyfunc():

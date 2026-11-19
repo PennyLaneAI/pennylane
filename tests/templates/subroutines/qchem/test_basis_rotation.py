@@ -19,8 +19,8 @@ import numpy as np
 import pytest
 from scipy.linalg import expm
 
-import pennylane as qp
-from pennylane.testing import assert_decomposable
+import pennylane2 as qp
+from pennylane2.testing import assert_decomposable
 
 
 @pytest.mark.parametrize(
@@ -209,8 +209,8 @@ class TestDecomposition:
     def test_real_determinant_correction_with_capture(self, det, seed):
         """Test that with program capture, the determinant correction of an orthogonal matrix is
         a PauliZ for a negative determinant and nothing otherwise."""
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-        from pennylane.templates.subroutines.qchem.basis_rotation import (
+        from pennylane2.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane2.templates.subroutines.qchem.basis_rotation import (
             _real_basis_rotation_decomp,
             _real_basis_rotation_resources,
         )
@@ -240,7 +240,7 @@ class TestDecomposition:
         a PauliZ, except under plain jax.jit, where it is a PhaseShift."""
         import jax
 
-        from pennylane.templates.subroutines.qchem.basis_rotation import (
+        from pennylane2.templates.subroutines.qchem.basis_rotation import (
             _real_basis_rotation_resources,
         )
 

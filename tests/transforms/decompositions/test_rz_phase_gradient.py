@@ -21,14 +21,14 @@ import numpy as np
 import phase_gradient_helpers
 import pytest
 
-import pennylane as qp
-from pennylane.testing import assert_valid_decomp_rule
-from pennylane.transforms.decompositions import (
+import pennylane2 as qp
+from pennylane2.testing import assert_valid_decomp_rule
+from pennylane2.transforms.decompositions import (
     make_rz_to_phase_gradient_decomp,
     phase_gradient_precision_stats,
     validate_phase_gradient_wires,
 )
-from pennylane.wires import WireError
+from pennylane2.wires import WireError
 
 
 def _num_set_bits(phi, p):

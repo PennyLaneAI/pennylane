@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the pennylane pytrees module.
+Tests for the pennylane2 pytrees module.
 """
 
 import re
 
 import pytest
 
-import pennylane as qp
-from pennylane.measurements import ExpectationMP
-from pennylane.pytrees import PyTreeStructure, flatten, leaf, register_pytree, unflatten
-from pennylane.pytrees.pytrees import get_typename, get_typename_type
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.measurements import ExpectationMP
+from pennylane2.pytrees import PyTreeStructure, flatten, leaf, register_pytree, unflatten
+from pennylane2.pytrees.pytrees import get_typename, get_typename_type
+from pennylane2.wires import Wires
 
 
 def test_structure_repr_str():
@@ -65,7 +65,7 @@ def test_register_new_class():
 
 
 def test_list():
-    """Test that pennylane treats list as a pytree."""
+    """Test that pennylane2 treats list as a pytree."""
 
     x = [1, 2, [3, 4]]
 
@@ -80,7 +80,7 @@ def test_list():
 
 
 def test_tuple():
-    """Test that pennylane can handle tuples as pytrees."""
+    """Test that pennylane2 can handle tuples as pytrees."""
     x = (1, 2, (3, 4))
 
     data, structure = flatten(x)
@@ -94,7 +94,7 @@ def test_tuple():
 
 
 def test_dict():
-    """Test that pennylane can handle dictionaries as pytees."""
+    """Test that pennylane2 can handle dictionaries as pytees."""
 
     x = {"a": 1, "b": {"c": 2, "d": 3}}
 
@@ -108,7 +108,7 @@ def test_dict():
 
 
 def test_none_is_an_empty_pytree_node():
-    """Test that pennylane treats ``None`` as an empty pytree node rather than a leaf."""
+    """Test that pennylane2 treats ``None`` as an empty pytree node rather than a leaf."""
 
     data, structure = flatten(None)
     assert data == []
@@ -138,7 +138,7 @@ def test_none_nested_in_container():
 
 
 def test_nested_pl_object():
-    """Test that we can flatten and unflatten nested pennylane object."""
+    """Test that we can flatten and unflatten nested pennylane2 object."""
 
     tape = qp.tape.QuantumScript(
         [qp.adjoint(qp.RX(0.1, wires=0))],

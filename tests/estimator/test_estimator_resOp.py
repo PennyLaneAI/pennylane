@@ -24,11 +24,11 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
-import pennylane as qp
-import pennylane.estimator.ops as qre_ops
-from pennylane.core.queuing import AnnotatedQueue
-from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
-from pennylane.estimator.resource_operator import GateCount, _dequeue, _make_hashable, resource_rep
+import pennylane2 as qp
+import pennylane2.estimator.ops as qre_ops
+from pennylane2.core.queuing import AnnotatedQueue
+from pennylane2.estimator import CompressedResourceOp, ResourceOperator, Resources
+from pennylane2.estimator.resource_operator import GateCount, _dequeue, _make_hashable, resource_rep
 
 
 class DummyX(ResourceOperator):

@@ -21,20 +21,20 @@ from collections import defaultdict
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import Operation
-from pennylane.decomposition.decomposition_rule import null_decomp
-from pennylane.decomposition.gate_set import GateSet
-from pennylane.exceptions import DecompositionWarning
-from pennylane.ops.mid_measure import MidMeasure
-from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.ops.op_math.condition import Conditional
-from pennylane.transforms.decompose import (
+import pennylane2 as qp
+from pennylane2.core.operator import Operation
+from pennylane2.decomposition.decomposition_rule import null_decomp
+from pennylane2.decomposition.gate_set import GateSet
+from pennylane2.exceptions import DecompositionWarning
+from pennylane2.ops.mid_measure import MidMeasure
+from pennylane2.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane2.ops.op_math.condition import Conditional
+from pennylane2.transforms.decompose import (
     _decompose_setup_inputs,
     _resolve_gate_set,
     _tape_decompose,
 )
-from pennylane.typing import Float, Wire
+from pennylane2.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
 pytestmark = pytest.mark.usefixtures("enable_graph_decomposition")

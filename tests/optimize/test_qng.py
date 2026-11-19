@@ -16,9 +16,9 @@
 import pytest
 import scipy as sp
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.optimize.qng import _flatten_np, _unflatten_np
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.optimize.qng import _flatten_np, _unflatten_np
 
 
 class TestBasics:

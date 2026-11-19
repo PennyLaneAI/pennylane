@@ -18,7 +18,7 @@ from collections import Counter
 import numpy as np
 from scipy.linalg import expm
 
-import pennylane as qp
+import pennylane2 as qp
 
 TROTTER_GATE_SET = {
     "Hadamard",
@@ -70,7 +70,7 @@ def cdf_reference_hamiltonian(ham):
     equal ``expm(-i H t)``.
     """
     # Local import to avoid a module-load-time dependency on the template.
-    from pennylane.templates.subroutines.time_evolution.trotter_cdf import _energy_shift
+    from pennylane2.templates.subroutines.time_evolution.trotter_cdf import _energy_shift
 
     Z = np.asarray(ham.core_tensors, dtype=float)
     num_cas = Z.shape[-1]
@@ -102,7 +102,7 @@ def cgf_reference_hamiltonian(ham):
     with ``s = _energy_shift(ham)`` and wire index ``l * n_states + p``. For an identity-leaf
     Hamiltonian ``matrix(TrotterCGF)`` must equal ``expm(-i H t)``.
     """
-    from pennylane.templates.subroutines.time_evolution.trotter_cgf import _energy_shift
+    from pennylane2.templates.subroutines.time_evolution.trotter_cgf import _energy_shift
 
     Z = np.asarray(ham.core_tensors, dtype=float)
     num_modes = Z.shape[1]

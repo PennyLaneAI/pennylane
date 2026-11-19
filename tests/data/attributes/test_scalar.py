@@ -17,7 +17,7 @@ Tests for the ``DatasetScalar`` attribute type.
 
 import pytest
 
-from pennylane.data.attributes.scalar import DatasetScalar
+from pennylane2.data.attributes.scalar import DatasetScalar
 
 pytestmark = pytest.mark.data
 

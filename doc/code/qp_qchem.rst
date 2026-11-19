@@ -4,7 +4,7 @@ qp.qchem
 Overview
 --------
 
-.. currentmodule:: pennylane.qchem
+.. currentmodule:: pennylane2.qchem
 
 The quantum chemistry module provides the functionality to perform Hartree-Fock calculations
 and construct observables such as molecular Hamiltonians as well as dipole moment, spin and particle
@@ -14,14 +14,14 @@ number observables. It also includes functionalities to convert to and from Open
 
 .. note::
 
-    The function :func:`~pennylane.math.decomposition.givens_decomposition` has been moved to the
-    :mod:`~pennylane.math` module. The function is still available in the
-    :mod:`~pennylane.qchem` module for backward compatibility, but it is recommended to import it
+    The function :func:`~pennylane2.math.decomposition.givens_decomposition` has been moved to the
+    :mod:`~pennylane2.math` module. The function is still available in the
+    :mod:`~pennylane2.qchem` module for backward compatibility, but it is recommended to import it
     from the new location in future code.
 
-.. currentmodule:: pennylane.qchem
+.. currentmodule:: pennylane2.qchem
 
-.. automodapi:: pennylane.qchem
+.. automodapi:: pennylane2.qchem
     :no-heading:
     :include-all-objects:
     :skip: taper, symmetry_generators, paulix_ops, import_operator, givens_decomposition
@@ -51,8 +51,8 @@ geometry of the molecule and the basis set parameters are all differentiable.
 
 .. code-block:: python3
 
-    import pennylane as qp
-    from pennylane import numpy as np
+    import pennylane2 as qp
+    from pennylane2 import numpy as np
 
     symbols = ["H", "H"]
     # This initial geometry is suboptimal and will be optimized by the algorithm
@@ -177,8 +177,8 @@ in ``molecular_hamiltonian``:
 
 .. code-block:: python
 
-    import pennylane as qp
-    from pennylane import numpy as np
+    import pennylane2 as qp
+    from pennylane2 import numpy as np
 
     symbols = ["H", "H"]
     geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])

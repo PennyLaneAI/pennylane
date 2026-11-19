@@ -1,7 +1,7 @@
 qp.typing
 =========
 
-.. currentmodule:: pennylane.typing
+.. currentmodule:: pennylane2.typing
 
 .. autosummary::
     :toctree: api
@@ -23,4 +23,4 @@ qp.typing
     ~AbstractArray
     ~AbstractWires
 
-.. currentmodule:: pennylane.typing
+.. currentmodule:: pennylane2.typing

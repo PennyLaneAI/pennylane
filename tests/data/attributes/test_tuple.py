@@ -17,7 +17,7 @@ Tests for the ``DatasetTuple`` attribute type.
 
 import pytest
 
-from pennylane.data.attributes.tuple import DatasetTuple
+from pennylane2.data.attributes.tuple import DatasetTuple
 
 pytestmark = pytest.mark.data
 

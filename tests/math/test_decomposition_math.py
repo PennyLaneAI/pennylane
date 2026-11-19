@@ -19,7 +19,7 @@ import warnings
 
 import pytest
 
-from pennylane.math.decomposition import decomp_int_to_powers_of_two
+from pennylane2.math.decomposition import decomp_int_to_powers_of_two
 
 
 @pytest.mark.parametrize(

@@ -11,7 +11,7 @@ PyTorch interface
 
     .. code::
 
-        import pennylane as qp
+        import pennylane2 as qp
         import torch
 
 In order to use PennyLane in combination with PyTorch, we have to generate PyTorch-compatible
@@ -24,7 +24,7 @@ Construction via keyword
 ------------------------
 
 The :ref:`QNode decorator <intro_vcirc_decorator>` is the recommended way for creating
-:class:`QNode <pennylane.QNode>` objects in PennyLane. The only change required to construct a PyTorch-capable
+:class:`QNode <pennylane2.QNode>` objects in PennyLane. The only change required to construct a PyTorch-capable
 QNode is to specify the ``interface='torch'`` keyword argument:
 
 .. code-block:: python
@@ -152,7 +152,7 @@ result in an expectation value of 0.5 we can do the following:
 .. code-block:: python
 
     import torch
-    import pennylane as qp
+    import pennylane2 as qp
 
     dev = qp.device('default.qubit', wires=2)
 

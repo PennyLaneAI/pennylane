@@ -1,6 +1,6 @@
 qp.decomposition
 =================
 
-.. currentmodule:: pennylane.decomposition
+.. currentmodule:: pennylane2.decomposition
 
-.. automodule:: pennylane.decomposition
+.. automodule:: pennylane2.decomposition

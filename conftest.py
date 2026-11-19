@@ -23,7 +23,7 @@ from sybil.parsers.markdown import PythonCodeBlockParser as MarkDownPythonCodeBl
 
 import numpy as base_numpy
 import scipy as base_scipy
-import pennylane as qp
+import pennylane2 as qp
 
 try:
     import jax
@@ -70,7 +70,7 @@ def local_decomp_context():
 def pytest_configure(config):
     """Used to amend to the pytest.ini used for testing."""
     config.addinivalue_line(
-        "filterwarnings", "error::pennylane.exceptions.PennyLaneDeprecationWarning"
+        "filterwarnings", "error::pennylane2.exceptions.PennyLaneDeprecationWarning"
     )
 
 

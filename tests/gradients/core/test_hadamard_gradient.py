@@ -17,11 +17,11 @@ Tests for the gradients.hadamard_gradient module.
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane import qnode
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.gradients import hadamard_gradient
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2 import qnode
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.gradients import hadamard_gradient
 
 
 def grad_fn(tape, dev, fn=qp.gradients.hadamard_grad, mode="standard", aux_wire=None, **kwargs):

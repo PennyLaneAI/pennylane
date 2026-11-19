@@ -20,15 +20,15 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-from pennylane.capture.primitives import while_loop_prim  # pylint: disable=wrong-import-position
-from pennylane.testing import extract_all_primitives  # pylint: disable=wrong-import-position
+from pennylane2.capture.primitives import while_loop_prim  # pylint: disable=wrong-import-position
+from pennylane2.testing import extract_all_primitives  # pylint: disable=wrong-import-position
 
 
 class TestCaptureWhileLoop:
@@ -258,7 +258,7 @@ class TestCaptureCircuitsWhileLoop:
 
     def test_while_loop_grad(self):
         """Test simple while-loop primitive with gradient."""
-        from pennylane.capture.primitives import jacobian_prim
+        from pennylane2.capture.primitives import jacobian_prim
 
         @qp.qnode(qp.device("default.qubit", wires=2))
         def inner_func(x):

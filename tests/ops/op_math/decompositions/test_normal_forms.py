@@ -17,15 +17,15 @@ import math
 
 import pytest
 
-import pennylane as qp
-from pennylane.ops.op_math.decompositions.normal_forms import (
+import pennylane2 as qp
+from pennylane2.ops.op_math.decompositions.normal_forms import (
     _clifford_gates_to_SU2,
     _clifford_group_to_SO3,
     _ma_normal_form,
     _parity_transforms,
 )
-from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega
-from pennylane.ops.op_math.decompositions.solovay_kitaev import (
+from pennylane2.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega
+from pennylane2.ops.op_math.decompositions.solovay_kitaev import (
     _quaternion_transform,
     _SU2_transform,
 )

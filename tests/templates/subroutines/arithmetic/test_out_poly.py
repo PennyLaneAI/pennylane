@@ -17,13 +17,13 @@ Tests for the OutPoly template.
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.templates.subroutines.arithmetic.out_poly import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.templates.subroutines.arithmetic.out_poly import (
     _get_polynomial,
     _mobius_inversion_of_zeta_transform,
 )
-from pennylane.testing import assert_decomposable
+from pennylane2.testing import assert_decomposable
 
 
 def test_get_polynomial():

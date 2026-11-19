@@ -17,8 +17,8 @@ Pytest helper functions for testing phase gradient decomposition rules.
 
 import numpy as np
 
-import pennylane as qp
-from pennylane.ops.op_math.composite2 import CompositeOp2
+import pennylane2 as qp
+from pennylane2.ops.op_math.composite2 import CompositeOp2
 
 
 def bits_to_angles(bits, unit):

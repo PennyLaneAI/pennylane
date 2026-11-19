@@ -22,20 +22,20 @@ import numpy as np
 import pytest
 from scipy.linalg import fractional_matrix_power
 
-import pennylane as qp
-from pennylane.core.operator import Operator2
-from pennylane.decomposition.resources import Resources
-from pennylane.exceptions import (
+import pennylane2 as qp
+from pennylane2.core.operator import Operator2
+from pennylane2.decomposition.resources import Resources
+from pennylane2.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops import ISWAP, Identity, PhaseShift, S, T, Z
-from pennylane.ops.op_math.controlled2 import ControlledOp2
-from pennylane.ops.op_math.pow import pow
-from pennylane.ops.op_math.pow2 import Pow2, pow_rotation
-from pennylane.typing import Float, Wire
+from pennylane2.ops import ISWAP, Identity, PhaseShift, S, T, Z
+from pennylane2.ops.op_math.controlled2 import ControlledOp2
+from pennylane2.ops.op_math.pow import pow
+from pennylane2.ops.op_math.pow2 import Pow2, pow_rotation
+from pennylane2.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 from tests.ops.op_math.test_adjoint2 import RX2, SX2
 

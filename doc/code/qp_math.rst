@@ -4,9 +4,9 @@ qp.math
 Overview
 --------
 
-.. currentmodule:: pennylane.math
+.. currentmodule:: pennylane2.math
 
-.. automodapi:: pennylane.math
+.. automodapi:: pennylane2.math
     :no-heading:
     :no-inherited-members:
     :skip: binary_finite_reduced_row_echelon, binary_is_independent, binary_matrix_rank, binary_select_basis, binary_solve_linear_system, int_to_binary

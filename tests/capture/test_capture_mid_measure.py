@@ -18,14 +18,14 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane.ops.mid_measure import MeasurementValue, MidMeasure
-from pennylane.testing import assert_eqn_matches_op
+import pennylane2 as qp
+from pennylane2.ops.mid_measure import MeasurementValue, MidMeasure
+from pennylane2.testing import assert_eqn_matches_op
 
 jax = pytest.importorskip("jax")
 import jax.numpy as jnp
 
-from pennylane.capture.primitives import AbstractOperator  # pylint: disable=ungrouped-imports
+from pennylane2.capture.primitives import AbstractOperator  # pylint: disable=ungrouped-imports
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 

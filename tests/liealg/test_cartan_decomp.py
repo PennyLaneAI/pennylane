@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/labs/dla/cartan.py functionality"""
+"""Tests for pennylane2/labs/dla/cartan.py functionality"""
 
 import pytest
 
-import pennylane as qp
-from pennylane import X, Y, Z
-from pennylane.liealg import (
+import pennylane2 as qp
+from pennylane2 import X, Y, Z
+from pennylane2.liealg import (
     cartan_decomp,
     check_cartan_decomp,
     check_commutation_relation,

@@ -20,7 +20,7 @@ Tests a function for determining abstracted axes and extracting the abstract sha
 
 import pytest
 
-from pennylane.capture import determine_abstracted_axes, register_custom_staging_rule
+from pennylane2.capture import determine_abstracted_axes, register_custom_staging_rule
 
 pytestmark = pytest.mark.capture
 

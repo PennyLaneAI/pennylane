@@ -16,8 +16,8 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.typing import AbstractArray
+import pennylane2 as qp
+from pennylane2.typing import AbstractArray
 
 
 class TestNumpyMimicForFFT:
@@ -56,7 +56,7 @@ class TestIsRealObjOrClose:
     @pytest.mark.autograd
     def test_autograd(self, data, dtype, exp_output):
         """Test with Autograd."""
-        from pennylane import numpy as pnp
+        from pennylane2 import numpy as pnp
 
         x = pnp.array(data, dtype=dtype)
         assert qp.math.is_real_obj_or_close(x) is exp_output

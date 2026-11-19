@@ -16,13 +16,13 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.core.qscript import QuantumScript
-from pennylane.core.transforms import BoundTransform, CompilePipeline
-from pennylane.devices import ExecutionConfig
-from pennylane.transforms.optimization import merge_rotations
-from pennylane.workflow import run
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.core.transforms import BoundTransform, CompilePipeline
+from pennylane2.devices import ExecutionConfig
+from pennylane2.transforms.optimization import merge_rotations
+from pennylane2.workflow import run
 
 
 class TestNoInterfaceRequired:

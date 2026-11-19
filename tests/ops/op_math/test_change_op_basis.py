@@ -23,17 +23,17 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qp
-import pennylane.numpy as qnp
-from pennylane.core.operator import abstractify
-from pennylane.core.operator.base import Operator, Operator1
-from pennylane.exceptions import DeviceError
-from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
-from pennylane.ops.op_math.change_op_basis import _convert_to_prod, _validate_callable
-from pennylane.templates import Subroutine
-from pennylane.testing import assert_decomposable, assert_eqn_matches_op
-from pennylane.typing import Float, Wire
-from pennylane.wires import Wires
+import pennylane2 as qp
+import pennylane2.numpy as qnp
+from pennylane2.core.operator import abstractify
+from pennylane2.core.operator.base import Operator, Operator1
+from pennylane2.exceptions import DeviceError
+from pennylane2.ops.op_math import ChangeOpBasis, change_op_basis
+from pennylane2.ops.op_math.change_op_basis import _convert_to_prod, _validate_callable
+from pennylane2.templates import Subroutine
+from pennylane2.testing import assert_decomposable, assert_eqn_matches_op
+from pennylane2.typing import Float, Wire
+from pennylane2.wires import Wires
 from tests.core.operator.operator2_utils import NonParametricOp
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ

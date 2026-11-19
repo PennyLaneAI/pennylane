@@ -18,13 +18,13 @@ Unit tests for the PhaseGradientStatePrep template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.exceptions import WireError
-from pennylane.templates.state_preparations.phase_gradient import (
+import pennylane2 as qp
+from pennylane2.exceptions import WireError
+from pennylane2.templates.state_preparations.phase_gradient import (
     _phase_gradient_state_prep_clifford_t_decomposition,
     _phase_gradient_state_prep_ppr_decomposition,
 )
-from pennylane.templates.state_preparations.phase_gradient_decomp_data import PI_OVER_8_PPRS
+from pennylane2.templates.state_preparations.phase_gradient_decomp_data import PI_OVER_8_PPRS
 
 
 def _expected_state(num_wires):

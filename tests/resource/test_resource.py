@@ -23,12 +23,12 @@ from dataclasses import FrozenInstanceError
 
 import pytest
 
-import pennylane as qp
-from pennylane.core.qscript import QuantumScript
-from pennylane.core.shots import Shots
-from pennylane.resource.expression import Expression
-from pennylane.resource.extension import _RESOURCE_EXTENSIONS, weighted_sum
-from pennylane.resource.resource import (
+import pennylane2 as qp
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.core.shots import Shots
+from pennylane2.resource.expression import Expression
+from pennylane2.resource.extension import _RESOURCE_EXTENSIONS, weighted_sum
+from pennylane2.resource.resource import (
     CircuitSpecs,
     PBCSpecsResources,
     Resources,

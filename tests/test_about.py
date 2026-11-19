@@ -23,7 +23,7 @@ import re
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 
 @pytest.mark.slow
@@ -48,22 +48,22 @@ def test_about():
 
 
 def test_about_prints_core_fields(capsys):
-    about = importlib.import_module("pennylane.about")
+    about = importlib.import_module("pennylane2.about")
     about.about()
     cap = capsys.readouterr()
 
     assert cap.err == ""
-    assert re.search(r"Name:\s*pennylane", cap.out, re.I)
+    assert re.search(r"Name:\s*pennylane2", cap.out, re.I)
     assert "Version:" in cap.out
     assert "Summary:" in cap.out
     assert "Location:" in cap.out
 
 
 def test_about_shows_editable_location(monkeypatch, capsys):
-    about = importlib.import_module("pennylane.about")
+    about = importlib.import_module("pennylane2.about")
 
     class Dist:  # pylint: disable=too-few-public-methods
-        metadata = {"Name": "PennyLane", "Version": "x"}
+        metadata = {"Name": "PennyLane2", "Version": "x"}
 
         @staticmethod
         def read_text(name):  # pylint: disable=unused-argument
@@ -71,18 +71,23 @@ def test_about_shows_editable_location(monkeypatch, capsys):
 
     im = importlib.import_module("importlib.metadata")
     monkeypatch.setattr(about, "metadata", im)
-    monkeypatch.setattr(im, "distribution", lambda _name: Dist())
-    monkeypatch.setattr(about, "_pkg_location", lambda: "/site-packages/pennylane")
+    original_distribution = im.distribution
+    monkeypatch.setattr(
+        im,
+        "distribution",
+        lambda name: Dist() if name.lower() == "pennylane2" else original_distribution(name),
+    )
+    monkeypatch.setattr(about, "_pkg_location", lambda: "/site-packages/pennylane2")
 
     about.about()
     out = capsys.readouterr().out
     assert "Editable project location: /tmp/pl" in out
-    assert re.search(r"Location:\s*/site-packages/pennylane", out)
+    assert re.search(r"Location:\s*/site-packages/pennylane2", out)
 
 
 def test_catalyst_version(monkeypatch):
     """Tests the catalyst_version function."""
-    about = importlib.import_module("pennylane.about")
+    about = importlib.import_module("pennylane2.about")
 
     # Test when catalyst is not found
     monkeypatch.setattr(about, "find_spec", lambda name: None if name == "catalyst" else True)

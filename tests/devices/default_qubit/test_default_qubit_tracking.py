@@ -18,9 +18,9 @@ Tests for the tracking capabilities of default qubit.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.devices import ExecutionConfig
-from pennylane.resource import SpecsResources
+import pennylane2 as qp
+from pennylane2.devices import ExecutionConfig
+from pennylane2.resource import SpecsResources
 
 
 class TestTracking:

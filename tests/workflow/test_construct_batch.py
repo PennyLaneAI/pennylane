@@ -20,8 +20,8 @@ import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qp
-from pennylane.workflow import construct_batch
+import pennylane2 as qp
+from pennylane2.workflow import construct_batch
 
 
 class TestMarker:

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for :mod:`pennylane.wires`.
+Unit tests for :mod:`pennylane2.wires`.
 """
 
 import re
@@ -21,11 +21,11 @@ from importlib import import_module, util
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.allocation import DynamicRegister
-from pennylane.exceptions import WireError
-from pennylane.typing import Wire
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.allocation import DynamicRegister
+from pennylane2.exceptions import WireError
+from pennylane2.typing import Wire
+from pennylane2.wires import Wires
 
 if util.find_spec("jax") is not None:
     jax = import_module("jax")

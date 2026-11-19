@@ -17,10 +17,10 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import math
-from pennylane.core.shots import Shots
-from pennylane.devices.qubit_mixed import create_initial_state, measure_with_samples, sample_state
+import pennylane2 as qp
+from pennylane2 import math
+from pennylane2.core.shots import Shots
+from pennylane2.devices.qubit_mixed import create_initial_state, measure_with_samples, sample_state
 
 # Tolerance for approximate equality checks
 APPROX_ATOL = 0.05

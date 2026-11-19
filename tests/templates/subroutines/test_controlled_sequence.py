@@ -18,9 +18,9 @@ Unit tests for the ControlledSequence subroutine.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.wires import Wires
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

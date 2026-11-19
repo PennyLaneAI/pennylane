@@ -1,9 +1,9 @@
 PYTHON3 := $(shell which python3 2>/dev/null)
 
 PYTHON := python3
-COVERAGE := --cov=pennylane --cov-report term-missing --cov-report=html:coverage_html_report
+COVERAGE := --cov=pennylane2 --cov-report term-missing --cov-report=html:coverage_html_report
 TESTRUNNER := -m pytest tests --tb=native --no-flaky-report
-PLUGIN_TESTRUNNER := -m pytest pennylane/devices/tests --tb=native --no-flaky-report
+PLUGIN_TESTRUNNER := -m pytest pennylane2/devices/tests --tb=native --no-flaky-report
 
 .PHONY: help
 help:
@@ -37,11 +37,11 @@ dist:
 
 .PHONY : clean
 clean:
-	rm -rf pennylane/__pycache__
-	rm -rf pennylane/optimize/__pycache__
-	rm -rf pennylane/expectation/__pycache__
-	rm -rf pennylane/ops/__pycache__
-	rm -rf pennylane/devices/__pycache__
+	rm -rf pennylane2/__pycache__
+	rm -rf pennylane2/optimize/__pycache__
+	rm -rf pennylane2/expectation/__pycache__
+	rm -rf pennylane2/ops/__pycache__
+	rm -rf pennylane2/devices/__pycache__
 	rm -rf tests/__pycache__
 	rm -rf tests/new_qnode/__pycache__
 	rm -rf dist
@@ -68,17 +68,17 @@ coverage:
 .PHONY:format
 format:
 ifdef check
-	$(PYTHON) -m isort --settings-path ./pyproject.toml ./pennylane ./tests --check
-	$(PYTHON) -m black --config ./pyproject.toml ./pennylane ./tests --check
+	$(PYTHON) -m isort --settings-path ./pyproject.toml ./pennylane2 ./tests --check
+	$(PYTHON) -m black --config ./pyproject.toml ./pennylane2 ./tests --check
 else
-	$(PYTHON) -m isort --settings-path ./pyproject.toml ./pennylane ./tests
-	$(PYTHON) -m black --config ./pyproject.toml ./pennylane ./tests
+	$(PYTHON) -m isort --settings-path ./pyproject.toml ./pennylane2 ./tests
+	$(PYTHON) -m black --config ./pyproject.toml ./pennylane2 ./tests
 endif
 
 .PHONY: lint
 lint:
-	$(PYTHON) -m pylint pennylane --rcfile .pylintrc
+	$(PYTHON) -m pylint pennylane2 --rcfile .pylintrc
 
 .PHONY: lint-test
 lint-test:
-	$(PYTHON) -m pylint tests pennylane/devices/tests --rcfile tests/.pylintrc
+	$(PYTHON) -m pylint tests pennylane2/devices/tests --rcfile tests/.pylintrc

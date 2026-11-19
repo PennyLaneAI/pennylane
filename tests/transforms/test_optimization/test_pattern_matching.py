@@ -20,11 +20,11 @@ Unit tests for the optimization transform ``pattern_matching_optimization``.
 
 import pytest
 
-import pennylane as qp
-import pennylane.numpy as np
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.transforms.commutation_dag import commutation_dag
-from pennylane.transforms.optimization.pattern_matching import (
+import pennylane2 as qp
+import pennylane2.numpy as np
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.transforms.commutation_dag import commutation_dag
+from pennylane2.transforms.optimization.pattern_matching import (
     BackwardMatch,
     ForwardMatch,
     _update_qubits,

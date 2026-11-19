@@ -18,8 +18,8 @@ Unit tests for the adjoint_metric_tensor function.
 import numpy as onp
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
+import pennylane2 as qp
+from pennylane2 import numpy as np
 
 fixed_pars = [-0.2, 0.2, 0.5, 0.3, 0.7]
 

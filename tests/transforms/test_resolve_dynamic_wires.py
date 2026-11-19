@@ -17,8 +17,8 @@ Tests for the `resolve_dynamic_wires` transform.
 
 import pytest
 
-import pennylane as qp
-from pennylane.allocation import AllocateState
+import pennylane2 as qp
+from pennylane2.allocation import AllocateState
 
 
 def test_error_if_no_available_wires():

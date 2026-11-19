@@ -19,9 +19,9 @@ import re
 
 import pytest
 
-import pennylane as qp
-from pennylane import I, X, Y, Z
-from pennylane.spin import (
+import pennylane2 as qp
+from pennylane2 import I, X, Y, Z
+from pennylane2.spin import (
     Lattice,
     emery,
     fermi_hubbard,

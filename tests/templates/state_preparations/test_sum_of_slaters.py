@@ -24,11 +24,11 @@ import numpy as np
 import pytest
 from jax import numpy as jnp
 
-import pennylane as qp
-from pennylane import math
-from pennylane.decomposition import list_decomps
-from pennylane.math import binary_matrix_rank, ceil_log2
-from pennylane.templates.state_preparations.sum_of_slaters import (
+import pennylane2 as qp
+from pennylane2 import math
+from pennylane2.decomposition import list_decomps
+from pennylane2.math import binary_matrix_rank, ceil_log2
+from pennylane2.templates.state_preparations.sum_of_slaters import (
     SumOfSlatersPrep,
     _columns_differ,
     _find_ell,
@@ -40,9 +40,9 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     compute_sos_encoding,
     select_sos_rows,
 )
-from pennylane.testing import assert_valid, assert_valid_decomp_rule
-from pennylane.typing import Complex, Float, Int, Wire
-from pennylane.wires import Wires
+from pennylane2.testing import assert_valid, assert_valid_decomp_rule
+from pennylane2.typing import Complex, Float, Int, Wire
+from pennylane2.wires import Wires
 
 
 def _is_binary(x: np.ndarray) -> bool:

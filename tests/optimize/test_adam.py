@@ -17,8 +17,8 @@ Unit tests for the ``AdamOptimizer``.
 
 import pytest
 
-from pennylane import numpy as np
-from pennylane.optimize import AdamOptimizer
+from pennylane2 import numpy as np
+from pennylane2.optimize import AdamOptimizer
 
 
 class TestAdamOptimizer:

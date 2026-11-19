@@ -17,10 +17,10 @@ Test the resource configuration class.
 
 import pytest
 
-from pennylane.estimator.ops.op_math.controlled_ops import CRX, CRY, CRZ
-from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
-from pennylane.estimator.resource_config import ResourceConfig
-from pennylane.estimator.resource_operator import ResourceOperator
+from pennylane2.estimator.ops.op_math.controlled_ops import CRX, CRY, CRZ
+from pennylane2.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
+from pennylane2.estimator.resource_config import ResourceConfig
+from pennylane2.estimator.resource_operator import ResourceOperator
 
 
 class DummyOp(ResourceOperator):  # pylint: disable=too-few-public-methods

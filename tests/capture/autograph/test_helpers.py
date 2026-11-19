@@ -19,7 +19,7 @@ from functools import wraps as ft_wraps
 
 import pytest
 
-from pennylane.capture.autograph import wraps as ag_wraps
+from pennylane2.capture.autograph import wraps as ag_wraps
 
 
 def test_wrapper_assignments():
@@ -39,7 +39,7 @@ def test_wrapper_assignments():
     for attr in WRAPPER_ASSIGNMENTS:
         if attr == "__module__":
             assert getattr(ag_wrapped, attr) == "test_helpers"
-            assert getattr(ft_wrapped, attr) == "pennylane.capture.autograph"
+            assert getattr(ft_wrapped, attr) == "pennylane2.capture.autograph"
         else:
             assert getattr(ag_wrapped, attr) == getattr(ft_wrapped, attr)
     for attr in WRAPPER_UPDATES:

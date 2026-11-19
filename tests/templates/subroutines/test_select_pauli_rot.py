@@ -20,11 +20,11 @@ import re
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.ops.op_math import Prod
-from pennylane.testing import assert_decomposable
-from pennylane.typing import AbstractWires, Float
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.ops.op_math import Prod
+from pennylane2.testing import assert_decomposable
+from pennylane2.typing import AbstractWires, Float
 
 
 def get_tape(angles, wires):

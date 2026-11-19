@@ -22,11 +22,11 @@ from functools import partial
 import pytest
 from device_shots_to_analytic import shots_to_analytic
 
-import pennylane as qp
-import pennylane.numpy as np
-from pennylane.devices import DefaultQubit
-from pennylane.exceptions import DecompositionWarning, DeviceError
-from pennylane.ops import Controlled, MeasurementValue, MidMeasure
+import pennylane2 as qp
+import pennylane2.numpy as np
+from pennylane2.devices import DefaultQubit
+from pennylane2.exceptions import DecompositionWarning, DeviceError
+from pennylane2.ops import Controlled, MeasurementValue, MidMeasure
 
 
 def test_broadcasted_postselection(mocker):

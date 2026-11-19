@@ -1,6 +1,6 @@
 qp.transforms
 ==============
 
-.. currentmodule:: pennylane.transforms
+.. currentmodule:: pennylane2.transforms
 
-.. automodule:: pennylane.transforms
+.. automodule:: pennylane2.transforms

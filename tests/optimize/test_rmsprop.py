@@ -17,8 +17,8 @@ Unit tests for the ``RMSPropOptimizer``.
 
 import pytest
 
-from pennylane import numpy as np
-from pennylane.optimize import RMSPropOptimizer
+from pennylane2 import numpy as np
+from pennylane2.optimize import RMSPropOptimizer
 
 
 class TestRMSPropOptimizer:

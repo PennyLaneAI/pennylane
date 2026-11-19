@@ -16,8 +16,8 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.devices import DefaultQubit
+import pennylane2 as qp
+from pennylane2.devices import DefaultQubit
 
 
 @pytest.mark.parametrize("diff_method", (None, "backprop", qp.gradients.param_shift))

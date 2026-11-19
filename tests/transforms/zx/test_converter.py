@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for conversion and helper methods used in `pennylane.transforms.zx`
+Unit tests for conversion and helper methods used in `pennylane2.transforms.zx`
 """
 
 import sys
@@ -20,9 +20,9 @@ import sys
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.qscript import QuantumScript
-from pennylane.exceptions import DecompositionWarning, QuantumFunctionError
+import pennylane2 as qp
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.exceptions import DecompositionWarning, QuantumFunctionError
 
 pyzx = pytest.importorskip("pyzx")
 pytestmark = pytest.mark.external

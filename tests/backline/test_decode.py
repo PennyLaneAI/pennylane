@@ -13,13 +13,13 @@
 # limitations under the License.
 
 
-"""Tests for :mod:`pennylane.backline.decode`."""
+"""Tests for :mod:`pennylane2.backline.decode`."""
 
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.backline.decode import (
+import pennylane2 as qp
+from pennylane2.backline.decode import (
     ROLE_CONTROLLER,
     _byte_count,
     _pack,
@@ -30,8 +30,8 @@ from pennylane.backline.decode import (
     _validate_packed,
     decode,
 )
-from pennylane.backline.runtime.runtime_call import get_runtime_call_prim
-from pennylane.testing import find_eqns
+from pennylane2.backline.runtime.runtime_call import get_runtime_call_prim
+from pennylane2.testing import find_eqns
 
 TRANSPORT_CALLS = [
     "__catalyst__transport__get_session",

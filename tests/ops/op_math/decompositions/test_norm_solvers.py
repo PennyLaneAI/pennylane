@@ -18,7 +18,7 @@ from functools import reduce
 import pytest
 from flaky import flaky
 
-from pennylane.ops.op_math.decompositions.norm_solver import (
+from pennylane2.ops.op_math.decompositions.norm_solver import (
     _factorize_prime_zomega,
     _factorize_prime_zsqrt_two,
     _gcd,
@@ -28,7 +28,7 @@ from pennylane.ops.op_math.decompositions.norm_solver import (
     _solve_diophantine,
     _sqrt_modulo_p,
 )
-from pennylane.ops.op_math.decompositions.rings import ZOmega, ZSqrtTwo
+from pennylane2.ops.op_math.decompositions.rings import ZOmega, ZSqrtTwo
 
 
 class TestGCD:

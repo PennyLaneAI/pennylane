@@ -20,7 +20,7 @@ jobs:
       repository-ref: ${{ github.ref }}
       runner_name: ubuntu-latest
       bandit-config-file: pyproject.toml
-      scan_directory: pennylane
+      scan_directory: pennylane2
       
       # We error out CI if any high-severity issues are found
       # All other errors are still printed to logs

@@ -18,8 +18,8 @@ Unit tests for the RandomLayers template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

@@ -11,7 +11,7 @@ where the quantum dataset is a collection of `quantum data` obtained from variou
 
 .. note::
 
-    The packages ``aiohttp``, ``fsspec``, and ``h5py`` are required to use the :mod:`~pennylane.data` module. 
+    The packages ``aiohttp``, ``fsspec``, and ``h5py`` are required to use the :mod:`~pennylane2.data` module.
     These can be installed with:
     
     .. code-block:: console
@@ -21,13 +21,13 @@ where the quantum dataset is a collection of `quantum data` obtained from variou
 Loading Datasets in PennyLane
 -----------------------------
 
-We can access data of a desired type with the :func:`~pennylane.data.load` or :func:`~pennylane.data.load_interactive` functions.
+We can access data of a desired type with the :func:`~pennylane2.data.load` or :func:`~pennylane2.data.load_interactive` functions.
 These download the desired datasets or load them from local storage if previously downloaded.
 
 To specify the dataset to be loaded, the data category (``data_name``) must be
 specified, alongside category-specific keyword arguments. For the full list
 of available datasets, please see the `datasets website <https://pennylane.ai/datasets>`_.
-The :func:`~pennylane.data.load` function returns a ``list`` with the desired data.
+The :func:`~pennylane2.data.load` function returns a ``list`` with the desired data.
 
 >>> H2datasets = qp.data.load("qchem", molname="H2", basis="STO-3G", bondlength=1.1)
 >>> print(H2datasets)
@@ -35,7 +35,7 @@ The :func:`~pennylane.data.load` function returns a ``list`` with the desired da
 >>> H2data = H2datasets[0]
 
 We can load datasets for multiple parameter values by providing a list of values instead of a single value.
-To load all possible values, use the special value :const:`~pennylane.data.FULL` or the string ``"full"``:
+To load all possible values, use the special value :const:`~pennylane2.data.FULL` or the string ``"full"``:
 
 >>> H2datasets = qp.data.load("qchem", molname="H2", basis="full", bondlength=[0.5, 1.1])
 >>> print(H2datasets)
@@ -56,7 +56,7 @@ For example, we can download or load only the molecule and energy of a dataset a
 >>> part.fci_energy
 -1.0791924385860894
 
-To determine what attributes are available for a type of dataset, we can use the function :func:`~pennylane.data.list_attributes`:
+To determine what attributes are available for a type of dataset, we can use the function :func:`~pennylane2.data.list_attributes`:
 
 >>> qp.data.list_attributes(data_name="qchem")
 ['molname',
@@ -101,7 +101,7 @@ Viewing Available Dataset Names
 -------------------------------
 
 We can call the 
-:func:`~pennylane.data.list_data_names` function to get a snapshot of the names of the currently available datasets.
+:func:`~pennylane2.data.list_data_names` function to get a snapshot of the names of the currently available datasets.
 This function returns a list of strings as shown below.
 
 >>> qp.data.list_data_names()
@@ -131,7 +131,7 @@ Viewing Available Datasets
 --------------------------
 
 We can call the 
-:func:`~pennylane.data.list_datasets` function to get a snapshot of the currently available data.
+:func:`~pennylane2.data.list_datasets` function to get a snapshot of the currently available data.
 This function returns a nested dictionary as shown below. 
 
 >>> available_data = qp.data.list_datasets()
@@ -151,7 +151,7 @@ function calls will change.
 Creating Custom Datasets
 ------------------------
 
-The functionality in :mod:`~pennylane.data` also includes creating and reading custom-made datasets.
+The functionality in :mod:`~pennylane2.data` also includes creating and reading custom-made datasets.
 We can use custom datasets to store any data generated in PennyLane and its supporting data.
 To create a dataset, we can do the following:
 
@@ -167,7 +167,7 @@ To create a dataset, we can do the following:
 >>> dataset.energies
 array([-1.5, -0.5,  0.5,  1.5])
 
-We can then write this :class:`~pennylane.data.Dataset` to storage and read it as follows:
+We can then write this :class:`~pennylane2.data.Dataset` to storage and read it as follows:
 
 
 >>> dataset.write("./path/to/dataset.h5")
@@ -191,11 +191,11 @@ Quantum Datasets Functions and Classes
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.data.list_attributes
-    ~pennylane.data.list_data_names
-    ~pennylane.data.list_datasets
-    ~pennylane.data.load
-    ~pennylane.data.load_interactive
-    ~pennylane.data.Dataset
+    ~pennylane2.data.list_attributes
+    ~pennylane2.data.list_data_names
+    ~pennylane2.data.list_datasets
+    ~pennylane2.data.load
+    ~pennylane2.data.load_interactive
+    ~pennylane2.data.Dataset
 
 :html:`</div>`

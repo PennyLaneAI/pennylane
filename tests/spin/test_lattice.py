@@ -20,8 +20,8 @@ import re
 import numpy as np
 import pytest
 
-from pennylane.spin import Lattice
-from pennylane.spin.lattice import generate_lattice
+from pennylane2.spin import Lattice
+from pennylane2.spin.lattice import generate_lattice
 
 
 @pytest.mark.parametrize(("boundary_condition"), [([True, True]), ([4])])

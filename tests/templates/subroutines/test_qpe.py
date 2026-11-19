@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 from scipy.stats import unitary_group
 
-import pennylane as qp
+import pennylane2 as qp
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

@@ -24,9 +24,9 @@ import pytest
 import scipy
 from gate_data import CNOT, H, I, S, X, Y, Z
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.transforms import TransformError
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.transforms import TransformError
 
 one_qubit_no_parameter = [
     qp.PauliX,

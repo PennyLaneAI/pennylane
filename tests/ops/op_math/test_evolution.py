@@ -16,10 +16,10 @@
 import pytest
 from scipy.linalg import expm
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.ops.op_math import Evolution, Exp
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.ops.op_math import Evolution, Exp
 
 
 @pytest.mark.xfail_if_capture(reason="Exp is not currently planned for porting to Op2")

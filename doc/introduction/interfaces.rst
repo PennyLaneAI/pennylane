@@ -22,7 +22,7 @@ each of these libraries quantum-aware, allowing quantum circuits to be treated j
 like any other operation. Any automatic differentiation framework can be chosen with any device.
 
 In PennyLane, an automatic differentiation framework is declared using the ``interface`` argument when creating
-a :class:`QNode <pennylane.QNode>`, e.g.,
+a :class:`QNode <pennylane2.QNode>`, e.g.,
 
 .. code-block:: python
 
@@ -135,20 +135,20 @@ Some of these are specific to quantum optimization, such as the :class:`~.QNGOpt
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.AdagradOptimizer
-    ~pennylane.AdamOptimizer
-    ~pennylane.AdaptiveOptimizer
-    ~pennylane.GradientDescentOptimizer
-    ~pennylane.MomentumOptimizer
-    ~pennylane.NesterovMomentumOptimizer
-    ~pennylane.QNGOptimizer
-    ~pennylane.RiemannianGradientOptimizer
-    ~pennylane.RMSPropOptimizer
-    ~pennylane.RotosolveOptimizer
-    ~pennylane.RotoselectOptimizer
-    ~pennylane.ShotAdaptiveOptimizer
-    ~pennylane.SPSAOptimizer
-    ~pennylane.QNSPSAOptimizer
+    ~pennylane2.AdagradOptimizer
+    ~pennylane2.AdamOptimizer
+    ~pennylane2.AdaptiveOptimizer
+    ~pennylane2.GradientDescentOptimizer
+    ~pennylane2.MomentumOptimizer
+    ~pennylane2.NesterovMomentumOptimizer
+    ~pennylane2.QNGOptimizer
+    ~pennylane2.RiemannianGradientOptimizer
+    ~pennylane2.RMSPropOptimizer
+    ~pennylane2.RotosolveOptimizer
+    ~pennylane2.RotoselectOptimizer
+    ~pennylane2.ShotAdaptiveOptimizer
+    ~pennylane2.SPSAOptimizer
+    ~pennylane2.QNSPSAOptimizer
 
 :html:`</div>`
 
@@ -173,8 +173,8 @@ PennyLane offers a built-in Jax-based implementation compatible with ``jax.jit``
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.QNGOptimizerQJIT
-    ~pennylane.MomentumQNGOptimizerQJIT
+    ~pennylane2.QNGOptimizerQJIT
+    ~pennylane2.MomentumQNGOptimizerQJIT
 
 :html:`</div>`
 
@@ -203,7 +203,7 @@ Simulation-based differentiation
 The following methods use `reverse accumulation
 <https://en.wikipedia.org/wiki/Automatic_differentiation#Reverse_accumulation>`__ to compute
 gradients; a well-known example of this approach is backpropagation. These methods are **not** hardware compatible; they are only supported on
-*statevector* simulator devices such as :class:`default.qubit <pennylane.devices.DefaultQubit>`.
+*statevector* simulator devices such as :class:`default.qubit <pennylane2.devices.DefaultQubit>`.
 
 However, for rapid prototyping on simulators, these methods typically out-perform forward-mode
 accumulators such as the parameter-shift rule and finite-differences. For more details, see the
@@ -213,7 +213,7 @@ accumulators such as the parameter-shift rule and finite-differences. For more d
 
   This differentiation method is only allowed on simulator
   devices that are classically end-to-end differentiable, for example
-  :class:`default.qubit <pennylane.devices.DefaultQubit>`. This method does *not* work on devices
+  :class:`default.qubit <pennylane2.devices.DefaultQubit>`. This method does *not* work on devices
   that estimate measurement statistics using a finite number of shots; please use
   the ``parameter-shift`` rule instead.
 
@@ -245,18 +245,18 @@ with the number of trainable circuit parameters.
   observable being measured and the generators of the unitary operations in the
   circuit are reversed; the generators are now the observables, and the Pauli
   decomposition of the observables are now gates in the circuit. More information 
-  can be found in the documentation for :func:`qp.gradients.hadamard_grad <pennylane.gradients.hadamard_grad>`
+  can be found in the documentation for :func:`qp.gradients.hadamard_grad <pennylane2.gradients.hadamard_grad>`
   and the `original paper outlining this gradient method <https://arxiv.org/pdf/2408.05406>`__.
 
 * ``"direct-hadamard"``: Use a variant of ``"hadamard"``, where the additional auxiliary
   qubit needed in ``"hadamard"`` is exchanged for additional circuit executions.
-  More information can be found in the documentation for :func:`qp.gradients.hadamard_grad <pennylane.gradients.hadamard_grad>`
+  More information can be found in the documentation for :func:`qp.gradients.hadamard_grad <pennylane2.gradients.hadamard_grad>`
   and the `original paper outlining this gradient method <https://arxiv.org/pdf/2408.05406>`__.
 
 * ``"reversed-direct-hadamard"``: Use a variant of ``"direct-hadamard"``, where 
   the role of the observable and the generators of the unitary operations in the 
   circuit swap in a similar fashion to the ``"reversed-hadamard"`` method. More 
-  information can be found in the documentation for :func:`qp.gradients.hadamard_grad <pennylane.gradients.hadamard_grad>`
+  information can be found in the documentation for :func:`qp.gradients.hadamard_grad <pennylane2.gradients.hadamard_grad>`
   and the
   `original paper outlining this gradient method <https://arxiv.org/pdf/2408.05406>`__.
 
@@ -281,7 +281,7 @@ Gradient transforms
 
 In addition to registering the differentiation method of QNodes to be used with autodifferentiation
 frameworks, PennyLane also provides a library of **gradient transforms** via the
-:mod:`qp.gradients <pennylane.gradients>` module.
+:mod:`qp.gradients <pennylane2.gradients>` module.
 
 Quantum gradient transforms are strategies for computing the gradient of a quantum
 circuit that work by **transforming** the quantum circuit into one or more gradient circuits.
@@ -318,7 +318,7 @@ this is not a replacement --- and should not be used instead of --- standard tra
 This is because gradient transforms do not take into account classical computation nodes, and only
 support gradients of QNodes.
 For more details on available gradient transforms, as well as learning how to define your own
-gradient transform, please see the :mod:`qp.gradients <pennylane.gradients>` documentation.
+gradient transform, please see the :mod:`qp.gradients <pennylane2.gradients>` documentation.
 
 
 Differentiating gradient transforms and higher-order derivatives

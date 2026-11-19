@@ -22,10 +22,10 @@ import mcm_utils
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.exceptions import CompileError
-from pennylane.transforms.dynamic_one_shot import fill_in_value
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.exceptions import CompileError
+from pennylane2.transforms.dynamic_one_shot import fill_in_value
 
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")

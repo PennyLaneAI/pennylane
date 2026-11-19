@@ -21,8 +21,8 @@ from pathlib import Path
 
 import pytest
 
-from pennylane.backline import onnx_decoder
-from pennylane.backline.onnx import (
+from pennylane2.backline import onnx_decoder
+from pennylane2.backline.onnx import (
     _onnx_function,
     _onnxruntime_library,
     _onnxruntime_library_in,

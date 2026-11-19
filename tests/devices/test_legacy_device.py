@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane` :class:`Device` class.
+Unit tests for the :mod:`pennylane2` :class:`Device` class.
 """
 
 # pylint: disable=redefined-outer-name
@@ -23,10 +23,10 @@ import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qp
-from pennylane.devices import LegacyDevice as Device
-from pennylane.exceptions import DeviceError, QuantumFunctionError
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.devices import LegacyDevice as Device
+from pennylane2.exceptions import DeviceError, QuantumFunctionError
+from pennylane2.wires import Wires
 
 mock_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_device_paulis_and_hamiltonian = ["Hamiltonian", "PauliX", "PauliY", "PauliZ"]
@@ -190,7 +190,7 @@ def mock_device_supporting_prod(monkeypatch):
 
 
 def test_invalid_attribute_in_devices_raises_error():
-    with pytest.raises(AttributeError, match="'pennylane.devices' has no attribute 'blabla'"):
+    with pytest.raises(AttributeError, match="'pennylane2.devices' has no attribute 'blabla'"):
         qp.devices.blabla  # pylint: disable=pointless-statement
 
 
@@ -246,13 +246,13 @@ class TestDeviceSupportedLogic:
 
         with pytest.raises(
             ValueError,
-            match="The given operation must either be a pennylane.Operation class or a string.",
+            match="The given operation must either be a pennylane2.Operation class or a string.",
         ):
             dev.supports_operation(3)
 
         with pytest.raises(
             ValueError,
-            match="The given operation must either be a pennylane.Operation class or a string.",
+            match="The given operation must either be a pennylane2.Operation class or a string.",
         ):
             dev.supports_operation(Device)
 
@@ -263,7 +263,7 @@ class TestDeviceSupportedLogic:
 
         with pytest.raises(
             ValueError,
-            match="The given observable must either be a pennylane.operation.Operator class or a string.",
+            match="The given observable must either be a pennylane2.operation.Operator class or a string.",
         ):
             dev.supports_observable(3)
 
@@ -296,7 +296,7 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
         dev = mock_device_supporting_paulis()
         string = str(dev)
         assert "Short name: MockDevice" in string
-        assert "Package: pennylane" in string
+        assert "Package: pennylane2" in string
         assert "Plugin version: None" in string
         assert "Author: None" in string
         assert "Wires: 1" in string

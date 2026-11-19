@@ -16,10 +16,10 @@
 
 import pytest
 
-import pennylane as qp
-import pennylane.numpy as np
-from pennylane.shadows import ClassicalShadow
-from pennylane.shadows.classical_shadow import _project_density_matrix_spectrum
+import pennylane2 as qp
+import pennylane2.numpy as np
+from pennylane2.shadows import ClassicalShadow
+from pennylane2.shadows.classical_shadow import _project_density_matrix_spectrum
 
 
 def max_entangled_circuit(wires, shots=10000, interface="autograd"):

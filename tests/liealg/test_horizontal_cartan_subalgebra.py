@@ -11,15 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/labs/dla/horizontal_cartan_subalgebra.py functionality"""
+"""Tests for pennylane2/labs/dla/horizontal_cartan_subalgebra.py functionality"""
 
 import numpy as np
 import pytest
 from scipy.linalg import sqrtm
 
-import pennylane as qp
-from pennylane import X, Y, Z
-from pennylane.liealg import (
+import pennylane2 as qp
+from pennylane2 import X, Y, Z
+from pennylane2.liealg import (
     adjvec_to_op,
     cartan_decomp,
     change_basis_ad_rep,
@@ -28,7 +28,7 @@ from pennylane.liealg import (
     horizontal_cartan_subalgebra,
     op_to_adjvec,
 )
-from pennylane.pauli import PauliSentence
+from pennylane2.pauli import PauliSentence
 
 
 class TestCartanSubalgebra:

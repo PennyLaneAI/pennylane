@@ -17,9 +17,9 @@ from functools import partial
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.gradients import param_shift
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.gradients import param_shift
 
 
 class TestComputeVJP:

@@ -17,8 +17,8 @@ Unit tests for the composite operator class of Operator2 instances.
 
 import pytest
 
-import pennylane as qp
-from pennylane.ops.op_math.change_op_basis import ChangeOpBasis
+import pennylane2 as qp
+from pennylane2.ops.op_math.change_op_basis import ChangeOpBasis
 
 jax = pytest.importorskip("jax")
 

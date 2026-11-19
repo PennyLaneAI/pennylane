@@ -1,0 +1,177 @@
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This module contains classes and functions for Operator arithmetic.
+
+Constructor Functions
+~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane2
+
+.. autosummary::
+    :toctree: api
+
+    ~adjoint
+    ~ctrl
+    ~cond
+    ~change_op_basis
+    ~exp
+    ~sum
+    ~pow
+    ~prod
+    ~s_prod
+
+Symbolic Classes
+~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane2.ops.op_math
+
+.. autosummary::
+    :toctree: api
+
+    ~Adjoint
+    ~ChangeOpBasis
+    ~ChangeOpBasis2
+    ~CompositeOp
+    ~CompositeOp2
+    ~Conditional
+    ~Controlled
+    ~ControlledOp
+    ~Evolution
+    ~Exp
+    ~LinearCombination
+    ~Pow
+    ~Pow2
+    ~Prod
+    ~Prod2
+    ~Sum
+    ~SProd
+    ~SymbolicOp
+    ~SymbolicOp2
+    ~ScalarSymbolicOp
+
+Controlled Operator Classes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane2
+
+.. autosummary::
+    :toctree: api
+
+    ~ControlledQubitUnitary
+    ~CY
+    ~CZ
+    ~CH
+    ~CCZ
+    ~CSWAP
+    ~CNOT
+    ~Toffoli
+    ~MultiControlledX
+    ~CRX
+    ~CRY
+    ~CRZ
+    ~CRot
+    ~ControlledPhaseShift
+
+Decompositions
+~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane2.ops
+
+.. autosummary::
+    :toctree: api
+
+    ~one_qubit_decomposition
+    ~two_qubit_decomposition
+    ~multi_qubit_decomposition
+    ~sk_decomposition
+    ~rs_decomposition
+
+Control Decompositions
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane2.ops.op_math
+
+.. autosummary::
+    :toctree: api
+
+    ~ctrl_decomp_zyz
+    ~ctrl_decomp_bisect
+
+"""
+
+from .adjoint import Adjoint, adjoint
+from .adjoint2 import Adjoint2
+from .composite import CompositeOp
+from .composite2 import CompositeOp2
+from .condition import Conditional, cond
+from .controlled import Controlled, ControlledOp, ctrl
+from .controlled2 import Controlled2, ControlledOp2
+from .controlled_ops import (
+    CCZ,
+    CH,
+    CNOT,
+    CRX,
+    CRY,
+    CRZ,
+    CSWAP,
+    CY,
+    CZ,
+    ControlledPhaseShift,
+    ControlledQubitUnitary,
+    CPhase,
+    CRot,
+    MultiControlledX,
+    Toffoli,
+)
+from .decompositions import (
+    one_qubit_decomposition,
+    sk_decomposition,
+    rs_decomposition,
+    two_qubit_decomposition,
+    multi_qubit_decomposition,
+    ctrl_decomp_bisect,
+    ctrl_decomp_zyz,
+)
+from .evolution import Evolution
+from .exp import Exp, exp
+from .linear_combination import LinearCombination
+from .pow import Pow, pow
+from .pow2 import Pow2
+from .prod import Prod, prod
+from .prod2 import Prod2
+from .change_op_basis import ChangeOpBasis, change_op_basis
+from .change_op_basis2 import ChangeOpBasis2
+from .sprod import SProd, s_prod
+from .sum import Sum, sum
+from .symbolicop import ScalarSymbolicOp, SymbolicOp
+from .symbolicop2 import SymbolicOp2
+
+controlled_qubit_ops = {
+    "ControlledQubitUnitary",
+    "CY",
+    "CZ",
+    "CH",
+    "CCZ",
+    "CSWAP",
+    "CNOT",
+    "Toffoli",
+    "MultiControlledX",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "CRot",
+    "ControlledPhaseShift",
+    "CPhase",
+}

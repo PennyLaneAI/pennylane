@@ -1,0 +1,1854 @@
+# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This submodule contains the discrete-variable quantum operations that are the
+core parametrized gates.
+"""
+
+# pylint: disable=arguments-differ
+
+
+import functools
+import math as builtin_math
+from itertools import combinations
+from typing import Literal, override
+from warnings import warn
+
+import numpy as np
+import scipy as sp
+
+import pennylane2 as qp
+from pennylane2.core.operator import Operator2, abstractify
+from pennylane2.decomposition import (
+    add_decomps,
+    register_condition,
+    register_resources,
+)
+from pennylane2.exceptions import PennyLaneDeprecationWarning
+from pennylane2.ops.identity import I
+from pennylane2.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane2.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane2.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane2.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
+from pennylane2.ops.op_math.pow2 import pow_rotation as pow_rotation2
+from pennylane2.ops.op_math.prod import prod
+from pennylane2.typing import Float, TensorLike, Wire
+from pennylane2.wires import WiresLike, concatenate_wires
+
+from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
+
+stack_last = functools.partial(qp.math.stack, axis=-1)
+
+
+def _can_replace(x, y):
+    """
+    Convenience function that returns true if x is close to y and if
+    x does not require grad
+    """
+    return not qp.math.is_tracer(x) and not qp.math.requires_grad(x) and qp.math.allclose(x, y)
+
+
+class RX(Operator2):
+    r"""
+    The single qubit X rotation
+
+    .. math:: R_x(\phi) = e^{-i\phi\sigma_x/2} = \begin{bmatrix}
+                \cos(\phi/2) & -i\sin(\phi/2) \\
+                -i\sin(\phi/2) & \cos(\phi/2)
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_x(\phi)) = \frac{1}{2}\left[f(R_x(\phi+\pi/2)) - f(R_x(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`R_x(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.RX
+
+            .. decomposition-rule:: _rx_to_rot
+                :image: /_static/decomposition_thumbnails/rx_to_rot.svg
+
+                :class:`~.Rot` | :math:`1`
+
+            .. decomposition-rule:: _rx_to_rz_ry
+                :image: /_static/decomposition_thumbnails/rx_to_rz_ry.svg
+
+                :class:`~.RZ` | :math:`2`
+                :class:`~.RY` | :math:`1`
+
+            .. decomposition-rule:: _rx_to_ppr
+                :image: /_static/decomposition_thumbnails/rx_to_ppr.svg
+
+                :class:`PauliRot("X") <.PauliRot>` | :math:`1`
+
+            .. decomposition-rule:: _rx_to_ry_cliff
+                :image: /_static/decomposition_thumbnails/rx_to_ry_cliff.svg
+
+                :class:`~.S` | :math:`1`
+                :class:`Adjoint(S) <.S>` | :math:`1`
+                :class:`~.RY` | :math:`1`
+
+            .. decomposition-rule:: _rx_to_rz_cliff
+                :image: /_static/decomposition_thumbnails/rx_to_rz_cliff.svg
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.RZ` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/rx_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.RX` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rx_decomp)
+                :image: /_static/decomposition_thumbnails/rx_controlled.svg
+                :region: controlled
+                :where: :math:`c` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.CRX` | :math:`1` if :math:`c = 1`
+                :class:`~.Hadamard` | :math:`2` if :math:`c \geq 2`
+                :class:`~.RZ` | :math:`2` if :math:`c \geq 2`
+                :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/rx_pow.svg
+                :region: pow
+                :where: the angle of rotation is multiplied by the power :math:`z`
+
+                :class:`~.RX` | :math:`1`
+    """
+
+    num_wires = 1
+    """int: Number of wires that the operation acts on."""
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    dynamic_argnames = ("phi",)
+
+    arg_specs = {"phi": Float, "wires": Wire[1]}
+
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
+
+    @property
+    @override
+    def basis(self) -> Literal["X", "Y", "Z", None]:  # pylint: disable=missing-function-docstring
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "X"
+
+    def generator(self) -> "qp.Hamiltonian":
+        return qp.Hamiltonian([-0.5], [PauliX(wires=self.wires)])
+
+    @staticmethod
+    @override
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.RX.matrix`
+
+        Args:
+            phi (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qp.RX.compute_matrix(torch.tensor(0.5))
+        tensor([[0.9689+0.0000j, 0.0000-0.2474j],
+                [0.0000-0.2474j, 0.9689+0.0000j]])
+        """
+        c = qp.math.cos(phi / 2)
+        s = qp.math.sin(phi / 2)
+
+        # The following avoids casting an imaginary quantity to reals when backpropagating
+        c = (1 + 0j) * c
+        js = -1j * s
+        return qp.math.stack([stack_last([c, js]), stack_last([js, c])], axis=-2)
+
+    @staticmethod
+    @override
+    # pylint: disable-next=unused-argument
+    def compute_sparse_matrix(phi, wires: WiresLike | None = None, format="csr"):
+        return sp.sparse.csr_matrix(
+            [
+                [qp.math.cos(phi / 2), -1j * qp.math.sin(phi / 2)],
+                [-1j * qp.math.sin(phi / 2), qp.math.cos(phi / 2)],
+            ]
+        ).asformat(format)
+
+    @override
+    def adjoint(self) -> "RX":
+        return RX(-self.phi, wires=self.wires)
+
+    @override
+    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+        return [RX(self.phi * z, wires=self.wires)]
+
+    @override
+    def simplify(self) -> "RX":
+        phi = self.phi % (4 * np.pi)
+
+        if _can_replace(phi, 0):
+            return qp.Identity(wires=self.wires)
+
+        return RX(phi, wires=self.wires)
+
+
+def _rx_to_rot_resources(*_, **__):
+    return {qp.Rot: 1}
+
+
+@register_resources(_rx_to_rot_resources)
+def _rx_to_rot(phi, wires: WiresLike):
+    qp.Rot(np.pi / 2, phi, 3.5 * np.pi, wires=wires)
+
+
+def _rx_to_rz_ry_resources(*_, **__):
+    return {qp.RZ: 2, qp.RY: 1}
+
+
+@register_resources(_rx_to_rz_ry_resources)
+def _rx_to_rz_ry(phi, wires: WiresLike):
+    qp.RZ(np.pi / 2, wires=wires)
+    qp.RY(phi, wires=wires)
+    qp.RZ(-np.pi / 2, wires=wires)
+
+
+def _rx_to_ry_cliff_resources(*_, **__):
+    resources = {_change_op_basis_abstract(qp.S, qp.RY, qp.adjoint(qp.S(Wire[1]))): 1}
+    return resources
+
+
+@register_resources(_rx_to_ry_cliff_resources)
+def _rx_to_ry_cliff(phi, wires: WiresLike):
+    qp.change_op_basis(qp.S(wires), qp.RY(phi, wires))
+
+
+def _rx_to_rz_cliff_resources(*_, **__):
+    resources = {_change_op_basis_abstract(qp.Hadamard, qp.RZ, qp.Hadamard): 1}
+    return resources
+
+
+@register_resources(_rx_to_rz_cliff_resources)
+def _rx_to_rz_cliff(phi, wires: WiresLike):
+    qp.change_op_basis(qp.Hadamard(wires), qp.RZ(phi, wires), qp.Hadamard(wires))
+
+
+def _rx_to_ppr_resources(*_, **__):
+    return {qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1}
+
+
+@register_resources(_rx_to_ppr_resources)
+def _rx_to_ppr(phi, wires):
+    qp.PauliRot(phi, "X", wires=wires)
+
+
+add_decomps(RX, _rx_to_rot, _rx_to_rz_ry, _rx_to_ppr, _rx_to_ry_cliff, _rx_to_rz_cliff)
+add_decomps("Adjoint(RX)", adjoint_rotation2)
+add_decomps("Pow(RX)", pow_rotation2)
+
+
+# pylint: disable-next=unused-argument
+def _controlled_rx_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    if len(control_wires) == 1:
+        return {qp.CRX: 1}
+    return {
+        qp.H: 2,
+        qp.RZ: 2,
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 1],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
+        ): 2,
+    }
+
+
+@register_resources(_controlled_rx_resource)
+# pylint: disable-next=unused-argument
+def _controlled_rx_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+    wires = concatenate_wires(control_wires, base.wires)
+    if len(control_wires) == 1:
+        qp.CRX(base.phi, wires=wires)
+        return
+
+    qp.H(wires=wires[-1])
+    qp.RZ(base.phi / 2, wires=wires[-1])
+    qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    qp.RZ(-base.phi / 2, wires=wires[-1])
+    qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    qp.H(wires=wires[-1])
+
+
+add_decomps("C(RX)", flip_zero_control2(_controlled_rx_decomp))
+
+
+class RY(Operator2):
+    r"""
+    The single qubit Y rotation
+
+    .. math:: R_y(\phi) = e^{-i\phi\sigma_y/2} = \begin{bmatrix}
+                \cos(\phi/2) & -\sin(\phi/2) \\
+                \sin(\phi/2) & \cos(\phi/2)
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_y(\phi)) = \frac{1}{2}\left[f(R_y(\phi+\pi/2)) - f(R_y(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`R_y(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.RY
+
+            .. decomposition-rule:: _ry_to_rot
+                :image: /_static/decomposition_thumbnails/ry_to_rot.svg
+
+                :class:`~.Rot` | :math:`1`
+
+            .. decomposition-rule:: _ry_to_rz_rx
+                :image: /_static/decomposition_thumbnails/ry_to_rz_rx.svg
+
+                :class:`~.RZ` | :math:`2`
+                :class:`~.RX` | :math:`1`
+
+            .. decomposition-rule:: _ry_to_ppr
+                :image: /_static/decomposition_thumbnails/ry_to_ppr.svg
+
+                :class:`PauliRot("Y") <.PauliRot>` | :math:`1`
+
+            .. decomposition-rule:: _ry_to_rx_cliff
+                :image: /_static/decomposition_thumbnails/ry_to_rx_cliff.svg
+
+                :class:`~.S` | :math:`1`
+                :class:`Adjoint(S) <.S>` | :math:`1`
+                :class:`~.RX` | :math:`1`
+
+            .. decomposition-rule:: _ry_to_rz_cliff
+                :image: /_static/decomposition_thumbnails/ry_to_rz_cliff.svg
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.S` | :math:`1`
+                :class:`Adjoint(S) <.S>` | :math:`1`
+                :class:`~.RZ` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/ry_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.RY` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_ry_decomp)
+                :image: /_static/decomposition_thumbnails/ry_controlled.svg
+                :region: controlled
+                :where: :math:`c` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.CRY` | :math:`1` if :math:`c = 1`
+                :class:`~.RY` | :math:`2` if :math:`c \geq 2`
+                :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/ry_pow.svg
+                :region: pow
+                :where: the angle of rotation is multiplied by the power :math:`z`
+
+                :class:`~.RY` | :math:`1`
+    """
+
+    num_wires = 1
+    """int: Number of wires that the operation acts on."""
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    dynamic_argnames = ("phi",)
+
+    arg_specs = {"phi": Float, "wires": Wire[1]}
+
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
+
+    @property
+    @override
+    def basis(self) -> Literal["X", "Y", "Z", None]:  # pylint: disable=missing-function-docstring
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Y"
+
+    def generator(self) -> "qp.Hamiltonian":
+        return qp.Hamiltonian([-0.5], [PauliY(wires=self.wires)])
+
+    @staticmethod
+    @override
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.RY.matrix`
+
+
+        Args:
+            phi (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qp.RY.compute_matrix(torch.tensor(0.5))
+        tensor([[ 0.9689+0.j, -0.2474-0.j],
+                [ 0.2474+0.j,  0.9689+0.j]])
+        """
+
+        c = qp.math.cos(phi / 2)
+        s = qp.math.sin(phi / 2)
+        # The following avoids casting an imaginary quantity to reals when backpropagating
+        c = (1 + 0j) * c
+        s = (1 + 0j) * s
+        return qp.math.stack([stack_last([c, -s]), stack_last([s, c])], axis=-2)
+
+    @staticmethod
+    @override
+    # pylint: disable-next=unused-argument
+    def compute_sparse_matrix(phi, wires: WiresLike | None = None, format="csr"):
+        return sp.sparse.csr_matrix(
+            [
+                [qp.math.cos(phi / 2), -qp.math.sin(phi / 2)],
+                [qp.math.sin(phi / 2), qp.math.cos(phi / 2)],
+            ]
+        ).asformat(format)
+
+    @override
+    def adjoint(self) -> "RY":
+        return RY(-self.phi, wires=self.wires)
+
+    @override
+    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+        return [RY(self.phi * z, wires=self.wires)]
+
+    @override
+    def simplify(self) -> "RY":
+        theta = self.phi % (4 * np.pi)
+
+        if _can_replace(theta, 0):
+            return qp.Identity(wires=self.wires)
+
+        return RY(theta, wires=self.wires)
+
+
+def _ry_to_rot_resources(*_, **__):
+    return {qp.Rot: 1}
+
+
+@register_resources(_ry_to_rot_resources)
+def _ry_to_rot(phi, wires: WiresLike):
+    qp.Rot(0, phi, 0, wires=wires)
+
+
+def _ry_to_rz_rx_resources(*_, **__):
+    return {qp.RZ: 2, qp.RX: 1}
+
+
+@register_resources(_ry_to_rz_rx_resources)
+def _ry_to_rz_rx(phi, wires: WiresLike):
+    qp.RZ(-np.pi / 2, wires=wires)
+    qp.RX(phi, wires=wires)
+    qp.RZ(np.pi / 2, wires=wires)
+
+
+def _ry_to_rx_cliff_resources(*_, **__):
+    resources = {_change_op_basis_abstract(_adjoint_abstract(qp.S), qp.RX, qp.S): 1}
+    return resources
+
+
+@register_resources(_ry_to_rx_cliff_resources)
+def _ry_to_rx_cliff(phi, wires: WiresLike):
+    qp.change_op_basis(qp.adjoint(qp.S(wires)), qp.RX(phi, wires), qp.S(wires))
+
+
+def _ry_to_rz_cliff_resources(*_, **__):
+    resources = {
+        _change_op_basis_abstract(
+            prod(qp.H(Wire[1]), qp.adjoint(qp.S(Wire[1]))),
+            qp.RZ,
+            prod(qp.S(Wire[1]), qp.H(Wire[1])),
+        ): 1
+    }
+    return resources
+
+
+@register_resources(_ry_to_rz_cliff_resources)
+def _ry_to_rz_cliff(phi, wires: WiresLike, **__):
+
+    def _compute():
+        qp.adjoint(qp.S(wires))
+        qp.Hadamard(wires)
+
+    def _uncompute():
+        qp.Hadamard(wires)
+        qp.S(wires)
+
+    qp.change_op_basis(_compute, qp.RZ(phi, wires), _uncompute)
+
+
+def _ry_to_ppr_resources(*_, **__):
+    return {qp.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1}
+
+
+@register_resources(_ry_to_ppr_resources)
+def _ry_to_ppr(phi, wires):
+    qp.PauliRot(phi, "Y", wires=wires)
+
+
+add_decomps(RY, _ry_to_rot, _ry_to_rz_rx, _ry_to_ppr, _ry_to_rx_cliff, _ry_to_rz_cliff)
+add_decomps("Adjoint(RY)", adjoint_rotation2)
+add_decomps("Pow(RY)", pow_rotation2)
+
+
+# pylint: disable-next=unused-argument
+def _controlled_ry_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    if len(control_wires) == 1:
+        return {qp.CRY: 1}
+    return {
+        qp.RY: 2,
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 1],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
+        ): 2,
+    }
+
+
+@register_resources(_controlled_ry_resource)
+# pylint: disable-next=unused-argument
+def _controlled_ry_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+    wires = concatenate_wires(control_wires, base.wires)
+    if len(control_wires) == 1:
+        qp.CRY(base.phi, wires=wires)
+        return
+
+    qp.RY(base.phi / 2, wires=wires[-1])
+    qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    qp.RY(-base.phi / 2, wires=wires[-1])
+    qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+
+
+add_decomps("C(RY)", flip_zero_control2(_controlled_ry_decomp))
+
+
+class RZ(Operator2):
+    r"""
+    The single qubit Z rotation
+
+    .. math:: R_z(\phi) = e^{-i\phi\sigma_z/2} = \begin{bmatrix}
+                e^{-i\phi/2} & 0 \\
+                0 & e^{i\phi/2}
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_z(\phi)) = \frac{1}{2}\left[f(R_z(\phi+\pi/2)) - f(R_z(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`R_z(\phi)`.
+
+    Args:
+        phi (TensorLike): rotation angle :math:`\phi`
+        wires (WiresLike): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.RZ
+
+            .. decomposition-rule:: _rz_to_ps
+                :image: /_static/decomposition_thumbnails/rz_to_phaseshift.svg
+
+                :class:`~.PhaseShift` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _rz_to_rot
+                :image: /_static/decomposition_thumbnails/rz_to_rot.svg
+
+                :class:`~.Rot` | :math:`1`
+
+            .. decomposition-rule:: _rz_to_ry_rx
+                :image: /_static/decomposition_thumbnails/rz_to_ry_rx.svg
+
+                :class:`~.RY` | :math:`2`
+                :class:`~.RX` | :math:`1`
+
+            .. decomposition-rule:: _rz_to_ppr
+                :image: /_static/decomposition_thumbnails/rz_to_ppr.svg
+
+                :class:`PauliRot("Z") <.PauliRot>` | :math:`1`
+
+            .. decomposition-rule:: _rz_to_rx_cliff
+                :image: /_static/decomposition_thumbnails/rz_to_rx_cliff.svg
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.RX` | :math:`1`
+
+            .. decomposition-rule:: _rz_to_ry_cliff
+                :image: /_static/decomposition_thumbnails/rz_to_ry_cliff.svg
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.S` | :math:`1`
+                :class:`Adjoint(S) <.S>` | :math:`1`
+                :class:`~.RY` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/rz_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.RZ` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rz_decomp)
+                :image: /_static/decomposition_thumbnails/rz_controlled.svg
+                :region: controlled
+                :where: :math:`c` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.CRZ` | :math:`1` if :math:`c = 1`
+                :class:`~.RZ` | :math:`2` if :math:`c \geq 2`
+                :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/rz_pow.svg
+                :region: pow
+                :where: the angle of rotation is multiplied by the power :math:`z`
+
+                :class:`~.RZ` | :math:`1`
+    """
+
+    num_wires = 1
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    wire_sizes = (1,)
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Float, "wires": Wire[1]}
+
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        """Return the operator's basis."""
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
+
+    def generator(self) -> "qp.Hamiltonian":
+        return qp.Hamiltonian([-0.5], [PauliZ(wires=self.wires)])
+
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
+
+    @staticmethod
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires=None) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.RZ.matrix`
+
+        Args:
+            phi (TensorLike): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qp.RZ.compute_matrix(torch.tensor(0.5))
+        tensor([[0.9689-0.2474j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.9689+0.2474j]])
+        """
+        signs = qp.math.array([-1, 1], like=phi)
+        arg = 0.5j * phi
+
+        if qp.math.ndim(arg) == 0:
+            return qp.math.diag(qp.math.exp(arg * signs))
+
+        diags = qp.math.exp(qp.math.outer(arg, signs))
+        return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(2, like=diags), diags)
+
+    @staticmethod
+    def compute_sparse_matrix(phi, wires=None, format="csr"):  # pylint: disable=unused-argument
+        return sp.sparse.csr_matrix(
+            [[np.exp(-1j * phi / 2), 0], [0, np.exp(1j * phi / 2)]]
+        ).asformat(format)
+
+    @staticmethod
+    # pylint: disable-next=unused-argument
+    def compute_eigvals(phi: TensorLike, wires=None) -> TensorLike:
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.RZ.eigvals`
+
+
+        Args:
+            phi (TensorLike): rotation angle
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qp.RZ.compute_eigvals(torch.tensor(0.5))
+        tensor([0.9689-0.2474j, 0.9689+0.2474j])
+        """
+        prefactors = qp.math.array([-0.5j, 0.5j], like=phi)
+        if qp.math.ndim(phi) == 0:
+            product = phi * prefactors
+        else:
+            product = qp.math.outer(phi, prefactors)
+        return qp.math.exp(product)
+
+    def adjoint(self) -> "RZ":
+        return RZ(-self.arguments["phi"], wires=self.wires)
+
+    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+        return [RZ(self.arguments["phi"] * z, wires=self.wires)]
+
+    def simplify(self) -> "RZ":
+        phi = self.arguments["phi"] % (4 * np.pi)
+
+        if _can_replace(phi, 0):
+            return I(wires=self.wires)
+
+        return RZ(phi, wires=self.wires)
+
+
+def _rz_to_ps_resources(phi, wires):  # pylint: disable=unused-argument
+    return {qp.PhaseShift: 1, qp.GlobalPhase: 1}
+
+
+@register_resources(_rz_to_ps_resources)
+def _rz_to_ps(phi, wires: WiresLike):
+    qp.PhaseShift(phi, wires)
+    qp.GlobalPhase(phi / 2)
+
+
+def _rz_to_rot_resources(phi, wires):  # pylint: disable=unused-argument
+    return {qp.Rot: 1}
+
+
+@register_resources(_rz_to_rot_resources)
+def _rz_to_rot(phi, wires: WiresLike):
+    qp.Rot(0, 0, phi, wires=wires)
+
+
+def _rz_to_ry_rx_resources(phi, wires):  # pylint: disable=unused-argument
+    return {qp.RY: 2, qp.RX: 1}
+
+
+@register_resources(_rz_to_ry_rx_resources)
+def _rz_to_ry_rx(phi, wires: WiresLike):
+    qp.RY(np.pi / 2, wires=wires)
+    qp.RX(phi, wires=wires)
+    qp.RY(-np.pi / 2, wires=wires)
+
+
+def _rz_to_rx_cliff_resources(phi, wires):  # pylint: disable=unused-argument
+    resources = {_change_op_basis_abstract(qp.Hadamard, qp.RX, qp.Hadamard): 1}
+    return resources
+
+
+@register_resources(_rz_to_rx_cliff_resources)
+def _rz_to_rx_cliff(phi, wires: WiresLike):
+    qp.change_op_basis(qp.Hadamard(wires), qp.RX(phi, wires), qp.Hadamard(wires))
+
+
+def _rz_to_ry_cliff_resources(phi, wires):  # pylint: disable=unused-argument
+    resources = {
+        _change_op_basis_abstract(
+            prod(qp.S(Wire[1]), qp.H(Wire[1])),
+            qp.RY,
+            prod(qp.H(Wire[1]), qp.adjoint(qp.S(Wire[1]))),
+        ): 1
+    }
+    return resources
+
+
+@register_resources(_rz_to_ry_cliff_resources)
+def _rz_to_ry_cliff(phi, wires: WiresLike):
+
+    def _compute():
+        qp.H(wires)
+        qp.S(wires)
+
+    def _uncompute():
+        qp.adjoint(qp.S(wires))
+        qp.H(wires)
+
+    qp.change_op_basis(_compute, qp.RY(phi, wires), _uncompute)
+
+
+def _rz_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
+    return {qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1}
+
+
+@register_resources(_rz_to_ppr_resources)
+def _rz_to_ppr(phi, wires, **_):
+    qp.PauliRot(phi, "Z", wires=wires)
+
+
+add_decomps(RZ, _rz_to_ps, _rz_to_rot, _rz_to_ry_rx, _rz_to_ppr, _rz_to_rx_cliff, _rz_to_ry_cliff)
+add_decomps("Adjoint(RZ)", adjoint_rotation2)
+add_decomps("Pow(RZ)", pow_rotation2)
+
+
+# pylint: disable-next=unused-argument
+def _controlled_rz_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    if len(control_wires) == 1:
+        return {qp.CRZ: 1}
+    return {
+        qp.RZ: 2,
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 1],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
+        ): 2,
+    }
+
+
+@register_resources(_controlled_rz_resource)
+# pylint: disable-next=unused-argument
+def _controlled_rz_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+
+    if len(control_wires) == 1:
+        qp.CRZ(base.phi, wires=concatenate_wires(control_wires, base.wires))
+        return
+
+    qp.RZ(base.phi / 2, wires=base.wires)
+    qp.MultiControlledX(
+        concatenate_wires(control_wires, base.wires),
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+    qp.RZ(-base.phi / 2, wires=base.wires)
+    qp.MultiControlledX(
+        concatenate_wires(control_wires, base.wires),
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+
+add_decomps("C(RZ)", flip_zero_control2(_controlled_rz_decomp))
+
+
+class PhaseShift(Operator2):
+    r"""
+    Arbitrary single qubit local phase shift
+
+    .. math:: R_\phi(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
+                1 & 0 \\
+                0 & e^{i\phi}
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R_\phi(\phi)) = \frac{1}{2}\left[f(R_\phi(\phi+\pi/2)) - f(R_\phi(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`R_{\phi}(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PhaseShift
+            :symbols: :math:`c` control wires, :math:`z` controls on :math:`0`
+            :example: :math:`c=2`, :math:`z=0`
+
+            .. decomposition-rule:: _phaseshift_to_rz_gp
+                :image: /_static/decomposition_thumbnails/phaseshift_to_rz_gp.svg
+
+                :class:`~.RZ` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/phaseshift_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_phase_shift_decomp)
+                :image: /_static/decomposition_thumbnails/phaseshift_controlled.svg
+                :region: controlled
+                :where: :math:`c` is the number of control wires, :math:`\binom{c+1}{k}` of
+                    the :class:`~.PauliRot` gates act on :math:`k` wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, and the circuit 
+                    shows :math:`c = 2` and :math:`z = 0`.
+
+                :class:`~.ControlledPhaseShift` | :math:`1` if :math:`c = 1`
+                :class:`~.PauliRot` | :math:`2^{c+1} - 1` if :math:`c \geq 2`
+                :class:`~.GlobalPhase` | :math:`1` if :math:`c \geq 2`
+                :class:`~.PauliX` | :math:`2z` | 0
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_phase_shift_single_phase)
+                :image: /_static/decomposition_thumbnails/controlled_phase_shift_single_phase.svg
+                :region: controlled
+                :requires: :math:`c` zeroed work wires
+                :where: A ladder of :class:`~.TemporaryAND` gates computes the AND of the 
+                    :math:`c` control wires and the target wire into the last work wire, which 
+                    then receives a single ``PhaseShift``. The ladder is uncomputed with mid-circuit 
+                    measurements. Controls on :math:`0` are flipped with ``X`` gates before and 
+                    after the decomposition. The circuit shows :math:`c = 2` and :math:`z = 0`.
+
+                :class:`~.TemporaryAND` | :math:`c` | 2
+                :class:`~.PhaseShift` | :math:`1` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`c` | 2
+                :class:`~.PauliX` | :math:`2z` | 0
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/phaseshift_pow.svg
+                :region: pow
+                :where: the angle is multiplied by the power :math:`z`
+
+                :class:`~.PhaseShift` | :math:`1`
+    """
+
+    num_wires = 1
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    wire_sizes = (1,)
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Float, "wires": Wire[1]}
+
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
+
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        """The basis of an operation."""
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
+
+    def generator(self) -> "qp.Projector":
+        return qp.Projector(np.array([1]), wires=self.wires)
+
+    def label(
+        self,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
+    ) -> str:
+        return super().label(decimals=decimals, base_label=base_label or "Rϕ", cache=cache)
+
+    @staticmethod
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.PhaseShift.matrix`
+
+
+        Args:
+            phi (tensor_like or float): phase shift
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qp.PhaseShift.compute_matrix(torch.tensor(0.5))
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.8776+0.4794j]])
+        """
+        signs = qp.math.array([0, 1], like=phi)
+        arg = 1j * phi
+
+        if qp.math.ndim(arg) == 0:
+            return qp.math.diag(qp.math.exp(arg * signs))
+
+        diags = qp.math.exp(qp.math.outer(arg, signs))
+        return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(2, like=diags), diags)
+
+    @staticmethod
+    # pylint: disable-next=unused-argument
+    def compute_eigvals(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.PhaseShift.eigvals`
+
+
+        Args:
+            phi (tensor_like or float): phase shift
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qp.PhaseShift.compute_eigvals(torch.tensor(0.5))
+        tensor([1.0000+0.0000j, 0.8776+0.4794j])
+        """
+        prefactors = qp.math.array([0, 1j], like=phi)
+        if qp.math.ndim(phi) == 0:
+            product = phi * prefactors
+        else:
+            product = qp.math.outer(phi, prefactors)
+        return qp.math.exp(product)
+
+    def adjoint(self) -> "PhaseShift":
+        return PhaseShift(-self.phi, wires=self.wires)
+
+    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+        return [PhaseShift(self.phi * z, wires=self.wires)]
+
+    def simplify(self) -> "PhaseShift":
+        phi = self.phi % (2 * np.pi)
+
+        if _can_replace(phi, 0):
+            return qp.Identity(wires=self.wires)
+
+        return PhaseShift(phi, wires=self.wires)
+
+
+def _phaseshift_to_rz_gp_resources(phi, wires):  # pylint: disable=unused-argument
+    return {qp.RZ: 1, qp.GlobalPhase: 1}
+
+
+@register_resources(_phaseshift_to_rz_gp_resources)
+def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
+    RZ(phi, wires=wires)
+    qp.GlobalPhase(-phi / 2)
+
+
+# pylint: disable-next=unused-argument
+def _controlled_phase_shift_resource(base, control_wires, *_, **__):
+    # A single control wire specializes to ``ControlledPhaseShift``, matching the legacy
+    # behaviour (and its cheaper ``RZ``/``CNOT`` decomposition) rather than the general
+    # phase-polynomial (``PauliRot``) expansion, which is only used for multiple control wires.
+    if len(control_wires) == 1:
+        return {qp.ControlledPhaseShift: 1}
+    num_control_wires = len(control_wires)
+    resources = {
+        qp.PauliRot(Float, pauli_word="Z" * i, wires=Wire[len("Z" * i)]): builtin_math.comb(
+            num_control_wires + 1, i
+        )
+        for i in range(1, num_control_wires + 2)
+    }
+    resources[qp.GlobalPhase] = 1
+    return resources
+
+
+@register_resources(_controlled_phase_shift_resource)
+def _controlled_phase_shift_decomp(base, control_wires, *_, **__):
+    wires = concatenate_wires(control_wires, base.wires)
+    if len(control_wires) == 1:
+        qp.ControlledPhaseShift(base.phi, wires=wires)
+        return
+
+    n = len(wires)
+    for l in range(1, n + 1):
+        for sub_wires in combinations(wires, l):
+            phi = -base.phi / 2 ** (n - 1) * (-1) ** l
+            qp.PauliRot(phi, pauli_word="Z" * l, wires=sub_wires)
+    qp.GlobalPhase(-base.phi / 2**n)
+
+
+def _controlled_phase_shift_single_phase_resources(base, control_wires, *_, **__):
+    #  pylint: disable=unused-argument
+    num_control_wires = len(control_wires)
+    return {
+        qp.TemporaryAND: num_control_wires,
+        PhaseShift: 1,
+        qp.adjoint(qp.TemporaryAND(Wire[3])): num_control_wires,
+    }
+
+
+@register_condition(
+    lambda control_wires, work_wires, work_wire_type, **_: work_wire_type == "zeroed"
+    and len(control_wires) > 0
+    and len(work_wires) >= len(control_wires)
+)
+@register_resources(_controlled_phase_shift_single_phase_resources)
+def _controlled_phase_shift_single_phase(base, control_wires, work_wires, **_):
+    """Computes ``AND(*control_wires, base.wires[0])`` into ``len(control_wires)`` zeroed work
+    wires with a ``TemporaryAND`` ladder, applies a single ``PhaseShift`` to the last work wire
+    and uncomputes the ladder with measurements."""
+    and_controls = [*control_wires, base.wires[0]]
+    and_targets = list(work_wires[: len(control_wires)])
+    and_wires = list(zip([and_controls[0], *and_targets[:-1]], and_controls[1:], and_targets))
+
+    for wires in and_wires:
+        qp.TemporaryAND(wires=wires)
+    PhaseShift(base.phi, wires=and_targets[-1])
+    for wires in reversed(and_wires):
+        qp.adjoint(qp.TemporaryAND)(wires=wires)
+
+
+add_decomps(PhaseShift, _phaseshift_to_rz_gp)
+add_decomps("Adjoint(PhaseShift)", adjoint_rotation2)
+add_decomps("Pow(PhaseShift)", pow_rotation2)
+add_decomps(
+    "C(PhaseShift)",
+    flip_zero_control2(_controlled_phase_shift_decomp),
+    flip_zero_control2(_controlled_phase_shift_single_phase),
+)
+
+
+class Rot(Operator2):
+    r"""
+    Arbitrary single qubit rotation
+
+    .. math::
+
+        R(\phi,\theta,\omega) = RZ(\omega)RY(\theta)RZ(\phi)= \begin{bmatrix}
+        e^{-i(\phi+\omega)/2}\cos(\theta/2) & -e^{i(\phi-\omega)/2}\sin(\theta/2) \\
+        e^{-i(\phi-\omega)/2}\sin(\theta/2) & e^{i(\phi+\omega)/2}\cos(\theta/2)
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 3
+    * Number of dimensions per parameter: (0, 0, 0)
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(R(\phi, \theta, \omega)) = \frac{1}{2}\left[f(R(\phi+\pi/2, \theta, \omega)) - f(R(\phi-\pi/2, \theta, \omega))\right]`
+      where :math:`f` is an expectation value depending on :math:`R(\phi, \theta, \omega)`.
+      This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \omega\}`.
+
+    .. note::
+
+        If the ``Rot`` gate is not supported on the targeted device, PennyLane
+        will attempt to decompose the gate into :class:`~.RZ` and :class:`~.RY` gates.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        theta (float): rotation angle :math:`\theta`
+        omega (float): rotation angle :math:`\omega`
+        wires (Any, Wires): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.Rot
+
+            .. decomposition-rule:: _rot_to_rz_ry_rz
+                :image: /_static/decomposition_thumbnails/rot_to_rz_ry_rz.svg
+
+                :class:`~.RZ` | :math:`2`
+                :class:`~.RY` | :math:`1`
+
+            .. decomposition-rule:: _adjoint_rot
+                :image: /_static/decomposition_thumbnails/rot_adjoint.svg
+                :region: adjoint
+
+                :class:`~.Rot` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rot_decomp)
+                :image: /_static/decomposition_thumbnails/rot_controlled.svg
+                :region: controlled
+                :where: :math:`c` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.CRot` | :math:`1` if :math:`c = 1`
+                :class:`~.RZ` | :math:`3` if :math:`c \geq 2`
+                :class:`~.RY` | :math:`2` if :math:`c \geq 2`
+                :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
+    """
+
+    ndim_params = (0, 0, 0)
+
+    num_wires = 1
+
+    num_params = 3
+
+    dynamic_argnames = ("phi", "theta", "omega")
+
+    arg_specs = {"phi": Float, "theta": Float, "omega": Float, "wires": Wire[1]}
+
+    def __init__(self, phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike):
+        super().__init__(phi, theta, omega, wires=wires)
+
+    @staticmethod
+    @override
+    def compute_matrix(  # pylint: disable=unused-argument
+        phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike | None = None
+    ) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.Rot.matrix`
+
+
+        Args:
+            phi (tensor_like or float): first rotation angle
+            theta (tensor_like or float): second rotation angle
+            omega (tensor_like or float): third rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qp.Rot.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
+        tensor([[ 0.9752-0.1977j, -0.0993+0.0100j],
+                [ 0.0993+0.0100j,  0.9752+0.1977j]])
+
+        """
+        c = qp.math.cos(theta / 2)
+        s = qp.math.sin(theta / 2)
+
+        # The following variable is used to assert the all terms to be stacked have same shape
+        one = qp.math.ones_like(phi) * qp.math.ones_like(omega)
+        c = c * one
+        s = s * one
+
+        mat = [
+            [
+                qp.math.exp(-0.5j * (phi + omega)) * c,
+                -qp.math.exp(0.5j * (phi - omega)) * s,
+            ],
+            [
+                qp.math.exp(-0.5j * (phi - omega)) * s,
+                qp.math.exp(0.5j * (phi + omega)) * c,
+            ],
+        ]
+
+        return qp.math.stack([stack_last(row) for row in mat], axis=-2)
+
+    @override
+    def adjoint(self) -> "Rot":
+        return Rot(-self.omega, -self.theta, -self.phi, wires=self.wires)
+
+    @override
+    def simplify(self) -> "Rot":
+        """Simplifies into single-rotation gates or a Hadamard if possible.
+
+        >>> qp.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0).simplify()
+        RX(0.1, wires=[0])
+        >>> qp.Rot(np.pi, np.pi/2, 0, 0).simplify()
+        H(0)
+
+        """
+        p0, p1, p2 = (p % (4 * np.pi) for p in self.data)
+
+        if _can_replace(p0, 0) and _can_replace(p1, 0) and _can_replace(p2, 0):
+            return qp.Identity(wires=self.wires)
+        if _can_replace(p0, np.pi / 2) and _can_replace(p2, 7 * np.pi / 2):
+            return RX(p1, wires=self.wires)
+        if _can_replace(p0, 0) and _can_replace(p2, 0):
+            return RY(p1, wires=self.wires)
+        if _can_replace(p1, 0):
+            return RZ((p0 + p2) % (4 * np.pi), wires=self.wires)
+        if _can_replace(p0, np.pi) and _can_replace(p1, np.pi / 2) and _can_replace(p2, 0):
+            return Hadamard(wires=self.wires)
+
+        return Rot(p0, p1, p2, wires=self.wires)
+
+
+def _rot_to_rz_ry_rz_resources(phi, theta, omega, wires):  # pylint: disable=unused-argument
+    return {qp.RZ: 2, qp.RY: 1}
+
+
+@register_resources(_rot_to_rz_ry_rz_resources)
+def _rot_to_rz_ry_rz(phi, theta, omega, wires: WiresLike):
+    RZ(phi, wires=wires)
+    RY(theta, wires=wires)
+    RZ(omega, wires=wires)
+
+
+add_decomps(Rot, _rot_to_rz_ry_rz)
+
+
+@register_resources({Rot: 1})
+def _adjoint_rot(base):
+    Rot(-base.omega, -base.theta, -base.phi, wires=base.wires)
+
+
+add_decomps("Adjoint(Rot)", _adjoint_rot)
+
+
+# pylint: disable-next=unused-argument
+def _controlled_rot_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    if len(control_wires) == 1:
+        return {qp.CRot: 1}
+    return {
+        qp.RZ: 3,
+        qp.RY: 2,
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 1],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
+        ): 2,
+    }
+
+
+@register_resources(_controlled_rot_resource)
+# pylint: disable-next=unused-argument
+def _controlled_rot_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+
+    phi, theta, omega = base.phi, base.theta, base.omega
+    wires = concatenate_wires(control_wires, base.wires)
+
+    if len(control_wires) == 1:
+        qp.CRot(phi, theta, omega, wires=wires)
+        return
+
+    qp.RZ((phi - omega) / 2, wires=wires[-1])
+    qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    qp.RZ(-(phi + omega) / 2, wires=wires[-1])
+    qp.RY(-theta / 2, wires=wires[-1])
+    qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    qp.RY(theta / 2, wires=wires[-1])
+    qp.RZ(omega, wires=wires[-1])
+
+
+add_decomps("C(Rot)", flip_zero_control2(_controlled_rot_decomp))
+
+
+class U1(Operator2):
+    r"""
+    U1 gate.
+
+    .. math:: U_1(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
+                1 & 0 \\
+                0 & e^{i\phi}
+            \end{bmatrix}.
+
+    .. note::
+
+        The ``U1`` gate is an alias for the phase shift operation :class:`~.PhaseShift`.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_1(\phi)) = \frac{1}{2}\left[f(U_1(\phi+\pi/2)) - f(U_1(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_1(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.U1
+
+            .. decomposition-rule:: _u1_phaseshift
+                :image: /_static/decomposition_thumbnails/u1_to_phaseshift.svg
+
+                :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/u1_adjoint.svg
+                :region: adjoint
+
+                :class:`~.U1` | :math:`1`
+                :where: ``phi`` changes sign
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/u1_pow.svg
+                :region: pow
+                :where: the angle is multiplied by the power :math:`z`
+
+                :class:`~.U1` | :math:`1`
+    """
+
+    num_wires = 1
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    wire_sizes = (1,)
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Float, "wires": Wire[1]}
+
+    def generator(self) -> "qp.Projector":
+        return qp.Projector(np.array([1]), wires=self.wires)
+
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
+
+    @staticmethod
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.U1.matrix`
+
+        Args:
+            phi (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qp.U1.compute_matrix(torch.tensor(0.5))
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.8776+0.4794j]])
+        """
+        fac = np.array([0, 1])
+
+        fac = qp.math.convert_like(fac, phi)
+
+        arg = 1j * phi
+        if qp.math.ndim(arg) == 0:
+            return qp.math.diag(qp.math.exp(arg * fac))
+
+        diags = qp.math.exp(qp.math.outer(arg, fac))
+        return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(2, like=diags), diags)
+
+    def adjoint(self) -> "U1":
+        return U1(-self.phi, wires=self.wires)
+
+    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+        return [U1(self.phi * z, wires=self.wires)]
+
+    def simplify(self) -> "U1":
+        phi = self.phi % (2 * np.pi)
+
+        if _can_replace(phi, 0):
+            return qp.Identity(wires=self.wires)
+
+        return U1(phi, wires=self.wires)
+
+
+def _u1_phaseshift_resources(*_, **__):
+    return {PhaseShift: 1}
+
+
+@register_resources(_u1_phaseshift_resources)
+def _u1_phaseshift(phi, wires):
+    PhaseShift(phi, wires=wires)
+
+
+add_decomps(U1, _u1_phaseshift)
+add_decomps("Adjoint(U1)", adjoint_rotation2)
+add_decomps("Pow(U1)", pow_rotation2)
+
+
+class U2(Operator2):
+    r"""
+    U2 gate.
+
+    .. math::
+
+        U_2(\phi, \delta) = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & -\exp(i \delta)
+        \\ \exp(i \phi) & \exp(i (\phi + \delta)) \end{bmatrix}
+
+    The :math:`U_2` gate is related to the single-qubit rotation :math:`R` (:class:`Rot`) and the
+    :math:`R_\phi` (:class:`PhaseShift`) gates via the following relation:
+
+    .. math::
+
+        U_2(\phi, \delta) = R_\phi(\phi+\delta) R(\delta,\pi/2,-\delta)
+
+    .. note::
+
+        If the ``U2`` gate is not supported on the targeted device, PennyLane
+        will attempt to decompose the gate into :class:`~.Rot` and :class:`~.PhaseShift` gates.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 2
+    * Number of dimensions per parameter: (0, 0)
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_2(\phi, \delta)) = \frac{1}{2}\left[f(U_2(\phi+\pi/2, \delta)) - f(U_2(\phi-\pi/2, \delta))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_2(\phi, \delta)`.
+      This gradient recipe applies for each angle argument :math:`\{\phi, \delta\}`.
+
+    Args:
+        phi (float): azimuthal angle :math:`\phi`
+        delta (float): quantum phase :math:`\delta`
+        wires (Sequence[int] or int): the subsystem the gate acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.U2
+
+            .. decomposition-rule:: _u2_phaseshift_rot
+                :image: /_static/decomposition_thumbnails/u2_to_rot_phaseshift.svg
+
+                :class:`~.Rot` | :math:`1`
+                :class:`~.PhaseShift` | :math:`2`
+
+            .. decomposition-rule:: _adjoint_u2
+                :image: /_static/decomposition_thumbnails/u2_adjoint.svg
+                :region: adjoint
+                :where: the angles change to :math:`\delta \rightarrow \pi - \delta` and  :math:`\phi \rightarrow \pi - \phi` (both :math:`\text{mod} 2 \pi`)
+
+                :class:`~.U2` | :math:`1`
+    """
+
+    num_wires = 1
+    num_params = 2
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0, 0)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    wire_sizes = (1,)
+    dynamic_argnames = ("phi", "delta")
+    arg_specs = {"phi": Float, "delta": Float, "wires": Wire[1]}
+
+    def __init__(self, phi: TensorLike, delta: TensorLike, wires: WiresLike):
+        super().__init__(phi, delta, wires=wires)
+
+    @staticmethod
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, delta: TensorLike, wires: WiresLike = None) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.U2.matrix`
+
+        Args:
+            phi (tensor_like or float): azimuthal angle
+            delta (tensor_like or float): quantum phase
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qp.U2.compute_matrix(torch.tensor(0.1), torch.tensor(0.2))
+        tensor([[ 0.7071+0.0000j, -0.6930-0.1405j],
+                [ 0.7036+0.0706j,  0.6755+0.2090j]])
+        """
+        one = qp.math.ones_like(phi) * qp.math.ones_like(delta)
+        mat = [
+            [one, -qp.math.exp(1j * delta) * one],
+            [qp.math.exp(1j * phi) * one, qp.math.exp(1j * (phi + delta))],
+        ]
+
+        return qp.math.stack([stack_last(row) for row in mat], axis=-2) / np.sqrt(2)
+
+    def adjoint(self) -> "U2":
+        new_delta = qp.math.mod((np.pi - self.phi), (2 * np.pi))
+        new_phi = qp.math.mod((np.pi - self.delta), (2 * np.pi))
+        return U2(new_phi, new_delta, wires=self.wires)
+
+    def simplify(self) -> "U2":
+        """Simplifies the gate into RX or RY gates if possible."""
+        wires = self.wires
+
+        phi = self.phi % (2 * np.pi)
+        delta = self.delta % (2 * np.pi)
+
+        if _can_replace(delta, 0) and _can_replace(phi, 0):
+            return RY(np.pi / 2, wires=wires)
+        if _can_replace(delta, np.pi / 2) and _can_replace(phi, 3 * np.pi / 2):
+            return RX(np.pi / 2, wires=wires)
+        if _can_replace(delta, 3 * np.pi / 2) and _can_replace(phi, np.pi / 2):
+            return RX(3 * np.pi / 2, wires=wires)
+
+        return U2(phi, delta, wires=wires)
+
+
+def _u2_phaseshift_rot_resources(phi, delta, wires):  # pylint: disable=unused-argument
+    return {PhaseShift: 2, Rot: 1}
+
+
+@register_resources(_u2_phaseshift_rot_resources)
+def _u2_phaseshift_rot(phi, delta, wires):
+    pi_half = qp.math.ones_like(delta) * (np.pi / 2)
+    Rot(delta, pi_half, -delta, wires=wires)
+    PhaseShift(delta, wires=wires)
+    PhaseShift(phi, wires=wires)
+
+
+add_decomps(U2, _u2_phaseshift_rot)
+
+
+@register_resources(lambda base: {abstractify(U2): 1})
+def _adjoint_u2(base):
+    new_delta = qp.math.mod((np.pi - base.phi), (2 * np.pi))
+    new_phi = qp.math.mod((np.pi - base.delta), (2 * np.pi))
+    U2(new_phi, new_delta, wires=base.wires)
+
+
+add_decomps("Adjoint(U2)", _adjoint_u2)
+
+
+class U3(Operator2):
+    r"""
+    Arbitrary single qubit unitary.
+
+    .. math::
+
+        U_3(\theta, \phi, \delta) = \begin{bmatrix} \cos(\theta/2) & -\exp(i \delta)\sin(\theta/2) \\
+        \exp(i \phi)\sin(\theta/2) & \exp(i (\phi + \delta))\cos(\theta/2) \end{bmatrix}
+
+    The :math:`U_3` gate is related to the single-qubit rotation :math:`R` (:class:`Rot`) and the
+    :math:`R_\phi` (:class:`PhaseShift`) gates via the following relation:
+
+    .. math::
+
+        U_3(\theta, \phi, \delta) = R_\phi(\phi+\delta) R(\delta,\theta,-\delta)
+
+    .. note::
+
+        If the ``U3`` gate is not supported on the targeted device, PennyLane
+        will attempt to decompose the gate into :class:`~.PhaseShift` and :class:`~.Rot` gates.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 3
+    * Number of dimensions per parameter: (0, 0, 0)
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_3(\theta, \phi, \delta)) = \frac{1}{2}\left[f(U_3(\theta+\pi/2, \phi, \delta)) - f(U_3(\theta-\pi/2, \phi, \delta))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_3(\theta, \phi, \delta)`.
+      This gradient recipe applies for each angle argument :math:`\{\theta, \phi, \delta\}`.
+
+    Args:
+        theta (float): polar angle :math:`\theta`
+        phi (float): azimuthal angle :math:`\phi`
+        delta (float): quantum phase :math:`\delta`
+        wires (Sequence[int] or int): the subsystem the gate acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.U3
+
+            .. decomposition-rule:: _u3_phaseshift_rot
+                :image: /_static/decomposition_thumbnails/u3_to_rot_phaseshift.svg
+
+                :class:`~.Rot` | :math:`1`
+                :class:`~.PhaseShift` | :math:`2`
+
+            .. decomposition-rule:: _adjoint_u3
+                :image: /_static/decomposition_thumbnails/u3_adjoint.svg
+                :region: adjoint
+                :where: :math:`\theta` stays the same, but :math:`\delta \rightarrow \pi - \delta` and  :math:`\phi \rightarrow \pi - \phi` (both :math:`\text{mod} 2 \pi`)
+
+                :class:`~.U3` | :math:`1`
+    """
+
+    num_wires = 1
+    num_params = 3
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0, 0, 0)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    wire_sizes = (1,)
+    dynamic_argnames = ("theta", "phi", "delta")
+    arg_specs = {"theta": Float, "phi": Float, "delta": Float, "wires": Wire[1]}
+
+    def __init__(
+        self,
+        theta: TensorLike,
+        phi: TensorLike,
+        delta: TensorLike,
+        wires: WiresLike,
+    ):
+        super().__init__(theta, phi, delta, wires=wires)
+
+    @staticmethod
+    def compute_matrix(  # pylint: disable=unused-argument
+        theta: TensorLike,
+        phi: TensorLike,
+        delta: TensorLike,
+        wires: WiresLike = None,
+    ) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.U3.matrix`
+
+        Args:
+            theta (tensor_like or float): polar angle
+            phi (tensor_like or float): azimuthal angle
+            delta (tensor_like or float): quantum phase
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qp.U3.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
+        tensor([[ 0.9988+0.0000j, -0.0477-0.0148j],
+                [ 0.0490+0.0099j,  0.8765+0.4788j]])
+
+        """
+        c = qp.math.cos(theta / 2)
+        s = qp.math.sin(theta / 2)
+
+        # The following variable is used to assert the all terms to be stacked have same shape
+        one = qp.math.ones_like(phi) * qp.math.ones_like(delta)
+        c = c * one
+        s = s * one
+
+        mat = [
+            [c, -s * qp.math.exp(1j * delta)],
+            [s * qp.math.exp(1j * phi), c * qp.math.exp(1j * (phi + delta))],
+        ]
+
+        return qp.math.stack([stack_last(row) for row in mat], axis=-2)
+
+    def adjoint(self) -> "U3":
+        new_delta = qp.math.mod((np.pi - self.phi), (2 * np.pi))
+        new_phi = qp.math.mod((np.pi - self.delta), (2 * np.pi))
+        return U3(self.theta, new_phi, new_delta, wires=self.wires)
+
+    def simplify(self) -> "U3":
+        """Simplifies into :class:`~.RX`, :class:`~.RY`, or :class:`~.PhaseShift` gates
+        if possible.
+
+        >>> qp.U3(0.1, 0, 0, wires=0).simplify()
+        RY(0.1, wires=[0])
+
+        """
+        wires = self.wires
+        theta = self.theta % (4 * np.pi)
+        phi = self.phi % (2 * np.pi)
+        delta = self.delta % (2 * np.pi)
+
+        if _can_replace(theta, 0) and _can_replace(phi, 0) and _can_replace(delta, 0):
+            return qp.Identity(wires=wires)
+        if _can_replace(theta, 0) and not _can_replace(phi, 0) and _can_replace(delta, 0):
+            return PhaseShift(phi, wires=wires)
+        if (
+            _can_replace(delta, np.pi / 2)
+            and _can_replace(phi, 3 * np.pi / 2)
+            and not _can_replace(theta, 0)
+        ):
+            return RX(theta, wires=wires)
+        if not _can_replace(theta, 0) and _can_replace(phi, 0) and _can_replace(delta, 0):
+            return RY(theta, wires=wires)
+
+        return U3(theta, phi, delta, wires=wires)
+
+
+def _u3_phaseshift_rot_resources(theta, phi, delta, wires):  # pylint: disable=unused-argument
+    return {PhaseShift: 2, Rot: 1}
+
+
+@register_resources(_u3_phaseshift_rot_resources)
+def _u3_phaseshift_rot(theta, phi, delta, wires):
+    Rot(delta, theta, -delta, wires=wires)
+    PhaseShift(delta, wires=wires)
+    PhaseShift(phi, wires=wires)
+
+
+add_decomps(U3, _u3_phaseshift_rot)
+
+
+@register_resources(lambda base: {abstractify(U3): 1})
+def _adjoint_u3(base):
+    new_delta = qp.math.mod((np.pi - base.phi), (2 * np.pi))
+    new_phi = qp.math.mod((np.pi - base.delta), (2 * np.pi))
+    U3(base.theta, new_phi, new_delta, wires=base.wires)
+
+
+add_decomps("Adjoint(U3)", _adjoint_u3)

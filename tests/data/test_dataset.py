@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for :mod:`pennylane.data.base.dataset`.
+Tests for :mod:`pennylane2.data.base.dataset`.
 """
 
 # pylint: disable=too-few-public-methods
@@ -25,7 +25,7 @@ from typing import ClassVar
 import numpy as np
 import pytest
 
-from pennylane.data import (
+from pennylane2.data import (
     AttributeInfo,
     Dataset,
     DatasetJSON,
@@ -34,8 +34,8 @@ from pennylane.data import (
     attribute,
     field,
 )
-from pennylane.data.base.dataset import UNSET, _init_arg
-from pennylane.data.base.hdf5 import open_group
+from pennylane2.data.base.dataset import UNSET, _init_arg
+from pennylane2.data.base.hdf5 import open_group
 
 
 class MyDataset(Dataset, data_name="my_dataset", identifiers=("x", "y")):

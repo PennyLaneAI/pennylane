@@ -29,9 +29,9 @@ pytest.importorskip("optax")
 
 from numpy.polynomial.chebyshev import Chebyshev
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.templates.subroutines.qsvt import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.templates.subroutines.qsvt import (
     _cheby_pol,
     _grid_pts,
     _poly_func_optax,

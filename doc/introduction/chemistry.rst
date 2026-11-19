@@ -22,8 +22,8 @@ to generate the electronic Hamiltonian in a single call. For example,
 
 .. code-block:: python
 
-    import pennylane as qp
-    from pennylane import numpy as np
+    import pennylane2 as qp
+    from pennylane2 import numpy as np
 
     symbols = ["H", "H"]
     geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
@@ -68,10 +68,10 @@ Importing the Hamiltonian and ansatz state
 
 If the electronic Hamiltonian is built independently using 
 `OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools, it can be readily converted 
-to a PennyLane observable using the :func:`~.pennylane.import_operator` function. There is also 
+to a PennyLane observable using the :func:`~.pennylane2.import_operator` function. There is also
 capability to import wavefunctions (states) that have been pre-computed by traditional quantum chemistry methods
 from `PySCF <https://github.com/pyscf/pyscf>`_, which could be used to for example provide a better
-starting point to a quantum algorithm. State import can be accomplished using the :func:`~pennylane.qchem.import_state` 
+starting point to a quantum algorithm. State import can be accomplished using the :func:`~pennylane2.qchem.import_state`
 utility function.
 
 
@@ -124,7 +124,7 @@ The circuit parameter can be optimized using the interface of choice.
 .. note::
 
     For more details on VQE and the quantum chemistry functionality available in
-    :mod:`~pennylane.qchem`, check out the PennyLane `quantum chemistry tutorials <https://pennylane.ai/search/?contentType=DEMO&categories=quantum%20chemistry>`_.
+    :mod:`~pennylane2.qchem`, check out the PennyLane `quantum chemistry tutorials <https://pennylane.ai/search/?contentType=DEMO&categories=quantum%20chemistry>`_.
 
 
 Quantum chemistry functions and classes
@@ -140,29 +140,29 @@ Molecular integrals and matrices
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.qchem.attraction_integral
-    ~pennylane.qchem.attraction_matrix
-    ~pennylane.qchem.contracted_norm
-    ~pennylane.qchem.core_matrix
-    ~pennylane.qchem.dipole_integrals
-    ~pennylane.qchem.electron_integrals
-    ~pennylane.qchem.electron_repulsion
-    ~pennylane.qchem.expansion
-    ~pennylane.qchem.gaussian_kinetic
-    ~pennylane.qchem.gaussian_moment
-    ~pennylane.qchem.gaussian_overlap
-    ~pennylane.qchem.hermite_moment
-    ~pennylane.qchem.kinetic_integral
-    ~pennylane.qchem.kinetic_matrix
-    ~pennylane.qchem.mol_density_matrix
-    ~pennylane.qchem.moment_integral
-    ~pennylane.qchem.moment_matrix
-    ~pennylane.qchem.nuclear_attraction
-    ~pennylane.qchem.overlap_integral
-    ~pennylane.qchem.overlap_matrix
-    ~pennylane.qchem.primitive_norm
-    ~pennylane.qchem.repulsion_integral
-    ~pennylane.qchem.repulsion_tensor
+    ~pennylane2.qchem.attraction_integral
+    ~pennylane2.qchem.attraction_matrix
+    ~pennylane2.qchem.contracted_norm
+    ~pennylane2.qchem.core_matrix
+    ~pennylane2.qchem.dipole_integrals
+    ~pennylane2.qchem.electron_integrals
+    ~pennylane2.qchem.electron_repulsion
+    ~pennylane2.qchem.expansion
+    ~pennylane2.qchem.gaussian_kinetic
+    ~pennylane2.qchem.gaussian_moment
+    ~pennylane2.qchem.gaussian_overlap
+    ~pennylane2.qchem.hermite_moment
+    ~pennylane2.qchem.kinetic_integral
+    ~pennylane2.qchem.kinetic_matrix
+    ~pennylane2.qchem.mol_density_matrix
+    ~pennylane2.qchem.moment_integral
+    ~pennylane2.qchem.moment_matrix
+    ~pennylane2.qchem.nuclear_attraction
+    ~pennylane2.qchem.overlap_integral
+    ~pennylane2.qchem.overlap_matrix
+    ~pennylane2.qchem.primitive_norm
+    ~pennylane2.qchem.repulsion_integral
+    ~pennylane2.qchem.repulsion_tensor
 
 :html:`</div>`
 
@@ -175,9 +175,9 @@ Differentiable Hartree-Fock
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.qchem.hf_energy
-    ~pennylane.qchem.nuclear_energy
-    ~pennylane.qchem.scf
+    ~pennylane2.qchem.hf_energy
+    ~pennylane2.qchem.nuclear_energy
+    ~pennylane2.qchem.scf
 
 :html:`</div>`
 
@@ -190,10 +190,10 @@ Hartree-Fock with external packages
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.qchem.decompose
-    ~pennylane.qchem.meanfield
-    ~pennylane.qchem.one_particle
-    ~pennylane.qchem.two_particle
+    ~pennylane2.qchem.decompose
+    ~pennylane2.qchem.meanfield
+    ~pennylane2.qchem.one_particle
+    ~pennylane2.qchem.two_particle
 
 :html:`</div>`
 
@@ -206,14 +206,14 @@ Differentiable observables
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.qchem.diff_hamiltonian
-    ~pennylane.qchem.dipole_moment
-    ~pennylane.qchem.fermionic_dipole
-    ~pennylane.qchem.fermionic_hamiltonian
-    ~pennylane.qchem.fermionic_observable
-    ~pennylane.jordan_wigner
-    ~pennylane.qchem.molecular_hamiltonian
-    ~pennylane.qchem.qubit_observable
+    ~pennylane2.qchem.diff_hamiltonian
+    ~pennylane2.qchem.dipole_moment
+    ~pennylane2.qchem.fermionic_dipole
+    ~pennylane2.qchem.fermionic_hamiltonian
+    ~pennylane2.qchem.fermionic_observable
+    ~pennylane2.jordan_wigner
+    ~pennylane2.qchem.molecular_hamiltonian
+    ~pennylane2.qchem.qubit_observable
 
 :html:`</div>`
 
@@ -226,11 +226,11 @@ Other observables
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.qchem.dipole_of
-    ~pennylane.qchem.observable
-    ~pennylane.qchem.particle_number
-    ~pennylane.qchem.spin2
-    ~pennylane.qchem.spinz
+    ~pennylane2.qchem.dipole_of
+    ~pennylane2.qchem.observable
+    ~pennylane2.qchem.particle_number
+    ~pennylane2.qchem.spin2
+    ~pennylane2.qchem.spinz
 
 :html:`</div>`
 
@@ -243,13 +243,13 @@ Qubit tapering
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.qchem.clifford
-    ~pennylane.qchem.optimal_sector
-    ~pennylane.paulix_ops
-    ~pennylane.symmetry_generators
-    ~pennylane.taper
-    ~pennylane.qchem.taper_hf
-    ~pennylane.qchem.taper_operation
+    ~pennylane2.qchem.clifford
+    ~pennylane2.qchem.optimal_sector
+    ~pennylane2.paulix_ops
+    ~pennylane2.symmetry_generators
+    ~pennylane2.taper
+    ~pennylane2.qchem.taper_hf
+    ~pennylane2.qchem.taper_operation
 
 :html:`</div>`
 
@@ -261,16 +261,16 @@ Utility functions
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.qchem.active_space
-    ~pennylane.qchem.excitations
-    ~pennylane.qchem.excitations_to_wires
-    ~pennylane.qchem.factorize
-    ~pennylane.math.decomposition.givens_decomposition
-    ~pennylane.qchem.hf_state
-    ~pennylane.import_operator
-    ~pennylane.qchem.import_state
-    ~pennylane.qchem.mol_data
-    ~pennylane.qchem.read_structure
+    ~pennylane2.qchem.active_space
+    ~pennylane2.qchem.excitations
+    ~pennylane2.qchem.excitations_to_wires
+    ~pennylane2.qchem.factorize
+    ~pennylane2.math.decomposition.givens_decomposition
+    ~pennylane2.qchem.hf_state
+    ~pennylane2.import_operator
+    ~pennylane2.qchem.import_state
+    ~pennylane2.qchem.mol_data
+    ~pennylane2.qchem.read_structure
 
 :html:`</div>`
 
@@ -282,9 +282,9 @@ Molecule class and basis functions
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.qchem.atom_basis_data
-    ~pennylane.qchem.BasisFunction
-    ~pennylane.qchem.Molecule
-    ~pennylane.qchem.mol_basis_data
+    ~pennylane2.qchem.atom_basis_data
+    ~pennylane2.qchem.BasisFunction
+    ~pennylane2.qchem.Molecule
+    ~pennylane2.qchem.mol_basis_data
 
 :html:`</div>`

@@ -19,7 +19,7 @@ Note some tests on the errors exist in test_capture_diff.py
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 pytestmark = pytest.mark.capture
 
@@ -27,7 +27,7 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 # pylint: disable-next=wrong-import-position
-from pennylane.capture.primitives import value_and_grad_prim
+from pennylane2.capture.primitives import value_and_grad_prim
 
 
 def test_value_and_grad_error_with_non_scalar_function():

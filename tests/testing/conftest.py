@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Pytest configuration file for the pennylane.testing tests.
+Pytest configuration file for the pennylane2.testing tests.
 
 Generates parametrizations of operators to test in test_assert_valid.py.
 """
@@ -23,8 +23,8 @@ import jax
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import (
+import pennylane2 as qp
+from pennylane2.core.operator import (
     Channel,
     Operation,
     Operator,
@@ -32,16 +32,16 @@ from pennylane.core.operator import (
     StatePrepBase,
     StatePrepBase2,
 )
-from pennylane.drawer.label import LabelledOp
-from pennylane.exceptions import DeviceError
-from pennylane.ops.op_math import ChangeOpBasis
-from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
-from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
-from pennylane.ops.op_math.pow import PowOperation
-from pennylane.ops.op_math.pow2 import Pow2
-from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
-from pennylane.templates.subroutines.time_evolution.trotter import TrotterizedQfunc
+from pennylane2.drawer.label import LabelledOp
+from pennylane2.exceptions import DeviceError
+from pennylane2.ops.op_math import ChangeOpBasis
+from pennylane2.ops.op_math.adjoint import Adjoint, AdjointOperation
+from pennylane2.ops.op_math.adjoint2 import Adjoint2
+from pennylane2.ops.op_math.controlled2 import Controlled2, ControlledOp2
+from pennylane2.ops.op_math.pow import PowOperation
+from pennylane2.ops.op_math.pow2 import Pow2
+from pennylane2.ops.op_math.symbolicop2 import SymbolicOp2
+from pennylane2.templates.subroutines.time_evolution.trotter import TrotterizedQfunc
 
 
 def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
@@ -240,7 +240,7 @@ _ABSTRACT_OR_META_TYPES = {
 def get_all_classes(c):
     """Recursive function to generate a flat list of all child classes of ``c``.
     (first called with ``Operator``)."""
-    if c.__module__[:10] != "pennylane.":
+    if c.__module__[:10] != "pennylane2.":
         return []
     subs = c.__subclasses__()
     classes = [] if c in _ABSTRACT_OR_META_TYPES else [c]

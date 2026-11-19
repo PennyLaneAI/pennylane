@@ -21,9 +21,9 @@ import itertools
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.ops import Hadamard, MultiControlledX, PauliZ
-from pennylane.testing import assert_decomposable
+import pennylane2 as qp
+from pennylane2.ops import Hadamard, MultiControlledX, PauliZ
+from pennylane2.testing import assert_decomposable
 
 
 def test_repr():

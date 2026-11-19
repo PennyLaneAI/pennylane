@@ -17,8 +17,8 @@ Unit tests for the available conditional utitlities for noise models.
 
 import pytest
 
-import pennylane as qp
-from pennylane.noise import meas_eq, op_eq, op_in, partial_wires, wires_eq, wires_in
+import pennylane2 as qp
+from pennylane2.noise import meas_eq, op_eq, op_in, partial_wires, wires_eq, wires_in
 
 
 class TestNoiseModels:

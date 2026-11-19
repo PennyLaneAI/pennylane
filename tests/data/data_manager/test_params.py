@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the :class:`pennylane.data.data_manager.params.ParamArg` class.
+Tests for the :class:`pennylane2.data.data_manager.params.ParamArg` class.
 """
 
 import pytest
 
-from pennylane.data.data_manager.params import (
+from pennylane2.data.data_manager.params import (
     Description,
     ParamArg,
     format_param_args,

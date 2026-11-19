@@ -19,9 +19,9 @@ from functools import partial
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.drawer import draw
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.drawer import draw
 
 
 @qp.qnode(qp.device("default.qubit", wires=(0, 5, 9)))

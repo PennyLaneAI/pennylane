@@ -16,9 +16,9 @@
 
 import pytest
 
-from pennylane.devices import MCMConfig
-from pennylane.math import Interface
-from pennylane.workflow import _resolve_mcm_config
+from pennylane2.devices import MCMConfig
+from pennylane2.math import Interface
+from pennylane2.workflow import _resolve_mcm_config
 
 
 def test_no_finite_shots():

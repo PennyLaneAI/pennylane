@@ -17,8 +17,8 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
+import pennylane2 as qp
+from pennylane2.transforms.rz_phase_gradient import _rz_phase_gradient
 
 
 @pytest.mark.parametrize("p", [2, 3, 4])

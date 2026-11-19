@@ -69,12 +69,15 @@ For more details and additional features, please see the [PennyLane website](htt
 
 ## Installation
 
-PennyLane requires Python version 3.12 and above. Installation of PennyLane, as well as all
-dependencies, can be done using pip:
+This development branch builds `pennylane2` and requires Python 3.12 or above.
+Install it from this checkout using pip:
 
 ```console
-python -m pip install pennylane
+python -m pip install .
 ```
+
+Use `import pennylane2 as qp`. Matching Lightning and Catalyst beta builds are
+still required for those integrations; this branch is not ready for public release.
 
 ## Docker support
 

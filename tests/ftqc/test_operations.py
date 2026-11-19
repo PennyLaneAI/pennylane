@@ -17,12 +17,12 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.qscript import QuantumScript
-from pennylane.core.queuing import AnnotatedQueue
-from pennylane.ftqc.operations import RotXZX
-from pennylane.testing import assert_valid
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.core.queuing import AnnotatedQueue
+from pennylane2.ftqc.operations import RotXZX
+from pennylane2.testing import assert_valid
+from pennylane2.wires import Wires
 
 
 class TestRotXZX:

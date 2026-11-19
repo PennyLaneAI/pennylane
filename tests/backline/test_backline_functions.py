@@ -20,10 +20,10 @@ import sys
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.backline import CoprocessorFunction, css_bp_decoder, triton_decoder
+import pennylane2 as qp
+from pennylane2.backline import CoprocessorFunction, css_bp_decoder, triton_decoder
 
-_DECODER_FRONTEND = "pennylane.backline.decoders.triton.decoder_frontend"
+_DECODER_FRONTEND = "pennylane2.backline.decoders.triton.decoder_frontend"
 
 
 class TestCoprocessorFunction:
@@ -79,13 +79,13 @@ class TestTritonDecoder:
             triton_decoder((object(),))
 
     def test_the_wrapper_reexports_from_backline(self):
-        """The public name is exported from pennylane.backline."""
+        """The public name is exported from pennylane2.backline."""
         assert qp.backline.triton_decoder is triton_decoder
 
     def test_accepts_plain_python_functions_and_unique_names_them(self, monkeypatch, tmp_path):
         """Un-jitted Triton functions are jitted internally under unique generated names."""
         pytest.importorskip("triton")
-        from pennylane.backline.decoders.triton import decoder_frontend as frontend
+        from pennylane2.backline.decoders.triton import decoder_frontend as frontend
 
         captured = {}
         scratch = tmp_path / "scratch"
@@ -142,13 +142,13 @@ class TestCssBpDecoder:
             css_bp_decoder(Hx, Hz)
 
     def test_the_wrapper_reexports_from_backline(self):
-        """The public name is exported from pennylane.backline."""
+        """The public name is exported from pennylane2.backline."""
         assert qp.backline.css_bp_decoder is css_bp_decoder
 
     def test_same_shape_matrices_get_distinct_decoder_names(self, monkeypatch, tmp_path):
         """Hx and Hz specializations stay distinct even when their shapes match."""
         pytest.importorskip("triton")
-        from pennylane.backline.decoders.triton import decoder_frontend as frontend
+        from pennylane2.backline.decoders.triton import decoder_frontend as frontend
 
         captured = {}
         scratch = tmp_path / "scratch"
@@ -182,7 +182,7 @@ class TestCssBpDecoder:
 class TestTritonSubmoduleImportGuards:  # pylint: disable=too-few-public-methods
     """Each triton submodule raises a helpful ImportError when triton is missing.
 
-    Every submodule under ``pennylane.backline.decoders.triton`` wraps its
+    Every submodule under ``pennylane2.backline.decoders.triton`` wraps its
     ``import triton`` in a try/except that re-raises with a message directing the user to install
     the package. On a system without triton, an accidental import should hit that branch.
     """
@@ -190,11 +190,11 @@ class TestTritonSubmoduleImportGuards:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize(
         "module_name",
         [
-            "pennylane.backline.decoders.triton.algorithms",
-            "pennylane.backline.decoders.triton.bp_iters",
-            "pennylane.backline.decoders.triton.decoder_frontend",
-            "pennylane.backline.decoders.triton.persistent_kernel",
-            "pennylane.backline.decoders.triton.triton_so_builder",
+            "pennylane2.backline.decoders.triton.algorithms",
+            "pennylane2.backline.decoders.triton.bp_iters",
+            "pennylane2.backline.decoders.triton.decoder_frontend",
+            "pennylane2.backline.decoders.triton.persistent_kernel",
+            "pennylane2.backline.decoders.triton.triton_so_builder",
         ],
     )
     def test_missing_triton_re_raises_with_install_hint(self, monkeypatch, module_name):
@@ -220,7 +220,7 @@ class TestCatalystLauncherCheck:
 
     def test_an_older_catalyst_is_refused(self, monkeypatch):
         """A Catalyst without the launcher version predates the reply layout the kernels write."""
-        from pennylane.backline.functions import _check_catalyst_runs_triton_kernels
+        from pennylane2.backline.functions import _check_catalyst_runs_triton_kernels
 
         self._catalyst(monkeypatch)
         with pytest.raises(ImportError, match="need a newer Catalyst"):
@@ -228,14 +228,14 @@ class TestCatalystLauncherCheck:
 
     def test_a_matching_catalyst_passes(self, monkeypatch):
         """A Catalyst following the kernels' launcher ABI is accepted."""
-        from pennylane.backline.functions import _check_catalyst_runs_triton_kernels
+        from pennylane2.backline.functions import _check_catalyst_runs_triton_kernels
 
         self._catalyst(monkeypatch, COPROCESSOR_LAUNCHER_ABI_VERSION=2)
         _check_catalyst_runs_triton_kernels()
 
     def test_no_catalyst_passes(self, monkeypatch):
         """Without Catalyst there is nothing to check; compiling the program reports it."""
-        from pennylane.backline.functions import _check_catalyst_runs_triton_kernels
+        from pennylane2.backline.functions import _check_catalyst_runs_triton_kernels
 
         monkeypatch.setitem(sys.modules, "catalyst", None)
         _check_catalyst_runs_triton_kernels()

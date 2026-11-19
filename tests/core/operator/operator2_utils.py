@@ -15,10 +15,10 @@
 # pylint: disable=too-few-public-methods,useless-parent-delegation
 
 
-import pennylane as qp
-from pennylane.core.operator import Operator2
-from pennylane.typing import Float, Wire
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.core.operator import Operator2
+from pennylane2.typing import Float, Wire
+from pennylane2.wires import Wires
 
 
 class NonParametricOp(Operator2):

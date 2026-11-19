@@ -1,7 +1,7 @@
 qp.capture
 ===========
 
-.. currentmodule:: pennylane.capture
+.. currentmodule:: pennylane2.capture
 
-.. automodule:: pennylane.capture
+.. automodule:: pennylane2.capture
 

@@ -20,7 +20,7 @@ from functools import reduce
 
 import numpy as np
 
-import pennylane as qp
+import pennylane2 as qp
 
 
 def validate_counts(shots, results1, results2, batch_size=None):

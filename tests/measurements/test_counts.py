@@ -18,10 +18,10 @@ import copy
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.measurements import CountsMP
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.measurements import CountsMP
+from pennylane2.wires import Wires
 
 
 class TestCounts:

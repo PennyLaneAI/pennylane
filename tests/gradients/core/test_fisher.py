@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the classical and quantum fisher information matrix in the module pennylane.gradients
+Tests for the classical and quantum fisher information matrix in the module pennylane2.gradients
 """
 
 import numpy as np
 import pytest
 
-import pennylane as qp
-import pennylane.numpy as pnp
-from pennylane.gradients.fisher import _compute_cfim, _make_probs, classical_fisher, quantum_fisher
+import pennylane2 as qp
+import pennylane2.numpy as pnp
+from pennylane2.gradients.fisher import _compute_cfim, _make_probs, classical_fisher, quantum_fisher
 
 
 class TestMakeProbs:

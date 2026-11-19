@@ -11,16 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/labs/dla/involutions.py functionality"""
+"""Tests for pennylane2/labs/dla/involutions.py functionality"""
 
 from functools import partial
 
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import X, Y, Z
-from pennylane.liealg import (
+import pennylane2 as qp
+from pennylane2 import X, Y, Z
+from pennylane2.liealg import (
     AI,
     AII,
     AIII,
@@ -34,7 +34,7 @@ from pennylane.liealg import (
     concurrence_involution,
     even_odd_involution,
 )
-from pennylane.liealg.involutions import Ipq, J, Kpq
+from pennylane2.liealg.involutions import Ipq, J, Kpq
 
 
 class TestMatrixConstructors:

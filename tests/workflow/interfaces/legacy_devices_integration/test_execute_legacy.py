@@ -18,8 +18,8 @@ Interface independent tests for qp.execute
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qp
-from pennylane.exceptions import QuantumFunctionError
+import pennylane2 as qp
+from pennylane2.exceptions import QuantumFunctionError
 
 
 def test_old_interface_no_device_jacobian_products():

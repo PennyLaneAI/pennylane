@@ -18,8 +18,8 @@ from textwrap import dedent
 
 import pytest
 
-import pennylane as qp
-from pennylane.transforms import decomp_inspector
+import pennylane2 as qp
+from pennylane2.transforms import decomp_inspector
 
 
 @pytest.mark.usefixtures("disable_graph_decomposition")

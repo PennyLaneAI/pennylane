@@ -18,7 +18,7 @@ Tests for the ``DatasetSparseArray`` attribute type.
 import pytest
 import scipy.sparse
 
-from pennylane.data.attributes.sparse_array import DatasetSparseArray
+from pennylane2.data.attributes.sparse_array import DatasetSparseArray
 
 pytestmark = pytest.mark.data
 
