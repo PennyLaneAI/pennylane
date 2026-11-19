@@ -41,6 +41,7 @@ from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.ops.op_math.pow import PowOperation
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
+from pennylane.templates.subroutines.arithmetic import adder_blocks
 from pennylane.templates.subroutines.time_evolution.trotter import TrotterizedQfunc
 
 
@@ -162,6 +163,11 @@ _INSTANCES_TO_TEST = [
         ),
         {},
     ),
+    (adder_blocks.LeftFullAdder([0, 1, 2, 3]), {}),
+    (adder_blocks.RightFullAdder([0, 1, 2, 3]), {}),
+    (adder_blocks.RightHalfAdder([0, 1, 2]), {}),
+    (adder_blocks.CtrlRightFullAdder([4, 5], [0, 1, 2, 3], [6], "zeroed"), {}),
+    (adder_blocks.CtrlRightHalfAdder([4], [0, 1, 2]), {}),
 ]
 """Valid operator instances that could not be auto-generated."""
 
@@ -226,6 +232,8 @@ _ABSTRACT_OR_META_TYPES = {
     qp.templates.core.CollectedSubroutine,
     # pylint: disable-next=protected-access
     qp.templates.subroutines.arithmetic.out_square._SquareArithmeticOp,
+    adder_blocks._AdderBlock,  # pylint: disable=protected-access
+    adder_blocks._CtrlRightAdderBlock,  # pylint: disable=protected-access
     qp.ops.qubit.non_parametric_ops._FixedAnglePPR,  # pylint: disable=protected-access
     StatePrepBase,
     StatePrepBase2,

@@ -143,9 +143,11 @@ class OutMultiplier(Operator2):
                 :requires: :math:`w \geq k + 1` work wires
                 :where: :math:`[m > 1]` equal to 1 if :math:`m > 1` and 0 otherwise
 
-                :class:`~.TemporaryAND` | :math:`(n + 1)k - m - \binom{n}{2}` | 3
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`(n + 1)k - m - \binom{n}{2}` | 3
-                :class:`~.CNOT` | :math:`(n + 1)k + 5nm + n - m - 4 - \binom{n}{2}` | 5
+                :class:`~.TemporaryAND` | :math:`(n + 1)(k - m) + 1 - \binom{n}{2}` | 3
+                ``LeftFullAdder`` | :math:`nm - 1` | 0
+                ``RightFullAdder`` | :math:`nm - 1` | 0
+                ``RightHalfAdder`` | :math:`(n + 1)(k - m) + 1 - \binom{n}{2}` | 3
+                :class:`~.CNOT` | :math:`n + 1` | 2
                 :class:`~.X` | :math:`2k + 8` | 12
                 :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`4n` | 4
                 :class:`~.MultiX` with 1 control on :math:`|0\rangle` | :math:`2n\,[m > 1]` | 0

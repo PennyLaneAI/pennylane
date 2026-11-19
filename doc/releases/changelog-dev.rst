@@ -896,6 +896,12 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* The decompositions of :class:`~.SemiAdder`, ``C(SemiAdder)`` and of the arithmetic templates
+  built from the same ripple-carry adder (:class:`~.OutSquare`, :class:`~.OutMultiplier` and
+  :class:`~.SignedOutSquare`) now use internal operators for the left and right adder blocks, so
+  that improved decompositions of these blocks propagate to all of these templates.
+  `(#10263) <https://github.com/PennyLaneAI/pennylane/pull/10263>`__
+
 * :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
   powers that can simplify eagerly for faster execution, while the other uses nested
   loops to keep the captured intermediate representation compact. Both variants include
