@@ -40,6 +40,7 @@ from .ffft import FFFT, TwoWireFFT
 from .select import Multiplexer, Multiplexor, Select
 from .prepselprep import PrepSelPrep
 from .multix import MultiX
+from .rz_layer import RZLayer
 from .reflection import Reflection
 from .qubitization import Qubitization
 from .controlled_sequence import ControlledSequence
@@ -124,6 +125,7 @@ __all__ = [
     "SelectOnlyQRAM",
     "PrepSelPrep",
     "MultiX",
+    "RZLayer",
     "Reflection",
     "Qubitization",
     "ControlledSequence",
