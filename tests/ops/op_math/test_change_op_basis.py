@@ -177,7 +177,7 @@ def test_non_operator_capture(position, invalid):
         operands[position] = invalid
         qp.change_op_basis(*operands)
 
-    with pytest.raises(TypeError, match="must be Operator"):
+    with pytest.raises(TypeError, match="must be of type Operator"):
         qp.capture.make_plxpr(circuit)()
 
 
@@ -191,7 +191,7 @@ def test_missing_required_operator_capture(position):
         operands[position] = None
         qp.change_op_basis(*operands)
 
-    with pytest.raises(TypeError, match="must be Operator"):
+    with pytest.raises(TypeError, match="must be of type Operator"):
         qp.capture.make_plxpr(circuit)()
 
 

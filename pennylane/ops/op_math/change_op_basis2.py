@@ -38,7 +38,7 @@ from .composite2 import CompositeOp2
 
 
 class ChangeOpBasis2(CompositeOp2):
-    """Composite operator representing a compute-uncompute pattern of ``Operator2``\ s.
+    r"""Composite operator representing a compute-uncompute pattern of ``Operator2``\ s.
 
     Args:
         compute_op (~.Operator2): operator applied before the target
