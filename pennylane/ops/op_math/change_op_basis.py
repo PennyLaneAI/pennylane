@@ -102,7 +102,7 @@ def change_op_basis(
     .. note::
 
         With program capture enabled, all operands must be operators. Use :func:`~.subcircuit`
-        to turn a quantum function with registered resources into an operator class, then pass
+        to turn a :class:`~.DecompositionRule` into an operator class, then pass
         an instance of that class.
 
         With program capture disabled, callables with no unbound mandatory parameters are also
