@@ -148,8 +148,7 @@ def _tape_decompose(  # pylint: disable=too-many-arguments
         gate_set (Iterable[str or type], Dict[type or str, float]): The
             target gate set specified as either (1) a sequence of operator types and/or names,
             (2) a dictionary mapping operator types and/or names to their respective costs, in
-            which case the total cost will be minimized. Operators that belong in the target
-            gate set will not be decomposed.
+            which case the total cost will be minimized. Operators in the target gate set are not decomposed.
         stopping_condition (Callable, optional): a function that returns ``True`` if the operator
             does not need to be decomposed. If ``None``, the default stopping condition is whether
             the operator is in the target gate set. See the "Gate Set vs. Stopping Condition"
