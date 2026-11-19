@@ -182,7 +182,7 @@ class TestOperations:
         ],
     )
     def test_basis_change_decomposition(self, op, rule_name):
-        """Basis changes preserve their matrices and declared resources during capture."""
+        """Test that basis changes preserve their matrices and declared resources during capture."""
         rule = qp.list_decomps(op)[rule_name]
         assert_valid_decomp_rule(op, rule)
         for gate in decomp_rule_to_tape(op, rule).operations:
@@ -194,7 +194,7 @@ class TestOperations:
 
     @pytest.mark.capture
     def test_isingxy_subcircuit_replays_dynamic_arguments(self):
-        """A captured rotation subcircuit uses each invocation's angle and wires."""
+        """Test that a captured rotation subcircuit uses each invocation's angle and wires."""
         import jax
         import jax.numpy as jnp
 
@@ -831,7 +831,7 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
     @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_isingzz_qjit_without_toffoli(self):
-        """Captured controlled IsingZZ compiles and can be analyzed without Toffoli (#10357)."""
+        """Test that captured controlled IsingZZ compiles and analyzes without Toffoli (#10357)."""
         gate_set = {qp.CNOT, qp.RZ, qp.GlobalPhase, qp.PauliX}
 
         @qp.qjit(capture=True, target="mlir")
@@ -2949,7 +2949,7 @@ class TestPauliRot:  # pylint: disable=too-many-public-methods
         qp.assert_equal(uncompute[1], qp.PPR_4(-1, "X", wires=2))
 
     def test_PauliRot_single_basis_gate(self):
-        """Test the basis subcircuits for single-qubit Pauli words."""
+        """Test that basis subcircuits for single-qubit Pauli words decompose correctly."""
         theta = 0.4
         (cob,) = qp.PauliRot(theta, "X", wires=0).decomposition()
 

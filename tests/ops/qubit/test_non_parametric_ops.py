@@ -1435,7 +1435,7 @@ class TestPPR:
     @pytest.mark.parametrize("sign", [1, -1])
     @pytest.mark.parametrize("pauli_word", ["III", "IZI", "ZZZ", "XIY", "YZX"])
     def test_decomposition_resources_and_matrix(self, op_cls, sign, pauli_word):
-        """Captured PPR rules preserve phase, basis changes, and resource identities."""
+        """Test that captured PPR rules preserve phase, basis changes, and resource identities."""
         op = op_cls(sign, pauli_word, wires=[3, 1, 4])
         rule = qp.list_decomps(op)[0]
         assert_valid_decomp_rule(op, rule)

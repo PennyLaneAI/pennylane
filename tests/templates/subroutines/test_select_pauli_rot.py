@@ -261,7 +261,7 @@ class TestSelectPauliRot:
     @pytest.mark.parametrize("dtype", ["float32", "float64", "int32", "int64"])
     @pytest.mark.parametrize("axis", "XYZ")
     def test_decomposition_resources_match_angle_dtype(self, dtype, axis):
-        """Subcircuits retain the parent operator's canonical angle signature."""
+        """Test that subcircuits retain the parent operator's canonical angle signature."""
         angles = qp.math.asarray([1, 2], like="jax", dtype=dtype)
         op = qp.SelectPauliRot(angles, control_wires=[0], target_wire=[1], rot_axis=axis)
         assert_decomposable(op)
@@ -269,7 +269,7 @@ class TestSelectPauliRot:
     @pytest.mark.capture
     @pytest.mark.parametrize("axis", "XY")
     def test_captured_decomposition_reuses_dynamic_angles_and_wires(self, axis):
-        """Repeated evaluation preserves current angles and the ordered control register."""
+        """Test that reevaluation preserves current angles and the ordered control register."""
         import jax.numpy as jnp
 
         angles = jnp.array([0.1, 0.2, 0.3, 0.4])

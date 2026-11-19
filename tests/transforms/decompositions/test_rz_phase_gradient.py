@@ -116,7 +116,7 @@ def test_valid_decomp(p):
 @pytest.mark.capture
 @pytest.mark.parametrize("rotation", ["RZ", "CRZ", "X", "Y", "Z"])
 def test_phase_gradient_capture_reuses_dynamic_inputs(rotation, seed):
-    """The captured factories apply new angles on new system wires on each evaluation."""
+    """Test that the captured factories apply new angles on new system wires on each evaluation."""
     import jax.numpy as jnp
 
     factories = {

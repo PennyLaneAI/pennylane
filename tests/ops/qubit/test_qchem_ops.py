@@ -325,7 +325,7 @@ class TestSingleExcitationDecompositions:
         ["_single_excitation_decomp", "_single_excitation_ppr_rz", "_single_excitation_ppr_crz"],
     )
     def test_basis_change_resources_and_matrix(self, rule_name):
-        """Captured basis changes preserve the excitation matrix and resource identities."""
+        """Test that basis changes preserve the excitation matrix and resource identities."""
         op = qp.SingleExcitation(0.37, wires=[3, 1])
         rule = qp.list_decomps(op)[rule_name]
         qp.testing.assert_valid_decomp_rule(op, rule)
@@ -341,7 +341,7 @@ class TestSingleExcitationDecompositions:
         ["_single_excitation_decomp", "_single_excitation_ppr_rz", "_single_excitation_ppr_crz"],
     )
     def test_subcircuit_replays_dynamic_arguments(self, rule_name):
-        """Captured target subcircuits retain dynamic angles and wire assignments."""
+        """Test that captured target subcircuits retain dynamic angles and wire assignments."""
         import jax
         import jax.numpy as jnp
 

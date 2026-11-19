@@ -189,7 +189,7 @@ class TestTemporaryAND:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_basis_subcircuit(self):
-        """The compute block is a resource-registered subcircuit with its own decomposition."""
+        """Test that the compute subcircuit has registered resources and its own decomposition."""
         op = qp.TemporaryAND([5, 2, 7])
         rule = qp.list_decomps(qp.TemporaryAND)[0]
         tape = qp.testing.decomp_rule_to_tape(op, rule)

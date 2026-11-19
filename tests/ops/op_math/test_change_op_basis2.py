@@ -565,7 +565,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("ops_lst", ops)
     @pytest.mark.capture
     def test_decomposition_new_capture(self, ops_lst):
-        """Prebuilt operands remain inside the captured basis-change operator."""
+        """Test that prebuilt operands remain inside the captured basis-change operator."""
 
         jaxpr = qp.capture.make_plxpr(lambda: change_op_basis(*ops_lst))()
         tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
