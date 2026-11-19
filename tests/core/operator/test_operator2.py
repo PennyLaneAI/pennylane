@@ -328,7 +328,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
             dynamic_argnames = ("phi",)
             arg_specs = {"phi": float}
 
-            def __init__(self, phi, wires):
+            def __init__(self, phi, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(phi, wires)
 
         assert Op.arg_specs == {"phi": AbstractArray((), float)}
@@ -342,7 +342,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
 
                 arg_specs = {"wires": Wire}
 
-                def __init__(self, wires):
+                def __init__(self, wires): # pylint: disable=useless-parent-delegation
                     super().__init__(wires)
 
     def test_has_fixed_sig_false_with_argnames_without_arg_specs(self):
@@ -364,7 +364,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         class Op(Operator2):
             wire_argnames = ()
 
-            def __init__(self):
+            def __init__(self): # pylint: disable=useless-parent-delegation
                 super().__init__()
 
         assert Op.has_fixed_sig is True
@@ -422,7 +422,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
                 "wires": AbstractWires(-1),
             }
 
-            def __init__(self, phi, wires):
+            def __init__(self, phi, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(phi, wires=wires)
 
         assert Op.has_fixed_sig is False
@@ -1439,7 +1439,7 @@ class TestDunderMethods:
             wire_argnames = ("wires",)
             arg_specs = {"wires": Wire[1]}
 
-            def __init__(self, wires):
+            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 
         op = Op(Wire[1])
@@ -1448,7 +1448,7 @@ class TestDunderMethods:
         class Op2(Operator2):
             wire_argnames = ("wires",)
 
-            def __init__(self, wires):
+            def __init__(self, wires): # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 
         op = Op2(Wire[1])
@@ -1656,7 +1656,8 @@ class TestLabel:
         class Op(Operator2):
             def __init__(self, wires):
                 super().__init__(wires=Wires(wires))
-
+            
+            # pylint: disable-next=unused-argument
             def label(self, decimals=None, base_label=None, cache=None):
                 return "custom_label"
 
