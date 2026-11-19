@@ -1879,7 +1879,7 @@ class TestHasRepresentations:
     def test_has_matrix_true_when_method_overridden(self):
         """Test that ``has_matrix`` is True when ``matrix`` is overridden."""
 
-        class WithMatrix(Operator2):
+        class WithMatrix(Operator2): # pylint: disable=unused-argument
             def matrix(self, wire_order=None):
                 return np.eye(2)
 
@@ -1909,7 +1909,7 @@ class TestHasRepresentations:
         """Test that ``has_sparse_matrix`` is True when ``sparse_matrix`` is overridden."""
 
         class WithSparse(Operator2):
-
+            # pylint: disable-next=unused-argument
             def sparse_matrix(self, wire_order=None, format="csr"):
                 return csr_matrix(np.eye(2))
 
@@ -2251,7 +2251,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
         """Test that overriding ``sparse_matrix`` alone provides a working representation."""
 
         class WithSparse(Operator2):
-
+            # pylint: disable-next=unused-argument
             def sparse_matrix(self, wire_order=None, format="csr"):
                 return csr_matrix(np.eye(2)).asformat(format)
 
@@ -2483,10 +2483,10 @@ class TestStatePrepBase:
         class MyStatePrep(StatePrepBase2):
             wire_argnames = ("wires",)
 
-            def __init__(self, wires):
+            def __init__(self, wires): # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 
-            def state_vector(self, wire_order=None):
+            def state_vector(self, wire_order=None): # pylint: disable=unused-argument
                 return np.zeros(5)
 
         op = MyStatePrep(0)
@@ -2496,10 +2496,10 @@ class TestStatePrepBase:
     def test_interface_not_implemented(self):
         """Tests that an error is raised if an interface isn't implemented."""
 
-        class BadStatePrep(StatePrepBase2):  # pylint: disable=abstract-method
+        class BadStatePrep(StatePrepBase2):  
             wire_argnames = ("wires",)
 
-            def __init__(self, wires):
+            def __init__(self, wires): # pylint: disable=useless-parent-delegation
                 super().__init__(wires)
 
             # state_vector is not implemented!
