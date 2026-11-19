@@ -1551,6 +1551,7 @@ Breaking changes 💔
   Plugins must register under the ``pennylane2`` entry-point groups.
   The device test command is now ``pl2-device-test``.
   Serialized objects containing Classic module paths are not migrated automatically.
+  Importing PennyLane2 after Classic raises an error; use separate processes or kernels.
 
 * :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly: use
   ``get_compile_pipeline(qnode, level)`` instead of

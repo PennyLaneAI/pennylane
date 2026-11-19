@@ -21,6 +21,10 @@ PennyLane can be directly imported.
 
 import warnings
 
+from pennylane2 import _compatibility
+
+_compatibility.check_classic_import()
+
 from pennylane2 import exceptions
 from pennylane2.boolean_fn import BooleanFn
 from pennylane2 import numpy
