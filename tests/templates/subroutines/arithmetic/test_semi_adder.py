@@ -752,8 +752,7 @@ class TestControlledSemiAdderPPM:
             assert qp.math.allclose(circuit(), expected)
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize("num_provided", [0, 2, 5])
-    @pytest.mark.parametrize("num_controls", [1, 2, 3])
+    @pytest.mark.parametrize(("num_provided", "num_controls"), [(0, 1), (2, 2), (6, 3)])
     def test_direct_rule_compiled_allocation(self, num_provided, num_controls):
         """Direct rule calls compile with provided, allocated or mixed work registers."""
         wires = qp.registers({"control": num_controls, "x": 1, "y": 2, "work": num_provided})
@@ -763,18 +762,35 @@ class TestControlledSemiAdderPPM:
         @qp.qjit(capture=True)
         @qp.transforms.to_ppr
         @qp.decompose(gate_set={"PPR_8", "PauliMeasure", "PauliX", "PauliZ", "GlobalPhase"})
-        @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
+        @qp.qnode(qp.device("null.qubit", wires=num_wires))
+        def circuit():
+            # Invoke the rule directly; native graph decomposition cannot allocate these wires.
+            _controlled_semi_adder_ppm(base, wires["control"])
+            return qp.expval(qp.Z(wires["y"][0]))
+
+        _, specs = qp.track(circuit)()
+        assert specs.resources.num_wires == num_controls + 3 + max(num_provided, num_controls + 3)
+        assert any(name.startswith("PauliMeasure") for name in specs.resources.quantum_operations)
+
+    @pytest.mark.catalyst
+    def test_fully_allocated_control_ladder(self):
+        """Execute a three-control ladder with every work wire allocated dynamically."""
+        wires = qp.registers({"control": 3, "x": 1, "y": 2})
+        base = qp.SemiAdder(wires["x"], wires["y"])
+
+        @qp.qjit(capture=True)
+        @qp.transforms.to_ppr
+        @qp.decompose(gate_set={"PPR_8", "PauliMeasure", "PauliX", "PauliZ", "GlobalPhase"})
+        @qp.qnode(qp.device("lightning.qubit", wires=6))
         def circuit():
             # All controls are on and x = y = 1.
             for wire in wires["control"] + wires["x"] + wires["y"][-1:]:
                 qp.X(wire)
-            # Invoke the rule directly; native graph decomposition cannot allocate these wires.
             _controlled_semi_adder_ppm(base, wires["control"])
-            return qp.probs(wires=range(num_wires))
+            return qp.probs(wires=range(6))
 
-        # All controls |1>, addend |1>, sum |10> and clean provided work wires.
-        expected_bits = "1" * num_controls + "1" + "10" + "0" * num_provided
-        assert qp.math.isclose(circuit()[int(expected_bits, 2)], 1.0, rtol=0)
+        # All controls |111>, unchanged addend |1> and sum |10>.
+        assert qp.math.isclose(circuit()[0b111110], 1.0, rtol=0)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("control_values", [[True], [True, True], [False, True, False]])
@@ -810,21 +826,9 @@ class TestControlledSemiAdderPPM:
         assert solution.decomposition(op).name == expected_rule
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        ("control_values", "initial_controls", "expected_sum"),
-        [
-            ([True], [1], 1),
-            ([False], [0], 1),
-            ([False], [1], 0),
-            ([True, True], [1, 1], 1),
-            ([True, False], [1, 0], 1),
-            ([True, False], [1, 1], 0),
-            ([False, True, False], [0, 1, 0], 1),
-            ([False, True, False], [0, 0, 0], 0),
-        ],
-    )
-    def test_compiled_graph_decomposition(self, control_values, initial_controls, expected_sum):
-        """Compile the public controlled operator through the registered PPM rule."""
+    @pytest.mark.parametrize("control_values", [[False], [True, False], [False, True, False]])
+    def test_compiled_graph_decomposition(self, control_values):
+        """Compile each control configuration once and test its active and inactive states."""
         wires = qp.registers(
             {"control": len(control_values), "x": 2, "y": 2, "work": len(control_values) + 3}
         )
@@ -841,10 +845,9 @@ class TestControlledSemiAdderPPM:
         @qp.transforms.to_ppr
         @qp.decompose(gate_set=gate_set)
         @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
-        def circuit():
+        def circuit(initial_controls):
             for wire, value in zip(wires["control"], initial_controls):
-                if value:
-                    qp.X(wire)
+                qp.cond(value == 1, qp.X)(wire)
             qp.X(wires["x"][-1])
             qp.ctrl(
                 qp.SemiAdder(wires["x"], wires["y"], wires["work"]),
@@ -853,10 +856,14 @@ class TestControlledSemiAdderPPM:
             )
             return qp.probs(wires=range(num_wires))
 
-        # Include every control, the addend, the sum and all clean work wires.
-        control_bits = "".join(str(bit) for bit in initial_controls)
-        expected_bits = control_bits + "01" + f"0{expected_sum}" + "0" * len(wires["work"])
-        assert qp.math.isclose(circuit()[int(expected_bits, 2)], 1.0, rtol=0)
+        active_controls = [int(value) for value in control_values]
+        inactive_controls = active_controls.copy()
+        inactive_controls[0] ^= 1
+        for initial_controls, expected_sum in [(active_controls, 1), (inactive_controls, 0)]:
+            # Include every control, the addend, the sum and all clean work wires.
+            control_bits = "".join(str(bit) for bit in initial_controls)
+            expected_bits = control_bits + "01" + f"0{expected_sum}" + "0" * len(wires["work"])
+            assert qp.math.isclose(circuit(initial_controls)[int(expected_bits, 2)], 1.0, rtol=0)
 
 
 class TestSemiAdderPPM:

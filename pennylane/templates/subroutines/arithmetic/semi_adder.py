@@ -195,7 +195,8 @@ class SemiAdder(Operator2):
             to encode the integer :math:`x+y` which is computed modulo :math:`2^{\text{len(y_wires)}}` in the computational basis.
         work_wires (Optional(Sequence[int])): Auxiliary wires initialized and returned to
             :math:`|0\rangle`. The standard decomposition uses ``len(y_wires) - 1``;
-            see below for the PPM requirements.
+            the Pauli product measurement (PPM) decomposition uses ``len(y_wires) + 1``,
+            plus one per control.
 
     **Example**
 
@@ -254,9 +255,14 @@ class SemiAdder(Operator2):
     The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4` where :math:`4 \mod 2^2 = 0`.
 
     The PPM decompositions require capture or an active compiler and ``len(y_wires) + 1``
-    zeroed work wires, plus one per control. 
+    zeroed work wires, plus one per control.
+
     .. details::
         :title: Available decompositions
+
+        The PPM diagrams show the block order, including measurement-based corrections.
+        Their measurement and correction counts are upper bounds; counts for
+        :class:`~.PPR_8` and :func:`~.pauli_measure` are summed over Pauli words.
 
         .. decomposition-table:: qp.SemiAdder
             :stacked:
@@ -271,6 +277,30 @@ class SemiAdder(Operator2):
                 :class:`~.TemporaryAND` | :math:`n - 1` | 2
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`n - 1` | 2
                 :class:`~.CNOT` | :math:`n + 5\ell - 5 + [m \geq n]` | 9
+
+            .. decomposition-rule:: _semi_adder_ppm
+                :image: /_static/decomposition_thumbnails/semi_adder_ppm.svg
+                :requires: capture or an active compiler, and :math:`n + 1` zeroed work wires
+
+                :class:`~.PPR_8` | :math:`4n - 4` | 8
+                :func:`PauliMeasure <.pauli_measure>` | :math:`\leq 10n - 6` | :math:`\leq 24`
+                :class:`~.X` | :math:`\leq 4n - 2` | :math:`\leq 10`
+                :class:`~.Z` | :math:`\leq 9n - 6` | :math:`\leq 21`
+                :class:`~.GlobalPhase` | :math:`\leq 3n - 2` | :math:`\leq 7`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_semi_adder_ppm)
+                :image: /_static/decomposition_thumbnails/semi_adder_controlled_ppm.svg
+                :region: controlled
+                :requires: capture or an active compiler, and :math:`n + c + 1` zeroed work wires
+                :where: :math:`c \geq 1` is the number of control wires; the circuit shows
+                    :math:`c = 1`. Each control value :math:`0` adds two :class:`~.X` gates
+                    beyond the counts shown.
+
+                :class:`~.PPR_8` | :math:`8n + 4c - 8` | 20
+                :func:`PauliMeasure <.pauli_measure>` | :math:`\leq 14n + 4c - 10` | :math:`\leq 36`
+                :class:`~.X` | :math:`\leq 5n + c - 3` | :math:`\leq 13`
+                :class:`~.Z` | :math:`\leq 13n + 3c - 10` | :math:`\leq 32`
+                :class:`~.GlobalPhase` | :math:`\leq 4n + c - 3` | :math:`\leq 10`
     """
 
     grad_method = None
@@ -827,8 +857,10 @@ def _controlled_semi_adder_ppm(
             num_ladder_wires : num_ladder_wires + num_controls - 1
         ]
         for i in range(num_controls - 1):
-            # Reuse the existing PPR rule directly: native lowering of TemporaryAND cannot
-            # combine allocated and existing wire registers yet.
+            # TODO: Use TemporaryAND once Catalyst can lower rules spanning multiple qregs.
+            # A control flag from new_wires and an input control belong to different qregs;
+            # TemporaryAND then fails with "register-mode decomposition rule cannot span
+            # multiple qregs yet". Calling its PPR rule directly also supports this case.
             _temporary_and_ppr(
                 [control_chain[i], control_wires[i + 1], control_chain[i + 1]], [True, True]
             )
