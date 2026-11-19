@@ -32,7 +32,7 @@ New features since last release
   than ``QROM``.
   In addition, ``Adjoint(QROMLoad)`` and ``Adjoint(SelectSwap)`` have new decompositions based on 
   measurement-based uncomputation from
-  Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, which reduces its Toffoli 
+  Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, which reduces their Toffoli 
   cost to roughly :math:`2\sqrt{L}` for :math:`L` bitstrings, given enough work wires.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
   `(#10363) <https://github.com/PennyLaneAI/pennylane/pull/10363>`__
