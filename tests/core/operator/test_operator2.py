@@ -294,6 +294,21 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         assert Op in flatten_registrations
         assert Op in unflatten_registrations
 
+    def test_arg_specs_defaults_to_unconstrained_wires(self):
+        """Test that when ``arg_specs`` is not declared, wire arguments are
+        unconstrained and accept arbitrary lengths."""
+
+        class Op(Operator2):
+            wire_argnames = ("wires", "ctrl_wires")
+
+            def __init__(self, wires, ctrl_wires):
+                super().__init__(wires=wires, ctrl_wires=ctrl_wires)
+
+        assert not Op.arg_specs
+
+        op = Op(wires=[0, 1], ctrl_wires=[2, 3, 4])
+        assert op.wires == Wires([0, 1, 2, 3, 4])
+
     @pytest.mark.parametrize("attr", ["hybrid_argnames", "static_argnames", "compilable_argnames"])
     def test_arg_specs_incompatible_with_other_arg_groups(self, attr):
         """Test that ``arg_specs`` cannot name hybrid, static, or compilable args."""
