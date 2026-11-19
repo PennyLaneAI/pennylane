@@ -613,7 +613,6 @@ def _check_properties_operator2(op: Operator2) -> None:
             assert len(math.shape(val)) == dim, error_msg
 
 
-
 def assert_valid(  # pylint: disable=too-many-arguments
     op: Operator,
     *,

@@ -1835,7 +1835,6 @@ class SWAP(Operator2):
                 :class:`Pow(SWAP) <.SWAP>` with power :math:`z \bmod 2` | :math:`1`
     """
 
-
     arg_specs = {"wires": Wire[2]}
 
     is_verified_hermitian = True
@@ -2045,7 +2044,6 @@ class ECR(Operator2):
 
                 :class:`Pow(ECR) <.ECR>` with power :math:`z \bmod 2` | :math:`1`
     """
-
 
     arg_specs = {"wires": Wire[2]}
 

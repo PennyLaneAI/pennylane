@@ -119,7 +119,7 @@ class AQFT(Operator2):
 
     compilable_argnames = ("order",)
     arg_specs = {"wires": Wire[-1]}
-    
+
     def __init__(self, order: int, wires: WiresLike) -> None:
         wires = Wires(wires)
         num_wires = len(wires)
