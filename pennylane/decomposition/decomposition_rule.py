@@ -181,7 +181,7 @@ def register_resources(
             returns a decorator for acting on a function.
 
     Keyword Args:
-        name (str or None): public rule name, or ``None`` to use the function name with leading
+        name (Optional(str)): Optional public rule name, if ``None``, use the function name with leading
             underscores removed. Existing rules retain their name when this argument is omitted.
             Names must be non-blank and must not start with an underscore.
         work_wires (dict or Callable): a dictionary declaring the number of work wires of each type
