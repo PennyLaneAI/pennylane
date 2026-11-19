@@ -54,8 +54,7 @@ def to_resources(gate_count: dict, weighted_cost: float | None = None) -> Resour
     return Resources(gate_count, weighted_cost=weighted_cost)
 
 
-@qp.register_name("cz_to_cnot")
-@qp.register_resources({qp.Hadamard: 2, qp.CNOT: 1})
+@qp.register_resources({qp.Hadamard: 2, qp.CNOT: 1}, name="cz_to_cnot")
 def _cz_to_cnot(*_, **__):
     raise NotImplementedError
 
@@ -63,8 +62,7 @@ def _cz_to_cnot(*_, **__):
 decompositions.get()["CZ"].append(_cz_to_cnot)
 
 
-@qp.register_name("cnot_to_cz")
-@qp.register_resources({qp.Hadamard: 2, qp.CZ: 1})
+@qp.register_resources({qp.Hadamard: 2, qp.CZ: 1}, name="cnot_to_cz")
 def _cnot_to_cz(*_, **__):
     raise NotImplementedError
 
@@ -76,8 +74,7 @@ def _multi_rz_standard_resources(num_wires):
     return {qp.RZ: 1, qp.CNOT: 2 * (num_wires - 1)}
 
 
-@qp.register_name("multi_rz_standard")
-@qp.register_resources(_multi_rz_standard_resources)
+@qp.register_resources(_multi_rz_standard_resources, name="multi_rz_standard")
 def _multi_rz_standard(*_, **__):
     raise NotImplementedError
 
@@ -85,14 +82,12 @@ def _multi_rz_standard(*_, **__):
 decompositions.get()["MultiRZ"].append(_multi_rz_standard)
 
 
-@qp.register_name("hadamard_to_rz_rx")
-@qp.register_resources({qp.RZ: 2, qp.RX: 1, qp.GlobalPhase: 1})
+@qp.register_resources({qp.RZ: 2, qp.RX: 1, qp.GlobalPhase: 1}, name="hadamard_to_rz_rx")
 def _hadamard_to_rz_rx(*_, **__):
     raise NotImplementedError
 
 
-@qp.register_name("hadamard_to_rz_ry")
-@qp.register_resources({qp.RZ: 1, qp.RY: 1, qp.GlobalPhase: 1})
+@qp.register_resources({qp.RZ: 1, qp.RY: 1, qp.GlobalPhase: 1}, name="hadamard_to_rz_ry")
 def _hadamard_to_rz_ry(*_, **__):
     raise NotImplementedError
 
@@ -101,8 +96,7 @@ decompositions.get()["Hadamard"].append(_hadamard_to_rz_rx)
 decompositions.get()["Hadamard"].append(_hadamard_to_rz_ry)
 
 
-@qp.register_name("ry_to_rx_rz")
-@qp.register_resources({qp.RX: 1, qp.RZ: 2})
+@qp.register_resources({qp.RX: 1, qp.RZ: 2}, name="ry_to_rx_rz")
 def _ry_to_rx_rz(*_, **__):
     raise NotImplementedError
 
@@ -110,15 +104,14 @@ def _ry_to_rx_rz(*_, **__):
 decompositions.get()["RY"].append(_ry_to_rx_rz)
 
 
-@qp.register_name("crx_to_rx_cz")
-@qp.register_resources({qp.RX: 2, qp.CZ: 2})
+@qp.register_resources({qp.RX: 2, qp.CZ: 2}, name="crx_to_rx_cz")
 def _crx_to_rx_cz(*_, **__):
     raise NotImplementedError
 
 
-@qp.register_name("crx_to_rx_ry_cnot_ry_cnot_ry_cnot_rz")
 @qp.register_resources(
     {qp.RX: 2, qp.CNOT: 2, qp.RY: 4, qp.GlobalPhase: 4, qp.RZ: 4},
+    name="crx_to_rx_ry_cnot_ry_cnot_ry_cnot_rz",
 )
 def _crx_to_rx_ry_cnot_ry_cnot_ry_cnot_rz(*_, **__):
     raise NotImplementedError
@@ -128,8 +121,7 @@ decompositions.get()["CRX"].append(_crx_to_rx_cz)
 decompositions.get()["CRX"].append(_crx_to_rx_ry_cnot_ry_cnot_ry_cnot_rz)
 
 
-@qp.register_name("cphase_to_rz_cnot")
-@qp.register_resources({qp.RZ: 3, qp.CNOT: 2, qp.GlobalPhase: 1})
+@qp.register_resources({qp.RZ: 3, qp.CNOT: 2, qp.GlobalPhase: 1}, name="cphase_to_rz_cnot")
 def _cphase_to_rz_cnot(*_, **__):
     raise NotImplementedError
 
@@ -137,8 +129,7 @@ def _cphase_to_rz_cnot(*_, **__):
 decompositions.get()["ControlledPhaseShift"].append(_cphase_to_rz_cnot)
 
 
-@qp.register_name("phase_shift_to_rz_gp")
-@qp.register_resources({qp.RZ: 1, qp.GlobalPhase: 1})
+@qp.register_resources({qp.RZ: 1, qp.GlobalPhase: 1}, name="phase_shift_to_rz_gp")
 def _phase_shift_to_rz_gp(*_, **__):
     raise NotImplementedError
 
@@ -146,8 +137,7 @@ def _phase_shift_to_rz_gp(*_, **__):
 decompositions.get()["PhaseShift"].append(_phase_shift_to_rz_gp)
 
 
-@qp.register_name("x_to_rx")
-@qp.register_resources({qp.RX: 1, qp.GlobalPhase: 1})
+@qp.register_resources({qp.RX: 1, qp.GlobalPhase: 1}, name="x_to_rx")
 def _x_to_rx(*_, **__):
     raise NotImplementedError
 
@@ -155,8 +145,7 @@ def _x_to_rx(*_, **__):
 decompositions.get()["PauliX"].append(_x_to_rx)
 
 
-@qp.register_name("u1_ps")
-@qp.register_resources({qp.PhaseShift: 1})
+@qp.register_resources({qp.PhaseShift: 1}, name="u1_ps")
 def _u1_ps(phi, wires, **__):
     qp.PhaseShift(phi, wires=wires)
 
@@ -164,8 +153,7 @@ def _u1_ps(phi, wires, **__):
 decompositions.get()["U1"].append(_u1_ps)
 
 
-@qp.register_name("t_ps")
-@qp.register_resources({qp.PhaseShift: 1})
+@qp.register_resources({qp.PhaseShift: 1}, name="t_ps")
 def _t_ps(wires, **__):
     raise NotImplementedError
 
@@ -173,8 +161,7 @@ def _t_ps(wires, **__):
 decompositions.get()["T"].append(_t_ps)
 
 
-@qp.register_name("crot_to_rot_cnot")
-@qp.register_resources({qp.RZ: 3, qp.RY: 2, qp.CNOT: 2})
+@qp.register_resources({qp.RZ: 3, qp.RY: 2, qp.CNOT: 2}, name="crot_to_rot_cnot")
 def _crot_to_rot_cnot(*_, **__):
     raise NotImplementedError
 

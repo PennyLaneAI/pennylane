@@ -21,7 +21,7 @@ from functools import reduce
 import pennylane as qp
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_name, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.typing import Bool, Wire
 from pennylane.wires import concatenate_wires
 
@@ -399,8 +399,7 @@ def _superposition_standard_resources(num_wires, num_coeffs, bases):
     return dict(resources)
 
 
-@register_name("state_prep_permutations")
-@register_resources(_superposition_standard_resources)
+@register_resources(_superposition_standard_resources, name="state_prep_permutations")
 # pylint: disable-next=unused-argument
 def _superposition_standard(coeffs, bases, wires, target_wires, work_wire):
     dic_state = dict(zip(bases, coeffs, strict=True))

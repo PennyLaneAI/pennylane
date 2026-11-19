@@ -233,8 +233,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
                 resources[qp.Rot] = 1
                 return resources
 
-            @qp.register_name("my_op_decomp")
-            @qp.register_resources(_my_op_resources)
+            @qp.register_resources(_my_op_resources, name="my_op_decomp")
             def _my_op_decomp(pauli_string, angle_array, wires, rot_wire):
                 wire_map = {wires[i]: i for i in range(len(wires))}
                 for wire, pauli in zip(wires, pauli_string):

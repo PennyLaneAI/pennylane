@@ -21,7 +21,7 @@ from pennylane import capture, math, ops
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator1
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import add_decomps, register_name, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops.op_math.linear_combination import Hamiltonian
 from pennylane.pauli import PauliWord
 from pennylane.wires import Wires, WiresLike
@@ -212,8 +212,7 @@ def _commuting_evolution_standard_resources(words: tuple[PauliWord]):
     return {resource_rep(ApproxTimeEvolution, words=words, n=1): 1}
 
 
-@register_name("to_approx_time_evolution")
-@register_resources(_commuting_evolution_standard_resources)
+@register_resources(_commuting_evolution_standard_resources, name="to_approx_time_evolution")
 def _commuting_evolution_standard(  # pylint: disable=unused-argument
     time: list,
     *_,
@@ -231,8 +230,7 @@ def _commuting_evolution_standard(  # pylint: disable=unused-argument
 add_decomps(CommutingEvolution, _commuting_evolution_standard)
 
 
-@register_name("negate_time")
-@register_resources(lambda base_params, **_: {resource_rep(CommutingEvolution, **base_params): 1})
+@register_resources(lambda base_params, **_: {resource_rep(CommutingEvolution, **base_params): 1}, name="negate_time")
 def _adjoint_commuting_evolution_standard(time, *params, base, **__):
     hamiltonian = ops.functions.bind_new_parameters(base.hyperparameters["hamiltonian"], params)
     CommutingEvolution(

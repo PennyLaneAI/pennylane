@@ -20,7 +20,7 @@ from functools import reduce
 
 from pennylane import math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import expand_matrix
 from pennylane.ops import PPR_4, Hadamard, MultiRZ, PauliX
 from pennylane.typing import Float, TensorLike, Wire
@@ -167,8 +167,7 @@ def _instantaneous_quantum_polynomial_standard_resources(weights, wires, pattern
     return resources
 
 
-@register_name("to_h_multirz")
-@register_resources(_instantaneous_quantum_polynomial_standard_resources)
+@register_resources(_instantaneous_quantum_polynomial_standard_resources, name="to_h_multirz")
 def _instantaneous_quantum_polynomial_standard(weights, wires, pattern, spin_sym):
     num_wires = len(wires)
 

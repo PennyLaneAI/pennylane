@@ -215,8 +215,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         import pennylane as qp
 
-        @qp.register_name("my_cz")
-        @qp.register_resources({qp.H: 2, qp.CNOT: 1})
+        @qp.register_resources({qp.H: 2, qp.CNOT: 1}, name="my_cz")
         def my_cz(wires):
             qp.H(wires=wires[1])
             qp.CNOT(wires=wires)

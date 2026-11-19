@@ -21,7 +21,7 @@ import numpy as np
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import ceil_log2
 from pennylane.ops import SWAP, Hadamard, adjoint, ctrl
 from pennylane.typing import Wire
@@ -620,8 +620,7 @@ def _alias_sampling_thc_standard_resources(  # pylint: disable=too-many-argument
     return dict(resources)
 
 
-@register_name("qrom_comparator_swap")
-@register_resources(_alias_sampling_thc_standard_resources)
+@register_resources(_alias_sampling_thc_standard_resources, name="qrom_comparator_swap")
 def _alias_sampling_thc_standard(  # pylint: disable=too-many-arguments
     M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, **_
 ):

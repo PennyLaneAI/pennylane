@@ -23,7 +23,6 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
-    register_name,
     register_resources,
 )
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
@@ -346,8 +345,7 @@ def _multix_standard_resources(
 
 
 # Decomposition function for MultiX
-@register_name("to_x")
-@register_resources(_multix_standard_resources, exact=False)
+@register_resources(_multix_standard_resources, exact=False, name="to_x")
 def _multix_standard(bitstring: TensorLike, wires: WiresLike) -> None:
     # Dynamically-allocated wires (``AbstractQubit`` handles, e.g. from ``qp.allocate``) cannot
     # be stacked into a numeric array for ``for_loop``-based dynamic indexing, so unroll instead
@@ -433,11 +431,11 @@ def _controlled_multix_ladder_standard_work_wires(control_wires, work_wires, wor
 
 
 @register_condition(lambda control_wires, **_: len(control_wires) > 1 and not compiler.active())
-@register_name("ancilla_fanout")
 @register_resources(
     _controlled_multix_ladder_standard_resources,
     work_wires=_controlled_multix_ladder_standard_work_wires,
     exact=False,
+    name="ancilla_fanout",
 )
 def _controlled_multix_ladder_standard(base, control_wires, work_wires, work_wire_type, **_):
     """Controlled-``MultiX`` decomposition that loads the fanout through a single work wire

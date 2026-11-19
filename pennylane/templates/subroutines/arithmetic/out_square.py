@@ -21,7 +21,6 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
-    register_name,
     register_resources,
 )
 from pennylane.ops import CNOT
@@ -302,8 +301,7 @@ def _out_square_with_adder_zeroed_resources(  # pylint: disable=unused-argument
 
 
 @register_condition(_out_square_with_adder_zeroed_condition)
-@register_name("with_adder_zeroed")
-@register_resources(_out_square_with_adder_zeroed_resources)
+@register_resources(_out_square_with_adder_zeroed_resources, name="with_adder_zeroed")
 def _out_square_with_adder_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     output_wires: WiresLike,
@@ -402,8 +400,7 @@ def _shifted_adder(x_wires, output_wires, work_wires):
 
 
 @register_condition(_out_square_with_caddsub_condition)
-@register_name("with_caddsub")
-@register_resources(_out_square_with_caddsub_resources)
+@register_resources(_out_square_with_caddsub_resources, name="with_caddsub")
 def _out_square_with_caddsub(
     x_wires: WiresLike,
     output_wires: WiresLike,

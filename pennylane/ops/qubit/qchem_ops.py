@@ -26,7 +26,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qp
 from pennylane.core.operator import Operation, Operator2
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import (
     _adjoint_negate_angle,
     _pow_scale_angle,
@@ -269,8 +269,7 @@ def _single_excitation_standard_resources(phi, wires):  # pylint: disable=unused
     }
 
 
-@register_name("basis_change_ry")
-@register_resources(_single_excitation_standard_resources)
+@register_resources(_single_excitation_standard_resources, name="basis_change_ry")
 def _single_excitation_standard(phi: TensorLike, wires: WiresLike):
     def _to_basis():
         qp.Hadamard(wires[0])
@@ -294,8 +293,7 @@ def _single_excitation_to_ppr_resources(phi, wires):  # pylint: disable=unused-a
     }
 
 
-@register_name("to_paulirot")
-@register_resources(_single_excitation_to_ppr_resources)
+@register_resources(_single_excitation_to_ppr_resources, name="to_paulirot")
 def _single_excitation_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 2, "YX", wires=wires)
     qp.PauliRot(-phi / 2, "XY", wires=wires)
@@ -311,8 +309,7 @@ def _single_excitation_to_ppr_rz_resources(phi, wires):  # pylint: disable=unuse
     }
 
 
-@register_name("to_ppr_rz")
-@register_resources(_single_excitation_to_ppr_rz_resources)
+@register_resources(_single_excitation_to_ppr_rz_resources, name="to_ppr_rz")
 def _single_excitation_to_ppr_rz(phi: TensorLike, wires: WiresLike):
     def _rotations():
         qp.RZ(phi / 2, wires[0])
@@ -332,8 +329,7 @@ def _single_excitation_to_ppr_crz_resources(phi, wires):  # pylint: disable=unus
     }
 
 
-@register_name("to_ppr_crz")
-@register_resources(_single_excitation_to_ppr_crz_resources)
+@register_resources(_single_excitation_to_ppr_crz_resources, name="to_ppr_crz")
 def _single_excitation_to_ppr_crz(phi: TensorLike, wires: WiresLike):
     r"""A single arbitrary-angle rotation per Givens rotation.
 
@@ -518,8 +514,7 @@ def _single_excitation_minus_standard_resources():
     }
 
 
-@register_name("to_single_qubit_cnot_cy")
-@register_resources(_single_excitation_minus_standard_resources)
+@register_resources(_single_excitation_minus_standard_resources, name="to_single_qubit_cnot_cy")
 def _single_excitation_minus_standard(phi, wires: WiresLike, **__):
     qp.Hadamard(wires[1])
     qp.CNOT([wires[1], wires[0]])
@@ -683,8 +678,7 @@ def _single_excitation_plus_standard_resources():
     }
 
 
-@register_name("to_single_qubit_cnot_cy")
-@register_resources(_single_excitation_plus_standard_resources)
+@register_resources(_single_excitation_plus_standard_resources, name="to_single_qubit_cnot_cy")
 def _single_excitation_plus_standard(phi, wires: WiresLike, **__):
     qp.Hadamard(wires[1])
     qp.CNOT([wires[1], wires[0]])
@@ -825,8 +819,7 @@ def _double_excitation_to_gates_resources(phi, wires):  # pylint: disable=unused
     return {qp.CNOT: 14, qp.Hadamard: 6, qp.RY: 8}
 
 
-@register_name("to_gates")
-@register_resources(_double_excitation_to_gates_resources)
+@register_resources(_double_excitation_to_gates_resources, name="to_gates")
 def _double_excitation_to_gates(phi: TensorLike, wires: WiresLike):
     qp.CNOT(wires=[wires[2], wires[3]])
     qp.CNOT(wires=[wires[0], wires[2]])
@@ -871,8 +864,7 @@ def _double_excitation_to_ppr_resources(phi, wires):  # pylint: disable=unused-a
     }
 
 
-@register_name("to_paulirot")
-@register_resources(_double_excitation_to_ppr_resources)
+@register_resources(_double_excitation_to_ppr_resources, name="to_paulirot")
 def _double_excitation_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 8, pauli_word="YYYX", wires=wires)
     qp.PauliRot(phi / 8, pauli_word="YYXY", wires=wires)
@@ -1243,8 +1235,7 @@ def _orbital_rotation_standard_resources(phi: TensorLike, wires: WiresLike):
     return {qp.FermionicSWAP: 2, qp.SingleExcitation: 2}
 
 
-@register_name("to_fermionic_swap_single_excitation")
-@register_resources(_orbital_rotation_standard_resources)
+@register_resources(_orbital_rotation_standard_resources, name="to_fermionic_swap_single_excitation")
 def _orbital_rotation_standard(phi: TensorLike, wires: WiresLike):
     qp.FermionicSWAP(np.pi, wires=[wires[1], wires[2]])
     qp.SingleExcitation(phi, wires=[wires[0], wires[1]])
@@ -1408,8 +1399,7 @@ def _fermionic_swap_standard_resources(phi: TensorLike = None, wires: WiresLike 
     }
 
 
-@register_name("to_multirz_single_qubit")
-@register_resources(_fermionic_swap_standard_resources)
+@register_resources(_fermionic_swap_standard_resources, name="to_multirz_single_qubit")
 def _fermionic_swap_standard(phi, wires: WiresLike, **__):
     qp.Hadamard(wires=wires[0])
     qp.Hadamard(wires=wires[1])

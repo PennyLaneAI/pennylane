@@ -20,7 +20,6 @@ from collections import defaultdict
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
-    register_name,
     register_resources,
 )
 from pennylane.ops import CNOT, ChangeOpBasis2, MultiControlledX, PauliX
@@ -205,8 +204,7 @@ def _adder_fourier_resources(k: int, x_wires: WiresLike, mod: int, work_wires: W
     return resources
 
 
-@register_name("fourier")
-@register_resources(_adder_fourier_resources)
+@register_resources(_adder_fourier_resources, name="fourier")
 def _adder_fourier(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike):
     if mod == 2 ** len(x_wires):
         change_op_basis(QFT(x_wires), PhaseAdder(k, x_wires, mod))
@@ -263,8 +261,7 @@ def _adder_arithmetic_resources(
     return dict(counts)
 
 
-@register_name("arithmetic")
-@register_resources(_adder_arithmetic_resources, exact=False)
+@register_resources(_adder_arithmetic_resources, exact=False, name="arithmetic")
 def _adder_arithmetic(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike):
     x_wires = Wires(x_wires)
     work_wires = Wires(work_wires)

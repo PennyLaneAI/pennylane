@@ -17,7 +17,7 @@ Contains the 'label' function for customizing operator labels.
 
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, abstractify
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.functions.equal import (
     BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
     _equal,
@@ -108,8 +108,7 @@ def _custom_label_standard_resources(base):
     return {base: 1}
 
 
-@register_name("unwrap_base")
-@register_resources(_custom_label_standard_resources)
+@register_resources(_custom_label_standard_resources, name="unwrap_base")
 def _custom_label_standard(*params, wires, base, **_):  # pylint: disable=unused-argument
     apply(base)
 

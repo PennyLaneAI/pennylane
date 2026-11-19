@@ -25,7 +25,6 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
-    register_name,
     register_resources,
 )
 from pennylane.numeric_hamiltonians import CDFHamiltonian
@@ -719,8 +718,7 @@ def _trotter_cdf_standard_resources(  # pylint: disable=too-many-arguments,unuse
     )
 
 
-@register_name("double_factorized_steps")
-@register_resources(_trotter_cdf_standard_resources, exact=False)
+@register_resources(_trotter_cdf_standard_resources, exact=False, name="double_factorized_steps")
 def _trotter_cdf_standard(  # pylint: disable=too-many-arguments,unused-argument
     evolution_time,
     num_trotter_steps,
@@ -764,8 +762,7 @@ def _controlled_trotter_cdf_standard_resources(  # pylint: disable=unused-argume
 
 
 @register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
-@register_name("controlled_double_factorized_steps")
-@register_resources(_controlled_trotter_cdf_standard_resources, exact=False)
+@register_resources(_controlled_trotter_cdf_standard_resources, exact=False, name="controlled_double_factorized_steps")
 def _controlled_trotter_cdf_standard(
     base,
     control_wires,
@@ -826,12 +823,12 @@ def _controlled_trotter_cdf_standard(
 
 @register_condition(ctrl_many_zeroed_work_wires.is_applicable)
 @register_condition(lambda base, **_: not base.arguments["double_phase"])
-@register_name("multi_control")
 @register_resources(
     lambda *args, **kwargs: ctrl_many_zeroed_work_wires.compute_resources(
         *args, **kwargs
     ).gate_counts,
     exact=False,
+    name="multi_control",
 )
 def _trotter_cdf_multi_control(base, control_wires, control_values, work_wires, work_wire_type):
     """Reuse the single-control CDF decomposition after combining multiple controls."""

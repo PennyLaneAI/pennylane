@@ -20,7 +20,7 @@ import numpy as np
 from pennylane import capture, compiler, math, ops
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2, abstractify
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, _validate_work_wire_type
 from pennylane.ops.op_math.pow2 import _pow_abstract
@@ -210,8 +210,7 @@ def _GQSP_standard_resources(unitary, angles, control, work_wires, work_wire_typ
     return resources
 
 
-@register_name("controlled_unitary_rotations")
-@register_resources(_GQSP_standard_resources)
+@register_resources(_GQSP_standard_resources, name="controlled_unitary_rotations")
 # pylint: disable-next=too-many-arguments
 def _GQSP_standard(unitary, angles, control, work_wires, work_wire_type, shift):
     if compiler.active() or capture.enabled():

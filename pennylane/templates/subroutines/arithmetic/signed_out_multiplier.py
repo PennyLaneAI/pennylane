@@ -25,7 +25,6 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
-    register_name,
     register_resources,
 )
 from pennylane.ops import CNOT, ctrl
@@ -510,8 +509,7 @@ def _not_zeroed_condition(x_wires, y_wires, output_wires, work_wires, output_wir
 
 @register_condition(_zeroed_condition)
 @register_condition(_zeroed_work_wire_condition)
-@register_name("zeroed")
-@register_resources(_signed_out_multiplier_zeroed_resources)
+@register_resources(_signed_out_multiplier_zeroed_resources, name="zeroed")
 def _signed_out_multiplier_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -568,8 +566,7 @@ def _signed_out_multiplier_zeroed(  # pylint: disable=unused-argument
 
 @register_condition(_not_zeroed_condition)
 @register_condition(_not_zeroed_work_wire_condition)
-@register_name("borrowed")
-@register_resources(_signed_out_multiplier_borrowed_resources)
+@register_resources(_signed_out_multiplier_borrowed_resources, name="borrowed")
 def _signed_out_multiplier_borrowed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,

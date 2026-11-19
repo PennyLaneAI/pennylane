@@ -18,7 +18,7 @@ import numpy as np
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import GlobalPhase, Hadamard, Z, adjoint
 from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -382,8 +382,7 @@ def _one_body_block_encoding_standard_resources(
     return resources
 
 
-@register_name("alias_sampling_basis_rotation")
-@register_resources(_one_body_block_encoding_standard_resources)
+@register_resources(_one_body_block_encoding_standard_resources, name="alias_sampling_basis_rotation")
 def _one_body_block_encoding_standard(
     op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires, **_
 ):

@@ -27,7 +27,7 @@ from jax import numpy as jnp
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
 from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
@@ -288,8 +288,7 @@ def _all_singles_doubles_standard_resources(num_singles, num_doubles, num_wires)
     }
 
 
-@register_name("excitation_layers")
-@register_resources(_all_singles_doubles_standard_resources)
+@register_resources(_all_singles_doubles_standard_resources, name="excitation_layers")
 def _all_singles_doubles_standard(weights, wires, hf_state, singles, doubles):
     BasisState(hf_state, wires=wires)
 

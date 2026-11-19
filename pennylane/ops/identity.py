@@ -22,7 +22,7 @@ from scipy import sparse
 import pennylane as qp
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.core.pauli import PauliSentence, PauliWord
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
@@ -415,8 +415,7 @@ def _controlled_g_phase_standard_resources(
     return resources
 
 
-@register_name("to_controlled_phaseshift")
-@register_resources(_controlled_g_phase_standard_resources, exact=False)
+@register_resources(_controlled_g_phase_standard_resources, exact=False, name="to_controlled_phaseshift")
 def _controlled_g_phase_standard(
     base,
     control_wires,

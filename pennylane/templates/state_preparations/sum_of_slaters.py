@@ -24,7 +24,6 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
-    register_name,
     register_resources,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
@@ -1412,11 +1411,11 @@ def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
 @register_condition(
     lambda coefficients, wires, indices, *_, **__: indices is not None
 )  # indices must be known
-@register_name("sparse_state_isometry")
 @register_resources(
     _sos_state_prep_standard_resources,
     exact=False,
     work_wires=_sos_state_prep_standard_work_wires,
+    name="sparse_state_isometry",
 )
 def _sos_state_prep_standard(  # pylint: disable=too-many-arguments
     coefficients,

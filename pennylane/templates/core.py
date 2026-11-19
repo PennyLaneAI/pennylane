@@ -47,7 +47,6 @@ from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
     adjoint_resource_rep,
-    register_name,
     register_resources,
     resource_rep,
 )
@@ -181,8 +180,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
         abstract_wires = Wire[1] # a single wire
         S_rep = subroutine_resource_rep(S, abstract_params, abstract_wires, qp.RX)
 
-        @qp.decomposition.register_name("my_op_decomposition")
-        @qp.decomposition.register_resources({S_rep: 1})
+        @qp.decomposition.register_resources({S_rep: 1}, name="my_op_decomposition")
         def my_op_decomposition(wires):
             # data of shape (4, ) and dtype float
             params = np.array([1.0, 2.0, 3.0, 4.0])
@@ -404,8 +402,7 @@ def _subroutine_standard_resources(subroutine: "Subroutine", signature_key):
     return subroutine.compute_resources(**sig.arguments)
 
 
-@register_name("expand_operations")
-@register_resources(_subroutine_standard_resources)
+@register_resources(_subroutine_standard_resources, name="expand_operations")
 def _subroutine_standard(*data, wires, decomposition):  # pylint: disable=unused-argument
     _ = [apply(op) for op in decomposition]
 
@@ -601,8 +598,7 @@ class Subroutine:  # pylint: disable=too-many-instance-attributes
         abstract_wires = Wire[3]
         rxlayer_rep = subroutine_resource_rep(RXLayer, abstract_params, abstract_wires)
 
-        @qp.decomposition.register_name("MyOpDecomposition")
-        @qp.decomposition.register_resources({rxlayer_rep: 1})
+        @qp.decomposition.register_resources({rxlayer_rep: 1}, name="MyOpDecomposition")
         def MyOpDecomposition(wires):
             params = np.arange(3, dtype=float)
             RXLayer(params, wires)

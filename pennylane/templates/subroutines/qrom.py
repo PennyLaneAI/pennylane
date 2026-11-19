@@ -29,7 +29,6 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
-    register_name,
     register_resources,
 )
 from pennylane.math import ceil_log2
@@ -428,8 +427,7 @@ def _qrom_select_swap_resources(bitstrings, control_wires, target_wires, work_wi
 
 
 @register_condition(_select_swap_condition)
-@register_name("select_swap")
-@register_resources(_qrom_select_swap_resources)
+@register_resources(_qrom_select_swap_resources, name="select_swap")
 def _qrom_select_swap(bitstrings, control_wires, target_wires, work_wires, clean):
     if len(control_wires) == 0:
         MultiX(bitstrings[0, :], wires=target_wires)
@@ -840,8 +838,7 @@ def _build_flag(extra_wires, work_wires):
 
 
 @register_condition(_qrom_measurement_condition)
-@register_name("measurement")
-@register_resources(_qrom_measurement_resources, exact=False)
+@register_resources(_qrom_measurement_resources, exact=False, name="measurement")
 def _qrom_measurement(  # pylint: disable=too-many-arguments,unused-argument
     bitstrings=None,
     control_wires=None,
@@ -1151,8 +1148,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
     qp_ops.adjoint(TemporaryAND(wires=triples[0], control_values=tuple(closing_bits[:2])))
 
 
-@register_name("unary_iteration")
-@register_resources(_qrom_unary_iteration_resources)
+@register_resources(_qrom_unary_iteration_resources, name="unary_iteration")
 # pylint: disable-next=unused-argument
 def _qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires, clean, **__):
     """Unary iteration decomposition of QROM.

@@ -15,7 +15,7 @@
 
 from pennylane.allocation import allocate
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.ops import CNOT, adjoint, ctrl
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
@@ -343,8 +343,7 @@ def _semi_adder_standard_work_wires(x_wires, y_wires, work_wires):
     return {"zeroed": max(num_work_wires_needed - num_work_wires_provided, 0)}
 
 
-@register_name("carry_ladder")
-@register_resources(_semi_adder_standard_resources, work_wires=_semi_adder_standard_work_wires)
+@register_resources(_semi_adder_standard_resources, work_wires=_semi_adder_standard_work_wires, name="carry_ladder")
 def _semi_adder_standard(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_pos=None):
     num_y_wires = len(y_wires)
     num_x_wires = len(x_wires)
@@ -456,10 +455,10 @@ def _controlled_semi_adder_standard_resources(
     }
 
 
-@register_name("controlled_carry_ladder")
 @register_resources(
     _controlled_semi_adder_standard_resources,
     work_wires=lambda base, *_, **__: _semi_adder_standard_work_wires(**base.arguments),
+    name="controlled_carry_ladder",
 )
 def _controlled_semi_adder_standard(  # pylint: disable=too-many-arguments
     base,

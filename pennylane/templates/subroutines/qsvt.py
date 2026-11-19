@@ -35,7 +35,6 @@ from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
-    register_name,
     register_resources,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
@@ -546,8 +545,7 @@ def _QSVT_standard_resources(UA, projectors):
     return dict(resources)
 
 
-@register_name("alternating_block_encodings")
-@register_resources(_QSVT_standard_resources)
+@register_resources(_QSVT_standard_resources, name="alternating_block_encodings")
 def _QSVT_standard(UA, projectors):
 
     apply(projectors[0])

@@ -27,7 +27,6 @@ from pennylane.core import queuing
 from pennylane.core.apply import apply
 from pennylane.decomposition.decomposition_rule import (
     register_condition,
-    register_name,
     register_resources,
 )
 from pennylane.exceptions import DecompositionUndefinedError
@@ -303,8 +302,7 @@ def make_one_qubit_unitary_decomposition(su2_rule, su2_resource, name=""):
 
     # Resources are not exact because the global phase or rotations might be skipped
     @register_condition(lambda U, wires, **_: len(wires) == 1)
-    @register_name(name)
-    @register_resources(_resource_fn, exact=False)
+    @register_resources(_resource_fn, exact=False, name=name)
     def _impl(U, wires, **__):
         if sparse.issparse(U):
             U = U.todense()
@@ -404,9 +402,8 @@ def _qubit_unitary_two_qubit_resources(*_, **__):
     }
 
 
-@register_name("two_qubit")
 @register_condition(lambda U, wires, **_: len(wires) == 2)
-@register_resources(_qubit_unitary_two_qubit_resources, exact=False)
+@register_resources(_qubit_unitary_two_qubit_resources, exact=False, name="two_qubit")
 def _qubit_unitary_two_qubit(U, wires, **_):
     """The decomposition rule for a two-qubit unitary."""
 
@@ -452,9 +449,8 @@ def _qubit_unitary_multi_qubit_resources(U, wires, **_):  # pylint: disable=unus
     }
 
 
-@register_name("multi_qubit")
 @register_condition(lambda U, wires, **_: len(wires) > 2)
-@register_resources(_qubit_unitary_multi_qubit_resources)
+@register_resources(_qubit_unitary_multi_qubit_resources, name="multi_qubit")
 def _qubit_unitary_multi_qubit(U, wires, **__):
     """The decomposition rule for a multi-qubit unitary."""
 

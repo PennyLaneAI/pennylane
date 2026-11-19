@@ -16,7 +16,7 @@
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, X
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires, WiresLike
@@ -158,8 +158,7 @@ def _left_quantum_comparator_standard_resources(
     return resources
 
 
-@register_name("elbow_ladder")
-@register_resources(_left_quantum_comparator_standard_resources, exact=True)
+@register_resources(_left_quantum_comparator_standard_resources, exact=True, name="elbow_ladder")
 def _left_quantum_comparator_standard(x_wires, y_wires, target_wire, work_wires, comparator, **_):
 
     # revert to follow PL convention

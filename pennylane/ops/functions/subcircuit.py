@@ -121,8 +121,7 @@ def subcircuit(  # pylint: disable=too-many-arguments
     .. code-block:: python
 
         @qp.subcircuit(dynamic_argnames=("phi",))
-        @qp.register_name("MyOp")
-        @qp.register_resources({qp.H: 1, qp.RZ: 1})
+        @qp.register_resources({qp.H: 1, qp.RZ: 1}, name="MyOp")
         def MyOp(phi, wires):
             qp.H(wires)
             qp.RZ(phi, wires)

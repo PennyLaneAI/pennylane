@@ -18,7 +18,6 @@ Contains the OutAdder template.
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
-    register_name,
     register_resources,
 )
 from pennylane.ops import Prod2, change_op_basis
@@ -311,8 +310,7 @@ def _out_adder_standard_resources(num_output_wires, num_x_wires, num_y_wires, mo
     return resources
 
 
-@register_name("fourier_phase_adders")
-@register_resources(_out_adder_standard_resources)
+@register_resources(_out_adder_standard_resources, name="fourier_phase_adders")
 def _out_adder_standard(x_wires, y_wires, output_wires, mod, work_wires, **__):
     if mod != 2 ** len(output_wires) and mod is not None:
         qft_new_output_wires = work_wires[:1] + output_wires

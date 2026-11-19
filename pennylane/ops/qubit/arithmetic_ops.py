@@ -26,7 +26,6 @@ from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
-    register_name,
     register_resources,
     resource_rep,
 )
@@ -200,8 +199,7 @@ def _qubitcarry_to_cnot_toffolis_resources():
     return {qp.CNOT: 1, qp.Toffoli: 2}
 
 
-@register_name("to_cnot_toffolis")
-@register_resources(_qubitcarry_to_cnot_toffolis_resources)
+@register_resources(_qubitcarry_to_cnot_toffolis_resources, name="to_cnot_toffolis")
 def _qubitcarry_to_cnot_toffolis(wires: WiresLike, **__):
     qp.Toffoli(wires=wires[1:])
     qp.CNOT(wires=[wires[1], wires[2]])
@@ -362,8 +360,7 @@ def _qubitsum_to_cnots_resources():
     return {qp.CNOT: 2}
 
 
-@register_name("to_cnots")
-@register_resources(_qubitsum_to_cnots_resources)
+@register_resources(_qubitsum_to_cnots_resources, name="to_cnots")
 def _qubitsum_to_cnots(wires: WiresLike, **__):
     qp.CNOT(wires=[wires[1], wires[2]])
     qp.CNOT(wires=[wires[0], wires[2]])
@@ -662,8 +659,7 @@ def _integer_comparator_less_than_resources(num_wires, value, num_work_wires, **
 
 
 @register_condition(lambda geq, **_: not geq)
-@register_name("less_than")
-@register_resources(_integer_comparator_less_than_resources)
+@register_resources(_integer_comparator_less_than_resources, name="less_than")
 def _integer_comparator_less_than(wires, value, work_wires, **_):
     """Decompose the ``IntegerComparator`` for when the flipping condition is ``n < value``.
 
@@ -798,8 +794,7 @@ def _integer_comparator_greater_equal_resources(num_wires, value, num_work_wires
 
 
 @register_condition(lambda geq, **_: geq)
-@register_name("greater_equal")
-@register_resources(_integer_comparator_greater_equal_resources)
+@register_resources(_integer_comparator_greater_equal_resources, name="greater_equal")
 def _integer_comparator_greater_equal(wires, value, work_wires, **_):
     """Decompose the ``IntegerComparator`` for when the flipping condition is ``n >= value``.
 
@@ -867,8 +862,7 @@ def _integer_comparator_flip_greater_equal_resources(num_wires, value, num_work_
     }
 
 
-@register_name("flip_greater_equal")
-@register_resources(_integer_comparator_flip_greater_equal_resources)
+@register_resources(_integer_comparator_flip_greater_equal_resources, name="flip_greater_equal")
 def _integer_comparator_flip_greater_equal(value, geq, wires, work_wires, **_):
     """Decompose the IntegerComparator by flipping geq to lt or vice versa."""
     qp.X(wires[-1])

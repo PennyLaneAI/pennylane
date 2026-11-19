@@ -380,8 +380,7 @@ class TestValidateMeasurements:
             validate_measurements(tape, lambda obj: True)
 
 
-@qp.register_name("dummy_rz_decomp_0")
-@qp.register_resources({qp.H: 6, qp.RX: 1})
+@qp.register_resources({qp.H: 6, qp.RX: 1}, name="dummy_rz_decomp_0")
 def dummy_rz_decomp_0(phi, wires):
     qp.H(wires)
     qp.H(wires)
@@ -392,14 +391,12 @@ def dummy_rz_decomp_0(phi, wires):
     qp.H(wires)
 
 
-@qp.register_name("dummy_rz_decomp_1")
-@qp.register_resources({qp.RX: 1})
+@qp.register_resources({qp.RX: 1}, name="dummy_rz_decomp_1")
 def dummy_rz_decomp_1(phi, wires):
     qp.RX(phi, wires)
 
 
-@qp.register_name("dummy_rz_decomp_2")
-@qp.register_resources({qp.H: 1}, work_wires={"zeroed": 1})
+@qp.register_resources({qp.H: 1}, work_wires={"zeroed": 1}, name="dummy_rz_decomp_2")
 def dummy_rz_decomp_2(phi, wires):  # pylint: disable=unused-argument
     qp.H(wires)
 
@@ -704,15 +701,13 @@ class TestGraphModeExclusiveFeatures:
             num_wires = 1
 
         # Fallback decomposition (no work wires needed)
-        @qp.register_name("decomp_fallback")
-        @qp.register_resources({qp.H: 2})
+        @qp.register_resources({qp.H: 2}, name="decomp_fallback")
         def decomp_fallback(wires):
             qp.H(wires)
             qp.H(wires)
 
         # Work wire decomposition (needs 5 burnable wires)
-        @qp.register_name("decomp_with_work_wire")
-        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 5})
+        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 5}, name="decomp_with_work_wire")
         def decomp_with_work_wire(wires):
             qp.X(wires)
 

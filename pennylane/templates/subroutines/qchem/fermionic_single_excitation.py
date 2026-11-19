@@ -21,7 +21,7 @@ from jax import numpy as jnp
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.wires import Wires, WiresLike
 
@@ -218,8 +218,7 @@ def _fermionic_single_excitation_standard_resources(num_wires):
     return {RX: 4, Hadamard: 4, CNOT: 4 * (num_wires - 1), RZ: 2}
 
 
-@register_name("jordan_wigner_rotations")
-@register_resources(_fermionic_single_excitation_standard_resources)
+@register_resources(_fermionic_single_excitation_standard_resources, name="jordan_wigner_rotations")
 def _fermionic_single_excitation_standard(weight, wires, **_):
     # pylint: disable=no-value-for-parameter
     # Interpret first and last wire as r and p

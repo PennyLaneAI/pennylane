@@ -1168,11 +1168,11 @@ def _partial_unary_state_prep_standard_work_wires(coefficients, wires, indices, 
     return {"zeroed": need_to_allocate}
 
 
-@qp.register_name("partial_unary_isometry")
 @qp.register_resources(
     _partial_unary_state_prep_standard_resources,
     work_wires=_partial_unary_state_prep_standard_work_wires,
     exact=False,
+    name="partial_unary_isometry",
 )
 def _partial_unary_state_prep_standard(coefficients, wires, indices, work_wires):
     """Compute the decomposition of the partial unary iteration state preparation technique.

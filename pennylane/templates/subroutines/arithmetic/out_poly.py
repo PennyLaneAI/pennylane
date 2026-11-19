@@ -21,7 +21,6 @@ from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
-    register_name,
     register_resources,
 )
 from pennylane.ops import adjoint, ctrl
@@ -499,8 +498,7 @@ def _out_poly_standard_resources(num_output_wires, num_work_wires, mod, coeffs_l
     return dict(resources)
 
 
-@register_name("fourier_polynomial_phases")
-@register_resources(_out_poly_standard_resources)
+@register_resources(_out_poly_standard_resources, name="fourier_polynomial_phases")
 def _out_poly_standard(  # pylint: disable=unused-argument
     polynomial_function,
     input_registers,

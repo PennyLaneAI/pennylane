@@ -29,7 +29,6 @@ from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
-    register_name,
     register_resources,
 )
 from pennylane.exceptions import (
@@ -521,8 +520,7 @@ def _exp_to_pauli_rot_resources(base):
 
 
 @register_condition(_pauli_rot_decomp_condition)
-@register_name("to_pauli_rot")
-@register_resources(_exp_to_pauli_rot_resources)
+@register_resources(_exp_to_pauli_rot_resources, name="to_pauli_rot")
 def _exp_to_pauli_rot(*params, wires, base, **_):  # pylint: disable=unused-argument
     """Decompose the operator into a single PauliRot operator."""
     with queuing.QueuingManager.stop_recording():

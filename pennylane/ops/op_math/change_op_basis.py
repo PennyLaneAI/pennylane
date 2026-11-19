@@ -26,7 +26,7 @@ from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core import queuing
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
     EigvalsUndefinedError,
@@ -394,8 +394,7 @@ def _adjoint_change_op_basis_standard_resources(base_params, **_):
     return resources
 
 
-@register_name("adjoint_target")
-@register_resources(_adjoint_change_op_basis_standard_resources)
+@register_resources(_adjoint_change_op_basis_standard_resources, name="adjoint_target")
 def _adjoint_change_op_basis_standard(*_, base, **__):
     apply(base.operands[2])
     adjoint(apply(base.operands[1]))
@@ -431,8 +430,7 @@ def _controlled_change_op_basis_standard_resources(
     return resources
 
 
-@register_name("control_target")
-@register_resources(_controlled_change_op_basis_standard_resources)
+@register_resources(_controlled_change_op_basis_standard_resources, name="control_target")
 def _controlled_change_op_basis_standard(
     *_,
     control_wires,
@@ -453,8 +451,7 @@ def _controlled_change_op_basis_standard(
     apply(base.operands[0])
 
 
-@register_name("expand_basis_change")
-@register_resources(_change_op_basis_standard_resources)
+@register_resources(_change_op_basis_standard_resources, name="expand_basis_change")
 def _change_op_basis_standard(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
     for op in operands[::-1]:
         apply(op)

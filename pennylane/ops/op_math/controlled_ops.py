@@ -32,7 +32,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.allocation import allocate
 from pennylane.core.operator import Operator, abstractify
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     _list_decomps,
@@ -299,8 +299,7 @@ def _to_general_c_qu_standard_resources(U, wires, control_values, work_wires, wo
 
 
 @qp.register_condition(lambda U, *_, **__: math.ceil_log2(qp.math.shape(U)[0]) > 2)
-@qp.register_name("to_controlled_qubit_unitary")
-@qp.register_resources(_to_general_c_qu_standard_resources)
+@qp.register_resources(_to_general_c_qu_standard_resources, name="to_controlled_qubit_unitary")
 def _to_general_c_qu_standard(U, wires, control_values, work_wires, work_wire_type, **_):
     """Convert a ControlledQubitUnitary to a general Controlled(QubitUnitary) so that
     the graph finds the general decomposition rule of applying control to the decomposition
@@ -329,8 +328,7 @@ def _conj_transpose(U):
     return U.conjugate().transpose() if sparse.issparse(U) else math.moveaxis(math.conj(U), -2, -1)
 
 
-@register_name("conjugate_transpose")
-@register_resources(lambda base: {abstractify(base): 1})
+@register_resources(lambda base: {abstractify(base): 1}, name="conjugate_transpose")
 def _adjoint_controlled_qubit_unitary_standard(base):
     ControlledQubitUnitary(
         _conj_transpose(base.U),
@@ -456,8 +454,7 @@ def _ch_to_ry_cz_ry_resources(wires: WiresLike = None):
     return {qp.RY: 2, qp.CZ: 1}
 
 
-@register_name("to_ry_cz_ry")
-@register_resources(_ch_to_ry_cz_ry_resources)
+@register_resources(_ch_to_ry_cz_ry_resources, name="to_ry_cz_ry")
 def _ch_to_ry_cz_ry(wires: WiresLike, **__):
     qp.RY(-np.pi / 4, wires=wires[1])
     qp.CZ(wires=wires)
@@ -592,8 +589,7 @@ def _cy_to_ry_cnot_resources(wires: AbstractWires):
     return {qp.CRY: 1, qp.S: 1}
 
 
-@register_name("to_ry_cnot")
-@register_resources(_cy_to_ry_cnot_resources)
+@register_resources(_cy_to_ry_cnot_resources, name="to_ry_cnot")
 def _cy_to_ry_cnot(wires: WiresLike, **__):
     qp.CRY(np.pi, wires=wires)
     qp.S(wires=wires[0])
@@ -619,8 +615,7 @@ def _pauli_ctrl_pauli_ppr(wires: AbstractWires, pauli0, pauli1):
     qp.GlobalPhase(np.pi / 4)
 
 
-@register_name("to_ppr")
-@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, pauli0=Z, pauli1=Y))
+@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, pauli0=Z, pauli1=Y), name="to_ppr")
 def _cy_to_ppr(wires: AbstractWires):
     _pauli_ctrl_pauli_ppr(wires, qp.Z, qp.Y)
 
@@ -637,7 +632,6 @@ def _pauli_ctrl_pauli_ppm(wires, pauli0, pauli1):
         qp.cond(m2, qp.Z)(work_wires[0])  # Reset work wire (to |+>), achieving pure state
 
 
-@qp.register_name("lattice_surgery_ppm")
 @qp.register_resources(
     {
         PauliMeasure("ZX", wires=Wire[2]): 1,
@@ -648,6 +642,7 @@ def _pauli_ctrl_pauli_ppm(wires, pauli0, pauli1):
         GlobalPhase: 1,
     },
     work_wires={"burnable": 1},
+    name="lattice_surgery_ppm",
 )
 def _cy_lattice_surgery_ppm(wires: AbstractWires):
     _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.Y)
@@ -780,8 +775,7 @@ def _cz_to_cps_resources(wires: AbstractWires):
     return {qp.ControlledPhaseShift: 1}
 
 
-@register_name("to_cps")
-@register_resources(_cz_to_cps_resources)
+@register_resources(_cz_to_cps_resources, name="to_cps")
 def _cz_to_cps(wires: WiresLike):
     qp.ControlledPhaseShift(np.pi, wires=wires)
 
@@ -790,16 +784,14 @@ def _cz_to_cnot_resources(wires: AbstractWires):
     return {qp.H: 2, qp.CNOT: 1}
 
 
-@register_name("to_cnot")
-@register_resources(_cz_to_cnot_resources)
+@register_resources(_cz_to_cnot_resources, name="to_cnot")
 def _cz_to_cnot(wires: WiresLike):
     qp.H(wires=wires[1])
     qp.CNOT(wires=wires)
     qp.H(wires=wires[1])
 
 
-@register_name("to_ppr")
-@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, pauli0=Z, pauli1=Z))
+@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, pauli0=Z, pauli1=Z), name="to_ppr")
 def _cz_to_ppr(wires: AbstractWires):
     _pauli_ctrl_pauli_ppr(wires, qp.Z, qp.Z)
 
@@ -814,8 +806,7 @@ def _cz_lattice_surgery_ppm_resources(wires: AbstractWires):
     }
 
 
-@qp.register_name("lattice_surgery_ppm")
-@qp.register_resources(_cz_lattice_surgery_ppm_resources, work_wires={"burnable": 1})
+@qp.register_resources(_cz_lattice_surgery_ppm_resources, work_wires={"burnable": 1}, name="lattice_surgery_ppm")
 def _cz_lattice_surgery_ppm(wires: WiresLike):
     _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.Z)
 
@@ -959,8 +950,7 @@ def _cswap_to_cnot_toffoli_resources(wires: WiresLike = None):
     return {qp.CNOT: 2, qp.Toffoli: 1}
 
 
-@register_name("to_cnot_toffoli")
-@register_resources(_cswap_to_cnot_toffoli_resources)
+@register_resources(_cswap_to_cnot_toffoli_resources, name="to_cnot_toffoli")
 def _cswap_to_cnot_toffoli(wires: WiresLike, **__):
     qp.CNOT([wires[2], wires[1]])
     qp.Toffoli(wires=[wires[0], wires[1], wires[2]])
@@ -980,8 +970,7 @@ def _cswap_to_ppr_resources(wires: WiresLike = None):
     }
 
 
-@register_name("to_ppr")
-@register_resources(_cswap_to_ppr_resources)
+@register_resources(_cswap_to_ppr_resources, name="to_ppr")
 def _cswap_to_ppr(wires: WiresLike, **_):
     qp.PPR_8(-1, "ZZZ", wires=wires)
     qp.PPR_8(-1, "ZYY", wires=wires)
@@ -1158,8 +1147,7 @@ def _ccz_to_clifford_t_resources(wires: AbstractWires):
     }
 
 
-@register_name("to_clifford_t")
-@register_resources(_ccz_to_clifford_t_resources)
+@register_resources(_ccz_to_clifford_t_resources, name="to_clifford_t")
 def _ccz_to_clifford_t(wires: WiresLike, **__):
     qp.CNOT(wires=[wires[1], wires[2]])
     qp.adjoint(qp.T(wires=wires[2]))
@@ -1182,8 +1170,7 @@ def _ccz_to_toffoli_resources(wires: AbstractWires):
     return {qp.Hadamard: 2, qp.Toffoli: 1}
 
 
-@register_name("to_toffoli")
-@register_resources(_ccz_to_toffoli_resources)
+@register_resources(_ccz_to_toffoli_resources, name="to_toffoli")
 def _ccz_to_toffoli(wires: WiresLike, **__):
     qp.Hadamard(wires[2])
     qp.Toffoli(wires)
@@ -1344,16 +1331,14 @@ def _cnot_to_cz_h_resources(wires: WiresLike):
     return {qp.H: 2, qp.CZ: 1}
 
 
-@register_name("to_cz_h")
-@register_resources(_cnot_to_cz_h_resources)
+@register_resources(_cnot_to_cz_h_resources, name="to_cz_h")
 def _cnot_to_cz_h(wires: WiresLike):
     qp.H(wires[1])
     qp.CZ(wires=wires)
     qp.H(wires[1])
 
 
-@register_name("to_ppr")
-@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, pauli0=Z, pauli1=X))
+@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, pauli0=Z, pauli1=X), name="to_ppr")
 def _cnot_to_ppr(wires: AbstractWires):
     _pauli_ctrl_pauli_ppr(wires, qp.Z, qp.X)
 
@@ -1368,8 +1353,7 @@ def _cnot_lattice_surgery_ppm_resources(wires: WiresLike):
     }
 
 
-@qp.register_name("lattice_surgery_ppm")
-@qp.register_resources(_cnot_lattice_surgery_ppm_resources, work_wires={"burnable": 1})
+@qp.register_resources(_cnot_lattice_surgery_ppm_resources, work_wires={"burnable": 1}, name="lattice_surgery_ppm")
 def _cnot_lattice_surgery_ppm(wires: WiresLike):
     _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.X)
 
@@ -1391,8 +1375,7 @@ def _ctrl_cnot_to_mcx_resources(base, control_wires, control_values, work_wires,
     }
 
 
-@qp.register_name("to_mcx")
-@qp.register_resources(_ctrl_cnot_to_mcx_resources)
+@qp.register_resources(_ctrl_cnot_to_mcx_resources, name="to_mcx")
 def _ctrl_cnot_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
     ctrl_values = _resolve_ctrl_values(control_values, [True], len(control_wires))
     qp.MultiControlledX(
@@ -1587,8 +1570,7 @@ def _toffoli_to_clifford_t_resources(wires: WiresLike):
     }
 
 
-@register_name("to_clifford_t")
-@register_resources(_toffoli_to_clifford_t_resources)
+@register_resources(_toffoli_to_clifford_t_resources, name="to_clifford_t")
 def _toffoli_to_clifford_t(wires: WiresLike):
     qp.Hadamard(wires=wires[2])
     CNOT(wires=[wires[1], wires[2]])
@@ -1618,8 +1600,7 @@ def _toffoli_to_ppr_resources(wires: WiresLike):
     }
 
 
-@register_name("to_ppr")
-@register_resources(_toffoli_to_ppr_resources)
+@register_resources(_toffoli_to_ppr_resources, name="to_ppr")
 def _toffoli_to_ppr(wires: WiresLike):
     qp.PPR_8(-1, "ZZ", wires=wires[:2])
     qp.PPR_8(-1, "ZX", wires=[wires[0], wires[2]])
@@ -1635,8 +1616,7 @@ def _toffoli_elbow_resources(*_, **__):
     return {_change_op_basis_abstract(qp.Elbow, qp.CNOT, qp.adjoint(qp.Elbow(Wire[3]))): 1}
 
 
-@register_name("elbow")
-@register_resources(_toffoli_elbow_resources, work_wires={"zeroed": 1})
+@register_resources(_toffoli_elbow_resources, work_wires={"zeroed": 1}, name="elbow")
 def _toffoli_elbow(wires: WiresLike):
     with allocate(1, qp.allocation.AllocateState.ZERO, restored=True) as work_wires:
         qp.change_op_basis(
@@ -1662,8 +1642,7 @@ def _ctrl_toffoli_to_mcx_resources(base, control_wires, control_values, work_wir
     }
 
 
-@qp.register_name("to_mcx")
-@qp.register_resources(_ctrl_toffoli_to_mcx_resources)
+@qp.register_resources(_ctrl_toffoli_to_mcx_resources, name="to_mcx")
 def _ctrl_toffoli_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
     ctrl_values = _resolve_ctrl_values(control_values, [True, True], len(control_wires))
     qp.MultiControlledX(
@@ -2134,8 +2113,7 @@ def _ctrl_mcx_to_mcx_resources(base, control_wires, control_values, work_wires, 
     }
 
 
-@qp.register_name("to_mcx")
-@qp.register_resources(_ctrl_mcx_to_mcx_resources)
+@qp.register_resources(_ctrl_mcx_to_mcx_resources, name="to_mcx")
 def _ctrl_mcx_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
     n_ctrl_wires = len(control_wires)
     work_wire_type = resolve_work_wire_type(
@@ -2305,8 +2283,7 @@ def _crx_to_rz_ry_resources(phi, wires):
     return {qp.RZ: 2, qp.RY: 2, qp.CNOT: 2}
 
 
-@register_name("to_rz_ry")
-@register_resources(_crx_to_rz_ry_resources)
+@register_resources(_crx_to_rz_ry_resources, name="to_rz_ry")
 def _crx_to_rz_ry(phi: TensorLike, wires: WiresLike):
     qp.RZ(np.pi / 2, wires=wires[1])
     qp.RY(phi / 2, wires=wires[1])
@@ -2320,8 +2297,7 @@ def _crx_to_rx_cz_resources(phi, wires):
     return {qp.RX: 2, qp.CZ: 2}
 
 
-@register_name("to_rx_cz")
-@register_resources(_crx_to_rx_cz_resources)
+@register_resources(_crx_to_rx_cz_resources, name="to_rx_cz")
 def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
     qp.RX(phi / 2, wires=wires[1])
     qp.CZ(wires=wires)
@@ -2333,8 +2309,7 @@ def _crx_to_h_crz_resources(phi, wires):
     return {qp.Hadamard: 2, qp.CRZ: 1}
 
 
-@register_name("to_h_crz")
-@register_resources(_crx_to_h_crz_resources)
+@register_resources(_crx_to_h_crz_resources, name="to_h_crz")
 def _crx_to_h_crz(phi: TensorLike, wires: WiresLike):
     qp.Hadamard(wires=wires[1])
     qp.CRZ(phi, wires=wires)
@@ -2348,8 +2323,7 @@ def _crx_to_ppr_resources(phi, wires):
     }
 
 
-@register_name("to_paulirot")
-@register_resources(_crx_to_ppr_resources)
+@register_resources(_crx_to_ppr_resources, name="to_paulirot")
 def _crx_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 2, "X", wires=wires[1])
     qp.PauliRot(-phi / 2, "ZX", wires=wires)
@@ -2497,8 +2471,7 @@ def _cry_to_ry_cnot_resources(phi, wires):
     return {qp.RY: 2, qp.CNOT: 2}
 
 
-@register_name("to_ry_cnot")
-@register_resources(_cry_to_ry_cnot_resources)
+@register_resources(_cry_to_ry_cnot_resources, name="to_ry_cnot")
 def _cry_to_ry_cnot(phi: TensorLike, wires: WiresLike):
     qp.RY(phi / 2, wires=wires[1])
     qp.CNOT(wires=wires)
@@ -2513,8 +2486,7 @@ def _cry_to_ppr_resources(phi, wires):
     }
 
 
-@register_name("to_paulirot")
-@register_resources(_cry_to_ppr_resources)
+@register_resources(_cry_to_ppr_resources, name="to_paulirot")
 def _cry_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 2, "Y", wires=wires[1])
     qp.PauliRot(-phi / 2, "ZY", wires=wires)
@@ -2694,8 +2666,7 @@ def _crz_to_rz_cnot_resources(phi, wires):
     return {qp.RZ: 2, qp.CNOT: 2}
 
 
-@register_name("to_rz_cnot")
-@register_resources(_crz_to_rz_cnot_resources)
+@register_resources(_crz_to_rz_cnot_resources, name="to_rz_cnot")
 def _crz_to_rz_cnot(phi: TensorLike, wires: WiresLike):
     qp.RZ(phi / 2, wires=wires[1])
     qp.CNOT(wires=wires)
@@ -2710,8 +2681,7 @@ def _crz_to_ppr_resources(phi, wires):
     }
 
 
-@register_name("to_paulirot")
-@register_resources(_crz_to_ppr_resources)
+@register_resources(_crz_to_ppr_resources, name="to_paulirot")
 def _crz_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 2, "Z", wires=wires[1])
     qp.PauliRot(-phi / 2, "ZZ", wires=wires)
@@ -2858,8 +2828,7 @@ def _crot_to_rot_cnot_resources(*_, **__):
     return {qp.RZ: 3, qp.CNOT: 2, qp.RY: 2}
 
 
-@register_name("to_rot_cnot")
-@register_resources(_crot_to_rot_cnot_resources)
+@register_resources(_crot_to_rot_cnot_resources, name="to_rot_cnot")
 def _crot_to_rot_cnot(phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike):
     qp.RZ((phi - omega) / 2, wires=wires[1])
     qp.CNOT(wires=wires)
@@ -2873,8 +2842,7 @@ def _crot_to_rot_cnot(phi: TensorLike, theta: TensorLike, omega: TensorLike, wir
 add_decomps(CRot, _crot_to_rot_cnot)
 
 
-@register_name("reverse_angles")
-@register_resources({CRot: 1})
+@register_resources({CRot: 1}, name="reverse_angles")
 def _adjoint_crot_standard(base):
     CRot(-base.omega, -base.theta, -base.phi, wires=base.wires)
 
@@ -3046,8 +3014,7 @@ def _cphase_to_rz_cnot_resources(phi, wires):
     return {qp.RZ: 3, qp.CNOT: 2, qp.GlobalPhase: 1}
 
 
-@register_name("to_rz_cnot")
-@register_resources(_cphase_to_rz_cnot_resources)
+@register_resources(_cphase_to_rz_cnot_resources, name="to_rz_cnot")
 def _cphase_to_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     qp.RZ(phi / 2, wires=wires[0])
     qp.CNOT(wires=wires)
@@ -3065,8 +3032,7 @@ def _cphase_to_ppr_resources(phi, wires):
     }
 
 
-@register_name("to_paulirot")
-@register_resources(_cphase_to_ppr_resources)
+@register_resources(_cphase_to_ppr_resources, name="to_paulirot")
 def _cphase_to_ppr(phi: TensorLike, wires: WiresLike, **__):
     qp.PauliRot(-phi / 2, pauli_word="ZZ", wires=wires)
     qp.PauliRot(phi / 2, pauli_word="Z", wires=wires[1])
@@ -3079,8 +3045,7 @@ def _cphase_to_single_phase_resources(phi, wires):
     return {_change_op_basis_abstract(elbow, qp.PhaseShift, qp.adjoint(elbow)): 1}
 
 
-@register_name("to_single_phase")
-@register_resources(_cphase_to_single_phase_resources, work_wires={"zeroed": 1})
+@register_resources(_cphase_to_single_phase_resources, work_wires={"zeroed": 1}, name="to_single_phase")
 def _cphase_to_single_phase(phi: TensorLike, wires: WiresLike, **__):
     with qp.allocate(1, state="zero", restored=True) as work_wire:
         elbow = qp.TemporaryAND([wires[0], wires[1], work_wire[0]])
