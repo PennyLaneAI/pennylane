@@ -68,15 +68,20 @@ BITSTRINGS = (
         [6, 7, 8, 9, 10, 11],  # Select-SWAP with a work wire for the CSWAPs
     ],
 )
-def test_assert_valid_qrom_load(work_wires):
+def test_assert_valid_qrom_load(work_wires, mocker):
     """Run standard validity tests."""
+    # Under capture, assert_valid cannot convert the classical processing of measurement outcomes
+    # into a tape. The rule is tested in TestAdjointQROMLoadMeasurement instead.
+    mocker.patch.object(_adjoint_qrom_load_measurement, "is_applicable", return_value=False)
     op = qp.QROMLoad(BITSTRINGS, [0, 1, 2], [3, 4, 5], work_wires)
     qp.testing.assert_valid(op, skip_differentiation=True)
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_falsy_zero_as_work_wire():
+def test_falsy_zero_as_work_wire(mocker):
     """Test that work wire is not treated as a falsy zero."""
+    # See test_assert_valid_qrom_load
+    mocker.patch.object(_adjoint_qrom_load_measurement, "is_applicable", return_value=False)
     op = qp.QROMLoad(
         ((1,), (0,), (0,), (1,)),
         control_wires=[1, 2],
@@ -612,22 +617,19 @@ class TestAdjointQROMLoadMeasurement:
         size = _adjoint_qrom_load_one_hot_size(num_bitstrings, num_control_wires, num_aux_wires)
         assert size == expected
 
-    def test_condition(self, mocker):
-        """Test that the rule requires an active compiler with program capture, at least one
-        control wire, but no work wires."""
-        op = qp.adjoint(qp.QROMLoad(Bool[4, 2], Wire[2], Wire[2], Wire[1]))
-        assert not _adjoint_qrom_load_measurement.is_applicable(base=op.base)
+    def test_condition(self):
+        """Test that the rule requires program capture and at least one control wire, but no
+        active compiler, which is not active yet when ``qjit`` selects decomposition rules, and
+        no work wires."""
+        op = qp.QROMLoad(Bool[4, 2], Wire[2], Wire[2], Wire[1])
+        assert not qp.compiler.active()
+        assert not _adjoint_qrom_load_measurement.is_applicable(base=op)
         with qp.capture.toggle_ctx(True):
-            assert not _adjoint_qrom_load_measurement.is_applicable(base=op.base)
-
-        mocker.patch("pennylane.templates.subroutines.qrom_load.compiler.active", return_value=True)
-        assert not _adjoint_qrom_load_measurement.is_applicable(base=op.base)
-        with qp.capture.toggle_ctx(True):
-            assert _adjoint_qrom_load_measurement.is_applicable(base=op.base)
-            op = qp.adjoint(qp.QROMLoad(Bool[1, 2], Wire[0], Wire[2], Wire[1]))
-            assert not _adjoint_qrom_load_measurement.is_applicable(base=op.base)
-            op = qp.adjoint(qp.QROMLoad(Bool[4, 2], Wire[2], Wire[2], Wire[0]))
-            assert _adjoint_qrom_load_measurement.is_applicable(base=op.base)
+            assert _adjoint_qrom_load_measurement.is_applicable(base=op)
+            op = qp.QROMLoad(Bool[1, 2], Wire[0], Wire[2], Wire[1])
+            assert not _adjoint_qrom_load_measurement.is_applicable(base=op)
+            op = qp.QROMLoad(Bool[4, 2], Wire[2], Wire[2], Wire[0])
+            assert _adjoint_qrom_load_measurement.is_applicable(base=op)
 
     @pytest.mark.parametrize("case", ADJOINT_QROM_LOAD_CASES)
     def test_resources(self, case):
@@ -651,9 +653,9 @@ class TestAdjointQROMLoadMeasurement:
         _assert_counts_match({k: v for k, v in expected.items() if v > 0}, actual)
 
     @pytest.mark.parametrize("case", [(16, 2, 0, 3), (64, 2, 0, 5)])
-    def test_chosen_by_graph(self, case, mocker):
-        """Test that the graph chooses the rule for ``Adjoint(QROMLoad)`` with an active compiler
-        and program capture, and that this reduces the T count."""
+    def test_chosen_by_graph(self, case):
+        """Test that the graph chooses the rule for ``Adjoint(QROMLoad)`` with program capture,
+        and that this reduces the T count."""
         op = qp.adjoint(_adjoint_qrom_load_setup(*case)[0])
         gate_set = {"T": 100, "Adjoint(T)": 100, "H": 1, "S": 1, "Adjoint(S)": 1, "CNOT": 1, "X": 1}
         gate_set |= {"Z": 1, "CZ": 1, "GlobalPhase": 1, "MidMeasure": 1, "PauliMeasure": 1}
@@ -665,7 +667,6 @@ class TestAdjointQROMLoadMeasurement:
             return solution, t_count
 
         _, inverse_t_count = solve()
-        mocker.patch("pennylane.templates.subroutines.qrom_load.compiler.active", return_value=True)
         with qp.capture.toggle_ctx(True):
             solution, t_count = solve()
         assert solution.decomposition(op) == _adjoint_qrom_load_measurement
@@ -728,27 +729,32 @@ class TestAdjointQROMLoadMeasurement:
     @pytest.mark.parametrize(
         "case", [(4, 2, 0, 1), (8, 2, 0, 2), (11, 2, 0, 3), (4, 2, 1, 2), (16, 2, 0, 3)]
     )
-    def test_qjit(self, case):
-        """Test that loading and uncomputing a QROMLoad under ``qjit`` leaves the target and work
-        wires in the zero state, and does not introduce relative phases on a uniform superposition
-        of addresses."""
+    def test_qjit(self, case, mocker):
+        """Test that the graph applies the rule under ``qjit`` with program capture, and that
+        loading and uncomputing a QROMLoad leaves the target and work wires in the zero state,
+        without introducing relative phases on a uniform superposition of addresses."""
         op, _ = _adjoint_qrom_load_setup(*case)
         control_wires = list(op.control_wires)
         shots = 20
+        spy = mocker.spy(_adjoint_qrom_load_measurement, "_impl")
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
+        @qp.decompose(
+            gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ | {"PauliMeasure"},
+            fixed_decomps={"Adjoint(QROMLoad)": _adjoint_qrom_load_measurement},
+        )
         @qp.set_shots(shots)
         @qp.qnode(qp.device("lightning.qubit", wires=len(op.wires)))
         def circuit():
             for wire in control_wires:
                 qp.H(wire)
             _qrom_measurement_decomposition(**op.dynamic_args, **op.wire_args)
-            _adjoint_qrom_load_measurement(base=op)
+            qp.adjoint(qp.QROMLoad(**op.dynamic_args, **op.wire_args))
             for wire in control_wires:
                 qp.H(wire)
             return qp.sample(wires=op.wires)
 
         samples = circuit()
+        assert spy.call_count == 1
         assert samples.shape == (shots, len(op.wires))
         assert np.allclose(samples, 0)

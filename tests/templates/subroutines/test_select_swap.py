@@ -58,8 +58,11 @@ BITSTRINGS = (
         [6, 7, 8, 9, 10, 11],  # Select-SWAP with a work wire for the CSWAPs
     ],
 )
-def test_assert_valid_select_swap(work_wires):
+def test_assert_valid_select_swap(work_wires, mocker):
     """Run standard validity tests."""
+    # Under capture, assert_valid cannot convert the classical processing of measurement outcomes
+    # into a tape. The rule is tested in TestAdjointSelectSwapMeasurement instead.
+    mocker.patch.object(_adjoint_select_swap_measurement, "is_applicable", return_value=False)
     op = qp.SelectSwap(BITSTRINGS, [0, 1, 2], [3, 4, 5], work_wires)
     qp.testing.assert_valid(op, skip_differentiation=True)
 
@@ -207,23 +210,16 @@ class TestAdjointSelectSwapMeasurement:
         """Test that the rule is registered for ``Adjoint(SelectSwap)``."""
         assert _adjoint_select_swap_measurement in qp.list_decomps("Adjoint(SelectSwap)")
 
-    def test_condition(self, mocker):
-        """Test that the rule requires an active compiler with program capture and at least one
-        control wire."""
-        op = qp.adjoint(qp.SelectSwap(Bool[4, 2], Wire[2], Wire[2], Wire[2]))
-        assert not _adjoint_select_swap_measurement.is_applicable(base=op.base)
+    def test_condition(self):
+        """Test that the rule requires program capture and at least one control wire, but no
+        active compiler, which is not active yet when ``qjit`` selects decomposition rules."""
+        op = qp.SelectSwap(Bool[4, 2], Wire[2], Wire[2], Wire[2])
+        assert not qp.compiler.active()
+        assert not _adjoint_select_swap_measurement.is_applicable(base=op)
         with qp.capture.toggle_ctx(True):
-            assert not _adjoint_select_swap_measurement.is_applicable(base=op.base)
-
-        mocker.patch("pennylane.templates.subroutines.qrom_load.compiler.active", return_value=True)
-        mocker.patch(
-            "pennylane.templates.subroutines.select_swap.compiler.active", return_value=True
-        )
-        assert not _adjoint_select_swap_measurement.is_applicable(base=op.base)
-        with qp.capture.toggle_ctx(True):
-            assert _adjoint_select_swap_measurement.is_applicable(base=op.base)
-            op = qp.adjoint(qp.SelectSwap(Bool[1, 2], Wire[0], Wire[2], Wire[1]))
-            assert not _adjoint_select_swap_measurement.is_applicable(base=op.base)
+            assert _adjoint_select_swap_measurement.is_applicable(base=op)
+            op = qp.SelectSwap(Bool[1, 2], Wire[0], Wire[2], Wire[1])
+            assert not _adjoint_select_swap_measurement.is_applicable(base=op)
 
     @pytest.mark.parametrize("case", ADJOINT_SELECT_SWAP_CASES)
     def test_resources(self, case):
@@ -255,7 +251,7 @@ class TestAdjointSelectSwapMeasurement:
             ((64, 1, 7, 0), False),
         ],
     )
-    def test_graph_choice(self, case, chooses_measurement, mocker):
+    def test_graph_choice(self, case, chooses_measurement):
         """Test that the graph chooses between this rule and the adjoint of the Select-SWAP
         decomposition, whose ``Adjoint(QROMLoad)`` also uncomputes with measurements, by their
         T counts."""
@@ -271,10 +267,6 @@ class TestAdjointSelectSwapMeasurement:
             t_count = sum(n for gate, n in counts.items() if str(gate) in {"T", "Adjoint(T)"})
             return solution, t_count
 
-        mocker.patch("pennylane.templates.subroutines.qrom_load.compiler.active", return_value=True)
-        mocker.patch(
-            "pennylane.templates.subroutines.select_swap.compiler.active", return_value=True
-        )
         if chooses_measurement:
             chosen_rule, other_rule = measurement_rule, inverse_rule
         else:
@@ -344,27 +336,32 @@ class TestAdjointSelectSwapMeasurement:
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize("case", [(8, 1, 3, 0), (11, 1, 4, 0), (6, 2, 3, 0), (4, 1, 3, 1)])
-    def test_qjit(self, case):
-        """Test that loading and uncomputing a SelectSwap under ``qjit`` leaves the target and
-        work wires in the zero state, and does not introduce relative phases on a uniform
-        superposition of addresses."""
+    def test_qjit(self, case, mocker):
+        """Test that the graph applies the rule under ``qjit`` with program capture, and that
+        loading and uncomputing a SelectSwap leaves the target and work wires in the zero state,
+        without introducing relative phases on a uniform superposition of addresses."""
         op, _ = _adjoint_select_swap_setup(*case)
         control_wires = list(op.control_wires)
         shots = 20
+        spy = mocker.spy(_adjoint_select_swap_measurement, "_impl")
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ)
+        @qp.decompose(
+            gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ | {"PauliMeasure"},
+            fixed_decomps={"Adjoint(SelectSwap)": _adjoint_select_swap_measurement},
+        )
         @qp.set_shots(shots)
         @qp.qnode(qp.device("lightning.qubit", wires=len(op.wires)))
         def circuit():
             for wire in control_wires:
                 qp.H(wire)
             _select_swap(**op.dynamic_args, **op.wire_args)
-            _adjoint_select_swap_measurement(base=op)
+            qp.adjoint(qp.SelectSwap(**op.dynamic_args, **op.wire_args))
             for wire in control_wires:
                 qp.H(wire)
             return qp.sample(wires=op.wires)
 
         samples = circuit()
+        assert spy.call_count == 1
         assert samples.shape == (shots, len(op.wires))
         assert np.allclose(samples, 0)

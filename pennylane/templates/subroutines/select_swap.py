@@ -17,7 +17,7 @@ This submodule contains the template SelectSwap.
 
 from collections.abc import Sequence
 
-from pennylane import capture, compiler, math
+from pennylane import capture, math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import SWAP, ctrl
@@ -142,7 +142,7 @@ class SelectSwap(Operator2):
                 :image: /_static/decomposition_thumbnails/select_swap_adjoint_measurement.svg
                 :lightbox:
                 :region: adjoint
-                :requires: compilation with :func:`~.qjit` and program capture,
+                :requires: program capture, as with :func:`qjit(capture=True) <.qjit>`,
                     and :math:`c \geq 1` control wires
                 :where: the :math:`nk` target and work wires holding the :math:`k` bitstrings
                     loaded in parallel, with :math:`k` as for ``_select_swap``, are measured and
@@ -269,13 +269,11 @@ def _adjoint_select_swap_measurement_resources(base):
         num_entries, len(base.control_wires), num_targets + len(base.work_wires)
     )
     for op, count in _measure_and_reset_resources(depth * num_targets).items():
-        resources[op] = resources.get(op, 0) + count
+        resources[op] += count
     return resources
 
 
-@register_condition(
-    lambda base: compiler.active() and capture.enabled() and len(base.control_wires) > 0
-)
+@register_condition(lambda base: capture.enabled() and len(base.control_wires) > 0)
 @register_resources(_adjoint_select_swap_measurement_resources, exact=False)
 def _adjoint_select_swap_measurement(base):
     r"""Uncomputation of SelectSwap with measurements and a phase fixup, following Appendix C of

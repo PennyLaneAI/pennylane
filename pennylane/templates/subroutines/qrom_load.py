@@ -15,6 +15,7 @@
 This submodule contains the template QROMLoad.
 """
 
+from collections import defaultdict
 from collections.abc import Sequence
 from functools import partial
 
@@ -231,7 +232,7 @@ class QROMLoad(Operator2):
                 :image: /_static/decomposition_thumbnails/qrom_load_adjoint_measurement.svg
                 :lightbox:
                 :region: adjoint
-                :requires: compilation with :func:`~.qjit` and program capture,
+                :requires: program capture, as with :func:`qjit(capture=True) <.qjit>`,
                     and :math:`c \geq 1` control wires
                 :where: the :math:`j` least-significant control wires are encoded into a one-hot
                     register of :math:`k = 2^j` auxiliary wires, taken from the target wires
@@ -542,10 +543,10 @@ def _adjoint_qrom_load_one_hot_size(num_bitstrings, num_control_wires, num_aux_w
     The fixup ``QROM`` uses unary iteration over the remaining ``num_control_wires - n`` address
     bits with the remaining ``num_aux_wires - k`` auxiliary wires as work wires. Each work wire it
     lacks for a full iteration tree adds a control to every load, which costs far more than a
-    larger one-hot register saves. Therefore, ``n`` first minimizes this shortfall and then the
-    T-count, estimated as 4 per ``TemporaryAND`` and 7 per Toffoli in the loads. Without shortfall,
-    this approximately minimizes the Toffoli cost ``ceil(L / k) + k`` from Appendix C of
-    `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__.
+    larger one-hot register saves. Therefore, ``n`` first minimizes this shortfall for unary iteration
+    and then the T-count, estimated as 4 per ``TemporaryAND`` and 7 per Toffoli in the loads.
+    Without shortfall, this approximately minimizes the Toffoli cost ``ceil(L / k) + k`` from
+    Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__.
     """
 
     def cost(n):
@@ -593,7 +594,8 @@ def _measure_and_reset_resources(num_wires):
 
 def _measure_and_reset(wires):
     r"""Measure each wire in the :math:`X` basis and reset it to :math:`|0\rangle`, returning the
-    outcomes of the :math:`X`-basis measurements."""
+    outcomes of the :math:`X`-basis measurements. It has its independent resource function
+    above to allow for reuse in ``SelectSwap``."""
     outcomes = []
     for wire in wires:
         outcome = pauli_measure("X", wire)
@@ -616,19 +618,23 @@ def _phase_fixup_resources(num_entries, num_control_wires, num_aux_wires):
         Wire[k],
         Wire[num_aux_wires - k],
     )
-    return {
-        X: 2,
-        TemporaryAND: k - 1,
-        CNOT: 2 * (k - 1),
-        H: 2 * k,
-        fixup_qrom: 1,
-        qp_ops.adjoint(TemporaryAND(Wire[3])): k - 1,
-    }
+    return defaultdict(
+        int,
+        {
+            X: 2,
+            TemporaryAND: k - 1,
+            CNOT: 2 * (k - 1),
+            H: 2 * k,
+            fixup_qrom: 1,
+            qp_ops.adjoint(TemporaryAND(Wire[3])): k - 1,
+        },
+    )
 
 
 def _phase_fixup(fixups, control_wires, aux_wires):
     r"""Apply the phase :math:`(-1)^{f_i}` to each address :math:`i` of the control register,
     for the bits :math:`f_i` in ``fixups``, and none to addresses beyond.
+     It has its independent resource function above to allow for reuse in ``SelectSwap``.
 
     A :class:`~.QROM` of the fixup table over the most-significant address bits targets a one-hot
     encoding of the :math:`n` least-significant address bits in :math:`k=2^n` auxiliary wires
@@ -679,13 +685,11 @@ def _adjoint_qrom_load_measurement_resources(base):
         len(base.bitstrings), len(base.control_wires), num_targets + len(base.work_wires)
     )
     for op, count in _measure_and_reset_resources(num_targets).items():
-        resources[op] = resources.get(op, 0) + count
+        resources[op] += count
     return resources
 
 
-@register_condition(
-    lambda base: compiler.active() and capture.enabled() and len(base.control_wires) > 0
-)
+@register_condition(lambda base: capture.enabled() and len(base.control_wires) > 0)
 @register_resources(_adjoint_qrom_load_measurement_resources, exact=False)
 def _adjoint_qrom_load_measurement(base):
     r"""Uncomputation of QROMLoad with measurements and a phase fixup, following Appendix C of
