@@ -81,4 +81,4 @@ Unsupported subroutines
 
 Some subroutines from PennyLane Classic (v0.45.1 and lower) are not supported in
 PennyLane2. For an up-to-date list of unsupported operators, please consult
-:doc:`Coming from PennyLane Classic <coming_from_classic/some_section_title>`.
+:doc:`Coming from PennyLane Classic <coming_from_classic:unsupported_classic_subroutines>`.
