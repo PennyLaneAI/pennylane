@@ -1552,6 +1552,7 @@ Breaking changes 💔
   ``"to_cnot"`` for ``SWAP``, available through
   ``qp.list_decomps(qp.SWAP)["to_cnot"]`` and ``fixed_decomps={qp.SWAP: "to_cnot"}``.
   `(#10492) <https://github.com/PennyLaneAI/pennylane/pull/10492>`__
+  `(#10566) <https://github.com/PennyLaneAI/pennylane/pull/10566>`__
 
 * :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly: use
   ``get_compile_pipeline(qnode, level)`` instead of

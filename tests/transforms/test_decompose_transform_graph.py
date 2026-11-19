@@ -94,9 +94,6 @@ def test_decompose_rejects_alt_decomps(transform):
 @pytest.mark.capture
 @pytest.mark.parametrize("use_name", [False, True])
 @pytest.mark.parametrize("graph_enabled", [False, True])
-@pytest.mark.xfail(
-    reason="Waiting for a Catalyst build with updated precompiled decomposition rule names.",
-)
 def test_compiled_decompose_exclusions(use_name, graph_enabled):
     """Compiled exclusions are local to a pass and independent of the legacy graph toggle."""
     pytest.importorskip("catalyst")
