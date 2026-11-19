@@ -502,7 +502,9 @@ def _controlled_qubit_unitary_standard_resources(
     }
 
 
-@register_resources(_controlled_qubit_unitary_standard_resources, name="to_controlled_qubit_unitary")
+@register_resources(
+    _controlled_qubit_unitary_standard_resources, name="to_controlled_qubit_unitary"
+)
 def _controlled_qubit_unitary_standard(
     base, control_wires, control_values, work_wires, work_wire_type
 ):
@@ -714,7 +716,9 @@ def _diagonal_qubit_unitary_auxiliary_resources(D, wires):  # pylint: disable=un
     }
 
 
-@register_resources(_diagonal_qubit_unitary_auxiliary_resources, work_wires={"zeroed": 1}, name="auxiliary")
+@register_resources(
+    _diagonal_qubit_unitary_auxiliary_resources, work_wires={"zeroed": 1}, name="auxiliary"
+)
 def _diagonal_qubit_unitary_auxiliary(D, wires, **_):
     angles = -2 * math.angle(D)
     with qp.allocate(1, "zero", restored=True) as aux_wire:

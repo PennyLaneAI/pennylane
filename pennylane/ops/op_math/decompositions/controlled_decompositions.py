@@ -287,7 +287,9 @@ def _controlled_unitary_single_control_zyz_resources(U, wires, **_):
 
 # Resources are not exact because rotations might be skipped for zero angles
 @register_condition(_single_ctrl_decomp_zyz_condition)
-@register_resources(_controlled_unitary_single_control_zyz_resources, exact=False, name="single_control_zyz")
+@register_resources(
+    _controlled_unitary_single_control_zyz_resources, exact=False, name="single_control_zyz"
+)
 # pylint: disable-next=unused-argument
 def _controlled_unitary_single_control_zyz(U, wires, control_values, work_wires, **_):
     """The decomposition rule for ControlledQubitUnitary from Lemma 5.1 of
@@ -335,7 +337,9 @@ def _controlled_unitary_multi_control_zyz_resources(
 
 @register_condition(_multi_ctrl_decomp_zyz_condition)
 # Resources are not exact because rotations might be skipped for zero angle(s)
-@register_resources(_controlled_unitary_multi_control_zyz_resources, exact=False, name="multi_control_zyz")
+@register_resources(
+    _controlled_unitary_multi_control_zyz_resources, exact=False, name="multi_control_zyz"
+)
 def _controlled_unitary_multi_control_zyz(
     U, wires, control_values, work_wires, work_wire_type, **_
 ):

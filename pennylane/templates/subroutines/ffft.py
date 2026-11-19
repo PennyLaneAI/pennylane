@@ -182,7 +182,9 @@ def _fast_fermionic_fourier_transform_standard_resources(num_wires):
     return resources
 
 
-@register_resources(_fast_fermionic_fourier_transform_standard_resources, name="recursive_butterfly")
+@register_resources(
+    _fast_fermionic_fourier_transform_standard_resources, name="recursive_butterfly"
+)
 def _fast_fermionic_fourier_transform_standard(*_, wires: WiresLike, **__):
     if capture.enabled():
         wires = math.array(wires, like="jax")

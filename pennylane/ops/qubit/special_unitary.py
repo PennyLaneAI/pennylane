@@ -794,7 +794,9 @@ def _tmp_paulirot_standard(theta: TensorLike, wires: WiresLike, pauli_word: str)
 add_decomps(TmpPauliRot, _tmp_paulirot_standard)
 
 
-@register_resources(lambda base: _tmp_paulirot_standard_resources(**base.arguments), name="negate_angle")
+@register_resources(
+    lambda base: _tmp_paulirot_standard_resources(**base.arguments), name="negate_angle"
+)
 def _adjoint_tmp_paulirot_standard(base):
     PauliRot(-base.theta, pauli_word=base.pauli_word, wires=base.wires)
 

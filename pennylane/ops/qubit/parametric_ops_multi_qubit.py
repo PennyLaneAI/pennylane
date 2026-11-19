@@ -2062,7 +2062,9 @@ def _pswap_to_swap_cnot_phaseshift_cnot_resources():
     return {qp.SWAP: 1, qp.CNOT: 2, PhaseShift: 1}
 
 
-@register_resources(_pswap_to_swap_cnot_phaseshift_cnot_resources, name="to_swap_cnot_phaseshift_cnot")
+@register_resources(
+    _pswap_to_swap_cnot_phaseshift_cnot_resources, name="to_swap_cnot_phaseshift_cnot"
+)
 def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__):
     qp.SWAP(wires=wires)
     qp.CNOT(wires=wires)

@@ -344,7 +344,9 @@ def _pow_repeat_base(base, z):
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-@register_resources(lambda base, z: {qp.pow(abstractify(base.base), z * base.z): 1}, name="merge_powers")
+@register_resources(
+    lambda base, z: {qp.pow(abstractify(base.base), z * base.z): 1}, name="merge_powers"
+)
 def _pow_merge_powers(base, z):
     """Decompose nested powers by combining them."""
     qp.pow(base.base, z * base.z)

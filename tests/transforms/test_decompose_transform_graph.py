@@ -198,7 +198,9 @@ class CustomOpDynamicWireDecomp(Operation):
         return {}
 
 
-@qp.register_resources({qp.Toffoli: 2, qp.CRot: 1}, work_wires={"burnable": 2}, name="decomp_with_work_wire")
+@qp.register_resources(
+    {qp.Toffoli: 2, qp.CRot: 1}, work_wires={"burnable": 2}, name="decomp_with_work_wire"
+)
 def _decomp_with_work_wire(wires, **__):
     with qp.allocation.allocate(2, state="zero", restored=False) as work_wires:
         qp.Toffoli(wires=[wires[0], wires[1], work_wires[0]])
@@ -240,7 +242,9 @@ def _decomp2_with_work_wire(wires, **__):
         CustomOpDynamicWireDecomp(wires=[wires[1], wires[2], wires[3]])
 
 
-@qp.register_resources({qp.Toffoli: 4, CustomOpDynamicWireDecomp: 2}, name="decomp2_without_work_wire")
+@qp.register_resources(
+    {qp.Toffoli: 4, CustomOpDynamicWireDecomp: 2}, name="decomp2_without_work_wire"
+)
 def _decomp2_without_work_wire(wires, **__):
     qp.Toffoli(wires=[wires[0], wires[1], wires[2]])
     CustomOpDynamicWireDecomp(wires=[wires[1], wires[2], wires[3]])
@@ -751,7 +755,9 @@ class TestDecomposeGraphEnabled:
     def test_minimize_work_wires(self):
         """Tests that the number of allocations can be minimized."""
 
-        @qp.register_resources({qp.CNOT: 2, LargeOpDynamicWireDecomp: 2}, work_wires={"zeroed": 1}, name="some_decomp")
+        @qp.register_resources(
+            {qp.CNOT: 2, LargeOpDynamicWireDecomp: 2}, work_wires={"zeroed": 1}, name="some_decomp"
+        )
         def _some_decomp(wires):
             with qp.allocation.allocate(1, state="zero", restored=True) as work_wires:
                 qp.CNOT([wires[0], work_wires[0]])
@@ -804,7 +810,9 @@ class TestDecomposeGraphEnabled:
     def test_operator2_integration(self):
         """Tests that circuits containing Operator2 instances can be decomposed."""
 
-        @qp.register_resources({qp.H: 2, qp.CNOT: 1, DynOp(Float, Wire[2]): 2}, name="custom_decomp")
+        @qp.register_resources(
+            {qp.H: 2, qp.CNOT: 1, DynOp(Float, Wire[2]): 2}, name="custom_decomp"
+        )
         def _custom_decomp(theta, wires):
             qp.H(wires[0])
             qp.H(wires[1])

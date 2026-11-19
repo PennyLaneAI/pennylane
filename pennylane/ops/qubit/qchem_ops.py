@@ -1235,7 +1235,9 @@ def _orbital_rotation_standard_resources(phi: TensorLike, wires: WiresLike):
     return {qp.FermionicSWAP: 2, qp.SingleExcitation: 2}
 
 
-@register_resources(_orbital_rotation_standard_resources, name="to_fermionic_swap_single_excitation")
+@register_resources(
+    _orbital_rotation_standard_resources, name="to_fermionic_swap_single_excitation"
+)
 def _orbital_rotation_standard(phi: TensorLike, wires: WiresLike):
     qp.FermionicSWAP(np.pi, wires=[wires[1], wires[2]])
     qp.SingleExcitation(phi, wires=[wires[0], wires[1]])

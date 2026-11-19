@@ -102,7 +102,10 @@ def is_integer(x):
 
 
 @register_condition(lambda z, **__: is_integer(z) and z >= 0)
-@register_resources(lambda base_class, base_params, z: {resource_rep(base_class, **base_params): z}, name="repeat_base")
+@register_resources(
+    lambda base_class, base_params, z: {resource_rep(base_class, **base_params): z},
+    name="repeat_base",
+)
 def _pow_repeat_base(*params, wires, base, z, **__):  # pylint: disable=unused-argument
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
@@ -372,7 +375,9 @@ def _controlled_single_work_wire_resources(base_class, base_params, num_control_
 
 
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
-@register_resources(_controlled_single_work_wire_resources, work_wires={"zeroed": 1}, name="single_work_wire")
+@register_resources(
+    _controlled_single_work_wire_resources, work_wires={"zeroed": 1}, name="single_work_wire"
+)
 # pylint: disable-next=unused-argument
 def _controlled_single_work_wire(*params, wires, control_wires, base, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""

@@ -806,7 +806,9 @@ def _cz_lattice_surgery_ppm_resources(wires: AbstractWires):
     }
 
 
-@qp.register_resources(_cz_lattice_surgery_ppm_resources, work_wires={"burnable": 1}, name="lattice_surgery_ppm")
+@qp.register_resources(
+    _cz_lattice_surgery_ppm_resources, work_wires={"burnable": 1}, name="lattice_surgery_ppm"
+)
 def _cz_lattice_surgery_ppm(wires: WiresLike):
     _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.Z)
 
@@ -1353,7 +1355,9 @@ def _cnot_lattice_surgery_ppm_resources(wires: WiresLike):
     }
 
 
-@qp.register_resources(_cnot_lattice_surgery_ppm_resources, work_wires={"burnable": 1}, name="lattice_surgery_ppm")
+@qp.register_resources(
+    _cnot_lattice_surgery_ppm_resources, work_wires={"burnable": 1}, name="lattice_surgery_ppm"
+)
 def _cnot_lattice_surgery_ppm(wires: WiresLike):
     _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.X)
 
@@ -3045,7 +3049,9 @@ def _cphase_to_single_phase_resources(phi, wires):
     return {_change_op_basis_abstract(elbow, qp.PhaseShift, qp.adjoint(elbow)): 1}
 
 
-@register_resources(_cphase_to_single_phase_resources, work_wires={"zeroed": 1}, name="to_single_phase")
+@register_resources(
+    _cphase_to_single_phase_resources, work_wires={"zeroed": 1}, name="to_single_phase"
+)
 def _cphase_to_single_phase(phi: TensorLike, wires: WiresLike, **__):
     with qp.allocate(1, state="zero", restored=True) as work_wire:
         elbow = qp.TemporaryAND([wires[0], wires[1], work_wire[0]])

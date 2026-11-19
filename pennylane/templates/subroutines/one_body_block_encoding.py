@@ -382,7 +382,9 @@ def _one_body_block_encoding_standard_resources(
     return resources
 
 
-@register_resources(_one_body_block_encoding_standard_resources, name="alias_sampling_basis_rotation")
+@register_resources(
+    _one_body_block_encoding_standard_resources, name="alias_sampling_basis_rotation"
+)
 def _one_body_block_encoding_standard(
     op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires, **_
 ):

@@ -691,7 +691,9 @@ class TestGraphModeExclusiveFeatures:  # pylint: disable=too-few-public-methods
             qp.Hadamard(wires)
 
         # Work wire decomposition (needs more wires than available)
-        @qp.register_resources({qp.PauliX: 1}, work_wires={"burnable": 3}, name="decomp_with_work_wire")
+        @qp.register_resources(
+            {qp.PauliX: 1}, work_wires={"burnable": 3}, name="decomp_with_work_wire"
+        )
         def decomp_with_work_wire(wires):
             qp.PauliX(wires)
 

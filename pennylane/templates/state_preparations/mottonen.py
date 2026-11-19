@@ -449,10 +449,10 @@ def _mottonen_resources(num_wires):
 
 
 mottonen_decomp = qp.register_resources(
-        _mottonen_resources,
-        MottonenStatePreparation.compute_decomposition,
-        exact=False,
-        name="standard",
-    )
+    _mottonen_resources,
+    MottonenStatePreparation.compute_decomposition,
+    exact=False,
+    name="standard",
+)
 
 qp.add_decomps(MottonenStatePreparation, mottonen_decomp)

@@ -343,7 +343,9 @@ def _semi_adder_standard_work_wires(x_wires, y_wires, work_wires):
     return {"zeroed": max(num_work_wires_needed - num_work_wires_provided, 0)}
 
 
-@register_resources(_semi_adder_standard_resources, work_wires=_semi_adder_standard_work_wires, name="carry_ladder")
+@register_resources(
+    _semi_adder_standard_resources, work_wires=_semi_adder_standard_work_wires, name="carry_ladder"
+)
 def _semi_adder_standard(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_pos=None):
     num_y_wires = len(y_wires)
     num_x_wires = len(x_wires)

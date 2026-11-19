@@ -864,7 +864,9 @@ def _controlled_single_work_wire_resources(base, control_wires, *_, **__):
 
 
 @register_condition(lambda base, control_wires, *_, **__: len(control_wires) > 2)
-@register_resources(_controlled_single_work_wire_resources, work_wires={"zeroed": 1}, name="single_work_wire")
+@register_resources(
+    _controlled_single_work_wire_resources, work_wires={"zeroed": 1}, name="single_work_wire"
+)
 def _controlled_single_work_wire(base, control_wires, *_, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     with allocation.allocate(1, state="zero", restored=True) as aux:

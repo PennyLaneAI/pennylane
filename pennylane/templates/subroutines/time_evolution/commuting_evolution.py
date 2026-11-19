@@ -230,7 +230,10 @@ def _commuting_evolution_standard(  # pylint: disable=unused-argument
 add_decomps(CommutingEvolution, _commuting_evolution_standard)
 
 
-@register_resources(lambda base_params, **_: {resource_rep(CommutingEvolution, **base_params): 1}, name="negate_time")
+@register_resources(
+    lambda base_params, **_: {resource_rep(CommutingEvolution, **base_params): 1},
+    name="negate_time",
+)
 def _adjoint_commuting_evolution_standard(time, *params, base, **__):
     hamiltonian = ops.functions.bind_new_parameters(base.hyperparameters["hamiltonian"], params)
     CommutingEvolution(

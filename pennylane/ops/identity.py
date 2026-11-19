@@ -415,7 +415,9 @@ def _controlled_g_phase_standard_resources(
     return resources
 
 
-@register_resources(_controlled_g_phase_standard_resources, exact=False, name="to_controlled_phaseshift")
+@register_resources(
+    _controlled_g_phase_standard_resources, exact=False, name="to_controlled_phaseshift"
+)
 def _controlled_g_phase_standard(
     base,
     control_wires,

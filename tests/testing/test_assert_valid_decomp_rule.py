@@ -228,7 +228,9 @@ class TestAssertValidDecompositionRule:
         def mcm_rule(wires):
             qp.ops.measure(wires[0])
 
-        rule = qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1}, name="mcm_rule")(mcm_rule)
+        rule = qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1}, name="mcm_rule")(
+            mcm_rule
+        )
 
         spy = mocker.spy(qp.ops.functions, "matrix")
         assert_valid_decomp_rule(op, rule)

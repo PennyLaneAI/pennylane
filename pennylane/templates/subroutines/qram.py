@@ -985,7 +985,9 @@ def _flip_controls(control_wires, control_vals):
             PauliX(control_wires[i])
 
 
-@register_resources(_select_only_qram_standard_resources, exact=False, name="controlled_data_loading")
+@register_resources(
+    _select_only_qram_standard_resources, exact=False, name="controlled_data_loading"
+)
 def _select_only_qram_standard(
     bitstrings, select_value, select_wires, control_wires, target_wires, **_
 ):

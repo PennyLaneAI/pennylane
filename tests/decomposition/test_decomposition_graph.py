@@ -454,7 +454,9 @@ class TestDecompGraphConstruction:
         def _base_to_ctrl(*_, **__):
             raise NotImplementedError
 
-        @qp.register_resources({_adjoint_abstract(_ctrl_abstract(base, Wire[1])): 1}, name="another_to_adjoint_ctrl")
+        @qp.register_resources(
+            {_adjoint_abstract(_ctrl_abstract(base, Wire[1])): 1}, name="another_to_adjoint_ctrl"
+        )
         def _another_to_adjoint_ctrl(*_, **__):
             raise NotImplementedError
 
@@ -510,11 +512,15 @@ class TestDecompGraphConstruction:
         def _custom_to_x(*_, **__):
             raise NotImplementedError
 
-        @qp.register_resources({_ctrl_abstract(AnotherOp, Wire[1]): 1}, name="custom_to_ctrl_another")
+        @qp.register_resources(
+            {_ctrl_abstract(AnotherOp, Wire[1]): 1}, name="custom_to_ctrl_another"
+        )
         def _custom_to_ctrl_another(*_, **__):
             raise NotImplementedError
 
-        @qp.register_resources({_ctrl_abstract(CustomOp, Wire[1]): 1}, name="ctrl_another_to_ctrl_custom")
+        @qp.register_resources(
+            {_ctrl_abstract(CustomOp, Wire[1]): 1}, name="ctrl_another_to_ctrl_custom"
+        )
         def _ctrl_another_to_ctrl_custom(*_, **__):
             raise NotImplementedError
 
@@ -709,7 +715,9 @@ class TestDecompGraphSolver:
         def _another_custom_rule(*args, **kwargs):
             raise NotImplementedError
 
-        @qp.register_resources(lambda num_wires: {DynOp(Float, Wire[1]): num_wires}, name="second_rule")
+        @qp.register_resources(
+            lambda num_wires: {DynOp(Float, Wire[1]): num_wires}, name="second_rule"
+        )
         def _second_rule(*args, **kwargs):
             raise NotImplementedError
 
@@ -911,7 +919,9 @@ class TestDecompGraphWorkWireBudgeting:
     def test_work_wire_requirement(self):
         """Tests that the graph respects the work wire requirement."""
 
-        @qp.register_resources({qp.Toffoli: 2, qp.CRot: 1}, work_wires={"zeroed": 1}, name="decomp_with_work_wire")
+        @qp.register_resources(
+            {qp.Toffoli: 2, qp.CRot: 1}, work_wires={"zeroed": 1}, name="decomp_with_work_wire"
+        )
         def _decomp_with_work_wire(*_, **__):
             raise NotImplementedError
 
@@ -938,7 +948,9 @@ class TestDecompGraphWorkWireBudgeting:
         """Tests that the same operator produced under different work wire budgets
         are stored as different nodes in the graph, and results can be queried."""
 
-        @qp.register_resources({qp.Toffoli: 2, qp.CRot: 1}, work_wires={"zeroed": 2}, name="decomp_with_work_wire")
+        @qp.register_resources(
+            {qp.Toffoli: 2, qp.CRot: 1}, work_wires={"zeroed": 2}, name="decomp_with_work_wire"
+        )
         def _decomp_with_work_wire(*_, **__):
             raise NotImplementedError
 
@@ -946,7 +958,9 @@ class TestDecompGraphWorkWireBudgeting:
         def _decomp_without_work_wire(*_, **__):
             raise NotImplementedError
 
-        @qp.register_resources({qp.Toffoli: 2, CustomOp: 2}, work_wires={"zeroed": 1}, name="decomp2_with_work_wire")
+        @qp.register_resources(
+            {qp.Toffoli: 2, CustomOp: 2}, work_wires={"zeroed": 1}, name="decomp2_with_work_wire"
+        )
         def _decomp2_with_work_wire(*_, **__):
             raise NotImplementedError
 
@@ -1199,15 +1213,21 @@ class TestDecompGraphWorkWireBudgeting:
         def _simple_decomp(_):
             raise NotImplementedError
 
-        @qp.register_resources({SimpleOp: 1, qp.CNOT: 4}, work_wires={"zeroed": 2}, name="custom_decomp")
+        @qp.register_resources(
+            {SimpleOp: 1, qp.CNOT: 4}, work_wires={"zeroed": 2}, name="custom_decomp"
+        )
         def _custom_decomp(_):
             raise NotImplementedError
 
-        @qp.register_resources({CustomOp: 1, qp.CNOT: 4}, work_wires={"zeroed": 2}, name="another_decomp")
+        @qp.register_resources(
+            {CustomOp: 1, qp.CNOT: 4}, work_wires={"zeroed": 2}, name="another_decomp"
+        )
         def _another_decomp(_):
             raise NotImplementedError
 
-        @qp.register_resources({SimpleOp: 3, qp.CNOT: 4}, work_wires={"zeroed": 3}, name="yet_another_decomp")
+        @qp.register_resources(
+            {SimpleOp: 3, qp.CNOT: 4}, work_wires={"zeroed": 3}, name="yet_another_decomp"
+        )
         def _yet_another_decomp(_):
             raise NotImplementedError
 
@@ -1240,17 +1260,23 @@ class TestDecompGraphWorkWireBudgeting:
         def _simple_decomp(_):
             raise NotImplementedError
 
-        @qp.register_resources({SimpleOp: 1, qp.CNOT: 4}, work_wires={"zeroed": 1}, name="custom_decomp")
+        @qp.register_resources(
+            {SimpleOp: 1, qp.CNOT: 4}, work_wires={"zeroed": 1}, name="custom_decomp"
+        )
         def _custom_decomp(_):
             raise NotImplementedError
 
         # This decomposition rule isn't actually reacheable for the target gate set because it requires `qp.H`, therefore, the minimum number of
         # work wires required to decompose `AnotherOp` should be 4, not 3
-        @qp.register_resources({CustomOp: 1, qp.H: 4}, work_wires={"zeroed": 2}, name="another_decomp")
+        @qp.register_resources(
+            {CustomOp: 1, qp.H: 4}, work_wires={"zeroed": 2}, name="another_decomp"
+        )
         def _another_decomp(_):
             raise NotImplementedError
 
-        @qp.register_resources({SimpleOp: 3, qp.CNOT: 4}, work_wires={"zeroed": 4}, name="yet_another_decomp")
+        @qp.register_resources(
+            {SimpleOp: 3, qp.CNOT: 4}, work_wires={"zeroed": 4}, name="yet_another_decomp"
+        )
         def _yet_another_decomp(_):
             raise NotImplementedError
 
@@ -1319,7 +1345,9 @@ class TestControlledDecompositions:
             def resource_params(self):
                 return {}
 
-        @qp.register_resources({qp.Z: 1, _ctrl_abstract(CustomOp, Wire[1]): 1}, name="custom_controlled_decomp")
+        @qp.register_resources(
+            {qp.Z: 1, _ctrl_abstract(CustomOp, Wire[1]): 1}, name="custom_controlled_decomp"
+        )
         def custom_controlled_decomp(wires):
             qp.Z(wires=wires[0])
             qp.ctrl(CustomOp(wires=wires[1]), control=wires[0])

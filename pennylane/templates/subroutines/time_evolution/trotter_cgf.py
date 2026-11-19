@@ -544,7 +544,9 @@ def _trotter_cgf_standard_resources(
     return _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control=False)
 
 
-@register_resources(_trotter_cgf_standard_resources, exact=False, name="compressed_factorized_steps")
+@register_resources(
+    _trotter_cgf_standard_resources, exact=False, name="compressed_factorized_steps"
+)
 # pylint: disable-next=unused-argument
 def _trotter_cgf_standard(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
     # ``double_phase`` only affects the controlled decomposition; the base operator is
@@ -581,7 +583,11 @@ def _controlled_trotter_cgf_standard_resources(  # pylint: disable=unused-argume
 
 
 @register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
-@register_resources(_controlled_trotter_cgf_standard_resources, exact=False, name="controlled_compressed_factorized_steps")
+@register_resources(
+    _controlled_trotter_cgf_standard_resources,
+    exact=False,
+    name="controlled_compressed_factorized_steps",
+)
 def _controlled_trotter_cgf_standard(
     base,
     control_wires,

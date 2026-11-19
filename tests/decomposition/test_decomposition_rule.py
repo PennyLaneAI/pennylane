@@ -220,7 +220,12 @@ class TestDecompositionRule:  # pylint: disable=too-many-public-methods
                 qp.CNOT: 2 * (num_wires - 1),
             }
 
-        multi_rz_decomposition = register_resources(_multi_rz_resources, multi_rz_decomposition, exact=exact_resources, name="multi_rz_decomposition")
+        multi_rz_decomposition = register_resources(
+            _multi_rz_resources,
+            multi_rz_decomposition,
+            exact=exact_resources,
+            name="multi_rz_decomposition",
+        )
 
         assert isinstance(multi_rz_decomposition, DecompositionRule)
 
@@ -250,7 +255,9 @@ class TestDecompositionRule:  # pylint: disable=too-many-public-methods
                 qp.CNOT: 2 * (num_wires - 1),
             }
 
-        @register_resources(_multi_rz_resources, exact=exact_resources, name="multi_rz_decomposition")
+        @register_resources(
+            _multi_rz_resources, exact=exact_resources, name="multi_rz_decomposition"
+        )
         def multi_rz_decomposition(theta, wires, **__):
             for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
                 qp.CNOT(wires=(w0, w1))
@@ -377,7 +384,9 @@ class TestDecompositionRule:  # pylint: disable=too-many-public-methods
             for w0, w1 in zip(wires[1:], wires[:-1]):
                 qp.CNOT(wires=(w0, w1))
 
-        multi_rz_decomposition = register_resources(None, multi_rz_decomposition, name="multi_rz_decomposition")
+        multi_rz_decomposition = register_resources(
+            None, multi_rz_decomposition, name="multi_rz_decomposition"
+        )
 
         with pytest.raises(NotImplementedError, match="No resource estimation found"):
             multi_rz_decomposition.compute_resources(num_wires=3)
@@ -411,7 +420,9 @@ class TestDecompositionRule:  # pylint: disable=too-many-public-methods
         def custom_decomp_2(*_, **__):
             raise NotImplementedError
 
-        custom_decomp_2 = register_resources({abstractify(DummyOp): 1}, custom_decomp_2, name="custom_decomp_2")
+        custom_decomp_2 = register_resources(
+            {abstractify(DummyOp): 1}, custom_decomp_2, name="custom_decomp_2"
+        )
 
         assert custom_decomp_2.compute_resources() == Resources(
             gate_counts={abstractify(DummyOp): 1}
@@ -565,9 +576,11 @@ class TestDecompositionRule:  # pylint: disable=too-many-public-methods
             }
 
         multi_rz_decomposition = register_resources(
-                _multi_rz_resources_old, multi_rz_decomposition, exact=exact_resources,
-                name="multi_rz_decomposition",
-            )
+            _multi_rz_resources_old,
+            multi_rz_decomposition,
+            exact=exact_resources,
+            name="multi_rz_decomposition",
+        )
 
         assert isinstance(multi_rz_decomposition, DecompositionRule)
         assert multi_rz_decomposition.compute_resources(num_wires=3) == Resources(
@@ -1228,7 +1241,9 @@ class TestInspectDecomps:
             qp.CNOT(wires=[wires[0], wires[1]])
             qp.RZ(theta, wires=wires[0])
 
-        @register_resources(lambda num_wires: {qp.RX: 2, qp.CZ: 2 * (num_wires - 1), qp.H: 1}, name="general_decomp")
+        @register_resources(
+            lambda num_wires: {qp.RX: 2, qp.CZ: 2 * (num_wires - 1), qp.H: 1}, name="general_decomp"
+        )
         def general_decomp(theta, wires, **_):
             @qp.for_loop(len(wires) - 1)
             def _loop(i):

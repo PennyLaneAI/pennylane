@@ -762,7 +762,11 @@ def _controlled_trotter_cdf_standard_resources(  # pylint: disable=unused-argume
 
 
 @register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
-@register_resources(_controlled_trotter_cdf_standard_resources, exact=False, name="controlled_double_factorized_steps")
+@register_resources(
+    _controlled_trotter_cdf_standard_resources,
+    exact=False,
+    name="controlled_double_factorized_steps",
+)
 def _controlled_trotter_cdf_standard(
     base,
     control_wires,
