@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -29,16 +29,15 @@ def test_standard_validity():
     H = 2.0 * qp.PauliX(0) + 3.0 * qp.PauliY(0)
     t = 0.1
     op = qp.ApproxTimeEvolution(H, t, n=20)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Tests the _flatten and _unflatten methods."""
     H = 2.0 * qp.PauliX(0) + 3.0 * qp.PauliY(0)
     t = 0.1
     op = qp.ApproxTimeEvolution(H, t, n=20)
-    data, metadata = op._flatten()
+    data, metadata = op._flatten()  # pylint: disable=protected-access
     assert data[0] is H
     assert data[1] == t
     assert metadata == (20,)
@@ -46,7 +45,7 @@ def test_flatten_unflatten():
     # check metadata hashable
     assert hash(metadata)
 
-    new_op = type(op)._unflatten(*op._flatten())
+    new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
     qp.assert_equal(op, new_op)
     assert new_op is not op
 
@@ -212,8 +211,7 @@ class TestDecomposition:
     @pytest.mark.parametrize(("hamiltonian", "time", "steps"), DECOMP_PARAMS)
     def test_decomposition_new(self, hamiltonian, time, steps):
         op = qp.ApproxTimeEvolution(hamiltonian, time, steps)
-        for rule in qp.list_decomps(qp.ApproxTimeEvolution):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 class TestInputs:
@@ -416,7 +414,6 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
 
-# pylint: disable=protected-access, unexpected-keyword-arg
 @pytest.mark.autograd
 @pytest.mark.parametrize(
     "dev_name,diff_method",

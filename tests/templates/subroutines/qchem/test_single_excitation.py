@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -28,7 +28,7 @@ def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
     weight = np.pi / 3
     op = qp.FermionicSingleExcitation(weight, wires=[0, 1, 2])
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestDecomposition:
@@ -95,7 +95,6 @@ class TestDecomposition:
         """Test the correctness of the FermionicSingleExcitation template including the gate count
         and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
-        # pylint: disable=protected-access
 
         sqg = 10
         cnots = 4 * (len(single_wires) - 1)
@@ -158,8 +157,7 @@ class TestDecomposition:
             wires=single_wires,
         )
 
-        for rule in qp.list_decomps(qp.FermionicSingleExcitation):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 @pytest.mark.parametrize(

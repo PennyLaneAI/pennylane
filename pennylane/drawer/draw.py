@@ -62,8 +62,7 @@ def catalyst_qjit(qnode):
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
-# pylint: disable=too-many-arguments
-def draw(
+def draw(  # pylint: disable=too-many-arguments
     qnode,
     wire_order=None,
     show_all_wires=False,
@@ -88,7 +87,7 @@ def draw(
         show_matrices (bool): Show matrix valued parameters below all circuit diagrams. Defaults to ``False``.
         show_wire_labels (bool): Whether or not to show the wire labels. Defaults to ``True``.
         level (str, int, slice): An indication of what transforms to apply before drawing. Defaults to ``"gradient"``.
-            Check :func:`~.workflow.get_compile_pipeline` for more information on the allowed values and usage details of
+            Check :func:`~.workflow.construct_batch` for more information on the allowed values and usage details of
             this argument.
 
     Returns:
@@ -289,11 +288,10 @@ def draw(
         For controlled versions of these globally acting operators, the control
         nodes are exempt from the expansion:
 
-        >>> ctrl_gphase = qp.ctrl(qp.GlobalPhase, control=[2])
-        >>> print(qp.draw(ctrl_gphase, **draw_kwargs)(phi=0.5))
-        0: ─╭GlobalPhase(0.50)─┤
-        1: ─├GlobalPhase(0.50)─┤
-        2: ─╰●─────────────────┤
+        >>> print(qp.draw(qp.ctrl(qp.Identity, control=[2]), **draw_kwargs)())
+        0: ─╭I─┤
+        1: ─├I─┤
+        2: ─╰●─┤
 
     """
     qnode, partial_args, partial_kwargs = _unwrap_partial(qnode)
@@ -348,8 +346,7 @@ def draw(
     return _apply_partial_args(wrapper, partial_args, partial_kwargs)
 
 
-# pylint: disable=too-many-arguments
-def _draw_qnode(
+def _draw_qnode(  # pylint: disable=too-many-arguments
     qnode,
     wire_order: Sequence | None = None,
     show_all_wires: bool = False,
@@ -402,8 +399,7 @@ def _draw_qnode(
     return wrapper
 
 
-# pylint: disable=too-many-arguments
-def draw_mpl(
+def draw_mpl(  # pylint: disable=too-many-arguments
     qnode: QNode | Callable,
     wire_order: Sequence | None = None,
     show_all_wires: bool = False,
@@ -447,7 +443,7 @@ def draw_mpl(
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
         level (str, int, slice): An indication of what transforms to apply before drawing.
-            Check :func:`~.workflow.get_compile_pipeline` for more information on the allowed values and usage details of
+            Check :func:`~.workflow.construct_batch` for more information on the allowed values and usage details of
             this argument.
 
     Returns:
@@ -773,11 +769,11 @@ def draw_mpl(
 
         .. code-block:: python
 
-            ctrl_gphase = qp.ctrl(qp.GlobalPhase, control=[2])
-            fig, ax = qp.draw_mpl(ctrl_gphase, **draw_kwargs)(phi=0.5)
+            ctrl_identity = qp.ctrl(qp.Identity, control=[2])
+            fig, ax = qp.draw_mpl(ctrl_identity, **draw_kwargs)()
             fig.show()
 
-        .. figure:: ../../_static/draw_mpl/ctrl_gphase.png
+        .. figure:: ../../_static/draw_mpl/ctrl_identity.png
             :align: center
             :width: 40%
             :target: javascript:void(0);
@@ -837,8 +833,7 @@ def draw_mpl(
     return _apply_partial_args(wrapper, partial_args, partial_kwargs)
 
 
-# pylint: disable=too-many-arguments
-def _draw_mpl_qnode(
+def _draw_mpl_qnode(  # pylint: disable=too-many-arguments
     qnode,
     wire_order=None,
     show_all_wires=False,

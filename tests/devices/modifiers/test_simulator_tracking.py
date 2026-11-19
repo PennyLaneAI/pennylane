@@ -15,7 +15,9 @@
 Tests for qp.devices.modifiers.simulator_tracking.
 """
 
-# pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring
+# pylint: disable=unused-argument
+
+
 import pennylane as qp
 from pennylane.devices.modifiers import simulator_tracking
 
@@ -24,7 +26,7 @@ def test_tracking_execute():
     """Test the tracking behavior of execute with no shots."""
 
     @simulator_tracking
-    class DummyDev(qp.devices.Device):
+    class DummyDev(qp.devices.Device):  # pylint: disable=too-few-public-methods
 
         def execute(self, circuits, execution_config: qp.devices.ExecutionConfig | None = None):
             results = []
@@ -42,13 +44,16 @@ def test_tracking_execute():
     with dev.tracker:
         out = dev.execute((tape1, tape2))
 
+    tape1_resources = qp.resource.resources_from_tape(tape1)
+    tape2_resources = qp.resource.resources_from_tape(tape2)
+
     assert out == ((0.0, 0.0), 0.0)
     assert len(dev.tracker.history) == 6
     assert dev.tracker.history["batches"] == [1]
     assert dev.tracker.history["simulations"] == [1, 1]
     assert dev.tracker.history["executions"] == [2, 2]
     assert dev.tracker.history["results"] == [(0.0, 0.0), 0.0]
-    assert dev.tracker.history["resources"] == [tape1.specs["resources"], tape2.specs["resources"]]
+    assert dev.tracker.history["resources"] == [tape1_resources, tape2_resources]
     assert dev.tracker.history["shots"] == [100]
 
 
@@ -100,7 +105,7 @@ def test_tracking_execute_and_compute_derivatives():
     assert dev.tracker.history["execute_and_derivative_batches"] == [1]
     assert dev.tracker.history["executions"] == [3]
     assert dev.tracker.history["derivatives"] == [3]
-    r = t.specs["resources"]
+    r = qp.resource.resources_from_tape(t)
     assert dev.tracker.history["resources"] == [r, r, r]
 
 
@@ -153,7 +158,7 @@ def test_tracking_execute_and_compute_jvp():
     assert dev.tracker.history["execute_and_jvp_batches"] == [1]
     assert dev.tracker.history["executions"] == [3]
     assert dev.tracker.history["jvps"] == [3]
-    r = t.specs["resources"]
+    r = qp.resource.resources_from_tape(t)
     assert dev.tracker.history["resources"] == [r, r, r]
 
 
@@ -214,5 +219,5 @@ def test_tracking_execute_and_compute_vjp():
     assert dev.tracker.history["execute_and_vjp_batches"] == [1]
     assert dev.tracker.history["executions"] == [3]
     assert dev.tracker.history["vjps"] == [3]
-    r = t.specs["resources"]
+    r = qp.resource.resources_from_tape(t)
     assert dev.tracker.history["resources"] == [r, r, r]

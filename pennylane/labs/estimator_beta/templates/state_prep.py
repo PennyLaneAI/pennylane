@@ -25,8 +25,6 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.wires import WiresLike
 
-# pylint: disable=arguments-differ, too-many-arguments
-
 
 class LabsMottonenStatePreparation(ResourceOperator):
     r"""Resource class for Mottonen state preparation.
@@ -77,6 +75,7 @@ class LabsMottonenStatePreparation(ResourceOperator):
         return {"num_wires": self.num_wires}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_wires: int) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -87,7 +86,7 @@ class LabsMottonenStatePreparation(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
 
     @classmethod
-    def resource_decomp(cls, num_wires: int):
+    def resource_decomp(cls, num_wires: int):  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -177,6 +176,7 @@ class LabsCosineWindow(ResourceOperator):
         return {"num_wires": self.num_wires}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_wires: int) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -187,7 +187,7 @@ class LabsCosineWindow(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
 
     @classmethod
-    def resource_decomp(cls, num_wires: int):
+    def resource_decomp(cls, num_wires: int):  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -275,7 +275,7 @@ class LabsSumOfSlatersPrep(ResourceOperator):
         "select_swap_depth",
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         num_coeffs: int,
         num_wires: int,
@@ -328,7 +328,7 @@ class LabsSumOfSlatersPrep(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         num_coeffs: int,
         num_wires: int,
@@ -363,7 +363,7 @@ class LabsSumOfSlatersPrep(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         num_coeffs: int,
         num_wires: int,

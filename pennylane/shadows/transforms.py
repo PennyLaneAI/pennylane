@@ -21,8 +21,9 @@ import numpy as np
 
 import pennylane.ops as qops
 from pennylane import math
+from pennylane.core.apply import apply
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
-from pennylane.core.queuing import AnnotatedQueue, apply
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.measurements import shadow_expval
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn

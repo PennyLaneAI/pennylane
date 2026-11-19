@@ -22,9 +22,10 @@ from collections.abc import Callable
 from functools import reduce
 
 from pennylane import capture, math
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core import queuing
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
@@ -33,6 +34,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import adjoint, ctrl, prod
+from pennylane.ops.op_math.adjoint import _adjoint_eager
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -65,7 +67,7 @@ def _validate_callable(func: Callable) -> None:
 
 def _is_abstract_operator(op) -> bool:
     """Return whether ``op`` is an operator-valued JAX tracer."""
-    return math.is_abstract(op) and isinstance(op.aval, capture.AbstractOperator)
+    return math.is_tracer(op) and isinstance(op.aval, capture.AbstractOperator)
 
 
 def _apply_op_or_func(op_or_func):
@@ -76,10 +78,9 @@ def _apply_op_or_func(op_or_func):
         # NOTE: An Operator2 built outside the trace context has no equation
         # so we need to emit one.
         if op_or_func.tracer is None:
-            # pylint: disable-next=protected-access
-            op_or_func._bind_primitive()
+            op_or_func._bind_primitive()  # pylint: disable=protected-access
     elif isinstance(op_or_func, Operator):
-        queuing.apply(op_or_func)
+        apply(op_or_func)
     elif _is_abstract_operator(op_or_func):
         pass
     else:
@@ -99,8 +100,7 @@ def _convert_to_prod(op_or_func):
     )
 
 
-# pylint: disable=inconsistent-return-statements
-def change_op_basis(
+def change_op_basis(  # pylint: disable=inconsistent-return-statements
     compute_op: Operator | Callable,
     target_op: Operator | Callable,
     uncompute_op: Operator | Callable | None = None,
@@ -144,15 +144,15 @@ def change_op_basis(
             )
             return qp.state()
 
-        circuit2 = qp.decompose(circuit, max_expansion=1)
+        circuit2 = qp.transforms._tape_decompose(circuit, max_expansion=1)
 
     When this circuit is decomposed, the ``compute_op`` and ``uncompute_op`` are not controlled,
     resulting in a much more resource-efficient decomposition:
 
     >>> print(qp.draw(circuit2)())
-    0: ──H──────╭●────────────────┤ ╭State
-    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤ ├State
-    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤ ╰State
+    0: ──H──────╭●──────────────────────┤ ╭State
+    1: ─╭●─╭QFT─├PhaseAdder(1.00)─╭QFT†─┤ ├State
+    2: ─╰X─╰QFT─╰PhaseAdder(1.00)─╰QFT†─┤ ╰State
 
     A ``Callable`` can also be provided as an argument to ``change_op_basis``. This can be a
     function that applies a series of ``Operation`` s. Since ``change_op_basis`` requires this
@@ -179,7 +179,7 @@ def change_op_basis(
             qp.change_op_basis(compute, target)
             return qp.state()
 
-        circuit3 = qp.decompose(circuit, max_expansion=1)
+        circuit3 = qp.transforms._tape_decompose(circuit, max_expansion=1)
 
     >>> print(qp.draw(circuit3)())
     0: ─╭RX(0.10)@QFT@|Ψ⟩──X─╭(RX(0.10)@QFT@|Ψ⟩)†─┤ ╭State
@@ -261,7 +261,9 @@ class ChangeOpBasis(CompositeOp):
     .. seealso:: :func:`~.change_op_basis`
     """
 
-    def __init__(self, compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
+    def __init__(
+        self, compute_op: Operator, target_op: Operator, uncompute_op: Operator | None = None
+    ):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
         super().__init__(uncompute_op, target_op, compute_op)
@@ -269,8 +271,8 @@ class ChangeOpBasis(CompositeOp):
     def _flatten(self):
         return tuple(reversed(self.operands)), tuple()
 
-    # pylint: disable=arguments-differ
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, compute_op, target_op, uncompute_op=None):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
@@ -283,8 +285,7 @@ class ChangeOpBasis(CompositeOp):
         for leaf in leaves:
             if isinstance(leaf, Operator2):
                 if leaf.tracer is None:
-                    # pylint: disable-next=protected-access
-                    leaf._bind_primitive()
+                    leaf._bind_primitive()  # pylint: disable=protected-access
                 new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
             else:
                 new_leaves.append(leaf)
@@ -350,7 +351,6 @@ class ChangeOpBasis(CompositeOp):
         """
         return self[1].is_verified_hermitian
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
         return True
@@ -358,16 +358,15 @@ class ChangeOpBasis(CompositeOp):
     def decomposition(self):
         r"""Decomposition of the product operator is given by each of compute_op, target_op, compute_op† applied in succession."""
         if queuing.QueuingManager.recording():
-            _ = [queuing.apply(op) for op in reversed(self)]
+            _ = [apply(op) for op in reversed(self)]
         return list(self[::-1])
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return True
 
     def adjoint(self):
-        return ChangeOpBasis(*(adjoint(factor, lazy=False) for factor in self))
+        return ChangeOpBasis(*(_adjoint_eager(factor, update_queue=True) for factor in self))
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
@@ -395,18 +394,17 @@ def _adjoint_change_op_basis_resources(base_params, **_):
     return resources
 
 
-# pylint: disable=protected-access
 @register_resources(_adjoint_change_op_basis_resources)
 def _adjoint_change_op_basis_decomp(*_, base, **__):
-    queuing.apply(base.operands[2])
-    adjoint(queuing.apply(base.operands[1]))
-    queuing.apply(base.operands[0])
+    apply(base.operands[2])
+    adjoint(apply(base.operands[1]))
+    apply(base.operands[0])
 
 
 add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
 
 
-def _controlled_change_op_basis_resources(
+def _controlled_change_op_basis_resources(  # pylint: disable=too-many-arguments,unused-argument
     *_,
     num_control_wires,
     num_zero_control_values,
@@ -415,7 +413,7 @@ def _controlled_change_op_basis_resources(
     base_class,
     base_params,
     **__,
-):  # pylint: disable=unused-argument, too-many-arguments
+):
     resources = defaultdict(int)
     resources[base_params["compute_op"]] += 1
     resources[
@@ -441,22 +439,21 @@ def _controlled_change_op_basis_decomposition(
     base,
     **__,
 ):
-    queuing.apply(base.operands[2])
+    apply(base.operands[2])
     ctrl(
-        queuing.apply(base.operands[1]),
+        apply(base.operands[1]),
         control=control_wires,
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    queuing.apply(base.operands[0])
+    apply(base.operands[0])
 
 
-# pylint: disable=unused-argument
 @register_resources(_change_op_basis_resources)
-def _change_op_basis_decomp(*_, wires=None, operands, **__):
+def _change_op_basis_decomp(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
     for op in operands[::-1]:
-        queuing.apply(op)
+        apply(op)
 
 
 add_decomps(ChangeOpBasis, _change_op_basis_decomp)

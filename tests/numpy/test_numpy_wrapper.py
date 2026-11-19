@@ -34,7 +34,6 @@ class TestExtractTensors:
     def test_empty_iterable(self):
         """Test that an empty iterable returns nothing"""
         res = list(np.extract_tensors([]))
-        # pylint: disable=use-implicit-booleaness-not-comparison
         assert res == []
 
     def test_iterable_with_strings(self):
@@ -420,9 +419,8 @@ class TestNumpyIntegration:
         """Test that a tensor is returned if the array ufunc method returns
         multiple results."""
 
-        class _ufunc:
-            # pylint: disable=unused-argument,too-few-public-methods
-            def __init__(self, *args, **kwargs):
+        class _ufunc:  # pylint: disable=too-few-public-methods
+            def __init__(self, *args, **kwargs):  # pylint: disable=unused-argument
                 self.nout = 2
 
             def __call__(self, *args, **kwargs):

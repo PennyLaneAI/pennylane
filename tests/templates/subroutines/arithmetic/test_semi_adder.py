@@ -22,22 +22,23 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.semi_adder import (
+    _controlled_semi_adder,
     _effective_skip_input_pos,
     _semi_adder,
     _semi_adder_resources,
 )
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_standard_validity_SemiAdder():
+@pytest.mark.parametrize("work_wires", [[6, 7], [6, 7, 8]])
+def test_standard_validity_SemiAdder(work_wires):
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2]
     y_wires = [3, 4, 5]
-    work_wires = [6, 7]
     op = qp.SemiAdder(x_wires, y_wires, work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestSemiAdder:
@@ -74,9 +75,7 @@ class TestSemiAdder:
             (["a", "b", "d"], ["e", "h", "p"], ["f", "z", "u", "q", "v"], 4, 2),
         ],
     )
-    def test_operation_result(
-        self, x_wires, y_wires, work_wires, x, y
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_result(self, x_wires, y_wires, work_wires, x, y):
         """Test the correctness of the SemiAdder template output."""
         dev = qp.device("default.qubit")
 
@@ -95,7 +94,6 @@ class TestSemiAdder:
         sample = output[0]
 
         #  check that the output sample is the binary representation of x + y mod 2^len(y_wires)
-        # pylint: disable=bad-reversed-sequence
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(sample[0, :]))),
             (x + y) % 2 ** len(y_wires),
@@ -134,9 +132,7 @@ class TestSemiAdder:
             ),
         ],
     )
-    def test_wires_error(
-        self, x_wires, y_wires, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_wires_error(self, x_wires, y_wires, work_wires, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qp.SemiAdder(x_wires, y_wires, work_wires)
@@ -168,8 +164,7 @@ class TestSemiAdder:
     def test_decomposition_rule(self, x_wires, work_wires):
         """Tests that SemiAdder is decomposed properly."""
 
-        for rule in qp.list_decomps(qp.SemiAdder):
-            _test_decomposition_rule(qp.SemiAdder(x_wires, [5, 6, 7, 8], work_wires), rule)
+        assert_decomposable(qp.SemiAdder(x_wires, [5, 6, 7, 8], work_wires))
 
     @pytest.mark.capture
     @pytest.mark.parametrize(
@@ -219,7 +214,6 @@ class TestSemiAdder:
             qp.SemiAdder(x_wires, y_wires, work_wires)
             return qp.sample(wires=y_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))),
             (x + y) % 2 ** len(y_wires),
@@ -269,7 +263,7 @@ class TestSemiAdder:
         ],
     )
     @pytest.mark.parametrize("split_work_wires", [True, False])
-    def test_controlled_decomposition(
+    def test_controlled_decomposition(  # pylint: disable=too-many-arguments
         self,
         x_wires,
         y_wires,
@@ -279,7 +273,7 @@ class TestSemiAdder:
         y_value,
         control_values,
         split_work_wires,
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Test correctness of C(SemiAdder) decomposition"""
 
         dev = qp.device("default.qubit")
@@ -329,6 +323,21 @@ class TestSemiAdder:
             else:
                 assert output == expected_output
 
+    @pytest.mark.parametrize("y_wires", [[3], [3, 4, 5]])
+    def test_controlled_decomposition_surplus_base_work_wires_are_zeroed(self, y_wires):
+        """Test that the surplus work wires of the base ``SemiAdder`` are passed on as zeroed
+        work wires to the controlled CNOTs, even if the work wire type of the control is borrowed.
+        """
+        base = qp.SemiAdder([0, 1, 2], y_wires, [6, 7, 8, 9])
+
+        with qp.queuing.AnnotatedQueue() as q:
+            _controlled_semi_adder(base, [10], [1], work_wire_type="borrowed")
+
+        ops = qp.tape.QuantumScript.from_queue(q).operations
+        ctrl_ops = [o for o in ops if isinstance(o, qp.ops.ControlledOp2)]
+        assert ctrl_ops
+        assert all(o.work_wire_type == "zeroed" for o in ctrl_ops)
+
     @pytest.mark.capture
     @pytest.mark.parametrize(
         "wire_lens",
@@ -359,7 +368,7 @@ class TestSemiAdder:
             "work_wires": jnp.array([]),
         }
         for rule in qp.list_decomps("C(SemiAdder)"):
-            if not rule.is_applicable(**decomp_args):
+            if not rule.is_applicable(**decomp_args, work_wire_type="borrowed"):
                 continue
             # pylint: disable-next=protected-access
             subroutine = qp.capture.subroutine(partial(rule._impl, work_wire_type="borrowed"))
@@ -392,9 +401,8 @@ class TestSemiAdderSkipInputPos:
             ([0, 1], [2, 3, 4, 5], [6, 7, 8], 3, 5, [1, 3]),
         ],
     )
-    def test_operation_result(
-        self, x_wires, y_wires, work_wires, x, y, skip_input_pos
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_operation_result(self, x_wires, y_wires, work_wires, x, y, skip_input_pos):
         """Test that skipped input positions inject classical zeros into the addend."""
         n = len(x_wires)
         m = len(y_wires)

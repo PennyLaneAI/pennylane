@@ -15,13 +15,12 @@
 Tests for the CommutingEvolution template.
 """
 
-# pylint: disable=too-few-public-methods
 import pytest
 from scipy.linalg import expm
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -32,7 +31,7 @@ def test_standard_validity():
     frequencies = (2, 4)
     shifts = (1, 0.5)
     op = qp.CommutingEvolution(H, time, frequencies=frequencies, shifts=shifts)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_adjoint():
@@ -114,8 +113,7 @@ DECOMP_PARAMS = [
 def test_decomposition_new(hamiltonian, time):
     """Capture produces only the resource-declared ``ApproxTimeEvolution`` operation."""
     op = qp.CommutingEvolution(hamiltonian, time)
-    for rule in qp.list_decomps(qp.CommutingEvolution):
-        _test_decomposition_rule(op, rule)
+    assert_decomposable(op)
 
 
 @pytest.mark.capture
@@ -130,7 +128,7 @@ def test_captured_decomposition_does_not_add_hamiltonian_to_tape():
 
     time = 0.5
     plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(time)
-    tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, time)
+    tape = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, time)
 
     expected = qp.ApproxTimeEvolution(hamiltonian, time, 1)
 
@@ -195,7 +193,7 @@ def test_jax_jit():
     assert qp.math.allclose(circuit(1), jit_circuit(1))
 
 
-class TestInputs:
+class TestInputs:  # pylint: disable=too-few-public-methods
     """Tests for input validation of `CommutingEvolution`."""
 
     def test_invalid_hamiltonian(self):
@@ -256,13 +254,11 @@ class TestGradients:
 
         x_vals = np.linspace(-np.pi, np.pi, num=10)
 
-        # pylint: disable=not-callable
         grads_finite_diff = [qp.gradients.finite_diff(circuit)(x) for x in x_vals]
         grads_param_shift = [qp.gradients.param_shift(circuit)(x) for x in x_vals]
 
         assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
 
-    # pylint: disable=not-callable
     def test_four_term_case(self):
         """Tests the parameter shift rules for `CommutingEvolution` equal the
         finite difference result for a four term shift rule case."""
@@ -288,7 +284,6 @@ class TestGradients:
 
         assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
 
-    # pylint: disable=not-callable
     def test_differentiable_hamiltonian(self):
         """Tests correct gradients are produced when the Hamiltonian is differentiable."""
 

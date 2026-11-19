@@ -36,7 +36,7 @@ def test_standard_validity(init_state):
 
     weights = np.random.normal(0, 2 * np.pi, (layers, 2 * qubits - 1))
     op = qp.ParticleConservingU2(weights, wires=range(qubits), init_state=init_state)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 def test_resources():
@@ -58,7 +58,7 @@ def test_resources():
 
 @pytest.mark.system
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-class TestCorrectness:  # pylint: disable=too-few-public-methods
+class TestCorrectness:
     """Tests the correctness of the template in a qnode."""
 
     @pytest.mark.parametrize(
@@ -132,7 +132,7 @@ def _get_queue(op, system):
     try:
         f = partial(qp.list_decomps(qp.ParticleConservingU2)[0], **op.hyperparameters)
         jaxpr = jax.make_jaxpr(f)(*op.data, op.wires)
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *op.data, *op.wires)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *op.data, *op.wires)
         return tape.circuit
     finally:
         qp.capture.disable()

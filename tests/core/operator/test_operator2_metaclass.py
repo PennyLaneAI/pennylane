@@ -12,17 +12,21 @@
 # limitations under the License.
 """Tests for Operator2's metaclass."""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 from operator2_utils import CompilableOp, DynOp, StaticOp
 
+import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.operator2 import operator_p
-from pennylane.typing import AbstractArray, Complex, Float, Int, Wire
+from pennylane.testing import find_eqns
+from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
 
-class DynCanonOp(Operator2):  # pylint: disable=too-few-public-methods
+class DynCanonOp(Operator2):
     """Operator with a dynamic parameter and wires that performs canonicalization."""
 
     dynamic_argnames = ("phi",)
@@ -64,7 +68,7 @@ class TestArgSpecValidationAbstractInputs:
     def test_weak_dtype_is_preserved(self):
         """Tests that canonicalization preserves strength of dtype."""
 
-        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+        class MixedArgOp(Operator2):
             """Operator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
@@ -78,13 +82,12 @@ class TestArgSpecValidationAbstractInputs:
         # NOTE: Can safely upcast an int to a float.
         op = MixedArgOp(AbstractArray((), np.int32), Wire[3])
         assert op.dynamic_arg == Float
-        # pylint: disable=protected-access
-        assert op.dynamic_arg._weak_type
+        assert op.dynamic_arg._weak_type  # pylint: disable=protected-access
 
     def test_arg_spec_with_unknown_shape_canonicalizes_only_dtype(self):
         """Tests that only the dtype is promoted."""
 
-        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+        class MixedArgOp(Operator2):
             """Operator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
@@ -102,7 +105,7 @@ class TestArgSpecValidationAbstractInputs:
     def test_arg_spec_canonicalizes_abstract_inputs(self):
         """Tests that abstract inputs are canonicalized when possible."""
 
-        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+        class MixedArgOp(Operator2):
             """Operator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
@@ -130,7 +133,7 @@ class TestArgSpecValidationAbstractInputs:
     def test_valid_arg_spec_with_unknown_shape(self):
         """Tests that using ... in your arg_specs works as expected."""
 
-        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+        class MixedArgOp(Operator2):
             """Operator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
@@ -151,7 +154,7 @@ class TestArgSpecValidationAbstractInputs:
     def test_valid_arg_spec_with_fixed_shape(self):
         """Tests a simple valid arg spec."""
 
-        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+        class MixedArgOp(Operator2):
             """Operator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
@@ -168,7 +171,7 @@ class TestArgSpecValidationAbstractInputs:
     def test_invalid_dynamic_arg_spec(self, bad_dynamic_arg):
         """Tests arg_spec validation against operators constructed with abstract inputs."""
 
-        class MixedArgOp(Operator2):  # pylint: disable=too-few-public-methods
+        class MixedArgOp(Operator2):
             """Operator with static, dynamic and hybrid argnames."""
 
             dynamic_argnames = ("dynamic_arg",)
@@ -191,4 +194,33 @@ def test_bind_primitive():
 
     cjaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(2.0)
     # Make sure the operator primitive is in the JAXPR
-    assert len([e for e in cjaxpr.eqns if e.primitive is operator_p]) == 1
+    assert len(find_eqns(cjaxpr, operator_p)) == 1
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("value", [Int, Float[2], Bool[3], Wire[2], (1, Int), {"data": [Float[2]]}])
+def test_abstract_compilable_argument_rejected(value, monkeypatch):
+    """Reject abstract leaves before entering operator-specific constructors."""
+
+    def unexpected_constructor(*_args, **_kwargs):
+        pytest.fail("The operator constructor must not run for abstract compilable inputs.")
+
+    monkeypatch.setattr(CompilableOp, "__init__", unexpected_constructor)
+    with pytest.raises(ValueError, match="Argument 'n' of operator 'CompilableOp'.*abstract input"):
+        CompilableOp(value, wires=0)
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+def test_flipsign_abstract_state_rejected():
+    """FlipSign reports the invalid argument instead of a later MLIR conversion failure."""
+    with pytest.raises(ValueError, match="Argument 'state' of operator 'FlipSign'.*abstract input"):
+        qp.FlipSign(Bool[3], wires=Wire[3], work_wires=Wire[1])
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("value", [3, (0, 1, 0), {"data": [1, 2]}])
+def test_concrete_compilable_arguments_with_abstract_wires(value):
+    """Concrete compilable arguments still allow abstract wire arguments."""
+    op = CompilableOp(value, wires=Wire[2])
+    assert op.n == value
+    assert op.wires == Wire[2]

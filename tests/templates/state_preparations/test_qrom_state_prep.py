@@ -15,8 +15,6 @@
 Unit tests for the QROMStatePreparation template.
 """
 
-# pylint: disable=too-many-arguments,too-few-public-methods
-
 import numpy as np
 import pytest
 
@@ -58,7 +56,7 @@ class TestQROMStatePreparation:
             precision_wires=wires["precision_wires"],
             work_wires=wires["work_wires"],
         )
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.parametrize(
         ("state", "msg_match"),

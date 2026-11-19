@@ -62,7 +62,7 @@ class TestInitialization:
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_init_correctly(self, coeffs, ops, time, n, seed):  # pylint: disable=too-many-arguments
+    def test_init_correctly(self, coeffs, ops, time, n, seed):
         """Test that all of the attributes are initialized correctly."""
         h = qp.dot(coeffs, ops)
         op = qp.QDrift(h, time, n=n, seed=seed)
@@ -70,7 +70,7 @@ class TestInitialization:
         if seed is not None:
             # For seed = None, decomposition and compute_decomposition do not match because
             # compute_decomposition is stochastic
-            qp.ops.functions.assert_valid(op, skip_differentiation=True)
+            qp.testing.assert_valid(op, skip_differentiation=True)
 
         assert op.wires == h.wires
         assert op.parameters == [*h.data, time]
@@ -83,7 +83,7 @@ class TestInitialization:
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_copy(self, coeffs, ops, time, n, seed):  # pylint: disable=too-many-arguments
+    def test_copy(self, coeffs, ops, time, n, seed):
         """Test that we can make copies of QDrift correctly."""
         h = qp.dot(coeffs, ops)
         op = qp.QDrift(h, time, n=n, seed=seed)
@@ -129,7 +129,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_private_sample(self, coeffs, ops, time, seed, n):  # pylint: disable=too-many-arguments
+    def test_private_sample(self, coeffs, ops, time, seed, n):
         """Test the private function which samples the decomposition"""
         ops_to_coeffs = dict(zip(ops, coeffs))
         normalization = qnp.sum(qnp.abs(coeffs))
@@ -185,7 +185,7 @@ class TestIntegration:
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
-    def test_execution(self, coeffs, ops, time, n, seed):  # pylint: disable=too-many-arguments
+    def test_execution(self, coeffs, ops, time, n, seed):
         """Test that the circuit executes as expected"""
         hamiltonian = qp.dot(coeffs, ops)
         wires = hamiltonian.wires

@@ -22,12 +22,11 @@ from typing import Literal
 
 from pennylane.capture import enabled as capture_enabled
 from pennylane.core.operator import Operator
-from pennylane.math import is_abstract
+from pennylane.math import is_tracer
 from pennylane.wires import DynamicWire, Wires
 
 has_jax = True
 try:
-    # pylint: disable=ungrouped-imports
     from pennylane.capture import QpPrimitive
     from pennylane.wires import AbstractQubit
 except ImportError:
@@ -60,10 +59,12 @@ else:
     ):
         raise NotImplementedError("jaxpr containing qubit allocation cannot be executed.")
 
-    # pylint: disable=unused-argument
     @allocate_prim.def_abstract_eval
-    def _allocate_primitive_abstract_eval(
-        *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
+    def _allocate_primitive_abstract_eval(  # pylint: disable=unused-argument
+        *,
+        num_wires,
+        state: AllocateState = AllocateState.ZERO,
+        restored=False,
     ):
         return [AbstractQubit() for _ in range(num_wires)]
 
@@ -74,9 +75,8 @@ else:
     def _deallocate_primitive_impl(*wires):
         raise NotImplementedError("jaxpr containing qubit deallocation cannot be executed.")
 
-    # pylint: disable=unused-argument
     @deallocate_prim.def_abstract_eval
-    def _deallocate_primitive_abstract_eval(*wires):
+    def _deallocate_primitive_abstract_eval(*wires):  # pylint: disable=unused-argument
         return []
 
 
@@ -386,7 +386,7 @@ def allocate(
     if isinstance(num_wires, Integral) and not isinstance(num_wires, bool) and num_wires == 0:
         return DynamicRegister(())
     if capture_enabled():
-        if is_abstract(num_wires):
+        if is_tracer(num_wires):
             raise NotImplementedError(
                 "Number of allocated wires must be static when capture is enabled."
             )

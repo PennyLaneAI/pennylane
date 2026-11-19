@@ -29,8 +29,6 @@ from pennylane.estimator.resource_operator import (
 from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=arguments-differ,super-init-not-called, signature-differs
-
 
 class SelectTHC(ResourceOperator):
     r"""Resource class for creating the custom ``Select`` operator for tensor hypercontracted (THC)
@@ -115,7 +113,7 @@ class SelectTHC(ResourceOperator):
 
     resource_keys = {"thc_ham", "num_batches", "rotation_precision", "select_swap_depth"}
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(
         self,
         thc_ham: THCHamiltonian,
         num_batches: int = 1,
@@ -185,7 +183,7 @@ class SelectTHC(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         thc_ham: THCHamiltonian,
         num_batches: int = 1,
@@ -241,7 +239,7 @@ class SelectTHC(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         thc_ham: THCHamiltonian,
         num_batches: int = 1,
@@ -375,7 +373,7 @@ class SelectTHC(ResourceOperator):
         return gate_list
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for the controlled version of the operator.
@@ -572,6 +570,7 @@ class SelectPauli(ResourceOperator):
 
     resource_keys = {"pauli_ham"}
 
+    # pylint: disable-next=super-init-not-called
     def __init__(self, pauli_ham: PauliHamiltonian, wires: WiresLike = None) -> None:
         self.queue()
 
@@ -596,9 +595,8 @@ class SelectPauli(ResourceOperator):
             self.num_wires = num_wires
 
     @classmethod
-    def resource_decomp(
-        cls, pauli_ham: PauliHamiltonian
-    ) -> list[GateCount]:  # pylint: disable=unused-argument
+    # pylint: disable-next=arguments-differ
+    def resource_decomp(cls, pauli_ham: PauliHamiltonian) -> list[GateCount]:
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
 
         Args:
@@ -668,6 +666,7 @@ class SelectPauli(ResourceOperator):
         return gate_types
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
@@ -687,7 +686,7 @@ class SelectPauli(ResourceOperator):
         return [GateCount(cls.resource_rep(**target_resource_params))]
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -796,6 +795,7 @@ class SelectPauli(ResourceOperator):
         return {"pauli_ham": self.pauli_ham}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, pauli_ham: PauliHamiltonian) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.

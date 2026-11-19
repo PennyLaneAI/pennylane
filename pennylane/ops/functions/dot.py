@@ -18,10 +18,12 @@ a vector and a list of operators.
 
 from collections import defaultdict
 from collections.abc import Sequence
+from typing import TypeGuard
 
 import pennylane as qp
 from pennylane.core.operator import Operator
-from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.core.pauli import PauliSentence, PauliWord
+from pennylane.ops._pauli_conversion import to_operator
 
 
 def dot(
@@ -88,7 +90,7 @@ def dot(
     Note that it returns a :class:`~.PauliSentence`, which is not an :class:`~.Operator`. This
     specialized representation can be converted to an operator:
 
-    >>> qp.dot([1, 2], [qp.X(0), qp.X(0)], pauli=True).operation()
+    >>> qp.pauli.to_operator(qp.dot([1, 2], [qp.X(0), qp.X(0)], pauli=True))
     3.0 * X(0)
 
     Using ``pauli=True`` and then converting the result to an :class:`~.Operator` is much faster
@@ -142,7 +144,8 @@ def dot(
 
     # User-specified Pauli route
     if pauli:
-        if all(isinstance(pauli, (PauliWord, PauliSentence)) for pauli in ops):
+        # _all_paulis helper allows us to use TypeGuard
+        if _all_paulis(ops):
             # Use pauli arithmetic when ops are just PauliWord and PauliSentence instances
             return _dot_pure_paulis(coeffs, ops)
 
@@ -150,10 +153,10 @@ def dot(
         return _dot_with_ops_and_paulis(coeffs, ops)
 
     # Convert possible PauliWord and PauliSentence instances to operation
-    ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
+    ops = [to_operator(op) if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
 
     operands = [
-        op if (not qp.math.is_abstract(coeff) and coeff == 1) else qp.s_prod(coeff, op)
+        op if (not qp.math.is_tracer(coeff) and coeff == 1) else qp.s_prod(coeff, op)
         for coeff, op in zip(coeffs, ops, strict=True)
     ]
     return (
@@ -163,7 +166,16 @@ def dot(
     )
 
 
-def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
+def _all_paulis(
+    ops: Sequence[Operator | PauliWord | PauliSentence],
+) -> TypeGuard[Sequence[PauliWord | PauliSentence]]:
+    """Check whether all operators are Pauli words or sentences."""
+    return all(isinstance(pauli, (PauliWord, PauliSentence)) for pauli in ops)
+
+
+def _dot_with_ops_and_paulis(
+    coeffs: Sequence[float], ops: Sequence[Operator | PauliWord | PauliSentence]
+):
     """Compute dot when operators are a mix of pennylane operators, PauliWord and PauliSentence by turning them all into a PauliSentence instance.
     Returns a PauliSentence instance"""
     pauli_words = defaultdict(int)
@@ -172,7 +184,7 @@ def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
         for pw in sentence:
             pauli_words[pw] += sentence[pw] * coeff
 
-    return qp.pauli.PauliSentence(pauli_words)
+    return PauliSentence(pauli_words)
 
 
 def _dot_pure_paulis(coeffs: Sequence[float], ops: Sequence[PauliWord | PauliSentence]):

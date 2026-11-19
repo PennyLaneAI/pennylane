@@ -20,7 +20,7 @@ from string import ascii_letters
 import scipy as sp
 import scipy.sparse.linalg as spla
 from autoray import numpy as np
-from numpy import float64, sqrt  # pylint:disable=wrong-import-order
+from numpy import float64, sqrt  # pylint: disable=wrong-import-order
 from scipy.sparse import csc_matrix, issparse
 
 from pennylane import math
@@ -324,7 +324,6 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
     return reduced_density_matrix if is_batched else reduced_density_matrix[0]
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
 def _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim, dim):
     """Compute the reduced density matrix for autograd interface by tracing out the provided indices with the use
     of projectors as same subscripts indices are not supported in autograd backprop.
@@ -660,15 +659,8 @@ def _compute_vn_entropy(density_matrix, base=None):
     return entropy
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
-def mutual_info(
-    state,
-    indices0,
-    indices1,
-    base=None,
-    check_state=False,
-    c_dtype="complex128",
-):
+# pylint: disable-next=too-many-arguments
+def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"):
     r"""Compute the mutual information between two subsystems given a state:
 
     .. math::
@@ -734,8 +726,7 @@ def mutual_info(
     )
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
-def _compute_mutual_info(
+def _compute_mutual_info(  # pylint: disable=too-many-arguments
     state,
     indices0,
     indices1,
@@ -787,7 +778,7 @@ def _check_hermitian_operator(operators):
     if len(operators.shape) == 2:
         operators = math.stack([operators])
 
-    if not math.is_abstract(operators):
+    if not math.is_tracer(operators):
         for ops in operators:
             conj_trans = np.transpose(np.conj(ops))
             if not math.allclose(ops, conj_trans):
@@ -857,8 +848,7 @@ def expectation_value(
     return expval
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
-def vn_entanglement_entropy(
+def vn_entanglement_entropy(  # pylint: disable=too-many-arguments
     state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"
 ):
     r"""Compute the Von Neumann entanglement entropy between two subsystems in a given state.
@@ -947,7 +937,7 @@ def sqrt_matrix(density_matrix):
     evs, vecs = math.linalg.eigh(density_matrix)
     evs = math.real(evs)
     evs = math.where(evs > 0.0, evs, 0.0)
-    if not math.is_abstract(evs):
+    if not math.is_tracer(evs):
         evs = math.cast_like(evs, vecs)
 
     shape = math.shape(density_matrix)
@@ -1186,7 +1176,7 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
     state0 = math.cast(state0, dtype=c_dtype)
 
     # Cannot be cast_like if jit
-    if not math.is_abstract(state0):
+    if not math.is_tracer(state0):
         state1 = math.cast_like(state1, state0)
 
     if check_state:
@@ -1214,7 +1204,7 @@ def _check_density_matrix(density_matrix):
     if len(density_matrix.shape) == 2:
         density_matrix = math.stack([density_matrix])
 
-    if not math.is_abstract(density_matrix):
+    if not math.is_tracer(density_matrix):
         for dm in density_matrix:
             # Check trace
             trace = np.trace(dm)
@@ -1244,7 +1234,7 @@ def _check_state_vector(state_vector):
         state_vector = math.stack([state_vector])
 
     # Check norm
-    if not math.is_abstract(state_vector):
+    if not math.is_tracer(state_vector):
         for sv in state_vector:
             norm = np.linalg.norm(sv, ord=2)
             if not math.allclose(norm, 1.0, atol=1e-10):
@@ -1485,7 +1475,7 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
     state0 = math.cast(state0, dtype=c_dtype)
 
     # Cannot be cast_like if jit
-    if not math.is_abstract(state0):
+    if not math.is_tracer(state0):
         state1 = math.cast_like(state1, state0)
 
     if check_state:

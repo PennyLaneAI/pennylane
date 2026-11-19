@@ -15,15 +15,13 @@
 Unit tests for the StronglyEntanglingLayers template.
 """
 
-# pylint: disable=too-few-public-methods
-
 import numpy as np
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane import ops as qp_ops
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -38,7 +36,7 @@ def test_standard_validity():
 
     op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires))
 
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.parametrize("batch_dim", [None, 1, 3])
@@ -71,13 +69,11 @@ class TestDecomposition:
         """Tests the decomposition rule implemented with the new system."""
         weights = np.random.random(size=(1, n_wires, 3))
         op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
-        for rule in qp.list_decomps(qp.StronglyEntanglingLayers):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize("n_wires, weight_shape, expected_names, expected_wires", QUEUES)
     def test_expansion(self, n_wires, weight_shape, expected_names, expected_wires, batch_dim):
         """Checks the queue for the default settings."""
-        # pylint: disable=too-many-arguments
 
         if batch_dim is not None:
             weight_shape = (batch_dim,) + weight_shape
@@ -209,7 +205,7 @@ class TestInputs:
             circuit(weights, ranges=[0])
 
 
-class TestAttributes:
+class TestAttributes:  # pylint: disable=too-few-public-methods
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(

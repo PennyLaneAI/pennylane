@@ -28,7 +28,7 @@ from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.core.queuing import QueuingManager
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.math import is_abstract, isscalar, ndim, unwrap
+from pennylane.math import is_tracer, isscalar, ndim, unwrap
 from pennylane.ops.mid_measure import MeasurementValue, MidMeasure, measure
 from pennylane.ops.op_math import Conditional, adjoint
 from pennylane.ops.qubit import RX, RY, H, PhaseShift, S
@@ -348,8 +348,7 @@ class ParametricMidMeasure(MidMeasure):
     # importable while that work is deferred.
     compilable_argnames = ("angle", "plane", "reset", "postselect", "meas_uid")
 
-    # pylint: disable=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         wires: Wires | None,
         *,
@@ -376,7 +375,7 @@ class ParametricMidMeasure(MidMeasure):
 
     def __hash__(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
-        if is_abstract(self.angle):  # pragma: no cover
+        if is_tracer(self.angle):  # pragma: no cover
             # no unique value from tracer to values, hash based on object string
             param_hash = hashlib.sha256(str(self).encode()).digest()
         elif isscalar(self.angle) or ndim(self.angle) == 0:
@@ -396,9 +395,8 @@ class ParametricMidMeasure(MidMeasure):
 
         return hash(fingerprint)
 
-    # pylint: disable=too-many-positional-arguments, arguments-differ
     @classmethod
-    def _primitive_bind_call(
+    def _primitive_bind_call(  # pylint: disable=too-many-arguments
         cls, angle=0.0, wires=None, plane="ZX", reset=False, postselect=None, meas_uid=None
     ):
         wires = () if wires is None else wires
@@ -468,7 +466,6 @@ class XMidMeasure(ParametricMidMeasure):
         )
         return (), (self.wires, metadata)
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Wires | None,
@@ -532,7 +529,6 @@ class YMidMeasure(ParametricMidMeasure):
         )
         return (), (self.wires, metadata)
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         wires: Wires | None,

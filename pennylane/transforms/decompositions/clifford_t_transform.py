@@ -22,6 +22,7 @@ import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
 from pennylane.ops import Adjoint, MeasurementValue
+from pennylane.ops.op_math.adjoint import _adjoint_eager
 from pennylane.ops.op_math.decompositions.ross_selinger import rs_decomposition
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
 from pennylane.transforms.core import transform
@@ -73,11 +74,11 @@ _CLIFFORD_T_CACHE = None
 _CATALYST_SKIP_OP_TYPES = ()
 
 
-# pylint: disable=import-outside-toplevel, global-statement
 def _add_catalyst_skip_op_types():
     """Delayed addition of PennyLane-Catalyst skip op types."""
-    global _CATALYST_SKIP_OP_TYPES
+    global _CATALYST_SKIP_OP_TYPES  # pylint: disable=global-statement
     try:
+        # pylint: disable-next=import-outside-toplevel
         from catalyst.api_extensions.quantum_operators import MidCircuitMeasure
 
         _CATALYST_SKIP_OP_TYPES = (*_CATALYST_SKIP_OP_TYPES, MidCircuitMeasure)
@@ -120,7 +121,9 @@ def _check_clifford_op(op, use_decomposition=False):
         qp.pauli.pauli_sentence(qp.prod(*pauli))
         for pauli in product(*(pauli_group(idx) for idx in op.wires))
     ]
-    pauli_ops = (pauli_sen.operation(wire_order=op.wires) for pauli_sen in pauli_sens)
+    pauli_ops = (
+        qp.pauli.to_operator(pauli_sen, identity_wires=op.wires) for pauli_sen in pauli_sens
+    )
 
     # Perform U@P@U^\dagger and check if the result exists in set P
     for pauli_prod in product([pauli_terms], pauli_ops, [pauli_terms_adj]):
@@ -165,7 +168,7 @@ def check_clifford_t(op, use_decomposition=False):
         theta = op.data[0]
         return (
             False
-            if qp.math.is_abstract(theta)
+            if qp.math.is_tracer(theta)
             else qp.math.allclose(qp.math.mod(theta, math.pi), 0.0)
         )
 
@@ -179,7 +182,7 @@ def _simplify_param(theta, gate):
     when even, and (b) returns combination of provided gate with global phase when odd.
     In rest of the other cases it would return None.
     """
-    if qp.math.is_abstract(theta):  # pragma: no cover
+    if qp.math.is_tracer(theta):  # pragma: no cover
         return None
 
     if qp.math.allclose(theta, 0.0, atol=1e-6):
@@ -195,8 +198,7 @@ def _simplify_param(theta, gate):
     return None
 
 
-# pylint: disable= too-many-branches,
-def _rot_decompose(op):
+def _rot_decompose(op):  # pylint: disable=too-many-branches
     r"""Decomposes a rotation operation: :class:`~.Rot`, :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`,
     :class:`~.PhaseShift` or a :class`~.QubitUnitary` into a basis composed of :class:`~.RZ`,
     :class:`~.S`, and :class:`~.Hadamard`.
@@ -242,7 +244,7 @@ def _rot_decompose(op):
         ops_ = _simplify_param(theta, qp.Z(wires))
         if ops_ is None:
             ops_ = [qp.RZ(theta, wires=wires), qp.GlobalPhase(-theta / 2)]
-            if not qp.math.is_abstract(theta):
+            if not qp.math.is_tracer(theta):
                 # The following loop simplifies the two cases where for all odd intergers `k`,
                 # `PhaseShift(k * pi / 2)` is S / S* and `PhaseShift(k * pi / 4)` is T / T*.
                 for val_ in [2, 4]:
@@ -399,7 +401,6 @@ class _CachedCallable:
             else lru_cache(maxsize=cache_size)(self.cached_decompose)
         )
 
-    # pylint: disable=too-many-arguments
     def compatible(self, method, epsilon, cache_size, cache_eps_rtol, is_qjit, **method_kwargs):
         """Check compatibility based on `method`, `epsilon`, `cache_eps_rtol` and `method_kwargs`."""
         return (
@@ -425,15 +426,14 @@ class _CachedCallable:
             if f_adj:
                 return seq
 
-            adj = [qp.adjoint(s, lazy=False) for s in reversed(seq)]
+            adj = [_adjoint_eager(s, update_queue=True) for s in reversed(seq)]
             return adj[1:] + adj[:1]
 
         return self.decompose_fn(op)
 
 
-# pylint: disable=too-many-branches,too-many-statements
 @transform
-def clifford_t_decomposition(
+def clifford_t_decomposition(  # pylint: disable=too-many-branches,too-many-statements
     tape: QuantumScript,
     epsilon=1e-4,
     method="gridsynth",
@@ -621,7 +621,7 @@ def clifford_t_decomposition(
                 decomp_ops.append(op)
 
         # check if phase is non-zero for non jax-jit cases
-        if qp.math.is_abstract(phase) or not qp.math.allclose(phase, 0.0):
+        if qp.math.is_tracer(phase) or not qp.math.allclose(phase, 0.0):
             decomp_ops.append(qp.GlobalPhase(phase))
 
     # Construct a new tape with the expanded set of operations

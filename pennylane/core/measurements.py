@@ -29,6 +29,7 @@ import jax.extend.core
 from pennylane import math
 from pennylane.capture import ABCCaptureMeta
 from pennylane.capture import enabled as capture_enabled
+from pennylane.capture import symbolic_array
 from pennylane.core.operator.base import AbstractOperator  # tach-ignore
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import (
@@ -37,9 +38,9 @@ from pennylane.exceptions import (
     PennyLaneDeprecationWarning,
     QuantumFunctionError,
 )
-from pennylane.math.utils import is_abstract
+from pennylane.math.utils import is_tracer
 from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.typing import TensorLike
+from pennylane.typing import AbstractWires, TensorLike
 from pennylane.wires import Wires
 
 # tach-ignore
@@ -93,6 +94,8 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
         """
         if obs is None:
+            if isinstance(wires, AbstractWires):
+                wires = [symbolic_array((), int) for _ in range(len(wires))]
             wires = () if wires is None else wires
             if eigvals is None:
                 out = cls._wires_primitive.bind(*wires, **kwargs)  # wires
@@ -121,9 +124,8 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         out = cls._mcm_primitive.bind(obs, single_mcm=True, **kwargs)  # single mcm
         return tuple(out) if isinstance(out, list) else out
 
-    # pylint: disable=unused-argument
     @classmethod
-    def _abstract_eval(
+    def _abstract_eval(  # pylint: disable=unused-argument
         cls,
         n_wires: int | None = None,
         has_eigvals=False,
@@ -179,7 +181,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             # Cast sequence of measurement values to list
             self.mv = obs if getattr(obs, "name", None) == "MeasurementValue" else list(obs)
             self.obs = None
-        elif is_abstract(obs):  # Catalyst program with qp.sample(m, wires=i)
+        elif is_tracer(obs):  # Catalyst program with qp.sample(m, wires=i)
             self.mv = obs
             self.obs = None
         else:
@@ -309,7 +311,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
         This is the union of all the Wires objects of the measurement.
         """
-        if self.mv is not None and not is_abstract(self.mv):
+        if self.mv is not None and not is_tracer(self.mv):
             if isinstance(self.mv, list):
                 return Wires.all_wires([m.wires for m in self.mv])
             return self.mv.wires
@@ -406,7 +408,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         """
         return self if self.obs is None else self.__class__(obs=self.obs.simplify())
 
-    # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):
         """Returns a copy of the current measurement process with its wires changed according to
         the given wire map.
@@ -427,6 +428,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         elif self.obs is not None:
             new_measurement.obs = self.obs.map_wires(wire_map=wire_map)
         elif self._wires is not None:
+            # pylint: disable-next=protected-access
             new_measurement._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         return new_measurement
 

@@ -16,13 +16,11 @@ Unit tests for the BasicEntanglerLayers template.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -32,12 +30,12 @@ def test_standard_validity():
     weights = np.random.random((1, 3))
 
     op = qp.BasicEntanglerLayers(weights, wires=range(3))
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 @pytest.mark.system
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-class TestCorrectness:  # pylint: disable=too-few-public-methods
+class TestCorrectness:
     """Tests the correctness of a circuit which contains the template."""
 
     @pytest.mark.parametrize(
@@ -138,11 +136,10 @@ class TestDecomposition:
     @pytest.mark.parametrize(("weights", "wires", "rotation"), DECOMP_PARAMS)
     def test_decomposition_new(self, weights, wires, rotation):
         op = qp.BasicEntanglerLayers(weights, wires, rotation=rotation)
-        for rule in qp.list_decomps(qp.BasicEntanglerLayers):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
-class TestInputs:
+class TestInputs:  # pylint: disable=too-few-public-methods
     """Test inputs and pre-processing."""
 
     def test_exception_wrong_dim(self):
@@ -163,7 +160,7 @@ class TestInputs:
             circuit([[1, 0], [1, 0]])
 
 
-class TestAttributes:
+class TestAttributes:  # pylint: disable=too-few-public-methods
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(

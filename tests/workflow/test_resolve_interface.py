@@ -48,7 +48,6 @@ def test_auto_with_autograd():
 def test_auto_with_jax():
     """Test that 'auto' interface resolves to 'jax' correctly.."""
     try:
-        # pylint: disable=import-outside-toplevel
         import jax.numpy as jnp
     except ImportError:
         pytest.skip("JAX not installed.")
@@ -62,11 +61,9 @@ def test_auto_with_jax():
 
 def test_auto_with_unsupported_interface():
     """Test that 'auto' interface resolves to None correctly."""
-    # pylint: disable=import-outside-toplevel
     import networkx as nx
 
-    # pylint: disable=too-few-public-methods
-    class DummyCustomGraphOp(qp.operation.Operation):
+    class DummyCustomGraphOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
         """Dummy custom operation for testing purposes."""
 
         def __init__(self, graph: nx.Graph):
@@ -85,7 +82,6 @@ def test_auto_with_unsupported_interface():
 def test_jax():
     """Test that non-abstract JAX parameters in tapes resolve to 'jax'."""
     try:
-        # pylint: disable=import-outside-toplevel
         import jax.numpy as jnp
     except ImportError:
         pytest.skip("JAX not installed.")
@@ -94,7 +90,7 @@ def test_jax():
     tapes = [
         QuantumScript([qp.RX(x, wires=0)], [qp.expval(qp.PauliZ(0))]),
     ]
-    assert not qp.math.is_abstract(x)
+    assert not qp.math.is_tracer(x)
 
     resolved_interface_abstract = _resolve_interface("jax", tapes)
     assert resolved_interface_abstract == Interface.JAX
@@ -104,18 +100,17 @@ def test_jax():
 def test_jax_jit():
     """Test that abstract JAX parameters in tapes resolve to 'jax-jit'."""
     try:
-        # pylint: disable=import-outside-toplevel
         import jax
         import jax.numpy as jnp
     except ImportError:
         pytest.skip("JAX not installed.")
 
     param = jnp.array(0.5)
-    assert not qp.math.is_abstract(param)
+    assert not qp.math.is_tracer(param)
 
     @jax.jit
     def abstract_func(x):
-        assert qp.math.is_abstract(x)
+        assert qp.math.is_tracer(x)
         tapes = [
             QuantumScript([qp.RX(x, wires=0)], [qp.expval(qp.PauliZ(0))]),
         ]

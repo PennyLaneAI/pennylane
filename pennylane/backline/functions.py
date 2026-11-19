@@ -14,9 +14,29 @@
 
 """Coprocessor functions for backline placement."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from numpy.typing import ArrayLike
+
+# The launch contract the generated Triton kernels follow: Catalyst's CoprocLaunchDesc frames,
+# with replies carrying the request's decoder_id.
+_TRITON_LAUNCHER_ABI_VERSION = 2
+
+
+def _check_catalyst_runs_triton_kernels():
+    """Refuse a Catalyst whose GPU coprocessors expect an older reply layout than the generated
+    Triton kernels write: the session would wait for replies it never recognises."""
+    try:
+        import catalyst.backline as catalyst_backline  # pylint: disable=import-outside-toplevel
+    except ImportError:
+        return
+    supported = getattr(catalyst_backline, "COPROCESSOR_LAUNCHER_ABI_VERSION", 1)
+    if supported < _TRITON_LAUNCHER_ABI_VERSION:
+        raise ImportError(
+            "Triton decoders from this PennyLane need a newer Catalyst: its GPU coprocessors "
+            f"follow launcher ABI {supported}, and these kernels write replies for ABI "
+            f"{_TRITON_LAUNCHER_ABI_VERSION}. Update pennylane-catalyst."
+        )
 
 
 @dataclass(frozen=True)
@@ -39,8 +59,22 @@ class CoprocessorFunction:
         lib_path (str, None): Path to the shared library providing the symbol. Defaults to
             ``None``, in which case the runtime resolves :attr:`name` from the symbols already
             loaded on the host.
+        config (str): The function's configuration, in the form of a semicolon-separated set of
+            keys and values, for example ``"key1=value1;key2=value2"``. A function whose library
+            exports lifecycle hooks under ``<name>_info`` (for example
+            ``catalyst_onnx_coprocessor_info``) receives these entries in its ``init`` hook once,
+            before its first message, and is then called with the context that hook returns. The
+            keys ``in_bytes`` and ``out_bytes`` are reserved for the message sizes, which Catalyst
+            adds to the entries.
+        per_message (bool): Whether the function is a host function called once per message,
+            rather than a launcher that starts a persistent GPU kernel. This option applies only on
+            a GPU coprocessor, which then runs the function per message, and only over the
+            ``"memcpy"`` transport. On a CPU coprocessor every function is called per message.
+        message_bytes (tuple[int, int] or None): The ``(in_bytes, out_bytes)`` message sizes the
+            function expects, or ``None`` to declare none.
 
-    .. seealso:: :class:`~.Coprocessor`, :func:`~.css_bp_decoder`, :func:`~.triton_decoder`
+    .. seealso:: :class:`~.Coprocessor`, :func:`~.css_bp_decoder`, :func:`~.onnx_decoder`,
+        :func:`~.triton_decoder`
 
     **Example**
 
@@ -49,7 +83,7 @@ class CoprocessorFunction:
 
     >>> coproc = qp.Coprocessor(coprocessor_fn="decoder")
     >>> coproc.coprocessor_fn
-    CoprocessorFunction(name='decoder', lib_path=None)
+    CoprocessorFunction(name='decoder', lib_path=None, config='', per_message=False)
 
     Construct one directly to point at a symbol in a specific shared library. The path is what the
     coprocessor's node passes to the runtime as its backend library:
@@ -67,6 +101,28 @@ class CoprocessorFunction:
     lib_path: str | None = None
     """Path to the shared library that provides the symbol. Defaults to ``None``, in which case the
     runtime resolves :attr:`name` from the symbols already loaded on the host."""
+
+    config: str = ""
+    """The function's configuration, as semicolon-separated keys and values such as
+    ``"key1=value1;key2=value2"``, handed to the ``init`` hook its library exports under
+    ``<name>_info``."""
+
+    per_message: bool = False
+    """Whether the function is called once per message, rather than launching a persistent GPU
+    kernel."""
+
+    message_bytes: tuple[int, int] | None = field(default=None, repr=False)
+    """The ``(in_bytes, out_bytes)`` message sizes the function expects, or ``None`` when it does
+    not declare them. A :class:`~.Placement` takes the controller's unset sizes from it, and
+    rejects a controller size that differs."""
+
+    def __post_init__(self):
+        if self.message_bytes is not None:
+            object.__setattr__(self, "message_bytes", tuple(self.message_bytes))
+            if len(self.message_bytes) != 2:
+                raise ValueError(
+                    f"message_bytes must be an (in_bytes, out_bytes) pair, got {self.message_bytes}"
+                )
 
     @property
     def symbol_name(self) -> str:
@@ -127,12 +183,12 @@ def triton_decoder(
     ... )
     """
     try:
-        from pennylane.backline.decoders.triton.decoder_frontend import (  # pylint: disable=import-outside-toplevel
-            _build_triton_decoder,
-        )
+        # pylint: disable-next=import-outside-toplevel
+        from pennylane.backline.decoders.triton.decoder_frontend import _build_triton_decoder
     except ImportError as exc:
         raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
+    _check_catalyst_runs_triton_kernels()  # pragma: no cover
     so_path, symbol_name = _build_triton_decoder(decoder_fns, **build_options)  # pragma: no cover
     return CoprocessorFunction(name=symbol_name, lib_path=str(so_path))  # pragma: no cover
 
@@ -204,12 +260,12 @@ def css_bp_decoder(
     ... )
     """
     try:
-        from pennylane.backline.decoders.triton.decoder_frontend import (  # pylint: disable=import-outside-toplevel
-            _build_css_bp_decoder,
-        )
+        # pylint: disable-next=import-outside-toplevel
+        from pennylane.backline.decoders.triton.decoder_frontend import _build_css_bp_decoder
     except ImportError as exc:
         raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
+    _check_catalyst_runs_triton_kernels()  # pragma: no cover
     so_path, symbol_name = _build_css_bp_decoder(  # pragma: no cover
         Hx, Hz, postprocess=postprocess, num_iters=num_iters, prob=prob, **build_options
     )

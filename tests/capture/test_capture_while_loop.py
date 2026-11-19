@@ -15,7 +15,7 @@
 Tests for capturing for while loops into jaxpr.
 """
 
-# pylint: disable=unbalanced-tuple-unpacking
+from functools import partial
 
 import numpy as np
 import pytest
@@ -28,9 +28,7 @@ jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
 from pennylane.capture.primitives import while_loop_prim  # pylint: disable=wrong-import-position
-from tests.capture.capture_utils import (  # pylint: disable=wrong-import-position
-    extract_all_primitives,
-)
+from pennylane.testing import extract_all_primitives  # pylint: disable=wrong-import-position
 
 
 class TestCaptureWhileLoop:
@@ -503,9 +501,8 @@ class TestCaptureWhileLoopDynamicShapes:
 
         def f(sz):
 
-            # pylint: disable=unused-argument
             @qp.while_loop(lambda i, a: i < 5)
-            def loop(i, a):
+            def loop(i, a):  # pylint: disable=unused-argument
                 return i + 1, jnp.ones([sz])
 
             _, a2 = loop(0, jnp.ones([sz]))
@@ -546,8 +543,7 @@ class TestCaptureWhileLoopDynamicShapes:
         Encountered in benchmarking suite.
         """
 
-        # pylint: disable=too-few-public-methods
-        class ThingWithShape:
+        class ThingWithShape:  # pylint: disable=too-few-public-methods
 
             def __init__(self):
                 pass
@@ -567,3 +563,50 @@ class TestCaptureWhileLoopDynamicShapes:
         jaxpr = jax.make_jaxpr(w)()
         assert jaxpr.eqns[0].primitive == while_loop_prim
         assert jaxpr.eqns[0].params["jaxpr_body_fn"].eqns[0].primitive.name == "add"
+
+
+class TestWhileLoopHintsCapture:
+    """Tests that ``num-iters`` reaches the while-loop capture primitive."""
+
+    def test_estimated_iterations_in_jaxpr(self):
+        """``num-iters`` should become ``estimated_iterations`` on ``while_loop``."""
+
+        @qp.hint({"num-iters": 7})
+        @qp.while_loop(lambda i: i < 3)
+        def loop(i):
+            return i + 1
+
+        jaxpr = jax.make_jaxpr(loop)(0)
+        assert jaxpr.eqns[0].primitive == while_loop_prim
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 7
+
+    def test_without_hint_has_none_estimated_iterations(self):
+        """Unhinted while loops should bind ``estimated_iterations=None``."""
+
+        @qp.while_loop(lambda i: i < 3)
+        def loop(i):
+            return i + 1
+
+        jaxpr = jax.make_jaxpr(loop)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] is None
+
+    def test_apply_hint_form_sets_estimated_iterations(self):
+        """``qp.hint(...)(loop)`` should also populate ``estimated_iterations``."""
+
+        @qp.while_loop(lambda i: i < 3)
+        def loop(i):
+            return i + 1
+
+        hinted = qp.hint({"num-iters": 4})(loop)
+        jaxpr = jax.make_jaxpr(hinted)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 4
+
+    def test_hint_under_partial(self):
+        """``num-iters`` should be found when the hinted body is wrapped in a partial."""
+
+        def body(i, step):
+            return i + step
+
+        loop = qp.while_loop(lambda i: i < 3)(partial(qp.hint(body, {"num-iters": 7}), step=1))
+        jaxpr = jax.make_jaxpr(loop)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 7

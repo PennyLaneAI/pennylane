@@ -16,6 +16,8 @@ Unit tests for the optimization transform ``pattern_matching_optimization``.
 """
 
 # pylint: disable=too-many-statements
+
+
 import pytest
 
 import pennylane as qp
@@ -65,8 +67,13 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
         optimized_qnode_res = optimized_qnode()
 
-        cnots_qnode = qp.specs(qnode)().resources.quantum_operations["CNOT"]
-        cnots_optimized_qnode = qp.specs(optimized_qnode)().resources.quantum_operations["CNOT"]
+        tape = qp.workflow.construct_tape(qnode)()
+        tape_optimized = qp.workflow.construct_tape(optimized_qnode)()
+
+        cnots_qnode = qp.resource.resources_from_tape(tape).quantum_operations["CNOT"]
+        cnots_optimized_qnode = qp.resource.resources_from_tape(tape_optimized).quantum_operations[
+            "CNOT"
+        ]
 
         tape = qp.workflow.construct_tape(qnode)()
         assert len(tape.operations) == 8
@@ -142,8 +149,13 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
         optimized_qnode_res = optimized_qnode()
 
-        cnots_qnode = qp.specs(qnode)().resources.quantum_operations["CNOT"]
-        cnots_optimized_qnode = qp.specs(optimized_qnode)().resources.quantum_operations["CNOT"]
+        tape = qp.workflow.construct_tape(qnode)()
+        tape_optimized = qp.workflow.construct_tape(optimized_qnode)()
+
+        cnots_qnode = qp.resource.resources_from_tape(tape).quantum_operations["CNOT"]
+        cnots_optimized_qnode = qp.resource.resources_from_tape(tape_optimized).quantum_operations[
+            "CNOT"
+        ]
 
         tape = qp.workflow.construct_tape(qnode)()
         assert len(tape.operations) == 8
@@ -184,8 +196,13 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
         optimized_qnode_res = optimized_qnode()
 
-        cnots_qnode = qp.specs(qnode)().resources.quantum_operations["CNOT"]
-        cnots_optimized_qnode = qp.specs(optimized_qnode)().resources.quantum_operations["CNOT"]
+        tape = qp.workflow.construct_tape(qnode)()
+        tape_optimized = qp.workflow.construct_tape(optimized_qnode)()
+
+        cnots_qnode = qp.resource.resources_from_tape(tape).quantum_operations["CNOT"]
+        cnots_optimized_qnode = qp.resource.resources_from_tape(tape_optimized).quantum_operations[
+            "CNOT"
+        ]
 
         tape = qp.workflow.construct_tape(qnode)()
         assert len(tape.operations) == 8
@@ -225,10 +242,13 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
         optimized_qnode_res = optimized_qnode()
 
-        s_qnode = qp.specs(qnode)().resources.quantum_operations["S"]
-        s_adjoint_optimized_qnode = qp.specs(optimized_qnode)().resources.quantum_operations[
-            "Adjoint(S)"
-        ]
+        tape = qp.workflow.construct_tape(qnode)()
+        tape_optimized = qp.workflow.construct_tape(optimized_qnode)()
+
+        s_qnode = qp.resource.resources_from_tape(tape).quantum_operations["S"]
+        s_adjoint_optimized_qnode = qp.resource.resources_from_tape(
+            tape_optimized
+        ).quantum_operations["Adjoint(S)"]
 
         tape = qp.workflow.construct_tape(qnode)()
         assert len(tape.operations) == 8
@@ -275,10 +295,13 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
         optimized_qnode_res = optimized_qnode()
 
-        toffolis_qnode = qp.specs(qnode)().resources.quantum_operations.get("Toffoli", 0)
-        toffolis_optimized_qnode = qp.specs(optimized_qnode)().resources.quantum_operations.get(
-            "Toffoli", 0
-        )
+        tape = qp.workflow.construct_tape(qnode)()
+        tape_optimized = qp.workflow.construct_tape(optimized_qnode)()
+
+        toffolis_qnode = qp.resource.resources_from_tape(tape).quantum_operations.get("Toffoli", 0)
+        toffolis_optimized_qnode = qp.resource.resources_from_tape(
+            tape_optimized
+        ).quantum_operations.get("Toffoli", 0)
 
         tape = qp.workflow.construct_tape(qnode)()
         assert len(tape.operations) == 11
@@ -324,11 +347,14 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
         optimized_qnode_res = optimized_qnode()
 
-        gate_qnode = qp.specs(qnode)().resources.quantum_operations
+        tape = qp.workflow.construct_tape(qnode)()
+        tape_optimized = qp.workflow.construct_tape(optimized_qnode)()
+
+        gate_qnode = qp.resource.resources_from_tape(tape).quantum_operations
         swap_qnode = gate_qnode.get("SWAP", 0)
         cnot_qnode = gate_qnode.get("CNOT", 0)
 
-        gate_qnode_optimized = qp.specs(optimized_qnode)().resources.quantum_operations
+        gate_qnode_optimized = qp.resource.resources_from_tape(tape_optimized).quantum_operations
         swap_optimized_qnode = gate_qnode_optimized.get("SWAP", 0)
         cnot_optimized_qnode = gate_qnode_optimized.get("CNOT", 0)
 
@@ -376,11 +402,14 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
         optimized_qnode_res = optimized_qnode()
 
-        gate_qnode = qp.specs(qnode)().resources.quantum_operations
+        tape = qp.workflow.construct_tape(qnode)()
+        tape_optimized = qp.workflow.construct_tape(optimized_qnode)()
+
+        gate_qnode = qp.resource.resources_from_tape(tape).quantum_operations
         swap_qnode = gate_qnode.get("SWAP", 0)
         cnot_qnode = gate_qnode.get("CNOT", 0)
 
-        gate_qnode_optimized = qp.specs(optimized_qnode)().resources.quantum_operations
+        gate_qnode_optimized = qp.resource.resources_from_tape(tape_optimized).quantum_operations
         swap_optimized_qnode = gate_qnode_optimized.get("SWAP", 0)
         cnot_optimized_qnode = gate_qnode_optimized.get("CNOT", 0)
 
@@ -428,11 +457,14 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
         optimized_qnode_res = optimized_qnode()
 
-        gate_qnode = qp.specs(qnode)().resources.quantum_operations
+        tape = qp.workflow.construct_tape(qnode)()
+        tape_optimized = qp.workflow.construct_tape(optimized_qnode)()
+
+        gate_qnode = qp.resource.resources_from_tape(tape).quantum_operations
         cswap_qnode = gate_qnode.get("CSWAP", 0)
         cnot_qnode = gate_qnode.get("CNOT", 0)
 
-        gate_qnode_optimized = qp.specs(optimized_qnode)().resources.quantum_operations
+        gate_qnode_optimized = qp.resource.resources_from_tape(tape_optimized).quantum_operations
         cswap_optimized_qnode = gate_qnode_optimized.get("CSWAP", 0)
         cnot_optimized_qnode = gate_qnode_optimized.get("CNOT", 0)
 
@@ -490,15 +522,19 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
         optimized_qnode_res = optimized_qnode(0.1, 0.2)
 
-        rx_qnode = qp.specs(qnode)(0.1, 0.2).resources.quantum_operations.get("RX", 0)
-        rx_optimized_qnode = qp.specs(optimized_qnode)(0.1, 0.2).resources.quantum_operations.get(
-            "RX", 0
-        )
+        tape = qp.workflow.construct_tape(qnode)(0.1, 0.2)
+        tape_optimized = qp.workflow.construct_tape(optimized_qnode)(0.1, 0.2)
 
-        rz_qnode = qp.specs(qnode)(0.1, 0.2).resources.quantum_operations.get("RZ", 0)
-        rz_optimized_qnode = qp.specs(optimized_qnode)(0.1, 0.2).resources.quantum_operations.get(
-            "RZ", 0
-        )
+        resources_qnode = qp.resource.resources_from_tape(tape).quantum_operations
+        resources_optimized_qnode = qp.resource.resources_from_tape(
+            tape_optimized
+        ).quantum_operations
+
+        rx_qnode = resources_qnode.get("RX", 0)
+        rx_optimized_qnode = resources_optimized_qnode.get("RX", 0)
+
+        rz_qnode = resources_qnode.get("RZ", 0)
+        rz_optimized_qnode = resources_optimized_qnode.get("RZ", 0)
 
         tape = qp.workflow.construct_tape(qnode)(0.1, 0.2)
         assert len(tape.operations) == 14
@@ -552,8 +588,13 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
         optimized_qnode_res = optimized_qnode()
 
-        cnots_qnode = qp.specs(qnode)().resources.quantum_operations["CNOT"]
-        cnots_optimized_qnode = qp.specs(optimized_qnode)().resources.quantum_operations["CNOT"]
+        tape = qp.workflow.construct_tape(qnode)()
+        tape_optimized = qp.workflow.construct_tape(optimized_qnode)()
+
+        cnots_qnode = qp.resource.resources_from_tape(tape).quantum_operations["CNOT"]
+        cnots_optimized_qnode = qp.resource.resources_from_tape(tape_optimized).quantum_operations[
+            "CNOT"
+        ]
 
         tape = qp.workflow.construct_tape(qnode)()
         assert len(tape.operations) == 7
@@ -640,8 +681,13 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
         optimized_qnode_res = optimized_qnode()
 
-        cnots_qnode = qp.specs(qnode)().resources.quantum_operations["CNOT"]
-        cnots_optimized_qnode = qp.specs(optimized_qnode)().resources.quantum_operations["CNOT"]
+        tape = qp.workflow.construct_tape(qnode)()
+        tape_optimized = qp.workflow.construct_tape(optimized_qnode)()
+
+        cnots_qnode = qp.resource.resources_from_tape(tape).quantum_operations["CNOT"]
+        cnots_optimized_qnode = qp.resource.resources_from_tape(tape_optimized).quantum_operations[
+            "CNOT"
+        ]
 
         tape = qp.workflow.construct_tape(qnode)()
         assert len(tape.operations) == 51
@@ -767,8 +813,13 @@ class TestPatternMatchingOptimization:
         optimized_qnode = qp.QNode(optimized_qfunc, dev)
         optimized_qnode_res = optimized_qnode()
 
-        cnots_qnode = qp.specs(qnode)().resources.quantum_operations["CNOT"]
-        cnots_optimized_qnode = qp.specs(optimized_qnode)().resources.quantum_operations["CNOT"]
+        tape = qp.workflow.construct_tape(qnode)()
+        tape_optimized = qp.workflow.construct_tape(optimized_qnode)()
+
+        cnots_qnode = qp.resource.resources_from_tape(tape).quantum_operations["CNOT"]
+        cnots_optimized_qnode = qp.resource.resources_from_tape(tape_optimized).quantum_operations[
+            "CNOT"
+        ]
 
         tape = qp.workflow.construct_tape(qnode)()
         assert len(tape.operations) == 89

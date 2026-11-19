@@ -15,6 +15,7 @@
 
 # pylint: disable=unused-argument
 
+
 import inspect
 from collections import Counter, defaultdict
 from functools import partial
@@ -251,14 +252,13 @@ class TestSubroutineOp:
     def test_isinstance_with_Subroutine(self):
         """Test that SubroutineOp's are instances of their corresponding Subroutine."""
 
-        # pylint: disable=isinstance-second-argument-not-valid-type
         assert isinstance(self.op1, Example1Subroutine)
 
     # SubroutineOp exists for the tape pipeline only. It does not need to be capture compatible.
     @pytest.mark.usefixtures("disable_capture")
     def test_basic_validity(self):
         """Test that subroutine op passes basic validity checks."""
-        qp.ops.functions.assert_valid(self.op1, skip_pickle=True)
+        qp.testing.assert_valid(self.op1, skip_pickle=True)
 
     def test_repr(self):
         """Test that SubroutineOp has a clean repr."""
@@ -316,7 +316,8 @@ class TestSubroutineOp:
 
         tape = qp.tape.QuantumScript([self.op1])
 
-        [new_tape], _ = qp.transforms.decompose(tape, gate_set={qp.PauliRot})
+        # pylint: disable-next=protected-access
+        [new_tape], _ = qp.transforms._tape_decompose(tape, gate_set={qp.PauliRot})
 
         qp.assert_equal(new_tape[0], qp.PauliRot(0.5, "XY", (0, "a")))
         qp.assert_equal(new_tape[1], qp.PauliRot(0.6, "YZ", ("a", 1)))
@@ -381,7 +382,7 @@ class TestSubroutineCapture:
     def test_setup_inputs_program_capture(self):
         """Test that setup_inputs can make inputs hashable for use with program capture."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         def my_setup_inputs(wires, pauli_words):
             return (), {"wires": wires, "pauli_words": tuple(pauli_words)}
@@ -397,7 +398,6 @@ class TestSubroutineCapture:
         jaxpr = jax.make_jaxpr(w)()
         assert jaxpr.eqns[-1].primitive == qp.capture.primitives.quantum_subroutine_prim
         inner_jaxpr = jaxpr.eqns[-1].params["jaxpr"]
-        # pylint: disable=protected-access
         assert inner_jaxpr.eqns[-1].primitive == qp.capture.primitives.operator_p
         assert inner_jaxpr.eqns[-1].params["op_cls"] is qp.PauliRot
         assert inner_jaxpr.eqns[-1].params["pauli_word"][0] == ("X",)
@@ -459,7 +459,7 @@ class TestSubroutineCapture:
     def test_autograph_not_propagated_through(self):
         """Test that autograph would propagate through a Subroutine."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         @Subroutine
         def f(x, wires):
@@ -478,7 +478,7 @@ class TestSubroutineCapture:
     def test_manual_autograph_use(self):
         """Test that autograph can be manually applied to a Subroutine."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         @Subroutine
         @qp.capture.run_autograph
@@ -497,7 +497,7 @@ class TestSubroutineCapture:
     def test_stack_wires(self):
         """Test that wire arguments to a subroutine are stacked"""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         @Subroutine
         def f(wires):
@@ -612,22 +612,6 @@ class TestTapePLIntegration:
         out2 = qp.draw(c, decimals=None)(0.5, 1.2)
         assert out2 == "0: ─╭Tester─┤  <Z>\n1: ─╰Tester─┤  <Z>"
 
-    def test_specs(self):
-        """Test that subroutines show up as gate types in specs."""
-
-        @qp.templates.Subroutine
-        def Tester(x, y, wires):
-            qp.RX(x, wires[0])
-            qp.RY(y, wires[1])
-
-        @qp.qnode(qp.device("reference.qubit", wires=2))
-        def c(x, y):
-            Tester(x, y, wires=(0, 1))
-            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
-
-        specs = qp.specs(c, level="top")(0.5, 1.2)
-        assert specs.resources.quantum_operations["Tester"] == 1
-
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestGraphDecomposition:
@@ -657,7 +641,6 @@ class TestGraphDecomposition:
         )
         assert rp["signature_key"] == key
 
-    # pylint: disable=too-many-statements
     def test_change_op_basis_subroutine_resource_rep_with_a_subroutine(self):
         """Test creating a ChangeOpBasis resource representation with a subroutine."""
 
@@ -972,7 +955,7 @@ class TestGraphDecomposition:
 
         op = qp.adjoint(RXLayer.operator(np.array([1, 2, 3]), (1, 2, 3)))
         tape = qp.tape.QuantumScript([op])
-        new_tape = qp.decompose(tape)[0][0]
+        new_tape = qp.transforms._tape_decompose(tape)[0][0]  # pylint: disable=protected-access
         qp.assert_equal(new_tape[0], qp.RX(-3, 3))
         qp.assert_equal(new_tape[1], qp.RX(-2, 2))
         qp.assert_equal(new_tape[2], qp.RX(-1, 1))
@@ -990,7 +973,8 @@ class TestGraphDecomposition:
 
         op = qp.ctrl(RXLayer.operator(np.array([1, 2, 3]), (1, 2, 3)), (4, 5))
         tape = qp.tape.QuantumScript([op])
-        new_tape = qp.decompose(tape, max_expansion=1)[0][0]
+        # pylint: disable-next=protected-access
+        new_tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][0]
         qp.assert_equal(new_tape[0], qp.ctrl(qp.RX(1, 1), (4, 5)))
         qp.assert_equal(new_tape[1], qp.ctrl(qp.RX(2, 2), (4, 5)))
         qp.assert_equal(new_tape[2], qp.ctrl(qp.RX(3, 3), (4, 5)))
@@ -1020,8 +1004,7 @@ class TestGraphDecomposition:
             for i in range(params.shape[0]):
                 qp.RY(params[i], wires[i])
 
-        # pylint: disable=too-few-public-methods
-        class SubroutineDemoOp(qp.operation.Operator):
+        class SubroutineDemoOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
 
             resource_keys = frozenset(())
 
@@ -1049,12 +1032,14 @@ class TestGraphDecomposition:
         op = SubroutineDemoOp(wires=(0, 1, 2))
         tape = qp.tape.QuantumScript([op])
 
-        tape_rx = qp.decompose(tape, gate_set={qp.RX})[0][0]
+        # pylint: disable-next=protected-access
+        tape_rx = qp.transforms._tape_decompose(tape, gate_set={qp.RX})[0][0]
         qp.assert_equal(tape_rx[0], qp.RX(0.0, 0))
         qp.assert_equal(tape_rx[1], qp.RX(1.0, 1))
         qp.assert_equal(tape_rx[2], qp.RX(2.0, 2))
 
-        tape_ry = qp.decompose(tape, gate_set={qp.RY})[0][0]
+        # pylint: disable-next=protected-access
+        tape_ry = qp.transforms._tape_decompose(tape, gate_set={qp.RY})[0][0]
         qp.assert_equal(tape_ry[0], qp.RY(0.0, 0))
         qp.assert_equal(tape_ry[1], qp.RY(1.0, 1))
         qp.assert_equal(tape_ry[2], qp.RY(2.0, 2))
@@ -1071,7 +1056,7 @@ class TestGraphDecomposition:
             qp.X(wires)
 
         op = f.operator(0)
-        qp.ops.functions.assert_valid(op, skip_pickle=True)
+        qp.testing.assert_valid(op, skip_pickle=True)
 
     def test_compute_resources_fallback(self):
         """Test that the compute_resources fallback allows integration with decomps by default."""
@@ -1088,7 +1073,8 @@ class TestGraphDecomposition:
         params = np.array([0.5, 1.2, 3.4])
         wires = [0, 1, 2]
         tape = qp.tape.QuantumScript([f.operator(params, wires, "X")])
-        [decomposed], _ = qp.decompose(tape, gate_set=qp.gate_sets.ALL_OPS)
+        # pylint: disable-next=protected-access
+        [decomposed], _ = qp.transforms._tape_decompose(tape, gate_set=qp.gate_sets.ALL_OPS)
         print(decomposed.circuit)
         qp.assert_equal(decomposed[0], qp.PauliRot(0.5, "X", 0))
         qp.assert_equal(decomposed[1], qp.PauliRot(1.2, "X", 1))

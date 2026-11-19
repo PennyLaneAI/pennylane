@@ -28,7 +28,7 @@ def test_basic_validity():
     """Assert the basic validity of an evolution op."""
     base = qp.prod(qp.PauliX(0), qp.PauliY(1))
     op = Evolution(base, 5.2)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestEvolution:  # pylint: disable=too-many-public-methods
@@ -330,7 +330,8 @@ def test_pauli_decomposition_integration_graph(coeff, hamiltonian):
     op = qp.evolve(hamiltonian, coeff)
     tape = qp.tape.QuantumScript([op])
 
-    [decomp_tape], _ = qp.transforms.decompose(tape, gate_set={"PauliRot"})
+    # pylint: disable-next=protected-access
+    [decomp_tape], _ = qp.transforms._tape_decompose(tape, gate_set={"PauliRot"})
     assert len(decomp_tape) == 1
     assert not qp.math.iscomplex(decomp_tape[0].data[0])
     actual_matrix = qp.matrix(decomp_tape, wire_order=op.wires)

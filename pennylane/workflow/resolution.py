@@ -52,7 +52,7 @@ def _get_jax_interface_name() -> Interface:
     abstract.
     """
     x = math.asarray([0], like="jax")
-    return Interface.JAX_JIT if math.is_abstract(x) else Interface.JAX
+    return Interface.JAX_JIT if math.is_tracer(x) else Interface.JAX
 
 
 def _resolve_interface(interface: str | Interface | None, tapes: QuantumScriptBatch) -> Interface:

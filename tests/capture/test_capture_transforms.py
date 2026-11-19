@@ -15,7 +15,8 @@
 This submodule tests transforms with program capture
 """
 
-# pylint: disable=protected-access
+# pylint: disable=protected-access,wrong-import-position
+
 
 import pytest
 
@@ -24,19 +25,17 @@ from pennylane.core.transforms import CompilePipeline
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-# pylint: disable=wrong-import-position
 import pennylane as qp
 from pennylane.capture.primitives import qnode_prim, transform_prim
+from pennylane.testing import assert_eqn_matches_op
 from pennylane.transforms.core import transform
-from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 @transform
-def z_to_hadamard(
-    tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def z_to_hadamard(tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None):
     """Transform that converts Z gates to H gates."""
     new_ops = [qp.H(wires=op.wires) if isinstance(op, qp.Z) else op for op in tape.operations]
     return [tape.copy(operations=new_ops)], lambda res: res[0]
@@ -59,9 +58,8 @@ def shift_rx_to_end(tape):
 
 
 @transform
-def expval_z_obs_to_x_obs(
-    tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def expval_z_obs_to_x_obs(tape, dummy_arg1, dummy_arg2, dummy_kwarg1=None, dummy_kwarg2=None):
     """Transform that converts Z observables for expectation values to X observables.
     This transform works natively with plxpr."""
     new_measurements = [
@@ -145,6 +143,49 @@ class TestCaptureTransforms:
         # Verifying that transformed function can execute
         _ = transformed_func(*args)
 
+    @pytest.mark.parametrize(
+        "args, kwargs",
+        [
+            ((1.5, {"offsets": [2.5, 3.5]}), {}),
+            ((1.5,), {"y": {"offsets": [2.5, 3.5]}}),
+            ((), {"y": {"offsets": [2.5, 3.5]}, "x": 1.5}),
+        ],
+        ids=["positional", "mixed", "keywords"],
+    )
+    def test_transform_qfunc_keyword_args(self, args, kwargs):
+        """Test keyword pytrees alongside captured constants and transform arguments."""
+        weights = jnp.array([2.0, 3.0])
+
+        def func(x, y):
+            return weights[0] * x + weights[1] * y["offsets"][0] - y["offsets"][1]
+
+        transformed_func = z_to_hadamard(func, 0, 1, dummy_kwarg1="foo")
+        jaxpr = jax.make_jaxpr(transformed_func)(*args, **kwargs)
+
+        result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.5, 2.5, 3.5)
+        assert qp.math.allclose(result, [7.0])
+        assert qp.math.allclose(transformed_func(*args, **kwargs), 7.0)
+
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    @pytest.mark.parametrize(
+        "kwargs",
+        [{"x": 0.5}, {"offset": 0.25, "x": 0.5}],
+        ids=["keyword", "keyword_only"],
+    )
+    def test_transform_qnode_keyword_args(self, kwargs):
+        """Test transformed QNode keyword inputs with dynamic-shape staging enabled."""
+
+        @qp.transforms.cancel_inverses
+        @qp.qnode(qp.device("default.qubit", wires=1))
+        def circuit(x, *, offset=0.0):
+            qp.RX(x + offset, wires=0)
+            return qp.probs()
+
+        jaxpr = jax.make_jaxpr(circuit)(**kwargs)
+
+        assert jaxpr.eqns[0].primitive == transform_prim
+        assert jaxpr.eqns[0].invars == jaxpr.jaxpr.invars
+
     def test_transform_qnode_capture(self):
         """Test that a transformed QNode is captured correctly."""
         dev = qp.device("default.qubit", wires=2)
@@ -171,7 +212,7 @@ class TestCaptureTransforms:
         expected_program = CompilePipeline()
         expected_program.add_transform(z_to_hadamard, *targs, **tkwargs)
         # Manually change targs from tuple to list
-        expected_program[0]._args = tuple(targs)  # pylint: disable=protected-access
+        expected_program[0]._args = tuple(targs)
         assert qnode.compile_pipeline == expected_program
 
         qfunc_jaxpr = qnode_jaxpr.eqns[0].params["qfunc_jaxpr"]

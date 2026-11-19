@@ -15,7 +15,8 @@
 Tests for capturing a qnode into jaxpr.
 """
 
-# pylint: disable=protected-access,wrong-import-position,ungrouped-imports,unbalanced-tuple-unpacking
+# pylint: disable=protected-access,wrong-import-position
+
 
 import pytest
 
@@ -38,26 +39,7 @@ from pennylane.capture.primitives import (
     while_loop_prim,
 )
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from tests.capture.capture_utils import assert_eqn_matches_op, extract_all_primitives
-
-
-def get_qnode_output_eqns(jaxpr):
-    """Extracts equations related to QNode outputs in the given JAX expression (jaxpr).
-
-    Parameters:
-        jaxpr: A JAX expression with equations, containing QNode-related operations.
-
-    Returns:
-        List of equations containing QNode outputs.
-    """
-
-    qnode_output_eqns = []
-
-    for eqn in jaxpr.eqns:
-        if eqn.primitive.name == "qnode":
-            qnode_output_eqns.append(eqn)
-
-    return qnode_output_eqns
+from pennylane.testing import assert_eqn_matches_op, extract_all_primitives, find_eqns
 
 
 @pytest.mark.capture
@@ -437,7 +419,6 @@ class TestUserTransforms:
             qp.capture.enable()
 
         jaxpr = jax.make_jaxpr(circuit)(1.5)
-        # pylint: disable=protected-access
         assert jaxpr.eqns[0].primitive == transform_prim
         assert jaxpr.eqns[0].params["transform"] == qp.transforms.cancel_inverses
         inner_jaxpr = jaxpr.eqns[0].params["inner_jaxpr"]
@@ -472,7 +453,6 @@ class TestUserTransforms:
         jaxpr = jax.make_jaxpr(circuit)(1.5)
         assert jaxpr.eqns[0].primitive == qnode_prim
         qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
-        # pylint: disable=protected-access
         assert qfunc_jaxpr.eqns[0].primitive == transform_prim
         assert qfunc_jaxpr.eqns[0].params["transform"] == qp.transforms.cancel_inverses
 
@@ -506,7 +486,6 @@ class TestUserTransforms:
             qp.capture.enable()
 
         jaxpr = jax.make_jaxpr(circuit)(1.5)
-        # pylint: disable=protected-access
         assert jaxpr.eqns[0].primitive == transform_prim
         assert jaxpr.eqns[0].params["transform"] == qp.transforms.cancel_inverses
         inner_jaxpr = jaxpr.eqns[0].params["inner_jaxpr"]
@@ -528,8 +507,7 @@ class TestDifferentiation:
     def test_error_backprop_unsupported(self):
         """Test an error is raised with backprop if the device does not support it."""
 
-        # pylint: disable=too-few-public-methods
-        class DummyDev(qp.devices.Device):
+        class DummyDev(qp.devices.Device):  # pylint: disable=too-few-public-methods
 
             def execute(self, *_, **__):
                 return 0
@@ -553,8 +531,7 @@ class TestDifferentiation:
             jax.grad(circuit)(0.5)
 
 
-# pylint: disable=too-many-public-methods
-class TestQNodeVmapIntegration:
+class TestQNodeVmapIntegration:  # pylint: disable=too-many-public-methods
     """Tests for integrating JAX vmap with the QNode primitive."""
 
     @pytest.mark.parametrize(
@@ -680,8 +657,7 @@ class TestQNodeVmapIntegration:
         dev = qp.device("default.qubit", wires=1)
 
         @qp.qnode(dev)
-        # pylint: disable=unused-argument
-        def circuit(x):
+        def circuit(x):  # pylint: disable=unused-argument
             return qp.sample()
 
         x = jnp.array([1.0, 2.0, 3.0])
@@ -808,7 +784,6 @@ class TestQNodeVmapIntegration:
     def test_simple_multidim_case_2(self):
         """Test vmap over a simple multidimensional case with a scalar and constant argument."""
 
-        # pylint: disable=import-outside-toplevel
         from scipy.stats import unitary_group
 
         const = jnp.array(2.0)
@@ -857,7 +832,7 @@ class TestQNodeVmapIntegration:
 
         jaxpr = jax.make_jaxpr(workflow)(x)
 
-        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        qnode_output_eqns = find_eqns(jaxpr, qnode_prim)
         assert len(qnode_output_eqns) == 3
         for eqn in qnode_output_eqns:
             assert len(eqn.outvars) == 1
@@ -888,7 +863,7 @@ class TestQNodeVmapIntegration:
 
         jaxpr = jax.make_jaxpr(workflow)(x)
 
-        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        qnode_output_eqns = find_eqns(jaxpr, qnode_prim)
         assert len(qnode_output_eqns) == 2
         for eqn in qnode_output_eqns:
             assert len(eqn.outvars) == 1
@@ -920,7 +895,7 @@ class TestQNodeVmapIntegration:
 
         jaxpr = jax.make_jaxpr(workflow)(y, x)
 
-        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        qnode_output_eqns = find_eqns(jaxpr, qnode_prim)
         assert len(qnode_output_eqns) == 2
         for eqn in qnode_output_eqns:
             assert len(eqn.outvars) == 1
@@ -962,7 +937,7 @@ class TestQNodeVmapIntegration:
 
         jaxpr = jax.make_jaxpr(workflow)(x, y, 1)
 
-        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        qnode_output_eqns = find_eqns(jaxpr, qnode_prim)
         assert len(qnode_output_eqns) == 3
         for eqn in qnode_output_eqns:
             assert len(eqn.outvars) == 1
@@ -1008,7 +983,7 @@ class TestQNodeVmapIntegration:
 
         jaxpr = jax.make_jaxpr(workflow)(x, y, 1)
 
-        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        qnode_output_eqns = find_eqns(jaxpr, qnode_prim)
         assert len(qnode_output_eqns) == 4
         for eqn in qnode_output_eqns:
             assert len(eqn.outvars) == 1
@@ -1033,7 +1008,7 @@ class TestQNodeVmapIntegration:
 
         jaxpr = jax.make_jaxpr(workflow)(x)
 
-        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        qnode_output_eqns = find_eqns(jaxpr, qnode_prim)
         assert len(qnode_output_eqns) == 2
         for eqn in qnode_output_eqns:
             assert len(eqn.outvars) == 1
@@ -1080,7 +1055,7 @@ class TestQNodeVmapIntegration:
 
         jaxpr = jax.make_jaxpr(workflow)(x)
 
-        qnode_output_eqns = get_qnode_output_eqns(jaxpr)
+        qnode_output_eqns = find_eqns(jaxpr, qnode_prim)
         assert len(qnode_output_eqns) == 2
         for eqn in qnode_output_eqns:
             assert len(eqn.outvars) == 2

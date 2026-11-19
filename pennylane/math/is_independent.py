@@ -76,7 +76,6 @@ def _autograd_is_indep_analytic(func, *args, **kwargs):
     return True
 
 
-# pylint: disable=import-outside-toplevel
 def _jax_is_indep_analytic(func, *args, **kwargs):
     """Test analytically whether a function is independent of its arguments
     using JAX.
@@ -161,7 +160,7 @@ def _get_random_args(args, interface, num, seed, bounds):
     return rnd_args
 
 
-# pylint:disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable-next=too-many-arguments
 def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol, bounds):
     """Test whether a function returns the same output at random positions.
 
@@ -200,8 +199,7 @@ def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol
     return True
 
 
-# pylint: disable=too-many-positional-arguments
-def is_independent(
+def is_independent(  # pylint: disable=too-many-arguments
     func,
     interface,
     args,
@@ -305,8 +303,6 @@ def is_independent(
     This means that ``is_independent`` is a stronger test than simply verifying functions
     have constant output.
     """
-
-    # pylint:disable=too-many-arguments
 
     if interface not in {"autograd", "jax", "torch"}:
         raise ValueError(f"Unknown interface: {interface}")

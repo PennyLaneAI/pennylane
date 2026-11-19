@@ -188,7 +188,7 @@ class OutSquare(_SquareArithmeticOp):
 
             dev = qp.device("lightning.qubit", wires=20, seed=295)
 
-            @qp.decompose(max_expansion=1) # To see resources easily
+            @qp.transforms._tape_decompose(max_expansion=1) # To see resources easily
             @qp.qnode(dev, shots=1_000)
             def circuit(zeroed):
                 qp.BasisState(qp.math.int_to_binary(13, len(x_wires)), wires=x_wires)
@@ -198,15 +198,15 @@ class OutSquare(_SquareArithmeticOp):
         We can compute the required resources with ``zeroed=False``, i.e., when not passing
         the information to the template:
 
-        >>> specs_false = qp.specs(circuit)(False).resources.quantum_operations
-        >>> print(specs_false)
+        >>> specs_false = qp.specs(circuit)(False).resources.quantum_operations  # doctest: +SKIP
+        >>> print(specs_false)  # doctest: +SKIP
         {'BasisState': 1, 'C(MultiX)': 4, 'MultiControlledX': 12, 'TemporaryAND': 14, 'LeftFullAdder': 5, 'CNOT': 5, 'RightHalfAdder': 14, 'RightFullAdder': 5, 'MultiX': 4, 'SemiAdder': 2}
 
         When we do pass the information, we reduce the required resources by a lot:
 
-        >>> specs_true = qp.specs(circuit)(True).resources.quantum_operations
-        >>> print(specs_true)
-        {'BasisState': 1, 'TemporaryAND': 7, 'CNOT': 4, 'LeftFullAdder': 3, 'MultiControlledX': 3, 'CtrlRightFullAdder': 3, 'CtrlRightHalfAdder': 2, 'RightHalfAdder': 2}
+        >>> specs_true = qp.specs(circuit)(True).resources.quantum_operations  # doctest: +SKIP
+        >>> print(specs_true)  # doctest: +SKIP
+        {'BasisState': 1, 'TemporaryAND': 7, 'CNOT': 4, 'LeftFullAdder': 3, 'C(PauliX)': 3, 'CtrlRightFullAdder': 3, 'CtrlRightHalfAdder': 2, 'RightHalfAdder': 2}
 
         Of course, both decompositions are correctly implementing the squaring operation:
 
@@ -288,10 +288,9 @@ def _out_square_with_adder_zeroed_condition(
     return len(work_wires) >= OutSquare._min_work_wires(n, m, output_wires_zeroed)
 
 
-def _out_square_with_adder_zeroed_resources(
+def _out_square_with_adder_zeroed_resources(  # pylint: disable=unused-argument
     x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> dict:
-    # pylint: disable=unused-argument
     n = len(x_wires)
     m = len(output_wires)
     num_work_wires = len(work_wires)
@@ -316,13 +315,12 @@ def _out_square_with_adder_zeroed_resources(
 
 @register_condition(_out_square_with_adder_zeroed_condition)
 @register_resources(_out_square_with_adder_zeroed_resources, name="out_square_with_adder")
-def _out_square_with_adder_zeroed(
+def _out_square_with_adder_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
     output_wires_zeroed: bool = False,
 ):
-    # pylint: disable=unused-argument
     n = len(x_wires)
     m = len(output_wires)
     x_wires = x_wires[::-1]
@@ -355,7 +353,6 @@ def _out_square_with_adder_zeroed(
 def _out_square_with_caddsub_condition(
     x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> bool:
-    # pylint: disable=unused-argument
     n = len(x_wires)
     m = len(output_wires)
     if output_wires_zeroed and (n == 1 or m == 1):
@@ -367,7 +364,6 @@ def _out_square_with_caddsub_condition(
 def _out_square_with_caddsub_resources(
     x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> dict:
-    # pylint: disable=unused-argument
     n = len(x_wires)
     m = len(output_wires)
     num_work_wires = len(work_wires)

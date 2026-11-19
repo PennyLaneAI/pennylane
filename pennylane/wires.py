@@ -28,7 +28,7 @@ from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
 from pennylane.typing import AbstractWires, Wire, _AbstractWireTypeFactory
 
-# pylint: disable=unnecessary-lambda
+# pylint: disable-next=unnecessary-lambda
 setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
 
 
@@ -54,7 +54,7 @@ def _process(wires):
         # of considering the elements of iterables as wire labels.
         wires = [wires]
 
-    if math.get_interface(wires) == "jax" and not math.is_abstract(wires):
+    if math.get_interface(wires) == "jax" and not math.is_tracer(wires):
         wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
 
     if math.get_interface(wires) == "numpy" and hasattr(wires, "tolist") and wires.ndim == 0:
@@ -150,7 +150,7 @@ class Wires(Sequence):
             data = tuple(
                 (
                     w.item()
-                    if isinstance(w, jax.Array) and not math.is_abstract(w) and w.ndim == 0
+                    if isinstance(w, jax.Array) and not math.is_tracer(w) and w.ndim == 0
                     else w
                 )
                 for w in data
@@ -294,7 +294,7 @@ class Wires(Sequence):
         """
         return set(self.labels)
 
-    def index(self, wire):
+    def index(self, wire):  # pylint: disable=arguments-differ
         """Overwrites a Sequence's ``index()`` function which returns the index of ``wire``.
 
         Args:
@@ -304,7 +304,6 @@ class Wires(Sequence):
         Returns:
             int: index of the input
         """
-        # pylint: disable=arguments-differ
 
         if isinstance(wire, Wires):
             if len(wire) != 1:
@@ -838,13 +837,13 @@ class AbstractQubit(jax.core.AbstractValue):
 
 def is_abstract_qubit(v):
     """Returns ``True`` if the provided value is a DynamicJaxprTracer of type AbstractQubit"""
-    return math.is_abstract(v) and isinstance(v.val.aval, AbstractQubit)
+    return math.is_tracer(v) and isinstance(v.val.aval, AbstractQubit)
 
 
 def _filter_abstract_and_traced_wires(v):
     if isinstance(v, AbstractWires):
         return Wires([])
-    return Wires([w for w in v if not math.is_abstract(w)])
+    return Wires([w for w in v if not math.is_tracer(w)])
 
 
 def validate_no_wire_overlaps(wire_args: dict):

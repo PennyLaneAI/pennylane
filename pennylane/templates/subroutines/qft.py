@@ -17,8 +17,8 @@ This submodule contains the template for QFT.
 
 import numpy as np
 
-from pennylane import compiler, math
-from pennylane.capture import enabled
+from pennylane import capture, compiler, math
+from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
@@ -68,6 +68,20 @@ class QFT(Operator2):
     >>> circuit_qft(np.array([1.0, 0.0, 0.0])) # doctest: +SKIP
     array([ 0.3536+0.j, -0.3536+0.j,  0.3536+0.j, -0.3536+0.j,  0.3536+0.j,
            -0.3536+0.j,  0.3536+0.j, -0.3536+0.j])
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.QFT
+            :symbols: :math:`n` wires
+            :example: :math:`n=3`
+
+            .. decomposition-rule:: _qft_decomposition
+                :image: /_static/decomposition_thumbnails/qft_cphase_swap.svg
+
+                :class:`~.Hadamard` | :math:`n` | 3
+                :class:`~.ControlledPhaseShift` | :math:`n(n-1)/2` | 3
+                :class:`~.SWAP` | :math:`\lfloor n/2 \rfloor` | 1
 
     .. details::
         :title: Semiclassical Quantum Fourier transform
@@ -149,11 +163,9 @@ def _qft_decomposition_resources(wires: AbstractWires):
 def _qft_decomposition(wires: WiresLike):
     num_wires = len(wires)
     shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
-    if compiler.active() or enabled():
+    if compiler.active() or capture.enabled():
         shifts = math.array(shifts, like="jax")
         wires = math.array(wires, like="jax")
-
-    shift_len = len(shifts)
 
     @for_loop(num_wires)
     def outer_loop(i):
@@ -161,7 +173,8 @@ def _qft_decomposition(wires: WiresLike):
 
         if num_wires > 1:
 
-            @for_loop(shift_len - i)
+            @hint({"num-iters": (num_wires - 1) / 2})
+            @for_loop(num_wires - 1 - i)
             def cphaseshift_loop(j):
                 ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
 

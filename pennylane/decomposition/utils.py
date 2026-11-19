@@ -34,9 +34,9 @@ OP_NAME_ALIASES = {
     "Z": "PauliZ",
     "I": "Identity",
     "H": "Hadamard",
-    "measure": "MidMeasureMP",
-    "MidMeasure": "MidMeasureMP",
-    "MidCircuitMeasure": "MidMeasureMP",
+    "measure": "MidMeasure",
+    "MidMeasureMP": "MidMeasure",
+    "MidCircuitMeasure": "MidMeasure",
     "MidCircuitPauliMeasure": "PauliMeasure",
     "ppm": "PauliMeasure",
     "pauli_measure": "PauliMeasure",
@@ -227,10 +227,10 @@ def _init_signature_registration():
         specs = dict(op.arg_specs or {})
         specs.update(**kwargs)
 
-        # pylint: disable=protected-access
-        if set(specs.keys()) != set(op._sig.parameters.keys()):
+        if set(specs.keys()) != set(op._sig.parameters.keys()):  # pylint: disable=protected-access
             raise ValueError(
                 "Signatures being registered must cover all operator arguments. Expected "
+                # pylint: disable-next=protected-access
                 f"{tuple(op._sig.parameters.keys())} but got {tuple(specs.keys())}."
             )
 

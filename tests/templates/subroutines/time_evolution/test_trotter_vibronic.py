@@ -13,8 +13,12 @@
 # limitations under the License.
 """Tests for the ``TrotterVibronic`` template."""
 
+from collections import Counter
 from dataclasses import replace
+from functools import partial
 
+import hint_helpers
+import jax
 import numpy as np
 import pytest
 
@@ -28,13 +32,16 @@ from pennylane.templates.subroutines.arithmetic import (
 )
 from pennylane.templates.subroutines.time_evolution.trotter_vibronic import (
     _diagonalization_matrix,
+    _diagonalize_probs,
     _diagonalize_vibronic_circuit,
     _half_signed_out_multiplier,
     _momentum_coefficients,
+    _num_applied_terms,
     _position_coefficients,
     _validate_registers,
     _wires_are_concrete,
 )
+from pennylane.transforms.decompositions import make_rz_to_phase_gradient_decomp
 from pennylane.typing import AbstractWires
 
 # ---------------------------------------------------------------------------
@@ -114,7 +121,21 @@ def fragment_list(n_states=2, n_modes=2, seed=42):
     return fragments
 
 
-def make_wires(n_states, n_modes, k=3, b=3):
+def sparse_fragment_list(n_states, n_modes, seed):
+    """Create fragments as in ``fragment_list`` in which some of the constant, linear, bilinear
+    and kinetic terms vanish, and that contain bilinear terms."""
+    fragments = fragment_list(n_states=n_states, n_modes=n_modes, seed=seed)
+    position, kinetic = fragments[:-1], fragments[-1]
+    for i, fragment in enumerate(position):
+        # Bilinear term between the first and last mode, with the XOR structure
+        fragment["quadratic"][..., 0, -1] = fragment["linear"][..., 0]
+        fragment["linear"][..., i % n_modes] = 0.0
+    position[-1]["constant"][:] = 0.0
+    kinetic["kinetic"][..., -1, -1] = 0.0
+    return fragments
+
+
+def make_wires(n_states, n_modes, k=3, b=3, num_extra_pg_wires=0):
     """Create the wire registers required by :class:`~.TrotterVibronic`."""
     n = int(qp.math.ceil_log2(n_states))
     sizes = {
@@ -122,8 +143,8 @@ def make_wires(n_states, n_modes, k=3, b=3):
         "vib_wires": n_modes * k,
         "cache": 2 * k,
         "coefficients": b,
-        "phase_gradient": b,
-        "work": max(n - 1, 2 * k, 2 * b + 2),
+        "phase_gradient": b + num_extra_pg_wires,
+        "work": max(n - 1, b + 1, 2 * k + 2),
     }
     return qp.registers(sizes)
 
@@ -160,6 +181,22 @@ def decomposition_queue(op):
     return q.queue
 
 
+def assert_resources_match_decomposition(op):
+    """Assert that the resource function reproduces the operations of the decomposition, except
+    for the upper bounds of the electronic diagonalization."""
+    rule = qp.list_decomps(qp.TrotterVibronic)[0]
+    estimated = Counter()
+    for rep, count in rule.compute_resources(**op.arguments).gate_counts.items():
+        estimated[rep.name] += count
+    actual = Counter(o.name for o in decomposition_queue(op))
+
+    assert estimated["Hadamard"] >= actual["Hadamard"]
+    assert estimated["CNOT"] >= actual["CNOT"]
+    for name in ("Hadamard", "CNOT"):
+        del estimated[name], actual[name]
+    assert estimated == actual
+
+
 def count_ops(queue, *op_types):
     return sum(isinstance(op, op_types) for op in queue)
 
@@ -173,9 +210,6 @@ def count_allocations(op):
     jaxpr's top-level equations instead of in the (executed) queue.
     """
     if qp.capture.enabled():
-        # pylint: disable=import-outside-toplevel
-        import jax
-
         from pennylane.allocation import allocate_prim, deallocate_prim
 
         decomposition = qp.list_decomps(qp.TrotterVibronic)[0]
@@ -204,7 +238,9 @@ class TestDiagonalization:
         """Test that the correct Clifford circuit is queued for the ``(0, fragment_idx)`` key."""
         wires = list(range(int(qp.math.ceil_log2(n_states))))
         with qp.queuing.AnnotatedQueue() as q:
-            _diagonalize_vibronic_circuit(fragment_idx=fragment_idx, wires=wires)
+            _diagonalize_vibronic_circuit(
+                fragment_idx=fragment_idx, wires=wires, num_fragments=n_states
+            )
         control = wires[support[0]]
         expected = [qp.Hadamard(control)] + [qp.CNOT([control, wires[i]]) for i in support[1:]]
         assert q.queue == expected
@@ -212,18 +248,54 @@ class TestDiagonalization:
     def test_zero_fragment_idx_is_identity(self):
         """Test that fragment index 0 (key ``(0, 0)``) queues no operations and yields identity."""
         with qp.queuing.AnnotatedQueue() as q:
-            _diagonalize_vibronic_circuit(fragment_idx=0, wires=[0, 1])
+            _diagonalize_vibronic_circuit(fragment_idx=0, wires=[0, 1], num_fragments=4)
         assert q.queue == []
         assert np.allclose(_diagonalization_matrix((0, 0), 2), np.eye(4))
 
-    @pytest.mark.parametrize("n, fragment_idx", [(1, 1), (2, 3), (3, 7)])
-    def test_matrix_matches_circuit(self, n, fragment_idx):
+    @pytest.mark.parametrize("adjoint", [False, True])
+    @pytest.mark.parametrize("n, fragment_idx", [(1, 0), (1, 1), (2, 3), (3, 7)])
+    def test_matrix_matches_circuit(self, n, fragment_idx, adjoint):
         """Test that the dense diagonalization matrix matches the circuit unitary."""
         wires = list(range(n))
         circuit_matrix = qp.matrix(_diagonalize_vibronic_circuit, wires)(
-            fragment_idx=fragment_idx, wires=wires
+            fragment_idx=fragment_idx, wires=wires, num_fragments=2**n, inverse=adjoint
         )
-        assert np.allclose(_diagonalization_matrix((0, fragment_idx), n), circuit_matrix)
+        expected = _diagonalization_matrix((0, fragment_idx), n)
+        assert np.allclose(expected.T if adjoint else expected, circuit_matrix)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("adjoint", [False, True])
+    @pytest.mark.parametrize(
+        "n, num_fragments", [(1, 1), (1, 2), (2, 3), (2, 4), (3, 1), (3, 6), (3, 8)]
+    )
+    def test_branch_prob_hints(self, n, num_fragments, adjoint):
+        """Test that the conditionals carry ``branch-prob`` hints that reproduce the number of
+        gates applied across all fragments."""
+        wires = list(range(n))
+        plxpr = jax.make_jaxpr(
+            partial(
+                _diagonalize_vibronic_circuit,
+                wires=wires,
+                num_fragments=num_fragments,
+                inverse=adjoint,
+            )
+        )(0)
+        hints = hint_helpers.cond_hints(plxpr.jaxpr)
+        if num_fragments == 1:
+            assert len(hints) == 0
+            return
+
+        assert len(hints) == 2
+
+        num_hadamards = num_cnots = 0
+        for fragment_idx in range(num_fragments):
+            ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, fragment_idx).operations
+            num_hadamards += sum(isinstance(op, qp.Hadamard) for op in ops)
+            num_cnots += sum(isinstance(op, qp.CNOT) for op in ops)
+
+        # Hints for the Hadamard (with nested CNOT loop) and for each CNOT in the loop
+        assert hints[0][0] == pytest.approx(num_hadamards / num_fragments)
+        assert hints[1][0] == pytest.approx(num_cnots / (num_hadamards * n))
 
     def test_matrix_is_orthogonal(self):
         """Test that the diagonalization matrix is orthogonal."""
@@ -274,25 +346,41 @@ class TestCoefficientReadout:
 
 
 @pytest.mark.parametrize(
-    "x, y, z, expected",
-    [(3, -3, 5, (5 + 3 * (-3)) % 64), (2, 3, 1, (1 + 2 * 3) % 64), (4, -1, 0, (-4) % 64)],
+    "sizes, x, y, z",
+    [
+        ((3, 3, 6), 3, -3, 5),
+        ((3, 3, 6), 2, 3, 1),
+        ((3, 3, 6), 4, -1, 0),
+        ((3, 3, 6), 7, -4, 9),
+        ((3, 1, 4), 5, -1, 2),
+        ((3, 1, 4), 5, 0, 2),
+        ((2, 4, 3), 3, -6, 1),
+        ((3, 5, 4), 6, -16, 3),
+    ],
 )
-def test_half_signed_out_multiplier(x, y, z, expected):
-    """Test that the half-signed multiplier computes ``(z + x*y) mod 2^k`` for a signed ``y``."""
-    x_wires, y_wires = [0, 1, 2], [3, 4, 5]
-    output_wires, work_wires = [6, 7, 8, 9, 10, 11], [12, 13, 14, 15]
-    dev = qp.device("default.qubit", wires=16)
+@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+def test_half_signed_out_multiplier(sizes, x, y, z):
+    """Test that the half-signed multiplier computes ``(z + x*y) mod 2^k`` for a signed ``y``,
+    restores the input registers and leaves the work wires clean."""
+    num_x, num_y, num_out = sizes
+    x_wires, y_wires = list(range(num_x)), list(range(num_x, num_x + num_y))
+    output_wires = list(range(num_x + num_y, num_x + num_y + num_out))
+    work_wires = list(range(num_x + num_y + num_out, num_x + num_y + 2 * num_out + 1))
+    y_unsigned = y % 2**num_y
+    expected = (z + x * y) % 2**num_out
+    dev = qp.device("default.qubit")
 
     @qp.qnode(dev)
     def circuit():
         qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
-        qp.BasisState(qp.math.int_to_binary(y % (2 ** len(y_wires)), len(y_wires)), wires=y_wires)
+        qp.BasisState(qp.math.int_to_binary(y_unsigned, len(y_wires)), wires=y_wires)
         qp.BasisState(qp.math.int_to_binary(z, len(output_wires)), wires=output_wires)
         _half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires)
-        return qp.probs(wires=output_wires)
+        return qp.probs(wires=x_wires + y_wires + output_wires + work_wires)
 
     # the circuit permutes basis states, so the output is a single basis state
-    assert int(np.argmax(circuit())) == expected
+    expected_state = ((x * 2**num_y + y_unsigned) * 2**num_out + expected) * 2 ** len(work_wires)
+    assert int(np.argmax(circuit())) == expected_state
 
 
 # ---------------------------------------------------------------------------
@@ -419,10 +507,10 @@ class TestConstruction:
             "cache": [1, 2, 3, 4],
             "coefficients": [5],
             "phase_gradient": [6],
-            "work": [7, 8, 9, 10],
+            "work": [7, 8, 9, 10, 11, 12],
         }
         # The first mode has two wires while the second has one, which is invalid.
-        mode_registers = [[11, 12], [13]]
+        mode_registers = [[13, 14], [15]]
         with pytest.raises(ValueError, match="same size"):
             _validate_registers(registers, mode_registers, n_modes=2, n_states=2)
 
@@ -441,9 +529,9 @@ class TestConstruction:
             "cache": [1, 2, 3, 4],
             "coefficients": [5],
             "phase_gradient": [6],
-            "work": [7, 8, 9, 10],
+            "work": [7, 8, 9, 10, 11, 12],
         }
-        mode_registers = [[11, 12], [13, 14]]
+        mode_registers = [[13, 14], [15, 16]]
         with pytest.raises(ValueError, match="electronic states"):
             _validate_registers(registers, mode_registers, n_modes=2, n_states=4)
 
@@ -452,7 +540,6 @@ class TestConstruction:
 
         Uses an invalid ``vib_wires`` size to confirm the check is genuinely skipped.
         """
-        jax = pytest.importorskip("jax")
         hamiltonian = build_hamiltonian(fragment_list())
         wires = make_wires(2, 2)
 
@@ -475,7 +562,6 @@ class TestConstruction:
 
     def test_init_accepts_traced_hamiltonian(self):
         """Test that a traced Hamiltonian is accepted and uses the ``(0, j)`` blocks structure."""
-        jax = pytest.importorskip("jax")
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=1))
         wires = make_wires(2, 1)
 
@@ -574,13 +660,54 @@ class TestDecomposition:
         resources = rule.compute_resources(**op.arguments)
         assert resources.num_gates > 0
 
+    @pytest.mark.parametrize("n_states, n_modes", [(2, 2), (4, 3)])
+    def test_resources_use_branch_probs(self, n_states, n_modes, seed):
+        """Test that the resource function weights the terms with ``branch_probs``, reproducing
+        the operations of the decomposition except for the diagonalization upper bounds."""
+        hamiltonian = build_hamiltonian(sparse_fragment_list(n_states, n_modes, seed))
+        op = make_op(hamiltonian, make_wires(n_states, n_modes), num_trotter_steps=2)
+        assert_resources_match_decomposition(op)
+
+    @pytest.mark.parametrize(
+        "magnitude, evolution_time, expected_prob",
+        [(3e-9, 0.52, 0.5), (3e-9, 100.0, 1.0), (1e-7, 0.52, 1.0), (1e-7, 0.001, 0.5)],
+    )
+    def test_branch_probs_use_time_step(self, magnitude, evolution_time, expected_prob, seed):
+        """Test that ``branch_probs`` take the time step into account, which scales the
+        coefficients before they are compared against the skipping tolerance."""
+        fragments = sparse_fragment_list(2, 2, seed)
+        # Linear coefficients close to the skipping tolerance instead of exact zeros
+        for i, fragment in enumerate(fragments[:-1]):
+            fragment["linear"][..., i % 2] = magnitude
+        hamiltonian = build_hamiltonian(fragments)
+        op = make_op(hamiltonian, make_wires(2, 2), evolution_time=evolution_time)
+
+        assert dict(op.arguments["branch_probs"])["linear"] == expected_prob
+        assert_resources_match_decomposition(op)
+
+    @pytest.mark.parametrize(
+        "branch_probs, use_key, num_visits, expected",
+        [
+            (None, "linear", 10, 10),
+            ((("constant", 0.5),), "linear", 10, 10),
+            ((("linear", 0.25),), "linear", 10, 3),
+            ((("quadratic", 0.7),), "quadratic", 10, 7),
+            ((("bilinear", 0.0),), "bilinear", 10, 1),
+            ((("kinetic", 0.0),), "kinetic", 0, 0),
+        ],
+    )
+    def test_num_applied_terms(self, branch_probs, use_key, num_visits, expected):
+        """Test that the number of applied terms is weighted with the probability of the term,
+        rounded up and at least one for visited terms, and unweighted without probability."""
+        assert _num_applied_terms(branch_probs, use_key, num_visits) == expected
+
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp", "enable_and_disable_capture")
     def test_assert_valid(self):
         """Test that ``TrotterVibronic`` passes ``assert_valid``."""
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=1))
         op = make_op(hamiltonian, make_wires(2, 2), evolution_time=0.5)
-        qp.ops.functions.assert_valid(
+        qp.testing.assert_valid(
             op, skip_differentiation=True, skip_decomp_matrix_check=True, skip_wire_mapping=True
         )
 
@@ -607,7 +734,7 @@ class TestDecomposition:
         assert num_allocate == 1
         assert num_deallocate == 1
 
-        qp.ops.functions.assert_valid(
+        qp.testing.assert_valid(
             op, skip_differentiation=True, skip_decomp_matrix_check=True, skip_wire_mapping=True
         )
 
@@ -635,7 +762,7 @@ class TestDecomposition:
         assert num_allocate == 1
         assert num_deallocate == 1
 
-        qp.ops.functions.assert_valid(
+        qp.testing.assert_valid(
             op, skip_differentiation=True, skip_decomp_matrix_check=True, skip_wire_mapping=True
         )
 
@@ -651,12 +778,9 @@ class TestDecomposition:
         """Test that the position-fragment loop is a traced ``for_loop`` under capture, rather
         than unrolled by the fragment count: the number of traced ``for_loop`` primitives is the
         same regardless of the number of position fragments."""
-        import jax  # pylint: disable=import-outside-toplevel
-        from jax._src.core import ClosedJaxpr, Jaxpr  # pylint: disable=import-outside-toplevel
+        from jax._src.core import ClosedJaxpr, Jaxpr
 
-        from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
-            for_loop_prim,
-        )
+        from pennylane.capture.primitives import for_loop_prim
 
         def count_for_loops(jaxpr):
             count = sum(eqn.primitive == for_loop_prim for eqn in jaxpr.eqns)
@@ -678,6 +802,113 @@ class TestDecomposition:
         # ``num_position_fragments == n_states`` here; if the fragment loop were unrolled, the
         # traced ``for_loop`` count would scale with it instead of staying constant.
         assert num_for_loops(2) == num_for_loops(8)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("n_states, n_modes", [(2, 2), (4, 3)])
+    def test_term_branch_prob_hints(self, n_states, n_modes, seed):
+        """Test that the conditionals skipping terms with vanishing coefficients carry
+        ``branch-prob`` hints that reproduce the number of applied terms."""
+        hamiltonian = build_hamiltonian(sparse_fragment_list(n_states, n_modes, seed))
+        num_steps = 2
+        wires = make_wires(n_states, n_modes)
+        op = make_op(hamiltonian, wires, num_trotter_steps=num_steps)
+        decomposition = qp.list_decomps(qp.TrotterVibronic)[0]
+
+        def traced_decomposition(*tensors):
+            # The hints must not rely on concrete Hamiltonian data within the decomposition
+            traced_hamiltonian = qp.VibronicHamiltonian(*tensors)
+            return decomposition(**(op.arguments | {"hamiltonian": traced_hamiltonian}))
+
+        plxpr = jax.make_jaxpr(traced_decomposition)(*hamiltonian.tensors)
+        tape = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *hamiltonian.tensors)
+        counts = Counter(o.name for o in tape.operations)
+
+        # Infer the number of applied terms from the arithmetic operations specific to them
+        num_fragments = hamiltonian.num_fragments
+        position_visits = 2 * num_fragments * num_steps
+        num_pairs = n_modes * (n_modes - 1) // 2
+        # A half-signed multiplier with an ``m``-wire signed register emits one ``SemiAdder`` and
+        # ``2 min(m, b + 1)`` controlled ``MultiX`` gates. Its signed register is a mode register
+        # for linear terms and the cache register for bilinear terms.
+        k, b = len(wires["vib_wires"]) // n_modes, len(wires["coefficients"])
+        num_bilinear = counts["SignedOutMultiplier"]
+        num_ctrl_multix_linear = counts["C(MultiX)"] - 2 * min(2 * k, b + 1) * num_bilinear
+        num_linear = num_ctrl_multix_linear / (2 * min(k, b + 1))
+        p_kinetic = counts["AQFT"] / (num_steps * n_modes)
+        p_constant = (counts["SemiAdder"] - num_linear - num_bilinear) / position_visits
+        p_linear = num_linear / (position_visits * n_modes)
+        p_quadratic = (counts["SignedOutSquare"] - counts["AQFT"]) / (position_visits * n_modes)
+        p_bilinear = num_bilinear / (position_visits * num_pairs)
+
+        def skip_hint(p):
+            # The skipping branch is the true branch
+            return pytest.approx((1 - p, p))
+
+        n = int(qp.math.ceil_log2(n_states))
+        diag = [pytest.approx((p, 1 - p)) for p in _diagonalize_probs(num_fragments, n)]
+        terms = [skip_hint(p) for p in (p_constant, p_linear, p_quadratic, p_bilinear)]
+        fragment_hints = [*diag, *terms, *diag]
+        expected = [*fragment_hints, skip_hint(p_kinetic), *fragment_hints]
+        assert hint_helpers.cond_hints(plxpr.jaxpr) == expected
+
+    @pytest.mark.capture
+    def test_branch_probs_argument(self, seed):
+        """Test that ``branch_probs`` is computed from a concrete Hamiltonian and evolution time,
+        omitted if either is traced, and that provided values are used as ``branch-prob`` hints."""
+        fragments = fragment_list(n_states=2, n_modes=2, seed=seed)
+        # A single position fragment, so that all conditionals belong to terms
+        hamiltonian = build_hamiltonian([fragments[0], fragments[-1]])
+        wires = make_wires(2, 2)
+
+        # The fragment has no bilinear terms
+        expected = (
+            ("constant", 1.0),
+            ("linear", 1.0),
+            ("quadratic", 1.0),
+            ("bilinear", 0.0),
+            ("kinetic", 1.0),
+        )
+        assert make_op(hamiltonian, wires).arguments["branch_probs"] == expected
+
+        def make_traced(constant, evolution_time):
+            traced_op = make_op(replace(hamiltonian, constant=constant), wires)
+            assert traced_op.arguments["branch_probs"] is None
+            traced_op = make_op(hamiltonian, wires, evolution_time=evolution_time)
+            assert traced_op.arguments["branch_probs"] is None
+            return 0
+
+        jax.make_jaxpr(make_traced)(hamiltonian.constant, 0.52)
+
+        op = make_op(hamiltonian, wires, branch_probs={"kinetic": 0.25, "constant": 0.5})
+        assert op.arguments["branch_probs"] == (("constant", 0.5), ("kinetic", 0.25))
+        decomposition = qp.list_decomps(qp.TrotterVibronic)[0]
+        plxpr = jax.make_jaxpr(lambda: decomposition(**op.arguments))()
+        position_hints = [(0.5, 0.5), None, None, None]
+        expected_hints = [*position_hints, (0.75, 0.25), *position_hints]
+        assert hint_helpers.cond_hints(plxpr.jaxpr) == expected_hints
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("interface", ["numpy", "jax"])
+    def test_branch_probs_with_closed_over_hamiltonian(self, interface, seed):
+        """Test that ``branch_probs`` is computed from a concrete Hamiltonian that is closed over
+        while tracing, e.g., in a captured circuit, and matches the value computed eagerly."""
+        hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=seed))
+        hamiltonian = replace(
+            hamiltonian,
+            **{
+                name: qp.math.asarray(getattr(hamiltonian, name), like=interface)
+                for name in ("constant", "linear", "quadratic", "kinetic")
+            },
+        )
+        wires = make_wires(2, 2)
+        expected = make_op(hamiltonian, wires).arguments["branch_probs"]
+        assert expected is not None
+
+        def circuit():
+            assert make_op(hamiltonian, wires).arguments["branch_probs"] == expected
+            return 0
+
+        _ = jax.make_jaxpr(circuit)()
 
 
 # ---------------------------------------------------------------------------
@@ -702,7 +933,7 @@ def test_default_qubit_execution():
             "cache": 2 * k,
             "coefficients": b,
             "phase_gradient": b,
-            "work": max(n - 1, 2 * k, 2 * b + 2),
+            "work": max(n - 1, b + 1, 2 * k + 2),
         }
     )
     num_wires = max(w for reg in wires.values() for w in reg) + 1
@@ -800,16 +1031,18 @@ class TestNumericalCorrectness:
         expected = (2 * _binary_decimals_int(-lam / 2, b) * q) % (2**b)
         assert got == expected == (-2 * m * q) % (2**b)
 
-    @pytest.mark.parametrize("mode_value", [0, 1, 2])
-    def test_sign_matches_exact_evolution(self, mode_value):
+    @pytest.mark.parametrize("num_extra_pg_wires", [0, 2])
+    @pytest.mark.parametrize("mode_value", [0, 1, -1])
+    def test_sign_matches_exact_evolution(self, mode_value, num_extra_pg_wires):
         """With a genuine phase-gradient state the template realizes ``e^{-iHt}`` (not
         ``e^{+iHt}``): the global sign that the integer-accumulation tests above cannot see.
 
         A single position fragment (kinetic zero) is diagonal, so one Trotter step is exact and
         the electronic register picks up the diagonal phase ``e^{-i theta_a}`` per electronic
         state ``a``. Comparing the measured relative phase against the exact one pins the sign.
+        Phase-gradient wires beyond the first ``b`` must not change the result.
         """
-        n_states, n_modes, k, b = 2, 1, 3, 3
+        n_states, n_modes, k, b = 2, 1, 2, 3
         t = 1.0
         # Exact binary fractions of 2*pi (so ``binary_decimals`` is exact): coeff = 2*pi*m/2**(b-1).
         scale = 2 * np.pi / 2 ** (b - 1)
@@ -827,7 +1060,7 @@ class TestNumericalCorrectness:
             quadratic=quadratic,
             kinetic=np.zeros((n_states, n_states, n_modes, n_modes)),
         )
-        wires = make_wires(n_states, n_modes, k=k, b=b)
+        wires = make_wires(n_states, n_modes, k=k, b=b, num_extra_pg_wires=num_extra_pg_wires)
         num_wires = max(w for reg in wires.values() for w in reg) + 1
         dev = qp.device("default.qubit", wires=num_wires)
 
@@ -835,7 +1068,7 @@ class TestNumericalCorrectness:
         def circuit():
             qp.Hadamard(wires["electronic"][0])  # electronic |+>
             if mode_value:
-                qp.BasisState(qp.math.int_to_binary(mode_value, k), wires=wires["vib_wires"])
+                qp.BasisState(qp.math.int_to_binary(mode_value % 2**k, k), wires=wires["vib_wires"])
             qp.PhaseGradientStatePrep(wires["phase_gradient"])
             make_op(hamiltonian, wires, evolution_time=t, num_trotter_steps=1)
             return qp.density_matrix(wires=wires["electronic"])
@@ -850,6 +1083,66 @@ class TestNumericalCorrectness:
 
         expected = -(theta(1) - theta(0))  # arg(e^{-i theta_1} conj(e^{-i theta_0}))
         assert np.isclose(np.exp(1j * measured), np.exp(1j * expected))
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_kinetic_aqft_with_phase_gradient_rotations(self):
+        """Test that the ``AQFT`` of the kinetic fragment may be decomposed into phase-gradient
+        rotations that reuse the coefficient wires as angle wires, which requires the coefficient
+        register to be zeroed during the ``AQFT``."""
+        n_states, n_modes, k, b = 2, 1, 2, 4
+        # The kinetic coefficient loads the bitstring 0101 into the coefficient register. For most
+        # other bitstrings, a coefficient register that is occupied during the ``AQFT`` leads to a
+        # global phase or to an error that commutes with the kinetic evolution, and thus would
+        # not be detected.
+        kinetic = 2 * np.pi * 11 / 2**b
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=np.zeros((1, n_states, n_states)),
+            linear=np.zeros((1, n_states, n_states, n_modes)),
+            quadratic=np.zeros((1, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.einsum("ab,cd->abcd", np.eye(n_states), np.diag([kinetic])),
+        )
+        wires = make_wires(n_states, n_modes, k=k, b=b)
+        num_wires = max(w for reg in wires.values() for w in reg) + 1
+        rz_rule = make_rz_to_phase_gradient_decomp(
+            wires["coefficients"], wires["phase_gradient"], wires["work"][: b - 1]
+        )
+        gate_set = {
+            "Hadamard",
+            "SWAP",
+            "CNOT",
+            "PauliX",
+            "RX",
+            "RY",
+            "GlobalPhase",
+            "MultiX",
+            "C(MultiX)",
+            "SemiAdder",
+            "QROM",
+            "OutMultiplier",
+            "SignedOutSquare",
+            "Adjoint(SignedOutSquare)",
+            "PhaseGradientStatePrep",
+        }
+
+        @qp.qnode(qp.device("default.qubit", wires=num_wires))
+        def circuit():
+            mode_0, mode_1 = wires["vib_wires"]
+            qp.Hadamard(mode_0)
+            qp.Hadamard(mode_1)
+            qp.RY(0.4, mode_1)
+            qp.RX(0.7, mode_0)
+            qp.CNOT([mode_0, mode_1])
+            qp.PhaseGradientStatePrep(wires["phase_gradient"])
+            make_op(hamiltonian, wires, evolution_time=1.0, num_trotter_steps=1)
+            return qp.state()
+
+        expected = circuit()
+        # pylint: disable-next=protected-access
+        pg_circuit = qp.transforms._tape_decompose(
+            circuit, gate_set=gate_set, fixed_decomps={qp.RZ: rz_rule}
+        )
+        assert count_ops(qp.workflow.construct_tape(pg_circuit)().operations, SemiAdder) > 0
+        assert np.isclose(np.abs(np.vdot(expected, pg_circuit())), 1.0)
 
 
 # ---------------------------------------------------------------------------

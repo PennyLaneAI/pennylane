@@ -16,10 +16,8 @@ Tests that application of gates and state preparations
 works correctly an a device.
 """
 
-# pylint: disable=no-self-use
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,unnecessary-lambda-assignment
 
-# pylint: disable=unnecessary-lambda-assignment
 
 from cmath import exp
 from math import cos, sin, sqrt
@@ -108,7 +106,9 @@ ops = {
     "QubitCarry": qp.QubitCarry(wires=[0, 1, 2, 3]),
     "QubitSum": qp.QubitSum(wires=[0, 1, 2]),
     "PauliRot": qp.PauliRot(0, "XXYY", wires=[0, 1, 2, 3]),
-    "PPR": qp.PPR(-4, "XZYZ", wires=[0, 1, 2, 3]),
+    "PPR_2": qp.PPR_2(1, "YZIX", wires=[0, 1, 2, 3]),
+    "PPR_4": qp.PPR_4(-1, "XZYZ", wires=[0, 1, 2, 3]),
+    "PPR_8": qp.PPR_8(1, "ZYXI", wires=[0, 1, 2, 3]),
     "U1": qp.U1(0, wires=0),
     "U2": qp.U2(0, 0, wires=0),
     "U3": qp.U3(0, 0, 0, wires=0),
@@ -351,8 +351,7 @@ A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1
 # ===============================================================
 
 
-# pylint: disable=too-few-public-methods
-class TestSupportedGates:
+class TestSupportedGates:  # pylint: disable=too-few-public-methods
     """Test that the device can implement all gates that it claims to support."""
 
     @pytest.mark.parametrize("operation", all_ops)

@@ -15,7 +15,9 @@
 Tests for the TrotterProduct template and helper functions.
 """
 
-# pylint: disable=private-access, protected-access, too-many-arguments
+# pylint: disable=too-many-arguments
+
+
 import copy
 from functools import partial, reduce
 
@@ -24,13 +26,13 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.time_evolution.trotter import (
     TrotterizedQfunc,
     _recursive_expression,
     _recursive_qfunc,
     _scalar,
 )
+from pennylane.testing import assert_decomposable
 
 test_hamiltonians = (
     qp.dot([1.0, 1.0, 1.0], [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(1)]),
@@ -373,7 +375,7 @@ class TestInitialization:
         """Test standard validity criteria using assert_valid."""
         time, n, order = (4.2, 10, 4)
         op = qp.TrotterProduct(hamiltonian, time, n=n, order=order)
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+        qp.testing.assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
     @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -382,7 +384,7 @@ class TestInitialization:
         """Test standard validity criteria using assert_valid."""
         time, n, order = (4.2, 10, 4)
         op = qp.TrotterProduct(hamiltonian, time, n=n, order=order)
-        qp.ops.functions.assert_valid(op)
+        qp.testing.assert_valid(op)
 
     # TODO: Remove test when we deprecate ApproxTimeEvolution
     @pytest.mark.parametrize("n", (1, 2, 5, 10))
@@ -529,13 +531,11 @@ class TestDecomposition:
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("order", (1, 2, 4))
     @pytest.mark.parametrize("hamiltonian_index, hamiltonian", list(enumerate(test_hamiltonians)))
-    def test_decomposition_new(
-        self, hamiltonian, hamiltonian_index, order
-    ):  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
+    def test_decomposition_new(self, hamiltonian, hamiltonian_index, order):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.TrotterProduct(hamiltonian, 4.2, order=order)
-        for rule in qp.list_decomps(qp.TrotterProduct):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize("order", (1, 2))
     @pytest.mark.parametrize("num_steps", (1, 2, 3))
@@ -1005,7 +1005,7 @@ class TestTrotterizedQfuncInitialization:
         """Test that an error is raised if the named kwargs for the qfunc match the
         names of the kwargs of the TrotterizedQfunc class."""
 
-        def my_dummy_qfunc(time, wires, **kwargs):  # pylint:disable=unused-argument
+        def my_dummy_qfunc(time, wires, **kwargs):  # pylint: disable=unused-argument
             qp.RZ(time, wires[0])
 
         for special_key in ["n", "order", "qfunc", "reverse"]:
@@ -1033,7 +1033,7 @@ class TestTrotterizedQfuncInitialization:
             wires=[3, 4, 5],
             flip=True,
         )
-        qp.ops.functions.assert_valid(op, skip_pickle=True)
+        qp.testing.assert_valid(op, skip_pickle=True)
 
 
 class TestTrotterizedQfuncIntegration:

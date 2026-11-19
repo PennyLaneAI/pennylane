@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for the ``Prod2`` operator."""
 
-# pylint: disable=import-outside-toplevel
-
 from functools import reduce
 
 import numpy as np
@@ -24,10 +22,10 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
 import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import prod
 from pennylane.ops.op_math.prod import Prod
 from pennylane.ops.op_math.prod2 import Prod2
+from pennylane.testing import assert_decomposable
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import NonParametricOp
 
@@ -121,7 +119,7 @@ class TestInitialization:
 
     def test_mcm_operands_raises(self):
         """Test that a product of mid-circuit measurements raises an error."""
-        m = qp.measurements.MidMeasureMP(qp.wires.Wires([0]))
+        m = qp.ops.MidMeasure(qp.wires.Wires([0]))
         with pytest.raises(ValueError, match="mid-circuit measurements"):
             Prod2([qp.X(1), m])
 
@@ -196,6 +194,8 @@ class TestMethods:
             [qp.X(0), qp.Z(1)],
             [qp.RZ(1.23, 0), qp.X(0), qp.Z(1)],
             [qp.Hadamard(0), qp.CNOT([0, 1])],
+            # merging overlapping groups reorders the wires relative to the ``Prod2`` op's wires.
+            [qp.Hadamard(1), qp.Hadamard(0), qp.CNOT([2, 1]), qp.CNOT([1, 0])],
         ],
     )
     def test_matrix(self, factors):
@@ -216,6 +216,24 @@ class TestMethods:
             [np.kron(qp.matrix(qp.RX(xi, 0)), qp.matrix(qp.RY(yi, 1))) for xi, yi in zip(x, y)]
         )
         assert mat.shape == (3, 4, 4)
+        assert np.allclose(mat, expected)
+
+    @pytest.mark.parametrize(
+        "factors",
+        (
+            (qp.H(1), qp.H(0), qp.CNOT([2, 1]), qp.CNOT([1, 0])),
+            (qp.CNOT([1, 3]), qp.X(0), qp.CNOT([3, 2]), qp.Toffoli([2, 0, 1])),
+        ),
+    )
+    @pytest.mark.parametrize("wire_order", [None, [0, 1, 2, 3], [3, 2, 0, 1]])
+    def test_matrix_merged_overlapping_groups(self, wire_order, factors):
+        """Test the matrix when merging overlapping groups reorders the wires relative to
+        the wires of the ``Prod2`` op, and we need to reorder them back."""
+        prod_op = Prod2(factors)
+        mat = prod_op.matrix(wire_order=wire_order)
+        if wire_order is None:
+            wire_order = prod_op.wires
+        expected = reduce(np.matmul, [factor.matrix(wire_order=wire_order) for factor in factors])
         assert np.allclose(mat, expected)
 
     @pytest.mark.parametrize(
@@ -380,7 +398,7 @@ class TestSimplify:
         qp.assert_equal(simplified, qp.RY(0.3, 1))
 
 
-class TestValidity:  # pylint: disable=too-few-public-methods
+class TestValidity:
     """Standard validity checks."""
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -388,9 +406,9 @@ class TestValidity:  # pylint: disable=too-few-public-methods
         """Test that ``Prod2`` is defined correctly."""
         # TODO: [sc-129513] Update bind_new_parameters to work with CompositeOp2 so that
         # we no longer need to skip differentiation-related validation
-        qp.ops.functions.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(1)]), skip_differentiation=True)
+        qp.testing.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(1)]), skip_differentiation=True)
         # Also assert validity with overlapping wires
-        qp.ops.functions.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(0)]), skip_differentiation=True)
+        qp.testing.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(0)]), skip_differentiation=True)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("control_values", [[1, 1, 1], [0, 1, 0], [1, 0, 1], [0, 0, 0]])
@@ -410,16 +428,7 @@ class TestValidity:  # pylint: disable=too-few-public-methods
             work_wires=work_wires,
             work_wire_type="zeroed",
         )
-        rules = qp.list_decomps("C(Prod2)")
-        assert rules, "no decomp rules registered for C(Prod2)"
-
-        # ``_test_decomposition_rule`` is a no-op for rules that are not applicable, so check
-        # explicitly that when the work_wire_type is "zeroed", at least one rule is applicable
-        applicable = [rule for rule in rules if rule.is_applicable(**op.arguments)]
-        assert applicable
-
-        for rule in rules:
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 class TestAbstractOperands:
@@ -468,7 +477,6 @@ class TestAbstractOperands:
 
 
 @pytest.mark.capture
-# pylint: disable-next=too-few-public-methods
 class TestCapture:
     """Test that Prod2 integrates with program capture."""
 
@@ -476,7 +484,7 @@ class TestCapture:
         """Test that a ValidOp can be captured into and reconstructed from jaxpr."""
         import jax
 
-        from tests.capture.capture_utils import assert_eqn_matches_op
+        from pennylane.testing import assert_eqn_matches_op
 
         def qfunc():
             return Prod2((qp.RX(1.2, wires=0), qp.PauliZ(0)))

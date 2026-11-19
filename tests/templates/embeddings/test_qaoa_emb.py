@@ -16,13 +16,11 @@ Tests for the QAOAEmbedding template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -34,10 +32,9 @@ def test_standard_validity():
     weights = [layer1, layer2]
 
     op = qp.QAOAEmbedding(features=features, wires=(0, 1), weights=weights)
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test _flatten and _unflatten methods."""
     features = [1.0, 2.0]
@@ -46,10 +43,10 @@ def test_flatten_unflatten():
     weights = [layer1, layer2]
 
     op = qp.QAOAEmbedding(features=features, wires=(0, 1), weights=weights)
-    _, metadata = op._flatten()
+    _, metadata = op._flatten()  # pylint: disable=protected-access
     assert hash(metadata)
 
-    new_op = type(op)._unflatten(*op._flatten())
+    new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
     qp.assert_equal(op, new_op)
 
 
@@ -244,8 +241,7 @@ class TestDecomposition:
     @pytest.mark.parametrize(("features", "weights", "wires", "local_field"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, weights, wires, local_field):
         op = qp.QAOAEmbedding(features, weights, wires, local_field=local_field)
-        for rule in qp.list_decomps(qp.QAOAEmbedding):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 class TestInputs:

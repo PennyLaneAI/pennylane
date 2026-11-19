@@ -19,8 +19,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import assert_valid
 from pennylane.templates.subroutines.superposition_thc import SuperpositionTHC
+from pennylane.testing import assert_valid
 
 
 def _wire_layout(n):
@@ -311,9 +311,8 @@ class TestSuperpositionTHC:
             ),
         ],
     )
-    def test_wires_error(
-        self, M, N, mu_wires, nu_wires, work_wires, msg_match
-    ):  # pylint:disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_wires_error(self, M, N, mu_wires, nu_wires, work_wires, msg_match):
         """An error is raised when the registers do not meet the requirements."""
         with pytest.raises(ValueError, match=msg_match):
             SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)

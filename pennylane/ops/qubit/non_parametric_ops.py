@@ -18,9 +18,11 @@ not depend on any parameters.
 
 # pylint: disable=arguments-differ,unused-argument
 
+
 import cmath
+from collections import Counter
 from copy import copy
-from functools import lru_cache, reduce
+from functools import lru_cache, partial
 from typing import Literal, override
 from warnings import warn
 
@@ -30,17 +32,17 @@ from scipy import sparse
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator2
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
-from pennylane.typing import AbstractWires, Float, TensorLike, Wire
+from pennylane.typing import AbstractWires, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, concatenate_wires
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -61,6 +63,68 @@ class Hadamard(Operator2):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.Hadamard
+
+            .. decomposition-rule:: _hadamard_to_rz_rx
+                :image: /_static/decomposition_thumbnails/hadamard_to_rz_rx.svg
+
+                :class:`~.RZ` | :math:`2`
+                :class:`~.RX` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _hadamard_to_rz_ry
+                :image: /_static/decomposition_thumbnails/hadamard_to_rz_ry.svg
+
+                :class:`~.RZ` | :math:`1`
+                :class:`~.RY` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _hadamard_ppm
+                :image: /_static/decomposition_thumbnails/hadamard_ppm.svg
+                :requires: 1 work wire (not restored)
+
+                :func:`PauliMeasure("YY") <.pauli_measure>` | :math:`1`
+                :func:`PauliMeasure("X") <.pauli_measure>` | :math:`1`
+                :class:`~.Y` (conditional) | :math:`1`
+                :class:`~.Z` (one conditional) | :math:`2`
+                :class:`~.GlobalPhase` (conditional) | :math:`1`
+
+            .. decomposition-rule:: _hadamard_ppr
+                :image: /_static/decomposition_thumbnails/hadamard_ppr.svg
+
+                :class:`PPR_2(1, "Z") <.PPR_2>` | :math:`1`
+                :class:`PPR_4(1, "Y") <.PPR_4>` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: decompose_to_base
+                :image: /_static/decomposition_thumbnails/hadamard_adjoint.svg
+                :region: adjoint
+                :where: :class:`~.Hadamard` is self-adjoint
+
+                :class:`~.Hadamard` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_hadamard)
+                :image: /_static/decomposition_thumbnails/hadamard_controlled.svg
+                :region: controlled
+                :where: :math:`c \geq 2` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.RY` | :math:`2`
+                :class:`~.MultiControlledX` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/hadamard_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+
+                :class:`Pow(Hadamard) <.Hadamard>` with power :math:`z \bmod 2` | :math:`1`
     """
 
     is_verified_hermitian = True
@@ -182,13 +246,6 @@ class Hadamard(Operator2):
         return super().pow(z % 2)
 
 
-@custom_ctrl_dispatch.register
-def _ctrl_h(base: Hadamard, control, control_values, *_):
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CH(control + base.wires)
-    return NotImplemented
-
-
 H = Hadamard
 r"""H(wires)
 The Hadamard operator
@@ -251,29 +308,37 @@ def _hadamard_ppm(wires, **__):
         qp.cond(m1, qp.Z)(work_wires[0])  # Reset work wire to |+>
 
 
-add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry, _hadamard_ppm)
+def _hadamard_ppr_resources(wires: WiresLike):
+    return {qp.PPR_2(1, "Z", Wire[1]): 1, qp.PPR_4(1, "Y", Wire[1]): 1, qp.GlobalPhase: 1}
+
+
+@register_resources(_hadamard_ppr_resources)
+def _hadamard_ppr(wires: WiresLike, **__):
+    qp.PPR_2(1, "Z", wires=wires)
+    qp.PPR_4(1, "Y", wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
+
+
+add_decomps(Hadamard, _hadamard_to_rz_rx, _hadamard_to_rz_ry, _hadamard_ppm, _hadamard_ppr)
 add_decomps("Adjoint(Hadamard)", self_adjoint)
 add_decomps("Pow(Hadamard)", pow_involutory2)
 
 
-# pylint: disable-next=unused-argument
 def _controlled_h_resources(base, control_wires, control_values, work_wires, work_wire_type):
     if len(control_wires) == 1:
         return {qp.CH: 1}
     return {
         qp.H: 2,
         qp.RY: 2,
-        _ctrl_abstract(
-            qp.X,
-            Wire[len(control_wires)],
-            Wire[len(work_wires)],
-            work_wire_type,
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 1],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
         ): 1,
     }
 
 
 @register_resources(_controlled_h_resources)
-# pylint: disable-next=unused-argument
 def _controlled_hadamard(base, control_wires, control_values, work_wires, work_wire_type):
     wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
@@ -282,9 +347,8 @@ def _controlled_hadamard(base, control_wires, control_values, work_wires, work_w
 
     qp.RY(-np.pi / 4, wires=wires[-1])
     qp.H(wires=wires[-1])
-    qp.ctrl(
-        qp.X(wires[-1]),
-        control=wires[:-1],
+    qp.MultiControlledX(
+        wires,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
@@ -310,6 +374,61 @@ class PauliX(Operator2):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PauliX
+
+            .. decomposition-rule:: _paulix_to_rx
+                :image: /_static/decomposition_thumbnails/paulix_to_rx.svg
+
+                :class:`~.RX` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _paulix_to_ppr
+                :image: /_static/decomposition_thumbnails/paulix_to_ppr.svg
+
+                :class:`PPR_2(1, "X") <.PPR_2>` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: decompose_to_base
+                :image: /_static/decomposition_thumbnails/paulix_adjoint.svg
+                :region: adjoint
+                :where: :class:`~.PauliX` is self-adjoint
+
+                :class:`~.PauliX` | :math:`1`
+
+            .. decomposition-rule:: _ctrl_x_to_mcx
+                :image: /_static/decomposition_thumbnails/paulix_controlled.svg
+                :region: controlled
+                :where: the circuit shows :math:`c = 2` control wires
+
+                :class:`~.MultiControlledX` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/paulix_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+
+                :class:`Pow(PauliX) <.PauliX>` with power :math:`z \bmod 2` | :math:`1`
+
+            .. decomposition-rule:: _pow_x_to_rx
+                :image: /_static/decomposition_thumbnails/paulix_pow_to_rx.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 0.5`
+
+                :class:`~.RX` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _pow_x_to_sx
+                :image: /_static/decomposition_thumbnails/paulix_pow_to_sx.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 2 = 1/2`, and the
+                    circuit shows :math:`z = 0.5`
+
+                :class:`~.SX` | :math:`1`
     """
 
     wire_sizes = (1,)
@@ -339,9 +458,7 @@ class PauliX(Operator2):
     @override
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
-                {qp.pauli.PauliWord({self.wires[0]: "X"}): 1.0}
-            )
+            self._pauli_rep = PauliSentence({PauliWord({self.wires[0]: "X"}): 1.0})
         return self._pauli_rep
 
     def __init__(self, wires: WiresLike):
@@ -454,18 +571,6 @@ class PauliX(Operator2):
         return super().pow(z_mod2)
 
 
-@custom_ctrl_dispatch.register
-def _ctrl_x(base: PauliX, control, control_values, work_wires, work_wire_type):
-    wires = control + base.wires
-    if not _is_empty_or_all_true(control_values):
-        return qp.MultiControlledX(wires, control_values, work_wires, work_wire_type)
-    if len(control) == 1:
-        return qp.CNOT(wires)
-    if len(control) == 2 and not work_wires:
-        return qp.Toffoli(wires)
-    return qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
-
-
 X = PauliX
 r"""The Pauli X operator
 
@@ -493,10 +598,9 @@ def _paulix_to_rx(wires: WiresLike):
     qp.GlobalPhase(-np.pi / 2)
 
 
-# pylint: disable-next=unused-argument
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.5))
 @register_resources(lambda *_, **__: {qp.SX: 1})
-def _pow_x_to_sx(base, z):  # pylint: disable=unused-argument
+def _pow_x_to_sx(base, z):
     qp.SX(wires=base.wires)
 
 
@@ -507,7 +611,17 @@ def _pow_x_to_rx(base, z):
     qp.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
-add_decomps(PauliX, _paulix_to_rx)
+def _paulix_to_ppr_resources(wires: AbstractWires):
+    return {qp.PPR_2(1, "X", Wire[1]): 1, qp.GlobalPhase: 1}
+
+
+@register_resources(_paulix_to_ppr_resources)
+def _paulix_to_ppr(wires: WiresLike):
+    qp.PPR_2(1, "X", wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
+
+
+add_decomps(PauliX, _paulix_to_rx, _paulix_to_ppr)
 add_decomps("Adjoint(PauliX)", self_adjoint)
 add_decomps("Pow(PauliX)", pow_involutory2, _pow_x_to_rx, _pow_x_to_sx)
 
@@ -551,6 +665,57 @@ class PauliY(Operator2):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PauliY
+
+            .. decomposition-rule:: _pauliy_to_ry_gp
+                :image: /_static/decomposition_thumbnails/pauliy_to_ry.svg
+
+                :class:`~.RY` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _pauliy_to_ppr
+                :image: /_static/decomposition_thumbnails/pauliy_to_ppr.svg
+
+                :class:`PPR_2(1, "Y") <.PPR_2>` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: decompose_to_base
+                :image: /_static/decomposition_thumbnails/pauliy_adjoint.svg
+                :region: adjoint
+                :where: :class:`~.PauliY` is self-adjoint
+
+                :class:`~.PauliY` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_y_decomp)
+                :image: /_static/decomposition_thumbnails/pauliy_controlled.svg
+                :region: controlled
+                :where: :math:`c \geq 2` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.S` | :math:`1`
+                :class:`Adjoint(S) <.S>` | :math:`1`
+                :class:`~.MultiControlledX` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/pauliy_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+
+                :class:`Pow(PauliY) <.PauliY>` with power :math:`z \bmod 2` | :math:`1`
+
+            .. decomposition-rule:: _pow_y
+                :image: /_static/decomposition_thumbnails/pauliy_pow_to_ry.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 0.5`
+
+                :class:`~.RY` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
     """
 
     arg_specs = {"wires": Wire[1]}
@@ -578,9 +743,7 @@ class PauliY(Operator2):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
-                {qp.pauli.PauliWord({self.wires[0]: "Y"}): 1.0}
-            )
+            self._pauli_rep = PauliSentence({PauliWord({self.wires[0]: "Y"}): 1.0})
         return self._pauli_rep
 
     def __init__(self, wires: WiresLike):
@@ -687,13 +850,6 @@ class PauliY(Operator2):
         return super().pow(z % 2)
 
 
-@custom_ctrl_dispatch.register
-def _ctrl_y(base: PauliY, control, control_values, *_):
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CY(control + base.wires)
-    return NotImplemented
-
-
 Y = PauliY
 r"""The Pauli Y operator
 
@@ -728,7 +884,17 @@ def _pow_y(base, z):
     qp.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
-add_decomps(PauliY, _pauliy_to_ry_gp)
+def _pauliy_to_ppr_resources(wires: AbstractWires):
+    return {qp.PPR_2(1, "Y", Wire[1]): 1, qp.GlobalPhase: 1}
+
+
+@register_resources(_pauliy_to_ppr_resources)
+def _pauliy_to_ppr(wires: WiresLike):
+    qp.PPR_2(1, "Y", wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
+
+
+add_decomps(PauliY, _pauliy_to_ry_gp, _pauliy_to_ppr)
 add_decomps("Adjoint(PauliY)", self_adjoint)
 add_decomps("Pow(PauliY)", pow_involutory2, _pow_y)
 
@@ -739,11 +905,10 @@ def _controlled_y_resource(base, control_wires, control_values, work_wires, work
     return {
         qp.S: 1,
         _adjoint_abstract(qp.S): 1,
-        _ctrl_abstract(
-            qp.X,
-            Wire[len(control_wires)],
-            Wire[len(work_wires)],
-            work_wire_type,
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 1],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
         ): 1,
     }
 
@@ -757,9 +922,7 @@ def _controlled_y_decomp(base, control_wires, control_values, work_wires, work_w
         return
 
     qp.adjoint(qp.S(wires[-1]))
-    qp.ctrl(
-        qp.X(wires[-1]), control=wires[:-1], work_wires=work_wires, work_wire_type=work_wire_type
-    )
+    qp.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
     qp.S(wires=wires[-1])
 
 
@@ -781,6 +944,70 @@ class PauliZ(Operator2):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PauliZ
+
+            .. decomposition-rule:: _pauliz_to_ps
+                :image: /_static/decomposition_thumbnails/pauliz_to_phase_shift.svg
+
+                :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: _pauliz_to_ppr
+                :image: /_static/decomposition_thumbnails/pauliz_to_ppr.svg
+
+                :class:`PPR_2(1, "Z") <.PPR_2>` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: decompose_to_base
+                :image: /_static/decomposition_thumbnails/pauliz_adjoint.svg
+                :region: adjoint
+                :where: :class:`~.PauliZ` is self-adjoint
+
+                :class:`~.PauliZ` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_z_decomp)
+                :image: /_static/decomposition_thumbnails/pauliz_controlled.svg
+                :region: controlled
+                :where: :math:`c \geq 3` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 3`
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.MultiControlledX` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/pauliz_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+
+                :class:`Pow(PauliZ) <.PauliZ>` with power :math:`z \bmod 2` | :math:`1`
+
+            .. decomposition-rule:: _pow_z
+                :image: /_static/decomposition_thumbnails/pauliz_pow_to_phaseshift.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 0.5`
+
+                :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: _pow_z_to_s
+                :image: /_static/decomposition_thumbnails/pauliz_pow_to_s.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 2 = 1/2`, and the
+                    circuit shows :math:`z = 0.5`
+
+                :class:`~.S` | :math:`1`
+
+            .. decomposition-rule:: _pow_z_to_t
+                :image: /_static/decomposition_thumbnails/pauliz_pow_to_t.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 2 = 1/4`, and the
+                    circuit shows :math:`z = 0.25`
+
+                :class:`~.T` | :math:`1`
     """
 
     arg_specs = {"wires": Wire[1]}
@@ -805,9 +1032,7 @@ class PauliZ(Operator2):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
-                {qp.pauli.PauliWord({self.wires[0]: "Z"}): 1.0}
-            )
+            self._pauli_rep = PauliSentence({PauliWord({self.wires[0]: "Z"}): 1.0})
         return self._pauli_rep
 
     def __init__(self, wires: WiresLike):
@@ -830,7 +1055,6 @@ class PauliZ(Operator2):
         return base_label or "Z"
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(wires: WiresLike | None = None) -> np.ndarray:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -852,12 +1076,10 @@ class PauliZ(Operator2):
 
     @staticmethod
     @lru_cache
-    # pylint: disable=unused-argument,arguments-differ
     def compute_sparse_matrix(wires: WiresLike | None = None, format="csr") -> sparse.spmatrix:
         return sparse.csr_matrix([[1, 0], [0, -1]]).asformat(format=format)
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
     def compute_eigvals(wires: WiresLike | None = None) -> np.ndarray:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -883,10 +1105,7 @@ class PauliZ(Operator2):
         return qp.pauli.pauli_eigs(1)
 
     @staticmethod
-    # pylint: disable=unused-argument
-    def compute_diagonalizing_gates(
-        wires: WiresLike,
-    ) -> list[qp.operation.Operator]:
+    def compute_diagonalizing_gates(wires: WiresLike) -> list[qp.operation.Operator]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -929,18 +1148,6 @@ class PauliZ(Operator2):
         return [qp.PhaseShift(np.pi * z_mod2, wires=self.wires)]
 
 
-@custom_ctrl_dispatch.register
-def _ctrl_z(base: PauliZ, control, control_values, work_wires, work_wire_type):
-    if not _is_empty_or_all_true(control_values):
-        return NotImplemented
-    is_abstract = isinstance(control, AbstractWires) or isinstance(base.wires, AbstractWires)
-    if len(control) == 1:
-        return qp.CZ(Wire[2]) if is_abstract else qp.CZ(control + base.wires)
-    if len(control) == 2:
-        return qp.CCZ(Wire[3]) if is_abstract else qp.CCZ(control + base.wires)
-    return NotImplemented
-
-
 Z = PauliZ
 r"""The Pauli Z operator
 
@@ -958,7 +1165,7 @@ Args:
 """
 
 
-def _pauliz_to_ps_resources(wires: AbstractWires):  # pylint: disable=unused-argument
+def _pauliz_to_ps_resources(wires: AbstractWires):
     return {qp.PhaseShift: 1}
 
 
@@ -969,13 +1176,13 @@ def _pauliz_to_ps(wires: WiresLike):
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.5))
 @register_resources(lambda *_, **__: {qp.S: 1})
-def _pow_z_to_s(base, z):  # pylint: disable=unused-argument
+def _pow_z_to_s(base, z):
     qp.S(wires=base.wires)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.25))
 @register_resources(lambda *_, **__: {qp.T: 1})
-def _pow_z_to_t(base, z):  # pylint: disable=unused-argument
+def _pow_z_to_t(base, z):
     qp.T(wires=base.wires)
 
 
@@ -985,18 +1192,24 @@ def _pow_z(base, z):
     qp.PhaseShift(np.pi * z_mod2, wires=base.wires)
 
 
-add_decomps(PauliZ, _pauliz_to_ps)
+def _pauliz_to_ppr_resources(wires: AbstractWires):
+    return {qp.PPR_2(1, "Z", Wire[1]): 1, qp.GlobalPhase: 1}
+
+
+@register_resources(_pauliz_to_ppr_resources)
+def _pauliz_to_ppr(wires: WiresLike):
+    qp.PPR_2(1, "Z", wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
+
+
+add_decomps(PauliZ, _pauliz_to_ps, _pauliz_to_ppr)
 add_decomps("Adjoint(PauliZ)", self_adjoint)
 add_decomps("Pow(PauliZ)", pow_involutory2, _pow_z, _pow_z_to_s, _pow_z_to_t)
 
 
-def _controlled_z_resources(  # pylint: disable=unused-argument
-    base, control_wires, control_values, work_wires, work_wire_type
-):
+def _controlled_z_resources(base, control_wires, control_values, work_wires, work_wire_type):
     if len(control_wires) == 1:
         return {qp.CZ: 1}
-    if len(control_wires) == 2:
-        return {qp.CCZ: 1}
     return {
         qp.H: 2,
         qp.MultiControlledX(
@@ -1008,17 +1221,11 @@ def _controlled_z_resources(  # pylint: disable=unused-argument
 
 
 @register_resources(_controlled_z_resources)
-def _controlled_z_decomp(  # pylint: disable=unused-argument
-    base, control_wires, control_values, work_wires, work_wire_type
-):
+def _controlled_z_decomp(base, control_wires, control_values, work_wires, work_wire_type):
     wires = concatenate_wires(control_wires, base.wires)
 
     if len(control_wires) == 1:
         qp.CZ(wires=wires)
-        return
-
-    if len(control_wires) == 2:
-        qp.CCZ(wires=wires)
         return
 
     qp.H(wires=wires[-1])
@@ -1026,7 +1233,17 @@ def _controlled_z_decomp(  # pylint: disable=unused-argument
     qp.H(wires=wires[-1])
 
 
-add_decomps("C(PauliZ)", flip_zero_control2(_controlled_z_decomp))
+@register_condition(lambda control_wires, **_: len(control_wires) == 2)
+@register_resources(lambda *_, **__: {qp.CCZ: 1})
+def _controlled_z_to_ccz(base, control_wires, **_):
+    qp.CCZ(wires=concatenate_wires(control_wires, base.wires))
+
+
+add_decomps(
+    "C(PauliZ)",
+    flip_zero_control2(_controlled_z_to_ccz),
+    flip_zero_control2(_controlled_z_decomp),
+)
 
 
 class S(Operator2):
@@ -1045,6 +1262,53 @@ class S(Operator2):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.S
+
+            .. decomposition-rule:: _s_phaseshift
+                :image: /_static/decomposition_thumbnails/s_to_phase_shift.svg
+
+                :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: _s_to_ppr
+                :image: /_static/decomposition_thumbnails/s_to_ppr.svg
+
+                :class:`PPR_4(1, "Z") <.PPR_4>` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/s_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 4` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 5`
+
+                :class:`Pow(S) <.S>` with power :math:`z \bmod 4` | :math:`1`
+
+            .. decomposition-rule:: _pow_s
+                :image: /_static/decomposition_thumbnails/s_pow_to_phaseshift.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 0.5`
+
+                :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: _pow_s_to_t
+                :image: /_static/decomposition_thumbnails/s_pow_to_t.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 4 = 1/2`, and the
+                    circuit shows :math:`z = 0.5`
+
+                :class:`~.T` | :math:`1`
+
+            .. decomposition-rule:: _pow_s_to_z
+                :image: /_static/decomposition_thumbnails/s_pow_to_z.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 4 = 2`, and the
+                    circuit shows :math:`z = 2`
+
+                :class:`~.PauliZ` | :math:`1`
     """
 
     wire_sizes = (1,)
@@ -1073,10 +1337,10 @@ class S(Operator2):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
+            self._pauli_rep = PauliSentence(
                 {
-                    qp.pauli.PauliWord({self.wires[0]: "I"}): 0.5 + 0.5j,
-                    qp.pauli.PauliWord({self.wires[0]: "Z"}): 0.5 - 0.5j,
+                    PauliWord({self.wires[0]: "I"}): 0.5 + 0.5j,
+                    PauliWord({self.wires[0]: "Z"}): 0.5 - 0.5j,
                 }
             )
         return self._pauli_rep
@@ -1148,7 +1412,17 @@ def _s_phaseshift(wires: WiresLike | None = None):
     qp.PhaseShift(np.pi / 2, wires=wires)
 
 
-add_decomps(S, _s_phaseshift)
+def _s_to_ppr_resources(wires: AbstractWires):
+    return {qp.PPR_4(1, "Z", Wire[1]): 1, qp.GlobalPhase: 1}
+
+
+@register_resources(_s_to_ppr_resources)
+def _s_to_ppr(wires: WiresLike):
+    qp.PPR_4(1, "Z", wires=wires)
+    qp.GlobalPhase(-np.pi / 4)
+
+
+add_decomps(S, _s_phaseshift, _s_to_ppr)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 0.5))
@@ -1188,6 +1462,37 @@ class T(Operator2):
 
     Args:
         wires (WiresLike): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.T
+
+            .. decomposition-rule:: _t_phaseshift
+                :image: /_static/decomposition_thumbnails/t_to_phase_shift.svg
+
+                :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: _t_to_ppr
+                :image: /_static/decomposition_thumbnails/t_to_ppr.svg
+
+                :class:`PPR_8(1, "Z") <.PPR_8>` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/t_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 8` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 9`
+
+                :class:`Pow(T) <.T>` with power :math:`z \bmod 8` | :math:`1`
+
+            .. decomposition-rule:: _pow_t
+                :image: /_static/decomposition_thumbnails/t_pow_to_phaseshift.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 0.5`
+
+                :class:`~.PhaseShift` | :math:`1`
     """
 
     wire_sizes = (1,)
@@ -1213,10 +1518,10 @@ class T(Operator2):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
+            self._pauli_rep = PauliSentence(
                 {
-                    qp.pauli.PauliWord({self.wires[0]: "I"}): (0.5 + INV_SQRT2 * (0.5 + 0.5j)),
-                    qp.pauli.PauliWord({self.wires[0]: "Z"}): (0.5 - INV_SQRT2 * (0.5 + 0.5j)),
+                    PauliWord({self.wires[0]: "I"}): (0.5 + INV_SQRT2 * (0.5 + 0.5j)),
+                    PauliWord({self.wires[0]: "Z"}): (0.5 - INV_SQRT2 * (0.5 + 0.5j)),
                 }
             )
         return self._pauli_rep
@@ -1288,13 +1593,23 @@ def _t_phaseshift(wires=None):
     qp.PhaseShift(np.pi / 4, wires=wires)
 
 
+def _t_to_ppr_resources(wires: AbstractWires):
+    return {qp.PPR_8(1, "Z", Wire[1]): 1, qp.GlobalPhase: 1}
+
+
+@register_resources(_t_to_ppr_resources)
+def _t_to_ppr(wires: WiresLike):
+    qp.PPR_8(1, "Z", wires=wires)
+    qp.GlobalPhase(-np.pi / 8)
+
+
 @register_resources(lambda *_, **__: {qp.PhaseShift: 1})
 def _pow_t(base, z):
     z_mod8 = qp.math.array(z) % 8
     qp.PhaseShift(np.pi * z_mod8 / 4, wires=base.wires)
 
 
-add_decomps(T, _t_phaseshift)
+add_decomps(T, _t_phaseshift, _t_to_ppr)
 add_decomps("Pow(T)", make_pow_decomp_with_period2(8), _pow_t)
 
 
@@ -1314,6 +1629,41 @@ class SX(Operator2):
 
     Args:
         wires (Sequence[int] or int): the wire the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SX
+
+            .. decomposition-rule:: _sx_to_rx
+                :image: /_static/decomposition_thumbnails/sx_to_rx.svg
+
+                :class:`~.RX` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/sx_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 4` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 5`
+
+                :class:`Pow(SX) <.SX>` with power :math:`z \bmod 4` | :math:`1`
+
+            .. decomposition-rule:: _pow_sx_to_x
+                :image: /_static/decomposition_thumbnails/sx_pow_to_x.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 4 = 2`, and the
+                    circuit shows :math:`z = 2`
+
+                :class:`~.PauliX` | :math:`1`
+
+            .. decomposition-rule:: _pow_sx
+                :image: /_static/decomposition_thumbnails/sx_pow_to_rx.svg
+                :region: pow
+                :where: :math:`z` is the power, and the circuit shows :math:`z = 0.5`
+
+                :class:`~.RX` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
     """
 
     wire_sizes = (1,)
@@ -1338,10 +1688,10 @@ class SX(Operator2):
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
+            self._pauli_rep = PauliSentence(
                 {
-                    qp.pauli.PauliWord({self.wires[0]: "I"}): (0.5 + 0.5j),
-                    qp.pauli.PauliWord({self.wires[0]: "X"}): (0.5 - 0.5j),
+                    PauliWord({self.wires[0]: "I"}): (0.5 + 0.5j),
+                    PauliWord({self.wires[0]: "X"}): (0.5 - 0.5j),
                 }
             )
         return self._pauli_rep
@@ -1448,6 +1798,48 @@ class SWAP(Operator2):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SWAP
+
+            .. decomposition-rule:: _swap_to_cnot
+                :image: /_static/decomposition_thumbnails/swap_to_cnot.svg
+
+                :class:`~.CNOT` | :math:`3`
+
+            .. decomposition-rule:: _swap_to_ppr
+                :image: /_static/decomposition_thumbnails/swap_to_ppr.svg
+
+                :class:`PPR_4(1, "XX") <.PPR_4>` | :math:`1`
+                :class:`PPR_4(1, "YY") <.PPR_4>` | :math:`1`
+                :class:`PPR_4(1, "ZZ") <.PPR_4>` | :math:`1`
+                :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: decompose_to_base
+                :image: /_static/decomposition_thumbnails/swap_adjoint.svg
+                :region: adjoint
+
+                :class:`~.SWAP` | :math:`1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_swap_decomp)
+                :image: /_static/decomposition_thumbnails/swap_controlled.svg
+                :region: controlled
+                :where: :math:`c \geq 2` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.CNOT` | :math:`2`
+                :class:`~.MultiControlledX` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/swap_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+
+                :class:`Pow(SWAP) <.SWAP>` with power :math:`z \bmod 2` | :math:`1`
     """
 
     wire_sizes = (2,)
@@ -1470,12 +1862,12 @@ class SWAP(Operator2):
     @override
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
+            self._pauli_rep = PauliSentence(
                 {
-                    qp.pauli.PauliWord({}): 0.5,
-                    qp.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5,
-                    qp.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5,
-                    qp.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5,
+                    PauliWord({}): 0.5,
+                    PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5,
+                    PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5,
+                    PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5,
                 }
             )
         return self._pauli_rep
@@ -1544,13 +1936,6 @@ class SWAP(Operator2):
         return SWAP(wires=self.wires)
 
 
-@custom_ctrl_dispatch.register
-def _ctrl_swap(base: SWAP, control, control_values, *_):
-    if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CSWAP(control + base.wires)
-    return NotImplemented
-
-
 def _swap_to_cnot_resources(wires: WiresLike):
     return {qp.CNOT: 3}
 
@@ -1564,18 +1949,18 @@ def _swap_to_cnot(wires, **_):
 
 def _swap_to_ppr_resource(wires: WiresLike):
     return {
-        qp.PPR(4, pauli_word="XX", wires=Wire[2]): 1,
-        qp.PPR(4, pauli_word="YY", wires=Wire[2]): 1,
-        qp.PPR(4, pauli_word="ZZ", wires=Wire[2]): 1,
+        qp.PPR_4(1, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PPR_4(1, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PPR_4(1, pauli_word="ZZ", wires=Wire[2]): 1,
         qp.GlobalPhase: 1,
     }
 
 
 @register_resources(_swap_to_ppr_resource)
 def _swap_to_ppr(wires, **_):
-    qp.PPR(4, "YY", wires=wires)
-    qp.PPR(4, "XX", wires=wires)
-    qp.PPR(4, "ZZ", wires=wires)
+    qp.PPR_4(1, "YY", wires=wires)
+    qp.PPR_4(1, "XX", wires=wires)
+    qp.PPR_4(1, "ZZ", wires=wires)
     qp.GlobalPhase(-np.pi / 4)
 
 
@@ -1584,10 +1969,7 @@ add_decomps("Adjoint(SWAP)", self_adjoint)
 add_decomps("Pow(SWAP)", pow_involutory2)
 
 
-# pylint: disable-next=unused-argument
 def _controlled_swap_resources(base, control_wires, control_values, work_wires, work_wire_type):
-    if len(control_wires) == 1:
-        return {qp.CSWAP: 1}
     return {
         qp.CNOT: 2,
         qp.MultiControlledX(
@@ -1599,13 +1981,8 @@ def _controlled_swap_resources(base, control_wires, control_values, work_wires, 
 
 
 @register_resources(_controlled_swap_resources)
-# pylint: disable-next=unused-argument
 def _controlled_swap_decomp(base, control_wires, control_values, work_wires, work_wire_type):
     wires = concatenate_wires(control_wires, base.wires)
-    if len(control_wires) == 1:
-        qp.CSWAP(wires=wires)
-        return
-
     qp.CNOT(wires=[wires[-2], wires[-1]])
     qp.MultiControlledX(
         wires=concatenate_wires(wires[:-2], [wires[-1], wires[-2]]),
@@ -1615,7 +1992,17 @@ def _controlled_swap_decomp(base, control_wires, control_values, work_wires, wor
     qp.CNOT(wires=[wires[-2], wires[-1]])
 
 
-add_decomps("C(SWAP)", flip_zero_control2(_controlled_swap_decomp))
+@register_condition(lambda control_wires, **_: len(control_wires) == 1)
+@register_resources(lambda *_, **__: {qp.CSWAP: 1})
+def _controlled_swap_to_cswap(base, control_wires, **_):
+    qp.CSWAP(wires=concatenate_wires(control_wires, base.wires))
+
+
+add_decomps(
+    "C(SWAP)",
+    flip_zero_control2(_controlled_swap_to_cswap),
+    flip_zero_control2(_controlled_swap_decomp),
+)
 
 
 class ECR(Operator2):
@@ -1637,6 +2024,34 @@ class ECR(Operator2):
 
     Args:
         wires (int): the subsystem the gate acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.ECR
+
+            .. decomposition-rule:: _ecr_decomp
+                :image: /_static/decomposition_thumbnails/ecr_decomp.svg
+
+                :class:`~.Z` | :math:`1`
+                :class:`~.CNOT` | :math:`1`
+                :class:`~.SX` | :math:`1`
+                :class:`~.RX` | :math:`2`
+                :class:`~.RY` | :math:`1`
+
+            .. decomposition-rule:: decompose_to_base
+                :image: /_static/decomposition_thumbnails/ecr_adjoint.svg
+                :region: adjoint
+
+                :class:`~.ECR` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/ecr_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 2` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 3`
+
+                :class:`Pow(ECR) <.ECR>` with power :math:`z \bmod 2` | :math:`1`
     """
 
     wire_sizes = (2,)
@@ -1656,10 +2071,10 @@ class ECR(Operator2):
     @override
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
+            self._pauli_rep = PauliSentence(
                 {
-                    qp.pauli.PauliWord({self.wires[0]: "X"}): INV_SQRT2,
-                    qp.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "X"}): -INV_SQRT2,
+                    PauliWord({self.wires[0]: "X"}): INV_SQRT2,
+                    PauliWord({self.wires[0]: "Y", self.wires[1]: "X"}): -INV_SQRT2,
                 }
             )
         return self._pauli_rep
@@ -1774,6 +2189,48 @@ class ISWAP(Operator2):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.ISWAP
+
+            .. decomposition-rule:: _iswap_decomp
+                :image: /_static/decomposition_thumbnails/iswap_decomp.svg
+
+                :class:`~.S` | :math:`2`
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.CNOT` | :math:`2`
+
+            .. decomposition-rule:: _iswap_to_ppr
+                :image: /_static/decomposition_thumbnails/iswap_to_ppr.svg
+
+                :class:`PPR_4(-1, "XX") <.PPR_4>` | :math:`1`
+                :class:`PPR_4(-1, "YY") <.PPR_4>` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/iswap_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 4` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 5`
+
+                :class:`Pow(ISWAP) <.ISWAP>` with power :math:`z \bmod 4` | :math:`1`
+
+            .. decomposition-rule:: _pow_iswap_to_zz
+                :image: /_static/decomposition_thumbnails/iswap_pow_to_zz.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 4 = 2`, and the
+                    circuit shows :math:`z = 2`
+
+                :class:`~.PauliZ` | :math:`2`
+
+            .. decomposition-rule:: _pow_iswap_to_siswap
+                :image: /_static/decomposition_thumbnails/iswap_pow_to_siswap.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 4 = 1/2`, and the
+                    circuit shows :math:`z = 0.5`
+
+                :class:`~.SISWAP` | :math:`1`
     """
 
     wire_sizes = (2,)
@@ -1794,12 +2251,12 @@ class ISWAP(Operator2):
     @override
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
+            self._pauli_rep = PauliSentence(
                 {
-                    qp.pauli.PauliWord({}): 0.5,
-                    qp.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5j,
-                    qp.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5j,
-                    qp.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5,
+                    PauliWord({}): 0.5,
+                    PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5j,
+                    PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5j,
+                    PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5,
                 }
             )
         return self._pauli_rep
@@ -1880,15 +2337,15 @@ def _iswap_decomp(wires):
 
 def _iswap_to_ppr_resource(wires: WiresLike):
     return {
-        qp.PPR(-4, pauli_word="XX", wires=Wire[2]): 1,
-        qp.PPR(-4, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PPR_4(-1, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PPR_4(-1, pauli_word="YY", wires=Wire[2]): 1,
     }
 
 
 @register_resources(_iswap_to_ppr_resource)
 def _iswap_to_ppr(wires):
-    qp.PPR(-4, "YY", wires=wires)
-    qp.PPR(-4, "XX", wires=wires)
+    qp.PPR_4(-1, "YY", wires=wires)
+    qp.PPR_4(-1, "XX", wires=wires)
 
 
 add_decomps(ISWAP, _iswap_decomp, _iswap_to_ppr)
@@ -1928,6 +2385,48 @@ class SISWAP(Operator2):
 
     Args:
         wires (Sequence[int]): the wires the operation acts on
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SISWAP
+
+            .. decomposition-rule:: _siswap_decomp
+                :image: /_static/decomposition_thumbnails/siswap_decomp.svg
+
+                :class:`~.SX` | :math:`6`
+                :class:`~.RZ` | :math:`4`
+                :class:`~.CNOT` | :math:`2`
+
+            .. decomposition-rule:: _siswap_to_ppr
+                :image: /_static/decomposition_thumbnails/siswap_to_ppr.svg
+
+                :class:`PPR_8(-1, "XX") <.PPR_8>` | :math:`1`
+                :class:`PPR_8(-1, "YY") <.PPR_8>` | :math:`1`
+
+            .. decomposition-rule:: _impl
+                :image: /_static/decomposition_thumbnails/siswap_pow_period.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \geq 8` or
+                    :math:`z < 0`, and the circuit shows :math:`z = 9`
+
+                :class:`Pow(SISWAP) <.SISWAP>` with power :math:`z \bmod 8` | :math:`1`
+
+            .. decomposition-rule:: _pow_siswap_to_zz
+                :image: /_static/decomposition_thumbnails/siswap_pow_to_zz.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 8 = 4`, and the
+                    circuit shows :math:`z = 4`
+
+                :class:`~.PauliZ` | :math:`2`
+
+            .. decomposition-rule:: _pow_siswap_to_iswap
+                :image: /_static/decomposition_thumbnails/siswap_pow_to_iswap.svg
+                :region: pow
+                :where: :math:`z` is the power, the rule applies if :math:`z \bmod 8 = 2`, and the
+                    circuit shows :math:`z = 2`
+
+                :class:`~.ISWAP` | :math:`1`
     """
 
     wire_sizes = (2,)
@@ -1948,14 +2447,12 @@ class SISWAP(Operator2):
     @override
     def pauli_rep(self):
         if self._pauli_rep is None:
-            self._pauli_rep = qp.pauli.PauliSentence(
+            self._pauli_rep = PauliSentence(
                 {
-                    qp.pauli.PauliWord({self.wires[0]: "I", self.wires[1]: "I"}): 0.5
-                    + 0.5 * INV_SQRT2,
-                    qp.pauli.PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5j * INV_SQRT2,
-                    qp.pauli.PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5j * INV_SQRT2,
-                    qp.pauli.PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5
-                    - 0.5 * INV_SQRT2,
+                    PauliWord({self.wires[0]: "I", self.wires[1]: "I"}): 0.5 + 0.5 * INV_SQRT2,
+                    PauliWord({self.wires[0]: "X", self.wires[1]: "X"}): 0.5j * INV_SQRT2,
+                    PauliWord({self.wires[0]: "Y", self.wires[1]: "Y"}): 0.5j * INV_SQRT2,
+                    PauliWord({self.wires[0]: "Z", self.wires[1]: "Z"}): 0.5 - 0.5 * INV_SQRT2,
                 }
             )
         return self._pauli_rep
@@ -2055,15 +2552,15 @@ def _siswap_decomp(wires):
 
 def _siswap_to_ppr_resource(wires: WiresLike):
     return {
-        qp.PPR(-8, pauli_word="XX", wires=Wire[2]): 1,
-        qp.PPR(-8, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PPR_8(-1, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PPR_8(-1, pauli_word="YY", wires=Wire[2]): 1,
     }
 
 
 @register_resources(_siswap_to_ppr_resource)
 def _siswap_to_ppr(wires, **_):
-    qp.PPR(-8, "YY", wires=wires)
-    qp.PPR(-8, "XX", wires=wires)
+    qp.PPR_8(-1, "YY", wires=wires)
+    qp.PPR_8(-1, "XX", wires=wires)
 
 
 add_decomps(SISWAP, _siswap_decomp, _siswap_to_ppr)
@@ -2088,81 +2585,18 @@ add_decomps("Pow(SISWAP)", make_pow_decomp_with_period2(8), _pow_siswap_to_zz, _
 SQISW = SISWAP
 
 
-class PPR(Operator2):
-    r"""PPR(angle_denominator, pauli_word, wires)
-    A Pauli product rotation (PPR) with a fixed angle.
+class _FixedAnglePPR(Operator2, is_baseclass=True):
+    """Shared ``Operator2`` boilerplate for :class:`~.PPR_2`, :class:`~.PPR_4`, and
+    :class:`~.PPR_8`, the Pauli product rotations by the angle ``±π / _denominator``."""
 
-    .. math::
-
-        \text{PPR}(k, P) = \exp\left(-i \frac{\pi}{k} P\right),
-
-    where :math:`P` is a Pauli word and we call :math:`\varphi = \pi / k` the rotation angle,
-    following the literature convention (e.g.
-    `:math:`\mathrm{PPR}(-4, \mathrm{X})=\exp(-i\pi / (-4) X)=\exp(i\tfrac{\pi}{4} X)`).
-    The denominator :math:`k` is restricted to :math:`\pm 2`, :math:`\pm 4` and :math:`\pm 8`,
-    so that ``PPR`` covers exactly those Pauli product rotations that occur in Clifford+T circuits:
-
-    * ``angle_denominator=±2``: a :math:`\pm\pi/2` PPR (signed Pauli),
-    * ``angle_denominator=±4``: a :math:`\pm\pi/4` PPR (Clifford),
-    * ``angle_denominator=±8``: a :math:`\pm\pi/8` PPR (non-Clifford).
-
-    The Pauli-based computation literature commonly writes a PPR with this angle convention,
-    whereas :class:`~.PauliRot` follows the convention
-    :math:`\mathrm{PauliRot}(\theta, P)=\exp(-i \theta / 2 P)`, i.e., :math:`\varphi = \theta / 2`.
-
-    .. note:: ``PPR`` corresponds to the respective operators in the Pauli-based computation
-        (``pbc``) dialect of Catalyst, and follows the same angle convention.
-
-    .. seealso:: :class:`~.PauliRot` for a Pauli product rotation with an arbitrary angle, and
-        :func:`~.pauli_measure` for PPM, the measurement counterpart of a PPR.
-        For more information on Pauli-based computation (PBC), check out the
-        `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
-
-    Args:
-        angle_denominator (int): the denominator :math:`k` of the rotation angle
-            :math:`\varphi = \pi / k`. Must be one of ``±2``, ``±4``, or ``±8``.
-        pauli_word (str): the Pauli word defining the rotation, consisting of the characters
-            ``"X"``, ``"Y"``, ``"Z"``, and ``"I"``. Its length must match the length of ``wires``.
-        wires (Sequence[int] or int): the wires the operation acts on. The length must match
-            length of ``pauli_word``.
-
-    Raises:
-        ValueError: if ``angle_denominator`` is not an allowed integer denominator
-        ValueError: if the Pauli word contains characters other than ``X``, ``Y``, ``Z``, and ``I``
-        ValueError: if no wires are provided
-        ValueError: if the number of wires does not match the length of the Pauli word
-
-    **Example**
-
-    A :math:`\pi/8` PPR on the Pauli word :math:`X \otimes Y` is created by requesting the
-    corresponding angle :math:`\varphi=\pi/8`:
-
-    >>> op = qp.PPR(8, "XY", wires=[0, 1])
-    >>> op
-    PPR(8, 'XY', wires=[0, 1])
-
-    Negative denominators denote the inverse rotations:
-
-    >>> qp.PPR(-8, "XY", wires=[0, 1])
-    PPR(-8, 'XY', wires=[0, 1])
-
-    When compiling further to Pauli product measurements (PPM), ``PPR`` should first be lowered
-    using PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
-
-    """
-
-    compilable_argnames = ("angle_denominator", "pauli_word")
+    compilable_argnames = ("sign", "pauli_word")
     arg_specs = {"wires": Wire[-1]}
 
-    _ALLOWED_DENOMINATORS = (-8, -4, -2, 2, 4, 8)
+    _denominator: int
 
-    def __init__(self, angle_denominator: int, pauli_word: str, wires: WiresLike):
-        if angle_denominator not in self._ALLOWED_DENOMINATORS:
-            raise ValueError(
-                "The angle denominator must be an integer in "
-                f"{self._ALLOWED_DENOMINATORS}, denoting the rotation angle "
-                f"pi / angle_denominator, but got {angle_denominator}."
-            )
+    def __init__(self, sign: int, pauli_word: str, wires: WiresLike):
+        if sign not in (1, -1):
+            raise ValueError(f"The sign must be 1 or -1, but got {sign}.")
 
         if not set(pauli_word).issubset({"X", "Y", "Z", "I"}):
             raise ValueError(
@@ -2170,7 +2604,7 @@ class PPR(Operator2):
                 "Allowed characters are X, Y, Z and I."
             )
 
-        super().__init__(angle_denominator, pauli_word, wires=wires)
+        super().__init__(sign, pauli_word, wires=wires)
 
         if not self.wires:
             raise ValueError("At least one wire has to be provided.")
@@ -2187,7 +2621,7 @@ class PPR(Operator2):
         r"""A customizable string representation of the operator.
 
         Args:
-            decimals=None (int): unused, as ``PPR`` has no trainable parameters
+            decimals=None (int): unused, as PPRs have no trainable parameters
             base_label=None (str): overwrite the non-parameter component of the label
             cache=None (dict): dictionary that carries information between label calls
                 in the same drawing
@@ -2197,35 +2631,28 @@ class PPR(Operator2):
 
         **Example:**
 
-        >>> op = qp.PPR(8, "XY", wires=[0, 1])
+        >>> op = qp.PPR_8(1, "XY", wires=[0, 1])
         >>> op.label()
         'PPR(π/8, XY)'
         >>> op.label(base_label="PPR")
         'PPR'
         """
-        denominator = self.angle_denominator
-        sign = "-" if denominator < 0 else ""
-        angle_label = f"{sign}π/{abs(denominator)}"
-        return base_label or f"PPR({angle_label}, {self.pauli_word})"
+        sign = "-" if self.sign < 0 else ""
+        return base_label or f"PPR({sign}π/{self._denominator}, {self.pauli_word})"
 
     @override
     def __repr__(self) -> str:
-        return f"PPR({self.angle_denominator}, '{self.pauli_word}', wires={self.wires})"
+        return f"{self.name}({self.sign}, '{self.pauli_word}', wires={self.wires})"
 
-    @staticmethod
-    def compute_matrix(  # pylint: disable=unused-argument
-        angle_denominator: int, pauli_word: str, wires=None
-    ) -> TensorLike:
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+    @classmethod
+    def compute_matrix(cls, sign: int, pauli_word: str, wires=None) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (class method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.PPR.matrix`
-
-
         Args:
-            angle_denominator (TensorLike): rotation angle
+            sign (int): sign of the rotation angle, ``1`` or ``-1``
             pauli_word (str): string representation of Pauli word
 
         Returns:
@@ -2233,42 +2660,392 @@ class PPR(Operator2):
 
         **Example**
 
-        >>> mat = qp.PPR.compute_matrix(-4, 'X')
+        >>> mat = qp.PPR_4.compute_matrix(-1, 'X')
         >>> expected = ((qp.I(0) + 1j * qp.X(0))/np.sqrt(2)).matrix()
         >>> np.allclose(mat, expected)
         True
 
         """
-        theta = np.pi / angle_denominator * 2
-        multi_Z_rot_matrix = qp.MultiRZ.compute_matrix(theta, list(range(len(pauli_word))))
-
-        # conjugate with Hadamard and RX to create the Pauli string
-        # pylint: disable-next=protected-access
-        conjugation_factors = (qp.PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in pauli_word)
-        conjugation_matrix = reduce(math.kron, conjugation_factors)
-        return math.conj(conjugation_matrix) @ multi_Z_rot_matrix @ conjugation_matrix
+        return qp.PauliRot.compute_matrix(2 * np.pi * sign / cls._denominator, pauli_word)
 
 
-def _ppr_to_paulirot_resources(pauli_word, **_):
-    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
+class PPR_2(_FixedAnglePPR):
+    r"""A Pauli product rotation (PPR) by the angle :math:`\pm\pi/2`.
+
+    .. math::
+
+        \text{PPR}_2(s, P) = \exp\left(-i s \frac{\pi}{2} P\right) = -i s P,
+
+    where :math:`s=\pm 1` is the sign of the rotation angle and :math:`P` is a Pauli word.
+    Up to a sign-dependent global phase, ``PPR_2`` is equivalent to the Pauli word
+    :math:`P` itself (e.g., ``PPR_2(1, "XY", wires=[0, 1])`` is equivalent to :math:`-iX_0Y_1`).
+
+    The Pauli-based computation literature commonly writes PPRs with this angle convention,
+    whereas :class:`~.PauliRot` follows the convention
+    :math:`\mathrm{PauliRot}(\theta, P)=\exp(-i \theta / 2 P)`.
+
+    .. note:: ``PPR_2`` corresponds to the ``pbc.ppr`` operation with rotation kind
+        :math:`\pm 2` in the Pauli-based computation (``pbc``) dialect of Catalyst, and follows
+        the same angle convention.
+
+    .. seealso:: :class:`~.PPR_4` and :class:`~.PPR_8` for PPRs by :math:`\pm\pi/4` and
+        :math:`\pm\pi/8`, :class:`~.PauliRot` for a Pauli product rotation with an arbitrary
+        angle (albeit following a different angle convention), and :func:`~.pauli_measure`
+        for PPM, the measurement counterpart of a PPR.
+        For more information on Pauli-based computation (PBC), check out the
+        `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
+
+    Args:
+        sign (int): the sign :math:`s` of the rotation angle. Must be ``1`` or ``-1``.
+        pauli_word (str): the Pauli word defining the rotation, consisting of the characters
+            ``"X"``, ``"Y"``, ``"Z"``, and ``"I"``. Its length must match the length of ``wires``.
+        wires (Sequence[int] or int): the wires the operation acts on. The length must match
+            length of ``pauli_word``.
+
+    Raises:
+        ValueError: if ``sign`` is not ``1`` or ``-1``
+        ValueError: if the Pauli word contains characters other than ``X``, ``Y``, ``Z``, and ``I``
+        ValueError: if no wires are provided
+        ValueError: if the number of wires does not match the length of the Pauli word
+
+    **Example**
+
+    >>> op = qp.PPR_2(1, "XY", wires=[0, 1])
+    >>> op
+    PPR_2(1, 'XY', wires=[0, 1])
+
+    The inverse rotation is obtained with ``sign=-1``:
+
+    >>> qp.PPR_2(-1, "XY", wires=[0, 1])
+    PPR_2(-1, 'XY', wires=[0, 1])
+
+    To compile ``PPR_2`` with PBC compilation passes (e.g., :func:`~.ppr_to_ppm` or
+    :func:`~.ppm_compilation`), the :func:`~.to_ppr` pass must be used beforehand.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PPR_2
+            :symbols: ``sign`` :math:`s` and a Pauli word with :math:`x` X's, :math:`y` Y's
+                and :math:`z` Z's
+            :example: ``PPR_2(1, "XYZ")``
+
+            .. decomposition-rule:: _ppr2_to_paulis
+                :image: /_static/decomposition_thumbnails/ppr2_to_paulis.svg
+
+                :class:`~.X` | :math:`x` | 1
+                :class:`~.Y` | :math:`y` | 1
+                :class:`~.Z` | :math:`z` | 1
+                :class:`~.GlobalPhase` | :math:`1` | 1
+
+            .. decomposition-rule:: _adjoint_ppr_flip_sign
+                :image: /_static/decomposition_thumbnails/ppr2_adjoint.svg
+                :region: adjoint
+
+                :class:`~.PPR_2` with sign :math:`-s` | :math:`1`
+    """
+
+    _denominator = 2
 
 
-@register_resources(_ppr_to_paulirot_resources)
-def _ppr_to_paulirot(angle_denominator, pauli_word, wires):
-    qp.PauliRot(np.pi / angle_denominator * 2, pauli_word, wires=wires)
+class PPR_4(_FixedAnglePPR):
+    r"""A Clifford Pauli product rotation (PPR) by the angle :math:`\pm\pi/4`.
+
+    .. math::
+
+        \text{PPR}_4(s, P) = \exp\left(-i s \frac{\pi}{4} P\right),
+
+    where :math:`s=\pm 1` is the sign of the rotation angle and :math:`P` is a Pauli word.
+    For :math:`P=Z`, ``PPR_4`` is equivalent to :class:`~.S` (:math:`s=1`) or its adjoint
+    (:math:`s=-1`), up to a global phase.
+
+    The Pauli-based computation literature commonly writes PPRs with this angle convention,
+    whereas :class:`~.PauliRot` follows the convention
+    :math:`\mathrm{PauliRot}(\theta, P)=\exp(-i \theta / 2 P)`.
+
+    .. note:: ``PPR_4`` corresponds to the ``pbc.ppr`` operation with rotation kind
+        :math:`\pm 4` in the Pauli-based computation (``pbc``) dialect of Catalyst, and follows
+        the same angle convention.
+
+    .. seealso:: :class:`~.PPR_2` and :class:`~.PPR_8` for PPRs by :math:`\pm\pi/2` and
+        :math:`\pm\pi/8`, :class:`~.PauliRot` for a Pauli product rotation with an arbitrary
+        angle (albeit following a different angle convention), and :func:`~.pauli_measure`
+        for PPM, the measurement counterpart of a PPR.
+        For more information on Pauli-based computation (PBC), check out the
+        `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
+
+    Args:
+        sign (int): the sign :math:`s` of the rotation angle. Must be ``1`` or ``-1``.
+        pauli_word (str): the Pauli word defining the rotation, consisting of the characters
+            ``"X"``, ``"Y"``, ``"Z"``, and ``"I"``. Its length must match the length of ``wires``.
+        wires (Sequence[int] or int): the wires the operation acts on. The length must match
+            length of ``pauli_word``.
+
+    Raises:
+        ValueError: if ``sign`` is not ``1`` or ``-1``
+        ValueError: if the Pauli word contains characters other than ``X``, ``Y``, ``Z``, and ``I``
+        ValueError: if no wires are provided
+        ValueError: if the number of wires does not match the length of the Pauli word
+
+    **Example**
+
+    >>> op = qp.PPR_4(1, "XY", wires=[0, 1])
+    >>> op
+    PPR_4(1, 'XY', wires=[0, 1])
+
+    The inverse rotation is obtained with ``sign=-1``:
+
+    >>> qp.PPR_4(-1, "XY", wires=[0, 1])
+    PPR_4(-1, 'XY', wires=[0, 1])
+
+    To compile ``PPR_4`` with PBC compilation passes (e.g., :func:`~.ppr_to_ppm` or
+    :func:`~.ppm_compilation`), the :func:`~.to_ppr` pass must be used beforehand.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PPR_4
+            :symbols: ``sign`` :math:`s` and a Pauli word with :math:`x` X's, :math:`y` Y's
+                and :math:`z` Z's
+            :example: ``PPR_4(1, "XYZ")``
+
+            .. decomposition-rule:: _ppr4_to_cliffords
+                :image: /_static/decomposition_thumbnails/ppr4_to_cliffords.svg
+                :where: :math:`k = x + y + z`, and :math:`[\cdot]` equal to 1 if the condition
+                    holds and 0 otherwise
+
+                :class:`~.Hadamard` | :math:`2(x + y)` | 4
+                :class:`~.S` | :math:`y + [k > 0,\ s = 1]` | 2
+                :class:`Adjoint(S) <.S>` | :math:`y + [k > 0,\ s = -1]` | 1
+                :class:`~.CNOT` | :math:`2\max(k - 1, 0)` | 4
+                :class:`~.GlobalPhase` | :math:`1` | 1
+
+            .. decomposition-rule:: _adjoint_ppr_flip_sign
+                :image: /_static/decomposition_thumbnails/ppr4_adjoint.svg
+                :region: adjoint
+
+                :class:`~.PPR_4` with sign :math:`-s` | :math:`1`
+    """
+
+    _denominator = 4
 
 
-add_decomps(PPR, _ppr_to_paulirot)
+class PPR_8(_FixedAnglePPR):
+    r"""A non-Clifford Pauli product rotation (PPR) by the angle :math:`\pm\pi/8`.
+
+    .. math::
+
+        \text{PPR}_8(s, P) = \exp\left(-i s \frac{\pi}{8} P\right),
+
+    where :math:`s=\pm 1` is the sign of the rotation angle and :math:`P` is a Pauli word.
+    For :math:`P=Z`, ``PPR_8`` is equivalent to :class:`~.T` (:math:`s=1`) or its adjoint
+    (:math:`s=-1`), up to a global phase.
+
+    The Pauli-based computation literature commonly writes PPRs with this angle convention,
+    whereas :class:`~.PauliRot` follows the convention
+    :math:`\mathrm{PauliRot}(\theta, P)=\exp(-i \theta / 2 P)`.
+
+    .. note:: ``PPR_8`` corresponds to the ``pbc.ppr`` operation with rotation kind
+        :math:`\pm 8` in the Pauli-based computation (``pbc``) dialect of Catalyst, and follows
+        the same angle convention.
+
+    .. seealso:: :class:`~.PPR_2` and :class:`~.PPR_4` for PPRs by :math:`\pm\pi/2` and
+        :math:`\pm\pi/4`, :class:`~.PauliRot` for a Pauli product rotation with an arbitrary
+        angle (albeit following a different angle convention), and :func:`~.pauli_measure`
+        for PPM, the measurement counterpart of a PPR.
+        For more information on Pauli-based computation (PBC), check out the
+        `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
+
+    Args:
+        sign (int): the sign :math:`s` of the rotation angle. Must be ``1`` or ``-1``.
+        pauli_word (str): the Pauli word defining the rotation, consisting of the characters
+            ``"X"``, ``"Y"``, ``"Z"``, and ``"I"``. Its length must match the length of ``wires``.
+        wires (Sequence[int] or int): the wires the operation acts on. The length must match
+            length of ``pauli_word``.
+
+    Raises:
+        ValueError: if ``sign`` is not ``1`` or ``-1``
+        ValueError: if the Pauli word contains characters other than ``X``, ``Y``, ``Z``, and ``I``
+        ValueError: if no wires are provided
+        ValueError: if the number of wires does not match the length of the Pauli word
+
+    **Example**
+
+    >>> op = qp.PPR_8(1, "XY", wires=[0, 1])
+    >>> op
+    PPR_8(1, 'XY', wires=[0, 1])
+
+    The inverse rotation is obtained with ``sign=-1``:
+
+    >>> qp.PPR_8(-1, "XY", wires=[0, 1])
+    PPR_8(-1, 'XY', wires=[0, 1])
+
+    To compile ``PPR_8`` with PBC compilation passes (e.g., :func:`~.ppr_to_ppm` or
+    :func:`~.ppm_compilation`), the :func:`~.to_ppr` pass must be used beforehand.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.PPR_8
+            :symbols: ``sign`` :math:`s` and a Pauli word with :math:`x` X's, :math:`y` Y's
+                and :math:`z` Z's
+            :example: ``PPR_8(1, "XYZ")``
+
+            .. decomposition-rule:: _ppr8_to_clifford_t
+                :image: /_static/decomposition_thumbnails/ppr8_to_clifford_t.svg
+                :where: :math:`k = x + y + z`, and :math:`[\cdot]` equal to 1 if the condition
+                    holds and 0 otherwise
+
+                :class:`~.Hadamard` | :math:`2(x + y)` | 4
+                :class:`~.S` | :math:`y` | 1
+                :class:`Adjoint(S) <.S>` | :math:`y` | 1
+                :class:`~.T` | :math:`[k > 0,\ s = 1]` | 1
+                :class:`Adjoint(T) <.T>` | :math:`[k > 0,\ s = -1]` | 0
+                :class:`~.CNOT` | :math:`2\max(k - 1, 0)` | 4
+                :class:`~.GlobalPhase` | :math:`1` | 1
+
+            .. decomposition-rule:: _adjoint_ppr_flip_sign
+                :image: /_static/decomposition_thumbnails/ppr8_adjoint.svg
+                :region: adjoint
+
+                :class:`~.PPR_8` with sign :math:`-s` | :math:`1`
+    """
+
+    _denominator = 8
 
 
-def _adjoint_ppr_to_ppr_resources(base):
-    num_wires = len(base.wires)
-    return {PPR(-base.angle_denominator, pauli_word=base.pauli_word, wires=Wire[num_wires]): 1}
+_PAULI_OPS = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
 
 
-@register_resources(_adjoint_ppr_to_ppr_resources)
-def _adjoint_ppr_to_ppr(base):
-    PPR(-base.angle_denominator, pauli_word=base.pauli_word, wires=base.wires)
+def _ppr2_to_paulis_resources(pauli_word, **_):
+    return {qp.GlobalPhase: 1, **Counter(_PAULI_OPS[p] for p in pauli_word if p != "I")}
 
 
-add_decomps("Adjoint(PPR)", _adjoint_ppr_to_ppr)
+@register_resources(_ppr2_to_paulis_resources)
+def _ppr2_to_paulis(sign, pauli_word, wires):
+    qp.GlobalPhase(sign * np.pi / 2)
+    for wire, pauli in zip(wires, pauli_word, strict=True):
+        if pauli != "I":
+            _PAULI_OPS[pauli](wires=wire)
+
+
+def _z_gate(sign, gate, wires):
+    """``gate`` (``S`` or ``T``) for ``sign=1`` and its adjoint for ``sign=-1``."""
+    return gate(wires) if sign > 0 else qp.adjoint(gate(wires))
+
+
+def _ppr_via_z_gate_resources(gate, sign, pauli_word, wires):
+    """Resources of ``_ppr_via_z_gate`` and a global phase."""
+    active_word = pauli_word.replace("I", "")
+    if not active_word:
+        return {qp.GlobalPhase: 1}
+
+    # gates in the order they are applied in
+    compute, uncompute = [], []
+    for pauli in active_word:
+        if pauli == "X":
+            compute.append(Hadamard(Wire[1]))
+            uncompute.append(Hadamard(Wire[1]))
+        elif pauli == "Y":
+            compute.extend([qp.adjoint(S(Wire[1])), Hadamard(Wire[1])])
+            uncompute.extend([Hadamard(Wire[1]), S(Wire[1])])
+    ladder = [qp.CNOT(Wire[2])] * (len(active_word) - 1)
+    compute, uncompute = compute + ladder, ladder + uncompute
+
+    z_gate = _z_gate(sign, gate, Wire[1])
+    if not compute:
+        return {qp.GlobalPhase: 1, z_gate: 1}
+
+    compute = compute[0] if len(compute) == 1 else qp.prod(*reversed(compute))
+    uncompute = uncompute[0] if len(uncompute) == 1 else qp.prod(*reversed(uncompute))
+
+    return {qp.GlobalPhase: 1, _change_op_basis_abstract(compute, z_gate, uncompute): 1}
+
+
+def _ppr_via_z_gate(sign, pauli_word, wires, gate):
+    """Apply the Pauli product rotation that is equal to ``gate`` (``S`` or ``T``) or its adjoint
+    for the Pauli word ``"Z"``, up to a global phase, by changing the basis of ``pauli_word`` to
+    a single Pauli ``Z``.
+
+    Examples:
+
+    For ``pauli_word="XYZ"``, ``gate=T`` and ``sign=1``:
+
+    .. code-block:: text
+
+        0: ──H────────╭X──T─╭X──H───────
+        1: ──S†──H─╭X─╰●────╰●─╭X──H──S─
+        2: ────────╰●──────────╰●───────
+
+    For ``pauli_word="IYZIX"``, ``gate=S`` and ``sign=-1``, the identities are skipped, the
+    central gate acts on the first non-identity wire, and the central gate is adjoint.
+
+    .. code-block:: text
+
+        0: ────────────────────────
+        1: ──S†──H─╭X──S†─╭X──H──S─
+        2: ─────╭X─╰●─────╰●─╭X────
+        3: ─────│────────────│─────
+        4: ──H──╰●───────────╰●──H─
+    """
+    active = [(wire, pauli) for wire, pauli in zip(wires, pauli_word, strict=True) if pauli != "I"]
+    if not active:
+        return
+
+    active_wires = [wire for wire, _ in active]
+    central_op = _z_gate(sign, gate, active_wires[0])
+    if pauli_word.replace("I", "") == "Z":
+        return
+
+    def _compute():
+        for wire, pauli in active:
+            if pauli == "X":
+                Hadamard(wires=wire)
+            elif pauli == "Y":
+                qp.adjoint(S(wires=wire))
+                Hadamard(wires=wire)
+        for i in range(len(active_wires) - 1, 0, -1):
+            qp.CNOT(wires=(active_wires[i], active_wires[i - 1]))
+
+    def _uncompute():
+        for i in range(1, len(active_wires)):
+            qp.CNOT(wires=(active_wires[i], active_wires[i - 1]))
+        for wire, pauli in active:
+            if pauli == "X":
+                Hadamard(wires=wire)
+            elif pauli == "Y":
+                Hadamard(wires=wire)
+                S(wires=wire)
+
+    qp.change_op_basis(_compute, central_op, _uncompute)
+
+
+@register_resources(partial(_ppr_via_z_gate_resources, gate=S))
+def _ppr4_to_cliffords(sign, pauli_word, wires):
+    qp.GlobalPhase(sign * np.pi / 4)
+    _ppr_via_z_gate(sign, pauli_word, wires, S)
+
+
+@register_resources(partial(_ppr_via_z_gate_resources, gate=T))
+def _ppr8_to_clifford_t(sign, pauli_word, wires):
+    qp.GlobalPhase(sign * np.pi / 8)
+    _ppr_via_z_gate(sign, pauli_word, wires, T)
+
+
+add_decomps(PPR_2, _ppr2_to_paulis)
+add_decomps(PPR_4, _ppr4_to_cliffords)
+add_decomps(PPR_8, _ppr8_to_clifford_t)
+
+
+def _adjoint_ppr_flip_sign_resources(base):
+    return {type(base)(-base.sign, pauli_word=base.pauli_word, wires=Wire[len(base.wires)]): 1}
+
+
+@register_resources(_adjoint_ppr_flip_sign_resources)
+def _adjoint_ppr_flip_sign(base):
+    type(base)(-base.sign, pauli_word=base.pauli_word, wires=base.wires)
+
+
+add_decomps("Adjoint(PPR_2)", _adjoint_ppr_flip_sign)
+add_decomps("Adjoint(PPR_4)", _adjoint_ppr_flip_sign)
+add_decomps("Adjoint(PPR_8)", _adjoint_ppr_flip_sign)

@@ -33,18 +33,22 @@ from .device import active_placement
 from .placement import DEFAULT_MESSAGE_BYTES
 from .runtime import runtime_call
 
-# In-process ``__call`` adapters from TransportCAPI.h, named verbatim by a local runtime_call.
+# Native functions from TransportCAPI.h, named verbatim by a local runtime_call.
 _PREFIX = "__catalyst__transport__"
-_GET_SESSION = f"{_PREFIX}get_session__call"
-_STAGE_PAYLOAD = f"{_PREFIX}stage_payload__call"
-_POST = f"{_PREFIX}post__call"
-_COLLECT = f"{_PREFIX}collect__call"
+_GET_SESSION = f"{_PREFIX}get_session"
+_STAGE_PAYLOAD = f"{_PREFIX}stage_payload"
+_POST = f"{_PREFIX}post"
+_COLLECT = f"{_PREFIX}collect"
+_CHECK = f"{_PREFIX}check"
+_CHECK_SESSION = f"{_PREFIX}check_session"
 
 
 _SIG_GET_SESSION = "(i32, str) -> ptr"  # role, key
 _SIG_STAGE_PAYLOAD = "(ptr, buf, u64, u32) -> i32"  # session, src, bytes, decoder_id
 _SIG_POST = "(ptr, u32) -> i32"  # session, work_item_idx
 _SIG_COLLECT = "(ptr, out, u64) -> i32"  # session, reply(out), reply_bytes
+_SIG_CHECK = "(i32, str)"  # status, the call it came from
+_SIG_CHECK_SESSION = "(ptr, str)"  # session, the call it came from
 
 # Mirrors catalyst::transport::Role.
 ROLE_CONTROLLER = 0
@@ -96,14 +100,18 @@ def _byte_count(array) -> int:
     return count * np.dtype(dtype).itemsize
 
 
-def _resolve_out_bytes(controller, out_bytes) -> int:
+def _resolve_out_bytes(placement, controller, out_bytes) -> int:
     """How many bytes the correction reply occupies.
 
-    Explicit ``out_bytes`` wins; otherwise use the controller's committed reply size.
+    Explicit ``out_bytes`` wins. Otherwise it is the reply size the placement commits, or with no
+    placement the controller's own size, or :data:`DEFAULT_MESSAGE_BYTES` when that is unset.
     """
     if out_bytes is not None:
         return int(out_bytes)
-    return int(getattr(controller, "out_bytes", DEFAULT_MESSAGE_BYTES))
+    if placement is not None:
+        return int(placement.out_bytes)
+    size = getattr(controller, "out_bytes", None)
+    return DEFAULT_MESSAGE_BYTES if size is None else int(size)
 
 
 def _resolve_nodes(controller, coprocessor):
@@ -216,13 +224,12 @@ def decode(  # pylint: disable=too-many-arguments
         syndrome: The syndrome to send. Passed by data pointer, so its byte length comes from its
             shape and dtype at compile time. With ``bitpack=True``, this must be a 1D bit vector
             with at most 64 entries.
-        controller (Controller): The :class:`~.Controller` whose session drives the round, and whose
-            :attr:`~.Controller.out_bytes` supplies the default reply size.
+        controller (Controller): The :class:`~.Controller` whose session drives the round.
         coprocessor (Coprocessor | None): The :class:`~.Coprocessor` the round targets. Selects the
             session key; which coprocessor serves the round is otherwise fixed by the session's
             configuration.
-        out_bytes (int, None): The correction reply size in bytes. Defaults to the controller's
-            :attr:`~.Controller.out_bytes`.
+        out_bytes (int, None): The correction reply size in bytes. Defaults to the placement's
+            :attr:`~.Placement.out_bytes`.
         in_bytes (int, None): How many bytes of ``syndrome`` to send, at most what the round was
             committed to carry. Defaults to ``syndrome``'s full byte length.
         decoder_id (int): Which coprocessor-side decoder handles this round.
@@ -279,15 +286,18 @@ def decode(  # pylint: disable=too-many-arguments
         reply_bytes = _PACKED_U64_BYTES
     else:
         nbytes = _byte_count(syndrome) if in_bytes is None else int(in_bytes)
-        reply_bytes = _resolve_out_bytes(controller, out_bytes)
+        reply_bytes = _resolve_out_bytes(placement, controller, out_bytes)
 
     # The live controller session the setup pass registered under `key`.
     session = runtime_call(
         _GET_SESSION, ROLE_CONTROLLER, key, signature=_SIG_GET_SESSION, library=library
     )
+    runtime_call(
+        _CHECK_SESSION, session, "get_session", signature=_SIG_CHECK_SESSION, library=library
+    )
 
     # Copy `nbytes` into the outbound slot and stamp `decoder_id`, then start the round trip.
-    _ = runtime_call(
+    _checked(
         _STAGE_PAYLOAD,
         session,
         syndrome,
@@ -298,10 +308,10 @@ def decode(  # pylint: disable=too-many-arguments
     )
 
     # Start the round trip
-    _ = runtime_call(_POST, session, work_item_idx, signature=_SIG_POST, library=library)
+    _checked(_POST, session, work_item_idx, signature=_SIG_POST, library=library)
 
     # Wait for the reply
-    _, correction = runtime_call(
+    _, correction = _checked(
         _COLLECT,
         session,
         reply_bytes,
@@ -310,3 +320,13 @@ def decode(  # pylint: disable=too-many-arguments
         library=library,
     )
     return _unpack(correction) if bitpack else correction
+
+
+def _checked(symbol, *args, signature, library, **kwargs):
+    """Call a transport function that returns a status, then stop the program if it failed."""
+    result = runtime_call(symbol, *args, signature=signature, library=library, **kwargs)
+    status = result[0] if isinstance(result, tuple) else result
+    runtime_call(
+        _CHECK, status, symbol.removeprefix(_PREFIX), signature=_SIG_CHECK, library=library
+    )
+    return result

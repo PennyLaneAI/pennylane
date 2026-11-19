@@ -21,9 +21,8 @@ import pytest
 @pytest.fixture(scope="session", name="sklearn_support")
 def fixture_sklearn_support():
     """Fixture to determine whether sklearn is installed."""
-    # pylint: disable=unused-import, import-outside-toplevel
     try:
-        import sklearn
+        import sklearn  # pylint: disable=unused-import
 
         sklearn_support = True
     except ModuleNotFoundError:
@@ -35,9 +34,8 @@ def fixture_sklearn_support():
 @pytest.fixture(scope="session", name="pyscf_support")
 def fixture_pyscf_support():
     """Fixture to determine whether pyscf is installed."""
-    # pylint: disable=unused-import, import-outside-toplevel
     try:
-        import pyscf
+        import pyscf  # pylint: disable=unused-import
 
         pyscf_support = True
     except ModuleNotFoundError:
@@ -49,9 +47,8 @@ def fixture_pyscf_support():
 @pytest.fixture(scope="session", name="geometric_support")
 def fixture_geometric_support():
     """Fixture to determine whether geometric is installed."""
-    # pylint: disable=unused-import, import-outside-toplevel
     try:
-        import geometric
+        import geometric  # pylint: disable=unused-import
 
         geometric_support = True
     except ModuleNotFoundError:
@@ -84,9 +81,8 @@ def skip_if_no_sklearn_support(sklearn_support):
 @pytest.fixture(scope="session", name="mpi4py_support")
 def fixture_mpi4py_support():
     """Fixture to determine whether mpi4py is installed."""
-    # pylint: disable=unused-import, import-outside-toplevel
     try:
-        import mpi4py
+        import mpi4py  # pylint: disable=unused-import
 
         mpi4py_support = True
     except ModuleNotFoundError:

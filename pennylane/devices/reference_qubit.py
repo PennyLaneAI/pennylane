@@ -118,9 +118,10 @@ def supports_operation(op: Operator) -> bool:
     return getattr(op, "name", None) in operations
 
 
+# Derivative entry points are optional for devices without native differentiation.
 @simulator_tracking  # update device.tracker with some relevant information
 @single_tape_support  # add support for device.execute(tape) in addition to device.execute((tape,))
-class ReferenceQubit(Device):
+class ReferenceQubit(Device):  # pylint: disable=abstract-method
     """A slimmed down numpy-based simulator for reference and testing purposes.
 
     Args:

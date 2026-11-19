@@ -21,7 +21,6 @@ from itertools import product
 import pytest
 
 import pennylane as qp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.adder_blocks import (
     CtrlRightFullAdder,
     CtrlRightHalfAdder,
@@ -39,6 +38,8 @@ from pennylane.templates.subroutines.arithmetic.out_square import (
     _out_square_with_caddsub,
 )
 from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
+from pennylane.testing import assert_decomposable
+from pennylane.transforms.decompose import _tape_decompose
 
 
 def _run_on_basis_state(make_op, bits):
@@ -82,9 +83,7 @@ class TestAdderBlocks:
         assert out == [c, y ^ c, 0]
 
     @pytest.mark.parametrize(("ctrl_0", "ctrl_1", "c", "x", "y"), list(product([0, 1], repeat=5)))
-    def test_ctrl_right_full_adder_block(
-        self, ctrl_0, ctrl_1, c, x, y
-    ):  # pylint: disable=too-many-arguments
+    def test_ctrl_right_full_adder_block(self, ctrl_0, ctrl_1, c, x, y):
         """Test that CtrlRightFullAdder acts like RightFullAdder if all controls are
         set, and like the inverse of LeftFullAdder otherwise."""
         bits = [ctrl_0, ctrl_1, c, x ^ c, y ^ c, _maj(c, x, y), 0]
@@ -116,8 +115,7 @@ class TestAdderBlocks:
     )
     def test_decomposition_rule(self, op):
         """Test the decomposition rules of the adder blocks."""
-        for rule in qp.list_decomps(type(op)):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
 
 _ELEMENTARY_GATE_SET = {
@@ -156,7 +154,7 @@ _GATE_COUNT_CASES = [
     (
         lambda: qp.ctrl(qp.SemiAdder(_r(0, 3), _r(3, 7), _r(7, 10)), control=[10]),
         None,
-        {"Adjoint(TemporaryAND)": 3, "CNOT": 12, "TemporaryAND": 3, "Toffoli": 4},
+        {"Adjoint(TemporaryAND)": 3, "CNOT": 12, "MultiControlledX": 4, "TemporaryAND": 3},
     ),
     (
         lambda: qp.ctrl(
@@ -174,7 +172,7 @@ _GATE_COUNT_CASES = [
     (
         lambda: qp.ctrl(qp.SemiAdder(_r(0, 5), _r(5, 8), _r(8, 10)), control=[10]),
         None,
-        {"Adjoint(TemporaryAND)": 2, "CNOT": 6, "TemporaryAND": 2, "Toffoli": 4},
+        {"Adjoint(TemporaryAND)": 2, "CNOT": 6, "MultiControlledX": 4, "TemporaryAND": 2},
     ),
     (
         lambda: OutSquare(_r(0, 3), _r(3, 9), _r(9, 21), True),
@@ -191,8 +189,8 @@ _GATE_COUNT_CASES = [
         {OutSquare: _out_square_with_caddsub},
         {
             "Adjoint(TemporaryAND)": 14,
-            "CNOT": 42,
-            "MultiControlledX": 8,
+            "CNOT": 40,
+            "MultiControlledX": 10,
             "MultiX": 4,
             "PauliX": 4,
             "TemporaryAND": 14,
@@ -203,8 +201,8 @@ _GATE_COUNT_CASES = [
         {OutSquare: _out_square_with_caddsub},
         {
             "Adjoint(TemporaryAND)": 22,
-            "CNOT": 75,
-            "MultiControlledX": 12,
+            "CNOT": 69,
+            "MultiControlledX": 18,
             "MultiX": 4,
             "PauliX": 8,
             "TemporaryAND": 22,
@@ -215,8 +213,8 @@ _GATE_COUNT_CASES = [
         {OutMultiplier: _out_multiplier_with_caddsub},
         {
             "Adjoint(TemporaryAND)": 22,
-            "CNOT": 69,
-            "MultiControlledX": 12,
+            "CNOT": 63,
+            "MultiControlledX": 18,
             "PauliX": 31,
             "TemporaryAND": 22,
         },
@@ -228,8 +226,8 @@ _GATE_COUNT_CASES = [
         {OutMultiplier: _out_multiplier_with_caddsub},
         {
             "Adjoint(TemporaryAND)": 19,
-            "CNOT": 78,
-            "MultiControlledX": 8,
+            "CNOT": 70,
+            "MultiControlledX": 16,
             "PauliX": 29,
             "TemporaryAND": 19,
         },
@@ -251,8 +249,8 @@ _GATE_COUNT_CASES = [
         None,
         {
             "Adjoint(TemporaryAND)": 38,
-            "CNOT": 79,
-            "MultiControlledX": 13,
+            "CNOT": 77,
+            "MultiControlledX": 15,
             "MultiX": 6,
             "PauliX": 14,
             "TemporaryAND": 38,
@@ -267,7 +265,7 @@ def test_elementary_gate_counts(make_op, fixed_decomps, expected):
     """Test the gate counts of arithmetic templates built from adder blocks, fully decomposed
     into elementary gates, against fixed reference values."""
     tape = qp.tape.make_qscript(make_op)()
-    [decomposed], _ = qp.transforms.decompose(
+    [decomposed], _ = _tape_decompose(
         tape, gate_set=_ELEMENTARY_GATE_SET, fixed_decomps=fixed_decomps
     )
     assert dict(Counter(op.name for op in decomposed.operations)) == expected

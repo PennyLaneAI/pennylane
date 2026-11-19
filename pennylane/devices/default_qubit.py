@@ -121,13 +121,12 @@ ALL_DQ_GATES = GateSet(
     name="All DefaultQubit Gates",
 )
 
-ALL_DQ_GATES_PLUS_MCM = ALL_DQ_GATES | GateSet({"MidMeasureMP"})
+ALL_DQ_GATES_PLUS_MCM = ALL_DQ_GATES | GateSet({"MidMeasure"})
 ALL_DQ_GATES_PLUS_MCM.name = "All DefaultQubit Gates With MCM"
 
 _special_operator_support = {
     "QFT": lambda op: len(op.wires) < 6,
     "GroverOperator": lambda op: len(op.wires) < 13,
-    "FromBloq": lambda op: len(op.wires) < 4 and op.has_matrix,
     "IQP": lambda op: len(op.wires) < 6,
     "Snapshot": lambda _: True,
     "Allocate": lambda _: True,
@@ -240,8 +239,8 @@ def no_counts(tape):
 
 
 @transform
-def adjoint_state_measurements(
-    tape: QuantumScript, device_vjp=False  # pylint: disable=unused-argument
+def adjoint_state_measurements(  # pylint: disable=unused-argument
+    tape: QuantumScript, device_vjp=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Perform adjoint measurement preprocessing.
 

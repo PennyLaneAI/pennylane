@@ -50,20 +50,13 @@ class TestConstruction:
         assert isinstance(dev.placement, Placement)
         assert dev.transport.name == "rdma"
 
-    def test_backline_property_is_an_alias_of_placement(self):
-        """``dev.backline`` is the Catalyst-facing alias for :attr:`placement`."""
-        dev = _device()
-        assert dev.backline is dev.placement
-
     def test_all_arguments_are_keyword_only(self):
         """No argument may be passed positionally, so ordering can never be confused, and a
         controller is never mistaken for wires."""
         ctrl, cops = _nodes()
         with pytest.raises(TypeError):
-            # pylint: disable=too-many-function-args,missing-kwoa
             Backline(ctrl, transport="rdma")
         with pytest.raises(TypeError):
-            # pylint: disable=too-many-function-args,missing-kwoa
             Backline(cops[0], ctrl, transport="rdma")
 
     def test_wires_taken_from_controller_device(self):

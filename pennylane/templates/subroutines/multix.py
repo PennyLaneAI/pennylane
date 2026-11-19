@@ -73,6 +73,19 @@ class MultiX(Operator2):
     ...     return qp.probs(wires=range(3))
     >>> circuit()
     array([0., 0., 0., 0., 0., 1., 0., 0.])
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.MultiX
+            :stacked:
+            :symbols: :math:`n` wires and bitstring :math:`\mathbf{b}`
+            :example: :math:`\mathbf{b}=(1, 0, 1)`
+
+            .. decomposition-rule:: _multix_decomposition
+                :image: /_static/decomposition_thumbnails/multix_conditional_x.svg
+
+                :class:`~.X` | :math:`\sum_i b_i \leq n` (one per :math:`b_i=1`) | 2
     """
 
     dynamic_argnames = ("bitstring",)
@@ -130,7 +143,7 @@ class MultiX(Operator2):
         if not is_bitstring_integer_or_bool:
             raise ValueError("The bitstring must be an integer or boolean array.")
 
-        is_bitstring_abstract = isinstance(bitstring, AbstractArray) or math.is_abstract(bitstring)
+        is_bitstring_abstract = isinstance(bitstring, AbstractArray) or math.is_tracer(bitstring)
         if not is_bitstring_abstract:
             is_bitstring_binary = math.all(math.logical_or(bitstring == 0, bitstring == 1))
             # is_bitstring_binary evaluates to True at least when all entries belong to (0, 1, False, True)
@@ -193,8 +206,7 @@ class MultiX(Operator2):
         return matrix
 
     @staticmethod
-    # pylint: disable-next=arguments-differ
-    def compute_sparse_matrix(
+    def compute_sparse_matrix(  # pylint: disable=arguments-differ
         bitstring: TensorLike, wires: WiresLike, format: str = "csr"
     ) -> sparse.spmatrix:
         r"""

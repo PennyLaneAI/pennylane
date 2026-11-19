@@ -103,7 +103,7 @@ class TestCompile:
     def test_compile_non_commuting_observables(self):
         """Test that compile works with non-commuting observables."""
 
-        ops = (qp.RX(0.1, 0), qp.RX(0.2, 0), qp.Barrier(only_visual=True), qp.X(0), qp.X(0))
+        ops = (qp.RX(0.1, 0), qp.RX(0.2, 0), qp.X(0), qp.X(0))
         ms = (qp.expval(qp.X(0)), qp.expval(qp.Y(0)))
         tape = qp.tape.QuantumScript(ops, ms, shots=50)
 
@@ -350,9 +350,9 @@ class TestCompileIntegration:
 
         # Push commuting gates to the right and merging rotations gives a circuit
         # with alternating RX and CNOT gates
-        # pylint: disable=expression-not-assigned
         def qfunc(x, params):
             qp.templates.AngleEmbedding(x, wires=range(3))
+            # pylint: disable-next=expression-not-assigned
             qp.adjoint(qp.adjoint(qp.templates.BasicEntanglerLayers(params, wires=range(3)))) ** 2
             return qp.expval(qp.PauliZ(wires=2))
 

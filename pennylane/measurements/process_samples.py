@@ -23,8 +23,7 @@ from pennylane.typing import Sequence, TensorLike
 from pennylane.wires import WiresLike
 
 
-# pylint: disable=too-many-arguments
-def process_raw_samples(
+def process_raw_samples(  # pylint: disable=too-many-arguments
     mp: MeasurementProcess,
     samples: TensorLike,
     wire_order: WiresLike,
@@ -65,7 +64,7 @@ def process_raw_samples(
     num_wires = samples.shape[-1]  # wires is the last dimension
 
     # If we're sampling wires or a list of mid-circuit measurements
-    # pylint: disable=protected-access
+    # pylint: disable-next=protected-access
     if mp.obs is None and not isinstance(mp.mv, MeasurementValue) and mp._eigvals is None:
         # if no observable was provided then return the raw samples
         samples = samples.astype(dtype) if dtype is not None else samples
@@ -91,7 +90,7 @@ def process_raw_samples(
         indices = math.array(indices)  # Add np.array here for Jax support.
         # This also covers statistics for mid-circuit measurements manipulated using
         # arithmetic operators
-        if math.is_abstract(indices):
+        if math.is_tracer(indices):
             samples = math.take(eigvals, indices, like=indices)
         else:
             samples = eigvals[indices]

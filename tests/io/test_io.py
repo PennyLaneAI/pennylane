@@ -32,7 +32,7 @@ try:
     import openqasm3
 
     from pennylane.io.io import from_qasm3  # pylint: disable=ungrouped-imports
-    from pennylane.io.qasm_interpreter import QasmInterpreter  # pylint: disable=ungrouped-imports
+    from pennylane.io.qasm_interpreter import QasmInterpreter
 except (ModuleNotFoundError, ImportError) as import_error:
     has_openqasm = False
 
@@ -53,7 +53,6 @@ class MockPluginConverter:
         """True if the mocked loader was called."""
         return self.mock_loader.called
 
-    # pylint: disable=unsubscriptable-object
     @property
     def last_args(self):
         """The last call arguments of the mocked loader."""
@@ -66,13 +65,11 @@ class MockPluginConverter:
 
 
 load_entry_points = [
-    "pyquil_program",
     "qasm_file",
     "qasm",
     "qiskit_op",
+    "qiskit_noise",
     "qiskit",
-    "quil_file",
-    "quil",
 ]
 
 
@@ -94,6 +91,7 @@ class TestLoad:
         [
             (qp.from_qiskit, "qiskit"),
             (qp.from_qiskit_op, "qiskit_op"),
+            (qp.from_qiskit_noise, "qiskit_noise"),
         ],
     )
     def test_qiskit_converter_does_not_exist(self, monkeypatch, method, entry_point_name):
@@ -116,6 +114,7 @@ class TestLoad:
         [
             (qp.from_qiskit, "qiskit"),
             (qp.from_qiskit_op, "qiskit_op"),
+            (qp.from_qiskit_noise, "qiskit_noise"),
         ],
     )
     def test_qiskit_converter_load_fails(self, monkeypatch, method, entry_point_name):
@@ -136,9 +135,7 @@ class TestLoad:
         [
             (qp.from_qiskit, "qiskit"),
             (qp.from_qiskit_op, "qiskit_op"),
-            (qp.from_pyquil, "pyquil_program"),
-            (qp.from_quil, "quil"),
-            (qp.from_quil_file, "quil_file"),
+            (qp.from_qiskit_noise, "qiskit_noise"),
         ],
     )
     def test_convenience_functions(self, method, entry_point_name, mock_plugin_converters):
@@ -187,7 +184,7 @@ class TestLoad:
         mock_plugin_converters,
         args,
         kwargs,
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Test that the convenience load functions access the correct entry point and forward their
         arguments correctly.
         """

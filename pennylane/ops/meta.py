@@ -17,17 +17,30 @@ not depend on any parameters.
 """
 
 from collections.abc import Hashable, Sequence
-
-# pylint: disable=arguments-differ
 from copy import copy
 from typing import Literal
 
 import pennylane as qp
-from pennylane.core.operator import Operation
-from pennylane.wires import Wires, WiresLike
+from pennylane.capture.custom_primitives import QpPrimitive
+from pennylane.core.operator import Operation, Operator2
+from pennylane.decomposition.decomposition_rule import add_decomps, null_decomp
+from pennylane.typing import Wire
+from pennylane.wires import WiresLike
+
+barrier_p = QpPrimitive("barrier")
 
 
-class Barrier(Operation):
+@barrier_p.def_impl
+def _barrier_impl(*wires):
+    type.__call__(Barrier, wires=wires)
+    return []
+
+
+barrier_p.multiple_results = True
+barrier_p.def_abstract_eval(lambda *wires: [])
+
+
+class Barrier(Operator2):
     r"""Barrier(wires)
     The Barrier operator, used to separate the compilation process into blocks or as a visual tool.
 
@@ -37,63 +50,41 @@ class Barrier(Operation):
     * Number of parameters: 0
 
     Args:
-        only_visual (bool): True if we do not want it to have an impact on the compilation process. Default is False.
         wires (Sequence[int] or int): the wires the operation acts on
     """
 
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, wires: WiresLike = (), only_visual=False):
-        wires = Wires(wires)
-        self.only_visual = only_visual
-        self.hyperparameters["only_visual"] = only_visual
+    num_wires = None
+    """Any number of wires."""
+
+    arg_specs = {"wires": Wire[-1]}
+
+    def __init__(self, wires: WiresLike = ()):
         super().__init__(wires=wires)
 
-    @staticmethod
-    def compute_decomposition(wires, only_visual=False):  # pylint: disable=unused-argument
-        r"""Representation of the operator as a product of other operators (static method).
+    def _bind_primitive(self):
+        """Capture a barrier using the dedicated operator primitive."""
+        barrier_p.bind(*self.wires)
 
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.Barrier.decomposition`.
-
-        ``Barrier`` decomposes into an empty list for all arguments.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-            only_visual (Bool): True if we do not want it to have an impact on the compilation process. Default is False.
-
-        Returns:
-            list: decomposition of the operator
-
-        **Example:**
-
-        >>> print(qp.Barrier.compute_decomposition(0))
-        []
-
-        """
-        return []
+    def __repr__(self):
+        return f"Barrier(wires={self.wires.tolist()})"
 
     def label(self, decimals=None, base_label=None, cache=None):
         return "||"
 
-    def _controlled(self, _):
-        return copy(self).queue()
-
     def adjoint(self):
-        return copy(self)
+        return Barrier(wires=self.wires)
 
     def pow(self, z):
-        return [copy(self)]
+        return [Barrier(wires=self.wires)]
 
     def simplify(self):
-        if self.only_visual:
-            if len(self.wires) == 1:
-                return qp.Identity(self.wires[0])
-            return qp.prod(*(qp.Identity(w) for w in self.wires))
         return self
+
+
+add_decomps(Barrier, null_decomp)
 
 
 class Snapshot(Operation):
@@ -160,6 +151,7 @@ class Snapshot(Operation):
     grad_method = None
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, tag=None, measurement=None, shots="workflow"):
         if measurement is None:
             return cls._primitive.bind(measurement=measurement, tag=tag, shots=shots)

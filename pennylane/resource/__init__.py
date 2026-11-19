@@ -15,17 +15,18 @@ r"""
 The ``resource`` module provides classes and functionality to track the quantum resources
 (number of qubits, circuit depth, etc.) required to implement advanced quantum algorithms.
 
-.. seealso::
-    The :mod:`~.estimator` module for higher level resource estimation of quantum programs.
 
-Circuit Specifications (specs)
-------------------------------
+Circuit Resource Profiling
+--------------------------
 
 .. currentmodule:: pennylane
 
 .. autosummary::
     :toctree: api
 
+    ~estimate
+    ~analyze
+    ~track
     ~specs
 
 Circuit Specification Classes and Utilities
@@ -43,6 +44,7 @@ Circuit Specification Classes and Utilities
     ~PBCSpecsResources
 
     ~resources_from_tape
+    ~register_resource_extension
 """
 
 from .resource import (
@@ -53,7 +55,11 @@ from .resource import (
     resources_from_tape,
 )
 from .expression import Expression
+from .analyze import analyze
+from .estimate import estimate
+from .extension import register_resource_extension
 from .specs import specs
+from .track import track
 
 __all__ = [
     "Resources",
@@ -62,5 +68,9 @@ __all__ = [
     "CircuitSpecs",
     "resources_from_tape",
     "Expression",
+    "analyze",
+    "estimate",
     "specs",
+    "track",
+    "register_resource_extension",
 ]

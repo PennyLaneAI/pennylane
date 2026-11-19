@@ -15,7 +15,6 @@
 Tests for the QSVT template and qsvt wrapper function.
 """
 
-# pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 from copy import deepcopy
 
 import pytest
@@ -25,7 +24,6 @@ from numpy.polynomial.chebyshev import Chebyshev
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.queuing import AnnotatedQueue
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
@@ -36,7 +34,8 @@ from pennylane.templates.subroutines.qsvt import (
     _W_of_x,
     _z_rotation,
 )
-from pennylane.transforms import decompose
+from pennylane.testing import assert_decomposable
+from pennylane.transforms import _tape_decompose as decompose
 
 
 def qfunc(A):
@@ -95,7 +94,7 @@ class TestQSVTBasics:
     def test_standard_validity(self, UA, projectors):
         """Test standard validity criteria with assert_valid."""
         op = qp.QSVT(UA, projectors)
-        qp.ops.functions.assert_valid(op)
+        qp.testing.assert_valid(op)
 
     def test_init_error(self):
         """Test that an error is raised if a non-operation object is passed
@@ -166,7 +165,7 @@ class TestQSVTBasics:
                 rule(UA=UA, projectors=projectors)  # pylint: disable=cell-var-from-loop
 
             jaxpr = qp.capture.make_plxpr(circuit)()
-            tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+            tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
             # NOTE: Need to flatten COB before comparing.
             flat_expected = []
@@ -200,8 +199,7 @@ class TestQSVTBasics:
     )
     def test_decomposition(self, UA, projectors):
         op = qp.QSVT(UA, projectors)
-        for rule in qp.list_decomps(op):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_wire_order(self):
         """Test that the wire order is preserved."""
@@ -689,9 +687,7 @@ class Testqsvt:
             (qp.Z(0) - qp.X(0), [0.3, 0, 0.4], "prepselprep", [0], "Control wires in"),
         ],
     )
-    def test_raise_error(
-        self, A, poly, block_encoding, encoding_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_raise_error(self, A, poly, block_encoding, encoding_wires, msg_match):
         """Test that proper errors are raised"""
 
         with pytest.raises(ValueError, match=msg_match):
@@ -1032,7 +1028,7 @@ class TestIterativeSolver:
         )
 
         assert qp.math.isclose(
-            _qsp_iterate_broadcast(phis, x_point, None),
+            _qsp_iterate_broadcast(phis, x_point),
             _poly_func_scipy(coeffs=target_polynomial_coeffs, parity=parity, x=x_point),
             atol=tolerance,
         )
@@ -1067,26 +1063,13 @@ class TestIterativeSolver:
 
     @pytest.mark.parametrize("angle", list([0.1, 0.2, 0.3, 0.4]))
     def test_z_rotation_scipy(self, angle):
-        """Test internal function _z_rotation_scipy"""
-        try:
-            import jax  # pylint: disable=unused-import
-
-            interface = "jax"
-        except ModuleNotFoundError:
-            interface = None
-        assert np.allclose(_z_rotation(angle, interface), qp.RZ.compute_matrix(-2 * angle))
+        """Test internal function _z_rotation"""
+        assert np.allclose(_z_rotation(angle), qp.RZ.compute_matrix(-2 * angle))
 
     @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
     def test_qsp_iterate_scipy(self, phi):
-        """Test internal function _qsp_iterate_scipy"""
-        try:
-            import jax  # pylint: disable=unused-import
-
-            interface = "jax"
-        except ModuleNotFoundError:
-            interface = None
-
-        mtx = _qsp_iterate(0.0, phi, interface)
+        """Test internal function _qsp_iterate"""
+        mtx = _qsp_iterate(0.0, phi)
         ref = qp.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
 
@@ -1096,30 +1079,16 @@ class TestIterativeSolver:
     )
     @pytest.mark.parametrize("degree", range(2, 6))
     def test_qsp_iterate_broadcast_scipy(self, x, degree):
-        """Test internal function _qsp_iterate_broadcast_scipy"""
-        try:
-            from jax import numpy as np  # pylint: disable=redefined-outer-name
-
-            interface = "jax"
-        except ModuleNotFoundError:
-            import numpy as np
-
-            interface = "numpy"
+        """Test internal function _qsp_iterate_broadcast"""
         phis = np.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
-        qsp_be = _qsp_iterate_broadcast(phis, x, interface)
+        qsp_be = _qsp_iterate_broadcast(phis, x)
         ref = qp.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
         assert np.isclose(qsp_be, ref)
 
     @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
     def test_W_of_x_scipy(self, x):
-        """Test internal function _W_of_x_scipy"""
-        try:
-            import jax  # pylint:disable=unused-import
-
-            interface = "jax"
-        except ModuleNotFoundError:
-            interface = None
-        mtx = _W_of_x(x, interface)
+        """Test internal function _W_of_x"""
+        mtx = _W_of_x(x)
         ref = qp.RX.compute_matrix(-2 * np.arccos(x))
         assert np.allclose(mtx, ref)
 

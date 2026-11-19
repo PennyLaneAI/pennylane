@@ -16,6 +16,7 @@ operations and observables.
 TODO: [sc-120453] Fill docstring
 """
 
+import warnings
 from abc import abstractmethod
 from collections.abc import Hashable, Iterable, Sequence
 from copy import copy, deepcopy
@@ -28,14 +29,16 @@ from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 import numpy as np
 from jax.core import ShapedArray
-from scipy.sparse import spmatrix
+from scipy.sparse import issparse, spmatrix
 
 import pennylane as qp
-from pennylane import math
+from pennylane import capture, math
 from pennylane._class_property import classproperty
-from pennylane.capture import enabled, pause, symbolic_array
+from pennylane.capture import pause, symbolic_array
 from pennylane.capture.custom_primitives import QpPrimitive
-from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
+from pennylane.capture.op_eqns import pop_op_eqns
+from pennylane.core.apply import apply
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -63,7 +66,7 @@ from .meta import OperatorMeta
 from .utils import abstractify
 
 if TYPE_CHECKING:
-    from pennylane.pauli import PauliSentence
+    from pennylane.core.pauli import PauliSentence
 
 ArgSpecType: TypeAlias = type[Number] | AbstractArray | AbstractWires
 
@@ -84,7 +87,33 @@ ARGNAME_CATEGORIES = (
 )
 
 
-class Operator2(metaclass=OperatorMeta):
+class OperatorRegistry:
+    """A Singleton class that keeps track of all the Operator2 operators (including user-defined operators) defined."""
+
+    _instance = None
+    registry = {}
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __getitem__(self, index):
+        try:
+            return self.registry[index]
+        except KeyError as e:
+            raise KeyError(f"No defined Operator2 with the name {index} found.") from e
+
+    def __setitem__(self, index, value):
+        if index not in self.registry:
+            self.registry[index] = value
+        elif self.registry[index] is not value:
+            warnings.warn(
+                f"More than one operator class by the same name ({index}) has been defined."
+            )
+
+
+class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-methods
     r"""Base class representing quantum operators that are designed for compatibility with
     :func:`~.qjit`.
 
@@ -290,8 +319,6 @@ class Operator2(metaclass=OperatorMeta):
             downstream; the dynamic data stored within the Pytree is lowered correctly,
             and the static structure of the Pytree is reduced to a UID in MLIR.
     """
-
-    # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
     _operator_version = 2
 
@@ -647,7 +674,7 @@ class Operator2(metaclass=OperatorMeta):
 
         Default is ``'F'``, or ``None`` if the Operation has zero parameters.
         """
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable-next=import-outside-toplevel
         from pennylane.gradients import parameter_frequencies
 
         if self.num_params == 0:
@@ -815,7 +842,7 @@ class Operator2(metaclass=OperatorMeta):
         """
         return cls.adjoint != Operator2.adjoint
 
-    def adjoint(self) -> "Operator2":  # pylint:disable=no-self-use
+    def adjoint(self) -> "Operator2":
         """Create an operation that is the adjoint of this one. Used to simplify
         :class:`~.Adjoint` operators constructed by :func:`~.adjoint`.
         TODO: [sc-120844] Fix docstring after Adjoint is added
@@ -884,7 +911,6 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
     # ----------------------- Operator representations -----------------------
     # ------------------------------------------------------------------------
-    # pylint: disable=unused-argument,comparison-with-callable,no-self-use
 
     @staticmethod
     def compute_matrix(*args, **kwargs) -> TensorLike:
@@ -1292,7 +1318,7 @@ class Operator2(metaclass=OperatorMeta):
         serialized_hybrid = []
         if self.hybrid_argnames:
             # Imported lazily to avoid a circular import
-            # pylint: disable=import-outside-toplevel
+            # pylint: disable-next=import-outside-toplevel
             from pennylane.decomposition.resources import CompressedResourceOp
 
             hashable_leaf_types = (AbstractWires, Operator, Wires, CompressedResourceOp)
@@ -1360,7 +1386,7 @@ class Operator2(metaclass=OperatorMeta):
         if isinstance(other, Operator):
             return qp.sum(self, other, lazy=False)
         if isinstance(other, TensorLike):
-            if not qp.math.is_abstract(other) and qp.math.allequal(other, 0):
+            if not qp.math.is_tracer(other) and qp.math.allequal(other, 0):
                 return self
             return qp.sum(
                 self,
@@ -1548,7 +1574,7 @@ class Operator2(metaclass=OperatorMeta):
         """Bind the operator plxpr primitive."""
 
         # Skip if program capture is disabled
-        if not enabled():
+        if not capture.enabled():
             return
 
         # Substitute AbstractArray and AbstractWires for symbolic arrays.
@@ -1600,11 +1626,14 @@ class Operator2(metaclass=OperatorMeta):
         )
         # If we bind the primitive outside a tracing context but with program capture enabled,
         # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
-        if math.is_abstract(res):
+        if math.is_tracer(res):
             self.tracer = res
 
     def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
         cls._sig = signature(cls)
+
+        OperatorRegistry()[cls.__name__] = cls
+
         if is_baseclass:
             return
 
@@ -1626,6 +1655,40 @@ class Operator2(metaclass=OperatorMeta):
 
         if cls.has_fixed_sig:
             qp.decomposition.register_signature(cls)
+
+
+# ---------------------------------------------------------------------------------
+# ------------------------- Operator registry helper ------------------------------
+# ---------------------------------------------------------------------------------
+
+
+def get_op_class_by_name(name: str) -> type[Operator2]:
+    """
+    Helper to get an operator class by name using a function call.
+
+    Args:
+        name (str): the name of the class to retrieve.
+
+    Returns:
+        The class with the provided name.
+
+    **Example**
+
+    .. code-block:: python
+
+        from pennylane.core.operator import Operator2
+
+        class MyNamedOp(Operator2):
+            static_argnames = ("label",)
+
+            def __init__(self, label, wires):
+                super().__init__(label, wires=wires)
+
+    >>> from pennylane.core import get_op_class_by_name
+    >>> get_op_class_by_name("MyNamedOp")("my-label", [0, 1])
+    MyNamedOp(label=my-label, wires=[0, 1])
+    """
+    return OperatorRegistry()[name]
 
 
 # ---------------------------------------------------------------------------------
@@ -1739,8 +1802,8 @@ def _init_arg_types(op: Operator2) -> None:
         # spec in 'arg_specs' in order to have a single source of truth.
         if isinstance(argval, AbstractArray):
             new_argval = AbstractArray(arg_shape, exp_type.dtype)
-            # pylint: disable=protected-access
             # FIX: Hacky way to set attribute of a frozen dataclass
+            # pylint: disable-next=protected-access
             object.__setattr__(new_argval, "_weak_type", exp_type._weak_type)
             op.arguments[name] = new_argval
 
@@ -1880,8 +1943,7 @@ def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
 
 def _init_subclass_add_dynamic_properties(cls: type[Operator2]) -> None:
     """Create dynamic properties for an operator using its signature."""
-    # pylint: disable=protected-access
-    for name in cls._sig.parameters:
+    for name in cls._sig.parameters:  # pylint: disable=protected-access
         if not hasattr(cls, name):
             dyn_property = partial(_init_subclass_dynamic_property, name=name)
             setattr(cls, name, property(dyn_property))
@@ -1903,14 +1965,12 @@ def _init_subclass_dynamic_property(self: Operator2, name: str) -> Any:
 # -------------------------------------------------------------------------------
 
 
-# pylint: disable=ungrouped-imports
 operator_p = QpPrimitive("operator")
 operator_p.prim_type = "operator"
 
 
-# pylint: disable=too-many-arguments,unused-argument
 @operator_p.def_impl
-def _op_impl(
+def _op_impl(  # pylint: disable=too-many-arguments,unused-argument
     *all_args,
     op_cls,
     wire_lens,
@@ -1982,32 +2042,6 @@ def _op_impl(
 @operator_p.def_abstract_eval
 def _op_aval(*_, **__):
     return AbstractOperator()
-
-
-def pop_op_eqns(ops: Iterable):
-    """Delete the jaxpr equations for operators that have been used as data.
-
-    These equations must be deleted because operators used as data are treated as
-    pytrees wrapping dynamic data rather than instructions. Thus, the equation that
-    corresponds to the operator as an instruction should be removed.
-    """
-    old_eqns = []
-
-    for op in ops:
-        if op.tracer is not None:
-            # pylint: disable=protected-access
-            frame = op.tracer._trace.frame
-            assert frame.auto_dce is False  # eqns are stored differently if this is enabled
-
-            # for some reason the frame now wraps equations in lambdas
-            eqn = op.tracer.parent
-            old_eqns.append(eqn)
-            frame.tracing_eqns = [r for r in frame.tracing_eqns if r() is not eqn]
-
-            # delete reference to tracer after its equation has been deleted
-            op.tracer = None
-
-    return old_eqns
 
 
 def _is_pytree_placeholder(obj) -> bool:
@@ -2165,7 +2199,7 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
         return hash(d)
 
     # We stringify the data because arrays are unhashable
-    return str(id(d) if math.is_abstract(d) else _mod_and_round(d, mod_val))
+    return str(id(d) if math.is_tracer(d) else _mod_and_round(d, mod_val))
 
 
 def _is_hash_leaf(l) -> bool:
@@ -2194,7 +2228,7 @@ def _to_int_wires(wires):
             " AbstractWires, AbstractQubits"
         )
 
-    return Wires(tuple(w if math.is_abstract(w) else int(w) for w in wires))
+    return Wires(tuple(w if math.is_tracer(w) else int(w) for w in wires))
 
 
 class _ArgType(Enum):
@@ -2216,8 +2250,7 @@ def _resolve_arg_kind(cls, name: str) -> _ArgType:
     return _ArgType.DYN
 
 
-# pylint: disable=too-many-return-statements
-def _canonicalize_abstract_type(val, kind: _ArgType):
+def _canonicalize_abstract_type(val, kind: _ArgType):  # pylint: disable=too-many-return-statements
     """Canonicalizes the input into its abstract equivalent.
 
     Args:
@@ -2253,7 +2286,7 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
                     "specifiers found in pennylane.typing."
                 )
             # Ensure it behaves like a clean array/scalar leaf before abstractifying
-            if math.is_abstract(val):
+            if math.is_tracer(val) or issparse(val):
                 return abstractify(val)
             return abstractify(math.asarray(val))
 
@@ -2314,7 +2347,6 @@ class StatePrepBase2(Operator2, is_baseclass=True):
             array: A state vector for all wires in a circuit
         """
 
-    # pylint: disable=unused-argument
     def label(
         self, decimals: int | None = None, base_label: str | None = None, cache: dict | None = None
     ) -> str:

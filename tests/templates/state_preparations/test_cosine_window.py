@@ -16,13 +16,11 @@ Unit tests for the CosineWindow template.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp
 from pennylane.exceptions import WireError
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -31,7 +29,7 @@ def test_standard_validity():
 
     op = qp.CosineWindow(wires=[0, 1])
 
-    qp.ops.functions.assert_valid(op)
+    qp.testing.assert_valid(op)
 
 
 class TestDecomposition:
@@ -50,8 +48,7 @@ class TestDecomposition:
         """Tests the decomposition rule implemented with the new system."""
         op = qp.CosineWindow(wires=wires)
 
-        for rule in qp.list_decomps(qp.CosineWindow):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     def test_correct_gates_single_wire(self):
         """Test that the correct gates are applied."""
@@ -148,7 +145,7 @@ class TestStateVector:
         assert np.allclose(res, expected)
 
 
-class TestInterfaces:
+class TestInterfaces:  # pylint: disable=too-few-public-methods
     """Test that the template works with different interfaces"""
 
     @pytest.mark.jax

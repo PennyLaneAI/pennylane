@@ -16,6 +16,7 @@
 from pennylane.allocation import allocate
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.ops import CNOT, ctrl
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import Wire
@@ -187,6 +188,25 @@ class SemiAdder(Operator2):
     [[0 0]]
 
     The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4` where :math:`4 \mod 2^2 = 0`.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SemiAdder
+            :stacked:
+            :symbols: :math:`m` ``x_wires`` and :math:`n \geq 2` ``y_wires``
+            :example: :math:`m=n=3`
+
+            .. decomposition-rule:: _semi_adder
+                :image: /_static/decomposition_thumbnails/semi_adder_elbow_ladder.svg
+                :where: :math:`\ell = \min(m, n - 1)`, and :math:`[m \geq n]` equal to 1 if
+                    :math:`m \geq n` and 0 otherwise
+
+                :class:`~.TemporaryAND` | :math:`n - \ell` | 1
+                ``LeftFullAdder`` | :math:`\ell - 1` | 1
+                ``RightFullAdder`` | :math:`\ell - 1` | 1
+                ``RightHalfAdder`` | :math:`n - \ell` | 1
+                :class:`~.CNOT` | :math:`1 + [m \geq n]` | 2
     """
 
     grad_method = None
@@ -254,8 +274,7 @@ def _num_ladder_blocks(num_y_wires, skip_input_pos):
     return num_half_blocks, num_y_wires - 2 - num_half_blocks
 
 
-# pylint: disable-next=unused-argument
-def _semi_adder_work_wires(x_wires, y_wires, work_wires):
+def _semi_adder_work_wires(x_wires, y_wires, work_wires):  # pylint: disable=unused-argument
     """The work wires that the ladders need, minus the ones that were already provided.
 
     Symbolic rules like ``C(SemiAdder)`` reuse this spec but are called with the symbolic
@@ -312,7 +331,7 @@ def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_p
 add_decomps(SemiAdder, _semi_adder)
 
 
-# pylint: disable-next=too-many-arguments,unused-argument
+# pylint: disable-next=unused-argument
 def _ctrl_semi_adder_resource(base, control_wires, control_values, work_wires, work_wire_type):
     r"""
     Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
@@ -336,7 +355,11 @@ def _ctrl_semi_adder_resource(base, control_wires, control_values, work_wires, w
     # The base's own work_wires beyond the (num_y_wires - 1) consumed by the ladders
     # are available, in addition to any extra work_wires passed to `ctrl`, to the ctrl-CNOTs.
     # Clamped at 0: if the base has too few, the ladders allocate and none are left over here.
-    num_work_wires = num_extra_work_wires + max(len(base_work_wires) - (num_y_wires - 1), 0)
+    num_extra_work_wires_from_base = max(len(base_work_wires) - (num_y_wires - 1), 0)
+    num_work_wires = num_extra_work_wires + num_extra_work_wires_from_base
+    work_wire_type = resolve_work_wire_type(
+        Wire[num_extra_work_wires_from_base], "zeroed", work_wires, work_wire_type
+    )
     ctrl_cnot = ctrl(
         CNOT(Wire[2]),
         Wire[num_control_wires],
@@ -368,14 +391,14 @@ def _ctrl_semi_adder_resource(base, control_wires, control_values, work_wires, w
     _ctrl_semi_adder_resource,
     work_wires=lambda base, *_, **__: _semi_adder_work_wires(**base.arguments),
 )
-def _controlled_semi_adder(
+def _controlled_semi_adder(  # pylint: disable=too-many-arguments,unused-argument
     base,
     control_wires,
     control_values=None,
     work_wires=None,
     work_wire_type="borrowed",
     carry_flip=None,
-):  # pylint: disable=too-many-arguments,unused-argument
+):
     r"""
     Decomposition extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_
     using building block described in Figure 4.
@@ -396,10 +419,13 @@ def _controlled_semi_adder(
     with allocate(num_to_allocate, restored=True) as alloc_work_wires:
         base_work_wires += list(alloc_work_wires)
         work_wires = [] if work_wires is None else work_wires
+        ctrl_work_wire_type = resolve_work_wire_type(
+            extra_work_wires_from_base, "zeroed", work_wires, work_wire_type
+        )
         ctrl_kwargs = {
             "control_wires": control_wires,
             "work_wires": Wires.all_wires([work_wires, extra_work_wires_from_base]),
-            "work_wire_type": work_wire_type,
+            "work_wire_type": ctrl_work_wire_type,
         }
 
         num_y_wires = len(y_wires)

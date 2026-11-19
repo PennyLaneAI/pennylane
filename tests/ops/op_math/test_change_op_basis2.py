@@ -15,7 +15,8 @@
 Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
 
-# pylint:disable=protected-access, unused-argument
+# pylint: disable=protected-access
+
 
 import re
 from functools import partial, reduce
@@ -27,14 +28,13 @@ import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane.core.operator import abstractify
 from pennylane.exceptions import DeviceError, DiagGatesUndefinedError
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis2, Prod2, change_op_basis
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.change_op_basis import _validate_callable
 from pennylane.templates import Subroutine
+from pennylane.testing import assert_decomposable, assert_eqn_matches_op
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
-from tests.capture.capture_utils import assert_eqn_matches_op
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
@@ -54,7 +54,7 @@ def test_basic_validity():
     op2 = qp.Rot(1.2, 2.3, 3.4, wires=0)
     op3 = qp.PauliZ(0)
     op = qp.change_op_basis(op1, op2, op3)
-    qp.ops.functions.assert_valid(op, skip_eigvals=True)
+    qp.testing.assert_valid(op, skip_eigvals=True)
 
 
 def test_change_op_basis_callables():
@@ -128,9 +128,9 @@ def test_change_op_basis_concrete_legacy_operand_capture():
     import jax
 
     # Building with capture paused yields a concrete legacy operator rather than a tracer, so
-    # ``_apply_op_or_func`` takes the ``isinstance(op, Operator)`` -> ``queuing.apply`` branch.
+    # ``_apply_op_or_func`` takes the ``isinstance(op, Operator)`` -> ``apply`` branch.
     with qp.capture.pause():
-        legacy_op = qp.ControlledSequence(qp.RX(0.1, 0), control=1)
+        legacy_op = qp.AngleEmbedding(np.array([0.1]), wires=[0])
 
     def circuit():
         qp.change_op_basis(legacy_op, qp.X(2), qp.X(2))
@@ -138,7 +138,7 @@ def test_change_op_basis_concrete_legacy_operand_capture():
     jaxpr = jax.make_jaxpr(circuit)()
 
     names = [eqn.primitive.name for eqn in jaxpr.eqns]
-    assert names.count("ControlledSequence") == 1
+    assert names.count("AngleEmbedding") == 1
 
 
 @pytest.mark.capture
@@ -151,13 +151,13 @@ def test_change_op_basis_abstract_legacy_operand_capture():
     # ``_apply_op_or_func`` takes the ``_is_abstract_operator`` -> ``pass`` branch (the equation is
     # already in the jaxpr from construction and must not be re-emitted).
     def circuit():
-        legacy_op = qp.ControlledSequence(qp.RX(0.1, 0), control=1)
+        legacy_op = qp.AngleEmbedding(np.array([0.1]), wires=[0])
         qp.change_op_basis(legacy_op, qp.X(2), qp.X(2))
 
     jaxpr = jax.make_jaxpr(circuit)()
 
     names = [eqn.primitive.name for eqn in jaxpr.eqns]
-    assert names.count("ControlledSequence") == 1
+    assert names.count("AngleEmbedding") == 1
 
 
 @pytest.mark.capture
@@ -294,12 +294,12 @@ def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
         qp.change_op_basis(compute_op(0), target_op(1), uncompute)
 
     jaxpr = qp.capture.make_plxpr(circuit)()
-    tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+    tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
     expected_uncompute = uncompute_op(0) if uncompute_op else qp.adjoint(compute_op(0))
     assert tape.operations == [compute_op(0), target_op(1), expected_uncompute]
 
 
-class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
+class MyOp(qp.RX):  # pylint: disable=too-few-public-methods
     """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
@@ -308,7 +308,7 @@ class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
     has_diagonalizing_gates = False
 
 
-class TestInitialization:  # pylint:disable=too-many-public-methods
+class TestInitialization:
     """Test the initialization."""
 
     def test_init_change_op_basis_op(self):
@@ -393,7 +393,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert change_op_basis_op.has_diagonalizing_gates is False
 
 
-class TestProperties:  # pylint: disable=too-few-public-methods
+class TestProperties:
     """Test class properties."""
 
     @pytest.mark.parametrize("ops_lst", list(ops))
@@ -576,8 +576,7 @@ class TestDecomposition:
         """Test the qfunc decomposition."""
         change_op_basis_op = ChangeOpBasis2(*ops_lst)
 
-        for rule in qp.list_decomps(ChangeOpBasis2):
-            _test_decomposition_rule(change_op_basis_op, rule)
+        assert_decomposable(change_op_basis_op)
 
     @pytest.mark.parametrize("ops_lst", ops)
     @pytest.mark.capture
@@ -585,7 +584,7 @@ class TestDecomposition:
         """Test that capture applies each decomposition operand in order."""
 
         jaxpr = qp.capture.make_plxpr(lambda: change_op_basis(*ops_lst))()
-        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+        tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
         assert tape.operations == list(ops_lst)
 
@@ -595,8 +594,7 @@ class TestDecomposition:
         with qp.capture.pause():
             op = ChangeOpBasis2(NonParametricOp(0), DynOp(0.2, 1), NonParametricOp(2))
 
-        [rule] = qp.list_decomps(ChangeOpBasis2)
-        _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize("ops_lst", ops)
     @pytest.mark.parametrize("num_control_wires", (1, 3))
@@ -610,16 +608,14 @@ class TestDecomposition:
             control_values=[1] * num_control_wires,
             work_wires=work_wires,
         )
-        for rule in qp.list_decomps("C(ChangeOpBasis2)"):
-            _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
         assert len(qp.list_decomps(op)) == 1
 
     def test_adjoint_decomposition_with_explicit_uncompute(self):
         """Test the generated adjoint rule with an asymmetric explicit uncompute operator."""
         op = qp.adjoint(ChangeOpBasis2(qp.S(0), qp.T(1), qp.SX(2)))
-        [rule] = qp.list_decomps(op)
-        _test_decomposition_rule(op, rule)
+        assert_decomposable(op)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_on_tape(self, ops_lst):
@@ -647,7 +643,7 @@ def test_callable_validation_doesnt_hide_bugs_with_typeerror():
         change_op_basis(f, qp.Y(0))
 
 
-def blah(a, b, c=3):
+def blah(a, b, c=3):  # pylint: disable=unused-argument
     pass
 
 

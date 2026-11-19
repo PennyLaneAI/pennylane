@@ -18,8 +18,8 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator.utils import abstractify
-from pennylane.ops.functions import assert_valid
 from pennylane.ops.identity import GlobalPhase, Identity
+from pennylane.testing import assert_valid
 from pennylane.typing import Float, Wire
 
 op_wires = [[], [0], ["a"], [0, 1], ["a", "b", "c"], [100, "xasd", 12]]
@@ -57,6 +57,53 @@ def test_abstractify_identity():
     assert abstractify(Identity(wires=[0, 1])) == Identity(Wire[2])
 
 
+class TestControlledGlobalPhase:
+    """Tests for symbolic controls of GlobalPhase."""
+
+    @staticmethod
+    def _expected_matrix(phi, n_control):
+        """A controlled GlobalPhase applies ``e^{-i phi}`` to the all-ones control state."""
+        mat = np.eye(2**n_control, dtype=complex)
+        mat[-1, -1] = np.exp(-1j * phi)
+        return mat
+
+    @pytest.mark.parametrize("control", ([0], [0, 1], [0, 1, 2]))
+    def test_matrix_matches_controlled_global_phase(self, control):
+        """The symbolic op reproduces the controlled-GlobalPhase matrix."""
+        phi = 0.123
+        op = qp.ctrl(GlobalPhase(phi), control=control)
+        mat = qp.matrix(op, wire_order=control)
+        assert np.allclose(mat, self._expected_matrix(phi, len(control)))
+
+    @pytest.mark.parametrize(
+        "phi, control, work_wires, work_wire_type",
+        [
+            (0.123, [0, 1, 2], [3, 4], "zeroed"),
+            (0.5, [0, 1, 2], [3], "borrowed"),
+            (-1.0, [0, 1, 2, 3], [4, 5, 6], "zeroed"),
+        ],
+    )
+    def test_work_wires_passed_through(self, phi, control, work_wires, work_wire_type):
+        """Work wires are retained by the symbolic control."""
+        op = qp.ctrl(
+            GlobalPhase(phi),
+            control=control,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+        assert list(op.work_wires) == work_wires
+        assert op.work_wire_type == work_wire_type
+        qp.assert_equal(
+            op,
+            qp.ops.ControlledOp2(
+                GlobalPhase(phi),
+                control_wires=control,
+                work_wires=work_wires,
+                work_wire_type=work_wire_type,
+            ),
+        )
+
+
 def test_is_verified_hermitian():
     """Test that identity is verified to be hermitian."""
     assert Identity.is_verified_hermitian is True
@@ -65,15 +112,14 @@ def test_is_verified_hermitian():
 
 @pytest.mark.parametrize("wires", op_wires)
 class TestIdentity:
-    # pylint: disable=protected-access
     def test_flatten_unflatten(self, wires):
         """Test the flatten and unflatten methods of identity."""
         op = Identity(wires)
-        data, metadata = op._flatten()
+        data, metadata = op._flatten()  # pylint: disable=protected-access
         assert data == ([], [qp.wires.Wires(wires)], [])
         assert hash(metadata)
 
-        new_op = Identity._unflatten(*op._flatten())
+        new_op = Identity._unflatten(*op._flatten())  # pylint: disable=protected-access
         qp.assert_equal(op, new_op)
 
     def test_class_name(self, wires):
@@ -97,7 +143,7 @@ class TestIdentity:
         if all(isinstance(w, int) for w in wires):
             # ``Operator2`` treats wires as dynamic pytree leaves, so only integer wire
             # labels can be traced by ``jax.jit``.
-            adj_op = jax.jit(lambda op: qp.adjoint(op, lazy=False))(op)
+            adj_op = jax.jit(lambda op: op.adjoint())(op)
             qp.assert_equal(op, adj_op)
 
     def test_identity_eigvals(self, wires, tol):

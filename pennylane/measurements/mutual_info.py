@@ -11,10 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access
 """
 This module contains the qp.mutual_info measurement.
 """
+
+# pylint: disable=protected-access
+
 
 from collections.abc import Sequence
 from copy import copy
@@ -54,9 +56,8 @@ class MutualInfoMP(StateMeasurement):
         self.log_base = log_base
         super().__init__(wires=wires)
 
-    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, wires: Sequence, **kwargs):
+    def _primitive_bind_call(cls, wires: Sequence, **kwargs):  # pylint: disable=arguments-differ
         return cls._wires_primitive.bind(*wires[0], *wires[1], n_wires0=len(wires[0]), **kwargs)
 
     def __repr__(self):
@@ -168,7 +169,7 @@ def mutual_info(wires0, wires1, log_base=None) -> MutualInfoMP:
     wires1 = Wires(wires1)
 
     # the subsystems cannot overlap
-    if not any(math.is_abstract(w) for w in wires0 + wires1) and [
+    if not any(math.is_tracer(w) for w in wires0 + wires1) and [
         wire for wire in wires0 if wire in wires1
     ]:
         raise QuantumFunctionError("Subsystems for computing mutual information must not overlap.")

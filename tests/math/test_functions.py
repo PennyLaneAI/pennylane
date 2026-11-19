@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for pennylane.math.single_dispatch"""
 
-# pylint: disable=import-outside-toplevel
 import itertools
 from functools import partial
 from unittest.mock import patch
@@ -1061,7 +1060,6 @@ class TestScipySparse:
             _sparse_matrix_power_bruteforce(A, 1.5)
 
 
-# pylint: disable=too-few-public-methods
 class TestInterfaceEnum:
     """Test the Interface enum class"""
 
@@ -1094,10 +1092,11 @@ class TestInterfaceEnum:
 
     def test_eq(self):
         """Test that an error is raised if comparing to string"""
+        # Exercise the custom equality method with identical enum members.
+        # pylint: disable-next=comparison-with-itself
         assert fn.Interface.NUMPY == fn.Interface.NUMPY
         with pytest.raises(TypeError, match="Cannot compare Interface with str"):
-            # pylint: disable=pointless-statement
-            fn.Interface.NUMPY == "numpy"
+            fn.Interface.NUMPY == "numpy"  # pylint: disable=pointless-statement
 
 
 @pytest.mark.parametrize("t", test_data)
@@ -1421,6 +1420,34 @@ def test_get_dtype_name(x, expected):
     assert fn.get_dtype_name(x) == expected
 
 
+@pytest.mark.parametrize(
+    "obj, expected_is_complex",
+    [
+        (1.0, False),
+        (1.0j, True),
+        (True, False),
+        (onp.array([1], dtype=onp.int64), False),
+        (onp.array([1], dtype=onp.complex64), True),
+        (np.array([1.0]), False),
+        (np.array([1.0j]), True),
+        (jnp.array([1.0]), False),
+        (jnp.array([1.0j]), True),
+        (torch.tensor([1.0]), False),
+        (torch.tensor([1.0j]), True),
+        (qp.typing.Float[2], False),
+        (qp.typing.Complex[2], True),
+    ],
+)
+def test_complex_dtype_helpers(obj, expected_is_complex):
+    assert fn.is_complex_dtype(obj) is expected_is_complex
+
+    abstract_dtype, cast_dtype = fn.get_abstract_and_cast_dtype(obj)
+    expected_abstract = qp.typing.Complex if expected_is_complex else qp.typing.Float
+    expected_cast = complex if expected_is_complex else float
+    assert abstract_dtype is expected_abstract
+    assert cast_dtype is expected_cast
+
+
 @pytest.mark.parametrize("t", test_data)
 def test_sqrt(t):
     """Test that the square root function works for a variety
@@ -1653,7 +1680,7 @@ class TestTake:
         assert np.array_equal(fn.take(x, indices=3, axis=-1), [3, 7])
 
 
-class TestDelete:
+class TestDelete:  # pylint: disable=too-few-public-methods
     """Tests for the qp.math.delete function."""
 
     def test_numpy_accepts_assume_unique_indices(self):
@@ -2287,7 +2314,6 @@ class TestUnwrap:
     def test_autograd_unwrapping_forward(self):
         """Test that a sequence of Autograd values is properly unwrapped
         during the forward pass"""
-        # pylint: disable=not-an-iterable
         unwrapped_params = None
 
         def cost_fn(params):
@@ -2300,12 +2326,12 @@ class TestUnwrap:
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
         assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
+        # pylint: disable-next=not-an-iterable
         assert all(not isinstance(a, np.tensor) for a in unwrapped_params)
 
     def test_autograd_unwrapping_backward(self):
         """Test that a sequence of Autograd values is properly unwrapped
         during the backward pass"""
-        # pylint: disable=not-an-iterable
         unwrapped_params = None
 
         def cost_fn(*params):
@@ -2322,12 +2348,12 @@ class TestUnwrap:
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
         assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
+        # pylint: disable-next=not-an-iterable
         assert not any(isinstance(a, ArrayBox) for a in unwrapped_params)
 
     def test_autograd_unwrapping_backward_nested(self):
         """Test that a sequence of Autograd values is properly unwrapped
         during multiple backward passes"""
-        # pylint: disable=not-an-iterable
         unwrapped_params = None
 
         def cost_fn(p, max_depth=None):
@@ -2345,12 +2371,12 @@ class TestUnwrap:
         # Specifying max_depth=1 will result in the second backward
         # pass not being unwrapped
         _ = qp.jacobian(qp.grad(cost_fn))(values, max_depth=1)
+        # pylint: disable-next=not-an-iterable
         assert all(isinstance(a, ArrayBox) for a in unwrapped_params)
 
     def test_jax_unwrapping(self):
         """Test that a sequence of Autograd values is properly unwrapped
         during the forward pass"""
-        # pylint: disable=not-an-iterable
         unwrapped_params = None
 
         def cost_fn(params):
@@ -2363,6 +2389,7 @@ class TestUnwrap:
 
         expected = [np.array([0.1, 0.2]), 0.1, np.array([0.5, 0.2])]
         assert all(np.allclose(a, b) for a, b in zip(unwrapped_params, expected))
+        # pylint: disable-next=not-an-iterable
         assert all(not isinstance(a, np.tensor) for a in unwrapped_params)
 
 
@@ -2424,10 +2451,8 @@ test_sort_data = [
 ]
 
 
-class TestSortFunction:
+class TestSortFunction:  # pylint: disable=too-few-public-methods
     """Test the sort function works across all interfaces"""
-
-    # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize("input, test_output", test_sort_data)
     def test_sort(self, input, test_output):
@@ -2465,10 +2490,8 @@ class TestExpm:
         assert qp.math.allclose(exp_mat, self.get_compare_mat(), atol=1e-4)
 
 
-class TestSize:
+class TestSize:  # pylint: disable=too-few-public-methods
     """Test qp.math.size method."""
-
-    # pylint: disable=too-few-public-methods
 
     array_and_size = [
         ([], 0),

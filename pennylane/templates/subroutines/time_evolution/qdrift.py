@@ -16,8 +16,9 @@
 import copy
 
 from pennylane import math
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import Evolution, LinearCombination, Sum
 from pennylane.wires import Wires
@@ -195,7 +196,7 @@ class QDrift(Operation):
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))
 
-    def __init__(self, hamiltonian, time, n=1, seed=None):  # pylint: disable=too-many-arguments
+    def __init__(self, hamiltonian, time, n=1, seed=None):
         r"""Initialize the QDrift class"""
 
         _check_hamiltonian_type(hamiltonian)
