@@ -12,7 +12,7 @@
 # limitations under the License.
 """Basic unit tests for ``Operator2``."""
 
-# pylint: disable=protected-access,too-few-public-methods
+# pylint: disable=protected-access
 
 
 # TODO: [sc-120817] Add interface tests
@@ -70,6 +70,7 @@ class TestOperatorRegistry:
     def test_user_defined_subclass(self):
         """A custom operator is registered without constructing an instance."""
 
+        # pylint: disable=super-init-not-called
         class RegistryCustomOp(Operator2):
             """A user-defined operator with a wire argument."""
 
@@ -84,6 +85,8 @@ class TestOperatorRegistry:
 
         class RegistryParentOp(Operator2):
             """A user-defined parent operator."""
+
+            # pylint: disable=super-init-not-called
 
             def __init__(self, wires):
                 raise AssertionError("Registration must not instantiate the operator")
@@ -102,6 +105,7 @@ class TestOperatorRegistry:
         class RegistryDuplicateOp(Operator2):
             """The first operator registered under this name."""
 
+            # pylint: disable=super-init-not-called
             def __init__(self, wires):
                 raise AssertionError("Registration must not instantiate the operator")
 
@@ -114,6 +118,7 @@ class TestOperatorRegistry:
             class RegistryDuplicateOp(Operator2):  # pylint: disable=function-redefined
                 """A different operator with the same name."""
 
+                # pylint: disable=super-init-not-called
                 def __init__(self, wires):
                     raise AssertionError("Registration must not instantiate the operator")
 
@@ -164,7 +169,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
             static_argnames = ("s2", "s1")
             hybrid_argnames = ("h2", "h1")
 
-            # pylint: disable-next=useless-parent-delegation,too-many-arguments
+            # pylint: disable-next=too-many-arguments
             def __init__(self, a, reg1, s1, h1, b, reg2, s2, h2):
                 super().__init__(a, reg1, s1, h1, b, reg2, s2, h2)
 
@@ -176,7 +181,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         class DummyOp2(qp.core.Operator2):
             compilable_argnames = ("c3", "c2", "c1")
 
-            def __init__(self, c1, wires, c2, c3):  # pylint: disable=useless-parent-delegation
+            def __init__(self, c1, wires, c2, c3):
                 super().__init__(c1, wires, c2, c3)
 
         assert DummyOp2.compilable_argnames == ("c1", "c2", "c3")
@@ -323,7 +328,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
             dynamic_argnames = ("phi",)
             arg_specs = {"phi": float}
 
-            def __init__(self, phi, wires):  # pylint: disable=useless-parent-delegation
+            def __init__(self, phi, wires):
                 super().__init__(phi, wires)
 
         assert Op.arg_specs == {"phi": AbstractArray((), float)}
@@ -337,7 +342,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
 
                 arg_specs = {"wires": Wire}
 
-                def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+                def __init__(self, wires):
                     super().__init__(wires)
 
     def test_has_fixed_sig_false_with_argnames_without_arg_specs(self):
@@ -359,7 +364,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         class Op(Operator2):
             wire_argnames = ()
 
-            def __init__(self):  # pylint: disable=useless-parent-delegation
+            def __init__(self):
                 super().__init__()
 
         assert Op.has_fixed_sig is True
@@ -635,7 +640,8 @@ class TestOperatorInit:
         """Test that a wire argument matching the declared ``wire_sizes`` is accepted."""
 
         class Op(Operator2):
-            
+            arg_specs = {"wires": Wire[2]}
+
             def __init__(self, wires):
                 super().__init__(wires=wires)
 
@@ -646,7 +652,7 @@ class TestOperatorInit:
         """Test that supplying a different number of wires than ``wire_sizes`` raises an error."""
 
         class Op(Operator2):
-            
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, wires):
                 super().__init__(wires=wires)
@@ -671,7 +677,7 @@ class TestOperatorInit:
 
         class Op(Operator2):
             wire_argnames = ("wires", "ctrl_wires")
-            arg_specs = {"wires": Wires[2]}
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, wires, ctrl_wires):
                 super().__init__(wires=wires, ctrl_wires=ctrl_wires)
@@ -695,7 +701,6 @@ class TestOperatorInit:
 
         # Varying leaf counts and per-leaf sizes are all accepted.
         _ = Op([[0, 1, 2], [3], [4, 5]])
-
 
     def test_op_is_queued_on_init(self):
         """Test that instantiating an operator appends it to the active queue."""
@@ -1434,7 +1439,7 @@ class TestDunderMethods:
             wire_argnames = ("wires",)
             arg_specs = {"wires": Wire[1]}
 
-            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+            def __init__(self, wires):
                 super().__init__(wires)
 
         op = Op(Wire[1])
@@ -1443,7 +1448,7 @@ class TestDunderMethods:
         class Op2(Operator2):
             wire_argnames = ("wires",)
 
-            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+            def __init__(self, wires):
                 super().__init__(wires)
 
         op = Op2(Wire[1])
@@ -1652,7 +1657,6 @@ class TestLabel:
             def __init__(self, wires):
                 super().__init__(wires=Wires(wires))
 
-            # pylint: disable-next=unused-argument
             def label(self, decimals=None, base_label=None, cache=None):
                 return "custom_label"
 
@@ -1875,7 +1879,7 @@ class TestHasRepresentations:
         """Test that ``has_matrix`` is True when ``matrix`` is overridden."""
 
         class WithMatrix(Operator2):
-            def matrix(self, wire_order=None):  # pylint: disable=unused-argument
+            def matrix(self, wire_order=None):
                 return np.eye(2)
 
             def __init__(self, wires):
@@ -1904,7 +1908,7 @@ class TestHasRepresentations:
         """Test that ``has_sparse_matrix`` is True when ``sparse_matrix`` is overridden."""
 
         class WithSparse(Operator2):
-            # pylint: disable-next=unused-argument
+
             def sparse_matrix(self, wire_order=None, format="csr"):
                 return csr_matrix(np.eye(2))
 
@@ -2246,7 +2250,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
         """Test that overriding ``sparse_matrix`` alone provides a working representation."""
 
         class WithSparse(Operator2):
-            # pylint: disable-next=unused-argument
+
             def sparse_matrix(self, wire_order=None, format="csr"):
                 return csr_matrix(np.eye(2)).asformat(format)
 
@@ -2478,10 +2482,10 @@ class TestStatePrepBase:
         class MyStatePrep(StatePrepBase2):
             wire_argnames = ("wires",)
 
-            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+            def __init__(self, wires):
                 super().__init__(wires)
 
-            def state_vector(self, wire_order=None):  # pylint: disable=unused-argument
+            def state_vector(self, wire_order=None):
                 return np.zeros(5)
 
         op = MyStatePrep(0)
@@ -2491,10 +2495,10 @@ class TestStatePrepBase:
     def test_interface_not_implemented(self):
         """Tests that an error is raised if an interface isn't implemented."""
 
-        class BadStatePrep(StatePrepBase2):
+        class BadStatePrep(StatePrepBase2):  # pylint: disable=abstract-method
             wire_argnames = ("wires",)
 
-            def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+            def __init__(self, wires):
                 super().__init__(wires)
 
             # state_vector is not implemented!
