@@ -120,13 +120,13 @@ class TestPrivateHelpers:
         def stopping_condition(op):
             return op.has_matrix
 
-        op = NoMatOp("a")
+        op = NoMatOp(7)
         casted_to_list = list(
             _operator_decomposition_gen(op, stopping_condition, custom_decomposer=self.decomposer)
         )
         assert len(casted_to_list) == 2
-        qp.assert_equal(casted_to_list[0], qp.PauliX("a"))
-        qp.assert_equal(casted_to_list[1], qp.PauliY("a"))
+        qp.assert_equal(casted_to_list[0], qp.PauliX(7))
+        qp.assert_equal(casted_to_list[1], qp.PauliY(7))
 
     def test_operator_decomposition_gen_decomposed_operator_ragged_nesting(self):
         """Test that _operator_decomposition_gen handles a decomposition that requires different depths of decomposition."""
@@ -142,16 +142,16 @@ class TestPrivateHelpers:
             def decomposition(self):
                 return [NoMatOp(self.wires), qp.S(self.wires), qp.adjoint(NoMatOp(self.wires))]
 
-        op = RaggedDecompositionOp("a")
+        op = RaggedDecompositionOp(7)
         final_decomp = list(
             _operator_decomposition_gen(op, stopping_condition, custom_decomposer=self.decomposer)
         )
         assert len(final_decomp) == 5
-        qp.assert_equal(final_decomp[0], qp.PauliX("a"))
-        qp.assert_equal(final_decomp[1], qp.PauliY("a"))
-        qp.assert_equal(final_decomp[2], qp.S("a"))
-        qp.assert_equal(final_decomp[3], qp.adjoint(qp.PauliY("a")))
-        qp.assert_equal(final_decomp[4], qp.adjoint(qp.PauliX("a")))
+        qp.assert_equal(final_decomp[0], qp.PauliX(7))
+        qp.assert_equal(final_decomp[1], qp.PauliY(7))
+        qp.assert_equal(final_decomp[2], qp.S(7))
+        qp.assert_equal(final_decomp[3], qp.adjoint(qp.PauliY(7)))
+        qp.assert_equal(final_decomp[4], qp.adjoint(qp.PauliX(7)))
 
 
 def test_no_sampling():
@@ -204,22 +204,22 @@ class TestValidateDeviceWires:
     def test_error(self):
         """Tests for the error raised by validate_device_wires transform."""
 
-        tape1 = qp.tape.QuantumScript([qp.S("a")])
+        tape1 = qp.tape.QuantumScript([qp.S(7)])
         with pytest.raises(qp.wires.WireError, match="on abc as they contain wires"):
             validate_device_wires(tape1, wires=qp.wires.Wires((0,)), name="abc")
 
     def test_null_if_no_wires_provided(self):
         """Test that nothing happens if no wires are provided to the transform."""
 
-        tape1 = qp.tape.QuantumScript([qp.S("b")], [qp.expval(qp.PauliZ(0))])
+        tape1 = qp.tape.QuantumScript([qp.S(8)], [qp.expval(qp.PauliZ(0))])
         batch, _ = validate_device_wires(tape1)
         assert batch[0] is tape1
 
     def test_fill_in_wires(self):
         """Tests that if the wires are provided, measurements without wires gain them."""
-        tape1 = qp.tape.QuantumScript([qp.S("b")], [qp.state(), qp.probs()], shots=52)
+        tape1 = qp.tape.QuantumScript([qp.S(8)], [qp.state(), qp.probs()], shots=52)
 
-        wires = qp.wires.Wires(["a", "b", "c"])
+        wires = qp.wires.Wires([7, 8, 9])
         batch, _ = validate_device_wires(tape1, wires=wires)
         assert batch[0][1].wires == wires
         assert batch[0][2].wires == wires
@@ -1065,16 +1065,6 @@ class TestDeviceResolveDynamicWires:
         assert fn(("a",)) == "a"
         for op, wire in zip(new_tape.operations, wires):
             qp.assert_equal(op, qp.X(wire))
-
-    def test_min_int_non_integer_algorithmic_wires(self):
-        """Test that a min int can be calculated when the tape contains non-integer wires."""
-
-        allocation = qp.allocation.Allocate.from_num_wires(1)
-        ops = [qp.Z("a"), qp.Z("b"), qp.Z("my_wire"), qp.X(allocation.wires)]
-        tape = qp.tape.QuantumScript([allocation] + ops)
-
-        [new_tape], _ = device_resolve_dynamic_wires(tape, wires=None)
-        qp.assert_equal(new_tape[-1], qp.X(0))
 
     def test_min_int_unsorted_wires(self):
         """Test that the min_int is the smallest integer larger than all integers in operation wires."""

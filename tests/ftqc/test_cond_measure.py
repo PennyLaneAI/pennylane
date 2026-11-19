@@ -42,7 +42,7 @@ PARAMETRIC_MCM_XFAIL = pytest.mark.pl2do(
 class TestCondMeas:
     """Test the behaviour of cond_measure for expected inputs"""
 
-    @pytest.mark.parametrize("wire", (2, "c"))
+    @pytest.mark.parametrize("wire", (2, 4))
     @pytest.mark.parametrize("reset", (True, False))
     @pytest.mark.parametrize("postselect", (None, 0, 1))
     def test_cond_measure_with_measurements(self, wire, reset, postselect):

@@ -89,9 +89,11 @@ def test_decomp_has_name():
 def test_as_fixed_decomps(phi, p):
     """Test that the decomposition rule from ``make_crz_to_phase_gradient_decomp`` works as
     expected as a fixed decomposition and yields the correct resources"""
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([100 + len(angle_wires) + i for i in range(p)])
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(p - 1)]
+    )
 
     kwargs = {
         "angle_wires": angle_wires,
@@ -119,9 +121,11 @@ def test_as_fixed_decomps(phi, p):
 def test_as_alt_decomps(phi, p):
     """Test that the decomposition rule from ``make_crz_to_phase_gradient_decomp`` works as
     expected as an alternative decomposition and yields the correct resources"""
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([100 + len(angle_wires) + i for i in range(p)])
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(p - 1)]
+    )
 
     kwargs = {
         "angle_wires": angle_wires,
@@ -155,9 +159,9 @@ def test_integration_multi_wire(seed):
     phi = (1 / 2 + 0 / 4 + 1 / 8) * 4 * np.pi
     wires = [0, 1]
 
-    angle_wires = [f"aux_{i}" for i in range(prec)]
-    phase_grad_wires = [f"qft_{i}" for i in range(prec)]
-    work_wires = [f"work_{i}" for i in range(prec - 1)]
+    angle_wires = [100 + i for i in range(prec)]
+    phase_grad_wires = [100 + len(angle_wires) + i for i in range(prec)]
+    work_wires = [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(prec - 1)]
 
     all_wires = angle_wires + phase_grad_wires + work_wires + wires
 

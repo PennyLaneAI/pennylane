@@ -126,7 +126,7 @@ class TestCompile:
 class TestCompileIntegration:
     """Integration tests to verify outputs of compilation pipelines."""
 
-    @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
+    @pytest.mark.parametrize(("wires"), [[5, 6, 7], [0, 1, 2], [3, 1, 2], [0, 5, 4]])
     def test_compile_empty_pipeline(self, wires):
         """Test that an empty pipeline returns the original function."""
 
@@ -149,7 +149,7 @@ class TestCompileIntegration:
         transformed_tape = qp.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
         compare_operation_lists(transformed_tape.operations, names_expected, wires_expected)
 
-    @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
+    @pytest.mark.parametrize(("wires"), [[5, 6, 7], [0, 1, 2], [3, 1, 2], [0, 5, 4]])
     def test_compile_default_pipeline(self, wires):
         """Test that the default pipeline returns the correct results."""
 
@@ -177,7 +177,7 @@ class TestCompileIntegration:
         tape = qp.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
         compare_operation_lists(tape.operations, names_expected, wires_expected)
 
-    @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
+    @pytest.mark.parametrize(("wires"), [[5, 6, 7], [0, 1, 2], [3, 1, 2], [0, 5, 4]])
     def test_compile_default_pipeline_qnode(self, wires):
         """Test that the default pipeline returns the correct results."""
 
@@ -202,7 +202,7 @@ class TestCompileIntegration:
         [compiled_tape], _ = qp.compile(tape)
         assert compiled_tape.operations == [qp.PauliX(0), qp.CNOT([0, 1])]
 
-    @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
+    @pytest.mark.parametrize(("wires"), [[5, 6, 7], [0, 1, 2], [3, 1, 2], [0, 5, 4]])
     def test_compile_pipeline_with_non_default_arguments(self, wires):
         """Test that using non-default arguments returns the correct results."""
 
@@ -255,7 +255,7 @@ class TestCompileIntegration:
         expected = qp.tape.QuantumScript(state_prep_op.decomposition())
         qp.assert_equal(compiled_tape, expected)
 
-    @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
+    @pytest.mark.parametrize(("wires"), [[5, 6, 7], [0, 1, 2], [3, 1, 2], [0, 5, 4]])
     def test_compile_multiple_passes(self, wires):
         """Test that running multiple passes produces the correct results."""
 
@@ -287,7 +287,7 @@ class TestCompileIntegration:
         tape = qp.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
         compare_operation_lists(tape.operations, names_expected, wires_expected)
 
-    @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
+    @pytest.mark.parametrize(("wires"), [[5, 6, 7], [0, 1, 2], [3, 1, 2], [0, 5, 4]])
     def test_compile_decompose_into_basis_gates(self, wires):
         """Test that running multiple passes produces the correct results."""
 

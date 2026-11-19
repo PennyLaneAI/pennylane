@@ -535,16 +535,16 @@ class TestExecutingBatches:
     def f(dev, phi):
         """A function that executes a batch of scripts on NullQubit without preprocessing."""
         ops = [
-            qp.PauliX("a"),
-            qp.PauliX("b"),
-            qp.ctrl(qp.RX(phi, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
+            qp.PauliX(8),
+            qp.PauliX(9),
+            qp.ctrl(qp.RX(phi, 11), (8, 9, -3), control_values=[1, 1, 0]),
         ]
 
         qs1 = qp.tape.QuantumScript(
             ops,
             [
-                qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
+                qp.expval(qp.sum(qp.PauliY(11), qp.PauliZ(9))),
+                qp.expval(qp.s_prod(3, qp.PauliZ(11))),
             ],
         )
 
@@ -557,16 +557,16 @@ class TestExecutingBatches:
     def f_hashable(phi):
         """A function that executes a batch of scripts on NullQubit without preprocessing."""
         ops = [
-            qp.PauliX("a"),
-            qp.PauliX("b"),
-            qp.ctrl(qp.RX(phi, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
+            qp.PauliX(8),
+            qp.PauliX(9),
+            qp.ctrl(qp.RX(phi, 11), (8, 9, -3), control_values=[1, 1, 0]),
         ]
 
         qs1 = qp.tape.QuantumScript(
             ops,
             [
-                qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
+                qp.expval(qp.sum(qp.PauliY(11), qp.PauliZ(9))),
+                qp.expval(qp.s_prod(3, qp.PauliZ(11))),
             ],
         )
 

@@ -72,9 +72,9 @@ def _simulate_schedule(num_wires):
 def test_seed_sign_and_endianness():
     """Test that the seed has Z and S-dagger phases on the two most-significant wires."""
 
-    @qp.qnode(qp.device("default.qubit", wires=["a", "b", "tail"]))
+    @qp.qnode(qp.device("default.qubit", wires=[10, 14, 19]))
     def circuit():
-        _jones_seed(["a", "b", "tail"])
+        _jones_seed([10, 14, 19])
         return qp.state()
 
     assert np.allclose(circuit(), _seed_state(3))
@@ -167,12 +167,12 @@ def test_postselected_rule_queues_expected_operations():
     measurements."""
     num_wires = 3
     rule = make_phase_gradient_distillation_decomp(
-        aux_wires=["a0", "a1", "a2"],
-        work_wires=["w0", "w1"],
+        aux_wires=[11, 12, 13],
+        work_wires=[20, 22],
         mode="postselect",
     )
     with qp.queuing.AnnotatedQueue() as queue:
-        rule(wires=["g0", "g1", "g2"])
+        rule(wires=[15, 17, 18])
 
     operations = list(queue.queue)
     assert sum(isinstance(op, qp.SemiAdder) for op in operations) == 1
