@@ -3,6 +3,8 @@ qp.typing
 
 .. currentmodule:: pennylane.typing
 
+.. automodule:: pennylane.typing
+
 .. autosummary::
     :toctree: api
 

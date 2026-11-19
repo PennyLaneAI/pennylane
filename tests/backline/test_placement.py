@@ -546,7 +546,6 @@ class TestSingleConstructionSurface:
     @pytest.mark.parametrize(
         "call",
         [
-            # pylint: disable=too-many-function-args,missing-kwoa
             lambda: qp.Controller(qp.device("default.qubit", wires=2)),
             lambda: qp.Coprocessor("decoder", endpoint=ENDPOINT),
         ],

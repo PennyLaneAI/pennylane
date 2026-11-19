@@ -15,7 +15,6 @@
 Tests for the gradients.finite_difference module.
 """
 
-# pylint: disable=use-implicit-booleaness-not-comparison,abstract-method
 import numpy
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
@@ -476,15 +475,13 @@ class TestFiniteDiff:
             def __radd__(self, other):
                 return self + other
 
-        # pylint: disable=too-few-public-methods
-        class SpecialObservable(qp.operation.Operator):
+        class SpecialObservable(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             """SpecialObservable"""
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""
                 return []
 
-        # pylint: disable=too-few-public-methods
         class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device that supports the above SpecialObservable as a return type."""
 
@@ -492,9 +489,8 @@ class TestFiniteDiff:
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})
 
-            # pylint: disable=unused-argument
             @staticmethod
-            def _asarray(arr, dtype=None):
+            def _asarray(arr, dtype=None):  # pylint: disable=unused-argument
                 return np.asarray(arr)
 
             def __init__(self, *args, **kwargs):

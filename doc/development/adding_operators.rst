@@ -58,7 +58,9 @@ modules.
 
     ~pennylane.register_resources
     ~pennylane.add_decomps
-    ~pennylane.typing
+
+Additionally, the :mod:`~pennylane.typing` module contains data types that can be used as placeholder 
+information when defining new decomposition rules, as will be shown in subsequent examples.
 
 The decomposition system in PennyLane2 works by counting the quantum resources
 required to compile a given circuit into a desired target gate set. The
@@ -255,7 +257,7 @@ Adding your new operator to PennyLane
 #####################################
 
 If you want PennyLane to natively support your new operator, you have to make a
-`Pull Request <https://github.com/PennyLaneAI/pennylane/compare>` that adds it
+`Pull Request <https://github.com/PennyLaneAI/pennylane/compare>`__ that adds it
 to the appropriate folder in ``pennylane/``. The tests
 are added to a file of a similar name and location in ``tests/``. Generally, the
 new operator should also be imported in the module's ``__init__.py`` file in

@@ -42,20 +42,20 @@ def null_postprocessing(results):
 def _decompose_setup_inputs(
     gate_set: Iterable[type | str] | dict[type | str, float],
     fixed_decomps: dict | None = None,
-    alt_decomps: dict | None = None,
+    exclude_decomps: dict | None = None,
 ):
     """Validate and pack options for Catalyst's ``graph-decomposition`` pass.
 
     Wraps a single gate type or name into a set, and includes ``fixed_decomps`` /
-    ``alt_decomps`` in the options dict only when they are provided.
+    ``exclude_decomps`` in the options dict only when they are provided.
 
     Args:
         gate_set (Iterable[type | str] | dict[type | str, float]): Target gate set, or a
             single operator type/name that will be wrapped as a one-element set.
         fixed_decomps (dict | None): Optional map from operators to fixed decomposition
             rules. Omitted from the returned options when ``None``.
-        alt_decomps (dict | None): Optional map from operators to alternative decomposition
-            rules. Omitted from the returned options when ``None``.
+        exclude_decomps (dict | None): Optional map from operators to decomposition rules
+            to exclude. Omitted from the returned options when ``None``.
 
     Returns:
         tuple[tuple, dict]: positional and keyword arguments forwarded to
@@ -70,8 +70,8 @@ def _decompose_setup_inputs(
     options = {"gate_set": gate_set}
     if fixed_decomps is not None:
         options["fixed_decomps"] = fixed_decomps
-    if alt_decomps is not None:
-        options["alt_decomps"] = alt_decomps
+    if exclude_decomps is not None:
+        options["exclude_decomps"] = exclude_decomps
     return (), options
 
 
@@ -89,9 +89,11 @@ decompose.__doc__ = """Decompose a quantum circuit toward a target gate set via 
 Args:
     gate_set (Iterable[type | str] | dict[type | str, float]): Target gate set after
         decomposition. A mapping may supply relative costs used by the graph solver.
-    fixed_decomps (dict | None): Map operators to specific decomposition rules.
-    alt_decomps (dict | None): Map operators to alternative decomposition rules considered
-        by the graph solver.
+    fixed_decomps (dict | None): Map operators to specific decomposition rule names to guarantee a
+        specific rule is used for each operator.
+    exclude_decomps (dict | None): Map operators to lists of decomposition rule names to exclude
+        from this pass's graph. Rules are specified by name. Excluded rules remain available
+        to subsequent passes.
 
 **Example**
 
@@ -105,11 +107,15 @@ Args:
         qp.CNOT([0, 1])
         return qp.expval(qp.Z(0))
 
+To exclude a registered rule from this pass, supply its name or callable in
+``exclude_decomps``, for example ``exclude_decomps={qp.CRX: ["_crx_to_h_crz"]}``.
+Use :func:`~pennylane.decomposition.list_decomps` to inspect the available rules.
+
 """
 
 
 @transform
-def _tape_decompose(
+def _tape_decompose(  # pylint: disable=too-many-arguments
     tape,
     *,
     gate_set=None,
@@ -120,7 +126,7 @@ def _tape_decompose(
     fixed_decomps: dict | None = None,
     alt_decomps: dict | None = None,
     strict: bool = True,
-):  # pylint: disable=too-many-arguments
+):
     """Tape-based decomposition of a quantum circuit into a user-specified gate set.
 
     This is the Python/tape execution path formerly provided by :func:`~.transforms.decompose`.
@@ -466,13 +472,13 @@ def _tape_decompose(
                 alt_decomps={qp.CNOT: [my_cnot1, my_cnot2]},
                 fixed_decomps={qp.IsingXX: isingxx_decomp},
             )
-            @qp.qnode(qp.device("lightning.qubit"))
+            @qp.qnode(qp.device("lightning.qubit", wires=2))
             def circuit():
                 qp.CNOT(wires=[0, 1])
                 qp.IsingXX(0.5, wires=[0, 1])
                 return qp.state()
 
-        >>> qp.specs(qp.qjit(circuit))().resources.quantum_operations
+        >>> qp.specs(qp.qjit(circuit, capture=False))().resources.quantum_operations
         {'GlobalPhase': 6, 'CZ': 3, 'RX': 7, 'RZ': 12}
         >>> qp.decomposition.disable_graph()
 
@@ -668,7 +674,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
             )
 
 
-def _process_gate_set(gate_set) -> tuple[GateSet, Callable]:  # pylint: disable=unused-argument
+def _process_gate_set(gate_set) -> tuple[GateSet, Callable]:
     """Return a GateSet and a callable that returns True iff an operator is in the gate set."""
 
     if gate_set is None and enabled_graph():

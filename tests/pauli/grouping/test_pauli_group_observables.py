@@ -171,7 +171,6 @@ class TestPauliGroupingStrategy:
 
         # compute observable and custom indices partitions
         observables_partitioned = groupper.partition_observables()
-        # pylint: disable=protected-access
         indices_partitioned = groupper.idx_partitions_from_graph(observables_indices=custom_indices)
         for group_obs, group_custom_indices in zip(observables_partitioned, indices_partitioned):
             for i, custom_idx in enumerate(group_custom_indices):
@@ -440,7 +439,6 @@ class TestGroupObservables:
     def test_binary_repr_custom_wire_map(self):
         """Tests that the ``binary_repr`` method sets a custom
         wire map correctly."""
-        # pylint: disable=protected-access
 
         observables = [Identity("alice"), Identity("bob"), Identity("charlie")]
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
@@ -449,7 +447,7 @@ class TestGroupObservables:
         wire_map = {"alice": 1, "bob": 0, "charlie": 2}
         _ = grouping_instance.binary_repr(n_qubits, wire_map)
 
-        assert grouping_instance._wire_map == wire_map
+        assert grouping_instance._wire_map == wire_map  # pylint: disable=protected-access
 
     def test_return_list_coefficients(self):
         """Tests that if the coefficients are given as a list, the groups

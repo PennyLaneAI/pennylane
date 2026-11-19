@@ -172,9 +172,8 @@ def _lcu_signs(M, entries, weights):
 
 
 @lru_cache(maxsize=16)
-def _build_qrom_data(
-    M, N, zeta, t_ell, num_index_wires, aleph
-):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable-next=too-many-arguments
+def _build_qrom_data(M, N, zeta, t_ell, num_index_wires, aleph):
     r"""Pack the alias tables into the bitstrings consumed by :class:`~.QROM`.
 
     The QROM is addressed by the contiguous two-body index
@@ -484,7 +483,7 @@ class AliasSamplingTHC(Operator2):
         "work_wires": Wire[-1],
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         M,
         N,
@@ -495,7 +494,7 @@ class AliasSamplingTHC(Operator2):
         edge_flag: WiresLike,
         work_wires: WiresLike,
         aleph,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):
         if isinstance(M, bool) or not isinstance(M, int) or M < 1:
             raise ValueError(f"M must be a positive integer, got {M!r}.")
         if isinstance(N, bool) or not isinstance(N, int) or N < 1:
@@ -550,9 +549,17 @@ class AliasSamplingTHC(Operator2):
         return self.mu_wires + self.nu_wires + self.edge_flag + self.work_wires
 
 
-def _alias_sampling_thc_resources(
-    M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph
-):  # pylint: disable=too-many-arguments,unused-argument
+def _alias_sampling_thc_resources(  # pylint: disable=too-many-arguments,unused-argument
+    M,
+    N,
+    zeta,
+    t_ell,
+    mu_wires,
+    nu_wires,
+    edge_flag,
+    work_wires,
+    aleph,
+):
     n = len(mu_wires)
     n_d = _num_address_wires(M, N)
     n_work = len(work_wires)
@@ -614,9 +621,9 @@ def _alias_sampling_thc_resources(
 
 
 @register_resources(_alias_sampling_thc_resources)
-def _alias_sampling_thc_decomp(
+def _alias_sampling_thc_decomp(  # pylint: disable=too-many-arguments
     M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, **_
-):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+):
     n = len(mu_wires)
     n_d = _num_address_wires(M, N)
     work_wires = list(work_wires)

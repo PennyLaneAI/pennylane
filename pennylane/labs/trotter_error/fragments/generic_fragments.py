@@ -231,7 +231,7 @@ class SparseState(TrotterState):
         return np.allclose(self.state.data, other.state.data)
 
     @classmethod
-    def zero_state(cls, dim: int) -> SparseState:  # pylint: disable=arguments-differ
+    def zero_state(cls, dim: int) -> SparseState:
         """Return a representation of the zero state.
 
         Returns:

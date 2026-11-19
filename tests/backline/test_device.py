@@ -55,10 +55,8 @@ class TestConstruction:
         controller is never mistaken for wires."""
         ctrl, cops = _nodes()
         with pytest.raises(TypeError):
-            # pylint: disable=too-many-function-args,missing-kwoa
             Backline(ctrl, transport="rdma")
         with pytest.raises(TypeError):
-            # pylint: disable=too-many-function-args,missing-kwoa
             Backline(cops[0], ctrl, transport="rdma")
 
     def test_wires_taken_from_controller_device(self):
