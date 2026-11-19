@@ -12,7 +12,7 @@
 # limitations under the License.
 """Basic unit tests for ``Operator2``."""
 
-# pylint: disable=protected-access, too-few-public-methods
+# pylint: disable=protected-access,too-few-public-methods
 
 
 # TODO: [sc-120817] Add interface tests
@@ -169,7 +169,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
             static_argnames = ("s2", "s1")
             hybrid_argnames = ("h2", "h1")
 
-            # pylint: disable-next=too-many-arguments
+            # pylint: disable-next=useless-parent-delegation,too-many-arguments
             def __init__(self, a, reg1, s1, h1, b, reg2, s2, h2):
                 super().__init__(a, reg1, s1, h1, b, reg2, s2, h2)
 
@@ -181,7 +181,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         class DummyOp2(qp.core.Operator2):
             compilable_argnames = ("c3", "c2", "c1")
 
-            def __init__(self, c1, wires, c2, c3):
+            def __init__(self, c1, wires, c2, c3):# pylint: disable=useless-parent-delegation
                 super().__init__(c1, wires, c2, c3)
 
         assert DummyOp2.compilable_argnames == ("c1", "c2", "c3")
