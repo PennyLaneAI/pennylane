@@ -47,8 +47,7 @@ from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
     adjoint_resource_rep,
-    register_name,
-    register_resources,
+    decomposition_rule,
     resource_rep,
 )
 from pennylane.ops import ChangeOpBasis
@@ -181,8 +180,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
         abstract_wires = Wire[1] # a single wire
         S_rep = subroutine_resource_rep(S, abstract_params, abstract_wires, qp.RX)
 
-        @qp.decomposition.register_name("my_op_decomposition")
-        @qp.decomposition.register_resources({S_rep: 1})
+        @qp.decomposition.decomposition_rule(name="my_op_decomposition", resources={S_rep: 1})
         def my_op_decomposition(wires):
             # data of shape (4, ) and dtype float
             params = np.array([1.0, 2.0, 3.0, 4.0])
@@ -404,8 +402,7 @@ def _subroutine_standard_resources(subroutine: "Subroutine", signature_key):
     return subroutine.compute_resources(**sig.arguments)
 
 
-@register_name("expand_operations")
-@register_resources(_subroutine_standard_resources)
+@decomposition_rule(name="expand_operations", resources=_subroutine_standard_resources)
 def _subroutine_standard(*data, wires, decomposition):  # pylint: disable=unused-argument
     _ = [apply(op) for op in decomposition]
 
@@ -433,7 +430,7 @@ class Subroutine:  # pylint: disable=too-many-instance-attributes
             It should only calculate the resources from the static arguments, the length of the wire registers,
             and the shape and dtype of the dynamic arguments. In the case of the specific resources
             depending on the specifics of a dynamic argument, a worse case scenario can be used.
-        exact_resources (bool): whether or not ``compute_resources`` is exact. Similar to ``register_resources``,
+        exact_resources (bool): whether or not ``compute_resources`` is exact. Similar to ``decomposition_rule``,
             this option is used purely for testing purposes.
 
     For simple cases, a ``Subroutine`` can simply be created from a single quantum function, like:
@@ -601,8 +598,7 @@ class Subroutine:  # pylint: disable=too-many-instance-attributes
         abstract_wires = Wire[3]
         rxlayer_rep = subroutine_resource_rep(RXLayer, abstract_params, abstract_wires)
 
-        @qp.decomposition.register_name("MyOpDecomposition")
-        @qp.decomposition.register_resources({rxlayer_rep: 1})
+        @qp.decomposition.decomposition_rule(name="MyOpDecomposition", resources={rxlayer_rep: 1})
         def MyOpDecomposition(wires):
             params = np.arange(3, dtype=float)
             RXLayer(params, wires)

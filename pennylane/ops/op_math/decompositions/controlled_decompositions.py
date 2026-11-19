@@ -24,7 +24,7 @@ from pennylane import capture, compiler, control_flow, math, ops
 from pennylane.core import queuing
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator
-from pennylane.decomposition import register_condition, register_name, register_resources
+from pennylane.decomposition import decomposition_rule
 from pennylane.ops.op_math.decompositions.unitary_decompositions import _qubit_unitary_two_qubit
 from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires, concatenate_wires
@@ -235,9 +235,12 @@ def _controlled_unitary_bisect_resources(U, wires, control_values, *_, **__):
 
 
 # Resources are not exact because rotations might be skipped for zero angles
-@register_condition(_ctrl_decomp_bisect_condition)
-@register_name("bisect")
-@register_resources(_controlled_unitary_bisect_resources, exact=False)
+@decomposition_rule(
+    name="bisect",
+    condition=_ctrl_decomp_bisect_condition,
+    resources=_controlled_unitary_bisect_resources,
+    exact=False,
+)
 def _controlled_unitary_bisect(U, wires, control_values, *_, **__):
     """The decomposition rule for ControlledQubitUnitary from
     `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_."""
@@ -287,9 +290,12 @@ def _controlled_unitary_single_control_zyz_resources(U, wires, **_):
 
 
 # Resources are not exact because rotations might be skipped for zero angles
-@register_condition(_single_ctrl_decomp_zyz_condition)
-@register_name("single_control_zyz")
-@register_resources(_controlled_unitary_single_control_zyz_resources, exact=False)
+@decomposition_rule(
+    name="single_control_zyz",
+    condition=_single_ctrl_decomp_zyz_condition,
+    resources=_controlled_unitary_single_control_zyz_resources,
+    exact=False,
+)
 # pylint: disable-next=unused-argument
 def _controlled_unitary_single_control_zyz(U, wires, control_values, work_wires, **_):
     """The decomposition rule for ControlledQubitUnitary from Lemma 5.1 of
@@ -335,10 +341,13 @@ def _controlled_unitary_multi_control_zyz_resources(
     }
 
 
-@register_condition(_multi_ctrl_decomp_zyz_condition)
 # Resources are not exact because rotations might be skipped for zero angle(s)
-@register_name("multi_control_zyz")
-@register_resources(_controlled_unitary_multi_control_zyz_resources, exact=False)
+@decomposition_rule(
+    name="multi_control_zyz",
+    condition=_multi_ctrl_decomp_zyz_condition,
+    resources=_controlled_unitary_multi_control_zyz_resources,
+    exact=False,
+)
 def _controlled_unitary_multi_control_zyz(
     U, wires, control_values, work_wires, work_wire_type, **_
 ):
@@ -395,9 +404,12 @@ def _controlled_unitary_two_qubit_resources(
 
 
 # Resources are not exact because rotations might be skipped for zero angle(s)
-@register_condition(lambda U, *_, **__: qp.math.ceil_log2(qp.math.shape(U)[0]) == 2)
-@register_name("two_qubit")
-@register_resources(_controlled_unitary_two_qubit_resources, exact=False)
+@decomposition_rule(
+    name="two_qubit",
+    condition=lambda U, *_, **__: qp.math.ceil_log2(qp.math.shape(U)[0]) == 2,
+    resources=_controlled_unitary_two_qubit_resources,
+    exact=False,
+)
 def _controlled_unitary_two_qubit(U, wires, control_values, work_wires, work_wire_type, **_):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
 
@@ -448,10 +460,10 @@ def _wrap_mcx_rule_w_alloc(base_rule, num_work_wires, work_wire_type, name=""):
             work_wire_type=work_wire_type,
         )
 
-    @register_condition(_condition_fn)
-    @register_name(name or f"use_allocation({base_rule.name})")
-    @register_resources(
-        _resource_fn,
+    @decomposition_rule(
+        name=name or f"use_allocation({base_rule.name})",
+        condition=_condition_fn,
+        resources=_resource_fn,
         work_wires={work_wire_type: num_work_wires},
         exact=base_rule.exact_resources,
     )
@@ -473,9 +485,12 @@ def _mcx_to_cnot_or_toffoli_resources(wires, *_, **__):
     return {qp.Toffoli: 1, qp.X: 2}
 
 
-@register_condition(lambda wires, *_, **__: len(wires) <= 3)
-@register_name("to_cnot_or_toffoli")
-@register_resources(_mcx_to_cnot_or_toffoli_resources, exact=False)
+@decomposition_rule(
+    name="to_cnot_or_toffoli",
+    condition=lambda wires, *_, **__: len(wires) <= 3,
+    resources=_mcx_to_cnot_or_toffoli_resources,
+    exact=False,
+)
 def _mcx_to_cnot_or_toffoli(wires, control_values, *_, **__):
     """A decomposition rule that decomposes an MCX to a CNOT or Toffoli"""
 
@@ -509,9 +524,12 @@ def _2cx_elbow_explicit_condition(wires, control_values, work_wires, work_wire_t
     return len(work_wires) >= 1 and num_control_wires == 2 and work_wire_type == "zeroed"
 
 
-@register_condition(_2cx_elbow_explicit_condition)
-@register_name("two_controls_elbows")
-@register_resources(_mcx_two_controls_elbows_resources, exact=False)
+@decomposition_rule(
+    name="two_controls_elbows",
+    condition=_2cx_elbow_explicit_condition,
+    resources=_mcx_two_controls_elbows_resources,
+    exact=False,
+)
 def _mcx_two_controls_elbows(wires, control_values, work_wires, **_):
     """A decomposition rule for MCX that uses controlled Elbow."""
 
@@ -568,9 +586,12 @@ def _mcx_many_work_wires_resources(wires, control_values, work_wires, work_wire_
     }
 
 
-@register_condition(_mcx_many_workers_condition)
-@register_name("many_work_wires")
-@register_resources(_mcx_many_work_wires_resources, exact=False)
+@decomposition_rule(
+    name="many_work_wires",
+    condition=_mcx_many_workers_condition,
+    resources=_mcx_many_work_wires_resources,
+    exact=False,
+)
 def _mcx_many_work_wires(wires, control_values, work_wires, work_wire_type="borrowed"):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
@@ -670,9 +691,12 @@ def _mcx_two_work_wires_resources(wires, control_values, work_wires, work_wire_t
     }
 
 
-@register_condition(_mcx_two_workers_condition)
-@register_name("two_work_wires")
-@register_resources(_mcx_two_work_wires_resources, exact=False)
+@decomposition_rule(
+    name="two_work_wires",
+    condition=_mcx_two_workers_condition,
+    resources=_mcx_two_work_wires_resources,
+    exact=False,
+)
 def _mcx_two_work_wires(wires, control_values, work_wires, work_wire_type="borrowed"):
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` auxiliary qubits.
@@ -799,9 +823,12 @@ def _mcx_one_worker_no_flips(wires, work_wires, work_wire_type, _skip_toggle_det
         ops.adjoint(_build_linear_depth_ladder)(wires[:-1])
 
 
-@register_condition(_mcx_one_worker_condition)
-@register_name("one_work_wire")
-@register_resources(_mcx_one_work_wire_resources, exact=False)
+@decomposition_rule(
+    name="one_work_wire",
+    condition=_mcx_one_worker_condition,
+    resources=_mcx_one_work_wire_resources,
+    exact=False,
+)
 def _mcx_one_work_wire(wires, control_values, work_wires, work_wire_type="zeroed"):
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` auxiliary qubit. It
@@ -860,9 +887,12 @@ def _mcx_no_worker_condition(wires, control_values, work_wires, **_):
     return len(wires) > 3 and len(work_wires) == 0
 
 
-@register_condition(_mcx_no_worker_condition)
-@register_name("no_work_wires")
-@register_resources(_mcx_no_work_wires_resources, exact=False)
+@decomposition_rule(
+    name="no_work_wires",
+    condition=_mcx_no_worker_condition,
+    resources=_mcx_no_work_wires_resources,
+    exact=False,
+)
 def _mcx_no_work_wires(wires, control_values, *_, **__):
     """Use ctrl_decomp_bisect_md to decompose a multi-controlled X gate with no work wires."""
 

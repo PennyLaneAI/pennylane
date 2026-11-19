@@ -20,8 +20,8 @@ import numpy as np
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_name, register_resources
-from pennylane.decomposition.decomposition_rule import register_condition
+from pennylane.decomposition import add_decomps, decomposition_rule
+from pennylane.decomposition.decomposition_rule import decomposition_rule
 from pennylane.ops import PauliZ, PhaseShift, SingleExcitation, cond
 from pennylane.typing import Wire
 from pennylane.wires import Wires
@@ -378,9 +378,12 @@ def _basis_rotation_real_resources(unitary_matrix, wires, check=False):
     return {correction: 1, SingleExcitation: dim * (dim - 1) // 2}
 
 
-@register_condition(lambda unitary_matrix, **_: not math.is_complex_dtype(unitary_matrix))
-@register_name("real")
-@register_resources(_basis_rotation_real_resources, exact=False)
+@decomposition_rule(
+    name="real",
+    condition=lambda unitary_matrix, **_: not math.is_complex_dtype(unitary_matrix),
+    resources=_basis_rotation_real_resources,
+    exact=False,
+)
 def _basis_rotation_real(unitary_matrix, wires, **_):
 
     unitary, wires = _prepare_args(unitary_matrix, wires)
@@ -425,9 +428,12 @@ def _basis_rotation_complex_resources(unitary_matrix, wires, check=False):
     return {PhaseShift: dim + se_count, SingleExcitation: se_count}
 
 
-@register_condition(lambda unitary_matrix, **_: math.is_complex_dtype(unitary_matrix))
-@register_name("complex")
-@register_resources(_basis_rotation_complex_resources, exact=False)
+@decomposition_rule(
+    name="complex",
+    condition=lambda unitary_matrix, **_: math.is_complex_dtype(unitary_matrix),
+    resources=_basis_rotation_complex_resources,
+    exact=False,
+)
 def _basis_rotation_complex(unitary_matrix, wires, **_):
 
     unitary, wires = _prepare_args(unitary_matrix, wires)

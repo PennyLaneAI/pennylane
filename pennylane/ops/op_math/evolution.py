@@ -170,9 +170,11 @@ def _exp_to_pauli_rot_resources(base, **__):
     return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
-@qp.register_condition(_pauli_rot_decomp_condition)
-@qp.register_name("to_pauli_rot")
-@qp.register_resources(_exp_to_pauli_rot_resources)
+@qp.decomposition_rule(
+    name="to_pauli_rot",
+    condition=_pauli_rot_decomp_condition,
+    resources=_exp_to_pauli_rot_resources,
+)
 def _exp_to_pauli_rot(*params, wires, base, **_):  # pylint: disable=unused-argument
     """Decompose the operator into a single PauliRot operator."""
     with queuing.QueuingManager.stop_recording():

@@ -168,14 +168,14 @@ def _tape_decompose(  # pylint: disable=too-many-arguments
             allocated throughout the circuit. Defaults to ``False``.
         fixed_decomps (Dict[Type[Operator], DecompositionRule or str]): a dictionary mapping operator types
             to custom decomposition rules. A decomposition rule is a quantum function decorated with
-            :func:`~pennylane.register_resources`. The custom decomposition rules specified here
+            :func:`~pennylane.decomposition_rule`. The custom decomposition rules specified here
             will be used in place of the existing decomposition rules defined for this operator.
             A string selects a registered rule by its public name, for example
             ``fixed_decomps={qp.SWAP: "to_cnot"}``.
             This is only used when :func:`~pennylane.decomposition.enable_graph` is present.
         alt_decomps (Dict[Type[Operator], List[DecompositionRule]]): a dictionary mapping operator
             types to lists of alternative custom decomposition rules. A decomposition rule is a
-            quantum function decorated with :func:`~pennylane.register_resources`. The custom
+            quantum function decorated with :func:`~pennylane.decomposition_rule`. The custom
             decomposition rules specified here will be considered as alternatives to the existing
             decomposition rules defined for this operator, and one of them may be chosen if they
             lead to a more resource-efficient decomposition. This is only used when :func:`~pennylane.decomposition.enable_graph`
@@ -430,9 +430,9 @@ def _tape_decompose(  # pylint: disable=too-many-arguments
         The new system also enables specifying custom decomposition rules. When ``qp.decomposition.enable_graph()``
         is present, this transform accepts two additional keyword arguments: ``fixed_decomps`` and
         ``alt_decomps``. The user can define custom decomposition rules as quantum functions decorated
-        with ``@qp.register_resources``, and provide them to the transform via these arguments.
+        with ``@qp.decomposition_rule``, and provide them to the transform via these arguments.
 
-        .. seealso:: :func:`qp.register_resources <pennylane.register_resources>`
+        .. seealso:: :func:`qp.decomposition_rule <pennylane.decomposition_rule>`
 
         The ``fixed_decomps`` forces the transform to use the specified decomposition rules for
         certain operators if they need to be decomposed (i.e., when they're not in the target gate
@@ -449,22 +449,19 @@ def _tape_decompose(  # pylint: disable=too-many-arguments
 
             qp.decomposition.enable_graph()
 
-            @qp.register_name("isingxx_decomp")
-            @qp.register_resources({qp.CNOT: 2, qp.RX: 1})
+            @qp.decomposition_rule(name="isingxx_decomp", resources={qp.CNOT: 2, qp.RX: 1})
             def isingxx_decomp(phi, wires, **__):
                 qp.CNOT(wires=wires)
                 qp.RX(phi, wires=[wires[0]])
                 qp.CNOT(wires=wires)
 
-            @qp.register_name("my_cnot1")
-            @qp.register_resources({qp.H: 2, qp.CZ: 1})
+            @qp.decomposition_rule(name="my_cnot1", resources={qp.H: 2, qp.CZ: 1})
             def my_cnot1(wires, **__):
                 qp.H(wires=wires[1])
                 qp.CZ(wires=wires)
                 qp.H(wires=wires[1])
 
-            @qp.register_name("my_cnot2")
-            @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2})
+            @qp.decomposition_rule(name="my_cnot2", resources={qp.RY: 2, qp.CZ: 1, qp.Z: 2})
             def my_cnot2(wires, **__):
                 qp.RY(np.pi/2, wires[1])
                 qp.Z(wires[1])

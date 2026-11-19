@@ -27,8 +27,7 @@ from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
-    register_name,
-    register_resources,
+    decomposition_rule,
 )
 from pennylane.math import is_tracer
 from pennylane.ops import CNOT, Hadamard, QubitUnitary
@@ -522,8 +521,7 @@ def _up_to_last_layer(
     return n_wires, first_range, second_range, wires
 
 
-@register_name("bell_basis")
-@register_resources(_hilbert_schmidt_standard_resources)
+@decomposition_rule(name="bell_basis", resources=_hilbert_schmidt_standard_resources)
 def _hilbert_schmidt_standard(  # pylint: disable=unused-argument
     *params: TensorLike,
     wires: int | Iterable[int | str] | Wires,
@@ -545,8 +543,7 @@ def _hilbert_schmidt_standard(  # pylint: disable=unused-argument
     layer_hadamards()  # pylint: disable=no-value-for-parameter
 
 
-@register_name("local_bell_basis")
-@register_resources(_local_hilbert_schmidt_standard_resources)
+@decomposition_rule(name="local_bell_basis", resources=_local_hilbert_schmidt_standard_resources)
 def _local_hilbert_schmidt_standard(  # pylint: disable=unused-argument
     *params: TensorLike,
     wires: int | Iterable[int | str] | Wires,

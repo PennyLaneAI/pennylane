@@ -33,9 +33,7 @@ from pennylane.decomposition.decomposition_rule import (
     _list_decomps,
     get_fixed_decomp,
     list_decomps,
-    register_condition,
-    register_name,
-    register_resources,
+    decomposition_rule,
 )
 from pennylane.decomposition.resources import (
     AbstractOperatorLike,
@@ -254,10 +252,10 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
 
     base_source = base_rule._source
 
-    @register_condition(_condition_fn)
-    @register_name(f"adjoint({base_rule.name})")
-    @register_resources(
-        _resource_fn,
+    @decomposition_rule(
+        name=f"adjoint({base_rule.name})",
+        condition=_condition_fn,
+        resources=_resource_fn,
         work_wires=_wrap_work_wire_spec(base_rule),
         exact=base_rule.exact_resources,
     )
@@ -288,8 +286,7 @@ def _adjoint_cancel_resources(base):
     return {inner_base: 1}
 
 
-@register_name("cancel")
-@register_resources(_adjoint_cancel_resources)
+@decomposition_rule(name="cancel", resources=_adjoint_cancel_resources)
 def _adjoint_cancel(base):
     """Decompose the adjoint of the adjoint of an operator."""
     assert isinstance(base, Adjoint2)
@@ -300,8 +297,7 @@ def _adjoint_negate_angle_resources(base):
     return {abstractify(base): 1}
 
 
-@register_name("negate_angle")
-@register_resources(_adjoint_negate_angle_resources)
+@decomposition_rule(name="negate_angle", resources=_adjoint_negate_angle_resources)
 def _adjoint_negate_angle(base):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
     # A rotation should only have 1 dynamic parameter

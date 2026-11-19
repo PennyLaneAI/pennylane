@@ -36,9 +36,7 @@ from pennylane.decomposition.decomposition_rule import (
     _list_decomps,
     get_fixed_decomp,
     list_decomps,
-    register_condition,
-    register_name,
-    register_resources,
+    decomposition_rule,
 )
 from pennylane.decomposition.resources import (
     AbstractOperatorLike,
@@ -692,12 +690,12 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
 
         return _wrapper
 
-    @register_condition(_condition_fn)
-    @register_name(f"controlled({base_rule.name})")
-    @register_resources(
-        _resource_fn,
+    @decomposition_rule(
+        name=f"controlled({base_rule.name})",
+        condition=_condition_fn,
+        resources=_resource_fn,
         work_wires=_wrap_work_wire_spec(base_rule),
-        exact=False,  # TODO: no reliable way to tell whether control values has 0s.
+        exact=False,
     )
     def _impl(base, control_wires, control_values, work_wires, work_wire_type):
 
@@ -746,8 +744,7 @@ def _controlled_flip_adjoint_resources(
     }
 
 
-@register_name("flip_adjoint")
-@register_resources(_controlled_flip_adjoint_resources)
+@decomposition_rule(name="flip_adjoint", resources=_controlled_flip_adjoint_resources)
 def _controlled_flip_adjoint(base, control_wires, control_values, work_wires, work_wire_type):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
@@ -781,9 +778,11 @@ def _controlled_to_unitary_resources(
     }
 
 
-@register_name("to_unitary")
-@register_condition(lambda base, *_, **__: base.has_matrix and len(base.wires) == 1)
-@register_resources(_controlled_to_unitary_resources)
+@decomposition_rule(
+    name="to_unitary",
+    condition=lambda base, *_, **__: base.has_matrix and len(base.wires) == 1,
+    resources=_controlled_to_unitary_resources,
+)
 def _controlled_to_unitary(base, control_wires, control_values, work_wires, work_wire_type):
     """Convert a controlled operator to a controlled qubit unitary."""
     qp.ControlledQubitUnitary(
@@ -814,11 +813,11 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         gate_counts[qp.X] = base_x_count + len(control_values)
         return gate_counts
 
-    @register_condition(_condition_fn)
-    @register_name(name or f"flip_zero_ctrl_values({rule.name})")
-    @register_resources(
-        _resource_fn,
-        work_wires=rule._work_wire_spec,  # pylint: disable=protected-access
+    @decomposition_rule(
+        name=name or f"flip_zero_ctrl_values({rule.name})",
+        condition=_condition_fn,
+        resources=_resource_fn,
+        work_wires=rule._work_wire_spec,
         exact=False,
     )
     def _impl(base, control_wires, control_values, work_wires, work_wire_type):
@@ -866,9 +865,12 @@ def _controlled_single_work_wire_resources(base, control_wires, *_, **__):
     }
 
 
-@register_name("single_work_wire")
-@register_condition(lambda base, control_wires, *_, **__: len(control_wires) > 2)
-@register_resources(_controlled_single_work_wire_resources, work_wires={"zeroed": 1})
+@decomposition_rule(
+    name="single_work_wire",
+    condition=lambda base, control_wires, *_, **__: len(control_wires) > 2,
+    resources=_controlled_single_work_wire_resources,
+    work_wires={"zeroed": 1},
+)
 def _controlled_single_work_wire(base, control_wires, *_, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     with allocation.allocate(1, state="zero", restored=True) as aux:
@@ -897,9 +899,11 @@ def _ctrl_many_zeroed_work_wires_condition(control_wires, work_wires, work_wire_
     )
 
 
-@register_condition(_ctrl_many_zeroed_work_wires_condition)
-@register_name("many_zeroed_work_wires")
-@register_resources(_controlled_many_zeroed_work_wires_resources)
+@decomposition_rule(
+    name="many_zeroed_work_wires",
+    condition=_ctrl_many_zeroed_work_wires_condition,
+    resources=_controlled_many_zeroed_work_wires_resources,
+)
 def _controlled_many_zeroed_work_wires(base, control_wires, work_wires, *_, **__):
     # pylint: disable-next=import-outside-toplevel
     from pennylane.ops.op_math.prod2 import _multi_temporary_and_all_ones

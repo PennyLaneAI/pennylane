@@ -20,9 +20,7 @@ from collections import defaultdict
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
-    register_condition,
-    register_name,
-    register_resources,
+    decomposition_rule,
 )
 from pennylane.ops import CNOT
 from pennylane.typing import Bool, Wire
@@ -301,9 +299,11 @@ def _out_square_with_adder_zeroed_resources(  # pylint: disable=unused-argument
     return dict(resources)
 
 
-@register_condition(_out_square_with_adder_zeroed_condition)
-@register_name("with_adder_zeroed")
-@register_resources(_out_square_with_adder_zeroed_resources)
+@decomposition_rule(
+    name="with_adder_zeroed",
+    condition=_out_square_with_adder_zeroed_condition,
+    resources=_out_square_with_adder_zeroed_resources,
+)
 def _out_square_with_adder_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     output_wires: WiresLike,
@@ -401,9 +401,11 @@ def _shifted_adder(x_wires, output_wires, work_wires):
     MultiX(all_ones, all_target_wires)
 
 
-@register_condition(_out_square_with_caddsub_condition)
-@register_name("with_caddsub")
-@register_resources(_out_square_with_caddsub_resources)
+@decomposition_rule(
+    name="with_caddsub",
+    condition=_out_square_with_caddsub_condition,
+    resources=_out_square_with_caddsub_resources,
+)
 def _out_square_with_caddsub(
     x_wires: WiresLike,
     output_wires: WiresLike,

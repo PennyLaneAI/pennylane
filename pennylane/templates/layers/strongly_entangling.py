@@ -18,7 +18,7 @@ Contains the StronglyEntanglingLayers template.
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, decomposition_rule
 from pennylane.ops import CNOT, Rot
 from pennylane.ops.op_math import cond
 from pennylane.wires import Wires
@@ -266,8 +266,10 @@ def _strongly_entangling_standard_resources(imprimitive, n_wires, n_layers):
     return resources
 
 
-@register_name("rotations_entangler_layers")
-@register_resources(_strongly_entangling_standard_resources)
+@decomposition_rule(
+    name="rotations_entangler_layers",
+    resources=_strongly_entangling_standard_resources,
+)
 def _strongly_entangling_standard(weights, wires, ranges, imprimitive):
 
     if capture.enabled():

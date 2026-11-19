@@ -21,7 +21,7 @@ from functools import reduce
 from pennylane import math
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, decomposition_rule
 from pennylane.decomposition.resources import change_op_basis_resource_rep
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
@@ -195,8 +195,7 @@ def _controlled_change_op_basis_standard_resources(  # pylint: disable=unused-ar
     return resources
 
 
-@register_name("control_target")
-@register_resources(_controlled_change_op_basis_standard_resources)
+@decomposition_rule(name="control_target", resources=_controlled_change_op_basis_standard_resources)
 def _controlled_change_op_basis_standard(
     base,
     control_wires,
@@ -225,8 +224,7 @@ def _change_op_basis_standard_resources(compute_op, target_op, uncompute_op):
     return resources
 
 
-@register_name("expand_basis_change")
-@register_resources(_change_op_basis_standard_resources)
+@decomposition_rule(name="expand_basis_change", resources=_change_op_basis_standard_resources)
 def _change_op_basis_standard(compute_op, target_op, uncompute_op):
     apply(compute_op)
     apply(target_op)
@@ -248,8 +246,7 @@ def _adjoint_change_op_basis_standard_resources(base):
     return dict(resources)
 
 
-@register_name("adjoint_target")
-@register_resources(_adjoint_change_op_basis_standard_resources)
+@decomposition_rule(name="adjoint_target", resources=_adjoint_change_op_basis_standard_resources)
 def _adjoint_change_op_basis_standard(base):
     apply(base.compute_op)
     adjoint(base.target_op)

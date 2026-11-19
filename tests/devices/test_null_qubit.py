@@ -1249,14 +1249,16 @@ class TestNullQubitGraphModeExclusive:
         class MyNullQubitOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
-        @qp.register_name("decomp_fallback")
-        @qp.register_resources({qp.H: 2})
+        @qp.decomposition_rule(name="decomp_fallback", resources={qp.H: 2})
         def decomp_fallback(wires):
             qp.H(wires)
             qp.H(wires)
 
-        @qp.register_name("decomp_with_work_wire")
-        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 5})
+        @qp.decomposition_rule(
+            name="decomp_with_work_wire",
+            resources={qp.X: 1},
+            work_wires={"burnable": 5},
+        )
         def decomp_with_work_wire(wires):
             qp.X(wires)
 

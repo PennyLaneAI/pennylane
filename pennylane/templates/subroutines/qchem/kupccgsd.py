@@ -28,7 +28,7 @@ import numpy as np
 from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_name, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, decomposition_rule, resource_rep
 from pennylane.ops.qubit import BasisState
 from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
@@ -377,8 +377,7 @@ def _kupccgsd_standard_resources(num_wires: int, k: int, d_wires: list, s_wires:
     return resources
 
 
-@register_name("paired_excitation_layers")
-@register_resources(_kupccgsd_standard_resources)
+@decomposition_rule(name="paired_excitation_layers", resources=_kupccgsd_standard_resources)
 def _kupccgsd_standard(  # pylint: disable=unused-argument
     weights: list,
     wires: WiresLike,

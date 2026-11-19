@@ -294,11 +294,10 @@ to a device:
 
 .. code-block:: python3
 
-    @qp.decomposition.register_name("custom_cnot_decomposition")
-    @qp.decomposition.register_resources({
-        qp.H: 2,
-        qp.CZ: 1
-    })
+    @qp.decomposition.decomposition_rule(
+        name="custom_cnot_decomposition",
+        resources={qp.H: 2, qp.CZ: 1},
+    )
     def _custom_cnot_decomposition(wires, **_):
         qp.Hadamard(wires=wires[1])
         qp.CZ(wires=[wires[0], wires[1]])
@@ -341,7 +340,7 @@ custom decompositions via two keyword arguments:
 Both keyword arguments above require a dictionary mapping PennyLane operator types to 
 custom decompositions. Creating custom decompositions that the graph-based system 
 can use involves a PennyLane quantum function that represents the decomposition, 
-and a declaration of its resource requirements (gate counts) via :func:`~.pennylane.register_resources`.
+and a declaration of its resource requirements (gate counts) via :func:`~.pennylane.decomposition_rule`.
 
 Consider this example where we add a fixed decomposition to ``CNOT`` gates:
 
@@ -349,15 +348,14 @@ Consider this example where we add a fixed decomposition to ``CNOT`` gates:
 
     qp.decomposition.enable_graph()
 
-    @qp.register_name("my_cnot")
-    @qp.register_resources({qp.H: 2, qp.CZ: 1})
+    @qp.decomposition_rule(name="my_cnot", resources={qp.H: 2, qp.CZ: 1})
     def my_cnot(wires, **__):
         qp.H(wires=wires[1])
         qp.CZ(wires=wires)
         qp.H(wires=wires[1])
 
-The :func:`~.pennylane.register_resources` accepts a dictionary mapping operator 
-types within the custom decomposition to the number of times they occur in the decomposition. 
+The ``resources`` argument of :func:`~.pennylane.decomposition_rule` accepts a dictionary mapping
+operator types within the custom decomposition to the number of times they occur.
 With the resources registered, this can be used with ``fixed_decomps`` or ``alt_decomps``:
 
 .. code-block:: python
@@ -380,15 +378,13 @@ type:
 
 .. code-block:: python
 
-    @qp.register_name("my_cnot1")
-    @qp.register_resources({qp.H: 2, qp.CZ: 1})
+    @qp.decomposition_rule(name="my_cnot1", resources={qp.H: 2, qp.CZ: 1})
     def my_cnot1(wires, **__):
         qp.H(wires=wires[1])
         qp.CZ(wires=wires)
         qp.H(wires=wires[1])
 
-    @qp.register_name("my_cnot2")
-    @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2})
+    @qp.decomposition_rule(name="my_cnot2", resources={qp.RY: 2, qp.CZ: 1, qp.Z: 2})
     def my_cnot2(wires, **__):
         qp.RY(np.pi/2, wires[1])
         qp.Z(wires[1])
@@ -407,7 +403,7 @@ type:
 
 The decomposition that the algorithm chooses internally will be the most resource-efficient.
 More details on creating complex decomposition rules that may depend on runtime 
-parameters can be found in the usage details for :func:`~.pennylane.register_resources`.
+parameters can be found in the usage details for :func:`~.pennylane.decomposition_rule`.
 
 Alternatively, new decomposition rules can be added to operators *globally* with 
 the :func:`~.pennylane.add_decomps` function. This negates having to specify ``alt_decomps``

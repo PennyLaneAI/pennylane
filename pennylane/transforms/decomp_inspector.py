@@ -319,11 +319,11 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
             allocated throughout the circuit. Defaults to ``False``.
         fixed_decomps (Dict[Type[Operator], DecompositionRule]): a dictionary mapping operator types
             to custom decomposition rules. A decomposition rule is a quantum function decorated with
-            :func:`~pennylane.register_resources`. The custom decomposition rules specified here
+            :func:`~pennylane.decomposition_rule`. The custom decomposition rules specified here
             will be used in place of the existing decomposition rules defined for this operator.
         alt_decomps (Dict[Type[Operator], List[DecompositionRule]]): a dictionary mapping operator
             types to lists of alternative custom decomposition rules. A decomposition rule is a
-            quantum function decorated with :func:`~pennylane.register_resources`. The custom
+            quantum function decorated with :func:`~pennylane.decomposition_rule`. The custom
             decomposition rules specified here will be considered as alternatives to the existing
             decomposition rules defined for this operator, and one of them may be chosen if they
             lead to a more resource-efficient decomposition.

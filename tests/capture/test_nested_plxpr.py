@@ -436,16 +436,9 @@ class TestCtrlQfunc:
     def test_controlled2_rule_forwards_work_wires(self, work_wire_type):
         """Controlled2 rule arguments can be forwarded to a callable control without patching."""
 
-        @qp.register_name("rule")
-        @qp.register_resources(
-            {
-                qp.ctrl(
-                    qp.RX(qp.typing.Float, qp.typing.Wire[1]),
-                    qp.typing.Wire[2],
-                    work_wires=qp.typing.Wire[1],
-                    work_wire_type=work_wire_type,
-                ): 1
-            },
+        @qp.decomposition_rule(
+            name="rule",
+            resources={qp.ctrl(qp.RX(qp.typing.Float, qp.typing.Wire[1]), qp.typing.Wire[2], work_wires=qp.typing.Wire[1], work_wire_type=work_wire_type): 1},
         )
         def rule(base, control_wires, control_values, work_wires, work_wire_type):
             qp.ctrl(

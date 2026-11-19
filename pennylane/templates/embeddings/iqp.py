@@ -20,7 +20,7 @@ from itertools import combinations
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, decomposition_rule
 from pennylane.ops import RZ, H, MultiRZ
 from pennylane.typing import Float, Int, Wire
 from pennylane.wires import WiresLike
@@ -227,8 +227,11 @@ def _iqp_embedding_standard_resources(features, wires, n_repeats, pattern):
     }
 
 
-@register_name("to_h_rz_multirz")
-@register_resources(_iqp_embedding_standard_resources, exact=False)
+@decomposition_rule(
+    name="to_h_rz_multirz",
+    resources=_iqp_embedding_standard_resources,
+    exact=False,
+)
 def _iqp_embedding_standard(features, wires: WiresLike, n_repeats, pattern):
 
     if capture.enabled() or compiler.active():

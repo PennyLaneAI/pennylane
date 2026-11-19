@@ -18,7 +18,7 @@ Contains the BasicEntanglerLayers template.
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation, abstractify
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, decomposition_rule
 from pennylane.ops import CNOT, RX, cond
 
 
@@ -231,8 +231,7 @@ def _basic_entangler_standard_resources(repeat, num_wires, rotation):
     return resources
 
 
-@register_name("rotations_cnot_ring")
-@register_resources(_basic_entangler_standard_resources)
+@decomposition_rule(name="rotations_cnot_ring", resources=_basic_entangler_standard_resources)
 def _basic_entangler_standard(weights, wires, rotation):
     repeat = math.shape(weights)[-2]
 

@@ -21,7 +21,7 @@ from pennylane import capture, compiler, math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_name, register_resources
+from pennylane.decomposition import add_decomps, decomposition_rule
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import WiresLike
@@ -159,8 +159,7 @@ def _qft_standard_resources(wires: AbstractWires):
     }
 
 
-@register_name("controlled_phase_shifts")
-@register_resources(_qft_standard_resources)
+@decomposition_rule(name="controlled_phase_shifts", resources=_qft_standard_resources)
 def _qft_standard(wires: WiresLike):
     num_wires = len(wires)
     shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]

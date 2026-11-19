@@ -32,9 +32,7 @@ import pennylane as qp
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
-    register_condition,
-    register_name,
-    register_resources,
+    decomposition_rule,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.identity import I
@@ -235,8 +233,7 @@ def _rx_to_rot_resources(*_, **__):
     return {qp.Rot: 1}
 
 
-@register_name("to_rot")
-@register_resources(_rx_to_rot_resources)
+@decomposition_rule(name="to_rot", resources=_rx_to_rot_resources)
 def _rx_to_rot(phi, wires: WiresLike):
     qp.Rot(np.pi / 2, phi, 3.5 * np.pi, wires=wires)
 
@@ -245,8 +242,7 @@ def _rx_to_rz_ry_resources(*_, **__):
     return {qp.RZ: 2, qp.RY: 1}
 
 
-@register_name("to_rz_ry")
-@register_resources(_rx_to_rz_ry_resources)
+@decomposition_rule(name="to_rz_ry", resources=_rx_to_rz_ry_resources)
 def _rx_to_rz_ry(phi, wires: WiresLike):
     qp.RZ(np.pi / 2, wires=wires)
     qp.RY(phi, wires=wires)
@@ -258,8 +254,7 @@ def _rx_to_ry_cliff_resources(*_, **__):
     return resources
 
 
-@register_name("to_ry_cliff")
-@register_resources(_rx_to_ry_cliff_resources)
+@decomposition_rule(name="to_ry_cliff", resources=_rx_to_ry_cliff_resources)
 def _rx_to_ry_cliff(phi, wires: WiresLike):
     qp.change_op_basis(qp.S(wires), qp.RY(phi, wires))
 
@@ -269,8 +264,7 @@ def _rx_to_rz_cliff_resources(*_, **__):
     return resources
 
 
-@register_name("to_rz_cliff")
-@register_resources(_rx_to_rz_cliff_resources)
+@decomposition_rule(name="to_rz_cliff", resources=_rx_to_rz_cliff_resources)
 def _rx_to_rz_cliff(phi, wires: WiresLike):
     qp.change_op_basis(qp.Hadamard(wires), qp.RZ(phi, wires), qp.Hadamard(wires))
 
@@ -279,8 +273,7 @@ def _rx_to_ppr_resources(*_, **__):
     return {qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1}
 
 
-@register_name("to_paulirot")
-@register_resources(_rx_to_ppr_resources)
+@decomposition_rule(name="to_paulirot", resources=_rx_to_ppr_resources)
 def _rx_to_ppr(phi, wires):
     qp.PauliRot(phi, "X", wires=wires)
 
@@ -310,8 +303,7 @@ def _controlled_rx_standard_resources(
     }
 
 
-@register_name("to_rz_mcx")
-@register_resources(_controlled_rx_standard_resources)
+@decomposition_rule(name="to_rz_mcx", resources=_controlled_rx_standard_resources)
 # pylint: disable-next=unused-argument
 def _controlled_rx_standard(base, control_wires, control_values, work_wires, work_wire_type):
     wires = concatenate_wires(control_wires, base.wires)
@@ -507,8 +499,7 @@ def _ry_to_rot_resources(*_, **__):
     return {qp.Rot: 1}
 
 
-@register_name("to_rot")
-@register_resources(_ry_to_rot_resources)
+@decomposition_rule(name="to_rot", resources=_ry_to_rot_resources)
 def _ry_to_rot(phi, wires: WiresLike):
     qp.Rot(0, phi, 0, wires=wires)
 
@@ -517,8 +508,7 @@ def _ry_to_rz_rx_resources(*_, **__):
     return {qp.RZ: 2, qp.RX: 1}
 
 
-@register_name("to_rz_rx")
-@register_resources(_ry_to_rz_rx_resources)
+@decomposition_rule(name="to_rz_rx", resources=_ry_to_rz_rx_resources)
 def _ry_to_rz_rx(phi, wires: WiresLike):
     qp.RZ(-np.pi / 2, wires=wires)
     qp.RX(phi, wires=wires)
@@ -530,8 +520,7 @@ def _ry_to_rx_cliff_resources(*_, **__):
     return resources
 
 
-@register_name("to_rx_cliff")
-@register_resources(_ry_to_rx_cliff_resources)
+@decomposition_rule(name="to_rx_cliff", resources=_ry_to_rx_cliff_resources)
 def _ry_to_rx_cliff(phi, wires: WiresLike):
     qp.change_op_basis(qp.adjoint(qp.S(wires)), qp.RX(phi, wires), qp.S(wires))
 
@@ -547,8 +536,7 @@ def _ry_to_rz_cliff_resources(*_, **__):
     return resources
 
 
-@register_name("to_rz_cliff")
-@register_resources(_ry_to_rz_cliff_resources)
+@decomposition_rule(name="to_rz_cliff", resources=_ry_to_rz_cliff_resources)
 def _ry_to_rz_cliff(phi, wires: WiresLike, **__):
 
     def _compute():
@@ -566,8 +554,7 @@ def _ry_to_ppr_resources(*_, **__):
     return {qp.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1}
 
 
-@register_name("to_paulirot")
-@register_resources(_ry_to_ppr_resources)
+@decomposition_rule(name="to_paulirot", resources=_ry_to_ppr_resources)
 def _ry_to_ppr(phi, wires):
     qp.PauliRot(phi, "Y", wires=wires)
 
@@ -596,8 +583,7 @@ def _controlled_ry_standard_resources(
     }
 
 
-@register_name("to_ry_mcx")
-@register_resources(_controlled_ry_standard_resources)
+@decomposition_rule(name="to_ry_mcx", resources=_controlled_ry_standard_resources)
 # pylint: disable-next=unused-argument
 def _controlled_ry_standard(base, control_wires, control_values, work_wires, work_wire_type):
     wires = concatenate_wires(control_wires, base.wires)
@@ -820,8 +806,7 @@ def _rz_to_ps_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.PhaseShift: 1, qp.GlobalPhase: 1}
 
 
-@register_name("to_ps")
-@register_resources(_rz_to_ps_resources)
+@decomposition_rule(name="to_ps", resources=_rz_to_ps_resources)
 def _rz_to_ps(phi, wires: WiresLike):
     qp.PhaseShift(phi, wires)
     qp.GlobalPhase(phi / 2)
@@ -831,8 +816,7 @@ def _rz_to_rot_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.Rot: 1}
 
 
-@register_name("to_rot")
-@register_resources(_rz_to_rot_resources)
+@decomposition_rule(name="to_rot", resources=_rz_to_rot_resources)
 def _rz_to_rot(phi, wires: WiresLike):
     qp.Rot(0, 0, phi, wires=wires)
 
@@ -841,8 +825,7 @@ def _rz_to_ry_rx_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.RY: 2, qp.RX: 1}
 
 
-@register_name("to_ry_rx")
-@register_resources(_rz_to_ry_rx_resources)
+@decomposition_rule(name="to_ry_rx", resources=_rz_to_ry_rx_resources)
 def _rz_to_ry_rx(phi, wires: WiresLike):
     qp.RY(np.pi / 2, wires=wires)
     qp.RX(phi, wires=wires)
@@ -854,8 +837,7 @@ def _rz_to_rx_cliff_resources(phi, wires):  # pylint: disable=unused-argument
     return resources
 
 
-@register_name("to_rx_cliff")
-@register_resources(_rz_to_rx_cliff_resources)
+@decomposition_rule(name="to_rx_cliff", resources=_rz_to_rx_cliff_resources)
 def _rz_to_rx_cliff(phi, wires: WiresLike):
     qp.change_op_basis(qp.Hadamard(wires), qp.RX(phi, wires), qp.Hadamard(wires))
 
@@ -871,8 +853,7 @@ def _rz_to_ry_cliff_resources(phi, wires):  # pylint: disable=unused-argument
     return resources
 
 
-@register_name("to_ry_cliff")
-@register_resources(_rz_to_ry_cliff_resources)
+@decomposition_rule(name="to_ry_cliff", resources=_rz_to_ry_cliff_resources)
 def _rz_to_ry_cliff(phi, wires: WiresLike):
 
     def _compute():
@@ -890,8 +871,7 @@ def _rz_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1}
 
 
-@register_name("to_paulirot")
-@register_resources(_rz_to_ppr_resources)
+@decomposition_rule(name="to_paulirot", resources=_rz_to_ppr_resources)
 def _rz_to_ppr(phi, wires, **_):
     qp.PauliRot(phi, "Z", wires=wires)
 
@@ -920,8 +900,7 @@ def _controlled_rz_standard_resources(
     }
 
 
-@register_name("to_rz_mcx")
-@register_resources(_controlled_rz_standard_resources)
+@decomposition_rule(name="to_rz_mcx", resources=_controlled_rz_standard_resources)
 # pylint: disable-next=unused-argument
 def _controlled_rz_standard(base, control_wires, control_values, work_wires, work_wire_type):
 
@@ -1144,8 +1123,7 @@ def _phaseshift_to_rz_gp_resources(phi, wires):  # pylint: disable=unused-argume
     return {qp.RZ: 1, qp.GlobalPhase: 1}
 
 
-@register_name("to_rz_gp")
-@register_resources(_phaseshift_to_rz_gp_resources)
+@decomposition_rule(name="to_rz_gp", resources=_phaseshift_to_rz_gp_resources)
 def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
     RZ(phi, wires=wires)
     qp.GlobalPhase(-phi / 2)
@@ -1169,8 +1147,7 @@ def _controlled_phase_shift_standard_resources(base, control_wires, *_, **__):
     return resources
 
 
-@register_name("to_pauli_rot")
-@register_resources(_controlled_phase_shift_standard_resources)
+@decomposition_rule(name="to_pauli_rot", resources=_controlled_phase_shift_standard_resources)
 def _controlled_phase_shift_standard(base, control_wires, *_, **__):
     wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
@@ -1195,13 +1172,15 @@ def _controlled_phase_shift_single_phase_resources(base, control_wires, *_, **__
     }
 
 
-@register_condition(
-    lambda control_wires, work_wires, work_wire_type, **_: work_wire_type == "zeroed"
-    and len(control_wires) > 0
-    and len(work_wires) >= len(control_wires)
+@decomposition_rule(
+    name="single_phase",
+    condition=lambda control_wires, work_wires, work_wire_type, **_: (
+        work_wire_type == "zeroed"
+        and len(control_wires) > 0
+        and len(work_wires) >= len(control_wires)
+    ),
+    resources=_controlled_phase_shift_single_phase_resources,
 )
-@register_name("single_phase")
-@register_resources(_controlled_phase_shift_single_phase_resources)
 def _controlled_phase_shift_single_phase(base, control_wires, work_wires, **_):
     """Computes ``AND(*control_wires, base.wires[0])`` into ``len(control_wires)`` zeroed work
     wires with a ``TemporaryAND`` ladder, applies a single ``PhaseShift`` to the last work wire
@@ -1384,8 +1363,7 @@ def _rot_to_rz_ry_rz_resources(phi, theta, omega, wires):  # pylint: disable=unu
     return {qp.RZ: 2, qp.RY: 1}
 
 
-@register_name("to_rz_ry_rz")
-@register_resources(_rot_to_rz_ry_rz_resources)
+@decomposition_rule(name="to_rz_ry_rz", resources=_rot_to_rz_ry_rz_resources)
 def _rot_to_rz_ry_rz(phi, theta, omega, wires: WiresLike):
     RZ(phi, wires=wires)
     RY(theta, wires=wires)
@@ -1395,8 +1373,7 @@ def _rot_to_rz_ry_rz(phi, theta, omega, wires: WiresLike):
 add_decomps(Rot, _rot_to_rz_ry_rz)
 
 
-@register_name("reverse_angles")
-@register_resources({Rot: 1})
+@decomposition_rule(name="reverse_angles", resources={Rot: 1})
 def _adjoint_rot_standard(base):
     Rot(-base.omega, -base.theta, -base.phi, wires=base.wires)
 
@@ -1424,8 +1401,7 @@ def _controlled_rot_standard_resources(
     }
 
 
-@register_name("to_rz_ry_mcx")
-@register_resources(_controlled_rot_standard_resources)
+@decomposition_rule(name="to_rz_ry_mcx", resources=_controlled_rot_standard_resources)
 # pylint: disable-next=unused-argument
 def _controlled_rot_standard(base, control_wires, control_values, work_wires, work_wire_type):
 
@@ -1567,8 +1543,7 @@ def _u1_to_phaseshift_resources(*_, **__):
     return {PhaseShift: 1}
 
 
-@register_name("to_phaseshift")
-@register_resources(_u1_to_phaseshift_resources)
+@decomposition_rule(name="to_phaseshift", resources=_u1_to_phaseshift_resources)
 def _u1_to_phaseshift(phi, wires):
     PhaseShift(phi, wires=wires)
 
@@ -1703,8 +1678,7 @@ def _u2_to_phaseshift_rot_resources(phi, delta, wires):  # pylint: disable=unuse
     return {PhaseShift: 2, Rot: 1}
 
 
-@register_name("to_phaseshift_rot")
-@register_resources(_u2_to_phaseshift_rot_resources)
+@decomposition_rule(name="to_phaseshift_rot", resources=_u2_to_phaseshift_rot_resources)
 def _u2_to_phaseshift_rot(phi, delta, wires):
     pi_half = qp.math.ones_like(delta) * (np.pi / 2)
     Rot(delta, pi_half, -delta, wires=wires)
@@ -1715,8 +1689,7 @@ def _u2_to_phaseshift_rot(phi, delta, wires):
 add_decomps(U2, _u2_to_phaseshift_rot)
 
 
-@register_name("invert_angles")
-@register_resources(lambda base: {abstractify(U2): 1})
+@decomposition_rule(name="invert_angles", resources=lambda base: {abstractify(U2): 1})
 def _adjoint_u2_standard(base):
     new_delta = qp.math.mod((np.pi - base.phi), (2 * np.pi))
     new_phi = qp.math.mod((np.pi - base.delta), (2 * np.pi))
@@ -1883,8 +1856,7 @@ def _u3_to_phaseshift_rot_resources(theta, phi, delta, wires):  # pylint: disabl
     return {PhaseShift: 2, Rot: 1}
 
 
-@register_name("to_phaseshift_rot")
-@register_resources(_u3_to_phaseshift_rot_resources)
+@decomposition_rule(name="to_phaseshift_rot", resources=_u3_to_phaseshift_rot_resources)
 def _u3_to_phaseshift_rot(theta, phi, delta, wires):
     Rot(delta, theta, -delta, wires=wires)
     PhaseShift(delta, wires=wires)
@@ -1894,8 +1866,7 @@ def _u3_to_phaseshift_rot(theta, phi, delta, wires):
 add_decomps(U3, _u3_to_phaseshift_rot)
 
 
-@register_name("invert_angles")
-@register_resources(lambda base: {abstractify(U3): 1})
+@decomposition_rule(name="invert_angles", resources=lambda base: {abstractify(U3): 1})
 def _adjoint_u3_standard(base):
     new_delta = qp.math.mod((np.pi - base.phi), (2 * np.pi))
     new_phi = qp.math.mod((np.pi - base.delta), (2 * np.pi))

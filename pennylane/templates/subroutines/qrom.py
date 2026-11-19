@@ -28,9 +28,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
-    register_condition,
-    register_name,
-    register_resources,
+    decomposition_rule,
 )
 from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, MultiControlledX, X, Z, cond, ctrl, pauli_measure
@@ -427,9 +425,11 @@ def _qrom_select_swap_resources(bitstrings, control_wires, target_wires, work_wi
     return {bigger_qrom: 2, cswap_rep: 4 * num_cswaps_per_block, qp_ops.H: 2 * num_targets}
 
 
-@register_condition(_select_swap_condition)
-@register_name("select_swap")
-@register_resources(_qrom_select_swap_resources)
+@decomposition_rule(
+    name="select_swap",
+    condition=_select_swap_condition,
+    resources=_qrom_select_swap_resources,
+)
 def _qrom_select_swap(bitstrings, control_wires, target_wires, work_wires, clean):
     if len(control_wires) == 0:
         MultiX(bitstrings[0, :], wires=target_wires)
@@ -839,9 +839,12 @@ def _build_flag(extra_wires, work_wires):
     return nodes[0][0], core_work
 
 
-@register_condition(_qrom_measurement_condition)
-@register_name("measurement")
-@register_resources(_qrom_measurement_resources, exact=False)
+@decomposition_rule(
+    name="measurement",
+    condition=_qrom_measurement_condition,
+    resources=_qrom_measurement_resources,
+    exact=False,
+)
 def _qrom_measurement(  # pylint: disable=too-many-arguments,unused-argument
     bitstrings=None,
     control_wires=None,
@@ -1151,8 +1154,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
     qp_ops.adjoint(TemporaryAND(wires=triples[0], control_values=tuple(closing_bits[:2])))
 
 
-@register_name("unary_iteration")
-@register_resources(_qrom_unary_iteration_resources)
+@decomposition_rule(name="unary_iteration", resources=_qrom_unary_iteration_resources)
 # pylint: disable-next=unused-argument
 def _qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires, clean, **__):
     """Unary iteration decomposition of QROM.

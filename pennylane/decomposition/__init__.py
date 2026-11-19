@@ -55,9 +55,7 @@ Defining Decomposition Rules
 .. autosummary::
     :toctree: api
 
-    ~register_resources
-    ~register_name
-    ~register_condition
+    ~decomposition_rule
     ~resource_rep
     ~controlled_resource_rep
     ~adjoint_resource_rep
@@ -71,12 +69,11 @@ Defining Decomposition Rules
 In the new decomposition system, a decomposition rule must be defined as a quantum function that
 accepts ``(*op.parameters, op.wires, **op.hyperparameters)`` as arguments, where ``op`` is an
 instance of the operator type that the decomposition is for. Additionally, a decomposition rule
-must declare its resource requirements using the ``register_resources`` decorator:
+must declare its resource requirements using the ``decomposition_rule`` decorator:
 
 .. code-block:: python
 
-    @qp.register_name("my_cnot")
-    @qp.register_resources({qp.H: 2, qp.CZ: 1})
+    @qp.decomposition_rule(name="my_cnot", resources={qp.H: 2, qp.CZ: 1})
     def my_cnot(wires):
         qp.H(wires=wires[1])
         qp.CZ(wires=wires)
@@ -149,22 +146,19 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
 
     qp.decomposition.enable_graph()
 
-    @qp.register_name("isingxx_decomp")
-    @qp.register_resources({qp.CNOT: 2, qp.RX: 1})
+    @qp.decomposition_rule(name="isingxx_decomp", resources={qp.CNOT: 2, qp.RX: 1})
     def isingxx_decomp(phi, wires, **__):
         qp.CNOT(wires=wires)
         qp.RX(phi, wires=[wires[0]])
         qp.CNOT(wires=wires)
 
-    @qp.register_name("my_cnot1")
-    @qp.register_resources({qp.H: 2, qp.CZ: 1})
+    @qp.decomposition_rule(name="my_cnot1", resources={qp.H: 2, qp.CZ: 1})
     def my_cnot1(wires, **__):
         qp.H(wires=wires[1])
         qp.CZ(wires=wires)
         qp.H(wires=wires[1])
 
-    @qp.register_name("my_cnot2")
-    @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2})
+    @qp.decomposition_rule(name="my_cnot2", resources={qp.RY: 2, qp.CZ: 1, qp.Z: 2})
     def my_cnot2(wires, **__):
         qp.RY(np.pi/2, wires[1])
         qp.Z(wires[1])
@@ -256,9 +250,7 @@ from .resources import (
     change_op_basis_resource_rep,
 )
 from .decomposition_rule import (
-    register_name,
-    register_resources,
-    register_condition,
+    decomposition_rule,
     DecompositionRule,
     null_decomp,
     add_decomps,

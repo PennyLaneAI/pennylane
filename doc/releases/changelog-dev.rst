@@ -246,8 +246,7 @@ New features since last release
   .. code-block:: python
 
       @qp.subcircuit(dynamic_argnames=("phi",), wire_argnames=("wires",))
-      @qp.register_name("MyOp")
-      @qp.register_resources({qp.H: 1, qp.RZ: 1})
+      @qp.decomposition_rule(name="MyOp", resources={qp.H: 1, qp.RZ: 1})
       def MyOp(phi, wires):
           """My custom operator created using qp.subcircuit."""
           qp.H(wires)
@@ -1547,8 +1546,9 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
-* Decomposition rule names are registered with :func:`~pennylane.register_name` instead of the
-  ``name`` argument of :func:`~pennylane.register_resources` and cannot start with an underscore.
+* The ``register_resources``, ``register_condition``, and ``register_name`` decorators have been
+  combined into :func:`~pennylane.decomposition_rule`, which accepts ``resources``, ``condition``,
+  ``name``, ``work_wires``, and ``exact`` keyword arguments. Rule names cannot start with an underscore.
   Built-in decomposition rules use short strategy names, such as
   ``"to_cnot"`` for ``SWAP``, available through
   ``qp.list_decomps(qp.SWAP)["to_cnot"]`` and ``fixed_decomps={qp.SWAP: "to_cnot"}``.

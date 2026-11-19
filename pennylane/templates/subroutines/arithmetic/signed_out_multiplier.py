@@ -24,9 +24,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
-    register_condition,
-    register_name,
-    register_resources,
+    decomposition_rule,
 )
 from pennylane.ops import CNOT, ctrl
 from pennylane.typing import Wire
@@ -508,10 +506,13 @@ def _not_zeroed_condition(x_wires, y_wires, output_wires, work_wires, output_wir
     return not output_wires_zeroed
 
 
-@register_condition(_zeroed_condition)
-@register_condition(_zeroed_work_wire_condition)
-@register_name("zeroed")
-@register_resources(_signed_out_multiplier_zeroed_resources)
+@decomposition_rule(
+    name="zeroed",
+    condition=lambda *args, **kwargs: (
+        _zeroed_work_wire_condition(*args, **kwargs) and _zeroed_condition(*args, **kwargs)
+    ),
+    resources=_signed_out_multiplier_zeroed_resources,
+)
 def _signed_out_multiplier_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -566,10 +567,13 @@ def _signed_out_multiplier_zeroed(  # pylint: disable=unused-argument
     CNOT([y_wires[0], y_aux])
 
 
-@register_condition(_not_zeroed_condition)
-@register_condition(_not_zeroed_work_wire_condition)
-@register_name("borrowed")
-@register_resources(_signed_out_multiplier_borrowed_resources)
+@decomposition_rule(
+    name="borrowed",
+    condition=lambda *args, **kwargs: (
+        _not_zeroed_work_wire_condition(*args, **kwargs) and _not_zeroed_condition(*args, **kwargs)
+    ),
+    resources=_signed_out_multiplier_borrowed_resources,
+)
 def _signed_out_multiplier_borrowed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,

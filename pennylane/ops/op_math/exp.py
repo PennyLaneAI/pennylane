@@ -28,9 +28,7 @@ from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     add_decomps,
-    register_condition,
-    register_name,
-    register_resources,
+    decomposition_rule,
 )
 from pennylane.exceptions import (
     DecompositionUndefinedError,
@@ -520,9 +518,11 @@ def _exp_to_pauli_rot_resources(base):
     return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
-@register_condition(_pauli_rot_decomp_condition)
-@register_name("to_pauli_rot")
-@register_resources(_exp_to_pauli_rot_resources)
+@decomposition_rule(
+    name="to_pauli_rot",
+    condition=_pauli_rot_decomp_condition,
+    resources=_exp_to_pauli_rot_resources,
+)
 def _exp_to_pauli_rot(*params, wires, base, **_):  # pylint: disable=unused-argument
     """Decompose the operator into a single PauliRot operator."""
     with queuing.QueuingManager.stop_recording():
