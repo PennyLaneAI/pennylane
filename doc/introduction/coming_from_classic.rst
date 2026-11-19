@@ -280,6 +280,17 @@ For more information on optimization with Optax, check out our demo titled
 Transforms and compilation passes
 ---------------------------------
 
+Writing custom transforms and compilation passes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A custom transform made in PennyLane Classic that is built off of the tape representation of 
+quantum circuits is not compatible with PennyLane2. Compilation passes in PennyLane2 must be written 
+in MLIR, and instructions can be found in the Catalyst documentation under
+:doc:`catalyst:dev/transforms`.
+
+Unsupported PennyLane Classic transforms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 A complete list of supported transforms in PennyLane2 can be found in
 :doc:`compiling_circuits`. The following transforms from PennyLane Classic are
 *not* compatible with PennyLane2, including custom transforms implemented with
