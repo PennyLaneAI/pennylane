@@ -221,7 +221,7 @@ class MultiRZ(Operator2):
 
 @subcircuit(static_argnames=("reverse",))
 @register_resources(lambda wires, **_: {qp.CNOT: len(wires) - 1})
-def _multi_rz_ladder(wires: WiresLike, reverse: bool):
+def _MultiRZLadder(wires: WiresLike, reverse: bool):
     if qp.compiler.active() or qp.capture.enabled():
         wires = math.array(wires, like="jax")
     num_wires = len(wires)
@@ -238,8 +238,8 @@ def _multi_rz_decomposition_resources(theta: TensorLike, wires: WiresLike):
     num_wires = len(wires)
     if num_wires == 1:
         return {qp.RZ: 1}
-    ladder = _multi_rz_ladder(wires=Wire[num_wires], reverse=False)
-    unladder = _multi_rz_ladder(wires=Wire[num_wires], reverse=True)
+    ladder = _MultiRZLadder(wires=Wire[num_wires], reverse=False)
+    unladder = _MultiRZLadder(wires=Wire[num_wires], reverse=True)
     return {_change_op_basis_abstract(ladder, RZ(Float, wires=Wire[1]), unladder): 1}
 
 
@@ -251,9 +251,9 @@ def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike):
         return
 
     qp.change_op_basis(
-        _multi_rz_ladder(wires=wires, reverse=False),
+        _MultiRZLadder(wires=wires, reverse=False),
         qp.RZ(theta, wires=wires[0]),
-        _multi_rz_ladder(wires=wires, reverse=True),
+        _MultiRZLadder(wires=wires, reverse=True),
     )
 
 
@@ -574,7 +574,7 @@ def _pauli_rot_basis_resources(sign, pauli_word, **_):
 @subcircuit(static_argnames=("sign", "pauli_word"))
 @register_resources(_pauli_rot_basis_resources)
 @disable_autograph
-def _pauli_rot_basis(sign: int, pauli_word: str, wires: WiresLike):
+def _PauliRotBasis(sign: int, pauli_word: str, wires: WiresLike):
     for wire, gate in zip(wires, pauli_word, strict=True):
         if gate == "X":
             # A Y-axis PPR_4 would decompose back into PauliRot and create a cycle.
@@ -594,9 +594,9 @@ def _pauli_rot_resources(theta, pauli_word, wires):  # pylint: disable=unused-ar
 
     return {
         _change_op_basis_abstract(
-            _pauli_rot_basis(1, active_word, wires=Wire[num_active_wires]),
+            _PauliRotBasis(1, active_word, wires=Wire[num_active_wires]),
             qp.MultiRZ(Float, Wire[num_active_wires]),
-            _pauli_rot_basis(-1, active_word, wires=Wire[num_active_wires]),
+            _PauliRotBasis(-1, active_word, wires=Wire[num_active_wires]),
         ): 1
     }
 
@@ -618,9 +618,9 @@ def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLik
         return
 
     qp.change_op_basis(
-        _pauli_rot_basis(1, "".join(active_gates), wires=active_wires),
+        _PauliRotBasis(1, "".join(active_gates), wires=active_wires),
         qp.MultiRZ(theta, wires=list(active_wires)),
-        _pauli_rot_basis(-1, "".join(active_gates), wires=active_wires),
+        _PauliRotBasis(-1, "".join(active_gates), wires=active_wires),
     )
 
 
@@ -1865,7 +1865,7 @@ class IsingXY(Operator2):
 
 @subcircuit(static_argnames=("reverse",))
 @register_resources(lambda **_: {qp.Hadamard: 1, qp.CY: 1})
-def _isingxy_basis(wires: WiresLike, reverse: bool):
+def _IsingXYBasis(wires: WiresLike, reverse: bool):
     if not reverse:
         Hadamard(wires[0])
     qp.CY(wires)
@@ -1875,7 +1875,7 @@ def _isingxy_basis(wires: WiresLike, reverse: bool):
 
 @subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": Float, "wires": Wire[2]})
 @register_resources({RX: 1, RY: 1})
-def _isingxy_rotations(phi: TensorLike, wires: WiresLike):
+def _IsingXYRotations(phi: TensorLike, wires: WiresLike):
     RY(phi / 2, wires[0])
     RX(-phi / 2, wires[1])
 
@@ -1884,9 +1884,9 @@ def _isingxy_rotations(phi: TensorLike, wires: WiresLike):
 def _isingxy_to_h_cy_resources(phi: TensorLike, wires: WiresLike | None = None):
     return {
         _change_op_basis_abstract(
-            _isingxy_basis(wires=Wire[2], reverse=False),
-            _isingxy_rotations(Float, wires=Wire[2]),
-            _isingxy_basis(wires=Wire[2], reverse=True),
+            _IsingXYBasis(wires=Wire[2], reverse=False),
+            _IsingXYRotations(Float, wires=Wire[2]),
+            _IsingXYBasis(wires=Wire[2], reverse=True),
         ): 1
     }
 
@@ -1894,9 +1894,9 @@ def _isingxy_to_h_cy_resources(phi: TensorLike, wires: WiresLike | None = None):
 @register_resources(_isingxy_to_h_cy_resources)
 def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
     qp.change_op_basis(
-        _isingxy_basis(wires=wires, reverse=False),
-        _isingxy_rotations(phi, wires=wires),
-        _isingxy_basis(wires=wires, reverse=True),
+        _IsingXYBasis(wires=wires, reverse=False),
+        _IsingXYRotations(phi, wires=wires),
+        _IsingXYBasis(wires=wires, reverse=True),
     )
 
 

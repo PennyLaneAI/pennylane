@@ -256,7 +256,7 @@ class SingleExcitation(Operator2):
 
 @subcircuit(static_argnames=("reverse",))
 @register_resources(lambda **_: {qp.Hadamard: 1, qp.CNOT: 1})
-def _single_excitation_basis(wires: WiresLike, reverse: bool):
+def _SingleExcitationBasis(wires: WiresLike, reverse: bool):
     if not reverse:
         qp.Hadamard(wires[0])
     qp.CNOT(wires)
@@ -266,7 +266,7 @@ def _single_excitation_basis(wires: WiresLike, reverse: bool):
 
 @subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": Float, "wires": Wire[2]})
 @register_resources(lambda **_: {qp.RY: 2})
-def _single_excitation_rotations(phi: TensorLike, wires: WiresLike):
+def _SingleExcitationRotations(phi: TensorLike, wires: WiresLike):
     qp.RY(-phi / 2, wires[0])
     qp.RY(-phi / 2, wires[1])
 
@@ -275,9 +275,9 @@ def _single_excitation_rotations(phi: TensorLike, wires: WiresLike):
 def _single_excitation_resources(phi, wires):  # pylint: disable=unused-argument
     return {
         _change_op_basis_abstract(
-            _single_excitation_basis(wires=Wire[2], reverse=False),
-            _single_excitation_rotations(Float, wires=Wire[2]),
-            _single_excitation_basis(wires=Wire[2], reverse=True),
+            _SingleExcitationBasis(wires=Wire[2], reverse=False),
+            _SingleExcitationRotations(Float, wires=Wire[2]),
+            _SingleExcitationBasis(wires=Wire[2], reverse=True),
         ): 1
     }
 
@@ -285,15 +285,15 @@ def _single_excitation_resources(phi, wires):  # pylint: disable=unused-argument
 @register_resources(_single_excitation_resources)
 def _single_excitation_decomp(phi: TensorLike, wires: WiresLike):
     qp.change_op_basis(
-        _single_excitation_basis(wires=wires, reverse=False),
-        _single_excitation_rotations(phi, wires=wires),
-        _single_excitation_basis(wires=wires, reverse=True),
+        _SingleExcitationBasis(wires=wires, reverse=False),
+        _SingleExcitationRotations(phi, wires=wires),
+        _SingleExcitationBasis(wires=wires, reverse=True),
     )
 
 
 @subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": Float, "wires": Wire[2]})
 @register_resources(lambda **_: {qp.RZ: 2})
-def _single_excitation_rz_rotations(phi: TensorLike, wires: WiresLike):
+def _SingleExcitationRZRotations(phi: TensorLike, wires: WiresLike):
     qp.RZ(phi / 2, wires[0])
     qp.RZ(-phi / 2, wires[1])
 
@@ -315,7 +315,7 @@ def _single_excitation_ppr_rz_resource(phi, wires):  # pylint: disable=unused-ar
     return {
         _change_op_basis_abstract(
             qp.PPR_4(1, "XX", wires=Wire[2]),
-            _single_excitation_rz_rotations(Float, wires=Wire[2]),
+            _SingleExcitationRZRotations(Float, wires=Wire[2]),
             qp.PPR_4(-1, "XX", wires=Wire[2]),
         ): 1
     }
@@ -325,20 +325,20 @@ def _single_excitation_ppr_rz_resource(phi, wires):  # pylint: disable=unused-ar
 def _single_excitation_ppr_rz(phi: TensorLike, wires: WiresLike):
     qp.change_op_basis(
         qp.PPR_4(1, "XX", wires=wires),
-        _single_excitation_rz_rotations(phi, wires=wires),
+        _SingleExcitationRZRotations(phi, wires=wires),
         qp.PPR_4(-1, "XX", wires=wires),
     )
 
 
 @subcircuit
 @register_resources(lambda **_: {qp.PPR_4(1, "XX", wires=Wire[2]): 1, qp.CNOT: 1})
-def _single_excitation_crz_basis(wires: WiresLike):
+def _SingleExcitationCRZBasis(wires: WiresLike):
     qp.PPR_4(1, "XX", wires=wires)
     qp.CNOT(wires)
 
 
 def _single_excitation_ppr_crz_resource(phi, wires):  # pylint: disable=unused-argument
-    compute = _single_excitation_crz_basis(wires=Wire[2])
+    compute = _SingleExcitationCRZBasis(wires=Wire[2])
     return {
         _change_op_basis_abstract(
             compute,
@@ -361,7 +361,7 @@ def _single_excitation_ppr_crz(phi: TensorLike, wires: WiresLike):
     """
 
     qp.change_op_basis(
-        _single_excitation_crz_basis(wires=wires), qp.CRZ(phi, wires=[wires[1], wires[0]])
+        _SingleExcitationCRZBasis(wires=wires), qp.CRZ(phi, wires=[wires[1], wires[0]])
     )
 
 

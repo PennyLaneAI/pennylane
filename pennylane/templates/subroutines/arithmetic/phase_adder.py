@@ -175,7 +175,7 @@ def _phase_adder_basis_resources(wires, reverse, **_):
     arg_specs={"k": Int, "wires": Wire[-1]},
 )
 @register_resources(_phase_adder_basis_resources)
-def _phase_adder_basis(k: int, wires: WiresLike, reverse: bool):
+def _PhaseAdderBasis(k: int, wires: WiresLike, reverse: bool):
     if reverse:
         ops.X(wires[0])
         QFT(wires=wires)
@@ -193,8 +193,8 @@ def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
     if mod == 2**num_x_wires:
         return {ops.PhaseShift: num_x_wires}
 
-    basis_op1 = _phase_adder_basis(Int, wires=Wire[num_x_wires], reverse=False)
-    basis_op2 = _phase_adder_basis(Int, wires=Wire[num_x_wires], reverse=True)
+    basis_op1 = _PhaseAdderBasis(Int, wires=Wire[num_x_wires], reverse=False)
+    basis_op2 = _PhaseAdderBasis(Int, wires=Wire[num_x_wires], reverse=True)
 
     resources = {
         ops.PhaseShift: 2 * num_x_wires,
@@ -233,9 +233,9 @@ def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire):
         ops.ctrl(op, control=work_wire)
 
     ops.change_op_basis(
-        _phase_adder_basis(k, wires=x_wires, reverse=False),
+        _PhaseAdderBasis(k, wires=x_wires, reverse=False),
         ops.CNOT(wires=[aux_k, work_wire[0]]),
-        _phase_adder_basis(k, wires=x_wires, reverse=True),
+        _PhaseAdderBasis(k, wires=x_wires, reverse=True),
     )
 
 

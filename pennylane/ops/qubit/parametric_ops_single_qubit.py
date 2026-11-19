@@ -523,14 +523,14 @@ def _ry_to_rx_cliff(phi, wires: WiresLike):
 
 @subcircuit
 @register_resources(lambda **_: {qp.Hadamard: 1, _adjoint_abstract(qp.S): 1})
-def _y_to_z_basis(wires: WiresLike):
+def _YToZBasis(wires: WiresLike):
     qp.adjoint(qp.S(wires))
     qp.Hadamard(wires)
 
 
 @subcircuit
 @register_resources(lambda **_: {qp.Hadamard: 1, qp.S: 1})
-def _z_to_y_basis(wires: WiresLike):
+def _ZToYBasis(wires: WiresLike):
     qp.Hadamard(wires)
     qp.S(wires)
 
@@ -538,9 +538,9 @@ def _z_to_y_basis(wires: WiresLike):
 def _ry_to_rz_cliff_resources(*_, **__):
     resources = {
         _change_op_basis_abstract(
-            _y_to_z_basis(Wire[1]),
+            _YToZBasis(Wire[1]),
             qp.RZ,
-            _z_to_y_basis(Wire[1]),
+            _ZToYBasis(Wire[1]),
         ): 1
     }
     return resources
@@ -549,9 +549,9 @@ def _ry_to_rz_cliff_resources(*_, **__):
 @register_resources(_ry_to_rz_cliff_resources)
 def _ry_to_rz_cliff(phi, wires: WiresLike, **__):
     qp.change_op_basis(
-        _y_to_z_basis(wires),
+        _YToZBasis(wires),
         qp.RZ(phi, wires),
-        _z_to_y_basis(wires),
+        _ZToYBasis(wires),
     )
 
 
@@ -845,9 +845,9 @@ def _rz_to_rx_cliff(phi, wires: WiresLike):
 def _rz_to_ry_cliff_resources(phi, wires):  # pylint: disable=unused-argument
     resources = {
         _change_op_basis_abstract(
-            _z_to_y_basis(Wire[1]),
+            _ZToYBasis(Wire[1]),
             qp.RY,
-            _y_to_z_basis(Wire[1]),
+            _YToZBasis(Wire[1]),
         ): 1
     }
     return resources
@@ -856,9 +856,9 @@ def _rz_to_ry_cliff_resources(phi, wires):  # pylint: disable=unused-argument
 @register_resources(_rz_to_ry_cliff_resources)
 def _rz_to_ry_cliff(phi, wires: WiresLike):
     qp.change_op_basis(
-        _z_to_y_basis(wires),
+        _ZToYBasis(wires),
         qp.RY(phi, wires),
-        _y_to_z_basis(wires),
+        _YToZBasis(wires),
     )
 
 
