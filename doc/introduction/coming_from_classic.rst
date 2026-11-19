@@ -209,6 +209,8 @@ Alternatively, JAX differentiation methods can be called *outside* of ``qjit``.
   >>> jax.grad(circuit)(angles)
   [-1.98669331e-01  6.21609968e-01  1.16928756e-16]
 
+.. _optimizing:
+
 Optimizing circuits
 -------------------
 
