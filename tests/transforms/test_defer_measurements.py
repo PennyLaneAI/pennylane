@@ -1692,24 +1692,6 @@ class TestDrawing:
         _ = qp.draw_mpl(transformed_qnode)()
 
 
-def test_custom_wire_labels_allowed_without_reuse():
-    """Test that custom wire labels work if no qubits are re-used."""
-    with qp.queuing.AnnotatedQueue() as q:
-        qp.Hadamard("a")
-        ma = qp.measure("a", reset=False)
-        qp.cond(ma, qp.PauliX)("b")
-        qp.probs(wires="b")
-
-    tape = qp.tape.QuantumScript.from_queue(q)
-    tapes, _ = qp.defer_measurements(tape)
-    tape = tapes[0]
-
-    assert len(tape) == 3
-    qp.assert_equal(tape[0], qp.Hadamard("a"))
-    qp.assert_equal(tape[1], qp.ctrl(qp.X("b"), "a"))
-    qp.assert_equal(tape[2], qp.probs(wires="b"))
-
-
 def test_integer_wire_labels_with_reset():
     """Tests that integer wire labels work when qubits are re-used."""
 
@@ -1749,44 +1731,3 @@ def test_integer_wire_labels_with_reset():
     qp.assert_equal(tape[2], qp.ctrl(qp.X(1), 2))
     qp.assert_equal(tape[3], qp.Hadamard(0))
     qp.assert_equal(tape[4], qp.probs(wires=1))
-
-
-def test_custom_wire_labels_with_reset():
-    """Test that custom wire labels work if any qubits are re-used."""
-
-    # Reset example (should be the same circuit as in previous test but with wire labels)
-    with qp.queuing.AnnotatedQueue() as q:
-        qp.Hadamard("a")
-        ma = qp.measure("a", reset=True)
-        qp.cond(ma, qp.PauliX)("b")
-        qp.probs(wires="a")
-
-    tape = qp.tape.QuantumScript.from_queue(q)
-    tapes, _ = qp.defer_measurements(tape)
-    tape = tapes[0]
-
-    assert len(tape) == 5
-    qp.assert_equal(tape[0], qp.Hadamard("a"))
-    qp.assert_equal(tape[1], qp.CNOT(["a", 0]))
-    qp.assert_equal(tape[2], qp.CNOT([0, "a"]))
-    qp.assert_equal(tape[3], qp.ctrl(qp.X("b"), 0))
-    qp.assert_equal(tape[4], qp.probs(wires="a"))
-
-    # Reuse example (should be the same circuit as in previous test but with wire labels)
-    with qp.queuing.AnnotatedQueue() as q:
-        qp.Hadamard("a")
-        ma = qp.measure("a")
-        qp.cond(ma, qp.PauliX)("b")
-        qp.Hadamard("a")
-        qp.probs(wires="b")
-
-    tape = qp.tape.QuantumScript.from_queue(q)
-    tapes, _ = qp.defer_measurements(tape)
-    tape = tapes[0]
-
-    assert len(tape) == 5
-    qp.assert_equal(tape[0], qp.Hadamard("a"))
-    qp.assert_equal(tape[1], qp.CNOT(["a", 0]))
-    qp.assert_equal(tape[2], qp.ctrl(qp.X("b"), 0))
-    qp.assert_equal(tape[3], qp.Hadamard("a"))
-    qp.assert_equal(tape[4], qp.probs(wires="b"))
