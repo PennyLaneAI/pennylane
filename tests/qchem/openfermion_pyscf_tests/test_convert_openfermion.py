@@ -298,13 +298,13 @@ class TestToOpenFermion:
         (
             (1.2 * qp.X(7) + 2.4 * qp.Z(2)),
             (openfermion.QubitOperator("X0", 1.2) + openfermion.QubitOperator("Z1", 2.4)),
-            ({7: 0, 2: 1}),
+            ({0: 7, 1: 2}),
         ),
     )
 
     @pytest.mark.parametrize("pl_op, of_op, wires", MAPPED_OPS)
     def test_mapping_wires(self, pl_op, of_op, wires):
-        r"Test the mapping of the wires."
+        r"Test mapping integer PennyLane wires to OpenFermion qubit indices."
         q_op = qp.to_openfermion(pl_op, wires=wires)
         assert q_op == of_op
 
