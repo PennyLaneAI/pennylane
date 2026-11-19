@@ -42,6 +42,7 @@ from gate_data import (
     Y,
     Z,
 )
+from helpers.decomposition_helpers import assert_basis_change_decomposition
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
@@ -1438,12 +1439,7 @@ class TestPPR:
         """Test that captured PPR rules preserve phase, basis changes, and resource identities."""
         op = op_cls(sign, pauli_word, wires=[3, 1, 4])
         rule = qp.list_decomps(op)[0]
-        assert_valid_decomp_rule(op, rule)
-        for gate in qp.testing.decomp_rule_to_tape(op, rule).operations:
-            if isinstance(gate, qp.ops.ChangeOpBasis2):
-                for block in (gate.compute_op, gate.uncompute_op):
-                    assert not isinstance(block, qp.ops.Prod2)
-                    assert_valid_decomp_rule(block, qp.list_decomps(block)[0])
+        assert_basis_change_decomposition(op, rule)
 
     @pytest.mark.parametrize("sign", [1, -1])
     def test_init(self, op_cls, sign):

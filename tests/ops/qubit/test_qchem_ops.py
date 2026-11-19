@@ -27,6 +27,7 @@ from gate_data import (
     SingleExcitationMinus,
     SingleExcitationPlus,
 )
+from helpers.decomposition_helpers import assert_basis_change_decomposition
 from scipy.linalg import expm, fractional_matrix_power
 
 import pennylane as qp
@@ -328,12 +329,7 @@ class TestSingleExcitationDecompositions:
         """Test that basis changes preserve the excitation matrix and resource identities."""
         op = qp.SingleExcitation(0.37, wires=[3, 1])
         rule = qp.list_decomps(op)[rule_name]
-        qp.testing.assert_valid_decomp_rule(op, rule)
-        (cob,) = qp.testing.decomp_rule_to_tape(op, rule).operations
-        for block in cob.operands:
-            assert not isinstance(block, qp.ops.Prod2)
-            if not isinstance(block, qp.PPR_4):
-                qp.testing.assert_valid_decomp_rule(block, qp.list_decomps(block)[0])
+        assert_basis_change_decomposition(op, rule)
 
     @pytest.mark.capture
     @pytest.mark.parametrize(

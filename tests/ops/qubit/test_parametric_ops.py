@@ -21,6 +21,7 @@ from functools import partial, reduce
 import numpy as np
 import pytest
 from gate_data import CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
+from helpers.decomposition_helpers import assert_basis_change_decomposition
 from scipy import sparse
 
 import pennylane as qp
@@ -184,13 +185,7 @@ class TestOperations:
     def test_basis_change_decomposition(self, op, rule_name):
         """Test that basis changes preserve their matrices and declared resources during capture."""
         rule = qp.list_decomps(op)[rule_name]
-        assert_valid_decomp_rule(op, rule)
-        for gate in decomp_rule_to_tape(op, rule).operations:
-            if isinstance(gate, qp.ops.ChangeOpBasis2):
-                for block in gate.operands:
-                    assert not isinstance(block, qp.ops.Prod2)
-                    if block is not gate.target_op or isinstance(op, qp.IsingXY):
-                        assert_valid_decomp_rule(block, qp.list_decomps(block)[0])
+        assert_basis_change_decomposition(op, rule)
 
     @pytest.mark.capture
     def test_isingxy_subcircuit_replays_dynamic_arguments(self):
