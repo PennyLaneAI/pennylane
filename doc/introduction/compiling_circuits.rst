@@ -143,14 +143,8 @@ set of gates. For tape-based (non-compiled) workflows, use
 :func:`~.pennylane.transforms._tape_decompose`, which decomposes circuits into a
 set of gates defined either by their name, type, or by a set of rules they must
 follow. Under :func:`~.qjit`, use :func:`~.pennylane.transforms.decompose`, which
-dispatches to Catalyst's graph-decomposition pass.
-
-.. note::
-
-    Using :func:`~.pennylane.decomposition.enable_graph` enables PennyLane's new 
-    **experimental** decomposition algorithm (by default, this new system is *not* 
-    enabled). This new system uses a graph-based approach, which provides better 
-    overall versatility and resource efficiency.
+dispatches to Catalyst's graph-decomposition pass. Both transforms require an explicit
+``gate_set``.
 
 Using a gate set
 ****************
@@ -176,9 +170,9 @@ With the Hadamard gate not in our gate set, it will be decomposed into allowed r
 gate operators.
 
 >>> print(qp.draw(circuit)())
-0: ──RZ(1.57)─╭GlobalPhase(-0.79)──RX(1.57)──RZ(1.57)─╭GlobalPhase(-0.79)─╭●─┤  <Z>
-1: ───────────├GlobalPhase(-0.79)─────────────────────├GlobalPhase(-0.79)─├●─┤     
-2: ───────────╰GlobalPhase(-0.79)─────────────────────╰GlobalPhase(-0.79)─╰X─┤     
+0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭GlobalPhase(-1.57)─╭●─┤  <Z>
+1: ───────────────────────────────├GlobalPhase(-1.57)─├●─┤
+2: ───────────────────────────────╰GlobalPhase(-1.57)─╰X─┤
 
 Using a gate rule
 *****************
@@ -188,9 +182,10 @@ or two-qubit gates using a rule:
 
 .. code-block:: python
 
-    qp.decomposition.disable_graph()
-
-    @_tape_decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
+    @_tape_decompose(
+        gate_set={"H", "T", "Adjoint(T)", "CNOT"},
+        stopping_condition=lambda op: len(op.wires) <= 2,
+    )
     @qp.qnode(dev)
     def circuit():
         qp.Toffoli(wires=[0,1,2])
@@ -213,6 +208,8 @@ with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit:
 
 .. code-block:: python
 
+    from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
+
     phase = 1 
     unitary = qp.RX(phase, wires=0)
     n_estimation_wires = 3
@@ -227,36 +224,33 @@ with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit:
 From here, we can iterate through the stages of decomposition:
 
 >>> from pennylane.transforms import _tape_decompose
->>> print(qp.draw(_tape_decompose(circuit, max_expansion=0))())
+>>> print(qp.draw(_tape_decompose(circuit, gate_set=ROTATIONS_PLUS_CNOT, max_expansion=0))())
 0: ──H─╭QuantumPhaseEstimation─┤  
 1: ────├QuantumPhaseEstimation─┤  
 2: ────├QuantumPhaseEstimation─┤  
 3: ────╰QuantumPhaseEstimation─┤  
 
->>> print(qp.draw(_tape_decompose(circuit, max_expansion=1))())
-0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤  
-1: ──H─╰●──────│───────│───────╭QFT†─┤  
-2: ──H─────────╰●──────│───────├QFT†─┤  
-3: ──H─────────────────╰●──────╰QFT†─┤  
-M0 = 
-[[0.87758256+0.j         0.        -0.47942554j]
- [0.        -0.47942554j 0.87758256+0.j        ]]
+>>> print(qp.draw(_tape_decompose(circuit, gate_set=ROTATIONS_PLUS_CNOT, max_expansion=1))())
+0: ──RZ(3.14)──RY(1.57)─╭GlobalPhase(-1.57)────╭RX(1.00)⁴─╭RX(1.00)²─╭RX(1.00)¹───────┤
+1: ─────────────────────├GlobalPhase(-1.57)──H─╰●─────────│──────────│──────────╭QFT†─┤
+2: ─────────────────────├GlobalPhase(-1.57)──H────────────╰●─────────│──────────├QFT†─┤
+3: ─────────────────────╰GlobalPhase(-1.57)──H───────────────────────╰●─────────╰QFT†─┤
 
->>> print(qp.draw(_tape_decompose(circuit, max_expansion=2))())
-0: ──H──RZ(4.71)──RY(1.14)─╭X──RY(-1.14)──RZ(-3.14)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X ···
-1: ──H─────────────────────╰●───────────────────────╰●────────────────────────────────│─ ···
-2: ──H────────────────────────────────────────────────────────────────────────────────╰● ···
-3: ──H────────────────────────────────────────────────────────────────────────────────── ···
+>>> print(qp.draw(_tape_decompose(circuit, gate_set=ROTATIONS_PLUS_CNOT, max_expansion=2))())
+0: ──RZ(3.14)──RY(1.57)─╭GlobalPhase(-1.57)─────────────────────╭GlobalPhase(-1.57)────────── ···
+1: ─────────────────────├GlobalPhase(-1.57)──RZ(3.14)──RY(1.57)─├GlobalPhase(-1.57)────────── ···
+2: ─────────────────────├GlobalPhase(-1.57)─────────────────────├GlobalPhase(-1.57)──RZ(3.14) ···
+3: ─────────────────────╰GlobalPhase(-1.57)─────────────────────╰GlobalPhase(-1.57)────────── ···
 <BLANKLINE>
-0: ··· ──RY(-1.00)──RZ(-6.28)─╭X──RZ(4.71)──RZ(1.57)──RY(0.50)─╭X──RY(-0.50)──RZ(-6.28)─╭X ···
-1: ··· ───────────────────────│────────────────────────────────│────────────────────────│─ ···
-2: ··· ───────────────────────╰●───────────────────────────────│────────────────────────│─ ···
-3: ··· ────────────────────────────────────────────────────────╰●───────────────────────╰● ···
+0: ··· ───────────╭GlobalPhase(-1.57)─────────────────────╭GlobalPhase(-1.57)─╭RX(4.00) ···
+1: ··· ───────────├GlobalPhase(-1.57)─────────────────────├GlobalPhase(-1.57)─╰●─────── ···
+2: ··· ──RY(1.57)─├GlobalPhase(-1.57)─────────────────────├GlobalPhase(-1.57)────────── ···
+3: ··· ───────────╰GlobalPhase(-1.57)──RZ(3.14)──RY(1.57)─╰GlobalPhase(-1.57)────────── ···
 <BLANKLINE>
-0: ··· ──RZ(4.71)────────────────────────────────────────────────────┤  
-1: ··· ─╭SWAP†─────────────────────────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤  
-2: ··· ─│─────────────╭(Rϕ(1.57))†──H†─│────────────╰(Rϕ(1.57))†─────┤  
-3: ··· ─╰SWAP†─────H†─╰(Rϕ(1.57))†─────╰(Rϕ(0.79))†──────────────────┤  
+0: ··· ─╭RX(2.00)─╭RX(1.00)───────────────────────────────────────────────────────────┤
+1: ··· ─│─────────│─────────╭SWAP†──────────────────────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
+2: ··· ─╰●────────│─────────│──────────╭(Rϕ(1.57))†──H†─│────────────╰(Rϕ(1.57))†─────┤
+3: ··· ───────────╰●────────╰SWAP†──H†─╰(Rϕ(1.57))†─────╰(Rϕ(0.79))†──────────────────┤
 
 Custom Operator Decomposition
 -----------------------------
@@ -264,12 +258,11 @@ Custom Operator Decomposition
 When executing QNodes on a device, PennyLane will automatically decompose gates 
 that are unsupported by the device using built-in decomposition rules.
 
-In addition, you can provide *new* decomposition rules to be used, but the behaviour
-and user-interface is different depending on if the graph decompositions system is
-enabled.
+You can register additional decomposition rules globally or supply them to an individual
+``_tape_decompose`` transform.
 
-Default behaviour with custom decompositions
-********************************************
+Globally registered decompositions
+**********************************
 
 For example, suppose we would like to implement the following QNode:
 
@@ -288,9 +281,8 @@ For example, suppose we would like to implement the following QNode:
 1: ──RX(0.50)─╰X─╭●─│──┤     
 2: ──RX(0.60)────╰X─╰●─┤     
 
-Now, let's swap out PennyLane's default decomposition of the ``CNOT`` gate into 
-``CZ`` and ``Hadamard``. We define the custom decompositions like so, and pass them 
-to a device:
+To decompose ``CNOT`` into ``CZ`` and ``Hadamard``, register a quantum function with
+its required resources:
 
 .. code-block:: python3
 
@@ -305,11 +297,10 @@ to a device:
 
     qp.decomposition.add_decomps(qp.CNOT, _custom_cnot_decomposition)
 
-    qp.decomposition.enable_graph()
 
     decomp_dev = qp.device("default.qubit", wires=3)
     qnode = qp.QNode(circuit, decomp_dev)
-    decomp_qnode = qp.transforms._tape_decompose(qnode, gate_set={qp.CZ, qp.H})
+    decomp_qnode = qp.transforms._tape_decompose(qnode, gate_set={qp.CZ, qp.H, qp.RX})
 
 Now when we draw or run a QNode on this device, the gates will be expanded according
 to our specifications:
@@ -321,32 +312,25 @@ to our specifications:
 
 .. _custom_decomps_with_graph:
 
-Custom decompositions with qp.decomposition.enable_graph
-*********************************************************
-
-With the graph decompositions system enabled, custom decompositions for operators 
-in PennyLane can be added in a few ways depending on the application. 
+Local decomposition rules
+*************************
 
 The :func:`~.pennylane.transforms._tape_decompose` transform offers the ability to inject
 custom decompositions via two keyword arguments:
 
-* ``fixed_decomps``: any decomposition for an operator type here will automatically 
-  be chosen by the new algorithm, regardless of how resource efficient it may or 
-  may not be.
-* ``alt_decomps``: any decompositions for an operator type list here are added as 
-  *possible* decomposition rules the algorithm can choose based on its resource 
-  efficiency.
+* ``fixed_decomps`` maps an operator type or name to a rule that replaces its registered
+  decomposition rules when the operator needs to be decomposed.
+* ``alt_decomps`` maps an operator type or name to a list of additional rules the solver
+  can consider alongside its registered rules.
 
-Both keyword arguments above require a dictionary mapping PennyLane operator types to 
-custom decompositions. Creating custom decompositions that the graph-based system 
+Both keyword arguments above require a dictionary mapping PennyLane operator types or names to
+custom decompositions. Creating custom decompositions that the graph-based system
 can use involves a PennyLane quantum function that represents the decomposition, 
 and a declaration of its resource requirements (gate counts) via :func:`~.pennylane.register_resources`.
 
 Consider this example where we add a fixed decomposition to ``CNOT`` gates:
 
 .. code-block:: python
-
-    qp.decomposition.enable_graph()
 
     @qp.register_resources({qp.H: 2, qp.CZ: 1})
     def my_cnot(wires, **__):
@@ -402,8 +386,8 @@ type:
         return qp.state()
 
 The decomposition that the algorithm chooses internally will be the most resource-efficient.
-More details on creating complex decomposition rules that may depend on runtime 
-parameters can be found in the usage details for :func:`~.pennylane.register_resources`.
+More details on resource functions and conditional decomposition rules can be found in the
+usage details for :func:`~.pennylane.register_resources`.
 
 Alternatively, new decomposition rules can be added to operators *globally* with 
 the :func:`~.pennylane.add_decomps` function. This negates having to specify ``alt_decomps``
