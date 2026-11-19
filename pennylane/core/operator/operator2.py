@@ -1713,7 +1713,6 @@ def _init_wires(op: Operator2):
                         f"Expected {len(exp_type)} wires but got {len(canonical_wires)}."
                     )
 
-
             # Work wires are NOT included in the full wires list.
             if wname not in ("work_wires", "work_wire"):
                 all_algorithmic_wires.append(canonical_wires)
