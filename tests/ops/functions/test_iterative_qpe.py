@@ -307,7 +307,7 @@ class TestCaptureIQPE:
         specs = qp.specs(c, level="top")()
         # NOTE: PauliX comes from the aux_wire reset
         expected_operations = {
-            "C(Pow2)": num_iters,
+            "1C(Pow2)": num_iters,
             "Hadamard": 2 * num_iters,
             "MidCircuitMeasure": num_iters,
             "PhaseShift": num_iters * (num_iters - 1) // 2,
