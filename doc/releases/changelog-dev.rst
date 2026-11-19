@@ -1340,7 +1340,7 @@ Improvements 🛠
 * :class:`~.Adder` now registers an additional QFT-free, carry-ripple decomposition rule that avoids
   the arbitrarily precise rotations of the existing QFT-based decomposition and supports an arbitrary
   modulus. Its multi-controlled gates reuse the remaining register wires as borrowed work wires for a
-  cheaper decomposition, and the graph-based decomposition system
+  cheaper decomposition, and the graph-based decomposition system automatically selects the cheaper rule.
   automatically selects the cheaper rule.
   `(#9698) <https://github.com/PennyLaneAI/pennylane/pull/9698>`__
 
