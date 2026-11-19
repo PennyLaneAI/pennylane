@@ -2013,6 +2013,11 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* Added pinned local ``ty`` tooling and a diagnostic baseline for the package. Performs fixes
+  to improve ty compatibility.
+  `(#10537) <https://github.com/PennyLaneAI/pennylane/pull/10537>`__
+  `(#10540) <https://github.com/PennyLaneAI/pennylane/pull/10540>`__
+
 * Adding trusted publishing PyPI uploads.
   `(#10513) <https://github.com/PennyLaneAI/pennylane/pull/10513>`__
 

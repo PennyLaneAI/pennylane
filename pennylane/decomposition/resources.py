@@ -312,7 +312,7 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments
     )
 
 
-def adjoint_resource_rep(base_class: type[Operator], base_params: dict = None):
+def adjoint_resource_rep(base_class: type[Operator], base_params: dict | None = None):
     """Creates a ``CompressedResourceOp`` representation of the adjoint of an operator.
 
     Args:
