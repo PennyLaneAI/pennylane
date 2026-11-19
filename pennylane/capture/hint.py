@@ -16,7 +16,7 @@ Adds ``qp.hint``, a tool for annotating things with compiler hints.
 """
 
 import functools
-from collections.abc import Callable, Set
+from collections.abc import Callable, Collection, Set
 from difflib import SequenceMatcher
 from typing import Any, overload
 
@@ -43,9 +43,9 @@ def process_hints(hints: dict[str, Any], supported: Set[str]) -> dict[str, Any]:
 
     """
     processed: dict[str, Any] = {}
-    supported = sorted(supported)
+    sorted_supported = sorted(supported)
     for key, value in hints.items():
-        match = _canonical_match(key, supported)
+        match = _canonical_match(key, sorted_supported)
         if match in processed:
             raise ValueError(f"Multiple hint keys map to {match!r}. Got {tuple(hints)}.")
         if match is not None:
@@ -53,7 +53,7 @@ def process_hints(hints: dict[str, Any], supported: Set[str]) -> dict[str, Any]:
     return processed
 
 
-def _canonical_match(key: str, supported: Set[str]) -> str | None:
+def _canonical_match(key: str, supported: Collection[str]) -> str | None:
     """Return match if key has a close match in supported, else None."""
     if key in supported:
         return key
