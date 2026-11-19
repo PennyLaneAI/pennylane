@@ -18,6 +18,7 @@ import math
 import jax
 import jax.numpy as jnp
 from jax.core import ShapedArray
+from typing_extensions import TypeIs
 
 import pennylane as qp
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
@@ -30,8 +31,10 @@ from pennylane.ops.op_math.decompositions.normal_forms import (
 )
 from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega, ZSqrtTwo
 
+_DomainCorrection = tuple[float, ZOmega] | tuple[tuple[int, int], tuple[ZOmega, ZOmega]]
 
-def _domain_correction(theta: float) -> tuple[float, ZOmega]:
+
+def _domain_correction(theta: float) -> _DomainCorrection:
     r"""Return shifts for the angle :math:`\theta` for it to be in the interval :math:`[-\pi/4, \pi/4]` and the corresponding scaling factor for the matrix elements.
 
     Args:
@@ -86,6 +89,11 @@ def _domain_correction(theta: float) -> tuple[float, ZOmega]:
 
     # TODO: Handle the |theta| == pi/4 case better.
     return 0.0, ZOmega(d=1)  # -pi/4 <= |theta| < pi/4 / 7pi/4 <= |theta| < 8pi/4
+
+
+def _is_grid_correction(correction: _DomainCorrection) -> TypeIs[tuple[float, ZOmega]]:
+    """Check whether a domain correction requires a grid search."""
+    return isinstance(correction[1], ZOmega)
 
 
 def apply_clifford_from_idx(idx, wire):
@@ -246,19 +254,21 @@ def rs_decomposition(
 
         angle = -op.data[0] / 2
 
-        def eval_ross_algorithm(angle: float, upper_bounded_size: int = None):
+        def eval_ross_algorithm(angle: float, upper_bounded_size: int | None = None):
 
             # Get the implemented angle with the domain correction and scaling factor for it.
-            shift, scale = _domain_correction(angle)
+            correction = _domain_correction(angle)
             phase = 0.0 if isinstance(op, qp.RZ) else angle
 
             u, t, k = ZOmega(d=1), ZOmega(), 0
-            if not isinstance(scale, ZOmega):  # Get solution for the ± (2k + 1) . PI / 4 case.
+            if not _is_grid_correction(correction):  # Solution for the ± (2k + 1) . PI / 4 case.
+                shift, scale = correction
                 t_mat = DyadicMatrix(u, t, t, ZOmega(c=1)) @ DyadicMatrix(scale[0], t, t, u)
                 dyd_mat = t_mat * scale[1]
                 phase += math.pi / 8 if shift[0] == -1 else (8 - shift[1]) * math.pi / 8
 
             else:  # Get the solution from the grid search solver.
+                shift, scale = correction
                 u_solutions = GridIterator(angle + shift, epsilon, max_trials=max_search_trials)
                 for u_sol, k_val in u_solutions:
                     xi = ZSqrtTwo(2**k_val) - u_sol.norm().to_sqrt_two()
