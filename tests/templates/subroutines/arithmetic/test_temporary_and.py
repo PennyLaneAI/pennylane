@@ -80,11 +80,11 @@ class TestTemporaryAND:
 
     def test_repr_and_str(self):
         """Test the repr and str of TemporaryAND."""
-        assert repr(qp.TemporaryAND(wires=[0, "a", 2])) == "TemporaryAND(wires=[0, 'a', 2])"
-        assert str(qp.TemporaryAND(wires=[0, "a", 2])) == "TemporaryAND(wires=[0, 'a', 2])"
+        assert repr(qp.TemporaryAND(wires=[0, 5, 2])) == "TemporaryAND(wires=[0, 5, 2])"
+        assert str(qp.TemporaryAND(wires=[0, 5, 2])) == "TemporaryAND(wires=[0, 5, 2])"
         assert (
-            repr(qp.TemporaryAND(wires=[0, "a", 2], control_values=(0, 1)))
-            == "TemporaryAND(wires=[0, 'a', 2], control_values=[False, True])"
+            repr(qp.TemporaryAND(wires=[0, 5, 2], control_values=(0, 1)))
+            == "TemporaryAND(wires=[0, 5, 2], control_values=[False, True])"
         )
         assert (
             repr(qp.TemporaryAND(wires=Wire[3], control_values=Bool[2]))
@@ -107,8 +107,8 @@ class TestTemporaryAND:
 
     def test_alias(self):
         """Test that Elbow is an alias of TemporaryAND"""
-        op1 = qp.TemporaryAND(wires=[0, "a", 2], control_values=(0, 0))
-        op2 = qp.Elbow(wires=[0, "a", 2], control_values=(0, 0))
+        op1 = qp.TemporaryAND(wires=[0, 5, 2], control_values=(0, 0))
+        op2 = qp.Elbow(wires=[0, 5, 2], control_values=(0, 0))
         qp.assert_equal(op1, op2)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")

@@ -54,7 +54,7 @@ class TestInitialization:
         "wires, fixed_point, work_wire",
         (
             ([0, 1, 2], True, 2),
-            (["a", "b"], True, "a"),
+            ([8, 9], True, 8),
         ),
     )
     def test_error_wrong_work_wire(self, wires, fixed_point, work_wire):
