@@ -42,6 +42,7 @@ from gate_data import (
     Y,
     Z,
 )
+from helpers.decomposition_helpers import assert_basis_change_decomposition
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
@@ -1423,6 +1424,15 @@ PPR_DENOMINATORS = {qp.PPR_2: 2, qp.PPR_4: 4, qp.PPR_8: 8}
 @pytest.mark.parametrize("op_cls", list(PPR_DENOMINATORS))
 class TestPPR:
     """Tests for the fixed-angle Pauli product rotations (PPR) PPR_2, PPR_4 and PPR_8."""
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("sign", [1, -1])
+    @pytest.mark.parametrize("pauli_word", ["III", "IZI", "ZZZ", "XIY", "YZX"])
+    def test_decomposition_resources_and_matrix(self, op_cls, sign, pauli_word):
+        """Test that captured PPR rules preserve phase, basis changes, and resource identities."""
+        op = op_cls(sign, pauli_word, wires=[3, 1, 4])
+        rule = qp.list_decomps(op)[0]
+        assert_basis_change_decomposition(op, rule)
 
     @pytest.mark.parametrize("sign", [1, -1])
     def test_init(self, op_cls, sign):

@@ -1880,6 +1880,24 @@ Breaking changes 💔
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
+* :func:`~.change_op_basis` now preserves the basis-change operator during program capture.
+  With program capture enabled, inputs must be operator instances; callables remain supported
+  when capture is disabled. For capture, convert quantum functions into operators
+  with :func:`~.subcircuit`
+  and instantiate the resulting operator class before passing it to ``change_op_basis``.
+  `(#10511) <https://github.com/PennyLaneAI/pennylane/pull/10511>`__
+
+  .. code-block:: python
+
+      @qp.subcircuit(dynamic_argnames=("angle",))
+      @qp.register_resources({qp.H: 1, qp.RX: 1})
+      def Compute(angle, wires):
+          qp.H(wires)
+          qp.RX(angle, wires)
+
+      def circuit(angle):
+          qp.change_op_basis(Compute(angle, wires=0), qp.RZ(0.3, 0))
+
 * Graph-based decomposition is now always enabled, and the ``qp.decomposition.enable_graph``,
   ``disable_graph``, ``enabled_graph``, and ``toggle_graph_ctx`` functions have been removed.
 
@@ -2484,6 +2502,10 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed reconstruction of wire pytrees containing mixed Python and JAX scalars, allowing
+  nested captured operators to reuse these wires.
+  `(#10511) <https://github.com/PennyLaneAI/pennylane/pull/10511>`__
 
 * Fixed the measurement-based decomposition of :class:`~.QROM` to support dynamic
   bitstrings with ``qjit(capture=True)``, including padding for extra control wires.
