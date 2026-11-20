@@ -31,7 +31,7 @@ pytestmark = pytest.mark.catalyst
 TARGET = {"Hadamard", "CNOT", "RX"}
 
 
-@qp.register_resources({qp.Z: 2, qp.RY: 2, qp.CNOT: 1})
+@qp.register_resources({qp.Z: 2, qp.RY: 2, qp.CNOT: 1}, name="cz_with_ry")
 def cz_with_ry(wires, **_):
     """Decomposition rule for CZ that writes each Hadamard as Z followed by RY(pi/2)."""
     qp.Z(wires[1])
@@ -41,7 +41,7 @@ def cz_with_ry(wires, **_):
     qp.RY(np.pi / 2, wires[1])
 
 
-@qp.register_resources({qp.RY: 1, qp.X: 1})
+@qp.register_resources({qp.RY: 1, qp.X: 1}, name="h_with_x")
 def h_with_x(wires, **_):
     """Decomposition rule for Hadamard as RY(pi/2) followed by X."""
     qp.RY(np.pi / 2, wires)
@@ -255,6 +255,9 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         }
 
     @pytest.mark.parametrize("use_names", [False, True])
+    @pytest.mark.xfail(
+        reason="Waiting for a Catalyst build with updated precompiled decomposition rule names.",
+    )
     def test_exclude_decomps(self, qnode, use_names):
         """Estimate respects exclusions from a decompose transform in the pipeline."""
 
@@ -274,6 +277,9 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             "RX": 1,
         }
 
+    @pytest.mark.xfail(
+        reason="Waiting for a Catalyst build with updated precompiled decomposition rule names.",
+    )
     def test_exclusions_from_several_decompose_transforms(self, qnode):
         """Estimate combines excluded rules from every decomposition in the pipeline."""
         target = TARGET | {"RY", "PauliZ"}
