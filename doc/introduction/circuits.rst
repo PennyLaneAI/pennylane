@@ -60,8 +60,7 @@ Devices
 ^^^^^^^
 
 A quantum circuit has to run on a device, be it real hardware or a simulator.
-All devices that are compatible with PennyLane2 can be found at
-`<https://pennylane.ai/devices>`_. In general, however, devices are instantiated
+All devices that are compatible with PennyLane2 can be found in the :doc:`supported devices page <devices>`__. In general, however, devices are instantiated
 using :func:`~pennylane.device` as follows,
 
 .. code-block:: python
