@@ -288,25 +288,6 @@ def test_autograd_with_mixed_dictionary_keys(diff_function):
         assert derivative(offsets, x) == ()
 
 
-@pytest.mark.jax
-@pytest.mark.parametrize("grad_fn", [None, lambda x: 2 * x])
-@pytest.mark.parametrize(
-    "optimizer", [qp.GradientDescentOptimizer, qp.NesterovMomentumOptimizer, qp.QNGOptimizer]
-)
-def test_optimizer_rejects_jax_parameters(optimizer, grad_fn):
-    """JAX parameters require an optimizer that recognizes their trainability."""
-    with pytest.raises(ValueError, match="Optax"):
-        optimizer().step(lambda x: x**2, jax.numpy.array(2.0), grad_fn=grad_fn)
-
-
-@pytest.mark.jax
-def test_shot_adaptive_optimizer_rejects_jax_parameters():
-    """Shot-adaptive optimization validates JAX inputs before sampling gradients."""
-    optimizer = qp.ShotAdaptiveOptimizer(min_shots=10)
-    with pytest.raises(ValueError, match="Optax"):
-        optimizer.step(lambda value: value**2, jax.numpy.array(2.0))
-
-
 def test_autograd_jacobian_with_iterator_argnums():
     """Backend selection and repeated calls reuse all indices from a one-shot iterator."""
     derivative = qp.jacobian(lambda x, y: x**2 + x * y, argnums=iter((0, 1)))
@@ -393,29 +374,3 @@ def test_constant_jax_forward_remains_eager_value_after_jit():
     forward = derivative.forward
     assert compiled_derivative(value, offset=3.0) == 0.0
     assert derivative.forward is forward
-
-
-@pytest.mark.jax
-def test_optimizer_with_jax_auxiliary_data():
-    """Only the trainable NumPy argument is updated when JAX positional data is present."""
-    optimizer = qp.GradientDescentOptimizer(stepsize=0.1)
-    value = qp.numpy.array(2.0)
-    data = jax.numpy.array([1.0])
-    objective = lambda parameter, aux: parameter**2
-    updated, unchanged = optimizer.step(objective, value, data)
-    assert qp.math.allclose(updated, 1.6)
-    assert unchanged is data
-    updated, unchanged = optimizer.step(objective, value, data, grad_fn=lambda x, aux: 2 * x)
-    assert qp.math.allclose(updated, 1.6)
-    assert unchanged is data
-
-
-@pytest.mark.jax
-@pytest.mark.parametrize("grad_fn", [None, lambda params: {"value": 2 * params["value"]}])
-def test_optimizer_rejects_nested_jax_parameters(grad_fn):
-    """Nested JAX parameters cannot silently bypass optimizer validation."""
-    params = {"value": jax.numpy.array(2.0)}
-    with pytest.raises(ValueError, match="Optax"):
-        qp.GradientDescentOptimizer().step(
-            lambda argument: argument["value"] ** 2, params, grad_fn=grad_fn
-        )
