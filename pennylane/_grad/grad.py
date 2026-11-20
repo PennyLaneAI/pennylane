@@ -18,7 +18,7 @@ This submodule contains the autograd wrappers :class:`grad` and :func:`jacobian`
 import inspect
 import numbers
 import warnings
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from functools import wraps
 
 import jax
@@ -703,7 +703,7 @@ class jacobian:  # pylint: disable=too-few-public-methods
 
     def __init__(self, func, argnums=None, method=None, h=None):
         self._func = func
-        self._argnums = argnums if argnums is None or isinstance(argnums, int) else tuple(argnums)
+        self._argnums = tuple(argnums) if isinstance(argnums, Iterable) else argnums
         self._method = method
         self._h = h
 
