@@ -14,10 +14,7 @@
 
 """Utility functions for decompositions are available from ``qp.math.decomposition``."""
 
-from functools import lru_cache, partial
-
 import jax
-import jax.numpy as jnp
 import numpy as np
 
 from pennylane import math
@@ -285,7 +282,7 @@ def _set_unitary_matrix(unitary_matrix, index, value, like=None, real_valued=Fal
     return unitary_matrix
 
 
-def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
+def _givens_matrix(a, b, left=True, tol=1e-8, real_valued=False):
     r"""Build a :math:`2 \times 2` Givens rotation matrix :math:`G`.
 
     When the matrix :math:`G` is applied to a vector :math:`[a,\ b]^T` the following would happen:
@@ -505,24 +502,7 @@ def _commute_phases_u(left_givens, right_givens, phases):
     return math.diag(phases), ordered_rotations
 
 
-@lru_cache
-def _givens_matrix_jax():
-
-    @partial(jax.jit, static_argnames=("real_valued",))
-    def givens_matrix_jax(a, b, left=True, tol=1e-8, real_valued=False):
-        return _givens_matrix_core(a, b, left=left, tol=tol, real_valued=real_valued)
-
-    return givens_matrix_jax
-
-
-def _givens_matrix(a, b, left=True, tol=1e-8, real_valued=False):
-    interface = math.get_interface(a)
-    if interface == "jax" and isinstance(jnp.array(0), jax.core.Tracer):
-        return _givens_matrix_jax()(a, b, left=left, tol=tol, real_valued=real_valued)
-    return _givens_matrix_core(a, b, left=left, tol=tol, real_valued=real_valued)
-
-
-def _right_givens_core(indices, unitary, N, j, real_valued):
+def _right_givens(indices, unitary, N, j, real_valued):
     interface = math.get_interface(unitary)
     grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True, real_valued=real_valued)
     unitary = _set_unitary_matrix(
@@ -535,24 +515,7 @@ def _right_givens_core(indices, unitary, N, j, real_valued):
     return unitary, math.conj(grot_mat)
 
 
-@lru_cache
-def _right_givens_jax():
-
-    @partial(jax.jit, static_argnames=("real_valued",))
-    def _right_givens_jax(indices, unitary, N, j, real_valued):
-        return _right_givens_core(indices, unitary, N, j, real_valued)
-
-    return _right_givens_jax
-
-
-def _right_givens(indices, unitary, N, j, real_valued):
-    interface = math.get_interface(unitary)
-    if interface == "jax" and isinstance(jnp.array(0), jax.core.Tracer):
-        return _right_givens_jax()(indices, unitary, N, j, real_valued)
-    return _right_givens_core(indices, unitary, N, j, real_valued)
-
-
-def _left_givens_core(indices, unitary, j, real_valued):
+def _left_givens(indices, unitary, j, real_valued):
     interface = math.get_interface(unitary)
     grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False, real_valued=real_valued)
     unitary = _set_unitary_matrix(
@@ -563,23 +526,6 @@ def _left_givens_core(indices, unitary, j, real_valued):
         real_valued=real_valued,
     )
     return unitary, grot_mat
-
-
-@lru_cache
-def _left_givens_jax():
-
-    @partial(jax.jit, static_argnames=("real_valued",))
-    def _left_givens_jax(indices, unitary, j, real_valued):
-        return _left_givens_core(indices, unitary, j, real_valued)
-
-    return _left_givens_jax
-
-
-def _left_givens(indices, unitary, j, real_valued):
-    interface = math.get_interface(unitary)
-    if interface == "jax" and isinstance(jnp.array(0), jax.core.Tracer):
-        return _left_givens_jax()(indices, unitary, j, real_valued)
-    return _left_givens_core(indices, unitary, j, real_valued)
 
 
 def givens_decomposition(unitary):

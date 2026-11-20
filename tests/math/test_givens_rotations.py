@@ -349,15 +349,20 @@ def test_givens_matrix_exceptions():
 
 
 @pytest.mark.jax
-def test_givens_matrix_jaxpr():
-    """Verify the JAXPR representation includes a function"""
-    import jax.numpy as jnp
+@pytest.mark.parametrize("group", [ortho_group, unitary_group])
+def test_givens_decomposition_no_nested_jit_matrix_outputs(group, seed):
+    """Test that ``givens_decomposition`` does not return matrices from nested jitted functions,
+    as Catalyst does not free the buffers returned by them."""
     from jax import make_jaxpr
 
-    a = jnp.array(1.2)
-    b = jnp.array(2.3)
+    shape = 4
+    matrix = group.rvs(shape, random_state=seed)
+    jaxpr = make_jaxpr(givens_decomposition)(matrix)
 
-    assert "givens_matrix_jax" in str(make_jaxpr(_givens_matrix)(a, b))
+    nested_output_shapes = [
+        var.aval.shape for eqn in jaxpr.eqns if "jaxpr" in eqn.params for var in eqn.outvars
+    ]
+    assert (shape, shape) not in nested_output_shapes
 
 
 @pytest.mark.parametrize(
