@@ -82,7 +82,9 @@ Differences at a glance
         :func:`~pennylane.jacobian` must happen inside :func:`~.qjit`,
         parameter-shift, finite-difference, and adjoint gradient methods are
         supported on the quantum parts of the program, and optimization *must*
-        occur via `Optax <https://optax.readthedocs.io>`__.
+        occur via JAX-compatible optimizers (e.g., 
+        `Optax <https://optax.readthedocs.io>`__ and 
+        `Flax <https://flax.readthedocs.io/en/stable/>`__).
 
 Defining circuits
 -----------------
@@ -241,7 +243,8 @@ PennyLane Classic:
   >>> circuit(angles)
   tensor(1.67218462, requires_grad=True)
 
-With PennyLane2, optimization must happen with optimizers provided by the
+With PennyLane2, optimization is supported with optimizers that are 
+JAX-compatible, like those in the 
 `Optax <https://optax.readthedocs.io>`__ package, where it is often more
 performant if the entire optimization loop is placed *within* ``qjit``.
 
