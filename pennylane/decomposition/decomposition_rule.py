@@ -182,7 +182,7 @@ def register_resources(
 
     Keyword Args:
         name (Optional(str)): Optional public rule name, if ``None``, use the function name with leading
-            underscores removed. Existing rules retain their name when this argument is omitted.
+            underscores removed.
             Names must be non-blank and must not start with an underscore.
         work_wires (dict or Callable): a dictionary declaring the number of work wires of each type
             required to perform this decomposition. Accepted work wire types include ``"zeroed"``,
