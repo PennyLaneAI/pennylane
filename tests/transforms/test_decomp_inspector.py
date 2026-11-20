@@ -371,7 +371,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 18, RY: 8, RZ: 33}
             Weighted Cost: 2974.0
 
-            Decomposition 1 (name: one_borrowed_worker)
+            Decomposition 1 (name: one_borrowed_work_wire)
             0: ────╭●────╭●───────┤
             1: ────├●────├●───────┤
             2: ────│──╭●─│──╭●────┤
@@ -383,7 +383,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
             Weighted Cost: 2374.0
 
-            CHOSEN: Decomposition 2 (name: one_zeroed_worker)
+            CHOSEN: Decomposition 2 (name: one_zeroed_work_wire)
             0: ───────╭●─────●╮────┤
             1: ───────├●─────●┤────┤
             2: ───────│──╭●───│────┤
@@ -395,13 +395,13 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 11, GlobalPhase: 31, MidMeasure: 1, RX: 7, RY: 5, RZ: 20}
             Weighted Cost: 1612.0
 
-            Decomposition 3 (name: two_borrowed_workers)
+            Decomposition 3 (name: two_borrowed_work_wires)
             Insufficient work wires: requires 2 but only 1 available.
 
-            Decomposition 4 (name: two_zeroed_workers)
+            Decomposition 4 (name: two_zeroed_work_wires)
             Insufficient work wires: requires 2 but only 1 available.
 
-            Decomposition 5 (name: many_borrowed_workers)
+            Decomposition 5 (name: many_borrowed_work_wires)
             0: ────╭●────╭●───────┤
             1: ────│──╭●─│──╭●────┤
             2: ────│──├●─│──├●────┤
@@ -413,7 +413,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 41, RX: 5, RY: 8, RZ: 36}
             Weighted Cost: 2474.0
 
-            Decomposition 6 (name: many_zeroed_workers)
+            Decomposition 6 (name: many_zeroed_work_wires)
             0: ──────────╭●────────┤
             1: ───────╭●─│───●╮────┤
             2: ───────├●─│───●┤────┤

@@ -516,8 +516,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         Some decomposition rules make use of dynamically allocated work wires. For example:
 
-        >>> qp.inspect_decomps(qp.MultiControlledX([0, 1, 2, 3]), "one_zeroed_worker")
-        Decomposition 0 (name: one_zeroed_worker)
+        >>> qp.inspect_decomps(qp.MultiControlledX([0, 1, 2, 3]), "one_zeroed_work_wire")
+        Decomposition 0 (name: one_zeroed_work_wire)
         0: ───────╭●─────●╮────┤
         1: ───────├●─────●┤────┤
         2: ───────│──╭●───│────┤
@@ -624,7 +624,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Full Expansion Gates: {CNOT: 58, GlobalPhase: 62, RX: 23, RY: 10, RZ: 61}
         Weighted Cost: 4758.0
         <BLANKLINE>
-        Decomposition 1 (name: one_borrowed_worker)
+        Decomposition 1 (name: one_borrowed_work_wire)
         2: ────╭●──────────────────╭●──────────────────┤
         3: ────├●─╭X──X─╭●──X†─╭X†─├●─╭X──X─╭●──X†─╭X†─┤
         4: ────│──├●────│──────├X†─│──├●────│──────├X†─┤
@@ -637,7 +637,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Full Expansion Gates: {CNOT: 48, GlobalPhase: 80, RX: 8, RY: 16, RZ: 72}
         Weighted Cost: 4848.0
         <BLANKLINE>
-        Decomposition 2 (name: one_zeroed_worker)
+        Decomposition 2 (name: one_zeroed_work_wire)
         2: ───────╭●───────────────────●╮────┤
         3: ───────├●─╭X──X─╭●──X†─╭X†──●┤────┤
         4: ───────│──├●────│──────├X†───│────┤
@@ -650,7 +650,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Full Expansion Gates: {CNOT: 23, GlobalPhase: 46, MidMeasure: 1, RX: 10, RY: 9, RZ: 38}
         Weighted Cost: 2874.0
         <BLANKLINE>
-        Decomposition 3 (name: two_borrowed_workers)
+        Decomposition 3 (name: two_borrowed_work_wires)
         2: ────╭●──────────────────╭●──────────────────┤
         3: ────├●──X─╭X─╭●─╭X†──X†─├●──X─╭X─╭●─╭X†──X†─┤
         4: ────│─────├●─│──├X†─────│─────├●─│──├X†─────┤
@@ -664,7 +664,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Full Expansion Gates: {CNOT: 48, GlobalPhase: 80, RX: 8, RY: 16, RZ: 72}
         Weighted Cost: 4848.0
         <BLANKLINE>
-        Decomposition 4 (name: two_zeroed_workers)
+        Decomposition 4 (name: two_zeroed_work_wires)
         2: ───────╭●───────────────────●╮────┤
         3: ───────├●──X─╭X─╭●─╭X†──X†──●┤────┤
         4: ───────│─────├●─│──├X†───────│────┤
@@ -678,7 +678,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Full Expansion Gates: {CNOT: 23, GlobalPhase: 46, MidMeasure: 1, RX: 10, RY: 9, RZ: 38}
         Weighted Cost: 2874.0
         <BLANKLINE>
-        Decomposition 5 (name: many_borrowed_workers)
+        Decomposition 5 (name: many_borrowed_work_wires)
         2: ────╭●──────────╭●─────────────┤
         3: ────│──╭●────╭●─│──╭●────╭●────┤
         4: ────│──│──╭●─│──│──│──╭●─│─────┤
@@ -692,7 +692,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Full Expansion Gates: {CNOT: 48, GlobalPhase: 78, RX: 6, RY: 16, RZ: 72}
         Weighted Cost: 4748.0
         <BLANKLINE>
-        CHOSEN: Decomposition 6 (name: many_zeroed_workers)
+        CHOSEN: Decomposition 6 (name: many_zeroed_work_wires)
         2: ─────────────╭●────────────┤
         3: ──────────╭●─│───●╮────────┤
         4: ───────╭●─│──│────│──●╮────┤
@@ -730,7 +730,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Full Expansion Gates: {CNOT: 58, GlobalPhase: 62, RX: 23, RY: 10, RZ: 61}
         Weighted Cost: 4758.0
         <BLANKLINE>
-        Decomposition 1 (name: one_borrowed_worker)
+        Decomposition 1 (name: one_borrowed_work_wire)
         2: ────╭●──────────────────╭●──────────────────┤
         3: ────├●─╭X──X─╭●──X†─╭X†─├●─╭X──X─╭●──X†─╭X†─┤
         4: ────│──├●────│──────├X†─│──├●────│──────├X†─┤
@@ -743,7 +743,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Full Expansion Gates: {CNOT: 48, GlobalPhase: 80, RX: 8, RY: 16, RZ: 72}
         Weighted Cost: 4848.0
         <BLANKLINE>
-        CHOSEN: Decomposition 2 (name: one_zeroed_worker)
+        CHOSEN: Decomposition 2 (name: one_zeroed_work_wire)
         2: ───────╭●───────────────────●╮────┤
         3: ───────├●─╭X──X─╭●──X†─╭X†──●┤────┤
         4: ───────│──├●────│──────├X†───│────┤
@@ -756,16 +756,16 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Full Expansion Gates: {CNOT: 23, GlobalPhase: 46, MidMeasure: 1, RX: 10, RY: 9, RZ: 38}
         Weighted Cost: 2874.0
         <BLANKLINE>
-        Decomposition 3 (name: two_borrowed_workers)
+        Decomposition 3 (name: two_borrowed_work_wires)
         Insufficient work wires: requires 2 but only 1 available.
         <BLANKLINE>
-        Decomposition 4 (name: two_zeroed_workers)
+        Decomposition 4 (name: two_zeroed_work_wires)
         Insufficient work wires: requires 2 but only 1 available.
         <BLANKLINE>
-        Decomposition 5 (name: many_borrowed_workers)
+        Decomposition 5 (name: many_borrowed_work_wires)
         Insufficient work wires: requires 2 but only 1 available.
         <BLANKLINE>
-        Decomposition 6 (name: many_zeroed_workers)
+        Decomposition 6 (name: many_zeroed_work_wires)
         Insufficient work wires: requires 2 but only 1 available.
 
     """
