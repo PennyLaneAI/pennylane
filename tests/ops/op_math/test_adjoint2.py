@@ -32,7 +32,7 @@ from tests.core.operator.operator2_utils import CompilableOp, OneWireDynOp
 class SX2(Operator2):
     """A new SX gate."""
 
-    wire_sizes = (1,)
+    arg_specs = {"wires": Wire[1]}
 
     is_verified_hermitian = True
 
@@ -70,7 +70,7 @@ class RX2(Operator2):
 
     dynamic_argnames = ("theta",)
 
-    wire_sizes = (1,)
+    arg_specs = {"wires": Wire[1]}
 
     is_verified_hermitian = True
 

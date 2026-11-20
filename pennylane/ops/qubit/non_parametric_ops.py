@@ -130,8 +130,6 @@ class Hadamard(Operator2):
 
     is_verified_hermitian = True
 
-    wire_sizes = (1,)
-
     arg_specs = {"wires": Wire[1]}
 
     num_wires = 1
@@ -431,8 +429,6 @@ class PauliX(Operator2):
 
                 :class:`~.SX` | :math:`1`
     """
-
-    wire_sizes = (1,)
 
     arg_specs = {"wires": Wire[1]}
 
@@ -1312,7 +1308,6 @@ class S(Operator2):
                 :class:`~.PauliZ` | :math:`1`
     """
 
-    wire_sizes = (1,)
     arg_specs = {"wires": Wire[1]}
 
     num_wires = 1
@@ -1496,7 +1491,6 @@ class T(Operator2):
                 :class:`~.PhaseShift` | :math:`1`
     """
 
-    wire_sizes = (1,)
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
@@ -1667,7 +1661,6 @@ class SX(Operator2):
                 :class:`~.GlobalPhase` | :math:`1`
     """
 
-    wire_sizes = (1,)
     arg_specs = {"wires": Wire[1]}
 
     num_wires = 1
@@ -1842,8 +1835,6 @@ class SWAP(Operator2):
 
                 :class:`Pow(SWAP) <.SWAP>` with power :math:`z \bmod 2` | :math:`1`
     """
-
-    wire_sizes = (2,)
 
     arg_specs = {"wires": Wire[2]}
 
@@ -2055,8 +2046,6 @@ class ECR(Operator2):
                 :class:`Pow(ECR) <.ECR>` with power :math:`z \bmod 2` | :math:`1`
     """
 
-    wire_sizes = (2,)
-
     arg_specs = {"wires": Wire[2]}
 
     num_wires = 2
@@ -2233,8 +2222,6 @@ class ISWAP(Operator2):
 
                 :class:`~.SISWAP` | :math:`1`
     """
-
-    wire_sizes = (2,)
 
     arg_specs = {"wires": Wire[2]}
 
@@ -2429,8 +2416,6 @@ class SISWAP(Operator2):
 
                 :class:`~.ISWAP` | :math:`1`
     """
-
-    wire_sizes = (2,)
 
     arg_specs = {"wires": Wire[2]}
 

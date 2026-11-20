@@ -397,8 +397,6 @@ class CH(Controlled2):
 
     arg_specs = {"wires": Wire[2]}
 
-    wire_sizes = (2,)
-
     num_wires = 2
     """int: Number of wires that the operation acts on."""
 
@@ -886,8 +884,6 @@ class CSWAP(Controlled2):
 
     arg_specs = {"wires": Wire[3]}
 
-    wire_sizes = (3,)
-
     num_wires = 3
     """int : Number of wires that the operation acts on."""
 
@@ -1283,8 +1279,6 @@ class CNOT(Controlled2):
 
     arg_specs = {"wires": Wire[2]}
 
-    wire_sizes = (2,)
-
     num_wires = 2
     """int: Number of wires that the operator acts on."""
 
@@ -1501,8 +1495,6 @@ class Toffoli(Controlled2):
     wire_argnames = ("wires",)
 
     arg_specs = {"wires": Wire[3]}
-
-    wire_sizes = (3,)
 
     num_wires = 3
     """int: Number of wires that the operator acts on."""
@@ -2577,7 +2569,6 @@ class CRZ(Controlled2):
 
     name = "CRZ"
 
-    wire_sizes = (2,)
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Float, "wires": Wire[2]}
 
@@ -2916,7 +2907,6 @@ class ControlledPhaseShift(Controlled2):
 
     """
 
-    wire_sizes = (2,)
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Float, "wires": Wire[2]}
 
