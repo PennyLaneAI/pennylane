@@ -323,7 +323,7 @@ class TestMapToResourceOp:
             ),
             (
                 qtemps.QuantumPhaseEstimation(
-                    qops.MultiControlledX(wires=[0, 1, 2, 3], work_wires=["w0", "w1"]),
+                    qops.MultiControlledX(wires=[0, 1, 2, 3], work_wires=[20, 21]),
                     estimation_wires=[4, 5],
                 ),
                 re_temps.QPE(
@@ -705,30 +705,30 @@ class TestMapToResourceOp:
             (
                 qops.ctrl(
                     qtemps.SemiAdder(x_wires=[0, 1, 2], y_wires=[3, 4, 5], work_wires=[6, 7, 8]),
-                    control=["c1", "c2"],
-                    work_wires=["w1", "w2"],
+                    control=[17, 18],
+                    work_wires=[21, 22],
                     work_wire_type="zeroed",
                 ),
                 re_ops.Controlled(
                     re_temps.SemiAdder(3, wires=[0, 1, 2, 3, 4, 5]),
                     num_ctrl_wires=2,
                     num_zero_ctrl=0,
-                    wires=["c1", "c2"],
+                    wires=[17, 18],
                 ),
             ),
             (
                 qops.ctrl(
                     qtemps.AQFT(order=4, wires=[0, 1, 2, 3, 4, 5, 6]),
-                    control=["c1", "c2", "c3"],
+                    control=[17, 18, 19],
                     control_values=[0, 1, 0],
-                    work_wires=["w1", "w2"],
+                    work_wires=[21, 22],
                     work_wire_type="borrowed",
                 ),
                 re_ops.Controlled(
                     re_temps.AQFT(order=4, num_wires=7, wires=[0, 1, 2, 3, 4, 5, 6]),
                     num_ctrl_wires=3,
                     num_zero_ctrl=2,
-                    wires=["c1", "c2", "c3"],
+                    wires=[17, 18, 19],
                 ),
             ),
         ),

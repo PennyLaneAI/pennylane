@@ -175,8 +175,8 @@ class TestMergeRotations:
         def qfunc():
             qp.CRX(0.1, wires=[0, 1])
             qp.CRX(0.2, wires=[0, 1])
-            qp.RY(0.3, wires=["a"])
-            qp.RY(0.5, wires=["a"])
+            qp.RY(0.3, wires=[4])
+            qp.RY(0.5, wires=[4])
             qp.RX(-0.5, wires=[2])
             qp.RX(0.2, wires=[2])
             qp.RZ(0.2, wires=[2])
@@ -186,7 +186,7 @@ class TestMergeRotations:
         ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["CRX", "RY", "RY", "RX", "RZ"]
-        wires_expected = [Wires([0, 1]), Wires("a"), Wires("a"), Wires(2), Wires(2)]
+        wires_expected = [Wires([0, 1]), Wires(4), Wires(4), Wires(2), Wires(2)]
         compare_operation_lists(ops, names_expected, wires_expected)
 
         assert qp.math.isclose(ops[0].parameters[0], 0.3)
@@ -236,7 +236,7 @@ class TestMergeRotations:
     @pytest.mark.parametrize(
         ("theta_1", "theta_2", "expected_ops"),
         [
-            (0.3, -0.2, [qp.CRY(0.1, wires=["w1", "w2"])]),
+            (0.3, -0.2, [qp.CRY(0.1, wires=[5, 6])]),
             (0.15, -0.15, []),
         ],
     )
@@ -244,8 +244,8 @@ class TestMergeRotations:
         """Test that adjacent controlled rotations on the same wires in same order get merged."""
 
         def qfunc():
-            qp.CRY(theta_1, wires=["w1", "w2"])
-            qp.CRY(theta_2, wires=["w1", "w2"])
+            qp.CRY(theta_1, wires=[5, 6])
+            qp.CRY(theta_2, wires=[5, 6])
 
         transformed_qfunc = merge_rotations(qfunc)
 
@@ -262,15 +262,15 @@ class TestMergeRotations:
         """Test that adjacent controlled rotations on the same wires in different order don't merge."""
 
         def qfunc():
-            qp.CRX(0.2, wires=["w1", "w2"])
-            qp.CRX(0.3, wires=["w2", "w1"])
+            qp.CRX(0.2, wires=[5, 6])
+            qp.CRX(0.3, wires=[6, 5])
 
         transformed_qfunc = merge_rotations(qfunc)
 
         ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["CRX", "CRX"]
-        wires_expected = [Wires(["w1", "w2"]), Wires(["w2", "w1"])]
+        wires_expected = [Wires([5, 6]), Wires([6, 5])]
         compare_operation_lists(ops, names_expected, wires_expected)
 
         assert ops[0].parameters[0] == 0.2
@@ -403,14 +403,14 @@ class TestMergeRotationsInterfaces:
         import jax
 
         @jax.jit
-        @qp.qnode(qp.device("default.qubit", wires=["w1", "w2"]), interface="jax")
+        @qp.qnode(qp.device("default.qubit", wires=[5, 6]), interface="jax")
         @merge_rotations
         def qfunc():
-            qp.Rot(*jax.numpy.array([0.1, 0.2, 0.3]), wires=["w1"])
-            qp.Rot(*jax.numpy.array([-0.3, -0.2, -0.1]), wires=["w1"])
-            qp.CRX(jax.numpy.array(0.2), wires=["w1", "w2"])
-            qp.CRX(jax.numpy.array(-0.2), wires=["w1", "w2"])
-            return qp.expval(qp.PauliZ("w2"))
+            qp.Rot(*jax.numpy.array([0.1, 0.2, 0.3]), wires=[5])
+            qp.Rot(*jax.numpy.array([-0.3, -0.2, -0.1]), wires=[5])
+            qp.CRX(jax.numpy.array(0.2), wires=[5, 6])
+            qp.CRX(jax.numpy.array(-0.2), wires=[5, 6])
+            return qp.expval(qp.PauliZ(6))
 
         res = qfunc()
 

@@ -49,10 +49,10 @@ def test_specs_compute_depth(compute_depth):
     ops = [
         qp.RX(0.432, wires=0),
         qp.Rot(0.543, 0, 0.23, wires=0),
-        qp.CNOT(wires=[0, "a"]),
+        qp.CNOT(wires=[0, 13]),
         qp.RX(0.133, wires=4),
     ]
-    obs = [qp.expval(qp.PauliX(wires="a")), qp.probs(wires=[0, "a"])]
+    obs = [qp.expval(qp.PauliX(wires=13)), qp.probs(wires=[0, 13])]
 
     tape = QuantumScript(ops=ops, measurements=obs)
     resources = resources_from_tape(tape, compute_depth=compute_depth)
