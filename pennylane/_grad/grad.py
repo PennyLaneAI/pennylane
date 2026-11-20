@@ -28,6 +28,7 @@ from autograd.extend import vspace
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
 from autoray import infer_backend
+from jax._src.core import trace_state_clean
 from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten, treedef_tuple
 
 from pennylane import capture
@@ -99,8 +100,8 @@ def _setup_argnums(argnums: int | Sequence[int] | None) -> tuple[tuple[int, ...]
 
 def _interface_leaves(value):
     """Yield pytree leaves without sorting dictionary keys, which may have mixed types."""
-    for leaf in tree_leaves(value, is_leaf=lambda node: isinstance(node, dict)):
-        if isinstance(leaf, dict):
+    for leaf in tree_leaves(value, is_leaf=lambda node: node.__class__ is dict):
+        if leaf.__class__ is dict:
             for item in leaf.values():
                 yield from _interface_leaves(item)
         else:
@@ -111,9 +112,17 @@ def _interface_leaves(value):
 # convention as JAX. PyTorch support is deprioritized for now, so PyTorch inputs fall through to
 # the Autograd path, which does not support them. ``test_torch_dispatch`` in
 # ``tests/test_grad.py`` is marked ``pl2do`` until then.
-def _has_jax_inputs(args: tuple, kwargs: dict) -> bool:
-    """Detect JAX arrays in the arguments without importing ``math``."""
-    return any(infer_backend(leaf) == "jax" for leaf in _interface_leaves((args, kwargs)))
+def _has_jax_inputs(args: tuple, argnums) -> bool:
+    """Detect JAX leaves in differentiated positional arguments."""
+    if argnums is None:
+        selected = tuple(
+            arg for arg in args if getattr(arg, "requires_grad", False) or isinstance(arg, ArrayBox)
+        )
+        if not selected:
+            selected = args[:1]
+    else:
+        selected = tuple(args[i] for i in _setup_argnums(argnums)[0])
+    return any(infer_backend(leaf) == "jax" for leaf in _interface_leaves(selected))
 
 
 def _args_and_argnums(args, argnums):
@@ -237,6 +246,9 @@ class grad:  # pylint: disable=too-many-instance-attributes
     With JAX inputs, as within :func:`~.qjit`, the first positional argument is
     differentiated by default, following JAX. Use ``argnums`` to select positional
     arguments explicitly.
+
+    The backend is selected from the differentiated positional arguments.
+    Auxiliary JAX data does not override Autograd's trainable-argument inference.
 
     With Autograd, gradients are computed for arguments which contain
     the property ``requires_grad=True``. Alternatively, the ``argnums`` keyword argument
@@ -369,12 +381,12 @@ class grad:  # pylint: disable=too-many-instance-attributes
         if self._h:
             raise ValueError(f"h = {self._h} unsupported without QJIT. Must be ``None``.")
 
-        if _has_jax_inputs(args, kwargs):
+        if _has_jax_inputs(args, self._argnums):
             argnums, unpack = _setup_argnums(self._argnums)
             value, derivative = jax.value_and_grad(
                 self._func, argnums=argnums[0] if unpack else argnums
             )(*args, **kwargs)
-            if not isinstance(value, jax.core.Tracer):
+            if trace_state_clean():
                 self._forward = value
             return derivative
 
@@ -718,7 +730,7 @@ class jacobian:  # pylint: disable=too-few-public-methods
         if self._h:
             raise ValueError(f"h = {self._h} unsupported without QJIT. Must be ``None``.")
 
-        if _has_jax_inputs(args, kwargs):
+        if _has_jax_inputs(args, self._argnums):
             argnums, unpack = _setup_argnums(self._argnums)
             return jax.jacobian(self._func, argnums=argnums[0] if unpack else argnums)(
                 *args, **kwargs

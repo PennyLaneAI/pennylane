@@ -16,6 +16,7 @@
 from autoray import infer_backend
 
 from pennylane._grad import grad as get_gradient
+from pennylane._grad.grad import _interface_leaves
 
 
 class GradientDescentOptimizer:
@@ -103,7 +104,9 @@ class GradientDescentOptimizer:
 
     @staticmethod
     def _validate_parameters(args):
-        if any(infer_backend(arg) == "jax" for arg in args):
+        if not any(getattr(arg, "requires_grad", False) for arg in args) and any(
+            infer_backend(leaf) == "jax" for leaf in _interface_leaves(args)
+        ):
             raise ValueError(
                 "PennyLane's gradient-descent optimizers do not support JAX parameters. Use "
                 "pennylane.numpy parameters, or a native JAX optimizer such as Optax."

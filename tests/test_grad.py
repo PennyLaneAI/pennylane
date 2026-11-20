@@ -15,6 +15,7 @@
 Unit tests for qp.grad
 """
 
+import jax
 import pytest
 
 import pennylane as qp
@@ -155,7 +156,6 @@ def test_value_and_grad_without_qjit():
 @pytest.mark.jax
 def test_jax_grad_forward():
     """JAX gradients retain the forward value and respect keyword arguments."""
-    jax = pytest.importorskip("jax")
 
     def cost(first, second, *, scale):
         return first**2 + scale * first * second
@@ -173,7 +173,6 @@ def test_jax_grad_forward():
 @pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
 def test_jax_argnums(argnums, diff_function):
     """Explicit argument indices preserve scalar-versus-sequence result structure."""
-    jax = pytest.importorskip("jax")
 
     def cost(first, second, *, scale):
         value = scale * first * second
@@ -198,7 +197,6 @@ def test_jax_argnums(argnums, diff_function):
 @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "adjoint"])
 def test_jax_qnode_gradients(diff_method):
     """qp.grad and qp.jacobian differentiate scalar and vector JAX QNodes."""
-    jax = pytest.importorskip("jax")
 
     @qp.qnode(qp.device("default.qubit"), interface="jax", diff_method=diff_method)
     def scalar_circuit(angle):
@@ -224,7 +222,6 @@ def test_jax_qnode_gradients(diff_method):
 @pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
 def test_jax_higher_derivatives(diff_function):
     """JAX derivative results can be differentiated again."""
-    jax = pytest.importorskip("jax")
     derivative = diff_function(lambda value: value**3)
     assert qp.math.allclose(qp.grad(derivative)(jax.numpy.array(2.0)), 12.0)
 
@@ -233,7 +230,6 @@ def test_jax_higher_derivatives(diff_function):
 @pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
 def test_jax_default_and_jit(diff_function):
     """JAX defaults to the first argument and remains compatible with JIT."""
-    jax = pytest.importorskip("jax")
 
     def cost(first, second):
         return first**2 + first * second
@@ -248,7 +244,6 @@ def test_jax_default_and_jit(diff_function):
 @pytest.mark.parametrize("eager_first", [False, True])
 def test_jax_forward_remains_eager_value_after_jit(eager_first):
     """Compiled JAX executions cannot leak tracers through the cached forward value."""
-    jax = pytest.importorskip("jax")
     derivative = qp.grad(lambda value: value**3)
     if eager_first:
         assert qp.math.allclose(derivative(jax.numpy.array(2.0)), 12.0)
@@ -267,7 +262,6 @@ def test_jax_forward_remains_eager_value_after_jit(eager_first):
 @pytest.mark.jax
 def test_jax_pytree_jacobian():
     """JAX Jacobians support structured inputs and outputs."""
-    jax = pytest.importorskip("jax")
     argument = {"value": jax.numpy.array(2.0)}
     result = qp.jacobian(lambda data: {"square": data["value"] ** 2})(argument)
     assert qp.math.allclose(result["square"]["value"], 4.0)
@@ -300,6 +294,101 @@ def test_autograd_with_mixed_dictionary_keys(diff_function):
 )
 def test_optimizer_rejects_jax_parameters(optimizer, grad_fn):
     """JAX parameters require an optimizer that recognizes their trainability."""
-    jax = pytest.importorskip("jax")
     with pytest.raises(ValueError, match="Optax"):
         optimizer().step(lambda x: x**2, jax.numpy.array(2.0), grad_fn=grad_fn)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
+def test_autograd_with_jax_auxiliary_data(diff_function):
+    """Auxiliary JAX data does not change inference of trainable NumPy arguments."""
+    first, second = qp.numpy.array(2.0), qp.numpy.array(3.0)
+    data = jax.numpy.array([1.0])
+    derivative = diff_function(lambda x, y, aux: x**2 + y**2)
+    assert qp.math.allclose(derivative(first, second, aux=data), (4.0, 6.0))
+    assert qp.math.allclose(derivative(first, second, data), (4.0, 6.0))
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
+def test_dispatch_uses_explicit_argnums(diff_function):
+    """Explicit argument selection excludes auxiliary JAX positional arguments."""
+    derivative = diff_function(lambda data, value: value**2, argnums=1)
+    value = qp.numpy.array(3.0)
+    assert qp.math.allclose(derivative(jax.numpy.array([1.0]), value), 6.0)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
+def test_jax_auxiliary_data_before_trainable_parameter(diff_function):
+    """Default Autograd inference also applies when auxiliary JAX data comes first."""
+    derivative = diff_function(lambda data, value: value**2)
+    assert qp.math.allclose(derivative(jax.numpy.array([1.0]), qp.numpy.array(3.0)), 6.0)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
+def test_registered_dictionary_subclass(diff_function):
+    """Registered dictionary subclasses expose leaves through their custom flattening."""
+
+    @jax.tree_util.register_pytree_node_class
+    class Parameters(dict):
+        """Store a parameter as an attribute rather than a dictionary entry."""
+
+        def __init__(self, value):
+            super().__init__()
+            self.value = value
+
+        def tree_flatten(self):
+            """Return the differentiable parameter."""
+            return (self.value,), None
+
+        @classmethod
+        def tree_unflatten(cls, _, children):
+            """Rebuild the parameter container."""
+            return cls(children[0])
+
+    derivative = diff_function(lambda params: params.value**2)
+    result = derivative(Parameters(jax.numpy.array(2.0)))
+    assert isinstance(result, Parameters)
+    assert qp.math.allclose(result.value, 4.0)
+
+
+@pytest.mark.jax
+def test_constant_jax_forward_remains_eager_value_after_jit():
+    """Tracing a constant output leaves the cached eager forward value untouched."""
+    derivative = qp.grad(lambda value, *, offset: offset)
+    compiled_derivative = jax.jit(derivative, static_argnames="offset")
+    value = jax.numpy.array(2.0)
+    assert compiled_derivative(value, offset=1.0) == 0.0
+    assert derivative.forward is None
+    assert derivative(value, offset=2.0) == 0.0
+    forward = derivative.forward
+    assert compiled_derivative(value, offset=3.0) == 0.0
+    assert derivative.forward is forward
+
+
+@pytest.mark.jax
+def test_optimizer_with_jax_auxiliary_data():
+    """Only the trainable NumPy argument is updated when JAX positional data is present."""
+    optimizer = qp.GradientDescentOptimizer(stepsize=0.1)
+    value = qp.numpy.array(2.0)
+    data = jax.numpy.array([1.0])
+    objective = lambda parameter, aux: parameter**2
+    updated, unchanged = optimizer.step(objective, value, data)
+    assert qp.math.allclose(updated, 1.6)
+    assert unchanged is data
+    updated, unchanged = optimizer.step(objective, value, data, grad_fn=lambda x, aux: 2 * x)
+    assert qp.math.allclose(updated, 1.6)
+    assert unchanged is data
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("grad_fn", [None, lambda params: {"value": 2 * params["value"]}])
+def test_optimizer_rejects_nested_jax_parameters(grad_fn):
+    """Nested JAX parameters cannot silently bypass optimizer validation."""
+    params = {"value": jax.numpy.array(2.0)}
+    with pytest.raises(ValueError, match="Optax"):
+        qp.GradientDescentOptimizer().step(
+            lambda argument: argument["value"] ** 2, params, grad_fn=grad_fn
+        )
