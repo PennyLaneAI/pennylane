@@ -19,7 +19,6 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.templates.subroutines.arithmetic.out_adder import _out_adder_decomposition
 from pennylane.testing import assert_decomposable
 
 
@@ -232,7 +231,7 @@ class TestOutAdder:
     def test_basis_change_with_concrete_wires(self):
         """Test that the rule preserves modular addition during capture with concrete wires."""
         with qp.queuing.AnnotatedQueue() as queue:
-            _out_adder_decomposition([5], [1], [8], 2, [])
+            qp.list_decomps(qp.OutAdder)[0]([5], [1], [8], 2, [])
 
         with qp.capture.pause():
             tape = qp.tape.QuantumScript.from_queue(queue)
