@@ -17,10 +17,10 @@ from functools import partial
 
 import pytest
 
-import pennylane as qp
-from pennylane.core.shots import Shots
-from pennylane.devices.capabilities import DeviceCapabilities, OperatorProperties
-from pennylane.resource import CircuitSpecs, PBCSpecsResources, SpecsResources
+import pennylane2 as qp
+from pennylane2.core.shots import Shots
+from pennylane2.devices.capabilities import DeviceCapabilities, OperatorProperties
+from pennylane2.resource import CircuitSpecs, PBCSpecsResources, SpecsResources
 
 catalyst = pytest.importorskip("catalyst")
 
@@ -638,7 +638,7 @@ class TestAnalyzeHintIntegration:
             return qp.expval(qp.Z(0))
 
         r = qp.analyze(circuit)(True, False)
-        # pennylane fills unhinted with 0 -> (0.7, 0.0, 0.7); catalyst clamps total weight to 1
+        # pennylane2 fills unhinted with 0 -> (0.7, 0.0, 0.7); catalyst clamps total weight to 1
         assert r.resources.quantum_operations["PauliX"] == 7
         assert r.resources.quantum_operations["PauliZ"] == 0
         assert r.resources.quantum_operations["PauliY"] == 3

@@ -40,7 +40,7 @@ For example:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     def my_quantum_function(x, y):
         qp.RZ(x, wires=0)
@@ -77,9 +77,9 @@ Defining a device
 
 To run---and later optimize---a quantum circuit, one needs to first specify a *computational device*.
 
-The device is an instance of the :class:`~.pennylane.devices.Device`
+The device is an instance of the :class:`~.pennylane2.devices.Device`
 class, and can represent either a simulator or hardware device. They can be
-instantiated using the :func:`device <pennylane.device>` loader.
+instantiated using the :func:`device <pennylane2.device>` loader.
 
 .. code-block:: python
 
@@ -151,7 +151,7 @@ Creating a quantum node
 -----------------------
 
 Together, a quantum function and a device are used to create a *quantum node* or
-:class:`~.pennylane.QNode` object, which wraps the quantum function and binds it to the device.
+:class:`~.pennylane2.QNode` object, which wraps the quantum function and binds it to the device.
 
 A QNode can be explicitly created as follows:
 
@@ -167,7 +167,7 @@ function. It takes the same arguments as the original quantum function:
 >>> circuit(np.pi/4, 0.7)
 tensor(0.764, requires_grad=True)
 
-To view the quantum circuit given specific parameter values, we can use the :func:`~.pennylane.draw`
+To view the quantum circuit given specific parameter values, we can use the :func:`~.pennylane2.draw`
 transform,
 
 >>> print(qp.draw(circuit)(np.pi/4, 0.7))
@@ -175,7 +175,7 @@ aux: ───────────╭●─┤
  q1: ──RZ(0.79)─╰X─┤
  q2: ──RY(0.70)────┤  <Z>
 
-or the :func:`~.pennylane.draw_mpl` transform:
+or the :func:`~.pennylane2.draw_mpl` transform:
 
 >>> import matplotlib.pyplot as plt
 >>> qp.drawer.use_style("black_white")
@@ -194,10 +194,10 @@ Re-configuring QNode settings
 
 There is often a need to modify an existing QNode setup to test a new configuration. This includes,
 but is not limited to, executing on a different quantum device, using a new differentiation method or 
-machine learning interface, etc. The :meth:`~.pennylane.QNode.update` method provides a convenient
+machine learning interface, etc. The :meth:`~.pennylane2.QNode.update` method provides a convenient
 way to make these adjustments. To update one or more QNode settings, simply give a new value to the 
 QNode keyword argument you want to change (e.g., `mcm_method=...`, `diff_method=...`, etc.). Only arguments
-used to instantiate a :class:`~.pennylane.QNode` can be updated, objects like the compile pipeline cannot be updated 
+used to instantiate a :class:`~.pennylane2.QNode` can be updated, objects like the compile pipeline cannot be updated
 using this method.
 
 For instance, to use a different quantum device, the configuration can be updated with,
@@ -216,11 +216,11 @@ The QNode decorator
 
 A more convenient---and in fact the recommended---way for creating QNodes is the provided
 ``qnode`` decorator. This decorator converts a Python function containing PennyLane quantum
-operations to a :class:`~.pennylane.QNode` circuit that will run on a quantum device.
+operations to a :class:`~.pennylane2.QNode` circuit that will run on a quantum device.
 
 .. note::
     The decorator completely replaces the Python-based quantum function with
-    a :class:`~.pennylane.QNode` of the same name---as such, the original
+    a :class:`~.pennylane2.QNode` of the same name---as such, the original
     function is no longer accessible.
 
 For example:
@@ -245,7 +245,7 @@ The shots is an integer that defines how many times the circuit should be evalua
 to estimate statistical quantities. On some supported simulator devices, ``shots=None`` computes
 measurement statistics *exactly*.
 
-The shots can be configured for a QNode using the :func:`~pennylane.set_shots` transform:
+The shots can be configured for a QNode using the :func:`~pennylane2.set_shots` transform:
 
 .. code-block:: python
 
@@ -300,7 +300,7 @@ We can index into this tuple and retrieve the results computed with only 5 shots
 Parameter Broadcasting in QNodes
 --------------------------------
 
-Depending on the quantum operations used, a :class:`~.pennylane.QNode` may support execution at multiple parameters simultaneously:
+Depending on the quantum operations used, a :class:`~.pennylane2.QNode` may support execution at multiple parameters simultaneously:
 
 >>> x = np.array([0.543, 1.234])
 >>> result = circuit(x)
@@ -321,11 +321,11 @@ compared to the separate execution of the QNode for each parameter setting. Whet
 the case depends on quite a few details, but in particular for (at most) moderately sized circuits
 (:math:`\lesssim 20` wires) with a moderate number of parameters (:math:`\lesssim 200`) executed
 on a classical simulator, one can expect to benefit from broadcasting.
-See the :class:`~.pennylane.QNode` documentation for usage details.
+See the :class:`~.pennylane2.QNode` documentation for usage details.
 
 Many standard quantum operators support broadcasting; see the corresponding attribute
-:obj:`~.pennylane.ops.qubit.attributes.supports_broadcasting` for a list. The
-:class:`~.pennylane.operation.Operator` documentation contains implementation details
+:obj:`~.pennylane2.ops.qubit.attributes.supports_broadcasting` for a list. The
+:class:`~.pennylane2.operation.Operator` documentation contains implementation details
 and a guide to make custom operators compatible with broadcasting.
 Broadcasting can be used with any device, but will usually only yield performance upgrades for
 devices like ``"default.qubit"`` that indicate that they support it:
@@ -350,8 +350,8 @@ objects from Qiskit and OpenQASM files can be loaded by using the following func
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.from_qiskit
-    ~pennylane.from_qasm
+    ~pennylane2.from_qiskit
+    ~pennylane2.from_qasm
 
 :html:`</div>`
 
@@ -361,14 +361,14 @@ objects from Qiskit and OpenQASM files can be loaded by using the following func
     plugin needs to be installed.
 
 Objects for quantum circuits can be loaded outside or directly inside of a
-:class:`~.pennylane.QNode`. Circuits that contain unbound parameters are also
+:class:`~.pennylane2.QNode`. Circuits that contain unbound parameters are also
 supported. Parameter binding may happen by passing a dictionary containing the
 parameter-value pairs.
 
 Once a PennyLane template has been created from such a quantum circuit, it can
 be used similarly to other :doc:`templates <templates>` in PennyLane. One important thing to note
 is that custom templates must always be executed
-within a :class:`~.pennylane.QNode` (similar to pre-defined templates).
+within a :class:`~.pennylane2.QNode` (similar to pre-defined templates).
 
 .. note::
     Certain instructions that are specific to the external frameworks might be
@@ -376,7 +376,7 @@ within a :class:`~.pennylane.QNode` (similar to pre-defined templates).
     be emitted for ignored instructions.
 
 The following is an example of loading and calling a parametrized Qiskit ``QuantumCircuit`` object
-while using the :class:`~.pennylane.QNode` decorator:
+while using the :class:`~.pennylane2.QNode` decorator:
 
 .. code-block:: python
 
@@ -407,7 +407,7 @@ and then used multiple times on the ``forest.qpu`` device provided by PennyLane-
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     dev = qp.device('forest.qpu', wires=2)
 

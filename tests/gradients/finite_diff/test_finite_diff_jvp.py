@@ -18,7 +18,7 @@ This file tests qp.gradients.finite_diff_jvp
 import numpy as np
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 pytestmark = pytest.mark.all_interfaces
 

@@ -20,12 +20,12 @@ import pickle
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.operator.base import Operator
-from pennylane.gradients import parameter_frequencies
-from pennylane.ops.functions import single_qubit_zyz_angles
-from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.operator.base import Operator
+from pennylane2.gradients import parameter_frequencies
+from pennylane2.ops.functions import single_qubit_zyz_angles
+from pennylane2.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
 
 
 class PlainOperator(qp.operation.Operator):

@@ -20,8 +20,8 @@ Tests for the expectation value calculations on the DefaultTensor device.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.devices import DefaultQubit
+import pennylane2 as qp
+from pennylane2.devices import DefaultQubit
 
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)

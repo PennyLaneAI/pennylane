@@ -21,23 +21,23 @@ from textwrap import dedent
 
 import pytest
 
-import pennylane as qp
-from pennylane.core import Operator, Operator1, queuing
-from pennylane.core.operator import abstractify
-from pennylane.decomposition.decomposition_rule import (
+import pennylane2 as qp
+from pennylane2.core import Operator, Operator1, queuing
+from pennylane2.core.operator import abstractify
+from pennylane2.decomposition.decomposition_rule import (
     _fix_decomp,
     list_decomps,
     register_condition,
     register_resources,
 )
-from pennylane.decomposition.resources import (
+from pennylane2.decomposition.resources import (
     Resources,
     adjoint_resource_rep,
     controlled_resource_rep,
     pow_resource_rep,
     resource_rep,
 )
-from pennylane.decomposition.symbolic_decomposition import (
+from pennylane2.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
     ctrl_single_work_wire,
@@ -54,22 +54,22 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint_legacy,
     to_controlled_qubit_unitary,
 )
-from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
-from pennylane.ops.op_math.adjoint2 import cancel_adjoint as cancel_adjoint2
-from pennylane.ops.op_math.controlled2 import ControlledOp2
-from pennylane.ops.op_math.controlled2 import _make_controlled_decomp as make_controlled_decomp2
-from pennylane.ops.op_math.controlled2 import ctrl_single_work_wire as ctrl_single_work_wire2
-from pennylane.ops.op_math.controlled2 import flip_control_adjoint as flip_control_adjoint2
-from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
-from pennylane.ops.op_math.controlled2 import to_controlled_unitary
-from pennylane.ops.op_math.pow import pow
-from pennylane.ops.op_math.pow2 import Pow2, _pow_abstract
-from pennylane.ops.op_math.pow2 import flip_pow_adjoint as flip_pow_adjoint2
-from pennylane.ops.op_math.pow2 import merge_powers as merge_powers2
-from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
-from pennylane.ops.op_math.pow2 import repeat_pow_base as repeat_pow_base2
-from pennylane.testing import decomp_rule_to_tape
-from pennylane.typing import Bool, Complex, Float, Wire
+from pennylane2.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
+from pennylane2.ops.op_math.adjoint2 import cancel_adjoint as cancel_adjoint2
+from pennylane2.ops.op_math.controlled2 import ControlledOp2
+from pennylane2.ops.op_math.controlled2 import _make_controlled_decomp as make_controlled_decomp2
+from pennylane2.ops.op_math.controlled2 import ctrl_single_work_wire as ctrl_single_work_wire2
+from pennylane2.ops.op_math.controlled2 import flip_control_adjoint as flip_control_adjoint2
+from pennylane2.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
+from pennylane2.ops.op_math.controlled2 import to_controlled_unitary
+from pennylane2.ops.op_math.pow import pow
+from pennylane2.ops.op_math.pow2 import Pow2, _pow_abstract
+from pennylane2.ops.op_math.pow2 import flip_pow_adjoint as flip_pow_adjoint2
+from pennylane2.ops.op_math.pow2 import merge_powers as merge_powers2
+from pennylane2.ops.op_math.pow2 import pow_involutory as pow_involutory2
+from pennylane2.ops.op_math.pow2 import repeat_pow_base as repeat_pow_base2
+from pennylane2.testing import decomp_rule_to_tape
+from pennylane2.typing import Bool, Complex, Float, Wire
 from tests.core.operator.operator2_utils import (
     DynOp,
     DynOpWithMatrix,
@@ -305,7 +305,7 @@ class TestPowDecomposition:
     def test_repeat_pow_base_capture(self):
         """Tests that the general pow decomposition works with capture."""
 
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane2.tape.plxpr_conversion import CollectOpsandMeas
 
         op = qp.pow(qp.H(0), 3)
 
@@ -1138,8 +1138,8 @@ class TestControlledDecomposition:
         control wires with a traced loop variable, which requires the wires to be promoted to a
         jax array so structured capture does not raise ``TracerIntegerConversionError``."""
 
-        from pennylane.exceptions import CaptureWarning
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane2.exceptions import CaptureWarning
+        from pennylane2.tape.plxpr_conversion import CollectOpsandMeas
 
         @qp.register_resources({qp.CNOT: 3, qp.H: 2})
         def _custom_controlled_rule(base, control_wires, **_):

@@ -16,8 +16,8 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane.ops import (
+import pennylane2 as qp
+from pennylane2.ops import (
     CRX,
     RX,
     RY,
@@ -35,7 +35,7 @@ from pennylane.ops import (
     S,
     T,
 )
-from pennylane.ops.functions.single_qubit_zyz_angles import single_qubit_zyz_angles
+from pennylane2.ops.functions.single_qubit_zyz_angles import single_qubit_zyz_angles
 
 TEST_OPS = [
     RX(0.123, wires=0),

@@ -17,10 +17,10 @@ Tests for identity resource operators
 
 import pytest
 
-import pennylane.estimator as qre
-from pennylane.estimator.ops import GlobalPhase, Identity
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
-from pennylane.wires import Wires
+import pennylane2.estimator as qre
+from pennylane2.estimator.ops import GlobalPhase, Identity
+from pennylane2.estimator.resource_operator import CompressedResourceOp, GateCount
+from pennylane2.wires import Wires
 
 
 class TestIdentity:

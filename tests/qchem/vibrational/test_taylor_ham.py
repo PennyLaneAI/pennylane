@@ -19,9 +19,9 @@ import sys
 import numpy as np
 import pytest
 
-from pennylane.bose import BoseWord, binary_mapping, unary_mapping
-from pennylane.qchem import vibrational
-from pennylane.qchem.vibrational.taylor_ham import (
+from pennylane2.bose import BoseWord, binary_mapping, unary_mapping
+from pennylane2.qchem import vibrational
+from pennylane2.qchem.vibrational.taylor_ham import (
     _fit_onebody,
     _fit_threebody,
     _fit_twobody,
@@ -36,7 +36,7 @@ from pennylane.qchem.vibrational.taylor_ham import (
     taylor_dipole_coeffs,
     taylor_hamiltonian,
 )
-from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
+from pennylane2.qchem.vibrational.vibrational_class import VibrationalPES
 from tests.qchem.vibrational.test_ref_files.pes_object import (
     expected_coeffs_x_arr,
     expected_coeffs_y_arr,

@@ -17,13 +17,13 @@ import hint_helpers
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import FermionicSWAP, PauliZ, device, qnode
-from pennylane.measurements import state
-from pennylane.templates import BasisEmbedding
-from pennylane.templates.subroutines.ffft import FFFT, TwoWireFFT, _permute_and_apply_parallel
-from pennylane.testing import assert_decomposable
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2 import FermionicSWAP, PauliZ, device, qnode
+from pennylane2.measurements import state
+from pennylane2.templates import BasisEmbedding
+from pennylane2.templates.subroutines.ffft import FFFT, TwoWireFFT, _permute_and_apply_parallel
+from pennylane2.testing import assert_decomposable
+from pennylane2.wires import Wires
 
 dev = device("default.qubit")
 

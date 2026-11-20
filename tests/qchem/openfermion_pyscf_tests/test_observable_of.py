@@ -19,8 +19,8 @@ import sys
 
 import pytest
 
-import pennylane as qp
-from pennylane import qchem
+import pennylane2 as qp
+from pennylane2 import qchem
 
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")

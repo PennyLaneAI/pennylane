@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :func:`pennylane.math.is_tracer` function.
+Unit tests for the :func:`pennylane2.math.is_tracer` function.
 """
 
 import functools
@@ -20,7 +20,7 @@ import functools
 import numpy as np
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 
 @pytest.mark.jax

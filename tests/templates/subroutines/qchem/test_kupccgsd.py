@@ -18,7 +18,7 @@ Tests for the k-UpCCGSD template.
 import numpy as np
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 k_delta_sz_init_state_wires = [
     (1, 0, qp.math.array([1, 1, 0, 0]), qp.math.array([0, 1, 2, 3])),

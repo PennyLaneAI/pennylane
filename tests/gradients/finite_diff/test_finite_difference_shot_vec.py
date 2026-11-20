@@ -19,11 +19,11 @@ import numpy
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.shots import Shots
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.gradients import finite_diff
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.shots import Shots
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.gradients import finite_diff
 
 h_val = 0.1
 

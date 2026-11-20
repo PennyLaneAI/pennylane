@@ -15,7 +15,7 @@
 This file provides a dummy debugger for device tests.
 """
 
-import pennylane as qp
+import pennylane2 as qp
 
 
 class Debugger:  # pylint: disable=too-few-public-methods

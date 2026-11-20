@@ -18,14 +18,14 @@ from dataclasses import FrozenInstanceError, dataclass
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.numeric_hamiltonians import (
+import pennylane2 as qp
+from pennylane2.numeric_hamiltonians import (
     CDFHamiltonian,
     CGFHamiltonian,
     NumericHamiltonian,
     VibronicHamiltonian,
 )
-from pennylane.typing import AbstractArray, Float, Int
+from pennylane2.typing import AbstractArray, Float, Int
 from tests.templates.subroutines.time_evolution.trotter_test_helpers import random_orthogonal
 
 L, M, N = 2, 2, 3

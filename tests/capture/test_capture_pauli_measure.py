@@ -18,15 +18,15 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane.ops import MeasurementValue, PauliMeasure
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.ops import MeasurementValue, PauliMeasure
+from pennylane2.wires import Wires
 
 jax = pytest.importorskip("jax")
 
 import jax.numpy as jnp
 
-from pennylane.testing import plxpr_to_tape  # pylint: disable=ungrouped-imports
+from pennylane2.testing import plxpr_to_tape  # pylint: disable=ungrouped-imports
 
 pytestmark = [pytest.mark.capture, pytest.mark.jax]
 

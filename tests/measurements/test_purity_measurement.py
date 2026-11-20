@@ -16,8 +16,8 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.measurements import PurityMP
+import pennylane2 as qp
+from pennylane2.measurements import PurityMP
 
 
 def expected_purity_ising_xx(param):

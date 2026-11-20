@@ -20,12 +20,12 @@ import numpy as np
 import phase_gradient_helpers
 import pytest
 
-import pennylane as qp
-from pennylane.testing import assert_valid_decomp_rule
-from pennylane.transforms.decompositions import (
+import pennylane2 as qp
+from pennylane2.testing import assert_valid_decomp_rule
+from pennylane2.transforms.decompositions import (
     make_selectpaulirot_to_phase_gradient_decomp,
 )
-from pennylane.wires import WireError
+from pennylane2.wires import WireError
 
 
 def test_wires_error_decomp_fun():

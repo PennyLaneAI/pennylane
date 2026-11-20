@@ -18,9 +18,9 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import Operator1, abstractify
-from pennylane.decomposition.resources import (
+import pennylane2 as qp
+from pennylane2.core.operator import Operator1, abstractify
+from pennylane2.decomposition.resources import (
     CompressedResourceOp,
     Resources,
     adjoint_resource_rep,
@@ -28,9 +28,9 @@ from pennylane.decomposition.resources import (
     pow_resource_rep,
     resource_rep,
 )
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.pow2 import _pow_abstract
-from pennylane.typing import Bool, Float, Wire
+from pennylane2.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane2.ops.op_math.pow2 import _pow_abstract
+from pennylane2.typing import Bool, Float, Wire
 
 
 class DummyRX(Operator1):
@@ -360,7 +360,7 @@ class TestSymbolicResourceRep:
     def test_resource_rep_dispatch_to_adjoint_resource_rep(self, mocker):
         """Tests that resource_rep dispatches to adjoint_resource_rep for Adjoint."""
 
-        expected_fn = mocker.patch("pennylane.decomposition.resources.adjoint_resource_rep")
+        expected_fn = mocker.patch("pennylane2.decomposition.resources.adjoint_resource_rep")
         _ = resource_rep(
             qp.ops.Adjoint, **{"base_class": DummyOp, "base_params": {"foo": 2, "bar": 1}}
         )

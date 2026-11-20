@@ -22,9 +22,9 @@ from textwrap import dedent
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.decomposition.decomposition_rule import (
+import pennylane2 as qp
+from pennylane2.core.operator import Operator, Operator2, abstractify
+from pennylane2.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
     WorkWireSpec,
@@ -36,21 +36,21 @@ from pennylane.decomposition.decomposition_rule import (
     register_condition,
     register_resources,
 )
-from pennylane.decomposition.resources import Resources
-from pennylane.decomposition.utils import to_name
-from pennylane.ops.mid_measure import MidMeasure
-from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2, _change_op_basis_abstract
-from pennylane.ops.op_math.controlled2 import (
+from pennylane2.decomposition.resources import Resources
+from pennylane2.decomposition.utils import to_name
+from pennylane2.ops.mid_measure import MidMeasure
+from pennylane2.ops.op_math.adjoint2 import Adjoint2
+from pennylane2.ops.op_math.change_op_basis2 import ChangeOpBasis2, _change_op_basis_abstract
+from pennylane2.ops.op_math.controlled2 import (
     ControlledOp2,
     ctrl_many_zeroed_work_wires,
     ctrl_single_work_wire,
     to_controlled_unitary,
 )
-from pennylane.ops.op_math.pow2 import flip_pow_adjoint, merge_powers, repeat_pow_base
-from pennylane.ops.op_math.prod2 import Prod2
-from pennylane.testing.decompositions import assert_valid_decomp_rule
-from pennylane.typing import Bool, Float, Int, Wire
+from pennylane2.ops.op_math.pow2 import flip_pow_adjoint, merge_powers, repeat_pow_base
+from pennylane2.ops.op_math.prod2 import Prod2
+from pennylane2.testing.decompositions import assert_valid_decomp_rule
+from pennylane2.typing import Bool, Float, Int, Wire
 from tests.core.operator.operator2_utils import (
     DynOp,
     DynOpWithMatrix,

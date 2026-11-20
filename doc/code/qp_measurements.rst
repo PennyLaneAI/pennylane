@@ -1,7 +1,7 @@
 qp.measurements
 ================
 
-.. currentmodule:: pennylane.measurements
+.. currentmodule:: pennylane2.measurements
 
 .. warning::
 
@@ -12,4 +12,4 @@ qp.measurements
     details on available measurements.
 
 
-.. automodule:: pennylane.measurements
+.. automodule:: pennylane2.measurements

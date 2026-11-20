@@ -1,4 +1,4 @@
-.. currentmodule:: pennylane.package_name
+.. currentmodule:: pennylane2.package_name
 .. autosummary::
    :toctree: api
 

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.vqe` submodule.
+Unit tests for the :mod:`pennylane2.vqe` submodule.
 """
 
 import copy
@@ -20,8 +20,8 @@ import copy
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
 
 
 def generate_cost_fn(ansatz, hamiltonian, device, **kwargs):

@@ -20,9 +20,9 @@ from functools import partial
 import pytest
 from test_optimization.utils import compare_operation_lists
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.transforms import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.transforms import (
     cancel_inverses,
     combine_global_phases,
     commute_controlled,
@@ -30,8 +30,8 @@ from pennylane.transforms import (
     single_qubit_fusion,
     unitary_to_rot,
 )
-from pennylane.transforms.compile import compile
-from pennylane.wires import Wires
+from pennylane2.transforms.compile import compile
+from pennylane2.wires import Wires
 
 
 def build_qfunc(wires):

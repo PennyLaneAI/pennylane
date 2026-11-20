@@ -39,7 +39,7 @@ on:
         description: PyTest Coverage flags to pass to all jobs
         required: false
         type: string
-        default: --cov-config=.coveragerc --cov=pennylane --cov-append --cov-report=term-missing --cov-report=xml --no-flaky-report --tb=native
+        default: --cov-config=.coveragerc --cov=pennylane2 --cov-append --cov-report=term-missing --cov-report=xml --no-flaky-report --tb=native
       pytest_additional_args:
         description: Additional arguments to pass to pytest
         required: false
@@ -677,7 +677,7 @@ jobs:
         ${{ !contains(matrix.config.skip_interface, 'torch') && needs.default-dependency-versions.outputs.pytorch-version || '' }}
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
-      pytest_test_directory: pennylane/devices/tests
+      pytest_test_directory: pennylane2/devices/tests
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_additional_args: --device=${{ matrix.config.device }} --shots=${{ matrix.config.shots }} ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}device-tests (${{ matrix.config.device }}, ${{ matrix.config.shots }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'

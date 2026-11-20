@@ -1,0 +1,1436 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This submodule contains the discrete-variable quantum operations that come
+from quantum chemistry applications.
+"""
+
+# pylint: disable=arguments-differ
+
+
+import functools
+
+import numpy as np
+from scipy.sparse import csr_matrix
+
+import pennylane2 as qp
+from pennylane2.core.operator import Operation, Operator2
+from pennylane2.decomposition import add_decomps, register_resources
+from pennylane2.decomposition.symbolic_decomposition import (
+    adjoint_rotation,
+    pow_rotation,
+)
+from pennylane2.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane2.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane2.ops.op_math.pow2 import pow_rotation as pow_rotation2
+from pennylane2.ops.subcircuit import subcircuit
+from pennylane2.typing import Float, TensorLike, Wire
+from pennylane2.wires import WiresLike
+
+I4 = np.eye(4)
+I16 = np.eye(16)
+
+stack_last = functools.partial(qp.math.stack, axis=-1)
+
+
+def _single_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> TensorLike:
+    """This helper function unifies the `compute_matrix` methods
+    of `SingleExcitation`, `SingleExcitationPlus` and `SingleExcitationMinus`.
+    `phase_prefactor` determines which operation is produced:
+        `phase_prefactor=0.` : `SingleExcitation`
+        `phase_prefactor=0.5j` : `SingleExcitationPlus`
+        `phase_prefactor=-0.5j` : `SingleExcitationMinus`
+    """
+    interface = qp.math.get_interface(phi)
+    c = qp.math.cos(phi / 2)
+    s = qp.math.sin(phi / 2)
+    e = qp.math.exp(phase_prefactor * phi)
+
+    mask_e = np.diag([1, 0, 0, 1])
+    mask_c = np.diag([0, 1, 1, 0])
+    mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
+
+    if qp.math.ndim(phi) == 0:
+        if interface == "torch":
+            mask_e = qp.math.convert_like(mask_e, phi)
+            mask_c = qp.math.convert_like(mask_c, phi)
+            mask_s = qp.math.convert_like(mask_s, phi)
+        return e * mask_e + c * mask_c + s * mask_s
+
+    return (
+        qp.math.einsum("i,jk->ijk", e, mask_e)
+        + qp.math.einsum("i,jk->ijk", c, mask_c)
+        + qp.math.einsum("i,jk->ijk", s, mask_s)
+    )
+
+
+def _double_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> TensorLike:
+    """This helper function unifies the `compute_matrix` methods
+    of `DoubleExcitation`, `DoubleExcitationPlus` and `DoubleExcitationMinus`.
+    `phase_prefactor` determines which operation is produced:
+        `phase_prefactor=0.` : `DoubleExcitation`
+        `phase_prefactor=0.5j` : `DoubleExcitationPlus`
+        `phase_prefactor=-0.5j` : `DoubleExcitationMinus`
+    """
+    interface = qp.math.get_interface(phi)
+
+    c = qp.math.cos(phi / 2)
+    s = qp.math.sin(phi / 2)
+    e = qp.math.exp(phase_prefactor * phi)
+
+    if qp.math.ndim(phi) == 0:
+        diag = qp.math.diag([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3)
+        if interface == "torch":
+            return diag + s * qp.math.convert_like(DoubleExcitation.mask_s, phi)
+        return diag + s * DoubleExcitation.mask_s
+
+    if isinstance(phase_prefactor, complex):
+        c = (1 + 0j) * c
+    diag = qp.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
+    diag = qp.math.einsum("ij,jk->ijk", diag, I16)
+    off_diag = qp.math.einsum("i,jk->ijk", s, DoubleExcitation.mask_s)
+    return diag + off_diag
+
+
+class SingleExcitation(Operator2):
+    r"""
+    Single excitation rotation.
+
+    .. math:: U(\phi) = \begin{bmatrix}
+                1 & 0 & 0 & 0 \\
+                0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                0 & 0 & 0 & 1
+            \end{bmatrix}.
+
+    This operation performs a rotation in the two-dimensional subspace :math:`\{|01\rangle,
+    |10\rangle\}`. The name originates from the occupation-number representation of
+    fermionic wavefunctions, where the transformation  from :math:`|10\rangle` to :math:`|01\rangle`
+    is interpreted as "exciting" a particle from the first qubit to the second.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+    * Gradient recipe: The ``SingleExcitation`` operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+
+    **Example**
+
+    The following circuit performs the transformation :math:`|10\rangle\rightarrow \cos(
+    \phi/2)|10\rangle -\sin(\phi/2)|01\rangle`:
+
+    .. code-block::
+
+        dev = qp.device('default.qubit', wires=2)
+
+        @qp.qnode(dev)
+        def circuit(phi):
+            qp.X(0)
+            qp.SingleExcitation(phi, wires=[0, 1])
+            return qp.state()
+
+        circuit(0.1)
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SingleExcitation
+
+            .. decomposition-rule:: _single_excitation_decomp
+                :image: /_static/decomposition_thumbnails/singleexcitation_h_cnot_ry.svg
+
+                :class:`~.Hadamard` | :math:`2`
+                :class:`~.CNOT` | :math:`2`
+                :class:`~.RY` | :math:`2`
+
+            .. decomposition-rule:: _single_excitation_ppr
+                :image: /_static/decomposition_thumbnails/singleexcitation_ppr.svg
+
+                :class:`PauliRot("YX") <.PauliRot>` | :math:`1`
+                :class:`PauliRot("XY") <.PauliRot>` | :math:`1`
+
+            .. decomposition-rule:: _single_excitation_ppr_rz
+                :image: /_static/decomposition_thumbnails/singleexcitation_ppr_rz.svg
+
+                :class:`PPR_4(1, "XX") <.PPR_4>` | :math:`1`
+                :class:`PPR_4(-1, "XX") <.PPR_4>` | :math:`1`
+                :class:`~.RZ` | :math:`2`
+            .. decomposition-rule:: _single_excitation_ppr_crz
+                :image: /_static/decomposition_thumbnails/singleexcitation_ppr_crz.svg
+
+                :class:`PPR_4(1, "XX") <.PPR_4>` | :math:`1`
+                :class:`PPR_4(-1, "XX") <.PPR_4>` | :math:`1`
+                :class:`~.CNOT` | :math:`2`
+                :class:`~.CRZ` | :math:`1`
+
+            .. decomposition-rule:: adjoint_rotation
+                :image: /_static/decomposition_thumbnails/singleexcitation_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.SingleExcitation` | :math:`1`
+
+            .. decomposition-rule:: pow_rotation
+                :image: /_static/decomposition_thumbnails/singleexcitation_pow.svg
+                :region: pow
+                :where: ``phi`` is multiplied by the power :math:`z`
+
+                :class:`~.SingleExcitation` | :math:`1`
+    """
+
+    dynamic_argnames = "phi"
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+    wire_sizes = (2,)
+
+    num_wires = 2  # TODO: try and get rid of this legacy property
+    num_params = 1  # TODO: try and get rid of this legacy property
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    def generator(self) -> "qp.Hamiltonian":
+        w1, w2 = self.wires
+        return qp.Hamiltonian([0.25, -0.25], [qp.X(w1) @ qp.Y(w2), qp.Y(w1) @ qp.X(w2)])
+
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
+
+    @staticmethod
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires=None) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SingleExcitation.matrix`
+
+
+        Args:
+          phi (tensor_like or float): rotation angle
+
+        Returns:
+          tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qp.SingleExcitation.compute_matrix(torch.tensor(0.5))
+        tensor([[ 1.0000,  0.0000,  0.0000,  0.0000],
+                [ 0.0000,  0.9689, -0.2474,  0.0000],
+                [ 0.0000,  0.2474,  0.9689,  0.0000],
+                [ 0.0000,  0.0000,  0.0000,  1.0000]])
+        """
+        return _single_excitations_matrix(phi, 0.0)
+
+    def adjoint(self) -> "SingleExcitation":
+        return SingleExcitation(-self.phi, wires=self.wires)
+
+    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+        return [SingleExcitation(self.phi * z, wires=self.wires)]
+
+    def label(
+        self,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
+    ) -> str:
+        return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
+
+
+@subcircuit(static_argnames=("reverse",))
+@register_resources(lambda **_: {qp.Hadamard: 1, qp.CNOT: 1})
+def _SingleExcitationBasis(wires: WiresLike, reverse: bool):
+    if not reverse:
+        qp.Hadamard(wires[0])
+    qp.CNOT(wires)
+    if reverse:
+        qp.Hadamard(wires[0])
+
+
+@subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": Float, "wires": Wire[2]})
+@register_resources(lambda **_: {qp.RY: 2})
+def _SingleExcitationRotations(phi: TensorLike, wires: WiresLike):
+    qp.RY(-phi / 2, wires[0])
+    qp.RY(-phi / 2, wires[1])
+
+
+# needs to be wrapped in function due to circular dependencies
+def _single_excitation_resources(phi, wires):  # pylint: disable=unused-argument
+    return {
+        _change_op_basis_abstract(
+            _SingleExcitationBasis(wires=Wire[2], reverse=False),
+            _SingleExcitationRotations(Float, wires=Wire[2]),
+            _SingleExcitationBasis(wires=Wire[2], reverse=True),
+        ): 1
+    }
+
+
+@register_resources(_single_excitation_resources)
+def _single_excitation_decomp(phi: TensorLike, wires: WiresLike):
+    qp.change_op_basis(
+        _SingleExcitationBasis(wires=wires, reverse=False),
+        _SingleExcitationRotations(phi, wires=wires),
+        _SingleExcitationBasis(wires=wires, reverse=True),
+    )
+
+
+@subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": Float, "wires": Wire[2]})
+@register_resources(lambda **_: {qp.RZ: 2})
+def _SingleExcitationRZRotations(phi: TensorLike, wires: WiresLike):
+    qp.RZ(phi / 2, wires[0])
+    qp.RZ(-phi / 2, wires[1])
+
+
+def _single_excitation_ppr_resource(phi, wires):  # pylint: disable=unused-argument
+    return {
+        qp.PauliRot(Float, pauli_word="XY", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="YX", wires=Wire[2]): 1,
+    }
+
+
+@register_resources(_single_excitation_ppr_resource)
+def _single_excitation_ppr(phi: TensorLike, wires: WiresLike):
+    qp.PauliRot(phi / 2, "YX", wires=wires)
+    qp.PauliRot(-phi / 2, "XY", wires=wires)
+
+
+def _single_excitation_ppr_rz_resource(phi, wires):  # pylint: disable=unused-argument
+    return {
+        _change_op_basis_abstract(
+            qp.PPR_4(1, "XX", wires=Wire[2]),
+            _SingleExcitationRZRotations(Float, wires=Wire[2]),
+            qp.PPR_4(-1, "XX", wires=Wire[2]),
+        ): 1
+    }
+
+
+@register_resources(_single_excitation_ppr_rz_resource)
+def _single_excitation_ppr_rz(phi: TensorLike, wires: WiresLike):
+    qp.change_op_basis(
+        qp.PPR_4(1, "XX", wires=wires),
+        _SingleExcitationRZRotations(phi, wires=wires),
+        qp.PPR_4(-1, "XX", wires=wires),
+    )
+
+
+@subcircuit
+@register_resources(lambda **_: {qp.PPR_4(1, "XX", wires=Wire[2]): 1, qp.CNOT: 1})
+def _SingleExcitationCRZBasis(wires: WiresLike):
+    qp.PPR_4(1, "XX", wires=wires)
+    qp.CNOT(wires)
+
+
+def _single_excitation_ppr_crz_resource(phi, wires):  # pylint: disable=unused-argument
+    compute = _SingleExcitationCRZBasis(wires=Wire[2])
+    return {
+        _change_op_basis_abstract(
+            compute,
+            qp.CRZ(Float, wires=Wire[2]),
+            qp.adjoint(compute),
+        ): 1
+    }
+
+
+@register_resources(_single_excitation_ppr_crz_resource)
+def _single_excitation_ppr_crz(phi: TensorLike, wires: WiresLike):
+    r"""A single arbitrary-angle rotation per Givens rotation.
+
+    In the basis of ``_single_excitation_ppr_rz``, the two rotations
+    :math:`RZ(\phi/2)_i\, RZ(-\phi/2)_j = e^{-i\phi(Z_i - Z_j)/4}` are a rotation whose angle
+    depends only on whether the two wires differ. In the parity frame ``CNOT(i, j)`` this reads
+    :math:`e^{-i\phi Z_i n_j/2}`, i.e. a single :class:`~.CRZ` controlled on ``j`` and targeting
+    ``i``. This halves the number of arbitrary-angle rotations whenever a controlled rotation is
+    about as expensive as an uncontrolled one, as for phase-gradient synthesis.
+    """
+
+    qp.change_op_basis(
+        _SingleExcitationCRZBasis(wires=wires), qp.CRZ(phi, wires=[wires[1], wires[0]])
+    )
+
+
+add_decomps(
+    SingleExcitation,
+    _single_excitation_decomp,
+    _single_excitation_ppr,
+    _single_excitation_ppr_rz,
+    _single_excitation_ppr_crz,
+)
+add_decomps("Adjoint(SingleExcitation)", adjoint_rotation2)
+add_decomps("Pow(SingleExcitation)", pow_rotation2)
+
+
+class SingleExcitationMinus(Operation):
+    r"""
+    Single excitation rotation with negative phase-shift outside the rotation subspace.
+
+    .. math:: U_-(\phi) = \begin{bmatrix}
+                e^{-i\phi/2} & 0 & 0 & 0 \\
+                0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                0 & 0 & 0 & e^{-i\phi/2}
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_-(\phi)) = \frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_-(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wires the operation acts on
+
+    """
+
+    num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    grad_method = "A"
+    """Gradient computation method."""
+
+    parameter_frequencies = [(1,)]
+    """Frequencies of the operation parameter with respect to an expectation value."""
+
+    resource_keys = set()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    def generator(self) -> "qp.Hamiltonian":
+        w1, w2 = self.wires
+        return qp.Hamiltonian(
+            [-0.25, 0.25, -0.25, -0.25],
+            [qp.Identity(w1), qp.X(w1) @ qp.Y(w2), qp.Y(w1) @ qp.X(w2), qp.Z(w1) @ qp.Z(w2)],
+        )
+
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
+
+    @staticmethod
+    def compute_matrix(phi: TensorLike) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SingleExcitationMinus.matrix`
+
+
+        Args:
+          phi (tensor_like or float): rotation angle
+
+        Returns:
+          tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qp.SingleExcitationMinus.compute_matrix(torch.tensor(0.5))
+        tensor([[ 0.9689-0.2474j,  0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.9689+0.0000j, -0.2474+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.2474+0.0000j,  0.9689+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j,  0.9689-0.2474j]])
+        """
+        return _single_excitations_matrix(phi, -0.5j)
+
+    @staticmethod
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.SingleExcitationMinus.decomposition`.
+
+        Args:
+            phi (float): rotation angle :math:`\phi`
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qp.SingleExcitationMinus.compute_decomposition(1.23, wires=(0,1))
+        [H(1),
+         CNOT(wires=[1, 0]),
+         RY(0.615, wires=[0]),
+         RY(0.615, wires=[1]),
+         CY(wires=[1, 0]),
+         S(1),
+         H(1),
+         RZ(0.615, wires=[1]),
+         CNOT(wires=[0, 1]),
+         GlobalPhase(0.3075)]
+
+        """
+        decomp_ops = [
+            qp.Hadamard(wires[1]),
+            qp.CNOT([wires[1], wires[0]]),
+            qp.RY(phi / 2, wires[0]),
+            qp.RY(phi / 2, wires[1]),
+            qp.CY([wires[1], wires[0]]),
+            qp.S(wires[1]),
+            qp.Hadamard(wires[1]),
+            qp.RZ(phi / 2, wires[1]),
+            qp.CNOT(wires),
+            qp.GlobalPhase(phi / 4),
+        ]
+        return decomp_ops
+
+    def adjoint(self) -> "SingleExcitationMinus":
+        (phi,) = self.parameters
+        return SingleExcitationMinus(-phi, wires=self.wires)
+
+    def label(
+        self,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
+    ) -> str:
+        return super().label(decimals=decimals, base_label=base_label or "G₋", cache=cache)
+
+
+def _single_excitation_minus_decomp_resources():
+    return {
+        qp.Hadamard: 2,
+        qp.CY: 1,
+        qp.CNOT: 2,
+        qp.RY: 2,
+        qp.S: 1,
+        qp.RZ: 1,
+        qp.GlobalPhase: 1,
+    }
+
+
+@register_resources(_single_excitation_minus_decomp_resources)
+def _single_excitation_minus_decomp(phi, wires: WiresLike, **__):
+    qp.Hadamard(wires[1])
+    qp.CNOT([wires[1], wires[0]])
+    qp.RY(phi / 2, wires[0])
+    qp.RY(phi / 2, wires[1])
+    qp.CY([wires[1], wires[0]])
+    qp.S(wires[1])
+    qp.Hadamard(wires[1])
+    qp.RZ(phi / 2, wires[1])
+    qp.CNOT(wires)
+    qp.GlobalPhase(phi / 4)
+
+
+add_decomps(SingleExcitationMinus, _single_excitation_minus_decomp)
+add_decomps("Adjoint(SingleExcitationMinus)", adjoint_rotation)
+add_decomps("Pow(SingleExcitationMinus)", pow_rotation)
+
+
+class SingleExcitationPlus(Operation):
+    r"""
+    Single excitation rotation with positive phase-shift outside the rotation subspace.
+
+    .. math:: U_+(\phi) = \begin{bmatrix}
+                e^{i\phi/2} & 0 & 0 & 0 \\
+                0 & \cos(\phi/2) & -\sin(\phi/2) & 0 \\
+                0 & \sin(\phi/2) & \cos(\phi/2) & 0 \\
+                0 & 0 & 0 & e^{i\phi/2}
+            \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_+(\phi)) = \frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_+(\phi)`.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int] or int): the wires the operation acts on
+
+    """
+
+    num_wires = 2
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    grad_method = "A"
+    """Gradient computation method."""
+
+    parameter_frequencies = [(1,)]
+    """Frequencies of the operation parameter with respect to an expectation value."""
+
+    resource_keys = set()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    def generator(self) -> "qp.Hamiltonian":
+        w1, w2 = self.wires
+        return qp.Hamiltonian(
+            [0.25, 0.25, -0.25, 0.25],
+            [qp.Identity(w1), qp.X(w1) @ qp.Y(w2), qp.Y(w1) @ qp.X(w2), qp.Z(w1) @ qp.Z(w2)],
+        )
+
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
+
+    @staticmethod
+    def compute_matrix(phi: TensorLike) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.SingleExcitationPlus.matrix`
+
+
+        Args:
+          phi (tensor_like or float): rotation angle
+
+        Returns:
+          tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qp.SingleExcitationPlus.compute_matrix(torch.tensor(0.5))
+        tensor([[ 0.9689+0.2474j,  0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.9689+0.0000j, -0.2474+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.2474+0.0000j,  0.9689+0.0000j,  0.0000+0.0000j],
+                [ 0.0000+0.0000j,  0.0000+0.0000j,  0.0000+0.0000j,  0.9689+0.2474j]])
+        """
+        return _single_excitations_matrix(phi, 0.5j)
+
+    @staticmethod
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.SingleExcitationPlus.decomposition`.
+
+        Args:
+            phi (float): rotation angle :math:`\phi`
+            wires (Iterable, Wires): wires that the operator acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> from pprint import pprint
+        >>> decomp = qp.SingleExcitationPlus.compute_decomposition(1.23, wires=(0,1))
+        >>> pprint(decomp)
+        [H(1), CNOT(wires=[1, 0]), RY(0.615, wires=[0]), RY(0.615, wires=[1]), CY(wires=[1, 0]), S(1), H(1), RZ(-0.615, wires=[1]), CNOT(wires=[0, 1]), GlobalPhase(-0.3075)]
+
+        """
+        decomp_ops = [
+            qp.Hadamard(wires[1]),
+            qp.CNOT([wires[1], wires[0]]),
+            qp.RY(phi / 2, wires[0]),
+            qp.RY(phi / 2, wires[1]),
+            qp.CY([wires[1], wires[0]]),
+            qp.S(wires[1]),
+            qp.Hadamard(wires[1]),
+            qp.RZ(-phi / 2, wires[1]),
+            qp.CNOT(wires),
+            qp.GlobalPhase(-phi / 4),
+        ]
+        return decomp_ops
+
+    def adjoint(self) -> "SingleExcitationPlus":
+        (phi,) = self.parameters
+        return SingleExcitationPlus(-phi, wires=self.wires)
+
+    def label(
+        self,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
+    ) -> str:
+        return super().label(decimals=decimals, base_label=base_label or "G₊", cache=cache)
+
+
+def _single_excitation_plus_decomp_resources():
+    return {
+        qp.Hadamard: 2,
+        qp.CY: 1,
+        qp.CNOT: 2,
+        qp.RY: 2,
+        qp.S: 1,
+        qp.RZ: 1,
+        qp.GlobalPhase: 1,
+    }
+
+
+@register_resources(_single_excitation_plus_decomp_resources)
+def _single_excitation_plus_decomp(phi, wires: WiresLike, **__):
+    qp.Hadamard(wires[1])
+    qp.CNOT([wires[1], wires[0]])
+    qp.RY(phi / 2, wires[0])
+    qp.RY(phi / 2, wires[1])
+    qp.CY([wires[1], wires[0]])
+    qp.S(wires[1])
+    qp.Hadamard(wires[1])
+    qp.RZ(-phi / 2, wires[1])
+    qp.CNOT(wires)
+    qp.GlobalPhase(-phi / 4)
+
+
+add_decomps(SingleExcitationPlus, _single_excitation_plus_decomp)
+add_decomps("Adjoint(SingleExcitationPlus)", adjoint_rotation)
+add_decomps("Pow(SingleExcitationPlus)", pow_rotation)
+
+
+class DoubleExcitation(Operator2):
+    r"""
+    Double excitation rotation.
+
+    This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
+    |1100\rangle,|0011\rangle\}`. More precisely, it performs the transformation
+
+    .. math::
+
+        &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle + \sin(\phi/2) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle - \sin(\phi/2) |0011\rangle,
+
+    while leaving all other basis states unchanged.
+
+    The name originates from the occupation-number representation of fermionic wavefunctions, where
+    the transformation from :math:`|1100\rangle` to :math:`|0011\rangle` is interpreted as
+    "exciting" two particles from the first pair of qubits to the second pair of qubits.
+
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+    * Gradient recipe: The ``DoubleExcitation`` operator satisfies a four-term parameter-shift rule
+      (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+
+    **Example**
+
+    The following circuit performs the transformation :math:`|1100\rangle\rightarrow \cos(
+    \phi/2)|1100\rangle - \sin(\phi/2)|0011\rangle)`:
+
+    .. code-block::
+
+        dev = qp.device('default.qubit', wires=4)
+
+        @qp.qnode(dev)
+        def circuit(phi):
+            qp.X(0)
+            qp.X(1)
+            qp.DoubleExcitation(phi, wires=[0, 1, 2, 3])
+            return qp.state()
+
+        circuit(0.1)
+    """
+
+    dynamic_argnames = ("phi",)
+    wire_argnames = ("wires",)
+    arg_specs = {"phi": Float, "wires": Wire[4]}
+    wire_sizes = (4,)
+
+    num_wires = 4
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    def generator(self) -> "qp.Hamiltonian":
+        w0, w1, w2, w3 = self.wires
+        return qp.Hamiltonian(
+            [0.0625, 0.0625, -0.0625, 0.0625, -0.0625, 0.0625, -0.0625, -0.0625],
+            [
+                qp.X(w0) @ qp.X(w1) @ qp.X(w2) @ qp.Y(w3),
+                qp.X(w0) @ qp.X(w1) @ qp.Y(w2) @ qp.X(w3),
+                qp.X(w0) @ qp.Y(w1) @ qp.X(w2) @ qp.X(w3),
+                qp.X(w0) @ qp.Y(w1) @ qp.Y(w2) @ qp.Y(w3),
+                qp.Y(w0) @ qp.X(w1) @ qp.X(w2) @ qp.X(w3),
+                qp.Y(w0) @ qp.X(w1) @ qp.Y(w2) @ qp.Y(w3),
+                qp.Y(w0) @ qp.Y(w1) @ qp.X(w2) @ qp.Y(w3),
+                qp.Y(w0) @ qp.Y(w1) @ qp.Y(w2) @ qp.X(w3),
+            ],
+        )
+
+    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+        return [DoubleExcitation(self.phi * z, wires=self.wires)]
+
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
+
+    mask_s = np.zeros((16, 16))
+    mask_s[3, 12] = -1
+    mask_s[12, 3] = 1
+
+    @staticmethod
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.DoubleExcitation.matrix`
+
+
+        Args:
+          phi (tensor_like or float): rotation angle
+          wires (Sequence[int]): the wires the operation acts on
+
+        Returns:
+          tensor_like: canonical matrix
+        """
+        return _double_excitations_matrix(phi, 0.0)
+
+    def adjoint(self) -> "DoubleExcitation":
+        return DoubleExcitation(-self.phi, wires=self.wires)
+
+    def label(
+        self,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
+    ) -> str:
+        return super().label(decimals=decimals, base_label=base_label or "G²", cache=cache)
+
+
+def _doublexcit_resource(phi, wires):  # pylint: disable=unused-argument
+    return {qp.CNOT: 14, qp.Hadamard: 6, qp.RY: 8}
+
+
+@register_resources(_doublexcit_resource)
+def _doublexcit(phi: TensorLike, wires: WiresLike):
+    qp.CNOT(wires=[wires[2], wires[3]])
+    qp.CNOT(wires=[wires[0], wires[2]])
+    qp.Hadamard(wires=wires[3])
+    qp.Hadamard(wires=wires[0])
+    qp.CNOT(wires=[wires[2], wires[3]])
+    qp.CNOT(wires=[wires[0], wires[1]])
+    qp.RY(phi / 8, wires=wires[1])
+    qp.RY(-phi / 8, wires=wires[0])
+    qp.CNOT(wires=[wires[0], wires[3]])
+    qp.Hadamard(wires=wires[3])
+    qp.CNOT(wires=[wires[3], wires[1]])
+    qp.RY(phi / 8, wires=wires[1])
+    qp.RY(-phi / 8, wires=wires[0])
+    qp.CNOT(wires=[wires[2], wires[1]])
+    qp.CNOT(wires=[wires[2], wires[0]])
+    qp.RY(-phi / 8, wires=wires[1])
+    qp.RY(phi / 8, wires=wires[0])
+    qp.CNOT(wires=[wires[3], wires[1]])
+    qp.Hadamard(wires=wires[3])
+    qp.CNOT(wires=[wires[0], wires[3]])
+    qp.RY(-phi / 8, wires=wires[1])
+    qp.RY(phi / 8, wires=wires[0])
+    qp.CNOT(wires=[wires[0], wires[1]])
+    qp.CNOT(wires=[wires[2], wires[0]])
+    qp.Hadamard(wires=wires[0])
+    qp.Hadamard(wires=wires[3])
+    qp.CNOT(wires=[wires[0], wires[2]])
+    qp.CNOT(wires=[wires[2], wires[3]])
+
+
+def _doublexcit_ppr_resource(phi, wires):  # pylint: disable=unused-argument
+    return {
+        qp.PauliRot(Float, pauli_word="YYYX", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="YYXY", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="YXYY", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="YXXX", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="XYYY", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="XYXX", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="XXYX", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="XXXY", wires=Wire[4]): 1,
+    }
+
+
+@register_resources(_doublexcit_ppr_resource)
+def _doublexcit_ppr(phi: TensorLike, wires: WiresLike):
+    qp.PauliRot(phi / 8, pauli_word="YYYX", wires=wires)
+    qp.PauliRot(phi / 8, pauli_word="YYXY", wires=wires)
+    qp.PauliRot(-phi / 8, pauli_word="YXYY", wires=wires)
+    qp.PauliRot(phi / 8, pauli_word="YXXX", wires=wires)
+    qp.PauliRot(-phi / 8, pauli_word="XYYY", wires=wires)
+    qp.PauliRot(phi / 8, pauli_word="XYXX", wires=wires)
+    qp.PauliRot(-phi / 8, pauli_word="XXYX", wires=wires)
+    qp.PauliRot(-phi / 8, pauli_word="XXXY", wires=wires)
+
+
+add_decomps(DoubleExcitation, _doublexcit, _doublexcit_ppr)
+add_decomps("Adjoint(DoubleExcitation)", adjoint_rotation2)
+add_decomps("Pow(DoubleExcitation)", pow_rotation2)
+
+
+class DoubleExcitationPlus(Operation):
+    r"""
+    Double excitation rotation with positive phase-shift outside the rotation subspace.
+
+    This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
+    |1100\rangle,|0011\rangle\}` while applying a phase-shift on other states. More precisely,
+    it performs the transformation
+
+    .. math::
+
+        &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
+        &|x\rangle \rightarrow e^{i\phi/2} |x\rangle,
+
+    for all other basis states :math:`|x\rangle`.
+
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_+(\phi)) = \frac{1}{2}\left[f(U_+(\phi+\pi/2)) - f(U_+(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_+(\phi)`
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+    """
+
+    num_wires = 4
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    grad_method = "A"
+    """Gradient computation method."""
+
+    parameter_frequencies = [(1,)]
+    """Frequencies of the operation parameter with respect to an expectation value."""
+
+    resource_keys = set()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    def generator(self) -> "qp.SparseHamiltonian":
+        G = -1 * np.eye(16, dtype=np.complex64)
+        G[3, 3] = G[12, 12] = 0
+        G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
+        G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
+        H = csr_matrix(-0.5 * G)
+        return qp.SparseHamiltonian(H, wires=self.wires)
+
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
+
+    @staticmethod
+    def compute_matrix(phi: TensorLike) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.DoubleExcitationPlus.matrix`
+
+        Args:
+          phi (tensor_like or float): rotation angle
+
+        Returns:
+          tensor_like: canonical matrix
+
+        """
+        return _double_excitations_matrix(phi, 0.5j)
+
+    def adjoint(self) -> "DoubleExcitationPlus":
+        (theta,) = self.parameters
+        return DoubleExcitationPlus(-theta, wires=self.wires)
+
+    def label(
+        self,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
+    ) -> str:
+        return super().label(decimals=decimals, base_label=base_label or "G²₊", cache=cache)
+
+
+add_decomps("Adjoint(DoubleExcitationPlus)", adjoint_rotation)
+add_decomps("Pow(DoubleExcitationPlus)", pow_rotation)
+
+
+class DoubleExcitationMinus(Operation):
+    r"""
+    Double excitation rotation with negative phase-shift outside the rotation subspace.
+
+    This operation performs an :math:`SO(2)` rotation in the two-dimensional subspace :math:`\{
+    |1100\rangle,|0011\rangle\}` while applying a phase-shift on other states. More precisely,
+    it performs the transformation
+
+    .. math::
+
+        &|0011\rangle \rightarrow \cos(\phi/2) |0011\rangle - \sin(\phi/2) |1100\rangle\\
+        &|1100\rangle \rightarrow \cos(\phi/2) |1100\rangle + \sin(\phi/2) |0011\rangle\\
+        &|x\rangle \rightarrow e^{-i\phi/2} |x\rangle,
+
+    for all other basis states :math:`|x\rangle`.
+
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U_-(\phi)) = \frac{1}{2}\left[f(U_-(\phi+\pi/2)) - f(U_-(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U_-(\phi)`
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+    """
+
+    num_wires = 4
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    grad_method = "A"
+    """Gradient computation method."""
+
+    parameter_frequencies = [(1,)]
+    """Frequencies of the operation parameter with respect to an expectation value."""
+
+    resource_keys = set()
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    def generator(self) -> "qp.SparseHamiltonian":
+        G = np.eye(16, dtype=np.complex64)
+        G[3, 3] = G[12, 12] = 0
+        G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
+        G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
+        H = csr_matrix(-0.5 * G)
+        return qp.SparseHamiltonian(H, wires=self.wires)
+
+    @staticmethod
+    def compute_matrix(phi: TensorLike) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.DoubleExcitationMinus.matrix`
+
+
+        Args:
+          phi (tensor_like or float): rotation angle
+
+        Returns:
+          tensor_like: canonical matrix
+
+        """
+        return _double_excitations_matrix(phi, -0.5j)
+
+    def adjoint(self) -> "DoubleExcitationMinus":
+        (theta,) = self.parameters
+        return DoubleExcitationMinus(-theta, wires=self.wires)
+
+    def label(
+        self,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
+    ) -> str:
+        return super().label(decimals=decimals, base_label=base_label or "G²₋", cache=cache)
+
+
+add_decomps("Adjoint(DoubleExcitationMinus)", adjoint_rotation)
+add_decomps("Pow(DoubleExcitationMinus)", pow_rotation)
+
+
+class OrbitalRotation(Operator2):
+    r"""
+    Spin-adapted spatial orbital rotation.
+
+    For two neighbouring spatial orbitals :math:`\{|\Phi_{0}\rangle, |\Phi_{1}\rangle\}`, this operation
+    performs the following transformation
+
+    .. math::
+        &|\Phi_{0}\rangle = \cos(\phi/2)|\Phi_{0}\rangle - \sin(\phi/2)|\Phi_{1}\rangle\\
+        &|\Phi_{1}\rangle = \cos(\phi/2)|\Phi_{0}\rangle + \sin(\phi/2)|\Phi_{1}\rangle,
+
+    with the same orbital operation applied in the :math:`\alpha` and :math:`\beta` spin orbitals.
+
+    .. figure:: ../../_static/qchem/orbital_rotation.jpeg
+        :align: center
+        :width: 100%
+        :target: javascript:void(0);
+
+    Here, :math:`G(\phi)` represents a single-excitation Givens rotation and :math:`f\text{SWAP}(\pi)`
+    represents the fermionic swap operator, implemented in PennyLane as the
+    :class:`~.SingleExcitation` operation and :class:`~.FermionicSWAP` operation, respectively. This
+    implementation is a modified version of the one given in `Anselmetti et al. (2021) <https://doi.org/10.1088/1367-2630/ac2cb3>`__\ ,
+    and is consistent with the Jordan-Wigner mapping in interleaved ordering.
+
+    **Details:**
+
+    * Number of wires: 4
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+    * Gradient recipe: The ``OrbitalRotation`` operator has 4 equidistant frequencies
+      :math:`\{0.5, 1, 1.5, 2\}`, and thus permits an 8-term parameter-shift rule.
+      (see `Wierichs et al. (2022) <https://doi.org/10.22331/q-2022-03-30-677>`__).
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+
+    **Example**
+
+    .. code-block::
+
+        >>> dev = qp.device('default.qubit', wires=4)
+        >>> @qp.qnode(dev)
+        ... def circuit(phi):
+        ...     qp.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
+        ...     qp.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+        ...     return qp.state()
+        >>> circuit(0.1)
+        array([ 0.        +0.j,  0.        +0.j,  0.        +0.j,
+                0.00249792+0.j,  0.        +0.j,  0.        +0.j,
+                0.04991671+0.j,  0.        +0.j,  0.        +0.j,
+               -0.04991671+0.j,  0.        +0.j,  0.        +0.j,
+                0.99750208+0.j,  0.        +0.j,  0.        +0.j,
+                0.        +0.j])
+    """
+
+    dynamic_argnames = ("phi",)
+    wire_argnames = ("wires",)
+
+    arg_specs = {"phi": Float, "wires": Wire[4]}
+    wire_sizes = (4,)
+
+    num_wires = 4
+    """int: Number of wires that the operator acts on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    def generator(self) -> "qp.Hamiltonian":
+        w0, w1, w2, w3 = self.wires
+        return qp.Hamiltonian(
+            [0.25, -0.25, 0.25, -0.25],
+            [
+                qp.X(w0) @ qp.Z(w1) @ qp.Y(w2),
+                (qp.Y(w0) @ qp.Z(w1) @ qp.X(w2)),
+                (qp.X(w1) @ qp.Z(w2) @ qp.Y(w3)),
+                (qp.Y(w1) @ qp.Z(w2) @ qp.X(w3)),
+            ],
+        )
+
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
+
+    mask_s = np.zeros((16, 16))
+    mask_s[1, 4] = mask_s[2, 8] = mask_s[13, 7] = mask_s[14, 11] = -1
+    mask_s[4, 1] = mask_s[8, 2] = mask_s[7, 13] = mask_s[11, 14] = 1
+
+    mask_cs = np.zeros((16, 16))
+    mask_cs[6, 3] = mask_cs[3, 9] = mask_cs[12, 6] = mask_cs[9, 12] = -1
+    mask_cs[3, 6] = mask_cs[9, 3] = mask_cs[6, 12] = mask_cs[12, 9] = 1
+
+    mask_s2 = np.zeros((16, 16))
+    mask_s2[3, 12] = mask_s2[12, 3] = mask_s2[6, 9] = mask_s2[9, 6] = 1
+
+    @staticmethod
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.OrbitalRotation.matrix`
+
+
+        Args:
+          phi (tensor_like or float): rotation angle
+          wires (Sequence[int]): the wires the operation acts on
+
+        Returns:
+          tensor_like: canonical matrix
+        """
+        # This matrix is the "sign flipped" version of that on p18 of https://arxiv.org/abs/2104.05695,
+        # where the sign flip is to adjust for the opposite convention used by authors for naming wires.
+        # Additionally, there was a typo in the sign of a matrix element "s" at [2, 8], which is fixed here.
+        # It has been further modifided for the decomposition consistent with interleaved JW ordering.
+
+        c = qp.math.cos(phi / 2)
+        s = qp.math.sin(phi / 2)
+
+        if qp.math.ndim(phi) == 0:
+            diag = qp.math.diag(
+                [1.0, c, c, c**2, c, 1.0, c**2, c, c, c**2, 1.0, c, c**2, c, c, 1.0]
+            )
+            if qp.math.get_interface(phi) == "torch":
+                mask_s = qp.math.convert_like(OrbitalRotation.mask_s, phi)
+                mask_cs = qp.math.convert_like(OrbitalRotation.mask_cs, phi)
+                mask_s2 = qp.math.convert_like(OrbitalRotation.mask_s2, phi)
+                return diag + s * mask_s + (c * s) * mask_cs + s**2 * mask_s2
+            return (
+                diag
+                + s * OrbitalRotation.mask_s
+                + (c * s) * OrbitalRotation.mask_cs
+                + s**2 * OrbitalRotation.mask_s2
+            )
+
+        ones = qp.math.ones_like(c)
+        diag = qp.math.stack(
+            [ones, c, c, c**2, c, ones, c**2, c, c, c**2, ones, c, c**2, c, c, ones],
+            axis=-1,
+        )
+
+        diag = qp.math.einsum("ij,jk->ijk", diag, I16)
+        off_diag = (
+            qp.math.einsum("i,jk->ijk", s, OrbitalRotation.mask_s)
+            + qp.math.einsum("i,jk->ijk", c * s, OrbitalRotation.mask_cs)
+            + qp.math.einsum("i,jk->ijk", s**2, OrbitalRotation.mask_s2)
+        )
+
+        return diag + off_diag
+
+    def adjoint(self) -> "OrbitalRotation":
+        (phi,) = self.parameters
+        return OrbitalRotation(-phi, wires=self.wires)
+
+
+# pylint: disable-next=unused-argument
+def _orbital_rotation_decomposition_resources(phi: TensorLike, wires: WiresLike):
+    return {qp.FermionicSWAP: 2, qp.SingleExcitation: 2}
+
+
+@register_resources(_orbital_rotation_decomposition_resources)
+def _orbital_rotation_decomp(phi: TensorLike, wires: WiresLike):
+    qp.FermionicSWAP(np.pi, wires=[wires[1], wires[2]])
+    qp.SingleExcitation(phi, wires=[wires[0], wires[1]])
+    qp.SingleExcitation(phi, wires=[wires[2], wires[3]])
+    qp.FermionicSWAP(np.pi, wires=[wires[1], wires[2]])
+
+
+add_decomps(OrbitalRotation, _orbital_rotation_decomp)
+add_decomps("Adjoint(OrbitalRotation)", adjoint_rotation2)
+add_decomps("Pow(OrbitalRotation)", pow_rotation2)
+
+
+class FermionicSWAP(Operator2):
+    r"""Fermionic SWAP rotation.
+
+    .. math:: U(\phi) = \begin{bmatrix}
+                1 & 0 & 0 & 0 \\
+                0 & e^{i \phi/2} \cos(\phi/2) & -ie^{i \phi/2} \sin(\phi/2) & 0 \\
+                0 & -ie^{i \phi/2} \sin(\phi/2) & e^{i \phi/2} \cos(\phi/2) & 0 \\
+                0 & 0 & 0 & e^{i \phi}
+            \end{bmatrix}.
+
+    This operation performs a rotation in the adjacent fermionic modes under the Jordan-Wigner mapping,
+    and is realized by the following transformation of basis states:
+
+    .. math::
+        &|00\rangle \mapsto |00\rangle\\
+        &|01\rangle \mapsto e^{i \phi/2} \cos(\phi/2)|01\rangle - ie^{i \phi/2} \sin(\phi/2)|10\rangle\\
+        &|10\rangle \mapsto -ie^{i \phi/2} \sin(\phi/2)|01\rangle + e^{i \phi/2} \cos(\phi/2)|10\rangle\\
+        &|11\rangle \mapsto e^{i \phi}|11\rangle,
+
+    where qubits in :math:`|0\rangle` and :math:`|1\rangle` states represent a hole and a fermion in
+    the orbital, respectively. It preserves anti-symmetrization of orbitals by applying a phase factor
+    of :math:`e^{i \phi/2}` to the state for each qubit initially in :math:`|1\rangle` state. Consequently,
+    for :math:`\phi=\pi`, the given rotation will essentially perform a SWAP operation on the qubits while
+    applying a global phase of :math:`-1`, if both qubits are :math:`|1\rangle`.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+    * Gradient recipe: :math:`\frac{d}{d\phi}f(U(\phi)) = \frac{1}{2}\left[f(U(\phi+\pi/2)) - f(U(\phi-\pi/2))\right]`
+      where :math:`f` is an expectation value depending on :math:`U(\phi)`
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+        wires (Sequence[int]): the wires the operation acts on
+
+    **Example**
+
+    The following circuit performs the transformation: :math:`|01\rangle \mapsto e^{i \phi/2}
+    \cos(\phi/2)|01\rangle - ie^{i \phi/2} \sin(\phi/2)|10\rangle`, where :math:`\phi=0.1`:
+
+    .. code-block::
+
+        >>> dev = qp.device('default.qubit', wires=2)
+        >>> @qp.qnode(dev)
+        ... def circuit(phi):
+        ...     qp.X(1)
+        ...     qp.FermionicSWAP(phi, wires=[0, 1])
+        ...     return qp.state()
+        >>> circuit(0.1)
+        array([0.        +0.j        , 0.99750208+0.04991671j,
+               0.00249792-0.04991671j, 0.        +0.j        ])
+    """
+
+    dynamic_argnames = ("phi",)
+    wire_argnames = ("wires",)
+
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+    wire_sizes = (2,)
+
+    num_wires = 2
+    num_params = 1
+    ndim_params = (0,)
+
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
+
+    def generator(self) -> "qp.Hamiltonian":
+        w1, w2 = self.wires
+        return qp.Hamiltonian(
+            [0.5, -0.25, -0.25, -0.25, -0.25],
+            [
+                qp.Identity(w1) @ qp.Identity(w2),
+                qp.Identity(w1) @ qp.Z(w2),
+                qp.Z(w1) @ qp.Identity(w2),
+                qp.X(w1) @ qp.X(w2),
+                qp.Y(w1) @ qp.Y(w2),
+            ],
+        )
+
+    @staticmethod
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.FermionicSWAP.matrix`
+
+
+        Args:
+          phi (tensor_like or float): rotation angle
+          wires (Sequence[int]): the wires the operation acts on
+
+        Returns:
+          tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qp.FermionicSWAP.compute_matrix(torch.tensor(0.5))
+        tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.9388+0.2397j, 0.0612-0.2397j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0612-0.2397j, 0.9388+0.2397j, 0.0000+0.0000j],
+                [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.8776+0.4794j]],
+               dtype=torch.complex128)
+        """
+
+        c = qp.math.cast_like(qp.math.cos(phi / 2), 1j)
+        s = qp.math.cast_like(qp.math.sin(phi / 2), 1j)
+        g = qp.math.cast_like(qp.math.exp(1j * phi / 2), 1j)
+        p = qp.math.cast_like(qp.math.exp(1j * phi), 1j)
+
+        zeros = qp.math.zeros_like(phi)
+        ones = qp.math.ones_like(phi)
+        rows = [
+            [ones, zeros, zeros, zeros],
+            [zeros, g * c, -1j * g * s, zeros],
+            [zeros, -1j * g * s, g * c, zeros],
+            [zeros, zeros, zeros, p],
+        ]
+        return qp.math.stack([stack_last(row) for row in rows], axis=-2)
+
+    def adjoint(self) -> "FermionicSWAP":
+        (phi,) = self.parameters
+        return FermionicSWAP(-phi, wires=self.wires)
+
+    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+        return [FermionicSWAP(self.data[0] * z, wires=self.wires)]
+
+    def label(
+        self,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
+    ) -> str:
+        return super().label(decimals=decimals, base_label=base_label or "FSWAP", cache=cache)
+
+
+# pylint: disable-next=unused-argument
+def _fermionic_swap_decomp_resources(phi: TensorLike = None, wires: WiresLike = None):
+    return {
+        qp.Hadamard: 4,
+        qp.MultiRZ(Float, Wire[2]): 2,
+        qp.RX: 4,
+        qp.RZ: 2,
+        qp.GlobalPhase: 1,
+    }
+
+
+@register_resources(_fermionic_swap_decomp_resources)
+def _fermionic_swap_decomp(phi, wires: WiresLike, **__):
+    qp.Hadamard(wires=wires[0])
+    qp.Hadamard(wires=wires[1])
+    qp.MultiRZ(phi / 2, wires=[wires[0], wires[1]])
+    qp.Hadamard(wires=wires[0])
+    qp.Hadamard(wires=wires[1])
+    qp.RX(np.pi / 2, wires=wires[0])
+    qp.RX(np.pi / 2, wires=wires[1])
+    qp.MultiRZ(phi / 2, wires=[wires[0], wires[1]])
+    qp.RX(-np.pi / 2, wires=wires[0])
+    qp.RX(-np.pi / 2, wires=wires[1])
+    qp.RZ(phi / 2, wires=wires[0])
+    qp.RZ(phi / 2, wires=wires[1])
+    # for correcting global phase
+    qp.GlobalPhase(-0.5 * phi)
+
+
+add_decomps(FermionicSWAP, _fermionic_swap_decomp)
+add_decomps("Adjoint(FermionicSWAP)", adjoint_rotation2)
+add_decomps("Pow(FermionicSWAP)", pow_rotation2)

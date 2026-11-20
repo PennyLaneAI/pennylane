@@ -16,11 +16,11 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.fermi import FermiSentence, FermiWord, jordan_wigner
-from pennylane.templates.subroutines.alias_sampling import _build_alias_tables
-from pennylane.testing import assert_valid
-from pennylane.typing import AbstractWires
+import pennylane2 as qp
+from pennylane2.fermi import FermiSentence, FermiWord, jordan_wigner
+from pennylane2.templates.subroutines.alias_sampling import _build_alias_tables
+from pennylane2.testing import assert_valid
+from pennylane2.typing import AbstractWires
 
 
 def _registers(norbs, mu_bits):

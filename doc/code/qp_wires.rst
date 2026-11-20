@@ -1,7 +1,7 @@
 qp.wires
 ============
 
-.. currentmodule:: pennylane.wires
+.. currentmodule:: pennylane2.wires
 
 .. warning::
 

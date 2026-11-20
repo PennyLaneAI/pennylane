@@ -19,17 +19,17 @@ import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qp
-from pennylane.exceptions import QuantumFunctionError, TransformError
-from pennylane.measurements import (
+import pennylane2 as qp
+from pennylane2.exceptions import QuantumFunctionError, TransformError
+from pennylane2.measurements import (
     CountsMP,
     ExpectationMP,
     ProbabilityMP,
     SampleMP,
 )
-from pennylane.ops import MeasurementValue, MidMeasure
-from pennylane.transforms import dynamic_one_shot
-from pennylane.transforms.dynamic_one_shot import (
+from pennylane2.ops import MeasurementValue, MidMeasure
+from pennylane2.transforms import dynamic_one_shot
+from pennylane2.transforms.dynamic_one_shot import (
     _supports_one_shot,
     fill_in_value,
     gather_non_mcm,

@@ -1,0 +1,48 @@
+# Copyright 2026 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Test the mapping functionality overrides operators as exected.
+"""
+
+import pytest
+
+import pennylane2 as qp
+import pennylane2.estimator as pl_qre
+import pennylane2.labs.estimator_beta as qre
+from pennylane2.templates.subroutines.qrom import QROM
+
+
+@pytest.mark.parametrize("mod, work_wires", [(7, [3, 4]), (8, [])])
+def test_adder_mapping(mod, work_wires):
+    """Test that the Adder operator gets mapped correctly"""
+    adder = qp.Adder(3, x_wires=[0, 1, 2], mod=mod, work_wires=work_wires)
+
+    mapped = pl_qre.resource_mapping._map_to_resource_op(adder)  # pylint: disable=protected-access
+    assert mapped == qre.Adder(num_x_wires=3, mod=mod, wires=[0, 1, 2])
+    assert mapped.wires == qp.wires.Wires([0, 1, 2])
+
+
+@pytest.mark.parametrize("clean", [True, False])
+def test_qrom_mapping(clean):
+    """Test that the qrom operator gets mapped correctly"""
+    qrom = QROM(
+        bitstrings=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
+        control_wires=[0, 1],
+        target_wires=[2, 3, 4],
+        work_wires=[5, 6, 7],
+        clean=clean,
+    )
+
+    # pylint: disable-next=protected-access
+    assert isinstance(pl_qre.resource_mapping._map_to_resource_op(qrom), qre.LabsQROM)

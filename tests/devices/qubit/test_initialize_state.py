@@ -16,10 +16,10 @@
 import pytest
 import scipy as sp
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.operator import StatePrepBase
-from pennylane.devices.qubit import create_initial_state
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.operator import StatePrepBase
+from pennylane2.devices.qubit import create_initial_state
 
 
 class TestInitializeState:

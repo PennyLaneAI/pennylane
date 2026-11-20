@@ -1,7 +1,7 @@
 qp.tape
 ========
 
-.. currentmodule:: pennylane.tape
+.. currentmodule:: pennylane2.tape
 
 Quantum tapes are a datastructure that can represent quantum circuits and measurement statistics in PennyLane.
 They are queuing contexts that can record and process quantum operations and measurements.
@@ -18,8 +18,8 @@ and PyTorch.
     to use these classes directly.
 
     See the :doc:`quantum circuits <../introduction/circuits>` page for more
-    details on creating QNodes, as well as the :func:`~pennylane.qnode` decorator
-    and :func:`~pennylane.QNode` constructor.
+    details on creating QNodes, as well as the :func:`~pennylane2.qnode` decorator
+    and :func:`~pennylane2.QNode` constructor.
 
 .. _tape-vs-script:
 
@@ -29,7 +29,7 @@ QuantumTape versus QuantumScript
 A ``QuantumScript`` is purely a representation of a quantum circuit, and can only be constructed
 via initialization. Once it is initialized, the contents should then remain immutable throughout its lifetime.
 
->>> from pennylane.core.qscript import QuantumScript
+>>> from pennylane2.core.qscript import QuantumScript
 >>> ops = [qp.PauliX(0)]
 >>> measurements = [qp.expval(qp.PauliZ(0))]
 >>> QuantumScript(ops, measurements, shots=10)
@@ -37,10 +37,10 @@ via initialization. Once it is initialized, the contents should then remain immu
 
 A ``QuantumTape`` has additional queuing capabilities and also inherits from :class:`~.AnnotatedQueue`.  Its contents
 are set on exiting the context, rather than upon initialization. Since queuing requires interaction with the global singleton
-:class:`~pennylane.QueuingManager`, the ``QuantumTape`` requires a ``threading.RLock`` which complicates its use in distributed
+:class:`~pennylane2.QueuingManager`, the ``QuantumTape`` requires a ``threading.RLock`` which complicates its use in distributed
 situations.
 
->>> from pennylane.tape import QuantumTape
+>>> from pennylane2.tape import QuantumTape
 >>> with QuantumTape(shots=10) as tape:
 ...     qp.PauliX(0)
 ...     qp.expval(qp.PauliZ(0))
@@ -76,7 +76,7 @@ Quantum Script
 ~~~~~~~~~~~~~~
 
 
-.. currentmodule:: pennylane.core.qscript
+.. currentmodule:: pennylane2.core.qscript
 
 .. autosummary::
     :toctree: api
@@ -90,7 +90,7 @@ Quantum Script
 Quantum tape
 ~~~~~~~~~~~~
 
-.. currentmodule:: pennylane.tape
+.. currentmodule:: pennylane2.tape
 
 .. autosummary::
     :toctree: api

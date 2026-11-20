@@ -30,15 +30,15 @@ from gate_data import (
 from helpers.decomposition_helpers import assert_basis_change_decomposition
 from scipy.linalg import expm, fractional_matrix_power
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.gradients import parameter_frequencies
-from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.qubit.qchem_ops import (
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.gradients import parameter_frequencies
+from pennylane2.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane2.ops.qubit.qchem_ops import (
     _SingleExcitationBasis,
     _SingleExcitationRotations,
 )
-from pennylane.typing import Float, Wire
+from pennylane2.typing import Float, Wire
 
 PARAMETRIZED_QCHEM_OPERATIONS = [
     qp.SingleExcitation(0.14, wires=[0, 1]),

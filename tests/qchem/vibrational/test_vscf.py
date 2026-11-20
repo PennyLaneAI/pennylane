@@ -20,9 +20,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.qchem import vibrational
-from pennylane.qchem.vibrational import vscf
+import pennylane2 as qp
+from pennylane2.qchem import vibrational
+from pennylane2.qchem.vibrational import vscf
 
 h5py = pytest.importorskip("h5py")
 

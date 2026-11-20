@@ -18,15 +18,15 @@ Tests for the TemporaryAND template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import abstractify
-from pennylane.templates.subroutines.arithmetic.temporary_and import (
+import pennylane2 as qp
+from pennylane2.core.operator import abstractify
+from pennylane2.templates.subroutines.arithmetic.temporary_and import (
     _adjoint_temporary_and,
     _adjoint_temporary_and_ppm,
     _adjoint_temporary_and_to_toffoli,
 )
-from pennylane.testing import assert_valid_decomp_rule
-from pennylane.typing import Bool, Wire
+from pennylane2.testing import assert_valid_decomp_rule
+from pennylane2.typing import Bool, Wire
 
 expected_adjoint_temporary_and_rule_ops = [
     (

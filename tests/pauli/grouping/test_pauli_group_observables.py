@@ -20,11 +20,11 @@ import sys
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import Identity, PauliX, PauliY, PauliZ
-from pennylane import numpy as pnp
-from pennylane.pauli import are_identical_pauli_words, are_pauli_words_qwc
-from pennylane.pauli.grouping.group_observables import (
+import pennylane2 as qp
+from pennylane2 import Identity, PauliX, PauliY, PauliZ
+from pennylane2 import numpy as pnp
+from pennylane2.pauli import are_identical_pauli_words, are_pauli_words_qwc
+from pennylane2.pauli.grouping.group_observables import (
     PauliGroupingStrategy,
     compute_partition_indices,
     group_observables,
@@ -39,7 +39,7 @@ class TestOldRX:
     def test_new_strategies_with_old_rx_raise_error(self, monkeypatch, new_colourer):
         """Test that an error is raised if a new strategy is used with old rx"""
         # Monkey patch the new_rx variable to False
-        grouping = sys.modules["pennylane.pauli.grouping.group_observables"]
+        grouping = sys.modules["pennylane2.pauli.grouping.group_observables"]
         monkeypatch.setattr(grouping, "new_rx", False)
 
         observables = [qp.X(0)]
@@ -53,7 +53,7 @@ class TestOldRX:
         new_groupper = PauliGroupingStrategy(observables, graph_colourer="lf")
         new_partitions = new_groupper.partition_observables()
 
-        grouping = sys.modules["pennylane.pauli.grouping.group_observables"]
+        grouping = sys.modules["pennylane2.pauli.grouping.group_observables"]
         monkeypatch.setattr(grouping, "new_rx", False)
 
         old_groupper = PauliGroupingStrategy(observables, graph_colourer="lf")

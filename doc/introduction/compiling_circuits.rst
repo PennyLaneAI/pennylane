@@ -34,16 +34,16 @@ for a complete list.
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.transforms.cancel_inverses
-    ~pennylane.transforms.commute_controlled
-    ~pennylane.transforms.merge_amplitude_embedding
-    ~pennylane.transforms.merge_rotations
-    ~pennylane.transforms.pattern_matching
-    ~pennylane.transforms.remove_barrier
-    ~pennylane.transforms.single_qubit_fusion
-    ~pennylane.transforms.undo_swaps
-    ~pennylane.transforms.decompose
-    ~pennylane.transforms.combine_global_phases
+    ~pennylane2.transforms.cancel_inverses
+    ~pennylane2.transforms.commute_controlled
+    ~pennylane2.transforms.merge_amplitude_embedding
+    ~pennylane2.transforms.merge_rotations
+    ~pennylane2.transforms.pattern_matching
+    ~pennylane2.transforms.remove_barrier
+    ~pennylane2.transforms.single_qubit_fusion
+    ~pennylane2.transforms.undo_swaps
+    ~pennylane2.transforms.decompose
+    ~pennylane2.transforms.combine_global_phases
 
 :html:`</div>`
 
@@ -91,8 +91,8 @@ Alternatively, multiple transforms can be chained together into custom circuit o
 via the :class:`~.CompilePipeline` class. The defined compilation program can then be applied on a
 ``QNode``, which will transform the circuit with each pass therein.
 
-For example, by constructing a pipeline with the sequence of three transforms: :func:`~.pennylane.transforms.commute_controlled`,
-:func:`~.pennylane.transforms.cancel_inverses`, and :func:`~.pennylane.transforms.merge_rotations`,
+For example, by constructing a pipeline with the sequence of three transforms: :func:`~.pennylane2.transforms.commute_controlled`,
+:func:`~.pennylane2.transforms.cancel_inverses`, and :func:`~.pennylane2.transforms.merge_rotations`,
 the number of gates in the following quantum circuit can be reduced by almost a half:
 
 .. code-block:: python
@@ -128,7 +128,7 @@ the number of gates in the following quantum circuit can be reduced by almost a 
 
 .. note::
 
-    The :class:`~.pennylane.Barrier` operator can be used to prevent blocks of code from being merged during
+    The :class:`~.pennylane2.Barrier` operator can be used to prevent blocks of code from being merged during
     compilation.
 
 For more details on :class:`~.CompilePipeline` and the available compilation transforms, visit
@@ -140,9 +140,9 @@ Gate decompositions
 
 When compiling a circuit, it is often beneficial to decompose the circuit into a
 set of gates. For tape-based (non-compiled) workflows, use
-:func:`~.pennylane.transforms._tape_decompose`, which decomposes circuits into a
+:func:`~.pennylane2.transforms._tape_decompose`, which decomposes circuits into a
 set of gates defined either by their name, type, or by a set of rules they must
-follow. Under :func:`~.qjit`, use :func:`~.pennylane.transforms.decompose`, which
+follow. Under :func:`~.qjit`, use :func:`~.pennylane2.transforms.decompose`, which
 dispatches to Catalyst's graph-decomposition pass. Both transforms require an explicit
 ``gate_set``.
 
@@ -154,7 +154,7 @@ a pre-defined set of gates:
 
 .. code-block:: python
 
-    from pennylane.transforms import _tape_decompose
+    from pennylane2.transforms import _tape_decompose
 
     dev = qp.device('default.qubit')
     allowed_gates = {qp.Toffoli, qp.RX, qp.RZ, qp.GlobalPhase}
@@ -204,11 +204,11 @@ stages applied to the circuit. By default, the function will decompose the circu
 until the desired gate set is reached.
 
 The example below shows how the user can visualize the decomposition. We begin 
-with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit: 
+with creating a :class:`~.pennylane2.QuantumPhaseEstimation` circuit:
 
 .. code-block:: python
 
-    from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
+    from pennylane2.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 
     phase = 1 
     unitary = qp.RX(phase, wires=0)
@@ -223,7 +223,7 @@ with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit:
 
 From here, we can iterate through the stages of decomposition:
 
->>> from pennylane.transforms import _tape_decompose
+>>> from pennylane2.transforms import _tape_decompose
 >>> print(qp.draw(_tape_decompose(circuit, gate_set=ROTATIONS_PLUS_CNOT, max_expansion=0))())
 0: ──H─╭QuantumPhaseEstimation─┤  
 1: ────├QuantumPhaseEstimation─┤  
@@ -315,7 +315,7 @@ to our specifications:
 Local decomposition rules
 *************************
 
-The :func:`~.pennylane.transforms._tape_decompose` transform offers the ability to inject
+The :func:`~.pennylane2.transforms._tape_decompose` transform offers the ability to inject
 custom decompositions via two keyword arguments:
 
 * ``fixed_decomps`` maps an operator type or name to a rule that replaces its registered
@@ -326,7 +326,7 @@ custom decompositions via two keyword arguments:
 Both keyword arguments above require a dictionary mapping PennyLane operator types or names to
 custom decompositions. Creating custom decompositions that the graph-based system
 can use involves a PennyLane quantum function that represents the decomposition, 
-and a declaration of its resource requirements (gate counts) via :func:`~.pennylane.register_resources`.
+and a declaration of its resource requirements (gate counts) via :func:`~.pennylane2.register_resources`.
 
 Consider this example where we add a fixed decomposition to ``CNOT`` gates:
 
@@ -338,7 +338,7 @@ Consider this example where we add a fixed decomposition to ``CNOT`` gates:
         qp.CZ(wires=wires)
         qp.H(wires=wires[1])
 
-The :func:`~.pennylane.register_resources` accepts a dictionary mapping operator 
+The :func:`~.pennylane2.register_resources` accepts a dictionary mapping operator
 types within the custom decomposition to the number of times they occur in the decomposition. 
 With the resources registered, this can be used with ``fixed_decomps`` or ``alt_decomps``:
 
@@ -387,17 +387,17 @@ type:
 
 The decomposition that the algorithm chooses internally will be the most resource-efficient.
 More details on resource functions and conditional decomposition rules can be found in the
-usage details for :func:`~.pennylane.register_resources`.
+usage details for :func:`~.pennylane2.register_resources`.
 
 Alternatively, new decomposition rules can be added to operators *globally* with 
-the :func:`~.pennylane.add_decomps` function. This negates having to specify ``alt_decomps``
+the :func:`~.pennylane2.add_decomps` function. This negates having to specify ``alt_decomps``
 in every instance of the ``_tape_decompose`` transform. The following example globally
 adds the ``my_cnot1`` and ``my_cnot2`` decomposition rules to the ``qp.CNOT`` gate:
 
 >>> qp.add_decomps(qp.CNOT, my_cnot1, my_cnot2)
 
 The newly added rules for the ``qp.CNOT`` operator can be verified or inspected
-with the :func:`~.pennylane.list_decomps` function:
+with the :func:`~.pennylane2.list_decomps` function:
 
 >>> my_new_rules = qp.list_decomps(qp.CNOT)[-2:]
 >>> print(qp.draw(my_new_rules[1])(wires=[0, 1]))
@@ -407,7 +407,7 @@ with the :func:`~.pennylane.list_decomps` function:
 Simplifying Operators
 ----------------------
 
-PennyLane provides the :func:`~.pennylane.simplify` function to simplify single operators, quantum
+PennyLane provides the :func:`~.pennylane2.simplify` function to simplify single operators, quantum
 functions, QNodes and tapes. This function has several purposes:
 
 * Reducing the arithmetic depth of the given operators to its minimum.
@@ -491,12 +491,12 @@ and is an example of how observables can be "compiled".
 PennyLane contains different functionalities for this purpose, ranging from higher-level
 transforms acting on QNodes to lower-level functions acting on operators.
 
-An example of a transform manipulating QNodes is :func:`~.pennylane.transforms.split_non_commuting`.
+An example of a transform manipulating QNodes is :func:`~.pennylane2.transforms.split_non_commuting`.
 It turns a QNode that measures non-commuting observables into a QNode that internally
 uses *multiple* circuit executions with qubit-wise commuting groups. The transform is used
 by devices to make such measurements possible.
 
-On a lower level, the :func:`~.pennylane.pauli.group_observables` function can be used to split lists of
+On a lower level, the :func:`~.pennylane2.pauli.group_observables` function can be used to split lists of
 observables and coefficients:
 
 >>> obs = [qp.Y(0), qp.X(0) @ qp.X(1), qp.Z(1)]

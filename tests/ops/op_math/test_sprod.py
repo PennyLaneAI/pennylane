@@ -20,12 +20,12 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
 
-import pennylane as qp
-import pennylane.numpy as qnp
-from pennylane import math
-from pennylane.exceptions import DecompositionUndefinedError, MatrixUndefinedError
-from pennylane.ops.op_math import Prod, SProd, Sum, s_prod
-from pennylane.wires import Wires
+import pennylane2 as qp
+import pennylane2.numpy as qnp
+from pennylane2 import math
+from pennylane2.exceptions import DecompositionUndefinedError, MatrixUndefinedError
+from pennylane2.ops.op_math import Prod, SProd, Sum, s_prod
+from pennylane2.wires import Wires
 
 scalars = (1, 1.23, 0.0, 1 + 2j)  # int, float, zero, and complex cases accounted for
 

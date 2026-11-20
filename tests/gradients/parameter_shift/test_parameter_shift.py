@@ -18,12 +18,12 @@
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.shots import Shots
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.gradients import param_shift
-from pennylane.gradients.parameter_shift import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.shots import Shots
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.gradients import param_shift
+from pennylane2.gradients.parameter_shift import (
     _evaluate_gradient,
     _get_operation_recipe,
     _make_zero_rep,

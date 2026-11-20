@@ -20,15 +20,15 @@ Tests for capturing nested plxpr.
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, operator_p
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from pennylane.testing import assert_eqn_matches_op
+from pennylane2.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, operator_p
+from pennylane2.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane2.testing import assert_eqn_matches_op
 
 
 class TestAdjointQfunc:
@@ -164,7 +164,7 @@ class TestAdjointQfunc:
 
     def test_adjoint_grad(self):
         """Test that adjoint differentiated with grad can be captured."""
-        from pennylane.capture.primitives import jacobian_prim, qnode_prim
+        from pennylane2.capture.primitives import jacobian_prim, qnode_prim
 
         @qp.grad
         @qp.qnode(qp.device("default.qubit", wires=1))
@@ -615,7 +615,7 @@ class TestCtrlQfunc:
 
     def test_ctrl_grad(self):
         """Test that ctrl differentiated with grad can be captured."""
-        from pennylane.capture.primitives import jacobian_prim, qnode_prim
+        from pennylane2.capture.primitives import jacobian_prim, qnode_prim
 
         @qp.grad
         @qp.qnode(qp.device("default.qubit", wires=2))

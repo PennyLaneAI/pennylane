@@ -16,8 +16,8 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.measurements import VarianceMP
+import pennylane2 as qp
+from pennylane2.measurements import VarianceMP
 
 
 class TestVar:

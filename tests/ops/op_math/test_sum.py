@@ -19,13 +19,13 @@ import gate_data as gd  # a file containing matrix rep of each gate
 import numpy as np
 import pytest
 
-import pennylane as qp
-import pennylane.numpy as qnp
-from pennylane import X, Y, Z, math
-from pennylane.core.operator import Operator
-from pennylane.exceptions import MatrixUndefinedError
-from pennylane.ops.op_math import Prod, Sum
-from pennylane.wires import Wires
+import pennylane2 as qp
+import pennylane2.numpy as qnp
+from pennylane2 import X, Y, Z, math
+from pennylane2.core.operator import Operator
+from pennylane2.exceptions import MatrixUndefinedError
+from pennylane2.ops.op_math import Prod, Sum
+from pennylane2.wires import Wires
 
 no_mat_ops = (qp.Barrier,)
 

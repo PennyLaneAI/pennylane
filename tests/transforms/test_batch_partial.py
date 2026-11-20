@@ -22,8 +22,8 @@ import re
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
+import pennylane2 as qp
+from pennylane2 import numpy as np
 
 
 def test_partial_evaluation():

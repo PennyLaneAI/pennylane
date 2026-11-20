@@ -6,14 +6,14 @@
 Quantum operators
 =================
 
-.. currentmodule:: pennylane.ops
+.. currentmodule:: pennylane2.ops
 
 PennyLane supports a wide variety of quantum operators---such as gates, noisy channels, state preparations and measurements.
 These operators can be used in quantum functions, like shown in the following example:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     def my_quantum_function(x, y):
         qp.RZ(x, wires=0)
@@ -22,12 +22,12 @@ These operators can be used in quantum functions, like shown in the following ex
         qp.AmplitudeDamping(0.1, wires=0)
         return qp.expval(qp.PauliZ(1))
 
-This quantum function uses the :class:`RZ <pennylane.RZ>`,
-:class:`CNOT <pennylane.CNOT>`,
-:class:`RY <pennylane.RY>` gates, the
-:class:`AmplitudeDamping <pennylane.AmplitudeDamping>`
+This quantum function uses the :class:`RZ <pennylane2.RZ>`,
+:class:`CNOT <pennylane2.CNOT>`,
+:class:`RY <pennylane2.RY>` gates, the
+:class:`AmplitudeDamping <pennylane2.AmplitudeDamping>`
 noisy channel as well as the
-:class:`PauliZ <pennylane.PauliZ>` observable.
+:class:`PauliZ <pennylane2.PauliZ>` observable.
 
 Functions applied to operators extract information (such as the matrix representation) or
 transform operators (like turning a gate into a controlled gate).
@@ -48,19 +48,19 @@ Operator to Operator functions
 
 .. autosummary::
 
-    ~pennylane.adjoint
-    ~pennylane.ctrl
-    ~pennylane.cond
-    ~pennylane.exp
-    ~pennylane.sum
-    ~pennylane.pow
-    ~pennylane.prod
-    ~pennylane.s_prod
-    ~pennylane.generator
-    ~pennylane.map_wires
-    ~pennylane.dot
-    ~pennylane.evolve
-    ~pennylane.simplify
+    ~pennylane2.adjoint
+    ~pennylane2.ctrl
+    ~pennylane2.cond
+    ~pennylane2.exp
+    ~pennylane2.sum
+    ~pennylane2.pow
+    ~pennylane2.prod
+    ~pennylane2.s_prod
+    ~pennylane2.generator
+    ~pennylane2.map_wires
+    ~pennylane2.dot
+    ~pennylane2.evolve
+    ~pennylane2.simplify
 
 These operator functions act on operators to produce new operators.
 
@@ -75,12 +75,12 @@ Operator to Other functions
 
 .. autosummary::
 
-    ~pennylane.matrix
-    ~pennylane.eigvals
-    ~pennylane.is_commuting
-    ~pennylane.is_hermitian
-    ~pennylane.is_unitary
-    ~pennylane.iterative_qpe
+    ~pennylane2.matrix
+    ~pennylane2.eigvals
+    ~pennylane2.is_commuting
+    ~pennylane2.is_hermitian
+    ~pennylane2.is_unitary
+    ~pennylane2.iterative_qpe
 
 
 These operator functions act on operators and return other data types.
@@ -128,8 +128,8 @@ Matrix to Operator functions
 
 .. autosummary::
 
-    ~pennylane.pauli_decompose
-    ~pennylane.qsvt
+    ~pennylane2.pauli_decompose
+    ~pennylane2.qsvt
 
 These functions take a matrix and return an associated native PennyLane operator.
 For example:
@@ -137,7 +137,7 @@ For example:
 >>> mat = np.array([[1, 1], [1, -1]])
 >>> h = qp.pauli_decompose(mat)
 >>> type(h)
-<class 'pennylane.ops.op_math.linear_combination.LinearCombination'>
+<class 'pennylane2.ops.op_math.linear_combination.LinearCombination'>
 >>> print(h)
 1.0 * X(0) + 1.0 * Z(0)
 
@@ -157,28 +157,28 @@ Non-parametrized gates
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.Identity
-    ~pennylane.Hadamard
-    ~pennylane.S
-    ~pennylane.CNOT
-    ~pennylane.T
-    ~pennylane.Toffoli
-    ~pennylane.PauliX
-    ~pennylane.PauliY
-    ~pennylane.PauliZ
-    ~pennylane.SX
-    ~pennylane.CY
-    ~pennylane.CZ
-    ~pennylane.CH
-    ~pennylane.CCZ
-    ~pennylane.SWAP
-    ~pennylane.ISWAP
-    ~pennylane.CSWAP
-    ~pennylane.SISWAP
-    ~pennylane.ECR
-    ~pennylane.SQISW
-    ~pennylane.MultiControlledX
-    ~pennylane.Barrier
+    ~pennylane2.Identity
+    ~pennylane2.Hadamard
+    ~pennylane2.S
+    ~pennylane2.CNOT
+    ~pennylane2.T
+    ~pennylane2.Toffoli
+    ~pennylane2.PauliX
+    ~pennylane2.PauliY
+    ~pennylane2.PauliZ
+    ~pennylane2.SX
+    ~pennylane2.CY
+    ~pennylane2.CZ
+    ~pennylane2.CH
+    ~pennylane2.CCZ
+    ~pennylane2.SWAP
+    ~pennylane2.ISWAP
+    ~pennylane2.CSWAP
+    ~pennylane2.SISWAP
+    ~pennylane2.ECR
+    ~pennylane2.SQISW
+    ~pennylane2.MultiControlledX
+    ~pennylane2.Barrier
 
 :html:`</div>`
 
@@ -193,35 +193,35 @@ Parametrized gates
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.Rot
-    ~pennylane.RX
-    ~pennylane.RY
-    ~pennylane.RZ
-    ~pennylane.MultiRZ
-    ~pennylane.PauliRot
-    ~pennylane.PPR_2
-    ~pennylane.PPR_4
-    ~pennylane.PPR_8
-    ~pennylane.PhaseShift
-    ~pennylane.ControlledPhaseShift
-    ~pennylane.CPhase
-    ~pennylane.PCPhase
-    ~pennylane.CPhaseShift00
-    ~pennylane.CPhaseShift01
-    ~pennylane.CPhaseShift10
-    ~pennylane.CRX
-    ~pennylane.CRY
-    ~pennylane.CRZ
-    ~pennylane.CRot
-    ~pennylane.U1
-    ~pennylane.U2
-    ~pennylane.U3
-    ~pennylane.IsingXX
-    ~pennylane.IsingXY
-    ~pennylane.IsingYY
-    ~pennylane.IsingZZ
-    ~pennylane.PSWAP
-    ~pennylane.GlobalPhase
+    ~pennylane2.Rot
+    ~pennylane2.RX
+    ~pennylane2.RY
+    ~pennylane2.RZ
+    ~pennylane2.MultiRZ
+    ~pennylane2.PauliRot
+    ~pennylane2.PPR_2
+    ~pennylane2.PPR_4
+    ~pennylane2.PPR_8
+    ~pennylane2.PhaseShift
+    ~pennylane2.ControlledPhaseShift
+    ~pennylane2.CPhase
+    ~pennylane2.PCPhase
+    ~pennylane2.CPhaseShift00
+    ~pennylane2.CPhaseShift01
+    ~pennylane2.CPhaseShift10
+    ~pennylane2.CRX
+    ~pennylane2.CRY
+    ~pennylane2.CRZ
+    ~pennylane2.CRot
+    ~pennylane2.U1
+    ~pennylane2.U2
+    ~pennylane2.U3
+    ~pennylane2.IsingXX
+    ~pennylane2.IsingXY
+    ~pennylane2.IsingYY
+    ~pennylane2.IsingZZ
+    ~pennylane2.PSWAP
+    ~pennylane2.GlobalPhase
 
 :html:`</div>`
 
@@ -236,20 +236,20 @@ Quantum chemistry gates
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.SingleExcitation
-    ~pennylane.SingleExcitationPlus
-    ~pennylane.SingleExcitationMinus
-    ~pennylane.DoubleExcitation
-    ~pennylane.DoubleExcitationPlus
-    ~pennylane.DoubleExcitationMinus
-    ~pennylane.OrbitalRotation
-    ~pennylane.FermionicSWAP
+    ~pennylane2.SingleExcitation
+    ~pennylane2.SingleExcitationPlus
+    ~pennylane2.SingleExcitationMinus
+    ~pennylane2.DoubleExcitation
+    ~pennylane2.DoubleExcitationPlus
+    ~pennylane2.DoubleExcitationMinus
+    ~pennylane2.OrbitalRotation
+    ~pennylane2.FermionicSWAP
 
 :html:`</div>`
 
 Electronic Hamiltonians built independently using
 `OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools can be readily converted to a
-PennyLane observable using the :func:`~.pennylane.import_operator` function.
+PennyLane observable using the :func:`~.pennylane2.import_operator` function.
 
 .. _intro_ref_ops_matrix:
 
@@ -262,11 +262,11 @@ Gates constructed from a matrix
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.QubitUnitary
-    ~pennylane.ControlledQubitUnitary
-    ~pennylane.DiagonalQubitUnitary
-    ~pennylane.SpecialUnitary
-    ~pennylane.BlockEncode
+    ~pennylane2.QubitUnitary
+    ~pennylane2.ControlledQubitUnitary
+    ~pennylane2.DiagonalQubitUnitary
+    ~pennylane2.SpecialUnitary
+    ~pennylane2.BlockEncode
 
 :html:`</div>`
 
@@ -281,9 +281,9 @@ Gates performing arithmetics
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.QubitCarry
-    ~pennylane.QubitSum
-    ~pennylane.IntegerComparator
+    ~pennylane2.QubitCarry
+    ~pennylane2.QubitSum
+    ~pennylane2.IntegerComparator
 
 
 :html:`</div>`
@@ -299,9 +299,9 @@ State preparation
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.BasisState
-    ~pennylane.StatePrep
-    ~pennylane.QubitDensityMatrix
+    ~pennylane2.BasisState
+    ~pennylane2.StatePrep
+    ~pennylane2.QubitDensityMatrix
 
 :html:`</div>`
 
@@ -317,16 +317,16 @@ Noisy channels
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.AmplitudeDamping
-    ~pennylane.GeneralizedAmplitudeDamping
-    ~pennylane.PhaseDamping
-    ~pennylane.DepolarizingChannel
-    ~pennylane.BitFlip
-    ~pennylane.PhaseFlip
-    ~pennylane.ResetError
-    ~pennylane.PauliError
-    ~pennylane.QubitChannel
-    ~pennylane.ThermalRelaxationError
+    ~pennylane2.AmplitudeDamping
+    ~pennylane2.GeneralizedAmplitudeDamping
+    ~pennylane2.PhaseDamping
+    ~pennylane2.DepolarizingChannel
+    ~pennylane2.BitFlip
+    ~pennylane2.PhaseFlip
+    ~pennylane2.ResetError
+    ~pennylane2.PauliError
+    ~pennylane2.QubitChannel
+    ~pennylane2.ThermalRelaxationError
 
 :html:`</div>`
 
@@ -341,14 +341,14 @@ Observables
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.Hadamard
-    ~pennylane.Hermitian
-    ~pennylane.Identity
-    ~pennylane.PauliX
-    ~pennylane.PauliY
-    ~pennylane.PauliZ
-    ~pennylane.Projector
-    ~pennylane.Hamiltonian
-    ~pennylane.SparseHamiltonian
+    ~pennylane2.Hadamard
+    ~pennylane2.Hermitian
+    ~pennylane2.Identity
+    ~pennylane2.PauliX
+    ~pennylane2.PauliY
+    ~pennylane2.PauliZ
+    ~pennylane2.Projector
+    ~pennylane2.Hamiltonian
+    ~pennylane2.SparseHamiltonian
 
 :html:`</div>`

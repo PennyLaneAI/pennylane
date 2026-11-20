@@ -16,9 +16,9 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.transforms import convert_to_numpy_parameters
-from pennylane.transforms.convert_to_numpy_parameters import (
+import pennylane2 as qp
+from pennylane2.transforms import convert_to_numpy_parameters
+from pennylane2.transforms.convert_to_numpy_parameters import (
     _convert_measurement_to_numpy_data,
     _convert_op_to_numpy_data,
 )

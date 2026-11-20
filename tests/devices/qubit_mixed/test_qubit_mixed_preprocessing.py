@@ -21,14 +21,14 @@ import warnings
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.devices import ExecutionConfig
-from pennylane.devices.default_mixed import (
+import pennylane2 as qp
+from pennylane2.devices import ExecutionConfig
+from pennylane2.devices.default_mixed import (
     DefaultMixed,
     observable_stopping_condition,
     stopping_condition,
 )
-from pennylane.exceptions import DecompositionWarning, DeviceError
+from pennylane2.exceptions import DecompositionWarning, DeviceError
 
 
 def test_mid_circuit_measurement_preprocessing():

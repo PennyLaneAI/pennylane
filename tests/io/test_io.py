@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.io` module.
+Unit tests for the :mod:`pennylane2.io` module.
 """
 
 from textwrap import dedent
@@ -21,18 +21,18 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core import queuing
-from pennylane.ops import RX
-from pennylane.ops.mid_measure import MeasurementValue
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.core import queuing
+from pennylane2.ops import RX
+from pennylane2.ops.mid_measure import MeasurementValue
+from pennylane2.wires import Wires
 
 has_openqasm = True
 try:
     import openqasm3
 
-    from pennylane.io.io import from_qasm3  # pylint: disable=ungrouped-imports
-    from pennylane.io.qasm_interpreter import QasmInterpreter
+    from pennylane2.io.io import from_qasm3  # pylint: disable=ungrouped-imports
+    from pennylane2.io.qasm_interpreter import QasmInterpreter
 except (ModuleNotFoundError, ImportError) as import_error:
     has_openqasm = False
 

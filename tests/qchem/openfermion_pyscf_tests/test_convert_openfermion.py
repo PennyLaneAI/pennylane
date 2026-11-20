@@ -20,9 +20,9 @@ import sys
 
 import pytest
 
-import pennylane as qp
-from pennylane import fermi
-from pennylane import numpy as np
+import pennylane2 as qp
+from pennylane2 import fermi
+from pennylane2 import numpy as np
 
 openfermion = pytest.importorskip("openfermion")
 
@@ -169,7 +169,7 @@ class TestFromOpenFermion:
         ],
     )
     def test_convert_fermionic(self, of_op, pl_op):
-        r"""Test that conversion from openfermion fermionic operator to pennylane
+        r"""Test that conversion from openfermion fermionic operator to pennylane2
         fermionic operator is correct"""
 
         converted_op = qp.qchem.from_openfermion(of_op)

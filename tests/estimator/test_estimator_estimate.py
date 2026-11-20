@@ -20,9 +20,9 @@ from collections import defaultdict
 
 import pytest
 
-import pennylane as qp
-from pennylane.estimator.compact_hamiltonian import VibrationalHamiltonian
-from pennylane.estimator.estimate import (
+import pennylane2 as qp
+from pennylane2.estimator.compact_hamiltonian import VibrationalHamiltonian
+from pennylane2.estimator.estimate import (
     _default_adjoint_decomp,
     _default_controlled_decomp,
     _get_resource_decomposition,
@@ -31,24 +31,24 @@ from pennylane.estimator.estimate import (
     apply_default_symbolic_decomp,
     estimate,
 )
-from pennylane.estimator.ops.op_math.controlled_ops import CNOT, TemporaryAND, Toffoli
-from pennylane.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
-from pennylane.estimator.ops.qubit.matrix_ops import QubitUnitary
-from pennylane.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X, Z
-from pennylane.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ
-from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
-from pennylane.estimator.resource_config import ResourceConfig
-from pennylane.estimator.resource_operator import (
+from pennylane2.estimator.ops.op_math.controlled_ops import CNOT, TemporaryAND, Toffoli
+from pennylane2.estimator.ops.op_math.symbolic import Adjoint, Controlled, Pow
+from pennylane2.estimator.ops.qubit.matrix_ops import QubitUnitary
+from pennylane2.estimator.ops.qubit.non_parametric_ops import Hadamard, T, X, Z
+from pennylane2.estimator.ops.qubit.parametric_ops_multi_qubit import MultiRZ
+from pennylane2.estimator.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ
+from pennylane2.estimator.resource_config import ResourceConfig
+from pennylane2.estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-from pennylane.estimator.resources_base import Resources
-from pennylane.estimator.templates.subroutines import QFT
-from pennylane.estimator.templates.trotter import TrotterVibrational
-from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.exceptions import ResourcesUndefinedError
+from pennylane2.estimator.resources_base import Resources
+from pennylane2.estimator.templates.subroutines import QFT
+from pennylane2.estimator.templates.trotter import TrotterVibrational
+from pennylane2.estimator.wires_manager import Allocate, Deallocate
+from pennylane2.exceptions import ResourcesUndefinedError
 
 
 def _circuit_w_expval(circ):

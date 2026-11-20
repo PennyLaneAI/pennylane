@@ -11,14 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/dla/center.py functionality"""
+"""Tests for pennylane2/dla/center.py functionality"""
 
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import center
-from pennylane.pauli import PauliSentence, PauliWord
+import pennylane2 as qp
+from pennylane2 import center
+from pennylane2.pauli import PauliSentence, PauliWord
 
 
 def test_trivial_center():

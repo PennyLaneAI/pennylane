@@ -17,10 +17,10 @@ Unit tests for functions needed for computing the particle number observable.
 
 import pytest
 
-import pennylane as qp
-from pennylane import Identity, PauliZ
-from pennylane import numpy as np
-from pennylane import qchem
+import pennylane2 as qp
+from pennylane2 import Identity, PauliZ
+from pennylane2 import numpy as np
+from pennylane2 import qchem
 
 
 @pytest.mark.parametrize(

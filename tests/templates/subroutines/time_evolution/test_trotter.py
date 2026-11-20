@@ -23,16 +23,16 @@ from functools import partial, reduce
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as qnp
-from pennylane.math import allclose, get_interface
-from pennylane.templates.subroutines.time_evolution.trotter import (
+import pennylane2 as qp
+from pennylane2 import numpy as qnp
+from pennylane2.math import allclose, get_interface
+from pennylane2.templates.subroutines.time_evolution.trotter import (
     TrotterizedQfunc,
     _recursive_expression,
     _recursive_qfunc,
     _scalar,
 )
-from pennylane.testing import assert_decomposable
+from pennylane2.testing import assert_decomposable
 
 test_hamiltonians = (
     qp.dot([1.0, 1.0, 1.0], [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(1)]),

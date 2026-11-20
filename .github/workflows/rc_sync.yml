@@ -1,7 +1,7 @@
 # This workflow will sync changes in the release candidate branch to main during a
 # feature freeze. The action is run daily and will only create a pull request when
 # there exists a release candidate branch corresponding to the current package version
-# as declared in pennylane/_version.py, that is if the branch "v0.23.0-rc0" exists while
+# as declared in pennylane2/_version.py, that is if the branch "v0.23.0-rc0" exists while
 # the package version is "v0.24.0-dev".
 
 name: Sync release candidate with main
@@ -76,7 +76,7 @@ jobs:
           echo "tmp_branch=$BRANCH" >> $GITHUB_ENV
           git checkout -b "$BRANCH"
           # Exclude some files known to be divergent during the release process from the PR
-          git checkout main -- pennylane/_version.py
+          git checkout main -- pennylane2/_version.py
           git checkout main -- doc/development/release_notes.md
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"

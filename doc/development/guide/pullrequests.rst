@@ -34,13 +34,13 @@ merged.
 * **Formatting check**: We use `black <https://black.readthedocs.io/en/stable/>`_ to autoformat our
   code to `PEP8 <https://www.python.org/dev/peps/pep-0008/>`_ standards. You should run ``black``
   locally on changed files, as the CI check determines whether ``black`` would change
-  anything. Black installs with ``pip``. We run black on both the source folder ``pennylane`` and
+  anything. Black installs with ``pip``. We run black on both the source folder ``pennylane2`` and
   the ``tests`` folder. We format with a line length of 100. From the PennyLane's root folder, you
   can run:
 
   .. code-block:: bash
 
-      black -l 100 pennylane tests
+      black -l 100 pennylane2 tests
 
 * **Python imports check**: We use `isort <https://pycqa.github.io/isort/>`_ to automatically sort Python imports.
   You may run ``isort`` locally with ``make format``. ``isort`` will run with the following options: 
@@ -48,14 +48,14 @@ merged.
   * ``--py 312`` tells to ``isort`` to reorder imports as if your interpreter were Python 3.12;
   * ``--profile black`` is added for compatibility with Black;
   * ``-l 100`` sets the line width to 100, as with Black;
-  * ``-p ./pennylane`` forces ``isort`` to recognize the ``pennylane`` modules as being part of the current python project;
+  * ``-p ./pennylane2`` forces ``isort`` to recognize the ``pennylane2`` modules as being part of the current python project;
   * ``--skip __init__.py --filter-files`` tells ``isort`` to ignore ``__init__.py`` files.
 
   If you would like to call ``isort`` explicitly, from the PennyLane's root folder, you can run:
 
   .. code-block:: bash
 
-      isort --py 312 --profile black -l 100 -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests
+      isort --py 312 --profile black -l 100 -p ./pennylane2 --skip __init__.py --filter-files ./pennylane2 ./tests
 
 * **Code factor**:  `Code factor <https://www.codefactor.io/>`_ checks several common code quality
   characteristics. 
@@ -119,7 +119,7 @@ folder for PennyLane).
 
 * **Documentation**: The "Documentation check" determines if there are any issues with the build,
   but you also need to inspect the relevant pages in the website build visually. You can access the
-  temporary website by clicking on ``Details`` for ``docs/readthedocs.org:pennylane``, as shown in
+  temporary website by clicking on ``Details`` for ``docs/readthedocs.org:pennylane2``, as shown in
   the following image.
 
 .. image:: view_doc_build.jpeg

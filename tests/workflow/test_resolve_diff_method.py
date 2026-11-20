@@ -16,10 +16,10 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane.devices import ExecutionConfig
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.workflow import _resolve_diff_method
+import pennylane2 as qp
+from pennylane2.devices import ExecutionConfig
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.workflow import _resolve_diff_method
 
 
 def dummyfunc():

@@ -18,9 +18,9 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.exceptions import DecompositionWarning
-from pennylane.ftqc import (
+import pennylane2 as qp
+from pennylane2.exceptions import DecompositionWarning
+from pennylane2.ftqc import (
     ParametricMidMeasure,
     XMidMeasure,
     YMidMeasure,
@@ -31,7 +31,7 @@ from pennylane.ftqc import (
     measure_y,
     measure_z,
 )
-from pennylane.ops import MeasurementValue
+from pennylane2.ops import MeasurementValue
 
 PARAMETRIC_MCM_XFAIL = pytest.mark.pl2do(
     reason="Parametric mid-circuit measurements have not yet been migrated to Operator2 [sc-130033]."

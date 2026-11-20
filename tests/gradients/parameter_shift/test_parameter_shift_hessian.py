@@ -19,10 +19,10 @@ from itertools import product
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.gradients.parameter_shift_hessian import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.gradients.parameter_shift_hessian import (
     _collect_recipes,
     _generate_offdiag_tapes,
     _process_argnum,

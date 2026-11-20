@@ -53,18 +53,18 @@ jobs:
 
       - name: Run Black
         run: |
-          black --config ./pyproject.toml pennylane/ --check
+          black --config ./pyproject.toml pennylane2/ --check
           black --config ./pyproject.toml tests/ --check
 
       - name: Run isort
         run: |
-          isort --settings-path ./pyproject.toml ./pennylane --check
+          isort --settings-path ./pyproject.toml ./pennylane2 --check
           isort --settings-path ./pyproject.toml ./tests --check
 
       - name: Run Pylint (source files)
         if: always()
-        run: python -m pylint -rn -sn --rcfile=.pylintrc $(find pennylane -name "*.py" ! -path "pennylane/labs/tests/*")
+        run: python -m pylint -rn -sn --rcfile=.pylintrc $(find pennylane2 -name "*.py" ! -path "pennylane2/labs/tests/*")
 
       - name: Run Pylint (test files)
         if: always()
-        run: python -m pylint -rn -sn --rcfile=tests/.pylintrc $(find tests pennylane/labs/tests -name "*.py")
+        run: python -m pylint -rn -sn --rcfile=tests/.pylintrc $(find tests pennylane2/labs/tests -name "*.py")

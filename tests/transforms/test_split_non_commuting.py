@@ -19,9 +19,9 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.transforms import split_non_commuting
-from pennylane.transforms.split_non_commuting import ShotDistFunction
+import pennylane2 as qp
+from pennylane2.transforms import split_non_commuting
+from pennylane2.transforms.split_non_commuting import ShotDistFunction
 
 # Two qubit-wise commuting groups: [[0, 3], [1, 2, 4]]
 # Four groups based on wire overlaps: [[0, 2], [1], [3], [4]]
@@ -767,7 +767,7 @@ class TestDifferentiability:
     def test_autograd(self, grouping_strategy):
         """Tests that the output of ``split_non_commuting`` is differentiable with autograd"""
 
-        import pennylane.numpy as pnp
+        import pennylane2.numpy as pnp
 
         dev = qp.device("default.qubit", wires=2)
         circuit = circuit_to_test(dev, grouping_strategy=grouping_strategy)
@@ -790,7 +790,7 @@ class TestDifferentiability:
     def test_trainable_hamiltonian_autograd(self, grouping_strategy):
         """Tests that measurements of trainable Hamiltonians are differentiable"""
 
-        import pennylane.numpy as pnp
+        import pennylane2.numpy as pnp
 
         dev = qp.device("default.qubit", wires=2)
         circuit = circuit_with_trainable_H(dev, grouping_strategy=grouping_strategy)

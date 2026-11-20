@@ -18,8 +18,8 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.testing import assert_eqn_matches_op
+import pennylane2 as qp
+from pennylane2.testing import assert_eqn_matches_op
 
 
 def test_subroutine_no_jax():

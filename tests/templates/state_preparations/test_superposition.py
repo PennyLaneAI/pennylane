@@ -18,10 +18,10 @@ Unit tests for the Superposition template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.templates.state_preparations.superposition import order_states
-from pennylane.testing import assert_decomposable
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.templates.state_preparations.superposition import order_states
+from pennylane2.testing import assert_decomposable
 
 PROBS_BASES = [
     (

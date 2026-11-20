@@ -16,9 +16,9 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import math
-from pennylane.devices.qubit_mixed import get_final_state, measure_final_state, simulate
+import pennylane2 as qp
+from pennylane2 import math
+from pennylane2.devices.qubit_mixed import get_final_state, measure_final_state, simulate
 
 ml_interfaces = ["numpy", "autograd", "jax", "torch"]
 

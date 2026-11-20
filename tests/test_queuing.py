@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane` :class:`QueuingManager` class.
+Unit tests for the :mod:`pennylane2` :class:`QueuingManager` class.
 """
 
 from multiprocessing.dummy import Pool as ThreadPool
@@ -20,9 +20,9 @@ from multiprocessing.dummy import Pool as ThreadPool
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.queuing import AnnotatedQueue, QueuingManager, WrappedObj
-from pennylane.exceptions import QueuingError
+import pennylane2 as qp
+from pennylane2.core.queuing import AnnotatedQueue, QueuingManager, WrappedObj
+from pennylane2.exceptions import QueuingError
 
 
 class TestStopRecording:
@@ -331,5 +331,7 @@ def test_error_on_process_queue():
 def test_error_on_nonexistent_item():
     """Test an AttributeError is raised if an object does not exist."""
 
-    with pytest.raises(AttributeError, match="module 'pennylane.queuing' has no attribute 'thing'"):
+    with pytest.raises(
+        AttributeError, match="module 'pennylane2.queuing' has no attribute 'thing'"
+    ):
         _ = qp.queuing.thing

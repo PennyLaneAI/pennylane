@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for :mod:`pennylane.backline.runtime`.
+"""Tests for :mod:`pennylane2.backline.runtime`.
 
 Declared symbols land in a process-wide registry that is never cleared, so every symbol declared
 here has a name of its own.
@@ -21,10 +21,10 @@ here has a name of its own.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.backline.runtime import CSignature, CType, operands
-from pennylane.backline.runtime.runtime_call import get_runtime_call_prim
-from pennylane.testing import find_eqns
+import pennylane2 as qp
+from pennylane2.backline.runtime import CSignature, CType, operands
+from pennylane2.backline.runtime.runtime_call import get_runtime_call_prim
+from pennylane2.testing import find_eqns
 
 
 @pytest.fixture(name="x64")

@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit tests for resource utility functions"""
 
-from pennylane.resource._utils import make_level_name_unique
+from pennylane2.resource._utils import make_level_name_unique
 
 
 def test_make_level_name_unique():

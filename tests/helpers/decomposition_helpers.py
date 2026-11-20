@@ -13,9 +13,9 @@
 # limitations under the License.
 """Shared assertions for structured decomposition rules."""
 
-import pennylane as qp
-from pennylane.core.operator import Operator
-from pennylane.decomposition import DecompositionRule
+import pennylane2 as qp
+from pennylane2.core.operator import Operator
+from pennylane2.decomposition import DecompositionRule
 
 
 def assert_basis_change_decomposition(op: Operator, rule: DecompositionRule) -> None:

@@ -1,9 +1,9 @@
 qp.estimator
 =============
 
-.. currentmodule:: pennylane.estimator
+.. currentmodule:: pennylane2.estimator
 
-.. automodule:: pennylane.estimator
+.. automodule:: pennylane2.estimator
 
 The :mod:`~.estimator` module is the centre for quantum resource estimation in PennyLane.  
 Functionality within :mod:`~.estimator` is intended purely for resource estimation, and is *not* intended for true program compilation and execution.
@@ -22,7 +22,7 @@ resources required by a quantum program. Submit a program written with either st
 operators (:class:`~.Operation`) or resource operators (:class:`~.estimator.resource_operator.ResourceOperator`),
 and instantly receive the resource estimate in the form of :class:`~.estimator.resources_base.Resources`.
 
-.. currentmodule:: pennylane.estimator
+.. currentmodule:: pennylane2.estimator
 
 .. autosummary::
     :toctree: api
@@ -35,7 +35,7 @@ and instantly receive the resource estimate in the form of :class:`~.estimator.r
 Resource Operators
 ------------------
 
-.. currentmodule:: pennylane.estimator
+.. currentmodule:: pennylane2.estimator
 
 .. autosummary::
     :toctree: api
@@ -48,7 +48,7 @@ Resource Operators
 Qubit Management
 ----------------
 
-.. automodsumm:: pennylane.estimator.wires_manager
+.. automodsumm:: pennylane2.estimator.wires_manager
     :toctree: api
     :no-inherited-members:
     :classes-only:
@@ -58,7 +58,7 @@ Qubit Management
 Resource Operators
 ------------------
 
-.. automodsumm:: pennylane.estimator.ops
+.. automodsumm:: pennylane2.estimator.ops
     :toctree: api
     :no-inherited-members:
     :classes-only:
@@ -68,7 +68,7 @@ Resource Operators
 Resource Templates
 ------------------
 
-.. automodsumm:: pennylane.estimator.templates
+.. automodsumm:: pennylane2.estimator.templates
     :toctree: api
     :no-inherited-members:
     :classes-only:
@@ -78,7 +78,7 @@ Resource Templates
 Resource Hamiltonians
 ---------------------
 
-.. automodsumm:: pennylane.estimator.compact_hamiltonian
+.. automodsumm:: pennylane2.estimator.compact_hamiltonian
     :toctree: api
     :no-inherited-members:
     :classes-only:
@@ -87,7 +87,7 @@ Resource Hamiltonians
 QPE Resource Classes
 --------------------
 
-.. currentmodule:: pennylane.estimator
+.. currentmodule:: pennylane2.estimator
 
 .. autosummary::
     :toctree: api
@@ -99,7 +99,7 @@ QPE Resource Classes
 Measurement Functions
 ---------------------
 
-.. currentmodule:: pennylane.estimator
+.. currentmodule:: pennylane2.estimator
 
 .. autosummary::
     :toctree: api

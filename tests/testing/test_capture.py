@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the capture utilities in ``pennylane.testing``.
+Tests for the capture utilities in ``pennylane2.testing``.
 """
 
 # pylint: disable=wrong-import-position
@@ -22,15 +22,15 @@ from operator import eq, ne
 
 import pytest
 
-import pennylane as qp
-from pennylane.ops.op_math.condition import Conditional
+import pennylane2 as qp
+from pennylane2.ops.op_math.condition import Conditional
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import operator_p
-from pennylane.ops.mid_measure import MidMeasure
+from pennylane2.capture.primitives import operator_p
+from pennylane2.ops.mid_measure import MidMeasure
 
 
 class TestPlxprToTape:

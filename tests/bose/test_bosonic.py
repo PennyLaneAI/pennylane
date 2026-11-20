@@ -19,9 +19,9 @@ from copy import copy, deepcopy
 import numpy as np
 import pytest
 
-from pennylane import numpy as pnp
-from pennylane.bose import BoseSentence, BoseWord
-from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane2 import numpy as pnp
+from pennylane2.bose import BoseSentence, BoseWord
+from pennylane2.exceptions import PennyLaneDeprecationWarning
 
 bw1 = BoseWord({(0, 0): "+", (1, 1): "-"})
 bw1_dag = BoseWord({(0, 1): "+", (1, 0): "-"})
@@ -400,8 +400,8 @@ class TestBoseWordArithmetic:  # pylint: disable=too-many-public-methods
         (bw2, 3.7, BoseSentence({bw2: 3.7})),  # float
         (bw2, 2j, BoseSentence({bw2: 2j})),  # complex
         (bw2, np.array([2]), BoseSentence({bw2: 2})),  # numpy array
-        (bw1, pnp.array([2]), BoseSentence({bw1: 2})),  # pennylane numpy array
-        (bw1, pnp.array([2, 2])[0], BoseSentence({bw1: 2})),  # pennylane tensor with no length
+        (bw1, pnp.array([2]), BoseSentence({bw1: 2})),  # pennylane2 numpy array
+        (bw1, pnp.array([2, 2])[0], BoseSentence({bw1: 2})),  # pennylane2 tensor with no length
     )
 
     @pytest.mark.parametrize("bw, number, result", WORDS_AND_NUMBERS_MUL)
@@ -488,12 +488,12 @@ class TestBoseWordArithmetic:  # pylint: disable=too-many-public-methods
         (bw2, 2.8, BoseSentence({bw2: 1, bw4: 2.8})),  # float
         (bw3, (1 + 3j), BoseSentence({bw3: 1, bw4: (1 + 3j)})),  # complex
         (bw1, np.array([5]), BoseSentence({bw1: 1, bw4: 5})),  # numpy array
-        (bw2, pnp.array([2.8]), BoseSentence({bw2: 1, bw4: 2.8})),  # pennylane numpy array
+        (bw2, pnp.array([2.8]), BoseSentence({bw2: 1, bw4: 2.8})),  # pennylane2 numpy array
         (
             bw1,
             pnp.array([2, 2])[0],
             BoseSentence({bw1: 1, bw4: 2}),
-        ),  # pennylane tensor with no length
+        ),  # pennylane2 tensor with no length
         (bw4, 2, BoseSentence({bw4: 3})),  # BoseWord is Identity
     ]
 
@@ -556,12 +556,12 @@ class TestBoseWordArithmetic:  # pylint: disable=too-many-public-methods
         (bw2, 2.8, BoseSentence({bw2: 1, bw4: -2.8})),  # float
         (bw3, (1 + 3j), BoseSentence({bw3: 1, bw4: -(1 + 3j)})),  # complex
         (bw1, np.array([5]), BoseSentence({bw1: 1, bw4: -5})),  # numpy array
-        (bw2, pnp.array([2.8]), BoseSentence({bw2: 1, bw4: -2.8})),  # pennylane numpy array
+        (bw2, pnp.array([2.8]), BoseSentence({bw2: 1, bw4: -2.8})),  # pennylane2 numpy array
         (
             bw1,
             pnp.array([2, 2])[0],
             BoseSentence({bw1: 1, bw4: -2}),
-        ),  # pennylane tensor with no length
+        ),  # pennylane2 tensor with no length
         (bw4, 2, BoseSentence({bw4: -1})),  # BoseWord is Identity
     ]
 
@@ -582,12 +582,12 @@ class TestBoseWordArithmetic:  # pylint: disable=too-many-public-methods
         (bw2, 2.8, BoseSentence({bw2: -1, bw4: 2.8})),  # float
         (bw3, (1 + 3j), BoseSentence({bw3: -1, bw4: (1 + 3j)})),  # complex
         (bw1, np.array([5]), BoseSentence({bw1: -1, bw4: 5})),  # numpy array
-        (bw2, pnp.array([2.8]), BoseSentence({bw2: -1, bw4: 2.8})),  # pennylane numpy array
+        (bw2, pnp.array([2.8]), BoseSentence({bw2: -1, bw4: 2.8})),  # pennylane2 numpy array
         (
             bw1,
             pnp.array([2, 2])[0],
             BoseSentence({bw1: -1, bw4: 2}),
-        ),  # pennylane tensor with no length
+        ),  # pennylane2 tensor with no length
         (bw4, 2, BoseSentence({bw4: 1})),  # BoseWord is Identity
     ]
 
@@ -941,12 +941,12 @@ class TestBoseSentenceArithmetic:  # pylint: disable=too-many-public-methods
             bs1,
             pnp.array([2]),
             BoseSentence({bw1: 1.23 * 2, bw2: 4j * 2, bw3: -0.5 * 2}),
-        ),  # pennylane numpy array
+        ),  # pennylane2 numpy array
         (
             bs1,
             pnp.array([2, 2])[0],
             BoseSentence({bw1: 1.23 * 2, bw2: 4j * 2, bw3: -0.5 * 2}),
-        ),  # pennylane tensor with no length
+        ),  # pennylane2 tensor with no length
     )
 
     @pytest.mark.parametrize("bs, number, result", SENTENCES_AND_NUMBERS_MUL)
@@ -1017,12 +1017,12 @@ class TestBoseSentenceArithmetic:  # pylint: disable=too-many-public-methods
             BoseSentence({bw1: 1.2, bw3: 3j}),
             pnp.array([3]),
             BoseSentence({bw1: 1.2, bw3: 3j, bw4: 3}),
-        ),  # pennylane numpy array
+        ),  # pennylane2 numpy array
         (
             BoseSentence({bw1: 1.2, bw3: 3j}),
             pnp.array([3, 0])[0],
             BoseSentence({bw1: 1.2, bw3: 3j, bw4: 3}),
-        ),  # pennylane tensor with no length
+        ),  # pennylane2 tensor with no length
     ]
 
     @pytest.mark.parametrize("s, c, res", SENTENCES_AND_CONSTANTS_ADD)
@@ -1089,12 +1089,12 @@ class TestBoseSentenceArithmetic:  # pylint: disable=too-many-public-methods
             BoseSentence({bw1: 1.2, bw3: 3j}),
             pnp.array([3]),
             BoseSentence({bw1: 1.2, bw3: 3j, bw4: -3}),
-        ),  # pennylane numpy array
+        ),  # pennylane2 numpy array
         (
             BoseSentence({bw1: 1.2, bw3: 3j}),
             pnp.array([3, 2])[0],
             BoseSentence({bw1: 1.2, bw3: 3j, bw4: -3}),
-        ),  # pennylane tensor with no len
+        ),  # pennylane2 tensor with no len
     )
 
     @pytest.mark.parametrize("bs, c, result", SENTENCE_MINUS_CONSTANT)
@@ -1125,12 +1125,12 @@ class TestBoseSentenceArithmetic:  # pylint: disable=too-many-public-methods
             BoseSentence({bw1: 1.2, bw3: 3j}),
             pnp.array([3]),
             BoseSentence({bw1: -1.2, bw3: -3j, bw4: 3}),
-        ),  # pennylane numpy array
+        ),  # pennylane2 numpy array
         (
             BoseSentence({bw1: 1.2, bw3: 3j}),
             pnp.array([3, 3])[0],
             BoseSentence({bw1: -1.2, bw3: -3j, bw4: 3}),
-        ),  # pennylane tensor with to len
+        ),  # pennylane2 tensor with to len
     )
 
     @pytest.mark.parametrize("bs, c, result", CONSTANT_MINUS_SENTENCE)

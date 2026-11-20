@@ -17,9 +17,9 @@ Unit tests for the qp.simplify function
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.qscript import QuantumScript
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.qscript import QuantumScript
 
 
 def build_op():

@@ -15,8 +15,8 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane.resource.mlir_specs import resources_from_analysis_pass
+import pennylane2 as qp
+from pennylane2.resource.mlir_specs import resources_from_analysis_pass
 
 catalyst = pytest.importorskip("catalyst")
 

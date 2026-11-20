@@ -20,16 +20,16 @@ import jax
 import numpy as np
 import pytest
 
-from pennylane import Incrementer, ctrl, device, qnode
-from pennylane.measurements import state
-from pennylane.ops import CNOT, PauliX
-from pennylane.templates import BasisEmbedding, TemporaryAND
-from pennylane.templates.subroutines.arithmetic.incrementer import (
+from pennylane2 import Incrementer, ctrl, device, qnode
+from pennylane2.measurements import state
+from pennylane2.ops import CNOT, PauliX
+from pennylane2.templates import BasisEmbedding, TemporaryAND
+from pennylane2.templates.subroutines.arithmetic.incrementer import (
     _adjoint_incrementer_bit_flips,
     _decompose_mcxs,
 )
-from pennylane.testing import assert_decomposable, assert_valid, plxpr_to_tape
-from pennylane.transforms import _tape_decompose as decompose
+from pennylane2.testing import assert_decomposable, assert_valid, plxpr_to_tape
+from pennylane2.transforms import _tape_decompose as decompose
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

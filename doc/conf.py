@@ -102,7 +102,7 @@ mathjax_path = (
     "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 )
 ignore_warnings = [
-    ("code/api/qp_transforms*", "no module named pennylane.transforms"),
+    ("code/api/qp_transforms*", "no module named pennylane2.transforms"),
 ]
 # suppress_warnings = ["docutils"]  # Suppress docutils warnings from Sphinx 9 autodoc alias-of rendering
 autodoc_mock_imports = ["torch"]
@@ -128,13 +128,13 @@ add_module_names = False
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 
-import pennylane
+import pennylane2
 
-pennylane.Hamiltonian = pennylane.ops.op_math.linear_combination.LinearCombination
+pennylane2.Hamiltonian = pennylane2.ops.op_math.linear_combination.LinearCombination
 
 
 # The full version, including alpha/beta/rc tags.
-release = pennylane.__version__
+release = pennylane2.__version__
 
 # The short X.Y version.
 version = re.match(r"^(\d+\.\d+)", release).expand(r"\1")
@@ -323,7 +323,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "pennylane", "PennyLane Documentation", [author], 1)]
+man_pages = [(master_doc, "pennylane2", "PennyLane Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output -------------------------------------------
@@ -364,7 +364,7 @@ def add_noindex_to_estimator_stubs(app, docname, source):
 
     content = source[0]
     # Update the regex to match either ops or templates
-    if not re.search(r"\bpennylane\.estimator\.(ops|templates)\b", content):
+    if not re.search(r"\bpennylane2\.estimator\.(ops|templates)\b", content):
         return
 
     def _add_noindex_func(match):
@@ -397,13 +397,13 @@ def add_links_to_estimator_table(app, doctree, fromdocname):
         table = doctree.traverse(nodes.table)[table_idx]
         for literal in table.traverse(nodes.literal):
             name = literal.astext()
-            url = f"code/api/pennylane.estimator.{module_name}.{name}"
+            url = f"code/api/pennylane2.estimator.{module_name}.{name}"
             refuri = app.builder.get_relative_uri(fromdocname, url)
             refnode = nodes.reference("", refuri=refuri)
             refnode += nodes.literal(text=name)
             literal.parent.replace(literal, refnode)
             logger.info(
-                f"[add_noindex_links] Linked pennylane.estimator.{module_name}.{name} to {refuri}"
+                f"[add_noindex_links] Linked pennylane2.estimator.{module_name}.{name} to {refuri}"
             )
 
 

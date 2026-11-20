@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :class:`~pennylane.devices.ExecutionConfig` class.
+Unit tests for the :class:`~pennylane2.devices.ExecutionConfig` class.
 """
 
 from copy import copy, deepcopy
@@ -20,15 +20,15 @@ from dataclasses import replace
 
 import pytest
 
-from pennylane.devices.execution_config import (
+from pennylane2.devices.execution_config import (
     MCM_METHOD,
     POSTSELECT_MODE,
     ExecutionConfig,
     FrozenMapping,
     MCMConfig,
 )
-from pennylane.gradients import param_shift
-from pennylane.math import Interface
+from pennylane2.gradients import param_shift
+from pennylane2.math import Interface
 
 
 class TestFrozenMapping:

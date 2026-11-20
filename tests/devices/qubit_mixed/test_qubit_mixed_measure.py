@@ -21,10 +21,10 @@ from functools import reduce
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import math
-from pennylane.devices.qubit_mixed import apply_operation, create_initial_state, measure
-from pennylane.devices.qubit_mixed.measure import (
+import pennylane2 as qp
+from pennylane2 import math
+from pennylane2.devices.qubit_mixed import apply_operation, create_initial_state, measure
+from pennylane2.devices.qubit_mixed.measure import (
     csr_dot_products_density_matrix,
     full_dot_products_density_matrix,
     get_measurement_function,

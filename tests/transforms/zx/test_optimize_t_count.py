@@ -20,9 +20,9 @@ import sys
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import clifford_t_decomposition
-from pennylane.core.qscript import QuantumScript
+import pennylane2 as qp
+from pennylane2 import clifford_t_decomposition
+from pennylane2.core.qscript import QuantumScript
 
 pytest.importorskip("pyzx")
 

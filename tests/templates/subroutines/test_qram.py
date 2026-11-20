@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :func:`pennylane.template.subroutines.qram` class.
+Unit tests for the :func:`pennylane2.template.subroutines.qram` class.
 """
 
 import re
@@ -20,14 +20,14 @@ import re
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import apply, device, measure, qnode, registers, workflow
-from pennylane.math import int_to_binary
-from pennylane.measurements import probs, state
-from pennylane.ops import CH, CSWAP, CZ, SWAP, Controlled, MultiControlledX, X
-from pennylane.templates import BasisEmbedding
-from pennylane.templates.subroutines.qram import BBQRAM, FFQRAM, HybridQRAM, SelectOnlyQRAM
-from pennylane.testing import assert_decomposable, assert_valid
+import pennylane2 as qp
+from pennylane2 import apply, device, measure, qnode, registers, workflow
+from pennylane2.math import int_to_binary
+from pennylane2.measurements import probs, state
+from pennylane2.ops import CH, CSWAP, CZ, SWAP, Controlled, MultiControlledX, X
+from pennylane2.templates import BasisEmbedding
+from pennylane2.templates.subroutines.qram import BBQRAM, FFQRAM, HybridQRAM, SelectOnlyQRAM
+from pennylane2.testing import assert_decomposable, assert_valid
 
 has_jax = True
 try:

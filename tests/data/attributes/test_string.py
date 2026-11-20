@@ -17,7 +17,7 @@ Tests for the ``DatasetString`` attribute type.
 
 import pytest
 
-from pennylane.data.attributes.string import DatasetString
+from pennylane2.data.attributes.string import DatasetString
 
 pytestmark = pytest.mark.data
 

@@ -19,9 +19,9 @@ import copy
 
 import pytest
 
-import pennylane.estimator as qre
-from pennylane.estimator.ops import GlobalPhase, Hadamard, Identity, T
-from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import (
+import pennylane2.estimator as qre
+from pennylane2.estimator.ops import GlobalPhase, Hadamard, Identity, T
+from pennylane2.estimator.ops.qubit.parametric_ops_single_qubit import (
     RX,
     RY,
     RZ,
@@ -29,7 +29,7 @@ from pennylane.estimator.ops.qubit.parametric_ops_single_qubit import (
     Rot,
     _rotation_resources,
 )
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount
+from pennylane2.estimator.resource_operator import CompressedResourceOp, GateCount
 
 params = list(zip([10e-3, 10e-4, 10e-5], [17, 21, 24]))
 

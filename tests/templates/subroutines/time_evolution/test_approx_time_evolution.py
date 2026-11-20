@@ -18,9 +18,9 @@ Tests for the ApproxTimeEvolution template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.testing import assert_decomposable
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -218,7 +218,7 @@ class TestInputs:
     """Test inputs and pre-processing."""
 
     def test_hamiltonian_error(self):
-        """Tests if the correct error is thrown when hamiltonian is not a pennylane.Hamiltonian object"""
+        """Tests if the correct error is thrown when hamiltonian is not a pennylane2.Hamiltonian object"""
 
         n_wires = 2
         dev = qp.device("default.qubit", wires=n_wires)

@@ -17,7 +17,7 @@ Tests for the ``DatasetJSON`` attribute type.
 
 import pytest
 
-from pennylane.data.attributes.json import DatasetJSON
+from pennylane2.data.attributes.json import DatasetJSON
 
 pytestmark = pytest.mark.data
 

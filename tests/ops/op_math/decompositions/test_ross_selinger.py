@@ -17,9 +17,9 @@ import math
 
 import pytest
 
-import pennylane as qp
-from pennylane.ops.op_math.decompositions.rings import ZOmega
-from pennylane.ops.op_math.decompositions.ross_selinger import (
+import pennylane2 as qp
+from pennylane2.ops.op_math.decompositions.rings import ZOmega
+from pennylane2.ops.op_math.decompositions.ross_selinger import (
     _domain_correction,
     _jit_rs_decomposition,
     rs_decomposition,
@@ -89,7 +89,7 @@ def test_ross_selinger(op, epsilon):
         (qp.RZ(4.434079721283546, wires=[3]), 1e-3, 4),
     ],
 )
-@pytest.mark.filterwarnings("ignore::pennylane.exceptions.PennyLaneDeprecationWarning")
+@pytest.mark.filterwarnings("ignore::pennylane2.exceptions.PennyLaneDeprecationWarning")
 def test_ross_selinger_qjit(op, epsilon, wires):
     """Test Ross-Selinger decomposition method with specified max-depth"""
     pytest.importorskip("catalyst")
@@ -146,7 +146,7 @@ def test_exception():
         [0, [], 9],
     ],
 )
-@pytest.mark.filterwarnings("ignore::pennylane.exceptions.PennyLaneDeprecationWarning")
+@pytest.mark.filterwarnings("ignore::pennylane2.exceptions.PennyLaneDeprecationWarning")
 def test_jit_rs_decomposition(decomposition_info):
     """Test that the qjit rs decomposition is working."""
     catalyst = pytest.importorskip("catalyst")

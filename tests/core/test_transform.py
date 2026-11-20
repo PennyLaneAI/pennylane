@@ -21,12 +21,12 @@ import numpy as np
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
-import pennylane as qp
-from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
-from pennylane.core.transforms import BoundTransform, CompilePipeline, Transform
-from pennylane.exceptions import TransformError
-from pennylane.tape import QuantumTape
-from pennylane.typing import PostprocessingFn, TensorLike
+import pennylane2 as qp
+from pennylane2.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane2.core.transforms import BoundTransform, CompilePipeline, Transform
+from pennylane2.exceptions import TransformError
+from pennylane2.tape import QuantumTape
+from pennylane2.typing import PostprocessingFn, TensorLike
 
 dev = qp.device("default.qubit", wires=2)
 

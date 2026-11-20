@@ -15,7 +15,7 @@
 
 import pytest
 
-import pennylane.estimator as qre
+import pennylane2.estimator as qre
 
 
 class TestMultiRZ:

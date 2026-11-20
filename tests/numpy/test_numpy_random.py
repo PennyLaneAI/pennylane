@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for ``pennylane.numpy.random`` wrapping.  Arrays generated should have an
+Tests for ``pennylane2.numpy.random`` wrapping.  Arrays generated should have an
 additional property, ``requires_grad``, that marks them as trainable/ non-trainable.
 """
 
 import pytest
 
-from pennylane import numpy as np
-from pennylane.numpy import random
+from pennylane2 import numpy as np
+from pennylane2.numpy import random
 
 # distributions that require no extra parameters
 distributions_no_extra_input = [

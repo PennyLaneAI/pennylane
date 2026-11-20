@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for :mod:`pennylane.shots`.
+Unit tests for :mod:`pennylane2.shots`.
 """
 
 import copy
 
 import pytest
 
-from pennylane.core.shots import ShotCopies, Shots
-from pennylane.measurements import add_shots
+from pennylane2.core.shots import ShotCopies, Shots
+from pennylane2.measurements import add_shots
 
 ERROR_MSG = "Shots must be a single positive integer, a tuple"
 

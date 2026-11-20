@@ -18,8 +18,8 @@ Tests for the Multiplier template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.testing import assert_decomposable
+import pennylane2 as qp
+from pennylane2.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

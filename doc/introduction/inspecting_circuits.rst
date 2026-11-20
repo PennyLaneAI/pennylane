@@ -11,7 +11,7 @@ PennyLane offers functionality to inspect, visualize or analyze quantum circuits
 
 .. _intro_qtransforms:
 
-Most of these tools are implemented as **transforms**.  Transforms take a :class:`~pennylane.QNode` instance and return a function:
+Most of these tools are implemented as **transforms**.  Transforms take a :class:`~pennylane2.QNode` instance and return a function:
 
 >>> @qp.qnode(dev)
 ... def my_qnode(x, a=True):
@@ -30,7 +30,7 @@ More information on the concept of transforms can be found in
 Extracting properties of a circuit
 ----------------------------------
 
-The :func:`~pennylane.specs` transform takes a
+The :func:`~pennylane2.specs` transform takes a
 QNode and creates a function that returns
 details about the QNode, including circuit depth,
 number of gates and measurements, and device info.
@@ -51,7 +51,7 @@ For example:
         return qp.expval(qp.Z(0)), qp.expval(qp.X(1))
 
 
-We can now use the :func:`~pennylane.specs` transform to generate a function that returns
+We can now use the :func:`~pennylane2.specs` transform to generate a function that returns
 details and resource information:
 
 >>> x = qp.numpy.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
@@ -75,7 +75,7 @@ Measurement processes:
 Total wires: 4
 Circuit Depth: 4
 
-The :func:`~pennylane.track` transform reports the same device-level information, but also
+The :func:`~pennylane2.track` transform reports the same device-level information, but also
 returns the result of executing the circuit:
 
 >>> result, circuit_specs = qp.track(circuit)(x, y)
@@ -87,7 +87,7 @@ returns the result of executing the circuit:
 Resources are tracked by mock-executing the circuit on ``null.qubit``, so ``result`` has the
 shape and dtype of the real result, but not its values.
 
-The :func:`~pennylane.analyze` transform instead estimates the resources without executing the
+The :func:`~pennylane2.analyze` transform instead estimates the resources without executing the
 circuit, by analyzing the program after applying a given portion of its
 :class:`~.CompilePipeline` (``level``, see :func:`~.workflow.get_compile_pipeline`).
 This makes it possible to see how each transform changes the circuit:
@@ -108,9 +108,9 @@ This makes it possible to see how each transform changes the circuit:
 >>> qp.analyze(optimized_circuit, level="user")(0.1).resources.quantum_operations
 {'RX': 1}
 
-Since :func:`~pennylane.analyze` does not execute the circuit, it does not unroll control flow
+Since :func:`~pennylane2.analyze` does not execute the circuit, it does not unroll control flow
 either. A loop whose number of iterations depends on an argument is counted symbolically,
-whereas :func:`~pennylane.track` counts the iterations that were executed:
+whereas :func:`~pennylane2.track` counts the iterations that were executed:
 
 .. code-block:: python
 
@@ -136,7 +136,7 @@ Measurement processes:
 Total wires: 4
 Circuit Depth: Not computed
 
-The :func:`~pennylane.estimate` function provides fast resource estimates of a quantum circuit by
+The :func:`~pennylane2.estimate` function provides fast resource estimates of a quantum circuit by
 analyzing decomposition pathways to a target gate set with respect to the specified ``level``
 (see :func:`~.workflow.get_compile_pipeline`). In the following example, circuit compilation via the specified pipeline (just a
 single :func:`~.cancel_inverses`) is bypassed with ``level=0``, and specifying a ``target`` gate
@@ -175,8 +175,8 @@ the final resource estimate.
 Circuit drawing
 ---------------
 
-PennyLane has two built-in circuit drawers, :func:`~pennylane.draw` and
-:func:`~pennylane.draw_mpl`.
+PennyLane has two built-in circuit drawers, :func:`~pennylane2.draw` and
+:func:`~pennylane2.draw_mpl`.
 
 For example:
 
@@ -222,14 +222,14 @@ Debugging with mid-circuit snapshots
 
 When debugging quantum circuits run on simulators, we may want to inspect the current quantum state between gates.
 
-:class:`~pennylane.Snapshot` is an operator like a gate, but it saves the device state at its location in the circuit instead of manipulating the quantum state.
+:class:`~pennylane2.Snapshot` is an operator like a gate, but it saves the device state at its location in the circuit instead of manipulating the quantum state.
 
 Currently supported devices include:
 
 * ``default.qubit``: each snapshot saves the quantum state vector
 * ``default.mixed``: each snapshot saves the density matrix
 
-A :class:`~pennylane.Snapshot` can be used in a QNode like any other operation:
+A :class:`~pennylane2.Snapshot` can be used in a QNode like any other operation:
 
 .. code-block:: python
 
@@ -249,7 +249,7 @@ During normal execution, the snapshots are ignored:
 >>> circuit()
 0.0
 
-However, when using the :func:`~pennylane.snapshots`
+However, when using the :func:`~pennylane2.snapshots`
 transform, intermediate device states will be stored and returned alongside the
 results.
 
@@ -266,7 +266,7 @@ Interactive Debugging on Simulators
 -----------------------------------
 
 PennyLane allows for more interactive debugging of quantum circuits in a programmatic
-fashion using quantum breakpoints via :func:`~pennylane.breakpoint`. This feature is
+fashion using quantum breakpoints via :func:`~pennylane2.breakpoint`. This feature is
 currently supported on ``default.qubit`` and ``lightning.qubit`` devices.
 
 Consider the following python script containing the quantum circuit with breakpoints.
@@ -364,7 +364,7 @@ DAG of causal relations between ops
 A DAG can be used to represent which operator in a circuit is causally related to another. There are two
 options to construct such a DAG:
 
-The :class:`~pennylane.CircuitGraph` class takes a list of gates or channels and hermitian observables
+The :class:`~pennylane2.CircuitGraph` class takes a list of gates or channels and hermitian observables
 as well as a set of wire labels and constructs a DAG in which the :class:`~.Operator`
 instances are the nodes, and each directed edge corresponds to a wire
 (or a group of wires) on which the "nodes" act subsequently.
@@ -374,9 +374,9 @@ or to check whether two gates causally influence each other.
 
 .. code-block:: python
 
-    import pennylane as qp
-    from pennylane import CircuitGraph
-    from pennylane.workflow import construct_tape
+    import pennylane2 as qp
+    from pennylane2 import CircuitGraph
+    from pennylane2.workflow import construct_tape
 
     dev = qp.device('lightning.qubit', wires=(0,1,2,3))
 
@@ -395,7 +395,7 @@ or to check whether two gates causally influence each other.
     obs = tape.observables
     g = CircuitGraph(ops, obs, tape.wires)
 
-Internally, the :class:`~pennylane.CircuitGraph` class constructs a ``rustworkx`` graph object.
+Internally, the :class:`~pennylane2.CircuitGraph` class constructs a ``rustworkx`` graph object.
 
 >>> type(g.graph)
 rustworkx.PyDiGraph
@@ -420,7 +420,7 @@ False
 DAG of non-commuting ops
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :func:`~pennylane.commutation_dag` transform can be used to produce an instance of the ``CommutationDAG`` class.
+The :func:`~pennylane2.commutation_dag` transform can be used to produce an instance of the ``CommutationDAG`` class.
 In a commutation DAG, each node represents a quantum operation, and edges represent non-commutation
 between two operations.
 
@@ -444,13 +444,13 @@ the  form ``(ID, CommutationDAGNode)``:
 
 >>> nodes = dag.get_nodes()
 >>> nodes
-NodeDataView({0: <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x7f461c4bb580>, ...}, data='node')
+NodeDataView({0: <pennylane2.transforms.commutation_dag.CommutationDAGNode object at 0x7f461c4bb580>, ...}, data='node')
 
 Specific nodes in the commutation DAG can be accessed via the ``get_node()`` method:
 
 >>> second_node = dag.get_node(2)
 >>> second_node
-<pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x136f8c4c0>
+<pennylane2.transforms.commutation_dag.CommutationDAGNode object at 0x136f8c4c0>
 >>> second_node.op
 CNOT(wires=[1, 2])
 >>> second_node.successors

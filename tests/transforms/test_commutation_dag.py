@@ -19,9 +19,9 @@ from collections import OrderedDict
 
 import pytest
 
-import pennylane as qp
-import pennylane.numpy as np
-from pennylane.wires import Wires
+import pennylane2 as qp
+import pennylane2.numpy as np
+from pennylane2.wires import Wires
 
 
 class TestCommutationDAG:

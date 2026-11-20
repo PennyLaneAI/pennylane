@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for pennylane.registers.
+Unit tests for pennylane2.registers.
 """
 
 import pytest
 
-import pennylane as qp
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.wires import Wires
 
 
 class TestRegisters:

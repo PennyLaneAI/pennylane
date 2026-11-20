@@ -31,8 +31,8 @@ from matplotlib.colors import to_rgba
 from matplotlib.patches import Arc, FancyArrow, FancyBboxPatch, PathPatch
 from matplotlib.path import Path
 
-from pennylane.drawer import MPLDrawer
-from pennylane.math import allclose
+from pennylane2.drawer import MPLDrawer
+from pennylane2.math import allclose
 
 
 class TestElbow:

@@ -17,10 +17,10 @@ Unit tests for the comm function
 
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import Operator
-from pennylane.ops import SProd
-from pennylane.pauli import PauliSentence, PauliWord
+import pennylane2 as qp
+from pennylane2.core.operator import Operator
+from pennylane2.ops import SProd
+from pennylane2.pauli import PauliSentence, PauliWord
 
 X, Y, Z, Id = qp.PauliX, qp.PauliY, qp.PauliZ, qp.Identity
 
@@ -236,7 +236,7 @@ class TestcommPauliFalse:
     def test_paulis_used_when_ever_possible(self, mocker):
         """Test that pauli_rep is used whenever possible even when ``pauli=False``"""
         spy = mocker.patch(
-            "pennylane.ops.functions.commutator.to_operator", wraps=qp.pauli.to_operator
+            "pennylane2.ops.functions.commutator.to_operator", wraps=qp.pauli.to_operator
         )
         op1 = qp.PauliX(0) @ qp.PauliX(1)
         op2 = qp.PauliY(0) + qp.PauliY(1)

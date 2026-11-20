@@ -18,10 +18,10 @@ Unit tests for the StronglyEntanglingLayers template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane import ops as qp_ops
-from pennylane.testing import assert_decomposable
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2 import ops as qp_ops
+from pennylane2.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

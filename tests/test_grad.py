@@ -17,7 +17,7 @@ Unit tests for qp.grad
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 
 @pytest.mark.parametrize("grad_fn", (qp.grad, qp.jacobian))

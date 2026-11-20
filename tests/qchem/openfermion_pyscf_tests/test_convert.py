@@ -24,9 +24,9 @@ import sys
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane import qchem
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2 import qchem
 
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
@@ -397,7 +397,7 @@ ops_wires = (
 
 @pytest.mark.parametrize("pl_op, of_op, wire_order", ops_wires)
 def test_operation_conversion(pl_op, of_op, wire_order):
-    """Assert the conversion between pennylane and openfermion operators"""
+    """Assert the conversion between pennylane2 and openfermion operators"""
     converted_pl_op = qp.qchem.convert._pennylane_to_openfermion(*pl_op)  # coeffs, ops lists
     assert of_op == converted_pl_op
 
@@ -654,7 +654,7 @@ def test_pennylane_to_openfermion_no_decomp():
 def test_integration_observable_to_vqe_cost(
     monkeypatch, _, terms_ref, expected_cost, custom_wires, tol
 ):
-    r"""Test if `import_operator()` integrates with `QNode` in pennylane"""
+    r"""Test if `import_operator()` integrates with `QNode` in pennylane2"""
 
     qOp = openfermion.QubitOperator()
     if terms_ref is not None:

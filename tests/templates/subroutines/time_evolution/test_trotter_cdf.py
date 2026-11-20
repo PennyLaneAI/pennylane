@@ -33,12 +33,12 @@ from scipy.linalg import expm
 
 jax = pytest.importorskip("jax")
 
-import pennylane as qp
-from pennylane.core.operator import abstractify
-from pennylane.decomposition.resources import Resources
-from pennylane.exceptions import CaptureWarning
-from pennylane.numeric_hamiltonians import CDFHamiltonian
-from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
+import pennylane2 as qp
+from pennylane2.core.operator import abstractify
+from pennylane2.decomposition.resources import Resources
+from pennylane2.exceptions import CaptureWarning
+from pennylane2.numeric_hamiltonians import CDFHamiltonian
+from pennylane2.templates.subroutines.time_evolution.trotter_cdf import (
     _apply_system_basis_rotation,
     _apply_two_body_diagonal_with_work_wires,
     _cdf_resource_counts,
@@ -48,9 +48,9 @@ from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
     _multi_controlled_trotter_cdf_decomp,
     _trotter_cdf_decomposition,
 )
-from pennylane.testing import assert_decomposable
-from pennylane.typing import Float, Wire
-from pennylane.wires import Wires
+from pennylane2.testing import assert_decomposable
+from pennylane2.typing import Float, Wire
+from pennylane2.wires import Wires
 from tests.templates.subroutines.time_evolution.fermi_tools import one_body_matrix, permute_qubits
 from tests.templates.subroutines.time_evolution.trotter_test_helpers import (
     CATALYST_GATE_SET_DOUBLE_PHASE,

@@ -19,7 +19,7 @@ from inspect import signature
 
 import pytest
 
-from pennylane.capture.capture_meta import CaptureMeta
+from pennylane2.capture.capture_meta import CaptureMeta
 
 jax = pytest.importorskip("jax")
 

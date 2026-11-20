@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the :mod:`pennylane.data.base.hdf5` functions.
+Tests for the :mod:`pennylane2.data.base.hdf5` functions.
 """
 
 from unittest.mock import MagicMock
 
 import pytest
 
-from pennylane.data.base import hdf5
+from pennylane2.data.base import hdf5
 
 pytestmark = pytest.mark.data
 

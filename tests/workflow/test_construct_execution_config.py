@@ -17,9 +17,9 @@ from dataclasses import replace
 
 import pytest
 
-import pennylane as qp
-from pennylane.devices import ExecutionConfig, MCMConfig
-from pennylane.workflow import construct_execution_config
+import pennylane2 as qp
+from pennylane2.devices import ExecutionConfig, MCMConfig
+from pennylane2.workflow import construct_execution_config
 
 
 def dummycircuit():

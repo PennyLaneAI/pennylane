@@ -23,8 +23,8 @@ from copy import deepcopy
 import pytest
 from scipy.linalg import sqrtm
 
-import pennylane as qp
-from pennylane import numpy as np
+import pennylane2 as qp
+from pennylane2 import numpy as np
 
 
 def get_single_input_qnode():

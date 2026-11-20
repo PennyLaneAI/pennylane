@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the backbone of the :mod:`pennylane.capture` module.
+Unit tests for the backbone of the :mod:`pennylane2.capture` module.
 """
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 
 @pytest.mark.jax

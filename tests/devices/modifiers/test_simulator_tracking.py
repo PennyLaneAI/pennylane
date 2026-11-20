@@ -18,8 +18,8 @@ Tests for qp.devices.modifiers.simulator_tracking.
 # pylint: disable=unused-argument
 
 
-import pennylane as qp
-from pennylane.devices.modifiers import simulator_tracking
+import pennylane2 as qp
+from pennylane2.devices.modifiers import simulator_tracking
 
 
 def test_tracking_execute():

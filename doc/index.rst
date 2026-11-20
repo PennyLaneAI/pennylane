@@ -93,7 +93,7 @@ dependencies, can be done using pip:
 
 .. code-block:: bash
 
-    python -m pip install pennylane
+    python -m pip install pennylane2
 
 Docker support
 -----------------------

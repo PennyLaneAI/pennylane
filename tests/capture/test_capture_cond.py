@@ -23,18 +23,18 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.operator import Operator
-from pennylane.exceptions import ConditionalTransformError
-from pennylane.ops.op_math.condition import CondCallable, _is_operator_type
+import pennylane2 as qp
+from pennylane2.core.operator import Operator
+from pennylane2.exceptions import ConditionalTransformError
+from pennylane2.ops.op_math.condition import CondCallable, _is_operator_type
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
 # must be below jax importorskip
-from pennylane.capture.primitives import cond_prim
-from pennylane.testing import assert_eqn_matches_op, extract_all_primitives, find_eqns
+from pennylane2.capture.primitives import cond_prim
+from pennylane2.testing import assert_eqn_matches_op, extract_all_primitives, find_eqns
 
 
 @pytest.fixture
@@ -164,7 +164,7 @@ class TestCond:
     )
     def test_gradient(self, testing_functions, selector, arg, decorator):
         """Test the gradient of the conditional."""
-        from pennylane.capture.primitives import jacobian_prim
+        from pennylane2.capture.primitives import jacobian_prim
 
         true_fn, false_fn, _, _, _, _ = testing_functions
 

@@ -21,16 +21,16 @@ import numpy as np
 import pytest
 from scipy.stats import unitary_group
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.core.operator import abstractify
-from pennylane.decomposition.resources import CompressedResourceOp
-from pennylane.templates.subroutines.select import (
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.core.operator import abstractify
+from pennylane2.decomposition.resources import CompressedResourceOp
+from pennylane2.templates.subroutines.select import (
     _partial_select,
     _select_decomp_multi_control_work_wire,
     _select_decomp_unary,
 )
-from pennylane.typing import AbstractWires, Bool, Wire
+from pennylane2.typing import AbstractWires, Bool, Wire
 from tests.decomposition.conftest import to_resources
 
 

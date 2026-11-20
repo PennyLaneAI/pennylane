@@ -23,9 +23,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import pennylane as qp
-from pennylane.core.qscript import QuantumScript
-from pennylane.workflow import _cache_transform
+import pennylane2 as qp
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.workflow import _cache_transform
 
 
 @pytest.fixture

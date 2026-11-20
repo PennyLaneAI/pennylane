@@ -21,10 +21,10 @@ import jax
 import numpy as np
 import pytest
 
-import pennylane as qp
-import pennylane.numpy as pnp
-from pennylane.core.operator.base import AbstractOperator
-from pennylane.typing import (
+import pennylane2 as qp
+import pennylane2.numpy as pnp
+from pennylane2.core.operator.base import AbstractOperator
+from pennylane2.typing import (
     AbstractArray,
     AbstractWires,
     Bool,
@@ -36,7 +36,7 @@ from pennylane.typing import (
     _AbstractTypeFactory,
     _AbstractWireTypeFactory,
 )
-from pennylane.wires import Wires
+from pennylane2.wires import Wires
 
 try:
     import torch

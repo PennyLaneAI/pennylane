@@ -1,5 +1,5 @@
 """
-Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
+Unit tests for the :mod:`pennylane2.io.qasm_interpreter` module.
 """
 
 # pylint: disable=consider-using-with,unspecified-encoding
@@ -11,8 +11,8 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import (
+import pennylane2 as qp
+from pennylane2 import (
     CH,
     CNOT,
     CRX,
@@ -44,24 +44,24 @@ from pennylane import (
     probs,
     qnode,
 )
-from pennylane.core import queuing
-from pennylane.ops import (
+from pennylane2.core import queuing
+from pennylane2.ops import (
     Adjoint,
     Controlled,
     ControlledPhaseShift,
     MeasurementValue,
     MidMeasure,
 )
-from pennylane.ops.op_math.pow import PowOperation
-from pennylane.ops.op_math.pow2 import Pow2
-from pennylane.wires import Wires
+from pennylane2.ops.op_math.pow import PowOperation
+from pennylane2.ops.op_math.pow2 import Pow2
+from pennylane2.wires import Wires
 
 try:
     pytest.importorskip("openqasm3")
 
     from openqasm3.parser import parse
 
-    from pennylane.io.qasm_interpreter import (  # pylint: disable=ungrouped-imports
+    from pennylane2.io.qasm_interpreter import (  # pylint: disable=ungrouped-imports
         Context,
         QasmInterpreter,
         Variable,
@@ -510,7 +510,7 @@ class TestControlFlow:
         assert q.queue == [PauliX("q0"), PauliY("q0"), RX(0.1, wires=["q0"])]
 
     def test_if_else(self, mocker):
-        from pennylane import ops
+        from pennylane2 import ops
 
         # parse the QASM
         ast = parse(open("tests/io/qasm_interpreter/if_else.qasm").read(), permissive=True)

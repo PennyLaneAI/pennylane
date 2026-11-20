@@ -18,13 +18,13 @@
 import numpy as np
 import pytest
 
-from pennylane import gradients, math
-from pennylane.core.operator import Operator2
-from pennylane.exceptions import ParameterFrequenciesUndefinedError
-from pennylane.gradients import parameter_frequencies
-from pennylane.ops import U1, U2, U3, Exp, Hermitian, PauliZ
-from pennylane.ops.functions import eigvals, generator
-from pennylane.wires import WiresLike
+from pennylane2 import gradients, math
+from pennylane2.core.operator import Operator2
+from pennylane2.exceptions import ParameterFrequenciesUndefinedError
+from pennylane2.gradients import parameter_frequencies
+from pennylane2.ops import U1, U2, U3, Exp, Hermitian, PauliZ
+from pennylane2.ops.functions import eigvals, generator
+from pennylane2.wires import WiresLike
 
 
 class TestParameterFrequencies:

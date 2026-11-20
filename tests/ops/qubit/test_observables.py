@@ -24,8 +24,8 @@ import pytest
 from gate_data import H, I, X, Y, Z
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 
-import pennylane as qp
-from pennylane.ops.qubit.observables import BasisStateProjector, StateVectorProjector
+import pennylane2 as qp
+from pennylane2.ops.qubit.observables import BasisStateProjector, StateVectorProjector
 
 
 @pytest.fixture(autouse=True)

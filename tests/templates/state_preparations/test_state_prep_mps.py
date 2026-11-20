@@ -18,14 +18,14 @@ Tests for the MPSPrep template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.templates.state_preparations.state_prep_mps import (
+import pennylane2 as qp
+from pennylane2.exceptions import DecompositionUndefinedError
+from pennylane2.templates.state_preparations.state_prep_mps import (
     _mps_prep_decomposition,
     _validate_mps_shape,
     right_canonicalize_mps,
 )
-from pennylane.testing import assert_decomposable
+from pennylane2.testing import assert_decomposable
 
 
 class TestMPSPrep:
@@ -636,7 +636,7 @@ class TestMPSPrep:
     def test_decomposition_capture(self):
         """Tests that the new decomposition works with capture."""
 
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane2.tape.plxpr_conversion import CollectOpsandMeas
 
         mps = [
             np.array([[0.0, 0.107], [0.994, 0.0]]),

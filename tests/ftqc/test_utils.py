@@ -19,9 +19,9 @@ import random
 import numpy as np
 import pytest
 
-from pennylane.ftqc import QubitMgr
-from pennylane.ftqc.utils import parity
-from pennylane.ops import MeasurementValue, MidMeasure
+from pennylane2.ftqc import QubitMgr
+from pennylane2.ftqc.utils import parity
+from pennylane2.ops import MeasurementValue, MidMeasure
 
 num_qubits_vals = [1, 3, 7]
 acquire_num_vals = [0, 1, 5]

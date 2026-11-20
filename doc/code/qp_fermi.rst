@@ -6,7 +6,7 @@ Overview
 
 This module contains functions and classes for creating and manipulating fermionic operators.
 
-.. currentmodule:: pennylane
+.. currentmodule:: pennylane2
 
 Functions
 ^^^^^^^^^
@@ -33,8 +33,8 @@ Classes
 FermiC and FermiA
 -----------------
 
-The fermionic creation and annihilation operators are constructed with :class:`~pennylane.FermiC`
-and :class:`~pennylane.FermiA`, respectively. We pass in the index of the orbital that the
+The fermionic creation and annihilation operators are constructed with :class:`~pennylane2.FermiC`
+and :class:`~pennylane2.FermiA`, respectively. We pass in the index of the orbital that the
 operator acts on. For example, the operators :math:`a^{\dagger}_0` and :math:`a_3`, acting on the
 :math:`0\text{th}` and :math:`3\text{rd}` orbitals, are constructed as
 
@@ -63,8 +63,8 @@ Mapping to qubit operators
 --------------------------
 
 The fermionic operators can be mapped to the qubit basis by using the
-:func:`~pennylane.jordan_wigner` function. This function can be used to map
-:class:`~pennylane.FermiC` and :class:`~pennylane.FermiA` operators as well as Fermi words and
+:func:`~pennylane2.jordan_wigner` function. This function can be used to map
+:class:`~pennylane2.FermiC` and :class:`~pennylane2.FermiA` operators as well as Fermi words and
 Fermi sentences.
 
 >>> qp.jordan_wigner(qp.FermiA(1))
@@ -85,7 +85,7 @@ FermiWord and FermiSentence
 ---------------------------
 
 Fermi words and Fermi sentences can also be constructed directly with
-:class:`~pennylane.fermi.FermiWord` and :class:`~pennylane.fermi.FermiSentence` by passing
+:class:`~pennylane2.fermi.FermiWord` and :class:`~pennylane2.fermi.FermiSentence` by passing
 dictionaries that define the fermionic operators.
 
 For Fermi words, the dictionary items define the fermionic creation and annihilation operators.
@@ -99,7 +99,7 @@ denote creation and annihilation operators, respectively. The operator
 a⁺(0) a(3) a⁺(1)
 
 A Fermi sentence can be constructed directly by passing a dictionary of Fermi words and their
-corresponding coefficients to the :class:`~pennylane.fermi.FermiSentence` class. For instance, the
+corresponding coefficients to the :class:`~pennylane2.fermi.FermiSentence` class. For instance, the
 Fermi sentence :math:`1.2 a^{\dagger}_0 a_0  + 2.3 a^{\dagger}_3 a_3` can be constructed as
 
 >>> fw1 = qp.FermiWord({(0, 0): '+', (1, 0): '-'})

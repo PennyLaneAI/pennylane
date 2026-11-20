@@ -16,8 +16,8 @@
 import pytest
 import scipy as sp
 
-import pennylane as qp
-from pennylane import numpy as np
+import pennylane2 as qp
+from pennylane2 import numpy as np
 
 
 class TestBasics:

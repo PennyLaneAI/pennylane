@@ -21,9 +21,9 @@ from copy import copy
 import pytest
 import rustworkx as rx
 
-import pennylane as qp
-from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
-from pennylane.core.transforms.compile_pipeline import (
+import pennylane2 as qp
+from pennylane2.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane2.core.transforms.compile_pipeline import (
     DEVICE_PREPROCESSING,
     CotransformCache,
     ProtectedLevel,
@@ -31,14 +31,14 @@ from pennylane.core.transforms.compile_pipeline import (
     _batch_postprocessing,
     null_postprocessing,
 )
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.transforms.core import (
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.transforms.core import (
     BoundTransform,
     CompilePipeline,
     TransformError,
     transform,
 )
-from pennylane.typing import PostprocessingFn, Result, ResultBatch
+from pennylane2.typing import PostprocessingFn, Result, ResultBatch
 
 
 def first_valid_transform(

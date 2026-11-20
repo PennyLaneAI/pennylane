@@ -22,12 +22,12 @@ import numpy as np
 import pytest
 import scipy
 
-import pennylane as qp
-from pennylane import X, Y, Z
-from pennylane import numpy as pnp
-from pennylane.ops import LinearCombination
-from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2 import X, Y, Z
+from pennylane2 import numpy as pnp
+from pennylane2.ops import LinearCombination
+from pennylane2.pauli import PauliSentence, PauliWord
+from pennylane2.wires import Wires
 
 # Make test data in different interfaces, if installed
 COEFFS_PARAM_INTERFACE = [
@@ -1793,7 +1793,7 @@ class TestLinearCombinationDifferentiation:
 def test_create_instance_while_tracing():
     """Test that a LinearCombination instance can be created while tracing."""
 
-    from pennylane.capture.primitives import operator_p
+    from pennylane2.capture.primitives import operator_p
 
     def f(a, b):
         op1 = operator_p.impl(

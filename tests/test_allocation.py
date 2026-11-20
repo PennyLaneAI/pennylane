@@ -19,9 +19,9 @@ import uuid
 
 import pytest
 
-import pennylane as qp
-from pennylane import allocate, deallocate
-from pennylane.allocation import (
+import pennylane2 as qp
+from pennylane2 import allocate, deallocate
+from pennylane2.allocation import (
     Allocate,
     AllocateState,
     Deallocate,

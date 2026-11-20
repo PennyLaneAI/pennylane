@@ -21,23 +21,23 @@ from functools import reduce
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import SignedOutMultiplier, device, qnode
-from pennylane.core.operator import abstractify
-from pennylane.decomposition import list_decomps
-from pennylane.measurements import sample, state
-from pennylane.ops import CNOT, ctrl
-from pennylane.templates import BasisEmbedding
-from pennylane.templates.subroutines.arithmetic.incrementer import Incrementer
-from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier
-from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
-from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import (
+import pennylane2 as qp
+from pennylane2 import SignedOutMultiplier, device, qnode
+from pennylane2.core.operator import abstractify
+from pennylane2.decomposition import list_decomps
+from pennylane2.measurements import sample, state
+from pennylane2.ops import CNOT, ctrl
+from pennylane2.templates import BasisEmbedding
+from pennylane2.templates.subroutines.arithmetic.incrementer import Incrementer
+from pennylane2.templates.subroutines.arithmetic.out_multiplier import OutMultiplier
+from pennylane2.templates.subroutines.arithmetic.semi_adder import SemiAdder
+from pennylane2.templates.subroutines.arithmetic.signed_out_multiplier import (
     _not_zeroed_signed_out_multiplier_resources,
     _twos_complement_helper,
     _zeroed_signed_out_multiplier_resources,
 )
-from pennylane.testing import assert_decomposable, assert_valid
-from pennylane.typing import Wire
+from pennylane2.testing import assert_decomposable, assert_valid
+from pennylane2.typing import Wire
 
 
 def bin_to_int(bits):

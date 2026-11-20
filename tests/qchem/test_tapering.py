@@ -23,10 +23,10 @@ import functools
 import pytest
 import scipy
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.pauli import pauli_sentence
-from pennylane.qchem.tapering import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.pauli import pauli_sentence
+from pennylane2.qchem.tapering import (
     _kernel,
     _split_pauli_sentence,
     _taper_pauli_sentence,

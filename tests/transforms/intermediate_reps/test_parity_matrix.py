@@ -11,16 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/labs/phase_polynomials/parity_matrix.py"""
+"""Tests for pennylane2/labs/phase_polynomials/parity_matrix.py"""
 
 from itertools import permutations
 
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.transforms import _tape_decompose as decompose
-from pennylane.transforms import parity_matrix
+import pennylane2 as qp
+from pennylane2.transforms import _tape_decompose as decompose
+from pennylane2.transforms import parity_matrix
 
 circ1 = qp.tape.QuantumScript(
     [

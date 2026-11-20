@@ -25,16 +25,16 @@ import numpy as np
 import pytest
 import scipy.sparse
 
-import pennylane as qp
-from pennylane.core import Operator2
-from pennylane.core.operator import Operator
-from pennylane.testing.operators import (
+import pennylane2 as qp
+from pennylane2.core import Operator2
+from pennylane2.core.operator import Operator
+from pennylane2.testing.operators import (
     _check_bind_new_parameters,
     _check_eigendecomposition,
     _check_pytree,
     assert_valid,
 )
-from pennylane.wires import Wires
+from pennylane2.wires import Wires
 from tests.core.operator.operator2_utils import DynOp
 
 
@@ -490,7 +490,7 @@ class TestPytree:
             pass
 
         op = GoodPytree(wires=0)
-        mocker.patch("pennylane.testing.operators.pytrees.unflatten", return_value=GoodPytree(1))
+        mocker.patch("pennylane2.testing.operators.pytrees.unflatten", return_value=GoodPytree(1))
         with pytest.raises(AssertionError, match=r"qp.pytrees.unflatten must be able to reproduce"):
             _check_pytree(op)
 

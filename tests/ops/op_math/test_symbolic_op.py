@@ -19,11 +19,11 @@ from copy import copy
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.operator import Operator
-from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.operator import Operator
+from pennylane2.ops.op_math import ScalarSymbolicOp, SymbolicOp
+from pennylane2.wires import Wires
 
 
 class TempScalar(ScalarSymbolicOp):

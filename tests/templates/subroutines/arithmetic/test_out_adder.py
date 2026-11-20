@@ -17,10 +17,10 @@ Tests for the OutAdder template.
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.templates.subroutines.arithmetic.out_adder import _out_adder_decomposition
-from pennylane.testing import assert_decomposable
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.templates.subroutines.arithmetic.out_adder import _out_adder_decomposition
+from pennylane2.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

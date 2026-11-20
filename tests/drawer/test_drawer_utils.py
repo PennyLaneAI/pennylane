@@ -12,20 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the pennylane.drawer.utils` module.
+Unit tests for the pennylane2.drawer.utils` module.
 """
 
 import pytest
 
-import pennylane as qp
-from pennylane.drawer.utils import (
+import pennylane2 as qp
+from pennylane2.drawer.utils import (
     convert_wire_order,
     cwire_connections,
     default_bit_map,
     default_wire_map,
     unwrap_controls,
 )
-from pennylane.wires import Wires
+from pennylane2.wires import Wires
 
 
 class TestDefaultWireMap:

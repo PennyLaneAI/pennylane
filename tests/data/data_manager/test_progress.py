@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for :class:`pennylane.data.progress`
+Tests for :class:`pennylane2.data.progress`
 """
 
 import shutil
 
 import pytest
 
-import pennylane.data.data_manager.progress
-import pennylane.data.data_manager.progress._default
-from pennylane.data.data_manager.progress import Progress, Task
-from pennylane.data.data_manager.progress._default import term
+import pennylane2.data.data_manager.progress
+import pennylane2.data.data_manager.progress._default
+from pennylane2.data.data_manager.progress import Progress, Task
+from pennylane2.data.data_manager.progress._default import term
 
 
 @pytest.fixture
@@ -34,11 +34,11 @@ def disable_rich(request, monkeypatch):
     installed.
     """
     if getattr(request, "param", True):
-        monkeypatch.setattr(pennylane.data.data_manager.progress, "make_progress_rich", None)
+        monkeypatch.setattr(pennylane2.data.data_manager.progress, "make_progress_rich", None)
         return True
 
     try:
-        from pennylane.data.data_manager.progress._rich import RichProgress
+        from pennylane2.data.data_manager.progress._rich import RichProgress
 
         del RichProgress
     except ImportError:
@@ -48,12 +48,12 @@ def disable_rich(request, monkeypatch):
 
 
 class TestProgress:
-    """Tests for :class:`pennylane.data.progress.Progress`."""
+    """Tests for :class:`pennylane2.data.progress.Progress`."""
 
     @pytest.mark.parametrize(
         "disable_rich, expect_cls",
         [
-            (True, "pennylane.data.data_manager.progress._default.DefaultProgress"),
+            (True, "pennylane2.data.data_manager.progress._default.DefaultProgress"),
             (False, "rich.progress.Progress"),
         ],
         indirect=["disable_rich"],
@@ -87,7 +87,7 @@ class TestProgress:
 
 @pytest.mark.usefixtures("disable_rich")
 class TestDefaultProgress:
-    """Tests for :class:`pennylane.data.data_manger.progress._default.DefaultProgress`."""
+    """Tests for :class:`pennylane2.data.data_manger.progress._default.DefaultProgress`."""
 
     @pytest.fixture(autouse=True)
     def terminal_size(self, monkeypatch):

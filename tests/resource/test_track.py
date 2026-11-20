@@ -17,9 +17,9 @@ from functools import partial
 
 import pytest
 
-import pennylane as qp
-from pennylane.core.shots import Shots
-from pennylane.resource import CircuitSpecs, SpecsResources
+import pennylane2 as qp
+from pennylane2.core.shots import Shots
+from pennylane2.resource import CircuitSpecs, SpecsResources
 
 catalyst = pytest.importorskip("catalyst")
 

@@ -35,9 +35,9 @@ and optimize the circuit using :ref:`quantum-specific optimizers <intro_ref_opt>
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.from_qasm
-    ~pennylane.from_qasm3
-    ~pennylane.from_qiskit
+    ~pennylane2.from_qasm
+    ~pennylane2.from_qasm3
+    ~pennylane2.from_qiskit
 
 :html:`</div>`
 
@@ -59,14 +59,14 @@ using:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     pl_qfunc_from_qk = qp.from_qiskit(qk_circuit)
 
 .. note::
 
     The `PennyLane-Qiskit <https://docs.pennylane.ai/projects/qiskit/en/latest/>`__ plugin must be
-    installed to use the :func:`~pennylane.from_qiskit` function.
+    installed to use the :func:`~pennylane2.from_qiskit` function.
 
 This quantum function can then be called from inside a QNode to generate a PennyLane circuit:
 
@@ -89,14 +89,14 @@ This quantum function can then be called from inside a QNode to generate a Penny
 
 
     Here, the ``measurements`` argument overrides any terminal measurements in the Qiskit circuit.
-    See the :func:`~pennylane.from_qiskit` documentation for more details.
+    See the :func:`~pennylane2.from_qiskit` documentation for more details.
 
 The resulting PennyLane circuit can be executed directly:
 
 >>> pl_circuit_from_qk()
 [tensor(0., requires_grad=True), tensor(1., requires_grad=True)]
 
-It can also be visualized using PennyLane's :func:`~pennylane.draw` utility:
+It can also be visualized using PennyLane's :func:`~pennylane2.draw` utility:
 
 >>> print(qp.draw(pl_circuit_from_qk)())
 0: ──H─╭●─┤  <Y>
@@ -105,7 +105,7 @@ It can also be visualized using PennyLane's :func:`~pennylane.draw` utility:
 OpenQASM
 ~~~~~~~~
 
-:func:`~pennylane.io.from_qasm3` supports the OpenQASM 3.0 spec, including control flow,
+:func:`~pennylane2.io.from_qasm3` supports the OpenQASM 3.0 spec, including control flow,
 mid circuit measurements, subroutines, classical computation, and more.
 
 .. code-block:: python
@@ -163,7 +163,7 @@ Inspecting the circuit, we can see that the operations and measurements have bee
                 ╚═══╝
 
 
-:func:`~pennylane.from_qasm` relies on the PennyLane-Qiskit plugin and can import the OpenQASM 2.0 spec.
+:func:`~pennylane2.from_qasm` relies on the PennyLane-Qiskit plugin and can import the OpenQASM 2.0 spec.
 
 .. code-block:: python
 
@@ -183,7 +183,7 @@ We can import this circuit into PennyLane using the PennyLane-Qiskit plugin once
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     pl_qfunc_from_oq = qp.from_qasm(oq_circuit)
 
@@ -211,7 +211,7 @@ access to features like grouping for hardware-efficient execution.
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.from_qiskit_op
+    ~pennylane2.from_qiskit_op
 
 :html:`</div>`
 
@@ -226,12 +226,12 @@ imported into PennyLane. To see this in action, we first define a ``SparsePauliO
 
     qk_op = SparsePauliOp(["II", "XY"])
 
-Then, we apply the :func:`~pennylane.from_qiskit_op` function to convert the ``SparsePauliOp`` into
-a PennyLane :class:`Operator <pennylane.operation.Operator>`:
+Then, we apply the :func:`~pennylane2.from_qiskit_op` function to convert the ``SparsePauliOp`` into
+a PennyLane :class:`Operator <pennylane2.operation.Operator>`:
 
 .. code-block:: python
 
-    import pennylane as qp
+    import pennylane2 as qp
 
     pl_op = qp.from_qiskit_op(qk_op)
 

@@ -1,0 +1,231 @@
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This module contains a developer focused execution function for internal executions
+"""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from dataclasses import replace
+from functools import partial
+from typing import TYPE_CHECKING
+
+from pennylane2 import math
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.math import Interface
+
+from .jacobian_products import (
+    DeviceDerivatives,
+    DeviceJacobianProducts,
+    JacobianProductCalculator,
+    NoGradients,
+    TransformJacobianProducts,
+)
+
+if TYPE_CHECKING:
+    from pennylane2.core.qscript import QuantumScriptBatch
+    from pennylane2.core.transforms import CompilePipeline
+    from pennylane2.devices import Device, ExecutionConfig
+    from pennylane2.typing import ResultBatch
+
+    ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]
+
+
+def _construct_ml_execution_pipeline(
+    config: ExecutionConfig,
+    device: Device,
+    inner_transform_program: CompilePipeline,
+) -> tuple[JacobianProductCalculator, ExecuteFn]:
+    """Constructs the ML execution pipeline for all JPC interfaces.
+
+    This function determines the execution function (`execute_fn`) and the Jacobian product
+    class (`jpc`) required for gradient computations.
+
+    Args:
+        config (qp.devices.ExecutionConfig): resolved execution configuration
+        device (qp.devices.Device): a Pennylane device
+        inner_transform_program (qp.CompilePipeline): the transformation applied to quantum tapes
+
+    Returns:
+        tuple: A tuple containing:
+            - `jpc`: jacobian product class for computing gradients
+            - `execute_fn`: the function to execute quantum tapes
+
+    Raises:
+        ValueError: If gradients are computed on execution (`grad_on_execution=True`).
+    """
+    inner_execute = _make_inner_execute(device, inner_transform_program, config)
+
+    execute_fn = inner_execute
+
+    if config.gradient_method is None:
+        return NoGradients(), execute_fn
+
+    if config.use_device_jacobian_product:
+        return DeviceJacobianProducts(device, config), execute_fn
+
+    if config.use_device_gradient:
+        jpc = DeviceDerivatives(device, config)
+        if config.grad_on_execution:
+            execute_fn = jpc.execute_and_cache_jacobian
+        else:
+            execute_fn = inner_execute
+        return jpc, execute_fn
+
+    if config.grad_on_execution is True:
+        raise ValueError("Gradient transforms cannot be used with grad_on_execution=True")
+
+    jpc = TransformJacobianProducts(
+        execute_fn,
+        config.gradient_method,
+        config.gradient_keyword_arguments,
+        cache_full_jacobian=config.interface == Interface.AUTOGRAD,
+    )
+    for _ in range(1, config.derivative_order):
+        ml_boundary_execute = _get_ml_boundary_execute(config)
+        execute_fn = partial(
+            ml_boundary_execute,
+            execute_fn=execute_fn,
+            jpc=jpc,
+            device=device,
+        )
+        jpc = TransformJacobianProducts(
+            execute_fn,
+            config.gradient_method,
+            config.gradient_keyword_arguments,
+        )
+
+    return jpc, execute_fn
+
+
+def _get_ml_boundary_execute(resolved_execution_config: ExecutionConfig) -> Callable:
+    """Imports and returns the function that handles the interface boundary for a given machine learning framework.
+
+    Args:
+        resolved_execution_config (ExecutionConfig): resolved execution configuration set-up for execution
+
+    Returns:
+        Callable: Execution function for the specified machine learning framework.
+
+    Raises:
+        pennylane2.QuantumFunctionError: If the required package for the specified interface is not installed.
+    """
+    # pylint: disable=import-outside-toplevel
+    interface = resolved_execution_config.interface
+    device_vjp = resolved_execution_config.use_device_jacobian_product
+    try:
+        match interface:
+            case Interface.AUTOGRAD:
+                from .interfaces.autograd import autograd_execute as ml_boundary
+
+            case Interface.TORCH:
+                from .interfaces.torch import execute as ml_boundary
+
+            case Interface.JAX_JIT if resolved_execution_config.convert_to_numpy:
+                from .interfaces.jax_jit import jax_jit_jvp_execute as ml_boundary
+
+            case _:  # interface is jax
+                if device_vjp:
+                    from .interfaces.jax_jit import jax_jit_vjp_execute as ml_boundary
+                else:
+                    from .interfaces.jax import jax_jvp_execute as ml_boundary
+
+    except ImportError as e:  # pragma: no cover
+        raise QuantumFunctionError(
+            f"{interface} not found. Please install the latest "
+            f"version of {interface} to enable the '{interface}' interface."
+        ) from e
+
+    return ml_boundary
+
+
+def _make_inner_execute(device, inner_transform, execution_config=None) -> Callable:
+    """Construct the function responsible for executing quantum tapes within a ML framework boundary
+    for first-order derivatives.
+
+    The process involves performing device-specific preprocessing on the tapes (for new devices) or
+    device expansion (for legacy devices).
+
+    For higher-order derivatives, this function will delegate to another ML framework execution.
+    """
+
+    def inner_execute(tapes: QuantumScriptBatch) -> ResultBatch:
+        """Execution that occurs within a ML framework boundary.
+
+        Closure Variables:
+            inner_transform(CompilePipeline): a transform to apply to a set of tapes
+            expand_fn (Callable[[QuantumScript], QuantumScript]): A device preprocessing step
+            device (qp.devices.Device): a Pennylane device
+        """
+
+        transformed_tapes, transform_post_processing = inner_transform(tapes)
+
+        if transformed_tapes:
+            results = device.execute(transformed_tapes, execution_config=execution_config)
+        else:
+            results = ()
+
+        return transform_post_processing(results)
+
+    return inner_execute
+
+
+def run(
+    tapes: QuantumScriptBatch,
+    device: Device,
+    config: ExecutionConfig,
+    inner_transform_program: CompilePipeline,
+) -> ResultBatch:
+    """Execute a batch of quantum scripts on a device with optional gradient computation.
+
+    Args:
+        tapes (qp.tape.QuantumScriptBatch): batch of quantum scripts
+        device (qp.devices.Device): a Pennylane device
+        config (qp.devices.ExecutionConfig): Resolved configuration detailing
+            execution and differentiation settings.
+        inner_transform_program (CompilePipeline): The transformation program to apply
+            to the quantum scripts before execution.
+
+    Returns:
+        ResultBatch: results of the execution
+    """
+    inner_execute = _make_inner_execute(device, inner_transform_program, config)
+
+    # Exiting early if we do not need to deal with an interface boundary
+    no_interface_boundary_required = (
+        config.interface == Interface.NUMPY or config.gradient_method == "backprop"
+    )
+    if no_interface_boundary_required:
+        results = inner_execute(tapes)
+        return results
+
+    jpc, execute_fn = _construct_ml_execution_pipeline(config, device, inner_transform_program)
+
+    if config.interface == Interface.JAX_JIT and config.derivative_order > 1:
+        # no need to use pure callbacks around execute_fn or the jpc when taking
+        # higher order derivatives
+        config = replace(config, interface=Interface.JAX)
+
+    ml_execute = _get_ml_boundary_execute(config)
+
+    # trainable parameters can only be set on the first pass for jax
+    # not higher order passes for higher order derivatives
+    if config.interface in {Interface.JAX, Interface.JAX_JIT}:
+        for tape in tapes:
+            params = tape.get_parameters(trainable_only=False)
+            tape.trainable_params = math.get_trainable_indices(params)
+
+    results = ml_execute(tapes, execute_fn, jpc, device=device)
+    return results

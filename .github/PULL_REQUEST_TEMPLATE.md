@@ -19,7 +19,7 @@ Please complete the following checklist when submitting a PR:
       [PEP8 standards](https://www.python.org/dev/peps/pep-0008/).
       We check all of our code against [Pylint](https://www.pylint.org/).
       To lint modified files, simply `pip install pylint`, and then
-      run `pylint pennylane/path/to/file.py`.
+      run `pylint pennylane2/path/to/file.py`.
 
 When all the above are checked, delete everything above the dashed
 line and fill in the pull request template.

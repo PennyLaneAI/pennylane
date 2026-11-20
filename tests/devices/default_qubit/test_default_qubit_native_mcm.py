@@ -19,10 +19,10 @@ import mcm_utils
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.devices.qubit.simulate import combine_measurements_core, measurement_with_no_shots
-from pennylane.ops import MidMeasure
-from pennylane.transforms.dynamic_one_shot import fill_in_value
+import pennylane2 as qp
+from pennylane2.devices.qubit.simulate import combine_measurements_core, measurement_with_no_shots
+from pennylane2.ops import MidMeasure
+from pennylane2.transforms.dynamic_one_shot import fill_in_value
 
 pytestmark = pytest.mark.slow
 

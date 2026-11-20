@@ -20,9 +20,9 @@ import autograd
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.workflow import _resolve_execution_config, _setup_transform_program, run
 from tests.workflow.interfaces.run.conftest import atol_for_shots, get_device, test_matrix
 
 

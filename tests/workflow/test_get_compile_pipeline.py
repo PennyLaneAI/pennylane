@@ -19,12 +19,12 @@ import warnings
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.transforms import CompilePipeline
-from pennylane.core.transforms.compile_pipeline import DEVICE_PREPROCESSING
-from pennylane.exceptions import TransformError
-from pennylane.workflow import get_compile_pipeline
-from pennylane.workflow._levels import (
+import pennylane2 as qp
+from pennylane2.core.transforms import CompilePipeline
+from pennylane2.core.transforms.compile_pipeline import DEVICE_PREPROCESSING
+from pennylane2.exceptions import TransformError
+from pennylane2.workflow import get_compile_pipeline
+from pennylane2.workflow._levels import (
     level_to_number,
     levels_to_numbers,
     split_device_preprocessing,

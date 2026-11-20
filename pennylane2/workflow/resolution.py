@@ -1,0 +1,271 @@
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""This module contains the necessary helper functions for setting up the workflow for execution."""
+
+from __future__ import annotations
+
+from copy import copy
+from dataclasses import replace
+from typing import TYPE_CHECKING, Any, Literal, get_args
+
+import pennylane2 as qp
+from pennylane2 import math
+from pennylane2.core.transforms import Transform
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.logging import debug_logger
+from pennylane2.math import Interface, get_interface
+
+SupportedDiffMethods = Literal[
+    None,
+    "best",
+    "device",
+    "backprop",
+    "adjoint",
+    "parameter-shift",
+    "hadamard",
+    "reversed-hadamard",
+    "direct-hadamard",
+    "reversed-direct-hadamard",
+    "finite-diff",
+    "spsa",
+]
+
+if TYPE_CHECKING:
+    from pennylane2.core.qscript import QuantumScript, QuantumScriptBatch
+    from pennylane2.devices.device_api import Device
+    from pennylane2.devices.execution_config import ExecutionConfig, MCMConfig
+
+
+def _get_jax_interface_name() -> Interface:
+    """Check if we are in a jitting context by creating a dummy array and seeing if it's
+    abstract.
+    """
+    x = math.asarray([0], like="jax")
+    return Interface.JAX_JIT if math.is_tracer(x) else Interface.JAX
+
+
+def _resolve_interface(interface: str | Interface | None, tapes: QuantumScriptBatch) -> Interface:
+    """Helper function to resolve an interface based on a set of tapes.
+
+    Args:
+        interface (str, Interface): Original interface to use as reference.
+        tapes (list[.QuantumScript]): Quantum tapes
+
+    Returns:
+        Interface: resolved interface
+    """
+    interface = Interface(interface)
+
+    if interface == Interface.AUTO:
+        params = []
+        for tape in tapes:
+            params.extend(tape.get_parameters(trainable_only=False))
+        interface = get_interface(*params)
+        try:
+            interface = Interface(interface)
+        except ValueError:
+            # If the interface is not recognized, default to numpy, like networkx
+            interface = Interface.NUMPY
+
+    if interface == Interface.JAX:
+        interface = _get_jax_interface_name()
+
+    return interface
+
+
+def _resolve_mcm_config(
+    mcm_config: MCMConfig, interface: Interface, finite_shots: bool
+) -> MCMConfig:
+    """Helper function to resolve the mid-circuit measurements configuration based on
+    execution parameters"""
+    updated_values: dict[str, Any] = {}
+
+    if not finite_shots:
+        updated_values["postselect_mode"] = None
+        if mcm_config.mcm_method == "one-shot":
+            raise ValueError(
+                "Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode."
+            )
+
+    if mcm_config.mcm_method == "single-branch-statistics":
+        raise ValueError(
+            "Cannot use mcm_method='single-branch-statistics' without qp.qjit or capture enabled."
+        )
+
+    if interface == Interface.JAX_JIT and mcm_config.mcm_method == "deferred":
+        # This is a current limitation of defer_measurements. "hw-like" behaviour is
+        # not yet accessible.
+        if mcm_config.postselect_mode == "hw-like":
+            raise ValueError(
+                "Using postselect_mode='hw-like' is not supported with jax-jit when using "
+                "mcm_method='deferred'."
+            )
+        updated_values["postselect_mode"] = "fill-shots"
+
+    if (
+        finite_shots
+        and interface in {Interface.JAX, Interface.JAX_JIT}
+        and mcm_config.mcm_method in (None, "one-shot")
+        and mcm_config.postselect_mode in (None, "hw-like")
+    ):
+        updated_values["postselect_mode"] = "pad-invalid-samples"
+
+    return replace(mcm_config, **updated_values)
+
+
+def _resolve_hadamard(initial_config: ExecutionConfig, device: Device) -> ExecutionConfig:
+    diff_method = initial_config.gradient_method
+    if initial_config.derivative_order > 1 and (
+        "aux_wire" in initial_config.gradient_keyword_arguments
+        or (
+            "mode" in initial_config.gradient_keyword_arguments
+            and initial_config.gradient_keyword_arguments["mode"] in ("standard", "reversed")
+        )
+    ):
+        raise ValueError(
+            "Higher order derivatives with hadamard gradients in standard and reversed modes are not possible. "
+            "Instead please use direct or reversed-direct mode to perform a higher order derivative with a hadamard gradient."
+        )
+    updated_values = {"gradient_method": diff_method}
+    if diff_method != "hadamard" and "mode" in initial_config.gradient_keyword_arguments:
+        raise ValueError(
+            f"diff_method={diff_method} cannot be provided with a 'mode' in the gradient_kwargs."
+        )
+
+    hadamard_mode_map = {
+        "hadamard": "standard",
+        "reversed-hadamard": "reversed",
+        "direct-hadamard": "direct",
+        "reversed-direct-hadamard": "reversed-direct",
+    }
+    gradient_kwargs = copy(initial_config.gradient_keyword_arguments)
+    if "mode" not in gradient_kwargs:
+        gradient_kwargs["mode"] = hadamard_mode_map[diff_method]
+
+    if "device_wires" not in gradient_kwargs and "aux_wire" not in gradient_kwargs:
+        gradient_kwargs["device_wires"] = device.wires
+    updated_values["gradient_keyword_arguments"] = gradient_kwargs
+    updated_values["gradient_method"] = qp.gradients.hadamard_grad
+    return replace(initial_config, **updated_values)
+
+
+@debug_logger
+def _resolve_diff_method(
+    initial_config: ExecutionConfig,
+    device: Device,
+    tape: QuantumScript | None = None,
+) -> ExecutionConfig:
+    """
+    Resolves the differentiation method and updates the initial execution configuration accordingly.
+
+    Args:
+        initial_config (ExecutionConfig): The initial execution configuration.
+        device (Device): A PennyLane device.
+        tape (Optional[qp.tape.QuantumTape]): The circuit that will be differentiated. Should include shots information.
+
+    Returns:
+        ExecutionConfig: Updated execution configuration with the resolved differentiation method.
+    """
+    diff_method = initial_config.gradient_method
+    updated_values = {"gradient_method": diff_method}
+
+    if diff_method is None:
+        return initial_config
+
+    if device.supports_derivatives(initial_config, circuit=tape):
+        new_config = device.setup_execution_config(initial_config, tape)
+        return new_config
+
+    if diff_method in {"backprop", "adjoint", "device"}:
+        raise QuantumFunctionError(
+            f"Device {device} does not support {diff_method} with requested circuit."
+        )
+
+    if "hadamard" in str(diff_method):
+        return _resolve_hadamard(initial_config, device)
+
+    if diff_method in {"best", "parameter-shift"}:
+        updated_values["gradient_method"] = qp.gradients.param_shift
+
+    else:
+        gradient_transform_map = {
+            "finite-diff": qp.gradients.finite_diff,
+            "spsa": qp.gradients.spsa_grad,
+        }
+
+        if diff_method in gradient_transform_map:
+            updated_values["gradient_method"] = gradient_transform_map[diff_method]
+        elif isinstance(diff_method, Transform):
+            updated_values["gradient_method"] = diff_method
+        else:
+            raise QuantumFunctionError(
+                f"Differentiation method {diff_method} not recognized. Allowed "
+                f"options are {tuple(get_args(SupportedDiffMethods))}."
+            )
+
+    return replace(initial_config, **updated_values)
+
+
+def _resolve_execution_config(
+    execution_config: ExecutionConfig,
+    device: Device,
+    tapes: QuantumScriptBatch,
+) -> ExecutionConfig:
+    """Resolves the execution configuration for non-device specific properties.
+
+    Args:
+        execution_config (ExecutionConfig): an execution config to be executed on the device
+        device (Device): a Pennylane device
+        tapes (QuantumScriptBatch): a batch of tapes
+
+    Returns:
+        ExecutionConfig: resolved execution configuration
+    """
+    updated_values: dict[str, Any] = {}
+
+    if execution_config.interface in {Interface.JAX, Interface.JAX_JIT} and not callable(
+        execution_config.gradient_method
+    ):
+        updated_values["grad_on_execution"] = False
+
+    execution_config = _resolve_diff_method(
+        execution_config, device, tape=tapes[0] if tapes else None
+    )
+
+    if execution_config.use_device_jacobian_product and not device.supports_vjp(
+        execution_config, tapes[0]
+    ):
+        raise QuantumFunctionError(
+            f"device_vjp=True is not supported for device {device},"
+            f" diff_method {execution_config.gradient_method},"
+            " and the provided circuit."
+        )
+
+    # Mid-circuit measurement configuration validation
+    # If the user specifies `interface=None`, regular execution considers it numpy, but the mcm
+    # workflow still needs to know if jax-jit is used
+    interface = _resolve_interface(execution_config.interface, tapes)
+    finite_shots = any(tape.shots for tape in tapes)
+    mcm_interface = (
+        _resolve_interface(Interface.AUTO, tapes)
+        if execution_config.interface == Interface.NUMPY
+        else interface
+    )
+    mcm_config = _resolve_mcm_config(execution_config.mcm_config, mcm_interface, finite_shots)
+
+    updated_values["interface"] = interface
+    updated_values["mcm_config"] = mcm_config
+    execution_config = replace(execution_config, **updated_values)
+    execution_config = device.setup_execution_config(execution_config, tapes[0] if tapes else None)
+    return execution_config

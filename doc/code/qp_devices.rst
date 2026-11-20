@@ -1,7 +1,7 @@
 qp.devices
 ===========
 
-.. currentmodule:: pennylane.devices
+.. currentmodule:: pennylane2.devices
 
 .. warning::
 
@@ -13,4 +13,4 @@ qp.devices
 
 .. rubric:: Modules
 
-.. automodule:: pennylane.devices
+.. automodule:: pennylane2.devices

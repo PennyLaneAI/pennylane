@@ -18,13 +18,13 @@ from collections import Counter
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core import abstractify
-from pennylane.templates.subroutines.arithmetic.left_classical_comparator import (
+import pennylane2 as qp
+from pennylane2.core import abstractify
+from pennylane2.templates.subroutines.arithmetic.left_classical_comparator import (
     _left_classical_comparator,
 )
-from pennylane.testing import assert_valid, decomp_rule_to_tape
-from pennylane.typing import Int, Wire
+from pennylane2.testing import assert_valid, decomp_rule_to_tape
+from pennylane2.typing import Int, Wire
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

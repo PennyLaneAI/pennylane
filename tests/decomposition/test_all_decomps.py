@@ -15,9 +15,9 @@
 Tests for qp.decompositions.all_decomps
 """
 
-import pennylane as qp
-from pennylane.decomposition import all_decomps, list_decomps
-from pennylane.typing import Float, Wire
+import pennylane2 as qp
+from pennylane2.decomposition import all_decomps, list_decomps
+from pennylane2.typing import Float, Wire
 
 
 def test_skip_ops_root():

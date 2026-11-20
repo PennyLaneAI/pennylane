@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for pennylane.math.single_dispatch"""
+"""Unit tests for pennylane2.math.single_dispatch"""
 
 import itertools
 from functools import partial
@@ -22,10 +22,10 @@ import pytest
 import scipy as sp
 from autograd.numpy.numpy_boxes import ArrayBox
 
-import pennylane as qp
-from pennylane import math as fn
-from pennylane import numpy as np
-from pennylane.math.single_dispatch import _sparse_matrix_power_bruteforce
+import pennylane2 as qp
+from pennylane2 import math as fn
+from pennylane2 import numpy as np
+from pennylane2.math.single_dispatch import _sparse_matrix_power_bruteforce
 
 pytestmark = pytest.mark.all_interfaces
 

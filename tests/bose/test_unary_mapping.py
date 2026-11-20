@@ -15,11 +15,11 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane import I, X, Y, Z
-from pennylane.bose import BoseSentence, BoseWord, unary_mapping
-from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.pauli.conversion import pauli_sentence
+import pennylane2 as qp
+from pennylane2 import I, X, Y, Z
+from pennylane2.bose import BoseSentence, BoseWord, unary_mapping
+from pennylane2.pauli import PauliSentence, PauliWord
+from pennylane2.pauli.conversion import pauli_sentence
 
 # Expected results were generated manually
 BOSE_WORDS_AND_OPS = [

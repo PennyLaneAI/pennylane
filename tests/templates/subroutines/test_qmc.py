@@ -19,9 +19,9 @@ import numpy as np
 import pytest
 from scipy.stats import norm
 
-import pennylane as qp
-from pennylane.decomposition import gate_sets
-from pennylane.templates.subroutines.qmc import (
+import pennylane2 as qp
+from pennylane2.decomposition import gate_sets
+from pennylane2.templates.subroutines.qmc import (
     QuantumMonteCarlo,
     _make_V,
     _make_Z,
@@ -29,8 +29,8 @@ from pennylane.templates.subroutines.qmc import (
     make_Q,
     probs_to_unitary,
 )
-from pennylane.testing import assert_decomposable
-from pennylane.wires import Wires
+from pennylane2.testing import assert_decomposable
+from pennylane2.wires import Wires
 
 
 class TestProbsToUnitary:

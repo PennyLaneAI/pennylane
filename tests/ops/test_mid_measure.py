@@ -17,11 +17,11 @@ from itertools import product
 
 import pytest
 
-import pennylane as qp
-import pennylane.numpy as np
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.ops import MeasurementValue, MidMeasure
-from pennylane.wires import Wires
+import pennylane2 as qp
+import pennylane2.numpy as np
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.ops import MeasurementValue, MidMeasure
+from pennylane2.wires import Wires
 
 
 @pytest.mark.catalyst

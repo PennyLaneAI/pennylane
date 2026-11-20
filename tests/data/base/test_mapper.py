@@ -12,23 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the :class:`pennylane.data.base.mapper.AttributeTypeMapper` class.
+Tests for the :class:`pennylane2.data.base.mapper.AttributeTypeMapper` class.
 """
 
 from unittest.mock import MagicMock
 
 import pytest
 
-import pennylane.data.base.mapper
-from pennylane.data import AttributeInfo, Dataset, DatasetScalar
-from pennylane.data.base.hdf5 import create_group
-from pennylane.data.base.mapper import AttributeTypeMapper
+import pennylane2.data.base.mapper
+from pennylane2.data import AttributeInfo, Dataset, DatasetScalar
+from pennylane2.data.base.hdf5 import create_group
+from pennylane2.data.base.mapper import AttributeTypeMapper
 
 pytestmark = pytest.mark.data
 
 
 class TestMapper:
-    """Tests for :class:`pennylane.data.mapper.AttributeTypeMapper`."""
+    """Tests for :class:`pennylane2.data.mapper.AttributeTypeMapper`."""
 
     def test_info(self):
         """Test that info() returns the attribute info from bind."""
@@ -58,7 +58,7 @@ class TestMapper:
         """Test that set_item() only captures a ValueError if it is
         caused by a HDF5 file not being writeable."""
         monkeypatch.setattr(
-            pennylane.data.base.mapper,
+            pennylane2.data.base.mapper,
             "match_obj_type",
             MagicMock(side_effect=ValueError("Something")),
         )

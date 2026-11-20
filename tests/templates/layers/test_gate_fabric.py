@@ -20,9 +20,9 @@ from functools import partial
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.typing import Bool, Float, Wire
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.typing import Bool, Float, Wire
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

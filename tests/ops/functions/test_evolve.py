@@ -15,8 +15,8 @@
 
 import warnings
 
-import pennylane as qp
-from pennylane.ops import Evolution
+import pennylane2 as qp
+from pennylane2.ops import Evolution
 
 
 class TestEvolveConstructor:

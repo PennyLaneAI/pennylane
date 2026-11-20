@@ -16,9 +16,9 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.gradients.classical_jacobian import classical_jacobian
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.gradients.classical_jacobian import classical_jacobian
 
 a = pnp.array(-2.1, requires_grad=True)
 b = pnp.array(0.71, requires_grad=True)

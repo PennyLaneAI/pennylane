@@ -18,10 +18,10 @@ Unit tests for the ArbitraryStatePreparation template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.core.operator import abstractify
-from pennylane.templates.state_preparations.mottonen import (
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.core.operator import abstractify
+from pennylane2.templates.state_preparations.mottonen import (
     _get_alpha_y,
     _get_alpha_z,
     compute_theta,
@@ -368,7 +368,7 @@ class TestDecomposition:
         """Tests that the new decomposition works with capture."""
         from jax import numpy as jnp
 
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+        from pennylane2.tape.plxpr_conversion import CollectOpsandMeas
 
         state = jnp.array([0, 0, 0, 1j])
 

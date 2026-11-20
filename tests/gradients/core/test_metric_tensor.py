@@ -20,10 +20,10 @@ import importlib
 import pytest
 from scipy.linalg import block_diag
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.gradients.metric_tensor import _get_aux_wire, _WrappedObj
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.gradients.metric_tensor import _get_aux_wire, _WrappedObj
 
 
 class Test_WrappedObj:
@@ -1423,7 +1423,7 @@ def test_generator_no_expval(monkeypatch):
     """Test exception is raised if subcircuit contains an
     operation with generator object that is not an observable"""
     with monkeypatch.context() as m:
-        m.setattr("pennylane.RX.generator", lambda self: qp.RX(0.1, wires=0))
+        m.setattr("pennylane2.RX.generator", lambda self: qp.RX(0.1, wires=0))
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RX(np.array(0.5, requires_grad=True), wires=0)

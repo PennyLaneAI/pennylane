@@ -18,10 +18,10 @@ import warnings
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.ops import Identity, PauliX, PauliY, PauliZ
-from pennylane.pauli import PauliSentence, PauliWord, pauli_sentence
-from pennylane.pauli.conversion import (
+import pennylane2 as qp
+from pennylane2.ops import Identity, PauliX, PauliY, PauliZ
+from pennylane2.pauli import PauliSentence, PauliWord, pauli_sentence
+from pennylane2.pauli.conversion import (
     _check_hermitian_sparse,
     _fast_walsh_hadamard_transform,
     _generalized_pauli_decompose,

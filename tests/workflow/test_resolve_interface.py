@@ -16,11 +16,11 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.core.qscript import QuantumScript
-from pennylane.math import Interface
-from pennylane.workflow import _resolve_interface
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.math import Interface
+from pennylane2.workflow import _resolve_interface
 
 
 def test_auto_with_numpy():

@@ -17,9 +17,9 @@ Unit tests for the available conditional utitlities for noise models.
 
 import pytest
 
-import pennylane as qp
-from pennylane.boolean_fn import And, Not, Or, Xor
-from pennylane.noise.conditionals import _get_ops, _get_wires
+import pennylane2 as qp
+from pennylane2.boolean_fn import And, Not, Or, Xor
+from pennylane2.noise.conditionals import _get_ops, _get_wires
 
 
 class TestNoiseConditionals:

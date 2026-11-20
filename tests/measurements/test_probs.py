@@ -18,12 +18,12 @@ from collections.abc import Sequence
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.queuing import AnnotatedQueue
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.measurements import ProbabilityMP
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.core.measurements import MeasurementProcess
+from pennylane2.core.queuing import AnnotatedQueue
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.measurements import ProbabilityMP
 
 
 @pytest.fixture(name="init_state")

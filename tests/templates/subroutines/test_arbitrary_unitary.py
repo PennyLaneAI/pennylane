@@ -18,14 +18,14 @@ Tests for the ArbitraryUnitary template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.templates.subroutines.arbitrary_unitary import (
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.templates.subroutines.arbitrary_unitary import (
     _all_pauli_words_but_identity,
     _n_k_gray_code,
     _tuple_to_word,
 )
-from pennylane.testing import assert_decomposable
+from pennylane2.testing import assert_decomposable
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

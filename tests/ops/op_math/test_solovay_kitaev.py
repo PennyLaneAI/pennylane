@@ -18,8 +18,8 @@ import math
 import pytest
 import scipy as sp
 
-import pennylane as qp
-from pennylane.ops.op_math.decompositions.solovay_kitaev import (
+import pennylane2 as qp
+from pennylane2.ops.op_math.decompositions.solovay_kitaev import (
     _approximate_set,
     _contains_SU2,
     _group_commutator_decompose,

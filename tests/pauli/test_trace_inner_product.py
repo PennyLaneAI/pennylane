@@ -11,14 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for pennylane/pauli/dla/dense_util.py functionality"""
+"""Tests for pennylane2/pauli/dla/dense_util.py functionality"""
 
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import X, Y, Z
-from pennylane.pauli import trace_inner_product
+import pennylane2 as qp
+from pennylane2 import X, Y, Z
+from pennylane2.pauli import trace_inner_product
 
 
 @pytest.mark.parametrize(
@@ -68,7 +68,7 @@ def test_NotImplementedError():
     """Test that NotImplementedError is raised on non-supported inputs"""
 
     with pytest.raises(
-        NotImplementedError, match="Inputs to pennylane.pauli.trace_inner_product need"
+        NotImplementedError, match="Inputs to pennylane2.pauli.trace_inner_product need"
     ):
         _ = qp.pauli.trace_inner_product(qp.CNOT((0, 1)), qp.X(0))
 
@@ -78,7 +78,7 @@ class TestTraceInnerProductInterfaces:
     def test_autograd_input(self):
         """Test autograd inputs are handled correctly"""
 
-        import pennylane.numpy as pnp
+        import pennylane2.numpy as pnp
 
         A = pnp.array([qp.matrix(X(0)), qp.matrix(X(0))])
         B = pnp.array([qp.matrix(Y(0)), qp.matrix(Y(0))])

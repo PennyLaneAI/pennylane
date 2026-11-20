@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Integration tests for the capture of pennylane operations into jaxpr.
+Integration tests for the capture of pennylane2 operations into jaxpr.
 """
 
 # pylint: disable=protected-access,wrong-import-position
@@ -21,13 +21,13 @@ Integration tests for the capture of pennylane operations into jaxpr.
 import numpy as np
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import AbstractOperator, barrier_p, operator_p
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-from pennylane.testing import assert_eqn_matches_op
+from pennylane2.capture.primitives import AbstractOperator, barrier_p, operator_p
+from pennylane2.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane2.testing import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 

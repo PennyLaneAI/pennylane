@@ -16,8 +16,8 @@ provided by PennyLane alongside with the PennyLane library:
 
 .. code::
 
-    import pennylane as qp
-    from pennylane import numpy as np
+    import pennylane2 as qp
+    from pennylane2 import numpy as np
 
 This is powered via `Autograd <https://github.com/HIPS/autograd>`_, and enables
 automatic differentiation and backpropagation of classical computations using familiar
@@ -63,7 +63,7 @@ if you provide parameters.
 Via the QNode constructor
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In the :ref:`introduction <intro_vcirc_qnode>` it was shown how to instantiate a :class:`QNode <pennylane.qnode.QNode>`
+In the :ref:`introduction <intro_vcirc_qnode>` it was shown how to instantiate a :class:`QNode <pennylane2.qnode.QNode>`
 object directly, for example, if you would like to reuse the same quantum function across
 multiple devices, or even use different classical interfaces:
 
@@ -133,7 +133,7 @@ the original NumPy module. Thus, arguments need to be explicitly marked as train
 using the ``argnum`` keyword. To mark an argument as trainable, a special flag ``requires_grad``
 has been added to arrays from PennyLane's NumPy module:
 
->>> from pennylane import numpy as np
+>>> from pennylane2 import numpy as np
 >>> np.array([0.1, 0.2], requires_grad=True)
 tensor([0.1, 0.2], requires_grad=True)
 
@@ -141,7 +141,7 @@ When omitted, the value for this flag is ``True``, so if you would like to provi
 non-differentiable PennyLane NumPy array to the QNode or gradient function, make sure
 to specify ``requires_grad=False``:
 
->>> from pennylane import numpy as np
+>>> from pennylane2 import numpy as np
 >>> np.array([0.1, 0.2], requires_grad=False)
 tensor([0.1, 0.2], requires_grad=False)
 
@@ -191,17 +191,17 @@ use the provided optimizers:
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.AdagradOptimizer
-    ~pennylane.AdamOptimizer
-    ~pennylane.GradientDescentOptimizer
-    ~pennylane.MomentumOptimizer
-    ~pennylane.NesterovMomentumOptimizer
-    ~pennylane.QNGOptimizer
-    ~pennylane.RiemannianGradientOptimizer
-    ~pennylane.RMSPropOptimizer
-    ~pennylane.RotosolveOptimizer
-    ~pennylane.RotoselectOptimizer
-    ~pennylane.ShotAdaptiveOptimizer
+    ~pennylane2.AdagradOptimizer
+    ~pennylane2.AdamOptimizer
+    ~pennylane2.GradientDescentOptimizer
+    ~pennylane2.MomentumOptimizer
+    ~pennylane2.NesterovMomentumOptimizer
+    ~pennylane2.QNGOptimizer
+    ~pennylane2.RiemannianGradientOptimizer
+    ~pennylane2.RMSPropOptimizer
+    ~pennylane2.RotosolveOptimizer
+    ~pennylane2.RotoselectOptimizer
+    ~pennylane2.ShotAdaptiveOptimizer
 
 :html:`</div>`
 
@@ -240,7 +240,7 @@ tensor([0.19846757, 0.012     , 1.03559806], requires_grad=True)
 tensor(0.5, requires_grad=True)
 
 For more details on the NumPy optimizers, check out the tutorials, as well as the
-:mod:`pennylane.optimize` documentation.
+:mod:`pennylane2.optimize` documentation.
 
 
 
@@ -273,10 +273,10 @@ we would get an error message. This is because the `gradient <https://en.wikiped
 only defined for scalar functions, i.e., functions which return a single value. In the case where the QNode
 returns multiple expectation values, the correct differential operator to use is
 the `Jacobian matrix <https://en.wikipedia.org/wiki/Jacobian_matrix_and_determinant>`_.
-This can be accessed in PennyLane as :func:`~pennylane.jacobian`.
+This can be accessed in PennyLane as :func:`~pennylane2.jacobian`.
 
 As the ``circuit5`` returns a tuple of numpy arrays instead of a single numpy array, the results need
-to be stacked into a single array before use with :func:`~pennylane.jacobian`.
+to be stacked into a single array before use with :func:`~pennylane2.jacobian`.
 
 >>> j1 = qp.jacobian(lambda x: np.stack(circuit5(x)))
 >>> j1(params)
@@ -284,7 +284,7 @@ array([[ 0.        , -0.98006658],
        [-0.98006658,  0.        ]])
 
 
-The output of :func:`~pennylane.jacobian` is a two-dimensional vector, with the first/second element being
+The output of :func:`~pennylane2.jacobian` is a two-dimensional vector, with the first/second element being
 the partial derivative of the first/second expectation value with respect to the input parameter.
 
 
@@ -295,7 +295,7 @@ The PennyLane NumPy interface leverages the Python library `Autograd
 <https://github.com/HIPS/autograd>`_ to enable automatic differentiation of NumPy code, and extends
 it to provide gradients of quantum circuit functions encapsulated in QNodes. In order to make NumPy
 code differentiable, Autograd provides a wrapped version of NumPy (exposed in PennyLane as
-:code:`pennylane.numpy`).
+:code:`pennylane2.numpy`).
 
 .. warning::
     As stated in other sections, using this interface, any hybrid computation should be coded using the

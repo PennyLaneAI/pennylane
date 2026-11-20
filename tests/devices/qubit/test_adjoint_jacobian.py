@@ -16,9 +16,9 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.qscript import QuantumScript
-from pennylane.devices.qubit import adjoint_jacobian, adjoint_jvp, adjoint_vjp
+import pennylane2 as qp
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.devices.qubit import adjoint_jacobian, adjoint_jvp, adjoint_vjp
 
 
 def adjoint_ops(op: qp.operation.Operator) -> bool:

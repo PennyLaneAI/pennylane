@@ -17,7 +17,7 @@ import logging
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 _grad_log_map = {
     "adjoint": "diff_method=adjoint, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
@@ -72,30 +72,30 @@ class TestLogging:
         assert len(caplog.records) == 11
         log_records_expected = [
             (
-                "pennylane.workflow.qnode",
+                "pennylane2.workflow.qnode",
                 ["Creating QNode(func=<function TestLogging.test_dq_qnode_execution"],
             ),
             (
-                "pennylane.workflow.qnode",
+                "pennylane2.workflow.qnode",
                 ["Calling <construct(self=<QNode: device='<default.qubit device"],
             ),
             (
-                "pennylane.workflow.execution",
+                "pennylane2.workflow.execution",
                 [
                     "device=<default.qubit device (wires=2)",
                     "diff_method=None, interface=auto",
                 ],
             ),
             (
-                "pennylane.workflow.resolution",
+                "pennylane2.workflow.resolution",
                 ["Calling <_resolve_diff_method("],
             ),
             (
-                "pennylane.devices.default_qubit",
+                "pennylane2.devices.default_qubit",
                 ["Calling <setup_execution_config(self=<default.qubit device (wires=2)"],
             ),
             (
-                "pennylane.devices.default_qubit",
+                "pennylane2.devices.default_qubit",
                 ["Calling <preprocess_transforms(self=<default.qubit device (wires=2)"],
             ),
         ]
@@ -128,7 +128,7 @@ class TestLogging:
 
         log_records_expected = [
             (
-                "pennylane.workflow.qnode",
+                "pennylane2.workflow.qnode",
                 [
                     "Creating QNode(func=<function TestLogging.test_dq_qnode_execution_grad",
                     "device=<default.qubit device (wires=2)",
@@ -136,7 +136,7 @@ class TestLogging:
                 ],
             ),
             (
-                "pennylane.workflow.execution",
+                "pennylane2.workflow.execution",
                 [
                     "Entry with args=(tapes=(<QuantumScript: wires=[0], params=1>,)",
                     _grad_log_map[diff_method],

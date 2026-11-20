@@ -16,8 +16,8 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.templates.subroutines.alias_sampling_thc import (
+import pennylane2 as qp
+from pennylane2.templates.subroutines.alias_sampling_thc import (
     _build_alias_tables,
     _build_qrom_data,
     _build_thc_pairs,
@@ -25,8 +25,8 @@ from pennylane.templates.subroutines.alias_sampling_thc import (
     _cswap_pair,
     _symmetrize,
 )
-from pennylane.testing import assert_valid
-from pennylane.typing import AbstractWires
+from pennylane2.testing import assert_valid
+from pennylane2.typing import AbstractWires
 
 
 def _wire_layout(M, N, aleph):

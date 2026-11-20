@@ -28,10 +28,10 @@ from operator2_utils import (
     TwoDynOp,
 )
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.core.operator import Operator2
-from pennylane.typing import AbstractArray, AbstractWires, Wire
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.core.operator import Operator2
+from pennylane2.typing import AbstractArray, AbstractWires, Wire
 
 # ---------------------- Tests ----------------------
 

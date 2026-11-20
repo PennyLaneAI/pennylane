@@ -24,13 +24,13 @@ import jax
 import numpy
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.capture.primitives import for_loop_prim
-from pennylane.core.operator import abstractify
-from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.templates.subroutines.arithmetic import TemporaryAND
-from pennylane.templates.subroutines.qrom import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.capture.primitives import for_loop_prim
+from pennylane2.core.operator import abstractify
+from pennylane2.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane2.templates.subroutines.arithmetic import TemporaryAND
+from pennylane2.templates.subroutines.qrom import (
     _calculate_select_swap_sizes,
     _count_tempAND_in_measurement_qrom,
     _measurement_qrom_inner,
@@ -40,8 +40,8 @@ from pennylane.templates.subroutines.qrom import (
     _qrom_unary_iteration,
     _select_swap,
 )
-from pennylane.testing import assert_decomposable, extract_all_primitives
-from pennylane.typing import Bool, Wire
+from pennylane2.testing import assert_decomposable, extract_all_primitives
+from pennylane2.typing import Bool, Wire
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -821,7 +821,7 @@ class TestMeasurementQROM:
 
     def test_condition_with_compiler(self, mocker):
         """Test the condition logic when a compiler is active."""
-        mocker.patch("pennylane.templates.subroutines.qrom.compiler.active", return_value=True)
+        mocker.patch("pennylane2.templates.subroutines.qrom.compiler.active", return_value=True)
 
         # Small tables (<= 2 bitstrings) are always applicable.
         assert _qrom_measurement_condition(Bool[2, 1], Wire[1], Wire[1], Wire[0]) is True

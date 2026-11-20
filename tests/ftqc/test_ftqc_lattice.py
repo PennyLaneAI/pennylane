@@ -16,7 +16,7 @@
 import networkx as nx
 import pytest
 
-from pennylane.ftqc import Lattice, generate_lattice
+from pennylane2.ftqc import Lattice, generate_lattice
 
 
 class TestLattice:

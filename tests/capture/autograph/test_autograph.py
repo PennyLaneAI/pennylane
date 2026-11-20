@@ -24,9 +24,9 @@ import numpy as np
 import pytest
 from malt.core import converter
 
-import pennylane as qp
-from pennylane import grad, jacobian, measure
-from pennylane.capture.autograph.transformer import (
+import pennylane2 as qp
+from pennylane2 import grad, jacobian, measure
+from pennylane2.capture.autograph.transformer import (
     NESTED_OPTIONS,
     STANDARD_OPTIONS,
     TOPLEVEL_OPTIONS,
@@ -44,9 +44,9 @@ from jax import make_jaxpr
 
 # must be below jax importorskip
 # pylint: disable-next=ungrouped-imports
-from pennylane.capture.primitives import cond_prim, for_loop_prim
-from pennylane.exceptions import AutoGraphError
-from pennylane.testing import assert_eqn_matches_op, extract_all_primitives
+from pennylane2.capture.primitives import cond_prim, for_loop_prim
+from pennylane2.exceptions import AutoGraphError
+from pennylane2.testing import assert_eqn_matches_op, extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
 
@@ -137,11 +137,11 @@ class TestPennyLaneTransformer:
         locals = transformer.get_extra_locals()
         ag_fn_dict = locals["ag__"].__dict__
 
-        assert ag_fn_dict["if_stmt"].__module__ == "pennylane.capture.autograph.ag_primitives"
-        assert ag_fn_dict["while_stmt"].__module__ == "pennylane.capture.autograph.ag_primitives"
-        assert ag_fn_dict["for_stmt"].__module__ == "pennylane.capture.autograph.ag_primitives"
+        assert ag_fn_dict["if_stmt"].__module__ == "pennylane2.capture.autograph.ag_primitives"
+        assert ag_fn_dict["while_stmt"].__module__ == "pennylane2.capture.autograph.ag_primitives"
+        assert ag_fn_dict["for_stmt"].__module__ == "pennylane2.capture.autograph.ag_primitives"
         assert (
-            ag_fn_dict["converted_call"].__module__ == "pennylane.capture.autograph.ag_primitives"
+            ag_fn_dict["converted_call"].__module__ == "pennylane2.capture.autograph.ag_primitives"
         )
 
     @pytest.mark.parametrize("options", [TOPLEVEL_OPTIONS, NESTED_OPTIONS, STANDARD_OPTIONS])

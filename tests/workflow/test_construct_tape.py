@@ -18,8 +18,8 @@ Contains tests for `construct_tape`.
 
 import pytest
 
-import pennylane as qp
-from pennylane.workflow import construct_tape
+import pennylane2 as qp
+from pennylane2.workflow import construct_tape
 
 
 class TestConstructTape:

@@ -21,10 +21,10 @@ import numpy as np
 import pytest
 from flaky import flaky
 
-import pennylane as qp
-from pennylane import math
-from pennylane.devices.qubit.apply_operation import apply_operation
-from pennylane.ftqc import (
+import pennylane2 as qp
+from pennylane2 import math
+from pennylane2.devices.qubit.apply_operation import apply_operation
+from pennylane2.ftqc import (
     GraphStatePrep,
     RotXZX,
     cond_measure,
@@ -34,7 +34,7 @@ from pennylane.ftqc import (
     measure_arbitrary_basis,
     measure_x,
 )
-from pennylane.ftqc.decomposition import (
+from pennylane2.ftqc.decomposition import (
     _rot_to_xzx,
     cnot_corrections,
     cnot_measurements,
@@ -44,7 +44,7 @@ from pennylane.ftqc.decomposition import (
     queue_measurements,
     queue_single_qubit_gate,
 )
-from pennylane.ftqc.utils import QubitMgr
+from pennylane2.ftqc.utils import QubitMgr
 
 PARAMETRIC_MCM_XFAIL = pytest.mark.pl2do(
     reason="Parametric mid-circuit measurements have not yet been migrated to Operator2 [sc-130033]."

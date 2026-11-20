@@ -17,7 +17,7 @@ Unit tests for BooleanFn utility class.
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 
 class TestBooleanFn:

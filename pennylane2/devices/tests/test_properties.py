@@ -1,0 +1,251 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Tests that a device has the right attributes, arguments and methods."""
+
+import jax
+import pytest
+
+import pennylane2 as qp
+import pennylane2.numpy as pnp
+from pennylane2.exceptions import QuantumFunctionError
+
+from .conftest import get_legacy_capabilities
+
+try:
+    import torch
+
+    TORCH_SUPPORT = True
+
+except ImportError:
+    TORCH_SUPPORT = False
+
+
+class TestDeviceProperties:
+    """Test the device is created with the expected properties."""
+
+    def test_load_device(self, device_kwargs):
+        """Test that the device loads correctly."""
+        device_kwargs["wires"] = 2
+
+        dev = qp.device(**device_kwargs)
+        if isinstance(dev, qp.devices.Device):
+            assert isinstance(dev.wires, qp.wires.Wires)
+            assert dev.wires == qp.wires.Wires((0, 1))
+
+            assert device_kwargs["name"] == dev.name
+            assert isinstance(dev.tracker, qp.Tracker)
+            return
+
+        assert dev.num_wires == 2
+        assert dev.short_name == device_kwargs["name"]
+
+    def test_no_wires_given(self, device_kwargs):
+        """Test that the device requires correct arguments."""
+        with pytest.raises(TypeError, match="missing 1 required positional argument"):
+            dev = qp.device(**device_kwargs)
+            if isinstance(dev, qp.devices.Device):
+                pytest.skip("test is old interface specific.")
+
+
+class TestCapabilities:
+    """Test that the device declares its capabilities correctly."""
+
+    def test_has_capabilities_dictionary(self, device_kwargs):
+        """Test that the device class has a capabilities() method returning a dictionary."""
+        device_kwargs["wires"] = 1
+        dev = qp.device(**device_kwargs)
+        if isinstance(dev, qp.devices.Device):
+            pytest.skip("test is old interface specific.")
+        cap = get_legacy_capabilities(dev)
+        assert isinstance(cap, dict)
+
+    def test_model_is_defined_valid_and_correct(self, device_kwargs, shots):
+        """Test that the capabilities dictionary defines a valid model."""
+        device_kwargs["wires"] = 1
+        dev = qp.device(**device_kwargs)
+        if isinstance(dev, qp.devices.Device):
+            pytest.skip("test is old interface specific.")
+        cap = get_legacy_capabilities(dev)
+        assert "model" in cap
+        assert cap["model"] == "qubit"
+
+        @qp.qnode(dev, shots=shots)
+        def circuit():
+            qp.X(0)
+            return qp.expval(qp.Z(0))
+
+        # assert that device can measure observable from its model
+        circuit()
+
+    def test_passthru_interface_is_correct(self, device_kwargs, shots):
+        """Test that the capabilities dictionary defines a valid passthru interface, if not None."""
+        device_kwargs["wires"] = 1
+        dev = qp.device(**device_kwargs)
+        if isinstance(dev, qp.devices.Device):
+            pytest.skip("test is old interface specific.")
+        cap = get_legacy_capabilities(dev)
+
+        if "passthru_interface" not in cap:
+            pytest.skip("No passthru_interface capability specified by device.")
+
+        interface = cap["passthru_interface"]
+        assert interface in ["autograd", "jax", "torch"]  # for new interface, add test case
+
+        def qfunc(x):
+            qp.RX(x, wires=0)
+            return qp.expval(qp.Identity(wires=0))
+
+        qnode = qp.QNode(qfunc, dev, shots=shots, interface=interface)
+
+        # assert that we can do a simple gradient computation in the passthru interface
+        # without raising an error
+
+        if interface == "autograd":
+            x = pnp.array(0.1, requires_grad=True)
+            g = qp.grad(qnode)
+            g(x)
+
+        if interface == "jax":
+            x = jax.numpy.array(0.1)
+            g = jax.grad(lambda a: qnode(a).reshape(()))
+            g(x)
+
+        if interface == "torch":
+            if TORCH_SUPPORT:
+                x = torch.tensor(0.1, requires_grad=True)
+                res = qnode(x)
+                res.backward()
+                assert hasattr(x, "grad")
+            else:
+                pytest.skip("Cannot import torch")
+
+    def test_supports_tensor_observables(self, device_kwargs, shots):
+        """Tests that the device reports correctly whether it supports tensor observables."""
+        device_kwargs["wires"] = 2
+        dev = qp.device(**device_kwargs)
+        if isinstance(dev, qp.devices.Device):
+            pytest.skip("test is old interface specific.")
+        cap = get_legacy_capabilities(dev)
+
+        if "supports_tensor_observables" not in cap:
+            pytest.skip("No supports_tensor_observables capability specified by device.")
+
+        @qp.qnode(dev, shots=shots)
+        def circuit():
+            """Quantum function with tensor observable"""
+            qp.X(0)
+            return qp.expval(qp.Identity(wires=0) @ qp.Identity(wires=1))
+
+        if cap["supports_tensor_observables"]:
+            circuit()
+        else:
+            with pytest.raises(QuantumFunctionError):
+                circuit()
+
+    def test_returns_state(self, device_kwargs, shots):
+        """Tests that the device reports correctly whether it supports returning the state."""
+        device_kwargs["wires"] = 1
+        dev = qp.device(**device_kwargs)
+        if isinstance(dev, qp.devices.Device):
+            pytest.skip("test is old interface specific.")
+        cap = get_legacy_capabilities(dev)
+
+        @qp.qnode(dev, shots=shots)
+        def circuit():
+            qp.X(0)
+            return qp.state()
+
+        if not cap.get("returns_state"):
+            # If the device is not defined to return state then the
+            # access_state method should raise
+            with pytest.raises(QuantumFunctionError):
+                dev.access_state()
+
+            try:
+                state = dev.state
+            except (AttributeError, NotImplementedError):
+                state = None
+
+            assert state is None
+        else:
+            if shots is not None:
+                with pytest.warns(
+                    UserWarning,
+                    match="Requested state or density matrix with finite shots; the returned",
+                ):
+                    circuit()
+            else:
+                circuit()
+
+            assert dev.state is not None
+
+    def test_returns_probs(self, device_kwargs, shots):
+        """Tests that the device reports correctly whether it supports reversible differentiation."""
+        device_kwargs["wires"] = 1
+        dev = qp.device(**device_kwargs)
+        if isinstance(dev, qp.devices.Device):
+            pytest.skip("test is old interface specific.")
+        cap = get_legacy_capabilities(dev)
+
+        if "returns_probs" not in cap:
+            pytest.skip("No returns_probs capability specified by device.")
+
+        @qp.qnode(dev, shots=shots)
+        def circuit():
+            qp.X(0)
+            return qp.probs(wires=0)
+
+        if cap["returns_probs"]:
+            circuit()
+        else:
+            with pytest.raises(NotImplementedError):
+                circuit()
+
+    def test_supports_broadcasting(self, device_kwargs, mocker, shots):
+        """Tests that the device reports correctly whether it supports parameter broadcasting
+        and that it can execute broadcasted tapes in any case."""
+
+        device_kwargs["wires"] = 1
+        dev = qp.device(**device_kwargs)
+        if isinstance(dev, qp.devices.Device):
+            pytest.skip("test is old interface specific.")
+        cap = get_legacy_capabilities(dev)
+
+        assert "supports_broadcasting" in cap
+
+        @qp.qnode(dev, shots=shots)
+        def circuit(x):
+            qp.RX(x, wires=0)
+            return qp.probs(wires=0)
+
+        spy = mocker.spy(qp.transforms, "broadcast_expand")
+        circuit(0.5)
+        if cap.get("returns_state"):
+            orig_shape = pnp.array(dev.access_state()).shape
+        spy.assert_not_called()
+        x = pnp.array([0.5, 2.1, -0.6], requires_grad=True)
+
+        if cap["supports_broadcasting"]:
+            res = circuit(x)
+            spy.assert_not_called()
+            if cap.get("returns_state"):
+                assert pnp.array(dev.access_state()).shape != orig_shape
+        else:
+            res = circuit(x)
+            spy.assert_called()
+            if cap.get("returns_state"):
+                assert pnp.array(dev.access_state()).shape == orig_shape
+
+        assert pnp.ndim(res) == 2
+        assert res.shape[0] == 3

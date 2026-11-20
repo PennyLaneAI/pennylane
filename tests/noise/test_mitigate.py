@@ -18,19 +18,19 @@ Tests for mitigation transforms.
 import pytest
 from packaging import version
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.core.qscript import QuantumScript
-from pennylane.noise.insert_ops import insert
-from pennylane.noise.mitigate import (
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.noise.insert_ops import insert
+from pennylane2.noise.mitigate import (
     _polyfit,
     exponential_extrapolate,
     fold_global,
     mitigate_with_zne,
     richardson_extrapolate,
 )
-from pennylane.transforms import _tape_decompose as decompose
-from pennylane.transforms import broadcast_expand
+from pennylane2.transforms import _tape_decompose as decompose
+from pennylane2.transforms import broadcast_expand
 
 with qp.queuing.AnnotatedQueue() as q_tape:
     qp.BasisState([1], wires=0)

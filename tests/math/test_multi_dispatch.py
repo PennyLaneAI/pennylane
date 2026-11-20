@@ -21,9 +21,9 @@ import numpy as onp
 import pytest
 from autoray import numpy as anp
 
-from pennylane import grad as qp_grad
-from pennylane import math as fn
-from pennylane import numpy as np
+from pennylane2 import grad as qp_grad
+from pennylane2 import math as fn
+from pennylane2 import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 

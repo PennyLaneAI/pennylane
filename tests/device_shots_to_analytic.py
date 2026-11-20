@@ -19,7 +19,7 @@ It can be used to eliminate flakiness in shot vector tests.
 import copy
 from types import MethodType
 
-import pennylane as qp
+import pennylane2 as qp
 
 
 def shots_to_analytic(dev: qp.devices.Device) -> qp.devices.Device:

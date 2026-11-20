@@ -18,9 +18,9 @@ Tests for the AllSinglesDoubles template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.testing import assert_decomposable
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.testing import assert_decomposable
 
 
 @pytest.mark.xfail_if_capture(reason="come back to this as we port it to Op2 [sc-128406]")

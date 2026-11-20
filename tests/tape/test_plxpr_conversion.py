@@ -19,14 +19,14 @@ from functools import partial
 
 import pytest
 
-import pennylane as qp
+import pennylane2 as qp
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
 # pylint: disable-next=wrong-import-position
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane2.tape.plxpr_conversion import CollectOpsandMeas
 
 
 class TestCollectOpsandMeas:

@@ -17,8 +17,8 @@ Unit tests for functions needed for two-electron integral tensor factorization.
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
+import pennylane2 as qp
+from pennylane2 import numpy as np
 
 
 @pytest.mark.parametrize(

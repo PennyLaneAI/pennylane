@@ -18,14 +18,14 @@ import math
 
 import pytest
 
-from pennylane import math as pmath
-from pennylane.ops.op_math.decompositions.grid_problems import (
+from pennylane2 import math as pmath
+from pennylane2.ops.op_math.decompositions.grid_problems import (
     Ellipse,
     EllipseState,
     GridIterator,
     GridOp,
 )
-from pennylane.ops.op_math.decompositions.rings import ZOmega
+from pennylane2.ops.op_math.decompositions.rings import ZOmega
 
 
 class TestEllipse:

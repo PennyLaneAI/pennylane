@@ -22,7 +22,7 @@ from sybil import Sybil
 from sybil.parsers.markdown import PythonCodeBlockParser as MarkDownPythonCodeBlockParser
 from sybil.parsers.rest import DocTestParser, PythonCodeBlockParser
 
-import pennylane as qp
+import pennylane2 as qp
 
 try:
     import jax
@@ -68,7 +68,7 @@ def local_decomp_context():
 def pytest_configure(config):
     """Used to amend to the pytest.ini used for testing."""
     config.addinivalue_line(
-        "filterwarnings", "error::pennylane.exceptions.PennyLaneDeprecationWarning"
+        "filterwarnings", "error::pennylane2.exceptions.PennyLaneDeprecationWarning"
     )
 
 

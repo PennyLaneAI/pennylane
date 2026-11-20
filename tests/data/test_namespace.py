@@ -16,12 +16,12 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.data import Dataset, DatasetList, DatasetPyTree, DatasetScalar, attribute
-from pennylane.data.attributes.serialization import _get_typename_type
-from pennylane.data.base import hdf5
-from pennylane.data.base.attribute import AttributeInfo
-from pennylane.pytrees.pytrees import get_typename
+import pennylane2 as qp
+from pennylane2.data import Dataset, DatasetList, DatasetPyTree, DatasetScalar, attribute
+from pennylane2.data.attributes.serialization import _get_typename_type
+from pennylane2.data.base import hdf5
+from pennylane2.data.base.attribute import AttributeInfo
+from pennylane2.pytrees.pytrees import get_typename
 
 pytestmark = pytest.mark.data
 
@@ -94,7 +94,7 @@ def _legacy_h2_dataset_bind():  # pylint: disable=too-many-statements
 
     hamiltonian = bind.create_group("hamiltonian")
     hamiltonian.attrs["qml.data.type_id"] = "operator"
-    hamiltonian.attrs["qml.data.py_type"] = "pennylane.ops.qubit.hamiltonian.Hamiltonian"
+    hamiltonian.attrs["qml.data.py_type"] = "pennylane2.ops.qubit.hamiltonian.Hamiltonian"
     hamiltonian.attrs["qml.data.doc"] = "Hamiltonian of the system in the Pauli basis"
     hamiltonian.attrs["qml.__data_len__"] = 3
     hamiltonian["op_class_names"] = ["LinearCombination"]

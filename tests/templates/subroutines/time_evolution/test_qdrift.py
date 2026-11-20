@@ -20,11 +20,11 @@ from functools import reduce
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as qnp
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.math import allclose, isclose
-from pennylane.templates.subroutines.time_evolution.qdrift import _sample_decomposition
+import pennylane2 as qp
+from pennylane2 import numpy as qnp
+from pennylane2.exceptions import QuantumFunctionError
+from pennylane2.math import allclose, isclose
+from pennylane2.templates.subroutines.time_evolution.qdrift import _sample_decomposition
 
 test_hamiltonians = (
     (

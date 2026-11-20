@@ -20,8 +20,8 @@ Unit tests for the Tracker and constructor
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import Tracker
+import pennylane2 as qp
+from pennylane2 import Tracker
 
 
 class TestTrackerCoreBehavior:

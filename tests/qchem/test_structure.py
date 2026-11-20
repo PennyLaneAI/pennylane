@@ -22,11 +22,11 @@ from unittest.mock import patch
 
 import pytest
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane import qchem
-from pennylane.fermi import FermiWord
-from pennylane.templates.subroutines import UCCSD
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2 import qchem
+from pennylane2.fermi import FermiWord
+from pennylane2.templates.subroutines import UCCSD
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 

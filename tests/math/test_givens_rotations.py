@@ -20,9 +20,9 @@ import pytest
 from scipy.linalg import expm
 from scipy.stats import ortho_group, unitary_group
 
-import pennylane as qp
-from pennylane import numpy as np
-from pennylane.math.decomposition import _givens_matrix, _set_unitary_matrix, givens_decomposition
+import pennylane2 as qp
+from pennylane2 import numpy as np
+from pennylane2.math.decomposition import _givens_matrix, _set_unitary_matrix, givens_decomposition
 
 
 @pytest.mark.parametrize("left", [True, False])

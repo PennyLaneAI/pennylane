@@ -20,8 +20,8 @@ import sys
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.qscript import QuantumScript
+import pennylane2 as qp
+from pennylane2.core.qscript import QuantumScript
 
 pytest.importorskip("pyzx")
 

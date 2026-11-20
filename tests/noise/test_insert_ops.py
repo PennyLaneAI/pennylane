@@ -18,9 +18,9 @@ Tests for the insert transform.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.core.qscript import QuantumScript
-from pennylane.noise.insert_ops import insert
+import pennylane2 as qp
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.noise.insert_ops import insert
 
 
 class DummyOp2(qp.core.operator.Operator2):  # pylint: disable=too-few-public-methods

@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.circuit_graph` module.
+Unit tests for the :mod:`pennylane2.circuit_graph` module.
 """
 
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.circuit_graph import CircuitGraph, _WrappedObj
-from pennylane.ops.mid_measure.measurement_value import MeasurementValue
-from pennylane.ops.mid_measure.mid_measure import MidMeasure
-from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.ops.op_math.condition import Conditional
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.circuit_graph import CircuitGraph, _WrappedObj
+from pennylane2.ops.mid_measure.measurement_value import MeasurementValue
+from pennylane2.ops.mid_measure.mid_measure import MidMeasure
+from pennylane2.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane2.ops.op_math.condition import Conditional
+from pennylane2.wires import Wires
 
 
 class Test_WrappedObj:

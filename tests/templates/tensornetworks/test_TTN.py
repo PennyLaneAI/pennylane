@@ -18,8 +18,8 @@ Tests for the TTN template.
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.templates.tensornetworks.ttn import TTN, compute_indices
+import pennylane2 as qp
+from pennylane2.templates.tensornetworks.ttn import TTN, compute_indices
 
 
 def test_flatten_unflatten_methods():

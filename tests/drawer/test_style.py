@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the pennylane.drawer.style` module.
+Unit tests for the pennylane2.drawer.style` module.
 """
 
 import pytest
 
-import pennylane as qp
-from pennylane.drawer.style import _set_style
+import pennylane2 as qp
+from pennylane2.drawer.style import _set_style
 
 plt = pytest.importorskip("matplotlib.pyplot")
 

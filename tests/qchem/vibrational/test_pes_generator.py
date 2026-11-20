@@ -21,10 +21,10 @@ from tempfile import TemporaryDirectory
 import numpy as np
 import pytest
 
-from pennylane import qchem
-from pennylane.qchem import vibrational
-from pennylane.qchem.vibrational import pes_generator
-from pennylane.qchem.vibrational.vibrational_class import _single_point
+from pennylane2 import qchem
+from pennylane2.qchem import vibrational
+from pennylane2.qchem.vibrational import pes_generator
+from pennylane2.qchem.vibrational.vibrational_class import _single_point
 
 h5py = pytest.importorskip("h5py")
 

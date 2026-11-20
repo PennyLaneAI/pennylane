@@ -17,8 +17,8 @@ Tests for the for_loop
 
 import pytest
 
-import pennylane as qp
-from pennylane.control_flow.for_loop import ForLoopCallable
+import pennylane2 as qp
+from pennylane2.control_flow.for_loop import ForLoopCallable
 
 
 @pytest.mark.capture

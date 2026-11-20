@@ -25,20 +25,20 @@ import scipy as sp
 from gate_data import CH, CNOT, CSWAP, ControlledPhaseShift, CRot3, CRotx, CRoty, CRotz, Toffoli
 from scipy import sparse
 
-import pennylane as qp
-from pennylane import numpy as pnp
-from pennylane.core import Operator2
-from pennylane.core.operator import Operation, Operator
-from pennylane.core.qscript import QuantumScript
-from pennylane.decomposition import gate_sets
-from pennylane.decomposition.decomposition_rule import register_resources
-from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.gradients import parameter_frequencies
-from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
-from pennylane.ops.op_math.controlled2 import ControlledOp2
-from pennylane.transforms import _tape_decompose as decompose
-from pennylane.typing import Float, Wire
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2 import numpy as pnp
+from pennylane2.core import Operator2
+from pennylane2.core.operator import Operation, Operator
+from pennylane2.core.qscript import QuantumScript
+from pennylane2.decomposition import gate_sets
+from pennylane2.decomposition.decomposition_rule import register_resources
+from pennylane2.exceptions import DecompositionUndefinedError
+from pennylane2.gradients import parameter_frequencies
+from pennylane2.ops.op_math.controlled import Controlled, ControlledOp, ctrl
+from pennylane2.ops.op_math.controlled2 import ControlledOp2
+from pennylane2.transforms import _tape_decompose as decompose
+from pennylane2.typing import Float, Wire
+from pennylane2.wires import Wires
 from tests.core.operator.operator2_utils import DynOp
 
 

@@ -15,12 +15,12 @@
 
 import pytest
 
-import pennylane as qp
-from pennylane.core import queuing
-from pennylane.core.operator import abstractify
-from pennylane.ops import MeasurementValue, PauliMeasure
-from pennylane.typing import Wire
-from pennylane.wires import Wires
+import pennylane2 as qp
+from pennylane2.core import queuing
+from pennylane2.core.operator import abstractify
+from pennylane2.ops import MeasurementValue, PauliMeasure
+from pennylane2.typing import Wire
+from pennylane2.wires import Wires
 
 
 @pytest.mark.catalyst

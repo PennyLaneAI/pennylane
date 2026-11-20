@@ -17,9 +17,9 @@
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane.transforms import split_to_single_terms
-from pennylane.transforms.split_to_single_terms import null_postprocessing
+import pennylane2 as qp
+from pennylane2.transforms import split_to_single_terms
+from pennylane2.transforms.split_to_single_terms import null_postprocessing
 
 single_term_obs_list = [
     qp.X(0),
@@ -547,7 +547,7 @@ class TestDifferentiability:
     def test_trainable_hamiltonian_autograd(self, seed):
         """Tests that measurements of trainable Hamiltonians are differentiable"""
 
-        import pennylane.numpy as pnp
+        import pennylane2.numpy as pnp
 
         dev = NoTermsDevice(wires=2, seed=seed)
 

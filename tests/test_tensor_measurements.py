@@ -22,8 +22,8 @@ import functools
 import numpy as np
 import pytest
 
-import pennylane as qp
-from pennylane import expval, sample, var
+import pennylane2 as qp
+from pennylane2 import expval, sample, var
 
 Z = np.array([[1, 0], [0, -1]])
 THETA = np.linspace(0.11, 3, 5)
