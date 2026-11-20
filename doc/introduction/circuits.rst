@@ -12,13 +12,13 @@ for short. A QNode not only declares a quantum circuit, it also ties it to a
 specific device that executes it.
 
 Furthermore, in PennyLane2, all workflows involving QNodes must be decorated
-with :func:`@qjit <~pennylane.qjit>`, which triggers our bespoke quantum
+with :func:`@qjit <pennylane.qjit>`, which triggers our bespoke quantum
 just-in-time compiler framework.
 
-Workflows compiled with :func:`@qjit <~pennylane.qjit>` can simultaneously
+Workflows compiled with :func:`@qjit <pennylane.qjit>` can simultaneously
 interface with JAX and NumPy data types, though there are cases where using one
 over the other could be preferred. More information on compiling circuits with
-:func:`@qjit <~.qjit>` can be found in :doc:`compiling_circuits`.
+:func:`@qjit <pennylane.qjit>` can be found in :doc:`compiling_circuits`.
 
 .. _intro_vcirc_qfunc:
 
@@ -28,7 +28,7 @@ How circuits are constructed
 Quantum functions
 ^^^^^^^^^^^^^^^^^
 
-The first step in constructing an executable quantum circuit is by defining a
+The first step in constructing an executable quantum circuit is to define a
 special Python function called a *quantum function*. For example:
 
 .. code-block:: python
@@ -50,7 +50,7 @@ Quantum circuit operators (e.g., :doc:`gates <operations>` or
 occur in the final circuit in the order they appear in the quantum function. The
 final line of a Python function is typically the ``return`` statement, which in
 quantum-circuit terms is the :doc:`terminal measurement <measurements>`.
-Although, standard Python functions don't have to return anything, and neither
+However, standard Python functions don't have to return anything, and neither
 do quantum functions.
 
 Additionally, quantum functions can accept classical input arguments and contain
@@ -60,7 +60,7 @@ Devices
 ^^^^^^^
 
 A quantum circuit has to run on a device, be it real hardware or a simulator.
-All devices that are compatible with PennyLane2 can be found in the :doc:`supported devices page <devices>`__. In general, however, devices are instantiated
+All devices that are compatible with PennyLane2 can be found in the :doc:`supported devices page <devices>`. In general, however, devices are instantiated
 using :func:`~pennylane.device` as follows,
 
 .. code-block:: python
@@ -78,14 +78,14 @@ Decorate with qp.qnode, compile with qp.qjit
 Together, a quantum function and a device are used to create a *quantum node*,
 or QNode object, which wraps the quantum function and binds it to the device.
 QNodes are the foundational computational unit of PennyLane. Simply decorate
-with :func:`@qp.qnode(dev) <~pennylane.qnode>` to create a QNode.
+with :func:`@qp.qnode(dev) <pennylane.qnode>` to create a QNode.
 
 .. note::
 
     A QNode *must* return a terminal measurement.
 
 To be able to simulate or get quantum resource estimates, decorate with
-:func:`@qp.qjit <~pennylane.qjit>`, which is PennyLane's bespoke quantum
+:func:`@qp.qjit <pennylane.qjit>`, which is PennyLane's bespoke quantum
 just-in-time compiler.
 
 .. code-block:: python
@@ -107,7 +107,7 @@ function,
 Array(0.98006658, dtype=float64)
 
 By default, a QNode is executed analytically. To use a finite number of shots,
-decorate it with :func:`@qp.set_shots(shots=1000) <~pennylane.set_shots>`,
+decorate it with :func:`@qp.set_shots(shots=1000) <pennylane.set_shots>`,
 placed between ``@qp.qjit`` and ``@qp.qnode`` (see :ref:`intro_ref_meas` for
 more details).
 
