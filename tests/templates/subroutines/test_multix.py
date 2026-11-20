@@ -444,7 +444,6 @@ class TestDecomposition:
         first_applicable = next(rule for rule in rules if rule.is_applicable(**op.arguments))
         assert first_applicable.name == "_controlled_multix"
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         ("control_values", "gate_set", "expected"),
         [
@@ -646,7 +645,6 @@ class TestControlledMultiXLatticeSurgeryPPM:
         mocker.patch("pennylane.templates.subroutines.multix.compiler.active", return_value=True)
         assert rule.is_applicable(**op.arguments) == applicable
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("num_controls", [1, 2, 3])
     @pytest.mark.parametrize("use_ppm", [False, True])
     def test_graph_decomposition(self, num_controls, use_ppm):
