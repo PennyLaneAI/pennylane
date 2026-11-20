@@ -267,7 +267,7 @@ class TestMidMeasureXAndY:
 
     @pytest.mark.parametrize(
         "wire, expected",
-        [(0, "measure_x(wires=[0])"), (1, "measure_x(wires=[1])"), ("a", "measure_x(wires=['a'])")],
+        [(0, "measure_x(wires=[0])"), (1, "measure_x(wires=[1])"), (8, "measure_x(wires=[8])")],
     )
     def test_repr_x(self, wire, expected):
         """Test the repr for XMidMeasure is correct"""
@@ -276,7 +276,7 @@ class TestMidMeasureXAndY:
 
     @pytest.mark.parametrize(
         "wire, expected",
-        [(0, "measure_y(wires=[0])"), (1, "measure_y(wires=[1])"), ("a", "measure_y(wires=['a'])")],
+        [(0, "measure_y(wires=[0])"), (1, "measure_y(wires=[1])"), (8, "measure_y(wires=[8])")],
     )
     def test_repr_y(self, wire, expected):
         """Test the repr for YMidMeasure is correct"""

@@ -352,7 +352,7 @@ class TestSelectTHCOperator:
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("n_half, num_batches", [(1, 1), (2, 1), (4, 2)])
     def test_basis_and_swap_resources(self, n_half, num_batches):
-        """Each captured sandwich preserves its basis, target and declared resources."""
+        """Test that each captured sandwich preserves its basis, target and declared resources."""
         sizes = select_thc_wires(3, 2 * n_half, 2, num_batches)
         wires = qp.registers(sizes)
         op = qp.SelectTHC(
@@ -385,7 +385,7 @@ class TestSelectTHCOperator:
                     assert set(operand.angle_wires).issubset(sandwich.wires)
 
     def test_basis_loaded_angle_is_an_operator_wire(self):
-        """The basis keeps its loaded angle as state until the enclosing uncomputation."""
+        """Test that the basis keeps its loaded angle as state until the enclosing uncomputation."""
         basis = _SelectTHCBasis((1, ((0,),), (((1,),),)), [0, 1, 2, 3], [4], [5, 6], [7], [8])
         assert 7 in basis.wires
         assert 8 not in basis.wires

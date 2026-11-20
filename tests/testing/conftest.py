@@ -41,28 +41,27 @@ from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.ops.op_math.pow import PowOperation
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
-from pennylane.ops.qubit.non_parametric_ops import _ppr_basis
+from pennylane.ops.qubit.non_parametric_ops import _PPRBasis
 from pennylane.ops.qubit.parametric_ops_multi_qubit import (
-    _isingxy_basis,
-    _isingxy_rotations,
-    _multi_rz_ladder,
-    _pauli_rot_basis,
+    _IsingXYBasis,
+    _IsingXYRotations,
+    _MultiRZLadder,
+    _PauliRotBasis,
 )
-from pennylane.ops.qubit.parametric_ops_single_qubit import _y_to_z_basis, _z_to_y_basis
+from pennylane.ops.qubit.parametric_ops_single_qubit import _YToZBasis, _ZToYBasis
 from pennylane.ops.qubit.qchem_ops import (
-    _single_excitation_basis,
-    _single_excitation_crz_basis,
-    _single_excitation_rotations,
-    _single_excitation_rz_rotations,
+    _SingleExcitationBasis,
+    _SingleExcitationCRZBasis,
+    _SingleExcitationRotations,
+    _SingleExcitationRZRotations,
 )
 from pennylane.templates.subroutines.arithmetic.out_adder import _OutAdderTarget
 from pennylane.templates.subroutines.arithmetic.out_multiplier import _OutMultiplierHadamards
-from pennylane.templates.subroutines.arithmetic.phase_adder import _phase_adder_basis
+from pennylane.templates.subroutines.arithmetic.phase_adder import _PhaseAdderBasis
 from pennylane.templates.subroutines.arithmetic.temporary_and import _TemporaryANDBasis
-from pennylane.templates.subroutines.qubitization_thc import _THCPrepare, _THCSelect
+from pennylane.templates.subroutines.qubitization_thc import _THCPrepare
 from pennylane.templates.subroutines.select_pauli_rot import (
     _SelectPauliRotYBasis,
-    _SelectPauliRotYBasisInverse,
     _UniformRZ,
 )
 from pennylane.templates.subroutines.select_thc import _SelectTHCBasis, _THCIndexSwaps
@@ -84,26 +83,26 @@ def _subcircuit_instances():
     """Construct private decomposition helpers with their actual argument signatures."""
     thc_wires = qp.registers(qp.qubitization_thc_wires(1, 2, 1, 1))
     return [
-        (_ppr_basis("XY", [0, 1], reverse=False), {}),
-        (_isingxy_basis([0, 1], reverse=False), {}),
-        (_isingxy_rotations(0.37, [0, 1]), {}),
-        (_multi_rz_ladder([0, 1], reverse=False), {}),
-        (_pauli_rot_basis(1, "XY", [0, 1]), {}),
-        (_y_to_z_basis([0]), {}),
-        (_z_to_y_basis([0]), {}),
-        (_single_excitation_basis([0, 1], reverse=False), {}),
-        (_single_excitation_crz_basis([0, 1]), {}),
-        (_single_excitation_rotations(0.37, [0, 1]), {}),
-        (_single_excitation_rz_rotations(0.37, [0, 1]), {}),
+        (_PPRBasis("XY", [0, 1], reverse=False), {}),
+        (_IsingXYBasis([0, 1], reverse=False), {}),
+        (_IsingXYRotations(0.37, [0, 1]), {}),
+        (_MultiRZLadder([0, 1], reverse=False), {}),
+        (_PauliRotBasis(1, "XY", [0, 1]), {}),
+        (_YToZBasis([0]), {}),
+        (_ZToYBasis([0]), {}),
+        (_SingleExcitationBasis([0, 1], reverse=False), {}),
+        (_SingleExcitationCRZBasis([0, 1]), {}),
+        (_SingleExcitationRotations(0.37, [0, 1]), {}),
+        (_SingleExcitationRZRotations(0.37, [0, 1]), {}),
         (_OutAdderTarget([0], [1], [2, 3], 4, []), {}),
         (_OutMultiplierHadamards([0, 1]), {}),
         # The arithmetic input is an integer, not a differentiable gate parameter.
-        (_phase_adder_basis(1, [0, 1], reverse=False), {"skip_differentiation": True}),
+        (_PhaseAdderBasis(1, [0, 1], reverse=False), {"skip_differentiation": True}),
         (_TemporaryANDBasis([0, 1]), {}),
         # The legacy differentiator cannot evaluate this helper's captured loop.
         (_UniformRZ(np.array([0.2, 0.3]), [0], [1]), {"skip_differentiation": True}),
-        (_SelectPauliRotYBasis([0]), {}),
-        (_SelectPauliRotYBasisInverse([0]), {}),
+        (_SelectPauliRotYBasis([0], reverse=False), {}),
+        (_SelectPauliRotYBasis([0], reverse=True), {}),
         # Boolean angle tables cannot be replaced by arbitrary floating-point parameters.
         (
             _CRZPhaseGradientCompute(jax.numpy.array([True]), [0, 1], [2], [3]),
@@ -124,7 +123,6 @@ def _subcircuit_instances():
             ),
             {},
         ),
-        (_THCSelect(qp.X(0), [1]), {}),
         (_SelectTHCBasis((1, (), ()), [0, 1], [2, 3], [4, 5], []), {}),
         (_THCIndexSwaps([0], [1], [2, 3, 4], []), {}),
     ]

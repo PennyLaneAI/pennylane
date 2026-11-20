@@ -207,7 +207,7 @@ def test_change_op_basis_with_mixed_types():
 )
 @pytest.mark.capture
 def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
-    """Version-2 operands remain inside one captured basis-change operator."""
+    """Test that Operator2s remain inside one captured basis-change operator."""
 
     def circuit():
         uncompute = uncompute_op(0) if uncompute_op else None
@@ -233,7 +233,7 @@ def BasisCompute(angle, wires):
 @pytest.mark.parametrize("constructor", (change_op_basis, ChangeOpBasis2))
 @pytest.mark.parametrize("explicit_uncompute", (False, True))
 def test_subcircuit_capture(constructor, explicit_uncompute):
-    """Subcircuits retain their parameters inside a single captured basis change."""
+    """Test that subcircuits retain their parameters inside a single captured basis change."""
 
     def circuit(angle, wire):
         compute = BasisCompute(angle, wires=wire)
@@ -254,7 +254,7 @@ def test_subcircuit_capture(constructor, explicit_uncompute):
 @pytest.mark.capture
 @pytest.mark.parametrize("constructor", (change_op_basis, ChangeOpBasis2))
 def test_reused_compute_capture(constructor):
-    """Using the compute operand again does not apply its adjoint accidentally."""
+    """Test that using the compute operand again does not apply its adjoint accidentally."""
 
     def circuit(angle):
         compute = qp.RX(angle, 0)
@@ -271,7 +271,7 @@ def test_reused_compute_capture(constructor):
 @pytest.mark.capture
 @pytest.mark.parametrize("wrapper", (qp.adjoint, partial(qp.ctrl, control=1)))
 def test_symbolic_capture(wrapper):
-    """Symbolic operations consume the captured basis change as a single operator."""
+    """Test that symbolic operations consume the captured basis change as a single operator."""
 
     def circuit(angle):
         wrapper(change_op_basis(qp.H(0), qp.RZ(angle, 0)))
@@ -565,7 +565,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("ops_lst", ops)
     @pytest.mark.capture
     def test_decomposition_new_capture(self, ops_lst):
-        """Prebuilt operands remain inside the captured basis-change operator."""
+        """Test that prebuilt operands remain inside the captured basis-change operator."""
 
         jaxpr = qp.capture.make_plxpr(lambda: change_op_basis(*ops_lst))()
         tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)

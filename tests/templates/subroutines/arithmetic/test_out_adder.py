@@ -230,7 +230,7 @@ class TestOutAdder:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_basis_change_with_concrete_wires(self):
-        """The rule preserves modular addition when capture is enabled with concrete wires."""
+        """Test that the rule preserves modular addition during capture with concrete wires."""
         with qp.queuing.AnnotatedQueue() as queue:
             _out_adder_decomposition([5], [1], [8], 2, [])
 

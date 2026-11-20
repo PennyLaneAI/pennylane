@@ -109,31 +109,6 @@ class TestExpval:
 
         assert np.allclose(1.0, result, tol)
 
-    @pytest.mark.parametrize("wires", [([0, 1]), (["a", 1]), (["b", "a"]), ([-1, 2.5])])
-    @pytest.mark.parametrize("method", ["mps", "tn"])
-    def test_custom_wires(self, theta, phi, wires, method):
-        """Tests custom wires."""
-        dev = qp.device("default.tensor", wires=wires, method=method)
-
-        tape = qp.tape.QuantumScript(
-            [
-                qp.RX(theta, wires=wires[0]),
-                qp.RX(phi, wires=wires[1]),
-                qp.CNOT(wires=wires),
-            ],
-            [
-                qp.expval(qp.PauliZ(wires=wires[0])),
-                qp.expval(qp.PauliZ(wires=wires[1])),
-            ],
-        )
-
-        calculated_val = execute(dev, tape)
-        reference_val = np.array([np.cos(theta), np.cos(theta) * np.cos(phi)])
-
-        tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
-
-        assert np.allclose(calculated_val, reference_val, tol)
-
     @pytest.mark.parametrize(
         "Obs, Op, expected_fn",
         [

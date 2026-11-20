@@ -90,7 +90,7 @@ def change_op_basis(
         compute_op (~.Operator or Callable): operator applied before the target
         target_op (~.Operator or Callable): operator applied in the changed basis
         uncompute_op (~.Operator or Callable or None): Operator applied after the target.
-            ``None`` uses the adjoint of ``compute_op``.
+            If ``None`` (the default), the adjoint of ``compute_op`` is used.
 
     Returns:
         ~ops.op_math.ChangeOpBasis or ~ops.op_math.ChangeOpBasis2: the operator representing the
@@ -102,11 +102,11 @@ def change_op_basis(
     .. note::
 
         With program capture enabled, all operands must be operators. Use :func:`~.subcircuit`
-        to turn a quantum function with registered resources into an operator class, then pass
-        an instance of that class. The basis-change operator is preserved in the captured program.
+        to turn a :class:`~.DecompositionRule` into an operator class, then pass
+        an instance of that class.
 
         With program capture disabled, callables with no unbound mandatory parameters are also
-        accepted.
+        accepted (see below for details).
 
     .. seealso:: :func:`~.subcircuit`, :class:`~.ops.op_math.ChangeOpBasis`,
         :class:`~.ops.op_math.ChangeOpBasis2`
@@ -209,7 +209,7 @@ def change_op_basis(
                 )
             if not (isinstance(op, Operator) or _is_abstract_operator(op)):
                 raise TypeError(
-                    "The parameters to change_op_basis must be Operator when using program "
+                    "The parameters to change_op_basis must be of type Operator when using program "
                     f"capture, not {type(op)}"
                 )
         compute, target, uncompute = compute_op, target_op, uncompute_op

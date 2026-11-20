@@ -27,6 +27,7 @@ from gate_data import (
     SingleExcitationMinus,
     SingleExcitationPlus,
 )
+from helpers.decomposition_helpers import assert_basis_change_decomposition
 from scipy.linalg import expm, fractional_matrix_power
 
 import pennylane as qp
@@ -34,8 +35,8 @@ from pennylane import numpy as pnp
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.qubit.qchem_ops import (
-    _single_excitation_basis,
-    _single_excitation_rotations,
+    _SingleExcitationBasis,
+    _SingleExcitationRotations,
 )
 from pennylane.typing import Float, Wire
 
@@ -325,15 +326,10 @@ class TestSingleExcitationDecompositions:
         ["_single_excitation_decomp", "_single_excitation_ppr_rz", "_single_excitation_ppr_crz"],
     )
     def test_basis_change_resources_and_matrix(self, rule_name):
-        """Captured basis changes preserve the excitation matrix and resource identities."""
+        """Test that basis changes preserve the excitation matrix and resource identities."""
         op = qp.SingleExcitation(0.37, wires=[3, 1])
         rule = qp.list_decomps(op)[rule_name]
-        qp.testing.assert_valid_decomp_rule(op, rule)
-        (cob,) = qp.testing.decomp_rule_to_tape(op, rule).operations
-        for block in cob.operands:
-            assert not isinstance(block, qp.ops.Prod2)
-            if not isinstance(block, qp.PPR_4):
-                qp.testing.assert_valid_decomp_rule(block, qp.list_decomps(block)[0])
+        assert_basis_change_decomposition(op, rule)
 
     @pytest.mark.capture
     @pytest.mark.parametrize(
@@ -341,7 +337,7 @@ class TestSingleExcitationDecompositions:
         ["_single_excitation_decomp", "_single_excitation_ppr_rz", "_single_excitation_ppr_crz"],
     )
     def test_subcircuit_replays_dynamic_arguments(self, rule_name):
-        """Captured target subcircuits retain dynamic angles and wire assignments."""
+        """Test that captured target subcircuits retain dynamic angles and wire assignments."""
         import jax
         import jax.numpy as jnp
 
@@ -403,9 +399,9 @@ class TestSingleExcitationDecompositions:
 
         (actual,) = ops
         expected = qp.change_op_basis(
-            _single_excitation_basis(wires, reverse=False),
-            _single_excitation_rotations(phi, wires),
-            _single_excitation_basis(wires, reverse=True),
+            _SingleExcitationBasis(wires, reverse=False),
+            _SingleExcitationRotations(phi, wires),
+            _SingleExcitationBasis(wires, reverse=True),
         )
         qp.assert_equal(actual, expected)
 
@@ -415,13 +411,13 @@ class TestSingleExcitationDecompositions:
         op = qp.SingleExcitation(0.5, wires=(0, 1))
 
         # The rule reports a single ChangeOpBasis with registered subcircuit operands.
-        basis = _single_excitation_basis(Wire[2], reverse=False)
-        unbasis = _single_excitation_basis(Wire[2], reverse=True)
+        basis = _SingleExcitationBasis(Wire[2], reverse=False)
+        unbasis = _SingleExcitationBasis(Wire[2], reverse=True)
         expected = qp.decomposition.Resources(
             {
                 _change_op_basis_abstract(
                     basis,
-                    _single_excitation_rotations(Float, Wire[2]),
+                    _SingleExcitationRotations(Float, Wire[2]),
                     unbasis,
                 ): 1
             }

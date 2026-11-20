@@ -2949,7 +2949,7 @@ def _ppr_basis_resources(pauli_word, reverse, **_):
 
 @subcircuit(static_argnames=("pauli_word", "reverse"))
 @register_resources(_ppr_basis_resources)
-def _ppr_basis(pauli_word: str, wires: WiresLike, reverse: bool):
+def _PPRBasis(pauli_word: str, wires: WiresLike, reverse: bool):
     if reverse:
         for index in range(1, len(wires)):
             qp.CNOT(wires=(wires[index], wires[index - 1]))
@@ -2977,8 +2977,8 @@ def _ppr_via_z_gate_resources(gate, sign, pauli_word, wires):
     if active_word == "Z":
         return {qp.GlobalPhase: 1, z_gate: 1}
 
-    compute = _ppr_basis(active_word, wires=Wire[len(active_word)], reverse=False)
-    uncompute = _ppr_basis(active_word, wires=Wire[len(active_word)], reverse=True)
+    compute = _PPRBasis(active_word, wires=Wire[len(active_word)], reverse=False)
+    uncompute = _PPRBasis(active_word, wires=Wire[len(active_word)], reverse=True)
     return {qp.GlobalPhase: 1, _change_op_basis_abstract(compute, z_gate, uncompute): 1}
 
 
@@ -3019,9 +3019,9 @@ def _ppr_via_z_gate(sign, pauli_word, wires, gate):
 
     active_word = pauli_word.replace("I", "")
     qp.change_op_basis(
-        _ppr_basis(active_word, wires=active_wires, reverse=False),
+        _PPRBasis(active_word, wires=active_wires, reverse=False),
         central_op,
-        _ppr_basis(active_word, wires=active_wires, reverse=True),
+        _PPRBasis(active_word, wires=active_wires, reverse=True),
     )
 
 

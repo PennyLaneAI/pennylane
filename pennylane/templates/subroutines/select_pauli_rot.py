@@ -159,20 +159,16 @@ def _UniformRZ(angles, control_wires, target_wire) -> None:
     _apply_uniform_rotation_dagger(RZ, angles, control_wires[::-1], target_wire[0])
 
 
-@subcircuit(arg_specs={"wires": Wire[1]})
-@register_resources(lambda **_: {Hadamard: 1, _adjoint_abstract(S): 1})
-def _SelectPauliRotYBasis(wires) -> None:
-    """Change a Y rotation to the Z basis."""
-    adjoint(S(wires))
-    Hadamard(wires)
-
-
-@subcircuit(arg_specs={"wires": Wire[1]})
-@register_resources({Hadamard: 1, S: 1})
-def _SelectPauliRotYBasisInverse(wires) -> None:
-    """Restore the Y basis after a Z rotation."""
-    Hadamard(wires)
-    S(wires)
+@subcircuit(static_argnames=("reverse",), arg_specs={"wires": Wire[1]})
+@register_resources(lambda reverse, **_: {Hadamard: 1, S if reverse else _adjoint_abstract(S): 1})
+def _SelectPauliRotYBasis(wires, reverse: bool) -> None:
+    """Change between the Y and Z bases."""
+    if reverse:
+        Hadamard(wires)
+        S(wires)
+    else:
+        adjoint(S(wires))
+        Hadamard(wires)
 
 
 def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
@@ -186,7 +182,9 @@ def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
 
     return {
         _change_op_basis_abstract(
-            _SelectPauliRotYBasis, target_rep, _SelectPauliRotYBasisInverse
+            _SelectPauliRotYBasis(Wire[1], reverse=False),
+            target_rep,
+            _SelectPauliRotYBasis(Wire[1], reverse=True),
         ): 1
     }
 
@@ -210,9 +208,9 @@ def decompose_select_pauli_rot(angles, control_wires, target_wire, rot_axis):
             )
         case "Y":
             change_op_basis(
-                _SelectPauliRotYBasis(target_wire),
+                _SelectPauliRotYBasis(target_wire, reverse=False),
                 _UniformRZ(angles, control_wires, target_wire),
-                _SelectPauliRotYBasisInverse(target_wire),
+                _SelectPauliRotYBasis(target_wire, reverse=True),
             )
         case "Z":
             _apply_uniform_rotation_dagger(RZ, angles, wires[-2::-1], wires[-1])

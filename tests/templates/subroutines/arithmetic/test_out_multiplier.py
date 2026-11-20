@@ -539,7 +539,8 @@ class TestOutMultiplier:
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("num_output_wires", [1, 2])
     def test_qft_rule_zeroed_output_with_concrete_wires(self, num_output_wires):
-        """Concrete-wire capture preserves multiplication on the zero-output subspace."""
+        """Test that capture with concrete wires preserves multiplication on the
+        zero-output subspace."""
         output_wires = [8, 3][:num_output_wires]
         modulus = 2**num_output_wires
         with qp.queuing.AnnotatedQueue() as queue:

@@ -25,7 +25,6 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.templates.subroutines.select_pauli_rot import (
     _SelectPauliRotYBasis,
-    _SelectPauliRotYBasisInverse,
     _UniformRZ,
     decompose_select_pauli_rot,
 )
@@ -218,14 +217,12 @@ class TestSelectPauliRot:
             for op1, op2 in zip(decomp_1, decomp_2):
                 decomposition.extend(
                     op1.decomposition()
-                    if type(op1)
-                    in (_UniformRZ, _SelectPauliRotYBasis, _SelectPauliRotYBasisInverse)
+                    if type(op1) in (_UniformRZ, _SelectPauliRotYBasis)
                     else [op1]
                 )
                 decomposition_2.extend(
                     op2.decomposition()
-                    if type(op2)
-                    in (_UniformRZ, _SelectPauliRotYBasis, _SelectPauliRotYBasisInverse)
+                    if type(op2) in (_UniformRZ, _SelectPauliRotYBasis)
                     else [op2]
                 )
 
@@ -261,7 +258,7 @@ class TestSelectPauliRot:
     @pytest.mark.parametrize("dtype", ["float32", "float64", "int32", "int64"])
     @pytest.mark.parametrize("axis", "XYZ")
     def test_decomposition_resources_match_angle_dtype(self, dtype, axis):
-        """Subcircuits retain the parent operator's canonical angle signature."""
+        """Test that subcircuits retain the parent operator's canonical angle signature."""
         angles = qp.math.asarray([1, 2], like="jax", dtype=dtype)
         op = qp.SelectPauliRot(angles, control_wires=[0], target_wire=[1], rot_axis=axis)
         assert_decomposable(op)
@@ -269,7 +266,7 @@ class TestSelectPauliRot:
     @pytest.mark.capture
     @pytest.mark.parametrize("axis", "XY")
     def test_captured_decomposition_reuses_dynamic_angles_and_wires(self, axis):
-        """Repeated evaluation preserves current angles and the ordered control register."""
+        """Test that reevaluation preserves current angles and the ordered control register."""
         import jax.numpy as jnp
 
         angles = jnp.array([0.1, 0.2, 0.3, 0.4])
@@ -293,7 +290,9 @@ class TestSelectPauliRot:
             assert_decomposable(basis_change.target_op)
             if axis == "Y":
                 assert basis_change.compute_op.name == "_SelectPauliRotYBasis"
-                assert basis_change.uncompute_op.name == "_SelectPauliRotYBasisInverse"
+                assert basis_change.uncompute_op.name == "_SelectPauliRotYBasis"
+                assert basis_change.compute_op.arguments["reverse"] is False
+                assert basis_change.uncompute_op.arguments["reverse"] is True
                 assert_decomposable(basis_change.compute_op)
                 assert_decomposable(basis_change.uncompute_op)
             with qp.capture.pause():

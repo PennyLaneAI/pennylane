@@ -21,6 +21,7 @@ from functools import partial, reduce
 import numpy as np
 import pytest
 from gate_data import CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
+from helpers.decomposition_helpers import assert_basis_change_decomposition
 from scipy import sparse
 
 import pennylane as qp
@@ -33,11 +34,6 @@ from pennylane.testing import assert_decomposable
 from pennylane.testing.decompositions import assert_valid_decomp_rule, decomp_rule_to_tape
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
-
-REQUIRES_CATALYST_SHARED_WIRES = pytest.mark.xfail(
-    reason="Requires shared-wire hybrid operands from Catalyst PR #3470",
-    raises=pytest.RaisesExc(Exception, match="qubit operands must refer to distinct qubits"),
-)
 
 PARAMETRIZED_OPERATIONS = [
     qp.RX(0.123, wires=0),
@@ -187,19 +183,13 @@ class TestOperations:
         ],
     )
     def test_basis_change_decomposition(self, op, rule_name):
-        """Basis changes preserve their matrices and declared resources during capture."""
+        """Test that basis changes preserve their matrices and declared resources during capture."""
         rule = qp.list_decomps(op)[rule_name]
-        assert_valid_decomp_rule(op, rule)
-        for gate in decomp_rule_to_tape(op, rule).operations:
-            if isinstance(gate, qp.ops.ChangeOpBasis2):
-                for block in gate.operands:
-                    assert not isinstance(block, qp.ops.Prod2)
-                    if block is not gate.target_op or isinstance(op, qp.IsingXY):
-                        assert_valid_decomp_rule(block, qp.list_decomps(block)[0])
+        assert_basis_change_decomposition(op, rule)
 
     @pytest.mark.capture
     def test_isingxy_subcircuit_replays_dynamic_arguments(self):
-        """A captured rotation subcircuit uses each invocation's angle and wires."""
+        """Test that a captured rotation subcircuit uses each invocation's angle and wires."""
         import jax
         import jax.numpy as jnp
 
@@ -836,7 +826,7 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
     @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_isingzz_qjit_without_toffoli(self):
-        """Captured controlled IsingZZ compiles and can be analyzed without Toffoli (#10357)."""
+        """Test that captured controlled IsingZZ compiles and analyzes without Toffoli (#10357)."""
         gate_set = {qp.CNOT, qp.RZ, qp.GlobalPhase, qp.PauliX}
 
         @qp.qjit(capture=True, target="mlir")
@@ -2954,7 +2944,7 @@ class TestPauliRot:  # pylint: disable=too-many-public-methods
         qp.assert_equal(uncompute[1], qp.PPR_4(-1, "X", wires=2))
 
     def test_PauliRot_single_basis_gate(self):
-        """Test the basis subcircuits for single-qubit Pauli words."""
+        """Test that basis subcircuits for single-qubit Pauli words decompose correctly."""
         theta = 0.4
         (cob,) = qp.PauliRot(theta, "X", wires=0).decomposition()
 
@@ -3263,15 +3253,7 @@ class TestMultiRZ:
         assert_valid_decomp_rule(op, rule)
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "n",
-        [
-            1,
-            pytest.param(2, marks=REQUIRES_CATALYST_SHARED_WIRES),
-            pytest.param(3, marks=REQUIRES_CATALYST_SHARED_WIRES),
-            pytest.param(4, marks=REQUIRES_CATALYST_SHARED_WIRES),
-        ],
-    )
+    @pytest.mark.parametrize("n", [1, 2, 3, 4])
     def test_MultiRZ_decomposition_qjit_new(self, n):
         """Test that the decomposition with qjit with the new decomposition system
         produces the correct matrix."""

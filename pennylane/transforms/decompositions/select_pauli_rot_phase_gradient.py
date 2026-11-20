@@ -22,10 +22,7 @@ from pennylane.core.operator import Operator
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.subcircuit import subcircuit
-from pennylane.templates.subroutines.select_pauli_rot import (
-    _SelectPauliRotYBasis,
-    _SelectPauliRotYBasisInverse,
-)
+from pennylane.templates.subroutines.select_pauli_rot import _SelectPauliRotYBasis
 from pennylane.typing import Bool, Wire
 from pennylane.wires import WireError, Wires
 
@@ -97,9 +94,9 @@ def _select_pauli_rot_phase_gradient(  # pylint: disable=too-many-arguments
 
         case "Y":
             return qp.change_op_basis(
-                _SelectPauliRotYBasis(target_wire),
+                _SelectPauliRotYBasis(target_wire, reverse=False),
                 inner_cob,
-                _SelectPauliRotYBasisInverse(target_wire),
+                _SelectPauliRotYBasis(target_wire, reverse=True),
             )
 
     return inner_cob
@@ -318,9 +315,9 @@ def make_selectpaulirot_to_phase_gradient_decomp(
                 )
             case "Y":
                 change_basis_rep_basis_adapted = _change_op_basis_abstract(
-                    _SelectPauliRotYBasis,
+                    _SelectPauliRotYBasis(Wire[1], reverse=False),
                     change_basis_rep,
-                    _SelectPauliRotYBasisInverse,
+                    _SelectPauliRotYBasis(Wire[1], reverse=True),
                 )
             case "Z":
                 change_basis_rep_basis_adapted = change_basis_rep

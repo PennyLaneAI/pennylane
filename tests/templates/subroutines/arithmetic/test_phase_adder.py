@@ -40,7 +40,7 @@ def test_standard_validity_Phase_Adder():
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("dtype", ["int32", "int64"])
 def test_modular_resources_match_integer_dtype(dtype):
-    """Basis subcircuits retain the parent operator's canonical integer signature."""
+    """Test that basis subcircuits retain the parent operator's canonical integer signature."""
     op = qp.PhaseAdder(
         qp.math.asarray(1, like="jax", dtype=dtype),
         x_wires=[0, 1, 2],

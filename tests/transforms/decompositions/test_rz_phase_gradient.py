@@ -64,9 +64,13 @@ def _expected_rz_specs(phi, p):
 )
 def test_validate_phase_gradient_wires(n_angle_wires, n_phase_grad_wires, n_work_wires, msg_match):
     """Test that a WireError is raised correctly for wrongly-sized registers"""
-    angle_wires = qp.wires.Wires([f"ang_{i}" for i in range(n_angle_wires)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(n_phase_grad_wires)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(n_work_wires)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(n_angle_wires)])
+    phase_grad_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + i for i in range(n_phase_grad_wires)]
+    )
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(n_work_wires)]
+    )
 
     with pytest.raises(WireError, match=msg_match):
         _ = validate_phase_gradient_wires(angle_wires, phase_grad_wires, work_wires)
@@ -116,7 +120,7 @@ def test_valid_decomp(p):
 @pytest.mark.capture
 @pytest.mark.parametrize("rotation", ["RZ", "CRZ", "X", "Y", "Z"])
 def test_phase_gradient_capture_reuses_dynamic_inputs(rotation, seed):
-    """The captured factories apply new angles on new system wires on each evaluation."""
+    """Test that the captured factories apply new angles on new system wires on each evaluation."""
     import jax.numpy as jnp
 
     factories = {
@@ -158,7 +162,9 @@ def test_phase_gradient_capture_reuses_dynamic_inputs(rotation, seed):
         elif rotation in ("X", "Y", "Z"):
             if rotation == "Y":
                 assert basis_change.compute_op.name == "_SelectPauliRotYBasis"
-                assert basis_change.uncompute_op.name == "_SelectPauliRotYBasisInverse"
+                assert basis_change.uncompute_op.name == "_SelectPauliRotYBasis"
+                assert basis_change.compute_op.arguments["reverse"] is False
+                assert basis_change.uncompute_op.arguments["reverse"] is True
             if rotation in ("X", "Y"):
                 basis_change = basis_change.target_op
             assert basis_change.compute_op.name == "_SelectPauliRotPhaseGradientCompute"
@@ -172,9 +178,11 @@ def test_phase_gradient_capture_reuses_dynamic_inputs(rotation, seed):
 def test_as_fixed_decomps(phi, p):
     """Test that the decomposition rule from make_rz_to_phase_gradient_decomp works as expected
     as a fixed decomposition and yields the correct resources."""
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([100 + len(angle_wires) + i for i in range(p)])
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(p - 1)]
+    )
 
     kwargs = {
         "angle_wires": angle_wires,
@@ -203,9 +211,11 @@ def test_as_fixed_decomps(phi, p):
 def test_as_alt_decomps(phi, p):
     """Test that the decomposition rule from ``make_rz_to_phase_gradient_decomp works`` as
     expected as an alternative decomposition and yields the correct resources."""
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([100 + len(angle_wires) + i for i in range(p)])
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(p - 1)]
+    )
 
     kwargs = {
         "angle_wires": angle_wires,
@@ -240,9 +250,11 @@ def test_integration_multi_wire(seed):
     phi = (1 / 2 + 0 / 4 + 1 / 8) * 4 * np.pi
     wires = [0]
 
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(prec)])
+    phase_grad_wires = qp.wires.Wires([100 + len(angle_wires) + i for i in range(prec)])
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(prec - 1)]
+    )
 
     all_wires = angle_wires + phase_grad_wires + work_wires + wires
 
@@ -383,10 +395,6 @@ def test_precision_stats_hints(precision_stats, expected):
 
 
 @pytest.mark.catalyst
-@pytest.mark.xfail(
-    reason="Requires shared-wire hybrid operands from Catalyst PR #3470",
-    raises=pytest.RaisesExc(Exception, match="qubit operands must refer to distinct qubits"),
-)
 def test_precision_stats_hint_weighted_resources():
     """Test that the resources estimated from the hinted branches for a batch of rotations match
     the directly emitted operators for the individual rotations if ``precision_stats`` is
