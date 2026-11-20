@@ -249,7 +249,7 @@ def adjoint_state_measurements(  # pylint: disable=unused-argument
     * Turns the circuit into a state measurement + classical postprocesssing for arbitrary measurements
 
     Args:
-        tape (QuantumTape): the input circuit
+        tape (QuantumScript): the input circuit
 
     """
     if all(isinstance(m, ExpectationMP) for m in tape.measurements):
@@ -571,7 +571,7 @@ class DefaultQubit(Device):
 
         Args:
             execution_config (ExecutionConfig): The configuration of the desired derivative calculation
-            circuit (QuantumTape): An optional circuit to check derivatives support for.
+            circuit (QuantumScript): An optional circuit to check derivatives support for.
 
         Returns:
             Bool: Whether or not a derivative can be calculated provided the given information
@@ -877,7 +877,7 @@ class DefaultQubit(Device):
 
         Args:
             execution_config (ExecutionConfig): The configuration of the desired derivative calculation
-            circuit (QuantumTape): An optional circuit to check derivatives support for.
+            circuit (QuantumScript): An optional circuit to check derivatives support for.
 
         Returns:
             bool: Whether or not a derivative can be calculated provided the given information
@@ -951,7 +951,7 @@ class DefaultQubit(Device):
 
         Args:
             execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
-            circuit (None, QuantumTape): A specific circuit to check differentiation for.
+            circuit (None, QuantumScript): A specific circuit to check differentiation for.
 
         Returns:
             bool: Whether or not a derivative can be calculated provided the given information
@@ -969,7 +969,7 @@ class DefaultQubit(Device):
         adjoint differentiation method to compute the VJP.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits
+            circuits (Union[QuantumScript, Sequence[QuantumScript]]): the circuit or batch of circuits
             cotangents (Tuple[Number, Tuple[Number]]): Gradient-output vector. Must have shape matching the output shape of the
                 corresponding circuit. If the circuit has a single output, `cotangents` may be a single number, not an iterable
                 of numbers.

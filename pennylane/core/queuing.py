@@ -51,9 +51,8 @@ For example:
 To convert from a quantum function to a representation of a circuit, we use queuing.
 
 A *queuable object* is anything that can be placed into a queue. These will be :class:`~.Operator`,
-:class:`~.MeasurementProcess`, and :class:`~.QuantumTape` objects. :class:`~.Operator` and
+:class:`~.MeasurementProcess`. :class:`~.Operator` and
 :class:`~.MeasurementProcess` objects achieve queuing via a :meth:`~.Operator.queue` method called upon construction.
-Note that even though :class:`~.QuantumTape` is a queuable object, it does not have a ``queue`` method.
 
 When an object is queued, it sends itself to the :class:`~.QueuingManager`. The :class:`~.QueuingManager`
 is a global singleton class that facilitates placing objects in the queue. All of :class:`~.QueuingManager`'s methods
@@ -224,7 +223,7 @@ class QueuingManager:
     Queueable objects, like :class:`~.operation.Operator` and :class:`~.measurements.MeasurementProcess`, should
     use ``QueuingManager`` as an entry point for accessing the active queue.
 
-    See also: :class:`~.AnnotatedQueue`, :class:`~.tape.QuantumTape`, :meth:`~.operation.Operator.queue`.
+    See also: :class:`~.AnnotatedQueue`, :meth:`~.operation.Operator.queue`.
 
     Recording queues, such as :class:`~.AnnotatedQueue`, must define the following methods:
 

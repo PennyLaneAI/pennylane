@@ -45,7 +45,7 @@ def add_noise(tape, noise_model, level="user"):  # pylint: disable=too-many-bran
     noise model to indicate readout errors.
 
     Args:
-        tape (QNode or QuantumTape or Callable or pennylane.devices.Device): the input circuit or
+        tape (QNode or QuantumScript or Callable or pennylane.devices.Device): the input circuit or
             device to be transformed.
         noise_model (~pennylane.NoiseModel): noise model according to which noise has to be inserted.
         level (str, int, slice): An indication of which stage in the compile pipeline the
@@ -57,7 +57,7 @@ def add_noise(tape, noise_model, level="user"):  # pylint: disable=too-many-bran
             * ``slice``: a slice to select out components of the compile pipeline.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function] or device (pennylane.devices.Device):
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumScript], function] or device (pennylane.devices.Device):
         Transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     Raises:

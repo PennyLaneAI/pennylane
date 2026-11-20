@@ -166,7 +166,7 @@ def metric_tensor(  # pylint: disable=too-many-arguments
         This is the case for unitary single-parameter operations.
 
     Args:
-        tape (QNode or QuantumTape): quantum circuit to find the metric tensor of
+        tape (QNode or QuantumScript): quantum circuit to find the metric tensor of
         argnum (int or Sequence[int] or None): Trainable tape-parameter indices with respect to which
             the metric tensor is computed. If ``argnum=None``, the metric tensor with respect to all
             trainable parameters is returned. Excluding tape-parameter indices from this list reduces
@@ -207,7 +207,7 @@ def metric_tensor(  # pylint: disable=too-many-arguments
               The output shape is a single two-dimensional tensor.
 
     Returns:
-        qnode (QNode) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or tuple[List[QuantumScript], function]:
 
         The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the metric tensor in the form of a tensor.
@@ -328,7 +328,7 @@ def metric_tensor(  # pylint: disable=too-many-arguments
         :title: Usage Details
 
         This transform can also be applied to low-level
-        :class:`~.QuantumTape` objects. This will result in no implicit quantum
+        :class:`~.core.QuantumScript` objects. This will result in no implicit quantum
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the metric tensor are directly returned:
 
@@ -340,15 +340,15 @@ def metric_tensor(  # pylint: disable=too-many-arguments
         ...     qp.PhaseShift(params[2], wires=1),
         ...     ]
         >>> measurements = [qp.expval(qp.X(0))]
-        >>> tape = qp.tape.QuantumTape(ops, measurements)
+        >>> tape = qp.core.QuantumScript(ops, measurements)
         >>> tapes, fn = qp.metric_tensor(tape)
         >>> tapes
-        [<QuantumTape: wires=[0, 1], params=0>,
-         <QuantumTape: wires=[0, 1], params=1>,
-         <QuantumTape: wires=[0, 1], params=3>,
-         <QuantumTape: wires=[2, 0], params=1>,
-         <QuantumTape: wires=[2, 0, 1], params=2>,
-         <QuantumTape: wires=[2, 0, 1], params=2>]
+        [<QuantumScript: wires=[0, 1], params=0>,
+         <QuantumScript: wires=[0, 1], params=1>,
+         <QuantumScript: wires=[0, 1], params=3>,
+         <QuantumScript: wires=[2, 0], params=1>,
+         <QuantumScript: wires=[2, 0, 1], params=2>,
+         <QuantumScript: wires=[2, 0, 1], params=2>]
 
         This can be useful if the underlying circuits representing the metric tensor
         computation need to be analyzed. We clearly can distinguish the first three
@@ -388,7 +388,7 @@ def metric_tensor(  # pylint: disable=too-many-arguments
             The ``argnum`` argument can be used to restrict the parameters which are taken into account
             for computing the metric tensor.
             When the metric tensor of a QNode is computed, the ordering of the parameters has to be
-            specified as they appear in the corresponding QuantumTape.
+            specified as they appear in the corresponding QuantumScript.
 
         **Example**
 
@@ -477,13 +477,13 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too
     the covariance matrix of the generators of each layer.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
+        tape (pennylane.QNode or .core.QuantumScript): quantum tape or QNode to find the metric tensor of
         argnum (list[int]): Trainable tape-parameter indices with respect to which the metric tensor
             is computed.
         diag_approx (bool): if True, use the diagonal approximation. If ``False`` , a
             block-diagonal approximation of the metric tensor is computed.
     Returns:
-        list[pennylane.tape.QuantumTape]: Transformed tapes that compute the probabilities
+        list[pennylane.core.QuantumScript]: Transformed tapes that compute the probabilities
             required for the covariance matrix
         callable: Post-processing function that computes the covariance matrix from the
             results of the tapes in the first return value
@@ -657,7 +657,7 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire, shots):
             control the controlled-generator operations
 
     Returns:
-        list[pennylane.tape.QuantumTape]: Transformed tapes that compute the
+        list[pennylane.core.QuantumScript]: Transformed tapes that compute the
             first term of the metric tensor for the off-diagonal block belonging
             to the input layers
         list[tuple[int]]: 2-tuple indices assigning the tapes to metric tensor
@@ -703,7 +703,7 @@ def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wir
     and combine them with the covariance matrix-based block-diagonal tapes.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to find the metric tensor of
+        tape (pennylane.QNode or .core.QuantumScript): quantum tape or QNode to find the metric tensor of
         argnum (list[int]): Trainable tape-parameter indices with respect to which the metric tensor
             is computed.
         allow_nonunitary (bool): Whether non-unitary operations are allowed in circuits
@@ -717,7 +717,7 @@ def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wir
             is ``None`` .
 
     Returns:
-        list[pennylane.tape.QuantumTape]: Tapes to evaluate the metric tensor
+        list[pennylane.core.QuantumScript]: Tapes to evaluate the metric tensor
         callable: processing function to obtain the metric tensor from the tape results
     """
     # Get tapes and processing function for the block-diagonal metric tensor,
@@ -864,7 +864,7 @@ def _get_aux_wire(aux_wire, tape, device_wires):
             between ``_get_aux_wire`` and the ``Wires`` class.
             If a ``Wires`` instance already, the conversion to such an instance is performed
             trivially as well (also see the source code of ``~.Wires``).
-        tape (pennylane.tape.QuantumTape): Tape to infer the wire for
+        tape (pennylane.core.QuantumScript): Tape to infer the wire for
         device_wires (.wires.Wires): Wires of the device that is going to be used for the
             metric tensor. Facilitates finding a default for ``aux_wire`` if ``aux_wire``
             is ``None`` .

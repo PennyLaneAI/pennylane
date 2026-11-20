@@ -62,14 +62,14 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
     r"""This transform processes :class:`~pennylane.Snapshot` instances contained in a circuit,
     depending on the compatibility of the execution device.
     For supported devices, the snapshots' measurements are computed as the execution progresses.
-    Otherwise, the :func:`QuantumTape <pennylane.tape.QuantumTape>` gets split into several, one for each snapshot, with each aggregating
+    Otherwise, the :func:`QuantumScript <pennylane.tape.QuantumScript>` gets split into several, one for each snapshot, with each aggregating
     all the operations up to that specific snapshot.
 
     Args:
-        tape (QNode or QuantumTape or Callable): a quantum circuit.
+        tape (QNode or QuantumScript or Callable): a quantum circuit.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
         The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     If tape splitting is carried out, the transform will be conservative about the wires that it includes in each tape.
@@ -248,12 +248,12 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
         measurements = [qp.expval(qp.PauliX(0))]
 
-        tape = qp.tape.QuantumTape(ops, measurements)
+        tape = qp.tape.QuantumScript(ops, measurements)
 
         tapes, collect_results_into_dict = qp.snapshots(tape)
 
     >>> print(tapes)
-    [<QuantumTape: wires=[], params=0>, <QuantumTape: wires=[0], params=0>, <QuantumTape: wires=[0, 1], params=0>, <QuantumTape: wires=[0, 1], params=0>]
+    [<QuantumScript: wires=[], params=0>, <QuantumScript: wires=[0], params=0>, <QuantumScript: wires=[0, 1], params=0>, <QuantumScript: wires=[0, 1], params=0>]
 
     """
 

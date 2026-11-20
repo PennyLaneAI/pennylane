@@ -120,7 +120,7 @@ def default_wire_map(tape):
     """Create a dictionary mapping used wire labels to non-negative integers
 
     Args:
-        tape [~.tape.QuantumTape): the QuantumTape containing operations and measurements
+        tape [~.core.QuantumScript): the QuantumScript containing operations and measurements
 
     Returns:
         tuple[dict]: A tuple of maps from wires to sequential positive integers. The first map
@@ -151,7 +151,7 @@ def default_bit_map(tape):
     for classical conditions and for collecting statistics to this dictionary.
 
     Args:
-        tape [~.tape.QuantumTape]: the QuantumTape containing operations and measurements
+        tape [~.core.QuantumScript]: the QuantumScript containing operations and measurements
 
     Returns:
         dict: map from mid-circuit measurements to classical wires.
@@ -193,7 +193,7 @@ def convert_wire_order(tape, wire_order=None, show_all_wires=False):
     """Creates the mapping between wire labels and place in order.
 
     Args:
-        tape (~.tape.QuantumTape): the Quantum Tape containing operations and measurements
+        tape (~.core.QuantumScript): the Quantum Tape containing operations and measurements
         wire_order Sequence[Any]: the order (from top to bottom) to print the wires
 
     Keyword Args:

@@ -1544,6 +1544,24 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* :class:`~.QuantumTape` has now been removed. :class:`pennylane.core.QuantumScript` use is now fully
+required.
+
+.. code-block:: python
+
+    # before
+    with qp.tape.QuantumTape() as tape:
+        qp.X(0)
+        qp.probs()
+
+      # after
+      qp.core.QuantumScript([qp.X(0)], [qp.probs()])
+
+      with qp.queuing.AnnotatedQueue() as queue:
+          qp.X(0)
+          qp.probs()
+      qp.core.QuantumScript.from_queue(queue)
+
 * :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly: use
   ``get_compile_pipeline(qnode, level)`` instead of
   ``get_compile_pipeline(qnode, level)(*args, **kwargs)``. The device preprocessing transforms

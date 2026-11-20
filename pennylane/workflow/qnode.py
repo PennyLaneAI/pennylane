@@ -192,7 +192,7 @@ class QNode:  # pylint: disable=too-many-instance-attributes
     A *quantum node* contains a `quantum function <https://docs.pennylane.ai/en/stable/introduction/circuits.html#intro-vcirc-qfunc>`__
     and the computational device it is executed on.
 
-    The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing
+    The QNode calls the quantum function to construct a :class:`~.QuantumScript` instance representing
     the quantum circuit.
 
     Args:
@@ -800,7 +800,7 @@ class QNode:  # pylint: disable=too-many-instance-attributes
         self._shots_override_device = True
 
     @debug_logger
-    def construct(self, args, kwargs) -> qp.tape.QuantumScript:
+    def construct(self, args, kwargs) -> qp.core.qscript.QuantumScript:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
 

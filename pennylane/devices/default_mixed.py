@@ -156,15 +156,15 @@ def stopping_condition(op: qp.operation.Operator) -> bool:
 
 @qp.transform
 def warn_readout_error_state(
-    tape: qp.tape.QuantumTape,
-) -> tuple[Sequence[qp.tape.QuantumTape], Callable]:
+    tape: qp.core.qscript.QuantumScript,
+) -> tuple[Sequence[qp.core.qscript.QuantumScript], Callable]:
     """If a measurement in the QNode is an analytic state or density_matrix, warn that readout error will not be applied.
 
     Args:
-        tape (QuantumTape, .QNode, Callable): a quantum circuit.
+        tape (QuantumScript, .QNode, Callable): a quantum circuit.
 
     Returns:
-        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumTape], function]:
+        qnode (pennylane.QNode) or quantum function (callable) or tuple[List[.QuantumScript], function]:
         The unaltered input circuit.
     """
     if not tape.shots:
@@ -255,7 +255,7 @@ class DefaultMixed(Device):  # pylint: disable=abstract-method
 
         Args:
             execution_config (ExecutionConfig): The configuration of the desired derivative calculation.
-            circuit (QuantumTape): An optional circuit to check derivatives support for.
+            circuit (QuantumScript): An optional circuit to check derivatives support for.
 
         Returns:
             bool: Whether or not a derivative can be calculated provided the given information.
@@ -332,7 +332,7 @@ class DefaultMixed(Device):  # pylint: disable=abstract-method
 
         Returns:
             CompilePipeline, ExecutionConfig: A compile pipeline that when called returns
-            ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
+            ``QuantumScript`` objects that the device can natively execute, as well as a postprocessing
             function to be called after execution, and a configuration with unset
             specifications filled in.
 

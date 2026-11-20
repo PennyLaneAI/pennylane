@@ -48,16 +48,20 @@ class TestSnapshotTape:
         num_snapshots = len(tuple(filter(lambda x: isinstance(x, qp.Snapshot), ops)))
 
         expected_tapes = [
-            qp.tape.QuantumTape([], [qp.state()], shots=None),
-            qp.tape.QuantumTape([qp.Hadamard(0)], [qp.state()], shots=None),
-            qp.tape.QuantumTape([qp.Hadamard(0), qp.CNOT((0, 1))], [qp.probs()], shots=shots),
-            qp.tape.QuantumTape([qp.Hadamard(0), qp.CNOT((0, 1))], [qp.sample()], shots=10),
-            qp.tape.QuantumTape(
+            qp.core.qscript.QuantumScript([], [qp.state()], shots=None),
+            qp.core.qscript.QuantumScript([qp.Hadamard(0)], [qp.state()], shots=None),
+            qp.core.qscript.QuantumScript(
+                [qp.Hadamard(0), qp.CNOT((0, 1))], [qp.probs()], shots=shots
+            ),
+            qp.core.qscript.QuantumScript(
+                [qp.Hadamard(0), qp.CNOT((0, 1))], [qp.sample()], shots=10
+            ),
+            qp.core.qscript.QuantumScript(
                 [qp.Hadamard(0), qp.CNOT((0, 1))], [qp.expval(qp.X(0))], shots=shots
             ),
         ]
 
-        tape = qp.tape.QuantumTape(ops, measurements, shots=shots)
+        tape = qp.core.qscript.QuantumScript(ops, measurements, shots=shots)
         tapes, _ = qp.snapshots(tape)
 
         assert len(tapes) == num_snapshots + 1
@@ -65,7 +69,7 @@ class TestSnapshotTape:
         for out, expected in zip(tapes, expected_tapes):
             assert_equal(out, expected)
 
-        tape_no_meas = qp.tape.QuantumTape(ops, shots=shots)
+        tape_no_meas = qp.core.qscript.QuantumScript(ops, shots=shots)
         tapes_no_meas, _ = qp.snapshots(tape_no_meas)
 
         assert len(tapes_no_meas) == num_snapshots
@@ -86,7 +90,7 @@ class TestSnapshotTape:
 
         num_snapshots = len(tuple(filter(lambda x: isinstance(x, qp.Snapshot), ops)))
 
-        tape = qp.tape.QuantumTape(ops, measurements)
+        tape = qp.core.qscript.QuantumScript(ops, measurements)
 
         _, fn = qp.snapshots(tape)
 

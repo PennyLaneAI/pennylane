@@ -173,7 +173,7 @@ class TestControlledQubitUnitary:  # pylint: disable=too-many-public-methods
 
         dev = qp.device("default.qubit", wires=5)
 
-        with qp.tape.QuantumTape() as tape:
+        with qp.queuing.AnnotatedQueue() as tape_queue:
             arbitrary_input(wires=wires)
             qp.Toffoli(
                 wires=wires,
@@ -184,6 +184,8 @@ class TestControlledQubitUnitary:  # pylint: disable=too-many-public-methods
             )
 
             qp.adjoint(arbitrary_input)(wires=wires)
+
+        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         qs = qp.tape.QuantumScript(tape.operations, [qp.probs(wires=wires)])
 

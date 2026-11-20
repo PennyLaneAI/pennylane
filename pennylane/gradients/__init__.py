@@ -264,7 +264,7 @@ set its value correctly may yield incorrect results for higher-order derivatives
 Transforming tapes
 ------------------
 
-Gradient transforms can be applied to low-level :class:`~.QuantumTape` objects,
+Gradient transforms can be applied to low-level :class:`~.core.QuantumScript` objects,
 a datastructure representing variational quantum algorithms:
 
 .. code-block:: python
@@ -277,7 +277,7 @@ a datastructure representing variational quantum algorithms:
         qp.CNOT(wires=[0, 1]),
         qp.RX(weights[2], wires=1)]
     measurements = [qp.expval(qp.Z(1))]
-    tape = qp.tape.QuantumTape(ops, measurements)
+    tape = qp.core.QuantumScript(ops, measurements)
 
 Unlike when transforming a QNode, transforming a tape directly
 will perform no implicit quantum device evaluation. Instead, it returns
@@ -286,12 +286,12 @@ define the gradient:
 
 >>> gradient_tapes, fn = qp.gradients.param_shift(tape)
 >>> gradient_tapes
-[<QuantumTape: wires=[0, 1], params=3>,
- <QuantumTape: wires=[0, 1], params=3>,
- <QuantumTape: wires=[0, 1], params=3>,
- <QuantumTape: wires=[0, 1], params=3>,
- <QuantumTape: wires=[0, 1], params=3>,
- <QuantumTape: wires=[0, 1], params=3>]
+[<QuantumScript: wires=[0, 1], params=3>,
+ <QuantumScript: wires=[0, 1], params=3>,
+ <QuantumScript: wires=[0, 1], params=3>,
+ <QuantumScript: wires=[0, 1], params=3>,
+ <QuantumScript: wires=[0, 1], params=3>,
+ <QuantumScript: wires=[0, 1], params=3>]
 
 This can be useful if the underlying circuits representing the gradient
 computation need to be analyzed.

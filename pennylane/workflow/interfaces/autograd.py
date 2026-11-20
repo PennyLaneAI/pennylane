@@ -45,7 +45,7 @@ np.float64(4.0)
 
 The above code told autograd how to differentiate the first argument of ``f``.
 
-We have an additional problem that autograd does not understand that a :class:`~.QuantumTape`
+We have an additional problem that autograd does not understand that a :class:`~.QuantumScript`
 contains parameters we want to differentiate. So in order to match the ``vjp`` function with
 the correct parameters, we need to extract them from the batch of tapes, and pass them as is
 as the first argument to the primitive. Even though the primitive function
@@ -107,8 +107,8 @@ def autograd_execute(  # pylint: disable=unused-argument
     """Execute a batch of tapes with Autograd parameters on a device.
 
     Args:
-        tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
+        tapes (Sequence[.QuantumScript]): batch of tapes to execute
+        execute_fn (Callable[[Sequence[.QuantumScript]], ResultBatch]): a function that turns a batch of circuits into results
         jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
             for the input tapes.
 
@@ -165,8 +165,8 @@ def _execute(parameters, tapes, execute_fn, jpc):  # pylint: disable=unused-argu
     Args:
         parameters (list[list[Any]]): Nested list of the quantum tape parameters.
             This argument should be generated from the provided list of tapes.
-        tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
+        tapes (Sequence[.QuantumScript]): batch of tapes to execute
+        execute_fn (Callable[[Sequence[.QuantumScript]], ResultBatch]): a function that turns a batch of circuits into results
         jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
             for the input tapes.
 
@@ -181,8 +181,8 @@ def vjp(ans, parameters, tapes, execute_fn, jpc):  # pylint: disable=unused-argu
         ans (array): the result of the batch tape execution
         parameters (list[list[Any]]): Nested list of the quantum tape parameters.
             This argument should be generated from the provided list of tapes.
-        tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
+        tapes (Sequence[.QuantumScript]): batch of tapes to execute
+        execute_fn (Callable[[Sequence[.QuantumScript]], ResultBatch]): a function that turns a batch of circuits into results
         jpc (JacobianProductCalculator): a class that can compute the vector Jacobian product (VJP)
             for the input tapes.
 

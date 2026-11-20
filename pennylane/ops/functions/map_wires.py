@@ -65,14 +65,14 @@ def map_wires(  # pylint: disable=unused-argument
     to the given wire map.
 
     Args:
-        input (Operator or QNode or QuantumTape or Callable): an operator or a quantum circuit.
+        input (Operator or QNode or QuantumScript or Callable): an operator or a quantum circuit.
         wire_map (dict): dictionary containing the old wires as keys and the new wires as values
         queue (bool): Whether or not to queue the object when recording. Defaults to False.
         replace (bool): When ``queue=True``, if ``replace=True`` the input operators will be
             replaced by its mapped version. Defaults to False.
 
     Returns:
-        operator (Operator) or qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+        operator (Operator) or qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumScript], function]:
 
         The transformed circuit or operator with updated wires in :func:`qp.transform <pennylane.transform>`.
 

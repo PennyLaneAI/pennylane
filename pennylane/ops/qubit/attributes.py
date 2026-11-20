@@ -260,5 +260,5 @@ supports_broadcasting = Attribute(
 
 For such operations, the input parameters are allowed to have a single leading additional
 broadcasting dimension, creating the operation with a ``batch_size`` and leading to
-broadcasted tapes when used in a ``QuantumTape``.
+broadcasted tapes when used in a ``QuantumScript``.
 """

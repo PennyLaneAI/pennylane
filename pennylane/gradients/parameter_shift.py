@@ -266,7 +266,7 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     t_idx on tape.
 
     Args:
-        tape (.QuantumTape): Tape containing the operation to differentiate
+        tape (.core.QuantumScript): Tape containing the operation to differentiate
         t_idx (int): Parameter index of the operation to differentiate within the tape
         shifts (Sequence[float or int]): Shift values to use if no static ``grad_recipe`` is
             provided by the operation to differentiate
@@ -362,7 +362,7 @@ def expval_param_shift(  # pylint: disable=too-many-arguments
     stacking resaults.
 
         Args:
-            tape (.QuantumTape): quantum tape to differentiate
+            tape (.core.QuantumScript): quantum tape to differentiate
             argnum (int or list[int] or None): Trainable parameter indices to differentiate
                 with respect to. If not provided, the derivatives with respect to all
                 trainable indices are returned. Note that the indices are with respect to
@@ -381,7 +381,7 @@ def expval_param_shift(  # pylint: disable=too-many-arguments
                 a single broadcasted tape per operation instead of one tape per shift angle.
 
         Returns:
-            tuple[list[QuantumTape], function]: A tuple containing a
+            tuple[list[QuantumScript], function]: A tuple containing a
             list of generated tapes, together with a post-processing
             function to be applied to the results of the evaluated tapes
             in order to obtain the Jacobian matrix.
@@ -685,7 +685,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
     The post-processing function returns a tuple instead of stacking results.
 
     Args:
-        tape (.QuantumTape): quantum tape to differentiate
+        tape (.core.QuantumScript): quantum tape to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
@@ -703,7 +703,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None, b
             a single broadcasted tape per operation instead of one tape per shift angle.
 
     Returns:
-        tuple[list[QuantumTape], function]: A tuple containing a
+        tuple[list[QuantumScript], function]: A tuple containing a
         list of generated tapes, together with a post-processing
         function to be applied to the results of the evaluated tapes
         in order to obtain the Jacobian matrix.
@@ -850,7 +850,7 @@ def param_shift(  # pylint: disable=too-many-arguments
     parameters with respect to its inputs.
 
     Args:
-        tape (QNode or QuantumTape): quantum circuit to differentiate
+        tape (QNode or QuantumScript): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivative with respect to all
             trainable indices are returned.
@@ -881,7 +881,7 @@ def param_shift(  # pylint: disable=too-many-arguments
             a single broadcasted tape per operation instead of one tape per shift angle.
 
     Returns:
-        qnode (QNode) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or tuple[List[QuantumScript], function]:
 
         The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
@@ -1035,13 +1035,13 @@ def param_shift(  # pylint: disable=too-many-arguments
          Array([0.69916862, 0.34072424, 0.69202359], dtype=float64))
 
         This quantum gradient transform can also be applied to low-level
-        :class:`~.QuantumTape` objects. This will result in no implicit quantum
+        :class:`~.core.QuantumScript` objects. This will result in no implicit quantum
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
         >>> ops = [qp.RX(params[0], 0), qp.RY(params[1], 0), qp.RX(params[2], 0)]
         >>> measurements = [qp.expval(qp.Z(0)), qp.var(qp.Z(0))]
-        >>> tape = qp.tape.QuantumTape(ops, measurements)
+        >>> tape = qp.core.QuantumScript(ops, measurements)
         >>> gradient_tapes, fn = qp.gradients.param_shift(tape)
         >>> gradient_tapes
         [<QuantumScript: wires=[0], params=3>,
@@ -1109,7 +1109,7 @@ def param_shift(  # pylint: disable=too-many-arguments
         >>> params = np.array([0.1, 0.2, 0.3], requires_grad=True)
         >>> ops = [qp.RX(params[0], 0), qp.RY(params[1], 0), qp.RX(params[2], 0)]
         >>> measurements = [qp.expval(qp.Z(0))]
-        >>> tape = qp.tape.QuantumTape(ops, measurements)
+        >>> tape = qp.core.QuantumScript(ops, measurements)
         >>> gradient_tapes, fn = qp.gradients.param_shift(tape, broadcast=True)
         >>> len(gradient_tapes)
         3

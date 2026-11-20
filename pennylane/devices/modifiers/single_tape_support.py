@@ -171,7 +171,7 @@ def single_tape_support(cls: type) -> type:
     (0.0,)
 
     In this situation, ``MyDevice.execute`` only needs to handle the case where ``circuits`` is an iterable
-    of :class:`~pennylane.tape.QuantumTape` objects, not a single value.
+    of :class:`~pennylane.tape.QuantumScript` objects, not a single value.
 
     """
     if not issubclass(cls, Device):

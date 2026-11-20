@@ -130,14 +130,14 @@ def cancel_inverses(
     (self-)inverses or adjoint.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
+        tape (QNode or QuantumScript or Callable): A quantum circuit (QNode or quantum function).
         recursive (bool): Whether or not to recursively cancel inverses after a first pair of mutual inverses has been cancelled. Enabled by default.
 
             .. note::
                 This argument is not supported within a :func:`~.qjit` workflow.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
             The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
 
@@ -258,7 +258,7 @@ def cancel_inverses(
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
+        into a result for a single ``QuantumScript``.
         """
         return results[0]
 

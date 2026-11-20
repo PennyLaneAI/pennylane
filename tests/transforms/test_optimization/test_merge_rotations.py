@@ -465,7 +465,7 @@ with qp.queuing.AnnotatedQueue() as q:
     qp.Rot(0.0, 0.0, 0.0, wires=1)
     qp.expval(qp.PauliX(0) @ qp.PauliX(2))
 
-tape_circuit = qp.tape.QuantumTape.from_queue(q)
+tape_circuit = qp.core.qscript.QuantumScript.from_queue(q)
 
 
 ### QFunc

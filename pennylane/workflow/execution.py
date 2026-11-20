@@ -66,7 +66,7 @@ def execute(  # pylint: disable=too-many-arguments
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 
     Args:
-        tapes (Sequence[.QuantumTape]): batch of tapes to execute
+        tapes (Sequence[.core.QuantumScript]): batch of tapes to execute
         device (pennylane.devices.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
@@ -125,7 +125,7 @@ def execute(  # pylint: disable=too-many-arguments
         def cost_fn(params, x):
             ops1 = [qp.RX(params[0], wires=0), qp.RY(params[1], wires=0)]
             measurements1 = [qp.expval(qp.Z(0))]
-            tape1 = qp.tape.QuantumTape(ops1, measurements1)
+            tape1 = qp.core.QuantumScript(ops1, measurements1)
 
             ops2 = [
                 qp.RX(params[2], wires=0),
@@ -133,7 +133,7 @@ def execute(  # pylint: disable=too-many-arguments
                 qp.CNOT(wires=(0,1))
             ]
             measurements2 = [qp.probs(wires=0)]
-            tape2 = qp.tape.QuantumTape(ops2, measurements2)
+            tape2 = qp.core.QuantumScript(ops2, measurements2)
 
             tapes = [tape1, tape2]
 

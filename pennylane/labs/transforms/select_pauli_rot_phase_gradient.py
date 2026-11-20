@@ -48,7 +48,7 @@ def select_pauli_rot_phase_gradient(
 
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit containing :class:`~.SelectPauliRot` operators.
+        tape (QNode or QuantumScript or Callable): A quantum circuit containing :class:`~.SelectPauliRot` operators.
         angle_wires (Wires): The qubits that conditionally load the angle :math:`\phi` of
             the :class:`~.SelectPauliRot` gate in binary as a multiple of :math:`2\pi`.
             The length of the ``angle_wires`` , i.e. :math:`b`, implicitly determines the precision
@@ -60,7 +60,7 @@ def select_pauli_rot_phase_gradient(
             Needs to be at least :math:`b-1` wires.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
@@ -142,7 +142,7 @@ def select_pauli_rot_phase_gradient(
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
+        into a result for a single ``QuantumScript``.
         """
         return results[0]
 

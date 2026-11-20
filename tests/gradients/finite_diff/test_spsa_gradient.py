@@ -153,7 +153,7 @@ class TestSpsaGradient:
 
         dev = qp.device("default.qubit", wires=1)
 
-        tape = qp.tape.QuantumTape([qp.RX(0.5, wires=0)], [qp.expval(qp.PauliZ(0))])
+        tape = qp.core.qscript.QuantumScript([qp.RX(0.5, wires=0)], [qp.expval(qp.PauliZ(0))])
 
         results = []
         for sampler in [sampler_required_arg_or_kwarg, sampler_required_kwarg]:

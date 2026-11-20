@@ -615,7 +615,7 @@ class DefaultTensor(Device):  # pylint: disable=too-many-instance-attributes
                 parameters needed to fully describe the execution.
 
         Returns:
-            CompilePipeline, ExecutionConfig: A compile pipeline that when called returns :class:`~.QuantumTape`'s that the
+            CompilePipeline, ExecutionConfig: A compile pipeline that when called returns :class:`~.QuantumScript`'s that the
             device can natively execute as well as a postprocessing function to be called after execution, and a configuration
             with unset specifications filled in.
 
@@ -656,7 +656,7 @@ class DefaultTensor(Device):  # pylint: disable=too-many-instance-attributes
         """Execute a circuit or a batch of circuits and turn it into results.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the quantum circuits to be executed.
+            circuits (Union[QuantumScript, Sequence[QuantumScript]]): the quantum circuits to be executed.
             execution_config (ExecutionConfig): a data structure with additional information required for execution.
 
         Returns:
@@ -849,13 +849,13 @@ class DefaultTensor(Device):  # pylint: disable=too-many-instance-attributes
     def supports_derivatives(
         self,
         execution_config: ExecutionConfig | None = None,
-        circuit: qp.tape.QuantumTape | None = None,
+        circuit: qp.core.qscript.QuantumScript | None = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
         Args:
             execution_config (ExecutionConfig): The configuration of the desired derivative calculation.
-            circuit (QuantumTape): An optional circuit to check derivatives support for.
+            circuit (QuantumScript): An optional circuit to check derivatives support for.
 
         Returns:
             Bool: Whether or not a derivative can be calculated provided the given information.
@@ -871,7 +871,7 @@ class DefaultTensor(Device):  # pylint: disable=too-many-instance-attributes
         """Calculate the Jacobian of either a single or a batch of circuits on the device.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuits to calculate derivatives for.
+            circuits (Union[QuantumScript, Sequence[QuantumScript]]): the circuits to calculate derivatives for.
             execution_config (ExecutionConfig): a data structure with all additional information required for execution.
 
         Returns:
@@ -889,7 +889,7 @@ class DefaultTensor(Device):  # pylint: disable=too-many-instance-attributes
         """Compute the results and Jacobians of circuits at the same time.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuits or batch of circuits.
+            circuits (Union[QuantumScript, Sequence[QuantumScript]]): the circuits or batch of circuits.
             execution_config (ExecutionConfig): a data structure with all additional information required for execution.
 
         Returns:
@@ -908,7 +908,7 @@ class DefaultTensor(Device):  # pylint: disable=too-many-instance-attributes
 
         Args:
             execution_config (ExecutionConfig): The configuration of the desired derivative calculation.
-            circuit (QuantumTape): An optional circuit to check derivatives support for.
+            circuit (QuantumScript): An optional circuit to check derivatives support for.
 
         Returns:
             Bool: Whether or not a derivative can be calculated provided the given information.
@@ -924,7 +924,7 @@ class DefaultTensor(Device):  # pylint: disable=too-many-instance-attributes
         r"""The vector-Jacobian product used in reverse-mode differentiation.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits.
+            circuits (Union[QuantumScript, Sequence[QuantumScript]]): the circuit or batch of circuits.
             cotangents (Tuple[Number, Tuple[Number]]): Gradient-output vector. Must have shape matching the output shape of the
                 corresponding circuit. If the circuit has a single output, ``cotangents`` may be a single number, not an iterable
                 of numbers.
@@ -946,7 +946,7 @@ class DefaultTensor(Device):  # pylint: disable=too-many-instance-attributes
         """Calculate both the results and the vector-Jacobian product used in reverse-mode differentiation.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits to be executed.
+            circuits (Union[QuantumScript, Sequence[QuantumScript]]): the circuit or batch of circuits to be executed.
             cotangents (Tuple[Number, Tuple[Number]]): Gradient-output vector. Must have shape matching the output shape of the
                 corresponding circuit.
             execution_config (ExecutionConfig): a data structure with all additional information required for execution.

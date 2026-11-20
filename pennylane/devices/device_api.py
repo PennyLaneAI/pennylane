@@ -81,7 +81,7 @@ class Device(abc.ABC):
 
         :meth:`~.Device.batch_transform` and :meth:`~.Device.expand_fn` are now a single method, :meth:`~.Device.preprocess`
 
-        Shot information is no longer stored on the device, but instead specified on individual input :class:`~.QuantumTape`.
+        Shot information is no longer stored on the device, but instead specified on individual input :class:`~.QuantumScript`.
 
         The old devices defined a :meth:`~.Device.capabilities` dictionary that defined characteristics of the devices and controlled various
         preprocessing and validation steps, such as ``"supports_broadcasting"``.  These capabilities should now be handled by the
@@ -238,8 +238,8 @@ class Device(abc.ABC):
     def shots(self) -> Shots:
         """Default shots for execution workflows containing this device.
 
-        Note that the device itself should **always** pull shots from the provided :class:`~.QuantumTape` and its
-        :attr:`~.QuantumTape.shots`, not from this property. This property is used to provide a default at the start of a workflow.
+        Note that the device itself should **always** pull shots from the provided :class:`~.QuantumScript` and its
+        :attr:`~.QuantumScript.shots`, not from this property. This property is used to provide a default at the start of a workflow.
 
         """
         return self._shots
@@ -561,7 +561,7 @@ class Device(abc.ABC):
         """Execute a circuit or a batch of circuits and turn it into results.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the quantum circuits to be executed
+            circuits (Union[QuantumScript, Sequence[QuantumScript]]): the quantum circuits to be executed
             execution_config (ExecutionConfig): a datastructure with additional information required for execution
 
         Returns:
@@ -578,7 +578,7 @@ class Device(abc.ABC):
 
             See :ref:`Return Type Specification <ReturnTypeSpec>` for more detailed information.
 
-            The result for each :class:`~.QuantumTape` must match the shape specified by :class:`~.QuantumTape.shape`.
+            The result for each :class:`~.QuantumScript` must match the shape specified by :class:`~.QuantumScript.shape`.
 
             The level of priority for dimensions from outer dimension to inner dimension is:
 
@@ -617,7 +617,7 @@ class Device(abc.ABC):
 
             If the script has multiple measurements, then the device should return a tuple of measurements.
 
-            >>> tape = qp.tape.QuantumTape(measurements=[qp.expval(qp.Z(0)), qp.probs(wires=(0,1))])
+            >>> tape = qp.tape.QuantumScript(measurements=[qp.expval(qp.Z(0)), qp.probs(wires=(0,1))])
             >>> dev.execute(tape)
             (np.float64(1.0), array([1., 0., 0., 0.]))
 
@@ -635,7 +635,7 @@ class Device(abc.ABC):
 
         Args:
             execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
-            circuit (None, QuantumTape): A specific circuit to check differentiation for.
+            circuit (None, QuantumScript): A specific circuit to check differentiation for.
 
         Returns:
             Bool
@@ -723,7 +723,7 @@ class Device(abc.ABC):
         """Calculate the jacobian of either a single or a batch of circuits on the device.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuits to calculate derivatives for
+            circuits (Union[QuantumScript, Sequence[QuantumScript]]): the circuits to calculate derivatives for
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
@@ -753,7 +753,7 @@ class Device(abc.ABC):
         """Compute the results and jacobians of circuits at the same time.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuits or batch of circuits
+            circuits (Union[QuantumScript, Sequence[QuantumScript]]): the circuits or batch of circuits
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
         Returns:
@@ -782,7 +782,7 @@ class Device(abc.ABC):
         r"""The jacobian vector product used in forward mode calculation of derivatives.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits
+            circuits (Union[QuantumScript, Sequence[QuantumScript]]): the circuit or batch of circuits
             tangents (tensor-like): Gradient vector for input parameters.
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
@@ -821,7 +821,7 @@ class Device(abc.ABC):
         """Execute a batch of circuits and compute their jacobian vector products.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): circuit or batch of circuits
+            circuits (Union[QuantumScript, Sequence[QuantumScript]]): circuit or batch of circuits
             tangents (tensor-like): Gradient vector for input parameters.
             execution_config (ExecutionConfig): a datastructure with all additional information required for execution
 
@@ -845,7 +845,7 @@ class Device(abc.ABC):
 
         Args:
             execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
-            circuit (None, QuantumTape): A specific circuit to check differentiation for.
+            circuit (None, QuantumScript): A specific circuit to check differentiation for.
 
         Default behaviour assumes this to be ``True`` if :meth:`~.compute_jvp` is overridden.
 
@@ -861,7 +861,7 @@ class Device(abc.ABC):
         r"""The vector jacobian product used in reverse-mode differentiation.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits
+            circuits (Union[QuantumScript, Sequence[QuantumScript]]): the circuit or batch of circuits
             cotangents (Tuple[Number, Tuple[Number]]): Gradient-output vector. Must have shape matching the output shape of the
                 corresponding circuit. If the circuit has a single output, `cotangents` may be a single number, not an iterable
                 of numbers.
@@ -901,7 +901,7 @@ class Device(abc.ABC):
         r"""Calculate both the results and the vector jacobian product used in reverse-mode differentiation.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the circuit or batch of circuits to be executed
+            circuits (Union[QuantumScript, Sequence[QuantumScript]]): the circuit or batch of circuits to be executed
             cotangents (Tuple[Number, Tuple[Number]]): Gradient-output vector. Must have shape matching the output shape of the
                 corresponding circuit. If the circuit has a single output, `cotangents` may be a single number, not an iterable
                 of numbers.
@@ -927,7 +927,7 @@ class Device(abc.ABC):
 
         Args:
             execution_config (ExecutionConfig): A description of the hyperparameters for the desired computation.
-            circuit (None, QuantumTape): A specific circuit to check differentiation for.
+            circuit (None, QuantumScript): A specific circuit to check differentiation for.
 
         Default behaviour assumes this to be ``True`` if :meth:`~.compute_vjp` is overridden.
         """

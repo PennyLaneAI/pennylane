@@ -313,7 +313,7 @@ def simulate(
     This is an internal function that is used by``default.qubit``.
 
     Args:
-        circuit (QuantumTape): The single circuit to simulate
+        circuit (QuantumScript): The single circuit to simulate
         debugger (_Debugger): The debugger to use
         state_cache=None (Optional[dict]): A dictionary mapping the hash of a circuit to
             the pre-rotated state. Used to pass the state between forward passes and vjp
@@ -398,7 +398,7 @@ def simulate_tree_mcm(circuit: QuantumScript, debugger=None, **execution_kwargs)
     at a leaf at once and stops exploring more branches when a single shot is allocated to a sub-tree.
 
     Args:
-        circuit (QuantumTape): The single circuit to simulate
+        circuit (QuantumScript): The single circuit to simulate
         rng (Union[None, int, array_like[int], SeedSequence, BitGenerator, Generator]): A
             seed-like parameter matching that of ``seed`` for ``numpy.random.default_rng``.
             If no value is provided, a default RNG will be used.
@@ -630,10 +630,10 @@ def split_circuit_at_mcms(circuit):
     the last segment retains the original terminal measurements.
 
     Args:
-        circuit (QuantumTape): The circuit to simulate
+        circuit (QuantumScript): The circuit to simulate
 
     Returns:
-        Sequence[QuantumTape]: Circuit segments.
+        Sequence[QuantumScript]: Circuit segments.
     """
 
     mcm_gen = ((i, op) for i, op in enumerate(circuit) if isinstance(op, MidMeasure))
@@ -943,7 +943,7 @@ def simulate_one_shot_native_mcm(
     Assumes that the circuit has been transformed by `dynamic_one_shot`.
 
     Args:
-        circuit (QuantumTape): The single circuit to simulate
+        circuit (QuantumScript): The single circuit to simulate
         debugger (_Debugger): The debugger to use
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is

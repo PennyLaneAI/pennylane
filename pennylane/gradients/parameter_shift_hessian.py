@@ -270,7 +270,7 @@ def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_di
     post-processing function to combine the results of evaluating the tapes into the Hessian.
 
     Args:
-        tape (.QuantumTape): quantum tape to differentiate
+        tape (.core.QuantumScript): quantum tape to differentiate
         argnum (array_like[bool]): Parameter indices to differentiate
             with respect to, in form of a two-dimensional boolean ``array_like`` mask.
         method_map (dict[int, string]): The differentiation method to use for each trainable
@@ -292,7 +292,7 @@ def expval_hessian_param_shift(tape, argnum, method_map, diagonal_shifts, off_di
             instead of evaluating the input tape, reducing the number of device invocations.
 
     Returns:
-        tuple[list[QuantumTape], function]: A tuple containing a
+        tuple[list[QuantumScript], function]: A tuple containing a
         list of generated tapes, together with a post-processing
         function to be applied to the results of the evaluated tapes
         in order to obtain the Hessian matrix.
@@ -472,7 +472,7 @@ def param_shift_hessian(
     >>> qp.jacobian(qp.grad(cost))(weights)
 
     Args:
-        tape (QNode or QuantumTape): quantum circuit to differentiate
+        tape (QNode or QuantumScript): quantum circuit to differentiate
         argnum (int or list[int] or array_like[bool] or None): Parameter indices to differentiate
             with respect to. If not provided, the Hessian with respect to all
             trainable indices is returned. Note that the indices refer to tape
@@ -496,7 +496,7 @@ def param_shift_hessian(
             instead of evaluating the input tape, reducing the number of device invocations.
 
     Returns:
-        qnode (QNode) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or tuple[List[QuantumScript], function]:
 
         The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the Hessian in the form of a tensor, a tuple, or a nested tuple depending upon the number
@@ -539,7 +539,7 @@ def param_shift_hessian(
         >>> hessian_tapes, postproc_fn = qp.gradients.param_shift_hessian(tape)
         >>> len(hessian_tapes)
         13
-        >>> all(isinstance(tape, qp.tape.QuantumTape) for tape in hessian_tapes)
+        >>> all(isinstance(tape, qp.core.QuantumScript) for tape in hessian_tapes)
         True
         >>> postproc_fn(qp.execute(hessian_tapes, dev, None))
         ((array(-0.86883595), array(0.04762358)),
@@ -591,7 +591,7 @@ def param_shift_hessian(
 
         Finally, the ``argnum`` argument can be used to compute the Hessian only for some of the
         variational parameters. Note that this indexing refers to trainable tape parameters both
-        if ``tape`` is a ``QNode`` and if it is a ``QuantumTape``.
+        if ``tape`` is a ``QNode`` and if it is a ``QuantumScript``.
 
         >>> hessian_tapes, postproc_fn = qp.gradients.param_shift_hessian(tape, argnum=(1,))
         >>> postproc_fn(qp.execute(hessian_tapes, dev, None))

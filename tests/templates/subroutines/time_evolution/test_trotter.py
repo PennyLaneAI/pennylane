@@ -512,8 +512,10 @@ class TestDecomposition:
     def test_compute_decomposition(self, hamiltonian, hamiltonian_index, order):
         """Test the decomposition is correct and queues"""
         op = qp.TrotterProduct(hamiltonian, 4.2, order=order)
-        with qp.tape.QuantumTape() as tape:
+        with qp.queuing.AnnotatedQueue() as tape_queue:
             decomp = op.compute_decomposition(*op.parameters, **op.hyperparameters)
+
+        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         assert decomp == tape.operations  # queue matches decomp with circuit ordering
 

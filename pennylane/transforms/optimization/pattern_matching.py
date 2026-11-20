@@ -58,15 +58,15 @@ def pattern_matching_optimization(
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit to be optimized (QNode or quantum function).
-        pattern_tapes(list(.QuantumTape)): List of quantum tapes that implement the identity.
+        tape (QNode or QuantumScript or Callable): A quantum circuit to be optimized (QNode or quantum function).
+        pattern_tapes(list(.core.QuantumScript)): List of quantum tapes that implement the identity.
         custom_quantum_cost (dict): Optional, quantum cost that overrides the default cost dictionary.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     Raises:
-        QuantumFunctionError: The pattern provided is not a valid QuantumTape or the pattern contains measurements or
+        QuantumFunctionError: The pattern provided is not a valid QuantumScript or the pattern contains measurements or
             the pattern does not implement identity or the circuit has less qubits than the pattern.
 
     **Example**
@@ -79,7 +79,7 @@ def pattern_matching_optimization(
         import pennylane as qp
 
         ops = [qp.S(0), qp.S(0), qp.Z(0)]
-        pattern = qp.tape.QuantumTape(ops)
+        pattern = qp.core.QuantumScript(ops)
 
     Let's consider the following circuit where we want to replace a sequence of two ``pennylane.S`` gates with a
     ``pennylane.PauliZ`` gate.
@@ -178,7 +178,7 @@ def pattern_matching_optimization(
                 qp.CNOT(wires=[0, 1]),
                 qp.CNOT(wires=[0, 2]),
             ]
-            cnot_pattern = qp.tape.QuantumTape(ops)
+            cnot_pattern = qp.core.QuantumScript(ops)
 
         For optimizing the circuit given the following pattern of CNOTs we apply the ``pattern_matching``
         transform.
@@ -309,7 +309,7 @@ def pattern_matching_optimization(
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
+        into a result for a single ``QuantumScript``.
         """
         return results[0]
 

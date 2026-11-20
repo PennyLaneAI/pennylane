@@ -91,7 +91,7 @@ class JacobianProductCalculator(abc.ABC):
         This method is required to compute JVPs in the JAX interface.
 
         Args:
-            tapes (Sequence[.QuantumScript | .QuantumTape]): The batch of tapes to take the derivatives of
+            tapes (Sequence[.QuantumScript | .QuantumScript]): The batch of tapes to take the derivatives of
             tangents (Sequence[Sequence[TensorLike]]): the tangents for the parameters of the tape.
                 The ``i`` th tangent corresponds to the ``i`` th tape, and the ``j`` th entry into a
                 tangent entry corresponds to the ``j`` th trainable parameter of the tape.
@@ -241,7 +241,7 @@ class TransformJacobianProducts(JacobianProductCalculator):
     """Compute VJPs, JVPs and Jacobians via a gradient transform :class:`~.Transform`.
 
     Args:
-        inner_execute (Callable[[Tuple[QuantumTape]], ResultBatch]): a function that
+        inner_execute (Callable[[Tuple[QuantumScript]], ResultBatch]): a function that
             executes the batch of circuits and returns their results.
         gradient_transform (.Transform): the gradient transform to use.
         gradient_kwargs (dict): Any keyword arguments for the gradient transform.
