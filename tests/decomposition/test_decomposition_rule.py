@@ -1178,14 +1178,14 @@ class TestDecompCollection:
         with pytest.raises(KeyError, match="Cannot find a decomposition with the given name: abc"):
             collection["abc"]  # pylint: disable=pointless-statement
 
-    @pytest.mark.parametrize("inspect", [False, True])
-    def test_unknown_name_lists_available_names(self, inspect):
+    @pytest.mark.parametrize("use_inspect", [False, True])
+    def test_unknown_name_lists_available_names(self, use_inspect):
         """Failed public lookups report the available names in registration order."""
         with pytest.raises(KeyError) as exc:
-            if inspect:
+            if use_inspect:
                 qp.inspect_decomps(CustomOp(wires=[0, 1]), "abc")
             else:
-                qp.list_decomps(CustomOp)["abc"]
+                _ = qp.list_decomps(CustomOp)["abc"]
         assert exc.value.args[0] == (
             "Cannot find a decomposition with the given name: abc. "
             "Available names: ['custom_decomp', 'custom2', 'custom_decomp3']."
@@ -1194,7 +1194,7 @@ class TestDecompCollection:
     def test_unknown_name_in_empty_collection(self):
         """Failed lookups in an empty collection report that no names are available."""
         with pytest.raises(KeyError) as exc:
-            DecompCollection()["abc"]
+            _ = DecompCollection()["abc"]
         assert exc.value.args[0] == (
             "Cannot find a decomposition with the given name: abc. Available names: []."
         )

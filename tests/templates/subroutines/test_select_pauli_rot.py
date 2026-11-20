@@ -24,9 +24,9 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.templates.subroutines.select_pauli_rot import (
+    _select_pauli_rot_standard,
     _SelectPauliRotYBasis,
     _UniformRZ,
-    _select_pauli_rot_standard,
 )
 from pennylane.testing import assert_decomposable
 from pennylane.typing import AbstractWires, Float
