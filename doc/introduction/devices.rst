@@ -14,10 +14,8 @@
 Supported devices
 =================
 
-Not all PennyLane devices currently work with Catalyst, and for those that do, their supported
-feature set may not necessarily match supported features when used without :func:`~.qjit`.
-
-Supported backend devices include:
+Not all devices currently work with PennyLane2. Supported backend devices
+include:
 
 .. list-table::
   :widths: 20 80
@@ -44,7 +42,7 @@ Supported backend devices include:
     - A fast state-vector qubit simulator based on the ``lightning.kokkos`` device to give maximum performance on AMD GPUs. See the
       `Lightning-AMDGPU documentation <https://docs.pennylane.ai/projects/lightning/en/latest/lightning_amdgpu/device.html>`__
       for more details, as well as its
-      `Catalyst configuration file <https://github.com/PennyLaneAI/pennylane-lightning/blob/main/pennylane_lightning/lightning_kokkos/lightning_kokkos.toml>`__ 
+      `Catalyst configuration file <https://github.com/PennyLaneAI/pennylane-lightning/blob/main/pennylane_lightning/lightning_kokkos/lightning_kokkos.toml>`__
       (shared with ``lightning.kokkos``) for natively supported instructions.
 
   * - ``lightning.gpu``
@@ -59,7 +57,7 @@ Supported backend devices include:
   * - ``braket.aws.qubit``
 
     - Interact with quantum computing hardware devices and simulators through Amazon Braket. To use
-      this device with Catalyst, make sure to install the
+      this device with PennyLane2, make sure to install the
       `PennyLane-Braket plugin <https://amazon-braket-pennylane-plugin-python.readthedocs.io/en/latest/>`__.
       See the
       `Catalyst configuration file <https://github.com/PennyLaneAI/catalyst/blob/main/runtime/lib/backend/openqasm/braket_aws_qubit.toml>`__
@@ -68,7 +66,7 @@ Supported backend devices include:
   * - ``braket.local.qubit``
 
     - Run gate-based circuits on the Braket SDK's local simulator. To use
-      this device with Catalyst, make sure to install the
+      this device with PennyLane2, make sure to install the
       `PennyLane-Braket plugin <https://amazon-braket-pennylane-plugin-python.readthedocs.io/en/latest/>`__.
       See the
       `Catalyst configuration file <https://github.com/PennyLaneAI/catalyst/blob/main/runtime/lib/backend/openqasm/braket_local_qubit.toml>`__
@@ -78,7 +76,7 @@ Supported backend devices include:
 
     - `Qrack <https://github.com/unitaryfund/qrack>`__ is a GPU-accelerated quantum computer
       simulator with many novel optimizations including hybrid stabilizer simulation. To use this
-      device with Catalyst, make sure to install the
+      device with PennyLane2, make sure to install the
       `PennyLane-Qrack plugin <https://pennylane-qrack.readthedocs.io/en/latest/>`__, and check out
       the `QJIT compilation with Qrack and Catalyst tutorial <https://pennylane.ai/qml/demos/qrack/>`__.
 
@@ -88,7 +86,7 @@ Supported backend devices include:
   * - ``oqc.cloud``
 
     - Execute on `Oxford Quantum Circuits (OQC) <https://www.oqc.tech/>`__ superconducting hardware,
-      via `OQC Cloud <https://docs.oqc.app>`__. To use OQC Cloud with Catalyst, simply `install the
+      via `OQC Cloud <https://docs.oqc.app>`__. To use OQC Cloud with PennyLane2, simply `install the
       client <https://docs.oqc.app/installation.html>`__, ensure your credentials are set as
       environment variables, and use the ``backend`` argument to specify the OQC backend to use:
 
