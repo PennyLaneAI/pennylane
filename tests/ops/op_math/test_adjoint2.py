@@ -70,6 +70,8 @@ class RX2(Operator2):
 
     dynamic_argnames = ("theta",)
 
+    arg_specs = {"wires": Wire[1]}
+    
     is_verified_hermitian = True
 
     def __init__(self, theta, wires):  # pylint: disable=useless-parent-delegation

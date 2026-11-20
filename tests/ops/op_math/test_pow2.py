@@ -49,6 +49,8 @@ def pow_using_dunder_method(base, z):
 class NoPowOp(Operator2):
     """A base operator whose ``pow`` always raises ``PowUndefinedError``."""
 
+    arg_specs = {"wires": Wire[1]}
+
     def __init__(self, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(wires)
 
@@ -58,6 +60,8 @@ class NoPowOp(Operator2):
 
 class BadPowOp(Operator2):
     """A base operator whose ``pow`` raises a generic (non-``Pow``) error."""
+
+    arg_specs = {"wires": Wire[1]}
 
     def __init__(self, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(wires)
@@ -71,6 +75,8 @@ class RealPowOp(Operator2):
 
     dynamic_argnames = ("phi",)
 
+    arg_specs = {"wires": Wire[1]}
+    
     def __init__(self, phi, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(phi, wires)
 
