@@ -60,13 +60,18 @@ def test_fixed_decomposition_by_public_name(op_key):
 
 
 def test_fixed_decomposition_unknown_name():
-    """An unknown name reports the missing rule."""
-    with pytest.raises(KeyError, match="missing_strategy"):
+    """An unknown fixed rule name reports the available public names."""
+    available = [rule.name for rule in qp.list_decomps(qp.SWAP)]
+    with pytest.raises(KeyError, match="missing_strategy") as exc:
         DecompositionGraph(
             [qp.SWAP(wires=[0, 1])],
             gate_set={qp.CNOT},
             fixed_decomps={qp.SWAP: "missing_strategy"},
         )
+    assert exc.value.args[0] == (
+        "Cannot find a decomposition with the given name: missing_strategy. "
+        f"Available names: {available}."
+    )
 
 
 class CustomOp(Operation):

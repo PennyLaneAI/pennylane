@@ -544,7 +544,10 @@ class DecompCollection:
         if isinstance(arg, int):
             return list(self._decomps.values())[arg]
         if arg not in self._decomps:
-            raise KeyError(f"Cannot find a decomposition with the given name: {arg}.")
+            raise KeyError(
+                f"Cannot find a decomposition with the given name: {arg}. "
+                f"Available names: {list(self._decomps)}."
+            )
         return self._decomps[arg]
 
     def __repr__(self) -> str:
