@@ -129,9 +129,17 @@ class TrotterVibronic(Operator2):
         })
         all_wires = qp.wires.Wires.all_wires(list(wires.values()))
 
-        # decompose by one step to see the top-level sub-templates
-        @qp.transforms._tape_decompose(max_expansion=1, gate_set=qp.gate_sets.ALL_OPS | {qp.PhaseGradientStatePrep})
-        @qp.qnode(qp.device("default.qubit", wires=all_wires))
+        # decompose into the top-level sub-templates
+        gate_set = {
+            "PhaseGradientStatePrep", "QROM", "SemiAdder", "TemporaryAND",
+            "Adjoint(TemporaryAND)", "Hadamard", "CNOT", "C(MultiX)", "MultiX", "AQFT",
+            "Adjoint(AQFT)", "SignedOutSquare", "Adjoint(SignedOutSquare)", "OutMultiplier",
+            "SignedOutMultiplier", "Adjoint(SignedOutMultiplier)",
+        }
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("null.qubit", wires=all_wires))
         def circuit():
             qp.PhaseGradientStatePrep(wires["phase_gradient"])
             qp.TrotterVibronic(
@@ -143,8 +151,26 @@ class TrotterVibronic(Operator2):
             )
             return qp.probs(wires=wires["electronic"])
 
-    >>> qp.specs(circuit)().resources.quantum_operations  # doctest: +SKIP
-    {'PhaseGradientStatePrep': 1, 'QROM': 6, 'SemiAdder': 4, 'TemporaryAND': 6, 'C(MultiX)': 8, 'CNOT': 28, 'Adjoint(TemporaryAND)': 6, 'AQFT': 1, 'MultiX': 2, 'SignedOutSquare': 1, 'OutMultiplier': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(AQFT)': 1}
+    >>> print(qp.analyze(circuit)().resources)  # doctest: +SKIP
+    Quantum operations:
+    - Total: 66
+      - 1C(MultiX): 8
+      - AQFT: 1
+      - Adjoint(AQFT): 1
+      - Adjoint(SignedOutSquare): 1
+      - Adjoint(TemporaryAND): 6
+      - CNOT: 28
+      - MultiX: 2
+      - OutMultiplier: 1
+      - PhaseGradientStatePrep: 1
+      - QROM: 6
+      - SemiAdder: 4
+      - SignedOutSquare: 1
+      - TemporaryAND: 6
+    Measurement processes:
+    - probs(1 wires): 1
+    Total wires: 19
+    Circuit Depth: Not computed
 
     .. note::
 
