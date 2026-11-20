@@ -389,7 +389,7 @@ You can then use the device in PennyLane2 as follows:
 Taking the TOML configuration from the
 :ref:`"Configuration file for declaring supported instructions" <device_capabilities>`
 section, it declares ``ExpectationMP``. Therefore, running ``circuit`` requires
-the implementation of ``Expval`` and ``Observable`` in the ``CustomDevice``. Additionally, 
+the implementation of ``Expval`` and ``Observable`` in the ``CustomDevice``. Additionally,
 it also needs ``NamedOperation`` for the ``RY`` and ``CNOT``.
 
 When initializing a custom device in PennyLane2, the device's ``wires`` argument
@@ -429,6 +429,7 @@ so that ``config_filepath`` and ``get_c_interface`` point to files that exist.
 Further reading
 ---------------
 
-* :doc:`Custom devices <catalyst:dev/custom_devices>` and
-  :doc:`supported devices <catalyst:dev/devices>` in the Catalyst documentation.
+* :doc:`Custom devices <catalyst:dev/custom_devices>` in the Catalyst
+  documentation.
+* :doc:`Supported devices </introduction/devices>`.
 * The `QuantumDevice API documentation <https://docs.pennylane.ai/projects/catalyst/en/stable/api/structCatalyst_1_1Runtime_1_1QuantumDevice.html>`__.
