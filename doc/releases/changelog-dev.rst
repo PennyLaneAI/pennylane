@@ -260,7 +260,7 @@ New features since last release
       >>> isinstance(op, qp.core.Operator2)
       True
       >>> qp.inspect_decomps(op)
-      Decomposition 0 (name: MyOpdecomp)
+      Decomposition 0 (name: MyOp_decomp)
       0: ──H──RZ(0.50)─┤
       Gate Count: {Hadamard: 1, RZ: 1}
 

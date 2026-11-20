@@ -470,7 +470,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     >>> pauli_cob = qp.testing.decomp_rule_to_tape(qp.PauliRot(0.5, "XYZ", [0, 1, 2]), rule).operations[0]
     >>> to_basis = pauli_cob.compute_op
     >>> inspector.inspect_decomps(to_basis)
-    Decomposition 0 (name: PauliRotBasisdecomp)
+    Decomposition 0 (name: PauliRotBasis_decomp)
     0: ──H───────────┤
     1: ──PPR(π/4, X)─┤
     First-Level Expansion Gates: {Hadamard: 1, PPR_4(1, 'X', wires=AbstractWires(1)): 1}
