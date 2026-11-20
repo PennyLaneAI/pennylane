@@ -23,7 +23,7 @@ from collections.abc import Callable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
-from functools import partial, singledispatch, update_wrapper
+from functools import singledispatch, update_wrapper
 from textwrap import dedent
 from typing import overload
 
@@ -76,15 +76,6 @@ def register_condition(
     condition: Callable[..., bool], qfunc: Callable | None = None
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     """Binds a condition to a decomposition rule for when it is applicable.
-
-    .. note::
-
-        This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
-        performing decompositions is generally more resource-efficient and accommodates multiple alternative
-        decomposition rules for an operator. In this new system, custom decomposition rules are
-        defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using :func:`~.register_resources`.
 
     Args:
         condition (Callable): a function which takes the resource parameters of an operator as
@@ -163,15 +154,6 @@ def register_resources(
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     r"""Binds a quantum function to its required resources.
 
-    .. note::
-
-        This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
-        doing decompositions is generally more resource efficient and accommodates multiple alternative
-        decomposition rules for an operator. In this new system, custom decomposition rules are
-        defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using ``qp.register_resources``.
-
     Args:
         ops (dict or Callable): a dictionary mapping unique operators within the given ``qfunc``
             to their number of occurrences therein. If a function is provided instead of a static
@@ -196,7 +178,6 @@ def register_resources(
             a data structure that represents a decomposition rule, which contains a PennyLane
             quantum function representing the decomposition, and its resource function.
 
-
     **Example**
 
     This function can be used as a decorator to bind a quantum function to its required resources
@@ -205,8 +186,6 @@ def register_resources(
     .. code-block:: python
 
         import pennylane as qp
-
-        qp.decomposition.enable_graph()
 
         @qp.register_resources({qp.H: 2, qp.CZ: 1})
         def my_cnot(wires, **_):
@@ -219,7 +198,6 @@ def register_resources(
         def circuit():
             qp.CNOT(wires=[0, 1])
             return qp.state()
-
 
     >>> print(qp.draw(circuit, level="device")())
     0: ────╭●────┤ ╭State
@@ -296,8 +274,6 @@ def register_resources(
           from pennylane.allocation import allocate
           from pennylane.typing import Wire
 
-          qp.decomposition.enable_graph()
-
           def _condition_fn(control_wires, **_):
               return len(control_wires) > 1
 
@@ -318,7 +294,11 @@ def register_resources(
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
 
-          @qp.transforms._tape_decompose(fixed_decomps=decomps, num_work_wires=1)
+          @qp.transforms._tape_decompose(
+              gate_set={qp.MultiControlledX, qp.CRot},
+              fixed_decomps=decomps,
+              num_work_wires=1,
+          )
           @qp.qnode(qp.device("default.qubit"))
           def circuit():
               qp.ctrl(qp.Rot(0.1, 0.2, 0.3, wires=3), control=[0, 1, 2])
@@ -420,15 +400,7 @@ class DecompositionRule:
             if count > 0:
                 gate_counter.update({op: count})
 
-        gate_counter = dict(gate_counter)
-        if qp.capture.enabled():
-            # When capture is enabled, ChangeOpBasis is unrolled. The resource functions are
-            # typically not aware of that, and still produce resource reps of ChangeOpBasis.
-            # Therefore, we unroll the ChangeOpBasis in the resources manually so that it will
-            # match what the decomposition rule actually produces.
-            gate_counter = _unroll_change_op_basis(gate_counter)
-
-        return Resources(gate_counter)
+        return Resources(dict(gate_counter))
 
     def is_applicable(self, *args, **kwargs) -> bool:
         """Checks whether this decomposition rule is applicable."""
@@ -615,17 +587,8 @@ _excluded_decomps_var = ContextVar("_excluded_decomps", default=_excluded_decomp
 def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
-    .. note::
-
-        This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
-        doing decompositions is generally more resource efficient and accommodates multiple alternative
-        decomposition rules for an operator. In this new system, custom decomposition rules are
-        defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using :func:`~pennylane.register_resources`
-
-    In the new system of decompositions, multiple decomposition rules can be registered for the
-    same operator class. The specified decomposition rules in ``add_decomps`` serve as alternative
+    Multiple decomposition rules can be registered for the same operator class.
+    The specified decomposition rules in ``add_decomps`` serve as alternative
     decomposition rules that may be chosen if they lead to a more resource-efficient decomposition.
 
     Args:
@@ -735,13 +698,6 @@ def _list_control_decomps(op_name: str) -> DecompCollection:
 
 def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     """Lists decomposition rules for an operator.
-
-    .. note::
-
-        This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
-        doing decompositions is generally more resource efficient and accommodates multiple alternative
-        decomposition rules for an operator.
 
     Args:
         op (type or Operator or str): the operator or operator type to retrieve decomposition
@@ -883,13 +839,6 @@ def exclude_decomps(op: type[Operator] | Operator | str, *names: str) -> _Decomp
 
 def has_decomp(op: type[Operator] | Operator | str) -> bool:
     """Checks whether an operator has decomposition rules defined.
-
-    .. note::
-
-        This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
-        doing decompositions is generally more resource efficient and accommodates multiple alternative
-        decomposition rules for an operator.
 
     Args:
         op (type or Operator or str): the operator or operator type to check for
@@ -1113,13 +1062,6 @@ def inspect_decomps(
     Takes an operator instance and displays how the operator is decomposed
     using different decomposition rules.
 
-    .. note::
-
-        This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This
-        new way of performing decompositions is generally more resource-efficient and accommodates
-        multiple alternative decomposition rules for an operator.
-
     Args:
         op (Operator): the operator instance whose decomposition rules will be inspected.
         *rules (str or DecompositionRule): the decomposition rules to inspect. Accepts instances
@@ -1239,8 +1181,6 @@ def null_decomp(*_, **__):
         import pennylane as qp
         from pennylane.decomposition import null_decomp
 
-        qp.decomposition.enable_graph()
-
         @qp.transforms._tape_decompose(
             gate_set={qp.RZ},
             fixed_decomps={qp.GlobalPhase: null_decomp}
@@ -1298,98 +1238,3 @@ def _decomp_contains_mcm(rule, params):
         return False
     resources = rule.compute_resources(**params).gate_counts
     return any(_is_measurement(resource_op) for resource_op in resources)
-
-
-def _unroll_change_op_basis(gate_counts):
-    """Unroll ChangeOpBasis resource keys, including those inside symbolic operators.
-
-    ``ChangeOpBasis`` is unrolled into its compute/target/uncompute operands when program
-    capture is enabled. Resource functions call this on their returned gate-count dict so that
-    the estimate matches the captured decomposition.
-    """
-    new_gate_counts = defaultdict(int)
-    for op_rep, count in gate_counts.items():
-        for unrolled_rep, inner_count in _unroll_change_op_basis_resource(op_rep).items():
-            new_gate_counts[unrolled_rep] += count * inner_count
-    return new_gate_counts
-
-
-def _unroll_change_op_basis_resource(op_rep):
-    """Expand a single resource key that is (or wraps) a ChangeOpBasis.
-    Recursively expands nested ChangeOpBasis resource keys.
-
-    Keys that do not involve a ChangeOpBasis are returned unchanged as ``{op_rep: 1}``.
-    """
-    operands = _change_op_basis_operands(op_rep)
-    if operands is not None:
-        gate_counts = defaultdict(int)
-        for operand in operands:
-            unrolled_operand = _unroll_change_op_basis(_unroll_prod_operand(operand))
-            for inner_op, count in unrolled_operand.items():
-                gate_counts[inner_op] += count
-        return gate_counts
-
-    # pylint: disable-next=import-outside-toplevel
-    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-
-    if isinstance(op_rep, qp.ops.Adjoint2):
-        return _unroll_symbolic_change_op_basis(op_rep, _adjoint_abstract)
-
-    if isinstance(op_rep, qp.ops.ControlledOp2):
-        wrapper = partial(
-            qp.ctrl,
-            control=op_rep.control_wires,
-            control_values=op_rep.control_values,
-            work_wires=op_rep.work_wires,
-            work_wire_type=op_rep.work_wire_type,
-        )
-        return _unroll_symbolic_change_op_basis(op_rep, wrapper)
-
-    return {op_rep: 1}
-
-
-def _change_op_basis_operands(op_rep):
-    """Return ``(compute_op, target_op, uncompute_op)`` for a ChangeOpBasis resource key.
-
-    Handles both a native :class:`~.ChangeOpBasis2` and a legacy ``CompressedResourceOp``
-    wrapping :class:`~.ChangeOpBasis`. Returns ``None`` for any other resource key.
-    """
-    if isinstance(op_rep, qp.ops.ChangeOpBasis2):
-        return op_rep.compute_op, op_rep.target_op, op_rep.uncompute_op
-    if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.ChangeOpBasis:
-        params = op_rep.params
-        return params["compute_op"], params["target_op"], params["uncompute_op"]
-    return None
-
-
-def _unroll_prod_operand(operand):
-    """Expand a Prod-like ChangeOpBasis operand into its inner resource keys with counts."""
-
-    # pylint: disable-next=import-outside-toplevel
-    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-
-    if isinstance(operand, qp.ops.Prod2):
-        counts = defaultdict(int)
-        for inner_op in operand.operands:
-            counts[inner_op] += 1
-        return dict(counts)
-    if isinstance(operand, qp.ops.Adjoint):
-        counts = defaultdict(int)
-        for inner_op, inner_count in _unroll_prod_operand(operand.base).items():
-            counts[_adjoint_abstract(inner_op)] += inner_count
-        return dict(counts)
-    if isinstance(operand, CompressedResourceOp) and operand.op_type is qp.ops.Prod:
-        return dict(operand.params["resources"])
-    return {operand: 1}
-
-
-def _unroll_symbolic_change_op_basis(op_rep, wrapper):
-    """Unroll a ChangeOpBasis nested in a single symbolic resource key and reapply its wrapper."""
-    unrolled_base = _unroll_change_op_basis_resource(op_rep.base)
-    if unrolled_base == {op_rep.base: 1}:
-        return {op_rep: 1}
-
-    gate_counts = defaultdict(int)
-    for base_rep, count in unrolled_base.items():
-        gate_counts[wrapper(base_rep)] += count
-    return gate_counts

@@ -417,7 +417,6 @@ class TestResourceRule:
         )
         assert resources == Resources({})
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("double_phase", [False, True])
     @pytest.mark.parametrize("work_wires", [(), ("and", "controlled_and")])
     def test_controlled_zero_steps_empty_decomposition(
@@ -510,7 +509,6 @@ class TestDecomposition:
         expected = expm(-1j * cdf_reference_hamiltonian(ham) * t)
         assert np.allclose(u, expected, atol=1e-9)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(("num_fragments", "num_steps"), [(1, 1), (2, 3)])
     @pytest.mark.parametrize(
         ("has_control", "double_phase", "control_value", "num_work_wires"),
@@ -767,7 +765,6 @@ class TestDecomposition:
         assert diffs[1] / diffs[2] > 3.0
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestControlledDecomposition:
     """Tests for the default (genuine) C(TrotterCDF) controlled decomposition."""
 
@@ -948,7 +945,6 @@ class TestControlledDecomposition:
             qp.ctrl(op, control=99).decomposition()
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestDoublePhaseControlledDecomposition:
     """Tests for the opt-in double-phase (Fig. 6) C(TrotterCDF) controlled decomposition."""
 
@@ -1019,7 +1015,6 @@ class TestDoublePhaseControlledDecomposition:
 class TestIntegration:
     """Integration tests via the graph-based decomposition system."""
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("t, num_steps", [(1.0, 0), (0.0, 10)])
     @pytest.mark.parametrize("work_wires", [(), (99,)])
     def test_identity_edge_cases(self, toy_hamiltonian_cdf_concrete, t, num_steps, work_wires):
