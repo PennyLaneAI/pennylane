@@ -1551,6 +1551,9 @@ Breaking changes 💔
   ``qp.list_decomps(qp.SWAP)["to_cnot"]`` and ``fixed_decomps={qp.SWAP: "to_cnot"}``.
   `(#10492) <https://github.com/PennyLaneAI/pennylane/pull/10492>`__
 
+* Removes :class:`pennylane.tape.OperationRecorder`. Use :class:`~.AnnotatedQueue` instead.
+  [(#10574)](https://github.com/PennyLaneAI/pennylane/pull/10574)
+
 * :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly: use
   ``get_compile_pipeline(qnode, level)`` instead of
   ``get_compile_pipeline(qnode, level)(*args, **kwargs)``. The device preprocessing transforms
