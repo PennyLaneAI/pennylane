@@ -281,10 +281,11 @@ def test_torch_dispatch(diff_function):
 @pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
 def test_autograd_with_mixed_dictionary_keys(diff_function):
     """Interface selection allows dictionaries with heterogeneous keys."""
-    x = qp.numpy.array(2.0, requires_grad=True)
+    x = qp.numpy.array(2.0, requires_grad=False)
     offsets = {1: 2.0, "a": 3.0}
-    derivative = diff_function(lambda value, offset: value**2 + sum(offset.values()))
-    assert derivative(x, offsets) == 4.0
+    derivative = diff_function(lambda offset, value: value**2 + sum(offset.values()))
+    with pytest.warns(UserWarning, match="no trainable parameters"):
+        assert derivative(offsets, x) == ()
 
 
 @pytest.mark.jax
@@ -296,6 +297,32 @@ def test_optimizer_rejects_jax_parameters(optimizer, grad_fn):
     """JAX parameters require an optimizer that recognizes their trainability."""
     with pytest.raises(ValueError, match="Optax"):
         optimizer().step(lambda x: x**2, jax.numpy.array(2.0), grad_fn=grad_fn)
+
+
+@pytest.mark.jax
+def test_shot_adaptive_optimizer_rejects_jax_parameters():
+    """Shot-adaptive optimization validates JAX inputs before sampling gradients."""
+    optimizer = qp.ShotAdaptiveOptimizer(min_shots=10)
+    with pytest.raises(ValueError, match="Optax"):
+        optimizer.step(lambda value: value**2, jax.numpy.array(2.0))
+
+
+def test_autograd_jacobian_with_iterator_argnums():
+    """Backend selection and repeated calls reuse all indices from a one-shot iterator."""
+    derivative = qp.jacobian(lambda x, y: x**2 + x * y, argnums=iter((0, 1)))
+    x, y = qp.numpy.array(2.0), qp.numpy.array(3.0)
+    assert qp.math.allclose(derivative(x, y), (7.0, 2.0))
+    assert qp.math.allclose(derivative(x, y), (7.0, 2.0))
+
+
+@pytest.mark.jax
+def test_jax_jacobian_output_pytree_with_multiple_arguments():
+    """The output pytree surrounds the tuple of argument derivatives."""
+    derivative = qp.jacobian(lambda x, y: (x**2, x * y), argnums=(0, 1))
+    result = derivative(jax.numpy.array(2.0), jax.numpy.array(3.0))
+    expected = ((4.0, 0.0), (3.0, 2.0))
+    assert jax.tree_util.tree_structure(result) == jax.tree_util.tree_structure(expected)
+    assert qp.math.allclose(result, expected)
 
 
 @pytest.mark.jax

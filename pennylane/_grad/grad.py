@@ -530,12 +530,16 @@ class jacobian:  # pylint: disable=too-few-public-methods
     the trainable arguments are instead inferred from their ``requires_grad`` attribute.
     To differentiate several arguments in every case, pass their indices as ``argnums``.
 
-    The returned function takes the same arguments as the original
-    function and outputs a ``tuple``. The ``i``-th entry of the ``tuple`` has shape
-    ``(*output shape, *shape of args[argnums[i]])``.
+    The returned function takes the same arguments as the original function.
+    With JAX, its result preserves the output pytree, with a derivative for each
+    selected argument at every output leaf. For example, outputs ``(x**2, x*y)``
+    with ``argnums=(0, 1)`` produce ``((2*x, 0), (y, x))``. Each derivative has shape
+    ``(*output leaf shape, *input leaf shape)``. A single integer ``argnums``, or
+    ``None``, omits the argument tuple at each output leaf.
 
-    If a single trainable argument is inferred, or if ``argnums`` is a single integer
-    or ``None`` with JAX inputs, the tuple is unpacked and its only entry is returned instead.
+    With Autograd, the result is a tuple with one entry per differentiated argument,
+    each with shape ``(*output shape, *argument shape)``. The tuple is unpacked
+    when ``argnums`` is an integer or a single trainable argument is inferred.
 
     **Example**
 
@@ -699,7 +703,7 @@ class jacobian:  # pylint: disable=too-few-public-methods
 
     def __init__(self, func, argnums=None, method=None, h=None):
         self._func = func
-        self._argnums = argnums
+        self._argnums = argnums if argnums is None or isinstance(argnums, int) else tuple(argnums)
         self._method = method
         self._h = h
 
