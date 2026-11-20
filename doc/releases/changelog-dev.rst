@@ -1147,10 +1147,10 @@ Improvements 🛠
   efficient controlled decompositions.
   `(#10118) <https://github.com/PennyLaneAI/pennylane/pull/10118>`__
 
-* The decomposition of the adjoint of a :func:`~.change_op_basis` operator now produces another
-  basis-change operator with an inverted target, instead of three separate operators. This lets the
-  controlled-adjoint pattern control only the target, rather than every gate of the compute and
-  uncompute operators.
+* The decomposition of the adjoint of a :func:`~.change_op_basis` operator built from ``Operator2``
+  operands now produces another basis-change operator with an inverted target, instead of three
+  separate operators. This lets a controlled adjoint under program capture control only the target,
+  rather than every gate of the compute and uncompute operators.
   `(#10568) <https://github.com/PennyLaneAI/pennylane/pull/10568>`__
 
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.
