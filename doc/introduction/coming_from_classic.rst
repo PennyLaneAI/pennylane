@@ -65,8 +65,9 @@ Differences at a glance
     * - Supported devices
       - Python devices such as ``default.qubit``, plugins such as
         PennyLane-Qiskit, and more.
-      - Only :doc:`devices that Catalyst supports <catalyst:dev/devices>`, such
-        as ``lightning.qubit``, ``lightning.kokkos`` and ``lightning.gpu``.
+      - Only devices listed in the
+        :doc:`supported device page </introduction/devices>`, such as
+        ``lightning.qubit``, ``lightning.kokkos`` and ``lightning.gpu``.
         Devices must be given ``wires``. New plugin devices must follow
         :doc:`/development/plugins`.
     * - Control flow
@@ -283,8 +284,8 @@ Transforms and compilation passes
 Writing custom transforms and compilation passes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A custom transform made in PennyLane Classic that is built off of the tape representation of 
-quantum circuits is not compatible with PennyLane2. Compilation passes in PennyLane2 must be written 
+A custom transform made in PennyLane Classic that is built off of the tape representation of
+quantum circuits is not compatible with PennyLane2. Compilation passes in PennyLane2 must be written
 in MLIR, and instructions can be found in the Catalyst documentation under
 :doc:`catalyst:dev/transforms`.
 
