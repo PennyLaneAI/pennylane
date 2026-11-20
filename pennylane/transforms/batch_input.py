@@ -45,12 +45,12 @@ def batch_input(
     Based on `arXiv:2202.10471 <https://arxiv.org/abs/2202.10471>`__.
 
     Args:
-        tape (QNode or QuantumTape or Callable): Input quantum circuit to batch
+        tape (QNode or QuantumScript or Callable): Input quantum circuit to batch
         argnum (Sequence[int] or int): One or several index values indicating the position of the
             non-trainable batched parameters in the quantum tape.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the batched results.

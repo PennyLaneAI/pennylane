@@ -204,8 +204,8 @@ def execute(tapes, execute_fn, jpc, device=None):  # pylint: disable=unused-argu
     """Execute a batch of tapes with Torch parameters on a device.
 
     Args:
-        tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
+        tapes (Sequence[.QuantumScript]): batch of tapes to execute
+        execute_fn (Callable[[Sequence[.QuantumScript]], ResultBatch]): a function that turns a batch of circuits into results
         jpc (JacobianProductCalculator): a class that can compute the vector jacobian product for the input tapes.
 
     Returns:

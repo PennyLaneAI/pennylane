@@ -90,11 +90,11 @@ def _batch_postprocessing(
     """Broadcast individual post processing functions onto their respective tapes.
 
     Args:
-        results (ResultBatch): The numeric outcome from executing a batch of :class:`~.QuantumTape`
+        results (ResultBatch): The numeric outcome from executing a batch of :class:`~.QuantumScript`
 
     Keyword Args:
         individual_fns (List[Callable]): postprocessing functions converting a batch of results into a single result
-            corresponding to only a single :class:`~.QuantumTape`.
+            corresponding to only a single :class:`~.QuantumScript`.
         slices (List[slice]): the indices for the results that correspond to each individual post processing function.
 
     >>> results = (1.0, 2.0, 3.0, 4.0)
@@ -120,7 +120,7 @@ def _apply_postprocessing_stack(
     """Applies the postprocessing and cotransform postprocessing functions in a Last-In-First-Out LIFO manner.
 
     Args:
-        results (ResultBatch): The numeric outcome from executing a batch of :class:`~.QuantumTape`
+        results (ResultBatch): The numeric outcome from executing a batch of :class:`~.QuantumScript`
 
     Keyword Args:
         postprocessing_stack (List(BatchPostProcessingFn)): a LIFO stack of post processing functions.
@@ -148,7 +148,7 @@ def null_postprocessing(results: ResultBatch) -> ResultBatch:
     """An empty postprocessing function that simply returns its input.
 
     Args:
-        results (ResultBatch): Results from executing a batch of :class:`~.QuantumTape`.
+        results (ResultBatch): Results from executing a batch of :class:`~.QuantumScript`.
 
     Returns:
         ResultBatch: the input to the function.

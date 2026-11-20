@@ -572,7 +572,7 @@ class MeasurementTransform(MeasurementProcess):
     Any class inheriting from ``MeasurementTransform`` should define its own ``process`` method,
     which should have the following arguments:
 
-    * tape (QuantumTape): quantum tape to transform
+    * tape (QuantumScript): quantum tape to transform
     * device (pennylane.devices.LegacyDevice): device used to transform the quantum tape
     """
 
@@ -581,7 +581,7 @@ class MeasurementTransform(MeasurementProcess):
         """Process the given quantum tape.
 
         Args:
-            tape (QuantumTape): quantum tape to transform
+            tape (QuantumScript): quantum tape to transform
             device (pennylane.devices.LegacyDevice): device used to transform the quantum tape
         """
 

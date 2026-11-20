@@ -601,7 +601,7 @@ def _(op: ParametricMidMeasure, drawer, layer, _):
 
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
-    into a result for a single ``QuantumTape``.
+    into a result for a single ``QuantumScript``.
     """
     return results[0]
 

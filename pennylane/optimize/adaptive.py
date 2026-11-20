@@ -32,12 +32,12 @@ def append_gate(tape: QuantumScript, params, gates) -> tuple[QuantumScriptBatch,
     """Append parametrized gates to an existing tape.
 
     Args:
-        tape (QuantumTape or QNode or Callable): quantum circuit to transform by adding gates
+        tape (QuantumScript or QNode or Callable): quantum circuit to transform by adding gates
         params (array[float]): parameters of the gates to be added
         gates (list[Operator]): list of the gates to be added
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     """
     new_operations = []
@@ -50,7 +50,7 @@ def append_gate(tape: QuantumScript, params, gates) -> tuple[QuantumScriptBatch,
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
+        into a result for a single ``QuantumScript``.
         """
         return results[0]  # pragma: no cover
 

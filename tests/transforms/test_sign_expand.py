@@ -15,18 +15,19 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-import pennylane.tape
 
 # Defines the device used for all tests
 dev = qp.device("default.qubit", wires=[0, 1, 2, 3, "Hadamard", "Target"])
 
 # Defines circuits to be used in queueing/output tests
-with pennylane.tape.QuantumTape() as tape1:
+with qp.queuing.AnnotatedQueue() as tape1_queue:
     qp.PauliX(0)
     H1 = qp.Hamiltonian([1.5], [qp.PauliZ(0) @ qp.PauliZ(1)])
     qp.expval(H1)
 
-with pennylane.tape.QuantumTape() as tape2:
+tape1 = qp.core.qscript.QuantumScript.from_queue(tape1_queue)
+
+with qp.queuing.AnnotatedQueue() as tape2_queue:
     qp.Hadamard(0)
     qp.Hadamard(1)
     qp.PauliZ(1)
@@ -40,11 +41,15 @@ with pennylane.tape.QuantumTape() as tape2:
     )
     qp.expval(H2)
 
+tape2 = qp.core.qscript.QuantumScript.from_queue(tape2_queue)
+
 H3 = qp.Hamiltonian([1.5, 0.3], [qp.PauliZ(0) @ qp.PauliZ(1), qp.PauliX(2)])
 
-with qp.tape.QuantumTape() as tape3:
+with qp.queuing.AnnotatedQueue() as tape3_queue:
     qp.PauliX(0)
     qp.expval(H3)
+
+tape3 = qp.core.qscript.QuantumScript.from_queue(tape3_queue)
 
 
 H4 = qp.Hamiltonian(
@@ -52,7 +57,7 @@ H4 = qp.Hamiltonian(
     [qp.PauliX(0) @ qp.PauliZ(2), qp.PauliZ(2), qp.PauliX(0), qp.PauliZ(2), qp.PauliZ(2)],
 )
 
-with qp.tape.QuantumTape() as tape4:
+with qp.queuing.AnnotatedQueue() as tape4_queue:
     qp.Hadamard(0)
     qp.Hadamard(1)
     qp.PauliZ(1)
@@ -60,15 +65,19 @@ with qp.tape.QuantumTape() as tape4:
 
     qp.expval(H4)
 
+tape4 = qp.core.qscript.QuantumScript.from_queue(tape4_queue)
+
 TAPES = [tape1, tape2, tape3, tape4]
 OUTPUTS = [-1.5, -1, -1.5, -7]
 
-with pennylane.tape.QuantumTape() as tape1_var:
+with qp.queuing.AnnotatedQueue() as tape1_var_queue:
     qp.PauliX(0)
     H1 = qp.Hamiltonian([1.5], [qp.PauliZ(0) @ qp.PauliZ(1)])
     qp.var(H1)
 
-with pennylane.tape.QuantumTape() as tape2_var:
+tape1_var = qp.core.qscript.QuantumScript.from_queue(tape1_var_queue)
+
+with qp.queuing.AnnotatedQueue() as tape2_var_queue:
     qp.Hadamard(0)
     qp.Hadamard(1)
     qp.PauliZ(1)
@@ -81,6 +90,8 @@ with pennylane.tape.QuantumTape() as tape2_var:
         ],
     )
     qp.var(H2)
+
+tape2_var = qp.core.qscript.QuantumScript.from_queue(tape2_var_queue)
 
 TAPES_var = [tape1_var, tape2_var]
 OUTPUTS_var = [0, 2]
@@ -160,8 +171,10 @@ class TestSignExpand:
     def test_hamiltonian_error(self):
         """Tests if wrong observables get caught in the test"""
 
-        with pennylane.tape.QuantumTape() as tape:
+        with qp.queuing.AnnotatedQueue() as tape_queue:
             qp.expval(qp.PauliZ(0))
+
+        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         with pytest.raises(ValueError, match=r"Passed tape must end in"):
             qp.transforms.sign_expand(tape)
@@ -169,9 +182,11 @@ class TestSignExpand:
     def test_hamiltonian_error_not_jointly_measurable(self):
         """Test if hamiltonians that are not jointly measurable throw an error"""
 
-        with pennylane.tape.QuantumTape() as tape:
+        with qp.queuing.AnnotatedQueue() as tape_queue:
             H_mult = qp.Hamiltonian([1.5, 2, 0.3], [qp.PauliZ(0), qp.PauliZ(1), qp.PauliX(0)])
             qp.expval(H_mult)
+
+        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         with pytest.raises(ValueError, match=r"Passed hamiltonian"):
             qp.transforms.sign_expand(tape)

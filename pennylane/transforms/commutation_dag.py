@@ -38,10 +38,10 @@ def commutation_dag(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproces
     operations can be moved next to each other by pairwise commutation.
 
     Args:
-        tape (QNode or QuantumTape or Callable): The quantum circuit.
+        tape (QNode or QuantumScript or Callable): The quantum circuit.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the commutation DAG.
@@ -181,7 +181,7 @@ class CommutationDAG:
     transform :class:`qp.transforms.commutation_dag`.
 
     Args:
-        tape (.QuantumTape): PennyLane quantum tape representing a quantum circuit.
+        tape (.QuantumScript): PennyLane quantum tape representing a quantum circuit.
 
     **Reference:**
 

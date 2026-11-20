@@ -72,7 +72,7 @@ def insert(  # pylint: disable=too-many-branches
     for more information).
 
     Args:
-        tape (QNode or QuantumTape or Callable or pennylane.devices.Device): the input circuit to be transformed.
+        tape (QNode or QuantumScript or Callable or pennylane.devices.Device): the input circuit to be transformed.
         op (callable or Type[Operation]): the single-qubit operation, or sequence of operations
             acting on a single qubit, to be inserted into the circuit
         op_args (tuple or float): the arguments fed to the operation, either as a tuple or a single
@@ -86,7 +86,7 @@ def insert(  # pylint: disable=too-many-branches
             Default is ``False`` and the operation is inserted after.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function] or device (pennylane.devices.Device):
+        qnode (QNode) or quantum function (Callable) or tuple[List[.core.QuantumScript], function] or device (pennylane.devices.Device):
 
         The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
@@ -172,7 +172,7 @@ def insert(  # pylint: disable=too-many-branches
                 qp.RX(0.6, wires=1)
             ]
             measurements = [qp.expval(qp.Z(0) @ qp.Z(1))]
-            tape = qp.tape.QuantumTape(ops, measurements)
+            tape = qp.core.QuantumScript(ops, measurements)
 
         We can add the :class:`~.AmplitudeDamping` channel to the end of the circuit using:
 
@@ -281,7 +281,7 @@ def insert(  # pylint: disable=too-many-branches
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
+        into a result for a single ``QuantumScript``.
         """
         return results[0]
 

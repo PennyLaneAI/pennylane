@@ -91,7 +91,7 @@ class ClassicalShadowMP(MeasurementTransform):
         .. seealso:: :func:`~pennylane.classical_shadow`
 
         Args:
-            tape (QuantumTape): the quantum tape to be processed
+            tape (QuantumScript): the quantum tape to be processed
             device (pennylane.devices.LegacyDevice): the device used to process the quantum tape
 
         Returns:
@@ -774,7 +774,7 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
            [0, 2],
            [0, 1]], dtype=int8)
 
-        To use the same Pauli recipes for different executions, the :class:`~.tape.QuantumTape`
+        To use the same Pauli recipes for different executions, the :class:`~.core.QuantumScript`
         interface should be used instead:
 
         .. code-block:: python
@@ -783,7 +783,7 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
 
             ops = [qp.Hadamard(wires=0), qp.CNOT(wires=(0,1))]
             measurements = [qp.classical_shadow(wires=(0,1))]
-            tape = qp.tape.QuantumTape(ops, measurements, shots=5)
+            tape = qp.core.QuantumScript(ops, measurements, shots=5)
 
         >>> bits1, recipes1 = qp.execute([tape], device=dev, diff_method=None)[0]
         >>> bits2, recipes2 = qp.execute([tape], device=dev, diff_method=None)[0]
@@ -792,7 +792,7 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
         >>> print(np.all(bits1 == bits2))
         False
 
-        If using different Pauli recipes is desired for the :class:`~.tape.QuantumTape` interface,
+        If using different Pauli recipes is desired for the :class:`~.core.QuantumScript` interface,
         different seeds should be used for the classical shadow:
 
         .. code-block:: python
@@ -800,10 +800,10 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
             dev = qp.device("default.qubit", wires=2, seed=0)
 
             measurements1 = [qp.classical_shadow(wires=(0,1), seed=10)]
-            tape1 = qp.tape.QuantumTape(ops, measurements1, shots=5)
+            tape1 = qp.core.QuantumScript(ops, measurements1, shots=5)
 
             measurements2 = [qp.classical_shadow(wires=(0,1), seed=15)]
-            tape2 = qp.tape.QuantumTape(ops, measurements2, shots=5)
+            tape2 = qp.core.QuantumScript(ops, measurements2, shots=5)
 
         >>> bits1, recipes1 = qp.execute([tape1], device=dev, diff_method=None)[0]
         >>> bits2, recipes2 = qp.execute([tape2], device=dev, diff_method=None)[0]

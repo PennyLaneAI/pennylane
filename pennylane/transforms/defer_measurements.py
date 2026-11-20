@@ -90,7 +90,7 @@ def _collect_mid_measure_info(tape: QuantumScript):
 
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
-    into a result for a single ``QuantumTape``.
+    into a result for a single ``QuantumScript``.
     """
     return results[0]
 
@@ -147,7 +147,7 @@ def defer_measurements(  # pylint: disable=too-many-branches,unused-argument
         or an observable are explicitly specified.
 
     Args:
-        tape (QNode or QuantumTape or Callable): a quantum circuit.
+        tape (QNode or QuantumScript or Callable): a quantum circuit.
         reduce_postselected (bool): Whether to use postselection information to reduce the number
             of operations and control wires in the output tape. Active by default. This is currently
             ignored if program capture is enabled.
@@ -158,7 +158,7 @@ def defer_measurements(  # pylint: disable=too-many-branches,unused-argument
             only used if program capture is enabled.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]: The
             transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     Raises:

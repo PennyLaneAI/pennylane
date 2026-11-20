@@ -84,8 +84,8 @@ def equal(
         and ``check_trainability``.
 
     Args:
-        op1 (.Operator or .MeasurementProcess or .QuantumTape or .PauliWord or .PauliSentence): First object to compare
-        op2 (.Operator or .MeasurementProcess or .QuantumTape or .PauliWord or .PauliSentence): Second object to compare
+        op1 (.Operator or .MeasurementProcess or .QuantumScript or .PauliWord or .PauliSentence): First object to compare
+        op2 (.Operator or .MeasurementProcess or .QuantumScript or .PauliWord or .PauliSentence): Second object to compare
         check_interface (bool, optional): Whether to compare interfaces. Default: ``True``.
         check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``.
         rtol (float, optional): Relative tolerance for parameters.
@@ -181,8 +181,8 @@ def assert_equal(
     """Function to assert that two operators, measurements, or tapes are equal
 
     Args:
-        op1 (.Operator or .MeasurementProcess or .QuantumTape): First object to compare
-        op2 (.Operator or .MeasurementProcess or .QuantumTape): Second object to compare
+        op1 (.Operator or .MeasurementProcess or .QuantumScript): First object to compare
+        op2 (.Operator or .MeasurementProcess or .QuantumScript): Second object to compare
         check_interface (bool, optional): Whether to compare interfaces. Default: ``True``.
         check_trainability (bool, optional): Whether to compare trainability status. Default: ``True``.
         rtol (float, optional): Relative tolerance for parameters.
@@ -268,8 +268,8 @@ def _equal_dispatch(
 
 @_equal_dispatch.register
 def _equal_circuit(
-    op1: qp.tape.QuantumScript,
-    op2: qp.tape.QuantumScript,
+    op1: qp.core.qscript.QuantumScript,
+    op2: qp.core.qscript.QuantumScript,
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,

@@ -62,7 +62,7 @@ def simulate(tape: QuantumScript, seed=None) -> Result:
     """Simulate a tape and turn it into results.
 
     Args:
-        tape (.QuantumTape): a representation of a circuit
+        tape (.QuantumScript): a representation of a circuit
         seed (Any): A seed to use to control the generation of samples.
 
     """

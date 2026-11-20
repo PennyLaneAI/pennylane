@@ -156,7 +156,7 @@ def construct_sgn_circuit(hamiltonian, tape, mus, times, phis, controls):
 
     Args:
       hamiltonian (qp.Hamiltonian): The pennylane Hamiltonian to be decomposed
-      tape (qp.QuantumTape: Tape containing the circuit to be expanded into the new circuits
+      tape (qp.core.QuantumScript: Tape containing the circuit to be expanded into the new circuits
       mus (List[float]): The average between the two eigenvalues (E_1+E-2)/2
       times (List[float]): The time for this term group to be evaluated/evolved at
       phis (List[float]): Optimal phi values for the QSP part associated with the respective
@@ -210,7 +210,7 @@ def sign_expand(
     For the calculation of variances, one assumes an even distribution of shots among the groups.
 
     Args:
-        tape (QNode or QuantumTape): the quantum circuit used when calculating the expectation value of the Hamiltonian
+        tape (QNode or QuantumScript): the quantum circuit used when calculating the expectation value of the Hamiltonian
         circuit (bool): Toggle the calculation of the analytical Xi decomposition or if True
           constructs the circuits of the approximate sign decomposition to measure the expectation
           value
@@ -221,7 +221,7 @@ def sign_expand(
           Hadamard test and the quantum signal processing part on, have to be wires on the device
 
     Returns:
-        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
+        qnode (pennylane.QNode) or tuple[List[.core.QuantumScript], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
@@ -258,7 +258,7 @@ def sign_expand(
 
         operations = [qp.Hadamard(wires=0), qp.CNOT(wires=[0, 1]), qp.X(2)]
         measurements = [qp.expval(H)]
-        tape = qp.tape.QuantumTape(operations, measurements)
+        tape = qp.core.QuantumScript(operations, measurements)
 
     We can use the ``sign_expand`` transform to generate new tapes and a classical
     post-processing function for computing the expectation value of the Hamiltonian in these new decompositions
@@ -292,7 +292,7 @@ def sign_expand(
 
         operations = [qp.Hadamard(wires=0), qp.CNOT(wires=[0, 1]), qp.X(2)]
         measurements = [qp.var(H)]
-        tape = qp.tape.QuantumTape(operations, measurements)
+        tape = qp.core.QuantumScript(operations, measurements)
 
     >>> tapes, fn = qp.transforms.sign_expand(tape, circuit=True, J=20, delta=0)
     >>> dev = qp.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])

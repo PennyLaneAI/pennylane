@@ -63,9 +63,7 @@ def process_queue(
     measurements = []
     encountered_measurement = False
 
-    # cant use for obj in queue.queue, as OperatorRecorder overrides the definition of queue
-    # cant use for obj in queue, as QuantumTape overrides the definition of __iter__
-    for obj, _ in queue.items():
+    for obj in queue.queue:
         if isinstance(obj, (Operator, Operator2, QuantumScript)):
             if encountered_measurement:
                 raise ValueError(f"{obj} must occur prior to measurements.")
@@ -94,8 +92,6 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
         shots (None, int, Sequence[int], ~.Shots): Number and/or batches of shots for execution.
             Note that this property is still experimental and under development.
         trainable_params (None, Sequence[int]): the indices for which parameters are trainable
-
-    .. seealso:: :class:`pennylane.tape.QuantumTape`
 
     **Example:**
 

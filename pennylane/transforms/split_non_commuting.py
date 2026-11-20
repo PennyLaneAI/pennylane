@@ -99,7 +99,7 @@ shot_dist_str2fn = {
 
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
-    into a result for a single ``QuantumTape``.
+    into a result for a single ``QuantumScript``.
     """
     return results[0]
 
@@ -483,7 +483,7 @@ def split_non_commuting(
 
 
 def _split_ham_with_grouping(  # pylint: disable=too-many-branches
-    tape: qp.tape.QuantumScript, shot_dist_fn: ShotDistFunction, seed: int
+    tape: qp.core.qscript.QuantumScript, shot_dist_fn: ShotDistFunction, seed: int
 ):
     """Split a tape measuring a single Sum and group commuting observables.
     It also assigns to each new tape the correct number of shots according to the
@@ -561,7 +561,7 @@ def _split_ham_with_grouping(  # pylint: disable=too-many-branches
 
 
 def _split_using_qwc_grouping(
-    tape: qp.tape.QuantumScript,
+    tape: qp.core.qscript.QuantumScript,
     single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[float | TensorLike]]],
     offsets: list[TensorLike],
 ):
@@ -630,7 +630,7 @@ def _split_using_qwc_grouping(
 
 
 def _split_using_wires_grouping(
-    tape: qp.tape.QuantumScript,
+    tape: qp.core.qscript.QuantumScript,
     single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[float | TensorLike]]],
     offsets: list[float | TensorLike],
 ):
@@ -712,7 +712,7 @@ def _split_using_wires_grouping(
     return tapes, fn
 
 
-def _split_all_multi_term_obs_mps(tape: qp.tape.QuantumScript):
+def _split_all_multi_term_obs_mps(tape: qp.core.qscript.QuantumScript):
     """Splits all multi-term observables in a tape to measurements of single-term observables.
 
     Args:
@@ -905,7 +905,9 @@ def _sum_terms(
     return summed_dot_products + offset
 
 
-def _mp_to_obs(mp: MeasurementProcess, tape: qp.tape.QuantumScript) -> qp.operation.Operator:
+def _mp_to_obs(
+    mp: MeasurementProcess, tape: qp.core.qscript.QuantumScript
+) -> qp.operation.Operator:
     """Extract the observable from a measurement process.
 
     If the measurement process has an observable, return it. Otherwise, return a dummy

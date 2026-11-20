@@ -96,7 +96,7 @@ def apply_controlled_Q(
     :class:`~.QuantumPhaseEstimation` for more details).
 
     Args:
-        tape (QNode or QuantumTape or Callable): the quantum circuit that applies quantum operations
+        tape (QNode or QuantumScript or Callable): the quantum circuit that applies quantum operations
             according to the :math:`\mathcal{F}` unitary used as part of quantum Monte Carlo estimation
         wires (Union[Wires or Sequence[int]]): the wires acted upon by the ``fn`` circuit
         target_wire (Union[Wires, int]): The wire in which the expectation value is encoded. Must be
@@ -107,7 +107,7 @@ def apply_controlled_Q(
             decomposing :math:`\mathcal{Q}`
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will perform control on :math:`\mathcal{Q}` unitary.
@@ -176,7 +176,7 @@ def quantum_monte_carlo(
         simulators, but may perform faster and is suited to quick prototyping.
 
     Args:
-        tape (QNode or QuantumTape or Callable): the quantum circuit that applies quantum operations according to the
+        tape (QNode or QuantumScript or Callable): the quantum circuit that applies quantum operations according to the
             :math:`\mathcal{F}` unitary used as part of quantum Monte Carlo estimation
         wires (Union[Wires or Sequence[int]]): the wires acted upon by the ``fn`` circuit
         target_wire (Union[Wires, int]): The wire in which the expectation value is encoded. Must be
@@ -184,7 +184,7 @@ def quantum_monte_carlo(
         estimation_wires (Union[Wires, Sequence[int], or int]): the wires used for phase estimation
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
 
         The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will perform the quantum Monte Carlo estimation.

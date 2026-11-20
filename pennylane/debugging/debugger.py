@@ -435,16 +435,16 @@ def _measure(measurement):
 def debug_tape():
     """Access the tape of the quantum circuit.
 
-    The tape can then be used to access all properties stored in :class:`~pennylane.tape.QuantumTape`.
+    The tape can then be used to access all properties stored in :class:`~pennylane.tape.QuantumScript`.
     This can be used to visualize the gates that have
     been applied from the quantum circuit so far or otherwise process the operations.
 
     Returns:
-        QuantumTape: the quantum tape representing the circuit
+        QuantumScript: the quantum tape representing the circuit
 
     **Example**
 
-    While in a "debugging context", we can access the :code:`QuantumTape` representing the
+    While in a "debugging context", we can access the :code:`QuantumScript` representing the
     operations we have applied so far:
 
     .. code-block:: python3

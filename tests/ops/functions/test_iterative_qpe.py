@@ -138,8 +138,10 @@ class TestIQPE:
     def test_wires_args(self, wire):
         """Test to check that all types of wires are working"""
 
-        with qp.tape.QuantumTape() as tape:
+        with qp.queuing.AnnotatedQueue() as tape_queue:
             qp.iterative_qpe(qp.RZ(1.0, wires=[0]), wire, iters=3)
+
+        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
 
         assert wire in tape.wires
 

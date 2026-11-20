@@ -229,8 +229,8 @@ def jax_jvp_execute(tapes: QuantumScriptBatch, execute_fn: ExecuteFn, jpc, devic
     """Execute a batch of tapes with JAX parameters using JVP derivatives.
 
     Args:
-        tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        execute_fn (Callable[[Sequence[.QuantumTape]], ResultBatch]): a function that turns a batch of circuits into results
+        tapes (Sequence[.QuantumScript]): batch of tapes to execute
+        execute_fn (Callable[[Sequence[.QuantumScript]], ResultBatch]): a function that turns a batch of circuits into results
         jpc (JacobianProductCalculator): a class that can compute the Jacobian vector product (JVP)
             for the input tapes.
 

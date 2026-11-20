@@ -234,7 +234,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         the ``QNode`` hash that can be used later for parametric compilation.
 
         Args:
-            circuit (~.tape.QuantumTape): circuit to execute on the device
+            circuit (~.tape.QuantumScript): circuit to execute on the device
 
         Raises:
             QuantumFunctionError: if the observable is not supported
@@ -337,7 +337,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         vector are contained in a tuple.
 
         Args:
-            circuit (~.tape.QuantumTape): circuit to execute on the device
+            circuit (~.tape.QuantumScript): circuit to execute on the device
 
         Raises:
             QuantumFunctionError: if the observable is not supported
@@ -451,7 +451,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         circuits on a backend, for example using parallel and/or asynchronous executions.
 
         Args:
-            circuits (list[~.tape.QuantumTape]): circuits to execute on the device
+            circuits (list[~.tape.QuantumScript]): circuits to execute on the device
 
         Returns:
             list[array[float]]: list of measured value(s)
@@ -584,7 +584,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         density matrices.
 
         Args:
-            circuit (~.tape.QuantumTape): the quantum tape currently being executed
+            circuit (~.tape.QuantumScript): the quantum tape currently being executed
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
@@ -1062,7 +1062,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
 
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
-            circuit (~.tape.QuantumTape): The quantum tape that is being executed
+            circuit (~.tape.QuantumScript): The quantum tape that is being executed
 
         Returns:
             tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
@@ -1123,7 +1123,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         Args:
             obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow expectation
                 value measurement process
-            circuit (~.tape.QuantumTape): The quantum tape that is being executed
+            circuit (~.tape.QuantumScript): The quantum tape that is being executed
 
         Returns:
             float: expectation value estimate.
@@ -1618,7 +1618,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
               :class:`~.ops.LinearCombination` or :class:`~.Hermitian`.
 
         Args:
-            tape (.QuantumTape): circuit that the function takes the gradient of
+            tape (.QuantumScript): circuit that the function takes the gradient of
 
         Keyword Args:
             starting_state (tensor_like): post-forward pass state to start execution with. It should be
@@ -1761,7 +1761,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         gates for a measurement that doesn't need them).
 
         Args:
-            circuit (~.tape.QuantumTape): The circuit containing observables that may need diagonalizing
+            circuit (~.tape.QuantumScript): The circuit containing observables that may need diagonalizing
 
         Returns:
             List[~.Operation]: the operations that diagonalize the observables

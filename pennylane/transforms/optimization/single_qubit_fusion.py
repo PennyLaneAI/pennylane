@@ -32,7 +32,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
     operations into a general single-qubit unitary operation (:class:`~.Rot`).
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit (QNode or quantum function).
+        tape (QNode or QuantumScript or Callable): A quantum circuit (QNode or quantum function).
         atol (float): An absolute tolerance for which to apply a rotation after
             fusion. After fusion of gates, if the fused angles :math:`\theta` are such that
             :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
@@ -41,7 +41,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
             be fused will be fused.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], Callable]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], Callable]:
             The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
@@ -327,7 +327,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
+        into a result for a single ``QuantumScript``.
         """
         return results[0]
 

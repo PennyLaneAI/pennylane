@@ -98,7 +98,7 @@ def rz_phase_gradient(
     The additional global phase is taken into account in the decomposition.
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit containing :class:`~.RZ` gates.
+        tape (QNode or QuantumScript or Callable): A quantum circuit containing :class:`~.RZ` gates.
         angle_wires (Wires): The qubits that conditionally load the angle :math:`\phi` of
             the :class:`~.RZ` gate in binary as a multiple of :math:`2\pi`.
             The length of the ``angle_wires`` implicitly determines the precision
@@ -112,7 +112,7 @@ def rz_phase_gradient(
             the precision of the angle :math:`\phi`.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
@@ -226,7 +226,7 @@ def rz_phase_gradient(
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
+        into a result for a single ``QuantumScript``.
         """
         return results[0]
 

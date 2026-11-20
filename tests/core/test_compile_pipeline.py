@@ -1403,11 +1403,11 @@ class TestCompilePipelineCall:
         def scale_two(results):
             return results[0] * 2.0
 
-        def transform_add(tape: qp.tape.QuantumTape):
+        def transform_add(tape: qp.core.qscript.QuantumScript):
             """A valid transform."""
             return (tape,), add_one
 
-        def transform_mul(tape: qp.tape.QuantumTape):
+        def transform_mul(tape: qp.core.qscript.QuantumScript):
             return (tape,), scale_two
 
         container1 = BoundTransform(transform(transform_add))

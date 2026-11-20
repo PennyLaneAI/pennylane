@@ -1363,13 +1363,12 @@ class TestDiagonalizingGates:
         assert isinstance(qs.diagonalizing_gates[-1], qp.QubitUnitary)
 
 
-@pytest.mark.parametrize("qscript_type", (QuantumScript, qp.tape.QuantumTape))
-def test_flatten_unflatten(qscript_type):
+def test_flatten_unflatten():
     """Test the flatten and unflatten methods."""
     ops = [qp.RX(0.1, wires=0), qp.U3(0.2, 0.3, 0.4, wires=0)]
     mps = [qp.expval(qp.PauliZ(0)), qp.state()]
 
-    tape = qscript_type(ops, mps, shots=100)
+    tape = qp.core.qscript.QuantumScript(ops, mps, shots=100)
     tape.trainable_params = {0}
 
     data, metadata = tape._flatten()  # pylint: disable=protected-access
@@ -1379,7 +1378,9 @@ def test_flatten_unflatten(qscript_type):
     assert metadata[1] == (0,)
     assert hash(metadata)
 
-    new_tape = qscript_type._unflatten(data, metadata)  # pylint: disable=protected-access
+    new_tape = qp.core.qscript.QuantumScript._unflatten(
+        data, metadata
+    )  # pylint: disable=protected-access
     assert all(o1 is o2 for o1, o2 in zip(new_tape.operations, tape.operations))
     assert all(o1 is o2 for o1, o2 in zip(new_tape.measurements, tape.measurements))
     assert new_tape.shots == qp.measurements.Shots(100)
@@ -1387,8 +1388,7 @@ def test_flatten_unflatten(qscript_type):
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("qscript_type", (QuantumScript, qp.tape.QuantumTape))
-def test_jax_pytree_integration(qscript_type):
+def test_jax_pytree_integration():
     """Test that QuantumScripts are integrated with jax pytress."""
 
     eye_mat = np.eye(4)
@@ -1398,7 +1398,7 @@ def test_jax_pytree_integration(qscript_type):
         qp.expval(qp.Hermitian(eye_mat, wires=(0, 1))),
     ]
 
-    tape = qscript_type(ops, mps, shots=100)
+    tape = qp.core.qscript.QuantumScript(ops, mps, shots=100)
     tape.trainable_params = [2]
 
     import jax

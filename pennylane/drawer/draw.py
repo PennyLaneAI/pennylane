@@ -371,7 +371,7 @@ def _draw_qnode(  # pylint: disable=too-many-arguments
             except TypeError:
                 _wire_order = [w for w in tapes[0].wires if not isinstance(w, DynamicWire)]
 
-        cache = {"tape_offset": 0, "matrices": []}
+        cache = {"matrices": []}
         res = [
             tape_text(
                 t,

@@ -30,7 +30,7 @@ from pennylane.workflow import QNode
 
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
-    into a result for a single ``QuantumTape``.
+    into a result for a single ``QuantumScript``.
     """
     return results[0]
 
@@ -67,13 +67,13 @@ def append_time_evolution(
     and append this unitary.
 
     Args:
-        tape (QuantumTape or QNode or Callable): circuit to transform.
+        tape (QuantumScript or QNode or Callable): circuit to transform.
         riemannian_gradient (.Hamiltonian): Hamiltonian object representing the Riemannian gradient.
         t (float): time evolution parameter.
         n (int): number of Trotter steps.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
 
     """
@@ -93,12 +93,12 @@ def algebra_commutator(tape, lie_algebra_basis_names, nqubits):
     (see :meth:`RiemannianGradientOptimizer.get_omegas`).
 
     Args:
-        tape (.QuantumTape or .QNode): input circuit
+        tape (.QuantumScript or .QNode): input circuit
         lie_algebra_basis_names (list[str]): List of strings corresponding to valid Pauli words.
         nqubits (int): the number of qubits.
 
     Returns:
-        tuple[list[QuantumTape], function]:
+        tuple[list[QuantumScript], function]:
 
         - If the input is a QNode, an object representing the Riemannian gradient function
           of the QNode that can be executed with the same arguments as the QNode to obtain

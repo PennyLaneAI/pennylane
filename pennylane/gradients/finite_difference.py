@@ -321,7 +321,7 @@ def finite_diff(  # pylint: disable=too-many-arguments,too-many-statements
     r"""Transform a circuit to compute the finite-difference gradient of all gate parameters with respect to its inputs.
 
     Args:
-        tape (QNode or QuantumTape): quantum circuit to differentiate
+        tape (QNode or QuantumScript): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned. Note that the indices are with respect to
@@ -346,7 +346,7 @@ def finite_diff(  # pylint: disable=too-many-arguments,too-many-statements
             If ``False``, the finite-difference method will be applied to all parameters.
 
     Returns:
-        qnode (QNode) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or tuple[List[QuantumScript], function]:
 
         The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
@@ -407,16 +407,16 @@ def finite_diff(  # pylint: disable=too-many-arguments,too-many-statements
          tensor([0.69916868, 0.34072432, 0.69202365], requires_grad=True))
 
         This quantum gradient transform can also be applied to low-level
-        :class:`~.QuantumTape` objects. This will result in no implicit quantum
+        :class:`~.core.QuantumScript` objects. This will result in no implicit quantum
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
         >>> ops = [qp.RX(p, wires=0) for p in params]
         >>> measurements = [qp.expval(qp.Z(0)), qp.var(qp.Z(0))]
-        >>> tape = qp.tape.QuantumTape(ops, measurements)
+        >>> tape = qp.core.QuantumScript(ops, measurements)
         >>> gradient_tapes, fn = qp.gradients.finite_diff(tape)
         >>> gradient_tapes
-        [<QuantumTape: wires=[0], params=3>,
+        [<QuantumScript: wires=[0], params=3>,
          <QuantumScript: wires=[0], params=3>,
          <QuantumScript: wires=[0], params=3>,
          <QuantumScript: wires=[0], params=3>]

@@ -86,7 +86,7 @@ def _expand_transform_spsa(  # pylint: disable=too-many-arguments,unused-argumen
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
+        into a result for a single ``QuantumScript``.
         """
         return results[0]
 
@@ -118,7 +118,7 @@ def spsa_grad(  # pylint: disable=too-many-arguments
     finite-difference method.
 
     Args:
-        tape (QNode or QuantumTape): quantum circuit to differentiate
+        tape (QNode or QuantumScript): quantum circuit to differentiate
         argnum (int or list[int] or None): Trainable parameter indices to differentiate
             with respect to. If not provided, the derivatives with respect to all
             trainable parameters are returned. Note that the indices are with respect to
@@ -176,7 +176,7 @@ def spsa_grad(  # pylint: disable=too-many-arguments
             ``spsa_grad`` in each call.
 
     Returns:
-        qnode (QNode) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or tuple[List[QuantumScript], function]:
 
         The transformed circuit as described in :func:`qp.transform <pennylane.transform>`. Executing this circuit
         will provide the Jacobian in the form of a tensor, a tuple, or a nested tuple depending upon the nesting
@@ -229,13 +229,13 @@ def spsa_grad(  # pylint: disable=too-many-arguments
         executions.
 
         This quantum gradient transform can also be applied to low-level
-        :class:`~.QuantumTape` objects. This will result in no implicit quantum
+        :class:`~.core.QuantumScript` objects. This will result in no implicit quantum
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
         >>> ops = [qp.RX(params[0], 0), qp.RY(params[1], 0), qp.RX(params[2], 0)]
         >>> measurements = [qp.expval(qp.Z(0)), qp.var(qp.Z(0))]
-        >>> tape = qp.tape.QuantumTape(ops, measurements)
+        >>> tape = qp.core.QuantumScript(ops, measurements)
         >>> gradient_tapes, fn = qp.gradients.spsa_grad(tape)
         >>> gradient_tapes
         [<QuantumScript: wires=[0], params=3>, <QuantumScript: wires=[0], params=3>]
