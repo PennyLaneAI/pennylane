@@ -946,7 +946,7 @@ Improvements 🛠
   position fragment. For a :math:`k`-bit signed register and :math:`b`-bit coefficients, this
   takes :math:`b + \sum_{i=1}^{k-1}(b-i)` :class:`~.TemporaryAND` gates, e.g., 74 instead of 94
   for :math:`k=4` and :math:`b=20`, and removes the extra output bit and correction steps.
-  `(#PR_NUMBER) <https://github.com/PennyLaneAI/pennylane/pull/PR_NUMBER>`__
+  `(#10569) <https://github.com/PennyLaneAI/pennylane/pull/10569>`__
 
 * Added ``pennylane.core.get_op_class_by_name``
   to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
