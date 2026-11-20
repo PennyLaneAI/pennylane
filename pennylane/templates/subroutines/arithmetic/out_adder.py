@@ -243,50 +243,9 @@ class OutAdder(Operation):
             new_dict["work_wires"],
         )
 
-    def decomposition(self):
-
-        return self.compute_decomposition(**self.hyperparameters)
-
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
-
-    @staticmethod
-    # pylint: disable-next=arguments-differ
-    def compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires):
-        r"""Representation of the operator as a product of other operators.
-
-        Args:
-            x_wires (Sequence[int]): the wires that store the integer :math:`x`
-            y_wires (Sequence[int]): the wires that store the integer :math:`y`
-            output_wires (Sequence[int]): the wires that store the addition result. If the register is in a non-zero state :math:`b`, the solution will be added to this value.
-            mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`.
-            work_wires (Sequence[int]): the auxiliary wires to use for the addition. The work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires should be provided. Defaults to ``None``.
-        Returns:
-            list[.Operator]: Decomposition of the operator
-
-        **Example**
-
-        >>> ops = qp.OutAdder.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
-        >>> from pprint import pprint
-        >>> pprint(ops)
-        [(Adjoint(QFT(wires=[5, 6]))) @ ((ControlledSequence(PhaseAdder(k=1, x_wires=[5, 6], mod=4, work_wire=[]), control=[2, 3])) @ (ControlledSequence(PhaseAdder(k=1, x_wires=[5, 6], mod=4, work_wire=[]), control=[0, 1]))) @ QFT(wires=[5, 6])]
-
-        """
-        if mod != 2 ** len(output_wires) and mod is not None:
-            qft_new_output_wires = work_wires[:1] + output_wires
-            work_wire = work_wires[1:]
-        else:
-            qft_new_output_wires = output_wires
-            work_wire = ()
-
-        target_op = ControlledSequence(
-            PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
-        ) @ ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
-
-        op_list = [change_op_basis(QFT(wires=qft_new_output_wires), target_op)]
-
-        return op_list
 
 
 def _out_adder_target_resources(x_wires, y_wires, output_wires, mod, work_wires) -> dict:

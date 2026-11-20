@@ -767,7 +767,6 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         assert_valid_decomp_rule(op, rule)
 
     @pytest.mark.integration
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_isingzz_decomposition_graph(self):
         r"""Controlling ``IsingZZ`` should control only the inner ``RZ``, leaving the two
         conjugating ``CNOT``'s bare. There's no dedicated ``C(IsingZZ)`` rule for this: writing
@@ -824,7 +823,6 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         assert qp.math.allclose(mat, expected_matrix)
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_isingzz_qjit_without_toffoli(self):
         """Test that captured controlled IsingZZ compiles and analyzes without Toffoli (#10357)."""
         gate_set = {qp.CNOT, qp.RZ, qp.GlobalPhase, qp.PauliX}
@@ -841,7 +839,6 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         assert operations["RZ"] > 0
         assert set(operations).issubset({"CNOT", "RZ", "GlobalPhase", "PauliX"})
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_multirz_decomposition_graph(self):
         r"""Controlling ``MultiRZ`` should control only the inner ``RZ``, leaving the conjugating
         CNOT ladder bare. This comes out of the generic ``C(ChangeOpBasis)`` rule rather than a
@@ -892,7 +889,6 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         assert_decomposable(op)
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("base_type", [qp.PhaseShift, qp.U1])
     @pytest.mark.parametrize("num_controls", [1, 2, 3])
     def test_controlled_phase_shift_single_phase_with_work_wires(self, base_type, num_controls):
@@ -959,7 +955,6 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         assert_decomposable(op)
 
     @pytest.mark.integration
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_pcphase_decomposition_graph(self):
         """Tests that the PCPhase can be decomposed all the way down."""
 
@@ -2039,7 +2034,6 @@ class TestEigvals:
         assert np.allclose(op.eigvals(), expected)
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestGrad:
     device_methods = [
         ["default.qubit", "finite-diff"],
