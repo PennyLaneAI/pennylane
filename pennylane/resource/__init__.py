@@ -57,6 +57,7 @@ from .resource import (
 from .expression import Expression
 from .analyze import analyze
 from .estimate import estimate
+from . import pass_effects
 from .extension import register_resource_extension
 from .specs import specs
 from .track import track

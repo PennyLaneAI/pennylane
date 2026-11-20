@@ -16,22 +16,33 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Iterable
+import warnings
+from collections.abc import Callable, Iterable, Sequence
 from functools import partial
 
 from pennylane import capture
 from pennylane.core.transforms import CompilePipeline
 from pennylane.transforms import decompose
 from pennylane.workflow._levels import (
+    device_level,
     is_single_level,
     level_to_number,
+    levels_to_numbers,
     pipeline_at_slice,
     validate_level,
 )
 from pennylane.workflow.get_compile_pipeline import unwrap_qjit_qnode
 
-from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial
-from .mlir_specs import resources_from_analysis_pass
+from ._utils import (
+    apply_partial_args,
+    build_circuit_specs,
+    check_no_tape_transforms,
+    make_level_name_unique,
+    unwrap_partial,
+)
+from .effects import apply_effect, get_effect, identity
+from .mlir_specs import analysis_pass_json, resources_from_analysis_pass
+from .parsing import parse_resources_json
 from .resource import CircuitSpecs
 
 
@@ -47,7 +58,73 @@ def _decomps_from_pipeline(pipeline: CompilePipeline) -> dict:
     return {"fixed_decomps": fixed_decomps or None, "exclude_decomps": exclude_decomps or None}
 
 
-def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
+def _estimate_after_passes(
+    func, original_qnode, level, unknown_pass, *args, **kwargs
+) -> CircuitSpecs:
+    """Estimate the resources of a qjit'd QNode after the passes selected by ``level``, by
+    applying their declared resource effects to the resources before them."""
+    if isinstance(level, slice):
+        raise NotImplementedError("qp.estimate does not support slices of transforms yet.")
+    compile_pipeline = original_qnode.compile_pipeline
+    level_numbers = levels_to_numbers(level, compile_pipeline)
+    if device_level(compile_pipeline) in level_numbers:
+        raise NotImplementedError(
+            "qp.estimate does not support the device level yet. Use level='all-user' instead of "
+            "level='all'."
+        )
+    passes = list(compile_pipeline)[: max(level_numbers)]
+    check_no_tape_transforms(passes)
+
+    # The decomposition is projected by the resource-estimate pass, and must come first
+    decomposes_first = bool(passes) and passes[0].pass_name == "graph-decomposition"
+    if any(p.pass_name == "graph-decomposition" for p in passes[decomposes_first:]):
+        raise NotImplementedError(
+            "qp.estimate only supports a decompose transform as the first transform."
+        )
+
+    analysis_passes = [("resource-analysis", {})] if 0 in level_numbers else []
+    if decomposes_first:
+        analysis_passes.append(("resource-estimate", passes[0].kwargs))
+    elif not analysis_passes:
+        analysis_passes.append(("resource-analysis", {}))
+    data = analysis_pass_json(func, original_qnode, analysis_passes, *args, **kwargs)
+
+    states = {0: data[0]} if 0 in level_numbers else {}
+    state = data[-1]
+    for i, bound_transform in enumerate(passes, start=1):
+        if i > 1 or not decomposes_first:
+            pass_name = bound_transform.pass_name
+            effect = get_effect(pass_name)
+            if effect is None:
+                message = f"No resource effect is declared for the pass {pass_name!r}."
+                if unknown_pass != "identity":
+                    raise NotImplementedError(
+                        f"{message} Use unknown_pass='identity' to assume it does not change the "
+                        "resources."
+                    )
+                warnings.warn(f"{message} It is assumed not to change the resources.")
+                effect = identity
+            state = apply_effect(state, effect, bound_transform.kwargs)
+        if i in level_numbers:
+            states[i] = state
+
+    # Named as by qp.analyze: the displayed level describes the circuit after its transform
+    level_to_name, resources = {}, {}
+    for lvl, lvl_data in states.items():
+        name = "Before MLIR Passes" if lvl == 0 else passes[lvl - 1].pass_name
+        name = make_level_name_unique(name, frozenset(resources))
+        level_to_name[lvl] = name if lvl == 0 else f"After {name}"
+        lvl_resources = parse_resources_json(lvl_data, peak_wires=True)
+        resources[name] = lvl_resources[0] if len(lvl_resources) == 1 else lvl_resources
+
+    if is_single_level(level):
+        return build_circuit_specs(
+            original_qnode, next(iter(resources.values())), next(iter(level_to_name.values()))
+        )
+    return build_circuit_specs(original_qnode, resources, level_to_name)
+
+
+def _estimate_qjit(func, level, target, unknown_pass, *args, **kwargs) -> CircuitSpecs:
     """Decompose a qjit'd QNode at ``level`` into the ``target`` gate set and return its specs."""
     original_qnode = unwrap_qjit_qnode(func, fn_name="qp.estimate")
     from catalyst.utils.exceptions import CompileError  # pylint: disable=import-outside-toplevel
@@ -63,15 +140,6 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
         is_top = not pipeline_at_slice(compile_pipeline, level)
     else:
         is_top = is_single_level(level) and level_to_number(level, compile_pipeline) == 0
-    if not is_top:
-        raise NotImplementedError(
-            f"qp.estimate only supports level='top' or level=0, instead got: {level!r}."
-        )
-
-    if isinstance(target, str):
-        raise NotImplementedError(
-            f"qp.estimate does not support target={target!r} yet. Provide a gate set instead."
-        )
 
     uses_capture = func.compile_options.capture
     if uses_capture == "global":
@@ -79,6 +147,21 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
     if not uses_capture:
         raise ValueError(
             "qp.estimate requires program capture. Compile the QNode with qp.qjit(capture=True)."
+        )
+
+    if not is_top:
+        if target is not None:
+            raise ValueError(
+                "target is only used at level='top'. After the transforms, the resources are "
+                "projected onto the gate set of their decompose transform."
+            )
+        return _estimate_after_passes(func, original_qnode, level, unknown_pass, *args, **kwargs)
+
+    if target is None:
+        raise ValueError("qp.estimate requires a target at level='top'.")
+    if isinstance(target, str):
+        raise NotImplementedError(
+            f"qp.estimate does not support target={target!r} yet. Provide a gate set instead."
         )
 
     # At level="top", the user transforms are skipped and only the decomposition is applied
@@ -115,9 +198,10 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
 
 def estimate(
     qnode,
-    level: str | int | slice = "top",
+    level: str | int | slice | Sequence[str | int] = "top",
     *,
-    target: str | Iterable[type | str] | dict[type | str, float],
+    target: str | Iterable[type | str] | dict[type | str, float] | None = None,
+    unknown_pass: str = "error",
 ) -> Callable[..., CircuitSpecs]:
     r"""Provides a resource estimate of a quantum circuit with respect to the provided compilation target,
     via rapid analysis of decomposition pathways.
@@ -130,14 +214,20 @@ def estimate(
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the qjit'd QNode for which to estimate resources.
-        level (str | int | slice): The portion of the
+        level (str | int | slice | Sequence[str | int]): The portion of the
             :class:`~.CompilePipeline` to apply before projecting the resources onto the
             ``target``. See :func:`~.workflow.get_compile_pipeline` for accepted values.
-            Currently, only ``"top"``, ``0``, or the label of a marker placed before all
-            transforms are supported. Defaults to ``"top"``.
-        target (str | Iterable[type | str] | dict[type | str, float]): The gate set to project
-            the resources onto, in any form accepted by the ``gate_set`` argument of
-            :func:`~.decompose`.
+            At later levels than ``"top"``, the transforms are not applied: the resources are
+            projected onto the gate set of a :func:`~.decompose` transform placed first, and the
+            declared resource effects of the following transforms are applied to them (see
+            :mod:`pennylane.resource.effects`). Several levels may be given, as for
+            :func:`~.analyze`. Defaults to ``"top"``.
+        target (str | Iterable[type | str] | dict[type | str, float] | None): The gate set to
+            project the resources onto at ``level="top"``, in any form accepted by the
+            ``gate_set`` argument of :func:`~.decompose`.
+        unknown_pass (str): What to do with a transform that has no declared resource effect:
+            ``"error"`` raises an error, and ``"identity"`` assumes it does not change the
+            resources, with a warning. Defaults to ``"error"``.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
@@ -275,5 +365,5 @@ def estimate(
     qnode, partial_args, partial_kwargs = unwrap_partial(qnode)
 
     return apply_partial_args(
-        partial(_estimate_qjit, qnode, level, target), partial_args, partial_kwargs
+        partial(_estimate_qjit, qnode, level, target, unknown_pass), partial_args, partial_kwargs
     )

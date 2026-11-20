@@ -258,17 +258,56 @@ def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
     return SpecsResources(**kwargs, extra=extra)
 
 
+def _with_peak_wires(all_data: dict[str, Any]) -> dict[str, Any]:
+    """Adds the peak number of live qubits of each function, including its callees, to its
+    extended fields.
+
+    The resource analysis gives the peak of each function without its callees, and the number of
+    qubits live at the calls to each callee. Data without them is returned as is.
+    """
+    if not all("peak" in data["num_qubits"] for data in all_data.values()):
+        return all_data
+
+    peaks = {}
+
+    def peak(fn: str) -> float:
+        if fn not in peaks:
+            peaks[fn] = 0  # Recursive calls do not add to the peak
+            num_qubits = all_data[fn]["num_qubits"]
+            peaks[fn] = max(
+                [num_qubits["peak"]]
+                + [
+                    live + peak(callee)
+                    for callee, live in num_qubits["live_at_call"].items()
+                    if callee in all_data
+                ]
+            )
+        return peaks[fn]
+
+    new_data = {}
+    for fn, data in all_data.items():
+        data = dict(data)
+        data["extended_fields"] = dict(data["extended_fields"]) | {
+            "qubit_liveness": {"peak_wires": data["num_qubits"]["arg"] + peak(fn)}
+        }
+        new_data[fn] = data
+    return new_data
+
+
 def parse_resources_json(
-    all_data: dict[str, Any],
+    all_data: dict[str, Any], peak_wires: bool = False
 ) -> list[SpecsResources]:
     """Converts JSON resource data from Catalyst into :class:`~.resource.SpecsResources` objects.
 
     Args:
         all_data (dict[str, Any]): The full JSON representation of the resource data.
+        peak_wires (bool): Whether to add the peak number of live qubits to the extra fields.
 
     Returns:
         list[SpecsResources]: A list of :class:`~.resource.SpecsResources` objects corresponding to the QNodes in the JSON data.
     """
+    if peak_wires:
+        all_data = _with_peak_wires(all_data)
     resource_data = {}
 
     for fn_name in all_data.keys():

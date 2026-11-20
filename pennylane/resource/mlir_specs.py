@@ -30,6 +30,52 @@ from .resource import SpecsResources
 _RESOURCE_ANALYSIS_PREFIX = "pennylane_specs_analysis_pass"
 
 
+def analysis_pass_json(
+    qjit, original_qnode, analysis_passes: list[tuple[str, dict]], *args, **kwargs
+) -> list[dict]:
+    """Compile a QNode with the given analysis passes instead of its compile pipeline, and return
+    the JSON data output by each of them.
+
+    .. warning::
+
+        This function is intended for internal use and may be subject to change without deprecation.
+
+    Args:
+        qjit (:class:`~catalyst.QJIT`): the QNode to analyze.
+        original_qnode (:class:`~pennylane.QNode`): the original QNode before any compilation
+        analysis_passes (list[tuple[str, dict]]): the name and options of each analysis pass, which
+            are applied in order before any other pass
+        *args: the arguments to pass to the QNode when compiling
+        **kwargs: the keyword arguments to pass to the QNode when compiling
+
+    Returns:
+        list[dict]: The JSON data output by each analysis pass.
+    """
+    with tempfile.TemporaryDirectory(
+        prefix=f"{_RESOURCE_ANALYSIS_PREFIX}_{os.getpid()}_"
+    ) as tmpdirname:
+        pipeline = CompilePipeline()
+        fnames = []
+        for i, (pass_name, options) in enumerate(analysis_passes):
+            fnames.append(Path(tmpdirname) / f"{_RESOURCE_ANALYSIS_PREFIX}_{i}.json")
+            pipeline += transform(pass_name=pass_name)(
+                output_json=True, output_fname=str(fnames[-1]), **options
+            )
+
+        new_qnode = original_qnode.update_pipelines(
+            pipeline, post_device_pipeline=CompilePipeline()
+        )
+        compile_options = copy.deepcopy(qjit.compile_options)
+        compile_options.skip_preprocess = True
+        compile_options.target = "mlir_opt"
+        compile_options.enable_aot_compilation = False
+        if compile_options.pipelines is None:
+            compile_options.pipelines = [("pipe", ["user-transform-stage"])]
+        type(qjit)(new_qnode, compile_options=compile_options).aot_compile(*args, **kwargs)
+
+        return [json.loads(fname.read_text(encoding="utf-8")) for fname in fnames]
+
+
 def resources_from_analysis_pass(  # pylint: disable=too-many-arguments,too-many-statements
     qjit,
     original_qnode,
