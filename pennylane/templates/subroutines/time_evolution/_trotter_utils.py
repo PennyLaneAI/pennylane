@@ -53,6 +53,8 @@ def _run_trotter_steps(  # pylint: disable=too-many-arguments
     apply_one_body_diagonal,
     merge_leaves,
     transpose_leaf,
+    basis_rotations=None,
+    apply_prepared_basis_rotation=None,
 ):
     r"""Emit the second-order Trotter step sequence and the trailing basis rotation.
 
@@ -96,6 +98,10 @@ def _run_trotter_steps(  # pylint: disable=too-many-arguments
             basis rotations telescope into one.
         transpose_leaf (callable): ``(U) -> U``. Inverse of a leaf, for the trailing basis
             rotation that closes the final fragment.
+        basis_rotations (tuple or None): Prepared angles, shared Givens indices, and basis-change
+            matrices, ordered as the initial change, one step's changes, and the final inverse.
+        apply_prepared_basis_rotation (callable or None): Qfunc applying prepared data to both
+            spin channels.
     """
     U_tensor = hamiltonian.leaf_tensors
     Z_tensor = hamiltonian.core_tensors
@@ -107,19 +113,41 @@ def _run_trotter_steps(  # pylint: disable=too-many-arguments
         # array cannot do.
         U_tensor = math.array(U_tensor, like="jax")
         Z_tensor = math.array(Z_tensor, like="jax")
+        if basis_rotations is not None:
+            basis_rotations = tuple(math.array(value, like="jax") for value in basis_rotations)
+
+    def apply_basis_change(matrix_fn, rotation_idx):
+        if basis_rotations is None:
+            apply_system_basis_rotation(matrix_fn(), wires)
+        else:
+            angles, indices, matrices = basis_rotations
+            apply_prepared_basis_rotation(
+                matrices[rotation_idx], angles[rotation_idx], indices, wires
+            )
 
     second_order_time_step = evolution_time / num_trotter_steps
     first_order_time_step = second_order_time_step / 2
 
     num_two_body_fragments = U_tensor.shape[0] - 1
 
-    apply_system_basis_rotation(U_tensor[1], wires)
+    apply_basis_change(lambda: U_tensor[1], 0)
     apply_two_body_diagonal(Z_tensor[1], wires, first_order_time_step, control_wires, double_phase)
 
     def remainder_of_step(step_idx):
         def two_body_fragment(fragment_idx, prev_fragment_idx):
-            U = merge_leaves(U_tensor[prev_fragment_idx], U_tensor[fragment_idx])
-            apply_system_basis_rotation(U, wires)
+            rotation_idx = (
+                math.where(
+                    prev_fragment_idx == fragment_idx - 1,
+                    fragment_idx - 1,
+                    2 * num_two_body_fragments - fragment_idx + 1,
+                )
+                if basis_rotations is not None
+                else 0
+            )
+            apply_basis_change(
+                lambda: merge_leaves(U_tensor[prev_fragment_idx], U_tensor[fragment_idx]),
+                rotation_idx,
+            )
             apply_two_body_diagonal(
                 Z_tensor[fragment_idx],
                 wires,
@@ -131,8 +159,10 @@ def _run_trotter_steps(  # pylint: disable=too-many-arguments
 
         for_loop(2, num_two_body_fragments + 1)(two_body_fragment)(1)
 
-        U = merge_leaves(U_tensor[num_two_body_fragments], U_tensor[0])
-        apply_system_basis_rotation(U, wires)
+        apply_basis_change(
+            lambda: merge_leaves(U_tensor[num_two_body_fragments], U_tensor[0]),
+            num_two_body_fragments,
+        )
         apply_one_body_diagonal(
             Z_tensor[0], wires, first_order_time_step, control_wires, double_phase
         )
@@ -141,8 +171,10 @@ def _run_trotter_steps(  # pylint: disable=too-many-arguments
         # For L=1 there is no reverse two-body loop, so the preceding frame is H0.
         prev_fragment_idx = for_loop(num_two_body_fragments, 1, -1)(two_body_fragment)(0)
 
-        U = merge_leaves(U_tensor[prev_fragment_idx], U_tensor[1])
-        apply_system_basis_rotation(U, wires)
+        apply_basis_change(
+            lambda: merge_leaves(U_tensor[prev_fragment_idx], U_tensor[1]),
+            2 * num_two_body_fragments,
+        )
         # End internal steps with a full fragment-1 block and the final step with a half block.
         endpoint_time_step = math.where(
             step_idx < num_trotter_steps - 1,
@@ -153,5 +185,4 @@ def _run_trotter_steps(  # pylint: disable=too-many-arguments
 
     for_loop(num_trotter_steps)(remainder_of_step)()
 
-    very_last_U = transpose_leaf(U_tensor[1])
-    apply_system_basis_rotation(very_last_U, wires)
+    apply_basis_change(lambda: transpose_leaf(U_tensor[1]), 2 * num_two_body_fragments + 1)

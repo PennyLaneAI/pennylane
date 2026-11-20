@@ -18,19 +18,19 @@ from functools import partial
 
 import numpy as np
 
-from pennylane import math
+from pennylane import capture, compiler, math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.numeric_hamiltonians import CDFHamiltonian
-from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift
+from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift, SingleExcitation
 from pennylane.ops.op_math import adjoint, ctrl
 from pennylane.ops.op_math.controlled2 import ctrl_many_zeroed_work_wires
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
-from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Float, Int, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
@@ -50,6 +50,10 @@ class TrotterCDF(Operator2):
                 \tilde{n}^{(l)}_{p} \tilde{n}^{(l)}_{q} .
 
     .. seealso:: :class:`pennylane.CDFHamiltonian`
+
+    For fixed real-valued NumPy leaf tensors, the time-independent Givens rotations are prepared
+    when this operator is constructed. Captured decompositions reuse the angles across Trotter
+    steps and both spin channels. Other array interfaces retain runtime factorization.
 
     Args:
         evolution_time (float): Total evolution time ``t``.
@@ -293,11 +297,10 @@ class TrotterCDF(Operator2):
 
             e^{-i H_l \tau} = \mathcal{U}^{(l)\dagger}\, e^{-i D_l \tau}\, \mathcal{U}^{(l)} .
 
-        The Givens-rotation network used to synthesize :math:`\mathcal{U}^{(l)}` is not hand-rolled
-        here; :class:`~.BasisRotation` decomposes any orthogonal/unitary single-particle rotation
-        into a sequence of :class:`~.SingleExcitation`/:class:`~.PhaseShift` gates on its own (see
-        its ``compute_decomposition``), so this template only supplies the leaf and lets
-        :class:`~.BasisRotation` handle the gate-level realization.
+        The Givens-rotation network is obtained with :func:`~.math.decomposition.givens_decomposition`.
+        For fixed real-valued NumPy leaves, the merged basis changes are prepared once, and the
+        captured circuit applies the resulting :class:`~.SingleExcitation` angles. Other inputs
+        use :class:`~.BasisRotation` for runtime factorization.
 
         This is implemented by applying :math:`\mathcal{U}^{(l)}` (to the :math:`\alpha` and
         :math:`\beta` spin channels separately), the diagonal rotations for :math:`e^{-i D_l \tau}`
@@ -386,7 +389,7 @@ class TrotterCDF(Operator2):
     """
 
     dynamic_argnames = ("evolution_time",)
-    hybrid_argnames = ("hamiltonian",)
+    hybrid_argnames = ("hamiltonian", "_basis_rotations")
     wire_argnames = ("wires", "work_wires")
     # `hybrid_argnames` and `compilable_argnames` cannot both be non-empty on the same
     # operator, so `num_trotter_steps` (a plain Python int that drives Python-level
@@ -404,6 +407,8 @@ class TrotterCDF(Operator2):
         wires: WiresLike | AbstractWires,
         double_phase=False,
         work_wires: WiresLike | AbstractWires = (),
+        *,
+        _basis_rotations=None,
     ):
         # ``hamiltonian`` is a hybrid argument: its array-like leaves must be arrays (or scalars)
         # to be captured and lowered correctly. Cast only list/tuple inputs, leaving array inputs
@@ -428,9 +433,113 @@ class TrotterCDF(Operator2):
         wires = Wires(wires)
         work_wires = Wires(work_wires)
         validate_no_wire_overlaps({"wires": wires, "work_wires": work_wires})
+        if _basis_rotations is None and num_trotter_steps > 0:
+            # Only fixed NumPy leaves are prepared on the host. In particular, JAX
+            # tracers and other autodiff interfaces must retain their data dependence.
+            _basis_rotations = _prepare_cdf_basis_rotations(hamiltonian)
         super().__init__(
-            evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, work_wires
+            evolution_time,
+            num_trotter_steps,
+            hamiltonian,
+            wires,
+            double_phase,
+            work_wires,
+            _basis_rotations=_basis_rotations,
         )
+
+
+def _prepare_cdf_basis_rotations(hamiltonian):
+    """Prepare each time-independent basis change once for both spin channels."""
+    leaves = hamiltonian.leaf_tensors
+    if (
+        not isinstance(leaves, np.ndarray)
+        or math.get_interface(leaves) != "numpy"
+        or math.is_complex_dtype(leaves)
+        or leaves.shape[-1] < 2
+    ):
+        return None
+    leaves = hamiltonian.normalize_leaf_determinant().leaf_tensors
+    num_fragments = leaves.shape[0] - 1
+    matrices = [leaves[1]]
+    matrices.extend(
+        _merge_leaves(leaves[index - 1], leaves[index]) for index in range(2, num_fragments + 1)
+    )
+    matrices.append(_merge_leaves(leaves[num_fragments], leaves[0]))
+    previous = 0
+    for index in range(num_fragments, 0, -1):
+        matrices.append(_merge_leaves(leaves[previous], leaves[index]))
+        previous = index
+    matrices.append(_transpose_leaf(leaves[1]))
+    angles = []
+    for matrix in matrices:
+        _, rotations = math.decomposition.givens_decomposition(matrix)
+        angles.append(
+            math.stack(
+                [
+                    2 * math.arctan2(math.real(rotation[1, 0]), math.real(rotation[0, 0]))
+                    for rotation, _ in rotations
+                ]
+            )
+        )
+    indices = np.asarray([index for _, index in rotations], dtype=int)
+    return math.stack(angles), indices, math.stack(matrices)
+
+
+class _BasisRotationFromAngles(Operator2):
+    """An internal basis rotation carrying prepared SingleExcitation angles."""
+
+    dynamic_argnames = ("unitary_matrix", "angles", "indices")
+    wire_argnames = ("wires",)
+    arg_specs = {
+        "unitary_matrix": Float[-1, -1],
+        "angles": Float[-1],
+        "indices": Int[-1, 2],
+        "wires": Wire[-1],
+    }
+    wire_sizes = (None,)
+
+    def __init__(self, unitary_matrix, angles, indices, wires):
+        super().__init__(unitary_matrix, angles, indices, wires=Wires(wires))
+
+    def decomposition(self):
+        """Keep BasisRotation available to legacy tape transforms."""
+        return [BasisRotation(self.arguments["unitary_matrix"], wires=self.wires)]
+
+
+@register_resources(lambda angles, **_: {SingleExcitation: math.shape(angles)[0]})
+def _basis_rotation_from_angles(angles, indices, wires, **_):
+    if isinstance(wires, Wires):
+        wires = wires.labels
+    if compiler.active() or capture.enabled():
+        angles, indices, wires = (
+            math.array(value, like="jax") for value in (angles, indices, wires)
+        )
+
+    def givens_loop(index):
+        first, second = indices[index]
+        SingleExcitation(angles[index], wires=[wires[first], wires[second]])
+
+    for_loop(len(angles))(givens_loop)()
+
+
+@register_resources(
+    lambda unitary_matrix, wires, **_: {BasisRotation(unitary_matrix, wires=wires): 1}
+)
+def _prepared_to_basis_rotation(unitary_matrix, wires, **_):
+    """Preserve explicit gate sets that request BasisRotation rather than its gates."""
+    BasisRotation(unitary_matrix, wires=wires)
+
+
+add_decomps(_BasisRotationFromAngles, _basis_rotation_from_angles, _prepared_to_basis_rotation)
+
+
+def _apply_prepared_system_basis_rotation(unitary_matrix, angles, indices, wires):
+    """Share the prepared angles between alpha and beta spin rotations."""
+    if math.is_tracer(unitary_matrix) or not np.allclose(
+        unitary_matrix, np.eye(len(unitary_matrix))
+    ):
+        _BasisRotationFromAngles(unitary_matrix, angles, indices, wires[::2])
+        _BasisRotationFromAngles(unitary_matrix, angles, indices, wires[1::2])
 
 
 def _apply_system_basis_rotation(U, wires):
@@ -639,7 +748,12 @@ def _cdf_decomposition_helpers(work_wires, has_control=False, double_phase=False
 
 
 def _cdf_resource_counts(
-    num_trotter_steps, hamiltonian, has_control, double_phase=False, num_work_wires=0
+    num_trotter_steps,
+    hamiltonian,
+    has_control,
+    double_phase=False,
+    num_work_wires=0,
+    _basis_rotations=None,
 ):
     """Shared (upper-bound) gate counts for the base and controlled CDF circuits.
 
@@ -663,7 +777,13 @@ def _cdf_resource_counts(
 
     # NOTE: 'BasisRotation' decomposes differently depending on the dtype of the unitary matrix.
     dtype_leaf, _ = math.get_abstract_and_cast_dtype(leaf_tensors)
-    sysrot_key = BasisRotation(dtype_leaf[num_cas, num_cas], wires=Wire[num_cas])
+    if _basis_rotations is None:
+        sysrot_key = BasisRotation(dtype_leaf[num_cas, num_cas], wires=Wire[num_cas])
+    else:
+        num_angles = num_cas * (num_cas - 1) // 2
+        sysrot_key = _BasisRotationFromAngles(
+            Float[num_cas, num_cas], Float[num_angles], Int[num_angles, 2], wires=Wire[num_cas]
+        )
     resources[sysrot_key] += 2 * num_sysrot_calls
 
     if not has_control:
@@ -708,9 +828,14 @@ def _trotter_cdf_resources(  # pylint: disable=too-many-arguments,unused-argumen
     wires,
     double_phase,
     work_wires=(),
+    _basis_rotations=None,
 ):
     return _cdf_resource_counts(
-        num_trotter_steps, hamiltonian, has_control=False, num_work_wires=len(work_wires)
+        num_trotter_steps,
+        hamiltonian,
+        has_control=False,
+        num_work_wires=len(work_wires),
+        _basis_rotations=_basis_rotations,
     )
 
 
@@ -722,6 +847,7 @@ def _trotter_cdf_decomposition(  # pylint: disable=too-many-arguments,unused-arg
     wires,
     double_phase,
     work_wires=(),
+    _basis_rotations=None,
 ):
     # ``double_phase`` only affects the controlled decomposition; the base operator is
     # always the plain (uncontrolled) e^{-iHt} circuit.
@@ -732,6 +858,8 @@ def _trotter_cdf_decomposition(  # pylint: disable=too-many-arguments,unused-arg
             hamiltonian.normalize_leaf_determinant(),
             wires,
             (),
+            basis_rotations=_basis_rotations,
+            apply_prepared_basis_rotation=_apply_prepared_system_basis_rotation,
             **_cdf_decomposition_helpers(work_wires),
         )
         phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
@@ -754,6 +882,7 @@ def _controlled_trotter_cdf_resource(  # pylint: disable=unused-argument
         has_control=True,
         double_phase=base.arguments["double_phase"],
         num_work_wires=len(base.arguments["work_wires"]),
+        _basis_rotations=base.arguments["_basis_rotations"],
     )
 
 
@@ -775,6 +904,11 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
     helpers = _cdf_decomposition_helpers(
         cdf_work_wires, has_control=True, double_phase=double_phase
     )
+    helpers = {
+        **helpers,
+        "basis_rotations": base.arguments["_basis_rotations"],
+        "apply_prepared_basis_rotation": _apply_prepared_system_basis_rotation,
+    }
     phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
     hamiltonian = hamiltonian.normalize_leaf_determinant()
 
