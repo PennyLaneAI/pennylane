@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 415" role="img">
+  <title>Three-bit controlled SemiAdder PPM block circuit with one control</title>
+  <desc>The control is one qubit, the input and target registers each contain
+    three qubits, and five work qubits start and finish in zero. Compute carries
+    for bits zero and one, update sum bit two, then erase each carry before
+    updating its sum bit. Finally reset the shared auxiliary. Only the sum
+    blocks depend on the control. Bit zero is the least significant bit.
+    Each block includes its measurement-based corrections.</desc>
+  <style>
+    text { font-family: sans-serif; font-size: 17px; fill: #000; }
+    .wire { stroke: #000; stroke-width: 1.5; fill: none; }
+    .block { fill: #fff; stroke: #000; stroke-width: 1.5; }
+    .label { text-anchor: middle; }
+    .small { font-size: 14px; }
+  </style>
+  <g class="wire">
+    <path d="M 155 45 H 1170 M 155 100 H 1170 M 155 150 H 1170 M 155 200 H 1170"/>
+    <path d="M 168 94 l 8 12 M 168 144 l 8 12 M 168 194 l 8 12"/>
+    <path d="M 517 45 V 75 M 777 45 V 75 M 1037 45 V 75"/>
+  </g>
+  <text x="20" y="51">control</text>
+  <text x="20" y="106">x register</text>
+  <text x="20" y="156">y register</text>
+  <text x="20" y="206">work |00000⟩</text>
+  <text x="174" y="86" class="small">3</text>
+  <text x="174" y="136" class="small">3</text>
+  <text x="174" y="186" class="small">5</text>
+  <g class="block">
+    <rect x="205" y="75" width="105" height="150" rx="4"/>
+    <rect x="335" y="75" width="105" height="150" rx="4"/>
+    <rect x="465" y="75" width="105" height="150" rx="4"/>
+    <rect x="595" y="75" width="105" height="150" rx="4"/>
+    <rect x="725" y="75" width="105" height="150" rx="4"/>
+    <rect x="855" y="75" width="105" height="150" rx="4"/>
+    <rect x="985" y="75" width="105" height="150" rx="4"/>
+    <rect x="1110" y="175" width="60" height="50" rx="4"/>
+  </g>
+  <g fill="#000">
+    <circle cx="517" cy="45" r="4"/>
+    <circle cx="777" cy="45" r="4"/>
+    <circle cx="1037" cy="45" r="4"/>
+  </g>
+  <g class="label">
+    <text x="257" y="155">Carry 0</text>
+    <text x="387" y="155">Carry 1</text>
+    <text x="517" y="155">Sum 2</text>
+    <text x="647" y="155">Erase 1</text>
+    <text x="777" y="155">Sum 1</text>
+    <text x="907" y="155">Erase 0</text>
+    <text x="1037" y="155">Sum 0</text>
+    <text x="1140" y="197" class="small">Reset</text>
+    <text x="1140" y="215" class="small">aux</text>
+  </g>
+  <text x="20" y="266">Bits run from least (0) to most significant (2); each line is a register.</text>
+  <text x="20" y="294" class="small">Blocks act on the indicated bit and required work qubits; the other register qubits pass through.</text>
+  <text x="20" y="320" class="small">Carry: _ppm_controlled_left_block · Erase: _ppm_controlled_erase_carry · Sum: _ppm_controlled_sum</text>
+  <text x="20" y="346" class="small">Only sum blocks use the control; dots indicate this dependency, not a controlled version of every gate.</text>
+  <text x="20" y="372" class="small">Work register: two carries, one shared auxiliary, one qubit held at |0⟩, and one temporary AND for the top sum.</text>
+</svg>

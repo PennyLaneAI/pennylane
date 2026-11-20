@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 320" role="img">
+  <title>Three-bit SemiAdder PPM block circuit</title>
+  <desc>The input and target registers each contain three qubits. Four work qubits
+    start and finish in zero. Left blocks process bits zero and one, the last block
+    updates bit two, and right blocks uncompute bits one and zero. Bit zero is the
+    least significant bit. Each block includes its measurement-based corrections.</desc>
+  <style>
+    text { font-family: sans-serif; font-size: 17px; fill: #000; }
+    .wire { stroke: #000; stroke-width: 1.5; fill: none; }
+    .block { fill: #fff; stroke: #000; stroke-width: 1.5; }
+    .label { text-anchor: middle; }
+    .small { font-size: 14px; }
+  </style>
+  <g class="wire">
+    <path d="M 155 65 H 960 M 155 115 H 960 M 155 165 H 960"/>
+    <path d="M 168 59 l 8 12 M 168 109 l 8 12 M 168 159 l 8 12"/>
+  </g>
+  <text x="20" y="71">x register</text>
+  <text x="20" y="121">y register</text>
+  <text x="20" y="171">work |0000⟩</text>
+  <text x="174" y="51" class="small">3</text>
+  <text x="174" y="101" class="small">3</text>
+  <text x="174" y="151" class="small">4</text>
+  <g class="block">
+    <rect x="210" y="40" width="110" height="150" rx="4"/>
+    <rect x="355" y="40" width="110" height="150" rx="4"/>
+    <rect x="500" y="40" width="110" height="150" rx="4"/>
+    <rect x="645" y="40" width="110" height="150" rx="4"/>
+    <rect x="790" y="40" width="110" height="150" rx="4"/>
+  </g>
+  <g class="label">
+    <text x="265" y="110">Left 0</text>
+    <text x="265" y="135" class="small">carry + sum</text>
+    <text x="410" y="110">Left 1</text>
+    <text x="410" y="135" class="small">carry + sum</text>
+    <text x="555" y="110">Last 2</text>
+    <text x="555" y="135" class="small">top sum</text>
+    <text x="700" y="110">Right 1</text>
+    <text x="700" y="135" class="small">erase carry</text>
+    <text x="845" y="110">Right 0</text>
+    <text x="845" y="135" class="small">erase carry</text>
+  </g>
+  <text x="20" y="222">Bits run from least (0) to most significant (2); each line is a register.</text>
+  <text x="20" y="246" class="small">Blocks act on the indicated bit and required work qubits; the other register qubits pass through.</text>
+  <text x="20" y="270" class="small">Left: _ppm_left_block · Last: _ppm_last_block · Right: _ppm_right_block</text>
+  <text x="20" y="294" class="small">Work register: two carry qubits, one shared auxiliary, and one qubit held at |0⟩.</text>
+</svg>
