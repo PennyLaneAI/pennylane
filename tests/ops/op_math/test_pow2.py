@@ -76,7 +76,7 @@ class RealPowOp(Operator2):
     dynamic_argnames = ("phi",)
 
     arg_specs = {"wires": Wire[1]}
-    
+
     def __init__(self, phi, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(phi, wires)
 
