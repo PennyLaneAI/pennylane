@@ -4,9 +4,9 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Added a lattice-surgery decomposition for ``C(MultiX)`` with one control wire,
-  using three Pauli product measurements and one auxiliary qubit. It supports
-  dynamic bitstrings and controls on either ``0`` or ``1``.
+* Added a lattice-surgery decomposition for controlled :class:`~.MultiX`,
+  using three Pauli product measurements and one auxiliary qubit, plus an AND ladder
+  for multiple controls.
   `(#10558) <https://github.com/PennyLaneAI/pennylane/pull/10558>`__
 
 * A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
