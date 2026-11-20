@@ -547,6 +547,8 @@ New features since last release
   decomposition pathways to the ``target`` gate set are analyzed and the resulting operations are
   counted. Note that :func:`~pennylane.estimate` is only supported with ``qp.qjit(capture=True)``.
   `(#10296) <https://github.com/PennyLaneAI/pennylane/pull/10296>`__
+  `(#10572) <https://github.com/PennyLaneAI/pennylane/pull/10572>`__
+
 
   Consider the following circuit.
 
@@ -1549,6 +1551,9 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
+
+* Removes :class:`pennylane.tape.OperationRecorder`. Use :class:`~.AnnotatedQueue` instead.
+  [(#10574)](https://github.com/PennyLaneAI/pennylane/pull/10574)
 
 * :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly: use
   ``get_compile_pipeline(qnode, level)`` instead of
