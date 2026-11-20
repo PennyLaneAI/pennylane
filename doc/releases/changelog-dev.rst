@@ -2317,7 +2317,8 @@ Documentation 📝
 
 * The Using PennyLane2 and Development sections have been revamped to include updated information on 
   fundamental parts of the PennyLane2 interface and new development standards.
-  [(#10475)](https://github.com/PennyLaneAI/pennylane/pull/10475) 
+  `(#10475) <https://github.com/PennyLaneAI/pennylane/pull/10475>`__ 
+  `(#10571) <https://github.com/PennyLaneAI/pennylane/pull/10571>`__ 
   
 * Updated :class:`~.MPSPrep` documentation to use ``default.qubit`` and explain the
   work wires required for gate-based decomposition, replacing the ``lightning.tensor`` example.
