@@ -283,7 +283,7 @@ def test_symbolic_capture(wrapper):
     assert isinstance(tape.operations[0].base, ChangeOpBasis2)
 
 
-class MyOp(qp.RX):
+class MyOp(qp.RX):  # pylint: disable=too-few-public-methods
     """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
