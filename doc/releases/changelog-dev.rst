@@ -2509,7 +2509,7 @@ Bug fixes 🐛
 ~~~~~~~~~~~~
 
 * Fixed resource callbacks in :class:`~.SingleExcitation` decompositions to accept positional arguments.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10575) <https://github.com/PennyLaneAI/pennylane/pull/10575>`__
 
 * Fixed reconstruction of wire pytrees containing mixed Python and JAX scalars, allowing
   nested captured operators to reuse these wires.
