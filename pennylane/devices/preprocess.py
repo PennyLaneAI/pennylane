@@ -15,7 +15,8 @@
 """This module contains functions for preprocessing `QuantumTape` objects to ensure
 that they are supported for execution by a device."""
 
-# pylint: disable=protected-access, too-many-arguments
+# pylint: disable=protected-access
+
 
 import os
 import warnings
@@ -161,7 +162,7 @@ def validate_device_wires(
                     new_ops = list(tape.operations)
                 modified = True
                 new_mp = copy(mp)
-                new_mp._wires = wires  # pylint:disable=protected-access
+                new_mp._wires = wires
                 new_ops[i] = Snapshot(
                     measurement=new_mp, tag=op.tag, shots=op.hyperparameters["shots"]
                 )
@@ -173,7 +174,7 @@ def validate_device_wires(
         if not mp.obs and not mp.wires:
             modified = True
             new_mp = copy(mp)
-            new_mp._wires = wires  # pylint:disable=protected-access
+            new_mp._wires = wires
             measurements[m_idx] = new_mp
     if modified:
         tape = tape.copy(ops=new_ops, measurements=measurements)
@@ -266,7 +267,7 @@ def validate_adjoint_trainable_params(
 
 
 @transform
-def decompose(  # pylint: disable = too-many-positional-arguments
+def decompose(  # pylint: disable=too-many-arguments
     tape: QuantumScript,
     stopping_condition: Callable[[Operator], bool],
     stopping_condition_shots: Callable[[Operator], bool] | None = None,

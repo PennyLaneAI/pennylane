@@ -15,7 +15,8 @@
 """PyTests for the integration between AutoGraph and PennyLane for the
 source-to-source transformation feature."""
 
-# pylint: disable=wrong-import-position,wrong-import-order,ungrouped-imports
+# pylint: disable=wrong-import-position,wrong-import-order
+
 
 from functools import partial
 
@@ -42,14 +43,12 @@ jax = pytest.importorskip("jax")
 from jax import make_jaxpr
 
 # must be below jax importorskip
-# pylint: disable=wrong-import-position
+# pylint: disable-next=ungrouped-imports
 from pennylane.capture.primitives import cond_prim, for_loop_prim
 from pennylane.exceptions import AutoGraphError
 from pennylane.testing import assert_eqn_matches_op, extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
-
-# pylint: disable=too-few-public-methods, unnecessary-lambda-assignment
 
 
 class TestPennyLaneTransformer:
@@ -133,7 +132,7 @@ class TestPennyLaneTransformer:
 
         transformer = PennyLaneTransformer()
 
-        assert transformer._extra_locals is None  # pylint:disable = protected-access
+        assert transformer._extra_locals is None  # pylint: disable=protected-access
 
         locals = transformer.get_extra_locals()
         ag_fn_dict = locals["ag__"].__dict__
@@ -165,8 +164,7 @@ class TestPennyLaneTransformer:
         assert transformer.get_cached_function(fn)(1.7) == fn(1.7)
 
 
-# pylint: disable=too-many-public-methods
-class TestIntegration:
+class TestIntegration:  # pylint: disable=too-many-public-methods
     """Test that the autograph transformations trigger correctly in different settings."""
 
     def test_run_autograph_on_converted_function(self):
@@ -185,7 +183,7 @@ class TestIntegration:
         """Check the error produced when attempting to convert an unsupported object (neither of
         QNode, function, method or callable)."""
 
-        class FN:
+        class FN:  # pylint: disable=too-few-public-methods
             """Test object."""
 
             __name__ = "unknown"
@@ -198,7 +196,7 @@ class TestIntegration:
     def test_callable_object(self):
         """Test run_autograph applied to a callable object."""
 
-        class FN:
+        class FN:  # pylint: disable=too-few-public-methods
             """Test object."""
 
             __name__ = "unknown"
@@ -579,7 +577,7 @@ class TestIntegration:
     def test_custom_operation(self):
         """Test that autograph can be applied to circuits with custom operations."""
 
-        class MyOperation(qp.operation.Operation):
+        class MyOperation(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             pass
 
         def f(x):
@@ -587,7 +585,7 @@ class TestIntegration:
 
         ag_fn = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_fn)(0.5)
-        # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         assert jaxpr.jaxpr.eqns[0].primitive == MyOperation._primitive
         assert len(jaxpr.jaxpr.eqns) == 1
 

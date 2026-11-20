@@ -100,8 +100,7 @@ class TestBuildingBlocks:
         if not decompose_right_elbow:
             gate_set.add("Adjoint(TemporaryAND)")
 
-        # pylint: disable-next=protected-access
-        @qp.transforms._tape_decompose(gate_set=gate_set)
+        @qp.transforms._tape_decompose(gate_set=gate_set)  # pylint: disable=protected-access
         @qp.qnode(qp.device("default.qubit"))
         def node(x_state, y_state, transformed_state):
             qp.StatePrep(x_state, x_wires)
@@ -139,9 +138,9 @@ class TestBuildingBlocks:
         ([0, 1, 2], [3, 4, 5], [6, 7, 8], 8, [9], 8, 1),
     ],
 )
-def test_abstract_init(
+def test_abstract_init(  # pylint: disable=too-many-arguments
     x_wires, y_wires, output_wires, mod, work_wires, expected_mod, expected_num_work_wires
-):  # pylint: disable=too-many-arguments
+):
     """Tests that creating an abstract operator works."""
     abstract_op = OutMultiplier(
         Wire[len(x_wires)],
@@ -358,9 +357,9 @@ class TestOutMultiplier:
             ([0, 1], [3, 4, 5], [6, 7, 8], None, None),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_operation_result(self, x_wires, y_wires, output_wires, mod, work_wires, seed):
         """Test the correctness of the OutMultiplier template output."""
-        # pylint: disable=too-many-arguments
         all_wires = (x_wires, y_wires, output_wires, work_wires)
         _test_mult_correctness(all_wires, mod, _out_multiplier_with_qft, seed)
 
@@ -425,9 +424,8 @@ class TestOutMultiplier:
             ),
         ],
     )
-    def test_wires_error(
-        self, x_wires, y_wires, output_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_wires_error(self, x_wires, y_wires, output_wires, mod, work_wires, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
@@ -514,9 +512,9 @@ class TestOutMultiplier:
         _DECOMP_NEW_OUTPUT_WIRES_ZEROED_CASES,
     )
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_decomposition_new_output_wires_zeroed(
+    def test_decomposition_new_output_wires_zeroed(  # pylint: disable=too-many-arguments
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Tests the decomposition rules implemented with the new system
         with output_wires_zeroed=True."""
 
@@ -549,9 +547,9 @@ class TestOutMultiplier:
         _DECOMP_NEW_NON_ZERO_OUTPUT_WIRES_CASES,
     )
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_decomposition_new_non_zero_output_wires(
+    def test_decomposition_new_non_zero_output_wires(  # pylint: disable=too-many-arguments
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Tests the decomposition rule implemented with the new system
         with output_wires_zeroed=False (default)."""
 
@@ -582,9 +580,9 @@ class TestOutMultiplier:
             ([0], [3, 6], [5, 8], 4, [9, 10, 11], True),
         ],
     )
-    def test_decomposition_caddsub_rule(
+    def test_decomposition_caddsub_rule(  # pylint: disable=too-many-arguments
         self, x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Regression test (#10065): ``_out_multiplier_with_caddsub`` relies internally on
         ``_adder_flipped_first_work_wire``, whose collect-reorder-replay strategy used to be
         capture-unsafe. Verify the rule still decomposes correctly with program capture
@@ -623,7 +621,6 @@ class TestOutMultiplier:
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
             return qp.sample(wires=output_wires)
 
-        # pylint: disable=bad-reversed-sequence
         out = circuit()[0, :]
 
         assert np.allclose(2 ** np.arange(3, -1, -1) @ out, (x * y) % mod)

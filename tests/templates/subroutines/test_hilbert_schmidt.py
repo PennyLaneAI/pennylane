@@ -23,12 +23,9 @@ import pytest
 import pennylane as qp
 from pennylane.decomposition import gate_sets
 from pennylane.testing import assert_decomposable
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
-
-# pylint: disable=expression-not-assigned
+from pennylane.transforms import _tape_decompose as decompose
 
 
-# pylint: disable=protected-access
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("op_type", (qp.HilbertSchmidt, qp.LocalHilbertSchmidt))
 def test_flatten_unflatten_standard_checks(op_type):
@@ -40,11 +37,11 @@ def test_flatten_unflatten_standard_checks(op_type):
     op = op_type(V, U)
     qp.testing.assert_valid(op, skip_wire_mapping=True, skip_differentiation=True)
 
-    data, metadata = op._flatten()
+    data, metadata = op._flatten()  # pylint: disable=protected-access
     assert data == (V, U)
     assert not metadata
 
-    new_op = type(op)._unflatten(*op._flatten())
+    new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
     assert qp.math.allclose(op.data, new_op.data)
 
     for op1, op2 in zip(op.hyperparameters["U"], new_op.hyperparameters["U"]):
@@ -76,7 +73,6 @@ class TestHilbertSchmidt:
             return qp.probs()
 
         def cost_hst(V, U):
-            # pylint:disable=unsubscriptable-object
             return 1 - hilbert_test(V, U)[0]
 
         res = cost_hst(V, U)
@@ -471,7 +467,6 @@ class TestLocalHilbertSchmidt:
             return qp.probs()
 
         def cost_lhst(V, U):
-            # pylint:disable=unsubscriptable-object
             return 1 - local_hilbert_test(V, U)[0]
 
         v_params = [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2]
@@ -633,7 +628,6 @@ class TestLocalHilbertSchmidt:
             qp.LocalHilbertSchmidt(V, U)
             return qp.probs()
 
-        # pylint: disable=unsubscriptable-object
         def cost_lhst(V, U):
             return 1 - local_hilbert_test(V, U)[0]
 

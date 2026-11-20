@@ -16,8 +16,6 @@ Contains the classical Jacobian transform.
 """
 
 import jax
-
-# pylint: disable=import-outside-toplevel
 import numpy as np
 
 from pennylane import math
@@ -160,7 +158,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
             jac = jacobian(classical_preprocessing, argnums=wrapper_argnum)(*args, **kwargs)
 
         elif qnode.interface == "torch":
-            import torch
+            import torch  # pylint: disable=import-outside-toplevel
 
             def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
                 jac = torch.autograd.functional.jacobian(classical_preprocessing, args)

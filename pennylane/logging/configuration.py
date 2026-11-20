@@ -37,8 +37,7 @@ def _add_trace_level():
 
         # Due to limitations in how the logging module exposes support for custom levels,
         # accessing the private method `_log` has no alternative.
-        # pylint: disable=protected-access
-        self._log(TRACE, message, args, **kws)
+        self._log(TRACE, message, args, **kws)  # pylint: disable=protected-access
 
     logging.addLevelName(TRACE, "TRACE")
     logging.TRACE = TRACE
@@ -101,8 +100,7 @@ def show_system_config():
     """
     This function opens the logging configuration file in the system-default browser.
     """
-    # pylint:disable = import-outside-toplevel
-    import webbrowser
+    import webbrowser  # pylint: disable=import-outside-toplevel
 
     webbrowser.open(config_path())
 
@@ -121,7 +119,6 @@ def edit_system_config(wait_on_close=False):
         instead open this file manually with the ``config_path()`` provided path.
     """
     if editor := os.getenv("EDITOR"):
-        # pylint:disable = consider-using-with
         with subprocess.Popen((editor, config_path())) as p:
             if wait_on_close:  # Only valid when editor is known
                 p.wait()
@@ -131,6 +128,6 @@ def edit_system_config(wait_on_close=False):
             f_cmd = "xdg-open"
         else:
             f_cmd = "open"
-        subprocess.Popen((f_cmd, config_path()))
+        subprocess.Popen((f_cmd, config_path()))  # pylint: disable=consider-using-with
     else:  # Windows-only, does not exist on MacOS/Linux
-        os.startfile(config_path())  # pylint:disable = no-member
+        os.startfile(config_path())  # pylint: disable=no-member

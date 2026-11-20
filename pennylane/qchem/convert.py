@@ -20,7 +20,6 @@ from itertools import product
 
 import numpy as np
 
-# pylint: disable=import-outside-toplevel
 import pennylane as qp
 from pennylane.wires import Wires
 
@@ -235,7 +234,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
     (0.3+0j) [Z0]
     """
     try:
-        import openfermion
+        import openfermion  # pylint: disable=import-outside-toplevel
     except ImportError as Error:
         raise ImportError(
             "This feature requires openfermion. "

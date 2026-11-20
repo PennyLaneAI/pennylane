@@ -168,7 +168,6 @@ def _track_execute_and_compute_vjp(untracked_execute_and_compute_vjp):
     return execute_and_compute_vjp
 
 
-# pylint: disable=protected-access
 def simulator_tracking(cls: type) -> type:
     """Modifies all methods to add default simulator style tracking.
 
@@ -241,9 +240,9 @@ def simulator_tracking(cls: type) -> type:
         raise ValueError("simulator_tracking only accepts subclasses of pennylane.devices.Device")
 
     if hasattr(cls, "_applied_modifiers"):
-        cls._applied_modifiers.append(simulator_tracking)
+        cls._applied_modifiers.append(simulator_tracking)  # pylint: disable=protected-access
     else:
-        cls._applied_modifiers = [simulator_tracking]
+        cls._applied_modifiers = [simulator_tracking]  # pylint: disable=protected-access
 
     # execute must be defined
     cls.execute = _track_execute(cls.execute)

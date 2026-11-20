@@ -31,8 +31,6 @@ from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.math import ceil_log2
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called, signature-differs
-
 
 class OutOfPlaceSquare(ResourceOperator):
     r"""Resource class for the OutofPlaceSquare gate.
@@ -83,7 +81,7 @@ class OutOfPlaceSquare(ResourceOperator):
         return {"register_size": self.register_size}
 
     @classmethod
-    def resource_rep(cls, register_size: int):
+    def resource_rep(cls, register_size: int):  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -97,7 +95,7 @@ class OutOfPlaceSquare(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"register_size": register_size})
 
     @classmethod
-    def resource_decomp(cls, register_size):
+    def resource_decomp(cls, register_size):  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -179,6 +177,7 @@ class IQP(ResourceOperator):
         }
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_wires, pattern, spin_sym) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -205,6 +204,7 @@ class IQP(ResourceOperator):
         )
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, num_wires, pattern, spin_sym) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -243,7 +243,7 @@ class IQP(ResourceOperator):
         ]
 
     @staticmethod
-    def tracking_name(num_wires, pattern, spin_sym) -> str:
+    def tracking_name(num_wires, pattern, spin_sym) -> str:  # pylint: disable=arguments-differ
         r"""Returns the tracking name built with the operator's parameters."""
         return f"IQP({num_wires}, {pattern}, {spin_sym})"
 
@@ -289,7 +289,7 @@ class SelectOnlyQRAM(ResourceOperator):
         "num_select_wires",
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         data,
         num_wires,
@@ -339,6 +339,7 @@ class SelectOnlyQRAM(ResourceOperator):
         }
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, data, num_wires, select_value, num_select_wires, num_control_wires):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -363,8 +364,13 @@ class SelectOnlyQRAM(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
-        cls, data, num_wires, num_select_wires, num_control_wires, select_value=None
+    def resource_decomp(  # pylint: disable=arguments-differ,unused-argument
+        cls,
+        data,
+        num_wires,
+        num_select_wires,
+        num_control_wires,
+        select_value=None,
     ):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -422,6 +428,7 @@ class SelectOnlyQRAM(ResourceOperator):
         return ret
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def tracking_name(data, num_wires, select_value, num_select_wires, num_control_wires) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         return f"SelectOnlyQRAM({data}, {num_wires}, {select_value}, {num_select_wires}, {num_control_wires})"
@@ -488,7 +495,7 @@ class PhaseGradient(ResourceOperator):
         return {"num_wires": self.num_wires}
 
     @classmethod
-    def resource_rep(cls, num_wires) -> CompressedResourceOp:
+    def resource_rep(cls, num_wires) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -501,7 +508,7 @@ class PhaseGradient(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
 
     @classmethod
-    def resource_decomp(cls, num_wires: int):
+    def resource_decomp(cls, num_wires: int):  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -589,6 +596,7 @@ class OutMultiplier(ResourceOperator):
         return {"a_num_wires": self.a_num_wires, "b_num_wires": self.b_num_wires}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, a_num_wires, b_num_wires) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -606,6 +614,7 @@ class OutMultiplier(ResourceOperator):
         )
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, a_num_wires, b_num_wires) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -687,7 +696,7 @@ class SemiAdder(ResourceOperator):
         return {"max_register_size": self.max_register_size}
 
     @classmethod
-    def resource_rep(cls, max_register_size):
+    def resource_rep(cls, max_register_size):  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -701,7 +710,7 @@ class SemiAdder(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, {"max_register_size": max_register_size})
 
     @classmethod
-    def resource_decomp(cls, max_register_size: int):
+    def resource_decomp(cls, max_register_size: int):  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -740,7 +749,7 @@ class SemiAdder(ResourceOperator):
         ]  # Obtained resource from Fig1 and Fig2 https://quantum-journal.org/papers/q-2018-06-18-74/pdf/
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
     ):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
@@ -865,7 +874,7 @@ class ControlledSequence(ResourceOperator):
 
     resource_keys = {"base_cmpr_op", "num_ctrl_wires"}
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self, base: ResourceOperator, num_control_wires: int, wires: WiresLike = None
     ) -> None:
         _dequeue(op_to_remove=base)
@@ -898,7 +907,7 @@ class ControlledSequence(ResourceOperator):
         return {"base_cmpr_op": self.base_cmpr_op, "num_ctrl_wires": self.num_ctrl_wires}
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls, base_cmpr_op: CompressedResourceOp, num_ctrl_wires: int
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
@@ -917,7 +926,7 @@ class ControlledSequence(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, base_cmpr_op, num_ctrl_wires):
+    def resource_decomp(cls, base_cmpr_op, num_ctrl_wires):  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -1048,7 +1057,7 @@ class QPE(ResourceOperator):
 
     resource_keys = {"base_cmpr_op", "num_estimation_wires", "adj_qft_cmpr_op"}
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self,
         base: ResourceOperator,
         num_estimation_wires: int,
@@ -1097,7 +1106,7 @@ class QPE(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         base_cmpr_op: CompressedResourceOp,
         num_estimation_wires: int,
@@ -1126,7 +1135,7 @@ class QPE(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         base_cmpr_op: CompressedResourceOp,
         num_estimation_wires: int,
@@ -1165,7 +1174,7 @@ class QPE(ResourceOperator):
         ]
 
     @staticmethod
-    def tracking_name(
+    def tracking_name(  # pylint: disable=arguments-differ
         base_cmpr_op: CompressedResourceOp,
         num_estimation_wires: int,
         adj_qft_cmpr_op: CompressedResourceOp | None = None,
@@ -1210,6 +1219,7 @@ class IterativeQPE(ResourceOperator):
 
     resource_keys = {"base_cmpr_op", "num_iter"}
 
+    # pylint: disable-next=super-init-not-called
     def __init__(self, base: ResourceOperator, num_iter: int):
         _dequeue(base)
         self.queue()
@@ -1233,7 +1243,7 @@ class IterativeQPE(ResourceOperator):
         return {"base_cmpr_op": self.base_cmpr_op, "num_iter": self.num_iter}
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls, base_cmpr_op: CompressedResourceOp, num_iter: int
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
@@ -1253,7 +1263,7 @@ class IterativeQPE(ResourceOperator):
         )
 
     @classmethod
-    def resource_decomp(cls, base_cmpr_op, num_iter):
+    def resource_decomp(cls, base_cmpr_op, num_iter):  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -1351,7 +1361,7 @@ class UnaryIterationQPE(ResourceOperator):
 
     resource_keys = {"cmpr_walk_op", "num_iterations", "adj_qft_cmpr_op"}
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self,
         walk_op: ResourceOperator,
         num_iterations: int,
@@ -1419,7 +1429,7 @@ class UnaryIterationQPE(ResourceOperator):
         }
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         cmpr_walk_op: CompressedResourceOp,
         num_iterations: int,
@@ -1451,7 +1461,7 @@ class UnaryIterationQPE(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         cmpr_walk_op: CompressedResourceOp,
         num_iterations: int,
@@ -1526,7 +1536,7 @@ class UnaryIterationQPE(ResourceOperator):
         ]
 
     @staticmethod
-    def tracking_name(
+    def tracking_name(  # pylint: disable=arguments-differ
         cmpr_walk_op: CompressedResourceOp,
         num_iterations: int,
         adj_qft_cmpr_op: CompressedResourceOp | None = None,
@@ -1616,7 +1626,7 @@ class QFT(ResourceOperator):
         return {"num_wires": self.num_wires}
 
     @classmethod
-    def resource_rep(cls, num_wires) -> CompressedResourceOp:
+    def resource_rep(cls, num_wires) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -1630,7 +1640,7 @@ class QFT(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
-    def resource_decomp(cls, num_wires) -> list[GateCount]:
+    def resource_decomp(cls, num_wires) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -1708,7 +1718,7 @@ class QFT(ResourceOperator):
         return gate_types
 
     @staticmethod
-    def tracking_name(num_wires) -> str:
+    def tracking_name(num_wires) -> str:  # pylint: disable=arguments-differ
         r"""Returns the tracking name built with the operator's parameters."""
         return f"QFT({num_wires})"
 
@@ -1783,6 +1793,7 @@ class AQFT(ResourceOperator):
         return {"order": self.order, "num_wires": self.num_wires}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, order, num_wires) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -1798,6 +1809,7 @@ class AQFT(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, order, num_wires) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -1874,7 +1886,7 @@ class AQFT(ResourceOperator):
         return gate_types
 
     @staticmethod
-    def tracking_name(order, num_wires) -> str:
+    def tracking_name(order, num_wires) -> str:  # pylint: disable=arguments-differ
         r"""Returns the tracking name built with the operator's parameters."""
         return f"AQFT({order}, {num_wires})"
 
@@ -1928,7 +1940,7 @@ class BasisRotation(ResourceOperator):
         super().__init__(wires=wires)
 
     @classmethod
-    def resource_decomp(cls, dim) -> list[GateCount]:
+    def resource_decomp(cls, dim) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
@@ -1968,7 +1980,7 @@ class BasisRotation(ResourceOperator):
         return {"dim": self.num_wires}
 
     @classmethod
-    def resource_rep(cls, dim) -> CompressedResourceOp:
+    def resource_rep(cls, dim) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
@@ -1984,7 +1996,7 @@ class BasisRotation(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @staticmethod
-    def tracking_name(dim) -> str:
+    def tracking_name(dim) -> str:  # pylint: disable=arguments-differ
         r"""Returns the tracking name built with the operator's parameters."""
         return f"BasisRotation({dim})"
 
@@ -2026,7 +2038,7 @@ class HybridQRAM(ResourceOperator):
 
     resource_keys = {"data", "num_target_wires", "num_select_wires", "num_control_wires"}
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         data,
         num_wires,
@@ -2073,6 +2085,7 @@ class HybridQRAM(ResourceOperator):
         }
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, data, num_wires, num_select_wires, num_tree_control_wires):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -2095,6 +2108,7 @@ class HybridQRAM(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
+    # pylint: disable-next=arguments-differ,unused-argument
     def resource_decomp(cls, data, num_wires, num_select_wires, num_tree_control_wires):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -2176,6 +2190,7 @@ class HybridQRAM(ResourceOperator):
         return ret
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def tracking_name(data, num_wires, num_select_wires, num_tree_control_wires) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         return f"HybridQRAM({data}, {num_wires}, {num_select_wires}, {num_tree_control_wires})"
@@ -2209,7 +2224,7 @@ class BBQRAM(ResourceOperator):
 
     resource_keys = {"num_bitstrings", "size_bitstring", "num_bit_flips", "num_wires"}
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         num_bitstrings,
         size_bitstring,
@@ -2251,6 +2266,7 @@ class BBQRAM(ResourceOperator):
         }
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_bitstrings, size_bitstring, num_bit_flips, num_wires):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -2273,6 +2289,7 @@ class BBQRAM(ResourceOperator):
         return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
+    # pylint: disable-next=arguments-differ,unused-argument
     def resource_decomp(cls, num_bitstrings, size_bitstring, num_bit_flips, num_wires):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -2314,6 +2331,7 @@ class BBQRAM(ResourceOperator):
         ]
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def tracking_name(num_bitstrings, size_bitstring, num_bit_flips, num_wires) -> str:
         r"""Returns the tracking name built with the operator's parameters."""
         return f"BBQRAM({num_bitstrings}, {size_bitstring}, {num_bit_flips}, {num_wires})"
@@ -2359,6 +2377,7 @@ class Select(ResourceOperator):
 
     resource_keys = {"num_wires", "cmpr_ops"}
 
+    # pylint: disable-next=super-init-not-called
     def __init__(self, ops: list, wires: WiresLike = None) -> None:
         _dequeue(op_to_remove=ops)
         self.queue()
@@ -2389,7 +2408,8 @@ class Select(ResourceOperator):
             self.num_wires = minimum_num_wires
 
     @classmethod
-    def resource_decomp(cls, cmpr_ops, num_wires):  # pylint: disable=unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
+    def resource_decomp(cls, cmpr_ops, num_wires):
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
 
         Args:
@@ -2491,6 +2511,7 @@ class Select(ResourceOperator):
         return {"cmpr_ops": self.cmpr_ops, "num_wires": self.num_wires}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, cmpr_ops, num_wires: WiresLike = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -2592,7 +2613,7 @@ class QROM(ResourceOperator):
             return w2
         return w1
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         num_bitstrings: int,
         size_bitstring: int,
@@ -2624,9 +2645,8 @@ class QROM(ResourceOperator):
         self.select_swap_depth = select_swap_depth
         super().__init__(wires=wires)
 
-    # pylint: disable=protected-access
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         num_bitstrings: int,
         size_bitstring: int,
@@ -2753,6 +2773,7 @@ class QROM(ResourceOperator):
             max_depth = 2 ** ceil_log2(num_bitstrings)
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
 
+        # pylint: disable-next=protected-access
         W_opt = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
@@ -2824,7 +2845,7 @@ class QROM(ResourceOperator):
         return gate_cost
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
     ):
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -2993,6 +3014,7 @@ class QROM(ResourceOperator):
         ]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -3025,6 +3047,7 @@ class QROM(ResourceOperator):
             max_depth = 2 ** ceil_log2(num_bitstrings)
             select_swap_depth = min(max_depth, select_swap_depth)  # truncate depth beyond max depth
 
+        # pylint: disable-next=protected-access
         k = select_swap_depth or qre.QROM._t_optimized_select_swap_width(
             num_bitstrings, size_bitstring
         )
@@ -3080,7 +3103,7 @@ class QROM(ResourceOperator):
         return gate_lst
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         num_bitstrings: int,
         size_bitstring: int,
@@ -3209,6 +3232,7 @@ class SelectPauliRot(ResourceOperator):
         }
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_ctrl_wires, rot_axis, precision=None):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -3233,6 +3257,7 @@ class SelectPauliRot(ResourceOperator):
         )
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, num_ctrl_wires, rot_axis, precision):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -3401,7 +3426,7 @@ class Reflection(ResourceOperator):
 
     resource_keys = {"alpha", "num_wires", "cmpr_U"}
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self,
         num_wires: int | None = None,
         U: ResourceOperator | None = None,
@@ -3435,7 +3460,7 @@ class Reflection(ResourceOperator):
             self.wires = None
 
     @classmethod
-    def resource_decomp(
+    def resource_decomp(  # pylint: disable=arguments-differ
         cls,
         num_wires: int | None = None,
         alpha: float = math.pi,
@@ -3492,7 +3517,7 @@ class Reflection(ResourceOperator):
         return gate_types
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params):
+    def adjoint_resource_decomp(cls, target_resource_params):  # pylint: disable=signature-differs
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -3511,6 +3536,7 @@ class Reflection(ResourceOperator):
         return [GateCount(cls.resource_rep(**target_resource_params))]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -3589,7 +3615,7 @@ class Reflection(ResourceOperator):
         return {"alpha": self.alpha, "num_wires": self.num_wires, "cmpr_U": self.cmpr_U}
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls,
         num_wires: int | None = None,
         alpha: float = math.pi,
@@ -3662,7 +3688,7 @@ class Qubitization(ResourceOperator):
 
     resource_keys = {"prep_op", "select_op"}
 
-    def __init__(
+    def __init__(  # pylint: disable=super-init-not-called
         self, prep_op: ResourceOperator, select_op: ResourceOperator, wires: WiresLike = None
     ) -> None:
         self.queue()
@@ -3688,6 +3714,7 @@ class Qubitization(ResourceOperator):
             self.wires = None
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, prep_op: CompressedResourceOp, select_op: CompressedResourceOp):
         r"""Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
@@ -3714,7 +3741,7 @@ class Qubitization(ResourceOperator):
         return [GateCount(select_op), GateCount(ref_op)]
 
     @classmethod
-    def adjoint_resource_decomp(cls, target_resource_params):
+    def adjoint_resource_decomp(cls, target_resource_params):  # pylint: disable=signature-differs
         r"""Returns a list representing the resources for the adjoint of the operator.
 
         Args:
@@ -3739,6 +3766,7 @@ class Qubitization(ResourceOperator):
         return [GateCount(ref_op), GateCount(select_op)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def controlled_resource_decomp(cls, num_ctrl_wires, num_zero_ctrl, target_resource_params):
         r"""Returns a list representing the resources for a controlled version of the operator.
 
@@ -3792,7 +3820,7 @@ class Qubitization(ResourceOperator):
         return {"prep_op": self.prep_op, "select_op": self.select_op}
 
     @classmethod
-    def resource_rep(
+    def resource_rep(  # pylint: disable=arguments-differ
         cls, prep_op: CompressedResourceOp, select_op: CompressedResourceOp
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of

@@ -22,7 +22,9 @@ variants selected by the ``double_phase`` flag: the default (``False``) genuine 
 unitary and the (``True``) double-phase Hadamard-test circuit of Fig. 6 of arXiv:2506.15784.
 """
 
-# pylint: disable=too-many-arguments, redefined-outer-name, too-few-public-methods, wrong-import-position, protected-access
+# pylint: disable=too-many-arguments,redefined-outer-name,wrong-import-position,protected-access
+
+
 import warnings
 
 import numpy as np
@@ -49,11 +51,8 @@ from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
 from pennylane.testing import assert_decomposable
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
-from tests.templates.subroutines.time_evolution.fermi_tools import (  # pylint: disable=no-name-in-module
-    one_body_matrix,
-    permute_qubits,
-)
-from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  # pylint: disable=no-name-in-module
+from tests.templates.subroutines.time_evolution.fermi_tools import one_body_matrix, permute_qubits
+from tests.templates.subroutines.time_evolution.trotter_test_helpers import (
     CATALYST_GATE_SET_DOUBLE_PHASE,
     CATALYST_GATE_SET_GENUINE,
     _single_z,
@@ -1117,7 +1116,6 @@ class TestIntegration:
         registers = qp.registers({"hadamard": 1, "system": 2 * N})
 
         @qp.qjit(capture=False)
-        # pylint: disable-next=protected-access
         @qp.transforms._tape_decompose(gate_set=target_gates)
         @qp.qnode(qp.device("lightning.qubit"))
         def trotter_circuit():

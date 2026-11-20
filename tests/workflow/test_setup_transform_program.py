@@ -127,8 +127,8 @@ def test_cache_handling():
     device.preprocess_transforms = MagicMock(return_value=CompilePipeline())
 
     full_tp, inner_tp = _setup_transform_program(device, config, cache=True)
-    # pylint: disable=protected-access
     assert inner_tp == CompilePipeline(
+        # pylint: disable-next=protected-access
         BoundTransform(qp.workflow._cache_transform, kwargs={"cache": LRUCache(maxsize=10000)})
     )
     assert not full_tp

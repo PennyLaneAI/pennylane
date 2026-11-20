@@ -15,7 +15,9 @@
 Unit tests for molecular dipole.
 """
 
-# pylint: disable=too-many-arguments, protected-access
+# pylint: disable=too-many-arguments
+
+
 import pytest
 
 import pennylane as qp

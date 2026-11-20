@@ -13,8 +13,6 @@
 # limitations under the License.
 """Unit tests for local `qp.workflow.executors`"""
 
-# pylint: disable=too-many-arguments
-
 import os
 import sys
 
