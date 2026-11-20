@@ -647,7 +647,7 @@ class TestOperatorInit:
             _ = Op(wires=[0, [1, 2]])
 
     def test_wire_size_match(self):
-        """Test that a wire argument matching the declared ``wire_sizes`` is accepted."""
+        """Test that a wire argument matching the declared ``arg_specs`` is accepted."""
 
         class Op(Operator2):
             arg_specs = {"wires": Wire[2]}
@@ -659,7 +659,7 @@ class TestOperatorInit:
         assert op.arguments["wires"] == Wires([0, 1])
 
     def test_wire_size_mismatch_error(self):
-        """Test that supplying a different number of wires than ``wire_sizes`` raises an error."""
+        """Test that supplying a different number of wires than ``arg_specs`` raises an error."""
 
         class Op(Operator2):
             arg_specs = {"wires": Wire[2]}
@@ -674,7 +674,7 @@ class TestOperatorInit:
 
     @pytest.mark.parametrize("num_wires", (1, 3, 7))
     def test_wire_size_none_accepts_any_count(self, num_wires):
-        """Test that ``wire_sizes`` of ``None`` (default) accepts any number of wires."""
+        """Test that ``arg_specs`` of ``None`` (default) accepts any number of wires."""
 
         class Op(Operator2):
             def __init__(self, wires):
