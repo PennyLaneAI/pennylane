@@ -174,7 +174,7 @@ class TestOutAdder:
             )
 
     def test_decomposition(self):
-        """Test that compute_decomposition and decomposition work as expected."""
+        """Test that decomposition works as expected."""
         x_wires, y_wires, output_wires, mod, work_wires = (
             [0, 1, 2],
             [3, 4, 5],
@@ -184,7 +184,7 @@ class TestOutAdder:
         )
         _adder_decomposition = (
             qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-            .compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires)[0]
+            .decomposition()[0]
             .decomposition()
         )
         adder_decomposition = [

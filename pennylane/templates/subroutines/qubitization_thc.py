@@ -339,7 +339,10 @@ class QubitizationTHC(Operator2):
         gradient = wires["gradient_wires"]
 
 
-        @qp.transforms._tape_decompose(stopping_condition=lambda op: len(op.wires) <= 3)
+        @qp.transforms._tape_decompose(
+            gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT,
+            stopping_condition=lambda op: len(op.wires) <= 3,
+        )
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.PhaseGradientStatePrep(gradient)

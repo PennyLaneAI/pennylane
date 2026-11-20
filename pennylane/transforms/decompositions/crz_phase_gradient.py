@@ -107,8 +107,6 @@ def make_crz_to_phase_gradient_decomp(
         from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
         import numpy as np
 
-        qp.decomposition.enable_graph()
-
         prec = 3
         phi = (1/2 + 1/4 + 1/8) * 4 * np.pi # binary rep is (111)
 
@@ -128,7 +126,6 @@ def make_crz_to_phase_gradient_decomp(
         def circuit():
             qp.CRZ(phi, [0, 1])
             return qp.state()
-
 
     The resulting circuit corresponds to the phase gradient decomposition of ``CRZ``. The compute
     and uncompute fanouts load the binary representation of the angle (111 in this case) onto the
@@ -150,7 +147,6 @@ def make_crz_to_phase_gradient_decomp(
      phg_2: ───────────────────╰X─├SemiAdder───────────────────╰X────┤ ├State
     work_0: ──────────────────────├SemiAdder─────────────────────────┤ ├State
     work_1: ──────────────────────╰SemiAdder─────────────────────────┤ ╰State
-
 
     .. details::
         :title: Usage details
@@ -222,7 +218,6 @@ def make_crz_to_phase_gradient_decomp(
           to the full precision. Unless ``len(angle_wires)`` is a key in ``precision_stats``,
           this fallback branch is hinted with probability ``0``, so that resource estimates
           based on the hints do not account for these angles.
-
 
     """
     angle_wires, phase_grad_wires, work_wires = validate_phase_gradient_wires(

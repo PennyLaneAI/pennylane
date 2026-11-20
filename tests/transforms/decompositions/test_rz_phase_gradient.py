@@ -172,7 +172,6 @@ def test_phase_gradient_capture_reuses_dynamic_inputs(rotation, seed):
         phase_gradient_helpers.assert_decomp_realizes_op(op, tape, phase_grad_wires, seed)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_as_fixed_decomps(phi, p):
@@ -205,7 +204,6 @@ def test_as_fixed_decomps(phi, p):
     assert specs == _expected_rz_specs(phi, p)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_as_alt_decomps(phi, p):
@@ -238,7 +236,6 @@ def test_as_alt_decomps(phi, p):
     assert specs == _expected_rz_specs(phi, p)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_integration_multi_wire(seed):
     """
     Tests that the decomposition correctly realizes the phase gradient decomposition of RZ as described in

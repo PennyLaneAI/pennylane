@@ -15,14 +15,13 @@
 # pylint: disable = missing-module-docstring
 from doctest import ELLIPSIS, NORMALIZE_WHITESPACE
 
-
-import pytest
-from sybil import Sybil
-from sybil.parsers.rest import DocTestParser, PythonCodeBlockParser
-from sybil.parsers.markdown import PythonCodeBlockParser as MarkDownPythonCodeBlockParser
-
 import numpy as base_numpy
+import pytest
 import scipy as base_scipy
+from sybil import Sybil
+from sybil.parsers.markdown import PythonCodeBlockParser as MarkDownPythonCodeBlockParser
+from sybil.parsers.rest import DocTestParser, PythonCodeBlockParser
+
 import pennylane as qp
 
 try:
@@ -53,7 +52,6 @@ def reset_pennylane_state(namespace):
     after testing a document.
     """
     qp.capture.disable()
-    qp.decomposition.disable_graph()
     if jax is not None:
         jax.config.update("jax_dynamic_shapes", False)
     # jax.config.update("jax_enable_x64", False)
