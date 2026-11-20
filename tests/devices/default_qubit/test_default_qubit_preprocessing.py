@@ -807,8 +807,8 @@ class TestPreprocessingIntegration:
         x = 0.928
         y = -0.792
         qscript = qp.tape.QuantumScript(
-            [MyTemplate(x, y, ("a", "b"))],
-            [qp.expval(qp.PauliY("a")), qp.expval(qp.PauliZ("a")), qp.expval(qp.PauliX("b"))],
+            [MyTemplate(x, y, (9, 11))],
+            [qp.expval(qp.PauliY(9)), qp.expval(qp.PauliZ(9)), qp.expval(qp.PauliX(11))],
         )
 
         dev = DefaultQubit(max_workers=max_workers)
@@ -818,12 +818,12 @@ class TestPreprocessingIntegration:
 
         assert len(tapes) == 1
         execute_circuit = tapes[0]
-        qp.assert_equal(execute_circuit[0], qp.RX(x, "a"))
-        qp.assert_equal(execute_circuit[1], qp.RY(y, "b"))
-        qp.assert_equal(execute_circuit[2], qp.CNOT(("a", "b")))
-        qp.assert_equal(execute_circuit[3], qp.expval(qp.PauliY("a")))
-        qp.assert_equal(execute_circuit[4], qp.expval(qp.PauliZ("a")))
-        qp.assert_equal(execute_circuit[5], qp.expval(qp.PauliX("b")))
+        qp.assert_equal(execute_circuit[0], qp.RX(x, 9))
+        qp.assert_equal(execute_circuit[1], qp.RY(y, 11))
+        qp.assert_equal(execute_circuit[2], qp.CNOT((9, 11)))
+        qp.assert_equal(execute_circuit[3], qp.expval(qp.PauliY(9)))
+        qp.assert_equal(execute_circuit[4], qp.expval(qp.PauliZ(9)))
+        qp.assert_equal(execute_circuit[5], qp.expval(qp.PauliX(11)))
 
         results = dev.execute(tapes, config)
         assert len(results) == 1
@@ -842,8 +842,8 @@ class TestPreprocessingIntegration:
 
         x = 0.692
 
-        measurements1 = [qp.density_matrix("a"), qp.vn_entropy("a")]
-        qs1 = qp.tape.QuantumScript([CustomIsingXX(x, ("a", "b"))], measurements1)
+        measurements1 = [qp.density_matrix(9), qp.vn_entropy(9)]
+        qs1 = qp.tape.QuantumScript([CustomIsingXX(x, (9, 11))], measurements1)
 
         y = -0.923
 

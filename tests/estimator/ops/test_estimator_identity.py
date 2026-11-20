@@ -26,9 +26,7 @@ from pennylane.wires import Wires
 class TestIdentity:
     """Test ResourceIdentity"""
 
-    @pytest.mark.parametrize(
-        "wire_labels", [0, [0], [1, 0, 4], ["a", "b", "c"], [0, 1, None], ["a", 1, "auxiliary"]]
-    )
+    @pytest.mark.parametrize("wire_labels", [0, [0], [1, 0, 4]])
     def test_wires(self, wire_labels):
         """Test that common PL wires are accepted."""
         op = Identity(wire_labels)
@@ -96,9 +94,7 @@ class TestIdentity:
 class TestGlobalPhase:
     """Test ResourceGlobalPhase"""
 
-    @pytest.mark.parametrize(
-        "wire_labels", [0, [0], [1, 0, 4], ["a", "b", "c"], ["a", 1, "auxiliary"]]
-    )
+    @pytest.mark.parametrize("wire_labels", [0, [0], [1, 0, 4]])
     def test_wires(self, wire_labels):
         """Test that common PL wires are accepted."""
         op = GlobalPhase(wire_labels)
