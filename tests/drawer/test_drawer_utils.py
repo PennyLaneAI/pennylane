@@ -45,29 +45,21 @@ class TestDefaultWireMap:
         full_wire_map, used_wire_map = default_wire_map(ops)
         assert full_wire_map == used_wire_map == {0: 0, 2: 1, 1: 2}
 
-    def test_string_wires(self):
-        """Test wire map works with string labelled wires."""
-
-        ops = [qp.PauliY("a"), qp.CNOT(wires=("b", "c"))]
-
-        full_wire_map, used_wire_map = default_wire_map(ops)
-        assert full_wire_map == used_wire_map == {"a": 0, "b": 1, "c": 2}
-
     def test_work_wires(self):
-        """Test wire map works with string work wires, leading to a difference
+        """Test wire map works with work wires, leading to a difference
         between full_wire_map and used_wire_map."""
 
-        ops = [qp.PauliY("a"), qp.MultiControlledX(["b", 0, 9, 4], work_wires=[1, 5, "a"])]
+        ops = [qp.PauliY(7), qp.MultiControlledX([8, 0, 9, 4], work_wires=[1, 5, 7])]
 
         full_wire_map, used_wire_map = default_wire_map(ops)
-        assert full_wire_map == {"a": 0, "b": 1, 0: 2, 9: 3, 4: 4, 1: 5, 5: 6}
-        assert used_wire_map == {"a": 0, "b": 1, 0: 2, 9: 3, 4: 4}
+        assert full_wire_map == {7: 0, 8: 1, 0: 2, 9: 3, 4: 4, 1: 5, 5: 6}
+        assert used_wire_map == {7: 0, 8: 1, 0: 2, 9: 3, 4: 4}
 
-        ops = [qp.MultiControlledX(["b", 0, 9, 4], work_wires=[1, 5, "a"]), qp.PauliY("a")]
+        ops = [qp.MultiControlledX([8, 0, 9, 4], work_wires=[1, 5, 7]), qp.PauliY(7)]
         full_wire_map, used_wire_map = default_wire_map(ops)
         # Work-only wires always come after used wires
-        assert full_wire_map == {"b": 0, 0: 1, 9: 2, 4: 3, "a": 4, 1: 5, 5: 6}
-        assert used_wire_map == {"b": 0, 0: 1, 9: 2, 4: 3, "a": 4}
+        assert full_wire_map == {8: 0, 0: 1, 9: 2, 4: 3, 7: 4, 1: 5, 5: 6}
+        assert used_wire_map == {8: 0, 0: 1, 9: 2, 4: 3, 7: 4}
 
 
 class TestDefaultBitMap:
@@ -130,32 +122,23 @@ class TestConvertWireOrder:
         full_wire_map, used_wire_map = convert_wire_order(ops, wire_order)
         assert full_wire_map == used_wire_map == {2: 0, 1: 1, 0: 2}
 
-    def test_wire_order_str(self):
-        """Test wire map produced when initial wires are strings."""
-
-        ops = [qp.CNOT(wires=("a", "b")), qp.PauliX("c")]
-        wire_order = ("c", "b", "a")
-
-        full_wire_map, used_wire_map = convert_wire_order(ops, wire_order)
-        assert full_wire_map == used_wire_map == {"c": 0, "b": 1, "a": 2}
-
     def test_show_all_wires_false(self):
         """Test when `show_all_wires` is set to `False` only used wires are in the map."""
 
-        ops = [qp.PauliX("a"), qp.PauliY("c")]
-        wire_order = ["a", "b", "c", "d"]
+        ops = [qp.PauliX(7), qp.PauliY(11)]
+        wire_order = [7, 8, 11, 12]
 
         full_wire_map, used_wire_map = convert_wire_order(ops, wire_order, show_all_wires=False)
-        assert full_wire_map == used_wire_map == {"a": 0, "c": 1}
+        assert full_wire_map == used_wire_map == {7: 0, 11: 1}
 
     def test_show_all_wires_true(self):
         """Test when `show_all_wires` is set to `True` everything in ``wire_order`` is included."""
 
-        ops = [qp.X("a"), qp.PauliY("c")]
-        wire_order = ["a", "b", "c", "d"]
+        ops = [qp.X(7), qp.PauliY(11)]
+        wire_order = [7, 8, 11, 12]
 
         full_wire_map, used_wire_map = convert_wire_order(ops, wire_order, show_all_wires=True)
-        assert full_wire_map == used_wire_map == {"a": 0, "b": 1, "c": 2, "d": 3}
+        assert full_wire_map == used_wire_map == {7: 0, 8: 1, 11: 2, 12: 3}
 
     def test_with_work_wires(self):
         """Tests wire map produced when work wires are present."""
@@ -190,52 +173,50 @@ class TestUnwrapControls:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize(
         "op,expected_control_wires,expected_control_values,expected_base_cls",
         [
-            (qp.X(wires="a"), Wires([]), [], qp.X),
-            (qp.CNOT(wires=["a", "b"]), Wires("a"), [True], qp.X),
-            (qp.ctrl(qp.X(wires="b"), control="a"), Wires("a"), [True], qp.X),
+            (qp.X(wires=7), Wires([]), [], qp.X),
+            (qp.CNOT(wires=[7, 8]), Wires(7), [True], qp.X),
+            (qp.ctrl(qp.X(wires=8), control=7), Wires(7), [True], qp.X),
             (
-                qp.ctrl(qp.X(wires="b"), control=["a", "c", "d"]),
-                Wires(["a", "c", "d"]),
+                qp.ctrl(qp.X(wires=8), control=[7, 11, 12]),
+                Wires([7, 11, 12]),
                 [True, True, True],
                 qp.X,
             ),
             (
-                qp.ctrl(qp.Z(wires="c"), control=["a", "d"], control_values=[True, False]),
-                Wires(["a", "d"]),
+                qp.ctrl(qp.Z(wires=11), control=[7, 12], control_values=[True, False]),
+                Wires([7, 12]),
                 [True, False],
                 qp.Z,
             ),
             (
                 qp.ctrl(
-                    qp.CRX(0.3, wires=["c", "e"]),
-                    control=["a", "b", "d"],
+                    qp.CRX(0.3, wires=[11, 13]),
+                    control=[7, 8, 12],
                     control_values=[True, False, False],
                 ),
-                Wires(["a", "b", "d", "c"]),
+                Wires([7, 8, 12, 11]),
                 [True, False, False, True],
                 qp.RX,
             ),
             (
-                qp.ctrl(qp.CNOT(wires=["c", "d"]), control=["a", "b"]),
-                Wires(["a", "b", "c"]),
+                qp.ctrl(qp.CNOT(wires=[11, 12]), control=[7, 8]),
+                Wires([7, 8, 11]),
                 [True, True, True],
                 qp.X,
             ),
             (
-                qp.ctrl(qp.ctrl(qp.CNOT(wires=["c", "d"]), control=["a", "b"]), control=["e"]),
-                Wires(["e", "a", "b", "c"]),
+                qp.ctrl(qp.ctrl(qp.CNOT(wires=[11, 12]), control=[7, 8]), control=[13]),
+                Wires([13, 7, 8, 11]),
                 [True, True, True, True],
                 qp.X,
             ),
             (
                 qp.ctrl(
-                    qp.ctrl(
-                        qp.CNOT(wires=["c", "d"]), control=["a", "b"], control_values=[False, True]
-                    ),
-                    control=["e"],
+                    qp.ctrl(qp.CNOT(wires=[11, 12]), control=[7, 8], control_values=[False, True]),
+                    control=[13],
                     control_values=[False],
                 ),
-                Wires(["e", "a", "b", "c"]),
+                Wires([13, 7, 8, 11]),
                 [False, False, True, True],
                 qp.X,
             ),

@@ -87,9 +87,8 @@ class Adder(Operator2):
     (dirty) work wires for a cheaper decomposition. Its modular-reduction structure follows the
     modular adder of Beauregard, 2.2
     (`arXiv:quant-ph/0205095 <https://arxiv.org/abs/quant-ph/0205095>`_), with the Fourier additions
-    replaced by computational-basis incrementers. When the graph-based decomposition system is
-    enabled (via :func:`~pennylane.decomposition.enable_graph`), the cheaper rule is selected
-    automatically.
+    replaced by computational-basis incrementers. The graph solver selects between the applicable
+    rules according to the target gate set, gate weights, and available work wires.
 
     .. note::
 

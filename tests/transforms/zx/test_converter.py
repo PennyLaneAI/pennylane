@@ -76,7 +76,6 @@ def test_pyzx_min_version_error(monkeypatch):
         qp.transforms.to_zx(qp.PauliX(wires=0))
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestConvertersZX:
     """Test converters to_zx and from_zx."""
 
@@ -390,10 +389,7 @@ class TestConvertersZX:
             QuantumFunctionError,
             match="The expansion of the quantum tape failed, PyZX does not support",
         ):
-            if qp.decomposition.enabled_graph():
-                with pytest.warns(DecompositionWarning):
-                    qp.transforms.to_zx(qs)
-            else:
+            with pytest.warns(DecompositionWarning):
                 qp.transforms.to_zx(qs)
 
     def test_same_type_nodes_simple_edge(self):

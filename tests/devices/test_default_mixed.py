@@ -88,8 +88,8 @@ class TestDefaultMixedInit:
 
     def test_wire_initialization_list(self):
         """Test initialization with wire list"""
-        dev = DefaultMixed(wires=["a", "b", "c"])
-        assert dev.wires == qp.wires.Wires(["a", "b", "c"])
+        dev = DefaultMixed(wires=[4, 5, 6])
+        assert dev.wires == qp.wires.Wires([4, 5, 6])
 
     def test_too_many_wires(self):
         """Test error raised when too many wires requested"""

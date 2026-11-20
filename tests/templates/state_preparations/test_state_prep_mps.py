@@ -633,7 +633,6 @@ class TestMPSPrep:
         assert_decomposable(op)
 
     @pytest.mark.capture
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_decomposition_capture(self):
         """Tests that the new decomposition works with capture."""
 
