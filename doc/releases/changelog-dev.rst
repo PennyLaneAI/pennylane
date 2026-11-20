@@ -4,6 +4,11 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* Added a lattice-surgery decomposition for controlled :class:`~.MultiX`,
+  using three Pauli product measurements and one auxiliary qubit, plus an AND ladder
+  for multiple controls.
+  `(#10558) <https://github.com/PennyLaneAI/pennylane/pull/10558>`__
+
 * A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
   `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
 
