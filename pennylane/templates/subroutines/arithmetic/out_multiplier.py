@@ -26,6 +26,7 @@ from pennylane.decomposition import (
 )
 from pennylane.ops import H, MultiControlledX, X, adjoint, change_op_basis, ctrl, prod
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.subcircuit import subcircuit
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.multix import MultiX
 from pennylane.templates.subroutines.qft import QFT
@@ -337,6 +338,14 @@ class OutMultiplier(Operator2):
         return self.x_wires + self.y_wires + self.output_wires + self.work_wires
 
 
+@subcircuit
+@register_resources(lambda wires: {H: len(wires)})
+def _OutMultiplierHadamards(wires: WiresLike):
+    """Prepare a zeroed output register in the Fourier basis."""
+    for wire in wires:
+        H(wire)
+
+
 def _out_multiplier_with_qft_resources(  # pylint: disable=too-many-arguments,unused-argument
     x_wires,
     y_wires,
@@ -351,8 +360,7 @@ def _out_multiplier_with_qft_resources(  # pylint: disable=too-many-arguments,un
     num_qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
 
     if output_wires_zeroed:
-        multi_h = [H(Wire[1])] * num_qft_wires
-        compute_rep = prod(*multi_h)
+        compute_rep = _OutMultiplierHadamards(Wire[num_qft_wires])
     else:
         compute_rep = QFT(Wire[num_qft_wires])
 
@@ -410,7 +418,7 @@ def _out_multiplier_with_qft(  # pylint: disable=too-many-arguments
         work_wire = output_wires[:0]
 
     if output_wires_zeroed:
-        compute_op = prod(*[H(w) for w in qft_output_wires])
+        compute_op = _OutMultiplierHadamards(qft_output_wires)
     else:
         compute_op = QFT(qft_output_wires)
 

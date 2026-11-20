@@ -42,6 +42,7 @@ from gate_data import (
     Y,
     Z,
 )
+from helpers.decomposition_helpers import assert_basis_change_decomposition
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
@@ -605,7 +606,6 @@ class TestDecompositions:
         )
         assert_decomposable(op)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "base, num_controls, num_work_wires",
         [
@@ -833,7 +833,7 @@ class TestMultiControlledX:
         ).T
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
-    def test_decomposition_with_custom_wire_labels(self, mocker):
+    def test_decomposition_with_custom_wire_labels(self):
         """Test that the decomposed MultiControlledX gate performs the same unitary as the
         matrix-based version by checking if U^dagger U applies the identity to each basis
         state. This test focuses on using custom wire labels."""
@@ -842,7 +842,6 @@ class TestMultiControlledX:
         work_wires = ["charlie"]
         all_wires = control_target_wires + work_wires
 
-        spy = mocker.spy(qp.MultiControlledX, "decomposition")
         dev = qp.device("default.qubit", wires=all_wires)
 
         with qp.queuing.AnnotatedQueue() as q:
@@ -863,11 +862,9 @@ class TestMultiControlledX:
         u = np.array(
             [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
         ).T
-        if not qp.decomposition.enabled_graph():
-            spy.assert_called()
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
-    def test_worker_state_unperturbed(self, mocker):
+    def test_worker_state_unperturbed(self):
         """Test that the state of the worker wires is unperturbed after the decomposition has used
         them. To do this, a random state over all the qubits (control, target and workers) is
         loaded and U^dagger U(decomposed) is applied. If the workers are uncomputed, the output
@@ -877,7 +874,6 @@ class TestMultiControlledX:
         n_all_wires = 7
 
         rnd_state = unitary_group.rvs(2**n_all_wires, random_state=1)[0]
-        spy = mocker.spy(qp.MultiControlledX, "decomposition")
         dev = qp.device("default.qubit", wires=n_all_wires)
 
         with qp.queuing.AnnotatedQueue() as q:
@@ -895,8 +891,6 @@ class TestMultiControlledX:
             return qp.state()
 
         assert np.allclose(f(), rnd_state)
-        if not qp.decomposition.enabled_graph():
-            spy.assert_called()
 
     def test_compute_matrix_no_control_values(self):
         """Test compute_matrix assumes all control on "1" if no
@@ -1431,6 +1425,15 @@ PPR_DENOMINATORS = {qp.PPR_2: 2, qp.PPR_4: 4, qp.PPR_8: 8}
 class TestPPR:
     """Tests for the fixed-angle Pauli product rotations (PPR) PPR_2, PPR_4 and PPR_8."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("sign", [1, -1])
+    @pytest.mark.parametrize("pauli_word", ["III", "IZI", "ZZZ", "XIY", "YZX"])
+    def test_decomposition_resources_and_matrix(self, op_cls, sign, pauli_word):
+        """Test that captured PPR rules preserve phase, basis changes, and resource identities."""
+        op = op_cls(sign, pauli_word, wires=[3, 1, 4])
+        rule = qp.list_decomps(op)[0]
+        assert_basis_change_decomposition(op, rule)
+
     @pytest.mark.parametrize("sign", [1, -1])
     def test_init(self, op_cls, sign):
         """Test that both signs can be used."""
@@ -1610,7 +1613,6 @@ class TestToPPRDecompositions:
 
         assert_valid_decomp_rule(op, rule)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("base, ppr_cls", [(qp.S, qp.PPR_4), (qp.T, qp.PPR_8)])
     def test_adjoint_reaches_ppr(self, base, ppr_cls):
         """Test that the adjoint of S and T decompose into a PPR with a negative sign."""

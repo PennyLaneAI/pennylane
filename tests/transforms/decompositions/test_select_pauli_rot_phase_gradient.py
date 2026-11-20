@@ -112,7 +112,6 @@ def test_valid_decomp(prec, num_controls, rot_axis):
     assert_valid_decomp_rule(op, custom_decomp)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize("prec", [2, 3, 5])
 @pytest.mark.parametrize("num_controls", [1, 2])
 def test_as_fixed_decomps(prec, num_controls):
@@ -166,7 +165,6 @@ def test_as_fixed_decomps(prec, num_controls):
     assert expected_specs == specs
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize("rot_axis", ["X", "Y", "Z"])
 def test_integration_multi_wire(rot_axis, seed):
     """Numerically verify the decomposition reproduces SelectPauliRot's

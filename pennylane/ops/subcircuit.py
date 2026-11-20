@@ -47,6 +47,7 @@ def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator2]:
     attrs["__init__"] = _init
     attrs["__doc__"] = qfunc._impl.__doc__
     attrs["__module__"] = qfunc._impl.__module__
+    attrs["__qualname__"] = qfunc._impl.__qualname__
 
     # creates a new class
     new_operator = type(qfunc.name, (Operator2,), attrs)

@@ -419,7 +419,6 @@ class TestPreprocessing:
         res = stopping_condition(op)
         assert res == expected
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_adjoint_only_one_wire(self):
         """Tests adjoint accepts operators with no parameters or a single parameter and a generator."""
 
@@ -512,7 +511,6 @@ class TestPreprocessing:
             program([tape])
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestPreprocessingIntegration:
     """Test preprocess produces output that can be executed by the device."""
 
@@ -727,7 +725,6 @@ class TestPreprocessingIntegration:
         expected = (np.array([1, 2, 3]), np.array([4, 5, 6]))
         assert np.array_equal(batch_fn(val), expected)
 
-    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_preprocess_check_validity_fail(self):
         """Test that preprocess throws an error if the split and expanded tapes have
         unsupported operators."""
@@ -740,12 +737,8 @@ class TestPreprocessingIntegration:
 
         program = qp.device("default.qubit").preprocess_transforms()
 
-        if qp.decomposition.enabled_graph():
-            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
-                with pytest.warns(DecompositionWarning):
-                    program(tapes)
-        else:
-            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+            with pytest.warns(DecompositionWarning):
                 program(tapes)
 
     @pytest.mark.parametrize(
@@ -913,16 +906,11 @@ class TestPreprocessingIntegration:
 
         prog = DefaultQubit().preprocess_transforms(config)
 
-        if qp.decomposition.enabled_graph():
-            with pytest.raises(DeviceError, match="not supported with default.qubit"):
-                with pytest.warns(DecompositionWarning):
-                    prog((tape,))
-        else:
-            with pytest.raises(DeviceError, match="not supported with default.qubit"):
+        with pytest.raises(DeviceError, match="not supported with default.qubit"):
+            with pytest.warns(DecompositionWarning):
                 prog((tape,))
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestAdjointDiffTapeValidation:
     """Unit tests for validate_and_expand_adjoint"""
 
@@ -956,7 +944,6 @@ class TestAdjointDiffTapeValidation:
         ):
             program((qs,))
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_unsupported_op_decomposed(self):
         """Test that an operation supported on the forward pass but
         not adjoint is decomposed when adjoint is requested."""
@@ -1134,7 +1121,6 @@ class TestAdjointDiffTapeValidation:
         assert qp.jacobian(circuit)(x) == 0
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestDefaultQubitGraphModeExclusive:
     """Tests for DefaultQubit features that require graph mode enabled.
     The legacy decomposition mode should not be able to run these tests.

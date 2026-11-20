@@ -46,6 +46,7 @@ from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
+from pennylane.ops.subcircuit import subcircuit
 from pennylane.typing import AbstractWires, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, concatenate_wires
 
@@ -2946,31 +2947,50 @@ def _z_gate(sign, gate, wires):
     return gate(wires) if sign > 0 else qp.adjoint(gate(wires))
 
 
+def _ppr_basis_resources(pauli_word, reverse, **_):
+    resources = {}
+    if len(pauli_word) > 1:
+        resources[qp.CNOT] = len(pauli_word) - 1
+    num_hadamards = pauli_word.count("X") + pauli_word.count("Y")
+    if num_hadamards:
+        resources[Hadamard] = num_hadamards
+    if pauli_word.count("Y"):
+        resources[S if reverse else _adjoint_abstract(S)] = pauli_word.count("Y")
+    return resources
+
+
+@subcircuit(static_argnames=("pauli_word", "reverse"))
+@register_resources(_ppr_basis_resources)
+def _PPRBasis(pauli_word: str, wires: WiresLike, reverse: bool):
+    if reverse:
+        for index in range(1, len(wires)):
+            qp.CNOT(wires=(wires[index], wires[index - 1]))
+    for wire, pauli in zip(wires, pauli_word, strict=True):
+        if pauli == "X":
+            Hadamard(wire)
+        elif pauli == "Y":
+            if not reverse:
+                qp.adjoint(S(wire))
+            Hadamard(wire)
+            if reverse:
+                S(wire)
+    if not reverse:
+        for index in range(len(wires) - 1, 0, -1):
+            qp.CNOT(wires=(wires[index], wires[index - 1]))
+
+
 def _ppr_via_z_gate_resources(gate, sign, pauli_word, wires):
     """Resources of ``_ppr_via_z_gate`` and a global phase."""
     active_word = pauli_word.replace("I", "")
     if not active_word:
         return {qp.GlobalPhase: 1}
 
-    # gates in the order they are applied in
-    compute, uncompute = [], []
-    for pauli in active_word:
-        if pauli == "X":
-            compute.append(Hadamard(Wire[1]))
-            uncompute.append(Hadamard(Wire[1]))
-        elif pauli == "Y":
-            compute.extend([qp.adjoint(S(Wire[1])), Hadamard(Wire[1])])
-            uncompute.extend([Hadamard(Wire[1]), S(Wire[1])])
-    ladder = [qp.CNOT(Wire[2])] * (len(active_word) - 1)
-    compute, uncompute = compute + ladder, ladder + uncompute
-
     z_gate = _z_gate(sign, gate, Wire[1])
-    if not compute:
+    if active_word == "Z":
         return {qp.GlobalPhase: 1, z_gate: 1}
 
-    compute = compute[0] if len(compute) == 1 else qp.prod(*reversed(compute))
-    uncompute = uncompute[0] if len(uncompute) == 1 else qp.prod(*reversed(uncompute))
-
+    compute = _PPRBasis(active_word, wires=Wire[len(active_word)], reverse=False)
+    uncompute = _PPRBasis(active_word, wires=Wire[len(active_word)], reverse=True)
     return {qp.GlobalPhase: 1, _change_op_basis_abstract(compute, z_gate, uncompute): 1}
 
 
@@ -3009,27 +3029,12 @@ def _ppr_via_z_gate(sign, pauli_word, wires, gate):
     if pauli_word.replace("I", "") == "Z":
         return
 
-    def _compute():
-        for wire, pauli in active:
-            if pauli == "X":
-                Hadamard(wires=wire)
-            elif pauli == "Y":
-                qp.adjoint(S(wires=wire))
-                Hadamard(wires=wire)
-        for i in range(len(active_wires) - 1, 0, -1):
-            qp.CNOT(wires=(active_wires[i], active_wires[i - 1]))
-
-    def _uncompute():
-        for i in range(1, len(active_wires)):
-            qp.CNOT(wires=(active_wires[i], active_wires[i - 1]))
-        for wire, pauli in active:
-            if pauli == "X":
-                Hadamard(wires=wire)
-            elif pauli == "Y":
-                Hadamard(wires=wire)
-                S(wires=wire)
-
-    qp.change_op_basis(_compute, central_op, _uncompute)
+    active_word = pauli_word.replace("I", "")
+    qp.change_op_basis(
+        _PPRBasis(active_word, wires=active_wires, reverse=False),
+        central_op,
+        _PPRBasis(active_word, wires=active_wires, reverse=True),
+    )
 
 
 @register_resources(partial(_ppr_via_z_gate_resources, gate=S), name="to_cliffords")

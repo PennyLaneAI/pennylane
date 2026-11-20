@@ -27,48 +27,6 @@ from tests.core.operator.operator2_utils import CompilableDynOp, OneWireDynOp
 
 
 @pytest.mark.unit
-def test_toggle_graph_decomposition():
-    """Test that the graph-based decomposition system can be toggled."""
-
-    assert not qp.decomposition.enabled_graph()
-
-    qp.decomposition.enable_graph()
-    assert qp.decomposition.enabled_graph()
-
-    qp.decomposition.disable_graph()
-    assert not qp.decomposition.enabled_graph()
-
-    qp.decomposition.enable_graph()
-    assert qp.decomposition.enabled_graph()
-
-    qp.decomposition.disable_graph()
-    assert not qp.decomposition.enabled_graph()
-
-    qp.decomposition.enable_graph()
-    assert qp.decomposition.enabled_graph()
-
-    qp.decomposition.disable_graph()
-    assert not qp.decomposition.enabled_graph()
-
-
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-def test_graph_ctx():
-    """Test that the context manager for toggling the graph works."""
-
-    original_status = qp.decomposition.enabled_graph()
-
-    with qp.decomposition.toggle_graph_ctx(True):
-        assert qp.decomposition.enabled_graph()
-
-    assert qp.decomposition.enabled_graph() == original_status
-
-    with qp.decomposition.toggle_graph_ctx(False):
-        assert not qp.decomposition.enabled_graph()
-
-    assert qp.decomposition.enabled_graph() == original_status
-
-
-@pytest.mark.unit
 @pytest.mark.parametrize(
     "base_op_alias, expected_op_name",
     [
