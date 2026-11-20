@@ -150,10 +150,10 @@ class TestLayer:
         """Tests that the layering function is yielding the correct sequence of gates"""
 
         with pytest.warns(PennyLaneDeprecationWarning, match="layer is deprecated"):
-            with qp.tape.OperationRecorder() as rec:
+            with qp.queuing.AnnotatedQueue() as queue:
                 layer(unitary, depth, *arguments, **keywords)
 
-        for i, gate in enumerate(rec.operations):
+        for i, gate in enumerate(queue.queue):
             prep = [gate.name, gate.parameters, gate.wires]
             target = [gates[i].name, gates[i].parameters, gates[i].wires]
 
