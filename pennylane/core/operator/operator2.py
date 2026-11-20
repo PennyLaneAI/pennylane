@@ -406,10 +406,17 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
     arg_specs: ClassVar[dict[str, ArgSpecType] | None] = None
     """The expected types for the arguments of an operator. This attribute is optional—not
     setting it has no loss of functionality. If set, it can be used to perform automatic
-    validation of an operators inputs during construction. Additionally, when defining
+    validation of an operator's inputs during construction, including enforcing fixed wire
+    counts for wire arguments listed in ``arg_specs``. Additionally, when defining
     decomposition rules for an operator, operator types with ``arg_specs`` that spans
     all the arguments with static types can be placed in the rules' resources without needing
     to fully construct abstract operators.
+
+    For wire arguments, ``arg_specs`` also specifies expected wire counts: fixed-shape
+    specs enforce an exact wire count during operator construction, whereas dynamic/unfixed
+    specs (or omitting the wire argument from ``arg_specs``) allow arbitrary wire sizes.
+    Hybrid wire arguments (pytrees of wires) are not constrained to a single fixed wire count
+    via a flat wire size.
 
     .. note::
 
