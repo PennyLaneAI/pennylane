@@ -121,7 +121,7 @@ def _has_jax_inputs(args: tuple, argnums) -> bool:
         if not selected:
             selected = args[:1]
     else:
-        selected = tuple(args[i] for i in _setup_argnums(argnums)[0])
+        selected = tuple(args[i] for i in ((argnums,) if isinstance(argnums, int) else argnums))
     return any(infer_backend(leaf) == "jax" for leaf in _interface_leaves(selected))
 
 
