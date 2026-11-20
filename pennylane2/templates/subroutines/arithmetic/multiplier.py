@@ -190,66 +190,9 @@ class Multiplier(Operation):
         """All wires involved in the operation."""
         return self.hyperparameters["x_wires"] + self.hyperparameters["work_wires"]
 
-    def decomposition(self):
-        return self.compute_decomposition(**self.hyperparameters)
-
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
-
-    @staticmethod
-    # pylint: disable-next=arguments-differ
-    def compute_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike):
-        r"""Representation of the operator as a product of other operators.
-
-        Args:
-            k (int): the number that needs to be multiplied
-            x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough for encoding `x` in the computational basis. The number of wires also limits the maximum value for `mod`.
-            mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
-            work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. If :math:`mod=2^{\text{len(x_wires)}}`, the number of auxiliary wires must be ``len(x_wires)``. Otherwise ``len(x_wires) + 2`` auxiliary wires are needed.
-        Returns:
-            list[.Operator]: Decomposition of the operator
-
-        **Example**
-
-        >>> ops = qp.Multiplier.compute_decomposition(k=3, mod=8, x_wires=[0,1,2], work_wires=[3,4,5])
-        >>> from pprint import pprint
-        >>> pprint(ops)
-        [(Adjoint(QFT(wires=[3, 4, 5]))) @ (ControlledSequence(PhaseAdder(k=3, x_wires=[3, 4, 5], mod=8, work_wire=[]), control=[0, 1, 2])) @ QFT(wires=[3, 4, 5]),
-         SWAP(wires=[2, 5]) @ SWAP(wires=[1, 4]) @ SWAP(wires=[0, 3]),
-         (Adjoint(QFT(wires=[3, 4, 5]))) @ (Adjoint(ControlledSequence(PhaseAdder(k=3, x_wires=[3, 4, 5], mod=8, work_wire=[]), control=[0, 1, 2]))) @ QFT(wires=[3, 4, 5])]
-
-        """
-
-        if mod != 2 ** len(x_wires):
-            work_wire_aux = work_wires[:1]
-            wires_aux = work_wires[1:]
-            wires_aux_swap = wires_aux[1:]
-        else:
-            work_wire_aux = ()
-            wires_aux = work_wires[: len(x_wires)]
-            wires_aux_swap = wires_aux
-
-        op1 = change_op_basis(
-            QFT(wires=wires_aux),
-            ControlledSequence(PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires),
-        )
-
-        target_op = prod(
-            *list(reversed([SWAP(wires) for wires in zip(x_wires, wires_aux_swap, strict=True)]))
-        )
-
-        inv_k = pow(k, -1, mod)
-        op2 = change_op_basis(
-            QFT(wires=wires_aux),
-            adjoint(
-                ControlledSequence(
-                    PhaseAdder(inv_k, wires_aux, mod, work_wire_aux), control=x_wires
-                )
-            ),
-        )
-
-        return [op1, target_op, op2]
 
 
 def _multiplier_decomposition_resources(

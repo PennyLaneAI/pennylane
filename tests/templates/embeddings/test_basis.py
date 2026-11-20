@@ -59,7 +59,6 @@ class TestDecomposition:
         expected = [1 if s == 0 else -1 for s in state]
         assert np.allclose(res, expected)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_equivalent_to_basis_state(self):
         """Tests that BasisEmbedding is an alias of BasisState."""
         assert qp.BasisEmbedding is qp.BasisState

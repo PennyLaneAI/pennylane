@@ -478,7 +478,6 @@ class TestPartialUnaryStatePreparation:
         indices = tuple(rng.choice(2**num_wires, size=num_entries, replace=False))
         return coefficients, indices
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_complex_coefficients_on_non_affine_support(self):
         """The generic PUI path preserves arbitrary relative phases."""
         indices = (0, 3, 7, 17, 25)
@@ -628,7 +627,6 @@ class TestPartialUnaryStatePreparation:
             True,
         ],
     )
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "num_wires,num_entries",
         [
@@ -668,7 +666,6 @@ class TestPartialUnaryStatePreparation:
         assert_pui_correctness(rule, coefficients, indices, wire_specs)
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "num_wires, num_entries, num_work_wires", [(7, 5, 15), (3, 2, 6), (4, 14, 8)]
     )

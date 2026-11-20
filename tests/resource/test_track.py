@@ -79,7 +79,6 @@ class TestTrack:
         assert specs.resources.quantum_operations == {"RX": 1, "CNOT": 1}
         assert specs == qp.specs(circuit, level="device")(0.1)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_with_catalyst_passes_and_capture(self):
         """Test that track counts resources after a pipeline of Catalyst passes is applied to a
         program-captured workflow."""

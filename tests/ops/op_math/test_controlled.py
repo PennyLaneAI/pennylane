@@ -1520,9 +1520,6 @@ class TestControlledSupportsBroadcasting:
         base = qp.QAOAEmbedding(features, weights, wires=list(range(num_wires)))
         op = Controlled(base, "wire1")
         assert op.batch_size == batch_size
-        qp.QAOAEmbedding.compute_decomposition(
-            features, weights, wires=list(range(num_wires)), local_field=qp.RY
-        )
         op.decomposition()
 
 

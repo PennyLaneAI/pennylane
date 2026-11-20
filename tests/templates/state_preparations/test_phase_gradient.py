@@ -72,7 +72,6 @@ class TestDecomposition:
     @pytest.mark.parametrize("use_qjit", [False, pytest.param(True, marks=pytest.mark.catalyst)])
     @pytest.mark.parametrize("rule", RULES)
     @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 7, 14])
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_decomposition_prepares_state(self, rule, num_wires, use_qjit):
         """Test that executing the decomposition prepares the phase gradient state."""
 

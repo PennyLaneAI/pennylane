@@ -119,6 +119,7 @@ from pennylane2.ops import (
     prod,
     s_prod,
     measure,
+    subcircuit,
 )
 from pennylane2.ops import LinearCombination as Hamiltonian
 from pennylane2.decomposition import gate_sets
@@ -179,7 +180,6 @@ from pennylane2.ops.functions import (
     commutator,
     comm,
     single_qubit_zyz_angles,
-    subcircuit,
 )
 from pennylane2.ops.identity import I
 from pennylane2.optimize import *

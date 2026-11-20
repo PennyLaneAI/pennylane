@@ -52,7 +52,6 @@ def bb_quantum(bitstrings, control_wires, target_wires, work_wires, address):
 
 
 @pytest.mark.jax
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
         "bitstrings",
@@ -279,7 +278,6 @@ def hybrid_quantum(bitstrings, control_wires, target_wires, work_wires, k, addre
 
 
 @pytest.mark.jax
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
         "bitstrings",
@@ -756,7 +754,6 @@ def select_only_quantum(  # pylint: disable=too-many-arguments
 
 
 @pytest.mark.jax
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
         "bitstrings",

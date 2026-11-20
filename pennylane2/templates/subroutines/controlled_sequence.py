@@ -20,10 +20,12 @@ from collections import Counter
 from pennylane2 import capture, compiler, math
 from pennylane2.capture.op_eqns import pop_op_eqns
 from pennylane2.control_flow import for_loop
-from pennylane2.core.operator import abstractify
+from pennylane2.core.operator import Operator2, abstractify
 from pennylane2.decomposition import add_decomps, register_resources
+from pennylane2.decomposition.resources import CompressedResourceOp
 from pennylane2.ops.op_math import SymbolicOp2, ctrl, pow
 from pennylane2.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane2.ops.op_math.pow2 import _pow_abstract
 from pennylane2.typing import Wire
 from pennylane2.wires import Wires, validate_no_wire_overlaps
 
@@ -58,7 +60,7 @@ class ControlledSequence(SymbolicOp2):
 
         dev = qp.device("default.qubit")
 
-        @qp.transforms._tape_decompose(max_expansion=1)
+        @qp.transforms._tape_decompose(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1)
         @qp.qnode(dev)
         def circuit():
             qp.ControlledSequence(qp.RX(0.25, wires = 3), control = [0, 1, 2])
@@ -151,6 +153,8 @@ def _ctrl_seq_execution_optimized_decomposition_resources(base, control) -> dict
     if not control:
         return {}
     controlled_base = _ctrl_abstract(base_rep, Wire[1])
+    if isinstance(controlled_base, CompressedResourceOp):
+        return dict(Counter(_pow_abstract(controlled_base, 2**i) for i in range(len(control))))
     return dict(
         Counter(abstractify(pow(controlled_base, 2**i, lazy=False)) for i in range(len(control)))
     )
@@ -169,6 +173,8 @@ def _ctrl_seq_execution_optimized_decomposition(*_, base=None, control=None, **_
         control = math.array(control, like="jax")
 
     num_controls = len(control)
+    # To match legacy behaviour
+    lazy = not isinstance(base, Operator2)
 
     for i in range(num_controls - 1, -1, -1):
         j = num_controls - 1 - i
@@ -177,7 +183,7 @@ def _ctrl_seq_execution_optimized_decomposition(*_, base=None, control=None, **_
         controlled_base = ctrl(base, control=ctrl_wire)
         if capture.enabled():
             pop_op_eqns((controlled_base,))
-        pow(controlled_base, 2**i, lazy=False)
+        pow(controlled_base, 2**i, lazy=lazy)
 
 
 def _ctrl_seq_ir_optimized_resources(base, control) -> dict:

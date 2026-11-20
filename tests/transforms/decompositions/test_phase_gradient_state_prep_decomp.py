@@ -284,7 +284,6 @@ def test_mode_validation():
 
 
 @pytest.mark.catalyst
-@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_qjit_graph_decomposition_and_analyze():
     """Test that the retry rule survives capture and graph decomposition to Clifford+T and
     MCM."""

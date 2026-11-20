@@ -699,13 +699,11 @@ class PartialUnaryStatePreparation(Operator2):
 
         import pennylane2 as qp
         import numpy as np
-        qp.decomposition.enable_graph()
 
         coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
         indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
 
     Let's prepare this state on a six-qubit register, using three auxiliary qubits:
-
 
     .. code-block:: python
 
@@ -738,7 +736,7 @@ class PartialUnaryStatePreparation(Operator2):
 
     The preparation circuit looks like this:
 
-    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=1), max_length=200, show_matrices=False)())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1), max_length=200, show_matrices=False)())
     0: ─╭MultiplexerStatePreparation(M0)─╭MultiX(M1)─╭◑────────╭MultiX(M1)─╭MultiX(M3)─╭MultiX(M4)─╭MultiX(M5)─╭◑────────╭MultiX(M5)─╭MultiX(M6)─╭MultiX(M7)─╭MultiX(M8)─╭◑────────╭MultiX(M8) ···
     1: ─├MultiplexerStatePreparation(M0)─├MultiX(M1)─├◑────────├MultiX(M1)─├MultiX(M3)─├MultiX(M4)─├MultiX(M5)─├◑────────├MultiX(M5)─├MultiX(M6)─├MultiX(M7)─├MultiX(M8)─├◑────────├MultiX(M8) ···
     2: ─├MultiplexerStatePreparation(M0)─├MultiX(M1)─├◑────────├MultiX(M1)─├MultiX(M3)─├MultiX(M4)─├MultiX(M5)─├◑────────├MultiX(M5)─├MultiX(M6)─├MultiX(M7)─├MultiX(M8)─├◑────────├MultiX(M8) ···
@@ -779,7 +777,7 @@ class PartialUnaryStatePreparation(Operator2):
         num_work_wires = qp.math.ceil_log2(num_entries) - 1
         work_wires = list(range(15, 15 + num_work_wires))
 
-    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
+    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
     Quantum operations:
     - Total: 6,046
       - MultiplexerStatePreparation: 1
@@ -798,7 +796,7 @@ class PartialUnaryStatePreparation(Operator2):
 
     >>> new_num_work_wires = 3*num_work_wires
     >>> work_wires = list(range(15, 15 + new_num_work_wires))
-    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
+    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
     Quantum operations:
     - Total: 3,068
       - MultiplexerStatePreparation: 1

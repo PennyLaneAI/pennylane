@@ -166,40 +166,6 @@ class AmplitudeAmplification(Operation):
 
         super().__init__(*U.data, *O.data, wires=wires)
 
-    @staticmethod
-    def compute_decomposition(*_, **kwargs):
-        U = kwargs["U"]
-        O = kwargs["O"]
-        iters = kwargs["iters"]
-        fixed_point = kwargs["fixed_point"]
-        work_wire = kwargs["work_wire"]
-        p_min = kwargs["p_min"]
-        reflection_wires = kwargs["reflection_wires"]
-
-        ops = []
-
-        if fixed_point:
-            alphas, betas = _get_fixed_point_angles(iters, p_min)
-
-            for it in range(iters // 2):
-                ops.append(Hadamard(wires=work_wire))
-                ops.append(ctrl(O, control=work_wire))
-                ops.append(Hadamard(wires=work_wire))
-                ops.append(PhaseShift(betas[it], wires=work_wire))
-                ops.append(Hadamard(wires=work_wire))
-                ops.append(ctrl(O, control=work_wire))
-                ops.append(Hadamard(wires=work_wire))
-
-                ops.append(Reflection(U, -alphas[it], reflection_wires=reflection_wires))
-        else:
-            for _ in range(iters):
-                ops.append(O)
-                if QueuingManager.recording():
-                    apply(O)
-                ops.append(Reflection(U, np.pi, reflection_wires=reflection_wires))
-
-        return ops
-
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)

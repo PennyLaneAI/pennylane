@@ -25,6 +25,7 @@ from pennylane2.decomposition import (
     register_resources,
 )
 from pennylane2.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane2.ops.subcircuit import subcircuit
 from pennylane2.typing import AbstractArray, Bool, Wire
 from pennylane2.wires import WiresLike
 
@@ -59,7 +60,6 @@ class TemporaryAND(Operator2):
         control_values (tuple[bool or int]): The values on the control wires for which the target
             operator is applied. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
             Default is ``(1, 1)``, corresponding to a traditional ``AND`` gate.
-
 
     .. seealso:: The alias :class:`~Elbow`.
 
@@ -97,8 +97,6 @@ class TemporaryAND(Operator2):
     .. code-block:: python
 
         import pennylane2 as qp
-
-        qp.decomposition.enable_graph()
 
         @qp.transforms._tape_decompose(gate_set={qp.Toffoli, qp.X})
         def circuit():
@@ -236,23 +234,25 @@ class TemporaryAND(Operator2):
 _number_xs = 2
 
 
-def _temporary_and_resources(*_, **__):
-    compute_rep = ops.prod(
-        ops.adjoint(ops.T(Wire[1])),
-        ops.CNOT(Wire[2]),
-        ops.T(Wire[1]),
-        ops.Hadamard(Wire[1]),
-    )
-    uncompute_rep = ops.prod(
-        ops.Hadamard(Wire[1]),
-        ops.adjoint(ops.T(Wire[1])),
-        ops.CNOT(Wire[2]),
-        ops.T(Wire[1]),
-    )
+def _temporary_and_basis_resources(**_):
+    return {ops.Hadamard: 1, ops.T: 1, ops.CNOT: 1, ops.adjoint(ops.T(Wire[1])): 1}
 
+
+@subcircuit(arg_specs={"wires": Wire[2]})
+@register_resources(_temporary_and_basis_resources)
+def _TemporaryANDBasis(wires: WiresLike):
+    """Change basis for the Clifford+T implementation of TemporaryAND."""
+    ops.H(wires[1])
+    ops.T(wires[1])
+    ops.CNOT(wires)
+    ops.adjoint(ops.T(wires[1]))
+
+
+def _temporary_and_resources(*_, **__):
+    compute_rep = _TemporaryANDBasis(Wire[2])
     resources = {
         ops.X: _number_xs,
-        _change_op_basis_abstract(compute_rep, ops.CNOT, uncompute_rep): 1,
+        _change_op_basis_abstract(compute_rep, ops.CNOT, ops.adjoint(compute_rep)): 1,
         ops.adjoint(ops.S(Wire[1])): 1,
     }
     return resources
@@ -263,19 +263,9 @@ def _temporary_and(wires: WiresLike, control_values: Sequence[bool]):
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
 
-    def _compute_fn():
-        ops.H(wires[2])
-        ops.T(wires=wires[2])
-        ops.CNOT(wires=[wires[1], wires[2]])
-        ops.adjoint(ops.T(wires=wires[2]))
-
-    def _uncompute_fn():
-        ops.T(wires=wires[2])
-        ops.CNOT(wires=[wires[1], wires[2]])
-        ops.adjoint(ops.T(wires=wires[2]))
-        ops.H(wires[2])
-
-    ops.change_op_basis(_compute_fn, ops.CNOT(wires=[wires[0], wires[2]]), _uncompute_fn)
+    ops.change_op_basis(
+        _TemporaryANDBasis([wires[1], wires[2]]), ops.CNOT(wires=[wires[0], wires[2]])
+    )
     ops.adjoint(ops.S(wires=wires[2]))
 
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])

@@ -28,7 +28,7 @@ from pennylane2 import math
 from pennylane2.core.measurements import MeasurementProcess
 from pennylane2.core.qscript import QuantumScriptOrBatch
 from pennylane2.core.transforms import CompilePipeline
-from pennylane2.decomposition import enabled_graph, has_decomp
+from pennylane2.decomposition import has_decomp
 from pennylane2.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane2.measurements import (
     ClassicalShadowMP,
@@ -325,7 +325,7 @@ class NullQubit(Device):
 
                 def new_stopping_condition(op):
                     # pylint: disable-next=cell-var-from-loop
-                    return not _op_has_decomp(op) or original_stopping_condition(op)
+                    return not has_decomp(op) or original_stopping_condition(op)
 
                 t.kwargs["stopping_condition"] = new_stopping_condition
                 t.kwargs["strict"] = False
@@ -460,17 +460,3 @@ class NullQubit(Device):
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
-
-
-def _op_has_decomp(op):
-    """Check if an operator has a decomposition, taking into account the graph-based decomposition system.
-
-    Args:
-        op (Operator): The operator to check.
-
-    Returns:
-        bool: True if the operator has a decomposition, False otherwise.
-    """
-    if enabled_graph():
-        return has_decomp(op)
-    return op.has_decomposition

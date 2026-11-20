@@ -22,7 +22,7 @@ import networkx as nx
 from pennylane2 import math
 from pennylane2.core.qscript import QuantumScript
 from pennylane2.core.queuing import AnnotatedQueue
-from pennylane2.decomposition import enabled_graph, gate_sets, register_resources
+from pennylane2.decomposition import gate_sets, register_resources
 from pennylane2.devices.preprocess import null_postprocessing
 from pennylane2.measurements import SampleMP, sample
 from pennylane2.ops import (
@@ -155,11 +155,6 @@ def _rot_to_xzx(phi, theta, omega, wires, **__):
 def convert_to_mbqc_gateset(tape):
     """Converts a circuit expressed in arbitrary gates to the limited gate set that we can
     convert to the textbook MBQC formalism"""
-    if not enabled_graph():
-        raise RuntimeError(
-            "Using `convert_to_mbqc_gateset` requires the graph-based decomposition"
-            " method. This can be toggled by calling `qp.decomposition.enable_graph()`"
-        )
     tapes, fn = decompose(tape, gate_set=gate_sets.MBQC_GATES, alt_decomps={Rot: [_rot_to_xzx]})
     return tapes, fn
 

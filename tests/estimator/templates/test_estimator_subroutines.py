@@ -536,7 +536,8 @@ class TestSelectOnlyQRAM:
 
         dev = qp.device("lightning.qubit")
 
-        @qp.transforms._tape_decompose  # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
+        @qp.transforms._tape_decompose(gate_set={qp.X, qp.MultiControlledX, qp.BasisState})
         @qp.qnode(dev)
         def circuit():
             SelectOnlyQRAM(

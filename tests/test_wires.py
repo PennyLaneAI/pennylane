@@ -431,18 +431,29 @@ class TestWires:  # pylint: disable=too-many-public-methods
         assert wires == wires2, f"{wires} != {wires2}"
 
     @pytest.mark.jax
-    def test_wires_pytree_with_array_leaves(self):
+    @pytest.mark.parametrize("array_indices", [(), (0,), (1,), (0, 1, 2, 3)])
+    @pytest.mark.parametrize("pytree_library", ["jax", "pennylane2"])
+    def test_wires_pytree_with_array_leaves(self, array_indices, pytree_library):
         """Test that unflattening wire pytrees with leaves containing scalar arrays
         is possible and correct."""
         import jax.numpy as jnp
-        from jax.tree import flatten, unflatten
+        from jax import tree
+
+        pytrees = tree if pytree_library == "jax" else qp.pytrees
 
         wires = Wires([0, 1, 2, 3])
-        leaves, tree = flatten(wires)
-        inner_arr_leaves = [jnp.array(l, dtype=int) for l in leaves]
-        unflattened_wires = unflatten(tree, inner_arr_leaves)
+        leaves, structure = pytrees.flatten(wires)
+        inner_arr_leaves = [
+            jnp.array(label, dtype=int) if index in array_indices else label
+            for index, label in enumerate(leaves)
+        ]
+        if pytree_library == "jax":
+            unflattened_wires = pytrees.unflatten(structure, inner_arr_leaves)
+        else:
+            unflattened_wires = pytrees.unflatten(inner_arr_leaves, structure)
 
         assert wires == unflattened_wires
+        assert Wires.all_wires([unflattened_wires]) == wires
 
     def test_class_index(self):
         """Test that indexing the class raises."""
