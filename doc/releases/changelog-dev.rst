@@ -1545,6 +1545,7 @@ Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
 * Removes :class:`pennylane.tape.OperationRecorder`. Use :class:`~.AnnotatedQueue` instead.
+  [(#10574)](https://github.com/PennyLaneAI/pennylane/pull/10574)
 
 * :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly: use
   ``get_compile_pipeline(qnode, level)`` instead of
