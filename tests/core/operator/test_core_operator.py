@@ -1043,24 +1043,24 @@ class TestObservableConstruction:
     def test_repr(self):
         """Test the string representation of an observable with and without a return type."""
 
-        m = qp.expval(qp.PauliZ(wires=["a"]) @ qp.PauliZ(wires=["b"]))
-        expected = "expval(Z('a') @ Z('b'))"
+        m = qp.expval(qp.PauliZ(wires=[6]) @ qp.PauliZ(wires=[7]))
+        expected = "expval(Z(6) @ Z(7))"
         assert str(m) == expected
 
-        m = qp.probs(wires=["a"])
-        expected = "probs(wires=['a'])"
+        m = qp.probs(wires=[6])
+        expected = "probs(wires=[6])"
         assert str(m) == expected
 
-        m = qp.probs(op=qp.PauliZ(wires=["a"]))
-        expected = "probs(Z('a'))"
+        m = qp.probs(op=qp.PauliZ(wires=[6]))
+        expected = "probs(Z(6))"
         assert str(m) == expected
 
-        m = qp.PauliZ(wires=["a"]) @ qp.PauliZ(wires=["b"])
-        expected = "Z('a') @ Z('b')"
+        m = qp.PauliZ(wires=[6]) @ qp.PauliZ(wires=[7])
+        expected = "Z(6) @ Z(7)"
         assert str(m) == expected
 
-        m = qp.PauliZ(wires=["a"])
-        expected = "Z('a')"
+        m = qp.PauliZ(wires=[6])
+        expected = "Z(6)"
         assert str(m) == expected
 
     def test_raises_if_no_wire_is_given(self):

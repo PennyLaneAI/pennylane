@@ -313,9 +313,9 @@ class TestInitialization:
 
     def test_init_change_op_basis_op(self):
         """Test the initialization of a ChangeOpBasis operator."""
-        change_op_basis_op = ChangeOpBasis2(qp.PauliX(wires=0), qp.RZ(0.23, wires="a"))
+        change_op_basis_op = ChangeOpBasis2(qp.PauliX(wires=0), qp.RZ(0.23, wires=5))
 
-        assert change_op_basis_op.wires == Wires((0, "a"))
+        assert change_op_basis_op.wires == Wires((0, 5))
         assert change_op_basis_op.num_wires == 2
         assert change_op_basis_op.name == "ChangeOpBasis2"
 
@@ -327,18 +327,18 @@ class TestInitialization:
         """Test mapping wires belonging to both Operator1 and Operator2 operands."""
         op = ChangeOpBasis2(qp.X(0), NonParametricOp(1), qp.RX(0.2, 2))
 
-        mapped_op = op.map_wires({0: "a", 1: "b", 2: "c"})
+        mapped_op = op.map_wires({0: 5, 1: 6, 2: 7})
 
-        assert mapped_op.wires == Wires(("a", "b", "c"))
-        qp.assert_equal(mapped_op.compute_op, qp.X("a"))
-        qp.assert_equal(mapped_op.target_op, NonParametricOp("b"))
-        qp.assert_equal(mapped_op.uncompute_op, qp.RX(0.2, "c"))
+        assert mapped_op.wires == Wires((5, 6, 7))
+        qp.assert_equal(mapped_op.compute_op, qp.X(5))
+        qp.assert_equal(mapped_op.target_op, NonParametricOp(6))
+        qp.assert_equal(mapped_op.uncompute_op, qp.RX(0.2, 7))
 
     def test_hash(self):
         """Testing some situations for the hash property."""
         # test not the same hash if different order
-        op1 = qp.change_op_basis(qp.PauliX("a"), qp.PauliY("a"), qp.PauliX(1))
-        op2 = qp.change_op_basis(qp.PauliY("a"), qp.PauliX("a"), qp.PauliX(1))
+        op1 = qp.change_op_basis(qp.PauliX(5), qp.PauliY(5), qp.PauliX(1))
+        op2 = qp.change_op_basis(qp.PauliY(5), qp.PauliX(5), qp.PauliX(1))
         assert hash(op1) != hash(op2)
 
     @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
@@ -357,7 +357,7 @@ class TestInitialization:
         "factors",
         (
             [qp.PauliX(wires=0), qp.PauliZ(wires=0)],
-            [qp.PauliX(wires=0), qp.RZ(0.612, "r")],
+            [qp.PauliX(wires=0), qp.RZ(0.612, 8)],
             [qp.PauliZ(wires=0), qp.PauliX(wires=0)],
             [MyOp(3.1, 0), qp.CNOT([0, 2])],
         ),
@@ -373,7 +373,7 @@ class TestInitialization:
         "factors",
         (
             [qp.PauliX(wires=0), qp.PauliZ(wires=0)],
-            [qp.PauliX(wires=0), qp.RZ(0.612, "r")],
+            [qp.PauliX(wires=0), qp.RZ(0.612, 8)],
             [qp.PauliZ(wires=0), qp.PauliX(wires=0)],
             [MyOp(3.1, 0), qp.CNOT([0, 2])],
         ),
