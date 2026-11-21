@@ -13,7 +13,10 @@
 # limitations under the License.
 """Gradient descent optimizer"""
 
+from autoray import infer_backend
+
 from pennylane._grad import grad as get_gradient
+from pennylane._grad.grad import _interface_leaves
 
 
 class GradientDescentOptimizer:
@@ -100,6 +103,16 @@ class GradientDescentOptimizer:
         return new_args
 
     @staticmethod
+    def _validate_parameters(args):
+        if not any(getattr(arg, "requires_grad", False) for arg in args) and any(
+            infer_backend(leaf) == "jax" for leaf in _interface_leaves(args)
+        ):
+            raise ValueError(
+                "PennyLane's gradient-descent optimizers do not support JAX parameters. Use "
+                "pennylane.numpy parameters, or a native JAX optimizer such as Optax."
+            )
+
+    @staticmethod
     def compute_grad(objective_fn, args, kwargs, grad_fn=None):
         r"""Compute the gradient of the objective function at the given point and return it along with
         the objective function forward pass (if available).
@@ -118,6 +131,7 @@ class GradientDescentOptimizer:
             objective function output. If ``grad_fn`` is provided, the objective function
             will not be evaluated and instead ``None`` will be returned.
         """
+        GradientDescentOptimizer._validate_parameters(args)
         g = get_gradient(objective_fn) if grad_fn is None else grad_fn
         grad = g(*args, **kwargs)
         forward = getattr(g, "forward", None)
