@@ -25,19 +25,16 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.numeric_hamiltonians import VibronicHamiltonian
-from pennylane.ops import CNOT, Hadamard, adjoint, cond
-from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
+from pennylane.ops import CNOT, Hadamard, adjoint, cond, ctrl
+from pennylane.typing import AbstractArray, AbstractWires, Bool, Float, Wire
 from pennylane.wires import Wires, WiresLike
 
 from ..aqft import AQFT
-from ..arithmetic.out_multiplier import (
-    OutMultiplier,
-    _caddsub_multiplication,
-    _caddsub_multiplication_resources,
-)
-from ..arithmetic.semi_adder import SemiAdder
+from ..arithmetic.out_multiplier import OutMultiplier
+from ..arithmetic.semi_adder import SemiAdder, _semi_adder, _semi_adder_resources
 from ..arithmetic.signed_out_multiplier import SignedOutMultiplier
 from ..arithmetic.signed_out_square import SignedOutSquare
+from ..arithmetic.temporary_and import TemporaryAND
 from ..multix import MultiX
 from ..qrom import QROM
 
@@ -132,9 +129,17 @@ class TrotterVibronic(Operator2):
         })
         all_wires = qp.wires.Wires.all_wires(list(wires.values()))
 
-        # decompose by one step to see the top-level sub-templates
-        @qp.transforms._tape_decompose(max_expansion=1, gate_set=qp.gate_sets.ALL_OPS | {qp.PhaseGradientStatePrep})
-        @qp.qnode(qp.device("default.qubit", wires=all_wires))
+        # decompose into the top-level sub-templates
+        gate_set = {
+            "PhaseGradientStatePrep", "QROM", "SemiAdder", "TemporaryAND",
+            "Adjoint(TemporaryAND)", "Hadamard", "CNOT", "C(MultiX)", "MultiX", "AQFT",
+            "Adjoint(AQFT)", "SignedOutSquare", "Adjoint(SignedOutSquare)", "OutMultiplier",
+            "SignedOutMultiplier", "Adjoint(SignedOutMultiplier)",
+        }
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("null.qubit", wires=all_wires))
         def circuit():
             qp.PhaseGradientStatePrep(wires["phase_gradient"])
             qp.TrotterVibronic(
@@ -146,8 +151,26 @@ class TrotterVibronic(Operator2):
             )
             return qp.probs(wires=wires["electronic"])
 
-    >>> qp.specs(circuit)().resources.quantum_operations  # doctest: +SKIP
-    {'PhaseGradientStatePrep': 1, 'QROM': 6, 'SemiAdder': 4, 'PauliX': 28, 'C(MultiX)': 8, 'MultiControlledX': 16, 'TemporaryAND': 10, 'CNOT': 48, 'Adjoint(TemporaryAND)': 10, 'AQFT': 1, 'MultiX': 2, 'SignedOutSquare': 1, 'OutMultiplier': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(AQFT)': 1}
+    >>> print(qp.analyze(circuit)().resources)  # doctest: +SKIP
+    Quantum operations:
+    - Total: 66
+      - 1C(MultiX): 8
+      - AQFT: 1
+      - Adjoint(AQFT): 1
+      - Adjoint(SignedOutSquare): 1
+      - Adjoint(TemporaryAND): 6
+      - CNOT: 28
+      - MultiX: 2
+      - OutMultiplier: 1
+      - PhaseGradientStatePrep: 1
+      - QROM: 6
+      - SemiAdder: 4
+      - SignedOutSquare: 1
+      - TemporaryAND: 6
+    Measurement processes:
+    - probs(1 wires): 1
+    Total wires: 19
+    Circuit Depth: Not computed
 
     .. note::
 
@@ -187,14 +210,13 @@ class TrotterVibronic(Operator2):
                     if :math:`K > 0`
 
                 :class:`~.Hadamard` | :math:`2P` | 0
-                :class:`~.CNOT` | :math:`2P(n-1) + 3Pk(M(2b-k) + 4K(b-k))` | 6
-                :class:`~.X` | :math:`P(M + K)(2b + 8)` | 20
-                :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`4Pk(M + 2K)` | 8
-                :class:`~.MultiX` with 1 control on :math:`|0\rangle` | :math:`2Pk(M + 2K)\,[b > 1]` | 0
-                :class:`~.TemporaryAND` | :math:`\tfrac{Pk}{2}(M(2b-k+1) + 2K(2b-2k+1))` | 2
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`\tfrac{Pk}{2}(M(2b-k+1) + 2K(2b-2k+1))` | 2
+                :class:`~.CNOT` | :math:`2P(n-1) + P(M + K)(6b - 4)\,[b > 1]` | 0
+                :class:`~.MultiX` with 1 control | :math:`2P(M + K)` | 4
+                :class:`~.MultiX` with 1 control on :math:`|0\rangle` | :math:`2P(M(k-1) + K(2k-1))` | 0
+                :class:`~.TemporaryAND` | :math:`Pb(M + K)` | 2
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`Pb(M + K)` | 2
                 :class:`~.QROM` | :math:`P(2 + 2M + K)` | 6
-                :class:`~.SemiAdder` | :math:`P(1 + M + K)` | 4
+                :class:`~.SemiAdder` | :math:`P(1 + M(k - [b > 1]) + K(2k - 1))` | 4
                 :class:`~.OutMultiplier` | :math:`PM + rM` | 1
                 :class:`~.SignedOutSquare` | :math:`PM + rM` | 1
                 :class:`Adjoint(SignedOutSquare) <.SignedOutSquare>` | :math:`PM + rM` | 1
@@ -366,20 +388,25 @@ class TrotterVibronic(Operator2):
 
         The arithmetic block per monomial (skipped when the coefficient vanishes):
 
-        * :math:`c_a` -- :class:`~.SemiAdder`.
+        * :math:`c_a` -- :class:`~.SemiAdder`, with the offsets of the half-signed multiplies
+          (see below) subtracted from the loaded integer. It is skipped only if the linear and
+          bilinear terms of the fragment vanish as well.
         * :math:`l_{a,r} Q_r` -- a half-signed multiply of the (unsigned) coefficient by the
           signed :math:`Q_r`.
         * :math:`q_{a,r} Q_r^2` -- :class:`~.SignedOutSquare` then a plain :class:`~.OutMultiplier`.
         * :math:`\beta_{a,rs} Q_r Q_s` -- :class:`~.SignedOutMultiplier` then the same
           half-signed multiply as the linear term.
 
-        The half-signed multiply uses the controlled add/subtract decomposition of
-        :class:`~.OutMultiplier` (`arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__), with
-        the bits of the signed register controlling the add/subtract steps. Flipping its sign bit
-        swaps the add and subtract branches of the sign bit's step, which accounts for the
-        negative weight of the sign bit in two's complement and makes the final correction step
-        of the unsigned multiplication obsolete. Its gates are
-        applied directly, without an :class:`~.OutMultiplier` wrapper.
+        The half-signed multiply of the loaded integer :math:`x` by a signed :math:`y` adds
+        :math:`xy + \lfloor x/2\rfloor` to ``phase_gradient_wires``, using one adder per bit of
+        :math:`y` in the style of the controlled add/subtract decomposition of
+        :class:`~.OutMultiplier` (`arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__): each
+        bit of :math:`y` selects between adding and subtracting a shifted copy of :math:`x`. The
+        offset :math:`\lfloor x/2\rfloor` does not depend on :math:`y` and saves a subtraction of
+        :math:`\lfloor x/2\rfloor`, as well as the extra output bit and correction steps of the
+        unsigned multiplication. Since :math:`x` is classical data, the offsets are cancelled by
+        subtracting them from the encoding of :math:`c_a`. The gates of the half-signed multiply
+        are applied directly, without an :class:`~.OutMultiplier` wrapper.
         :math:`Q_r^2` uses the low :math:`2k-1` ``cache_wires`` and :math:`Q_r Q_s` all
         :math:`2k`, and each square/product is uncomputed after use. See the
         demo's `potential step
@@ -551,13 +578,10 @@ def _trotter_vibronic_resources(  # pylint: disable=too-many-arguments,unused-ar
     )
     semi_adder = SemiAdder(x_wires=Wire[b], y_wires=Wire[b], work_wires=Wire[n_work])
 
-    # The half-signed multipliers are emitted as the gates of a controlled add/subtract multiplier,
-    # controlled by the ``k``-wire mode register (linear terms) or the ``2k``-wire cache register
-    # (bilinear terms).
-    half_signed_linear = _caddsub_multiplication_resources(k, b, b, n_work, False, x_signed=True)
-    half_signed_bilinear = _caddsub_multiplication_resources(
-        2 * k, b, b, n_work, False, x_signed=True
-    )
+    # The half-signed multipliers are emitted as their gates, with the ``k``-wire mode register
+    # (linear terms) or the ``2k``-wire cache register (bilinear terms) as signed register.
+    half_signed_linear = _half_signed_out_multiplier_resources(b, k, b)
+    half_signed_bilinear = _half_signed_out_multiplier_resources(b, 2 * k, b)
     # The quadratic/kinetic terms multiply with the cache register minus its sign bit
     out_mult_quad = OutMultiplier(
         x_wires=Wire[max(2 * k - 1, 1)],
@@ -919,22 +943,91 @@ def _diagonalization_matrix(key, n_wires):
 
 
 def _half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
-    r"""Out-of-place multiplier of an unsigned register ``x`` and a signed register ``y``.
+    r"""Out-of-place multiplier of an unsigned register ``x`` and a signed register ``y``, up to
+    the offset :math:`\lfloor x/2\rfloor`.
 
-    Computes :math:`|z\rangle \mapsto |(z + xy) \bmod 2^k\rangle` on ``output_wires``, where
-    ``k = len(output_wires)``, ``x`` is an unsigned integer and ``y`` is a two's-complement
-    signed integer. This is a specialized primitive used by :class:`~.TrotterVibronic`; it is
-    a plain quantum function that queues its constituent operations.
+    Computes :math:`|z\rangle \mapsto |(z + xy + \lfloor x/2\rfloor) \bmod 2^k\rangle` on
+    ``output_wires``, where ``k = len(output_wires)``, ``x`` is an unsigned integer and ``y`` is a
+    two's-complement signed integer. The offset does not depend on ``y``, so a caller with
+    classical ``x`` subtracts it elsewhere, see :func:`_fold_half_signed_offsets`. This is a
+    specialized primitive used by :class:`~.TrotterVibronic`; it is a plain quantum function that
+    queues its constituent operations.
 
-    The multiplication uses the controlled add/subtract decomposition of
-    :class:`~.OutMultiplier`, with the bits of ``y`` controlling the add/subtract steps. Flipping
-    the sign bit of ``y`` swaps the add and subtract branches of its step, which makes one of
-    the correction steps of the unsigned multiplication obsolete. It requires
-    ``len(output_wires) + 1`` work wires.
+    Only the ``n = min(len(y_wires), k)`` least significant bits of ``y`` affect the result
+    modulo :math:`2^k`. With :math:`s_i = 2y_i - 1` for the little-endian bits :math:`y_i` of the
+    truncated ``y``, :math:`x' = \lfloor x/2\rfloor` and :math:`x_0 = x \bmod 2`,
+
+    .. math::
+
+        xy + x' = s_0 (x' + t) + \sum_{i=1}^{n-2} 2^{i-1} s_i x - 2^{n-2} s_{n-1} x,
+        \qquad t = (1 - y_0) x_0,
+
+    for :math:`n \geq 2`, and :math:`xy + x' = -s_0 (x' + y_0 x_0)` for :math:`n = 1`. The
+    product :math:`t` vanishes whenever :math:`s_0 (x' + t)` is an addition, so that it can be
+    the carry-in of a single adder. Each term is one adder into the output bits from
+    :math:`2^{i-1}` upwards, turned into a subtraction by complementing these bits before and
+    after it, controlled on :math:`y_i`.
+
+    This uses ``k`` :class:`~.TemporaryAND` gates for the first term (one of them for
+    :math:`t`), and ``k - i`` for the term with :math:`s_i`, for a total of
+    :math:`k + \sum_{i=1}^{n-1} (k - i)`. It requires ``k`` work wires.
     """
-    _caddsub_multiplication(
-        y_wires, x_wires, output_wires, work_wires, output_wires_zeroed=False, x_signed=True
-    )
+    k = len(output_wires)
+    y_wires = y_wires[-k:]
+    n = len(y_wires)
+    carry, adder_work = work_wires[0], work_wires[1:k]
+
+    def flip(i, wires):
+        # Complement ``wires`` if ``y_i`` selects a subtraction: 0, or 1 for the sign bit
+        sub_value = int(i == n - 1)
+        control = [y_wires[n - 1 - i]]
+        ctrl(MultiX([1] * len(wires), wires), control=control, control_values=[sub_value])
+
+    # s_0 (x' + t), with the carry-in t computed into ``carry``
+    t_values = (int(n == 1), 1)
+    TemporaryAND([y_wires[-1], x_wires[-1], carry], control_values=t_values)
+    flip(0, output_wires)
+    x_high = x_wires[:-1]
+    if len(x_high) == 0:
+        SemiAdder([carry], output_wires, adder_work)
+    else:
+        # The carry-in flips both least significant input bits and the first carry
+        CNOT([carry, x_high[-1]])
+        CNOT([carry, output_wires[-1]])
+        _semi_adder(x_high, output_wires, adder_work, carry_flip=lambda w: CNOT([carry, w]))
+        CNOT([carry, output_wires[-1]])
+        CNOT([carry, x_high[-1]])
+    flip(0, output_wires)
+    adjoint(TemporaryAND([y_wires[-1], x_wires[-1], carry], control_values=t_values))
+
+    # 2^{i-1} s_i x for i < n - 1, and -2^{n-2} s_{n-1} x
+    for i in range(1, n):
+        window = output_wires[: k - i + 1]
+        flip(i, window)
+        SemiAdder(x_wires, window, adder_work)
+        flip(i, window)
+
+
+def _half_signed_out_multiplier_resources(num_x_wires, num_y_wires, num_output_wires):
+    """Resources for :func:`_half_signed_out_multiplier`."""
+    k = num_output_wires
+    n = min(num_y_wires, k)
+    adder_work = Wire[k - 1]
+    resources = defaultdict(int)
+    resources[TemporaryAND] += 1
+    resources[adjoint(TemporaryAND(Wire[3]))] += 1
+    window_sizes = [k] + [k - i + 1 for i in range(1, n)]
+    for size in window_sizes:
+        resources[ctrl(MultiX(Bool[size], Wire[size]), Wire[1])] += 2
+    if num_x_wires == 1:
+        resources[SemiAdder(Wire[1], Wire[k], adder_work)] += 1
+    else:
+        resources[CNOT] += 4 + 2 * int(k > 1)
+        for rep, count in _semi_adder_resources(Wire[num_x_wires - 1], Wire[k]).items():
+            resources[rep] += count
+    for size in window_sizes[1:]:
+        resources[SemiAdder(Wire[num_x_wires], Wire[size], adder_work)] += 1
+    return dict(resources)
 
 
 # ---------------------------------------------------------------------------
@@ -1037,14 +1130,10 @@ def _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes):
     return (all_constant, all_linear, all_quadratic, all_bilinear), bilinear_indices
 
 
-def _applied_fraction(coeffs):
-    """Fraction of the terms, each given by a coefficient vector along the last axis of
-    ``coeffs``, that are applied rather than skipped for vanishing coefficients.
-
-    The tolerance must match the ``math.allclose(..., 0.0)`` skip conditions of the Trotter step.
-    """
-    applied = ~np.isclose(coeffs, 0.0).all(axis=-1)
-    return float(np.mean(applied)) if applied.size else None
+def _applied_fraction(vanishing):
+    """Fraction of the terms that are applied rather than skipped, given whether each of them
+    vanishes."""
+    return float(np.mean(~vanishing)) if vanishing.size else None
 
 
 def _branch_probs(hamiltonian, evolution_time, num_trotter_steps):
@@ -1069,8 +1158,13 @@ def _branch_probs(hamiltonian, evolution_time, num_trotter_steps):
     hamiltonian = VibronicHamiltonian(*(math.toarray(t) for t in hamiltonian.tensors))
     time_step = float(evolution_time) / num_trotter_steps
     coeffs, _ = _preprocess_data(time_step, hamiltonian, n_elec, n_states, n_modes)
+    constant, linear, quadratic, bilinear = coeffs
     kinetic = (_momentum_coefficients(hamiltonian.kinetic) * time_step)[:, None]
-    return {term: _applied_fraction(c) for term, c in zip(_BRANCH_TERMS, (*coeffs, kinetic))}
+    vanishing = (
+        _constant_term_vanishes(constant, linear, bilinear),
+        *(_vanishing(c) for c in (linear, quadratic, bilinear, kinetic)),
+    )
+    return {term: _applied_fraction(v) for term, v in zip(_BRANCH_TERMS, vanishing)}
 
 
 # ---------------------------------------------------------------------------
@@ -1078,19 +1172,76 @@ def _branch_probs(hamiltonian, evolution_time, num_trotter_steps):
 # ---------------------------------------------------------------------------
 
 
-def _load_coefficients(coefficients, precision, prev_bitstrings, qrom_wires):
-    """Load ``coefficients`` into the data-loading register via a differential :class:`~.QROM`.
-
-    The coefficients are converted into ``precision``-bit strings, XOR-ed with the currently
-    loaded ``prev_bitstrings`` reference point, and loaded with a :class:`~.QROM`. The newly
-    loaded bit strings are returned so that they can be used as the reference point for the next
-    data-loading step.
+def _coefficient_bitstrings(coefficients, precision):
+    """Convert ``coefficients`` into the ``precision``-bit strings loaded into the data-loading
+    register.
 
     The coefficients are negated before encoding: adding an integer into the standard
     phase-gradient state :math:`|\\nabla n\\rangle` imprints :math:`e^{+2\\pi i m/2^b}`, so the
     negation is what turns the accumulated phase into :math:`e^{-i\\theta}` (i.e. :math:`e^{-iHt}`).
     """
-    new_bitstrings = math.binary_decimals(-coefficients, precision, unit=2 * np.pi)
+    return math.binary_decimals(-coefficients, precision, unit=2 * np.pi)
+
+
+def _vanishing(coefficients):
+    """Whether the terms, each given by a coefficient vector along the last axis of
+    ``coefficients``, vanish and are skipped.
+
+    The tolerance must match the ``math.allclose(..., 0.0)`` skip conditions of the Trotter step.
+    """
+    return math.all(math.isclose(coefficients, 0.0), axis=-1)
+
+
+def _constant_term_vanishes(constant, linear, bilinear):
+    """Whether the constant term of each position fragment is skipped.
+
+    The constant term also cancels the offsets of the half-signed multipliers of the linear and
+    bilinear terms (see :func:`_fold_half_signed_offsets`), so it is only skipped if they are.
+    """
+    return (
+        _vanishing(constant)
+        & math.all(_vanishing(linear), axis=1)
+        & math.all(_vanishing(bilinear), axis=1)
+    )
+
+
+def _fold_half_signed_offsets(bitstrings, coefficients, precision):
+    r"""Subtract the offsets :math:`\lfloor x/2\rfloor` that the half-signed multipliers of the
+    applied linear and bilinear terms add for their loaded coefficients :math:`x` (see
+    :func:`_half_signed_out_multiplier`) from the constant bit strings of the same position
+    fragment and electronic state.
+
+    Args:
+        bitstrings (tuple): ``(constant, linear, quadratic, bilinear)`` bit strings, of the shapes
+            of the coefficient tensors with an additional last axis of size ``precision``.
+        coefficients (tuple): ``(constant, linear, quadratic, bilinear)`` coefficient tensors of
+            shapes ``(F, n_states)``, ``(F, n_modes, n_states)``, ``(F, n_modes, n_states)`` and
+            ``(F, n_pairs, n_states)``.
+        precision (int): number of bits per bit string.
+
+    Returns:
+        TensorLike: the constant bit strings with the offsets subtracted modulo ``2**precision``.
+    """
+    constant_bits, linear_bits, _, bilinear_bits = bitstrings
+    _, linear, _, bilinear = coefficients
+    powers = 2 ** np.arange(precision - 1, -1, -1)
+
+    def offsets(bits, coeffs):
+        halves = math.sum(bits * powers, axis=-1) // 2
+        return math.sum(halves * ~_vanishing(coeffs)[..., None], axis=1)
+
+    constant = math.sum(constant_bits * powers, axis=-1)
+    constant = constant - offsets(linear_bits, linear) - offsets(bilinear_bits, bilinear)
+    return math.int_to_binary(constant % 2**precision, precision)
+
+
+def _load_coefficients(new_bitstrings, prev_bitstrings, qrom_wires):
+    """Load ``new_bitstrings`` into the data-loading register via a differential :class:`~.QROM`.
+
+    The bit strings are XOR-ed with the currently loaded ``prev_bitstrings`` reference point, and
+    loaded with a :class:`~.QROM`. The newly loaded bit strings are returned so that they can be
+    used as the reference point for the next data-loading step.
+    """
     change_bitstrings = (prev_bitstrings + new_bitstrings) % 2
     QROM(change_bitstrings, **qrom_wires)
     return new_bitstrings
@@ -1197,13 +1348,16 @@ def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-s
     if compiler.active() or capture.enabled():
         all_coeffs = tuple(math.array(c, like="jax") for c in all_coeffs)
         bilinear_indices = math.array(bilinear_indices, like="jax")
+    all_bitstrings = tuple(_coefficient_bitstrings(c, precision) for c in all_coeffs)
+    all_const_bitstrings = _fold_half_signed_offsets(all_bitstrings, all_coeffs, precision)
+    _, all_linear_bitstrings, all_quadratic_bitstrings, all_bilinear_bitstrings = all_bitstrings
     all_constant, all_linear, all_quadratic, all_bilinear = all_coeffs
+    all_constant_vanishes = _constant_term_vanishes(all_constant, all_linear, all_bilinear)
     qrom_wires = _extract_registers(registers, mode_registers, "QROM")
     num_position_fragments = hamiltonian.num_fragments
 
     def position_fragments(i):
         # pylint: disable=no-value-for-parameter
-        const_coeffs = all_constant[i]
         linear_coeffs = all_linear[i]
         quadratic_coeffs = all_quadratic[i]
         bilinear_coeffs = all_bilinear[i]
@@ -1222,12 +1376,12 @@ def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-s
             @hint({"branch-prob": branch_probs.get("constant")})
             def actual_fn():
                 new_bitstrings = _load_coefficients(
-                    const_coeffs, precision, prev_bitstrings, qrom_wires
+                    all_const_bitstrings[i], prev_bitstrings, qrom_wires
                 )
                 SemiAdder(**_extract_registers(registers, mode_registers, "constant"))
                 return new_bitstrings
 
-            return cond(math.allclose(const_coeffs, 0.0), skip_fn, actual_fn)()
+            return cond(all_constant_vanishes[i], skip_fn, actual_fn)()
 
         @for_loop(n_modes)
         def linear_terms(k, prev_bitstrings):
@@ -1238,7 +1392,9 @@ def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-s
 
             @hint({"branch-prob": branch_probs.get("linear")})
             def actual_fn():
-                new_bitstrings = _load_coefficients(_coeffs, precision, prev_bitstrings, qrom_wires)
+                new_bitstrings = _load_coefficients(
+                    all_linear_bitstrings[i][k], prev_bitstrings, qrom_wires
+                )
                 _half_signed_out_multiplier(
                     **_extract_registers(registers, mode_registers, "linear", k)
                 )
@@ -1255,7 +1411,9 @@ def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-s
 
             @hint({"branch-prob": branch_probs.get("quadratic")})
             def actual_fn():
-                new_bitstrings = _load_coefficients(_coeffs, precision, prev_bitstrings, qrom_wires)
+                new_bitstrings = _load_coefficients(
+                    all_quadratic_bitstrings[i][k], prev_bitstrings, qrom_wires
+                )
                 square_wires, mult_wires = _extract_registers(
                     registers, mode_registers, "quadratic", k
                 )
@@ -1279,7 +1437,9 @@ def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-s
                 mode_mult_wires, coeff_mult_wires = _extract_registers(
                     registers, mode_registers, "bilinear", *ids
                 )
-                new_bitstrings = _load_coefficients(_coeffs, precision, prev_bitstrings, qrom_wires)
+                new_bitstrings = _load_coefficients(
+                    all_bilinear_bitstrings[i][k], prev_bitstrings, qrom_wires
+                )
                 SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True)
                 _half_signed_out_multiplier(**coeff_mult_wires)
                 adjoint(SignedOutMultiplier(**mode_mult_wires, output_wires_zeroed=True))
@@ -1320,8 +1480,7 @@ def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-s
                 square_wires, mult_wires = _extract_registers(
                     registers, mode_registers, "quadratic", k
                 )
-                # Negated for the same phase-gradient sign convention as ``_load_coefficients``.
-                bitstring = math.binary_decimals(-_coeffs, precision, unit=2 * np.pi)
+                bitstring = _coefficient_bitstrings(_coeffs, precision)
                 AQFT(order=aqft_order, wires=mode_registers[k])
                 MultiX(bitstring, registers["coefficients"])
                 SignedOutSquare(**square_wires, output_wires_zeroed=True)
