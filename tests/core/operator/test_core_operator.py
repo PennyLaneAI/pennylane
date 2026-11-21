@@ -412,6 +412,21 @@ class TestOperatorConstruction:
 
         assert hash(op1) == hash(op2)
 
+    def test_hash_large_array_not_truncated(self):
+        """Test that hashing an operator with a large array parameter (>1000 elements)
+        does not truncate array elements."""
+        arr1 = np.zeros(1005)
+        arr2 = np.zeros(1005)
+        arr2[500] = 1.0
+
+        class DummyLargeOp(Operator):
+            num_wires = 1
+            num_params = 1
+
+        op1 = DummyLargeOp(arr1, wires=[0])
+        op2 = DummyLargeOp(arr2, wires=[0])
+        assert hash(op1) != hash(op2)
+
     @pytest.mark.parametrize("data,batch_size,ndim_params", [(1.1, None, 0), ([1.1, 2.2], 2, 1)])
     def test_lazy_ndim_params_and_batch_size(self, data, batch_size, ndim_params):
         """Test that ndim_params and batch_size are lazy properties."""
