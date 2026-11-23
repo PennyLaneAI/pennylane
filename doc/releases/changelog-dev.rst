@@ -1,4 +1,5 @@
 Release 0.46.0 (development release)
+====================================
 
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
