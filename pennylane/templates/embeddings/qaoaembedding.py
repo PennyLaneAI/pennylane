@@ -25,7 +25,6 @@ from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RX, RY, RZ, H, MultiRZ, cond
 from pennylane.typing import Float, Wire
-from pennylane.wires import Wires
 
 
 class QAOAEmbedding(Operation):
@@ -225,85 +224,6 @@ class QAOAEmbedding(Operation):
         # The feature vector has one dimension, the weights tensor has two.
         return (1, 2)
 
-    @staticmethod
-    # pylint: disable-next=arguments-differ
-    def compute_decomposition(features, weights, wires, local_field):
-        r"""Representation of the operator as a product of other operators.
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-
-        .. seealso:: :meth:`~.QAOAEmbedding.decomposition`.
-
-        Args:
-            features (tensor_like): tensor of features to encode
-            weights (tensor_like): tensor of weights
-            wires (Any or Iterable[Any]): wires that the template acts on
-            local_field (type): type of :class:`~.Operator` for local field gate
-
-        Returns:
-            list[.Operator]: decomposition of the operator
-
-        **Example**
-
-        >>> features = torch.tensor([1., 2.])
-        >>> weights = torch.tensor([[0.1, -0.3, 1.3], [0.9, -0.2, -2.1]])
-        >>> qp.QAOAEmbedding.compute_decomposition(features, weights, wires=["a", "b"], local_field=qp.RY)
-        [RX(1.0, wires=['a']), RX(2.0, wires=['b']), MultiRZ(0.100..., wires=['a', 'b']), RY(-0.3000..., wires=['a']), RY(1.2999..., wires=['b']), RX(1.0, wires=['a']), RX(2.0, wires=['b']), MultiRZ(0.899..., wires=['a', 'b']), RY(-0.2000..., wires=['a']), RY(-2.0999..., wires=['b']), RX(1.0, wires=['a']), RX(2.0, wires=['b'])]
-        """
-        wires = Wires(wires)
-        # second to last dimension of the weights tensor determines
-        # the number of layers
-        repeat = math.shape(weights)[-2]
-        op_list = []
-        n_features = math.shape(features)[-1]
-        if math.ndim(features) > 1:
-            # If the features are broadcasted, move the broadcasting axis to the last place
-            # in order to propagate broadcasted parameters to the gates in the decomposition.
-            features = math.T(features)
-        if math.ndim(weights) > 2:
-            # If the weights are broadcasted, move the broadcasting axis to the last place
-            weights = math.moveaxis(weights, 0, -1)
-
-        for l in range(repeat):
-            # ---- apply encoding Hamiltonian
-            for i in range(n_features):
-                op_list.append(RX(features[i], wires=wires[i]))
-            for i in range(n_features, len(wires)):
-                op_list.append(H(wires=wires[i]))
-
-            # ---- apply weight Hamiltonian
-            if len(wires) == 1:
-                op_list.append(local_field(weights[l][0], wires=wires))
-
-            elif len(wires) == 2:
-                # deviation for 2 wires: we do not connect last to first qubit
-                # with the entangling gates
-                op_list.append(MultiRZ(weights[l][0], wires=wires.subset([0, 1])))
-                op_list.append(local_field(weights[l][1], wires=wires[0:1]))
-                op_list.append(local_field(weights[l][2], wires=wires[1:2]))
-
-            else:
-                multirz_gates = (
-                    MultiRZ(weights[l][i], wires.subset([i, i + 1], periodic_boundary=True))
-                    for i in range(len(wires))
-                )
-                op_list.extend(multirz_gates)
-                local_field_gates = (
-                    local_field(weights[l][len(wires) + i], wires=wires[i])
-                    for i in range(len(wires))
-                )
-                op_list.extend(local_field_gates)
-
-        # repeat the feature encoding once more at the end
-        for i in range(n_features):
-            op_list.append(RX(features[i], wires=wires[i]))
-        for i in range(n_features, len(wires)):
-            op_list.append(H(wires=wires[i]))
-
-        return op_list
-
     @property
     def resource_params(self) -> dict:
         return {
@@ -337,7 +257,7 @@ class QAOAEmbedding(Operation):
         return n_layers, wire_dim
 
 
-def _qaoa_embedding_resources(repeat, n_features, num_wires, local_field):
+def _qaoa_embedding_standard_resources(repeat, n_features, num_wires, local_field):
     multi_rz_count = num_wires * repeat if num_wires > 2 else repeat
     resources = defaultdict(
         int,
@@ -351,8 +271,8 @@ def _qaoa_embedding_resources(repeat, n_features, num_wires, local_field):
     return resources
 
 
-@register_resources(_qaoa_embedding_resources)
-def _qaoa_embedding_decomposition(features, weights, wires, local_field):
+@register_resources(_qaoa_embedding_standard_resources, name="feature_and_ansatz_layers")
+def _qaoa_embedding_standard(features, weights, wires, local_field):
     # pylint: disable=no-value-for-parameter
     if capture.enabled():
         weights, wires, features = jnp.array(weights), jnp.array(wires), jnp.array(features)
@@ -418,4 +338,4 @@ def _qaoa_embedding_decomposition(features, weights, wires, local_field):
     final_hadamard_loop()
 
 
-add_decomps(QAOAEmbedding, _qaoa_embedding_decomposition)
+add_decomps(QAOAEmbedding, _qaoa_embedding_standard)

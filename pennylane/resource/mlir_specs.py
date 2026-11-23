@@ -123,6 +123,8 @@ def resources_from_analysis_pass(  # pylint: disable=too-many-arguments,too-many
                 )
 
         compile_options = copy.deepcopy(qjit.compile_options)
+        if analysis_pass_name == "resource-estimate":
+            compile_options.estimate_decomps = True
 
         # The Max Legal Level is the device level
         if max_legal_level in level:

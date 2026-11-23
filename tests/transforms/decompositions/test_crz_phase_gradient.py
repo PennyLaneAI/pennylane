@@ -65,7 +65,6 @@ def test_valid_decomp(p):
     assert_valid_decomp_rule(op, custom_decomp, check_matrix=False)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_decomp_has_name():
     """Ensures the decomp rule has a name property."""
     p = 2
@@ -82,18 +81,19 @@ def test_decomp_has_name():
     }
 
     custom_decomp = make_crz_to_phase_gradient_decomp(**kwargs)
-    assert custom_decomp.name == "_crz_phase_gradient_decomp"
+    assert custom_decomp.name == "phase_gradient"
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_as_fixed_decomps(phi, p):
     """Test that the decomposition rule from ``make_crz_to_phase_gradient_decomp`` works as
     expected as a fixed decomposition and yields the correct resources"""
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([100 + len(angle_wires) + i for i in range(p)])
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(p - 1)]
+    )
 
     kwargs = {
         "angle_wires": angle_wires,
@@ -116,15 +116,16 @@ def test_as_fixed_decomps(phi, p):
     assert specs == _expected_crz_specs(phi, p)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_as_alt_decomps(phi, p):
     """Test that the decomposition rule from ``make_crz_to_phase_gradient_decomp`` works as
     expected as an alternative decomposition and yields the correct resources"""
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([100 + len(angle_wires) + i for i in range(p)])
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(p - 1)]
+    )
 
     kwargs = {
         "angle_wires": angle_wires,
@@ -147,7 +148,6 @@ def test_as_alt_decomps(phi, p):
     assert specs == _expected_crz_specs(phi, p)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_integration_multi_wire(seed):
     """
     Tests that the decomposition correctly realizes the phase gradient decomposition of CRZ as
@@ -159,9 +159,9 @@ def test_integration_multi_wire(seed):
     phi = (1 / 2 + 0 / 4 + 1 / 8) * 4 * np.pi
     wires = [0, 1]
 
-    angle_wires = [f"aux_{i}" for i in range(prec)]
-    phase_grad_wires = [f"qft_{i}" for i in range(prec)]
-    work_wires = [f"work_{i}" for i in range(prec - 1)]
+    angle_wires = [100 + i for i in range(prec)]
+    phase_grad_wires = [100 + len(angle_wires) + i for i in range(prec)]
+    work_wires = [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(prec - 1)]
 
     all_wires = angle_wires + phase_grad_wires + work_wires + wires
 

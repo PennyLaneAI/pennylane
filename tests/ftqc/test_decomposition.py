@@ -93,11 +93,10 @@ class TestGateSetDecomposition:
 
         assert np.allclose(expected_state, state)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_convert_to_mbqc_gateset(self):
         """Test the convert_to_mbqc_gateset works as expected"""
         tape = qp.tape.QuantumScript(
-            [qp.Rot(1.2, -0.34, 0.056, wires="a"), qp.RY(0.46, 1), qp.CZ([0, 1])]
+            [qp.Rot(1.2, -0.34, 0.056, wires=9), qp.RY(0.46, 1), qp.CZ([0, 1])]
         )
 
         (new_tape,), _ = convert_to_mbqc_gateset(tape)
@@ -106,18 +105,6 @@ class TestGateSetDecomposition:
         for op, expected_type in zip(new_tape.operations, expected_ops):
             assert isinstance(op, expected_type)
 
-    def test_error_if_old_decomp_method(self):
-        """Test that a clear error is raised if trying to use the convert_to_mbqc_gateset
-        transform with the old decomposition method"""
-
-        tape = qp.tape.QuantumScript(
-            [qp.Rot(1.2, -0.34, 0.056, wires="a"), qp.RY(0.46, 1), qp.CZ([0, 1])]
-        )
-
-        with pytest.raises(RuntimeError, match="requires the graph-based decomposition method"):
-            _, _ = convert_to_mbqc_gateset(tape)
-
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_qnode_integration(self):
         """Test that a QNode containing Rot and other unsupported gates is decomposed as
         expected by the convert_to_mbqc_gateset"""
@@ -244,7 +231,7 @@ class TestMBQCFormalismConversion:
         passed an unsupported operation"""
 
         with pytest.raises(NotImplementedError, match="Received unsupported gate of type"):
-            queue_measurements(qp.Identity, wires="a")
+            queue_measurements(qp.Identity, wires=9)
 
     @pytest.mark.parametrize("op", [qp.S(7), qp.H(1), qp.RZ(1.2, 2), RotXZX(1.2, 2.3, 3.4, 2)])
     def test_queue_corrections(self, op):
@@ -257,11 +244,11 @@ class TestMBQCFormalismConversion:
         correction_function = queue_corrections(op, [0, 1, 1, 0])
 
         with qp.queuing.AnnotatedQueue() as q:
-            correction_function("a")
+            correction_function(9)
 
         assert q.queue
         for byprodcut_op in q.queue:
-            assert qp.equal(byprodcut_op, qp.X("a")) or qp.equal(byprodcut_op, qp.Z("a"))
+            assert qp.equal(byprodcut_op, qp.X(9)) or qp.equal(byprodcut_op, qp.Z(9))
 
     def test_cnot_corrections(self):
         """Test that the function produced by cnot_corrections queues the byproduct operations as expected"""
@@ -273,12 +260,10 @@ class TestMBQCFormalismConversion:
         correction_function = cnot_corrections([0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0])
 
         with qp.queuing.AnnotatedQueue() as q:
-            correction_function(ctrl_wire="ctrl", target_wire="target")
+            correction_function(ctrl_wire=14, target_wire=16)
 
         assert len(q.queue) == 4
-        for op, expected_op in zip(
-            q.queue, [qp.Z("ctrl"), qp.X("ctrl"), qp.Z("target"), qp.X("target")]
-        ):
+        for op, expected_op in zip(q.queue, [qp.Z(14), qp.X(14), qp.Z(16), qp.X(16)]):
             assert qp.equal(op, expected_op)
 
     def test_queue_corrections_gate_not_implemented(self):

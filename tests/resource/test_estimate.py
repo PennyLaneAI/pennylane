@@ -32,7 +32,7 @@ pytestmark = pytest.mark.catalyst
 TARGET = {"Hadamard", "CNOT", "RX"}
 
 
-@qp.register_resources({qp.Z: 2, qp.RY: 2, qp.CNOT: 1})
+@qp.register_resources({qp.Z: 2, qp.RY: 2, qp.CNOT: 1}, name="cz_with_ry")
 def cz_with_ry(wires, **_):
     """Decomposition rule for CZ that writes each Hadamard as Z followed by RY(pi/2)."""
     qp.Z(wires[1])
@@ -46,7 +46,7 @@ def cz_with_ry(wires, **_):
 custom_transform = qp.transform(pass_name="custom-pass")
 
 
-@qp.register_resources({qp.RY: 1, qp.X: 1})
+@qp.register_resources({qp.RY: 1, qp.X: 1}, name="h_with_x")
 def h_with_x(wires, **_):
     """Decomposition rule for Hadamard as RY(pi/2) followed by X."""
     qp.RY(np.pi / 2, wires)
@@ -269,6 +269,9 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         }
 
     @pytest.mark.parametrize("use_names", [False, True])
+    @pytest.mark.xfail(
+        reason="Waiting for a Catalyst build with updated precompiled decomposition rule names.",
+    )
     def test_exclude_decomps(self, qnode, use_names):
         """Estimate respects exclusions from a decompose transform in the pipeline if the target
         is a pipeline level."""
@@ -289,6 +292,9 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             "RX": 1,
         }
 
+    @pytest.mark.xfail(
+        reason="Waiting for a Catalyst build with updated precompiled decomposition rule names.",
+    )
     def test_exclusions_from_first_decompose_transform(self, qnode):
         """Test that the excluded rules for an operator are those of the first decompose transform
         that decomposes it, as in the compiled pipeline."""
@@ -668,38 +674,25 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
 
         assert specs.resources.quantum_operations == {"Hadamard": 4, "CNOT": 1, "RX": 1}
 
-    @pytest.mark.parametrize("target", ["top", 0])
-    def test_level_zero_target(self, circuit, target):
-        """Test that level 0 as target gives the resources at level 0 without a warning."""
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", UserWarning)
-            specs = qp.estimate(circuit, target=target)(0.5)
-
-        assert specs.resources == qp.analyze(circuit, level=0)(0.5).resources
-
-    @pytest.mark.parametrize("target", ["user", 1])
+    @pytest.mark.parametrize("target", ["top", 0, "user", 1])
     def test_level_target_without_decompose(self, circuit, target):
         """Test that a level before the device level without a decompose transform before it
-        gives the resources at level 0, with a warning."""
+        gives the resources at level 0."""
 
-        with pytest.warns(UserWarning, match="found no qp.decompose transform before target="):
-            specs = qp.estimate(circuit, target=target)(0.5)
+        specs = qp.estimate(circuit, target=target)(0.5)
 
         assert specs.resources == qp.analyze(circuit, level=0)(0.5).resources
         assert specs.resources.quantum_operations == {"Hadamard": 2, "CZ": 1, "RX": 1}
 
     @pytest.mark.parametrize("with_marker", [False, True])
     def test_default_target_without_transforms(self, qnode, with_marker):
-        """Test that the default target and a marker target warn without a decompose transform,
-        even at level 0."""
+        """Test that the default target and a marker target at level 0 give the resources at
+        level 0 without any transform."""
 
         circuit = qp.qjit(qp.marker(qnode, "start") if with_marker else qnode)
         kwargs = {"target": "start"} if with_marker else {}
-        target = kwargs.get("target", "user")
 
-        with pytest.warns(UserWarning, match=f"found no qp.decompose .* target='{target}'"):
-            specs = qp.estimate(circuit, **kwargs)(0.5)
+        specs = qp.estimate(circuit, **kwargs)(0.5)
 
         assert specs.resources.quantum_operations == {"Hadamard": 2, "CZ": 1, "RX": 1}
 
@@ -845,8 +838,8 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
     )
     @pytest.mark.parametrize("target", ["user", "device"])
     def test_transform_not_after_last_decompose(self, qnode, with_decompose, counts, target):
-        """Test that a transform is skipped without a warning of its own if there is no decompose
-        transform before it, or if a decompose transform comes after it."""
+        """Test that a transform is skipped without a warning if there is no decompose transform
+        before it, or if a decompose transform comes after it."""
 
         circuit = qnode
         if with_decompose:
@@ -856,14 +849,10 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
             circuit = qp.transforms.decompose(circuit, gate_set=TARGET)
         circuit = qp.qjit(circuit)
 
-        with warnings.catch_warnings(record=True) as record:
-            warnings.simplefilter("always")
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", UserWarning)
             specs = qp.estimate(circuit, target=target)(0.5)
 
-        messages = [str(w.message) for w in record if issubclass(w.category, UserWarning)]
-        no_decompose = target == "user" and not with_decompose
-        assert len(messages) == no_decompose
-        assert all("found no qp.decompose transform" in message for message in messages)
         assert specs.resources.quantum_operations == counts
 
     @pytest.mark.parametrize("target", ["user", 2, "device"])
@@ -974,8 +963,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         circuit = qp.marker(circuit, "after_cancel")
         circuit = qp.qjit(qp.transforms.decompose(circuit, gate_set=TARGET))
 
-        with pytest.warns(UserWarning, match="found no qp.decompose transform"):
-            specs = qp.estimate(circuit, target="after_cancel")(0.5)
+        specs = qp.estimate(circuit, target="after_cancel")(0.5)
 
         assert specs.resources.quantum_operations == {"Hadamard": 2, "CZ": 1, "RX": 1}
 
@@ -984,8 +972,7 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
 
         circuit = qp.qjit(qp.transforms.decompose(qp.marker(qnode, "CNOT"), gate_set=TARGET))
 
-        with pytest.warns(UserWarning, match="found no qp.decompose transform"):
-            specs = qp.estimate(circuit, target="CNOT")(0.5)
+        specs = qp.estimate(circuit, target="CNOT")(0.5)
 
         assert specs.resources.quantum_operations == {"Hadamard": 2, "CZ": 1, "RX": 1}
 

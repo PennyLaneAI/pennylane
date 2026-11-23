@@ -146,14 +146,6 @@ def _estimate_passes(qnode, target) -> tuple[CompilePipeline, dict | None, list[
     if not decompositions:
         if is_device_level:
             return CompilePipeline(), {"gate_set": _device_gate_set(qnode)}, skipped(target_level)
-        # "user" and markers can also be at level 0, e.g. without any transform
-        if not (target == "top" or (is_int_level(target) and target == 0)):
-            warnings.warn(
-                f"qp.estimate found no qp.decompose transform before target={target!r}, so the "
-                "resources are those of the circuit without any decomposition. Use "
-                'target="device" or a gate set as target to decompose the gates.',
-                UserWarning,
-            )
         return CompilePipeline(), None, []
 
     last_kwargs = _decompose_kwargs(decompositions[-1])
@@ -407,8 +399,7 @@ def estimate(
 
         * If the ``target`` precedes ``target="device"``, the gate set is determined by the last
           :func:`~.decompose` transform before the specified ``target``. If there is no such
-          transform, the resources are those at ``target="top"``, with a warning for any
-          ``target`` other than ``"top"`` or ``0``.
+          transform, the resources are those at ``target="top"``.
         * With ``target="device"``, the gate set is determined by the device's supported gates.
           If the last :func:`~.decompose` transform specifies exclusively device-supported gates,
           that gate set is used as-is. Otherwise, the gates are further projected onto the gate
@@ -490,7 +481,7 @@ def estimate(
 
         .. code-block:: python
 
-            @qp.register_resources({qp.Z: 2, qp.RY: 2, qp.CNOT: 1})
+            @qp.register_resources({qp.Z: 2, qp.RY: 2, qp.CNOT: 1}, name="cz_with_ry")
             def cz_with_ry(wires, **_):
                 qp.Z(wires[1])
                 qp.RY(np.pi / 2, wires[1])

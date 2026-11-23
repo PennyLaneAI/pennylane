@@ -95,7 +95,7 @@ def test_pytree_structure_dump(decode):
             "list": ["a", 1],
             "dict": {"a": 1},
             "tuple": ("a", 1),
-            "custom": CustomNode([1, 5, 7], {"wires": Wires([1, "a", 3.4, None])}),
+            "custom": CustomNode([1, 5, 7], {"wires": Wires([1, 3, 6, 8])}),
         }
     )
 
@@ -112,7 +112,7 @@ def test_pytree_structure_dump(decode):
                 [None],
             ],
             ["builtins.tuple", None, [None, None]],
-            ["test.CustomNode", {"wires": [1, "a", 3.4, None]}, [None, None, None]],
+            ["test.CustomNode", {"wires": [1, 3, 6, 8]}, [None, None, None]],
         ],
     ]
 
@@ -214,7 +214,7 @@ H_TWO_QUBITS = np.array(
             qp.Hermitian(H_ONE_QUBIT, 2),
             qp.Hermitian(H_TWO_QUBITS, [0, 1]),
             qp.PauliX(1),
-            qp.Identity("a"),
+            qp.Identity(3),
         ),
         qp.Hamiltonian(
             (1.1, -0.4, 0.333), (qp.PauliX(0), qp.Hermitian(H_ONE_QUBIT, 2), qp.PauliZ(2))
@@ -245,7 +245,7 @@ def test_pennylane_pytree_roundtrip(obj_in: Any):
                 qp.Hermitian(H_ONE_QUBIT, 2),
                 qp.Hermitian(H_TWO_QUBITS, [0, 1]),
                 qp.PauliX(1),
-                qp.Identity("a"),
+                qp.Identity(3),
             ),
         ]
     ],
