@@ -614,7 +614,7 @@ class TestDecomposition:
             assert np.allclose(qp.matrix(op.adjoint(), wire_order=[0, 1]), expected)
             adj_op = qp.adjoint(op)
 
-        rule = qp.list_decomps(adj_op)["_adjoint_change_op_basis_decomp"]
+        rule = qp.list_decomps(adj_op)["adjoint_target"]
         decomp = qp.testing.decomp_rule_to_tape(adj_op, rule)
         with qp.capture.pause():
             assert np.allclose(qp.matrix(decomp, wire_order=[0, 1]), expected)
@@ -625,7 +625,7 @@ class TestDecomposition:
         only controls the inverted target operator."""
         with qp.capture.pause():
             op = qp.adjoint(ChangeOpBasis2(qp.H(0), qp.T(0)))
-        rule = qp.list_decomps(op)["_adjoint_change_op_basis_decomp"]
+        rule = qp.list_decomps(op)["adjoint_target"]
         qp.testing.assert_valid_decomp_rule(op, rule)
 
         [gate] = qp.testing.decomp_rule_to_tape(op, rule).operations
