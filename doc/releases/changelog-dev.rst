@@ -15,12 +15,12 @@ New features since last release
 * The new :class:`~.DoubleBasisRotation` applies the same :class:`~.BasisRotation` to two
   registers, such as the spin-up and spin-down wires. Its decompositions can apply each shared
   Givens rotation as one :class:`~.GivensPair`.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10579) <https://github.com/PennyLaneAI/pennylane/pull/10579>`__
 
 * The new :class:`~.GivensPair` applies the same :class:`~.SingleExcitation` to two pairs of
   wires, such as a spin-up and a spin-down pair. Its decomposition can apply the shared angle with
   one :class:`~.RZLayer`.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10578) <https://github.com/PennyLaneAI/pennylane/pull/10578>`__
 
 * :func:`~.transforms.decompositions.make_rzlayer_to_phase_gradient_decomp` creates a phase
   gradient decomposition rule for :class:`~.RZLayer`, which needs a single adder for each block
