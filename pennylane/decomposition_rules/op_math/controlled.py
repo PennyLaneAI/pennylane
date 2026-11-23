@@ -17,10 +17,9 @@
 
 from __future__ import annotations
 
-from importlib import import_module
 from textwrap import dedent
 
-from pennylane import allocation
+from pennylane import allocation, ops
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import (
     DecompositionRule,
@@ -28,6 +27,7 @@ from pennylane.decomposition.decomposition_rule import (
     register_resources,
 )
 from pennylane.decomposition.resources import adjoint_resource_rep, controlled_resource_rep
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Bool, Complex, Wire
 
 
@@ -40,11 +40,6 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
     def _resource_fn(
         base_params, num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, **_
     ):
-        ops = import_module("pennylane.ops")
-
-        # pylint: disable-next=import-outside-toplevel
-        from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-
         base_resources = base_decomposition.compute_resources(**base_params)
         gate_counts = {
             _ctrl_abstract(
@@ -69,7 +64,6 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
     )
     # pylint: disable-next=too-many-arguments
     def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
-        ops = import_module("pennylane.ops")
         zero_control_wires = [
             w for w, val in zip(control_wires, control_values, strict=True) if not val
         ]
@@ -104,7 +98,6 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
         return inner_decomp.is_applicable(**new_params)
 
     def _resource_fn(**resource_params):
-        ops = import_module("pennylane.ops")
         new_params = resource_params.copy()
         new_params["num_zero_control_values"] = 0
         inner_resource = inner_decomp.compute_resources(**new_params)
@@ -122,7 +115,6 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
         name=name or f"flip_zero_ctrl_values({inner_decomp.name})",
     )
     def _impl(*params, wires, control_wires, control_values, **kwargs):
-        ops = import_module("pennylane.ops")
         zero_control_wires = [
             w for w, val in zip(control_wires, control_values, strict=True) if not val
         ]
@@ -174,7 +166,6 @@ def controlled_flip_adjoint(  # pylint: disable=too-many-arguments
 ):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
-    ops = import_module("pennylane.ops")
     ops.adjoint(
         ops.ctrl(
             base.base,
@@ -187,7 +178,6 @@ def controlled_flip_adjoint(  # pylint: disable=too-many-arguments
 
 
 def _controlled_single_work_wire_resources(base_class, base_params, num_control_wires, **__):
-    ops = import_module("pennylane.ops")
     return {
         ops.MultiControlledX(Wire[num_control_wires + 1]): 2,
         controlled_resource_rep(base_class, base_params, 1): 1,
@@ -201,7 +191,6 @@ def _controlled_single_work_wire_resources(base_class, base_params, num_control_
 # pylint: disable-next=unused-argument
 def controlled_single_work_wire(*params, wires, control_wires, base, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
-    ops = import_module("pennylane.ops")
     with allocation.allocate(1, state="zero", restored=True) as work_wires:
         ops.MultiControlledX([*control_wires, work_wires[0]])
         ops.ctrl(base, control=work_wires[0])
@@ -222,7 +211,6 @@ def _controlled_to_unitary_resources(  # pylint: disable=unused-argument
     work_wire_type,
     **__,
 ):
-    ops = import_module("pennylane.ops")
     return {
         ops.ControlledQubitUnitary(
             Complex[2, 2],
@@ -238,7 +226,6 @@ def _controlled_to_unitary_resources(  # pylint: disable=unused-argument
 @register_resources(_controlled_to_unitary_resources, name="to_unitary")
 def controlled_to_unitary(*_, wires, control_values, work_wires, work_wire_type, base, **__):
     """Convert a controlled operator to a controlled qubit unitary."""
-    ops = import_module("pennylane.ops")
     matrix = base.matrix()
     ops.ControlledQubitUnitary(
         matrix,

@@ -165,7 +165,6 @@ class TestAdjointDecompositionRules:
                 name=f"adjoint({base_decomposition.name})",
             )
             def _impl(*params, wires, base):
-                ops = import_module("pennylane.ops")
                 # pylint: disable-next=protected-access
                 ops.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
 
@@ -666,7 +665,6 @@ class TestControlledDecomposition:
             )
             # pylint: disable-next=too-many-arguments
             def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
-                ops = import_module("pennylane.ops")
                 zero_control_wires = [
                     w for w, val in zip(control_wires, control_values, strict=True) if not val
                 ]
@@ -1042,7 +1040,6 @@ class TestControlledDecomposition:
                 name=name or f"flip_zero_ctrl_values({inner_decomp.name})",
             )
             def _impl(*params, wires, control_wires, control_values, **kwargs):
-                ops = import_module("pennylane.ops")
                 zero_control_wires = [
                     w for w, val in zip(control_wires, control_values, strict=True) if not val
                 ]

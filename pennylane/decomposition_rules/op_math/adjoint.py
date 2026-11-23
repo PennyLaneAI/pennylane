@@ -17,9 +17,9 @@
 
 from __future__ import annotations
 
-from importlib import import_module
 from textwrap import dedent
 
+from pennylane import ops
 from pennylane.core.apply import apply
 from pennylane.decomposition.decomposition_rule import (
     DecompositionRule,
@@ -27,6 +27,7 @@ from pennylane.decomposition.decomposition_rule import (
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 
 
 def make_adjoint_decomp(base_decomposition: DecompositionRule):
@@ -36,9 +37,6 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
         return base_decomposition.is_applicable(**base_params)
 
     def _resource_fn(base_class, base_params):  # pylint: disable=unused-argument
-
-        # pylint: disable-next=import-outside-toplevel
-        from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 
         base_resources = base_decomposition.compute_resources(**base_params)
         return {
@@ -56,7 +54,6 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
         name=f"adjoint({base_decomposition.name})",
     )
     def _impl(*params, wires, base):
-        ops = import_module("pennylane.ops")
         # pylint: disable-next=protected-access
         ops.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
 
@@ -89,5 +86,4 @@ def _adjoint_negate_angle_resources(base_class, base_params):
 @register_resources(_adjoint_negate_angle_resources, name="negate_angle")
 def adjoint_negate_angle(phi, wires, base):  # pylint: disable=unused-argument
     """Decompose the adjoint of a rotation operator by inverting the angle."""
-    ops = import_module("pennylane.ops")
     ops.functions.bind_new_parameters(base, (-phi,))

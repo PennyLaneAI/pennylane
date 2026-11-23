@@ -20,7 +20,7 @@ from collections import Counter
 from pennylane import decomposition, ops, templates
 from pennylane.core.apply import apply
 from pennylane.decomposition_rules.op_math.controlled import flip_zero_control
-from pennylane.decomposition_rules.op_math.prod2 import _multi_temporary_and_all_ones
+from pennylane.decomposition_rules.op_math.controlled2 import _multi_temporary_and_all_ones
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.prod import Prod

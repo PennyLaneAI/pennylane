@@ -158,7 +158,12 @@ def test_phase_gradient_rules_follow_operator_modules(name, module):
     [
         "pennylane",
         "pennylane.decomposition",
+        "pennylane.decomposition.decomposition_graph",
         "pennylane.decomposition_rules.common",
+        "pennylane.decomposition_rules.op_math.adjoint",
+        "pennylane.decomposition_rules.op_math.controlled",
+        "pennylane.decomposition_rules.op_math.pow",
+        "pennylane.decomposition_rules.op_math.prod2",
         "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
         "pennylane.decomposition_rules.op_math.controlled_ops",
         "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
@@ -176,8 +181,11 @@ def test_fresh_import_registers_builtin_rules(entrypoint):
 import importlib
 importlib.import_module({entrypoint!r})
 import pennylane as qp
+from pennylane.decomposition.decomposition_graph import DecompositionGraph, DecompGraphSolution
 from pennylane.decomposition_rules import null_decomp, make_rz_to_phase_gradient_decomp
 from pennylane.transforms.rz_phase_gradient import rz_phase_gradient
+assert qp.decomposition.DecompositionGraph is DecompositionGraph
+assert qp.decomposition.DecompGraphSolution is DecompGraphSolution
 assert qp.transforms.rz_phase_gradient is rz_phase_gradient
 assert [rule.name for rule in qp.list_decomps("LabelledOp")] == ["unwrap_base"]
 assert null_decomp.name == "null_decomp"

@@ -17,14 +17,16 @@
 
 from collections import Counter
 
-from pennylane import capture, compiler, control_flow, math, ops, templates
+from pennylane import ops, templates
 from pennylane.core.apply import apply
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.decomposition_rules.op_math.controlled2 import flip_zero_control
+from pennylane.decomposition_rules.op_math.controlled2 import (
+    _multi_temporary_and_all_ones,
+    flip_zero_control,
+)
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Wire
-from pennylane.wires import DynamicWire, is_abstract_qubit
 
 
 def _prod2_standard_resources(operands, _init_pauli_rep=None):
@@ -52,38 +54,6 @@ def _controlled_prod2_with_work_wires_resources(
         resources[ops.ctrl(abstractify(op), Wire[1])] += 1
 
     return dict(resources)
-
-
-def _multi_temporary_and_all_ones(control, work_wires):
-    """Controlled decomposition using a ``TemporaryAND`` ladder.
-
-    Assumes all control values are 1 and returns the last ancilla as the
-    effective control target. Compatible with QJIT: the ladder is expressed
-    via ``control_flow.for_loop`` when running under tracing.
-    """
-    num_needed = len(control) - 1
-
-    if any(is_abstract_qubit(w) or isinstance(w, DynamicWire) for w in (*control, *work_wires)):
-        # Dynamically allocated wires can't be cast to a JAX array for the traced indexing below.
-        # The ladder length is static either way, so just unroll it directly.
-        templates.TemporaryAND(wires=[control[0], control[1], work_wires[0]])
-        for i in range(1, num_needed):
-            templates.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
-        return work_wires[num_needed - 1]
-
-    if compiler.active() or capture.enabled():
-        control = math.array(control, like="jax")
-        work_wires = math.array(work_wires, like="jax")
-
-    templates.TemporaryAND(wires=[control[0], control[1], work_wires[0]])
-
-    @control_flow.for_loop(1, num_needed, 1)
-    def _ladder(i):
-        templates.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
-
-    _ladder()  # pylint: disable=no-value-for-parameter
-
-    return work_wires[num_needed - 1]
 
 
 @register_condition(
