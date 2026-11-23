@@ -547,6 +547,8 @@ New features since last release
   decomposition pathways to the ``target`` gate set are analyzed and the resulting operations are
   counted. Note that :func:`~pennylane2.estimate` is only supported with ``qp.qjit(capture=True)``.
   `(#10296) <https://github.com/PennyLaneAI/pennylane/pull/10296>`__
+  `(#10572) <https://github.com/PennyLaneAI/pennylane/pull/10572>`__
+
 
   Consider the following circuit.
 
@@ -1147,6 +1149,12 @@ Improvements 🛠
   efficient controlled decompositions.
   `(#10118) <https://github.com/PennyLaneAI/pennylane/pull/10118>`__
 
+* The decomposition of the adjoint of a :func:`~.change_op_basis` operator built from ``Operator2``
+  operands now produces another basis-change operator with an inverted target, instead of three
+  separate operators. This lets a controlled adjoint under program capture control only the target,
+  rather than every gate of the compute and uncompute operators.
+  `(#10568) <https://github.com/PennyLaneAI/pennylane/pull/10568>`__
+
 * Coprocessor connection addresses are grouped on :class:`~pennylane2.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.
   `(#10017) <https://github.com/PennyLaneAI/pennylane/pull/10017>`__
 
@@ -1550,6 +1558,9 @@ Breaking changes 💔
   The device test command is now ``pl2-device-test``.
   Serialized objects containing Classic module paths are not migrated automatically.
   Importing PennyLane2 after Classic raises an error; use separate processes or kernels.
+
+* Removes :class:`pennylane2.tape.OperationRecorder`. Use :class:`~.AnnotatedQueue` instead.
+  [(#10574)](https://github.com/PennyLaneAI/pennylane/pull/10574)
 
 * :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly: use
   ``get_compile_pipeline(qnode, level)`` instead of
@@ -2509,6 +2520,11 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed the adjoint of a :func:`~.change_op_basis` operator with an explicit ``uncompute_op`` that
+  is not the adjoint of ``compute_op``. The adjoint now inverts and swaps the compute and uncompute
+  operators instead of keeping them unchanged.
+  `(#10568) <https://github.com/PennyLaneAI/pennylane/pull/10568>`__
 
 * Fixed reconstruction of wire pytrees containing mixed Python and JAX scalars, allowing
   nested captured operators to reuse these wires.

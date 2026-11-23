@@ -24,5 +24,4 @@ from pennylane2.core.qscript import (
     process_queue,
 )
 
-from .operation_recorder import OperationRecorder
 from .tape import QuantumTape, QuantumTapeBatch

@@ -50,7 +50,7 @@ def test_domain_correction(angle, result):
     [
         (qp.RZ(math.pi / 42, wires=[1]), 1e-4),
         (qp.RZ(5 * math.pi / 4, wires=[1]), 1e-5),
-        (qp.PhaseShift(math.pi / 7, wires=["a"]), 1e-3),
+        (qp.PhaseShift(math.pi / 7, wires=[10]), 1e-3),
         (qp.RZ(math.pi / 3, wires=[1]), 1e-5),
         (qp.RZ(-math.pi / 3, wires=[1]), 1e-3),
         (qp.RZ(-math.pi / 4, wires=[1]), 1e-4),

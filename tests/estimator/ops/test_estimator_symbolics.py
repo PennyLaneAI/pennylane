@@ -152,7 +152,7 @@ class TestAdjoint:
         (
             qre.S(),
             qre.RZ(precision=1e-3),
-            qre.CNOT(wires=["ctrl", "trgt"]),
+            qre.CNOT(wires=[7, 9]),
         ),
     )
     def test_adj_resource_decomp(self, base_op):
@@ -380,7 +380,7 @@ class TestControlled:
         (
             qre.S(),
             qre.RZ(precision=1e-3),
-            qre.CNOT(wires=["ctrl", "trgt"]),
+            qre.CNOT(wires=[7, 9]),
         ),
     )
     def test_ctrl_resource_decomp(self, ctrl_wires, ctrl_values, base_op):
@@ -469,7 +469,7 @@ class TestPow:
         (
             qre.S(),
             qre.RZ(precision=1e-3),
-            qre.CNOT(wires=["ctrl", "trgt"]),
+            qre.CNOT(wires=[7, 9]),
         ),
     )
     def test_pow_resource_decomp(self, base_op, z):

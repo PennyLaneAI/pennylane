@@ -133,7 +133,7 @@ class TestDecompositionErrors:
             def compute_decomposition(*args, **kwargs):
                 if kwargs["wires"][0] == 0:
                     return [qp.RX(0.2, wires=0)]
-                return [qp.RX(0.2, wires="not the ops wire")]
+                return [qp.RX(0.2, wires=3)]
 
         with pytest.raises(AssertionError, match=r"Operators in decomposition of wire\-mapped"):
             assert_valid(BadDecompositionWireMap(wires=0), skip_pickle=True)

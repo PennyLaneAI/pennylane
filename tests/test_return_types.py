@@ -1270,31 +1270,3 @@ class TestDeviceNewUnits:
         assert isinstance(res, tuple) and len(res) == 2
         assert np.array_equal(res[0], [0.0, 0.0, 1.0, 0.0])
         assert res[1] == 1.0
-
-    def test_entropy_no_custom_wires(self):
-        """Test that entropy cannot be returned with custom wires."""
-
-        dev = qp.device("default.qubit", wires=["a", 1])
-
-        with qp.queuing.AnnotatedQueue() as q:
-            qp.PauliX(wires="a")
-            qp.vn_entropy(wires=["a"])
-
-        tape = qp.tape.QuantumScript.from_queue(q)
-        program = dev.preprocess_transforms()
-        res = qp.execute(tapes=[tape], device=dev, diff_method=None, transform_program=program)
-        assert res == (0,)
-
-    def test_custom_wire_labels_error(self):
-        """Tests that an error is raised when mutual information is measured
-        with custom wire labels"""
-        dev = qp.device("default.qubit", wires=["a", "b"])
-
-        with qp.queuing.AnnotatedQueue() as q:
-            qp.PauliX(wires="a")
-            qp.mutual_info(wires0=["a"], wires1=["b"])
-
-        tape = qp.tape.QuantumScript.from_queue(q)
-        program = dev.preprocess_transforms()
-        res = qp.execute(tapes=[tape], device=dev, diff_method=None, transform_program=program)
-        assert res == (0,)

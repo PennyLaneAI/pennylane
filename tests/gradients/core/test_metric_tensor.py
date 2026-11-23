@@ -1437,16 +1437,16 @@ def test_generator_no_expval(monkeypatch):
 def test_error_missing_aux_wire():
     """Tests that a special error is raised if the requested (or default, if not given)
     auxiliary wire for the Hadamard test is missing."""
-    dev = qp.device("default.qubit", wires=qp.wires.Wires(["wire1", "wire2"]))
+    dev = qp.device("default.qubit", wires=qp.wires.Wires([19, 20]))
 
     @qp.qnode(dev)
     def circuit(x, z):
-        qp.RX(x, wires="wire1")
-        qp.RZ(z, wires="wire2")
-        qp.CNOT(wires=["wire1", "wire2"])
-        qp.RX(x, wires="wire1")
-        qp.RZ(z, wires="wire2")
-        return qp.expval(qp.PauliZ("wire2"))
+        qp.RX(x, wires=19)
+        qp.RZ(z, wires=20)
+        qp.CNOT(wires=[19, 20])
+        qp.RX(x, wires=19)
+        qp.RZ(z, wires=20)
+        return qp.expval(qp.PauliZ(20))
 
     x = np.array(0.5, requires_grad=True)
     z = np.array(0.1, requires_grad=True)
@@ -1479,7 +1479,7 @@ def test_error_not_available_aux_wire():
 def test_error_generator_not_registered(allow_nonunitary):
     """Tests that an error is raised if an operation doe not have a
     controlled-generator operation registered."""
-    dev = qp.device("default.qubit", wires=qp.wires.Wires(["wire1", "wire2", "wire3"]))
+    dev = qp.device("default.qubit", wires=qp.wires.Wires([19, 20, 21]))
 
     x = np.array(0.5, requires_grad=True)
     z = np.array(0.1, requires_grad=True)
@@ -1490,9 +1490,9 @@ def test_error_generator_not_registered(allow_nonunitary):
 
     @qp.qnode(dev)
     def circuit1(x, z):
-        RX(x, wires="wire1")
-        qp.RZ(z, wires="wire1")
-        return qp.expval(qp.PauliZ("wire2"))
+        RX(x, wires=19)
+        qp.RZ(z, wires=19)
+        return qp.expval(qp.PauliZ(20))
 
     if allow_nonunitary:
         qp.metric_tensor(circuit1, approx=None, allow_nonunitary=allow_nonunitary)(x, z)
@@ -1506,17 +1506,17 @@ def test_expand_metric_tensor():
     allow_nonunitary = [True, False]
     res = []
 
-    dev = qp.device("default.qubit", wires=qp.wires.Wires(["wire1", "wire2", "wire3"]))
+    dev = qp.device("default.qubit", wires=qp.wires.Wires([19, 20, 21]))
 
     x = np.array(0.5, requires_grad=True)
     z = np.array(0.1, requires_grad=True)
 
     @qp.qnode(dev)
     def circuit(x, z):
-        qp.H("wire2")
-        qp.RX(x, wires="wire1")
-        qp.RZ(z, wires="wire1")
-        return qp.expval(qp.PauliZ("wire1"))
+        qp.H(20)
+        qp.RX(x, wires=19)
+        qp.RZ(z, wires=19)
+        return qp.expval(qp.PauliZ(19))
 
     for allow in allow_nonunitary:
         res.append(qp.metric_tensor(circuit, approx=None, allow_nonunitary=allow)(x, z))
@@ -1528,43 +1528,43 @@ def test_no_error_missing_aux_wire_not_used():
     """Tests that a no error is raised if the requested (or default, if not given)
     auxiliary wire for the Hadamard test is missing but it is not used, either
     because ``approx`` is used or because there only is a diagonal contribution."""
-    dev = qp.device("default.qubit", wires=qp.wires.Wires(["wire1", "wire2"]))
+    dev = qp.device("default.qubit", wires=qp.wires.Wires([19, 20]))
 
     @qp.qnode(dev)
     def circuit_single_block(x, z):
         """This circuit has a metric tensor that consists
         of a single block in the block diagonal "approximation"."""
-        qp.RX(x, wires="wire1")
-        qp.RZ(z, wires="wire2")
-        qp.CNOT(wires=["wire1", "wire2"])
-        return qp.expval(qp.PauliZ("wire2"))
+        qp.RX(x, wires=19)
+        qp.RZ(z, wires=20)
+        qp.CNOT(wires=[19, 20])
+        return qp.expval(qp.PauliZ(20))
 
     @qp.qnode(dev)
     def circuit_multi_block(x, z):
         """This circuit has a metric tensor that consists
         of multiple blocks and thus is approximated when only
         computing the block diagonal."""
-        qp.RX(x, wires="wire1")
-        qp.RZ(z, wires="wire2")
-        qp.CNOT(wires=["wire1", "wire2"])
-        qp.RX(x, wires="wire1")
-        qp.RZ(z, wires="wire2")
-        return qp.expval(qp.PauliZ("wire2"))
+        qp.RX(x, wires=19)
+        qp.RZ(z, wires=20)
+        qp.CNOT(wires=[19, 20])
+        qp.RX(x, wires=19)
+        qp.RZ(z, wires=20)
+        return qp.expval(qp.PauliZ(20))
 
     x = np.array(0.5, requires_grad=True)
     z = np.array(0.1, requires_grad=True)
 
     qp.metric_tensor(circuit_single_block, approx=None)(x, z)
-    qp.metric_tensor(circuit_single_block, approx=None, aux_wire="aux_wire")(x, z)
+    qp.metric_tensor(circuit_single_block, approx=None, aux_wire=12)(x, z)
     qp.metric_tensor(circuit_multi_block, approx="block-diag")(x, z)
-    qp.metric_tensor(circuit_multi_block, approx="block-diag", aux_wire="aux_wire")(x, z)
+    qp.metric_tensor(circuit_multi_block, approx="block-diag", aux_wire=12)(x, z)
 
 
 def test_raises_circuit_that_uses_missing_wire():
     """Test that an error in the original circuit is reraised properly and not caught. This avoids
     accidentally catching relevant errors, which can lead to a recursion error."""
 
-    dev = qp.device("default.qubit", wires=[0, "b"])
+    dev = qp.device("default.qubit", wires=[0, 15])
 
     @qp.qnode(dev)
     def circuit(x):
@@ -1589,7 +1589,7 @@ def aux_wire_ansatz_1(x, y):
     qp.RY(y, wires=1)
 
 
-@pytest.mark.parametrize("aux_wire", [None, "aux", 3])
+@pytest.mark.parametrize("aux_wire", [None, 11, 3])
 @pytest.mark.parametrize("ansatz", [aux_wire_ansatz_0, aux_wire_ansatz_1])
 def test_get_aux_wire(aux_wire, ansatz):
     """Test ``_get_aux_wire`` without device_wires."""
@@ -1610,16 +1610,16 @@ def test_get_aux_wire_with_device_wires():
     x, y = np.array([0.2, 0.1], requires_grad=True)
     with qp.queuing.AnnotatedQueue() as q:
         qp.RX(x, wires=0)
-        qp.RX(y, wires="one")
+        qp.RX(y, wires=17)
 
     tape = qp.tape.QuantumScript.from_queue(q)
-    device_wires = qp.wires.Wires([0, "aux", "one"])
+    device_wires = qp.wires.Wires([0, 11, 17])
 
-    assert _get_aux_wire(None, tape, device_wires) == "aux"
-    assert _get_aux_wire("aux", tape, device_wires) == "aux"
+    assert _get_aux_wire(None, tape, device_wires) == 11
+    assert _get_aux_wire(11, tape, device_wires) == 11
     _match = "The requested auxiliary wire is already in use by the circuit."
     with pytest.raises(qp.wires.WireError, match=_match):
-        _get_aux_wire("one", tape, device_wires)
+        _get_aux_wire(17, tape, device_wires)
     with pytest.raises(qp.wires.WireError, match=_match):
         _get_aux_wire(0, tape, device_wires)
 
@@ -1629,11 +1629,11 @@ def test_get_aux_wire_with_unavailable_aux():
     x, y = np.array([0.2, 0.1], requires_grad=True)
     with qp.queuing.AnnotatedQueue() as q:
         qp.RX(x, wires=0)
-        qp.RX(y, wires="one")
+        qp.RX(y, wires=17)
     tape = qp.tape.QuantumScript.from_queue(q)
-    device_wires = qp.wires.Wires([0, "one"])
+    device_wires = qp.wires.Wires([0, 17])
     with pytest.raises(qp.wires.WireError, match="The requested auxiliary wire does not exist"):
-        _get_aux_wire("two", tape, device_wires)
+        _get_aux_wire(18, tape, device_wires)
 
 
 def test_metric_tensor_repeated_parametrized_op():

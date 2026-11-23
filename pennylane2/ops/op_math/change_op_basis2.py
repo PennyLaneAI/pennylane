@@ -29,7 +29,8 @@ from pennylane2.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane2.ops.op_math import adjoint, ctrl
-from pennylane2.ops.op_math.adjoint import _adjoint_eager
+from pennylane2.ops.op_math.adjoint import Adjoint, _adjoint_eager
+from pennylane2.ops.op_math.adjoint2 import Adjoint2
 from pennylane2.ops.op_math.controlled2 import flip_zero_control
 from pennylane2.typing import Bool
 
@@ -128,9 +129,9 @@ class ChangeOpBasis2(CompositeOp2):
 
     def adjoint(self):
         return ChangeOpBasis2(
-            self.compute_op,
+            _adjoint_eager(self.uncompute_op, update_queue=True),
             _adjoint_eager(self.target_op, update_queue=True),
-            self.uncompute_op,
+            _adjoint_eager(self.compute_op, update_queue=True),
         )
 
     @handle_recursion_error
@@ -237,19 +238,24 @@ add_decomps(ChangeOpBasis2, _change_op_basis_decomp)
 add_decomps("C(ChangeOpBasis2)", flip_zero_control(_controlled_change_op_basis_decomposition))
 
 
+def _inverse(op):
+    """Invert an operand, unwrapping an existing adjoint instead of nesting another one."""
+    if isinstance(op, (Adjoint, Adjoint2)):
+        return op.base
+    return adjoint(op)
+
+
 def _adjoint_change_op_basis_resources(base):
-    resources = Counter()
-    resources[base.compute_op] += 1
-    resources[adjoint(base.target_op)] += 1
-    resources[base.uncompute_op] += 1
-    return dict(resources)
+    return {
+        _change_op_basis_abstract(
+            _inverse(base.uncompute_op), adjoint(base.target_op), _inverse(base.compute_op)
+        ): 1
+    }
 
 
 @register_resources(_adjoint_change_op_basis_resources)
 def _adjoint_change_op_basis_decomp(base):
-    apply(base.compute_op)
-    adjoint(base.target_op)
-    apply(base.uncompute_op)
+    ChangeOpBasis2(_inverse(base.uncompute_op), adjoint(base.target_op), _inverse(base.compute_op))
 
 
 add_decomps("Adjoint(ChangeOpBasis2)", _adjoint_change_op_basis_decomp)

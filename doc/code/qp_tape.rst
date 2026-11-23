@@ -97,4 +97,3 @@ Quantum tape
 
     ~QuantumTape
     ~QuantumTapeBatch
-    ~OperationRecorder

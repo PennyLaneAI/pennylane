@@ -25,6 +25,7 @@ from pennylane2.core import queuing
 from pennylane2.core.apply import apply
 from pennylane2.core.operator import Operator, Operator2, abstractify
 from pennylane2.decomposition import add_decomps, register_resources
+from pennylane2.decomposition.resources import CompressedResourceOp, resource_rep
 from pennylane2.exceptions import (
     DiagGatesUndefinedError,
     EigvalsUndefinedError,
@@ -32,8 +33,8 @@ from pennylane2.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane2.ops.op_math import adjoint, ctrl, prod
-from pennylane2.ops.op_math.adjoint import _adjoint_eager
-from pennylane2.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane2.ops.op_math.adjoint import Adjoint, _adjoint_eager
+from pennylane2.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
 from pennylane2.ops.op_math.change_op_basis2 import ChangeOpBasis2
 from pennylane2.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane2.pytrees import flatten, unflatten
@@ -379,20 +380,29 @@ def _change_op_basis_resources(compute_op, target_op, uncompute_op):
     return resources
 
 
+def _inverse_abstract(op):
+    """Abstract inverse of an operand, unwrapping an existing adjoint instead of nesting another one."""
+    if isinstance(op, CompressedResourceOp) and issubclass(op.op_type, Adjoint):
+        return resource_rep(op.params["base_class"], **op.params["base_params"])
+    if isinstance(op, Adjoint2):
+        return op.base
+    return _adjoint_abstract(op)
+
+
 def _adjoint_change_op_basis_resources(base_params, **_):
     resources = defaultdict(int)
-    resources[base_params["compute_op"]] += 1
-    resources[base_params["uncompute_op"]] += 1
-    target_op = base_params["target_op"]
-    resources[_adjoint_abstract(target_op)] += 1
+    for name in ("uncompute_op", "target_op", "compute_op"):
+        resources[_inverse_abstract(base_params[name])] += 1
     return resources
 
 
 @register_resources(_adjoint_change_op_basis_resources)
 def _adjoint_change_op_basis_decomp(*_, base, **__):
-    apply(base.operands[2])
-    adjoint(apply(base.operands[1]))
-    apply(base.operands[0])
+    for op in base.operands:
+        if isinstance(op, (Adjoint, Adjoint2)):
+            apply(op.base)
+        else:
+            adjoint(apply(op))
 
 
 add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
