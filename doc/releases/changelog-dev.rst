@@ -4,6 +4,11 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* The new :class:`~.DoubleBasisRotation` applies the same :class:`~.BasisRotation` to two
+  registers, such as the spin-up and spin-down wires. Its decompositions can apply each shared
+  Givens rotation as one :class:`~.GivensPair`.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * The new :class:`~.GivensPair` applies the same :class:`~.SingleExcitation` to two pairs of
   wires, such as a spin-up and a spin-down pair. Its decomposition can apply the shared angle with
   one :class:`~.RZLayer`.

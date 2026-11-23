@@ -22,3 +22,4 @@ from .kupccgsd import kUpCCGSD
 from .uccsd import UCCSD
 from .basis_rotation import BasisRotation
 from .givens_pair import GivensPair
+from .double_basis_rotation import DoubleBasisRotation

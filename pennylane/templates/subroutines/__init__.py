@@ -71,6 +71,7 @@ from .qchem import (
     kUpCCGSD,
     BasisRotation,
     GivensPair,
+    DoubleBasisRotation,
 )
 from .arithmetic import (
     PhaseAdder,
@@ -117,6 +118,7 @@ __all__ = [
     "FlipSign",
     "BasisRotation",
     "GivensPair",
+    "DoubleBasisRotation",
     "QuantumMonteCarlo",
     "FABLE",
     "FFFT",
