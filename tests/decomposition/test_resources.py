@@ -28,8 +28,8 @@ from pennylane.decomposition.resources import (
     pow_resource_rep,
     resource_rep,
 )
-from pennylane.decomposition_rules.op_math.adjoint2 import _adjoint_abstract
-from pennylane.decomposition_rules.op_math.pow2 import _pow_abstract
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.pow2 import _pow_abstract
 from pennylane.typing import Bool, Float, Wire
 
 

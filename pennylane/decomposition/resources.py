@@ -325,7 +325,7 @@ def change_op_basis_resource_rep(
 
     """
     # pylint: disable-next=import-outside-toplevel
-    from pennylane.decomposition_rules.op_math.adjoint2 import _adjoint_abstract
+    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 
     compute_op = abstractify(compute_op)
     target_op = abstractify(target_op)
