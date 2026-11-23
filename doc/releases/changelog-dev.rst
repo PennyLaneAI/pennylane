@@ -25,7 +25,7 @@ New features since last release
 * :func:`~.transforms.decompositions.make_rzlayer_to_phase_gradient_decomp` creates a phase
   gradient decomposition rule for :class:`~.RZLayer`, which needs a single adder for each block
   with an even number of wires, or for each batch of ``batch_size`` distinct angles.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10577) <https://github.com/PennyLaneAI/pennylane/pull/10577>`__
 
 * A new decomposition rule for :class:`~.RZLayer`, ``_rzlayer_hwp_synthesis``, uses Hamming-weight
   phasing to apply :math:`\lfloor \log_2 m \rfloor + 1` rotations instead of :math:`m` to each
