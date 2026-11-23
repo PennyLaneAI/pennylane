@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for op_math.controlled."""
 
 from __future__ import annotations
@@ -40,7 +41,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         base_params, num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, **_
     ):
 
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable-next=import-outside-toplevel
         from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 
         base_resources = base_decomposition.compute_resources(**base_params)
@@ -58,14 +59,14 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         gate_counts[abstractify(qp.PauliX)] = num_zero_control_values * 2
         return gate_counts
 
-    # pylint: disable=protected-access,too-many-arguments
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
-        work_wires=base_decomposition._work_wire_spec,
+        work_wires=base_decomposition._work_wire_spec,  # pylint: disable=protected-access
         exact=base_decomposition.exact_resources,
         name=f"controlled({base_decomposition.name})",
     )
+    # pylint: disable-next=too-many-arguments
     def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
         zero_control_wires = [
             w for w, val in zip(control_wires, control_values, strict=True) if not val
@@ -110,11 +111,10 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
         gate_counts[abstractify(qp.X)] = gate_counts.get(abstractify(qp.X), 0) + num_x * 2
         return gate_counts
 
-    # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
-        work_wires=inner_decomp._work_wire_spec,
+        work_wires=inner_decomp._work_wire_spec,  # pylint: disable=protected-access
         exact=inner_decomp.exact_resources,
         name=name or f"flip_zero_ctrl_values({inner_decomp.name})",
     )
@@ -143,15 +143,14 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
     return _impl
 
 
-def _flip_control_adjoint_resource(
+def _controlled_flip_adjoint_resources(  # pylint: disable=too-many-arguments,unused-argument
     base_class,
     base_params,
     num_control_wires,
     num_zero_control_values,
     num_work_wires,
     work_wire_type,
-):  # pylint: disable=too-many-arguments
-    del base_class
+):
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
     inner_rep = controlled_resource_rep(
@@ -165,9 +164,8 @@ def _flip_control_adjoint_resource(
     return {adjoint_resource_rep(inner_rep.op_type, inner_rep.params): 1}
 
 
-# pylint: disable=too-many-arguments
-@register_resources(_flip_control_adjoint_resource)
-def flip_control_adjoint(
+@register_resources(_controlled_flip_adjoint_resources, name="flip_adjoint")
+def _controlled_flip_adjoint(  # pylint: disable=too-many-arguments
     *_, wires, control_wires, control_values, work_wires, work_wire_type, base, **__
 ):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
@@ -183,17 +181,19 @@ def flip_control_adjoint(
     )
 
 
-def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, **__):
+def _controlled_single_work_wire_resources(base_class, base_params, num_control_wires, **__):
     return {
         qp.MultiControlledX(Wire[num_control_wires + 1]): 2,
         controlled_resource_rep(base_class, base_params, 1): 1,
     }
 
 
-# pylint: disable=protected-access,unused-argument
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
-@register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
-def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
+@register_resources(
+    _controlled_single_work_wire_resources, work_wires={"zeroed": 1}, name="single_work_wire"
+)
+# pylint: disable-next=unused-argument
+def _controlled_single_work_wire(*params, wires, control_wires, base, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     with allocation.allocate(1, state="zero", restored=True) as work_wires:
         qp.MultiControlledX([*control_wires, work_wires[0]])
@@ -201,15 +201,19 @@ def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
         qp.MultiControlledX([*control_wires, work_wires[0]])
 
 
-ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire)
+ctrl_single_work_wire = flip_zero_control(_controlled_single_work_wire, name="single_work_wire")
 
 
 def _to_controlled_qu_condition(base_class, **__):
     return base_class.has_matrix and base_class.num_wires == 1
 
 
-def _to_controlled_qu_resource(
-    num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, **__
+def _controlled_to_unitary_resources(  # pylint: disable=unused-argument
+    num_control_wires,
+    num_zero_control_values,
+    num_work_wires,
+    work_wire_type,
+    **__,
 ):
     return {
         qp.ControlledQubitUnitary(
@@ -223,8 +227,8 @@ def _to_controlled_qu_resource(
 
 
 @register_condition(_to_controlled_qu_condition)
-@register_resources(_to_controlled_qu_resource)
-def to_controlled_qubit_unitary(*_, wires, control_values, work_wires, work_wire_type, base, **__):
+@register_resources(_controlled_to_unitary_resources, name="to_unitary")
+def _controlled_to_unitary(*_, wires, control_values, work_wires, work_wire_type, base, **__):
     """Convert a controlled operator to a controlled qubit unitary."""
     matrix = base.matrix()
     qp.ControlledQubitUnitary(

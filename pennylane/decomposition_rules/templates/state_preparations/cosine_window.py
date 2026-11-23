@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.state_preparations.cosine_window."""
 
 import numpy as np
@@ -25,7 +26,7 @@ from pennylane.templates.state_preparations.cosine_window import CosineWindow
 from pennylane.typing import Wire
 
 
-def _cosine_window_resources(num_wires):
+def _cosine_window_standard_resources(num_wires):
     return {
         qp.Hadamard: 1,
         qp.RZ: 1,
@@ -34,8 +35,8 @@ def _cosine_window_resources(num_wires):
     }
 
 
-@register_resources(_cosine_window_resources)
-def _cosine_window_decomposition(wires, **_):
+@register_resources(_cosine_window_standard_resources, name="inverse_qft")
+def _cosine_window_standard(wires, **_):
     qp.Hadamard(wires=wires[-1])
     qp.RZ(np.pi, wires=wires[-1])
     qp.adjoint(qp.QFT)(wires=wires)
@@ -51,4 +52,4 @@ def _cosine_window_decomposition(wires, **_):
     wires_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(CosineWindow, _cosine_window_decomposition)
+add_decomps(CosineWindow, _cosine_window_standard)

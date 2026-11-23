@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for op_math.pow."""
 
 from __future__ import annotations
@@ -29,21 +30,23 @@ from pennylane.decomposition.resources import adjoint_resource_rep, pow_resource
 from pennylane.decomposition.symbolic_decomposition import is_integer
 
 
-# pylint: disable=protected-access,unused-argument
 @register_condition(lambda z, **__: is_integer(z) and z >= 0)
-@register_resources(lambda base_class, base_params, z: {resource_rep(base_class, **base_params): z})
-def repeat_pow_base(*params, wires, base, z, **__):
+@register_resources(
+    lambda base_class, base_params, z: {resource_rep(base_class, **base_params): z},
+    name="repeat_base",
+)
+def _pow_repeat_base(*params, wires, base, z, **__):  # pylint: disable=unused-argument
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
 
     @qp.for_loop(0, z)
-    def _loop(i):
+    def _loop(i):  # pylint: disable=unused-argument
         qp.apply(base)
 
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-def _merge_powers_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+def _pow_merge_powers_resources(base_class, base_params, z):  # pylint: disable=unused-argument
     return {
         pow_resource_rep(
             base_params["base_class"],
@@ -53,14 +56,13 @@ def _merge_powers_resource(base_class, base_params, z):  # pylint: disable=unuse
     }
 
 
-# pylint: disable=protected-access,unused-argument
-@register_resources(_merge_powers_resource)
-def merge_powers(*params, wires, base, z, **__):
+@register_resources(_pow_merge_powers_resources, name="merge_powers")
+def _pow_merge_powers(*params, wires, base, z, **__):  # pylint: disable=unused-argument
     """Decompose nested powers by combining them."""
     qp.pow(base.base, z * base.z)
 
 
-def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+def _pow_flip_adjoint_resources(base_class, base_params, z):  # pylint: disable=unused-argument
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
     return {
@@ -70,9 +72,8 @@ def _flip_pow_adjoint_resource(base_class, base_params, z):  # pylint: disable=u
     }
 
 
-# pylint: disable=protected-access,unused-argument
-@register_resources(_flip_pow_adjoint_resource)
-def flip_pow_adjoint(*params, wires, base, z, **__):
+@register_resources(_pow_flip_adjoint_resources, name="flip_adjoint")
+def _pow_flip_adjoint(*params, wires, base, z, **__):  # pylint: disable=unused-argument
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
     qp.adjoint(qp.pow(base.base, z))
@@ -84,7 +85,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
     def _condition_fn(base_class, base_params, z):  # pylint: disable=unused-argument
         return math.shape(z) == () and z % period != z
 
-    def _resource_fn(base_class, base_params, z):
+    def _pow_reduce_period_resources(base_class, base_params, z):
         z_mod_period = z % period
         if z_mod_period == 0:
             return {}
@@ -95,26 +96,25 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
         return {pow_resource_rep(base_class, base_params, z_mod_period): 1}
 
     @register_condition(_condition_fn)
-    @register_resources(_resource_fn)
-    def _impl(*params, wires, base, z, **__):  # pylint: disable=unused-argument
+    @register_resources(_pow_reduce_period_resources, name="reduce_period")
+    def _pow_reduce_period(*params, wires, base, z, **__):  # pylint: disable=unused-argument
         z_mod_period = z % period
         if z_mod_period == 1:
             qp.apply(base)
         elif z_mod_period > 0 and z_mod_period != period:
             qp.pow(base, z_mod_period)
 
-    return _impl
+    return _pow_reduce_period
 
 
 pow_involutory = make_pow_decomp_with_period(2)
 
 
-def _pow_rotation_resource(base_class, base_params, z):  # pylint: disable=unused-argument
+def _pow_scale_angle_resources(base_class, base_params, z):  # pylint: disable=unused-argument
     return {resource_rep(base_class, **base_params): 1}
 
 
-# pylint: disable=protected-access,unused-argument
-@register_resources(_pow_rotation_resource)
-def pow_rotation(phi, wires, base, z, **__):
+@register_resources(_pow_scale_angle_resources, name="scale_angle")
+def _pow_scale_angle(phi, wires, base, z, **__):  # pylint: disable=unused-argument
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
     qp.ops.functions.bind_new_parameters(base, (phi * z,))

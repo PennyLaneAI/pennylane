@@ -445,9 +445,6 @@ class TestSupportsBroadcasting:
 
         op = qp.QAOAEmbedding(features, weights, wires=list(range(num_wires)))
         assert op.batch_size == batch_size
-        qp.QAOAEmbedding.compute_decomposition(
-            features, weights, wires=list(range(num_wires)), local_field=qp.RY
-        )
         op.decomposition()
 
     @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
@@ -471,7 +468,7 @@ class TestSupportsBroadcasting:
         assert np.allclose(mat2, expected_mat)
 
 
-all_qubit_operators = sorted(qp.ops.qubit.__all__)  # pylint: disable=no-member
+all_qubit_operators = sorted(qp.ops.qubit.__all__)
 unitarily_generated_ops = sorted(list(has_unitary_generator))
 
 

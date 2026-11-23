@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.state_preparations.partial_unary."""
 
 from collections import Counter, defaultdict
@@ -141,11 +142,10 @@ def _find_affine_subspace_isometry(basis_states, n_qubits, n_subspace):
     return circuit, bijection
 
 
-def _partial_unary_state_prep_resources(coefficients, wires, indices, work_wires):
+def _partial_unary_state_prep_standard_resources(coefficients, wires, indices, work_wires):
     """Compute the resources for the partial unary iteration state preparation technique.
     These resource counts are numerically obtained heuristics, extended to guarantee all
     resource reps that may appear are included at least once."""
-    # pylint: disable=unused-argument
     num_entries = len(indices)
     num_wires = 1 if isinstance(wires, int) else len(wires)
     if num_entries == 1:
@@ -335,7 +335,6 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
         Each branch of the conditional then reads out only the entries it needs, and discards
         the padded zeros. The data type of the array depends on the number of qubits :math:`n`.
         """
-        # pylint: disable=cell-var-from-loop
 
         _type, *data = circuit[i]
 
@@ -413,8 +412,8 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
     main_loop()  # pylint: disable=no-value-for-parameter
 
 
-def _partial_unary_state_prep_work_wires(coefficients, wires, indices, work_wires):
-    # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _partial_unary_state_prep_standard_work_wires(coefficients, wires, indices, work_wires):
     work_wires = [] if work_wires is None else list(work_wires)
     num_entries = len(indices)
     is_affine = _is_affine_subspace(indices, max(math.ceil_log2(num_entries), 1))
@@ -426,18 +425,19 @@ def _partial_unary_state_prep_work_wires(coefficients, wires, indices, work_wire
 
 
 @qp.register_resources(
-    _partial_unary_state_prep_resources,
-    work_wires=_partial_unary_state_prep_work_wires,
+    _partial_unary_state_prep_standard_resources,
+    work_wires=_partial_unary_state_prep_standard_work_wires,
     exact=False,
+    name="partial_unary_isometry",
 )
-def _partial_unary_state_prep(coefficients, wires, indices, work_wires):
+def _partial_unary_state_prep_standard(coefficients, wires, indices, work_wires):
     """Compute the decomposition of the partial unary iteration state preparation technique.
 
     Dynamically allocates any work wires still missing after the ones passed to
     ``PartialUnaryStatePreparation``. Allocating zero wires records no operators.
     """
     work_wires = [] if work_wires is None else list(work_wires)
-    need_to_allocate = _partial_unary_state_prep_work_wires(
+    need_to_allocate = _partial_unary_state_prep_standard_work_wires(
         coefficients, wires, indices, work_wires
     )["zeroed"]
     with allocate(need_to_allocate, state="zero", restored=True) as extra_work_wires:
@@ -445,4 +445,4 @@ def _partial_unary_state_prep(coefficients, wires, indices, work_wires):
         _partial_unary_state_prep_core(coefficients, wires, indices, work_wires)
 
 
-qp.add_decomps(PartialUnaryStatePreparation, _partial_unary_state_prep)
+qp.add_decomps(PartialUnaryStatePreparation, _partial_unary_state_prep_standard)

@@ -22,7 +22,9 @@ variants selected by the ``double_phase`` flag: the default (``False``) genuine 
 unitary and the (``True``) double-phase Hadamard-test circuit of Fig. 6 of arXiv:2506.15784.
 """
 
-# pylint: disable=too-many-arguments, redefined-outer-name, too-few-public-methods, wrong-import-position, protected-access
+# pylint: disable=redefined-outer-name,wrong-import-position
+
+
 import itertools
 import warnings
 
@@ -38,17 +40,17 @@ from pennylane.decomposition.resources import Resources
 from pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cgf import (
     _apply_system_basis_rotation,
     _cgf_resource_counts,
-    _controlled_trotter_cgf_decomp,
+    _controlled_trotter_cgf_standard,
     _energy_shift,
     _merge_leaves,
-    _trotter_cgf_decomposition,
+    _trotter_cgf_standard,
 )
 from pennylane.exceptions import CaptureWarning
 from pennylane.numeric_hamiltonians import CGFHamiltonian
 from pennylane.testing import assert_decomposable
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
-from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  # pylint: disable=no-name-in-module
+from tests.templates.subroutines.time_evolution.trotter_test_helpers import (
     CATALYST_GATE_SET_DOUBLE_PHASE,
     CATALYST_GATE_SET_GENUINE,
     _single_z,
@@ -334,7 +336,6 @@ class TestResourceRule:
         )
         assert resources == Resources({})
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_zero_steps_empty_decomposition(self, toy_hamiltonian_cgf_concrete):
         """Test that C(TrotterCGF) with zero steps emits no gates."""
         ham, num_modes, n_states = toy_hamiltonian_cgf_concrete
@@ -365,11 +366,11 @@ class TestResourceRule:
         def circuit(t, *wires):
             system_wires = list(wires[:num_system_wires])
             if not has_control:
-                _trotter_cgf_decomposition(t, num_steps, ham, system_wires, False)
+                _trotter_cgf_standard(t, num_steps, ham, system_wires, False)
                 return
             with qp.capture.pause():
                 base = qp.TrotterCGF(t, num_steps, ham, system_wires, double_phase=double_phase)
-            _controlled_trotter_cgf_decomp(
+            _controlled_trotter_cgf_standard(
                 base, list(wires[num_system_wires:]), [1], [], "borrowed"
             )
 
@@ -417,7 +418,7 @@ class TestDecomposition:
         ham = CGFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.0)
         wires = list(range(num_modes * n_states))
 
-        tape = qp.tape.make_qscript(_trotter_cgf_decomposition)(
+        tape = qp.tape.make_qscript(_trotter_cgf_standard)(
             evolution_time, num_steps, ham, wires, False
         )
         angles = np.array([op.data[0] for op in tape.operations if isinstance(op, qp.IsingZZ)])
@@ -588,7 +589,6 @@ class TestDecomposition:
         assert np.allclose(u[np.ix_(~mask, physical)], 0.0, atol=1e-12)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestControlledDecomposition:
     """Tests for the default (genuine) C(TrotterCGF) controlled decomposition."""
 
@@ -648,7 +648,6 @@ class TestControlledDecomposition:
         assert np.allclose(block1, expected, atol=1e-9)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestDoublePhaseControlledDecomposition:
     """Tests for the opt-in double-phase (Fig. 6) C(TrotterCGF) controlled decomposition."""
 
@@ -719,7 +718,6 @@ class TestDoublePhaseControlledDecomposition:
 class TestIntegration:
     """Integration tests via the graph-based decomposition system."""
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("t, num_steps", [(1.0, 0), (0.0, 10)])
     def test_identity_edge_cases(self, toy_hamiltonian_cgf_concrete, t, num_steps):
         """Test that zero Trotter steps, or zero evolution time, produce the identity."""
@@ -754,8 +752,7 @@ class TestIntegration:
         registers = qp.registers({"hadamard": 1, "system": M * N})
 
         @qp.qjit(capture=False)
-        # pylint: disable-next=protected-access
-        @qp.transforms._tape_decompose(gate_set=target_gates)
+        @qp.transforms._tape_decompose(gate_set=target_gates)  # pylint: disable=protected-access
         @qp.qnode(qp.device("lightning.qubit"))
         def trotter_circuit():
             qp.H(registers["hadamard"])

@@ -15,6 +15,8 @@ r"""
 Contains the ControlledSequence template.
 """
 
+from importlib import import_module as _import_module
+
 from pennylane.ops.op_math import SymbolicOp2
 from pennylane.wires import Wires, validate_no_wire_overlaps
 
@@ -43,23 +45,44 @@ class ControlledSequence(SymbolicOp2):
 
     .. seealso:: :class:`~.QuantumPhaseEstimation`
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.ControlledSequence
+            :stacked:
+            :symbols: :math:`U=` ``base`` and :math:`n` control wires
+            :example: :math:`n=3`
+
+            .. decomposition-rule:: controlled_powers
+                :image: /_static/decomposition_thumbnails/controlled_sequence_powers.svg
+                :where: Powers are simplified eagerly when the base operator supports it.
+
+                :math:`U^{2^k}` with 1 control | :math:`n` (one per :math:`k < n`) | 3
+
+            .. decomposition-rule:: looped_controlled_repetitions
+                :image: /_static/decomposition_thumbnails/controlled_sequence_repetitions.svg
+                :where: Nested loops keep the circuit representation compact. The image shows
+                    the operations executed for three control wires.
+
+                :math:`U` with 1 control | :math:`2^n - 1` | 7
+
     **Examples**
 
     .. code-block:: python
 
         dev = qp.device("default.qubit")
 
-        @qp.transforms._tape_decompose(max_expansion=1)
+        @qp.transforms._tape_decompose(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1)
         @qp.qnode(dev)
         def circuit():
             qp.ControlledSequence(qp.RX(0.25, wires = 3), control = [0, 1, 2])
             return qp.state()
 
     >>> print(qp.draw(circuit, wire_order=[0,1,2,3])())
-    0: ─╭●────────╭●────────╭●────────╭●──────────────────────────────────────┤ ╭State
-    1: ─│─────────│─────────│─────────│─────────╭●────────╭●──────────────────┤ ├State
-    2: ─│─────────│─────────│─────────│─────────│─────────│─────────╭●────────┤ ├State
-    3: ─╰RX(0.25)─╰RX(0.25)─╰RX(0.25)─╰RX(0.25)─╰RX(0.25)─╰RX(0.25)─╰RX(0.25)─┤ ╰State
+    0: ─╭●────────────────────────────┤ ╭State
+    1: ─│─────────╭●──────────────────┤ ├State
+    2: ─│─────────│─────────╭●────────┤ ├State
+    3: ─╰RX(1.00)─╰RX(0.50)─╰RX(0.25)─┤ ╰State
 
 
     .. code-block:: python
@@ -133,3 +156,18 @@ class ControlledSequence(SymbolicOp2):
 
     def __repr__(self):
         return f"ControlledSequence({self.base}, control={list(self.control)})"
+
+
+_RULE_MODULES = {
+    "_ctrl_seq_execution_optimized_decomposition_resources": "pennylane.decomposition_rules.templates.subroutines.controlled_sequence",
+    "_ctrl_seq_execution_optimized_decomposition": "pennylane.decomposition_rules.templates.subroutines.controlled_sequence",
+    "_ctrl_seq_ir_optimized_resources": "pennylane.decomposition_rules.templates.subroutines.controlled_sequence",
+    "_ctrl_seq_ir_optimized_decomposition": "pennylane.decomposition_rules.templates.subroutines.controlled_sequence",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

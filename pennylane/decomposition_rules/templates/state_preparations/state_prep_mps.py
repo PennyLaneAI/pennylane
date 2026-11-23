@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.state_preparations.state_prep_mps."""
 
 import numpy as np
@@ -22,9 +23,8 @@ from pennylane.templates.state_preparations.state_prep_mps import MPSPrep, right
 from pennylane.typing import Complex, Wire
 
 
-def _mps_prep_decomposition_resources(
-    mps, wires, work_wires=None, right_canonicalize=False
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _mps_prep_standard_resources(mps, wires, work_wires=None, right_canonicalize=False):
     num_work_wires = len(work_wires)
     num_sites = len(mps)
     return {
@@ -35,9 +35,8 @@ def _mps_prep_decomposition_resources(
     }
 
 
-def _work_wires_bond_dimension_condition(
-    mps, wires, work_wires=None, right_canonicalize=False
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _work_wires_bond_dimension_condition(mps, wires, work_wires=None, right_canonicalize=False):
     bond_dimensions = [data.shape[-1] for data in mps]
     max_bond_dimension = max(bond_dimensions[:-1])
 
@@ -49,8 +48,8 @@ def _work_wires_bond_dimension_condition(
 
 
 @qp.register_condition(_work_wires_bond_dimension_condition)
-@register_resources(_mps_prep_decomposition_resources)
-def _mps_prep_decomposition(mps, wires, work_wires=None, right_canonicalize=False):
+@register_resources(_mps_prep_standard_resources, name="sequential_unitaries")
+def _mps_prep_standard(mps, wires, work_wires=None, right_canonicalize=False):
     mps = list(mps)
 
     n_wires = len(work_wires) + 1
@@ -95,4 +94,4 @@ def _mps_prep_decomposition(mps, wires, work_wires=None, right_canonicalize=Fals
         qp.QubitUnitary(unitary_matrix, wires=[wires[i], *work_wires])
 
 
-add_decomps(MPSPrep, _mps_prep_decomposition)
+add_decomps(MPSPrep, _mps_prep_standard)

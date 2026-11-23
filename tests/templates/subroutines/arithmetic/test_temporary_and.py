@@ -21,8 +21,8 @@ import pytest
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and import (
-    _adjoint_temporary_and,
-    _adjoint_temporary_and_ppm,
+    _adjoint_temporary_and_measurement,
+    _adjoint_temporary_and_to_ppm,
     _adjoint_temporary_and_to_toffoli,
 )
 from pennylane.testing import assert_valid_decomp_rule
@@ -30,7 +30,7 @@ from pennylane.typing import Bool, Wire
 
 expected_adjoint_temporary_and_rule_ops = [
     (
-        _adjoint_temporary_and,
+        _adjoint_temporary_and_measurement,
         [
             "H(2)",
             "MidMeasure(wires=[2], postselect=None, reset=True)",
@@ -39,7 +39,7 @@ expected_adjoint_temporary_and_rule_ops = [
     ),
     (_adjoint_temporary_and_to_toffoli, ["Toffoli(wires=[0, 1, 2])"]),
     (
-        _adjoint_temporary_and_ppm,
+        _adjoint_temporary_and_to_ppm,
         [
             "PauliMeasure('X', wires=[2])",
             "Conditional(CZ)(wires=[0, 1])",
@@ -187,12 +187,23 @@ class TestTemporaryAND:
                 matrix = qp.matrix(rule, wire_order=wires)(wires, control_values=cvals)
             self.compare_to_toffoli_on_zero(matrix, "input", cvals)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_basis_subcircuit(self):
+        """Test that the compute subcircuit has registered resources and its own decomposition."""
+        op = qp.TemporaryAND([5, 2, 7])
+        rule = qp.list_decomps(qp.TemporaryAND)[0]
+        tape = qp.testing.decomp_rule_to_tape(op, rule)
+        sandwich = next(gate for gate in tape.operations if isinstance(gate, qp.ops.ChangeOpBasis2))
+        assert not isinstance(sandwich.compute_op, qp.ops.Prod2)
+        qp.testing.assert_valid(sandwich.compute_op)
+        qp.testing.assert_decomposable(sandwich.uncompute_op)
+
     @pytest.mark.parametrize("rule", qp.list_decomps("Adjoint(TemporaryAND)"))
     @pytest.mark.parametrize("control_values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_adjoint_temporary_and_decomposition(self, control_values, rule, seed):
         """Validate various decompositions of Adjoint(TemporaryAND), excluding the PPM-based rule,
         which is tested in test_adjoint_temporary_and_ppm_decomposition below."""
-        if rule == _adjoint_temporary_and_ppm:
+        if rule == _adjoint_temporary_and_to_ppm:
             pytest.skip(
                 reason=(
                     "The PPM-based decomposition requires special handling and is tested separately "
@@ -235,7 +246,7 @@ class TestTemporaryAND:
             # Prepare control state
             qp.StatePrep(state, wires=sys_wires[:2])
             op = qp.TemporaryAND(wires=sys_wires, control_values=control_values)
-            _adjoint_temporary_and_ppm(op)
+            _adjoint_temporary_and_to_ppm(op)
             qp.adjoint(qp.MottonenStatePreparation.compute_decomposition)(
                 state, wires=sys_wires[:2]
             )
@@ -261,7 +272,6 @@ class TestTemporaryAND:
     @pytest.mark.parametrize(
         "rule, expected_ops_per_elbow", expected_adjoint_temporary_and_rule_ops
     )
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_adjoint_temporary_and_decomposition_ops(self, rule, expected_ops_per_elbow):
         """Test that the expected operators are produced by a fixed decomposition of
         Adjoint(TemporaryAND)."""
@@ -271,8 +281,7 @@ class TestTemporaryAND:
 
         @qp.set_shots(1)
         @qp.qnode(qp.device("default.qubit", wires=wires))
-        # pylint: disable-next=protected-access
-        @qp.transforms._tape_decompose(
+        @qp.transforms._tape_decompose(  # pylint: disable=protected-access
             gate_set=gate_set,
             fixed_decomps={"Adjoint(TemporaryAND)": rule},
         )
@@ -349,7 +358,6 @@ class TestTemporaryAND:
 
         assert qp.math.allclose(circuit(), jit_circuit())
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize("cvals", [(0, 0), (0, 1), (1, 1), (True, False)])
     def test_jax_qjit_control_values(self, cvals):

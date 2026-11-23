@@ -13,13 +13,14 @@
 # limitations under the License.
 """Block-encoding of a one-body operator."""
 
+from importlib import import_module as _import_module
+
 import numpy as np
 
 from pennylane.core.operator import Operator2
+from pennylane.templates.subroutines.alias_sampling import alias_sampling_wires
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
-
-from .alias_sampling import alias_sampling_wires
 
 
 def one_body_block_encoding_wires(norbs, alias_sampling_nbits):
@@ -205,7 +206,7 @@ class OneBodyBlockEncoding(Operator2):
                 eigenvalues of ``op_matrix``
             :example: the operator above with ``alias_sampling_nbits=1``, :math:`K=2`, :math:`\nu=1`
 
-            .. decomposition-rule:: _one_body_block_encoding_decomp
+            .. decomposition-rule:: alias_sampling_basis_rotation
                 :image: /_static/decomposition_thumbnails/one_body_block_encoding_lcu.svg
                 :where: :math:`\delta = 1` if :math:`\nu > 0` and :math:`\delta = 0` otherwise
 
@@ -236,7 +237,7 @@ class OneBodyBlockEncoding(Operator2):
         prep_wires: WiresLike,
         system_wires: WiresLike,
         work_wires: WiresLike,
-    ):  # pylint: disable=too-many-arguments
+    ):
         _validate_op_matrix(op_matrix)
         norbs = len(op_matrix)
 
@@ -282,3 +283,18 @@ class OneBodyBlockEncoding(Operator2):
         )
 
         super().__init__(op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires)
+
+
+_RULE_MODULES = {
+    "_block_encoding_data": "pennylane.decomposition_rules.templates.subroutines.one_body_block_encoding",
+    "_split_prep_wires": "pennylane.decomposition_rules.templates.subroutines.one_body_block_encoding",
+    "_one_body_block_encoding_standard_resources": "pennylane.decomposition_rules.templates.subroutines.one_body_block_encoding",
+    "_one_body_block_encoding_standard": "pennylane.decomposition_rules.templates.subroutines.one_body_block_encoding",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

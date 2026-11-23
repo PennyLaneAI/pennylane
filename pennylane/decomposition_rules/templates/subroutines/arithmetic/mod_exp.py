@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.arithmetic.mod_exp."""
 
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
@@ -22,7 +23,7 @@ from pennylane.typing import Wire
 from pennylane.wires import WiresLike
 
 
-def _mod_exp_decomposition_resources(num_x_wires, num_output_wires, mod, num_work_wires) -> dict:
+def _mod_exp_standard_resources(num_x_wires, num_output_wires, mod, num_work_wires) -> dict:
     return {
         ControlledSequence(
             base=resource_rep(
@@ -33,11 +34,9 @@ def _mod_exp_decomposition_resources(num_x_wires, num_output_wires, mod, num_wor
     }
 
 
-@register_resources(_mod_exp_decomposition_resources)
-def _mod_exp_decomposition(
-    x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike, **__
-):
+@register_resources(_mod_exp_standard_resources, name="controlled_multipliers")
+def _mod_exp_standard(x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike, **__):
     ControlledSequence(Multiplier(base, output_wires, mod, work_wires), control=x_wires)
 
 
-add_decomps(ModExp, _mod_exp_decomposition)
+add_decomps(ModExp, _mod_exp_standard)

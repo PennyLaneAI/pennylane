@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Built-in decomposition rules for templates.subroutines.time_evolution.commuting_evolution."""
 
-# pylint: disable-msg=too-many-arguments
+"""Built-in decomposition rules for templates.subroutines.time_evolution.commuting_evolution."""
 
 from pennylane import capture, ops
 from pennylane.core.apply import apply
@@ -27,14 +26,18 @@ from pennylane.templates.subroutines.time_evolution.commuting_evolution import C
 from pennylane.wires import WiresLike
 
 
-def _commuting_evolution_resources(words: tuple[PauliWord]):
+def _commuting_evolution_standard_resources(words: tuple[PauliWord]):
     return {resource_rep(ApproxTimeEvolution, words=words, n=1): 1}
 
 
-@register_resources(_commuting_evolution_resources)
-def _commuting_evolution_decomposition(
-    time: list, *_, wires: WiresLike, hamiltonian: Hamiltonian, **__
-):  # pylint: disable=unused-argument
+@register_resources(_commuting_evolution_standard_resources, name="to_approx_time_evolution")
+def _commuting_evolution_standard(  # pylint: disable=unused-argument
+    time: list,
+    *_,
+    wires: WiresLike,
+    hamiltonian: Hamiltonian,
+    **__,
+):
     if capture.enabled() and isinstance(hamiltonian, Operator1):
         # Reconstruct the closed-over Hamiltonian as a captured value. It is consumed by
         # ``ApproxTimeEvolution`` below, so it is not collected as a separate circuit operation.
@@ -42,11 +45,14 @@ def _commuting_evolution_decomposition(
     ApproxTimeEvolution(hamiltonian, time, 1)
 
 
-add_decomps(CommutingEvolution, _commuting_evolution_decomposition)
+add_decomps(CommutingEvolution, _commuting_evolution_standard)
 
 
-@register_resources(lambda base_params, **_: {resource_rep(CommutingEvolution, **base_params): 1})
-def _adjoint_commuting_evolution(time, *params, base, **__):
+@register_resources(
+    lambda base_params, **_: {resource_rep(CommutingEvolution, **base_params): 1},
+    name="negate_time",
+)
+def _adjoint_commuting_evolution_standard(time, *params, base, **__):
     hamiltonian = ops.functions.bind_new_parameters(base.hyperparameters["hamiltonian"], params)
     CommutingEvolution(
         hamiltonian,
@@ -56,4 +62,4 @@ def _adjoint_commuting_evolution(time, *params, base, **__):
     )
 
 
-add_decomps("Adjoint(CommutingEvolution)", _adjoint_commuting_evolution)
+add_decomps("Adjoint(CommutingEvolution)", _adjoint_commuting_evolution_standard)

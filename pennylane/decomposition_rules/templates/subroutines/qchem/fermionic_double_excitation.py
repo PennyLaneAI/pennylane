@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.qchem.fermionic_double_excitation."""
 
-# pylint: disable=too-many-arguments,protected-access
+# pylint: disable=too-many-arguments
+
 
 import numpy as np
 from jax import numpy as jnp
@@ -28,7 +30,7 @@ from pennylane.templates.subroutines.qchem.fermionic_double_excitation import (
 )
 
 
-def _fermionic_double_excitation_resources(num_wires_1, num_wires_2):
+def _fermionic_double_excitation_standard_resources(num_wires_1, num_wires_2):
     num_set_cnot_wires = num_wires_1 + num_wires_2 - 1
 
     return {Hadamard: 32, RX: 32, CNOT: 16 * num_set_cnot_wires, RZ: 8}
@@ -466,10 +468,9 @@ def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
     RX(np.pi / 2, wires=p)
 
 
-@register_resources(_fermionic_double_excitation_resources)
-def _fermionic_double_excitation_decomopsition(
-    weight, wires, wires1, wires2
-):  # pylint: disable=unused-argument
+@register_resources(_fermionic_double_excitation_standard_resources, name="jordan_wigner_rotations")
+# pylint: disable-next=unused-argument
+def _fermionic_double_excitation_standard(weight, wires, wires1, wires2):
     s = wires1[0]
     r = wires1[-1]
     q = wires2[0]
@@ -491,4 +492,4 @@ def _fermionic_double_excitation_decomopsition(
     _layer_qfunc8(weight, s, r, q, p, set_cnot_wires)
 
 
-add_decomps(FermionicDoubleExcitation, _fermionic_double_excitation_decomopsition)
+add_decomps(FermionicDoubleExcitation, _fermionic_double_excitation_standard)

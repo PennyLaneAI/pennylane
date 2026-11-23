@@ -15,6 +15,8 @@ r"""
 Contains the hardware-efficient ParticleConservingU2 template.
 """
 
+from importlib import import_module as _import_module
+
 from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.ops import CNOT, CRX, RZ, BasisState
@@ -252,3 +254,16 @@ class ParticleConservingU2(Operation):
                 f"The number of qubits must be greater than one; got 'n_wires' = {n_wires}"
             )
         return n_layers, 2 * n_wires - 1
+
+
+_RULE_MODULES = {
+    "_particle_conserving_u2_standard_resources": "pennylane.decomposition_rules.templates.layers.particle_conserving_u2",
+    "_particle_conserving_u2_standard": "pennylane.decomposition_rules.templates.layers.particle_conserving_u2",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

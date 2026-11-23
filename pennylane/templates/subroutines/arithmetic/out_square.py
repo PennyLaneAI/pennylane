@@ -15,6 +15,8 @@
 Contains the OutSquare template.
 """
 
+from importlib import import_module as _import_module
+
 from pennylane.core.operator import Operator2
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -173,7 +175,7 @@ class OutSquare(_SquareArithmeticOp):
 
             dev = qp.device("lightning.qubit", wires=20, seed=295)
 
-            @qp.transforms._tape_decompose(max_expansion=1) # To see resources easily
+            @qp.transforms._tape_decompose(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1) # To see resources easily
             @qp.qnode(dev, shots=1_000)
             def circuit(zeroed):
                 qp.BasisState(qp.math.int_to_binary(13, len(x_wires)), wires=x_wires)
@@ -204,22 +206,22 @@ class OutSquare(_SquareArithmeticOp):
         To conclude, we draw the more efficient circuit variant:
 
         >>> print(qp.draw(circuit)(True))
-         0: ─╭|Ψ⟩───────╭●─────────────╭X────╭●───────────●╮─╭●────╭X─────────────────────────────────── ···
-         1: ─├|Ψ⟩────╭●─│──╭X────╭●────│─────│─────────────│─│─────│──────●╮─╭●────╭X──────────────╭●─── ···
-         2: ─├|Ψ⟩─╭●─│──│──│─────│─────│─────│─────╭●──────│─├●────│───────│─├●────│──────╭●────╭●─│──── ···
-         3: ─╰|Ψ⟩─├●─├●─├●─│─────│─────│─────│─────│───────│─│─────│───────│─│─────│──────│─────│──│──── ···
-         4: ──────│──│──│──│─────│─────│─────│─────│───────│─│─────│───────│─│─────│──────│─────│──│──── ···
-         5: ──────│──│──│──│─────│─────│─────│─────├X──────│─│─────│───────│─│─────│──────│─────│──│──── ···
-         6: ──────│──│──│──│─────│─────│──╭X─├●────│──────●┤─╰X─╭X─│───────│─│─────│──────│─────│──│──╭● ···
-         7: ──────│──│──╰⊕─│──╭X─├●────│──│──│─────│───────│────│──│──────●┤─╰X─╭X─│──────│─────│──├●─│─ ···
-         8: ──────│──╰⊕─╭●─│──│──│─────│──│──│─────│───────│────│──│───────│────│──│───●╮─├X────│──│──│─ ···
-         9: ──────╰⊕─╭●─│──│──│──│─────│──│──│─────│───────│────│──│───────│────│──│────│─│──╭●─╰X─│──│─ ···
-        10: ─────────│──│──│──│──│─────│──│──│─────│───────│────│──│───────│────│──│────│─│──│─────│──│─ ···
-        11: ─────────│──│──│──│──│─────│──│──│─────│───────│────│──│───────│────│──│────│─│──│─────│──│─ ···
-        12: ─────────╰X─├●─│──│──│─────│──│──│─────│───────│────│──│───────│────│──│───●┤─╰●─╰X────╰⊕─├● ···
-        13: ────────────╰⊕─╰●─╰●─│──╭●─│──│──│─────│───────│────│──│──╭●───│────╰●─╰●──⊕╯─────────────╰⊕ ···
-        14: ─────────────────────╰⊕─╰X─╰●─╰●─│──╭●─│──╭●───│────╰●─╰●─╰X──⊕╯──────────────────────────── ···
-        15: ─────────────────────────────────╰⊕─╰X─╰●─╰X──⊕╯──────────────────────────────────────────── ···
+         0: ──X───────╭●─────────────╭X────╭●───────────●╮─╭●────╭X─────────────────────────────────── ···
+         1: ──X────╭●─│──╭X────╭●────│─────│─────────────│─│─────│──────●╮─╭●────╭X──────────────╭●─── ···
+         2: ────╭●─│──│──│─────│─────│─────│─────╭●──────│─├●────│───────│─├●────│──────╭●────╭●─│──── ···
+         3: ──X─├●─├●─├●─│─────│─────│─────│─────│───────│─│─────│───────│─│─────│──────│─────│──│──── ···
+         4: ────│──│──│──│─────│─────│─────│─────│───────│─│─────│───────│─│─────│──────│─────│──│──── ···
+         5: ────│──│──│──│─────│─────│─────│─────├X──────│─│─────│───────│─│─────│──────│─────│──│──── ···
+         6: ────│──│──│──│─────│─────│──╭X─├●────│──────●┤─╰X─╭X─│───────│─│─────│──────│─────│──│──╭● ···
+         7: ────│──│──╰⊕─│──╭X─├●────│──│──│─────│───────│────│──│──────●┤─╰X─╭X─│──────│─────│──├●─│─ ···
+         8: ────│──╰⊕─╭●─│──│──│─────│──│──│─────│───────│────│──│───────│────│──│───●╮─├X────│──│──│─ ···
+         9: ────╰⊕─╭●─│──│──│──│─────│──│──│─────│───────│────│──│───────│────│──│────│─│──╭●─╰X─│──│─ ···
+        10: ───────│──│──│──│──│─────│──│──│─────│───────│────│──│───────│────│──│────│─│──│─────│──│─ ···
+        11: ───────│──│──│──│──│─────│──│──│─────│───────│────│──│───────│────│──│────│─│──│─────│──│─ ···
+        12: ───────╰X─├●─│──│──│─────│──│──│─────│───────│────│──│───────│────│──│───●┤─╰●─╰X────╰⊕─├● ···
+        13: ──────────╰⊕─╰●─╰●─│──╭●─│──│──│─────│───────│────│──│──╭●───│────╰●─╰●──⊕╯─────────────╰⊕ ···
+        14: ───────────────────╰⊕─╰X─╰●─╰●─│──╭●─│──╭●───│────╰●─╰●─╰X──⊕╯──────────────────────────── ···
+        15: ───────────────────────────────╰⊕─╰X─╰●─╰X──⊕╯──────────────────────────────────────────── ···
         <BLANKLINE>
          0: ··· ─╭X────╭●───────────●╮─╭●────╭X───────────────╭●─╭●──●╮─╭●────┤
          1: ··· ─│─────│─────╭●──────│─├●────│──────╭●──●╮─╭●─│──│────│─│─────┤
@@ -243,3 +245,21 @@ class OutSquare(_SquareArithmeticOp):
     @staticmethod
     def _min_work_wires(n, m, output_wires_zeroed):
         return min(n - 1, max(m - 4, 0)) if output_wires_zeroed else m - 1
+
+
+_RULE_MODULES = {
+    "_out_square_with_adder_zeroed_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square",
+    "_out_square_with_adder_zeroed_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square",
+    "_out_square_with_adder_zeroed": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square",
+    "_out_square_with_caddsub_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square",
+    "_out_square_with_caddsub_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square",
+    "_shifted_adder": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square",
+    "_out_square_with_caddsub": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

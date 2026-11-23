@@ -17,6 +17,7 @@ Tests for the BasisRotation template.
 
 import numpy as np
 import pytest
+from scipy.linalg import expm
 
 import pennylane as qp
 from pennylane.testing import assert_decomposable
@@ -208,10 +209,9 @@ class TestDecomposition:
     def test_real_determinant_correction_with_capture(self, det, seed):
         """Test that with program capture, the determinant correction of an orthogonal matrix is
         a PauliZ for a negative determinant and nothing otherwise."""
-        # pylint: disable=import-outside-toplevel
         from pennylane.decomposition_rules.templates.subroutines.qchem.basis_rotation import (
-            _real_basis_rotation_decomp,
-            _real_basis_rotation_resources,
+            _basis_rotation_real,
+            _basis_rotation_real_resources,
         )
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
@@ -222,9 +222,9 @@ class TestDecomposition:
             ortho_matrix[:, 0] *= -1
 
         def circuit(unitary_matrix):
-            resources = _real_basis_rotation_resources(unitary_matrix, wires=[0, 1, 2])
+            resources = _basis_rotation_real_resources(unitary_matrix, wires=[0, 1, 2])
             assert resources == {qp.PauliZ: 1, qp.SingleExcitation: 3}
-            _real_basis_rotation_decomp(unitary_matrix, wires=[0, 1, 2])
+            _basis_rotation_real(unitary_matrix, wires=[0, 1, 2])
 
         plxpr = qp.capture.make_plxpr(circuit)(ortho_matrix)
         collector = CollectOpsandMeas()
@@ -238,22 +238,21 @@ class TestDecomposition:
     def test_real_resources_correction_gate(self):
         """Test that the resources of the real decomposition report the determinant correction as
         a PauliZ, except under plain jax.jit, where it is a PhaseShift."""
-        # pylint: disable=import-outside-toplevel
         import jax
 
         from pennylane.decomposition_rules.templates.subroutines.qchem.basis_rotation import (
-            _real_basis_rotation_resources,
+            _basis_rotation_real_resources,
         )
 
         @jax.jit
         def check_jit_resources(unitary_matrix):
-            resources = _real_basis_rotation_resources(unitary_matrix, wires=[0, 1, 2])
+            resources = _basis_rotation_real_resources(unitary_matrix, wires=[0, 1, 2])
             assert resources == {qp.PhaseShift: 1, qp.SingleExcitation: 3}
             return unitary_matrix
 
         check_jit_resources(np.eye(3))
 
-        resources = _real_basis_rotation_resources(np.eye(3), wires=[0, 1, 2])
+        resources = _basis_rotation_real_resources(np.eye(3), wires=[0, 1, 2])
         assert resources == {qp.PauliZ: 1, qp.SingleExcitation: 3}
 
     @pytest.mark.parametrize(
@@ -278,6 +277,22 @@ class TestDecomposition:
 
         assert np.allclose(single_particle_block, unitary_matrix.T)
         assert np.isclose(mat[0, 0], 1.0)
+
+    @pytest.mark.parametrize("dt", [1e-3, 1e-5, 1e-6])
+    def test_complex_matrix_close_to_identity(self, dt, seed):
+        """Test that a complex matrix close to the identity is implemented accurately, by
+        comparing the action on single-particle states to the matrix."""
+        rng = np.random.default_rng(seed)
+        h = rng.normal(size=(4, 4)) + 1j * rng.normal(size=(4, 4))
+        unitary_matrix = expm(1j * dt * (h + h.conj().T))
+        wires = list(range(4))
+        mat = qp.matrix(
+            qp.BasisRotation(wires=wires, unitary_matrix=unitary_matrix), wire_order=wires
+        )
+        single_particle_states = [2 ** (3 - p) for p in range(4)]
+        single_particle_block = mat[np.ix_(single_particle_states, single_particle_states)]
+
+        assert np.allclose(single_particle_block, unitary_matrix.T, atol=1e-14, rtol=0)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
@@ -316,7 +331,6 @@ class TestDecomposition:
         ],
     )
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_basis_rotation_operations_real_without_jax(self, num_wires, ortho_matrix):
         """Test the correctness of the BasisRotation template including the gate count
         and their order, the wires the operation acts on and the correct use of parameters
@@ -363,7 +377,6 @@ class TestDecomposition:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("unitary_matrix", "eigen_values", "exp_state"),
         [
@@ -562,7 +575,6 @@ def circuit_decomposed(weights):
     return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestInterfaces:
     """Test that the template is compatible with all interfaces, including the computation
     of gradients."""

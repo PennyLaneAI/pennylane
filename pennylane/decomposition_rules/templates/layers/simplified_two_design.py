@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.layers.simplified_two_design."""
 
 from jax import numpy as jnp
@@ -23,7 +24,7 @@ from pennylane.ops import CZ, RY
 from pennylane.templates.layers.simplified_two_design import SimplifiedTwoDesign
 
 
-def _simplified_two_design_resources(n_layers, num_wires):
+def _simplified_two_design_standard_resources(n_layers, num_wires):
     if num_wires > 1:
         return {
             RY: num_wires + (n_layers * num_wires - n_layers) * 2,
@@ -32,8 +33,8 @@ def _simplified_two_design_resources(n_layers, num_wires):
     return {RY: num_wires}
 
 
-@register_resources(_simplified_two_design_resources)
-def _simplified_two_design_decomposition(initial_layer_weights, weights, wires):
+@register_resources(_simplified_two_design_standard_resources, name="to_ry_cz")
+def _simplified_two_design_standard(initial_layer_weights, weights, wires):
     n_layers = math.shape(weights)[0]
 
     if capture.enabled():
@@ -71,4 +72,4 @@ def _simplified_two_design_decomposition(initial_layer_weights, weights, wires):
     layers_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(SimplifiedTwoDesign, _simplified_two_design_decomposition)
+add_decomps(SimplifiedTwoDesign, _simplified_two_design_standard)

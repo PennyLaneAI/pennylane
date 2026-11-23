@@ -13,6 +13,8 @@
 # limitations under the License.
 """Contains the MultiX template."""
 
+from importlib import import_module as _import_module
+
 import numpy as np
 from scipy import sparse
 
@@ -64,6 +66,19 @@ class MultiX(Operator2):
     ...     return qp.probs(wires=range(3))
     >>> circuit()
     array([0., 0., 0., 0., 0., 1., 0., 0.])
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.MultiX
+            :stacked:
+            :symbols: :math:`n` wires and bitstring :math:`\mathbf{b}`
+            :example: :math:`\mathbf{b}=(1, 0, 1)`
+
+            .. decomposition-rule:: to_x
+                :image: /_static/decomposition_thumbnails/multix_conditional_x.svg
+
+                :class:`~.X` | :math:`\sum_i b_i \leq n` (one per :math:`b_i=1`) | 2
     """
 
     dynamic_argnames = ("bitstring",)
@@ -184,8 +199,7 @@ class MultiX(Operator2):
         return matrix
 
     @staticmethod
-    # pylint: disable-next=arguments-differ
-    def compute_sparse_matrix(
+    def compute_sparse_matrix(  # pylint: disable=arguments-differ
         bitstring: TensorLike, wires: WiresLike, format: str = "csr"
     ) -> sparse.spmatrix:
         r"""
@@ -305,3 +319,20 @@ class MultiX(Operator2):
     def pow(self, z: int | float) -> list[Operator2]:
         # Only encodes the involutive property: MultiX^2 = I
         return super().pow(z % 2)
+
+
+_RULE_MODULES = {
+    "_multix_standard_resources": "pennylane.decomposition_rules.templates.subroutines.multix",
+    "_multix_standard": "pennylane.decomposition_rules.templates.subroutines.multix",
+    "_controlled_multix_ladder_standard_resources": "pennylane.decomposition_rules.templates.subroutines.multix",
+    "_multix_ladder_fanout": "pennylane.decomposition_rules.templates.subroutines.multix",
+    "_controlled_multix_ladder_standard_work_wires": "pennylane.decomposition_rules.templates.subroutines.multix",
+    "_controlled_multix_ladder_standard": "pennylane.decomposition_rules.templates.subroutines.multix",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

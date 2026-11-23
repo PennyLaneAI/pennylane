@@ -16,19 +16,17 @@
 This submodule contains the template for Amplitude Amplification.
 """
 
-# pylint: disable-msg=too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-arguments
+
+
 import copy
+from importlib import import_module as _import_module
 
 import numpy as np
 
-from pennylane.core.apply import apply
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager
-from pennylane.ops import Hadamard, PhaseShift
-from pennylane.ops.op_math import ctrl
 from pennylane.wires import WireError, Wires
-
-from .reflection import Reflection
 
 
 def _get_fixed_point_angles(iters, p_min):
@@ -160,40 +158,6 @@ class AmplitudeAmplification(Operation):
 
         super().__init__(*U.data, *O.data, wires=wires)
 
-    @staticmethod
-    def compute_decomposition(*_, **kwargs):
-        U = kwargs["U"]
-        O = kwargs["O"]
-        iters = kwargs["iters"]
-        fixed_point = kwargs["fixed_point"]
-        work_wire = kwargs["work_wire"]
-        p_min = kwargs["p_min"]
-        reflection_wires = kwargs["reflection_wires"]
-
-        ops = []
-
-        if fixed_point:
-            alphas, betas = _get_fixed_point_angles(iters, p_min)
-
-            for it in range(iters // 2):
-                ops.append(Hadamard(wires=work_wire))
-                ops.append(ctrl(O, control=work_wire))
-                ops.append(Hadamard(wires=work_wire))
-                ops.append(PhaseShift(betas[it], wires=work_wire))
-                ops.append(Hadamard(wires=work_wire))
-                ops.append(ctrl(O, control=work_wire))
-                ops.append(Hadamard(wires=work_wire))
-
-                ops.append(Reflection(U, -alphas[it], reflection_wires=reflection_wires))
-        else:
-            for _ in range(iters):
-                ops.append(O)
-                if QueuingManager.recording():
-                    apply(O)
-                ops.append(Reflection(U, np.pi, reflection_wires=reflection_wires))
-
-        return ops
-
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
@@ -213,3 +177,16 @@ class AmplitudeAmplification(Operation):
             context.remove(op)
         context.append(self)
         return self
+
+
+_RULE_MODULES = {
+    "_amplitude_amplification_standard_resources": "pennylane.decomposition_rules.templates.subroutines.amplitude_amplification",
+    "_amplitude_amplification_standard": "pennylane.decomposition_rules.templates.subroutines.amplitude_amplification",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -15,6 +15,8 @@
 Contains the OutMultiplier template.
 """
 
+from importlib import import_module as _import_module
+
 from pennylane.core.operator import Operator2
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -106,7 +108,7 @@ class OutMultiplier(Operator2):
                 ``output_wires_zeroed=False``
             :example: :math:`n=m=1`, :math:`k=2`
 
-            .. decomposition-rule:: _out_multiplier_with_qft
+            .. decomposition-rule:: with_qft
                 :image: /_static/decomposition_thumbnails/out_multiplier_qft.svg
                 :requires: program capture to be disabled
 
@@ -114,13 +116,13 @@ class OutMultiplier(Operator2):
                 :class:`~.ControlledSequence` (nested, of :class:`~.PhaseAdder`) | :math:`1` | 1
                 :class:`Adjoint(QFT) <.QFT>` | :math:`1` | 1
 
-            .. decomposition-rule:: _out_multiplier_with_adder
+            .. decomposition-rule:: with_adder
                 :image: /_static/decomposition_thumbnails/out_multiplier_adder.svg
                 :requires: :math:`w \geq k` work wires
 
                 :class:`~.SemiAdder` with 1 control | :math:`n` | 1
 
-            .. decomposition-rule:: _out_multiplier_with_caddsub
+            .. decomposition-rule:: with_caddsub
                 :image: /_static/decomposition_thumbnails/out_multiplier_caddsub.svg
                 :requires: :math:`w \geq k + 1` work wires
                 :where: :math:`[m > 1]` equal to 1 if :math:`m > 1` and 0 otherwise
@@ -134,7 +136,7 @@ class OutMultiplier(Operator2):
                 :class:`~.SemiAdder` | :math:`2` | 2
                 :class:`~.Incrementer` | :math:`1` | 1
 
-            .. decomposition-rule:: _out_multiplier_with_cache
+            .. decomposition-rule:: with_cache
                 :image: /_static/decomposition_thumbnails/out_multiplier_cache.svg
                 :requires: :math:`w \geq 2k - 1` work wires
 
@@ -142,7 +144,7 @@ class OutMultiplier(Operator2):
                 :class:`~.SemiAdder` | :math:`1` | 1
                 :class:`Adjoint(OutMultiplier) <.OutMultiplier>` | :math:`1` | 1
 
-            .. decomposition-rule:: _out_multiplier_swapped
+            .. decomposition-rule:: swap_factors
                 :image: /_static/decomposition_thumbnails/out_multiplier_swapped.svg
                 :requires: :math:`n > m`
                 :where: the circuit shows :math:`n=2`, :math:`m=1` and :math:`k=3`
@@ -263,7 +265,7 @@ class OutMultiplier(Operator2):
         "work_wires": Wire[-1],
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         x_wires: WiresLike,
         y_wires: WiresLike,
@@ -271,7 +273,7 @@ class OutMultiplier(Operator2):
         mod=None,
         work_wires: WiresLike = (),
         output_wires_zeroed: bool = False,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):
 
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
@@ -318,5 +320,35 @@ class OutMultiplier(Operator2):
         """All wires involved in the operation."""
         return self.x_wires + self.y_wires + self.output_wires + self.work_wires
 
-    # Note that dividing by two does not have to happen explicitly, because the registers are
-    # not explicit return values.
+
+_RULE_MODULES = {
+    "_OutMultiplierHadamards": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_out_multiplier_with_qft_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_out_multiplier_with_qft_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_out_multiplier_with_qft": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_out_multiplier_with_adder_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_out_multiplier_with_adder_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_out_multiplier_with_adder": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_out_multiplier_with_caddsub_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_caddsub_multiplication_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_out_multiplier_with_caddsub_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_adder_flipped_first_work_wire": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_add_plus_one": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_c_add_sub_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_c_add_sub": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_out_multiplier_with_caddsub": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_caddsub_multiplication": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_out_multiplier_with_cache_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_out_multiplier_with_cache_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_out_multiplier_with_cache": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_out_multiplier_swapped_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_out_multiplier_swapped_standard_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+    "_out_multiplier_swapped_standard": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

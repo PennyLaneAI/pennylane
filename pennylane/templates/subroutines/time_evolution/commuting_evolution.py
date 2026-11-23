@@ -15,8 +15,8 @@ r"""
 Contains the CommutingEvolution template.
 """
 
-# pylint: disable-msg=too-many-arguments
 import copy
+from importlib import import_module as _import_module
 
 from pennylane import math
 from pennylane.core.operator import Operation
@@ -134,7 +134,7 @@ class CommutingEvolution(Operation):
         }
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None):
-        # pylint: disable=import-outside-toplevel,too-many-positional-arguments
+        # pylint: disable-next=import-outside-toplevel
         from pennylane.gradients.general_shift_rules import generate_shift_rule
 
         if getattr(hamiltonian, "pauli_rep", None) is None:
@@ -172,9 +172,8 @@ class CommutingEvolution(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(
-        time, *_, wires, hamiltonian, **__
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(time, *_, wires, hamiltonian, **__):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -204,3 +203,17 @@ class CommutingEvolution(Operation):
         shifts = self.hyperparameters["shifts"]
 
         return CommutingEvolution(hamiltonian, -time, frequencies, shifts)
+
+
+_RULE_MODULES = {
+    "_commuting_evolution_standard_resources": "pennylane.decomposition_rules.templates.subroutines.time_evolution.commuting_evolution",
+    "_commuting_evolution_standard": "pennylane.decomposition_rules.templates.subroutines.time_evolution.commuting_evolution",
+    "_adjoint_commuting_evolution_standard": "pennylane.decomposition_rules.templates.subroutines.time_evolution.commuting_evolution",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

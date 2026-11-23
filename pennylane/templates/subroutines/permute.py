@@ -16,6 +16,7 @@ Contains the Permute template.
 """
 
 import copy
+from importlib import import_module as _import_module
 
 from pennylane.core.operator import Operation
 from pennylane.ops import SWAP
@@ -226,3 +227,16 @@ class Permute(Operation):
                     working_order[idx_here],
                 )
         return op_list
+
+
+_RULE_MODULES = {
+    "_permute_standard_resources": "pennylane.decomposition_rules.templates.subroutines.permute",
+    "_permute_standard": "pennylane.decomposition_rules.templates.subroutines.permute",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -15,6 +15,8 @@ r"""
 Contains the PhaseGradientStatePrep template.
 """
 
+from importlib import import_module as _import_module
+
 import numpy as np
 
 from pennylane import math
@@ -83,12 +85,11 @@ class PhaseGradientStatePrep(StatePrepBase2):
     mid-circuit measurements and supports any number of wires. Construct it and pass it to
     ``fixed_decomps``:
 
-    >>> qp.decomposition.enable_graph()
     >>> registers = qp.registers({"grad": 5, "aux": 5, "work": 4})
     >>> rule = qp.transforms.decompositions.make_phase_gradient_distillation_decomp(
     ...     registers["aux"], registers["work"], mode="postselect"
     ... )
-    >>> @qp.transforms.decompose(
+    >>> @qp.transforms._tape_decompose(
     ...     gate_set={"Hadamard", "PauliZ", "Adjoint(S)", "SemiAdder", "MidMeasure"},
     ...     fixed_decomps={qp.PhaseGradientStatePrep: rule},
     ... )
@@ -132,3 +133,20 @@ class PhaseGradientStatePrep(StatePrepBase2):
             ket = ket.transpose(desired_order)
 
         return ket
+
+
+_RULE_MODULES = {
+    "_ppr_counts": "pennylane.decomposition_rules.templates.state_preparations.phase_gradient",
+    "_ppr": "pennylane.decomposition_rules.templates.state_preparations.phase_gradient",
+    "_phase_gradient_state_prep_to_ppr_resources": "pennylane.decomposition_rules.templates.state_preparations.phase_gradient",
+    "_phase_gradient_state_prep_to_ppr": "pennylane.decomposition_rules.templates.state_preparations.phase_gradient",
+    "_phase_gradient_state_prep_to_clifford_t_resources": "pennylane.decomposition_rules.templates.state_preparations.phase_gradient",
+    "_phase_gradient_state_prep_to_clifford_t": "pennylane.decomposition_rules.templates.state_preparations.phase_gradient",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -16,6 +16,7 @@ Contains the ArbitraryStatePreparation template.
 """
 
 import functools
+from importlib import import_module as _import_module
 
 import pennylane as qp
 from pennylane.core.operator import Operation
@@ -152,3 +153,16 @@ class ArbitraryStatePreparation(Operation):
             tuple[int]: shape
         """
         return (2 ** (n_wires + 1) - 2,)
+
+
+_RULE_MODULES = {
+    "_arbitrary_state_preparation_standard_resources": "pennylane.decomposition_rules.templates.state_preparations.arbitrary_state_preparation",
+    "_arbitrary_state_preparation_standard": "pennylane.decomposition_rules.templates.state_preparations.arbitrary_state_preparation",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

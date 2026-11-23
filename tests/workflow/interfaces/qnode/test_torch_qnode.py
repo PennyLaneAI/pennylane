@@ -13,8 +13,9 @@
 # limitations under the License.
 """Integration tests for using the Torch interface with a QNode"""
 
-# pylint: disable=too-many-arguments,unexpected-keyword-arg,no-member,comparison-with-callable, no-name-in-module
-# pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-lambda-assignment, use-dict-literal
+# pylint: disable=too-many-arguments,use-dict-literal
+
+
 import numpy as np
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
@@ -513,7 +514,7 @@ class TestQNode:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        class MyU3(qp.U3):  # pylint:disable=too-few-public-methods
+        class MyU3(qp.U3):  # pylint: disable=too-few-public-methods
 
             name = "MyU3"
 
@@ -525,7 +526,7 @@ class TestQNode:
                     qp.PhaseShift(phi + lam, wires=wires),
                 ]
 
-        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1}, name="decomp")
         def _decomp(theta, phi, delta, wires):
             qp.Rot(delta, theta, -delta, wires)
             qp.PhaseShift(phi + delta, wires)
@@ -1251,16 +1252,16 @@ class TestTapeExpansion:
         if diff_method == "hadamard":
             gradient_kwargs["mode"] = "direct"
 
-        class PhaseShift(qp.PhaseShift):  # pylint:disable=too-few-public-methods
+        class PhaseShift(qp.PhaseShift):  # pylint: disable=too-few-public-methods
             grad_method = None
             has_generator = False
 
             def decomposition(self):
                 return [qp.RY(3 * self.data[0], wires=self.wires)]
 
-        @qp.register_resources({qp.RY: 1})
-        def custom_decomposition(param, wires):
-            qp.RY(3 * param, wires=wires)
+        @qp.register_resources({qp.RY: 1}, name="custom_decomposition")
+        def custom_decomposition(phi, wires):
+            qp.RY(3 * phi, wires=wires)
 
         qp.add_decomps(PhaseShift, custom_decomposition)
 
@@ -1306,7 +1307,7 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
-        class PhaseShift(qp.PhaseShift):  # pylint:disable=too-few-public-methods
+        class PhaseShift(qp.PhaseShift):  # pylint: disable=too-few-public-methods
             grad_method = None
 
             def decomposition(self):
@@ -1659,10 +1660,8 @@ qubit_device_and_diff_method_and_grad_on_execution = [
     qubit_device_and_diff_method_and_grad_on_execution,
 )
 @pytest.mark.parametrize("shots", [None, 10000])
-class TestReturn:
+class TestReturn:  # pylint: disable=too-many-public-methods
     """Class to test the shape of the Grad/Jacobian/Hessian with different return types."""
-
-    # pylint:disable=too-many-public-methods
 
     def test_grad_single_measurement_param(
         self, dev, diff_method, grad_on_execution, device_vjp, shots

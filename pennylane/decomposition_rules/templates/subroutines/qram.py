@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Built-in decomposition rules for templates.subroutines.qram."""
 
-# pylint: disable=consider-using-generator
+"""Built-in decomposition rules for templates.subroutines.qram."""
 
 from collections import defaultdict
 
@@ -47,7 +46,7 @@ from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import concatenate_wires
 
 
-def _bucket_brigade_qram_resources(num_controls, num_target_wires):
+def _bucket_brigade_qram_standard_resources(num_controls, num_target_wires):
     """
     Calculates the resources, assuming the worst case where bitstrings are all ones.
     """
@@ -120,10 +119,8 @@ def _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j):
         cond(bit, PauliZ)(wires=target)
 
 
-@register_resources(_bucket_brigade_qram_resources, exact=False)
-def _bucket_brigade_qram_decomposition(
-    bitstrings, wire_manager, **__
-):  # pylint: disable=unused-argument
+@register_resources(_bucket_brigade_qram_standard_resources, exact=False, name="router_swap_tree")
+def _bucket_brigade_qram_standard(bitstrings, wire_manager, **__):
     bus_wire = wire_manager.bus_wire
     control_wires = wire_manager.control_wires
     n_k = len(control_wires)
@@ -142,10 +139,10 @@ def _bucket_brigade_qram_decomposition(
     adjoint(_mark_routers_via_bus)(wire_manager, n_k)
 
 
-add_decomps(BBQRAM, _bucket_brigade_qram_decomposition)
+add_decomps(BBQRAM, _bucket_brigade_qram_standard)
 
 
-def _hybrid_qram_resources(num_target_wires, num_select_wires, num_tree_control_wires):
+def _hybrid_qram_standard_resources(num_target_wires, num_select_wires, num_tree_control_wires):
     resources = defaultdict(int)
     num_blocks = 1 << num_select_wires
 
@@ -186,9 +183,9 @@ def _bits(value: int, length: int) -> list[int]:
     return [(value >> (length - 1 - i)) & 1 for i in range(length)]
 
 
-def _tree_leaf_ops_for_bit_block_ctrl(
+def _tree_leaf_ops_for_bit_block_ctrl(  # pylint: disable=too-many-arguments
     bitstrings, j, block_index, tree_wire_manager, n_tree, signal
-):  # pylint: disable=too-many-arguments
+):
     """Leaf write for target bit j, for a given select prefix block, controlled on signal."""
 
     # For each leaf index p of the tree (n_tree bits)
@@ -262,9 +259,8 @@ def _tree_mark_routers_via_bus_ctrl(tree_wire_manager, n_tree, k, signal):
             CSWAP(wires=[signal, origin, target])
 
 
-def _block_tree_query_ops(
-    bitstrings, block_index, tree_wire_manager, n_tree, k, signal
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _block_tree_query_ops(bitstrings, block_index, tree_wire_manager, n_tree, k, signal):
     """One BBQRAM-style query of the (n_tree)-depth tree for a fixed select prefix."""
 
     # 1) address loading for the tree (controlled on signal)
@@ -299,10 +295,8 @@ def _block_tree_query_ops(
     adjoint(_tree_mark_routers_via_bus_ctrl)(tree_wire_manager, n_tree, k, signal)
 
 
-@register_resources(_hybrid_qram_resources, exact=False)
-def _hybrid_qram_decomposition(
-    bitstrings, tree_wire_manager, select_wires, signal_wire, **_
-):  # pylint: disable=unused-argument, too-many-arguments
+@register_resources(_hybrid_qram_standard_resources, exact=False, name="block_tree_queries")
+def _hybrid_qram_standard(bitstrings, tree_wire_manager, select_wires, signal_wire, **_):
     k = len(select_wires)
 
     signal = signal_wire[0]
@@ -336,10 +330,10 @@ def _hybrid_qram_decomposition(
             PauliX(wires=signal)
 
 
-add_decomps(HybridQRAM, _hybrid_qram_decomposition)
+add_decomps(HybridQRAM, _hybrid_qram_standard)
 
 
-def _select_only_qram_resources(
+def _select_only_qram_standard_resources(
     select_value, num_control_wires, num_select_wires, num_target_wires
 ):
     resources = defaultdict(int)
@@ -371,10 +365,12 @@ def _flip_controls(control_wires, control_vals):
             PauliX(control_wires[i])
 
 
-@register_resources(_select_only_qram_resources, exact=False)
-def _select_only_qram_decomposition(
+@register_resources(
+    _select_only_qram_standard_resources, exact=False, name="controlled_data_loading"
+)
+def _select_only_qram_standard(
     bitstrings, select_value, select_wires, control_wires, target_wires, **_
-):  # pylint: disable=unused-argument, too-many-arguments
+):
     controls = select_wires + control_wires
     num_select = len(select_wires)
     n_total = num_select + len(control_wires)
@@ -406,7 +402,7 @@ def _select_only_qram_decomposition(
         _flip_controls(controls, control_values)
 
 
-add_decomps(SelectOnlyQRAM, _select_only_qram_decomposition)
+add_decomps(SelectOnlyQRAM, _select_only_qram_standard)
 
 
 def _flip_zero_bits(address_wires, addr_bits):
@@ -428,7 +424,7 @@ def _normalize_amplitudes(amplitudes):
     return amplitudes / math.reshape(norm, (*math.shape(amplitudes)[:-1], 1))
 
 
-def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
+def _ffqram_standard_resources(num_zero_bits, num_address_wires, num_entries):
     """
     - One Hadamard gate per address wire to initialize the |+>^n state.
     - One "flip" and one "flop" for 0 bits.
@@ -441,8 +437,8 @@ def _ffqram_resources(num_zero_bits, num_address_wires, num_entries):
     }
 
 
-@register_resources(_ffqram_resources)
-def _ffqram_decomposition(amplitudes, wires, address, **_):
+@register_resources(_ffqram_standard_resources, name="controlled_amplitude_rotations")
+def _ffqram_standard(amplitudes, wires, address, **_):
     address_wires = wires[:-1]
     reg_wire = wires[-1]
 
@@ -479,4 +475,4 @@ def _ffqram_decomposition(amplitudes, wires, address, **_):
     main_loop(address)  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(FFQRAM, _ffqram_decomposition)
+add_decomps(FFQRAM, _ffqram_standard)

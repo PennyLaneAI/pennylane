@@ -19,6 +19,7 @@ computing the product between operations.
 import itertools
 from collections import Counter
 from functools import reduce
+from importlib import import_module as _import_module
 from itertools import combinations
 from typing import Union
 
@@ -30,11 +31,12 @@ from pennylane.capture.autograph import wraps
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, remove_from_program
+from pennylane.ops._pauli_conversion import to_operator
+from pennylane.ops.op_math.prod2 import Prod2, _ProductFactorsGrouping, _swappable_ops
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .composite import CompositeOp, handle_recursion_error
-from .prod2 import Prod2, _ProductFactorsGrouping, _swappable_ops
 from .sprod import SProd
 from .sum import Sum
 
@@ -291,7 +293,6 @@ class Prod(CompositeOp):
                 return False
         return all(op.is_verified_hermitian for op in self)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
         return True
@@ -368,12 +369,11 @@ class Prod(CompositeOp):
 
     @property
     @handle_recursion_error
-    def has_sparse_matrix(self):
+    def has_sparse_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return True
 
     def adjoint(self):
@@ -410,7 +410,7 @@ class Prod(CompositeOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return pr.operation(wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         global_phase, factors = self._simplify_factors(factors=self.operands)
 
@@ -477,7 +477,7 @@ class Prod(CompositeOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             with qp.QueuingManager.stop_recording():
-                ops = [pauli.operation() for pauli in pr.keys()]
+                ops = [to_operator(pauli) for pauli in pr.keys()]
             return list(pr.values()), ops
 
         with qp.QueuingManager.stop_recording():
@@ -499,3 +499,20 @@ class Prod(CompositeOp):
                 coeffs.append(global_phase)
                 ops.append(factor)
         return coeffs, ops
+
+
+_RULE_MODULES = {
+    "_prod_standard_resources": "pennylane.decomposition_rules.op_math.prod",
+    "_prod_standard": "pennylane.decomposition_rules.op_math.prod",
+    "_controlled_product_with_work_wires_resources": "pennylane.decomposition_rules.op_math.prod",
+    "_controlled_product_with_work_wires": "pennylane.decomposition_rules.op_math.prod",
+    "_controlled_product_with_one_work_wire_resources": "pennylane.decomposition_rules.op_math.prod",
+    "_controlled_product_with_one_work_wire": "pennylane.decomposition_rules.op_math.prod",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

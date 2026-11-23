@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.aqft."""
 
 import numpy as np
@@ -24,7 +25,7 @@ from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
 from pennylane.templates.subroutines.aqft import AQFT
 
 
-def _AQFT_resources(order, wires):
+def _AQFT_standard_resources(order, wires):
     num_wires = len(wires)
     num_ctrl_ps = sum(min(num_wires - 1 - i, order) for i in range(num_wires))
     return {
@@ -34,8 +35,8 @@ def _AQFT_resources(order, wires):
     }
 
 
-@register_resources(_AQFT_resources)
-def _AQFT_decomposition(wires, order):
+@register_resources(_AQFT_standard_resources, name="truncated_controlled_phases")
+def _AQFT_standard(wires, order):
     num_wires = len(wires)
     shifts = [2 * np.pi / (2**i) for i in range(2, num_wires + 1)]
 
@@ -71,4 +72,4 @@ def _AQFT_decomposition(wires, order):
     half_wire_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(AQFT, _AQFT_decomposition)
+add_decomps(AQFT, _AQFT_standard)

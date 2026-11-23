@@ -17,6 +17,7 @@ This submodule contains the templates for the Hilbert-Schmidt tests.
 
 import copy
 from collections.abc import Iterable
+from importlib import import_module as _import_module
 
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator, Operator2, abstractify
@@ -105,16 +106,15 @@ class HilbertSchmidt(Operation):
     resource_keys = {"num_wires", "u_reps", "v_wires"}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
-        # pylint: disable=arguments-differ
         U = (U,) if isinstance(U, Operator) or is_tracer(U) else U
         V = (V,) if isinstance(V, Operator) or is_tracer(V) else V
 
         def _get_tracer(op):
             if isinstance(op, Operator2):
                 if op.tracer is None:
-                    # pylint: disable-next=protected-access
-                    op._bind_primitive()
+                    op._bind_primitive()  # pylint: disable=protected-access
                 return op.tracer if op.tracer is not None else op
             return op
 
@@ -209,13 +209,12 @@ class HilbertSchmidt(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(
+    def compute_decomposition(  # pylint: disable=arguments-differ
         *params: TensorLike,
         wires: int | Iterable[int | str] | Wires,
         U: Operator | Iterable[Operator],
         V: Operator | Iterable[Operator],
     ) -> list[Operator]:
-        # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators."""
 
         u_ops = (U,) if isinstance(U, Operator) else tuple(U)
@@ -259,17 +258,15 @@ class HilbertSchmidt(Operation):
         return decomp_ops
 
 
-# pylint: disable=protected-access
-
-
-@HilbertSchmidt._primitive.def_impl
+@HilbertSchmidt._primitive.def_impl  # pylint: disable=protected-access
 def _hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
     V = ops[:num_v_ops]
     U = ops[num_v_ops:]
     return type.__call__(HilbertSchmidt, V, U, **kwargs)
 
 
-class LocalHilbertSchmidt(HilbertSchmidt):
+# Wire mapping remains explicitly unsupported by the parent implementation.
+class LocalHilbertSchmidt(HilbertSchmidt):  # pylint: disable=abstract-method
     r"""Create a Local Hilbert-Schmidt template that can be used to compute the Local Hilbert-Schmidt Test (LHST).
 
     The result of the LHST is a useful quantity for compiling a unitary `U` with an approximate unitary `V`. The
@@ -405,11 +402,24 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         return clone
 
 
-# pylint: disable=protected-access
-
-
-@LocalHilbertSchmidt._primitive.def_impl
+@LocalHilbertSchmidt._primitive.def_impl  # pylint: disable=protected-access
 def _local_hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
     V = ops[:num_v_ops]
     U = ops[num_v_ops:]
     return type.__call__(LocalHilbertSchmidt, V, U, **kwargs)
+
+
+_RULE_MODULES = {
+    "_hilbert_schmidt_standard_resources": "pennylane.decomposition_rules.templates.subroutines.hilbert_schmidt",
+    "_local_hilbert_schmidt_standard_resources": "pennylane.decomposition_rules.templates.subroutines.hilbert_schmidt",
+    "_up_to_last_layer": "pennylane.decomposition_rules.templates.subroutines.hilbert_schmidt",
+    "_hilbert_schmidt_standard": "pennylane.decomposition_rules.templates.subroutines.hilbert_schmidt",
+    "_local_hilbert_schmidt_standard": "pennylane.decomposition_rules.templates.subroutines.hilbert_schmidt",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

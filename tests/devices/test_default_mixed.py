@@ -16,6 +16,8 @@ Unit tests for the :mod:`pennylane.devices.DefaultMixed` device.
 """
 
 # pylint: disable=protected-access
+
+
 import pytest
 
 import pennylane as qp
@@ -62,7 +64,6 @@ class TestDefaultMixedInit:
     @pytest.mark.jax
     def test_seed_jax(self):
         """Test JAX PRNGKey seed initialization"""
-        # pylint: disable=import-outside-toplevel
         import jax
 
         dev = DefaultMixed(wires=1, seed=jax.random.PRNGKey(0))
@@ -87,8 +88,8 @@ class TestDefaultMixedInit:
 
     def test_wire_initialization_list(self):
         """Test initialization with wire list"""
-        dev = DefaultMixed(wires=["a", "b", "c"])
-        assert dev.wires == qp.wires.Wires(["a", "b", "c"])
+        dev = DefaultMixed(wires=[4, 5, 6])
+        assert dev.wires == qp.wires.Wires([4, 5, 6])
 
     def test_too_many_wires(self):
         """Test error raised when too many wires requested"""
@@ -107,7 +108,6 @@ class TestDefaultMixedInit:
         ), "The interface should be set to numpy for an invalid gradient method"
 
 
-# pylint: disable=too-few-public-methods
 class TestDefaultMixedTrainability:
     """Integration tests for DefaultMixed trainable parameters"""
 

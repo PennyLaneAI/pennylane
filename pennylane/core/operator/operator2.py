@@ -66,7 +66,7 @@ from .meta import OperatorMeta
 from .utils import abstractify
 
 if TYPE_CHECKING:
-    from pennylane.pauli import PauliSentence
+    from pennylane.core.pauli import PauliSentence
 
 ArgSpecType: TypeAlias = type[Number] | AbstractArray | AbstractWires
 
@@ -113,7 +113,7 @@ class OperatorRegistry:
             )
 
 
-class Operator2(metaclass=OperatorMeta):
+class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-methods
     r"""Base class representing quantum operators that are designed for compatibility with
     :func:`~.qjit`.
 
@@ -233,7 +233,7 @@ class Operator2(metaclass=OperatorMeta):
                 resources[qp.Rot] = 1
                 return resources
 
-            @qp.register_resources(_my_op_resources)
+            @qp.register_resources(_my_op_resources, name="my_op_decomp")
             def _my_op_decomp(pauli_string, angle_array, wires, rot_wire):
                 wire_map = {wires[i]: i for i in range(len(wires))}
                 for wire, pauli in zip(wires, pauli_string):
@@ -255,10 +255,9 @@ class Operator2(metaclass=OperatorMeta):
                 MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,))
                 return qp.expval(qp.Z(0))
 
-        >>> qp.decomposition.enable_graph()
         >>> inspector = qp.decomp_inspector(f)()
         >>> inspector.inspect_decomps(MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,)))
-        CHOSEN: Decomposition 0 (name: _my_op_decomp)
+        CHOSEN: Decomposition 0 (name: my_op_decomp)
         0: ──X───────────────────┤
         1: ──Y───────────────────┤
         2: ──Y───────────────────┤
@@ -266,7 +265,6 @@ class Operator2(metaclass=OperatorMeta):
         First-Level Expansion Gates: {PauliX: 1, PauliY: 2, Rot: 1}
         Full Expansion Gates: {PauliX: 1, PauliY: 2, Rot: 1}
         Weighted Cost: 4.0
-        >>> qp.decomposition.disable_graph()
 
         **Downstream effects of static_argnames, compilable_argnames**
 
@@ -319,8 +317,6 @@ class Operator2(metaclass=OperatorMeta):
             downstream; the dynamic data stored within the Pytree is lowered correctly,
             and the static structure of the Pytree is reduced to a UID in MLIR.
     """
-
-    # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
     _operator_version = 2
 
@@ -676,7 +672,7 @@ class Operator2(metaclass=OperatorMeta):
 
         Default is ``'F'``, or ``None`` if the Operation has zero parameters.
         """
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable-next=import-outside-toplevel
         from pennylane.gradients import parameter_frequencies
 
         if self.num_params == 0:
@@ -844,7 +840,7 @@ class Operator2(metaclass=OperatorMeta):
         """
         return cls.adjoint != Operator2.adjoint
 
-    def adjoint(self) -> "Operator2":  # pylint:disable=no-self-use
+    def adjoint(self) -> "Operator2":
         """Create an operation that is the adjoint of this one. Used to simplify
         :class:`~.Adjoint` operators constructed by :func:`~.adjoint`.
         TODO: [sc-120844] Fix docstring after Adjoint is added
@@ -913,7 +909,6 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
     # ----------------------- Operator representations -----------------------
     # ------------------------------------------------------------------------
-    # pylint: disable=unused-argument,comparison-with-callable,no-self-use
 
     @staticmethod
     def compute_matrix(*args, **kwargs) -> TensorLike:
@@ -1321,7 +1316,7 @@ class Operator2(metaclass=OperatorMeta):
         serialized_hybrid = []
         if self.hybrid_argnames:
             # Imported lazily to avoid a circular import
-            # pylint: disable=import-outside-toplevel
+            # pylint: disable-next=import-outside-toplevel
             from pennylane.decomposition.resources import CompressedResourceOp
 
             hashable_leaf_types = (AbstractWires, Operator, Wires, CompressedResourceOp)
@@ -1805,8 +1800,8 @@ def _init_arg_types(op: Operator2) -> None:
         # spec in 'arg_specs' in order to have a single source of truth.
         if isinstance(argval, AbstractArray):
             new_argval = AbstractArray(arg_shape, exp_type.dtype)
-            # pylint: disable=protected-access
             # FIX: Hacky way to set attribute of a frozen dataclass
+            # pylint: disable-next=protected-access
             object.__setattr__(new_argval, "_weak_type", exp_type._weak_type)
             op.arguments[name] = new_argval
 
@@ -1946,8 +1941,7 @@ def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
 
 def _init_subclass_add_dynamic_properties(cls: type[Operator2]) -> None:
     """Create dynamic properties for an operator using its signature."""
-    # pylint: disable=protected-access
-    for name in cls._sig.parameters:
+    for name in cls._sig.parameters:  # pylint: disable=protected-access
         if not hasattr(cls, name):
             dyn_property = partial(_init_subclass_dynamic_property, name=name)
             setattr(cls, name, property(dyn_property))
@@ -1969,14 +1963,12 @@ def _init_subclass_dynamic_property(self: Operator2, name: str) -> Any:
 # -------------------------------------------------------------------------------
 
 
-# pylint: disable=ungrouped-imports
 operator_p = QpPrimitive("operator")
 operator_p.prim_type = "operator"
 
 
-# pylint: disable=too-many-arguments,unused-argument
 @operator_p.def_impl
-def _op_impl(
+def _op_impl(  # pylint: disable=too-many-arguments,unused-argument
     *all_args,
     op_cls,
     wire_lens,
@@ -2256,8 +2248,7 @@ def _resolve_arg_kind(cls, name: str) -> _ArgType:
     return _ArgType.DYN
 
 
-# pylint: disable=too-many-return-statements
-def _canonicalize_abstract_type(val, kind: _ArgType):
+def _canonicalize_abstract_type(val, kind: _ArgType):  # pylint: disable=too-many-return-statements
     """Canonicalizes the input into its abstract equivalent.
 
     Args:
@@ -2354,7 +2345,6 @@ class StatePrepBase2(Operator2, is_baseclass=True):
             array: A state vector for all wires in a circuit
         """
 
-    # pylint: disable=unused-argument
     def label(
         self, decimals: int | None = None, base_label: str | None = None, cache: dict | None = None
     ) -> str:

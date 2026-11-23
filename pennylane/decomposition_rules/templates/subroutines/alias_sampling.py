@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.alias_sampling."""
 
 from itertools import islice
@@ -47,8 +48,8 @@ def _apply_hadamards(wires):
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-def _uniform_prep_resources(n_states, target_wires, work_wires):
-    # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _uniform_prep_standard_resources(n_states, target_wires, work_wires):
     k = (n_states & -n_states).bit_length() - 1
     L = n_states >> k
     logL = ceil_log2(L)
@@ -72,8 +73,8 @@ def _uniform_prep_resources(n_states, target_wires, work_wires):
     return resources
 
 
-@register_resources(_uniform_prep_resources)
-def _uniform_prep_decomp(n_states, target_wires, work_wires, **_):
+@register_resources(_uniform_prep_standard_resources, name="amplitude_amplification")
+def _uniform_prep_standard(n_states, target_wires, work_wires, **_):
     k = (n_states & -n_states).bit_length() - 1
     L = n_states >> k
     logL = ceil_log2(L)
@@ -102,7 +103,7 @@ def _uniform_prep_decomp(n_states, target_wires, work_wires, **_):
     GlobalPhase(np.pi / 2)
 
 
-add_decomps(UniformPrep, _uniform_prep_decomp)
+add_decomps(UniformPrep, _uniform_prep_standard)
 
 
 def _build_alias_tables(probs, mu):
@@ -190,8 +191,8 @@ def _qrom_data(probs, mu, logL):
     return data
 
 
-def _alias_sampling_resources(probs, mu, target_wires, temp_wires, work_wires):
-    # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _alias_sampling_standard_resources(probs, mu, target_wires, temp_wires, work_wires):
     L = len(probs)
     logL = ceil_log2(L)
     n_target = len(target_wires)
@@ -214,8 +215,8 @@ def _alias_sampling_resources(probs, mu, target_wires, temp_wires, work_wires):
     }
 
 
-@register_resources(_alias_sampling_resources)
-def _alias_sampling_decomp(probs, mu, target_wires, temp_wires, work_wires, **_):
+@register_resources(_alias_sampling_standard_resources, name="qrom_comparator_swap")
+def _alias_sampling_standard(probs, mu, target_wires, temp_wires, work_wires, **_):
     L = len(probs)
     logL = ceil_log2(L)
     sigma_wires, alt_wires, keep_wires, flag, cmp_work = _split_temp_wires(temp_wires, mu, logL)
@@ -246,4 +247,4 @@ def _alias_sampling_decomp(probs, mu, target_wires, temp_wires, work_wires, **_)
     _swap()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(AliasSampling, _alias_sampling_decomp)
+add_decomps(AliasSampling, _alias_sampling_standard)

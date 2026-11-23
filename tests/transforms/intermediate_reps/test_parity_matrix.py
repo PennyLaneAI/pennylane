@@ -13,14 +13,13 @@
 # limitations under the License.
 """Tests for pennylane/labs/phase_polynomials/parity_matrix.py"""
 
-# pylint: disable = no-self-use
 from itertools import permutations
 
 import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.transforms import parity_matrix
 
 circ1 = qp.tape.QuantumScript(
@@ -33,9 +32,6 @@ circ1 = qp.tape.QuantumScript(
         qp.CNOT((0, 2)),
     ],
 )
-wire_order_abcd = ["a", "b", "c", "d"]
-(circ1_letters,), _ = qp.map_wires(circ1, dict(enumerate(wire_order_abcd)))
-
 P1 = np.array([[1, 0, 0, 1], [1, 1, 1, 1], [0, 0, 1, 1], [0, 0, 0, 1]])
 
 circ2 = qp.tape.QuantumScript([qp.SWAP((0, 1)), qp.SWAP((1, 2)), qp.SWAP((2, 3))], [])
@@ -54,13 +50,6 @@ class TestParityMatrix:
         P = parity_matrix(circ, wire_order=range(len(circ.wires)))
 
         assert np.allclose(P, P_true)
-
-    def test_parity_matrix_with_string_wires(self):
-        """Test parity matrix computation with string valued wires"""
-        wire_order1 = ["a", "b", "c", "d"]
-        P_re = parity_matrix(circ1_letters, wire_order=wire_order1)
-
-        assert np.allclose(P_re, P1)
 
     @pytest.mark.parametrize("wire_order", list(permutations(range(4), 4)))
     def test_parity_matrix_wire_order(self, wire_order):

@@ -20,6 +20,7 @@ page in the developement guide.
 
 # pylint: disable=protected-access,wrong-import-position
 
+
 import warnings
 
 import pytest
@@ -87,7 +88,7 @@ class TestElbow:
 class TestInitialization:
     """Tests drawer creation"""
 
-    @pytest.mark.parametrize("wire_map", [{0: 0, 1: 1}, {"a": 0, "b": 1, "c": 2}])
+    @pytest.mark.parametrize("wire_map", [{0: 0, 1: 1}, {8: 0, 9: 1, 11: 2}])
     @pytest.mark.parametrize("n_layers", [2, 3])
     def test_figsize_wires(self, wire_map, n_layers):
         """Tests the figure is sized correctly."""
@@ -195,7 +196,7 @@ class TestLabels:
     def test_labels(self):
         """Tests labels are added"""
 
-        wire_map = {"a": 0, "b": 1, "c": 2}
+        wire_map = {8: 0, 9: 1, 11: 2}
 
         drawer = MPLDrawer(1, wire_map)
 
@@ -205,7 +206,7 @@ class TestLabels:
         drawn_labels = drawer.ax.texts
 
         for wire, expected_label, actual_label in zip(range(3), labels, drawn_labels):
-            assert actual_label.get_text() == expected_label
+            assert actual_label.get_text() == str(expected_label)
 
             assert actual_label.get_position() == (-1.5, wire)
 
@@ -233,7 +234,7 @@ class TestLabels:
     def test_crop_wire_labels(self, n_layers):
         """Test that cropping wire labels works."""
 
-        wire_map = {"a": 0, "b": 1, "c": 2}
+        wire_map = {8: 0, 9: 1, 11: 2}
 
         drawer = MPLDrawer(n_layers, wire_map)
 

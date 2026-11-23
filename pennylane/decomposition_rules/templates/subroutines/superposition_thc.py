@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.superposition_thc."""
 
 import numpy as np
@@ -30,9 +31,8 @@ from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, concatenate_wires
 
 
-def _left_inequalities(
-    M, N, mu_wires, nu_wires, work_wires, keep_eq=False
-):  # pylint:disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=False):
     r"""Apply the inequality tests that flag a valid THC index pair.
 
     Computes the comparisons that define the valid index set onto dedicated flag
@@ -105,8 +105,8 @@ def _left_inequalities(
     )
 
 
-def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
-    # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _superposition_thc_standard_resources(M, N, mu_wires, nu_wires, work_wires):
     r"""Returns the exact gate counts of the SuperpositionTHC decomposition."""
 
     n = len(mu_wires)
@@ -146,9 +146,8 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
     }
 
 
-@register_resources(_superposition_thc_resources)
-def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
-    # pylint: disable=too-many-arguments
+@register_resources(_superposition_thc_standard_resources, name="amplitude_amplification")
+def _superposition_thc_standard(M, N, mu_wires, nu_wires, work_wires, **_):
     #
     # The first seven `work_wires` correspond to the flag/auxiliary register in Fig. 3 of
     # https://arxiv.org/pdf/2011.03494. After the routine, all work wires return to the zero
@@ -233,4 +232,4 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     adjoint(lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True))()
 
 
-add_decomps(SuperpositionTHC, _superposition_thc)
+add_decomps(SuperpositionTHC, _superposition_thc_standard)

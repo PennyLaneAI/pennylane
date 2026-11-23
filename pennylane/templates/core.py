@@ -32,6 +32,7 @@ from collections import defaultdict
 from collections.abc import Callable
 from copy import deepcopy
 from functools import update_wrapper
+from importlib import import_module as _import_module
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ParamSpec
 
@@ -174,7 +175,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
         abstract_wires = Wire[1] # a single wire
         S_rep = subroutine_resource_rep(S, abstract_params, abstract_wires, qp.RX)
 
-        @qp.decomposition.register_resources({S_rep: 1})
+        @qp.decomposition.register_resources({S_rep: 1}, name="my_op_decomposition")
         def my_op_decomposition(wires):
             # data of shape (4, ) and dtype float
             params = np.array([1.0, 2.0, 3.0, 4.0])
@@ -186,14 +187,12 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     .. code-block:: python
 
-        qp.decomposition.enable_graph()
-
         @qp.qnode(qp.device('reference.qubit', wires=1))
         def c():
             MyOp(wires=0)
             return qp.state()
 
-    >>> print(qp.draw(qp.transforms._tape_decompose(c, max_expansion=1))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(c, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1))())
     0: ──S(M0)─┤  State
     <BLANKLINE>
     M0 =
@@ -308,7 +307,6 @@ class SubroutineOp(Operation):
         inputs = ", ".join(f"{key}={value}" for key, value in self._bound_args.arguments.items())
         return f"<{self.name}({inputs})>"
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         subroutine: "Subroutine",
@@ -392,8 +390,7 @@ def _default_resources(subroutine: "Subroutine", *args, **kwargs) -> defaultdict
 P = ParamSpec("P")
 
 
-# pylint: disable=too-many-arguments, too-many-instance-attributes
-class Subroutine:
+class Subroutine:  # pylint: disable=too-many-instance-attributes
     """The definition of a Subroutine, compatible both with program capture and backwards
     compatible with operators.
 
@@ -485,7 +482,6 @@ class Subroutine:
             for word in pauli_words:
                 qp.PauliRot(x, word, wires)
 
-
     >>> print(qp.draw(WithSetup)(0.5, [0, 1], ["XX", "XY", "XZ"]))
     0: ─╭WithSetup(0.50)─┤
     1: ─╰WithSetup(0.50)─┤
@@ -502,7 +498,6 @@ class Subroutine:
             if y is None:
                 y = len(wires)
             return (y, wires), {}
-
 
     ``setup_inputs`` should only interact with with compile-time information like
     static arguments, pytree structures, shapes, and dtypes, and *not* interact with any
@@ -523,7 +518,6 @@ class Subroutine:
                 # do something else
             ...
 
-
     **Integration with Graph decompositions:**
 
     .. warning::
@@ -532,7 +526,6 @@ class Subroutine:
         Ahead-Of-Time compiled decomposition rules and simple call signatures. Graph decompositions
         are not available for higher order algorithmic abstractions like ``Subroutine``, or operators
         that decompose to ``Subroutine``, in Catalyst.
-
 
     To use ``Subroutine`` with graph-based decompositions, we need a function to compute the resources.
     A default fallback calculates the resources by calling the subroutine with
@@ -579,7 +572,7 @@ class Subroutine:
         abstract_wires = Wire[3]
         rxlayer_rep = subroutine_resource_rep(RXLayer, abstract_params, abstract_wires)
 
-        @qp.decomposition.register_resources({rxlayer_rep: 1})
+        @qp.decomposition.register_resources({rxlayer_rep: 1}, name="MyOpDecomposition")
         def MyOpDecomposition(wires):
             params = np.arange(3, dtype=float)
             RXLayer(params, wires)
@@ -593,21 +586,18 @@ class Subroutine:
             MyOp((0,1,2))
             return qp.expval(qp.Z(0))
 
-        qp.decomposition.enable_graph()
-
-
     >>> print(qp.draw(c)())
     0: ─╭MyOp─┤  <Z>
     1: ─├MyOp─┤
     2: ─╰MyOp─┤
-    >>> print(qp.draw(qp.transforms._tape_decompose(c, max_expansion=1))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(c, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1))())
     0: ─╭RXLayer(M0)─┤  <Z>
     1: ─├RXLayer(M0)─┤
     2: ─╰RXLayer(M0)─┤
     <BLANKLINE>
     M0 =
     [0. 1. 2.]
-    >>> print(qp.draw(qp.transforms._tape_decompose(c, max_expansion=2))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(c, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=2))())
     0: ──RX(0.00)─┤  <Z>
     1: ──RX(1.00)─┤
     2: ──RX(2.00)─┤
@@ -671,7 +661,7 @@ class Subroutine:
     def __instancecheck__(self, instance) -> bool:
         return isinstance(instance, SubroutineOp) and instance.subroutine is self
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         definition: Callable[P, Any],
         *,
@@ -812,9 +802,8 @@ class CollectedSubroutine(Operation):
     def _unflatten(cls, data, metadata):
         return CollectedSubroutine(metadata, data)
 
-    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, name, decomp):
+    def _primitive_bind_call(cls, name, decomp):  # pylint: disable=arguments-differ
         return cls._primitive.bind(name=name, decomp=decomp)
 
     def __repr__(self) -> str:
@@ -847,3 +836,16 @@ __all__ = [
     "adjoint_subroutine_resource_rep",
     "change_op_basis_subroutine_resource_rep",
 ]
+
+
+_RULE_MODULES = {
+    "_subroutine_standard_resources": "pennylane.decomposition_rules.templates.core",
+    "_subroutine_standard": "pennylane.decomposition_rules.templates.core",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

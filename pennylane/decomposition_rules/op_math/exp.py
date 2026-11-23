@@ -12,12 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for op_math.exp."""
 
 import pennylane as qp
 from pennylane import math
 from pennylane.core import queuing
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_resources,
+)
 from pennylane.ops.op_math.exp import Exp
 from pennylane.typing import Float, Wire
 
@@ -29,7 +34,7 @@ def _pauli_rot_decomp_condition(base):
     return qp.pauli.is_pauli_word(base)
 
 
-def _pauli_rot_decomp_resource(base):
+def _exp_to_pauli_rot_resources(base):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
 
@@ -38,8 +43,8 @@ def _pauli_rot_decomp_resource(base):
 
 
 @register_condition(_pauli_rot_decomp_condition)
-@register_resources(_pauli_rot_decomp_resource)
-def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argument
+@register_resources(_exp_to_pauli_rot_resources, name="to_pauli_rot")
+def _exp_to_pauli_rot(*params, wires, base, **_):  # pylint: disable=unused-argument
     """Decompose the operator into a single PauliRot operator."""
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
@@ -56,4 +61,4 @@ def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argum
     qp.PauliRot(coeff, pauli_word, base.wires)
 
 
-add_decomps(Exp, pauli_rot_decomp)
+add_decomps(Exp, _exp_to_pauli_rot)

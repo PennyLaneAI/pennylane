@@ -20,6 +20,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
+from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 from pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square import (
     _out_square_with_adder_zeroed,
     _out_square_with_caddsub,
@@ -103,8 +104,7 @@ def test_min_work_wires_not_implemented_in_base_class(cls):
     # private base class directly) since both OutSquare and SignedOutSquare override this method
     # and would otherwise never reach the base class's placeholder implementation.
     with pytest.raises(NotImplementedError):
-        # pylint: disable=protected-access
-        super(cls, cls)._min_work_wires(1, 1, False)
+        super(cls, cls)._min_work_wires(1, 1, False)  # pylint: disable=protected-access
 
 
 def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit):
@@ -127,7 +127,11 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
     if use_jit:
         circuit = qp.qjit(
             # pylint: disable-next=protected-access
-            qp.transforms._tape_decompose(circuit, max_expansion=2),
+            qp.transforms._tape_decompose(
+                circuit,
+                gate_set=ROTATIONS_PLUS_CNOT | {qp.StatePrep, "Adjoint(StatePrep)"},
+                max_expansion=2,
+            ),
             capture=False,
         )
 
@@ -167,7 +171,6 @@ class TestOutSquare:
     """Test the OutSquare template."""
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("output_wires_zeroed", [False, True])
     def test_qjit_dynamic_wires(self, output_wires_zeroed):
         """Test the OutSquare template with dynamic wires."""
@@ -189,7 +192,9 @@ class TestOutSquare:
         @qp.qjit(capture=False)
         @qp.set_shots(1)
         # pylint: disable-next=protected-access
-        @qp.transforms._tape_decompose(max_expansion=2, fixed_decomps=fixed_decomps)
+        @qp.transforms._tape_decompose(
+            gate_set=ROTATIONS_PLUS_CNOT, max_expansion=2, fixed_decomps=fixed_decomps
+        )
         @qp.qnode(dev)
         def circuit(x, y, x_wires, work_wires):
             qp.BasisEmbedding(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
@@ -228,9 +233,7 @@ class TestOutSquare:
             ),
         ],
     )
-    def test_wires_overlap_error(
-        self, x_wires, output_wires, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_wires_overlap_error(self, x_wires, output_wires, work_wires, msg_match):
         """Test an error is raised when some registers overlap."""
         with pytest.raises(ValueError, match=msg_match):
             OutSquare(x_wires, output_wires, work_wires)
@@ -253,7 +256,7 @@ class TestOutSquare:
     )
     def test_work_wire_number(
         self, num_x_wires, num_output_wires, num_work_wires, zeroed, should_raise
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Test an error is raised (only) when too few work wires are supplied."""
         wires = qp.registers(
             {"x_wires": num_x_wires, "output_wires": num_output_wires, "work_wires": num_work_wires}
@@ -301,7 +304,7 @@ class TestOutSquare:
             False,
         ],
     )
-    def test_decomposition_new(
+    def test_decomposition_new(  # pylint: disable=too-many-arguments
         self,
         x_wires,
         output_wires,
@@ -310,7 +313,7 @@ class TestOutSquare:
         applicable_rules,
         use_jit,
         seed,
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Tests the decomposition rule implemented with the new system."""
 
         op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)

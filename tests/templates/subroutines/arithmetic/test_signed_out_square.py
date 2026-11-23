@@ -23,7 +23,7 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
 from pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_square import (
-    _signed_out_square_resources,
+    _signed_out_square_from_unsigned_resources,
 )
 from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
 from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
@@ -101,7 +101,7 @@ def test_signed_out_square_resources(output_wires_zeroed):
     output_wires = [3, 4, 5, 6, 7]
     work_wires = [8, 9, 10, 11, 12]
 
-    resources = _signed_out_square_resources(
+    resources = _signed_out_square_from_unsigned_resources(
         x_wires, output_wires, work_wires, output_wires_zeroed=output_wires_zeroed
     )
 
@@ -169,7 +169,6 @@ class TestSignedOutSquare:
     """Test the SignedOutSquare template."""
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("output_wires_zeroed", [False, True])
     def test_qjit_dynamic_wires(self, output_wires_zeroed):
         """Test the SignedOutSquare template with dynamic wires."""
@@ -240,9 +239,7 @@ class TestSignedOutSquare:
             ),
         ],
     )
-    def test_wires_overlap_error(
-        self, x_wires, output_wires, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_wires_overlap_error(self, x_wires, output_wires, work_wires, msg_match):
         """Test an error is raised when some registers overlap."""
         with pytest.raises(ValueError, match=msg_match):
             SignedOutSquare(x_wires, output_wires, work_wires)
@@ -265,9 +262,7 @@ class TestSignedOutSquare:
             ([0], [3, 4, 5], [6], False, True),
         ],
     )
-    def test_work_wire_number(
-        self, x_wires, output_wires, work_wires, zeroed, should_raise
-    ):  # pylint: disable=too-many-arguments
+    def test_work_wire_number(self, x_wires, output_wires, work_wires, zeroed, should_raise):
         """Test an error is raised (only) when too few work wires are supplied."""
         if should_raise:
             msg_match = "SignedOutSquare requires at least"
@@ -337,7 +332,7 @@ class TestSignedOutSquare:
     )
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=pytest.mark.jax), False])
-    def test_decomposition_new(
+    def test_decomposition_new(  # pylint: disable=too-many-arguments
         self,
         x_wires,
         output_wires,
@@ -345,7 +340,7 @@ class TestSignedOutSquare:
         output_wires_zeroed,
         use_jit,
         seed,
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Tests the decomposition rule implemented with the new system."""
         op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
         for rule in qp.list_decomps(SignedOutSquare):
@@ -371,7 +366,7 @@ class TestSignedOutSquare:
     def test_decomposition_rule_with_capture(
         self, x_wires, output_wires, work_wires, output_wires_zeroed
     ):
-        """Test that the decomposition rule is working correctly when ``_signed_out_square``
+        """Test that the decomposition rule is working correctly when ``_signed_out_square_from_unsigned``
         calls ``_c_subtract_then_add_one`` (triggered whenever ``len(output_wires) > len(x_wires)``)
         """
         op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)

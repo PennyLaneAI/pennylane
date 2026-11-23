@@ -19,6 +19,7 @@ symbolic operator representing the product of operators.
 import itertools
 from copy import copy
 from functools import reduce
+from importlib import import_module as _import_module
 from typing import Union, override
 
 from scipy.sparse import kron as sparse_kron
@@ -28,6 +29,7 @@ from pennylane import capture, math
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
+from pennylane.ops._pauli_conversion import to_operator
 from pennylane.typing import AbstractWires, TensorLike
 from pennylane.wires import Wires
 
@@ -188,9 +190,8 @@ class Prod2(CompositeOp2):
 
     @property
     @handle_recursion_error
-    def has_sparse_matrix(  # pylint: disable=arguments-differ,invalid-overridden-method
-        self,
-    ) -> bool:
+    # pylint: disable-next=arguments-differ,invalid-overridden-method
+    def has_sparse_matrix(self) -> bool:
         return (
             all(op.has_sparse_matrix for op in self)
             or self.pauli_rep is not None
@@ -280,7 +281,7 @@ class Prod2(CompositeOp2):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             with qp.QueuingManager.stop_recording(), capture.pause():
-                ops = [pauli.operation() for pauli in pr.keys()]
+                ops = [to_operator(pauli) for pauli in pr.keys()]
             return list(pr.values()), ops
 
         with qp.QueuingManager.stop_recording(), capture.pause():
@@ -313,7 +314,7 @@ class Prod2(CompositeOp2):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return pr.operation(wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         global_phase, factors = self._simplify_factors(factors=self.operands)
 
@@ -508,3 +509,21 @@ class _ProductFactorsGrouping:
             tuple: Tuple of grouped factors.
         """
         return tuple(self._factors)
+
+
+_RULE_MODULES = {
+    "_prod2_standard_resources": "pennylane.decomposition_rules.op_math.prod2",
+    "_prod2_standard": "pennylane.decomposition_rules.op_math.prod2",
+    "_controlled_prod2_with_work_wires_resources": "pennylane.decomposition_rules.op_math.prod2",
+    "_multi_temporary_and_all_ones": "pennylane.decomposition_rules.op_math.prod2",
+    "_controlled_prod2_with_work_wires": "pennylane.decomposition_rules.op_math.prod2",
+    "_controlled_prod2_with_one_work_wire_resources": "pennylane.decomposition_rules.op_math.prod2",
+    "_controlled_prod2_with_one_work_wire": "pennylane.decomposition_rules.op_math.prod2",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

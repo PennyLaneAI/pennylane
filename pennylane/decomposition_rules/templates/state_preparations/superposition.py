@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.state_preparations.superposition."""
 
 from collections import Counter
@@ -52,7 +53,7 @@ def _permutation_operator_qfunc(basis1, basis2, wires, work_wire):
     qp.MultiControlledX(concatenate_wires(wires, work_wire), control_values=basis2)
 
 
-def _superposition_resources(num_wires, num_coeffs, bases):
+def _superposition_standard_resources(num_wires, num_coeffs, bases):
     perms = order_states(bases)
 
     resources = Counter()
@@ -73,10 +74,9 @@ def _superposition_resources(num_wires, num_coeffs, bases):
     return dict(resources)
 
 
-@register_resources(_superposition_resources)
-def _superposition_decomposition(
-    coeffs, bases, wires, target_wires, work_wire  # pylint: disable=unused-argument
-):
+@register_resources(_superposition_standard_resources, name="state_prep_permutations")
+# pylint: disable-next=unused-argument
+def _superposition_standard(coeffs, bases, wires, target_wires, work_wire):
     dic_state = dict(zip(bases, coeffs, strict=True))
     perms = order_states(bases)
     new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
@@ -105,4 +105,4 @@ def _superposition_decomposition(
     apply_permutations()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(Superposition, _superposition_decomposition)
+add_decomps(Superposition, _superposition_standard)

@@ -37,15 +37,15 @@ hermitian_ops = [
     qp.Hermitian(H_ONE_QUBIT, 2),
     qp.Hermitian(H_TWO_QUBITS, [0, 1]),
     qp.PauliX(1),
-    qp.Identity("a"),
+    qp.Identity(4),
 ]
 
 pauli_ops = [
     op_cls(wires)
-    for op_cls, wires in itertools.product([qp.PauliX, qp.PauliY, qp.PauliZ], [0, 1, "q", [1]])
+    for op_cls, wires in itertools.product([qp.PauliX, qp.PauliY, qp.PauliZ], [0, 1, 5, [1]])
 ]
 
-identity = [qp.Identity(wires) for wires in [0, 1, "q", [1, "a"]]]
+identity = [qp.Identity(wires) for wires in [0, 1, 5, [1, 4]]]
 
 hamiltonians = [
     qp.Hamiltonian(*args)
@@ -60,7 +60,7 @@ hamiltonians = [
         ((0.6,), (qp.PauliX(0) @ qp.PauliX(1),)),
         ((0.5, -1.6), (qp.PauliX(0), qp.PauliY(1))),
         ((0.5, -1.6), (qp.PauliX(1), qp.PauliY(1))),
-        ((0.5, -1.6), (qp.PauliX("a"), qp.PauliY("b"))),
+        ((0.5, -1.6), (qp.PauliX(4), qp.PauliY(5))),
         ((1.1, -0.4, 0.333), (qp.PauliX(0), qp.Hermitian(H_ONE_QUBIT, 2), qp.PauliZ(2))),
         ((-0.4, 0.15), (qp.Hermitian(H_TWO_QUBITS, [0, 2]), qp.PauliZ(1))),
         ([1.5, 2.0], [qp.PauliZ(0), qp.PauliY(2)]),
@@ -155,8 +155,8 @@ class TestDatasetOperator:
         "op_in",
         [
             qp.RX(1.1, 0),
-            qp.FermionicSWAP(1.3, [1, "a"]),
-            qp.Toffoli([1, "a", 2]),
+            qp.FermionicSWAP(1.3, [1, 4]),
+            qp.Toffoli([1, 4, 2]),
             qp.Hamiltonian([], []),
         ],
     )
@@ -179,8 +179,8 @@ class TestDatasetOperator:
         "op_in",
         [
             qp.RX(1.1, 0),
-            qp.FermionicSWAP(1.3, [1, "a"]),
-            qp.Toffoli([1, "a", 2]),
+            qp.FermionicSWAP(1.3, [1, 4]),
+            qp.Toffoli([1, 4, 2]),
             qp.Hamiltonian([], []),
         ],
     )
@@ -234,7 +234,7 @@ def test_value_init_not_supported():
     """Test that a ValueError is raised if attempting to serialize an unsupported operator
     using the ``DatasetOperator`` attribute type."""
 
-    class NotSupported(Operator):  # pylint: disable=too-few-public-methods, unnecessary-ellipsis
+    class NotSupported(Operator):  # pylint: disable=too-few-public-methods
         """An operator."""
 
     with pytest.raises(

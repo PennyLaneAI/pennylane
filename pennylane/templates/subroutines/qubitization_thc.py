@@ -13,11 +13,10 @@
 # limitations under the License.
 """Qubitization walk operator for the tensor hypercontracted (THC) Hamiltonian."""
 
-from pennylane.core.operator import Operator2
-from pennylane.typing import Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from importlib import import_module as _import_module
 
-from .alias_sampling_thc import (
+from pennylane.core.operator import Operator2
+from pennylane.templates.subroutines.alias_sampling_thc import (
     _build_thc_pairs,
     _num_address_wires,
     _num_index_wires,
@@ -25,7 +24,9 @@ from .alias_sampling_thc import (
     _validate_zeta,
     alias_sampling_thc_wires,
 )
-from .select_thc import _validate_select_data, select_thc_wires
+from pennylane.templates.subroutines.select_thc import _validate_select_data, select_thc_wires
+from pennylane.typing import Wire
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 
 def _alias_wire_split(M, N, aleph):
@@ -273,7 +274,10 @@ class QubitizationTHC(Operator2):
         gradient = wires["gradient_wires"]
 
 
-        @qp.transforms._tape_decompose(stopping_condition=lambda op: len(op.wires) <= 3)
+        @qp.transforms._tape_decompose(
+            gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT,
+            stopping_condition=lambda op: len(op.wires) <= 3,
+        )
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.PhaseGradientStatePrep(gradient)
@@ -296,7 +300,7 @@ class QubitizationTHC(Operator2):
         .. decomposition-table:: qp.QubitizationTHC
             :stacked:
 
-            .. decomposition-rule:: _qubitization_thc_decomp
+            .. decomposition-rule:: thc_prepare_select_reflection
                 :image: /_static/decomposition_thumbnails/qubitization_thc_walk.svg
 
                 :class:`~.SuperpositionTHC` | :math:`1`
@@ -327,7 +331,7 @@ class QubitizationTHC(Operator2):
         "work_wires": Wire[-1],
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         zeta,
         t_ell,
@@ -341,7 +345,7 @@ class QubitizationTHC(Operator2):
         gradient_wires: WiresLike,
         work_wires: WiresLike,
         num_batches=1,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+    ):
         _validate_zeta(zeta)
         _validate_t_ell(t_ell)
         M, n_half = _validate_select_data(chi, t_eigenvectors)
@@ -385,3 +389,20 @@ class QubitizationTHC(Operator2):
             + self.gradient_wires
             + self.work_wires
         )
+
+
+_RULE_MODULES = {
+    "_prepare_registers": "pennylane.decomposition_rules.templates.subroutines.qubitization_thc",
+    "_thc_prepare_resources": "pennylane.decomposition_rules.templates.subroutines.qubitization_thc",
+    "_THCPrepare": "pennylane.decomposition_rules.templates.subroutines.qubitization_thc",
+    "_prepare_select": "pennylane.decomposition_rules.templates.subroutines.qubitization_thc",
+    "_qubitization_thc_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qubitization_thc",
+    "_qubitization_thc_standard": "pennylane.decomposition_rules.templates.subroutines.qubitization_thc",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

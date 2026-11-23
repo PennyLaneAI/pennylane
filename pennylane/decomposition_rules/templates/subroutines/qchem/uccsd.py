@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.qchem.uccsd."""
 
-# pylint: disable-msg=too-many-arguments,protected-access,too-many-positional-arguments
+# pylint: disable=too-many-arguments
+
 
 from collections import Counter
 
@@ -34,7 +36,7 @@ from pennylane.templates.subroutines.qchem.uccsd import UCCSD
 from pennylane.typing import Bool, Wire
 
 
-def _UCCSD_resources(num_wires, n_repeats, num_d_wires, num_s_wires):
+def _UCCSD_standard_resources(num_wires, n_repeats, num_d_wires, num_s_wires):
     resources = Counter({BasisState(Bool[num_wires], Wire[num_wires]): 1})
 
     for _ in range(n_repeats):
@@ -47,8 +49,8 @@ def _UCCSD_resources(num_wires, n_repeats, num_d_wires, num_s_wires):
     return dict(resources)
 
 
-@register_resources(_UCCSD_resources)
-def _UCCSD_decomposition(weights, wires, s_wires, d_wires, init_state, n_repeats):
+@register_resources(_UCCSD_standard_resources, name="fermionic_excitation_layers")
+def _UCCSD_standard(weights, wires, s_wires, d_wires, init_state, n_repeats):
     BasisState(init_state, wires=wires)
 
     if n_repeats == 1 and len(math.shape(weights)) == 1:
@@ -75,4 +77,4 @@ def _UCCSD_decomposition(weights, wires, s_wires, d_wires, init_state, n_repeats
     apply_layers()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(UCCSD, _UCCSD_decomposition)
+add_decomps(UCCSD, _UCCSD_standard)

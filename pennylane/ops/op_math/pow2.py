@@ -15,7 +15,7 @@
 """Defines the base class for the power of operators."""
 
 from functools import reduce
-from importlib import import_module
+from importlib import import_module as _import_module
 from typing import Union, override
 
 from scipy.linalg import fractional_matrix_power
@@ -38,6 +38,7 @@ from pennylane.exceptions import (
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
+from pennylane.ops._pauli_conversion import to_operator
 from pennylane.ops.op_math import adjoint
 
 from .symbolicop2 import SymbolicOp2
@@ -137,7 +138,6 @@ class Pow2(SymbolicOp2):
             f"({base_label}){z_string}" if self.base.arithmetic_depth > 0 else base_label + z_string
         )
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     @override
     def has_sparse_matrix(self) -> bool:
@@ -151,19 +151,17 @@ class Pow2(SymbolicOp2):
             return math.linalg.matrix_power(mat, z)
         return fractional_matrix_power(mat, z)
 
-    # pylint: disable=arguments-differ
     @staticmethod
     @override
-    def compute_sparse_matrix(base=None, z=0, format="csr"):
+    def compute_sparse_matrix(base=None, z=0, format="csr"):  # pylint: disable=arguments-differ
         if isinstance(z, int):
             base_matrix = base.compute_sparse_matrix(**base.arguments)
             return (base_matrix**z).asformat(format)
         raise SparseMatrixUndefinedError
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     @override
-    def has_decomposition(self):
+    def has_decomposition(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         if isinstance(self.z, int) and self.z > 0:
             return True
         try:
@@ -179,7 +177,7 @@ class Pow2(SymbolicOp2):
 
     @staticmethod
     @override
-    def compute_decomposition(base, z):
+    def compute_decomposition(base, z):  # pylint: disable=arguments-differ
         try:
             return base.pow(z)
         except PowUndefinedError as e:
@@ -193,12 +191,12 @@ class Pow2(SymbolicOp2):
 
     @property
     @override
-    def has_diagonalizing_gates(self):
+    def has_diagonalizing_gates(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return self.base.has_diagonalizing_gates
 
     @staticmethod
     @override
-    def compute_diagonalizing_gates(base, z):  # pylint: disable=unused-argument
+    def compute_diagonalizing_gates(base, z):  # pylint: disable=arguments-differ,unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -237,10 +235,9 @@ class Pow2(SymbolicOp2):
         complex_dtype = "complex64" if is_single_precision else "complex128"
         return math.cast(base_eigvals, complex_dtype) ** self.z
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     @override
-    def has_generator(self):
+    def has_generator(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return self.base.has_generator
 
     @override
@@ -262,10 +259,9 @@ class Pow2(SymbolicOp2):
     def pow(self, z):
         return [Pow2(base=self.base, z=self.z * z)]
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     @override
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-differ,invalid-overridden-method
         return isinstance(self.z, int)
 
     @override
@@ -303,7 +299,7 @@ class Pow2(SymbolicOp2):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return pr.operation(wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         base = self.base if capture.enabled() else self.base.simplify()
         try:
@@ -329,17 +325,31 @@ def _pow2_to_name(op: Pow2):
     return f"Pow({to_name(op.base)})"
 
 
-def __getattr__(name):
-    """Resolve the existing public names of relocated decomposition rules."""
-    if name in {
-        "flip_pow_adjoint",
-        "merge_powers",
-        "pow_involutory",
-        "repeat_pow_base",
-        "make_pow_decomp_with_period",
-        "pow_rotation",
-    }:
-        rules = import_module("pennylane.decomposition_rules.op_math.pow2")
+_RULE_MODULES = {
+    "_pow_repeat_base": "pennylane.decomposition_rules.op_math.pow2",
+    "_pow_merge_powers": "pennylane.decomposition_rules.op_math.pow2",
+    "_pow_flip_adjoint_resources": "pennylane.decomposition_rules.op_math.pow2",
+    "_pow_flip_adjoint": "pennylane.decomposition_rules.op_math.pow2",
+    "make_pow_decomp_with_period": "pennylane.decomposition_rules.op_math.pow2",
+    "pow_involutory": "pennylane.decomposition_rules.op_math.pow2",
+    "_pow_scale_angle_resources": "pennylane.decomposition_rules.op_math.pow2",
+    "_pow_scale_angle": "pennylane.decomposition_rules.op_math.pow2",
+    "_list_pow_decomps": "pennylane.decomposition_rules.op_math.pow2",
+}
 
-        return getattr(rules, name)
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+_RULE_MODULES.update(
+    {
+        "pow_rotation": "pennylane.decomposition_rules.op_math.pow2",
+        "repeat_pow_base": "pennylane.decomposition_rules.op_math.pow2",
+        "merge_powers": "pennylane.decomposition_rules.op_math.pow2",
+        "flip_pow_adjoint": "pennylane.decomposition_rules.op_math.pow2",
+    }
+)

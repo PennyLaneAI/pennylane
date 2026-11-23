@@ -18,7 +18,7 @@ core parametrized gates.
 """
 
 import functools
-from importlib import import_module
+from importlib import import_module as _import_module
 from operator import matmul
 from typing import Literal
 from warnings import warn
@@ -27,15 +27,12 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import math
-
-# pylint: disable=arguments-differ
 from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
+from pennylane.ops.qubit.parametric_ops_single_qubit import PhaseShift, _can_replace, stack_last
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
-
-from .non_parametric_ops import PauliX, PauliY, PauliZ
-from .parametric_ops_single_qubit import PhaseShift, _can_replace, stack_last
 
 
 class MultiRZ(Operator2):
@@ -70,25 +67,25 @@ class MultiRZ(Operator2):
             :symbols: :math:`n` wires
             :example: :math:`n=3`
 
-            .. decomposition-rule:: _multi_rz_decomposition
+            .. decomposition-rule:: cnot_ladder
                 :image: /_static/decomposition_thumbnails/multirz_cnot_ladder.svg
 
                 :class:`~.CNOT` | :math:`2(n-1)` | 4
                 :class:`~.RZ` | :math:`1` | 1
 
-            .. decomposition-rule:: _multi_rz_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/multirz_to_ppr.svg
 
                 :class:`PauliRot("Z...Z") <.PauliRot>` on :math:`n` wires | :math:`1` | 1
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/multirz_adjoint.svg
                 :region: adjoint
                 :where: ``theta`` changes sign
 
                 :class:`~.MultiRZ` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/multirz_pow.svg
                 :region: pow
                 :where: ``theta`` is multiplied by the power :math:`z`
@@ -116,6 +113,7 @@ class MultiRZ(Operator2):
             )
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_matrix(theta: TensorLike, wires: WiresLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -159,6 +157,7 @@ class MultiRZ(Operator2):
         return len(self.wires)
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_eigvals(theta: TensorLike, wires: WiresLike) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -255,7 +254,7 @@ class PauliRot(Operator2):
                 :math:`z` ``"Z"`` entries, and :math:`k = x + y + z`
             :example: :math:`P=` ``"XYZ"``
 
-            .. decomposition-rule:: _pauli_rot_decomposition
+            .. decomposition-rule:: basis_change_multirz
                 :image: /_static/decomposition_thumbnails/paulirot_basis_change.svg
                 :where: :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
 
@@ -265,14 +264,14 @@ class PauliRot(Operator2):
                 :class:`~.MultiRZ` on :math:`k` wires | :math:`[k > 0]` | 1
                 :class:`~.GlobalPhase` | :math:`[k = 0]` | 0
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/paulirot_adjoint.svg
                 :region: adjoint
                 :where: ``theta`` changes sign
 
                 :class:`~.PauliRot` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/paulirot_pow.svg
                 :region: pow
                 :where: ``theta`` is multiplied by the power :math:`z`
@@ -393,9 +392,8 @@ class PauliRot(Operator2):
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in set(pauli_word))
 
     @staticmethod
-    def compute_matrix(  # pylint: disable=unused-argument
-        theta: TensorLike, pauli_word: str, wires=None
-    ) -> TensorLike:
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_matrix(theta: TensorLike, pauli_word: str, wires=None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -461,9 +459,8 @@ class PauliRot(Operator2):
         )
 
     @staticmethod
-    def compute_eigvals(  # pylint: disable=unused-argument
-        theta: TensorLike, pauli_word: str, wires=None
-    ) -> TensorLike:
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_eigvals(theta: TensorLike, pauli_word: str, wires=None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -582,7 +579,7 @@ class PCPhase(Operator2):
             :symbols: :math:`n` wires and ``dim`` :math:`=d`
             :example: :math:`n=4`, :math:`d=3`
 
-            .. decomposition-rule:: _decompose_pcphase
+            .. decomposition-rule:: controlled_phase_shifts
                 :image: /_static/decomposition_thumbnails/pcphase_ctrl_phase_shifts.svg
                 :where: :math:`d = f\,2^n + \sum_{i=0}^{n-1} p_i 2^{n-1-i}` in non-adjacent form,
                     i.e., :math:`f\in\{0, 1\}` and :math:`p_i\in\{-1, 0, 1\}` with no two adjacent
@@ -594,7 +591,7 @@ class PCPhase(Operator2):
                 :class:`~.X` | :math:`2M_+` | 2
                 :class:`~.GlobalPhase` | :math:`1` | 1
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/pcphase_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
@@ -741,6 +738,7 @@ class PCPhase(Operator2):
         super().__init__(phi, dim, wires=wires)
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_matrix(phi: TensorLike, dim: int, wires: WiresLike) -> TensorLike:
         """Get the matrix representation of Pi-controlled phase unitary."""
         d, t = (dim, 2 ** len(wires))
@@ -755,6 +753,7 @@ class PCPhase(Operator2):
         return math.stack([math.diag(d) for d in diags])
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_eigvals(phi: TensorLike, dim: int, wires: WiresLike) -> TensorLike:
         """Get the eigvals for the Pi-controlled phase unitary."""
         d, t = (dim, 2 ** len(wires))
@@ -836,25 +835,25 @@ class IsingXX(Operator2):
 
         .. decomposition-table:: qp.IsingXX
 
-            .. decomposition-rule:: _isingxx_to_cnot_rx_cnot
+            .. decomposition-rule:: to_cnot_rx_cnot
                 :image: /_static/decomposition_thumbnails/isingxx_cnot_rx.svg
 
                 :class:`~.CNOT` | :math:`2`
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: _isingxx_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/isingxx_ppr.svg
 
                 :class:`PauliRot("XX") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/isingxx_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.IsingXX` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/isingxx_pow.svg
                 :region: pow
                 :where: ``phi`` is multiplied by the power :math:`z`
@@ -879,7 +878,7 @@ class IsingXX(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable-next=unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -966,25 +965,25 @@ class IsingYY(Operator2):
 
         .. decomposition-table:: qp.IsingYY
 
-            .. decomposition-rule:: _isingyy_to_cy_ry_cy
+            .. decomposition-rule:: to_cy_ry_cy
                 :image: /_static/decomposition_thumbnails/isingyy_cy_ry.svg
 
                 :class:`~.CY` | :math:`2`
                 :class:`~.RY` | :math:`1`
 
-            .. decomposition-rule:: _isingyy_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/isingyy_ppr.svg
 
                 :class:`PauliRot("YY") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/isingyy_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.IsingYY` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/isingyy_pow.svg
                 :region: pow
                 :where: ``phi`` is multiplied by the power :math:`z`
@@ -1009,7 +1008,7 @@ class IsingYY(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable-next=unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1109,18 +1108,18 @@ class IsingZZ(Operator2):
             :symbols: :math:`c` control wires, :math:`z` controls on :math:`0`
             :example: :math:`c=1`, :math:`z=0`
 
-            .. decomposition-rule:: _isingzz_to_cnot_rz_cnot
+            .. decomposition-rule:: to_cnot_rz_cnot
                 :image: /_static/decomposition_thumbnails/isingzz_cnot_rz.svg
 
                 :class:`~.CNOT` | :math:`2`
                 :class:`~.RZ` | :math:`1`
 
-            .. decomposition-rule:: _isingzz_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/isingzz_ppr.svg
 
                 :class:`PauliRot("ZZ") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_ising_zz)
+            .. decomposition-rule:: parity_controlled_rz
                 :image: /_static/decomposition_thumbnails/controlled_ising_zz.svg
                 :region: controlled
                 :where: The CNOT gates compute and uncompute the parity of the two target wires. Only the RZ rotation requires the :math:`c` control wires. Controls on :math:`0` are flipped with X gates before and after the decomposition.
@@ -1129,14 +1128,14 @@ class IsingZZ(Operator2):
                 :class:`Controlled(RZ) <.Controlled>` | :math:`1` | 1
                 :class:`~.PauliX` | :math:`2z` | 0
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/isingzz_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.IsingZZ` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/isingzz_pow.svg
                 :region: pow
                 :where: ``phi`` is multiplied by the power :math:`z`
@@ -1162,7 +1161,7 @@ class IsingZZ(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable-next=unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1196,7 +1195,7 @@ class IsingZZ(Operator2):
         return diags[:, :, np.newaxis] * math.cast_like(math.eye(4, like=diags), diags)
 
     @staticmethod
-    # pylint: disable-next=unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_eigvals(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -1292,7 +1291,7 @@ class IsingXY(Operator2):
 
         .. decomposition-table:: qp.IsingXY
 
-            .. decomposition-rule:: _isingxy_to_h_cy
+            .. decomposition-rule:: to_h_cy
                 :image: /_static/decomposition_thumbnails/isingxy_h_cy.svg
 
                 :class:`~.Hadamard` | :math:`2`
@@ -1300,14 +1299,14 @@ class IsingXY(Operator2):
                 :class:`~.RY` | :math:`1`
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/isingxy_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.IsingXY` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/isingxy_pow.svg
                 :region: pow
                 :where: ``phi`` is multiplied by the power :math:`z`
@@ -1338,7 +1337,7 @@ class IsingXY(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable-next=unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1386,7 +1385,7 @@ class IsingXY(Operator2):
         return diags * np.eye(4) + math.tensordot(js, off_diag, axes=0)
 
     @staticmethod
-    # pylint: disable-next=unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_eigvals(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -1479,6 +1478,7 @@ class PSWAP(Operation):
         return {}
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
@@ -1593,7 +1593,7 @@ class PSWAP(Operation):
         return PSWAP(phi, wires=self.wires)
 
 
-class CPhaseShift00(Operation):
+class CPhaseShift00(Operator2):
     r"""
     A qubit controlled phase shift.
 
@@ -1624,6 +1624,11 @@ class CPhaseShift00(Operation):
         wires (Sequence[int]): the wire the operation acts on
     """
 
+    dynamic_argnames = ("phi",)
+    wire_argnames = ("wires",)
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+    wire_sizes = (2,)
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1631,20 +1636,11 @@ class CPhaseShift00(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
-
     def generator(self) -> "qp.Projector":
         return qp.Projector(np.array([0, 0]), wires=self.wires)
 
-    resource_keys = set()
-
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def label(
         self,
@@ -1655,7 +1651,8 @@ class CPhaseShift00(Operation):
         return super().label(decimals=decimals, base_label="Rϕ(00)", cache=cache)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1665,12 +1662,15 @@ class CPhaseShift00(Operation):
 
         Args:
             phi (TensorLike): phase shift
+            wires (Sequence[int] or None): Wires the operation acts on.
+                Ignored for the canonical matrix.
 
         Returns:
             TensorLike: canonical matrix
 
         **Example**
 
+        >>> import torch
         >>> qp.CPhaseShift00.compute_matrix(torch.tensor(0.5))
         tensor([[0.8776+0.4794j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
@@ -1694,7 +1694,8 @@ class CPhaseShift00(Operation):
         return math.diag([exp_part, 1, 1, 1])
 
     @staticmethod
-    def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_eigvals(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1711,12 +1712,15 @@ class CPhaseShift00(Operation):
 
         Args:
             phi (TensorLike): phase shift
+            wires (Sequence[int] or None): Wires the operation acts on.
+                Ignored for the eigenvalues.
 
         Returns:
             TensorLike: eigenvalues
 
         **Example**
 
+        >>> import torch
         >>> qp.CPhaseShift00.compute_eigvals(torch.tensor(0.5))
         tensor([0.8776+0.4794j, 1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j])
         """
@@ -1724,55 +1728,11 @@ class CPhaseShift00(Operation):
         ones = math.ones_like(exp_part)
         return stack_last([exp_part, ones, ones, ones])
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-
-        .. seealso:: :meth:`~.CPhaseShift00.decomposition`.
-
-        Args:
-            phi (float): rotation angle :math:`\phi`
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.CPhaseShift00.compute_decomposition(1.234, wires=(0,1))
-        [X(0),
-        X(1),
-        PhaseShift(0.617, wires=[0]),
-        PhaseShift(0.617, wires=[1]),
-        CNOT(wires=[0, 1]),
-        PhaseShift(-0.617, wires=[1]),
-        CNOT(wires=[0, 1]),
-        X(1),
-        X(0)]
-
-        """
-        decomp_ops = [
-            PauliX(wires[0]),
-            PauliX(wires[1]),
-            PhaseShift(phi / 2, wires=[wires[0]]),
-            PhaseShift(phi / 2, wires=[wires[1]]),
-            qp.CNOT(wires=wires),
-            PhaseShift(-phi / 2, wires=[wires[1]]),
-            qp.CNOT(wires=wires),
-            PauliX(wires[1]),
-            PauliX(wires[0]),
-        ]
-        return decomp_ops
-
     def adjoint(self) -> "CPhaseShift00":
-        return CPhaseShift00(-self.data[0], wires=self.wires)
+        return CPhaseShift00(-self.phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> "CPhaseShift00":
-        return [CPhaseShift00(self.data[0] * z, wires=self.wires)]
+    def pow(self, z: int | float) -> list["CPhaseShift00"]:
+        return [CPhaseShift00(self.phi * z, wires=self.wires)]
 
     @property
     def control_values(self) -> str:
@@ -1781,10 +1741,11 @@ class CPhaseShift00(Operation):
 
     @property
     def control_wires(self) -> Wires:
+        """Wires: The control wire of the operation."""
         return self.wires[0:1]
 
 
-class CPhaseShift01(Operation):
+class CPhaseShift01(Operator2):
     r"""
     A qubit controlled phase shift.
 
@@ -1815,6 +1776,11 @@ class CPhaseShift01(Operation):
         wires (Sequence[int]): the wire the operation acts on
     """
 
+    dynamic_argnames = ("phi",)
+    wire_argnames = ("wires",)
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+    wire_sizes = (2,)
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1822,20 +1788,11 @@ class CPhaseShift01(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
-
     def generator(self) -> "qp.Projector":
         return qp.Projector(np.array([0, 1]), wires=self.wires)
 
-    resource_keys = set()
-
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def label(
         self,
@@ -1846,7 +1803,8 @@ class CPhaseShift01(Operation):
         return super().label(decimals=decimals, base_label="Rϕ(01)", cache=cache)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1856,12 +1814,15 @@ class CPhaseShift01(Operation):
 
         Args:
             phi (TensorLike): phase shift
+            wires (Sequence[int] or None): Wires the operation acts on.
+                Ignored for the canonical matrix.
 
         Returns:
             TensorLike: canonical matrix
 
         **Example**
 
+        >>> import torch
         >>> qp.CPhaseShift01.compute_matrix(torch.tensor(0.5))
         tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.8776+0.4794j, 0.0000+0.0000j, 0.0000+0.0000j],
@@ -1885,7 +1846,8 @@ class CPhaseShift01(Operation):
         return math.diag([1, exp_part, 1, 1])
 
     @staticmethod
-    def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_eigvals(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1902,12 +1864,15 @@ class CPhaseShift01(Operation):
 
         Args:
             phi (TensorLike): phase shift
+            wires (Sequence[int] or None): Wires the operation acts on.
+                Ignored for the eigenvalues.
 
         Returns:
             TensorLike: eigenvalues
 
         **Example**
 
+        >>> import torch
         >>> qp.CPhaseShift01.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 0.8776+0.4794j, 1.0000+0.0000j, 1.0000+0.0000j])
         """
@@ -1915,48 +1880,11 @@ class CPhaseShift01(Operation):
         ones = math.ones_like(exp_part)
         return stack_last([ones, exp_part, ones, ones])
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-        .. seealso:: :meth:`~.CPhaseShift01.decomposition`.
-
-        Args:
-            phi (Tensorlike): rotation angle :math:`\phi`
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.CPhaseShift01.compute_decomposition(1.234, wires=(0,1))
-        [X(0),
-        PhaseShift(0.617, wires=[0]),
-        PhaseShift(0.617, wires=[1]),
-        CNOT(wires=[0, 1]),
-        PhaseShift(-0.617, wires=[1]),
-        CNOT(wires=[0, 1]),
-        X(0)]
-
-        """
-        decomp_ops = [
-            PauliX(wires[0]),
-            PhaseShift(phi / 2, wires=[wires[0]]),
-            PhaseShift(phi / 2, wires=[wires[1]]),
-            qp.CNOT(wires=wires),
-            PhaseShift(-phi / 2, wires=[wires[1]]),
-            qp.CNOT(wires=wires),
-            PauliX(wires[0]),
-        ]
-        return decomp_ops
-
     def adjoint(self) -> "CPhaseShift01":
-        return CPhaseShift01(-self.data[0], wires=self.wires)
+        return CPhaseShift01(-self.phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> "CPhaseShift01":
-        return [CPhaseShift01(self.data[0] * z, wires=self.wires)]
+    def pow(self, z: int | float) -> list["CPhaseShift01"]:
+        return [CPhaseShift01(self.phi * z, wires=self.wires)]
 
     @property
     def control_values(self) -> str:
@@ -1965,10 +1893,11 @@ class CPhaseShift01(Operation):
 
     @property
     def control_wires(self) -> Wires:
+        """Wires: The control wire of the operation."""
         return self.wires[0:1]
 
 
-class CPhaseShift10(Operation):
+class CPhaseShift10(Operator2):
     r"""
     A qubit controlled phase shift.
 
@@ -1998,6 +1927,11 @@ class CPhaseShift10(Operation):
         wires (Any, Wires): the wire the operation acts on
     """
 
+    dynamic_argnames = ("phi",)
+    wire_argnames = ("wires",)
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+    wire_sizes = (2,)
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -2005,20 +1939,11 @@ class CPhaseShift10(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
-
     def generator(self) -> "qp.Projector":
         return qp.Projector(np.array([1, 0]), wires=self.wires)
 
-    resource_keys = set()
-
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def label(
         self,
@@ -2029,7 +1954,8 @@ class CPhaseShift10(Operation):
         return super().label(decimals=decimals, base_label="Rϕ(10)", cache=cache)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -2039,12 +1965,15 @@ class CPhaseShift10(Operation):
 
         Args:
             phi (TensorLike): phase shift
+            wires (Sequence[int] or None): Wires the operation acts on.
+                Ignored for the canonical matrix.
 
         Returns:
             TensorLike: canonical matrix
 
         **Example**
 
+        >>> import torch
         >>> qp.CPhaseShift10.compute_matrix(torch.tensor(0.5))
         tensor([[1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
@@ -2068,7 +1997,8 @@ class CPhaseShift10(Operation):
         return math.diag([1, 1, exp_part, 1])
 
     @staticmethod
-    def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_eigvals(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -2085,12 +2015,15 @@ class CPhaseShift10(Operation):
 
         Args:
             phi (TensorLike): phase shift
+            wires (Sequence[int] or None): Wires the operation acts on.
+                Ignored for the eigenvalues.
 
         Returns:
             TensorLike: eigenvalues
 
         **Example**
 
+        >>> import torch
         >>> qp.CPhaseShift10.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j, 1.0000+0.0000j])
         """
@@ -2098,58 +2031,66 @@ class CPhaseShift10(Operation):
         ones = math.ones_like(exp_part)
         return stack_last([ones, ones, exp_part, ones])
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-        .. seealso:: :meth:`~.CPhaseShift10.decomposition`.
-
-        Args:
-            phi (TensorLike): rotation angle :math:`\phi`
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.CPhaseShift10.compute_decomposition(1.234, wires=(0,1))
-        [X(1),
-        PhaseShift(0.617, wires=[0]),
-        PhaseShift(0.617, wires=[1]),
-        CNOT(wires=[0, 1]),
-        PhaseShift(-0.617, wires=[1]),
-        CNOT(wires=[0, 1]),
-        X(1)]
-
-        """
-        decomp_ops = [
-            PauliX(wires[1]),
-            PhaseShift(phi / 2, wires=[wires[0]]),
-            PhaseShift(phi / 2, wires=[wires[1]]),
-            qp.CNOT(wires=wires),
-            PhaseShift(-phi / 2, wires=[wires[1]]),
-            qp.CNOT(wires=wires),
-            PauliX(wires[1]),
-        ]
-        return decomp_ops
-
     def adjoint(self) -> "CPhaseShift10":
-        return CPhaseShift10(-self.data[0], wires=self.wires)
+        return CPhaseShift10(-self.phi, wires=self.wires)
 
-    def pow(self, z: int | float):
-        return [CPhaseShift10(self.data[0] * z, wires=self.wires)]
+    def pow(self, z: int | float) -> list["CPhaseShift10"]:
+        return [CPhaseShift10(self.phi * z, wires=self.wires)]
 
     @property
     def control_wires(self) -> Wires:
+        """Wires: The control wire of the operation."""
         return self.wires[0:1]
 
 
-def __getattr__(name):
-    """Resolve the existing public names of relocated decomposition rules."""
-    if name in {"controlled_ising_zz"}:
-        rules = import_module("pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit")
+_RULE_MODULES = {
+    "_MultiRZLadder": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_multi_rz_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_multi_rz_standard": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_multi_rz_to_ppr_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_multi_rz_to_ppr": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_pauli_rot_basis_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_PauliRotBasis": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_pauli_rot_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_pauli_rot_standard": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_ctrl_phase_shift_resource": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_ctrl_phase_shift": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_decompose_pcphase_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_decompose_pcphase_standard": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_isingxx_to_cnot_rx_cnot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_isingxx_to_cnot_rx_cnot": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_isingxx_to_ppr_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_isingxx_to_ppr": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_isingyy_to_cy_ry_cy_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_isingyy_to_cy_ry_cy": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_isingyy_to_ppr_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_isingyy_to_ppr": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_isingzz_to_cnot_rz_cnot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_isingzz_to_cnot_rz_cnot": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_isingzz_to_ppr_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_isingzz_to_ppr": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_controlled_ising_zz_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_controlled_ising_zz_standard": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "controlled_ising_zz": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_IsingXYBasis": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_IsingXYRotations": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_isingxy_to_h_cy_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_isingxy_to_h_cy": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_pswap_to_swap_cnot_phaseshift_cnot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_pswap_to_swap_cnot_phaseshift_cnot": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_pswap_to_ppr_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_pswap_to_ppr": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_cphaseshift00_to_x_phaseshift_cnot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_cphaseshift00_to_x_phaseshift_cnot": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_cphaseshift01_to_x_phaseshift_cnot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_cphaseshift01_to_x_phaseshift_cnot": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_cphaseshift10_to_x_phaseshift_cnot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+    "_cphaseshift10_to_x_phaseshift_cnot": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
+}
 
-        return getattr(rules, name)
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

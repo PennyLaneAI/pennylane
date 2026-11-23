@@ -13,6 +13,8 @@
 # limitations under the License.
 """Contains the LeftQuantumComparator template for performing inequality test of two quantum registers."""
 
+from importlib import import_module as _import_module
+
 from pennylane.core.operator import Operator2
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires, WiresLike
@@ -69,6 +71,22 @@ class LeftQuantumComparator(Operator2):
 
     >>> print(circuit())
     [0. 1.]
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.LeftQuantumComparator
+            :stacked:
+            :symbols: :math:`n` ``x_wires``, :math:`n` ``y_wires`` and ``comparator`` :math:`c`
+            :example: :math:`n=2`, :math:`c={\leq}`
+
+            .. decomposition-rule:: elbow_ladder
+                :image: /_static/decomposition_thumbnails/left_quantum_comparator_elbow_ladder.svg
+                :where: :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
+
+                :class:`~.TemporaryAND` | :math:`n` | 2
+                :class:`~.CNOT` | :math:`5n - 3` | 7
+                :class:`~.X` | :math:`[c \in \{\leq, \geq\}]` | 1
     """
 
     wire_argnames = ("x_wires", "y_wires", "target_wire", "work_wires")
@@ -87,7 +105,7 @@ class LeftQuantumComparator(Operator2):
         target_wire: WiresLike,
         work_wires: WiresLike,
         comparator: str,
-    ):  # pylint: disable=too-many-arguments
+    ):
 
         if comparator not in ["<", "<=", ">=", ">"]:
             raise ValueError("Allowed values for 'comparator' are: '<', '<=', '>=' and '>'.")
@@ -119,3 +137,16 @@ class LeftQuantumComparator(Operator2):
             raise ValueError("None of the wires in y_wires should be the target wire.")
 
         super().__init__(x_wires, y_wires, target_wire, work_wires, comparator)
+
+
+_RULE_MODULES = {
+    "_left_quantum_comparator_standard_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.left_quantum_comparator",
+    "_left_quantum_comparator_standard": "pennylane.decomposition_rules.templates.subroutines.arithmetic.left_quantum_comparator",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

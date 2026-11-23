@@ -15,13 +15,12 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from importlib import import_module as _import_module
 
 from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
-
-# pylint: disable=consider-using-generator
 
 
 # -----------------------------
@@ -74,7 +73,7 @@ def _node_index(level: int, prefix_value: int) -> int:
 # -----------------------------
 # Select-prefix × Bucket-Brigade with explicit bus routing
 # -----------------------------
-class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
+class BBQRAM(Operation):
     r"""Bucket-brigade QRAM with explicit bus routing using 3 wires per node. Bucket-brigade QRAM
     achieves an :math:`O(\log N)` complexity instead of the typical :math:`N`, where :math:`N` is
     the size of the classical data register being queried. For more theoretical details on how this
@@ -197,7 +196,7 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
-    ):  # pylint: disable=too-many-arguments
+    ):
         control_wires = Wires(control_wires)
 
         if isinstance(bitstrings, (list, tuple)):
@@ -380,7 +379,7 @@ class HybridQRAM(Operation):
         target_wires: WiresLike,
         work_wires: WiresLike,
         k: int,  # define the select part size, remaining part is tree part
-    ):  # pylint: disable=too-many-arguments
+    ):
 
         if isinstance(bitstrings, (list, tuple)):
             bitstrings = math.array(bitstrings)
@@ -577,7 +576,6 @@ class SelectOnlyQRAM(Operation):
         "num_target_wires",
     }
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         bitstrings: TensorLike | Sequence[str],
@@ -861,3 +859,34 @@ class FFQRAM(Operation):
     @property
     def ndim_params(self):
         return (1,)  # 1d amplitude (without broadcasting)
+
+
+_RULE_MODULES = {
+    "_bucket_brigade_qram_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_mark_routers_via_bus": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_route_bus_down_first_k_levels": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_leaf_ops_for_bit": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_bucket_brigade_qram_standard": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_hybrid_qram_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_bits": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_tree_leaf_ops_for_bit_block_ctrl": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_tree_route_bus_down_first_k_levels_ctrl": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_swap_controlled_on_signal": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_tree_mark_routers_via_bus_ctrl": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_block_tree_query_ops": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_hybrid_qram_standard": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_select_only_qram_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_flip_controls": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_select_only_qram_standard": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_flip_zero_bits": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_normalize_amplitudes": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_ffqram_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qram",
+    "_ffqram_standard": "pennylane.decomposition_rules.templates.subroutines.qram",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

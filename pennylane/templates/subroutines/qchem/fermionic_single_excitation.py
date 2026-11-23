@@ -15,6 +15,8 @@ r"""
 Contains the FermionicSingleExcitation template.
 """
 
+from importlib import import_module as _import_module
+
 import numpy as np
 
 from pennylane import math
@@ -209,3 +211,16 @@ class FermionicSingleExcitation(Operation):
         op_list.append(RX(np.pi / 2, wires=p))
 
         return op_list
+
+
+_RULE_MODULES = {
+    "_fermionic_single_excitation_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qchem.fermionic_single_excitation",
+    "_fermionic_single_excitation_standard": "pennylane.decomposition_rules.templates.subroutines.qchem.fermionic_single_excitation",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.arithmetic.semi_adder."""
 
 from pennylane.allocation import allocate
@@ -152,7 +153,7 @@ def _controlled_right_ladder(x_wires, y_wires, non_ctrl_work_wires, carry_flip=N
 
 
 # pylint: disable-next=unused-argument
-def _semi_adder_resources(x_wires, y_wires, work_wires=None, skip_input_pos=None):
+def _semi_adder_standard_resources(x_wires, y_wires, work_wires=None, skip_input_pos=None):
     num_x_wires = len(x_wires)
     num_y_wires = len(y_wires)
     if num_y_wires == 1:
@@ -181,7 +182,7 @@ def _semi_adder_resources(x_wires, y_wires, work_wires=None, skip_input_pos=None
 
 
 # pylint: disable-next=unused-argument
-def _semi_adder_work_wires(x_wires, y_wires, work_wires):
+def _semi_adder_standard_work_wires(x_wires, y_wires, work_wires):
     """The work wires that the ladders need, minus the ones that were already provided.
 
     Symbolic rules like ``C(SemiAdder)`` reuse this spec but are called with the symbolic
@@ -193,8 +194,10 @@ def _semi_adder_work_wires(x_wires, y_wires, work_wires):
     return {"zeroed": max(num_work_wires_needed - num_work_wires_provided, 0)}
 
 
-@register_resources(_semi_adder_resources, work_wires=_semi_adder_work_wires)
-def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_pos=None):
+@register_resources(
+    _semi_adder_standard_resources, work_wires=_semi_adder_standard_work_wires, name="carry_ladder"
+)
+def _semi_adder_standard(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_pos=None):
     num_y_wires = len(y_wires)
     num_x_wires = len(x_wires)
 
@@ -235,11 +238,16 @@ def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_p
         )
 
 
-add_decomps(SemiAdder, _semi_adder)
+add_decomps(SemiAdder, _semi_adder_standard)
 
 
-# pylint: disable-next=too-many-arguments,unused-argument
-def _ctrl_semi_adder_resource(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_semi_adder_standard_resources(
+    base,
+    control_wires,
+    control_values,  # pylint: disable=unused-argument
+    work_wires,
+    work_wire_type,
+):
     r"""
     Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
 
@@ -301,17 +309,18 @@ def _ctrl_semi_adder_resource(base, control_wires, control_values, work_wires, w
 
 
 @register_resources(
-    _ctrl_semi_adder_resource,
-    work_wires=lambda base, *_, **__: _semi_adder_work_wires(**base.arguments),
+    _controlled_semi_adder_standard_resources,
+    work_wires=lambda base, *_, **__: _semi_adder_standard_work_wires(**base.arguments),
+    name="controlled_carry_ladder",
 )
-def _controlled_semi_adder(
+def _controlled_semi_adder_standard(  # pylint: disable=too-many-arguments
     base,
     control_wires,
     control_values=None,
     work_wires=None,
     work_wire_type="borrowed",
     carry_flip=None,
-):  # pylint: disable=too-many-arguments
+):
     r"""
     Decomposition extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_
     using building block described in Figure 4.
@@ -364,4 +373,7 @@ def _controlled_semi_adder(
         _controlled_right_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip, **ctrl_kwargs)
 
 
-add_decomps("C(SemiAdder)", flip_zero_control2(_controlled_semi_adder))
+add_decomps(
+    "C(SemiAdder)",
+    flip_zero_control2(_controlled_semi_adder_standard, name="controlled_carry_ladder"),
+)

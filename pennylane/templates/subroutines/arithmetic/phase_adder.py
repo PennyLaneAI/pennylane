@@ -15,6 +15,8 @@
 Contains the PhaseAdder template.
 """
 
+from importlib import import_module as _import_module
+
 from pennylane.core.operator import Operator2
 from pennylane.typing import AbstractArray, Int, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -119,7 +121,6 @@ class PhaseAdder(Operator2):
     wire_argnames = ("x_wires", "work_wire")
     arg_specs = {"k": Int, "x_wires": Wire[-1], "work_wire": Wire[-1]}
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = ()):
 
         work_wire = Wires(() if work_wire is None else work_wire)
@@ -145,3 +146,19 @@ class PhaseAdder(Operator2):
         super().__init__(k=k, x_wires=x_wires, mod=mod, work_wire=work_wire)
         if not isinstance(self.k, AbstractArray):
             self.arguments["k"] = self.k % mod
+
+
+_RULE_MODULES = {
+    "_add_k_fourier": "pennylane.decomposition_rules.templates.subroutines.arithmetic.phase_adder",
+    "_phase_adder_basis_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.phase_adder",
+    "_PhaseAdderBasis": "pennylane.decomposition_rules.templates.subroutines.arithmetic.phase_adder",
+    "_phase_adder_standard_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.phase_adder",
+    "_phase_adder_standard": "pennylane.decomposition_rules.templates.subroutines.arithmetic.phase_adder",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

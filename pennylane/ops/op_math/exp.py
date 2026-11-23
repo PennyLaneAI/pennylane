@@ -16,7 +16,7 @@ This submodule defines the symbolic operation that stands for an exponential of 
 """
 
 from functools import lru_cache
-from importlib import import_module
+from importlib import import_module as _import_module
 from warnings import warn
 
 import numpy as np
@@ -226,7 +226,7 @@ class Exp(ScalarSymbolicOp, Operation):
         return (self.base, self.data[0]), ()
 
     @classmethod
-    def _unflatten(cls, data, metadata):  # pylint: disable=unused-argument
+    def _unflatten(cls, data, metadata):
         base, coeff = data
         return cls(base, coeff)
 
@@ -263,7 +263,6 @@ class Exp(ScalarSymbolicOp, Operation):
     def resource_params(self) -> dict:
         return {"base": self.base}
 
-    # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
     @queuing.QueuingManager.stop_recording()
     def has_decomposition(self):
@@ -273,7 +272,7 @@ class Exp(ScalarSymbolicOp, Operation):
             coeff *= base.scalar
             base = base.base
 
-        # pylint: disable=unidiomatic-typecheck
+        # pylint: disable-next=unidiomatic-typecheck
         if type(self) is Exp and not math.is_tracer(coeff) and math.real(coeff):
             # if type is Evolution, we assume that is is indeed time evolution
             return False
@@ -324,7 +323,7 @@ class Exp(ScalarSymbolicOp, Operation):
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
 
-        # pylint: disable=unidiomatic-typecheck
+        # pylint: disable-next=unidiomatic-typecheck
         if type(self) is Exp and not math.is_tracer(coeff) and math.real(coeff):
             error_msg = f"The decomposition of the {self} operator is not defined."
 
@@ -346,13 +345,13 @@ class Exp(ScalarSymbolicOp, Operation):
 
         if qp.pauli.is_pauli_word(base):
             # Check if the exponential can be decomposed into a PauliRot gate
-            return self._pauli_rot_decomposition(base, coeff)
+            return self._pauli_rot_standard(base, coeff)
 
         error_msg = f"The decomposition of the {self} operator is not defined."
         raise DecompositionUndefinedError(error_msg)
 
     @staticmethod
-    def _pauli_rot_decomposition(base: Operator, coeff: complex):
+    def _pauli_rot_standard(base: Operator, coeff: complex):
         """Decomposes the exponential of a Pauli word into a PauliRot.
 
         Args:
@@ -420,8 +419,8 @@ class Exp(ScalarSymbolicOp, Operation):
 
         return sparse_expm(self.coeff * self.base.sparse_matrix().tocsc()).asformat(format)
 
-    # pylint: disable=arguments-renamed,invalid-overridden-method
     @property
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
@@ -466,9 +465,8 @@ class Exp(ScalarSymbolicOp, Operation):
             return Exp(new_base.base, self.coeff * new_base.scalar)
         return Exp(new_base, self.coeff)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_generator(self):
+    def has_generator(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         if math.is_tracer(self.coeff):
             return self.base.is_verified_hermitian
         return self.base.is_verified_hermitian and not np.real(self.coeff)
@@ -501,10 +499,15 @@ class Exp(ScalarSymbolicOp, Operation):
         )
 
 
-def __getattr__(name):
-    """Resolve the existing public names of relocated decomposition rules."""
-    if name in {"pauli_rot_decomp"}:
-        rules = import_module("pennylane.decomposition_rules.op_math.exp")
+_RULE_MODULES = {
+    "_pauli_rot_decomp_condition": "pennylane.decomposition_rules.op_math.exp",
+    "_exp_to_pauli_rot_resources": "pennylane.decomposition_rules.op_math.exp",
+    "_exp_to_pauli_rot": "pennylane.decomposition_rules.op_math.exp",
+}
 
-        return getattr(rules, name)
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

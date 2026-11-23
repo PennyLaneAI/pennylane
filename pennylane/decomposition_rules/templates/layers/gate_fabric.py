@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Built-in decomposition rules for templates.layers.gate_fabric."""
 
-# pylint: disable=too-many-arguments
+"""Built-in decomposition rules for templates.layers.gate_fabric."""
 
 import numpy as np
 from jax import numpy as jnp
@@ -28,7 +27,7 @@ from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
 
 
-def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
+def _gate_fabric_standard_resources(n_layers, num_wires, len_wire_pattern, include_pi):
     rotation_count = 2 * n_layers * len_wire_pattern if include_pi else n_layers * len_wire_pattern
     return {
         BasisState(Bool[num_wires], Wire[num_wires]): 1,
@@ -37,8 +36,8 @@ def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
     }
 
 
-@register_resources(_gate_fabric_resources)
-def _gate_fabric_decomposition(weights, wires, init_state, include_pi):
+@register_resources(_gate_fabric_standard_resources, name="excitation_orbital_layers")
+def _gate_fabric_standard(weights, wires, init_state, include_pi):
     if isinstance(wires, Wires):
         wires = wires.labels
 
@@ -81,4 +80,4 @@ def _gate_fabric_decomposition(weights, wires, init_state, include_pi):
     layers_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(GateFabric, _gate_fabric_decomposition)
+add_decomps(GateFabric, _gate_fabric_standard)

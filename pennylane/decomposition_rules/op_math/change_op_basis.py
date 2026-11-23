@@ -12,20 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for op_math.change_op_basis."""
 
 from collections import Counter, defaultdict
 
 from pennylane.core.apply import apply
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.resources import CompressedResourceOp, resource_rep
 from pennylane.ops.op_math import adjoint, ctrl
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.adjoint import Adjoint
+from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis import ChangeOpBasis
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
 
 
-def _change_op_basis_resources(compute_op, target_op, uncompute_op):
+def _change_op_basis_standard_resources(compute_op, target_op, uncompute_op):
     resources = Counter()
 
     resources[compute_op] += 1
@@ -35,36 +38,45 @@ def _change_op_basis_resources(compute_op, target_op, uncompute_op):
     return resources
 
 
-def _adjoint_change_op_basis_resources(base_params, **_):
+def _inverse_abstract(op):
+    """Abstract inverse of an operand, unwrapping an existing adjoint instead of nesting another one."""
+    if isinstance(op, CompressedResourceOp) and issubclass(op.op_type, Adjoint):
+        return resource_rep(op.params["base_class"], **op.params["base_params"])
+    if isinstance(op, Adjoint2):
+        return op.base
+    return _adjoint_abstract(op)
+
+
+def _adjoint_change_op_basis_standard_resources(base_params, **_):
     resources = defaultdict(int)
-    resources[base_params["compute_op"]] += 1
-    resources[base_params["uncompute_op"]] += 1
-    target_op = base_params["target_op"]
-    resources[_adjoint_abstract(target_op)] += 1
+    for name in ("uncompute_op", "target_op", "compute_op"):
+        resources[_inverse_abstract(base_params[name])] += 1
     return resources
 
 
-# pylint: disable=protected-access
-@register_resources(_adjoint_change_op_basis_resources)
-def _adjoint_change_op_basis_decomp(*_, base, **__):
-    apply(base.operands[2])
-    adjoint(apply(base.operands[1]))
-    apply(base.operands[0])
+@register_resources(_adjoint_change_op_basis_standard_resources, name="adjoint_target")
+def _adjoint_change_op_basis_standard(*_, base, **__):
+    for op in base.operands:
+        if isinstance(op, (Adjoint, Adjoint2)):
+            apply(op.base)
+        else:
+            adjoint(apply(op))
 
 
-add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
+add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_standard)
 
 
-def _controlled_change_op_basis_resources(
+# pylint: disable-next=too-many-arguments
+def _controlled_change_op_basis_standard_resources(
     *_,
     num_control_wires,
     num_zero_control_values,
     num_work_wires,
     work_wire_type,
-    base_class,
+    base_class,  # pylint: disable=unused-argument
     base_params,
     **__,
-):  # pylint: disable=unused-argument, too-many-arguments
+):
     resources = defaultdict(int)
     resources[base_params["compute_op"]] += 1
     resources[
@@ -80,8 +92,8 @@ def _controlled_change_op_basis_resources(
     return resources
 
 
-@register_resources(_controlled_change_op_basis_resources)
-def _controlled_change_op_basis_decomposition(
+@register_resources(_controlled_change_op_basis_standard_resources, name="control_target")
+def _controlled_change_op_basis_standard(
     *_,
     control_wires,
     control_values,
@@ -101,13 +113,12 @@ def _controlled_change_op_basis_decomposition(
     apply(base.operands[0])
 
 
-# pylint: disable=unused-argument
-@register_resources(_change_op_basis_resources)
-def _change_op_basis_decomp(*_, wires=None, operands, **__):
+@register_resources(_change_op_basis_standard_resources, name="expand_basis_change")
+def _change_op_basis_standard(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
     for op in operands[::-1]:
         apply(op)
 
 
-add_decomps(ChangeOpBasis, _change_op_basis_decomp)
+add_decomps(ChangeOpBasis, _change_op_basis_standard)
 
-add_decomps("C(ChangeOpBasis)", _controlled_change_op_basis_decomposition)
+add_decomps("C(ChangeOpBasis)", _controlled_change_op_basis_standard)

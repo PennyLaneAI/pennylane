@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.state_preparations.mottonen."""
 
 import pennylane as qp
@@ -24,7 +25,7 @@ def _mottonen_resources(num_wires):
     return {qp.GlobalPhase: 1, qp.RY: n, qp.RZ: n, qp.CNOT: 2 * (n - 1)}
 
 
-@qp.register_resources(_mottonen_resources, exact=False, name="compute_decomposition")
+@qp.register_resources(_mottonen_resources, exact=False, name="standard")
 def mottonen_decomp(state_vector, wires, **_):
     """Decompose a state vector using the Mottonen preparation algorithm."""
     return MottonenStatePreparation.compute_decomposition(state_vector, wires, **_)

@@ -17,7 +17,10 @@ from quantum chemistry applications.
 """
 
 # pylint: disable=arguments-differ
+
+
 import functools
+from importlib import import_module as _import_module
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -142,26 +145,26 @@ class SingleExcitation(Operator2):
 
         .. decomposition-table:: qp.SingleExcitation
 
-            .. decomposition-rule:: _single_excitation_decomp
+            .. decomposition-rule:: basis_change_ry
                 :image: /_static/decomposition_thumbnails/singleexcitation_h_cnot_ry.svg
 
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.CNOT` | :math:`2`
                 :class:`~.RY` | :math:`2`
 
-            .. decomposition-rule:: _single_excitation_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/singleexcitation_ppr.svg
 
                 :class:`PauliRot("YX") <.PauliRot>` | :math:`1`
                 :class:`PauliRot("XY") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: _single_excitation_ppr_rz
+            .. decomposition-rule:: to_ppr_rz
                 :image: /_static/decomposition_thumbnails/singleexcitation_ppr_rz.svg
 
                 :class:`PPR_4(1, "XX") <.PPR_4>` | :math:`1`
                 :class:`PPR_4(-1, "XX") <.PPR_4>` | :math:`1`
                 :class:`~.RZ` | :math:`2`
-            .. decomposition-rule:: _single_excitation_ppr_crz
+            .. decomposition-rule:: to_ppr_crz
                 :image: /_static/decomposition_thumbnails/singleexcitation_ppr_crz.svg
 
                 :class:`PPR_4(1, "XX") <.PPR_4>` | :math:`1`
@@ -169,14 +172,14 @@ class SingleExcitation(Operator2):
                 :class:`~.CNOT` | :math:`2`
                 :class:`~.CRZ` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/singleexcitation_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.SingleExcitation` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/singleexcitation_pow.svg
                 :region: pow
                 :where: ``phi`` is multiplied by the power :math:`z`
@@ -202,9 +205,8 @@ class SingleExcitation(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(
-        phi: TensorLike, wires=None  # pylint: disable=unused-argument
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires=None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -301,7 +303,7 @@ class SingleExcitationMinus(Operation):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -441,7 +443,7 @@ class SingleExcitationPlus(Operation):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -604,9 +606,8 @@ class DoubleExcitation(Operator2):
     mask_s[12, 3] = 1
 
     @staticmethod
-    def compute_matrix(
-        phi: TensorLike, wires: WiresLike = None  # pylint: disable=unused-argument
-    ) -> TensorLike:
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -698,7 +699,7 @@ class DoubleExcitationPlus(Operation):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -787,7 +788,7 @@ class DoubleExcitationMinus(Operation):
         return qp.SparseHamiltonian(H, wires=self.wires)
 
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(phi: TensorLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -916,9 +917,8 @@ class OrbitalRotation(Operator2):
     mask_s2[3, 12] = mask_s2[12, 3] = mask_s2[6, 9] = mask_s2[9, 6] = 1
 
     @staticmethod
-    def compute_matrix(
-        phi: TensorLike, wires: WiresLike = None  # pylint: disable=unused-argument
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1060,9 +1060,8 @@ class FermionicSWAP(Operator2):
         )
 
     @staticmethod
-    def compute_matrix(
-        phi: TensorLike, wires: WiresLike = None  # pylint: disable=unused-argument
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1117,3 +1116,38 @@ class FermionicSWAP(Operator2):
         cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "FSWAP", cache=cache)
+
+
+_RULE_MODULES = {
+    "_SingleExcitationBasis": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_SingleExcitationRotations": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_single_excitation_standard_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_single_excitation_standard": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_SingleExcitationRZRotations": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_single_excitation_to_ppr_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_single_excitation_to_ppr": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_single_excitation_to_ppr_rz_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_single_excitation_to_ppr_rz": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_SingleExcitationCRZBasis": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_single_excitation_to_ppr_crz_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_single_excitation_to_ppr_crz": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_single_excitation_minus_standard_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_single_excitation_minus_standard": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_single_excitation_plus_standard_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_single_excitation_plus_standard": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_double_excitation_to_gates_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_double_excitation_to_gates": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_double_excitation_to_ppr_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_double_excitation_to_ppr": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_orbital_rotation_standard_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_orbital_rotation_standard": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_fermionic_swap_standard_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
+    "_fermionic_swap_standard": "pennylane.decomposition_rules.qubit.qchem_ops",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

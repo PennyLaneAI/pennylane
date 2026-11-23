@@ -13,6 +13,8 @@
 # limitations under the License.
 """Uniform state preparation and coherent alias sampling templates."""
 
+from importlib import import_module as _import_module
+
 import numpy as np
 
 from pennylane.core.operator import Operator2
@@ -66,7 +68,7 @@ class UniformPrep(Operator2):
                 :math:`\ell = \lceil \log_2 L \rceil`
             :example: :math:`n_\text{states}=5` (:math:`k=0`, :math:`L=5`, :math:`\ell=3`)
 
-            .. decomposition-rule:: _uniform_prep_decomp
+            .. decomposition-rule:: amplitude_amplification
                 :image: /_static/decomposition_thumbnails/uniform_prep_amplification.svg
                 :lightbox:
                 :requires: :math:`\ell` work wires
@@ -257,7 +259,7 @@ class AliasSampling(Operator2):
                 :math:`\mu` = ``mu`` bits
             :example: :math:`L=4`, :math:`\mu=2`
 
-            .. decomposition-rule:: _alias_sampling_decomp
+            .. decomposition-rule:: qrom_comparator_swap
                 :image: /_static/decomposition_thumbnails/alias_sampling_coherent.svg
 
                 :class:`~.UniformPrep` | :math:`1` | 1
@@ -282,7 +284,7 @@ class AliasSampling(Operator2):
         target_wires: WiresLike,
         temp_wires: WiresLike,
         work_wires: WiresLike,
-    ):  # pylint: disable=too-many-arguments
+    ):
         if isinstance(mu, bool) or not isinstance(mu, int) or mu < 1:
             raise ValueError(f"mu must be a positive integer, got {mu!r}.")
 
@@ -315,3 +317,22 @@ class AliasSampling(Operator2):
         )
 
         super().__init__(probs, mu, target_wires, temp_wires, work_wires)
+
+
+_RULE_MODULES = {
+    "_apply_hadamards": "pennylane.decomposition_rules.templates.subroutines.alias_sampling",
+    "_uniform_prep_standard_resources": "pennylane.decomposition_rules.templates.subroutines.alias_sampling",
+    "_uniform_prep_standard": "pennylane.decomposition_rules.templates.subroutines.alias_sampling",
+    "_build_alias_tables": "pennylane.decomposition_rules.templates.subroutines.alias_sampling",
+    "_split_temp_wires": "pennylane.decomposition_rules.templates.subroutines.alias_sampling",
+    "_qrom_data": "pennylane.decomposition_rules.templates.subroutines.alias_sampling",
+    "_alias_sampling_standard_resources": "pennylane.decomposition_rules.templates.subroutines.alias_sampling",
+    "_alias_sampling_standard": "pennylane.decomposition_rules.templates.subroutines.alias_sampling",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Built-in decomposition rules for meta."""
 
-# pylint: disable=arguments-differ
+"""Built-in decomposition rules for meta."""
 
 from pennylane.decomposition.decomposition_rule import add_decomps
 from pennylane.decomposition_rules._common import null_decomp

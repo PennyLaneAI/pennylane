@@ -15,7 +15,7 @@
 """This module defines decomposition functions for unitary matrices."""
 
 import warnings
-from importlib import import_module
+from importlib import import_module as _import_module
 from itertools import product
 
 import jax
@@ -37,6 +37,79 @@ from pennylane.wires import Wires
 
 #: Maximum tolerated error for a valid real SO(4) decomposition.
 _SO4_DECOMP_ERROR_THRESHOLD = 1e-5
+
+
+def _compute_udv(a, b):
+    r"""Given the matrices `a` and `b`, calculates the matrices `u`, `d` and `v`
+    of Eq. 36 in [arXiv-quant-ph:0504100](https://arxiv.org/pdf/quant-ph/0504100):
+
+    .. math::
+
+        a = u d v \\
+        b = u d^{\dagger} v.
+    """
+
+    # Calculates u and d diagonalizing ab^dagger (Eq.39)
+    ab_dagger = a @ math.conj(b.T)
+    d_square, u = math.linalg.eig(ab_dagger)
+    u, _ = math.linalg.qr(u)
+
+    # complex square root of eigenvalues
+    d = math.exp(1j * math.angle(d_square) / 2)
+
+    # Calculates v using Eq.40
+    v = math.conj(math.diag(d).T) @ math.conj(u.T) @ a
+
+    return u, d, v
+
+
+def _cossin_decomposition(U, p):
+    if math.get_interface(U) == "jax":
+        # Wrap scipy's cossin function with pure_callback to make the decomposition compatible with jit
+
+        def scipy_cossin_callback(U_flat, p):
+            dim = int(np.sqrt(U_flat.size))
+            U_np = U_flat.reshape((dim, dim))
+            (u1, u2), theta, (v1_dagg, v2_dagg) = cossin(U_np, p=p, q=p, separate=True)
+            return u1, u2, theta, v1_dagg, v2_dagg
+
+        def cossin_decomposition(U, p):
+            dtype = U.dtype
+            real_dtype = np.finfo(dtype).dtype
+            U_flat = U.reshape(-1)
+
+            def callback(U_flat):
+                u1, u2, theta, v1_dagg, v2_dagg = scipy_cossin_callback(np.asarray(U_flat), p)
+                return (
+                    u1.astype(dtype),
+                    u2.astype(dtype),
+                    # NOTE: According to https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.cossin.html
+                    # theta is an array of real angles in radians.
+                    theta.astype(real_dtype),
+                    v1_dagg.astype(dtype),
+                    v2_dagg.astype(dtype),
+                )
+
+            u1, u2, theta, v1_dagg, v2_dagg = jax.pure_callback(
+                callback,
+                result_shape_dtypes=(
+                    jax.ShapeDtypeStruct((p, p), dtype),
+                    jax.ShapeDtypeStruct((p, p), dtype),
+                    jax.ShapeDtypeStruct((p,), real_dtype),
+                    jax.ShapeDtypeStruct((p, p), dtype),
+                    jax.ShapeDtypeStruct((p, p), dtype),
+                ),
+                U_flat=U_flat,
+            )
+
+            return (u1, u2), theta, (v1_dagg, v2_dagg)
+
+    else:
+
+        def cossin_decomposition(U, p):
+            return cossin(U, p=p, q=p, separate=True)
+
+    return cossin_decomposition(U, p)
 
 
 def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False):
@@ -273,7 +346,7 @@ def multi_qubit_decomposition(U, wires):
     """
 
     with queuing.AnnotatedQueue() as q:
-        _multi_qubit_decomp(U, wires)
+        _qubit_unitary_multi_qubit_impl(U, wires)
 
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
@@ -281,11 +354,6 @@ def multi_qubit_decomposition(U, wires):
             apply(op)
 
     return q.queue
-
-
-#######################
-# Decomposition Rules #
-#######################
 
 
 def _su2_rot_decomp(U, wires, **__):
@@ -506,7 +574,6 @@ def _get_basis_and_eigenvalues(M):
     Returns eigenvalues and basis O such that :math:`D = O^T M O` is diagonal with
     sorted eigenvalues.
     """
-    # pylint: disable=protected-access
     # Use split_eigh to get a basis (ignoring its mixed eigenvalues)
     _, O = _real_imag_split_eigh(M, 1.0)
 
@@ -628,7 +695,6 @@ def _decompose_2_cnots(U, wires, initial_phase):
 
     The final circuit is then constructed by applying these local gates around the V.
     """
-    # pylint: disable=too-many-locals
     # 1. Compute gamma(U)
     u_mag = _multidot(math.cast_like(E_dag, U), U, math.cast_like(E, U))
     gamma_u = math.dot(u_mag, math.T(u_mag))
@@ -942,105 +1008,12 @@ def _decompose_3_cnots(U, wires, initial_phase):
     return math.cast_like(-e, initial_phase)
 
 
-def _compute_udv(a, b):
-    r"""Given the matrices `a` and `b`, calculates the matrices `u`, `d` and `v`
-    of Eq. 36 in [arXiv-quant-ph:0504100](https://arxiv.org/pdf/quant-ph/0504100):
-
-    .. math::
-
-        a = u d v \\
-        b = u d^{\dagger} v.
-    """
-
-    # Calculates u and d diagonalizing ab^dagger (Eq.39)
-    ab_dagger = a @ math.conj(b.T)
-    d_square, u = math.linalg.eig(ab_dagger)
-    u, _ = math.linalg.qr(u)
-
-    # complex square root of eigenvalues
-    d = math.exp(1j * math.angle(d_square) / 2)
-
-    # Calculates v using Eq.40
-    v = math.conj(math.diag(d).T) @ math.conj(u.T) @ a
-
-    return u, d, v
-
-
-def _cossin_decomposition(U, p):
-    if math.get_interface(U) == "jax":
-        # Wrap scipy's cossin function with pure_callback to make the decomposition compatible with jit
-
-        def scipy_cossin_callback(U_flat, p):
-            dim = int(np.sqrt(U_flat.size))
-            U_np = U_flat.reshape((dim, dim))
-            (u1, u2), theta, (v1_dagg, v2_dagg) = cossin(U_np, p=p, q=p, separate=True)
-            return u1, u2, theta, v1_dagg, v2_dagg
-
-        def cossin_decomposition(U, p):
-            dtype = U.dtype
-            real_dtype = np.finfo(dtype).dtype
-            U_flat = U.reshape(-1)
-
-            def callback(U_flat):
-                u1, u2, theta, v1_dagg, v2_dagg = scipy_cossin_callback(np.asarray(U_flat), p)
-                return (
-                    u1.astype(dtype),
-                    u2.astype(dtype),
-                    # NOTE: According to https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.cossin.html
-                    # theta is an array of real angles in radians.
-                    theta.astype(real_dtype),
-                    v1_dagg.astype(dtype),
-                    v2_dagg.astype(dtype),
-                )
-
-            u1, u2, theta, v1_dagg, v2_dagg = jax.pure_callback(
-                callback,
-                result_shape_dtypes=(
-                    jax.ShapeDtypeStruct((p, p), dtype),
-                    jax.ShapeDtypeStruct((p, p), dtype),
-                    jax.ShapeDtypeStruct((p,), real_dtype),
-                    jax.ShapeDtypeStruct((p, p), dtype),
-                    jax.ShapeDtypeStruct((p, p), dtype),
-                ),
-                U_flat=U_flat,
-            )
-
-            return (u1, u2), theta, (v1_dagg, v2_dagg)
-
-    else:
-
-        def cossin_decomposition(U, p):
-            return cossin(U, p=p, q=p, separate=True)
-
-    return cossin_decomposition(U, p)
-
-
 def _is_jax_jit(U):
     """Assume jax-jit if U is abstract and not in a capture or qjit context."""
     return math.is_tracer(U) and not (capture.enabled() or compiler.active())
 
 
-def __getattr__(name):
-    """Resolve the existing public names of relocated decomposition rules."""
-    if name in {
-        "zxz_decomp_rule",
-        "rot_decomp_rule",
-        "two_qubit_decomp_rule",
-        "multi_qubit_decomp_rule",
-        "zyz_decomp_rule",
-        "xyx_decomp_rule",
-        "make_one_qubit_unitary_decomposition",
-        "xzx_decomp_rule",
-    }:
-        rules = import_module(
-            "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions"
-        )
-
-        return getattr(rules, name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-def _multi_qubit_decomp(U, wires, **__):
+def _qubit_unitary_multi_qubit_impl(U, wires, **__):
     """The decomposition rule for a multi-qubit unitary."""
 
     # Combining the two equalities in Fig. 14 [https://arxiv.org/pdf/quant-ph/0504100], we can express
@@ -1080,3 +1053,29 @@ def _multi_qubit_decomp(U, wires, **__):
     )
 
     ops.QubitUnitary(u11, wires=wires[1:])
+
+
+_RULE_MODULES = {
+    "make_one_qubit_unitary_decomposition": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
+    "_su2_rot_resource": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
+    "_su2_zyz_resource": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
+    "_su2_xyx_resource": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
+    "_su2_xzx_resource": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
+    "_su2_zxz_resource": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
+    "rot_decomp_rule": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
+    "zyz_decomp_rule": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
+    "xyx_decomp_rule": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
+    "xzx_decomp_rule": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
+    "zxz_decomp_rule": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
+    "_qubit_unitary_two_qubit_resources": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
+    "_qubit_unitary_two_qubit": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
+    "_qubit_unitary_multi_qubit_resources": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
+    "_qubit_unitary_multi_qubit": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

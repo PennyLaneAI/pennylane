@@ -15,9 +15,9 @@
 Test base Resource class and its associated methods
 """
 
-import dataclasses
+# pylint: disable=protected-access
 
-# pylint: disable=unnecessary-dunder-call,protected-access,disallowed-name
+import dataclasses
 import textwrap
 from dataclasses import FrozenInstanceError
 
@@ -49,10 +49,10 @@ def test_specs_compute_depth(compute_depth):
     ops = [
         qp.RX(0.432, wires=0),
         qp.Rot(0.543, 0, 0.23, wires=0),
-        qp.CNOT(wires=[0, "a"]),
+        qp.CNOT(wires=[0, 13]),
         qp.RX(0.133, wires=4),
     ]
-    obs = [qp.expval(qp.PauliX(wires="a")), qp.probs(wires=[0, "a"])]
+    obs = [qp.expval(qp.PauliX(wires=13)), qp.probs(wires=[0, 13])]
 
     tape = QuantumScript(ops=ops, measurements=obs)
     resources = resources_from_tape(tape, compute_depth=compute_depth)
@@ -238,8 +238,9 @@ class TestBaseResourcesExtension:
     class DummyResources(Resources):
         """Dummy class to test automatic subclass field handling"""
 
+        # pylint: disable-next=disallowed-name
         foo: int = dataclasses.field(default=5, metadata={"display_name": "My field"})
-        bar: dict = dataclasses.field(
+        bar: dict = dataclasses.field(  # pylint: disable=disallowed-name
             default_factory=lambda: {"a": 1, "b": 2}, metadata={"display_name": "My dict field"}
         )
 
@@ -1013,7 +1014,6 @@ class TestPBCSpecsResources:
         )
 
     def test_pbc_depths_required(self):
-        # pylint: disable=missing-kwoa
         with pytest.raises(
             TypeError,
             match="missing 2 required keyword-only arguments: 'any_commuting_depth' and 'qubit_disjoint_depth'",

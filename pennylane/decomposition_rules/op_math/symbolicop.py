@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for op_math.symbolicop."""
 
 from __future__ import annotations
@@ -21,15 +22,14 @@ from pennylane.decomposition.decomposition_rule import DecompositionRule, regist
 from pennylane.decomposition.resources import resource_rep
 
 
-def _decomp_to_base_legacy_res(base_class, base_params, **__):
+def _operator1_to_base_resources(base_class, base_params, **__):
     return {resource_rep(base_class, **base_params): 1}
 
 
-# pylint: disable=protected-access,unused-argument
-@register_resources(_decomp_to_base_legacy_res)
-def decompose_to_base_legacy(*params, wires, base, **__):
+@register_resources(_operator1_to_base_resources, name="to_base")
+def _operator1_to_base(*params, wires, base, **__):  # pylint: disable=unused-argument
     """Decompose a symbolic operator to its base."""
     qp.apply(base)
 
 
-self_adjoint_legacy: DecompositionRule = decompose_to_base_legacy
+self_adjoint_legacy: DecompositionRule = _operator1_to_base

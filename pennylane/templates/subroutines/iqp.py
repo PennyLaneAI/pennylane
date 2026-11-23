@@ -16,6 +16,7 @@ Contains the IQP template.
 """
 
 from functools import reduce
+from importlib import import_module as _import_module
 
 from pennylane import math
 from pennylane.core.operator import Operator2
@@ -88,7 +89,7 @@ class IQP(Operator2):
             :symbols: :math:`n` wires and :math:`G` generators in total in ``pattern``
             :example: :math:`n=2`, ``pattern=[[[0]], [[1]], [[0, 1]]]`` (meaning the number of generators :math:`G = 3`), ``spin_sym=True``
 
-            .. decomposition-rule:: _instantaneous_quantum_polynomial_decomposition
+            .. decomposition-rule:: to_h_multirz
                 :image: /_static/decomposition_thumbnails/iqp_multirz.svg
                 :where: the Pauli word ``"YX...X"`` acts on all :math:`n` wires: one Y, then
                     :math:`n - 1` X's
@@ -130,8 +131,8 @@ class IQP(Operator2):
 
         super().__init__(weights, wires=wires, pattern=pattern, spin_sym=spin_sym)
 
-    # pylint: disable=arguments-differ
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_matrix(weights, wires, pattern, spin_sym) -> TensorLike:
         num_wires = len(Wires(wires))
         layers = []
@@ -147,3 +148,16 @@ class IQP(Operator2):
                 layers.append(rx_mat)
 
         return reduce(math.matmul, layers[::-1])
+
+
+_RULE_MODULES = {
+    "_instantaneous_quantum_polynomial_standard_resources": "pennylane.decomposition_rules.templates.subroutines.iqp",
+    "_instantaneous_quantum_polynomial_standard": "pennylane.decomposition_rules.templates.subroutines.iqp",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

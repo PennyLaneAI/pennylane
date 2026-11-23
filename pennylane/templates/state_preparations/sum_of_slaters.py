@@ -14,6 +14,7 @@
 r"""Contains the SumOfSlatersPrep template."""
 
 from collections import namedtuple
+from importlib import import_module as _import_module
 from itertools import combinations, product
 
 import numpy as np
@@ -24,6 +25,7 @@ from pennylane.typing import AbstractArray, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
+
 r"""This is a data container for preprocessed SumOfSlatersPrep data.
 
 Args:
@@ -754,8 +756,6 @@ class SumOfSlatersPrep(Operator2):
 
     .. code-block:: python
 
-        qp.decomposition.enable_graph()
-
         gate_set = {"QROM", "TemporaryAND", "Adjoint(TemporaryAND)", "MultiplexerStatePreparation", "CNOT", "X"}
 
         first_free_wire = max(wires)+1
@@ -840,7 +840,7 @@ class SumOfSlatersPrep(Operator2):
                 encoding computed by :func:`~.compute_sos_encoding`)
             :example: ``indices=(0, 1, 2, 4)`` on three wires, :math:`D=4`, :math:`m=3`, :math:`u=0`
 
-            .. decomposition-rule:: _sos_state_prep
+            .. decomposition-rule:: sparse_state_isometry
                 :image: /_static/decomposition_thumbnails/sum_of_slaters_prep.svg
                 :lightbox:
                 :where: :math:`u` is the number of ones in the encoding matrix (:math:`u=0` for an
@@ -983,8 +983,7 @@ class SumOfSlatersPrep(Operator2):
     # coefficients lead to a cheaper MultiplexerStatePreparation than complex-valued ones.
     arg_specs = {"wires": Wire[-1]}
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         coefficients: TensorLike,
         wires: WiresLike,
@@ -1001,7 +1000,6 @@ class SumOfSlatersPrep(Operator2):
             v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
             _, data = _preprocess(v_bits, wires)
 
-            # pylint: disable-next=protected-access
             sizes = self._required_register_sizes_from_nums(num_entries, data.r, n)
 
             if len(enumeration_wires) > 0 and len(enumeration_wires) != sizes["enumeration_wires"]:
@@ -1168,3 +1166,19 @@ def _preprocess(v_bits, wires):
     assert b_bits.shape == (m, num_entries)
 
     return selected_wires, SoSData(u_bits, b_bits, d, r, m)
+
+
+_RULE_MODULES = {
+    "_sos_state_prep_standard_resources": "pennylane.decomposition_rules.templates.state_preparations.sum_of_slaters",
+    "_sos_state_prep_standard_work_wires": "pennylane.decomposition_rules.templates.state_preparations.sum_of_slaters",
+    "_pad_and_cast_coeffs": "pennylane.decomposition_rules.templates.state_preparations.sum_of_slaters",
+    "_sos_state_prep_with_wires": "pennylane.decomposition_rules.templates.state_preparations.sum_of_slaters",
+    "_sos_state_prep_standard": "pennylane.decomposition_rules.templates.state_preparations.sum_of_slaters",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

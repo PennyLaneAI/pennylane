@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.embeddings.amplitude."""
 
-# pylint: disable=too-many-arguments
-
 from pennylane.decomposition import add_decomps
-from pennylane.decomposition_rules.qubit.state_preparation import _state_prep_decomp
+from pennylane.decomposition_rules.qubit.state_preparation import _state_prep_standard
 from pennylane.templates.embeddings.amplitude import AmplitudeEmbedding
 
-add_decomps(AmplitudeEmbedding, _state_prep_decomp)
+add_decomps(AmplitudeEmbedding, _state_prep_standard)

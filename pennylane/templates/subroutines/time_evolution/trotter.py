@@ -16,6 +16,7 @@ Contains templates for Suzuki-Trotter approximation based subroutines.
 """
 
 import copy
+from importlib import import_module as _import_module
 
 from pennylane import ops as qp_ops
 from pennylane.capture.autograph import wraps
@@ -239,9 +240,7 @@ class TrotterProduct(Operation):
         # accepts no wires, so bypasses the wire processing.
         return cls._primitive.bind(*args, **kwargs)
 
-    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        self, hamiltonian, time, n=1, order=1, check_hermitian=True
-    ):
+    def __init__(self, hamiltonian, time, n=1, order=1, check_hermitian=True):
         r"""Initialize the TrotterProduct class"""
 
         if order <= 0 or order != 1 and order % 2 != 0:
@@ -486,7 +485,6 @@ class TrotterizedQfunc(Operation):
 
     """
 
-    # pylint: disable = too-many-arguments
     def __init__(
         self,
         time,
@@ -693,3 +691,16 @@ def _recursive_qfunc(time, order, qfunc, wires, reverse, *qfunc_args, **qfunc_kw
     )
 
     return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
+
+
+_RULE_MODULES = {
+    "_trotter_product_standard_resources": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter",
+    "_trotter_product_standard": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

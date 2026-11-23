@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.select."""
 
 from collections import Counter, defaultdict
@@ -22,12 +23,16 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.core.apply import apply
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_resources,
+)
 from pennylane.ops import CNOT, MultiControlledX, adjoint, ctrl
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
-from pennylane.templates.subroutines.select import Select, _add_k_units
+from pennylane.templates.subroutines.select import Select
 from pennylane.typing import Bool, Wire
 
 
@@ -67,6 +72,9 @@ def _partial_select(K, control):
     return (list(zip(*ctrl_, strict=True)) for ctrl_ in controls)
 
 
+# Decomposition of Select using multi-control strategy
+
+
 def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state, num_work_wires):
     return _ctrl_abstract(
         target_rep,
@@ -76,7 +84,7 @@ def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state, num_work_wi
     )
 
 
-def _select_resources_multi_control(ops, control, work_wires, partial):
+def _select_multi_control_resources(ops, control, work_wires, partial):
     num_control_wires = len(control)
     num_work_wires = len(work_wires)
     resources = defaultdict(int)
@@ -97,8 +105,8 @@ def _select_resources_multi_control(ops, control, work_wires, partial):
     return dict(resources)
 
 
-@register_resources(_select_resources_multi_control)
-def _select_decomp_multi_control(*_, ops, control, work_wires, partial, **__):
+@register_resources(_select_multi_control_resources, name="multi_control")
+def _select_multi_control(*_, ops, control, work_wires, partial, **__):
 
     if partial:
         if len(ops) == 1:
@@ -114,7 +122,10 @@ def _select_decomp_multi_control(*_, ops, control, work_wires, partial, **__):
             ctrl(op, control, control_values=ctrl_state, work_wires=work_wires)
 
 
-add_decomps(Select, _select_decomp_multi_control)
+add_decomps(Select, _select_multi_control)
+
+
+# Decomposition of Select using unary iterator
 
 
 def _add_first_k_units(ops, controls, work_wires, k):
@@ -184,6 +195,59 @@ def _add_first_k_units(ops, controls, work_wires, k):
     return first_half + middle_part + second_half
 
 
+def _add_k_units(ops, controls, work_wires, k):
+    """Add k controlled-applied operators within the unary iterator scheme, in a recursive
+    manner.
+
+    In the documentation, this subroutine is called ``R``.
+    This is _not_ used for the outer-most recursion level, see _add_first_k_units instead.
+
+    We are given ``K=len(ops)`` operators and ``2 * ⌈log_2(K)⌉ + 1`` control and auxiliary wires.
+    If ``K=0``, nothing is applied.
+    If ``K=1``, the single operator is applied, controlled on the first control wire.
+
+    In all other cases, this function applies the circuit
+
+    .. code-block::
+
+        ─╭●────╭●────●─╮─
+        ─├○────│─────●─┤─
+         ╰──■──╰X─■────╯
+
+    where each box symbolizes calls to itself on the next recursion level.
+    The next-level calls to ``_add_k_units` use
+
+    ``k_first = 2 ** (⌈log_2(k)⌉-1)`` (i.e. half of ``k``, rounded up to the next power of two)
+    and
+    ``k_second = k-k_first`` (i.e. the rest)
+
+    operators, respectively. Accordingly, two fewer control wires are used.
+
+    """
+    assert k == len(ops) > 0
+    num_bits = math.ceil_log2(k)
+    needed_controls = 2 * num_bits + 1
+    assert len(controls) >= needed_controls, f"{len(controls)=}, {needed_controls=}"
+
+    if k == 1:
+        assert num_bits == 0
+        return [ctrl(ops[0], control=controls[0], control_values=[1], work_wires=work_wires)]
+
+    assert num_bits != 0
+    controls = controls[:1] + controls[-(needed_controls - 1) :]
+
+    and_wires = controls[:3]
+    new_controls = controls[2:]
+    k_first = 2 ** (num_bits - 1)
+    return (
+        [TemporaryAND(and_wires, control_values=(1, 0))]
+        + _add_k_units(ops[:k_first], new_controls, work_wires, k_first)
+        + [CNOT(and_wires[::2])]
+        + _add_k_units(ops[k_first:], new_controls, work_wires, k - k_first)
+        + [adjoint(TemporaryAND)(and_wires)]
+    )
+
+
 def _select_resources_unary_not_partial(ops, num_control_wires, num_work_wires):
     resources = defaultdict(int)
     c = num_control_wires
@@ -230,8 +294,7 @@ def _select_resources_unary_not_partial(ops, num_control_wires, num_work_wires):
     return dict(resources)
 
 
-# pylint: disable=unused-argument
-def _select_resources_unary(ops, control, work_wires, partial):
+def _select_unary_resources(ops, control, work_wires, partial):
     num_control_wires = len(control)
     num_work_wires = len(work_wires)
     num_ops = len(ops)
@@ -286,7 +349,7 @@ def _select_resources_unary(ops, control, work_wires, partial):
 def _select_decomp_unary_not_partial(ops, control, work_wires):
     """Decompose Select operator into unary iterator, without applying the partial Select
     reduction. The control structure is simpler without the Select reduction, so that we do
-    not use the same recursive structure as for ``_select_decomp_unary`` but a simple ``for`` loop
+    not use the same recursive structure as for ``_select_unary`` but a simple ``for`` loop
     instead.
 
     Args:
@@ -457,14 +520,13 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     return ops_decomp
 
 
-# pylint: disable=unused-argument
-def _unary_condition(ops, control, work_wires, partial):
+def _unary_condition(ops, control, work_wires, partial):  # pylint: disable=unused-argument
     return len(work_wires) >= len(control) - 1
 
 
 @register_condition(_unary_condition)
-@register_resources(_select_resources_unary)
-def _select_decomp_unary(*_, ops, control, work_wires, partial, **__):
+@register_resources(_select_unary_resources, name="unary")
+def _select_unary(*_, ops, control, work_wires, partial, **__):
     r"""This function reproduces the unary iterator behaviour in https://arxiv.org/abs/1805.03662.
     For :math:`K` operators this decomposition requires at least :math:`c=\lceil\log_2 K\rceil`
     control wires (as usual for Select), and :math:`c-1` additional work wires.
@@ -523,7 +585,10 @@ def _select_decomp_unary(*_, ops, control, work_wires, partial, **__):
     return _add_first_k_units(ops, aux_control, work_wires, len(ops))
 
 
-add_decomps(Select, _select_decomp_unary)
+add_decomps(Select, _select_unary)
+
+
+# Decomposition of Select using one work wire to control the target operations
 
 
 def _select_multi_control_work_wire_resources(ops, control, work_wires, partial):
@@ -574,14 +639,13 @@ def _select_multi_control_work_wire_resources(ops, control, work_wires, partial)
     return dict(resources)
 
 
-# pylint: disable=unused-argument
-def _work_wire_condition(ops, control, work_wires, partial):
+def _work_wire_condition(ops, control, work_wires, partial):  # pylint: disable=unused-argument
     return len(work_wires) >= 1
 
 
 @register_condition(_work_wire_condition)
-@register_resources(_select_multi_control_work_wire_resources)
-def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial, **__):
+@register_resources(_select_multi_control_work_wire_resources, name="multi_control_work_wire")
+def _select_multi_control_work_wire(*_, ops, control, work_wires, partial, **__):
     """
     Multi-controlled gate decomposition, in which, instead of directly controlling the target operator with all control
     wires, an auxiliary qubit is employed to encode whether the control condition is satisfied. The target operator
@@ -629,4 +693,4 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
     return []
 
 
-add_decomps(Select, _select_decomp_multi_control_work_wire)
+add_decomps(Select, _select_multi_control_work_wire)

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.time_evolution.trotter_vibronic."""
 
 from collections import defaultdict
@@ -23,12 +24,12 @@ from pennylane.allocation import allocate
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_multiplier import (
-    _twos_complement_helper,
+from pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier import (
+    _caddsub_multiplication,
+    _caddsub_multiplication_resources,
 )
-from pennylane.ops import CNOT, Hadamard, adjoint, cond, ctrl
+from pennylane.ops import CNOT, Hadamard, adjoint, cond
 from pennylane.templates.subroutines.aqft import AQFT
-from pennylane.templates.subroutines.arithmetic.incrementer import Incrementer
 from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier
 from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
 from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import SignedOutMultiplier
@@ -43,8 +44,7 @@ from pennylane.templates.subroutines.time_evolution.trotter_vibronic import (
 from pennylane.typing import Wire
 
 
-# pylint: disable-next=too-many-arguments
-def _trotter_vibronic_resources(
+def _trotter_vibronic_standard_resources(  # pylint: disable=too-many-arguments,unused-argument
     evolution_time,
     num_trotter_steps,
     hamiltonian,
@@ -66,7 +66,6 @@ def _trotter_vibronic_resources(
     """
     # ``evolution_time`` and ``cache_wires`` are part of the shared resource/decomposition
     # signature but do not affect the gate counts.
-    # pylint: disable=unused-argument
     num_fragments = hamiltonian.num_fragments
     n_states = hamiltonian.num_states
     n_modes = hamiltonian.num_modes
@@ -74,11 +73,10 @@ def _trotter_vibronic_resources(
     # ``coefficient_wires`` may be dynamically allocated (empty here); fall back to
     # ``len(phase_gradient_wires)`` so the sub-operations are counted consistently.
     b = _coefficient_register_size(coefficient_wires, phase_gradient_wires)
-    n_pg = len(phase_gradient_wires)
     k = len(vib_wires) // n_modes
     # ``work_wires`` may be dynamically allocated (empty here), in which case fall back to the
     # required size so the sub-operations are counted consistently with the decomposition.
-    n_work = len(work_wires) if len(work_wires) > 0 else max(n_elec - 1, 2 * k, 2 * b + 2)
+    n_work = len(work_wires) if len(work_wires) > 0 else _required_work_size(n_elec, k, b)
     num_pairs = n_modes * (n_modes - 1) // 2
 
     # Each Trotter step visits every position fragment twice (forward + backward).
@@ -98,28 +96,20 @@ def _trotter_vibronic_resources(
         target_wires=Wire[b],
         work_wires=Wire[max(n_elec - 1, 0)],
     )
-    semi_adder = SemiAdder(x_wires=Wire[b], y_wires=Wire[n_pg], work_wires=Wire[n_work])
+    semi_adder = SemiAdder(x_wires=Wire[b], y_wires=Wire[b], work_wires=Wire[n_work])
 
-    # ``OutMultiplier`` appears with three different ``y`` register sizes: inside the half-signed
-    # multiplier for the linear terms (``y = k``, the mode register) and the bilinear terms
-    # (``y = 2k``, the cache register), and directly for the quadratic/kinetic terms
-    # (``y = 2k - 1``, the cache register minus its sign bit).
-    out_mult_linear = OutMultiplier(
-        x_wires=Wire[b],
-        y_wires=Wire[k],
-        output_wires=Wire[n_pg],
-        work_wires=Wire[max(n_work - 1, 0)],
+    # The half-signed multipliers are emitted as the gates of a controlled add/subtract multiplier,
+    # controlled by the ``k``-wire mode register (linear terms) or the ``2k``-wire cache register
+    # (bilinear terms).
+    half_signed_linear = _caddsub_multiplication_resources(k, b, b, n_work, False, x_signed=True)
+    half_signed_bilinear = _caddsub_multiplication_resources(
+        2 * k, b, b, n_work, False, x_signed=True
     )
-    out_mult_bilinear = OutMultiplier(
-        x_wires=Wire[b],
-        y_wires=Wire[2 * k],
-        output_wires=Wire[n_pg],
-        work_wires=Wire[max(n_work - 1, 0)],
-    )
+    # The quadratic/kinetic terms multiply with the cache register minus its sign bit
     out_mult_quad = OutMultiplier(
-        x_wires=Wire[b],
-        y_wires=Wire[max(2 * k - 1, 1)],
-        output_wires=Wire[n_pg],
+        x_wires=Wire[max(2 * k - 1, 1)],
+        y_wires=Wire[b],
+        output_wires=Wire[b],
         work_wires=Wire[n_work],
     )
     signed_out_mult = SignedOutMultiplier(
@@ -145,51 +135,39 @@ def _trotter_vibronic_resources(
     adj_signed_out_mult = adjoint(signed_out_mult)
     adj_aqft = adjoint(aqft)
 
-    # The sign-bit-controlled two's complement (compute + uncompute) acts on the ``k``-wire mode
-    # register (linear terms) and the ``2k``-wire cache register (bilinear terms).
-    ctrl_incrementer_linear = ctrl(Incrementer(Wire[k], Wire[max(n_work - 1, 0)]), Wire[1])
-    ctrl_incrementer_bilinear = ctrl(Incrementer(Wire[2 * k], Wire[max(n_work - 1, 0)]), Wire[1])
-
     resources = defaultdict(int)
 
     # -- Electronic diagonalization (forward + adjoint per visit) --
     resources[Hadamard(wires=Wire[1])] += 2 * position_visits
-
-    # -- CNOTs: electronic diagonalization plus the half-signed multipliers, which cache the sign
-    #    bit, invert the register for the two's complement, and apply the controlled output flips --
-    resources[CNOT(wires=Wire[2])] += (
-        2 * position_visits * max(n_elec - 1, 0)
-        + num_linear * (2 + 2 * k + 2 * n_pg)
-        + num_bilinear * (2 + 4 * k + 2 * n_pg)
-    )
+    resources[CNOT(wires=Wire[2])] += 2 * position_visits * max(n_elec - 1, 0)
 
     # -- Data loading: each applied constant/linear/quadratic/bilinear term + final unload --
     resources[qrom] += num_constant + num_linear + num_quadratic + num_bilinear + position_visits
     resources[semi_adder] += num_constant
 
-    # -- Linear terms: one half-signed multiplier each --
-    resources[out_mult_linear] += num_linear
-    resources[ctrl_incrementer_linear] += num_linear * 2
+    # -- Linear terms: one half-signed multiplier each. Bilinear terms: one half-signed multiplier
+    #    each, plus two SignedOutMultipliers (compute + uncompute) --
+    for half_signed, num_terms in (
+        (half_signed_linear, num_linear),
+        (half_signed_bilinear, num_bilinear),
+    ):
+        for rep, count in half_signed.items():
+            resources[rep] += num_terms * count
+    resources[signed_out_mult] += num_bilinear
+    resources[adj_signed_out_mult] += num_bilinear
 
     # -- Quadratic terms: two SignedOutSquares (compute + uncompute) and one OutMultiplier --
     resources[signed_square] += num_quadratic
     resources[adj_signed_square] += num_quadratic
     resources[out_mult_quad] += num_quadratic
 
-    # -- Bilinear terms: two SignedOutMultipliers (compute + uncompute) and one half-signed
-    #    multiplier --
-    resources[signed_out_mult] += num_bilinear
-    resources[adj_signed_out_mult] += num_bilinear
-    resources[out_mult_bilinear] += num_bilinear
-    resources[ctrl_incrementer_bilinear] += num_bilinear * 2
-
-    # -- Kinetic fragment (once per Trotter step): per mode, load the momentum coefficients as a
-    #    basis state (``MultiX``), then AQFT + SignedOutSquare + OutMultiplier and their
+    # -- Kinetic fragment (once per Trotter step): per mode, AQFT, then load the momentum
+    #    coefficients as a basis state (``MultiX``), then SignedOutSquare + OutMultiplier and their
     #    uncomputation --
-    multi_x = MultiX(np.zeros(b, dtype=bool), wires=Wire[b])
-    resources[multi_x] += num_kinetic * 2
     resources[aqft] += num_kinetic
     resources[adj_aqft] += num_kinetic
+    multi_x = MultiX(np.zeros(b, dtype=bool), wires=Wire[b])
+    resources[multi_x] += num_kinetic * 2
     resources[signed_square] += num_kinetic
     resources[adj_signed_square] += num_kinetic
     resources[out_mult_quad] += num_kinetic
@@ -217,17 +195,27 @@ def _coefficient_register_size(coefficient_wires, phase_gradient_wires):
     return len(coefficient_wires) if len(coefficient_wires) > 0 else len(phase_gradient_wires)
 
 
+def _required_work_size(n, k, b):
+    """Required size of the ``work`` register for ``n`` electronic qubits, ``k`` qubits per mode
+    and ``b`` coefficient (and used phase-gradient) qubits.
+
+    The largest requirements come from the QROM (``n - 1``), the multipliers into the
+    phase-gradient register (``b + 1`` for controlled add/subtract multiplication), and the
+    ``SignedOutMultiplier`` of two mode registers for the bilinear terms (``2k + 2``).
+    """
+    return max(n - 1, b + 1, 2 * k + 2)
+
+
 def _required_work_wire_sizes(hamiltonian, vib_wires, b):
     """Required ``(cache, work)`` register sizes for the vibronic Trotter circuit."""
     n_states = hamiltonian.num_states
     n_modes = hamiltonian.num_modes
     k = len(vib_wires) // n_modes
     n = math.ceil_log2(n_states)
-    return 2 * k, max(n - 1, 2 * k, 2 * b + 2)
+    return 2 * k, _required_work_size(n, k, b)
 
 
-# pylint: disable-next=too-many-arguments
-def _trotter_vibronic_work_wires(
+def _trotter_vibronic_standard_work_wires(  # pylint: disable=too-many-arguments
     hamiltonian, vib_wires, coefficient_wires, phase_gradient_wires, cache_wires, work_wires, **_
 ):
     """Number of zeroed work wires allocated when ``coefficient_wires``/``cache_wires``/
@@ -245,10 +233,12 @@ def _trotter_vibronic_work_wires(
 
 
 @register_resources(
-    _trotter_vibronic_resources, exact=False, work_wires=_trotter_vibronic_work_wires
+    _trotter_vibronic_standard_resources,
+    exact=False,
+    work_wires=_trotter_vibronic_standard_work_wires,
+    name="vibronic_trotter_steps",
 )
-# pylint: disable-next=too-many-arguments
-def _trotter_vibronic_decomposition(
+def _trotter_vibronic_standard(  # pylint: disable=too-many-arguments
     evolution_time,
     num_trotter_steps,
     hamiltonian,
@@ -279,7 +269,8 @@ def _trotter_vibronic_decomposition(
             "electronic": electronic_wires,
             "cache": cache,
             "coefficients": coefficients,
-            "phase_gradient": phase_gradient_wires,
+            # The first ``b`` wires of a phase-gradient state form a ``b``-wire phase-gradient state
+            "phase_gradient": phase_gradient_wires[:b],
             "work": work,
         }
         _validate_registers(registers, mode_registers, n_modes, n_states)
@@ -322,7 +313,7 @@ def _trotter_vibronic_decomposition(
         _run(coefficients, cache, work)
 
 
-add_decomps(TrotterVibronic, _trotter_vibronic_decomposition)
+add_decomps(TrotterVibronic, _trotter_vibronic_standard)
 
 
 def _diagonalize_probs(num_fragments, n):
@@ -414,6 +405,11 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments, inverse=Fa
         _apply()
 
 
+# ---------------------------------------------------------------------------
+# ------------------------- Half-signed multiplier --------------------------
+# ---------------------------------------------------------------------------
+
+
 def _half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
     r"""Out-of-place multiplier of an unsigned register ``x`` and a signed register ``y``.
 
@@ -422,43 +418,20 @@ def _half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
     signed integer. This is a specialized primitive used by :class:`~.TrotterVibronic`; it is
     a plain quantum function that queues its constituent operations.
 
-    The sign bit of ``y`` is cached on the first work wire, the two's complement of ``y`` is
-    computed controlled on that cached bit, the (unsigned) magnitudes are multiplied into the
-    output register with a :class:`~.OutMultiplier` (with the output wires flipped before and
-    after the multiplication if ``y`` is negative), and finally the two's complement and the
-    cached sign bit are uncomputed.
+    The multiplication uses the controlled add/subtract decomposition of
+    :class:`~.OutMultiplier`, with the bits of ``y`` controlling the add/subtract steps. Flipping
+    the sign bit of ``y`` swaps the add and subtract branches of its step, which makes one of
+    the correction steps of the unsigned multiplication obsolete. It requires
+    ``len(output_wires) + 1`` work wires.
     """
-    y_aux, work_wires = work_wires[0], work_wires[1:]
+    _caddsub_multiplication(
+        y_wires, x_wires, output_wires, work_wires, output_wires_zeroed=False, x_signed=True
+    )
 
-    if compiler.active() or capture.enabled():
-        output_arr = math.array(list(output_wires), like="jax")
-    else:
-        output_arr = list(output_wires)
 
-    def _flip_outputs():
-        # CNOT from the cached sign bit onto every output wire.
-        @for_loop(len(output_wires))
-        def _flip(w):
-            CNOT([y_aux, output_arr[w]])
-
-        # pylint: disable-next=no-value-for-parameter
-        _flip()
-
-    # Cache the sign bit of ``y`` on the auxiliary wire.
-    CNOT([y_wires[0], y_aux])
-
-    # Take the two's complement of ``y`` controlled on the cached sign bit.
-    _twos_complement_helper(y_wires, y_aux, work_wires)
-
-    # Multiply the magnitudes into the output register. If ``y`` was negative, flip all output
-    # qubits before and after the (unsigned) multiplication, effectively subtracting the product.
-    _flip_outputs()
-    OutMultiplier(x_wires, y_wires, output_wires, work_wires=work_wires, output_wires_zeroed=False)
-    _flip_outputs()
-
-    # Uncompute the two's complement and the cached sign bit.
-    _twos_complement_helper(y_wires, y_aux, work_wires)
-    CNOT([y_wires[0], y_aux])
+# ---------------------------------------------------------------------------
+# ------------------------------ Data loading -------------------------------
+# ---------------------------------------------------------------------------
 
 
 def _load_coefficients(coefficients, precision, prev_bitstrings, qrom_wires):
@@ -494,14 +467,14 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
         # The cache contains 2k wires, we just need 2k-1 here
         square_wires["output_wires"] = square_wires["output_wires"][1:]
         mult_wires = {
-            "x_wires": "coefficients",
-            "y_wires": "cache",
+            "x_wires": "cache",
+            "y_wires": "coefficients",
             "output_wires": "phase_gradient",
             "work_wires": "work",
         }
         mult_wires = {new: registers[old] for new, old in mult_wires.items()}
         # The cache contains 2k wires, we just need 2k-1 here, see above
-        mult_wires["y_wires"] = mult_wires["y_wires"][1:]
+        mult_wires["x_wires"] = mult_wires["x_wires"][1:]
         return square_wires, mult_wires
 
     if term == "bilinear":
@@ -547,8 +520,12 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
     return {new: registers[old] for new, old in reg.items()}
 
 
-# pylint: disable-next=too-many-arguments,too-many-statements
-def _trotter_step_second_order(
+# ---------------------------------------------------------------------------
+# ------------------------------ Trotter step -------------------------------
+# ---------------------------------------------------------------------------
+
+
+def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-statements
     time,
     hamiltonian,
     registers,
@@ -571,7 +548,7 @@ def _trotter_step_second_order(
     :class:`~.TrotterVibronic`.
     """
     branch_probs = dict(branch_probs or ())
-    precision = len(registers["phase_gradient"])
+    precision = len(registers["coefficients"])
     all_coeffs, bilinear_indices = _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes)
     if compiler.active() or capture.enabled():
         all_coeffs = tuple(math.array(c, like="jax") for c in all_coeffs)
@@ -581,6 +558,7 @@ def _trotter_step_second_order(
     num_position_fragments = hamiltonian.num_fragments
 
     def position_fragments(i):
+        # pylint: disable=no-value-for-parameter
         const_coeffs = all_constant[i]
         linear_coeffs = all_linear[i]
         quadratic_coeffs = all_quadratic[i]
@@ -667,13 +645,10 @@ def _trotter_step_second_order(
 
         prev_bitstrings = np.zeros((n_states, precision), dtype=int)
         prev_bitstrings = constant_term(prev_bitstrings)
-        # pylint: disable-next=no-value-for-parameter
         prev_bitstrings = linear_terms(prev_bitstrings)
-        # pylint: disable-next=no-value-for-parameter
         prev_bitstrings = quadratic_terms(prev_bitstrings)
         # Skip empty bilinear loop: zero-iteration ``for_loop`` still traces under capture.
         if bilinear_indices.shape[1] > 0:
-            # pylint: disable-next=no-value-for-parameter
             prev_bitstrings = bilinear_terms(prev_bitstrings)
 
         # Finish up the coefficients register by unloading the last loaded coefficients
@@ -703,29 +678,25 @@ def _trotter_step_second_order(
                 )
                 # Negated for the same phase-gradient sign convention as ``_load_coefficients``.
                 bitstring = math.binary_decimals(-_coeffs, precision, unit=2 * np.pi)
-                MultiX(bitstring, registers["coefficients"])
                 AQFT(order=aqft_order, wires=mode_registers[k])
+                MultiX(bitstring, registers["coefficients"])
                 SignedOutSquare(**square_wires, output_wires_zeroed=True)
                 OutMultiplier(**mult_wires)
                 adjoint(SignedOutSquare(**square_wires, output_wires_zeroed=True))
-                adjoint(AQFT(order=aqft_order, wires=mode_registers[k]))
                 # ``MultiX`` is self-adjoint, so the unload is the same call.
                 MultiX(bitstring, registers["coefficients"])
+                adjoint(AQFT(order=aqft_order, wires=mode_registers[k]))
 
             cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
-        # pylint: disable-next=no-value-for-parameter
-        kinetic_terms()
+        kinetic_terms()  # pylint: disable=no-value-for-parameter
 
-    # pylint: disable-next=no-value-for-parameter
     for_loop(num_position_fragments)(position_fragments)()
     kinetic_fragment()
-    # pylint: disable-next=no-value-for-parameter
     for_loop(num_position_fragments - 1, -1, -1)(position_fragments)()
 
 
-# pylint: disable-next=too-many-arguments
-def _run_trotter_vibronic(
+def _run_trotter_vibronic(  # pylint: disable=too-many-arguments
     evolution_time,
     num_trotter_steps,
     hamiltonian,
@@ -763,7 +734,7 @@ def _validate_registers(registers, mode_registers, n_modes, n_states):
     b = len(registers["coefficients"])
     k = len(mode_registers[0])
     n = math.ceil_log2(n_states)
-    needed_work_wires = max(n - 1, 2 * k, 2 * b + 2)
+    needed_work_wires = _required_work_size(n, k, b)
 
     if len(registers["electronic"]) != n:
         raise ValueError(

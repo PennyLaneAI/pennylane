@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.arithmetic.out_poly."""
 
 from collections import Counter
 
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_resources,
+)
 from pennylane.ops import adjoint, ctrl
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.subroutines.arithmetic.out_poly import OutPoly
@@ -26,7 +30,7 @@ from pennylane.typing import Int, Wire
 from pennylane.wires import WiresLike
 
 
-def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coeffs_list) -> dict:
+def _out_poly_standard_resources(num_output_wires, num_work_wires, mod, coeffs_list) -> dict:
     num_output_adder_mod = num_output_wires + 1 if num_work_wires else num_output_wires
 
     resources = Counter({QFT(Wire[num_output_adder_mod]): 1})
@@ -56,15 +60,15 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
     return dict(resources)
 
 
-@register_resources(_out_poly_decomposition_resources)
-def _out_poly_decomposition(
+@register_resources(_out_poly_standard_resources, name="fourier_polynomial_phases")
+def _out_poly_standard(  # pylint: disable=unused-argument
     polynomial_function,
     input_registers,
     output_wires: WiresLike,
     mod=None,
     work_wires: WiresLike = (),
     **kwargs,
-):  # pylint: disable=unused-argument
+):
     registers_wires = [*input_registers, output_wires]
 
     if len(work_wires) == 0:
@@ -101,4 +105,4 @@ def _out_poly_decomposition(
     adjoint(QFT(wires=output_adder_mod))
 
 
-add_decomps(OutPoly, _out_poly_decomposition)
+add_decomps(OutPoly, _out_poly_standard)

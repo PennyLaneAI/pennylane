@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.qft."""
 
 import numpy as np
@@ -26,7 +27,7 @@ from pennylane.typing import AbstractWires
 from pennylane.wires import WiresLike
 
 
-def _qft_decomposition_resources(wires: AbstractWires):
+def _qft_standard_resources(wires: AbstractWires):
     num_wires = len(wires)
     return {
         Hadamard: num_wires,
@@ -35,8 +36,8 @@ def _qft_decomposition_resources(wires: AbstractWires):
     }
 
 
-@register_resources(_qft_decomposition_resources)
-def _qft_decomposition(wires: WiresLike):
+@register_resources(_qft_standard_resources, name="controlled_phase_shifts")
+def _qft_standard(wires: WiresLike):
     num_wires = len(wires)
     shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
     if compiler.active() or capture.enabled():
@@ -65,4 +66,4 @@ def _qft_decomposition(wires: WiresLike):
     swaps()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(QFT, _qft_decomposition)
+add_decomps(QFT, _qft_standard)

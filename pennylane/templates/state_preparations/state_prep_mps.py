@@ -15,6 +15,8 @@
 Contains the MPSPrep template.
 """
 
+from importlib import import_module as _import_module
+
 import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.typing import Wire
@@ -67,153 +69,6 @@ def _validate_mps_shape(mps):
     assert qp.math.isclose(
         new_dj0, dj2
     ), "Dimension mismatch: the last tensor's first dimension does not match the previous third dimension."
-
-
-class MPSPrep(Operator2):
-    r"""Prepares an initial state from a matrix product state (MPS) representation.
-
-    .. note::
-
-        The gate-based decomposition prepares the state vector represented by the MPS using
-        Eq. (23) in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_. It requires a
-        right-canonical MPS and auxiliary qubits supplied through ``work_wires``. Set
-        ``right_canonicalize=True`` to convert the input MPS to right-canonical form, or use
-        :func:`~.right_canonicalize_mps` before constructing the operator.
-
-    Args:
-        mps (list[TensorLike]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state
-            as a product of site matrices. See the usage details section for more information.
-
-        wires (Sequence[int]): wires that the template acts on. It should match the number of MPS tensors.
-        work_wires (Sequence[int]): extra qubits needed for the gate-based decomposition.
-            At least one work wire is required. If the maximum bond dimension of the MPS is
-            :math:`2^k`, provide at least :math:`k` work wires.
-
-        right_canonicalize (bool): indicates whether a conversion to right-canonical form should be performed to the MPS.
-            Default is ``False``.
-
-
-    .. seealso:: :func:`~.right_canonicalize_mps`.
-
-    **Example**
-
-    Prepare an MPS on ``default.qubit`` using one auxiliary wire:
-
-    .. code-block:: python
-
-        mps = [
-            np.array([[0.0, 0.107], [0.994, 0.0]]),
-            np.array(
-                [
-                    [[0.0, 0.0], [1.0, 0.0]],
-                    [[0.0, 1.0], [0.0, 0.0]],
-                ]
-            ),
-            np.array([[-1.0, -0.0], [-0.0, -1.0]]),
-        ]
-
-        dev = qp.device("default.qubit", wires=4)
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.MPSPrep(mps, wires=[1, 2, 3], work_wires=[0])
-            return qp.state()
-
-    The auxiliary wire returns to :math:`|0\rangle`, so the first eight amplitudes
-    contain the prepared three-qubit state:
-
-    >>> print(circuit()[:8])
-    [ 0.        +0.j -0.10702756+0.j  0.        +0.j  0.        +0.j
-      0.        +0.j  0.        +0.j -0.99425605+0.j  0.        +0.j]
-
-    .. details::
-        :title: Available decompositions
-
-        .. decomposition-table:: qp.MPSPrep
-            :stacked:
-            :symbols: :math:`n` MPS tensors (one per wire), :math:`w` work wires and maximal bond
-                dimension :math:`\chi`
-            :example: :math:`n=3`, :math:`w=1`
-
-            .. decomposition-rule:: _mps_prep_decomposition
-                :image: /_static/decomposition_thumbnails/mps_prep.svg
-                :requires: :math:`w \geq \log_2 \chi` work wires
-
-                :class:`~.QubitUnitary` on :math:`w + 1` wires | :math:`n` | 3
-
-    .. details::
-        :title: Usage Details
-
-        The input MPS must be a list of :math:`n` tensors :math:`[A^{(0)}, ..., A^{(n-1)}]`
-        with shapes :math:`d_0, ..., d_{n-1}`, respectively. The first and last tensors have rank :math:`2`
-        while the intermediate tensors have rank :math:`3`.
-
-        The first tensor must have the shape :math:`d_0 = (d_{0,0}, d_{0,1})` where :math:`d_{0,0}`
-        and :math:`d_{0,1}`  correspond to the physical dimension of the site and an auxiliary bond
-        dimension connecting it to the next tensor, respectively.
-
-        The last tensor must have the shape :math:`d_{n-1} = (d_{n-1,0}, d_{n-1,1})` where :math:`d_{n-1,0}`
-        and :math:`d_{n-1,1}` represent the auxiliary dimension from the previous site and the physical
-        dimension of the site, respectively.
-
-        The intermediate tensors must have the shape :math:`d_j = (d_{j,0}, d_{j,1}, d_{j,2})`, where:
-
-        - :math:`d_{j,0}` is the bond dimension connecting to the previous tensor
-        - :math:`d_{j,1}` is the physical dimension of the site
-        - :math:`d_{j,2}` is the bond dimension connecting to the next tensor
-
-        Note that the bond dimensions must match between adjacent tensors such that :math:`d_{j-1,2} = d_{j,0}`.
-
-        Additionally, the physical dimension of the site should always be fixed at :math:`2`
-        (since the dimension of a qubit is :math:`2`), while the other dimensions must be powers of two.
-
-        The following example shows a valid MPS input containing four tensors with
-        dimensions :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]` which satisfy the criteria described above.
-
-        .. code-block::
-
-            mps = [
-                np.array([[0.0, 0.107], [0.994, 0.0]]),
-                np.array(
-                    [
-                        [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
-                        [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
-                    ]
-                ),
-                np.array(
-                    [
-                        [[-1.0, 0.0], [0.0, 0.0]],
-                        [[0.0, 0.0], [0.0, 1.0]],
-                        [[0.0, -1.0], [0.0, 0.0]],
-                        [[0.0, 0.0], [1.0, 0.0]],
-                    ]
-                ),
-                np.array([[-1.0, -0.0], [-0.0, -1.0]]),
-            ]
-    """
-
-    hybrid_argnames = ("mps",)
-    wire_argnames = ("wires", "work_wires")
-    static_argnames = ("right_canonicalize",)
-
-    arg_specs = {"wires": Wire[-1], "work_wires": Wire[-1]}
-
-    grad_method = None
-
-    def __init__(
-        self, mps, wires, work_wires=None, right_canonicalize=False
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
-
-        _validate_mps_shape(mps)
-
-        # Cast each tensor to an array so that every tensor is treated as a single pytree
-        mps = [tensor if hasattr(tensor, "shape") else qp.math.asarray(tensor) for tensor in mps]
-
-        work_wires = () if work_wires is None else work_wires
-
-        super().__init__(
-            mps, wires=wires, work_wires=work_wires, right_canonicalize=right_canonicalize
-        )
 
 
 def right_canonicalize_mps(mps):
@@ -361,3 +216,162 @@ def right_canonicalize_mps(mps):
     output_mps[-1] = output_mps[-1][:, :, 0]
 
     return output_mps
+
+
+class MPSPrep(Operator2):
+    r"""Prepares an initial state from a matrix product state (MPS) representation.
+
+    .. note::
+
+        The gate-based decomposition prepares the state vector represented by the MPS using
+        Eq. (23) in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_. It requires a
+        right-canonical MPS and auxiliary qubits supplied through ``work_wires``. Set
+        ``right_canonicalize=True`` to convert the input MPS to right-canonical form, or use
+        :func:`~.right_canonicalize_mps` before constructing the operator.
+
+    Args:
+        mps (list[TensorLike]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state
+            as a product of site matrices. See the usage details section for more information.
+
+        wires (Sequence[int]): wires that the template acts on. It should match the number of MPS tensors.
+        work_wires (Sequence[int]): extra qubits needed for the gate-based decomposition.
+            At least one work wire is required. If the maximum bond dimension of the MPS is
+            :math:`2^k`, provide at least :math:`k` work wires.
+
+        right_canonicalize (bool): indicates whether a conversion to right-canonical form should be performed to the MPS.
+            Default is ``False``.
+
+
+    .. seealso:: :func:`~.right_canonicalize_mps`.
+
+    **Example**
+
+    Prepare an MPS on ``default.qubit`` using one auxiliary wire:
+
+    .. code-block:: python
+
+        mps = [
+            np.array([[0.0, 0.107], [0.994, 0.0]]),
+            np.array(
+                [
+                    [[0.0, 0.0], [1.0, 0.0]],
+                    [[0.0, 1.0], [0.0, 0.0]],
+                ]
+            ),
+            np.array([[-1.0, -0.0], [-0.0, -1.0]]),
+        ]
+
+        dev = qp.device("default.qubit", wires=4)
+
+        @qp.qnode(dev)
+        def circuit():
+            qp.MPSPrep(mps, wires=[1, 2, 3], work_wires=[0])
+            return qp.state()
+
+    The auxiliary wire returns to :math:`|0\rangle`, so the first eight amplitudes
+    contain the prepared three-qubit state:
+
+    >>> print(circuit()[:8])
+    [ 0.        +0.j -0.10702756+0.j  0.        +0.j  0.        +0.j
+      0.        +0.j  0.        +0.j -0.99425605+0.j  0.        +0.j]
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.MPSPrep
+            :stacked:
+            :symbols: :math:`n` MPS tensors (one per wire), :math:`w` work wires and maximal bond
+                dimension :math:`\chi`
+            :example: :math:`n=3`, :math:`w=1`
+
+            .. decomposition-rule:: sequential_unitaries
+                :image: /_static/decomposition_thumbnails/mps_prep.svg
+                :requires: :math:`w \geq \log_2 \chi` work wires
+
+                :class:`~.QubitUnitary` on :math:`w + 1` wires | :math:`n` | 3
+
+    .. details::
+        :title: Usage Details
+
+        The input MPS must be a list of :math:`n` tensors :math:`[A^{(0)}, ..., A^{(n-1)}]`
+        with shapes :math:`d_0, ..., d_{n-1}`, respectively. The first and last tensors have rank :math:`2`
+        while the intermediate tensors have rank :math:`3`.
+
+        The first tensor must have the shape :math:`d_0 = (d_{0,0}, d_{0,1})` where :math:`d_{0,0}`
+        and :math:`d_{0,1}`  correspond to the physical dimension of the site and an auxiliary bond
+        dimension connecting it to the next tensor, respectively.
+
+        The last tensor must have the shape :math:`d_{n-1} = (d_{n-1,0}, d_{n-1,1})` where :math:`d_{n-1,0}`
+        and :math:`d_{n-1,1}` represent the auxiliary dimension from the previous site and the physical
+        dimension of the site, respectively.
+
+        The intermediate tensors must have the shape :math:`d_j = (d_{j,0}, d_{j,1}, d_{j,2})`, where:
+
+        - :math:`d_{j,0}` is the bond dimension connecting to the previous tensor
+        - :math:`d_{j,1}` is the physical dimension of the site
+        - :math:`d_{j,2}` is the bond dimension connecting to the next tensor
+
+        Note that the bond dimensions must match between adjacent tensors such that :math:`d_{j-1,2} = d_{j,0}`.
+
+        Additionally, the physical dimension of the site should always be fixed at :math:`2`
+        (since the dimension of a qubit is :math:`2`), while the other dimensions must be powers of two.
+
+        The following example shows a valid MPS input containing four tensors with
+        dimensions :math:`[(2,2), (2,2,4), (4,2,2), (2,2)]` which satisfy the criteria described above.
+
+        .. code-block::
+
+            mps = [
+                np.array([[0.0, 0.107], [0.994, 0.0]]),
+                np.array(
+                    [
+                        [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
+                        [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
+                    ]
+                ),
+                np.array(
+                    [
+                        [[-1.0, 0.0], [0.0, 0.0]],
+                        [[0.0, 0.0], [0.0, 1.0]],
+                        [[0.0, -1.0], [0.0, 0.0]],
+                        [[0.0, 0.0], [1.0, 0.0]],
+                    ]
+                ),
+                np.array([[-1.0, -0.0], [-0.0, -1.0]]),
+            ]
+    """
+
+    hybrid_argnames = ("mps",)
+    wire_argnames = ("wires", "work_wires")
+    static_argnames = ("right_canonicalize",)
+
+    arg_specs = {"wires": Wire[-1], "work_wires": Wire[-1]}
+
+    grad_method = None
+
+    def __init__(self, mps, wires, work_wires=None, right_canonicalize=False):
+
+        _validate_mps_shape(mps)
+
+        # Cast each tensor to an array so that every tensor is treated as a single pytree
+        mps = [tensor if hasattr(tensor, "shape") else qp.math.asarray(tensor) for tensor in mps]
+
+        work_wires = () if work_wires is None else work_wires
+
+        super().__init__(
+            mps, wires=wires, work_wires=work_wires, right_canonicalize=right_canonicalize
+        )
+
+
+_RULE_MODULES = {
+    "_mps_prep_standard_resources": "pennylane.decomposition_rules.templates.state_preparations.state_prep_mps",
+    "_work_wires_bond_dimension_condition": "pennylane.decomposition_rules.templates.state_preparations.state_prep_mps",
+    "_mps_prep_standard": "pennylane.decomposition_rules.templates.state_preparations.state_prep_mps",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

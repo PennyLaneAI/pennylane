@@ -15,6 +15,8 @@ r"""
 Contains the CosineWindow template.
 """
 
+from importlib import import_module as _import_module
+
 import numpy as np
 
 import pennylane as qp
@@ -141,3 +143,16 @@ class CosineWindow(StatePrepBase):
             ket = ket.transpose(desired_order)
 
         return math.convert_like(ket, op_vector)
+
+
+_RULE_MODULES = {
+    "_cosine_window_standard_resources": "pennylane.decomposition_rules.templates.state_preparations.cosine_window",
+    "_cosine_window_standard": "pennylane.decomposition_rules.templates.state_preparations.cosine_window",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -53,11 +53,10 @@ def test_wires():
 
 def test_debugger_attribute():
     """Test that NullQubit has a debugger attribute and that it is `None`"""
-    # pylint: disable=protected-access
     dev = NullQubit()
 
     assert hasattr(dev, "_debugger")
-    assert dev._debugger is None
+    assert dev._debugger is None  # pylint: disable=protected-access
 
 
 def test_resource_tracking_attributes():
@@ -127,8 +126,7 @@ def test_set_device_target():
 def test_supports_operator_without_decomp(shots):
     """Test that null.qubit automatically supports any operation without a decomposition."""
 
-    # pylint: disable=too-few-public-methods
-    class MyOp(qp.operation.Operator):
+    class MyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
         pass
 
     tape = qp.tape.QuantumScript([MyOp(wires=(0, 1))], [qp.expval(qp.Z(0))], shots=shots)
@@ -537,16 +535,16 @@ class TestExecutingBatches:
     def f(dev, phi):
         """A function that executes a batch of scripts on NullQubit without preprocessing."""
         ops = [
-            qp.PauliX("a"),
-            qp.PauliX("b"),
-            qp.ctrl(qp.RX(phi, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
+            qp.PauliX(8),
+            qp.PauliX(9),
+            qp.ctrl(qp.RX(phi, 11), (8, 9, -3), control_values=[1, 1, 0]),
         ]
 
         qs1 = qp.tape.QuantumScript(
             ops,
             [
-                qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
+                qp.expval(qp.sum(qp.PauliY(11), qp.PauliZ(9))),
+                qp.expval(qp.s_prod(3, qp.PauliZ(11))),
             ],
         )
 
@@ -559,16 +557,16 @@ class TestExecutingBatches:
     def f_hashable(phi):
         """A function that executes a batch of scripts on NullQubit without preprocessing."""
         ops = [
-            qp.PauliX("a"),
-            qp.PauliX("b"),
-            qp.ctrl(qp.RX(phi, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
+            qp.PauliX(8),
+            qp.PauliX(9),
+            qp.ctrl(qp.RX(phi, 11), (8, 9, -3), control_values=[1, 1, 0]),
         ]
 
         qs1 = qp.tape.QuantumScript(
             ops,
             [
-                qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
+                qp.expval(qp.sum(qp.PauliY(11), qp.PauliZ(9))),
+                qp.expval(qp.s_prod(3, qp.PauliZ(11))),
             ],
         )
 
@@ -719,11 +717,10 @@ class TestSumOfTermsDifferentiability:
         out = self.f(dev, x, style=style)
         assert out == torch.tensor(0)
 
-        out.backward()  # pylint:disable=no-member
+        out.backward()
         assert x.grad == 0
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize("config", [None, ExecutionConfig(gradient_method="device")])
 class TestDeviceDifferentiation:
     """Tests device differentiation integration with NullQubit."""
@@ -737,7 +734,7 @@ class TestDeviceDifferentiation:
         [qs], _ = dev.preprocess_transforms(config)((qs,))
         actual_grad = dev.compute_derivatives(qs, config)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad.shape == ()
         assert actual_grad == 0
 
         actual_val, actual_grad = dev.execute_and_compute_derivatives(qs, config)
@@ -800,7 +797,7 @@ class TestDeviceDifferentiation:
 
         actual_grad = dev.compute_jvp(qs, tangent, config)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad.shape == ()
         assert actual_grad == 0.0
 
         actual_val_and_grad = dev.execute_and_compute_jvp(qs, tangent, config)
@@ -1237,8 +1234,7 @@ def test_measurement_shape_matches_default_qubit(mp, x, shots):
     assert qp.math.shape(res) == qp.math.shape(target)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
-class TestNullQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
+class TestNullQubitGraphModeExclusive:
     """Tests for NullQubit features that require graph mode enabled.
     The legacy decomposition mode should not be able to run these tests.
     NOTE: All tests in this suite will auto-enable graph mode via fixture.
@@ -1251,12 +1247,12 @@ class TestNullQubitGraphModeExclusive:  # pylint: disable=too-few-public-methods
         class MyNullQubitOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
-        @qp.register_resources({qp.H: 2})
+        @qp.register_resources({qp.H: 2}, name="decomp_fallback")
         def decomp_fallback(wires):
             qp.H(wires)
             qp.H(wires)
 
-        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 5})
+        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 5}, name="decomp_with_work_wire")
         def decomp_with_work_wire(wires):
             qp.X(wires)
 

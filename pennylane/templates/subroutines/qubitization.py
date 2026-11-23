@@ -16,6 +16,7 @@ This submodule contains the template for Qubitization.
 """
 
 import copy
+from importlib import import_module as _import_module
 
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager
@@ -175,3 +176,16 @@ class Qubitization(Operation):
         context.remove(self.hyperparameters["hamiltonian"])
         context.append(self)
         return self
+
+
+_RULE_MODULES = {
+    "_qubitization_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qubitization",
+    "_qubitization_standard": "pennylane.decomposition_rules.templates.subroutines.qubitization",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

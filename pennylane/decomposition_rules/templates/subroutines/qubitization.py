@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.qubitization."""
 
 from pennylane.core.operator import abstractify
@@ -23,7 +24,7 @@ from pennylane.templates.subroutines.reflection import Reflection
 from pennylane.typing import Wire
 
 
-def _qubitization_resources(num_control_wires, hamiltonian):
+def _qubitization_standard_resources(num_control_wires, hamiltonian):
     return {
         resource_rep(
             Reflection,
@@ -39,8 +40,8 @@ def _qubitization_resources(num_control_wires, hamiltonian):
     }
 
 
-@register_resources(_qubitization_resources)
-def _qubitization_decomposition(*_, **kwargs):
+@register_resources(_qubitization_standard_resources, name="prep_select_reflection")
+def _qubitization_standard(*_, **kwargs):
     hamiltonian = kwargs["hamiltonian"]
     control = kwargs["control"]
 
@@ -48,4 +49,4 @@ def _qubitization_decomposition(*_, **kwargs):
     PrepSelPrep(hamiltonian, control=control)
 
 
-add_decomps(Qubitization, _qubitization_decomposition)
+add_decomps(Qubitization, _qubitization_standard)

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Compatibility exports for decomposition rule factories."""
 
 from pennylane.decomposition_rules.transforms.decompositions.select_pauli_rot_phase_gradient import (

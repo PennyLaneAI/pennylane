@@ -15,9 +15,12 @@ r"""
 Contains the k-UpCCGSD template.
 """
 
-# pylint: disable-msg=too-many-arguments,protected-access,too-many-positional-arguments
+# pylint: disable=too-many-arguments
+
+
 import copy
 from collections.abc import Sequence
+from importlib import import_module as _import_module
 from itertools import product
 
 import numpy as np
@@ -262,6 +265,7 @@ class kUpCCGSD(Operation):
         super().__init__(weights, wires=wires)
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["s_wires"] = [
@@ -287,15 +291,8 @@ class kUpCCGSD(Operation):
         }
 
     @staticmethod
-    def compute_decomposition(
-        weights,
-        wires,
-        s_wires,
-        d_wires,
-        k,
-        init_state,
-        delta_sz=None,
-    ):  # pylint: disable=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_decomposition(weights, wires, s_wires, d_wires, k, init_state, delta_sz=None):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -360,3 +357,16 @@ class kUpCCGSD(Operation):
         d_wires = generalized_pair_doubles(range(n_wires))
 
         return k, len(s_wires) + len(d_wires)
+
+
+_RULE_MODULES = {
+    "_kupccgsd_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qchem.kupccgsd",
+    "_kupccgsd_standard": "pennylane.decomposition_rules.templates.subroutines.qchem.kupccgsd",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -12,22 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Built-in decomposition rules for drawer.label."""
 
-# pylint: disable=unused-argument
+"""Built-in decomposition rules for drawer.label."""
 
 from pennylane.core.apply import apply
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.drawer.label import LabelledOp
 
 
-def _resources(base):
+def _custom_label_standard_resources(base):
     return {base: 1}
 
 
-@register_resources(_resources)
-def _custom_label_decomp(*params, wires, base, **_):
+@register_resources(_custom_label_standard_resources, name="unwrap_base")
+def _custom_label_standard(*params, wires, base, **_):  # pylint: disable=unused-argument
     apply(base)
 
 
-add_decomps(LabelledOp, _custom_label_decomp)
+add_decomps(LabelledOp, _custom_label_standard)

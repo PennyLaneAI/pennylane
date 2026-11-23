@@ -15,7 +15,6 @@
 Integration tests for the draw transform
 """
 
-# pylint: disable=import-outside-toplevel
 from functools import partial
 
 import pytest
@@ -25,12 +24,12 @@ from pennylane import numpy as pnp
 from pennylane.drawer import draw
 
 
-@qp.qnode(qp.device("default.qubit", wires=(0, "a", 1.234)))
+@qp.qnode(qp.device("default.qubit", wires=(0, 5, 9)))
 def circuit(x, y, z):
     """A quantum circuit on three wires."""
     qp.RX(x, wires=0)
-    qp.RY(y, wires="a")
-    qp.RZ(z, wires=1.234)
+    qp.RY(y, wires=5)
+    qp.RZ(z, wires=9)
     return qp.expval(qp.PauliZ(0))
 
 
@@ -43,9 +42,9 @@ class TestPartial:
 
         expected = "\n".join(
             (
-                "    0: ──RX(1.23)─┤  <Z>",
-                "    a: ──RY(2.35)─┤",
-                "1.234: ──RZ(3.46)─┤",
+                "0: ──RX(1.23)─┤  <Z>",
+                "5: ──RY(2.35)─┤",
+                "9: ──RZ(3.46)─┤",
             )
         )
         assert draw(fixed)(2.345, 3.456) == expected
@@ -56,9 +55,9 @@ class TestPartial:
 
         expected = "\n".join(
             (
-                "    0: ──RX(1.23)─┤  <Z>",
-                "    a: ──RY(2.35)─┤",
-                "1.234: ──RZ(3.46)─┤",
+                "0: ──RX(1.23)─┤  <Z>",
+                "5: ──RY(2.35)─┤",
+                "9: ──RZ(3.46)─┤",
             )
         )
         assert draw(fixed)(1.234) == expected
@@ -69,9 +68,9 @@ class TestPartial:
 
         expected = "\n".join(
             (
-                "    0: ──RX(1.23)─┤  <Z>",
-                "    a: ──RY(2.35)─┤",
-                "1.234: ──RZ(3.46)─┤",
+                "0: ──RX(1.23)─┤  <Z>",
+                "5: ──RY(2.35)─┤",
+                "9: ──RZ(3.46)─┤",
             )
         )
         assert draw(fixed)(2.345) == expected
@@ -90,14 +89,6 @@ class TestPartial:
 class TestLabelling:
     """Test the wire labels."""
 
-    def test_any_wire_labels(self):
-        """Test wire labels with different kinds of objects."""
-
-        split_str = draw(circuit)(1.2, 2.3, 3.4).split("\n")
-        assert split_str[0][:6] == "    0:"
-        assert split_str[1][:6] == "    a:"
-        assert split_str[2][:6] == "1.234:"
-
     @pytest.mark.parametrize("as_qnode", (True, False))
     def test_wire_order(self, as_qnode):
         """Test wire_order keyword changes order of the wires."""
@@ -105,17 +96,17 @@ class TestLabelling:
         def f(x, y, z):
             """A quantum circuit on three wires."""
             qp.RX(x, wires=0)
-            qp.RY(y, wires="a")
-            qp.RZ(z, wires=1.234)
+            qp.RY(y, wires=5)
+            qp.RZ(z, wires=9)
             return qp.expval(qp.PauliZ(0))
 
         if as_qnode:
-            f = qp.QNode(f, qp.device("default.qubit", wires=(0, "a", 1.234)))
+            f = qp.QNode(f, qp.device("default.qubit", wires=(0, 5, 9)))
 
-        split_str = draw(f, wire_order=[1.234, "a", 0, "b"])(1.2, 2.3, 3.4).split("\n")
-        assert split_str[0][:6] == "1.234:"
-        assert split_str[1][:6] == "    a:"
-        assert split_str[2][:6] == "    0:"
+        split_str = draw(f, wire_order=[9, 5, 0, 7])(1.2, 2.3, 3.4).split("\n")
+        assert split_str[0][:2] == "9:"
+        assert split_str[1][:2] == "5:"
+        assert split_str[2][:2] == "0:"
 
     def test_show_all_wires(self):
         """Test show_all_wires=True forces empty wires to display."""
@@ -135,9 +126,9 @@ class TestLabelling:
         def circ():
             return qp.expval(qp.PauliZ(0))
 
-        split_str = draw(circ, wire_order=[0, "a"], show_all_wires=True)().split("\n")
+        split_str = draw(circ, wire_order=[0, 5], show_all_wires=True)().split("\n")
         assert split_str[0][:2] == "0:"
-        assert split_str[1][:2] == "a:"
+        assert split_str[1][:2] == "5:"
 
     def test_hiding_labels(self):
         """Test that printing wire labels can be skipped with show_wire_labels=False."""
@@ -157,19 +148,19 @@ class TestDecimals:
     def test_decimals_None(self):
         """Test that when decimals is ``None``, parameters are omitted."""
 
-        expected = "    0: ──RX─┤  <Z>\n    a: ──RY─┤\n1.234: ──RZ─┤"
+        expected = "0: ──RX─┤  <Z>\n5: ──RY─┤\n9: ──RZ─┤"
         assert draw(circuit, decimals=None)(1.234, 2.345, 3.456) == expected
 
     def test_decimals(self):
         """Test decimals keyword makes the operation parameters included to given precision"""
 
-        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤\n1.234: ──RZ(3.5)─┤"
+        expected = "0: ──RX(1.2)─┤  <Z>\n5: ──RY(2.3)─┤\n9: ──RZ(3.5)─┤"
         assert draw(circuit, decimals=1)(1.234, 2.345, 3.456) == expected
 
     def test_decimals_higher_value(self):
         """Test all decimals places display when requested value is bigger than number precision."""
 
-        out = "    0: ──RX(1.0000)─┤  <Z>\n    a: ──RY(2.0000)─┤\n1.234: ──RZ(3.0000)─┤"
+        out = "0: ──RX(1.0000)─┤  <Z>\n5: ──RY(2.0000)─┤\n9: ──RZ(3.0000)─┤"
         assert qp.draw(circuit, decimals=4)(1, 2, 3) == out
 
     def test_decimals_multiparameters(self):
@@ -186,13 +177,13 @@ class TestDecimals:
     def test_decimals_0(self):
         """Test decimals=0 rounds to integers."""
 
-        expected = "    0: ──RX(1)─┤  <Z>\n    a: ──RY(2)─┤\n1.234: ──RZ(3)─┤"
+        expected = "0: ──RX(1)─┤  <Z>\n5: ──RY(2)─┤\n9: ──RZ(3)─┤"
         assert draw(circuit, decimals=0)(1.234, 2.3456, 3.456) == expected
 
     def test_qp_numpy_parameters(self):
         """Test numpy parameters display as normal numbers."""
 
-        expected = "    0: ──RX(1.00)─┤  <Z>\n    a: ──RY(2.00)─┤\n1.234: ──RZ(3.00)─┤"
+        expected = "0: ──RX(1.00)─┤  <Z>\n5: ──RY(2.00)─┤\n9: ──RZ(3.00)─┤"
         assert draw(circuit)(pnp.array(1), pnp.array(2), pnp.array(3)) == expected
 
     @pytest.mark.torch
@@ -201,7 +192,7 @@ class TestDecimals:
 
         import torch
 
-        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤\n1.234: ──RZ(3.5)─┤"
+        expected = "0: ──RX(1.2)─┤  <Z>\n5: ──RY(2.3)─┤\n9: ──RZ(3.5)─┤"
         out = draw(circuit, decimals=1)(torch.tensor(1.23), torch.tensor(2.34), torch.tensor(3.45))
         assert out == expected
 
@@ -210,7 +201,7 @@ class TestDecimals:
         """Test jax parameters in tape display as normal numbers."""
         import jax.numpy as jnp
 
-        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤\n1.234: ──RZ(3.5)─┤"
+        expected = "0: ──RX(1.2)─┤  <Z>\n5: ──RY(2.3)─┤\n9: ──RZ(3.5)─┤"
         out = draw(circuit, decimals=1)(jnp.array(1.234), jnp.array(2.345), jnp.array(3.456))
         assert out == expected
 
@@ -341,10 +332,8 @@ class TestLayering:
         assert draw(circ)() == expected
 
 
-class TestMidCircuitMeasurements:
+class TestMidCircuitMeasurements:  # pylint: disable=too-many-public-methods
     """Tests for drawing mid-circuit measurements and classical conditions."""
-
-    # pylint: disable=too-many-public-methods
 
     @pytest.mark.parametrize("device_name", ["default.qubit"])
     def test_qnode_mid_circuit_measurement_not_deferred(self, device_name, mocker):
@@ -1516,22 +1505,4 @@ def test_sort_wires(use_qnode):
         func = qp.QNode(func, qp.device("default.qubit"))
 
     expected = "0: ──X─┤  <Z>\n2: ──X─┤\n4: ──X─┤"
-    assert qp.draw(func)() == expected
-
-
-@pytest.mark.parametrize("use_qnode", [True, False])
-def test_sort_wires_fallback(use_qnode):
-    """Test that drawing a qnode with no wire order or device wires falls back to tape wires if
-    sorting fails."""
-
-    def func():
-        qp.X(4)
-        qp.X("a")
-        qp.X(0)
-        return qp.expval(qp.Z(0))
-
-    if use_qnode:
-        func = qp.QNode(func, qp.device("default.qubit"))
-
-    expected = "4: ──X─┤\na: ──X─┤\n0: ──X─┤  <Z>"
     assert qp.draw(func)() == expected

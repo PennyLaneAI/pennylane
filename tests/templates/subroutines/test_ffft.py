@@ -19,9 +19,10 @@ import pytest
 
 import pennylane as qp
 from pennylane import FermionicSWAP, PauliZ, device, qnode
+from pennylane.decomposition_rules.templates.subroutines.ffft import _permute_and_apply_parallel
 from pennylane.measurements import state
 from pennylane.templates import BasisEmbedding
-from pennylane.templates.subroutines.ffft import FFFT, TwoWireFFT, _permute_and_apply_parallel
+from pennylane.templates.subroutines.ffft import FFFT, TwoWireFFT
 from pennylane.testing import assert_decomposable
 from pennylane.wires import Wires
 
@@ -138,7 +139,7 @@ def test_ffft_circuit(wires, expected_circuit):
 @pytest.mark.parametrize("wires, expected_circuit", _ffft_circuit_cases)
 def test_ffft_circuit_capture(wires, expected_circuit):
     """Test that FFFT decomposes into the correct operations under capture."""
-    import jax  # pylint: disable=import-outside-toplevel
+    import jax
 
     op = FFFT(wires)
     rule = qp.list_decomps(FFFT)[0]
@@ -161,7 +162,7 @@ def test_ffft_circuit_capture(wires, expected_circuit):
 def test_ffft_num_iters_hints(n_wires):
     """Test that the permutation loops with dynamic bounds carry ``num-iters`` hints that
     reproduce the number of ``FermionicSWAP`` gates."""
-    import jax  # pylint: disable=import-outside-toplevel
+    import jax
 
     def permutation():
         wires = qp.math.array(list(range(n_wires)), like="jax")

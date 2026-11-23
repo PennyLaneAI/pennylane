@@ -15,13 +15,10 @@
 This module contains the fast fermionic Fourier transform. Implemented based on the arXiv paper
 by Andrew J. Ferris: https://arxiv.org/pdf/1310.7605."""
 
-import numpy as np
+from importlib import import_module as _import_module
 
 from pennylane import math
-from pennylane.capture import hint
-from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator
-from pennylane.ops import FermionicSWAP, PauliZ, pow
 from pennylane.wires import WiresLike
 
 INV_SQRT2 = 1 / math.sqrt(2)
@@ -154,64 +151,16 @@ class FFFT(Operator):
         }
 
 
-def _recursive_decompose(wires: WiresLike):
-    # base case is that we have two wires
-    if len(wires) == 2:
-        TwoWireFFT(wires)
-    else:
-        _recursive_decompose(wires[: len(wires) // 2])
-        _recursive_decompose(wires[len(wires) // 2 :])
-
-        for mode in range(len(wires) // 2):
-            pow(PauliZ(wires[len(wires) // 2 + mode]), z=2 * mode / len(wires))
-
-        _permute_and_apply_parallel(wires, TwoWireFFT)
+_RULE_MODULES = {
+    "_fast_fermionic_fourier_transform_standard_resources": "pennylane.decomposition_rules.templates.subroutines.ffft",
+    "_fast_fermionic_fourier_transform_standard": "pennylane.decomposition_rules.templates.subroutines.ffft",
+    "_recursive_decompose": "pennylane.decomposition_rules.templates.subroutines.ffft",
+    "_permute_and_apply_parallel": "pennylane.decomposition_rules.templates.subroutines.ffft",
+}
 
 
-def _permute_and_apply_parallel(wires, operator):
-    """
-    A permutation algorithm specific to permuting all the 2-site fourier inputs into range
-    at the same time, parallelizing as many FSWAPs as possible and cutting the total number
-    of them in half.
-
-    Args:
-        wires (WiresLike): The wires to permute.
-        operator (Type[Operator]): The operator to apply once the Fermions are adjacent in the encoding.
-    """
-
-    num_layers = len(wires) // 2 - 1
-
-    def apply_swaps(start, num_parallel_swaps):
-
-        # The layers contain 1, ..., num_layers parallel swaps
-        @hint({"num-iters": (num_layers + 1) / 2})
-        @for_loop(start, start + 2 * num_parallel_swaps, 2)
-        def swap_layer(i):
-            FermionicSWAP(np.pi, [wires[i], wires[i + 1]])
-
-        swap_layer()  # pylint: disable=no-value-for-parameter
-
-    @for_loop(1, len(wires) // 2)
-    def permutation_in_layers(num_parallel_swaps):
-        # applies a layer of parallel FSWAPs
-        apply_swaps(num_layers - (num_parallel_swaps - 1), num_parallel_swaps)
-
-    # applies several layers of FSWAPs that achieve the parallel permutation of all needed indices
-    permutation_in_layers()  # pylint: disable=no-value-for-parameter
-
-    # applies the operator on the indices that are now in range
-    @for_loop(len(wires) // 2)
-    def apply_op(i):
-        # apply the op
-        operator([wires[2 * i], wires[2 * i + 1]])
-
-    apply_op()  # pylint: disable=no-value-for-parameter
-
-    # number of parallel swaps and their starting index is decreasing this time
-    @for_loop(num_layers, 0, -1)
-    def permutation_out_layers(num_parallel_swaps):
-        # applies a layer of parallel FSWAPs
-        apply_swaps(num_layers - (num_parallel_swaps - 1), num_parallel_swaps)
-
-    # applies the inverse permutation
-    permutation_out_layers()  # pylint: disable=no-value-for-parameter
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

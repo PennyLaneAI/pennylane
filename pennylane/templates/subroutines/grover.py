@@ -15,6 +15,8 @@
 Contains the Grover Operation template.
 """
 
+from importlib import import_module as _import_module
+
 import numpy as np
 
 from pennylane.core.operator import Operation
@@ -142,9 +144,8 @@ class GroverOperator(Operation):
         return 0
 
     @staticmethod
-    def compute_decomposition(
-        wires: WiresLike, work_wires: WiresLike, **kwargs
-    ):  # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_decomposition(wires: WiresLike, work_wires: WiresLike, **kwargs):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -213,3 +214,16 @@ class GroverOperator(Operation):
         # Grover diffusion operator. Realize the all-ones entry via broadcasting when subtracting
         # the second term.
         return 2 / dim - np.eye(dim)
+
+
+_RULE_MODULES = {
+    "_grover_standard_resources": "pennylane.decomposition_rules.templates.subroutines.grover",
+    "_grover_standard": "pennylane.decomposition_rules.templates.subroutines.grover",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

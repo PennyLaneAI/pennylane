@@ -13,6 +13,8 @@
 # limitations under the License.
 """Contains the template for the tensor hypercontraction ``SELECT`` oracle."""
 
+from importlib import import_module as _import_module
+
 import numpy as np
 
 from pennylane import math
@@ -272,7 +274,7 @@ class SelectTHC(Operator2):
                 :math:`P = 0`), and :math:`n = \lceil \log_2(M+1) \rceil` wires per index
             :example: :math:`M=1`, :math:`N=4` (:math:`h=2`, :math:`P=1`, :math:`B=1`, :math:`n=1`)
 
-            .. decomposition-rule:: _select_thc_decomp
+            .. decomposition-rule:: selected_basis_rotations
                 :image: /_static/decomposition_thumbnails/select_thc_double_factorized.svg
                 :lightbox:
 
@@ -309,7 +311,7 @@ class SelectTHC(Operator2):
         "work_wires": Wire[-1],
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         chi,
         t_eigenvectors,
@@ -320,7 +322,7 @@ class SelectTHC(Operator2):
         gradient_wires: WiresLike,
         work_wires: WiresLike,
         num_batches=1,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):
         M, n_half = _validate_select_data(chi, t_eigenvectors)
 
         requirements = select_thc_wires(M, 2 * n_half, beth, num_batches)
@@ -361,3 +363,25 @@ class SelectTHC(Operator2):
             + self.gradient_wires
             + self.work_wires
         )
+
+
+_RULE_MODULES = {
+    "_cascade_angles": "pennylane.decomposition_rules.templates.subroutines.select_thc",
+    "_build_qrom_givens_data": "pennylane.decomposition_rules.templates.subroutines.select_thc",
+    "_apply_loaded_rotation": "pennylane.decomposition_rules.templates.subroutines.select_thc",
+    "_select_basis_resources": "pennylane.decomposition_rules.templates.subroutines.select_thc",
+    "_SelectTHCBasis": "pennylane.decomposition_rules.templates.subroutines.select_thc",
+    "_select_half": "pennylane.decomposition_rules.templates.subroutines.select_thc",
+    "_index_swap_resources": "pennylane.decomposition_rules.templates.subroutines.select_thc",
+    "_THCIndexSwaps": "pennylane.decomposition_rules.templates.subroutines.select_thc",
+    "_index_swaps": "pennylane.decomposition_rules.templates.subroutines.select_thc",
+    "_select_thc_standard_resources": "pennylane.decomposition_rules.templates.subroutines.select_thc",
+    "_select_thc_standard": "pennylane.decomposition_rules.templates.subroutines.select_thc",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

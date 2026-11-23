@@ -15,7 +15,7 @@ r"""
 Contains the SelectPauliRot template.
 """
 
-from importlib import import_module
+from importlib import import_module as _import_module
 
 from pennylane import math
 from pennylane.core.operator import Operator2
@@ -85,6 +85,24 @@ class SelectPauliRot(Operator2):
     >>> print(circuit()) # doctest: +SKIP
     [0.8776+0.j 0.4794+0.j 0.    +0.j 0.    +0.j 0.    +0.j 0.    +0.j
      0.    +0.j 0.    +0.j]
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SelectPauliRot
+            :stacked:
+            :symbols: :math:`c \geq 1` control wires and rotation axis :math:`P` (``rot_axis``)
+            :example: :math:`c=1`, :math:`P=Y`
+
+            .. decomposition-rule:: gray_code
+                :image: /_static/decomposition_thumbnails/select_pauli_rot_cnot_ladder.svg
+                :where: :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
+
+                :class:`~.RZ` | :math:`\leq 2^c` | 2
+                :class:`~.CNOT` | :math:`2^c` | 2
+                :class:`~.Hadamard` | :math:`2[P \neq Z]` | 2
+                :class:`~.S` | :math:`[P = Y]` | 1
+                :class:`Adjoint(S) <.S>` | :math:`[P = Y]` | 1
     """
 
     dynamic_argnames = ("angles",)
@@ -96,9 +114,7 @@ class SelectPauliRot(Operator2):
     grad_method = None
     ndim_params = (1,)
 
-    def __init__(
-        self, angles, control_wires, target_wire, rot_axis="Z"
-    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    def __init__(self, angles, control_wires, target_wire, rot_axis="Z"):
 
         if math.shape(angles)[-1] != 2 ** len(control_wires):
             raise ValueError("Number of angles must be 2^(len(control_wires))")
@@ -127,12 +143,17 @@ Alias for :class:`~.SelectPauliRot`.
 """
 
 
-def __getattr__(name):
-    """Resolve the existing public names of relocated decomposition rules."""
-    if name in {"decompose_select_pauli_rot"}:
-        rules = import_module(
-            "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot"
-        )
+_RULE_MODULES = {
+    "_uniform_rz_resources": "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
+    "_UniformRZ": "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
+    "_SelectPauliRotYBasis": "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
+    "_select_pauli_rot_standard_resources": "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
+    "_select_pauli_rot_standard": "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
+}
 
-        return getattr(rules, name)
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

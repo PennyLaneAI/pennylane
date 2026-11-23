@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.iqp."""
 
 from collections import defaultdict
@@ -22,9 +23,8 @@ from pennylane.templates.subroutines.iqp import IQP
 from pennylane.typing import Float, Wire
 
 
-def _instantaneous_quantum_polynomial_resources(
-    weights, wires, pattern, spin_sym
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _instantaneous_quantum_polynomial_standard_resources(weights, wires, pattern, spin_sym):
     num_wires = len(wires)
     resources = defaultdict(int)
     if spin_sym:
@@ -39,8 +39,8 @@ def _instantaneous_quantum_polynomial_resources(
     return resources
 
 
-@register_resources(_instantaneous_quantum_polynomial_resources)
-def _instantaneous_quantum_polynomial_decomposition(weights, wires, pattern, spin_sym):
+@register_resources(_instantaneous_quantum_polynomial_standard_resources, name="to_h_multirz")
+def _instantaneous_quantum_polynomial_standard(weights, wires, pattern, spin_sym):
     num_wires = len(wires)
 
     if spin_sym:
@@ -57,4 +57,4 @@ def _instantaneous_quantum_polynomial_decomposition(weights, wires, pattern, spi
         Hadamard(wires[i])
 
 
-add_decomps(IQP, _instantaneous_quantum_polynomial_decomposition)
+add_decomps(IQP, _instantaneous_quantum_polynomial_standard)

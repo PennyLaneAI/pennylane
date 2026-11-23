@@ -13,6 +13,7 @@
 # limitations under the License.
 r"""Contains the PartialUnaryStatePreparation template."""
 
+from importlib import import_module as _import_module
 from numbers import Integral
 
 import numpy as np
@@ -25,8 +26,7 @@ from pennylane.wires import WiresLike, validate_no_wire_overlaps
 _U64 = np.uint64
 
 
-# pylint: disable-next=too-many-instance-attributes
-class PUIsometryFinder:
+class PUIsometryFinder:  # pylint: disable=too-many-instance-attributes
     r"""Classical algorithm that finds the isometry circuit and bijection for
     :class:`~.PartialUnaryStatePreparation`. The goal is to compute an isometry that maps
     given computational basis states :math:`\{|\ell\rangle\}_{\ell \in L}` to unique states in
@@ -585,13 +585,11 @@ class PartialUnaryStatePreparation(Operator2):
 
         import pennylane as qp
         import numpy as np
-        qp.decomposition.enable_graph()
 
         coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
         indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
 
     Let's prepare this state on a six-qubit register, using three auxiliary qubits:
-
 
     .. code-block:: python
 
@@ -624,7 +622,7 @@ class PartialUnaryStatePreparation(Operator2):
 
     The preparation circuit looks like this:
 
-    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=1), max_length=200, show_matrices=False)())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1), max_length=200, show_matrices=False)())
     0: ─╭MultiplexerStatePreparation(M0)─╭MultiX(M1)─╭◑────────╭MultiX(M1)─╭MultiX(M3)─╭MultiX(M4)─╭MultiX(M5)─╭◑────────╭MultiX(M5)─╭MultiX(M6)─╭MultiX(M7)─╭MultiX(M8)─╭◑────────╭MultiX(M8) ···
     1: ─├MultiplexerStatePreparation(M0)─├MultiX(M1)─├◑────────├MultiX(M1)─├MultiX(M3)─├MultiX(M4)─├MultiX(M5)─├◑────────├MultiX(M5)─├MultiX(M6)─├MultiX(M7)─├MultiX(M8)─├◑────────├MultiX(M8) ···
     2: ─├MultiplexerStatePreparation(M0)─├MultiX(M1)─├◑────────├MultiX(M1)─├MultiX(M3)─├MultiX(M4)─├MultiX(M5)─├◑────────├MultiX(M5)─├MultiX(M6)─├MultiX(M7)─├MultiX(M8)─├◑────────├MultiX(M8) ···
@@ -665,7 +663,7 @@ class PartialUnaryStatePreparation(Operator2):
         num_work_wires = qp.math.ceil_log2(num_entries) - 1
         work_wires = list(range(15, 15 + num_work_wires))
 
-    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
+    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
     Quantum operations:
     - Total: 6,046
       - MultiplexerStatePreparation: 1
@@ -684,7 +682,7 @@ class PartialUnaryStatePreparation(Operator2):
 
     >>> new_num_work_wires = 3*num_work_wires
     >>> work_wires = list(range(15, 15 + new_num_work_wires))
-    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
+    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
     Quantum operations:
     - Total: 3,068
       - MultiplexerStatePreparation: 1
@@ -710,7 +708,7 @@ class PartialUnaryStatePreparation(Operator2):
                 :math:`m = \lceil \log_2 D \rceil` wires
             :example: the ``coefficients`` and ``indices`` used above with :math:`D=10`
 
-            .. decomposition-rule:: _partial_unary_state_prep
+            .. decomposition-rule:: partial_unary_isometry
                 :image: /_static/decomposition_thumbnails/partial_unary_state_prep.svg
                 :lightbox:
                 :where: :math:`N_P`, :math:`N_F`, :math:`N_S` and :math:`N_T` are the numbers of
@@ -770,3 +768,27 @@ class PartialUnaryStatePreparation(Operator2):
         work_wires = () if work_wires is None else work_wires
         validate_no_wire_overlaps({"wires": wires, "work_wires": work_wires})
         super().__init__(coefficients, wires, indices, work_wires)
+
+
+_RULE_MODULES = {
+    "_reduced_binary_row_basis": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
+    "_is_affine_subspace": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
+    "_clear_nonpivot_columns": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
+    "_move_pivots_to_leading_wires": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
+    "_find_affine_subspace_isometry": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
+    "_partial_unary_state_prep_standard_resources": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
+    "_select_isometry": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
+    "_apply_affine_isometry": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
+    "_branch_probs": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
+    "_partial_unary_dense_state": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
+    "_partial_unary_state_prep_core": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
+    "_partial_unary_state_prep_standard_work_wires": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
+    "_partial_unary_state_prep_standard": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -15,7 +15,7 @@
 """This submodule defines functions to decompose controlled operations."""
 
 from functools import partial
-from importlib import import_module
+from importlib import import_module as _import_module
 from typing import Literal
 
 import numpy as np
@@ -26,186 +26,6 @@ from pennylane.core import queuing
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator
 from pennylane.wires import Wires, concatenate_wires
-
-
-def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
-    """Decompose the controlled version of a target single-qubit operation
-
-    Not backpropagation compatible (as currently implemented). Use only with numpy.
-
-    Automatically selects the best algorithm based on the matrix (uses specialized more efficient
-    algorithms if the matrix has a certain form, otherwise falls back to the general algorithm).
-    These algorithms are defined in sections 3.1 and 3.2 of
-    `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_.
-
-    .. warning:: This method will add a global phase for target operations that do not
-        belong to the SU(2) group.
-
-    Args:
-        target_operation (~.operation.Operator): the target operation to decompose
-        control_wires (~.wires.Wires): the control wires of the operation
-
-    Returns:
-        list[Operation]: the decomposed operations
-
-    Raises:
-        ValueError: if ``target_operation`` is not a single-qubit operation
-
-    **Example:**
-
-    >>> from pennylane.ops.op_math import ctrl_decomp_bisect
-    >>> op = qp.T(0) # uses OD algorithm
-    >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
-    0: ─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†─╭GlobalPhase(-0.39)─┤
-    1: ─├●────────│──────────├●────────│──────────├●──────────────────┤
-    2: ─├●────────│──────────├●────────│──────────├●──────────────────┤
-    3: ─╰●────────│──────────╰●────────│──────────├●──────────────────┤
-    4: ───────────├●───────────────────├●─────────├●──────────────────┤
-    5: ───────────╰●───────────────────╰●─────────╰●──────────────────┤
-    >>> op = qp.QubitUnitary([[0,1j],[1j,0]], 0) # uses MD algorithm
-    >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
-    0: ──H─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†──H─┤
-    1: ────├●────────│──────────├●────────│─────────────┤
-    2: ────├●────────│──────────├●────────│─────────────┤
-    3: ────╰●────────│──────────╰●────────│─────────────┤
-    4: ──────────────├●───────────────────├●────────────┤
-    5: ──────────────╰●───────────────────╰●────────────┤
-    >>> op = qp.Hadamard(0) # uses general algorithm
-    >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
-    0: ──U(M0)─╭X──U(M1)†──U(M2)─╭X──U(M2)†─╭X──U(M2)─╭X──U(M2)†─╭X──U(M1)─╭X──U(M0)† ···
-    1: ────────│─────────────────│──────────├●────────│──────────├●────────│───────── ···
-    2: ────────│─────────────────│──────────├●────────│──────────├●────────│───────── ···
-    3: ────────│─────────────────│──────────╰●────────│──────────╰●────────│───────── ···
-    4: ────────├●────────────────├●───────────────────├●───────────────────├●──────── ···
-    5: ────────╰●────────────────╰●───────────────────╰●───────────────────╰●──────── ···
-    <BLANKLINE>
-    0: ··· ─╭GlobalPhase(-1.57)─┤
-    1: ··· ─├●──────────────────┤
-    2: ··· ─├●──────────────────┤
-    3: ··· ─├●──────────────────┤
-    4: ··· ─├●──────────────────┤
-    5: ··· ─╰●──────────────────┤
-
-    """
-
-    if len(target_operation.wires) > 1:
-        raise ValueError(
-            "The target operation must be a single-qubit operation, instead "
-            f"got {target_operation}."
-        )
-
-    with queuing.AnnotatedQueue() as q:
-        _ctrl_decomp_bisect(
-            target_operation.matrix(),
-            control_wires + target_operation.wires,
-            control_values=[True] * len(control_wires),
-        )
-
-    # If there is an active queuing context, queue the decomposition so that expand works
-    if queuing.QueuingManager.recording():
-        for op in q.queue:  # pragma: no cover
-            apply(op)
-
-    return q.queue
-
-
-def ctrl_decomp_zyz(
-    target_operation: Operator,
-    control_wires: Wires,
-    work_wires: Wires | None = None,
-    work_wire_type: str | None = "borrowed",
-) -> list[Operation]:
-    """Decompose the controlled version of a target single-qubit operation
-
-    This function decomposes both single and multiple controlled single-qubit
-    target operations using the decomposition defined in Lemma 4.3 and Lemma 5.1
-    for single ``controlled_wires``, and Lemma 7.9 for multiple ``controlled_wires``
-    from `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
-
-    Args:
-        target_operation (~.operation.Operator): the target operation or matrix to decompose
-        control_wires (~.wires.Wires): the control wires of the operation.
-        work_wires (~.wires.Wires): the work wires available for this decomposition
-        work_wire_type (str): the type of work wires, either "zeroed" or "borrowed".
-
-    Returns:
-        list[Operation]: the decomposed operations
-
-    Raises:
-        ValueError: if ``target_operation`` is not a single-qubit operation
-
-    **Example**
-
-    We can create a controlled operation using ``qp.ctrl``, or by creating the
-    decomposed controlled version using ``qp.ctrl_decomp_zyz``.
-
-    .. code-block:: python
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev)
-        def expected_circuit(op):
-            qp.Hadamard(wires=0)
-            qp.ctrl(op, [0])
-            return qp.probs()
-
-        @qp.qnode(dev)
-        def decomp_circuit(op):
-            qp.Hadamard(wires=0)
-            qp.ops.ctrl_decomp_zyz(op, [0])
-            return qp.probs()
-
-    Measurements on both circuits will give us the same results:
-
-    >>> op = qp.RX(0.123, wires=1)
-    >>> expected_circuit(op)
-    array([0.5       , 0.        , 0.498..., 0.001...])
-
-    >>> decomp_circuit(op)
-    array([0.5       , 0.        , 0.498..., 0.001...])
-
-    """
-    if len(target_operation.wires) != 1:
-        raise ValueError(
-            "The target operation must be a single-qubit operation, instead "
-            f"got {target_operation.__class__.__name__}."
-        )
-
-    control_wires = Wires(control_wires)
-    target_wire = target_operation.wires
-
-    *rot_angles, global_phase = qp.single_qubit_zyz_angles(target_operation)
-    with queuing.AnnotatedQueue() as q:
-        all_wires = control_wires + target_wire
-        if len(control_wires) > 1:
-            _multi_control_zyz(
-                *rot_angles, wires=all_wires, work_wires=work_wires, work_wire_type=work_wire_type
-            )
-        else:
-            _single_control_zyz(*rot_angles, wires=all_wires)
-        ops.cond(_not_zero(global_phase), _ctrl_global_phase)(
-            global_phase,
-            control_wires,
-            work_wires,
-            work_wire_type,
-        )
-
-    # If there is an active queuing context, queue the decomposition so that expand works
-    if queuing.QueuingManager.recording():
-        for op in q.queue:  # pragma: no cover
-            apply(op)
-
-    return q.queue
-
-
-##############################################
-# ControlledQubitUnitary Decomposition Rules #
-##############################################
-
-
-########################################
-# MultiControlledX Decomposition Rules #
-########################################
 
 
 def _mcx_one_worker_no_flips(wires, work_wires, work_wire_type, _skip_toggle_detection=False):
@@ -229,15 +49,6 @@ def _mcx_one_worker_no_flips(wires, work_wires, work_wire_type, _skip_toggle_det
         _build_linear_depth_ladder(wires[:-1])
         ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
         ops.adjoint(_build_linear_depth_ladder)(wires[:-1])
-
-
-####################
-# Helper Functions #
-####################
-
-
-def _not_zero(x):
-    return math.logical_not(math.allclose(x, 0))
 
 
 def _ctrl_decomp_bisect_general(U, wires):
@@ -452,68 +263,6 @@ def _bisect_compute_b(u):
     return _param_su2(c, d, b, 0)
 
 
-def _single_control_zyz(phi, theta, omega, wires):
-    """Implements Lemma 5.1 from https://arxiv.org/pdf/quant-ph/9503016"""
-
-    # Operator A
-    ops.cond(_not_zero(phi), ops.RZ)(phi, wires=wires[-1])
-    ops.cond(_not_zero(theta), ops.RY)(theta / 2, wires=wires[-1])
-
-    ops.CNOT(wires)
-
-    # Operator B
-    ops.cond(_not_zero(theta), ops.RY)(-theta / 2, wires=wires[-1])
-    ops.cond(_not_zero(phi + omega), ops.RZ)(-(phi + omega) / 2, wires=wires[-1])
-
-    ops.CNOT(wires)
-
-    # Operator C
-    ops.cond(_not_zero(omega - phi), ops.RZ)((omega - phi) / 2, wires=wires[-1])
-
-
-# pylint: disable-next=too-many-arguments
-def _multi_control_zyz(phi, theta, omega, wires, work_wires, work_wire_type):
-    """Implements Lemma 7.9 from https://arxiv.org/pdf/quant-ph/9503016"""
-
-    # Operator A
-    ops.cond(_not_zero(phi), ops.CRZ)(phi, wires=wires[-2:])
-    ops.cond(_not_zero(theta), ops.CRY)(theta / 2, wires=wires[-2:])
-
-    ops.MultiControlledX(
-        concatenate_wires(wires[:-2], wires[-1:]),
-        work_wires=work_wires,
-        work_wire_type=work_wire_type,
-    )
-
-    # Operator B
-    ops.cond(_not_zero(theta), ops.CRY)(-theta / 2, wires=wires[-2:])
-    ops.cond(_not_zero(phi + omega), ops.CRZ)(-(phi + omega) / 2, wires=wires[-2:])
-
-    ops.MultiControlledX(
-        concatenate_wires(wires[:-2], wires[-1:]),
-        work_wires=work_wires,
-        work_wire_type=work_wire_type,
-    )
-
-    # Operator C
-    ops.cond(_not_zero(omega - phi), ops.CRZ)((omega - phi) / 2, wires=wires[-2:])
-
-
-def _ctrl_global_phase(
-    phase,
-    control_wires,
-    work_wires=None,
-    work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
-):
-    ops.ctrl(
-        ops.GlobalPhase(-phase),
-        control=control_wires,
-        work_wires=work_wires,
-        work_wire_type=work_wire_type,
-    )
-
-
-# pylint: disable=no-value-for-parameter
 def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
     r"""
     Construct a quantum circuit for creating n-condionally zeroed auxiliary qubits using 3n qubits. This
@@ -534,7 +283,7 @@ def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
         ops.X(target_wires[i])
         ops.Toffoli([control_wires_x[i], control_wires_y[i], target_wires[i]])
 
-    loop()
+    loop()  # pylint: disable=no-value-for-parameter
 
 
 def _build_linear_depth_ladder(wires) -> int:
@@ -640,29 +389,246 @@ def _build_log_n_depth_ccx_ladder(control_wires) -> list:
     return final_control_wires
 
 
-def __getattr__(name):
-    """Resolve the existing public names of relocated decomposition rules."""
-    if name in {
-        "decompose_mcx_two_controls_elbows",
-        "decompose_mcx_two_workers",
-        "controlled_two_qubit_unitary_rule",
-        "mcx_to_cnot_or_toffoli",
-        "decompose_mcx_with_no_worker",
-        "single_ctrl_decomp_zyz_rule",
-        "ctrl_decomp_bisect_rule",
-        "decompose_mcx_many_workers",
-        "multi_control_decomp_zyz_rule",
-        "decompose_mcx_one_worker",
-    }:
-        rules = import_module(
-            "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions"
+def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
+    """Decompose the controlled version of a target single-qubit operation
+
+    Not backpropagation compatible (as currently implemented). Use only with numpy.
+
+    Automatically selects the best algorithm based on the matrix (uses specialized more efficient
+    algorithms if the matrix has a certain form, otherwise falls back to the general algorithm).
+    These algorithms are defined in sections 3.1 and 3.2 of
+    `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_.
+
+    .. warning:: This method will add a global phase for target operations that do not
+        belong to the SU(2) group.
+
+    Args:
+        target_operation (~.operation.Operator): the target operation to decompose
+        control_wires (~.wires.Wires): the control wires of the operation
+
+    Returns:
+        list[Operation]: the decomposed operations
+
+    Raises:
+        ValueError: if ``target_operation`` is not a single-qubit operation
+
+    **Example:**
+
+    >>> from pennylane.ops.op_math import ctrl_decomp_bisect
+    >>> op = qp.T(0) # uses OD algorithm
+    >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
+    0: ─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†─╭GlobalPhase(-0.39)─┤
+    1: ─├●────────│──────────├●────────│──────────├●──────────────────┤
+    2: ─├●────────│──────────├●────────│──────────├●──────────────────┤
+    3: ─╰●────────│──────────╰●────────│──────────├●──────────────────┤
+    4: ───────────├●───────────────────├●─────────├●──────────────────┤
+    5: ───────────╰●───────────────────╰●─────────╰●──────────────────┤
+    >>> op = qp.QubitUnitary([[0,1j],[1j,0]], 0) # uses MD algorithm
+    >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
+    0: ──H─╭X──U(M0)─╭X──U(M0)†─╭X──U(M0)─╭X──U(M0)†──H─┤
+    1: ────├●────────│──────────├●────────│─────────────┤
+    2: ────├●────────│──────────├●────────│─────────────┤
+    3: ────╰●────────│──────────╰●────────│─────────────┤
+    4: ──────────────├●───────────────────├●────────────┤
+    5: ──────────────╰●───────────────────╰●────────────┤
+    >>> op = qp.Hadamard(0) # uses general algorithm
+    >>> print(qp.draw(ctrl_decomp_bisect, wire_order=(0,1,2,3,4,5), show_matrices=False)(op, (1,2,3,4,5)))
+    0: ──U(M0)─╭X──U(M1)†──U(M2)─╭X──U(M2)†─╭X──U(M2)─╭X──U(M2)†─╭X──U(M1)─╭X──U(M0)† ···
+    1: ────────│─────────────────│──────────├●────────│──────────├●────────│───────── ···
+    2: ────────│─────────────────│──────────├●────────│──────────├●────────│───────── ···
+    3: ────────│─────────────────│──────────╰●────────│──────────╰●────────│───────── ···
+    4: ────────├●────────────────├●───────────────────├●───────────────────├●──────── ···
+    5: ────────╰●────────────────╰●───────────────────╰●───────────────────╰●──────── ···
+    <BLANKLINE>
+    0: ··· ─╭GlobalPhase(-1.57)─┤
+    1: ··· ─├●──────────────────┤
+    2: ··· ─├●──────────────────┤
+    3: ··· ─├●──────────────────┤
+    4: ··· ─├●──────────────────┤
+    5: ··· ─╰●──────────────────┤
+
+    """
+    if len(target_operation.wires) > 1:
+        raise ValueError(
+            "The target operation must be a single-qubit operation, instead "
+            f"got {target_operation}."
         )
 
-        return getattr(rules, name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    with queuing.AnnotatedQueue() as q:
+        _controlled_unitary_bisect_impl(
+            target_operation.matrix(),
+            control_wires + target_operation.wires,
+            control_values=[True] * len(control_wires),
+        )
+
+    # If there is an active queuing context, queue the decomposition so that expand works
+    if queuing.QueuingManager.recording():
+        for op in q.queue:  # pragma: no cover
+            apply(op)
+
+    return q.queue
 
 
-def _ctrl_decomp_bisect(U, wires, control_values, *_, **__):
+def ctrl_decomp_zyz(
+    target_operation: Operator,
+    control_wires: Wires,
+    work_wires: Wires | None = None,
+    work_wire_type: str | None = "borrowed",
+) -> list[Operation]:
+    """Decompose the controlled version of a target single-qubit operation
+
+    This function decomposes both single and multiple controlled single-qubit
+    target operations using the decomposition defined in Lemma 4.3 and Lemma 5.1
+    for single ``controlled_wires``, and Lemma 7.9 for multiple ``controlled_wires``
+    from `Barenco et al. (1995) <https://arxiv.org/abs/quant-ph/9503016>`_.
+
+    Args:
+        target_operation (~.operation.Operator): the target operation or matrix to decompose
+        control_wires (~.wires.Wires): the control wires of the operation.
+        work_wires (~.wires.Wires): the work wires available for this decomposition
+        work_wire_type (str): the type of work wires, either "zeroed" or "borrowed".
+
+    Returns:
+        list[Operation]: the decomposed operations
+
+    Raises:
+        ValueError: if ``target_operation`` is not a single-qubit operation
+
+    **Example**
+
+    We can create a controlled operation using ``qp.ctrl``, or by creating the
+    decomposed controlled version using ``qp.ctrl_decomp_zyz``.
+
+    .. code-block:: python
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def expected_circuit(op):
+            qp.Hadamard(wires=0)
+            qp.ctrl(op, [0])
+            return qp.probs()
+
+        @qp.qnode(dev)
+        def decomp_circuit(op):
+            qp.Hadamard(wires=0)
+            qp.ops.ctrl_decomp_zyz(op, [0])
+            return qp.probs()
+
+    Measurements on both circuits will give us the same results:
+
+    >>> op = qp.RX(0.123, wires=1)
+    >>> expected_circuit(op)
+    array([0.5       , 0.        , 0.498..., 0.001...])
+
+    >>> decomp_circuit(op)
+    array([0.5       , 0.        , 0.498..., 0.001...])
+
+    """
+    if len(target_operation.wires) != 1:
+        raise ValueError(
+            "The target operation must be a single-qubit operation, instead "
+            f"got {target_operation.__class__.__name__}."
+        )
+
+    control_wires = Wires(control_wires)
+    target_wire = target_operation.wires
+
+    *rot_angles, global_phase = qp.single_qubit_zyz_angles(target_operation)
+    with queuing.AnnotatedQueue() as q:
+        all_wires = control_wires + target_wire
+        if len(control_wires) > 1:
+            _multi_control_zyz(
+                *rot_angles, wires=all_wires, work_wires=work_wires, work_wire_type=work_wire_type
+            )
+        else:
+            _single_control_zyz(*rot_angles, wires=all_wires)
+        ops.cond(_not_zero(global_phase), _ctrl_global_phase)(
+            global_phase,
+            control_wires,
+            work_wires,
+            work_wire_type,
+        )
+
+    # If there is an active queuing context, queue the decomposition so that expand works
+    if queuing.QueuingManager.recording():
+        for op in q.queue:  # pragma: no cover
+            apply(op)
+
+    return q.queue
+
+
+####################
+# Helper Functions #
+####################
+
+
+def _not_zero(x):
+    return math.logical_not(math.allclose(x, 0))
+
+
+def _single_control_zyz(phi, theta, omega, wires):
+    """Implements Lemma 5.1 from https://arxiv.org/pdf/quant-ph/9503016"""
+
+    # Operator A
+    ops.cond(_not_zero(phi), ops.RZ)(phi, wires=wires[-1])
+    ops.cond(_not_zero(theta), ops.RY)(theta / 2, wires=wires[-1])
+
+    ops.CNOT(wires)
+
+    # Operator B
+    ops.cond(_not_zero(theta), ops.RY)(-theta / 2, wires=wires[-1])
+    ops.cond(_not_zero(phi + omega), ops.RZ)(-(phi + omega) / 2, wires=wires[-1])
+
+    ops.CNOT(wires)
+
+    # Operator C
+    ops.cond(_not_zero(omega - phi), ops.RZ)((omega - phi) / 2, wires=wires[-1])
+
+
+# pylint: disable-next=too-many-arguments
+def _multi_control_zyz(phi, theta, omega, wires, work_wires, work_wire_type):
+    """Implements Lemma 7.9 from https://arxiv.org/pdf/quant-ph/9503016"""
+
+    # Operator A
+    ops.cond(_not_zero(phi), ops.CRZ)(phi, wires=wires[-2:])
+    ops.cond(_not_zero(theta), ops.CRY)(theta / 2, wires=wires[-2:])
+
+    ops.MultiControlledX(
+        concatenate_wires(wires[:-2], wires[-1:]),
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+    # Operator B
+    ops.cond(_not_zero(theta), ops.CRY)(-theta / 2, wires=wires[-2:])
+    ops.cond(_not_zero(phi + omega), ops.CRZ)(-(phi + omega) / 2, wires=wires[-2:])
+
+    ops.MultiControlledX(
+        concatenate_wires(wires[:-2], wires[-1:]),
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+    # Operator C
+    ops.cond(_not_zero(omega - phi), ops.CRZ)((omega - phi) / 2, wires=wires[-2:])
+
+
+def _ctrl_global_phase(
+    phase,
+    control_wires,
+    work_wires=None,
+    work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
+):
+    ops.ctrl(
+        ops.GlobalPhase(-phase),
+        control=control_wires,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+
+def _controlled_unitary_bisect_impl(U, wires, control_values, *_, **__):
     """The decomposition rule for ControlledQubitUnitary from
     `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_."""
 
@@ -693,7 +659,7 @@ def _ctrl_decomp_bisect(U, wires, control_values, *_, **__):
     _x_flips()  # pylint: disable=no-value-for-parameter
 
 
-def _mcx_to_cnot_or_toffoli(wires, control_values, *_, **__):
+def _mcx_to_cnot_or_toffoli_impl(wires, control_values, *_, **__):
     """A decomposition rule that decomposes an MCX to a CNOT or Toffoli"""
 
     if compiler.active() or capture.enabled():
@@ -715,10 +681,11 @@ def _mcx_to_cnot_or_toffoli(wires, control_values, *_, **__):
     _x_flips()  # pylint: disable=no-value-for-parameter
 
 
-def _decompose_mcx_many_workers(wires, control_values, work_wires, work_wire_type="borrowed"):
+def _mcx_many_work_wires_impl(wires, control_values, work_wires, work_wire_type="borrowed"):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
+    # pylint: disable=no-value-for-parameter
 
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
@@ -748,14 +715,14 @@ def _decompose_mcx_many_workers(wires, control_values, work_wires, work_wire_typ
     def loop_down(i):
         down_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
-    _x_flips()  # pylint: disable=no-value-for-parameter
+    _x_flips()
 
     if work_wire_type == "borrowed":
         ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
-        loop_up()  # pylint: disable=no-value-for-parameter
+        loop_up()
 
     down_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
-    loop_down()  # pylint: disable=no-value-for-parameter
+    loop_down()
 
     _wires = [control_wires[0], work_wires[0], target_wire]
     ops.MultiControlledX(
@@ -764,49 +731,16 @@ def _decompose_mcx_many_workers(wires, control_values, work_wires, work_wire_typ
         work_wire_type=work_wire_type,
     )
 
-    loop_up()  # pylint: disable=no-value-for-parameter
+    loop_up()
     up_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
 
     if work_wire_type == "borrowed":
-        loop_down()  # pylint: disable=no-value-for-parameter
+        loop_down()
 
-    _x_flips()  # pylint: disable=no-value-for-parameter
-
-
-def _decompose_mcx_one_worker(wires, control_values, work_wires, work_wire_type="zeroed"):
-    r"""
-    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` auxiliary qubit. It
-    produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(k)` if the auxiliary is zeroed
-    and :math:`4k-3` Toffoli gates and depth :math:`O(k)` if the auxiliary is borrowed as described in
-    Sec. 5.1 of [1].
-
-    .. note::
-
-        The keyword argument ``_skip_toggle_detection`` is only supposed to be used when utilizing
-        ``_mcx_one_worker`` as a subroutine within a decomposition rule, but not when using
-        it as a decomposition rule itself. This is because ``_mcx_one_worker_resource`` does not
-        support/take into account this keyword argument.
-
-    References:
-        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
-        `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
-
-    """
-
-    if compiler.active() or capture.enabled():
-        wires = math.array(wires, like="jax")
-        control_values = math.array(control_values, like="jax")
-
-    @qp.for_loop(len(control_values))
-    def _x_flips(i):
-        qp.cond(qp.math.logical_not(control_values[i]), qp.X)(wires[i])
-
-    _x_flips()  # pylint: disable=no-value-for-parameter
-    _mcx_one_worker_no_flips(wires, work_wires, work_wire_type)
-    _x_flips()  # pylint: disable=no-value-for-parameter
+    _x_flips()
 
 
-def _decompose_mcx_two_workers(wires, control_values, work_wires, work_wire_type="borrowed"):
+def _mcx_two_work_wires_impl(wires, control_values, work_wires, work_wire_type="borrowed"):
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` auxiliary qubits.
     It produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(\log(k))` if using
@@ -876,7 +810,40 @@ def _decompose_mcx_two_workers(wires, control_values, work_wires, work_wire_type
     _x_flips()  # pylint: disable=no-value-for-parameter
 
 
-def _decompose_mcx_with_no_worker(wires, control_values, *_, **__):
+def _mcx_one_work_wire_impl(wires, control_values, work_wires, work_wire_type="zeroed"):
+    r"""
+    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` auxiliary qubit. It
+    produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(k)` if the auxiliary is zeroed
+    and :math:`4k-3` Toffoli gates and depth :math:`O(k)` if the auxiliary is borrowed as described in
+    Sec. 5.1 of [1].
+
+    .. note::
+
+        The keyword argument ``_skip_toggle_detection`` is only supposed to be used when utilizing
+        ``_mcx_one_worker`` as a subroutine within a decomposition rule, but not when using
+        it as a decomposition rule itself. This is because ``_mcx_one_work_wire_resources`` does not
+        support/take into account this keyword argument.
+
+    References:
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
+        `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
+
+    """
+
+    if compiler.active() or capture.enabled():
+        wires = math.array(wires, like="jax")
+        control_values = math.array(control_values, like="jax")
+
+    @qp.for_loop(len(control_values))
+    def _x_flips(i):
+        qp.cond(qp.math.logical_not(control_values[i]), qp.X)(wires[i])
+
+    _x_flips()  # pylint: disable=no-value-for-parameter
+    _mcx_one_worker_no_flips(wires, work_wires, work_wire_type)
+    _x_flips()  # pylint: disable=no-value-for-parameter
+
+
+def _mcx_no_work_wires_impl(wires, control_values, *_, **__):
     """Use ctrl_decomp_bisect_md to decompose a multi-controlled X gate with no work wires."""
 
     U = ops.RX.compute_matrix(np.pi)
@@ -893,3 +860,43 @@ def _decompose_mcx_with_no_worker(wires, control_values, *_, **__):
     _ctrl_decomp_bisect_md(U, wires)
     ops.ctrl(ops.GlobalPhase(-np.pi / 2), control=wires[:-1])
     _x_flips()  # pylint: disable=no-value-for-parameter
+
+
+_RULE_MODULES = {
+    "_ctrl_decomp_bisect_condition": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_controlled_unitary_bisect_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_controlled_unitary_bisect": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_single_ctrl_decomp_zyz_condition": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_controlled_unitary_single_control_zyz_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_controlled_unitary_single_control_zyz": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_multi_ctrl_decomp_zyz_condition": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_controlled_unitary_multi_control_zyz_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_controlled_unitary_multi_control_zyz": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_controlled_unitary_two_qubit_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_controlled_unitary_two_qubit": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_wrap_mcx_rule_w_alloc": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_mcx_to_cnot_or_toffoli_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_mcx_to_cnot_or_toffoli": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_mcx_two_controls_elbows_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_2cx_elbow_explicit_condition": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_mcx_two_controls_elbows": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_mcx_many_workers_condition": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_mcx_many_work_wires_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_mcx_many_work_wires": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_mcx_two_workers_condition": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_mcx_two_work_wires_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_mcx_two_work_wires": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_mcx_one_worker_condition": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_mcx_one_work_wire_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_mcx_one_work_wire": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_mcx_no_work_wires_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_mcx_no_worker_condition": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+    "_mcx_no_work_wires": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

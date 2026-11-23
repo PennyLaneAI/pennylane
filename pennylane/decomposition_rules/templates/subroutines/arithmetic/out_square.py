@@ -12,18 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.arithmetic.out_square."""
 
 from collections import defaultdict
 
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_resources,
+)
 from pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier import (
     _c_add_sub,
     _c_add_sub_resources,
 )
 from pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder import (
-    _semi_adder,
-    _semi_adder_resources,
+    _semi_adder_standard,
+    _semi_adder_standard_resources,
 )
 from pennylane.ops import CNOT
 from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
@@ -49,10 +54,9 @@ def _out_square_with_adder_zeroed_condition(
     return len(work_wires) >= OutSquare._min_work_wires(n, m, output_wires_zeroed)
 
 
-def _out_square_with_adder_zeroed_resources(
+def _out_square_with_adder_zeroed_resources(  # pylint: disable=unused-argument
     x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> dict:
-    # pylint: disable=unused-argument
     n = len(x_wires)
     m = len(output_wires)
     num_work_wires = len(work_wires)
@@ -76,14 +80,13 @@ def _out_square_with_adder_zeroed_resources(
 
 
 @register_condition(_out_square_with_adder_zeroed_condition)
-@register_resources(_out_square_with_adder_zeroed_resources, name="out_square_with_adder")
-def _out_square_with_adder_zeroed(
+@register_resources(_out_square_with_adder_zeroed_resources, name="with_adder_zeroed")
+def _out_square_with_adder_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
     output_wires_zeroed: bool = False,
 ):
-    # pylint: disable=unused-argument
     n = len(x_wires)
     m = len(output_wires)
     x_wires = x_wires[::-1]
@@ -116,7 +119,6 @@ def _out_square_with_adder_zeroed(
 def _out_square_with_caddsub_condition(
     x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> bool:
-    # pylint: disable=unused-argument
     n = len(x_wires)
     m = len(output_wires)
     if output_wires_zeroed and (n == 1 or m == 1):
@@ -128,7 +130,6 @@ def _out_square_with_caddsub_condition(
 def _out_square_with_caddsub_resources(
     x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> dict:
-    # pylint: disable=unused-argument
     n = len(x_wires)
     m = len(output_wires)
     num_work_wires = len(work_wires)
@@ -146,7 +147,9 @@ def _out_square_with_caddsub_resources(
         resources[CNOT] += 1
     else:
         skips = [1] + [2 * j for j in range(1, n)]
-        sparse_adder_res = _semi_adder_resources(x_wires, output_wires, skip_input_pos=skips)
+        sparse_adder_res = _semi_adder_standard_resources(
+            x_wires, output_wires, skip_input_pos=skips
+        )
         for key, value in sparse_adder_res.items():
             resources[key] += value
 
@@ -176,7 +179,7 @@ def _shifted_adder(x_wires, output_wires, work_wires):
 
 
 @register_condition(_out_square_with_caddsub_condition)
-@register_resources(_out_square_with_caddsub_resources)
+@register_resources(_out_square_with_caddsub_resources, name="with_caddsub")
 def _out_square_with_caddsub(
     x_wires: WiresLike,
     output_wires: WiresLike,
@@ -207,7 +210,7 @@ def _out_square_with_caddsub(
         CNOT([x_wires[-1], output_wires[-1]])
     else:
         zeroed = [1] + [2 * j for j in range(1, n)]
-        _semi_adder(x_wires, output_wires, work_wires, skip_input_pos=zeroed)
+        _semi_adder_standard(x_wires, output_wires, work_wires, skip_input_pos=zeroed)
 
     if n > 1 and m > 1:
         _output = output_wires[:-1]

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Compatibility exports for decomposition rule factories."""
 
 from pennylane.decomposition_rules.transforms.decompositions.rz_phase_gradient import (
@@ -21,7 +22,7 @@ from pennylane.decomposition_rules.transforms.decompositions.rz_phase_gradient i
 )
 
 __all__ = [
-    "make_rz_to_phase_gradient_decomp",
-    "phase_gradient_precision_stats",
     "validate_phase_gradient_wires",
+    "phase_gradient_precision_stats",
+    "make_rz_to_phase_gradient_decomp",
 ]

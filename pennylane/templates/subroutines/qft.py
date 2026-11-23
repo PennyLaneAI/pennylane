@@ -15,6 +15,8 @@
 This submodule contains the template for QFT.
 """
 
+from importlib import import_module as _import_module
+
 import numpy as np
 
 from pennylane.core.operator import Operator2
@@ -71,7 +73,7 @@ class QFT(Operator2):
             :symbols: :math:`n` wires
             :example: :math:`n=3`
 
-            .. decomposition-rule:: _qft_decomposition
+            .. decomposition-rule:: controlled_phase_shifts
                 :image: /_static/decomposition_thumbnails/qft_cphase_swap.svg
 
                 :class:`~.Hadamard` | :math:`n` | 3
@@ -143,3 +145,16 @@ class QFT(Operator2):
     @staticmethod
     def compute_matrix(wires: WiresLike):  # pylint: disable=arguments-differ
         return np.fft.ifft(np.eye(2 ** len(wires)), norm="ortho")
+
+
+_RULE_MODULES = {
+    "_qft_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qft",
+    "_qft_standard": "pennylane.decomposition_rules.templates.subroutines.qft",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

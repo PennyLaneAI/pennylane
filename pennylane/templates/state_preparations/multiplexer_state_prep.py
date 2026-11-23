@@ -13,6 +13,8 @@
 # limitations under the License.
 r"""Contains the MultiplexerStatePreparation template."""
 
+from importlib import import_module as _import_module
+
 from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.typing import AbstractArray, Complex, Float, Wire
@@ -69,7 +71,7 @@ class MultiplexerStatePreparation(Operator2):
             :symbols: :math:`n` wires
             :example: :math:`n=3`
 
-            .. decomposition-rule:: _real_multiplexer_state_prep_decomposition
+            .. decomposition-rule:: real
                 :image: /_static/decomposition_thumbnails/multiplexer_state_prep_real.svg
                 :requires: a real-valued ``state_vector``
                 :where: one :class:`~.SelectPauliRot` with :math:`k` control wires for each
@@ -77,7 +79,7 @@ class MultiplexerStatePreparation(Operator2):
 
                 :class:`~.SelectPauliRot` (:math:`R_Y`) | :math:`n` | 3
 
-            .. decomposition-rule:: _complex_multiplexer_state_prep_decomposition
+            .. decomposition-rule:: complex
                 :image: /_static/decomposition_thumbnails/multiplexer_state_prep_complex.svg
                 :requires: a complex-valued ``state_vector``
                 :where: one :class:`~.SelectPauliRot` with :math:`k` control wires for each
@@ -120,3 +122,20 @@ class MultiplexerStatePreparation(Operator2):
             state_vector = state_type[state_vector.shape]
 
         super().__init__(state_vector, wires=wires)
+
+
+_RULE_MODULES = {
+    "_select_pauli_rot_resources": "pennylane.decomposition_rules.templates.state_preparations.multiplexer_state_prep",
+    "_select_pauli_rots": "pennylane.decomposition_rules.templates.state_preparations.multiplexer_state_prep",
+    "_multiplexer_state_prep_real_resources": "pennylane.decomposition_rules.templates.state_preparations.multiplexer_state_prep",
+    "_multiplexer_state_prep_real": "pennylane.decomposition_rules.templates.state_preparations.multiplexer_state_prep",
+    "_multiplexer_state_prep_complex_resources": "pennylane.decomposition_rules.templates.state_preparations.multiplexer_state_prep",
+    "_multiplexer_state_prep_complex": "pennylane.decomposition_rules.templates.state_preparations.multiplexer_state_prep",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

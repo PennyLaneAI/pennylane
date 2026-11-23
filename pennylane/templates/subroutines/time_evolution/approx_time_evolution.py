@@ -15,8 +15,8 @@ r"""
 Contains the ApproxTimeEvolution template.
 """
 
-# pylint: disable=protected-access
 import copy
+from importlib import import_module as _import_module
 
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation
@@ -157,6 +157,7 @@ class ApproxTimeEvolution(Operation):
         super().__init__(*hamiltonian.data, time, wires=wires)
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["hamiltonian"] = new_op._hyperparameters["hamiltonian"].map_wires(
@@ -170,9 +171,8 @@ class ApproxTimeEvolution(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(
-        *coeffs_and_time, wires, hamiltonian, n
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(*coeffs_and_time, wires, hamiltonian, n):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -232,3 +232,16 @@ class ApproxTimeEvolution(Operation):
             _ = [apply(op) for op in full_decomp]
 
         return full_decomp
+
+
+_RULE_MODULES = {
+    "_approx_time_evolution_standard_resources": "pennylane.decomposition_rules.templates.subroutines.time_evolution.approx_time_evolution",
+    "_approx_time_evolution_standard": "pennylane.decomposition_rules.templates.subroutines.time_evolution.approx_time_evolution",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

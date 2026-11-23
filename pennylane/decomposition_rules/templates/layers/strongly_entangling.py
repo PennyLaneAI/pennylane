@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Built-in decomposition rules for templates.layers.strongly_entangling."""
 
-# pylint: disable=too-many-arguments
+"""Built-in decomposition rules for templates.layers.strongly_entangling."""
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
@@ -24,7 +23,7 @@ from pennylane.ops.op_math import cond
 from pennylane.templates.layers.strongly_entangling import StronglyEntanglingLayers
 
 
-def _strongly_entangling_resources(imprimitive, n_wires, n_layers):
+def _strongly_entangling_standard_resources(imprimitive, n_wires, n_layers):
     resources = {}
 
     resources[Rot] = n_wires * n_layers
@@ -34,8 +33,8 @@ def _strongly_entangling_resources(imprimitive, n_wires, n_layers):
     return resources
 
 
-@register_resources(_strongly_entangling_resources)
-def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
+@register_resources(_strongly_entangling_standard_resources, name="rotations_entangler_layers")
+def _strongly_entangling_standard(weights, wires, ranges, imprimitive):
 
     if capture.enabled():
         wires = math.array(wires, like="jax")
@@ -76,4 +75,4 @@ def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
     layers()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(StronglyEntanglingLayers, _strongly_entangling_decomposition)
+add_decomps(StronglyEntanglingLayers, _strongly_entangling_standard)

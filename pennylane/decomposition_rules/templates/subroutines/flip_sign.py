@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.flip_sign."""
 
 from pennylane.decomposition import add_decomps, register_resources
@@ -21,7 +22,7 @@ from pennylane.typing import Bool, Wire
 from pennylane.wires import WiresLike
 
 
-def _flip_sign_resources(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
+def _flip_sign_standard_resources(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
     num_wires = len(wires)
     num_ctrl_wires = num_wires - 1
     if num_ctrl_wires == 0:
@@ -44,8 +45,8 @@ def _flip_sign_resources(state: tuple[int], wires: WiresLike, work_wires: WiresL
     return res
 
 
-@register_resources(_flip_sign_resources)
-def _flip_sign_decomposition(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
+@register_resources(_flip_sign_standard_resources, name="to_controlled_z")
+def _flip_sign_standard(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
     if state[-1] == 0:
         X(wires[-1])
 
@@ -66,4 +67,4 @@ def _flip_sign_decomposition(state: tuple[int], wires: WiresLike, work_wires: Wi
         X(wires[-1])
 
 
-add_decomps(FlipSign, _flip_sign_decomposition)
+add_decomps(FlipSign, _flip_sign_standard)

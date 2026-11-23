@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.qsvt."""
 
 from collections import defaultdict
@@ -25,7 +26,7 @@ from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.qsvt import QSVT
 
 
-def _QSVT_resources(UA, projectors):
+def _QSVT_standard_resources(UA, projectors):
     resources = defaultdict(int)
     resources[abstractify(projectors[0])] = 1
     for i in range(1, len(projectors) - 1, 2):
@@ -37,8 +38,8 @@ def _QSVT_resources(UA, projectors):
     return dict(resources)
 
 
-@register_resources(_QSVT_resources)
-def _QSVT_decomposition(UA, projectors):
+@register_resources(_QSVT_standard_resources, name="alternating_block_encodings")
+def _QSVT_standard(UA, projectors):
 
     apply(projectors[0])
 
@@ -51,4 +52,4 @@ def _QSVT_decomposition(UA, projectors):
         apply(projectors[-1])
 
 
-add_decomps(QSVT, _QSVT_decomposition)
+add_decomps(QSVT, _QSVT_standard)

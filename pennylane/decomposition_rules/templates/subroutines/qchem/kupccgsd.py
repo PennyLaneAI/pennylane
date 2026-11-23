@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.qchem.kupccgsd."""
 
-# pylint: disable-msg=too-many-arguments,protected-access,too-many-positional-arguments
+# pylint: disable=too-many-arguments
+
 
 from collections import defaultdict
 
@@ -32,7 +34,7 @@ from pennylane.typing import Bool, Wire
 from pennylane.wires import WiresLike
 
 
-def _kupccgsd_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
+def _kupccgsd_standard_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
     resources = defaultdict(int)
     resources[BasisState(Bool[num_wires], Wire[num_wires])] = 1
 
@@ -48,8 +50,8 @@ def _kupccgsd_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
     return resources
 
 
-@register_resources(_kupccgsd_resources)
-def _kupccgsd_decomposition(
+@register_resources(_kupccgsd_standard_resources, name="paired_excitation_layers")
+def _kupccgsd_standard(  # pylint: disable=unused-argument
     weights: list,
     wires: WiresLike,
     s_wires: list,
@@ -57,7 +59,7 @@ def _kupccgsd_decomposition(
     k: int,
     init_state: tuple[int],
     delta_sz: int = None,
-):  # pylint: disable=too-many-arguments, arguments-differ, unused-argument
+):
     BasisState(init_state, wires=wires)
 
     @for_loop(k)
@@ -79,4 +81,4 @@ def _kupccgsd_decomposition(
     layer_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(kUpCCGSD, _kupccgsd_decomposition)
+add_decomps(kUpCCGSD, _kupccgsd_standard)

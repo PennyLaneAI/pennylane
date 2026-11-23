@@ -15,8 +15,8 @@
 This module contains the template for the Fast Approximate BLock Encoding (FABLE) technique.
 """
 
-# pylint: disable=no-value-for-parameter
 import warnings
+from importlib import import_module as _import_module
 
 import numpy as np
 
@@ -144,7 +144,7 @@ class FABLE(Operation):
         }
 
     @staticmethod
-    def compute_decomposition(input_matrix, wires, tol=0):  # pylint:disable=arguments-differ
+    def compute_decomposition(input_matrix, wires, tol=0):  # pylint: disable=arguments-differ
         r"""Sequence of gates that represents the efficient circuit produced by the FABLE technique
 
         Args:
@@ -199,3 +199,16 @@ class FABLE(Operation):
             op_list.append(Hadamard(w))
 
         return op_list
+
+
+_RULE_MODULES = {
+    "_fable_standard_resources": "pennylane.decomposition_rules.templates.subroutines.fable",
+    "_fable_standard": "pennylane.decomposition_rules.templates.subroutines.fable",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

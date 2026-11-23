@@ -15,8 +15,11 @@ r"""
 Contains the FermionicDoubleExcitation template.
 """
 
-# pylint: disable=too-many-arguments,protected-access
+# pylint: disable=too-many-arguments
+
+
 import copy
+from importlib import import_module as _import_module
 
 import numpy as np
 
@@ -552,6 +555,7 @@ class FermionicDoubleExcitation(Operation):
         }
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         for key in ["wires1", "wires2"]:
@@ -608,3 +612,24 @@ class FermionicDoubleExcitation(Operation):
         op_list.extend(_layer8(weight, s, r, q, p, set_cnot_wires))
 
         return op_list
+
+
+_RULE_MODULES = {
+    "_fermionic_double_excitation_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qchem.fermionic_double_excitation",
+    "_layer_qfunc1": "pennylane.decomposition_rules.templates.subroutines.qchem.fermionic_double_excitation",
+    "_layer_qfunc2": "pennylane.decomposition_rules.templates.subroutines.qchem.fermionic_double_excitation",
+    "_layer_qfunc3": "pennylane.decomposition_rules.templates.subroutines.qchem.fermionic_double_excitation",
+    "_layer_qfunc4": "pennylane.decomposition_rules.templates.subroutines.qchem.fermionic_double_excitation",
+    "_layer_qfunc5": "pennylane.decomposition_rules.templates.subroutines.qchem.fermionic_double_excitation",
+    "_layer_qfunc6": "pennylane.decomposition_rules.templates.subroutines.qchem.fermionic_double_excitation",
+    "_layer_qfunc7": "pennylane.decomposition_rules.templates.subroutines.qchem.fermionic_double_excitation",
+    "_layer_qfunc8": "pennylane.decomposition_rules.templates.subroutines.qchem.fermionic_double_excitation",
+    "_fermionic_double_excitation_standard": "pennylane.decomposition_rules.templates.subroutines.qchem.fermionic_double_excitation",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

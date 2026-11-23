@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Built-in decomposition rules for templates.subroutines.prepselprep."""
 
-# pylint: disable=arguments-differ
+"""Built-in decomposition rules for templates.subroutines.prepselprep."""
 
 from pennylane import math
 from pennylane.core.operator import abstractify
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import (
+    add_decomps,
+    register_resources,
+    resource_rep,
+)
 from pennylane.ops import GlobalPhase, StatePrep, change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -28,7 +31,7 @@ from pennylane.templates.subroutines.select import Select
 from pennylane.typing import Wire
 
 
-def _prepselprep_resources(op_reps, num_control):
+def _prepselprep_standard_resources(op_reps, num_control):
     select_lcu = Select(list(op_reps), control=Wire[num_control], work_wires=Wire[0], partial=True)
     select_phases = Select(
         [abstractify(GlobalPhase)] * len(op_reps),
@@ -49,9 +52,8 @@ def _prepselprep_resources(op_reps, num_control):
     return resources
 
 
-# pylint: disable=unused-argument
-@register_resources(_prepselprep_resources)
-def _prepselprep_decomp(*_, wires, lcu, control, target_wires):
+@register_resources(_prepselprep_standard_resources, name="state_prep_select")
+def _prepselprep_standard(*_, wires, lcu, control, target_wires):  # pylint: disable=unused-argument
     coeffs, ops, phases = _get_new_terms(lcu)
     sqrt_coeffs = math.sqrt(coeffs)
     change_op_basis(
@@ -60,4 +62,4 @@ def _prepselprep_decomp(*_, wires, lcu, control, target_wires):
     )
 
 
-add_decomps(PrepSelPrep, _prepselprep_decomp)
+add_decomps(PrepSelPrep, _prepselprep_standard)

@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition_rules.templates.state_preparations.state_prep_mps import (
-    _mps_prep_decomposition,
+    _mps_prep_standard,
 )
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.templates.state_preparations.state_prep_mps import (
@@ -635,7 +635,6 @@ class TestMPSPrep:
         assert_decomposable(op)
 
     @pytest.mark.capture
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_decomposition_capture(self):
         """Tests that the new decomposition works with capture."""
 
@@ -662,7 +661,7 @@ class TestMPSPrep:
         num_wires = 4
 
         def circuit(*_mps):
-            _mps_prep_decomposition(
+            _mps_prep_standard(
                 list(_mps),
                 wires=range(2, num_wires + 2),
                 work_wires=[0, 1],

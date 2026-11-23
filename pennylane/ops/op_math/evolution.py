@@ -16,7 +16,7 @@ This submodule defines the Evolution class.
 """
 
 from copy import copy
-from importlib import import_module
+from importlib import import_module as _import_module
 from warnings import warn
 
 import pennylane as qp
@@ -155,10 +155,15 @@ class Evolution(Exp):
         return copied
 
 
-def __getattr__(name):
-    """Resolve the existing public names of relocated decomposition rules."""
-    if name in {"pauli_rot_decomp"}:
-        rules = import_module("pennylane.decomposition_rules.op_math.evolution")
+_RULE_MODULES = {
+    "_pauli_rot_decomp_condition": "pennylane.decomposition_rules.op_math.evolution",
+    "_exp_to_pauli_rot_resources": "pennylane.decomposition_rules.op_math.evolution",
+    "_exp_to_pauli_rot": "pennylane.decomposition_rules.op_math.evolution",
+}
 
-        return getattr(rules, name)
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

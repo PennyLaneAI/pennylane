@@ -32,16 +32,15 @@ class CustomOp(Operator):  # pylint: disable=too-few-public-methods
 class TestLabelledOp:
     """Tests for the 'LabelledOp' operator."""
 
-    # pylint:disable=protected-access
     def test_flatten_unflatten(self):
         """Tests the unflatten and flatten methods."""
 
         op = LabelledOp(qp.X(0), custom_label="my-x")
-        data, metadata = op._flatten()
+        data, metadata = op._flatten()  # pylint: disable=protected-access
         assert data[0] == qp.X(0)
         assert metadata[0] == ("custom_label", "my-x")
 
-        unflattened_op = LabelledOp._unflatten(data, metadata)
+        unflattened_op = LabelledOp._unflatten(data, metadata)  # pylint: disable=protected-access
         assert unflattened_op == op
 
     def test_repr(self):
@@ -78,13 +77,11 @@ class TestLabelledOp:
 
 
 @pytest.mark.integration
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize("op", [CustomOp(0), DynOp(0.5, wires=[0])])
 def test_decomposition(op):
     """Tests that the decomposition of label op works."""
 
-    # pylint: disable-next=protected-access
-    @qp.transforms._tape_decompose(gate_set={type(op)})
+    @qp.transforms._tape_decompose(gate_set={type(op)})  # pylint: disable=protected-access
     @qp.qnode(qp.device("default.qubit"))
     def circuit():
         qp.drawer.label(op, "foo")

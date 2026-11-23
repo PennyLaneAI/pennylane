@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Compatibility exports for decomposition rule factories."""
 
 from pennylane.decomposition_rules.transforms.decompositions.phase_gradient_state_prep_decomp import (

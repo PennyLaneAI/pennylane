@@ -96,7 +96,6 @@ class Backline(Device):
     For more usage details, see the `Backline demo <https://pennylane.ai/demos/backline>`__.
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
         *,

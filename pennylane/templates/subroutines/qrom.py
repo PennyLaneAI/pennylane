@@ -16,16 +16,13 @@ This submodule contains the template for QROM.
 """
 
 from collections.abc import Sequence
+from importlib import import_module as _import_module
 
 from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.math import ceil_log2
-from pennylane.ops import CNOT, CZ, X, Z, cond, pauli_measure
 from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
-
-from .arithmetic import TemporaryAND
-from .multix import MultiX
 
 
 class QROM(Operator2):
@@ -81,6 +78,63 @@ class QROM(Operator2):
     >>> print(circuit())
     [[1 1 0]]
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.QROM
+            :stacked:
+            :symbols: :math:`K` bitstrings of length :math:`b`, :math:`c \geq 2` control wires,
+                :math:`w` work wires and ``clean=True``
+            :example: :math:`K=4`, :math:`b=2`, :math:`c=2`, :math:`w=2`, bitstrings
+                ``[[0, 0], [0, 1], [1, 0], [1, 1]]``
+
+            .. decomposition-rule:: select_swap
+                :image: /_static/decomposition_thumbnails/qrom_select_swap.svg
+                :requires: :math:`w \geq c - 1` work wires and :math:`\lambda \geq 2`
+                :where: :math:`\lambda` is the number of bitstrings loaded in parallel: the largest
+                    power of 2 with :math:`\lambda \leq K`, :math:`b(\lambda - 1) \leq w` and
+                    :math:`w - b(\lambda - 1) \geq c - \log_2 \lambda - 1`. The nested
+                    :class:`~.QROM` loads :math:`\lceil K/\lambda \rceil` bitstrings of length
+                    :math:`\lambda b`
+
+                :class:`~.QROM` | :math:`2` | 2
+                :class:`~.Hadamard` | :math:`2b` | 4
+                :class:`~.CSWAP` | :math:`4b(\lambda - 1)` | 8
+
+            .. decomposition-rule:: unary_iteration
+                :image: /_static/decomposition_thumbnails/qrom_unary_iteration.svg
+                :where: :math:`t = \min(c, w + 1)` control wires span the unary iteration tree and
+                    the other :math:`e = c - t` are added as controls to each load,
+                    :math:`B = \lceil K / 2^e \rceil`,
+                    :math:`N = t + B - 2 - \mathrm{wt}(B-1) - [B > 2^{t-1}]`, with
+                    :math:`\mathrm{wt}` the number of ones in the binary representation, and
+                    :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise. With no work
+                    wires (:math:`w = 0`), each bitstring is instead loaded by a :class:`~.MultiX`
+                    with :math:`c` controls
+
+                :class:`~.TemporaryAND` | :math:`N` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`N` | 1
+                :class:`~.CNOT` | :math:`B - 1 + [B > 2^{t-1}]` | 4
+                :class:`~.X` | :math:`2[B > 2^{t-2}]` | 2
+                :class:`~.MultiX` with :math:`e + 1` controls | :math:`K` | 4
+
+            .. decomposition-rule:: measurement
+                :image: /_static/decomposition_thumbnails/qrom_measurement.svg
+                :requires: :math:`w \geq c - 1` work wires and compilation with :func:`~.qjit`
+                :where: :math:`L = 2^c` (the data is padded to :math:`L` entries, assuming
+                    :math:`c = \lceil \log_2 K \rceil`) and :math:`A = L - 3`. Gates marked as
+                    conditional are applied depending on mid-circuit measurement outcomes,
+                    and the number of :class:`~.CNOT` gates depends on the bitstrings
+
+                :class:`~.MultiX` | :math:`1 + A` (:math:`A` conditional) | 2
+                :class:`~.TemporaryAND` | :math:`A` | 1
+                :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`1` | 1
+                :class:`~.CNOT` | at most :math:`\max(3, L/2 - 1) + 2b` | 5
+                :func:`PauliMeasure <.pauli_measure>` (:math:`X`-type, :math:`\leq b + 1` wires) | :math:`A` | 1
+                :func:`PauliMeasure <.pauli_measure>` (:math:`Z`, 1 wire) | :math:`A` | 1
+                :class:`~.CZ` (conditional) | :math:`A` | 1
+                :class:`~.Z` (conditional) | :math:`A` | 1
+                :class:`~.X` (conditional) | :math:`A` | 1
 
     .. details::
         :title: Usage Details
@@ -141,7 +195,7 @@ class QROM(Operator2):
         target_wires: WiresLike,
         work_wires: WiresLike,
         clean=True,
-    ):  # pylint: disable=too-many-arguments,disable=too-many-positional-arguments
+    ):
 
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
@@ -182,62 +236,35 @@ class QROM(Operator2):
         return self.control_wires + self.target_wires + self.work_wires
 
 
-def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
-    """Measurement-based uncomputation from Fig 18a) https://arxiv.org/abs/2211.15465
+_RULE_MODULES = {
+    "_select_ops": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_swap_ops": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_calculate_select_swap_sizes": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_select_swap_condition": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_qrom_select_swap_resources": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_qrom_select_swap": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_measure_masked_x": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_measurement_uncompute": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_measurement_qrom_inner": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_measurement_qrom_outer": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_count_tempAND_in_measurement_qrom": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_qrom_measurement_resources": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_flag_resources": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_qrom_measurement_condition": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_interleave_controls": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_build_flag": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_qrom_measurement": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_unary_iteration_split": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_qrom_unary_iteration_resources": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_load_block": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_flip_iteration_bit": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_main_unary_loop_monolithic": "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "_qrom_unary_iteration": "pennylane.decomposition_rules.templates.subroutines.qrom",
+}
 
-    Args:
-        work_wire: the AND output wire to uncompute. Third wire on the figure.
-        ctrl_wires: [ctrl0, ctrl1] -- the two AND control wires (for CZ correction). First and second qubit on the figure.
-        targets: target register wires.
-        product: bitstring indicating the X positions in the target register.
-    """
-    x_wires = [targets[i] for i, bit in enumerate(product) if bit == 1]
 
-    m1 = pauli_measure("X" + "X" * len(x_wires), [work_wire, *x_wires])
-
-    cond(m1 == 1, CZ)(wires=ctrl_wires)
-    # Without this, the reset below would leave a global phase of -1 if both outcomes are 1
-    cond(m1 == 1, Z)(wires=work_wire)
-
-    m2 = pauli_measure("Z", [work_wire])
-    cond(m2 == 1, X)(wires=work_wire)
-    cond(m2 == 1, MultiX)(product, wires=targets)
-
-
-def _measurement_qrom_inner(controls, targets, bitstrings):
-    """Inner binary recursion with measurement-based uncomputation.
-
-    Each level opens a TemporaryAND, recurses into left/right halves,
-    then uncomputes via measurement. The XOR product between subtree
-    bases is absorbed into the measurement.
-
-    Args:
-        controls: interleaved [flag, sel, work, sel2, work2, ...]
-        targets: target register wires
-        bitstrings: The set of k strings to be loaded in the decomposition. They do not necessarily match the QROM input values.
-
-    """
-
-    k = len(bitstrings)
-    if k <= 1:
-        return
-
-    num_bits = ceil_log2(k)
-    needed = 2 * num_bits + 1
-    controls = list(controls[:1]) + list(controls[-(needed - 1) :])
-
-    flag, sel, work = controls[0], controls[1], controls[2]
-    child_controls = controls[2:]
-
-    k_left = 2 ** (num_bits - 1)
-
-    if k > 2:
-        TemporaryAND([flag, sel, work], control_values=[1, 0])
-        _measurement_qrom_inner(child_controls, targets, bitstrings[:k_left])
-        CNOT(wires=[flag, work])
-        _measurement_qrom_inner(child_controls, targets, bitstrings[k_left:])
-    else:
-        TemporaryAND([flag, sel, work], control_values=[1, 1])
-
-    product = math.bitwise_xor(bitstrings[0], bitstrings[k_left])
-    _measurement_uncompute(work, [flag, sel], targets, product)
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

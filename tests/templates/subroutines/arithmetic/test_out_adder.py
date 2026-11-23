@@ -65,9 +65,8 @@ class TestOutAdder:
             ),
         ],
     )
-    def test_operation_result(
-        self, x_wires, y_wires, output_wires, mod, work_wires, x, y, z
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_operation_result(self, x_wires, y_wires, output_wires, mod, work_wires, x, y, z):
         """Test the correctness of the OutAdder template output."""
         dev = qp.device("default.qubit")
 
@@ -86,7 +85,6 @@ class TestOutAdder:
         if mod is None:
             mod = 2 ** len(output_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y, z)[0, :]))),
             (x + y + z) % mod,
@@ -145,9 +143,8 @@ class TestOutAdder:
             ),
         ],
     )
-    def test_wires_error(
-        self, x_wires, y_wires, output_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
+    def test_wires_error(self, x_wires, y_wires, output_wires, mod, work_wires, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
@@ -176,7 +173,7 @@ class TestOutAdder:
             )
 
     def test_decomposition(self):
-        """Test that compute_decomposition and decomposition work as expected."""
+        """Test that decomposition works as expected."""
         x_wires, y_wires, output_wires, mod, work_wires = (
             [0, 1, 2],
             [3, 4, 5],
@@ -184,15 +181,15 @@ class TestOutAdder:
             7,
             [9, 10],
         )
-        _adder_decomposition = (
+        _adder_fourier = (
             qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
-            .compute_decomposition(x_wires, y_wires, output_wires, mod, work_wires)[0]
+            .decomposition()[0]
             .decomposition()
         )
         adder_decomposition = [
-            _adder_decomposition[0],
-            *_adder_decomposition[1].decomposition(),
-            _adder_decomposition[2],
+            _adder_fourier[0],
+            *_adder_fourier[1].decomposition(),
+            _adder_fourier[2],
         ]
 
         op_list = []
@@ -230,6 +227,25 @@ class TestOutAdder:
         op = qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
         assert_decomposable(op)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_basis_change_with_concrete_wires(self):
+        """Test that the rule preserves modular addition during capture with concrete wires."""
+        with qp.queuing.AnnotatedQueue() as queue:
+            qp.list_decomps(qp.OutAdder)[0]([5], [1], [8], 2, [])
+
+        with qp.capture.pause():
+            tape = qp.tape.QuantumScript.from_queue(queue)
+            assert isinstance(tape.operations[0], qp.ops.ChangeOpBasis2)
+            assert not isinstance(tape.operations[0].target_op, qp.ops.Prod2)
+            qp.testing.assert_valid(tape.operations[0].target_op)
+            matrix = qp.matrix(tape, wire_order=[5, 1, 8])
+        expected = np.zeros((8, 8))
+        for column in range(8):
+            x, y, output = column >> 2, (column >> 1) & 1, column & 1
+            row = (x << 2) + (y << 1) + ((output + x + y) % 2)
+            expected[row, column] = 1
+        assert np.allclose(matrix, expected)
+
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
         wires = qp.OutAdder(x_wires=[1, 2], y_wires=[3, 4], output_wires=[5, 6]).wires
@@ -263,7 +279,6 @@ class TestOutAdder:
             qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
             return qp.sample(wires=output_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))), (x + y) % mod
         )

@@ -15,13 +15,12 @@
 Contains the Select template.
 """
 
+from importlib import import_module as _import_module
+
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2
-from pennylane.ops import CNOT, adjoint, ctrl
 from pennylane.typing import Wire
 from pennylane.wires import Wires, validate_no_wire_overlaps
-
-from .arithmetic.temporary_and import TemporaryAND
 
 
 class Select(Operator2):
@@ -105,6 +104,40 @@ class Select(Operator2):
     3: ────╰X─╰SWAP─┤ ╰State
 
     Note how the first (second) control node of the second (third) operator was skipped.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.Select
+            :stacked:
+            :symbols: :math:`K` operators :math:`U_j=` ``ops[j]``, :math:`c\geq 2` control wires,
+                :math:`w` work wires and ``partial=False``
+            :example: :math:`K=4`, :math:`c=2`
+
+            .. decomposition-rule:: multi_control
+                :image: /_static/decomposition_thumbnails/select_multi_control.svg
+
+                :math:`U_j` with :math:`c` controls | :math:`K` (one per :math:`U_j`) | 4
+
+            .. decomposition-rule:: unary
+                :image: /_static/decomposition_thumbnails/select_unary.svg
+                :requires: :math:`w \geq c - 1` work wires
+                :where: :math:`N = c + K - 2 - \mathrm{wt}(K-1) - [K > 2^{c-1}]`, with
+                    :math:`\mathrm{wt}` the number of ones in the binary representation, and
+                    :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
+
+                :class:`~.TemporaryAND` | :math:`N` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`N` | 1
+                :class:`~.CNOT` | :math:`K - 1` :math:`+ [K > 2^{c-1}]` :math:`- [K > 2^{c-2}]` | 3
+                :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`[K > 2^{c-2}]` | 1
+                :math:`U_j` with 1 control | :math:`K` (one per :math:`U_j`) | 4
+
+            .. decomposition-rule:: multi_control_work_wire
+                :image: /_static/decomposition_thumbnails/select_multi_control_work_wire.svg
+                :requires: :math:`w \geq 1` work wire
+
+                :class:`~.MultiControlledX` with :math:`c` controls | :math:`2K` | 8
+                :math:`U_j` with 1 control | :math:`K` (one per :math:`U_j`) | 4
 
     .. details::
         :title: Unary iterator decomposition
@@ -347,68 +380,6 @@ class Select(Operator2):
         return f"Select(ops={self.ops}, control={self.control}, partial={self.partial})"
 
 
-# Decomposition of Select using multi-control strategy
-
-
-# Decomposition of Select using unary iterator
-
-
-def _add_k_units(ops, controls, work_wires, k):
-    """Add k controlled-applied operators within the unary iterator scheme, in a recursive
-    manner.
-
-    In the documentation, this subroutine is called ``R``.
-    This is _not_ used for the outer-most recursion level, see _add_first_k_units instead.
-
-    We are given ``K=len(ops)`` operators and ``2 * ⌈log_2(K)⌉ + 1`` control and auxiliary wires.
-    If ``K=0``, nothing is applied.
-    If ``K=1``, the single operator is applied, controlled on the first control wire.
-
-    In all other cases, this function applies the circuit
-
-    .. code-block::
-
-        ─╭●────╭●────●─╮─
-        ─├○────│─────●─┤─
-         ╰──■──╰X─■────╯
-
-    where each box symbolizes calls to itself on the next recursion level.
-    The next-level calls to ``_add_k_units` use
-
-    ``k_first = 2 ** (⌈log_2(k)⌉-1)`` (i.e. half of ``k``, rounded up to the next power of two)
-    and
-    ``k_second = k-k_first`` (i.e. the rest)
-
-    operators, respectively. Accordingly, two fewer control wires are used.
-
-    """
-    assert k == len(ops) > 0
-    num_bits = math.ceil_log2(k)
-    needed_controls = 2 * num_bits + 1
-    assert len(controls) >= needed_controls, f"{len(controls)=}, {needed_controls=}"
-
-    if k == 1:
-        assert num_bits == 0
-        return [ctrl(ops[0], control=controls[0], control_values=[1], work_wires=work_wires)]
-
-    assert num_bits != 0
-    controls = controls[:1] + controls[-(needed_controls - 1) :]
-
-    and_wires = controls[:3]
-    new_controls = controls[2:]
-    k_first = 2 ** (num_bits - 1)
-    return (
-        [TemporaryAND(and_wires, control_values=(1, 0))]
-        + _add_k_units(ops[:k_first], new_controls, work_wires, k_first)
-        + [CNOT(and_wires[::2])]
-        + _add_k_units(ops[k_first:], new_controls, work_wires, k - k_first)
-        + [adjoint(TemporaryAND)(and_wires)]
-    )
-
-
-# Decomposition of Select using one work wire to control the target operations
-
-
 Multiplexer = Select
 r"""Multiplexer(ops, control, work_wires=None, partial=False)
 
@@ -420,3 +391,28 @@ r"""Multiplexor(ops, control, work_wires=None, partial=False)
 
 Alias for :class:`~.Select`.
 """
+
+
+_RULE_MODULES = {
+    "_partial_select": "pennylane.decomposition_rules.templates.subroutines.select",
+    "_multi_controlled_rep": "pennylane.decomposition_rules.templates.subroutines.select",
+    "_select_multi_control_resources": "pennylane.decomposition_rules.templates.subroutines.select",
+    "_select_multi_control": "pennylane.decomposition_rules.templates.subroutines.select",
+    "_add_first_k_units": "pennylane.decomposition_rules.templates.subroutines.select",
+    "_add_k_units": "pennylane.decomposition_rules.templates.subroutines.select",
+    "_select_resources_unary_not_partial": "pennylane.decomposition_rules.templates.subroutines.select",
+    "_select_unary_resources": "pennylane.decomposition_rules.templates.subroutines.select",
+    "_select_decomp_unary_not_partial": "pennylane.decomposition_rules.templates.subroutines.select",
+    "_unary_condition": "pennylane.decomposition_rules.templates.subroutines.select",
+    "_select_unary": "pennylane.decomposition_rules.templates.subroutines.select",
+    "_select_multi_control_work_wire_resources": "pennylane.decomposition_rules.templates.subroutines.select",
+    "_work_wire_condition": "pennylane.decomposition_rules.templates.subroutines.select",
+    "_select_multi_control_work_wire": "pennylane.decomposition_rules.templates.subroutines.select",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -13,6 +13,8 @@
 # limitations under the License.
 """Contains the implementation of the Incrementer template."""
 
+from importlib import import_module as _import_module
+
 from pennylane.core.operator import Operator2
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
@@ -84,7 +86,7 @@ class Incrementer(Operator2):
                 :class:`~.MultiX` on :math:`n` wires | :math:`2`
                 :class:`~.Incrementer` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(ctrl_incrementer_elbow_ladder)
+            .. decomposition-rule:: ctrl_incrementer_elbow_ladder
                 :image: /_static/decomposition_thumbnails/incrementer_controlled.svg
                 :region: controlled
                 :requires: :math:`n + c - 1` work wires in total, from ``work_wires`` and the
@@ -204,3 +206,28 @@ class Incrementer(Operator2):
     def wires(self):
         """All wires involved in the operation."""
         return self.increment_wires + self.work_wires
+
+
+_RULE_MODULES = {
+    "_core_incrementer_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.incrementer",
+    "_incrementer_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.incrementer",
+    "_has_dynamic_qubits": "pennylane.decomposition_rules.templates.subroutines.arithmetic.incrementer",
+    "_work_wire_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.incrementer",
+    "_ctrl_work_wire_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.incrementer",
+    "_work_wire_inverse_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.incrementer",
+    "_decompose_mcxs": "pennylane.decomposition_rules.templates.subroutines.arithmetic.incrementer",
+    "_incrementer_fallback_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.incrementer",
+    "_incrementer_multicontrolledx": "pennylane.decomposition_rules.templates.subroutines.arithmetic.incrementer",
+    "_incrementer_elbow_ladder": "pennylane.decomposition_rules.templates.subroutines.arithmetic.incrementer",
+    "_controlled_incrementer_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.incrementer",
+    "_ctrl_incrementer_elbow_ladder": "pennylane.decomposition_rules.templates.subroutines.arithmetic.incrementer",
+    "_adjoint_incrementer_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.incrementer",
+    "_adjoint_incrementer_bit_flips": "pennylane.decomposition_rules.templates.subroutines.arithmetic.incrementer",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

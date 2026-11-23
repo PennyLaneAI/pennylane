@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.core."""
 
 from pennylane.core.apply import apply
@@ -20,7 +21,7 @@ from pennylane.pytrees import unflatten
 from pennylane.templates.core import SubroutineOp
 
 
-def _calculate_resources(subroutine: "Subroutine", signature_key):
+def _subroutine_standard_resources(subroutine: "Subroutine", signature_key):
     sig = subroutine.signature.bind(*signature_key)
     for arg in subroutine.dynamic_argnames:
         struct, shapes = sig.arguments[arg]
@@ -28,10 +29,9 @@ def _calculate_resources(subroutine: "Subroutine", signature_key):
     return subroutine.compute_resources(**sig.arguments)
 
 
-# pylint: disable=unused-argument
-@register_resources(_calculate_resources)
-def _subroutine_decomp(*data, wires, decomposition):
+@register_resources(_subroutine_standard_resources, name="expand_operations")
+def _subroutine_standard(*data, wires, decomposition):  # pylint: disable=unused-argument
     _ = [apply(op) for op in decomposition]
 
 
-add_decomps(SubroutineOp, _subroutine_decomp)
+add_decomps(SubroutineOp, _subroutine_standard)

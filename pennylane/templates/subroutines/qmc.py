@@ -15,8 +15,11 @@
 Contains the QuantumMonteCarlo template and utility functions.
 """
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-arguments
+
+
 import copy
+from importlib import import_module as _import_module
 
 import numpy as np
 
@@ -340,9 +343,8 @@ class QuantumMonteCarlo(Operation):
     resource_keys = {"num_target_wires", "num_estimation_wires", "q_shape"}
 
     @classmethod
-    def _primitive_bind_call(
-        cls, probs, func, target_wires, estimation_wires
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def _primitive_bind_call(cls, probs, func, target_wires, estimation_wires):
         # handle target wires and estimation wires
         return cls._primitive.bind(
             probs,
@@ -418,9 +420,8 @@ class QuantumMonteCarlo(Operation):
         return 3
 
     @staticmethod
-    def compute_decomposition(
-        A, R, Q, wires, estimation_wires, target_wires
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(A, R, Q, wires, estimation_wires, target_wires):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -452,11 +453,21 @@ class QuantumMonteCarlo(Operation):
         return op_list
 
 
-# pylint: disable=protected-access
-
-
-@QuantumMonteCarlo._primitive.def_impl
+@QuantumMonteCarlo._primitive.def_impl  # pylint: disable=protected-access
 def _quantum_monte_carlo_impl(probs, *wires, func, num_target_wires):
     target_wires = wires[:num_target_wires]
     estimation_wires = wires[num_target_wires:]
     return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires)
+
+
+_RULE_MODULES = {
+    "_quantum_monte_carlo_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qmc",
+    "_quantum_monte_carlo_standard": "pennylane.decomposition_rules.templates.subroutines.qmc",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

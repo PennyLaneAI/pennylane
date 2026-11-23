@@ -18,8 +18,10 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 # pylint: disable=unused-argument,arguments-differ,arguments-renamed
 
+
 from collections.abc import Iterable, Sequence
 from functools import partial
+from importlib import import_module as _import_module
 from typing import Literal, override
 
 import numpy as np
@@ -33,17 +35,23 @@ from pennylane.ops.op_math.controlled2 import (
     _setup_control_values,
     _validate_work_wire_type,
 )
+from pennylane.ops.op_math.decompositions.controlled_decompositions import (
+    _mcx_many_work_wires_impl as _mcx_many_work_wires,
+)
+from pennylane.ops.op_math.decompositions.controlled_decompositions import (
+    _mcx_no_work_wires_impl as _mcx_no_work_wires,
+)
+from pennylane.ops.op_math.decompositions.controlled_decompositions import (
+    _mcx_one_work_wire_impl as _mcx_one_work_wire,
+)
+from pennylane.ops.op_math.decompositions.controlled_decompositions import (
+    _mcx_to_cnot_or_toffoli_impl as _mcx_to_cnot_or_toffoli,
+)
+from pennylane.ops.op_math.decompositions.controlled_decompositions import (
+    _mcx_two_work_wires_impl as _mcx_two_work_wires,
+)
 from pennylane.typing import AbstractArray, Bool, Complex, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
-
-from .controlled import Controlled2
-from .decompositions.controlled_decompositions import (
-    _decompose_mcx_many_workers,
-    _decompose_mcx_one_worker,
-    _decompose_mcx_two_workers,
-    _decompose_mcx_with_no_worker,
-    _mcx_to_cnot_or_toffoli,
-)
 
 __all__ = [
     "ControlledQubitUnitary",
@@ -135,7 +143,7 @@ class ControlledQubitUnitary(Controlled2):
             :stacked:
             :symbols: :math:`n` target wires and :math:`c` control wires
 
-            .. decomposition-rule:: ctrl_decomp_bisect_rule
+            .. decomposition-rule:: bisect
                 :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_bisect.svg
                 :where: :math:`n = 1` and :math:`c \geq 2`, the circuit shows :math:`c = 3`, and
                     each control wire with control value :math:`0` adds two :class:`~.PauliX` gates,
@@ -149,7 +157,7 @@ class ControlledQubitUnitary(Controlled2):
                 :class:`~.MultiControlledX` with :math:`\lceil c/2 \rceil` controls (odd :math:`c`) | :math:`2`
                 :class:`~.MultiControlledX` with :math:`\lfloor c/2 \rfloor` controls (odd :math:`c`) | :math:`4`
 
-            .. decomposition-rule:: single_ctrl_decomp_zyz_rule
+            .. decomposition-rule:: single_control_zyz
                 :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_single_ctrl_zyz.svg
                 :where: :math:`n = 1` and :math:`c = 1`, and each control wire with control value
                     :math:`0` adds two :class:`~.PauliX` gates, not included in the counts
@@ -159,7 +167,7 @@ class ControlledQubitUnitary(Controlled2):
                 :class:`~.CNOT` | :math:`2`
                 :class:`~.PhaseShift` | :math:`1`
 
-            .. decomposition-rule:: multi_control_decomp_zyz_rule
+            .. decomposition-rule:: multi_control_zyz
                 :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_multi_ctrl_zyz.svg
                 :where: :math:`n = 1` and :math:`c \geq 2`, the circuit shows :math:`c = 3`, and
                     each control wire with control value :math:`0` adds two :class:`~.PauliX` gates,
@@ -170,7 +178,7 @@ class ControlledQubitUnitary(Controlled2):
                 :class:`~.MultiControlledX` with :math:`c - 1` controls | :math:`2`
                 :class:`~.PhaseShift` with :math:`c - 1` controls | :math:`1`
 
-            .. decomposition-rule:: controlled_two_qubit_unitary_rule
+            .. decomposition-rule:: two_qubit
                 :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_two_qubit.svg
                 :where: :math:`n = 2`, the circuit shows :math:`c = 1`, and each control wire with
                     control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
@@ -182,13 +190,13 @@ class ControlledQubitUnitary(Controlled2):
                 :class:`Controlled(RY) <.RY>` with :math:`c` controls | :math:`2`
                 :class:`~.PhaseShift` with :math:`c - 1` controls | :math:`1`
 
-            .. decomposition-rule:: _to_general_c_qu
+            .. decomposition-rule:: to_controlled_qubit_unitary
                 :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_to_general.svg
                 :where: :math:`n \geq 3`, and the circuit shows :math:`c = 1`
 
                 :class:`Controlled(QubitUnitary) <.QubitUnitary>` with :math:`c` controls | :math:`1`
 
-            .. decomposition-rule:: _adjoint_controlled_qubit_unitary
+            .. decomposition-rule:: conjugate_transpose
                 :image: /_static/decomposition_thumbnails/controlled_qubit_unitary_adjoint.svg
                 :region: adjoint
                 :where: the adjoint of the input unitary matrix is used
@@ -279,20 +287,20 @@ class CH(Controlled2):
 
         .. decomposition-table:: qp.CH
 
-            .. decomposition-rule:: _ch_to_ry_cz_ry
+            .. decomposition-rule:: to_ry_cz_ry
                 :image: /_static/decomposition_thumbnails/ch_to_ry_cz_ry.svg
 
                 :class:`~.RY` | :math:`2`
                 :class:`~.CZ` | :math:`1`
 
-            .. decomposition-rule:: decompose_to_base
+            .. decomposition-rule:: to_base
                 :image: /_static/decomposition_thumbnails/ch_adjoint.svg
                 :region: adjoint
                 :where: :class:`~.CH` is self-adjoint
 
                 :class:`~.CH` | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/ch_pow_period.svg
                 :region: pow
                 :where: :class:`~.CH` is its own inverse, so only :math:`z \bmod 2` matters, the
@@ -387,13 +395,13 @@ class CY(Controlled2):
 
         .. decomposition-table:: qp.CY
 
-            .. decomposition-rule:: _cy
+            .. decomposition-rule:: to_ry_cnot
                 :image: /_static/decomposition_thumbnails/cy_decomp.svg
 
                 :class:`~.CRY` | :math:`1`
                 :class:`~.S` | :math:`1`
 
-            .. decomposition-rule:: _cy_to_ppr
+            .. decomposition-rule:: to_ppr
                 :image: /_static/decomposition_thumbnails/cy_to_ppr.svg
 
                 :class:`PPR_4(-1, "Z") <.PPR_4>` | :math:`1`
@@ -401,7 +409,7 @@ class CY(Controlled2):
                 :class:`PPR_4(1, "ZY") <.PPR_4>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: _cy_lattice_surgery_ppm
+            .. decomposition-rule:: lattice_surgery_ppm
                 :image: /_static/decomposition_thumbnails/cy_lattice_surgery_ppm.svg
                 :requires: 1 work wire (not restored)
 
@@ -412,14 +420,14 @@ class CY(Controlled2):
                 :class:`~.PauliY` (conditional) | :math:`1`
                 :class:`~.GlobalPhase` (conditional) | :math:`1`
 
-            .. decomposition-rule:: decompose_to_base
+            .. decomposition-rule:: to_base
                 :image: /_static/decomposition_thumbnails/cy_adjoint.svg
                 :region: adjoint
                 :where: :class:`~.CY` is self-adjoint
 
                 :class:`~.CY` | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/cy_pow_period.svg
                 :region: pow
                 :where: :class:`~.CY` is its own inverse, so only :math:`z \bmod 2` matters, the
@@ -506,25 +514,25 @@ class CZ(Controlled2):
 
         .. decomposition-table:: qp.CZ
 
-            .. decomposition-rule:: _cz_to_cps
+            .. decomposition-rule:: to_cps
                 :image: /_static/decomposition_thumbnails/cz_to_cps.svg
 
                 :class:`~.ControlledPhaseShift` | :math:`1`
 
-            .. decomposition-rule:: _cz_to_cnot
+            .. decomposition-rule:: to_cnot
                 :image: /_static/decomposition_thumbnails/cz_to_cnot.svg
 
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.CNOT` | :math:`1`
 
-            .. decomposition-rule:: _cz_to_ppr
+            .. decomposition-rule:: to_ppr
                 :image: /_static/decomposition_thumbnails/cz_to_ppr.svg
 
                 :class:`PPR_4(-1, "Z") <.PPR_4>` | :math:`2`
                 :class:`PPR_4(1, "ZZ") <.PPR_4>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: _cz_lattice_surgery_ppm
+            .. decomposition-rule:: lattice_surgery_ppm
                 :image: /_static/decomposition_thumbnails/cz_lattice_surgery_ppm.svg
                 :requires: 1 work wire (not restored)
 
@@ -534,14 +542,14 @@ class CZ(Controlled2):
                 :class:`~.PauliZ` (conditional) | :math:`3`
                 :class:`~.GlobalPhase` (conditional) | :math:`1`
 
-            .. decomposition-rule:: decompose_to_base
+            .. decomposition-rule:: to_base
                 :image: /_static/decomposition_thumbnails/cz_adjoint.svg
                 :region: adjoint
                 :where: :class:`~.CZ` is self-adjoint
 
                 :class:`~.CZ` | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/cz_pow_period.svg
                 :region: pow
                 :where: :class:`~.CZ` is its own inverse, so only :math:`z \bmod 2` matters, the
@@ -576,7 +584,7 @@ class CZ(Controlled2):
         return CZ(self.wires)
 
     @staticmethod
-    def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ,unused-argument
+    def compute_matrix(wires: WiresLike = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -628,13 +636,13 @@ class CSWAP(Controlled2):
 
         .. decomposition-table:: qp.CSWAP
 
-            .. decomposition-rule:: _cswap
+            .. decomposition-rule:: to_cnot_toffoli
                 :image: /_static/decomposition_thumbnails/cswap_decomp.svg
 
                 :class:`~.CNOT` | :math:`2`
                 :class:`~.Toffoli` | :math:`1`
 
-            .. decomposition-rule:: _cswap_to_ppr
+            .. decomposition-rule:: to_ppr
                 :image: /_static/decomposition_thumbnails/cswap_to_ppr.svg
 
                 :class:`PPR_8(-1, "ZZZ") <.PPR_8>` | :math:`1`
@@ -646,14 +654,14 @@ class CSWAP(Controlled2):
                 :class:`PPR_8(1, "Z") <.PPR_8>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: decompose_to_base
+            .. decomposition-rule:: to_base
                 :image: /_static/decomposition_thumbnails/cswap_adjoint.svg
                 :region: adjoint
                 :where: :class:`~.CSWAP` is self-adjoint
 
                 :class:`~.CSWAP` | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/cswap_pow_period.svg
                 :region: pow
                 :where: :class:`~.CSWAP` is its own inverse, so only :math:`z \bmod 2` matters, the
@@ -787,7 +795,7 @@ class CCZ(Controlled2):
         .. decomposition-table:: qp.CCZ
             :stacked:
             
-            .. decomposition-rule:: _ccz
+            .. decomposition-rule:: to_clifford_t
                 :image: /_static/decomposition_thumbnails/ccz_decomp.svg
 
                 :class:`~.Hadamard` | :math:`2`
@@ -795,20 +803,20 @@ class CCZ(Controlled2):
                 :class:`~.T` | :math:`4`
                 :class:`Adjoint(T) <.T>` | :math:`3`
 
-            .. decomposition-rule:: _ccz_to_toffoli
+            .. decomposition-rule:: to_toffoli
                 :image: /_static/decomposition_thumbnails/ccz_to_toffoli.svg
 
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.Toffoli` | :math:`1`
 
-            .. decomposition-rule:: decompose_to_base
+            .. decomposition-rule:: to_base
                 :image: /_static/decomposition_thumbnails/ccz_adjoint.svg
                 :region: adjoint
                 :where: :class:`~.CCZ` is self-adjoint
 
                 :class:`~.CCZ` | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/ccz_pow_period.svg
                 :region: pow
                 :where: :class:`~.CCZ` is its own inverse, so only :math:`z \bmod 2` matters, the
@@ -841,7 +849,7 @@ class CCZ(Controlled2):
         return CCZ(self.wires)
 
     @staticmethod
-    def compute_matrix(wires: WiresLike = None):  # pylint: disable=arguments-differ,unused-argument
+    def compute_matrix(wires: WiresLike = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -926,13 +934,13 @@ class CNOT(Controlled2):
 
         .. decomposition-table:: qp.CNOT
 
-            .. decomposition-rule:: _cnot_to_cz_h
+            .. decomposition-rule:: to_cz_h
                 :image: /_static/decomposition_thumbnails/cnot_to_cz_h.svg
 
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.CZ` | :math:`1`
 
-            .. decomposition-rule:: _cnot_to_ppr
+            .. decomposition-rule:: to_ppr
                 :image: /_static/decomposition_thumbnails/cnot_to_ppr.svg
 
                 :class:`PPR_4(-1, "Z") <.PPR_4>` | :math:`1`
@@ -940,7 +948,7 @@ class CNOT(Controlled2):
                 :class:`PPR_4(1, "ZX") <.PPR_4>` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: _cnot_lattice_surgery_ppm
+            .. decomposition-rule:: lattice_surgery_ppm
                 :image: /_static/decomposition_thumbnails/cnot_lattice_surgery_ppm.svg
                 :requires: 1 work wire (not restored)
 
@@ -950,14 +958,14 @@ class CNOT(Controlled2):
                 :class:`~.PauliX` (conditional) | :math:`1`
                 :class:`~.GlobalPhase` (conditional) | :math:`1`
 
-            .. decomposition-rule:: decompose_to_base
+            .. decomposition-rule:: to_base
                 :image: /_static/decomposition_thumbnails/cnot_adjoint.svg
                 :region: adjoint
                 :where: :class:`~.CNOT` is self-adjoint
 
                 :class:`~.CNOT` | :math:`1`
 
-            .. decomposition-rule:: _ctrl_cnot_to_mcx
+            .. decomposition-rule:: to_mcx
                 :image: /_static/decomposition_thumbnails/cnot_controlled.svg
                 :region: controlled
                 :where: :math:`c` is the number of added control wires, and the circuit shows
@@ -965,7 +973,7 @@ class CNOT(Controlled2):
 
                 :class:`~.MultiControlledX` with :math:`c + 1` controls | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/cnot_pow_period.svg
                 :region: pow
                 :where: :class:`~.CNOT` is its own inverse, so only :math:`z \bmod 2` matters, the
@@ -1081,7 +1089,7 @@ class Toffoli(Controlled2):
         .. decomposition-table:: qp.Toffoli
             :stacked:
 
-            .. decomposition-rule:: _toffoli
+            .. decomposition-rule:: to_clifford_t
                 :image: /_static/decomposition_thumbnails/toffoli_decomp.svg
 
                 :class:`~.Hadamard` | :math:`2`
@@ -1089,7 +1097,7 @@ class Toffoli(Controlled2):
                 :class:`~.T` | :math:`4`
                 :class:`Adjoint(T) <.T>` | :math:`3`
 
-            .. decomposition-rule:: _toffoli_to_ppr
+            .. decomposition-rule:: to_ppr
                 :image: /_static/decomposition_thumbnails/toffoli_to_ppr.svg
 
                 :class:`PPR_8(-1, "ZZ") <.PPR_8>` | :math:`1`
@@ -1099,7 +1107,7 @@ class Toffoli(Controlled2):
                 :class:`PPR_8(1, "Z") <.PPR_8>` | :math:`2`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: _toffoli_elbow
+            .. decomposition-rule:: elbow
                 :image: /_static/decomposition_thumbnails/toffoli_elbow.svg
                 :requires: 1 zeroed work wire
 
@@ -1107,14 +1115,14 @@ class Toffoli(Controlled2):
                 :class:`~.CNOT` | :math:`1`
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1`
 
-            .. decomposition-rule:: decompose_to_base
+            .. decomposition-rule:: to_base
                 :image: /_static/decomposition_thumbnails/toffoli_adjoint.svg
                 :region: adjoint
                 :where: :class:`~.Toffoli` is self-adjoint
 
                 :class:`~.Toffoli` | :math:`1`
 
-            .. decomposition-rule:: _ctrl_toffoli_to_mcx
+            .. decomposition-rule:: to_mcx
                 :image: /_static/decomposition_thumbnails/toffoli_controlled.svg
                 :region: controlled
                 :where: :math:`c` is the number of added control wires, and the circuit shows
@@ -1122,7 +1130,7 @@ class Toffoli(Controlled2):
 
                 :class:`~.MultiControlledX` with :math:`c + 2` controls | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/toffoli_pow_period.svg
                 :region: pow
                 :where: :class:`~.Toffoli` is its own inverse, so only :math:`z \bmod 2` matters, the
@@ -1249,8 +1257,8 @@ class MultiControlledX(Controlled2):
             :stacked:
             :symbols: :math:`c` control wires and :math:`w` work wires
 
-            .. decomposition-rule:: _mcx_to_cnot_or_toffoli
-                :image: /_static/decomposition_thumbnails/_mcx_to_cnot_or_toffoli.svg
+            .. decomposition-rule:: to_cnot_or_toffoli
+                :image: /_static/decomposition_thumbnails/mcx_to_cnot_or_toffoli.svg
                 :where: :math:`c \leq 2`, the circuit shows :math:`c = 2`, and a control value of
                     :math:`0` adds :class:`~.PauliX` gates, not included in the counts: one on the target
                     if :math:`c = 1`, and two per such control wire if :math:`c = 2`
@@ -1258,7 +1266,7 @@ class MultiControlledX(Controlled2):
                 :class:`~.CNOT` (:math:`c = 1`) | :math:`1`
                 :class:`~.Toffoli` (:math:`c = 2`) | :math:`1`
 
-            .. decomposition-rule:: decompose_mcx_two_controls_elbows
+            .. decomposition-rule:: two_controls_elbows
                 :image: /_static/decomposition_thumbnails/mcx_two_controls_elbows.svg
                 :requires: :math:`w \geq 1` zeroed work wire
                 :where: :math:`c = 2`, the circuit shows :math:`c = 2`, with 1 zeroed work wire, and
@@ -1269,7 +1277,7 @@ class MultiControlledX(Controlled2):
                 :class:`~.CNOT` | :math:`1`
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1`
 
-            .. decomposition-rule:: _decompose_mcx_many_workers
+            .. decomposition-rule:: many_work_wires
                 :image: /_static/decomposition_thumbnails/mcx_many_workers.svg
                 :requires: :math:`w \geq c - 2` work wires
                 :where: :math:`c \geq 3`, :math:`s = [w > c - 2]` is 1 if :math:`w > c - 2` and 0
@@ -1282,7 +1290,7 @@ class MultiControlledX(Controlled2):
                 :class:`~.Toffoli` | :math:`1 - s` / :math:`4(c - 2) - s`
                 :class:`~.MultiControlledX` with :math:`2` controls | :math:`s` / :math:`s`
 
-            .. decomposition-rule:: _decompose_mcx_two_workers
+            .. decomposition-rule:: two_work_wires
                 :image: /_static/decomposition_thumbnails/mcx_two_workers.svg
                 :requires: :math:`w \geq 2` work wires, or :math:`w = 1` if :math:`c < 6`
                 :where: :math:`c \geq 3`, :math:`s = [c < 6]` is 1 if :math:`c < 6` and 0 otherwise,
@@ -1297,7 +1305,7 @@ class MultiControlledX(Controlled2):
                 :class:`~.TemporaryAND` | :math:`2 - s` / :math:`0`
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`2 - s` / :math:`0`
 
-            .. decomposition-rule:: _decompose_mcx_one_worker
+            .. decomposition-rule:: one_work_wire
                 :image: /_static/decomposition_thumbnails/mcx_one_worker.svg
                 :requires: :math:`w = 1` work wire
                 :where: :math:`c \geq 3`, counts are for zeroed / borrowed work wires, the circuit
@@ -1311,7 +1319,7 @@ class MultiControlledX(Controlled2):
                 :class:`~.TemporaryAND` | :math:`1` / :math:`0`
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1` / :math:`0`
 
-            .. decomposition-rule:: _decompose_mcx_with_no_worker
+            .. decomposition-rule:: no_work_wires
                 :image: /_static/decomposition_thumbnails/mcx_no_worker.svg
                 :where: :math:`c \geq 3` and :math:`w = 0`, the circuit shows :math:`c = 4`, and
                     each control wire with control value :math:`0` adds two :class:`~.PauliX` gates,
@@ -1324,7 +1332,7 @@ class MultiControlledX(Controlled2):
                 :class:`~.MultiControlledX` with :math:`\lceil c/2 \rceil` controls | :math:`2`
                 :class:`~.MultiControlledX` with :math:`\lfloor c/2 \rfloor` controls | :math:`2`
 
-            .. decomposition-rule:: use_allocation(decompose_mcx_two_controls_elbows)
+            .. decomposition-rule:: two_controls_elbows_allocated
                 :image: /_static/decomposition_thumbnails/mcx_alloc_two_controls_elbows.svg
                 :requires: 1 zeroed work wire, allocated by the rule
                 :where: :math:`c = 2` and :math:`w = 0`, the circuit shows :math:`c = 2`, and each
@@ -1335,8 +1343,8 @@ class MultiControlledX(Controlled2):
                 :class:`~.CNOT` | :math:`1`
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1`
 
-            .. decomposition-rule:: two_zeroed_workers
-                :image: /_static/decomposition_thumbnails/mcx_alloc_two_zeroed_workers.svg
+            .. decomposition-rule:: two_zeroed_work_wires
+                :image: /_static/decomposition_thumbnails/mcx_alloc_two_zeroed_work_wires.svg
                 :requires: 2 zeroed work wires, allocated by the rule
                 :where: :math:`c \geq 3` and :math:`w = 0`, :math:`s = [c < 6]` is 1 if
                     :math:`c < 6` and 0 otherwise, the circuit shows :math:`c = 4`, and each control
@@ -1350,8 +1358,8 @@ class MultiControlledX(Controlled2):
                 :class:`~.TemporaryAND` | :math:`2 - s`
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`2 - s`
 
-            .. decomposition-rule:: two_borrowed_workers
-                :image: /_static/decomposition_thumbnails/mcx_alloc_two_borrowed_workers.svg
+            .. decomposition-rule:: two_borrowed_work_wires
+                :image: /_static/decomposition_thumbnails/mcx_alloc_two_borrowed_work_wires.svg
                 :requires: 2 borrowed work wires, allocated by the rule
                 :where: :math:`c \geq 3` and :math:`w = 0`, :math:`s = [c < 6]` is 1 if
                     :math:`c < 6` and 0 otherwise, the circuit shows :math:`c = 4`, and each control
@@ -1363,8 +1371,8 @@ class MultiControlledX(Controlled2):
                 :class:`~.PauliX` | :math:`2(c - 4 + s)`
                 :class:`Adjoint(PauliX) <.PauliX>` | :math:`2(c - 4 + s)`
 
-            .. decomposition-rule:: one_zeroed_worker
-                :image: /_static/decomposition_thumbnails/mcx_alloc_one_zeroed_worker.svg
+            .. decomposition-rule:: one_zeroed_work_wire
+                :image: /_static/decomposition_thumbnails/mcx_alloc_one_zeroed_work_wire.svg
                 :requires: 1 zeroed work wire, allocated by the rule
                 :where: :math:`c \geq 3` and :math:`w = 0`, the circuit shows :math:`c = 4`, and
                     each control wire with control value :math:`0` adds two :class:`~.PauliX` gates,
@@ -1377,8 +1385,8 @@ class MultiControlledX(Controlled2):
                 :class:`~.TemporaryAND` | :math:`1`
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1`
 
-            .. decomposition-rule:: one_borrowed_worker
-                :image: /_static/decomposition_thumbnails/mcx_alloc_one_borrowed_worker.svg
+            .. decomposition-rule:: one_borrowed_work_wire
+                :image: /_static/decomposition_thumbnails/mcx_alloc_one_borrowed_work_wire.svg
                 :requires: 1 borrowed work wire, allocated by the rule
                 :where: :math:`c \geq 3` and :math:`w = 0`, the circuit shows :math:`c = 4`, and
                     each control wire with control value :math:`0` adds two :class:`~.PauliX` gates,
@@ -1389,14 +1397,14 @@ class MultiControlledX(Controlled2):
                 :class:`~.PauliX` | :math:`2(c - 3)`
                 :class:`Adjoint(PauliX) <.PauliX>` | :math:`2(c - 3)`
 
-            .. decomposition-rule:: decompose_to_base
+            .. decomposition-rule:: to_base
                 :image: /_static/decomposition_thumbnails/mcx_adjoint.svg
                 :region: adjoint
                 :where: :class:`~.MultiControlledX` is self-adjoint
 
                 :class:`~.MultiControlledX` | :math:`1`
 
-            .. decomposition-rule:: _ctrl_mcx_to_mcx
+            .. decomposition-rule:: to_mcx
                 :image: /_static/decomposition_thumbnails/mcx_controlled.svg
                 :region: controlled
                 :where: :math:`c'` is the number of added control wires, and the circuit shows
@@ -1404,7 +1412,7 @@ class MultiControlledX(Controlled2):
 
                 :class:`~.MultiControlledX` with :math:`c + c'` controls | :math:`1`
 
-            .. decomposition-rule:: _impl
+            .. decomposition-rule:: reduce_period
                 :image: /_static/decomposition_thumbnails/mcx_pow_period.svg
                 :region: pow
                 :where: :class:`~.MultiControlledX` is its own inverse, so only :math:`z \bmod 2` matters, the
@@ -1503,15 +1511,15 @@ class MultiControlledX(Controlled2):
         n_ctrl_wires = len(arguments["wires"]) - 1
 
         if len(arguments["work_wires"]) >= n_ctrl_wires - 2:
-            return _to_op_list(_decompose_mcx_many_workers)(**arguments)
+            return _to_op_list(_mcx_many_work_wires)(**arguments)
 
         if len(arguments["work_wires"]) >= 2:
-            return _to_op_list(_decompose_mcx_two_workers)(**arguments)
+            return _to_op_list(_mcx_two_work_wires)(**arguments)
 
         if len(arguments["work_wires"]) == 1:
-            return _to_op_list(_decompose_mcx_one_worker)(**arguments)
+            return _to_op_list(_mcx_one_work_wire)(**arguments)
 
-        return _to_op_list(_decompose_mcx_with_no_worker)(**arguments)
+        return _to_op_list(_mcx_no_work_wires)(**arguments)
 
 
 def _setup_inputs_mcx(
@@ -1599,39 +1607,39 @@ class CRX(Controlled2):
 
         .. decomposition-table:: qp.CRX
 
-            .. decomposition-rule:: _crx_to_rx_cz
+            .. decomposition-rule:: to_rx_cz
                 :image: /_static/decomposition_thumbnails/crx_to_rx_cz.svg
 
                 :class:`~.RX` | :math:`2`
                 :class:`~.CZ` | :math:`2`
 
-            .. decomposition-rule:: _crx_to_rz_ry
+            .. decomposition-rule:: to_rz_ry
                 :image: /_static/decomposition_thumbnails/crx_to_rz_ry.svg
 
                 :class:`~.RZ` | :math:`2`
                 :class:`~.RY` | :math:`2`
                 :class:`~.CNOT` | :math:`2`
 
-            .. decomposition-rule:: _crx_to_h_crz
+            .. decomposition-rule:: to_h_crz
                 :image: /_static/decomposition_thumbnails/crx_to_h_crz.svg
 
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.CRZ` | :math:`1`
 
-            .. decomposition-rule:: _crx_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/crx_to_ppr.svg
 
                 :class:`PauliRot("ZX") <.PauliRot>` | :math:`1`
                 :class:`PauliRot("X") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/crx_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.CRX` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/crx_pow.svg
                 :region: pow
                 :where: ``phi`` is multiplied by the power :math:`z`
@@ -1662,7 +1670,6 @@ class CRX(Controlled2):
 
     @staticmethod
     @override
-    # pylint: disable-next=unused-argument
     def compute_matrix(phi, wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1746,26 +1753,26 @@ class CRY(Controlled2):
 
         .. decomposition-table:: qp.CRY
 
-            .. decomposition-rule:: _cry
+            .. decomposition-rule:: to_ry_cnot
                 :image: /_static/decomposition_thumbnails/cry_decomp.svg
 
                 :class:`~.RY` | :math:`2`
                 :class:`~.CNOT` | :math:`2`
 
-            .. decomposition-rule:: _cry_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/cry_to_ppr.svg
 
                 :class:`PauliRot("ZY") <.PauliRot>` | :math:`1`
                 :class:`PauliRot("Y") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/cry_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.CRY` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/cry_pow.svg
                 :region: pow
                 :where: ``phi`` is multiplied by the power :math:`z`
@@ -1796,7 +1803,6 @@ class CRY(Controlled2):
 
     @staticmethod
     @override
-    # pylint: disable-next=unused-argument
     def compute_matrix(phi, wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1884,26 +1890,26 @@ class CRZ(Controlled2):
 
         .. decomposition-table:: qp.CRZ
 
-            .. decomposition-rule:: _crz
+            .. decomposition-rule:: to_rz_cnot
                 :image: /_static/decomposition_thumbnails/crz_decomp.svg
 
                 :class:`~.RZ` | :math:`2`
                 :class:`~.CNOT` | :math:`2`
 
-            .. decomposition-rule:: _crz_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/crz_to_ppr.svg
 
                 :class:`PauliRot("ZZ") <.PauliRot>` | :math:`1`
                 :class:`PauliRot("Z") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/crz_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.CRZ` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/crz_pow.svg
                 :region: pow
                 :where: ``phi`` is multiplied by the power :math:`z`
@@ -1934,7 +1940,6 @@ class CRZ(Controlled2):
         return CRZ(-self.phi, wires=self.wires)
 
     @staticmethod
-    # pylint: disable=unused-argument, arguments-differ
     def compute_matrix(phi, wires=None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1967,7 +1972,6 @@ class CRZ(Controlled2):
         return diags[:, :, np.newaxis] * math.cast_like(qp.math.eye(4, like=diags), diags)
 
     @staticmethod
-    # pylint: disable=unused-argument, arguments-differ
     def compute_eigvals(phi, wires=None):
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -2047,14 +2051,14 @@ class CRot(Controlled2):
 
         .. decomposition-table:: qp.CRot
 
-            .. decomposition-rule:: _crot
+            .. decomposition-rule:: to_rot_cnot
                 :image: /_static/decomposition_thumbnails/crot_decomp.svg
 
                 :class:`~.RZ` | :math:`3`
                 :class:`~.RY` | :math:`2`
                 :class:`~.CNOT` | :math:`2`
 
-            .. decomposition-rule:: _adjoint_crot
+            .. decomposition-rule:: reverse_angles
                 :image: /_static/decomposition_thumbnails/crot_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` and ``omega`` swap, and all three angles change sign
@@ -2082,7 +2086,6 @@ class CRot(Controlled2):
 
     @staticmethod
     @override
-    # pylint: disable-next=arguments-differ,unused-argument
     def compute_matrix(phi, theta, omega, wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -2171,21 +2174,21 @@ class ControlledPhaseShift(Controlled2):
 
         .. decomposition-table:: qp.ControlledPhaseShift
 
-            .. decomposition-rule:: _cphase_to_rz_cnot
+            .. decomposition-rule:: to_rz_cnot
                 :image: /_static/decomposition_thumbnails/cphase_to_rz_cnot.svg
 
                 :class:`~.RZ` | :math:`3`
                 :class:`~.CNOT` | :math:`2`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: _cphase_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/cphase_to_ppr.svg
 
                 :class:`PauliRot("ZZ") <.PauliRot>` | :math:`1`
                 :class:`PauliRot("Z") <.PauliRot>` | :math:`2`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: _cphase_to_single_phase
+            .. decomposition-rule:: to_single_phase
                 :image: /_static/decomposition_thumbnails/cphase_to_single_phase.svg
                 :requires: 1 zeroed work wire
 
@@ -2193,14 +2196,14 @@ class ControlledPhaseShift(Controlled2):
                 :class:`~.PhaseShift` | :math:`1`
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/cphase_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.ControlledPhaseShift` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/cphase_pow.svg
                 :region: pow
                 :where: ``phi`` is multiplied by the power :math:`z`
@@ -2232,7 +2235,6 @@ class ControlledPhaseShift(Controlled2):
         return ControlledPhaseShift(-self.phi, wires=self.wires)
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
     def compute_matrix(phi, wires=None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -2265,7 +2267,6 @@ class ControlledPhaseShift(Controlled2):
         return diags[:, :, np.newaxis] * math.cast_like(qp.math.eye(4, like=diags), diags)
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
     def compute_eigvals(phi, wires=None):
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -2301,3 +2302,86 @@ class ControlledPhaseShift(Controlled2):
 
 
 CPhase = ControlledPhaseShift
+
+
+_RULE_MODULES = {
+    "_to_general_c_qu_standard_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_to_general_c_qu_standard": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_conj_transpose": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_adjoint_controlled_qubit_unitary_standard": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_ch_to_ry_cz_ry_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_ch_to_ry_cz_ry": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cy_to_ry_cnot_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cy_to_ry_cnot": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_pauli_ctrl_pauli_ppr_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_pauli_ctrl_pauli_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cy_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_pauli_ctrl_pauli_ppm": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cy_lattice_surgery_ppm": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cz_to_cps_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cz_to_cps": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cz_to_cnot_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cz_to_cnot": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cz_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cz_lattice_surgery_ppm_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cz_lattice_surgery_ppm": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cswap_to_cnot_toffoli_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cswap_to_cnot_toffoli": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cswap_to_ppr_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cswap_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_ccz_to_clifford_t_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_ccz_to_clifford_t": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_ccz_to_toffoli_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_ccz_to_toffoli": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cnot_to_cz_h_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cnot_to_cz_h": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cnot_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cnot_lattice_surgery_ppm_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cnot_lattice_surgery_ppm": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_ctrl_cnot_to_mcx_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_ctrl_cnot_to_mcx": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_toffoli_to_clifford_t_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_toffoli_to_clifford_t": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_toffoli_to_ppr_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_toffoli_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_toffoli_elbow_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_toffoli_elbow": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_ctrl_toffoli_to_mcx_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_ctrl_toffoli_to_mcx": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_list_mcx_decomps": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_list_mcx_no_work_wire_decomps": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_ctrl_mcx_to_mcx_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_ctrl_mcx_to_mcx": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_crx_to_rz_ry_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_crx_to_rz_ry": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_crx_to_rx_cz_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_crx_to_rx_cz": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_crx_to_h_crz_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_crx_to_h_crz": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_crx_to_ppr_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_crx_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cry_to_ry_cnot_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cry_to_ry_cnot": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cry_to_ppr_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cry_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_crz_to_rz_cnot_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_crz_to_rz_cnot": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_crz_to_ppr_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_crz_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_crot_to_rot_cnot_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_crot_to_rot_cnot": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_adjoint_crot_standard": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cphase_to_rz_cnot_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cphase_to_rz_cnot": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cphase_to_ppr_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cphase_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cphase_to_single_phase_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
+    "_cphase_to_single_phase": "pennylane.decomposition_rules.op_math.controlled_ops",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

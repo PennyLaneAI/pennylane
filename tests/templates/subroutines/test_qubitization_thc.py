@@ -17,8 +17,10 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 from pennylane.decomposition_rules.templates.subroutines.alias_sampling import _build_alias_tables
 from pennylane.decomposition_rules.templates.subroutines.alias_sampling_thc import _lcu_signs
+from pennylane.decomposition_rules.templates.subroutines.qubitization_thc import _THCPrepare
 from pennylane.templates.subroutines.alias_sampling_thc import _build_thc_pairs
 from pennylane.testing import assert_valid
 
@@ -70,7 +72,7 @@ def _reference_V(leaf, N, sector):
     return np.eye(2**N) - 2.0 * qp.matrix(n_op, wire_order=list(range(N)))
 
 
-def _realized_lcu(M, N, zeta, t_ell, aleph):  # pylint: disable=too-many-arguments
+def _realized_lcu(M, N, zeta, t_ell, aleph):
     """Per-entry probability and sign the alias tables actually realize.
 
     This replays the integer tables the ``QROM`` loads, so the comparison is exact for
@@ -88,8 +90,8 @@ def _realized_lcu(M, N, zeta, t_ell, aleph):  # pylint: disable=too-many-argumen
     return per_pair, {e: (-1.0 if s else 1.0) for e, s in zip(entries, signs)}
 
 
+# pylint: disable-next=too-many-arguments
 def _reference_block(M, N, zeta, t_ell, chi, t_eigenvectors, aleph):
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     """The operator the walk block-encodes, assembled from the documented LCU."""
     zeta = np.array(zeta)
     t_ell = np.array(t_ell)
@@ -113,8 +115,8 @@ def _reference_block(M, N, zeta, t_ell, chi, t_eigenvectors, aleph):
     return block
 
 
+# pylint: disable-next=too-many-arguments
 def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, num_walks=1):
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     """Apply the walk ``num_walks`` times to ``psi`` and return the system amplitudes with
     every auxiliary wire on |0>."""
     M, n_half = np.shape(chi)
@@ -125,7 +127,9 @@ def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, num_walks=1):
     auxiliaries = [w for w in range(total) if w not in system]
 
     # pylint: disable-next=protected-access
-    @qp.transforms._tape_decompose(stopping_condition=lambda op: len(op.wires) <= 3)
+    @qp.transforms._tape_decompose(
+        gate_set=ROTATIONS_PLUS_CNOT, stopping_condition=lambda op: len(op.wires) <= 3
+    )
     @qp.qnode(qp.device("default.qubit", wires=total))
     def circuit():
         qp.StatePrep(psi, wires=system)
@@ -157,8 +161,7 @@ def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, num_walks=1):
 class TestQubitizationTHC:
     """Test the QubitizationTHC class."""
 
-    # pylint: disable=too-few-public-methods
-
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("num_batches", [1, 2])
     def test_standard_validity(self, seed, num_batches):
         """Test standard validity of the QubitizationTHC operator with assert_valid."""
@@ -174,6 +177,17 @@ class TestQubitizationTHC:
             zeta, t_ell, chi, t_eigenvectors, aleph, beth, **wires, num_batches=num_batches
         )
         assert_valid(op)
+
+        tape = qp.testing.decomp_rule_to_tape(op, qp.list_decomps(qp.QubitizationTHC)[0])
+        sandwich = tape.operations[0]
+        assert isinstance(sandwich, qp.ops.ChangeOpBasis2)
+        assert sandwich.compute_op.__class__ is _THCPrepare
+        assert isinstance(sandwich.target_op, qp.ops.Prod2)
+        selection, sign = sandwich.target_op.operands
+        assert isinstance(selection, qp.SelectTHC)
+        assert isinstance(sign, qp.Z)
+        for operand in (sandwich.compute_op, sandwich.target_op):
+            assert_valid(operand, skip_differentiation=True)
 
     @pytest.mark.parametrize(
         "register, match",

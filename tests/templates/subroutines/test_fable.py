@@ -39,6 +39,9 @@ class TestFable:
         )
 
     @pytest.mark.xfail_if_capture(reason="come back to this after we migrate Fable [sc-129901]")
+    @pytest.mark.pl2do(
+        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+    )
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self, input_matrix):
         """Check the operation using the assert_valid function."""
@@ -115,7 +118,6 @@ class TestFable:
     @pytest.mark.filterwarnings("ignore:The input matrix should be of shape NxN")
     def test_padding_for_non_square(self):
         """Test that non-square NxM matrices get padded with zeroes to reach NxN size."""
-        # pylint: disable=protected-access
         non_square_matrix = np.array(
             [
                 [-0.51192128, -0.51192128, 0.6237114, 0.6237114],
@@ -125,7 +127,7 @@ class TestFable:
         )
 
         op = qp.FABLE(non_square_matrix, wires=range(5), tol=0.01)
-        data = op._flatten()
+        data = op._flatten()  # pylint: disable=protected-access
         assert data[0][0].shape == (4, 4)
 
     def test_warning_for_not_power(self):
@@ -143,7 +145,6 @@ class TestFable:
     @pytest.mark.filterwarnings("ignore:The input matrix should be of shape NxN")
     def test_padding_for_not_power(self):
         """Test that matrices with dimensions N that are not a power of 2 get padded."""
-        # pylint: disable=protected-access
         two_by_three_array = np.array(
             [
                 [-0.51192128, -0.51192128, 0.6237114],
@@ -152,7 +153,7 @@ class TestFable:
         )
 
         op = qp.FABLE(two_by_three_array, wires=range(5), tol=0.01)
-        data = op._flatten()
+        data = op._flatten()  # pylint: disable=protected-access
         assert data[0][0].shape == (4, 4)
 
     @pytest.mark.jax
@@ -178,6 +179,9 @@ class TestFable:
         assert qp.math.get_interface(qp.matrix(circuit_grad)) == "autograd"
 
     @pytest.mark.jax
+    @pytest.mark.pl2do(
+        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+    )
     def test_fable_grad_jax(self, input_matrix):
         """Test that FABLE is differentiable when using jax."""
         import jax
@@ -227,6 +231,9 @@ class TestFable:
         assert np.allclose(gradient_numeric, gradient_jax[0, 0], rtol=0.001)
 
     @pytest.mark.jax
+    @pytest.mark.pl2do(
+        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+    )
     def test_fable_jax_jit(self, input_matrix):
         """Test that FABLE is differentiable when using jax."""
         import jax
@@ -281,6 +288,9 @@ class TestFable:
         assert qp.math.allclose(jitted_fn(input_matrix), circuit_jax(input_matrix))
 
     @pytest.mark.jax
+    @pytest.mark.pl2do(
+        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+    )
     def test_fable_grad_jax_jit_error(self, input_matrix):
         """Test that FABLE is differentiable when using jax."""
         import jax
@@ -301,6 +311,9 @@ class TestFable:
             circuit_jax(input_matrix_jax)
 
     @pytest.mark.autograd
+    @pytest.mark.pl2do(
+        reason="FABLE resources require concrete parameters; pending Operator2 migration (sc-129901)"
+    )
     def test_fable_autograd(self, input_matrix):
         """Test that FABLE is differentiable when using autograd."""
         dev = qp.device("default.qubit")

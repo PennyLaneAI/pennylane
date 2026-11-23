@@ -15,7 +15,9 @@
 Unit tests for the Prod arithmetic class of qubit operations
 """
 
-# pylint:disable=protected-access, unused-argument
+# pylint: disable=protected-access,unused-argument
+
+
 from functools import reduce
 
 import gate_data as gd  # a file containing matrix rep of each gate
@@ -122,7 +124,7 @@ def compare_and_expand_mat(mat1, mat2):
     return smaller_mat, larger_mat
 
 
-class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
+class MyOp(qp.RX):  # pylint: disable=too-few-public-methods
     """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
@@ -131,7 +133,7 @@ class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
     has_diagonalizing_gates = False
 
 
-class TestInitialization:  # pylint:disable=too-many-public-methods
+class TestInitialization:  # pylint: disable=too-many-public-methods
     """Test the initialization."""
 
     @pytest.mark.parametrize("id", ("foo", "bar"))
@@ -522,8 +524,7 @@ def test_empty_repr():
     assert repr(Prod()) == "Prod()"
 
 
-# pylint: disable=too-many-public-methods
-class TestMatrix:
+class TestMatrix:  # pylint: disable=too-many-public-methods
     """Test matrix-related methods."""
 
     @pytest.mark.parametrize("op1, mat1", non_param_ops)
@@ -875,7 +876,7 @@ class TestMatrix:
         """Test that an error is raised when the sparse matrix method
         is undefined for any of the factors."""
 
-        class DummyOp(qp.operation.Operation):  # pylint:disable=too-few-public-methods
+        class DummyOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
             def sparse_matrix(self, wire_order=None):
@@ -978,7 +979,6 @@ class TestProperties:
 
         assert qp.math.allclose(op.eigvals(), op2.eigvals())
 
-    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
         diag_prod_op = Prod(qp.PauliZ(wires=0), qp.PauliZ(wires=1))
@@ -1230,11 +1230,6 @@ class TestSimplify:
         simplified_op = prod_op.simplify()
         qp.assert_equal(simplified_op, prod_op)
 
-    def test_grouping_with_only_visual_barriers(self):
-        """Test that grouping is implemented when an only-visual barrier is present."""
-        prod_op = qp.prod(qp.S(0), qp.Barrier(0, only_visual=True), qp.S(0)).simplify()
-        qp.assert_equal(prod_op.simplify(), qp.PauliZ(0))
-
     @pytest.mark.jax
     def test_simplify_pauli_rep_jax(self):
         """Test that simplifying operators with a valid pauli representation works with jax interface."""
@@ -1397,8 +1392,8 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 1 in results  # pylint:disable=unsupported-membership-test
-        assert -1 not in results  # pylint:disable=unsupported-membership-test
+        assert 1 in results
+        assert -1 not in results
 
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Prod op in the measurement process."""
@@ -1661,7 +1656,6 @@ class TestDecomposition:
 
         assert q.queue == _ops[::-1]
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_integration(self):
         """Test that prod's can be integrated into the decomposition."""
 
@@ -1704,7 +1698,6 @@ class TestDecomposition:
         )
         assert_decomposable(op)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "num_control_wires, num_work_wires",

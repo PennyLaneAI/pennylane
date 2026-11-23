@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.qchem.basis_rotation."""
 
 import numpy as np
@@ -73,9 +74,9 @@ def _prepare_args(unitary_matrix, wires):
     return unitary_matrix, wires
 
 
-# pylint: disable=unused-argument
-def _real_basis_rotation_resources(unitary_matrix, wires, check=False):
-    """Upper bound on the gates emitted by '_real_basis_rotation_decomp'.
+# pylint: disable-next=unused-argument
+def _basis_rotation_real_resources(unitary_matrix, wires, check=False):
+    """Upper bound on the gates emitted by 'real'.
 
     - SingleExcitation: Exact count of N(N-1)/2 for Givens rotation.
     - PauliZ: *At most* one for determinant correction; skipped if det = +1. Under ``jax.jit``
@@ -89,8 +90,8 @@ def _real_basis_rotation_resources(unitary_matrix, wires, check=False):
 
 
 @register_condition(lambda unitary_matrix, **_: not math.is_complex_dtype(unitary_matrix))
-@register_resources(_real_basis_rotation_resources, exact=False)
-def _real_basis_rotation_decomp(unitary_matrix, wires, **_):
+@register_resources(_basis_rotation_real_resources, exact=False, name="real")
+def _basis_rotation_real(unitary_matrix, wires, **_):
 
     unitary, wires = _prepare_args(unitary_matrix, wires)
 
@@ -120,9 +121,9 @@ def _real_basis_rotation_decomp(unitary_matrix, wires, **_):
     givens_loop()  # pylint: disable=no-value-for-parameter
 
 
-# pylint: disable=unused-argument
-def _complex_basis_rotation_resources(unitary_matrix, wires, check=False):
-    """Upper bound on the gates emitted by '_complex_basis_rotation_decomp'.
+# pylint: disable-next=unused-argument
+def _basis_rotation_complex_resources(unitary_matrix, wires, check=False):
+    """Upper bound on the gates emitted by 'complex'.
 
     - SingleExcitation: Exact count of N(N-1)/2 for Givens rotation.
     - PhaseShift: *At most* N(N-1)/2 + N for the additional N diagonal phases; skipped if phase equal to zero.
@@ -135,8 +136,8 @@ def _complex_basis_rotation_resources(unitary_matrix, wires, check=False):
 
 
 @register_condition(lambda unitary_matrix, **_: math.is_complex_dtype(unitary_matrix))
-@register_resources(_complex_basis_rotation_resources, exact=False)
-def _complex_basis_rotation_decomp(unitary_matrix, wires, **_):
+@register_resources(_basis_rotation_complex_resources, exact=False, name="complex")
+def _basis_rotation_complex(unitary_matrix, wires, **_):
 
     unitary, wires = _prepare_args(unitary_matrix, wires)
 
@@ -159,7 +160,7 @@ def _complex_basis_rotation_decomp(unitary_matrix, wires, **_):
     def givens_loop(idx):
         grot_mat = givens_matrices[idx]
         i, j = givens_ids[idx]
-        theta = math.arccos(math.real(grot_mat[1, 1]))
+        theta = math.arctan2(-math.real(grot_mat[0, 1]), math.real(grot_mat[1, 1]))
         # The first column of grot_mat is e^{i phi} (cos(theta), sin(theta)) with both entries
         # non-negative before the phase, so their sum always carries the phase.
         phi = math.angle(grot_mat[0, 0] + grot_mat[1, 0])
@@ -172,4 +173,4 @@ def _complex_basis_rotation_decomp(unitary_matrix, wires, **_):
     givens_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(BasisRotation, _real_basis_rotation_decomp, _complex_basis_rotation_decomp)
+add_decomps(BasisRotation, _basis_rotation_real, _basis_rotation_complex)

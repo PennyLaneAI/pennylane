@@ -15,7 +15,7 @@ r"""
 Contains the MottonenStatePreparation template.
 """
 
-from importlib import import_module
+from importlib import import_module as _import_module
 
 import numpy as np
 
@@ -444,10 +444,14 @@ class MottonenStatePreparation(Operation):
         return op_list
 
 
-def __getattr__(name):
-    """Resolve the existing public names of relocated decomposition rules."""
-    if name in {"mottonen_decomp"}:
-        rules = import_module("pennylane.decomposition_rules.templates.state_preparations.mottonen")
+_RULE_MODULES = {
+    "_mottonen_resources": "pennylane.decomposition_rules.templates.state_preparations.mottonen",
+    "mottonen_decomp": "pennylane.decomposition_rules.templates.state_preparations.mottonen",
+}
 
-        return getattr(rules, name)
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

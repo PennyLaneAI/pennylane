@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.reflection."""
 
 import numpy as np
@@ -25,7 +26,7 @@ from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 
 
-def _reflection_decomposition_resources(base_rep, num_wires, num_reflection_wires=None) -> dict:
+def _reflection_standard_resources(base_rep, num_wires, num_reflection_wires=None) -> dict:
 
     num_wires = num_reflection_wires if num_reflection_wires is not None else num_wires
 
@@ -51,8 +52,8 @@ def _reflection_decomposition_resources(base_rep, num_wires, num_reflection_wire
     return resources
 
 
-@register_resources(_reflection_decomposition_resources)
-def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
+@register_resources(_reflection_standard_resources, name="prepare_phase_unprepare")
+def _reflection_standard(*parameters, wires=None, **hyperparameters):
     alpha = parameters[0]
     U = hyperparameters["base"]
     reflection_wires = hyperparameters["reflection_wires"]
@@ -81,4 +82,4 @@ def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
     apply(U)
 
 
-add_decomps(Reflection, _reflection_decomposition)
+add_decomps(Reflection, _reflection_standard)

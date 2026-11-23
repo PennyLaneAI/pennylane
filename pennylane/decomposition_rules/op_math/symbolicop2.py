@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for op_math.symbolicop2."""
 
 from __future__ import annotations
@@ -21,14 +22,14 @@ from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import DecompositionRule, register_resources
 
 
-def _decompose_to_base_resource(base):
+def _operator_to_base_resources(base):
     return {abstractify(base): 1}
 
 
-@register_resources(_decompose_to_base_resource)
-def decompose_to_base(base):
+@register_resources(_operator_to_base_resources, name="to_base")
+def _operator_to_base(base):
     """Decompose a symbolic operator to its base."""
     qp.apply(base)
 
 
-self_adjoint: DecompositionRule = decompose_to_base
+self_adjoint: DecompositionRule = _operator_to_base

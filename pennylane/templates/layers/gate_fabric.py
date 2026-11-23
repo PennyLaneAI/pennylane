@@ -15,7 +15,8 @@ r"""
 Contains the quantum-number-preserving GateFabric template.
 """
 
-# pylint: disable=too-many-arguments
+from importlib import import_module as _import_module
+
 import numpy as np
 
 from pennylane import math
@@ -237,9 +238,8 @@ class GateFabric(Operation):
         }
 
     @staticmethod
-    def compute_decomposition(
-        weights, wires, init_state, include_pi
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(weights, wires, init_state, include_pi):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -313,3 +313,16 @@ class GateFabric(Operation):
             )
 
         return n_layers, n_wires // 2 - 1, 2
+
+
+_RULE_MODULES = {
+    "_gate_fabric_standard_resources": "pennylane.decomposition_rules.templates.layers.gate_fabric",
+    "_gate_fabric_standard": "pennylane.decomposition_rules.templates.layers.gate_fabric",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

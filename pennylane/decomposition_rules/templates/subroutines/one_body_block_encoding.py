@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.one_body_block_encoding."""
 
 import numpy as np
@@ -73,9 +74,9 @@ def _split_prep_wires(prep_wires, norbs):
     return index_wires, spin_wire, garbage_wires
 
 
-def _one_body_block_encoding_resources(
+def _one_body_block_encoding_standard_resources(
     op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires
-):  # pylint: disable=too-many-arguments,unused-argument
+):
     norbs = len(op_matrix)
     absmu, n_neg, _ = _block_encoding_data(op_matrix)
     n_prep, n_work, n_system = len(prep_wires), len(work_wires), len(system_wires)
@@ -122,10 +123,12 @@ def _one_body_block_encoding_resources(
     return resources
 
 
-@register_resources(_one_body_block_encoding_resources)
-def _one_body_block_encoding_decomp(
+@register_resources(
+    _one_body_block_encoding_standard_resources, name="alias_sampling_basis_rotation"
+)
+def _one_body_block_encoding_standard(
     op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires, **_
-):  # pylint: disable=too-many-arguments
+):
     norbs = len(op_matrix)
     absmu, n_neg, unitary_matrix = _block_encoding_data(op_matrix)
 
@@ -203,4 +206,4 @@ def _one_body_block_encoding_decomp(
     GlobalPhase(np.pi)
 
 
-add_decomps(OneBodyBlockEncoding, _one_body_block_encoding_decomp)
+add_decomps(OneBodyBlockEncoding, _one_body_block_encoding_standard)

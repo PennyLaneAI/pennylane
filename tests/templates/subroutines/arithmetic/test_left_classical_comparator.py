@@ -21,7 +21,7 @@ import pytest
 import pennylane as qp
 from pennylane.core import abstractify
 from pennylane.decomposition_rules.templates.subroutines.arithmetic.left_classical_comparator import (
-    _left_classical_comparator,
+    _left_classical_comparator_standard,
 )
 from pennylane.testing import assert_valid, decomp_rule_to_tape
 from pennylane.typing import Int, Wire
@@ -46,6 +46,8 @@ def test_assert_valid():
 class TestLeftClassicalComparator:
     """Test LeftClassicalComparator template."""
 
+    # pylint: disable=too-many-arguments
+
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "qjit",
@@ -64,9 +66,7 @@ class TestLeftClassicalComparator:
             ([0, 3, 6], 5, 11, [2, 5], 2),
         ],
     )
-    def test_operation_result(
-        self, x_wires, value, target_wire, work_wires, x, comparator, qjit
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_result(self, x_wires, value, target_wire, work_wires, x, comparator, qjit):
         """Test that the LeftClassicalComparator template produces the correct output."""
 
         @qp.qnode(qp.device("lightning.qubit", wires=range(13)), shots=1)
@@ -137,9 +137,7 @@ class TestLeftClassicalComparator:
             ),
         ],
     )
-    def test_wires_error(
-        self, target_wire, x_wires, value, work_wires, comparator, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_wires_error(self, target_wire, x_wires, value, work_wires, comparator, msg_match):
         """Test that an error is raised when some work_wires don't meet the requirements."""
         with pytest.raises(ValueError, match=msg_match):
             qp.LeftClassicalComparator(
@@ -156,9 +154,7 @@ class TestLeftClassicalComparator:
         ],
     )
     @pytest.mark.parametrize("seed", [42, 123])
-    def test_no_phase_errors(  # pylint: disable=too-many-arguments
-        self, x_wires, value, target_wire, work_wires, comparator, seed
-    ):
+    def test_no_phase_errors(self, x_wires, value, target_wire, work_wires, comparator, seed):
         """Test that the comparator introduces no complex phases.
         A correct classical reversible circuit is a real permutation matrix,
         so a real positive input must produce a real positive output."""
@@ -225,7 +221,7 @@ class TestLeftClassicalComparator:
 @pytest.mark.parametrize("positional", [False, True])
 def test_resource_upper_bound(n, comparator, positional):
     """Worst-case estimates must cover each gate count for every valid threshold, including endpoints."""
-    rule = _left_classical_comparator
+    rule = _left_classical_comparator_standard
     abstract_op = qp.LeftClassicalComparator(Wire[n], Int, Wire[1], Wire[n - 1], comparator)
     if positional:
         estimates = rule.compute_resources(*abstract_op.arguments.values()).gate_counts
@@ -243,7 +239,6 @@ def test_resource_upper_bound(n, comparator, positional):
 
 
 @pytest.mark.catalyst
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
 def test_capture_dynamic_threshold(comparator):
     """A captured circuit returns the correct comparison result as the runtime threshold changes."""

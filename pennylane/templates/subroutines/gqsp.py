@@ -15,6 +15,8 @@
 Contains the GQSP template.
 """
 
+from importlib import import_module as _import_module
+
 import numpy as np
 
 from pennylane import math
@@ -99,7 +101,7 @@ class GQSP(Operator2):
                 ``(3, d+1)``) and shift :math:`s`
             :example: :math:`d=1`, :math:`s=0`
 
-            .. decomposition-rule:: _GQSP_decomposition
+            .. decomposition-rule:: controlled_unitary_rotations
                 :image: /_static/decomposition_thumbnails/gqsp_signal_processing.svg
                 :where: :math:`a = \min(\max(-s, 0), d)` is the number of controlled unitaries
                     absorbing a negative shift, and :math:`[\cdot]` is 1 if the condition holds
@@ -159,10 +161,9 @@ class GQSP(Operator2):
 
     arg_specs = {"angles": Float[3, -1], "control": Wire[1], "work_wires": Wire[-1]}
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self, unitary, angles, control, work_wires=None, work_wire_type="borrowed", shift=0
     ):
-        # pylint: disable=too-many-arguments
         work_wires = Wires(()) if work_wires is None else work_wires
         _validate_work_wire_type(work_wire_type)
         if isinstance(shift, bool) or not isinstance(shift, (int, np.integer)):
@@ -171,3 +172,17 @@ class GQSP(Operator2):
         if isinstance(angles, (list, tuple)):
             angles = math.stack(angles)
         super().__init__(unitary, angles, control, work_wires, work_wire_type, shift)
+
+
+_RULE_MODULES = {
+    "_num_shifted_ctrl_ops": "pennylane.decomposition_rules.templates.subroutines.gqsp",
+    "_GQSP_standard_resources": "pennylane.decomposition_rules.templates.subroutines.gqsp",
+    "_GQSP_standard": "pennylane.decomposition_rules.templates.subroutines.gqsp",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

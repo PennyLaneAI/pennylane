@@ -492,7 +492,7 @@ def _not_fixed_qubits(n_qubits_circuit, exclude, length):
         yield list(sublist)
 
 
-def _first_match_qubits(node_c, node_p, n_qubits_p):
+def _first_match_qubits(node_c, node_p, n_qubits_p):  # pylint: disable=too-many-branches
     """
     Returns the list of qubits for circuit given the first match, the unknown qubit are
     replaced by -1.
@@ -503,7 +503,6 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
     Returns:
         list: list of qubits to consider in circuit (with specific order).
     """
-    # pylint: disable=too-many-branches
 
     first_match_qubits = []
 
@@ -645,6 +644,7 @@ def _add_match(match_list, backward_match_list):
             match_list.append(b_match)
 
 
+# pylint: disable-next=too-many-arguments
 def _compare_qubits(node1, wires1, control1, target1, wires2, control2, target2):
     """Compare the qubit configurations of two operations. The operations are supposed to be similar up to their
     qubits configuration.
@@ -657,7 +657,6 @@ def _compare_qubits(node1, wires1, control1, target1, wires2, control2, target2)
         control2 (list(int)): Control wires of the second node.
         target2 (list(int)): Target wires of the second node.
     """
-    # pylint: disable=too-many-arguments
 
     if control1 and set(control1) == set(control2):
         if CONTROL_BASE[node1.op.name] in symmetric_over_all_wires and set(target1) == set(target2):
@@ -677,7 +676,7 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
     Class to apply pattern matching in the forward direction.
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self, circuit_dag, pattern_dag, node_id_c, node_id_p, wires, control_wires, target_wires
     ):
         """
@@ -688,7 +687,6 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
             node_id_c (int): index of the first gate matched in the circuit.
             node_id_p (int): index of the first gate matched in the pattern.
         """
-        # pylint: disable=too-many-arguments
 
         # Commutation DAG of the circuit
         self.circuit_dag = circuit_dag
@@ -843,7 +841,6 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
         """Apply the forward match algorithm and returns the list of matches given an initial match
         and a qubits configuration.
         """
-        # pylint: disable=too-many-nested-blocks
 
         # Initialization
         self._init_successors_to_visit()
@@ -856,7 +853,7 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
         self._init_matched_nodes()
 
         # While the list of matched nodes is not empty
-        while self.matched_nodes_list:
+        while self.matched_nodes_list:  # pylint: disable=too-many-nested-blocks
             # Return first element of the matched_nodes_list and removes it from the list
             v_first, successors_to_visit = self._get_node_forward(0)
             self._remove_node_forward(0)
@@ -971,7 +968,7 @@ class MatchingScenarios:  # pylint: disable=too-few-public-methods
     Class to represent a matching scenario in the Backward part of the algorithm.
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self, circuit_matched, circuit_blocked, pattern_matched, pattern_blocked, matches, counter
     ):
         """Create a MatchingScenarios class for the Backward match.
@@ -983,7 +980,6 @@ class MatchingScenarios:  # pylint: disable=too-few-public-methods
             matches (list): list of matches.
             counter (int): counter of the number of circuit gates already considered.
         """
-        # pylint: disable=too-many-arguments
 
         self.circuit_matched = circuit_matched
         self.pattern_matched = pattern_matched
@@ -1025,12 +1021,12 @@ class MatchingScenariosList:
         return first
 
 
-class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
+class BackwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-public-methods
     """
     Class BackwardMatch allows to run backward direction part of the pattern matching algorithm.
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         circuit_dag,
         pattern_dag,
@@ -1057,7 +1053,6 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
             control_wires (list):
             target_wires (list):
         """
-        # pylint: disable=too-many-arguments
 
         self.circuit_dag = circuit_dag
         self.pattern_dag = pattern_dag
@@ -1102,11 +1097,10 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
 
         return candidates_indices
 
-    def run_backward_match(self):
+    def run_backward_match(self):  # pylint: disable=too-many-branches,too-many-statements
         """Run the backward match algorithm and returns the list of matches given an initial match, a forward
         scenario and a circuit qubits configuration.
         """
-        # pylint: disable=too-many-branches,too-many-statements,too-many-nested-blocks
         match_store_list = []
 
         counter = 1
@@ -1135,7 +1129,7 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
         )
 
         # While the scenario stack is not empty.
-        while self.matching_list.matching_scenarios_list:
+        while self.matching_list.matching_scenarios_list:  # pylint: disable=too-many-nested-blocks
             scenario = self.matching_list.pop_scenario()
 
             circuit_matched = scenario.circuit_matched
@@ -1493,7 +1487,7 @@ class MaximalMatches:  # pylint: disable=too-few-public-methods
                 self.max_match_list.append(Match(sorted(matches.match), matches.qubit))
 
 
-class SubstitutionConfig:  # pylint: disable=too-many-arguments, too-few-public-methods
+class SubstitutionConfig:  # pylint: disable=too-few-public-methods
     """Class to store the configuration of a given match substitution, which circuit gates, template gates,
     qubits and predecessors of the match in the circuit.
     """

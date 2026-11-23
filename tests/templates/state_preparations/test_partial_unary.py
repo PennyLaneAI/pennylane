@@ -29,7 +29,7 @@ from pennylane.decomposition_rules.templates.state_preparations.partial_unary im
     _is_affine_subspace,
     _partial_unary_dense_state,
     _partial_unary_state_prep_core,
-    _partial_unary_state_prep_resources,
+    _partial_unary_state_prep_standard_resources,
 )
 from pennylane.math import binary_matrix_rank, ceil_log2
 from pennylane.templates.state_preparations.partial_unary import (
@@ -39,8 +39,6 @@ from pennylane.templates.state_preparations.partial_unary import (
 from pennylane.testing import assert_valid, assert_valid_decomp_rule
 from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires
-
-# pylint: disable=protected-access
 
 
 def random_distinct_integers(high, size, rng):
@@ -186,6 +184,7 @@ class TestPUIsometryFinder:
         # Load the final states
         final_states = list(map(int, iso_finder.tableau))
         states = np.array(
+            # pylint: disable-next=protected-access
             [[(val >> s) & iso_finder._one for s in iso_finder._shifts] for val in final_states]
         ).astype(np.int8)
         # Transform the final states back
@@ -222,6 +221,7 @@ class TestPUIsometryFinder:
         # Compute target state bit tableau
         target_states = np.array(
             [
+                # pylint: disable-next=protected-access
                 [(int(val) >> s) & iso_finder._one for s in iso_finder._shifts]
                 for val in basis_states
             ]
@@ -234,6 +234,7 @@ class TestPUIsometryFinder:
     )
     def test_find_isometry(self, num_entries, n, seed):
         """Test the main method ``find_isometry``."""
+        # pylint: disable=protected-access
         rng = np.random.default_rng(seed)
         states = random_distinct_integers(2**n, num_entries, rng)
         iso_finder = PUIsometryFinder(states, n)
@@ -344,8 +345,10 @@ class TestAffineSubspaceIsometry:
         # Four states with affine rank 3, so the generic (non-Clifford) resource model applies.
         indices = (0, 1, 2, 4)
         coefficients = np.ones(4) / 2
-        base = _partial_unary_state_prep_resources(coefficients, range(4), indices, work_wires=[4])
-        excess = _partial_unary_state_prep_resources(
+        base = _partial_unary_state_prep_standard_resources(
+            coefficients, range(4), indices, work_wires=[4]
+        )
+        excess = _partial_unary_state_prep_standard_resources(
             coefficients, range(4), indices, work_wires=range(4, 9)
         )
 
@@ -433,7 +436,6 @@ def assert_pui_correctness(rule, coefficients, indices, wire_specs):
     @qp.qnode(qp.device("lightning.qubit", wires=num_device_wires))
     @qp.transforms.resolve_dynamic_wires(min_int=num_wires + num_work_wires)
     def func():
-        # pylint: disable=cell-var-from-loop
         # Make sure that the output state length is at least 2**num_wires
         rule(coefficients, wires=wires, indices=indices, work_wires=work_wires)
         return qp.state()
@@ -480,7 +482,6 @@ class TestPartialUnaryStatePreparation:
         indices = tuple(rng.choice(2**num_wires, size=num_entries, replace=False))
         return coefficients, indices
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_complex_coefficients_on_non_affine_support(self):
         """The generic PUI path preserves arbitrary relative phases."""
         indices = (0, 3, 7, 17, 25)
@@ -630,7 +631,6 @@ class TestPartialUnaryStatePreparation:
             True,
         ],
     )
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "num_wires,num_entries",
         [
@@ -670,7 +670,6 @@ class TestPartialUnaryStatePreparation:
         assert_pui_correctness(rule, coefficients, indices, wire_specs)
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "num_wires, num_entries, num_work_wires", [(7, 5, 15), (3, 2, 6), (4, 14, 8)]
     )

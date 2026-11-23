@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.layers.basic_entangler."""
 
 from pennylane import capture, math
@@ -22,7 +23,7 @@ from pennylane.ops import CNOT, cond
 from pennylane.templates.layers.basic_entangler import BasicEntanglerLayers
 
 
-def _basic_entangler_resources(repeat, num_wires, rotation):
+def _basic_entangler_standard_resources(repeat, num_wires, rotation):
     resources = {abstractify(rotation): repeat * num_wires}
 
     if num_wires == 2:
@@ -34,8 +35,8 @@ def _basic_entangler_resources(repeat, num_wires, rotation):
     return resources
 
 
-@register_resources(_basic_entangler_resources)
-def _basic_entangler_decomposition(weights, wires, rotation):
+@register_resources(_basic_entangler_standard_resources, name="rotations_cnot_ring")
+def _basic_entangler_standard(weights, wires, rotation):
     repeat = math.shape(weights)[-2]
 
     if capture.enabled():
@@ -63,4 +64,4 @@ def _basic_entangler_decomposition(weights, wires, rotation):
     repeat_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(BasicEntanglerLayers, _basic_entangler_decomposition)
+add_decomps(BasicEntanglerLayers, _basic_entangler_standard)

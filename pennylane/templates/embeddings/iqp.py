@@ -15,6 +15,7 @@ r"""
 Contains the IQPEmbedding template.
 """
 
+from importlib import import_module as _import_module
 from itertools import combinations
 
 from pennylane import math
@@ -91,7 +92,7 @@ class IQPEmbedding(Operator2):
                 entanglers (``len(pattern)``, :math:`n(n-1)/2` by default)
             :example: :math:`n=3`, :math:`r=1`, default ``pattern`` (:math:`K = \tfrac{n(n-1)}{2} = 3`)
 
-            .. decomposition-rule:: _iqp_embedding_decomposition
+            .. decomposition-rule:: to_h_rz_multirz
                 :image: /_static/decomposition_thumbnails/iqp_embedding_multirz.svg
 
                 :class:`~.Hadamard` | :math:`rn` | 3
@@ -212,3 +213,16 @@ class IQPEmbedding(Operator2):
             pattern = math.asarray(pattern, dtype=int)
 
         super().__init__(features, wires, n_repeats, pattern)
+
+
+_RULE_MODULES = {
+    "_iqp_embedding_standard_resources": "pennylane.decomposition_rules.templates.embeddings.iqp",
+    "_iqp_embedding_standard": "pennylane.decomposition_rules.templates.embeddings.iqp",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

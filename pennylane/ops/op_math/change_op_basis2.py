@@ -16,6 +16,7 @@ This submodule defines a class for compute-uncompute patterns.
 """
 
 from functools import reduce
+from importlib import import_module as _import_module
 
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2, abstractify
@@ -33,27 +34,31 @@ from .composite2 import CompositeOp2
 
 
 class ChangeOpBasis2(CompositeOp2):
-    """
-    Composite operator representing a compute-uncompute pattern of operators, which constitutes changing the basis in
-    which an operator is applied.
+    r"""Composite operator representing a compute-uncompute pattern of ``Operator2``\ s.
 
     Args:
-        compute_op (:class:`~.Operator`): A single operator or product that applies quantum operations.
-        target_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
-            Default is uncompute_op=qp.adjoint(compute_op).
-
-    Returns:
-        (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.
+        compute_op (~.Operator2): operator applied before the target
+        target_op (~.Operator2): operator applied in the changed basis
+        uncompute_op (~.Operator2 or None): Operator applied after the target.
+            ``None`` uses the adjoint of ``compute_op``.
 
     .. note::
-        When a ``ChangeOpBasis`` operator is iterated over, its factors are iterated in the reverse order. This is to
-        have a similar behaviour to ``Prod`` which applies its factors in reverse order.
+        The factors are stored and iterated in matrix-product order: uncompute, target, compute.
 
-    .. seealso:: :func:`~.change_op_basis`
+    .. seealso:: :func:`~.change_op_basis`, :class:`~.ops.op_math.ChangeOpBasis`
+
+    **Example**
+
+    >>> op = qp.ops.ChangeOpBasis2(qp.H(0), qp.RZ(0.3, 0))
+    >>> op.compute_op
+    H(0)
+    >>> op.target_op
+    RZ(0.3, wires=[0])
     """
 
-    def __init__(self, compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
+    def __init__(
+        self, compute_op: Operator, target_op: Operator, uncompute_op: Operator | None = None
+    ):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
             self._init_args["uncompute_op"] = uncompute_op
@@ -119,9 +124,9 @@ class ChangeOpBasis2(CompositeOp2):
 
     def adjoint(self):
         return ChangeOpBasis2(
-            self.compute_op,
+            _adjoint_eager(self.uncompute_op, update_queue=True),
             _adjoint_eager(self.target_op, update_queue=True),
-            self.uncompute_op,
+            _adjoint_eager(self.compute_op, update_queue=True),
         )
 
     @handle_recursion_error
@@ -164,3 +169,21 @@ def _change_op_basis_abstract(compute_op, target_op, uncompute_op):
     if all(isinstance(op, Operator2) for op in (compute_op, target_op, uncompute_op)):
         return ChangeOpBasis2(compute_op, target_op, uncompute_op)
     return change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
+
+
+_RULE_MODULES = {
+    "_controlled_change_op_basis_standard_resources": "pennylane.decomposition_rules.op_math.change_op_basis2",
+    "_controlled_change_op_basis_standard": "pennylane.decomposition_rules.op_math.change_op_basis2",
+    "_change_op_basis_standard_resources": "pennylane.decomposition_rules.op_math.change_op_basis2",
+    "_change_op_basis_standard": "pennylane.decomposition_rules.op_math.change_op_basis2",
+    "_inverse": "pennylane.decomposition_rules.op_math.change_op_basis2",
+    "_adjoint_change_op_basis_standard_resources": "pennylane.decomposition_rules.op_math.change_op_basis2",
+    "_adjoint_change_op_basis_standard": "pennylane.decomposition_rules.op_math.change_op_basis2",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

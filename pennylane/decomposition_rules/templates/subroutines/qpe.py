@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.qpe."""
 
 from pennylane import capture, compiler, math, ops
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_resources,
+)
 from pennylane.ops import adjoint
 from pennylane.ops import pow as qp_pow
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -26,7 +30,7 @@ from pennylane.templates.subroutines.qpe import QuantumPhaseEstimation
 from pennylane.typing import Wire
 
 
-def _qpe_decomp_resource(unitary, estimation_wires):
+def _qpe_standard_resources(unitary, estimation_wires):
     num_estimation_wires = len(estimation_wires)
     gate_count = {
         ops.Hadamard: num_estimation_wires,
@@ -44,8 +48,8 @@ def _qpe_decomp_resource(unitary, estimation_wires):
     return gate_count
 
 
-@register_resources(_qpe_decomp_resource)
-def _qpe_decomp(unitary, estimation_wires):
+@register_resources(_qpe_standard_resources, name="controlled_powers_inverse_qft")
+def _qpe_standard(unitary, estimation_wires):
     if compiler.active() or capture.enabled():
         estimation_wires = math.array(estimation_wires, like="jax")
 
@@ -55,8 +59,7 @@ def _qpe_decomp(unitary, estimation_wires):
     def _apply_h(i):
         ops.Hadamard(estimation_wires[i])
 
-    # pylint: disable=no-value-for-parameter
-    _apply_h()
+    _apply_h()  # pylint: disable=no-value-for-parameter
 
     # NOTE: Must be pythonic for loop as 'z' argument in 'pow'
     # is a static argument.
@@ -66,4 +69,4 @@ def _qpe_decomp(unitary, estimation_wires):
     ops.adjoint(QFT(wires=estimation_wires))
 
 
-add_decomps(QuantumPhaseEstimation, _qpe_decomp)
+add_decomps(QuantumPhaseEstimation, _qpe_standard)

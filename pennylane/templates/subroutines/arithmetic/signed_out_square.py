@@ -15,6 +15,8 @@
 Contains the SignedOutSquare template.
 """
 
+from importlib import import_module as _import_module
+
 from .out_square import _SquareArithmeticOp
 
 
@@ -180,8 +182,8 @@ class SignedOutSquare(_SquareArithmeticOp):
         Overall, we arrive at the following decomposition:
 
         >>> op = qp.SignedOutSquare(range(3), range(3, 10), range(10, 16), True)
-        >>> qp.inspect_decomps(op, "signed_square_from_unsigned_square")
-        Decomposition 0 (name: signed_square_from_unsigned_square)
+        >>> qp.inspect_decomps(op, "from_unsigned")
+        Decomposition 0 (name: from_unsigned)
          0: ──────────────────────────────────────────╭●────────╭●──────────────╭●──────────── ···
          1: ─╭OutSquare──MultiX(M0)───────╭X────╭●────│──────●╮─├●────╭X────────│───MultiX(M0) ···
          2: ─├OutSquare─────────────╭●────│─────│─────│───────│─│─────│──────●╮─├●──────────── ···
@@ -227,3 +229,18 @@ class SignedOutSquare(_SquareArithmeticOp):
         # Work wires required for the first correction adder are `min(m-n, n)-1`, which is smaller
         # than `m` and smaller than `n`, so that the unsigned square always needs more work wires.
         return min(n, m) if output_wires_zeroed else m
+
+
+_RULE_MODULES = {
+    "_c_subtract_then_add_one_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_square",
+    "_c_subtract_then_add_one": "pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_square",
+    "_signed_out_square_from_unsigned_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_square",
+    "_signed_out_square_from_unsigned": "pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_square",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

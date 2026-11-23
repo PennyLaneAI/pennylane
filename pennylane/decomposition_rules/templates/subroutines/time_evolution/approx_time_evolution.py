@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Built-in decomposition rules for templates.subroutines.time_evolution.approx_time_evolution."""
 
-# pylint: disable=protected-access
+"""Built-in decomposition rules for templates.subroutines.time_evolution.approx_time_evolution."""
 
 from collections import defaultdict
 
@@ -28,7 +27,7 @@ from pennylane.typing import Float, Wire
 from pennylane.wires import Wires, WiresLike
 
 
-def _approx_time_evolution_resources(words: tuple[PauliWord], n: int):
+def _approx_time_evolution_standard_resources(words: tuple[PauliWord], n: int):
     resources = defaultdict(int)
 
     for _ in range(n):
@@ -40,10 +39,13 @@ def _approx_time_evolution_resources(words: tuple[PauliWord], n: int):
     return resources
 
 
-@register_resources(_approx_time_evolution_resources)
-def _approx_time_evolution_decomposition(
-    *coeffs_and_time: list, wires: WiresLike, hamiltonian: Hamiltonian, n: int
-):  # pylint: disable=unused-argument
+@register_resources(_approx_time_evolution_standard_resources, name="pauli_rotations")
+def _approx_time_evolution_standard(  # pylint: disable=unused-argument
+    *coeffs_and_time: list,
+    wires: WiresLike,
+    hamiltonian: Hamiltonian,
+    n: int,
+):
     time = coeffs_and_time[-1]
 
     @for_loop(n)
@@ -63,4 +65,4 @@ def _approx_time_evolution_decomposition(
     rounds_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(ApproxTimeEvolution, _approx_time_evolution_decomposition)
+add_decomps(ApproxTimeEvolution, _approx_time_evolution_standard)

@@ -17,6 +17,7 @@ This submodule contains the template for the Reflection operation.
 """
 
 import copy
+from importlib import import_module as _import_module
 
 import numpy as np
 
@@ -114,14 +115,13 @@ class Reflection(Operation):
         data = (self.hyperparameters["base"], self.parameters[0])
         return data, (self.hyperparameters["reflection_wires"],)
 
-    # pylint: disable=arguments-differ
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, U, alpha, reflection_wires, **kwargs):
         def _get_tracer(op):
             if isinstance(op, Operator2):
                 if op.tracer is None:
-                    # pylint: disable-next=protected-access
-                    op._bind_primitive()  # pragma: no cover
+                    op._bind_primitive()  # pragma: no cover  # pylint: disable=protected-access
                 return op.tracer if op.tracer is not None else op
             return op  # pragma: no cover
 
@@ -221,10 +221,20 @@ class Reflection(Operation):
         return decomp_ops
 
 
-# pylint: disable=protected-access
-
-
-@Reflection._primitive.def_impl
+@Reflection._primitive.def_impl  # pylint: disable=protected-access
 def _(*args, n_wires, **kwargs):
     (U, alpha), reflection_wires = args[:-n_wires], args[-n_wires:]
     return type.__call__(Reflection, U, alpha, reflection_wires=reflection_wires, **kwargs)
+
+
+_RULE_MODULES = {
+    "_reflection_standard_resources": "pennylane.decomposition_rules.templates.subroutines.reflection",
+    "_reflection_standard": "pennylane.decomposition_rules.templates.subroutines.reflection",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

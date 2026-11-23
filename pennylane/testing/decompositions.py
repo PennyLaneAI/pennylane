@@ -30,7 +30,7 @@ from pennylane.ops import Projector
 from pennylane.ops import functions as op_funcs
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript
-from pennylane.templates.core import SubroutineOp
+from pennylane.templates.core import CollectedSubroutine, SubroutineOp
 from pennylane.transforms import resolve_dynamic_wires
 
 from .capture import plxpr_to_tape
@@ -85,7 +85,7 @@ def decomp_rule_to_tape(op: Operator, rule: DecompositionRule) -> QuantumScript:
 
     .. code-block:: python
 
-        @qp.register_resources({qp.H: 2, qp.CZ: 1})
+        @qp.register_resources({qp.H: 2, qp.CZ: 1}, name="cnot_to_cz")
         def cnot_to_cz(wires):
             qp.H(wires[1])
             qp.CZ(wires)
@@ -110,7 +110,6 @@ def decomp_rule_to_tape(op: Operator, rule: DecompositionRule) -> QuantumScript:
 
 
 @singledispatch
-# pylint: disable-next=unused-argument
 def _prepare_decomp_for_capture(op: Operator, rule: DecompositionRule):
     raise NotImplementedError  # pragma: no cover
 
@@ -163,8 +162,8 @@ def assert_valid_decomp_rule(
             qp.CZ(wires)
             qp.H(wires[1])
 
-        good_rule = qp.register_resources({qp.H: 2, qp.CZ: 1})(cnot_to_cz)
-        bad_rule = qp.register_resources({qp.H: 1, qp.CZ: 1})(cnot_to_cz)
+        good_rule = qp.register_resources({qp.H: 2, qp.CZ: 1}, name="cnot_to_cz")(cnot_to_cz)
+        bad_rule = qp.register_resources({qp.H: 1, qp.CZ: 1}, name="cnot_to_cz")(cnot_to_cz)
 
     >>> qp.testing.assert_valid_decomp_rule(qp.CNOT([0, 1]), good_rule)
     >>> qp.testing.assert_valid_decomp_rule(qp.CNOT([0, 1]), bad_rule)
@@ -199,9 +198,14 @@ def assert_valid_decomp_rule(
         tape = _resolve_dynamic_wires(tape, total_work_wires)
 
     actual_gates = defaultdict(int)
-    for _op in tape.operations:
+    pending = list(tape.operations)
+    while pending:
+        _op = pending.pop()
         if isinstance(_op, Conditional):
             _op = _op.base
+        if isinstance(_op, CollectedSubroutine):
+            pending.extend(_op.decomposition())
+            continue
         op_rep = abstractify(_op)
         actual_gates[op_rep] += 1
 

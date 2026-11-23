@@ -15,6 +15,7 @@
 Contains the TemporaryAND template, which also is known as Elbow.
 """
 
+from importlib import import_module as _import_module
 from typing import override
 
 from pennylane import math
@@ -54,7 +55,6 @@ class TemporaryAND(Operator2):
             operator is applied. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
             Default is ``(1, 1)``, corresponding to a traditional ``AND`` gate.
 
-
     .. seealso:: The alias :class:`~Elbow`.
 
     **Example**
@@ -92,8 +92,6 @@ class TemporaryAND(Operator2):
 
         import pennylane as qp
 
-        qp.decomposition.enable_graph()
-
         @qp.transforms._tape_decompose(gate_set={qp.Toffoli, qp.X})
         def circuit():
             qp.TemporaryAND((0, 1, 2))
@@ -107,6 +105,38 @@ class TemporaryAND(Operator2):
     Note that we had to add ``qp.X`` to the gate set passed to ``decompose``, because the
     decomposition may contain bit flips on the control qubits, depending on potentially dynamic
     control values.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.TemporaryAND
+            :stacked:
+            :symbols: :math:`z` entries of ``control_values`` equal to 0
+            :example: ``control_values=(1, 0)``, i.e., :math:`z=1`
+
+            .. decomposition-rule:: to_clifford_t
+                :image: /_static/decomposition_thumbnails/temporary_and_clifford_t.svg
+
+                :class:`~.Hadamard` | :math:`2` | 2
+                :class:`~.T` | :math:`2` | 2
+                :class:`Adjoint(T) <.T>` | :math:`2` | 2
+                :class:`~.CNOT` | :math:`3` | 3
+                :class:`Adjoint(S) <.S>` | :math:`1` | 1
+                :class:`~.X` | :math:`2z` | 2
+
+            .. decomposition-rule:: to_toffoli
+                :image: /_static/decomposition_thumbnails/temporary_and_toffoli.svg
+
+                :class:`~.Toffoli` | :math:`1` | 1
+                :class:`~.X` | :math:`2z` | 2
+
+            .. decomposition-rule:: to_ppr
+                :image: /_static/decomposition_thumbnails/temporary_and_ppr.svg
+
+                :class:`PPR_8(1, "ZZY") <.PPR_8>` | :math:`1` | 1
+                :class:`PPR_8(-1, "ZY") <.PPR_8>` | :math:`2` | 2
+                :class:`PPR_8(1, "Y") <.PPR_8>` | :math:`1` | 1
+                :class:`~.X` | :math:`2z` | 2
     """
 
     num_wires = 3
@@ -210,3 +240,27 @@ Args:
         the target operator is applied. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
         Default is ``(1,1)``, corresponding to a traditional ``AND`` gate.
 """
+
+
+_RULE_MODULES = {
+    "_number_xs": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
+    "_temporary_and_basis_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
+    "_TemporaryANDBasis": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
+    "_temporary_and_to_clifford_t_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
+    "_temporary_and_to_clifford_t": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
+    "_toffoli_with_cvals": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
+    "_temporary_and_to_toffoli": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
+    "_temporary_and_to_ppr_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
+    "_temporary_and_to_ppr": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
+    "_adjoint_temporary_and_measurement_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
+    "_adjoint_temporary_and_measurement": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
+    "_adjoint_temporary_and_to_ppm": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
+    "_adjoint_temporary_and_to_toffoli": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

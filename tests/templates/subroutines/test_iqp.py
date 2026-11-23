@@ -96,7 +96,7 @@ def test_raises(params, error, match):
     ],
 )
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_decomposition_new(weights, pattern, spin_sym, wires):  # pylint: disable=too-many-arguments
+def test_decomposition_new(weights, pattern, spin_sym, wires):
     op = IQP(weights, wires, pattern, spin_sym)
 
     assert_decomposable(op)
@@ -121,9 +121,7 @@ def test_decomposition_new(weights, pattern, spin_sym, wires):  # pylint: disabl
         ),
     ],
 )
-def test_decomposition_contents(
-    weights, pattern, spin_sym, wires, expected_circuit
-):  # pylint: disable=too-many-arguments
+def test_decomposition_contents(weights, pattern, spin_sym, wires, expected_circuit):
     op = IQP(weights, wires, pattern, spin_sym)
     decomp = op.decomposition()
 

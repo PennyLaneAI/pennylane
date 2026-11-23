@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for identity."""
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition_rules._common import null_decomp
-from pennylane.decomposition_rules.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
-from pennylane.decomposition_rules.op_math.pow2 import pow_rotation as pow_rotation2
+from pennylane.decomposition_rules.op_math.adjoint2 import (
+    _adjoint_negate_angle as adjoint_rotation2,
+)
+from pennylane.decomposition_rules.op_math.pow2 import _pow_scale_angle as pow_rotation2
 from pennylane.ops.identity import Identity
 from pennylane.typing import Wire
 
@@ -32,9 +35,13 @@ add_decomps("C(Identity)", null_decomp)
 add_decomps("Pow(Identity)", null_decomp)
 
 
-def _controlled_g_phase_resource(
-    base, control_wires, control_values, work_wires, work_wire_type
-):  # pylint: disable=unused-argument
+def _controlled_g_phase_standard_resources(
+    base,  # pylint: disable=unused-argument
+    control_wires,
+    control_values,  # pylint: disable=unused-argument
+    work_wires,
+    work_wire_type,
+):
     num_control_wires = len(control_wires)
     num_work_wires = len(work_wires)
 
@@ -60,8 +67,10 @@ def _controlled_g_phase_resource(
     return resources
 
 
-@register_resources(_controlled_g_phase_resource, exact=False)
-def _controlled_g_phase_decomp(
+@register_resources(
+    _controlled_g_phase_standard_resources, exact=False, name="to_controlled_phaseshift"
+)
+def _controlled_g_phase_standard(
     base,
     control_wires,
     control_values,
@@ -104,4 +113,4 @@ add_decomps("Adjoint(GlobalPhase)", adjoint_rotation2)
 
 add_decomps("Pow(GlobalPhase)", pow_rotation2)
 
-add_decomps("C(GlobalPhase)", _controlled_g_phase_decomp)
+add_decomps("C(GlobalPhase)", _controlled_g_phase_standard)

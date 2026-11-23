@@ -15,8 +15,6 @@
 Unit tests for the StronglyEntanglingLayers template.
 """
 
-# pylint: disable=too-few-public-methods
-
 import numpy as np
 import pytest
 
@@ -76,7 +74,6 @@ class TestDecomposition:
     @pytest.mark.parametrize("n_wires, weight_shape, expected_names, expected_wires", QUEUES)
     def test_expansion(self, n_wires, weight_shape, expected_names, expected_wires, batch_dim):
         """Checks the queue for the default settings."""
-        # pylint: disable=too-many-arguments
 
         if batch_dim is not None:
             weight_shape = (batch_dim,) + weight_shape
@@ -114,7 +111,6 @@ class TestDecomposition:
         gate_names = [gate.name for gate in ops]
         assert gate_names.count("CZ") == n_wires * n_layers
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_custom_wire_labels(self, tol, batch_dim):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         shape = (1, 3, 3) if batch_dim is None else (batch_dim, 1, 3, 3)
@@ -208,7 +204,7 @@ class TestInputs:
             circuit(weights, ranges=[0])
 
 
-class TestAttributes:
+class TestAttributes:  # pylint: disable=too-few-public-methods
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(

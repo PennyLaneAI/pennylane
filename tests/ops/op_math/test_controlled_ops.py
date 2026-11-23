@@ -51,8 +51,7 @@ X = np.array([[0, 1], [1, 0]])
 X_broadcasted = np.array([X] * 3)
 
 
-# pylint: disable=too-many-public-methods
-class TestControlledQubitUnitary:
+class TestControlledQubitUnitary:  # pylint: disable=too-many-public-methods
     """Tests specific to the ControlledQubitUnitary operation"""
 
     def test_has_decomposition_sparse_edge_case(self):
@@ -843,9 +842,9 @@ def test_abstract_controlled_ops(op_type, wires):
 @pytest.mark.parametrize(
     ("op_type", "rule_name"),
     [
-        (qp.CNOT, "_cnot_lattice_surgery_ppm"),
-        (qp.CY, "_cy_lattice_surgery_ppm"),
-        (qp.CZ, "_cz_lattice_surgery_ppm"),
+        (qp.CNOT, "lattice_surgery_ppm"),
+        (qp.CY, "lattice_surgery_ppm"),
+        (qp.CZ, "lattice_surgery_ppm"),
     ],
 )
 def test_ppm_decomposition(op_type, rule_name, seed):

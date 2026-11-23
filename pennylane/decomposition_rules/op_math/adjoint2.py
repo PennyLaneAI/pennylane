@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for op_math.adjoint2."""
 
 from functools import partial
@@ -50,7 +51,7 @@ def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
 
     # special case of cancelling nested adjoints.
     if isinstance(abs_op.base, Adjoint2):
-        return DecompCollection([cancel_adjoint])
+        return DecompCollection([_adjoint_cancel])
 
     # Custom decomposition rules registered specifically to the adjoint operator
     custom_rules = _get_registered_decomps(to_name(abs_op))
@@ -85,8 +86,8 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
         return {_adjoint_abstract(op): count for op, count in base_gates.items()}
 
     def _wrap_work_wire_spec(base_rule):
-
         # pylint: disable=protected-access
+
         if isinstance(base_rule._work_wire_spec, dict):
             return base_rule._work_wire_spec
 
@@ -97,7 +98,6 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
 
     base_source = base_rule._source
 
-    # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
@@ -106,9 +106,8 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
         name=f"adjoint({base_rule.name})",
     )
     def _impl(base):
-        # pylint: disable=protected-access
         non_traced_args, traced_args = get_traced_and_non_traced_args(base)
-        impl = partial(base_rule._impl, **non_traced_args)
+        impl = partial(base_rule._impl, **non_traced_args)  # pylint: disable=protected-access
         qp.adjoint(impl)(**traced_args)
 
     _impl._source = (
@@ -120,27 +119,31 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
     return _impl
 
 
-def _cancel_adjoint_resources(base):
+def _adjoint_cancel_resources(base):
     assert isinstance(base, Adjoint2)
     inner_base = base.base
     return {inner_base: 1}
 
 
-@register_resources(_cancel_adjoint_resources)
-def cancel_adjoint(base):
+@register_resources(_adjoint_cancel_resources, name="cancel")
+def _adjoint_cancel(base):
     """Decompose the adjoint of the adjoint of an operator."""
     assert isinstance(base, Adjoint2)
     type(base.base)(**base.base.arguments)
 
 
-def _adjoint_rotation_resource(base):
+def _adjoint_negate_angle_resources(base):
     return {abstractify(base): 1}
 
 
-@register_resources(_adjoint_rotation_resource)
-def adjoint_rotation(base):
+@register_resources(_adjoint_negate_angle_resources, name="negate_angle")
+def _adjoint_negate_angle(base):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
     # A rotation should only have 1 dynamic parameter
     assert len(base.dynamic_argnames) == 1
     angle = tuple(base.dynamic_args.values())[0]
     qp.ops.functions.bind_new_parameters(base, (-angle,))
+
+
+adjoint_rotation = _adjoint_negate_angle
+cancel_adjoint = _adjoint_cancel

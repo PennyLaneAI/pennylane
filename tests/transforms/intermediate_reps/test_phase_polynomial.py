@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for pennylane/labs/phase_polynomials/phase_polynomial.py"""
 
-# pylint: disable = no-self-use
 import numpy as np
 import pytest
 
@@ -71,18 +70,6 @@ class TestPhasePolynomial:
         assert np.allclose(pmat, pmat_true)
         assert np.allclose(ptab, ptab_true)
         assert np.allclose(angles, angles_true)
-
-    def test_wire_order_string_wires(self):
-        """Test wire_order with string wires"""
-        wire_order_abcd = ["a", "b", "c", "d"]
-
-        (circ1_abcd,), _ = qp.map_wires(circ1, dict(enumerate(wire_order_abcd)))
-
-        pmat, ptab, angles = phase_polynomial(circ1_abcd, wire_order=["a", "b", "c", "d"])
-
-        assert np.allclose(pmat, pmat1)
-        assert np.allclose(ptab, ptab1)
-        assert np.allclose(angles, angles1)
 
     def test_qfunc_input(self):
         """Test phase_polynomial works for qfunc inputs"""

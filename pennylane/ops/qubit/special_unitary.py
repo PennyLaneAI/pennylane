@@ -16,8 +16,11 @@ This submodule contains the operation SpecialUnitary and
 its utility functions.
 """
 
-# pylint: disable=arguments-differ, import-outside-toplevel
+# pylint: disable=arguments-differ
+
+
 from functools import lru_cache, reduce
+from importlib import import_module as _import_module
 from itertools import product
 from typing import Literal
 
@@ -605,7 +608,7 @@ class SpecialUnitary(Operation):
             jac = jax.jacobian(self.compute_matrix, argnums=0, holomorphic=True)(theta, num_wires)
 
         elif interface == "torch":
-            import torch
+            import torch  # pylint: disable=import-outside-toplevel
 
             rjac, ijac = torch.autograd.functional.jacobian(split_matrix, theta)
             jac = rjac + 1j * ijac
@@ -768,3 +771,18 @@ class TmpPauliRot(PauliRot):
         if qp.math.isclose(theta, theta * 0) and not qp.math.requires_grad(theta):
             return []
         return [PauliRot(theta, pauli_word, wires)]
+
+
+_RULE_MODULES = {
+    "_adjoint_special_unitary_standard": "pennylane.decomposition_rules.qubit.special_unitary",
+    "_tmp_paulirot_standard_resources": "pennylane.decomposition_rules.qubit.special_unitary",
+    "_tmp_paulirot_standard": "pennylane.decomposition_rules.qubit.special_unitary",
+    "_adjoint_tmp_paulirot_standard": "pennylane.decomposition_rules.qubit.special_unitary",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

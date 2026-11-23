@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.gqsp."""
 
 from pennylane import capture, compiler, math, ops
@@ -34,9 +35,8 @@ def _num_shifted_ctrl_ops(shift, num_ctrl_ops):
     return num_absorbed, shift + num_absorbed
 
 
-def _GQSP_resources(
-    unitary, angles, control, work_wires, work_wire_type, shift
-):  # pylint: disable=unused-argument,too-many-arguments
+# pylint: disable-next=too-many-arguments,unused-argument
+def _GQSP_standard_resources(unitary, angles, control, work_wires, work_wire_type, shift):
     num_iters = angles.shape[1]
     num_absorbed, remaining = _num_shifted_ctrl_ops(shift, num_iters - 1)
     unitary = abstractify(unitary)
@@ -60,10 +60,9 @@ def _GQSP_resources(
     return resources
 
 
-@register_resources(_GQSP_resources)
-def _GQSP_decomposition(
-    unitary, angles, control, work_wires, work_wire_type, shift
-):  # pylint: disable=too-many-arguments
+@register_resources(_GQSP_standard_resources, name="controlled_unitary_rotations")
+# pylint: disable-next=too-many-arguments
+def _GQSP_standard(unitary, angles, control, work_wires, work_wire_type, shift):
     if compiler.active() or capture.enabled():
         angles = math.array(angles, like="jax")
 
@@ -113,8 +112,8 @@ def _GQSP_decomposition(
         )
         _signal_processing_rotation(i)
 
-    shifted_gqsp_loop()  # pylint:disable= no-value-for-parameter
-    gqsp_loop()  # pylint:disable= no-value-for-parameter
+    shifted_gqsp_loop()  # pylint: disable=no-value-for-parameter
+    gqsp_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(GQSP, _GQSP_decomposition)
+add_decomps(GQSP, _GQSP_standard)

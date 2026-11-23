@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Common built-in decomposition rules."""
+
+"""Built-in decomposition rules for _common."""
 
 from __future__ import annotations
 
 from pennylane.decomposition.decomposition_rule import register_resources
 
 
-@register_resources({})
+@register_resources({}, name="null_decomp")
 def null_decomp(*_, **__):
     """A decomposition rule that can be assigned to an operator so that the operator decomposes to nothing.
 
@@ -29,8 +30,6 @@ def null_decomp(*_, **__):
 
         import pennylane as qp
         from pennylane.decomposition import null_decomp
-
-        qp.decomposition.enable_graph()
 
         @qp.transforms._tape_decompose(
             gate_set={qp.RZ},

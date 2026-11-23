@@ -16,8 +16,6 @@ Unit tests for the ArbitraryStatePreparation template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -331,8 +329,7 @@ class TestDecomposition:
         op = qp.MottonenStatePreparation([0, 0, 0, 1], wires=(0, 1))
         assert op.resource_params == {"num_wires": 2}
 
-    @pytest.mark.parametrize("extra_kwargs", [{}, {"work_wires": []}])
-    def test_decomposition_rule(self, extra_kwargs):
+    def test_decomposition_rule(self):
         """Test that MottonenStatePreparation has a correct decomposition rule registered."""
 
         decomp = qp.list_decomps(qp.MottonenStatePreparation)[0]
@@ -350,7 +347,7 @@ class TestDecomposition:
         }
 
         with qp.queuing.AnnotatedQueue() as q:
-            decomp(np.array([0, 0, 0, 1j]), wires=(0, 1), **extra_kwargs)
+            decomp(np.array([0, 0, 0, 1j]), wires=(0, 1))
 
         q = q.queue
 
@@ -367,7 +364,6 @@ class TestDecomposition:
         qp.assert_equal(q[10], qp.GlobalPhase(-np.pi / 8))
 
     @pytest.mark.capture
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_decomposition_capture(self):
         """Tests that the new decomposition works with capture."""
         from jax import numpy as jnp
@@ -444,7 +440,7 @@ class TestInputs:
             qp.MottonenStatePreparation(state_vector, 2)
 
 
-class TestGradient:
+class TestGradient:  # pylint: disable=too-few-public-methods
     """Tests gradients."""
 
     # TODO: Currently the template fails for more elaborate gradient

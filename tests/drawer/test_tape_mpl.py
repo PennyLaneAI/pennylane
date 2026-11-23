@@ -17,7 +17,8 @@ See section on "Testing Matplotlib based code" in the "Software Tests"
 page in the developement guide.
 """
 
-# pylint: disable=protected-access, expression-not-assigned
+# pylint: disable=protected-access
+
 
 import warnings
 
@@ -48,8 +49,8 @@ def test_empty_tape():
 
 with qp.queuing.AnnotatedQueue() as q1:
     qp.PauliX(0)
-    qp.PauliX("a")
-    qp.PauliX(1.234)
+    qp.PauliX(11)
+    qp.PauliX(14)
 
 
 tape1 = QuantumScript.from_queue(q1)
@@ -76,22 +77,23 @@ def test_fig_argument():
 
 
 label_data = [
-    ({}, ["0", "a", "1.234"]),  # default behaviour
-    ({"wire_order": [1.234, "a", 0]}, ["1.234", "a", "0"]),  # provide standard wire order
+    ({}, ["0", "11", "14"]),  # default behaviour
+    ({"wire_order": [14, 11, 0]}, ["14", "11", "0"]),  # provide standard wire order
     (
-        {"wire_order": ["a", 1.234]},
-        ["a", "1.234", "0"],
+        {"wire_order": [11, 14]},
+        ["11", "14", "0"],
     ),  # wire order that doesn't include all active wires
     (
-        {"wire_order": ["nope", "not there", 3]},
-        ["0", "a", "1.234"],
+        {"wire_order": [15, 16, 3]},
+        ["0", "11", "14"],
     ),  # wire order includes unused wires
     (
-        {"wire_order": ["aux", 0, "a", 1.234], "show_all_wires": True},
+        {"wire_order": [17, 0, 11, 14], "show_all_wires": True},
         [
-            "aux",
+            "17",
             "0",
-            "a",
+            "11",
+            "14",
         ],
     ),  # show_all_wires=True
 ]
@@ -409,7 +411,7 @@ class TestSpecialGates:
     def test_Prod(self):
         """Test Prod gets correct special call."""
         with qp.queuing.AnnotatedQueue() as q_tape:
-            qp.S(0) @ qp.T(0)
+            qp.S(0) @ qp.T(0)  # pylint: disable=expression-not-assigned
 
         tape = QuantumScript.from_queue(q_tape)
         _, ax = tape_mpl(tape)
@@ -500,24 +502,22 @@ class TestTemporaryAND:
 
     @pytest.mark.parametrize("values", [(0, 0), (0, 1), (1, 0), (1, 1)])
     @pytest.mark.parametrize("adjoint", [False, True])
-    @pytest.mark.parametrize(
-        "order", [["a", "idle", "b", "t"], ["t", "b", "idle", "a"], ["a", "t", "idle", "b"]]
-    )
+    @pytest.mark.parametrize("order", [[11, 15, 12, 13], [13, 12, 15, 11], [11, 13, 15, 12]])
     def test_elbow(self, values, adjoint, order):
         """Check controls, circled-plus target, and connector side with arbitrary wire order."""
-        op = qp.TemporaryAND(["a", "b", "t"], control_values=values)
+        op = qp.TemporaryAND([11, 12, 13], control_values=values)
         if adjoint:
             op = qp.adjoint(op)
         fig, ax = tape_mpl(
             QuantumScript([op]), wire_order=order, show_all_wires=True, style="black_white"
         )
-        assert [text.get_text() for text in ax.texts] == order
+        assert [text.get_text() for text in ax.texts] == [str(wire) for wire in order]
         connector, *controls, target = ax.patches
-        for patch, wire, value in zip(controls, ["a", "b"], values, strict=True):
+        for patch, wire, value in zip(controls, [11, 12], values, strict=True):
             assert isinstance(patch, mpl.patches.Circle)
             assert patch.center == (0, order.index(wire))
             assert patch.get_facecolor() == mpl.colors.to_rgba("black" if value else "white")
-        assert target.center == (0, order.index("t"))
+        assert target.center == (0, order.index(13))
         assert target.get_radius() == 0.3
         path = connector.get_path()
         assert isinstance(connector, mpl.patches.PathPatch)
@@ -529,7 +529,7 @@ class TestTemporaryAND:
         # The only central vertical line is the short cross inside the target circle.
         assert list(ax.lines[4].get_xdata()) == [0, 0]
         np.testing.assert_allclose(
-            ax.lines[4].get_ydata(), [order.index("t") - 0.3, order.index("t") + 0.3]
+            ax.lines[4].get_ydata(), [order.index(13) - 0.3, order.index(13) + 0.3]
         )
         plt.close(fig)
 
@@ -654,7 +654,6 @@ class TestControlledGates:
         """Test control_values get displayed correctly when they are provided as a list of bools."""
 
         with qp.queuing.AnnotatedQueue() as q_tape:
-            # pylint:disable=no-member
             qubit_unitary = qp.QubitUnitary(qp.RX.compute_matrix(0), wires=4)
             qp.ops.op_math.Controlled(qubit_unitary, (0, 1, 2, 3), [1, 0, 1, 0])
 

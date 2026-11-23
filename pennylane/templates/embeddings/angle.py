@@ -15,6 +15,8 @@ r"""
 Contains the ``AngleEmbedding`` template.
 """
 
+from importlib import import_module as _import_module
+
 from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.ops import RX, RY, RZ
@@ -140,3 +142,16 @@ class AngleEmbedding(Operation):
         features = math.T(features) if batched else features
 
         return [rotation(features[i], wires=wires[i]) for i in range(len(wires))]
+
+
+_RULE_MODULES = {
+    "_angle_embedding_standard_resources": "pennylane.decomposition_rules.templates.embeddings.angle",
+    "_angle_embedding_standard": "pennylane.decomposition_rules.templates.embeddings.angle",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

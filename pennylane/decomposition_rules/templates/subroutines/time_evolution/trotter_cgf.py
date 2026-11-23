@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Built-in decomposition rules for templates.subroutines.time_evolution.trotter_cgf."""
 
-# pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
+"""Built-in decomposition rules for templates.subroutines.time_evolution.trotter_cgf."""
 
 from collections import defaultdict
 
@@ -22,7 +21,11 @@ import numpy as np
 
 from pennylane import math
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_resources,
+)
 from pennylane.decomposition_rules.op_math.controlled2 import (
     flip_zero_control as flip_zero_control2,
 )
@@ -99,7 +102,7 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
                         IsingZZ(_angle(q), [wire_lp, wire_mq])
 
                     CNOT([control_wires[0], wire_lp])
-                    _q_loop()
+                    _q_loop()  # pylint: disable=no-value-for-parameter
                     CNOT([control_wires[0], wire_lp])
                 else:
 
@@ -113,9 +116,9 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
                         else:
                             ctrl(IsingZZ(angle, zz_wires), control=control_wires)
 
-                    _q_loop()
+                    _q_loop()  # pylint: disable=no-value-for-parameter
 
-            _p_loop()
+            _p_loop()  # pylint: disable=no-value-for-parameter
 
 
 def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_wires, double_phase):
@@ -140,9 +143,9 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
             angle = -2.0 * Z_one_body[l, l, p, p] * first_order_time_step
             _emit_one_body_rz(angle, wire_lp, control_wires, double_phase)
 
-        modal_loop()
+        modal_loop()  # pylint: disable=no-value-for-parameter
 
-    mode_loop()
+    mode_loop()  # pylint: disable=no-value-for-parameter
 
 
 def _energy_shift(hamiltonian):
@@ -217,12 +220,21 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
     return dict(resources)
 
 
-def _trotter_cgf_resources(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
+def _trotter_cgf_standard_resources(
+    evolution_time,  # pylint: disable=unused-argument
+    num_trotter_steps,
+    hamiltonian,
+    wires,  # pylint: disable=unused-argument
+    double_phase,  # pylint: disable=unused-argument
+):
     return _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control=False)
 
 
-@register_resources(_trotter_cgf_resources, exact=False)
-def _trotter_cgf_decomposition(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
+@register_resources(
+    _trotter_cgf_standard_resources, exact=False, name="compressed_factorized_steps"
+)
+# pylint: disable-next=unused-argument
+def _trotter_cgf_standard(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
     # ``double_phase`` only affects the controlled decomposition; the base operator is
     # always the plain (uncontrolled) e^{-iHt} circuit.
     if num_trotter_steps > 0:
@@ -238,11 +250,15 @@ def _trotter_cgf_decomposition(evolution_time, num_trotter_steps, hamiltonian, w
         GlobalPhase(phi)
 
 
-add_decomps(TrotterCGF, _trotter_cgf_decomposition)
+add_decomps(TrotterCGF, _trotter_cgf_standard)
 
 
-def _controlled_trotter_cgf_resource(
-    base, control_wires, control_values, work_wires, work_wire_type
+def _controlled_trotter_cgf_standard_resources(  # pylint: disable=unused-argument
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,
 ):
     return _cgf_resource_counts(
         base.arguments["num_trotter_steps"],
@@ -253,8 +269,18 @@ def _controlled_trotter_cgf_resource(
 
 
 @register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
-@register_resources(_controlled_trotter_cgf_resource, exact=False)
-def _controlled_trotter_cgf_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+@register_resources(
+    _controlled_trotter_cgf_standard_resources,
+    exact=False,
+    name="controlled_compressed_factorized_steps",
+)
+def _controlled_trotter_cgf_standard(
+    base,
+    control_wires,
+    control_values,  # pylint: disable=unused-argument
+    work_wires,  # pylint: disable=unused-argument
+    work_wire_type,  # pylint: disable=unused-argument
+):
     evolution_time = base.arguments["evolution_time"]
     num_trotter_steps = base.arguments["num_trotter_steps"]
     hamiltonian = base.arguments["hamiltonian"]
@@ -301,4 +327,9 @@ def _controlled_trotter_cgf_decomp(base, control_wires, control_values, work_wir
     PhaseShift(-phi, control_wires)
 
 
-add_decomps("C(TrotterCGF)", flip_zero_control2(_controlled_trotter_cgf_decomp))
+add_decomps(
+    "C(TrotterCGF)",
+    flip_zero_control2(
+        _controlled_trotter_cgf_standard, name="controlled_compressed_factorized_steps"
+    ),
+)

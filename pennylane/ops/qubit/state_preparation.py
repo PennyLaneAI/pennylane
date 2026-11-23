@@ -17,8 +17,7 @@ with preparing a certain state on the device.
 """
 
 from collections.abc import Sequence
-
-# pylint: disable=too-many-branches,arguments-differ
+from importlib import import_module as _import_module
 from warnings import warn
 
 import numpy as np
@@ -298,7 +297,7 @@ class StatePrep(StatePrepBase):
     """int: Number of dimensions per trainable parameter of the operator."""
 
     @classmethod
-    def _primitive_bind_call(cls, state, wires, **kwargs):
+    def _primitive_bind_call(cls, state, wires, **kwargs):  # pylint: disable=arguments-differ
         if isinstance(state, (tuple, list)):
             if any(qp.math.is_tracer(x) for x in state):
                 state = qp.math.asarray(state, like="jax")
@@ -306,7 +305,6 @@ class StatePrep(StatePrepBase):
                 state = qp.math.asarray(state)
         return super()._primitive_bind_call(state, wires, **kwargs)
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         state: TensorLike | csr_matrix,
@@ -341,8 +339,8 @@ class StatePrep(StatePrepBase):
         else:
             super()._check_batching()
 
-    # pylint: disable=unused-argument
     @staticmethod
+    # pylint: disable-next=unused-argument,arguments-differ
     def compute_decomposition(state: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
@@ -408,6 +406,7 @@ class StatePrep(StatePrepBase):
         return math.transpose(op_vector, transpose_axes)
 
     @staticmethod
+    # pylint: disable-next=too-many-branches
     def _preprocess(state, wires, pad_with, normalize, validate_norm):
         """Validate and pre-process inputs as follows:
 
@@ -629,3 +628,18 @@ def _build_index_map(wires, wire_order):
         pos_bin_perm = [wire_values_map[wire] if wire in wires else "0" for wire in wire_order]
         index_map[pos] = int("".join(pos_bin_perm), 2)
     return index_map
+
+
+_RULE_MODULES = {
+    "_basis_state_standard_resources": "pennylane.decomposition_rules.qubit.state_preparation",
+    "_basis_state_standard": "pennylane.decomposition_rules.qubit.state_preparation",
+    "_state_prep_standard_resources": "pennylane.decomposition_rules.qubit.state_preparation",
+    "_state_prep_standard": "pennylane.decomposition_rules.qubit.state_preparation",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

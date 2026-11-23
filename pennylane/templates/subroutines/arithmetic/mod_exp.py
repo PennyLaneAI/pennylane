@@ -15,6 +15,8 @@
 Contains the ModExp template.
 """
 
+from importlib import import_module as _import_module
+
 import numpy as np
 
 from pennylane.core.operator import Operation
@@ -120,7 +122,7 @@ class ModExp(Operation):
 
     def __init__(
         self, x_wires: WiresLike, output_wires, base, mod=None, work_wires: WiresLike = ()
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):
 
         output_wires = Wires(output_wires)
         work_wires = Wires(() if work_wires is None else work_wires)
@@ -214,9 +216,8 @@ class ModExp(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(
-        x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike):
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -242,3 +243,16 @@ class ModExp(Operation):
             ControlledSequence(Multiplier(base, output_wires, mod, work_wires), control=x_wires)
         )
         return op_list
+
+
+_RULE_MODULES = {
+    "_mod_exp_standard_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.mod_exp",
+    "_mod_exp_standard": "pennylane.decomposition_rules.templates.subroutines.arithmetic.mod_exp",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

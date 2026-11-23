@@ -35,8 +35,7 @@ else:
     jax = None
 
 
-# pylint: disable=too-many-public-methods, too-many-positional-arguments
-class TestWires:
+class TestWires:  # pylint: disable=too-many-public-methods
     """Tests for the ``Wires`` class."""
 
     def test_AbstractWires_handled(self):
@@ -410,13 +409,12 @@ class TestWires:
         assert Wires([1, 2, 3]) != (1, 5, 3)
         assert (1, 5, 3) != Wires([1, 2, 3])
 
-    # pylint: disable=protected-access
     def test_hash_cached(self):
         """Test that the hash of a Wires object is being cached."""
         wires = Wires([0, 1])
-        assert wires._hash is None
+        assert wires._hash is None  # pylint: disable=protected-access
         h = hash(wires)
-        assert wires._hash == h
+        assert wires._hash == h  # pylint: disable=protected-access
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
@@ -433,18 +431,29 @@ class TestWires:
         assert wires == wires2, f"{wires} != {wires2}"
 
     @pytest.mark.jax
-    def test_wires_pytree_with_array_leaves(self):
+    @pytest.mark.parametrize("array_indices", [(), (0,), (1,), (0, 1, 2, 3)])
+    @pytest.mark.parametrize("pytree_library", ["jax", "pennylane"])
+    def test_wires_pytree_with_array_leaves(self, array_indices, pytree_library):
         """Test that unflattening wire pytrees with leaves containing scalar arrays
         is possible and correct."""
         import jax.numpy as jnp
-        from jax.tree import flatten, unflatten
+        from jax import tree
+
+        pytrees = tree if pytree_library == "jax" else qp.pytrees
 
         wires = Wires([0, 1, 2, 3])
-        leaves, tree = flatten(wires)
-        inner_arr_leaves = [jnp.array(l, dtype=int) for l in leaves]
-        unflattened_wires = unflatten(tree, inner_arr_leaves)
+        leaves, structure = pytrees.flatten(wires)
+        inner_arr_leaves = [
+            jnp.array(label, dtype=int) if index in array_indices else label
+            for index, label in enumerate(leaves)
+        ]
+        if pytree_library == "jax":
+            unflattened_wires = pytrees.unflatten(structure, inner_arr_leaves)
+        else:
+            unflattened_wires = pytrees.unflatten(inner_arr_leaves, structure)
 
         assert wires == unflattened_wires
+        assert Wires.all_wires([unflattened_wires]) == wires
 
     def test_class_index(self):
         """Test that indexing the class raises."""
@@ -543,7 +552,6 @@ class TestWires:
             (Wires([]), Wires([1, 2]), Wires([2, 3]), Wires([3, 4, 5]), Wires([1, 2, 3, 4, 5])),
         ],
     )
-    # pylint: disable=too-many-arguments
     def test_multiple_union(self, wire_a, wire_b, wire_c, wire_d, expected):
         """
         Test the union operation (|) with multiple Wires objects.

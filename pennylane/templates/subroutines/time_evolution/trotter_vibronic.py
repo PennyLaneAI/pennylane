@@ -14,6 +14,7 @@
 """Contains the ``TrotterVibronic`` template for vibronic Hamiltonian time evolution."""
 
 from functools import reduce
+from importlib import import_module as _import_module
 
 import numpy as np
 
@@ -62,13 +63,13 @@ class TrotterVibronic(Operator2):
             one per mode, via ``np.array(vib_wires).reshape(M, -1)``.
         phase_gradient_wires (WiresLike): at least :math:`b` wires holding the `phase-gradient
             resource state <https://pennylane.ai/compilation/phase-gradient>`__, assumed to be
-            prepared upfront. Extra wires beyond :math:`b` add unused precision headroom.
+            prepared upfront. Only the first :math:`b` wires are used.
         coefficient_wires (WiresLike): the :math:`b` wires of the Hamiltonian-coefficient
             register. If omitted (default), they are dynamically allocated in the decomposition,
             with :math:`b` equal to ``len(phase_gradient_wires)``.
         cache_wires (WiresLike): the :math:`2k` cache wires for squared/multiplied mode registers.
             If omitted (default), they are dynamically allocated in the decomposition.
-        work_wires (WiresLike): the :math:`\max(n-1, 2k, 2b+2)` work wires for data loading and
+        work_wires (WiresLike): the :math:`\max(n-1, b+1, 2k+2)` work wires for data loading and
             arithmetic. If omitted (default), they are dynamically allocated in the decomposition.
         aqft_order (int): approximation order of the :class:`~.AQFT` used to transform between
             position and momentum space. If ``None`` (default), no approximation is made
@@ -110,7 +111,7 @@ class TrotterVibronic(Operator2):
 
         wires = qp.registers({
             "electronic": n, "vib_wires": n_modes * k, "cache": 2 * k,
-            "coefficients": b, "phase_gradient": b, "work": max(n - 1, 2 * k, 2 * b + 2),
+            "coefficients": b, "phase_gradient": b, "work": max(n - 1, b + 1, 2 * k + 2),
         })
         all_wires = qp.wires.Wires.all_wires(list(wires.values()))
 
@@ -129,7 +130,7 @@ class TrotterVibronic(Operator2):
             return qp.probs(wires=wires["electronic"])
 
     >>> qp.specs(circuit)().resources.quantum_operations  # doctest: +SKIP
-    {'PhaseGradientStatePrep': 1, 'QROM': 6, 'SemiAdder': 2, 'CNOT': 24, 'C(Incrementer)': 4, 'OutMultiplier': 3, 'MultiX': 2, 'AQFT': 1, 'SignedOutSquare': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(AQFT)': 1}
+    {'PhaseGradientStatePrep': 1, 'QROM': 6, 'SemiAdder': 4, 'PauliX': 28, 'C(MultiX)': 8, 'MultiControlledX': 16, 'TemporaryAND': 10, 'CNOT': 48, 'Adjoint(TemporaryAND)': 10, 'AQFT': 1, 'MultiX': 2, 'SignedOutSquare': 1, 'OutMultiplier': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(AQFT)': 1}
 
     .. note::
 
@@ -158,19 +159,26 @@ class TrotterVibronic(Operator2):
             :example: :math:`F=1`, :math:`M=1`, :math:`k=1`, :math:`n=1`,
                 :math:`b=1`, :math:`r=1`
 
-            .. decomposition-rule:: _trotter_vibronic_decomposition
+            .. decomposition-rule:: vibronic_trotter_steps
                 :image: /_static/decomposition_thumbnails/trotter_vibronic_phase_gradient.svg
                 :where: :math:`P = 2Fr` position-fragment visits and :math:`K = M(M-1)/2` mode
-                    pairs. All counts are upper bounds: terms with zero coefficients are
+                    pairs, and :math:`[b > 1]` is 1 if :math:`b > 1` and 0 otherwise.
+                    All counts are upper bounds: terms with zero coefficients are
                     skipped, and the :class:`~.Hadamard` and :class:`~.CNOT` counts also depend
-                    on each fragment's electronic diagonalization
+                    on each fragment's electronic diagonalization. The counts of the gates from
+                    the half-signed multipliers assume :math:`k \leq b`, and :math:`2k \leq b`
+                    if :math:`K > 0`
 
                 :class:`~.Hadamard` | :math:`2P` | 0
-                :class:`~.CNOT` | :math:`2P(n-1) + PM(2+2k+2b) + PK(2+4k+2b)` | 12
+                :class:`~.CNOT` | :math:`2P(n-1) + 3Pk(M(2b-k) + 4K(b-k))` | 6
+                :class:`~.X` | :math:`P(M + K)(2b + 8)` | 20
+                :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`4Pk(M + 2K)` | 8
+                :class:`~.MultiX` with 1 control on :math:`|0\rangle` | :math:`2Pk(M + 2K)\,[b > 1]` | 0
+                :class:`~.TemporaryAND` | :math:`\tfrac{Pk}{2}(M(2b-k+1) + 2K(2b-2k+1))` | 2
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`\tfrac{Pk}{2}(M(2b-k+1) + 2K(2b-2k+1))` | 2
                 :class:`~.QROM` | :math:`P(2 + 2M + K)` | 6
-                :class:`~.SemiAdder` | :math:`P` | 2
-                :class:`~.OutMultiplier` | :math:`P(2M + K) + rM` | 3
-                :class:`~.Incrementer` with 1 control | :math:`2P(M + K)` | 4
+                :class:`~.SemiAdder` | :math:`P(1 + M + K)` | 4
+                :class:`~.OutMultiplier` | :math:`PM + rM` | 1
                 :class:`~.SignedOutSquare` | :math:`PM + rM` | 1
                 :class:`Adjoint(SignedOutSquare) <.SignedOutSquare>` | :math:`PM + rM` | 1
                 :class:`~.SignedOutMultiplier` | :math:`PK` | 0
@@ -210,7 +218,7 @@ class TrotterVibronic(Operator2):
              - :math:`\ge b`
              - phase-gradient state (unsigned)
            * - ``work_wires``
-             - :math:`\max(n-1, 2k, 2b+2)`
+             - :math:`\max(n-1, b+1, 2k+2)`
              - data-loading/arithmetic scratch
 
     .. details::
@@ -348,9 +356,13 @@ class TrotterVibronic(Operator2):
         * :math:`\beta_{a,rs} Q_r Q_s` -- :class:`~.SignedOutMultiplier` then the same
           half-signed multiply as the linear term.
 
-        The half-signed multiply is a plain :class:`~.OutMultiplier` on the magnitudes, flanked by
-        extra sign-bit CNOTs and two controlled :class:`~.Incrementer` calls that apply the
-        two's-complement (visible as ``C(Incrementer)`` in the resource count above).
+        The half-signed multiply uses the controlled add/subtract decomposition of
+        :class:`~.OutMultiplier` (`arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__), with
+        the bits of the signed register controlling the add/subtract steps. Flipping its sign bit
+        swaps the add and subtract branches of the sign bit's step, which accounts for the
+        negative weight of the sign bit in two's complement and makes the final correction step
+        of the unsigned multiplication obsolete. Its gates are
+        applied directly, without an :class:`~.OutMultiplier` wrapper.
         :math:`Q_r^2` uses the low :math:`2k-1` ``cache_wires`` and :math:`Q_r Q_s` all
         :math:`2k`, and each square/product is uncomputed after use. See the
         demo's `potential step
@@ -399,8 +411,7 @@ class TrotterVibronic(Operator2):
         "work_wires": Wire[-1],
     }
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         evolution_time,
         num_trotter_steps,
@@ -525,11 +536,6 @@ def _diagonalization_matrix(key, n_wires):
     for target in targets:
         matrix = _embed_cnot(control, target) @ matrix
     return matrix
-
-
-# ---------------------------------------------------------------------------
-# ------------------------- Half-signed multiplier --------------------------
-# ---------------------------------------------------------------------------
 
 
 # ---------------------------------------------------------------------------
@@ -669,16 +675,6 @@ def _branch_probs(hamiltonian, evolution_time, num_trotter_steps):
 
 
 # ---------------------------------------------------------------------------
-# ------------------------------ Data loading -------------------------------
-# ---------------------------------------------------------------------------
-
-
-# ---------------------------------------------------------------------------
-# ------------------------------ Trotter step -------------------------------
-# ---------------------------------------------------------------------------
-
-
-# ---------------------------------------------------------------------------
 # ------------------------------ Validation ---------------------------------
 # ---------------------------------------------------------------------------
 
@@ -714,3 +710,29 @@ def _validate_hamiltonian(hamiltonian):
             f"`hamiltonian` implies {n_states} electronic states, but TrotterVibronic currently "
             "only supports a number of electronic states that is a power of 2."
         )
+
+
+_RULE_MODULES = {
+    "_trotter_vibronic_standard_resources": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
+    "_num_applied_terms": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
+    "_coefficient_register_size": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
+    "_required_work_size": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
+    "_required_work_wire_sizes": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
+    "_trotter_vibronic_standard_work_wires": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
+    "_trotter_vibronic_standard": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
+    "_diagonalize_probs": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
+    "_diagonalize_vibronic_circuit": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
+    "_half_signed_out_multiplier": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
+    "_load_coefficients": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
+    "_extract_registers": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
+    "_trotter_step_second_order": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
+    "_run_trotter_vibronic": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
+    "_validate_registers": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

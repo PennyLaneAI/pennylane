@@ -16,6 +16,7 @@ Contains the FlipSign template.
 """
 
 from collections.abc import Sequence
+from importlib import import_module as _import_module
 
 from pennylane import math
 from pennylane.core.operator import Operator2
@@ -66,6 +67,22 @@ class FlipSign(Operator2):
     >>> circuit()
     array([ 0.5+0.j,  0.5+0.j, -0.5+0.j,  0.5+0.j])
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.FlipSign
+            :stacked:
+            :symbols: :math:`n` wires and basis state :math:`b=(b_0, \dots, b_{n-1})` (``state``)
+            :example: :math:`n=3`, :math:`b=(1, 0, 0)`
+
+            .. decomposition-rule:: to_controlled_z
+                :image: /_static/decomposition_thumbnails/flip_sign_controlled_z.svg
+                :where: the controls are on :math:`|b_0 \cdots b_{n-2}\rangle`, and
+                    :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
+
+                :class:`~.Z` with :math:`n-1` controls | :math:`1` | 1
+                :class:`~.X` | :math:`2[b_{n-1} = 0]` | 2
+
     """
 
     compilable_argnames = ("state",)
@@ -107,3 +124,16 @@ class FlipSign(Operator2):
         state = self._canonicalize_state(state, num_wires)
         work_wires = () if work_wires is None else work_wires
         super().__init__(state, wires, work_wires)
+
+
+_RULE_MODULES = {
+    "_flip_sign_standard_resources": "pennylane.decomposition_rules.templates.subroutines.flip_sign",
+    "_flip_sign_standard": "pennylane.decomposition_rules.templates.subroutines.flip_sign",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

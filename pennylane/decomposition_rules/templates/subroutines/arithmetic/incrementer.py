@@ -12,12 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.arithmetic.incrementer."""
 
 from pennylane import capture, compiler, math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_resources,
+)
 from pennylane.decomposition_rules.op_math.controlled2 import (
     flip_zero_control as flip_zero_control2,
 )
@@ -217,6 +222,9 @@ def _adjoint_incrementer_bit_flips(base):
 
 add_decomps(Incrementer, _incrementer_elbow_ladder, _incrementer_multicontrolledx)
 
-add_decomps("C(Incrementer)", flip_zero_control2(_ctrl_incrementer_elbow_ladder))
+add_decomps(
+    "C(Incrementer)",
+    flip_zero_control2(_ctrl_incrementer_elbow_ladder, name="ctrl_incrementer_elbow_ladder"),
+)
 
 add_decomps("Adjoint(Incrementer)", _adjoint_incrementer_bit_flips)

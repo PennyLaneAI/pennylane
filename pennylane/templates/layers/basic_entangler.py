@@ -15,6 +15,8 @@ r"""
 Contains the BasicEntanglerLayers template.
 """
 
+from importlib import import_module as _import_module
+
 from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.ops import CNOT, RX
@@ -215,3 +217,16 @@ class BasicEntanglerLayers(Operation):
         """
 
         return n_layers, n_wires
+
+
+_RULE_MODULES = {
+    "_basic_entangler_standard_resources": "pennylane.decomposition_rules.templates.layers.basic_entangler",
+    "_basic_entangler_standard": "pennylane.decomposition_rules.templates.layers.basic_entangler",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

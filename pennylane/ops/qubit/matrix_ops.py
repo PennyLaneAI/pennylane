@@ -16,8 +16,11 @@ This submodule contains the discrete-variable quantum operations that
 accept a hermitian or an unitary matrix as a parameter.
 """
 
-# pylint:disable=arguments-differ
+# pylint: disable=arguments-differ
+
+
 import warnings
+from importlib import import_module as _import_module
 
 import numpy as np
 import scipy as sp
@@ -160,7 +163,7 @@ class QubitUnitary(Operator2):
                 :class:`~.Rot` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: two_qubit_decomp_rule
+            .. decomposition-rule:: two_qubit
                 :image: /_static/decomposition_thumbnails/qubit_unitary_two_qubit.svg
                 :requires: a two-qubit matrix
                 :where: the counts are the worst case, a matrix that needs 3 :class:`~.CNOT` gates:
@@ -173,7 +176,7 @@ class QubitUnitary(Operator2):
                 :class:`~.RY` | :math:`2`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: multi_qubit_decomp_rule
+            .. decomposition-rule:: multi_qubit
                 :image: /_static/decomposition_thumbnails/qubit_unitary_multi_qubit.svg
                 :requires: a matrix on :math:`n > 2` wires
 
@@ -181,21 +184,21 @@ class QubitUnitary(Operator2):
                 :class:`~.SelectPauliRot` (:math:`Z`) with :math:`n-1` controls | :math:`2`
                 :class:`~.SelectPauliRot` (:math:`Y`) with :math:`n-1` controls | :math:`1`
 
-            .. decomposition-rule:: _adjoint_qubit_unitary
+            .. decomposition-rule:: conjugate_transpose
                 :image: /_static/decomposition_thumbnails/qubit_unitary_adjoint.svg
                 :region: adjoint
                 :where: the adjoint of the input unitary matrix is used
 
                 :class:`~.QubitUnitary` | :math:`1`
 
-            .. decomposition-rule:: _controlled_qubit_unitary
+            .. decomposition-rule:: to_controlled_qubit_unitary
                 :image: /_static/decomposition_thumbnails/qubit_unitary_controlled.svg
                 :region: controlled
                 :where: the circuit shows :math:`c = 2` control wires
 
                 :class:`~.ControlledQubitUnitary` | :math:`1`
 
-            .. decomposition-rule:: _pow_qubit_unitary
+            .. decomposition-rule:: matrix_power
                 :image: /_static/decomposition_thumbnails/qubit_unitary_pow.svg
                 :region: pow
                 :where: the input unitary matrix is raised to the power, :math:`z`
@@ -266,9 +269,8 @@ class QubitUnitary(Operator2):
         return f"QubitUnitary(U={self.U}, wires={self.wires})"
 
     @staticmethod
-    def compute_matrix(
-        U: TensorLike, wires: WiresLike | None = None, unitary_check: bool = False
-    ):  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
+    def compute_matrix(U: TensorLike, wires: WiresLike | None = None, unitary_check: bool = False):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -296,9 +298,12 @@ class QubitUnitary(Operator2):
         return U
 
     @staticmethod
-    def compute_sparse_matrix(
-        U: TensorLike, wires: WiresLike | None = None, unitary_check: bool = False, format="csr"
-    ):  # pylint: disable=arguments-differ,unused-argument
+    def compute_sparse_matrix(  # pylint: disable=unused-argument
+        U: TensorLike,
+        wires: WiresLike | None = None,
+        unitary_check: bool = False,
+        format="csr",
+    ):
         r"""Representation of the operator as a sparse matrix.
 
         Args:
@@ -327,9 +332,8 @@ class QubitUnitary(Operator2):
         )
 
     @staticmethod
-    def compute_decomposition(
-        U: TensorLike, wires: WiresLike, unitary_check: bool = False
-    ):  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
+    def compute_decomposition(U: TensorLike, wires: WiresLike, unitary_check: bool = False):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -383,19 +387,16 @@ class QubitUnitary(Operator2):
 
         return qp.ops.op_math.decompositions.multi_qubit_decomposition(U, Wires(wires))
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_sparse_matrix(self) -> bool:
+    def has_sparse_matrix(self) -> bool:  # pylint: disable=invalid-overridden-method
         return self._issparse
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_matrix(self) -> bool:
+    def has_matrix(self) -> bool:  # pylint: disable=invalid-overridden-method
         return not self._issparse
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_decomposition(self) -> bool:
+    def has_decomposition(self) -> bool:  # pylint: disable=invalid-overridden-method
         # Sparse matrices on more than one wire cannot be decomposed.
         return self.has_matrix or len(self.wires) == 1
 
@@ -454,7 +455,7 @@ class DiagonalQubitUnitary(Operator2):
             :symbols: :math:`n` wires and :math:`w` work wires
             :example: :math:`n=2`
 
-            .. decomposition-rule:: _diagonal_qu_decomp
+            .. decomposition-rule:: recursive
                 :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_recursive.svg
                 :where: :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
 
@@ -463,20 +464,20 @@ class DiagonalQubitUnitary(Operator2):
                 :class:`~.RZ` | :math:`[n=1]` | 0
                 :class:`~.GlobalPhase` | :math:`[n=1]` | 0
 
-            .. decomposition-rule:: _diagonal_mux_on_aux_decomp
+            .. decomposition-rule:: auxiliary
                 :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_mux_on_aux.svg
                 :requires: :math:`w \geq 1` work wire
 
                 :class:`~.SelectPauliRot` (:math:`Z`) with :math:`n` controls | :math:`1` | 1
 
-            .. decomposition-rule:: _adjoint_diagonal_unitary
+            .. decomposition-rule:: conjugate_diagonal
                 :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_adjoint.svg
                 :region: adjoint
                 :where: the adjoint of the diagonal entries is taken
 
                 :class:`~.DiagonalQubitUnitary` | :math:`1`
 
-            .. decomposition-rule:: _pow_diagonal_unitary
+            .. decomposition-rule:: power_diagonal
                 :image: /_static/decomposition_thumbnails/diagonal_qubit_unitary_pow.svg
                 :region: pow
                 :where: diagonal entries are raised to the power, :math:`z`
@@ -505,7 +506,7 @@ class DiagonalQubitUnitary(Operator2):
         super().__init__(D, wires=wires)
 
     @staticmethod
-    # pylint: disable-next=arguments-differ,unused-argument
+    # pylint: disable-next=unused-argument
     def compute_matrix(D: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -538,7 +539,7 @@ class DiagonalQubitUnitary(Operator2):
         return math.diag(D)
 
     @staticmethod
-    # pylint: disable-next=arguments-differ,unused-argument
+    # pylint: disable-next=unused-argument
     def compute_eigvals(D: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -688,15 +689,13 @@ class BlockEncode(Operator2):
         self._subspace = subspace
         self._issparse = sp.sparse.issparse(A)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_sparse_matrix(self) -> bool:
+    def has_sparse_matrix(self) -> bool:  # pylint: disable=invalid-overridden-method
         """bool: Whether the operator has a sparse matrix representation."""
         return self._issparse
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_matrix(self) -> bool:
+    def has_matrix(self) -> bool:  # pylint: disable=invalid-overridden-method
         """bool: Whether the operator has a sparse matrix representation."""
         return not self._issparse
 
@@ -793,8 +792,7 @@ def _process_blockencode(A, subspace):
 
     sqrtm = math.sqrt_matrix_sparse if sp.sparse.issparse(A) else math.sqrt_matrix
 
-    def _stack(lst, h=False, like=None):
-        del like
+    def _stack(lst, h=False, like=None):  # pylint: disable=unused-argument
         return math.hstack(lst) if h else math.vstack(lst)
 
     interface = math.get_interface(A)
@@ -828,3 +826,27 @@ def _process_blockencode(A, subspace):
         u = _stack([col1, col2], h=True, like=interface)
 
     return u
+
+
+_RULE_MODULES = {
+    "_adjoint_qubit_unitary_standard": "pennylane.decomposition_rules.qubit.matrix_ops",
+    "_matrix_pow": "pennylane.decomposition_rules.qubit.matrix_ops",
+    "_pow_qubit_unitary_standard": "pennylane.decomposition_rules.qubit.matrix_ops",
+    "_controlled_qubit_unitary_standard_resources": "pennylane.decomposition_rules.qubit.matrix_ops",
+    "_controlled_qubit_unitary_standard": "pennylane.decomposition_rules.qubit.matrix_ops",
+    "_diagonal_qubit_unitary_recursive_resources": "pennylane.decomposition_rules.qubit.matrix_ops",
+    "_diagonal_qubit_unitary_recursive": "pennylane.decomposition_rules.qubit.matrix_ops",
+    "_diagonal_qubit_unitary_auxiliary_resources": "pennylane.decomposition_rules.qubit.matrix_ops",
+    "_diagonal_qubit_unitary_auxiliary": "pennylane.decomposition_rules.qubit.matrix_ops",
+    "_adjoint_diagonal_unitary_standard": "pennylane.decomposition_rules.qubit.matrix_ops",
+    "_pow_diagonal_unitary_standard": "pennylane.decomposition_rules.qubit.matrix_ops",
+    "_adjoint_block_encode_standard_resources": "pennylane.decomposition_rules.qubit.matrix_ops",
+    "_adjoint_block_encode_standard": "pennylane.decomposition_rules.qubit.matrix_ops",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

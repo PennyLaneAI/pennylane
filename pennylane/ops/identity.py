@@ -16,11 +16,13 @@ This module contains the Identity operation that is common to qubit computing pa
 """
 
 from functools import lru_cache
+from importlib import import_module as _import_module
 
 from scipy import sparse
 
 import pennylane as qp
 from pennylane.core.operator import Operator2
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
@@ -33,7 +35,7 @@ def _identity_matrix(n_wires):
 
 
 @lru_cache
-def _identity_sparse_matrix(n_wires, format):  # pylint: disable=redefined-builtin
+def _identity_sparse_matrix(n_wires, format):
     """Cached sparse identity matrix, keyed on the number of wires rather than the wire labels."""
     return sparse.eye(int(2**n_wires), format=format)
 
@@ -72,7 +74,7 @@ class Identity(Operator2):
 
     def __init__(self, wires: WiresLike = ()):
         super().__init__(wires=wires)
-        self._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({}): 1.0})
+        self._pauli_rep = PauliSentence({PauliWord({}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
@@ -255,7 +257,7 @@ class GlobalPhase(Operator2):
     wire_argnames = ()
     arg_specs = {"phi": Float}
 
-    def __init__(self, phi):  # pylint: disable=unused-argument
+    def __init__(self, phi):
         super().__init__(phi)
 
     @staticmethod
@@ -326,9 +328,8 @@ class GlobalPhase(Operator2):
         return qp.math.exp(-1j * phi) * sparse.eye(2**n_wires, format=format)
 
     @staticmethod
-    def compute_diagonalizing_gates(
-        phi, wires=()
-    ):  # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_diagonalizing_gates(phi, wires=()):
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -372,3 +373,16 @@ class GlobalPhase(Operator2):
         # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
         # it otherwise can't handle Identity with no wires, see PR #5194
         return qp.s_prod(-1, qp.I())
+
+
+_RULE_MODULES = {
+    "_controlled_g_phase_standard_resources": "pennylane.decomposition_rules.identity",
+    "_controlled_g_phase_standard": "pennylane.decomposition_rules.identity",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -15,6 +15,8 @@
 This module contains the template for performing basis transformation defined by a set of fermionic ladder operators.
 """
 
+from importlib import import_module as _import_module
+
 from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.typing import Wire
@@ -57,7 +59,7 @@ class BasisRotation(Operator2):
             :symbols: :math:`N \times N` matrix :math:`u` (``unitary_matrix``) on :math:`N` wires
             :example: :math:`N=3`, with :math:`\det u = -1` for the real-valued rule
 
-            .. decomposition-rule:: _real_basis_rotation_decomp
+            .. decomposition-rule:: real
                 :image: /_static/decomposition_thumbnails/basis_rotation_real_givens.svg
                 :requires: real-valued :math:`u`
                 :where: :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
@@ -65,7 +67,7 @@ class BasisRotation(Operator2):
                 :class:`~.PhaseShift` | :math:`[\det u = -1]` | 1
                 :class:`~.SingleExcitation` | :math:`N(N-1)/2` | 3
 
-            .. decomposition-rule:: _complex_basis_rotation_decomp
+            .. decomposition-rule:: complex
                 :image: /_static/decomposition_thumbnails/basis_rotation_complex_givens.svg
                 :requires: complex-valued :math:`u`
 
@@ -306,3 +308,22 @@ class BasisRotation(Operator2):
             raise ValueError(f"This template requires at least two wires, got {len(wires)}")
 
         super().__init__(unitary_matrix, wires=wires)
+
+
+_RULE_MODULES = {
+    "_qjit_or_capture": "pennylane.decomposition_rules.templates.subroutines.qchem.basis_rotation",
+    "_adjust_determinant": "pennylane.decomposition_rules.templates.subroutines.qchem.basis_rotation",
+    "_is_jax_jit": "pennylane.decomposition_rules.templates.subroutines.qchem.basis_rotation",
+    "_prepare_args": "pennylane.decomposition_rules.templates.subroutines.qchem.basis_rotation",
+    "_basis_rotation_real_resources": "pennylane.decomposition_rules.templates.subroutines.qchem.basis_rotation",
+    "_basis_rotation_real": "pennylane.decomposition_rules.templates.subroutines.qchem.basis_rotation",
+    "_basis_rotation_complex_resources": "pennylane.decomposition_rules.templates.subroutines.qchem.basis_rotation",
+    "_basis_rotation_complex": "pennylane.decomposition_rules.templates.subroutines.qchem.basis_rotation",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -15,7 +15,8 @@ r"""
 Contains the StronglyEntanglingLayers template.
 """
 
-# pylint: disable=too-many-arguments
+from importlib import import_module as _import_module
+
 from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.ops import CNOT, Rot
@@ -185,9 +186,8 @@ class StronglyEntanglingLayers(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(
-        weights, wires, ranges, imprimitive=CNOT
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(weights, wires, ranges, imprimitive=CNOT):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -253,3 +253,16 @@ class StronglyEntanglingLayers(Operation):
         """
 
         return n_layers, n_wires, 3
+
+
+_RULE_MODULES = {
+    "_strongly_entangling_standard_resources": "pennylane.decomposition_rules.templates.layers.strongly_entangling",
+    "_strongly_entangling_standard": "pennylane.decomposition_rules.templates.layers.strongly_entangling",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

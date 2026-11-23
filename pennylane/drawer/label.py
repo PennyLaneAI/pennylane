@@ -15,7 +15,7 @@
 Contains the 'label' function for customizing operator labels.
 """
 
-# pylint: disable=unused-argument
+from importlib import import_module as _import_module
 
 from pennylane.core.operator import Operator, abstractify
 from pennylane.ops.functions.equal import (
@@ -150,3 +150,16 @@ def label(op: Operator, new_label: str) -> LabelledOp:
 
     """
     return LabelledOp(op, new_label)
+
+
+_RULE_MODULES = {
+    "_custom_label_standard_resources": "pennylane.decomposition_rules.drawer.label",
+    "_custom_label_standard": "pennylane.decomposition_rules.drawer.label",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -15,9 +15,12 @@ r"""
 Contains the UCCSD template.
 """
 
-# pylint: disable-msg=too-many-arguments,protected-access,too-many-positional-arguments
+# pylint: disable=too-many-arguments
+
+
 import copy
 from collections.abc import Sequence
+from importlib import import_module as _import_module
 
 import numpy as np
 
@@ -245,6 +248,7 @@ class UCCSD(Operation):
         super().__init__(weights, wires=wires)
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["s_wires"] = tuple(
@@ -272,9 +276,8 @@ class UCCSD(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(
-        weights, wires, s_wires, d_wires, init_state, n_repeats
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(weights, wires, s_wires, d_wires, init_state, n_repeats):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -318,3 +321,16 @@ class UCCSD(Operation):
                 op_list.append(FermionicSingleExcitation(weights[layer][j], wires=s_wires_))
 
         return op_list
+
+
+_RULE_MODULES = {
+    "_UCCSD_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qchem.uccsd",
+    "_UCCSD_standard": "pennylane.decomposition_rules.templates.subroutines.qchem.uccsd",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

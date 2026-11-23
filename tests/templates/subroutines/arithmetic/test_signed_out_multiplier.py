@@ -26,9 +26,9 @@ from pennylane import SignedOutMultiplier, device, qnode
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import list_decomps
 from pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_multiplier import (
-    _not_zeroed_signed_out_multiplier_resources,
+    _signed_out_multiplier_borrowed_resources,
+    _signed_out_multiplier_zeroed_resources,
     _twos_complement_helper,
-    _zeroed_signed_out_multiplier_resources,
 )
 from pennylane.measurements import sample, state
 from pennylane.ops import CNOT, ctrl
@@ -76,9 +76,9 @@ def twos_complement_value(bits):
         ((0, 1, 2), (3, 4, 5), (10, 11, 12, 13, 14, 15), (6, 7, 8, 9), True, 4),
     ],
 )
-def test_abstract_init(
+def test_abstract_init(  # pylint: disable=too-many-arguments
     x_wires, y_wires, output_wires, work_wires, output_wires_zeroed, expected_num_work_wires
-):  # pylint: disable=too-many-arguments
+):
     """Tests creating an abstract operator."""
     abstract_op = SignedOutMultiplier(
         Wire[len(x_wires)],
@@ -110,7 +110,7 @@ def test_signed_out_multiplier_resources():
     work_wires = [7, 8, 9, 10]
     num_incrementer_work_wires = len(work_wires) - 2
 
-    zeroed_resources = _zeroed_signed_out_multiplier_resources(
+    zeroed_resources = _signed_out_multiplier_zeroed_resources(
         x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=True
     )
     mult_ops = [key for key in zeroed_resources if isinstance(key, OutMultiplier)]
@@ -133,7 +133,7 @@ def test_signed_out_multiplier_resources():
     for inc_rep, count in expected_incrementers.items():
         assert zeroed_resources[inc_rep] == count
 
-    not_zeroed_resources = _not_zeroed_signed_out_multiplier_resources(
+    not_zeroed_resources = _signed_out_multiplier_borrowed_resources(
         x_wires, y_wires, output_wires, work_wires
     )
     nested_ops = [key for key in not_zeroed_resources if isinstance(key, SignedOutMultiplier)]
@@ -226,12 +226,12 @@ def test_decomposition(x_wires, y_wires, work_wires, output_wires, zeroed):
     "rule_name, registers, expected_primitives",
     [
         (
-            "_signed_out_multiplier_decomposition_zeroed",
+            "zeroed",
             ([0, 1, 2], [3, 4, 5], [10, 11, 12, 13, 14, 15], [6, 7, 8, 9]),
             {"for_loop": 5, "OutMultiplier": 1},
         ),
         (
-            "_signed_out_multiplier_decomposition_not_zeroed",
+            "borrowed",
             ([0, 1], [2, 3], [9, 10], [4, 5, 6, 7, 8]),
             {"concatenate": 2, "SignedOutMultiplier": 1},
         ),
@@ -333,17 +333,15 @@ def test_decomposition_with_abstract_wires(rule_name, registers, expected_primit
         ),
     ],
 )
-def test_signed_out_multiplier_correct(
+def test_signed_out_multiplier_correct(  # pylint: disable=too-many-arguments
     x_wires, y_wires, work_wires, output_wires, init_state, zeroed
-):  # pylint: disable=too-many-arguments
+):
     """Tests with a few examples that the Template yields correct results."""
 
     dev = device("default.qubit", wires=x_wires + y_wires + work_wires + output_wires)
 
     @qnode(dev)
-    def signed_multiply(
-        x_wires, y_wires, work_wires, output_wires, init_state, zeroed
-    ):  # pylint: disable=too-many-arguments
+    def signed_multiply(x_wires, y_wires, work_wires, output_wires, init_state, zeroed):
         BasisEmbedding(
             init_state,
             x_wires + y_wires + work_wires + output_wires,

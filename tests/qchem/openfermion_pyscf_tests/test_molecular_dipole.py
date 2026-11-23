@@ -15,7 +15,9 @@
 Unit tests for molecular dipole.
 """
 
-# pylint: disable=too-many-arguments, protected-access
+# pylint: disable=too-many-arguments
+
+
 import pytest
 
 import pennylane as qp
@@ -312,8 +314,8 @@ def test_differentiable_molecular_dipole(
 @pytest.mark.parametrize(
     ("wiremap"),
     [
-        ["a", "b", "c", "d"],
-        [0, "z", 3, "auxiliary"],
+        [6, 8, 9, 10],
+        [0, 11, 3, 7],
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")

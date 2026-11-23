@@ -28,7 +28,7 @@ from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.qscript import QuantumScriptOrBatch
 from pennylane.core.transforms import CompilePipeline
-from pennylane.decomposition import enabled_graph, has_decomp
+from pennylane.decomposition import has_decomp
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
 from pennylane.measurements import (
     ClassicalShadowMP,
@@ -232,8 +232,7 @@ class NullQubit(Device):
         """The name of the device."""
         return "null.qubit"
 
-    # pylint: disable=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         wires=None,
         shots=None,
@@ -307,7 +306,6 @@ class NullQubit(Device):
         """No-op function to allow for borrowing DefaultQubit.preprocess without AttributeErrors"""
         return execution_config
 
-    # pylint: disable=cell-var-from-loop
     def preprocess(
         self, execution_config: ExecutionConfig | None = None
     ) -> tuple[CompilePipeline, ExecutionConfig]:
@@ -326,7 +324,8 @@ class NullQubit(Device):
                 original_stopping_condition = t.kwargs["stopping_condition"]
 
                 def new_stopping_condition(op):
-                    return not _op_has_decomp(op) or original_stopping_condition(op)
+                    # pylint: disable-next=cell-var-from-loop
+                    return not has_decomp(op) or original_stopping_condition(op)
 
                 t.kwargs["stopping_condition"] = new_stopping_condition
                 t.kwargs["strict"] = False
@@ -335,6 +334,7 @@ class NullQubit(Device):
                 if original_shots_stopping_condition:
 
                     def new_shots_stopping_condition(op):
+                        # pylint: disable-next=cell-var-from-loop
                         return (not op.has_decomposition) or original_shots_stopping_condition(op)
 
                     t.kwargs["stopping_condition_shots"] = new_shots_stopping_condition
@@ -460,17 +460,3 @@ class NullQubit(Device):
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
-
-
-def _op_has_decomp(op):
-    """Check if an operator has a decomposition, taking into account the graph-based decomposition system.
-
-    Args:
-        op (Operator): The operator to check.
-
-    Returns:
-        bool: True if the operator has a decomposition, False otherwise.
-    """
-    if enabled_graph():
-        return has_decomp(op)
-    return op.has_decomposition

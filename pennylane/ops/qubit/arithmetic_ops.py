@@ -16,8 +16,8 @@ This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
 
-# pylint: disable=arguments-differ
 from copy import copy
+from importlib import import_module as _import_module
 
 import numpy as np
 
@@ -161,6 +161,7 @@ class QubitCarry(Operation):
         )
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(wires: WiresLike) -> list[qp.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -304,6 +305,7 @@ class QubitSum(Operation):
         )
 
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_decomposition(wires: WiresLike) -> qp.operation.Operator:
         r"""Representation of the operator as a product of other operators (static method).
 
@@ -445,10 +447,12 @@ class IntegerComparator(Operation):
     ):
         return base_label or f">={self.value}" if self.geq else f"<{self.value}"
 
-    # pylint: disable=unused-argument
     @staticmethod
-    def compute_matrix(
-        control_wires: WiresLike, value: int | None = None, geq: bool = True, **kwargs
+    def compute_matrix(  # pylint: disable=arguments-differ,unused-argument
+        control_wires: WiresLike,
+        value: int | None = None,
+        geq: bool = True,
+        **kwargs,
     ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -518,7 +522,7 @@ class IntegerComparator(Operation):
         return mat
 
     @staticmethod
-    def compute_decomposition(
+    def compute_decomposition(  # pylint: disable=arguments-differ,unused-argument
         value: int,
         wires: WiresLike,
         geq: bool = True,
@@ -565,9 +569,9 @@ class IntegerComparator(Operation):
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
         with qp.queuing.AnnotatedQueue() as q:
             if geq:
-                _integer_comparator_ge_decomposition_impl(wires, value, work_wires)
+                _integer_comparator_greater_equal_impl(wires, value, work_wires)
             else:
-                _integer_comparator_lt_decomposition_impl(wires, value, work_wires)
+                _integer_comparator_less_than_impl(wires, value, work_wires)
 
         if qp.queuing.QueuingManager.recording():
             for op in q.queue:
@@ -586,7 +590,7 @@ class IntegerComparator(Operation):
         return super().pow(z % 2)
 
 
-def _integer_comparator_lt_decomposition_impl(wires, value, work_wires, **_):
+def _integer_comparator_less_than_impl(wires, value, work_wires, **_):
     """Decompose the ``IntegerComparator`` for when the flipping condition is ``n < value``.
 
     This decomposition uses the minimum number of ``MultiControlledX`` gates. For a given value,
@@ -680,7 +684,7 @@ def _integer_comparator_lt_decomposition_impl(wires, value, work_wires, **_):
             qp.X(wires[i])
 
 
-def _integer_comparator_ge_decomposition_impl(wires, value, work_wires, **_):
+def _integer_comparator_greater_equal_impl(wires, value, work_wires, **_):
     """Decompose the ``IntegerComparator`` for when the flipping condition is ``n >= value``.
 
     This decomposition rule mirrors the implementation for the ``n < value`` case.
@@ -731,3 +735,24 @@ def _integer_comparator_ge_decomposition_impl(wires, value, work_wires, **_):
     for i in range(num_controls):
         if control_value_tracker[i]:
             qp.X(wires[i])
+
+
+_RULE_MODULES = {
+    "_qubitcarry_to_cnot_toffolis_resources": "pennylane.decomposition_rules.qubit.arithmetic_ops",
+    "_qubitcarry_to_cnot_toffolis": "pennylane.decomposition_rules.qubit.arithmetic_ops",
+    "_qubitsum_to_cnots_resources": "pennylane.decomposition_rules.qubit.arithmetic_ops",
+    "_qubitsum_to_cnots": "pennylane.decomposition_rules.qubit.arithmetic_ops",
+    "_integer_comparator_less_than_resources": "pennylane.decomposition_rules.qubit.arithmetic_ops",
+    "_integer_comparator_less_than": "pennylane.decomposition_rules.qubit.arithmetic_ops",
+    "_integer_comparator_greater_equal_resources": "pennylane.decomposition_rules.qubit.arithmetic_ops",
+    "_integer_comparator_greater_equal": "pennylane.decomposition_rules.qubit.arithmetic_ops",
+    "_integer_comparator_flip_greater_equal_resources": "pennylane.decomposition_rules.qubit.arithmetic_ops",
+    "_integer_comparator_flip_greater_equal": "pennylane.decomposition_rules.qubit.arithmetic_ops",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

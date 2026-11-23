@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=too-many-arguments
 """
 This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
@@ -19,7 +18,9 @@ core parametrized gates.
 
 # pylint: disable=arguments-differ
 
+
 import functools
+from importlib import import_module as _import_module
 from typing import Literal, override
 from warnings import warn
 
@@ -72,34 +73,60 @@ class RX(Operator2):
 
         .. decomposition-table:: qp.RX
 
-            .. decomposition-rule:: _rx_to_rot
+            .. decomposition-rule:: to_rot
                 :image: /_static/decomposition_thumbnails/rx_to_rot.svg
 
                 :class:`~.Rot` | :math:`1`
 
-            .. decomposition-rule:: _rx_to_rz_ry
+            .. decomposition-rule:: to_rz_ry
                 :image: /_static/decomposition_thumbnails/rx_to_rz_ry.svg
 
                 :class:`~.RZ` | :math:`2`
                 :class:`~.RY` | :math:`1`
 
-            .. decomposition-rule:: _rx_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/rx_to_ppr.svg
 
                 :class:`PauliRot("X") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: _rx_to_ry_cliff
+            .. decomposition-rule:: to_ry_cliff
                 :image: /_static/decomposition_thumbnails/rx_to_ry_cliff.svg
 
                 :class:`~.S` | :math:`1`
                 :class:`Adjoint(S) <.S>` | :math:`1`
                 :class:`~.RY` | :math:`1`
 
-            .. decomposition-rule:: _rx_to_rz_cliff
+            .. decomposition-rule:: to_rz_cliff
                 :image: /_static/decomposition_thumbnails/rx_to_rz_cliff.svg
 
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.RZ` | :math:`1`
+
+            .. decomposition-rule:: negate_angle
+                :image: /_static/decomposition_thumbnails/rx_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.RX` | :math:`1`
+
+            .. decomposition-rule:: to_rz_mcx
+                :image: /_static/decomposition_thumbnails/rx_controlled.svg
+                :region: controlled
+                :where: :math:`c` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.CRX` | :math:`1` if :math:`c = 1`
+                :class:`~.Hadamard` | :math:`2` if :math:`c \geq 2`
+                :class:`~.RZ` | :math:`2` if :math:`c \geq 2`
+                :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
+
+            .. decomposition-rule:: scale_angle
+                :image: /_static/decomposition_thumbnails/rx_pow.svg
+                :region: pow
+                :where: the angle of rotation is multiplied by the power :math:`z`
+
+                :class:`~.RX` | :math:`1`
     """
 
     num_wires = 1
@@ -120,8 +147,7 @@ class RX(Operator2):
 
     @property
     @override
-    # pylint: disable-next=missing-function-docstring
-    def basis(self) -> Literal["X", "Y", "Z", None]:
+    def basis(self) -> Literal["X", "Y", "Z", None]:  # pylint: disable=missing-function-docstring
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
@@ -134,7 +160,7 @@ class RX(Operator2):
 
     @staticmethod
     @override
-    # pylint: disable-next=arguments-differ,unused-argument
+    # pylint: disable-next=unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -218,36 +244,61 @@ class RY(Operator2):
 
         .. decomposition-table:: qp.RY
 
-            .. decomposition-rule:: _ry_to_rot
+            .. decomposition-rule:: to_rot
                 :image: /_static/decomposition_thumbnails/ry_to_rot.svg
 
                 :class:`~.Rot` | :math:`1`
 
-            .. decomposition-rule:: _ry_to_rz_rx
+            .. decomposition-rule:: to_rz_rx
                 :image: /_static/decomposition_thumbnails/ry_to_rz_rx.svg
 
                 :class:`~.RZ` | :math:`2`
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: _ry_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/ry_to_ppr.svg
 
                 :class:`PauliRot("Y") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: _ry_to_rx_cliff
+            .. decomposition-rule:: to_rx_cliff
                 :image: /_static/decomposition_thumbnails/ry_to_rx_cliff.svg
 
                 :class:`~.S` | :math:`1`
                 :class:`Adjoint(S) <.S>` | :math:`1`
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: _ry_to_rz_cliff
+            .. decomposition-rule:: to_rz_cliff
                 :image: /_static/decomposition_thumbnails/ry_to_rz_cliff.svg
 
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.S` | :math:`1`
                 :class:`Adjoint(S) <.S>` | :math:`1`
                 :class:`~.RZ` | :math:`1`
+
+            .. decomposition-rule:: negate_angle
+                :image: /_static/decomposition_thumbnails/ry_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.RY` | :math:`1`
+
+            .. decomposition-rule:: to_ry_mcx
+                :image: /_static/decomposition_thumbnails/ry_controlled.svg
+                :region: controlled
+                :where: :math:`c` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.CRY` | :math:`1` if :math:`c = 1`
+                :class:`~.RY` | :math:`2` if :math:`c \geq 2`
+                :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
+
+            .. decomposition-rule:: scale_angle
+                :image: /_static/decomposition_thumbnails/ry_pow.svg
+                :region: pow
+                :where: the angle of rotation is multiplied by the power :math:`z`
+
+                :class:`~.RY` | :math:`1`
     """
 
     num_wires = 1
@@ -268,8 +319,7 @@ class RY(Operator2):
 
     @property
     @override
-    # pylint: disable-next=missing-function-docstring
-    def basis(self) -> Literal["X", "Y", "Z", None]:
+    def basis(self) -> Literal["X", "Y", "Z", None]:  # pylint: disable=missing-function-docstring
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
             "qp.is_commuting should be used instead to check commutivity.",
@@ -282,7 +332,7 @@ class RY(Operator2):
 
     @staticmethod
     @override
-    # pylint: disable-next=arguments-differ,unused-argument
+    # pylint: disable-next=unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -367,35 +417,35 @@ class RZ(Operator2):
 
         .. decomposition-table:: qp.RZ
 
-            .. decomposition-rule:: _rz_to_ps
+            .. decomposition-rule:: to_ps
                 :image: /_static/decomposition_thumbnails/rz_to_phaseshift.svg
 
                 :class:`~.PhaseShift` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: _rz_to_rot
+            .. decomposition-rule:: to_rot
                 :image: /_static/decomposition_thumbnails/rz_to_rot.svg
 
                 :class:`~.Rot` | :math:`1`
 
-            .. decomposition-rule:: _rz_to_ry_rx
+            .. decomposition-rule:: to_ry_rx
                 :image: /_static/decomposition_thumbnails/rz_to_ry_rx.svg
 
                 :class:`~.RY` | :math:`2`
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: _rz_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/rz_to_ppr.svg
 
                 :class:`PauliRot("Z") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: _rz_to_rx_cliff
+            .. decomposition-rule:: to_rx_cliff
                 :image: /_static/decomposition_thumbnails/rz_to_rx_cliff.svg
 
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: _rz_to_ry_cliff
+            .. decomposition-rule:: to_ry_cliff
                 :image: /_static/decomposition_thumbnails/rz_to_ry_cliff.svg
 
                 :class:`~.Hadamard` | :math:`2`
@@ -403,9 +453,28 @@ class RZ(Operator2):
                 :class:`Adjoint(S) <.S>` | :math:`1`
                 :class:`~.RY` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/rz_adjoint.svg
                 :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.RZ` | :math:`1`
+
+            .. decomposition-rule:: to_rz_mcx
+                :image: /_static/decomposition_thumbnails/rz_controlled.svg
+                :region: controlled
+                :where: :math:`c` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
+
+                :class:`~.CRZ` | :math:`1` if :math:`c = 1`
+                :class:`~.RZ` | :math:`2` if :math:`c \geq 2`
+                :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
+
+            .. decomposition-rule:: scale_angle
+                :image: /_static/decomposition_thumbnails/rz_pow.svg
+                :region: pow
+                :where: the angle of rotation is multiplied by the power :math:`z`
 
                 :class:`~.RZ` | :math:`1`
     """
@@ -438,7 +507,7 @@ class RZ(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable=arguments-differ, unused-argument
+    # pylint: disable-next=unused-argument
     def compute_matrix(phi: TensorLike, wires=None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -469,17 +538,14 @@ class RZ(Operator2):
         return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(2, like=diags), diags)
 
     @staticmethod
-    # pylint: disable=arguments-differ, unused-argument
-    def compute_sparse_matrix(phi, wires=None, format="csr"):
+    def compute_sparse_matrix(phi, wires=None, format="csr"):  # pylint: disable=unused-argument
         return sp.sparse.csr_matrix(
             [[np.exp(-1j * phi / 2), 0], [0, np.exp(1j * phi / 2)]]
         ).asformat(format)
 
     @staticmethod
-    # pylint: disable=arguments-differ, unused-argument
-    def compute_eigvals(
-        phi: TensorLike, wires=None
-    ) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_eigvals(phi: TensorLike, wires=None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -552,12 +618,56 @@ class PhaseShift(Operator2):
         :title: Available decompositions
 
         .. decomposition-table:: qp.PhaseShift
+            :symbols: :math:`c` control wires, :math:`z` controls on :math:`0`
+            :example: :math:`c=2`, :math:`z=0`
 
-            .. decomposition-rule:: _phaseshift_to_rz_gp
+            .. decomposition-rule:: to_rz_gp
                 :image: /_static/decomposition_thumbnails/phaseshift_to_rz_gp.svg
 
                 :class:`~.RZ` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
+
+            .. decomposition-rule:: negate_angle
+                :image: /_static/decomposition_thumbnails/phaseshift_adjoint.svg
+                :region: adjoint
+                :where: ``phi`` changes sign
+
+                :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: to_pauli_rot
+                :image: /_static/decomposition_thumbnails/phaseshift_controlled.svg
+                :region: controlled
+                :where: :math:`c` is the number of control wires, :math:`\binom{c+1}{k}` of
+                    the :class:`~.PauliRot` gates act on :math:`k` wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, and the circuit 
+                    shows :math:`c = 2` and :math:`z = 0`.
+
+                :class:`~.ControlledPhaseShift` | :math:`1` if :math:`c = 1`
+                :class:`~.PauliRot` | :math:`2^{c+1} - 1` if :math:`c \geq 2`
+                :class:`~.GlobalPhase` | :math:`1` if :math:`c \geq 2`
+                :class:`~.PauliX` | :math:`2z` | 0
+
+            .. decomposition-rule:: single_phase
+                :image: /_static/decomposition_thumbnails/controlled_phase_shift_single_phase.svg
+                :region: controlled
+                :requires: :math:`c` zeroed work wires
+                :where: A ladder of :class:`~.TemporaryAND` gates computes the AND of the 
+                    :math:`c` control wires and the target wire into the last work wire, which 
+                    then receives a single ``PhaseShift``. The ladder is uncomputed with mid-circuit 
+                    measurements. Controls on :math:`0` are flipped with ``X`` gates before and 
+                    after the decomposition. The circuit shows :math:`c = 2` and :math:`z = 0`.
+
+                :class:`~.TemporaryAND` | :math:`c` | 2
+                :class:`~.PhaseShift` | :math:`1` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`c` | 2
+                :class:`~.PauliX` | :math:`2z` | 0
+
+            .. decomposition-rule:: scale_angle
+                :image: /_static/decomposition_thumbnails/phaseshift_pow.svg
+                :region: pow
+                :where: the angle is multiplied by the power :math:`z`
+
+                :class:`~.PhaseShift` | :math:`1`
     """
 
     num_wires = 1
@@ -596,7 +706,7 @@ class PhaseShift(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "Rϕ", cache=cache)
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -628,7 +738,7 @@ class PhaseShift(Operator2):
         return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(2, like=diags), diags)
 
     @staticmethod
-    # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=unused-argument
     def compute_eigvals(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -713,22 +823,24 @@ class Rot(Operator2):
 
         .. decomposition-table:: qp.Rot
 
-            .. decomposition-rule:: _rot_to_rz_ry_rz
+            .. decomposition-rule:: to_rz_ry_rz
                 :image: /_static/decomposition_thumbnails/rot_to_rz_ry_rz.svg
 
                 :class:`~.RZ` | :math:`2`
                 :class:`~.RY` | :math:`1`
 
-            .. decomposition-rule:: _adjoint_rot
+            .. decomposition-rule:: reverse_angles
                 :image: /_static/decomposition_thumbnails/rot_adjoint.svg
                 :region: adjoint
 
                 :class:`~.Rot` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rot_decomp)
+            .. decomposition-rule:: to_rz_ry_mcx
                 :image: /_static/decomposition_thumbnails/rot_controlled.svg
                 :region: controlled
-                :where: :math:`c` is the number of control wires, and the circuit shows :math:`c = 2`
+                :where: :math:`c` is the number of control wires, each control wire with
+                    control value :math:`0` adds two :class:`~.PauliX` gates, not included in the
+                    counts, and the circuit shows :math:`c = 2`
 
                 :class:`~.CRot` | :math:`1` if :math:`c = 1`
                 :class:`~.RZ` | :math:`3` if :math:`c \geq 2`
@@ -858,10 +970,24 @@ class U1(Operator2):
 
         .. decomposition-table:: qp.U1
 
-            .. decomposition-rule:: _u1_phaseshift
+            .. decomposition-rule:: to_phaseshift
                 :image: /_static/decomposition_thumbnails/u1_to_phaseshift.svg
 
                 :class:`~.PhaseShift` | :math:`1`
+
+            .. decomposition-rule:: negate_angle
+                :image: /_static/decomposition_thumbnails/u1_adjoint.svg
+                :region: adjoint
+
+                :class:`~.U1` | :math:`1`
+                :where: ``phi`` changes sign
+
+            .. decomposition-rule:: scale_angle
+                :image: /_static/decomposition_thumbnails/u1_pow.svg
+                :region: pow
+                :where: the angle is multiplied by the power :math:`z`
+
+                :class:`~.U1` | :math:`1`
     """
 
     num_wires = 1
@@ -882,7 +1008,7 @@ class U1(Operator2):
         super().__init__(phi, wires=wires)
 
     @staticmethod
-    # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
     def compute_matrix(phi: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -969,11 +1095,18 @@ class U2(Operator2):
 
         .. decomposition-table:: qp.U2
 
-            .. decomposition-rule:: _u2_phaseshift_rot
+            .. decomposition-rule:: to_phaseshift_rot
                 :image: /_static/decomposition_thumbnails/u2_to_rot_phaseshift.svg
 
                 :class:`~.Rot` | :math:`1`
                 :class:`~.PhaseShift` | :math:`2`
+
+            .. decomposition-rule:: invert_angles
+                :image: /_static/decomposition_thumbnails/u2_adjoint.svg
+                :region: adjoint
+                :where: the angles change to :math:`\delta \rightarrow \pi - \delta` and  :math:`\phi \rightarrow \pi - \phi` (both :math:`\text{mod} 2 \pi`)
+
+                :class:`~.U2` | :math:`1`
     """
 
     num_wires = 1
@@ -991,7 +1124,7 @@ class U2(Operator2):
         super().__init__(phi, delta, wires=wires)
 
     @staticmethod
-    # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
     def compute_matrix(phi: TensorLike, delta: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1084,11 +1217,18 @@ class U3(Operator2):
 
         .. decomposition-table:: qp.U3
 
-            .. decomposition-rule:: _u3_phaseshift_rot
+            .. decomposition-rule:: to_phaseshift_rot
                 :image: /_static/decomposition_thumbnails/u3_to_rot_phaseshift.svg
 
                 :class:`~.Rot` | :math:`1`
                 :class:`~.PhaseShift` | :math:`2`
+
+            .. decomposition-rule:: invert_angles
+                :image: /_static/decomposition_thumbnails/u3_adjoint.svg
+                :region: adjoint
+                :where: :math:`\theta` stays the same, but :math:`\delta \rightarrow \pi - \delta` and  :math:`\phi \rightarrow \pi - \phi` (both :math:`\text{mod} 2 \pi`)
+
+                :class:`~.U3` | :math:`1`
     """
 
     num_wires = 1
@@ -1112,9 +1252,11 @@ class U3(Operator2):
         super().__init__(theta, phi, delta, wires=wires)
 
     @staticmethod
-    # pylint: disable=unused-argument
-    def compute_matrix(
-        theta: TensorLike, phi: TensorLike, delta: TensorLike, wires: WiresLike = None
+    def compute_matrix(  # pylint: disable=unused-argument
+        theta: TensorLike,
+        phi: TensorLike,
+        delta: TensorLike,
+        wires: WiresLike = None,
     ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1185,3 +1327,73 @@ class U3(Operator2):
             return RY(theta, wires=wires)
 
         return U3(theta, phi, delta, wires=wires)
+
+
+_RULE_MODULES = {
+    "_rx_to_rot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rx_to_rot": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rx_to_rz_ry_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rx_to_rz_ry": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rx_to_ry_cliff_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rx_to_ry_cliff": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rx_to_rz_cliff_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rx_to_rz_cliff": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rx_to_ppr_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rx_to_ppr": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_controlled_rx_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_controlled_rx_standard": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_ry_to_rot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_ry_to_rot": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_ry_to_rz_rx_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_ry_to_rz_rx": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_ry_to_rx_cliff_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_ry_to_rx_cliff": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_YToZBasis": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_ZToYBasis": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_ry_to_rz_cliff_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_ry_to_rz_cliff": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_ry_to_ppr_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_ry_to_ppr": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_controlled_ry_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_controlled_ry_standard": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rz_to_ps_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rz_to_ps": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rz_to_rot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rz_to_rot": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rz_to_ry_rx_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rz_to_ry_rx": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rz_to_rx_cliff_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rz_to_rx_cliff": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rz_to_ry_cliff_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rz_to_ry_cliff": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rz_to_ppr_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rz_to_ppr": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_controlled_rz_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_controlled_rz_standard": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_phaseshift_to_rz_gp_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_phaseshift_to_rz_gp": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_controlled_phase_shift_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_controlled_phase_shift_standard": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_controlled_phase_shift_single_phase_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_controlled_phase_shift_single_phase": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rot_to_rz_ry_rz_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_rot_to_rz_ry_rz": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_adjoint_rot_standard": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_controlled_rot_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_controlled_rot_standard": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_u1_to_phaseshift_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_u1_to_phaseshift": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_u2_to_phaseshift_rot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_u2_to_phaseshift_rot": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_adjoint_u2_standard": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_u3_to_phaseshift_rot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_u3_to_phaseshift_rot": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "_adjoint_u3_standard": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+}
+
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -13,7 +13,7 @@
 # limitations under the License.
 """Defines the base class for the adjoint of operators."""
 
-from importlib import import_module
+from importlib import import_module as _import_module
 from typing import override
 
 import pennylane as qp
@@ -22,6 +22,7 @@ from pennylane._class_property import classproperty
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.operator.operator2 import operator_p  # tach-ignore
+from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import remove_from_program
 from pennylane.decomposition.decomposition_rule import list_decomps
 from pennylane.decomposition.resources import (
@@ -65,7 +66,7 @@ class Adjoint2(SymbolicOp2):
             return None
         if not self._pauli_rep:
             rep = {pw: math.conjugate(c) for pw, c in self.base.pauli_rep.items()}
-            self._pauli_rep = qp.pauli.PauliSentence(rep)
+            self._pauli_rep = PauliSentence(rep)
         return self._pauli_rep
 
     def __repr__(self) -> str:
@@ -157,8 +158,7 @@ class Adjoint2(SymbolicOp2):
         assert len(eqns) <= 1, f"Expected at most one plxpr equation for {self.base}."
 
         if len(eqns) == 0:
-            # pylint: disable=protected-access
-            self.base._bind_primitive()
+            self.base._bind_primitive()  # pylint: disable=protected-access
             if self.base.tracer is None:
                 # If the base's tracer is `None` after explicitly re-binding the primitive,
                 # it means we're not in a tracing context, so we don't need to (and cannot)
@@ -195,10 +195,26 @@ def _adjoint2_to_name(op: Adjoint2):
     return f"Adjoint({to_name(op.base)})"
 
 
-def __getattr__(name):
-    """Resolve the existing public names of relocated decomposition rules."""
-    if name in {"cancel_adjoint", "adjoint_rotation"}:
-        rules = import_module("pennylane.decomposition_rules.op_math.adjoint2")
+_RULE_MODULES = {
+    "_list_adjoint_decomps": "pennylane.decomposition_rules.op_math.adjoint2",
+    "_make_adjoint_decomp": "pennylane.decomposition_rules.op_math.adjoint2",
+    "_adjoint_cancel_resources": "pennylane.decomposition_rules.op_math.adjoint2",
+    "_adjoint_cancel": "pennylane.decomposition_rules.op_math.adjoint2",
+    "_adjoint_negate_angle_resources": "pennylane.decomposition_rules.op_math.adjoint2",
+    "_adjoint_negate_angle": "pennylane.decomposition_rules.op_math.adjoint2",
+}
 
-        return getattr(rules, name)
+
+def __getattr__(name):
+    """Resolve compatibility exports for relocated decomposition rules."""
+    if name in _RULE_MODULES:
+        return getattr(_import_module(_RULE_MODULES[name]), name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+_RULE_MODULES.update(
+    {
+        "adjoint_rotation": "pennylane.decomposition_rules.op_math.adjoint2",
+        "cancel_adjoint": "pennylane.decomposition_rules.op_math.adjoint2",
+    }
+)

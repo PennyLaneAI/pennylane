@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 """Built-in decomposition rules for templates.subroutines.qmc."""
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-arguments
+
 
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import QubitUnitary
@@ -23,7 +25,7 @@ from pennylane.templates.subroutines.qpe import QuantumPhaseEstimation
 from pennylane.typing import Complex, Wire
 
 
-def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_shape):
+def _quantum_monte_carlo_standard_resources(num_target_wires, num_estimation_wires, q_shape):
     return {
         QubitUnitary(
             Complex[2 ** (num_target_wires - 1), 2 ** (num_target_wires - 1)],
@@ -39,13 +41,12 @@ def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_sha
     }
 
 
-@register_resources(_quantum_monte_carlo_resources)
-def _quantum_monte_carlo_decomposition(
-    A, R, Q, wires, estimation_wires, target_wires
-):  # pylint: disable=unused-argument
+@register_resources(_quantum_monte_carlo_standard_resources, name="unitary_phase_estimation")
+# pylint: disable-next=unused-argument
+def _quantum_monte_carlo_standard(A, R, Q, wires, estimation_wires, target_wires):
     QubitUnitary(A, wires=target_wires[:-1])
     QubitUnitary(R, wires=target_wires)
     QuantumPhaseEstimation(QubitUnitary(Q, wires=target_wires), estimation_wires=estimation_wires)
 
 
-add_decomps(QuantumMonteCarlo, _quantum_monte_carlo_decomposition)
+add_decomps(QuantumMonteCarlo, _quantum_monte_carlo_standard)
