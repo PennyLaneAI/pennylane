@@ -1799,8 +1799,8 @@ class MultiControlledX(Controlled2):
                 :class:`~.CNOT` | :math:`1`
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1`
 
-            .. decomposition-rule:: two_zeroed_workers
-                :image: /_static/decomposition_thumbnails/mcx_alloc_two_zeroed_workers.svg
+            .. decomposition-rule:: two_zeroed_work_wires
+                :image: /_static/decomposition_thumbnails/mcx_alloc_two_zeroed_work_wires.svg
                 :requires: 2 zeroed work wires, allocated by the rule
                 :where: :math:`c \geq 3` and :math:`w = 0`, :math:`s = [c < 6]` is 1 if
                     :math:`c < 6` and 0 otherwise, the circuit shows :math:`c = 4`, and each control
@@ -1814,8 +1814,8 @@ class MultiControlledX(Controlled2):
                 :class:`~.TemporaryAND` | :math:`2 - s`
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`2 - s`
 
-            .. decomposition-rule:: two_borrowed_workers
-                :image: /_static/decomposition_thumbnails/mcx_alloc_two_borrowed_workers.svg
+            .. decomposition-rule:: two_borrowed_work_wires
+                :image: /_static/decomposition_thumbnails/mcx_alloc_two_borrowed_work_wires.svg
                 :requires: 2 borrowed work wires, allocated by the rule
                 :where: :math:`c \geq 3` and :math:`w = 0`, :math:`s = [c < 6]` is 1 if
                     :math:`c < 6` and 0 otherwise, the circuit shows :math:`c = 4`, and each control
@@ -1827,8 +1827,8 @@ class MultiControlledX(Controlled2):
                 :class:`~.PauliX` | :math:`2(c - 4 + s)`
                 :class:`Adjoint(PauliX) <.PauliX>` | :math:`2(c - 4 + s)`
 
-            .. decomposition-rule:: one_zeroed_worker
-                :image: /_static/decomposition_thumbnails/mcx_alloc_one_zeroed_worker.svg
+            .. decomposition-rule:: one_zeroed_work_wire
+                :image: /_static/decomposition_thumbnails/mcx_alloc_one_zeroed_work_wire.svg
                 :requires: 1 zeroed work wire, allocated by the rule
                 :where: :math:`c \geq 3` and :math:`w = 0`, the circuit shows :math:`c = 4`, and
                     each control wire with control value :math:`0` adds two :class:`~.PauliX` gates,
@@ -1841,8 +1841,8 @@ class MultiControlledX(Controlled2):
                 :class:`~.TemporaryAND` | :math:`1`
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1`
 
-            .. decomposition-rule:: one_borrowed_worker
-                :image: /_static/decomposition_thumbnails/mcx_alloc_one_borrowed_worker.svg
+            .. decomposition-rule:: one_borrowed_work_wire
+                :image: /_static/decomposition_thumbnails/mcx_alloc_one_borrowed_work_wire.svg
                 :requires: 1 borrowed work wire, allocated by the rule
                 :where: :math:`c \geq 3` and :math:`w = 0`, the circuit shows :math:`c = 4`, and
                     each control wire with control value :math:`0` adds two :class:`~.PauliX` gates,
@@ -2052,10 +2052,10 @@ def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
         return [_mcx_to_cnot_or_toffoli, elbow_rule]
 
     capture_compatible_rules = [
-        _wrap_mcx_rule_w_alloc(_mcx_two_work_wires, 2, "zeroed", "two_zeroed_workers"),
-        _wrap_mcx_rule_w_alloc(_mcx_two_work_wires, 2, "borrowed", "two_borrowed_workers"),
-        _wrap_mcx_rule_w_alloc(_mcx_one_work_wire, 1, "zeroed", "one_zeroed_worker"),
-        _wrap_mcx_rule_w_alloc(_mcx_one_work_wire, 1, "borrowed", "one_borrowed_worker"),
+        _wrap_mcx_rule_w_alloc(_mcx_two_work_wires, 2, "zeroed", "two_zeroed_work_wires"),
+        _wrap_mcx_rule_w_alloc(_mcx_two_work_wires, 2, "borrowed", "two_borrowed_work_wires"),
+        _wrap_mcx_rule_w_alloc(_mcx_one_work_wire, 1, "zeroed", "one_zeroed_work_wire"),
+        _wrap_mcx_rule_w_alloc(_mcx_one_work_wire, 1, "borrowed", "one_borrowed_work_wire"),
         _mcx_no_work_wires,
     ]
     if qp.capture.enabled():
@@ -2067,13 +2067,13 @@ def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
             _mcx_many_work_wires,
             len(op.control_wires) - 2,
             "zeroed",
-            "many_zeroed_workers",
+            "many_zeroed_work_wires",
         ),
         _wrap_mcx_rule_w_alloc(
             _mcx_many_work_wires,
             len(op.control_wires) - 2,
             "borrowed",
-            "many_borrowed_workers",
+            "many_borrowed_work_wires",
         ),
     ] + capture_compatible_rules
 
@@ -2089,10 +2089,10 @@ add_decomps(
     _wrap_mcx_rule_w_alloc(
         _mcx_two_controls_elbows, 1, "zeroed", name="two_controls_elbows_allocated"
     ),
-    _wrap_mcx_rule_w_alloc(_mcx_two_work_wires, 2, "zeroed", "two_zeroed_workers"),
-    _wrap_mcx_rule_w_alloc(_mcx_two_work_wires, 2, "borrowed", "two_borrowed_workers"),
-    _wrap_mcx_rule_w_alloc(_mcx_one_work_wire, 1, "zeroed", "one_zeroed_worker"),
-    _wrap_mcx_rule_w_alloc(_mcx_one_work_wire, 1, "borrowed", "one_borrowed_worker"),
+    _wrap_mcx_rule_w_alloc(_mcx_two_work_wires, 2, "zeroed", "two_zeroed_work_wires"),
+    _wrap_mcx_rule_w_alloc(_mcx_two_work_wires, 2, "borrowed", "two_borrowed_work_wires"),
+    _wrap_mcx_rule_w_alloc(_mcx_one_work_wire, 1, "zeroed", "one_zeroed_work_wire"),
+    _wrap_mcx_rule_w_alloc(_mcx_one_work_wire, 1, "borrowed", "one_borrowed_work_wire"),
     # TODO: include the allocation-wrapped versions of _mcx_many_work_wires
     # after we support tracer indexing into allocated wires. [sc-129521]
 )

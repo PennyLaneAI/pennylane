@@ -52,7 +52,7 @@ def all_decomps(
 
     >>> rules_map = all_decomps(qp.X(0))
     >>> len(rules_map)
-    66
+    90
     >>> rules_map[qp.RX(Float, Wire[1])]
     [DecompositionRule(name=to_rot),
      DecompositionRule(name=to_rz_ry),

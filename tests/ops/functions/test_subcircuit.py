@@ -54,6 +54,10 @@ def LoopOp(phi, w, n_iters):
 class TestClassCreation:
     """Tests that ``subcircuit`` builds a valid ``Operator2`` subclass."""
 
+    def test_decomposition_rule_name(self):
+        """Generated rule names separate the operator name from the suffix."""
+        assert qp.list_decomps(FixedOp)[0].name == "FixedOp_decomp"
+
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_validity(self):
         """Test that the decomposition rule of operators returned by ``subcircuit`` is valid."""

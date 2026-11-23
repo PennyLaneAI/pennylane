@@ -112,7 +112,6 @@ def test_valid_decomp(prec, num_controls, rot_axis):
     assert_valid_decomp_rule(op, custom_decomp)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize("prec", [2, 3, 5])
 @pytest.mark.parametrize("num_controls", [1, 2])
 def test_as_fixed_decomps(prec, num_controls):
@@ -129,9 +128,11 @@ def test_as_fixed_decomps(prec, num_controls):
     # required number of work wires.
     num_work_wires = max(prec, num_controls + 1) - 1
 
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(num_work_wires)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(prec)])
+    phase_grad_wires = qp.wires.Wires([100 + len(angle_wires) + i for i in range(prec)])
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(num_work_wires)]
+    )
 
     custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
         angle_wires, phase_grad_wires, work_wires
@@ -164,7 +165,6 @@ def test_as_fixed_decomps(prec, num_controls):
     assert expected_specs == specs
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize("rot_axis", ["X", "Y", "Z"])
 def test_integration_multi_wire(rot_axis, seed):
     """Numerically verify the decomposition reproduces SelectPauliRot's
@@ -180,10 +180,12 @@ def test_integration_multi_wire(rot_axis, seed):
     target_wire = num_controls
     sys_wires = ctrl_wires + [target_wire]
 
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(prec)])
+    phase_grad_wires = qp.wires.Wires([100 + len(angle_wires) + i for i in range(prec)])
     num_work = max(prec, num_controls + 1) - 1
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(num_work)])
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(num_work)]
+    )
 
     all_wires = angle_wires + phase_grad_wires + work_wires + qp.wires.Wires(sys_wires)
 
@@ -305,9 +307,9 @@ def test_capture_compatibility():
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_rot_axis_zero_controls(rot_axis, expected_op):
     """Test the 0-control-wire edge case for all rotation axes."""
-    angle_wires = qp.wires.Wires(["aux_0"])
-    phase_grad_wires = qp.wires.Wires(["qft_0"])
-    work_wires = qp.wires.Wires(["work_0"])
+    angle_wires = qp.wires.Wires([12])
+    phase_grad_wires = qp.wires.Wires([13])
+    work_wires = qp.wires.Wires([14])
 
     custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
         angle_wires, phase_grad_wires, work_wires

@@ -201,8 +201,8 @@ class TestAutogradExecuteIntegration:
             ops1 = [qp.RY(a, wires=0), qp.RX(b, wires=0)]
             tape1 = qp.tape.QuantumScript(ops1, [qp.expval(qp.PauliZ(0))], shots=shots)
 
-            ops2 = [qp.RY(a, wires="a"), qp.RX(b, wires="a")]
-            tape2 = qp.tape.QuantumScript(ops2, [qp.expval(qp.PauliZ("a"))], shots=shots)
+            ops2 = [qp.RY(a, wires=5), qp.RX(b, wires=5)]
+            tape2 = qp.tape.QuantumScript(ops2, [qp.expval(qp.PauliZ(5))], shots=shots)
 
             return execute([tape1, tape2], device, **execute_kwargs)
 

@@ -34,7 +34,7 @@ from pennylane.decomposition.symbolic_decomposition import (
 from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.pow2 import _pow_scale_angle as pow_rotation2
-from pennylane.ops.op_math.prod2 import Prod2
+from pennylane.ops.subcircuit import subcircuit
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -254,36 +254,48 @@ class SingleExcitation(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
 
 
+@subcircuit(static_argnames=("reverse",))
+@register_resources(lambda *_, **__: {qp.Hadamard: 1, qp.CNOT: 1})
+def _SingleExcitationBasis(wires: WiresLike, reverse: bool):
+    if not reverse:
+        qp.Hadamard(wires[0])
+    qp.CNOT(wires)
+    if reverse:
+        qp.Hadamard(wires[0])
+
+
+@subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": Float, "wires": Wire[2]})
+@register_resources(lambda *_, **__: {qp.RY: 2})
+def _SingleExcitationRotations(phi: TensorLike, wires: WiresLike):
+    qp.RY(-phi / 2, wires[0])
+    qp.RY(-phi / 2, wires[1])
+
+
 # needs to be wrapped in function due to circular dependencies
 def _single_excitation_standard_resources(phi, wires):  # pylint: disable=unused-argument
-    # ``Prod2`` takes its operands in matrix order, i.e. reversed relative to the order in which
-    # the decomposition below applies them.
-    basis = Prod2((qp.CNOT(wires=Wire[2]), qp.Hadamard(wires=Wire[1])))
-    unbasis = Prod2((qp.Hadamard(wires=Wire[1]), qp.CNOT(wires=Wire[2])))
     return {
         _change_op_basis_abstract(
-            basis,
-            Prod2((qp.RY(Float, wires=Wire[1]), qp.RY(Float, wires=Wire[1]))),
-            unbasis,
+            _SingleExcitationBasis(wires=Wire[2], reverse=False),
+            _SingleExcitationRotations(Float, wires=Wire[2]),
+            _SingleExcitationBasis(wires=Wire[2], reverse=True),
         ): 1
     }
 
 
 @register_resources(_single_excitation_standard_resources, name="basis_change_ry")
 def _single_excitation_standard(phi: TensorLike, wires: WiresLike):
-    def _to_basis():
-        qp.Hadamard(wires[0])
-        qp.CNOT(wires)
+    qp.change_op_basis(
+        _SingleExcitationBasis(wires=wires, reverse=False),
+        _SingleExcitationRotations(phi, wires=wires),
+        _SingleExcitationBasis(wires=wires, reverse=True),
+    )
 
-    def _rotations():
-        qp.RY(-phi / 2, wires[0])
-        qp.RY(-phi / 2, wires[1])
 
-    def _from_basis():
-        qp.CNOT(wires)
-        qp.Hadamard(wires[0])
-
-    qp.change_op_basis(_to_basis, _rotations, _from_basis)
+@subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": Float, "wires": Wire[2]})
+@register_resources(lambda *_, **__: {qp.RZ: 2})
+def _SingleExcitationRZRotations(phi: TensorLike, wires: WiresLike):
+    qp.RZ(phi / 2, wires[0])
+    qp.RZ(-phi / 2, wires[1])
 
 
 def _single_excitation_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
@@ -303,7 +315,7 @@ def _single_excitation_to_ppr_rz_resources(phi, wires):  # pylint: disable=unuse
     return {
         _change_op_basis_abstract(
             qp.PPR_4(1, "XX", wires=Wire[2]),
-            Prod2((qp.RZ(Float, wires=Wire[1]), qp.RZ(Float, wires=Wire[1]))),
+            _SingleExcitationRZRotations(Float, wires=Wire[2]),
             qp.PPR_4(-1, "XX", wires=Wire[2]),
         ): 1
     }
@@ -311,15 +323,22 @@ def _single_excitation_to_ppr_rz_resources(phi, wires):  # pylint: disable=unuse
 
 @register_resources(_single_excitation_to_ppr_rz_resources, name="to_ppr_rz")
 def _single_excitation_to_ppr_rz(phi: TensorLike, wires: WiresLike):
-    def _rotations():
-        qp.RZ(phi / 2, wires[0])
-        qp.RZ(-phi / 2, wires[1])
+    qp.change_op_basis(
+        qp.PPR_4(1, "XX", wires=wires),
+        _SingleExcitationRZRotations(phi, wires=wires),
+        qp.PPR_4(-1, "XX", wires=wires),
+    )
 
-    qp.change_op_basis(qp.PPR_4(1, "XX", wires=wires), _rotations, qp.PPR_4(-1, "XX", wires=wires))
+
+@subcircuit
+@register_resources(lambda *_, **__: {qp.PPR_4(1, "XX", wires=Wire[2]): 1, qp.CNOT: 1})
+def _SingleExcitationCRZBasis(wires: WiresLike):
+    qp.PPR_4(1, "XX", wires=wires)
+    qp.CNOT(wires)
 
 
 def _single_excitation_to_ppr_crz_resources(phi, wires):  # pylint: disable=unused-argument
-    compute = Prod2((qp.CNOT(Wire[2]), qp.PPR_4(1, "XX", wires=Wire[2])))
+    compute = _SingleExcitationCRZBasis(wires=Wire[2])
     return {
         _change_op_basis_abstract(
             compute,
@@ -341,14 +360,9 @@ def _single_excitation_to_ppr_crz(phi: TensorLike, wires: WiresLike):
     about as expensive as an uncontrolled one, as for phase-gradient synthesis.
     """
 
-    def _compute():
-        qp.PPR_4(1, "XX", wires=wires)
-        qp.CNOT(wires)
-
-    def _rotation():
-        qp.CRZ(phi, wires=[wires[1], wires[0]])
-
-    qp.change_op_basis(_compute, _rotation)
+    qp.change_op_basis(
+        _SingleExcitationCRZBasis(wires=wires), qp.CRZ(phi, wires=[wires[1], wires[0]])
+    )
 
 
 add_decomps(
