@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains the DoubleBasisRotation template."""
+"""Contains the BasisRotationPair template."""
 
 import numpy as np
 
@@ -34,14 +34,14 @@ from .basis_rotation import (
 from .givens_pair import GivensPair
 
 
-class DoubleBasisRotation(Operator2):
+class BasisRotationPair(Operator2):
     r"""Applies the same :class:`~.BasisRotation` to the spin-up and to the spin-down wires.
 
     For an :math:`N\times N` unitary matrix :math:`u`, this is
 
     .. math::
 
-        \operatorname{DoubleBasisRotation}(u) = U(u)_{\uparrow} U(u)_{\downarrow},
+        \operatorname{BasisRotationPair}(u) = U(u)_{\uparrow} U(u)_{\downarrow},
 
     where :math:`U(u)` is the basis rotation of :class:`~.BasisRotation`, applied to the
     :math:`N` spin-up and to the :math:`N` spin-down wires, respectively. Both rotations consist of
@@ -67,33 +67,33 @@ class DoubleBasisRotation(Operator2):
     By default, the operator decomposes into one :class:`~.BasisRotation` per spin:
 
     >>> U = np.array([[0.6, -0.8], [0.8, 0.6]])
-    >>> op = qp.DoubleBasisRotation(U, wires_up=[0, 2], wires_down=[1, 3])
+    >>> op = qp.BasisRotationPair(U, wires_up=[0, 2], wires_down=[1, 3])
     >>> [(o.name, o.wires) for o in op.decomposition()]
     [('BasisRotation', Wires([0, 2])), ('BasisRotation', Wires([1, 3]))]
 
     For a real-valued matrix, an alternative decomposition rule applies each Givens rotation to
     both spins as one :class:`~.GivensPair`:
 
-    >>> rule = qp.list_decomps(qp.DoubleBasisRotation)["_real_double_basis_rotation_givens_pairs"]
+    >>> rule = qp.list_decomps(qp.BasisRotationPair)["_real_basis_rotation_pair_givens_pairs"]
     >>> [(o.name, o.wires) for o in qp.tape.make_qscript(rule)(**op.arguments).operations]
     [('GivensPair', Wires([0, 2, 1, 3]))]
 
     .. details::
         :title: Available decompositions
 
-        .. decomposition-table:: qp.DoubleBasisRotation
+        .. decomposition-table:: qp.BasisRotationPair
             :stacked:
             :symbols: :math:`N \times N` matrix :math:`u` (``unitary_matrix``) on :math:`N`
                 spin-up and :math:`N` spin-down wires
             :example: :math:`N=3`, with :math:`\det u = -1` for the real-valued rule
 
-            .. decomposition-rule:: _double_basis_rotation_two_basis_rotations
-                :image: /_static/decomposition_thumbnails/double_basis_rotation_basis_rotations.svg
+            .. decomposition-rule:: _basis_rotation_pair_two_basis_rotations
+                :image: /_static/decomposition_thumbnails/basis_rotation_pair_basis_rotations.svg
 
                 :class:`~.BasisRotation` on :math:`N` wires | :math:`2` | 2
 
-            .. decomposition-rule:: _real_double_basis_rotation_givens_pairs
-                :image: /_static/decomposition_thumbnails/double_basis_rotation_real_givens.svg
+            .. decomposition-rule:: _real_basis_rotation_pair_givens_pairs
+                :image: /_static/decomposition_thumbnails/basis_rotation_pair_real_givens.svg
                 :requires: real-valued :math:`u`
                 :where: :math:`[\cdot]` is 1 if the condition holds and 0 otherwise, and the
                     :class:`~.GivensPair` gates receive the ``work_wires``
@@ -101,8 +101,8 @@ class DoubleBasisRotation(Operator2):
                 :class:`~.PauliZ` | :math:`2\,[\det u = -1]` | 2
                 :class:`~.GivensPair` | :math:`N(N-1)/2` | 3
 
-            .. decomposition-rule:: _complex_double_basis_rotation_givens_pairs
-                :image: /_static/decomposition_thumbnails/double_basis_rotation_complex_givens.svg
+            .. decomposition-rule:: _complex_basis_rotation_pair_givens_pairs
+                :image: /_static/decomposition_thumbnails/basis_rotation_pair_complex_givens.svg
                 :requires: complex-valued :math:`u`
                 :where: the :class:`~.GivensPair` and :class:`~.RZLayer` gates receive the
                     ``work_wires``
@@ -168,18 +168,18 @@ class DoubleBasisRotation(Operator2):
         return self.wires_up + self.wires_down + self.work_wires
 
 
-def _double_basis_rotation_two_basis_rotations_resources(unitary_matrix, wires_up, **_):
+def _basis_rotation_pair_two_basis_rotations_resources(unitary_matrix, wires_up, **_):
     return {BasisRotation(unitary_matrix, wires=Wire[len(wires_up)]): 2}
 
 
-@register_resources(_double_basis_rotation_two_basis_rotations_resources)
-def _double_basis_rotation_two_basis_rotations(unitary_matrix, wires_up, wires_down, **_):
+@register_resources(_basis_rotation_pair_two_basis_rotations_resources)
+def _basis_rotation_pair_two_basis_rotations(unitary_matrix, wires_up, wires_down, **_):
     BasisRotation(unitary_matrix, wires=wires_up)
     BasisRotation(unitary_matrix, wires=wires_down)
 
 
-def _real_double_basis_rotation_givens_pairs_resources(unitary_matrix, wires_up, work_wires, **_):
-    """Upper bound on the gates emitted by '_real_double_basis_rotation_givens_pairs'.
+def _real_basis_rotation_pair_givens_pairs_resources(unitary_matrix, wires_up, work_wires, **_):
+    """Upper bound on the gates emitted by '_real_basis_rotation_pair_givens_pairs'.
 
     - GivensPair: Exact count of N(N-1)/2 for the Givens rotations.
     - PauliZ: *At most* two for the determinant correction, one per spin; skipped if det = +1.
@@ -194,8 +194,8 @@ def _real_double_basis_rotation_givens_pairs_resources(unitary_matrix, wires_up,
 
 
 @register_condition(lambda unitary_matrix, **_: not math.is_complex_dtype(unitary_matrix))
-@register_resources(_real_double_basis_rotation_givens_pairs_resources, exact=False)
-def _real_double_basis_rotation_givens_pairs(unitary_matrix, wires_up, wires_down, work_wires, **_):
+@register_resources(_real_basis_rotation_pair_givens_pairs_resources, exact=False)
+def _real_basis_rotation_pair_givens_pairs(unitary_matrix, wires_up, wires_down, work_wires, **_):
     unitary, wires_up = _prepare_args(unitary_matrix, wires_up)
     _, wires_down = _prepare_args(unitary_matrix, wires_down)
 
@@ -230,8 +230,8 @@ def _real_double_basis_rotation_givens_pairs(unitary_matrix, wires_up, wires_dow
     for_loop(len(givens_list))(_givens_pair)()
 
 
-def _complex_double_basis_rotation_givens_pairs_resources(wires_up, work_wires, **_):
-    """Upper bound on the gates emitted by '_complex_double_basis_rotation_givens_pairs'.
+def _complex_basis_rotation_pair_givens_pairs_resources(wires_up, work_wires, **_):
+    """Upper bound on the gates emitted by '_complex_basis_rotation_pair_givens_pairs'.
 
     - GivensPair: Exact count of N(N-1)/2 for the Givens rotations.
     - RZLayer with N angles on N pairs of wires, and one GlobalPhase: Exact count of one each for
@@ -253,8 +253,8 @@ def _complex_double_basis_rotation_givens_pairs_resources(wires_up, work_wires, 
 
 
 @register_condition(lambda unitary_matrix, **_: math.is_complex_dtype(unitary_matrix))
-@register_resources(_complex_double_basis_rotation_givens_pairs_resources, exact=False)
-def _complex_double_basis_rotation_givens_pairs(
+@register_resources(_complex_basis_rotation_pair_givens_pairs_resources, exact=False)
+def _complex_basis_rotation_pair_givens_pairs(
     unitary_matrix, wires_up, wires_down, work_wires, **_
 ):
     unitary, wires_up = _prepare_args(unitary_matrix, wires_up)
@@ -296,8 +296,8 @@ def _complex_double_basis_rotation_givens_pairs(
 
 
 add_decomps(
-    DoubleBasisRotation,
-    _double_basis_rotation_two_basis_rotations,
-    _real_double_basis_rotation_givens_pairs,
-    _complex_double_basis_rotation_givens_pairs,
+    BasisRotationPair,
+    _basis_rotation_pair_two_basis_rotations,
+    _real_basis_rotation_pair_givens_pairs,
+    _complex_basis_rotation_pair_givens_pairs,
 )

@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the DoubleBasisRotation template."""
+"""Tests for the BasisRotationPair template."""
 
 from collections import Counter
 
@@ -20,31 +20,33 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
-from pennylane.templates.subroutines.qchem.double_basis_rotation import (
-    _complex_double_basis_rotation_givens_pairs,
-    _double_basis_rotation_two_basis_rotations,
-    _real_double_basis_rotation_givens_pairs,
+from pennylane.templates.subroutines.qchem.basis_rotation_pair import (
+    _basis_rotation_pair_two_basis_rotations,
+    _complex_basis_rotation_pair_givens_pairs,
+    _real_basis_rotation_pair_givens_pairs,
 )
+from pennylane.templates.subroutines.qchem.givens_pair import _givens_pair_rzlayer
 from pennylane.transforms import _tape_decompose
+from pennylane.transforms.decompositions import make_rzlayer_to_phase_gradient_decomp
 from pennylane.typing import AbstractArray, Complex, Float, Wire
 from pennylane.wires import Wires
 
 RULES = [
-    _double_basis_rotation_two_basis_rotations,
-    _real_double_basis_rotation_givens_pairs,
-    _complex_double_basis_rotation_givens_pairs,
+    _basis_rotation_pair_two_basis_rotations,
+    _real_basis_rotation_pair_givens_pairs,
+    _complex_basis_rotation_pair_givens_pairs,
 ]
 
 REAL_KINDS = ["det+1", "det-1"]
 COMPLEX_KINDS = ["complex", "real as complex"]
 
 # (rule, kind of matrix that the rule applies to)
-GIVENS_RULE_CASES = [(_real_double_basis_rotation_givens_pairs, kind) for kind in REAL_KINDS] + [
-    (_complex_double_basis_rotation_givens_pairs, kind) for kind in COMPLEX_KINDS
+GIVENS_RULE_CASES = [(_real_basis_rotation_pair_givens_pairs, kind) for kind in REAL_KINDS] + [
+    (_complex_basis_rotation_pair_givens_pairs, kind) for kind in COMPLEX_KINDS
 ]
 
 # Gates that neither BasisRotation nor the Givens rules emit, so that the decomposed circuits do
-# not rely on the matrices of DoubleBasisRotation, GivensPair or RZLayer.
+# not rely on the matrices of BasisRotationPair, GivensPair or RZLayer.
 ELEMENTARY_GATES = {"StatePrep", "SingleExcitation", "PhaseShift", "PauliZ", "RZ", "GlobalPhase"}
 
 
@@ -94,12 +96,12 @@ def _two_basis_rotations_state(unitary_matrix, wires_up, wires_down, in_state):
 
 
 class TestInitialization:
-    """Tests for the arguments of DoubleBasisRotation."""
+    """Tests for the arguments of BasisRotationPair."""
 
     def test_arguments(self):
         """Test that the wire arguments are stored and that the work wires are part of
         ``op.wires``."""
-        op = qp.DoubleBasisRotation(np.eye(2), ["u0", "u1"], ["d0", "d1"], ["w"])
+        op = qp.BasisRotationPair(np.eye(2), ["u0", "u1"], ["d0", "d1"], ["w"])
 
         assert op.wires_up == Wires(["u0", "u1"])
         assert op.wires_down == Wires(["d0", "d1"])
@@ -120,22 +122,22 @@ class TestInitialization:
         """Test that a non-square matrix, unequal or too few wires per spin, and overlapping
         wires raise an error."""
         with pytest.raises(ValueError, match=match):
-            qp.DoubleBasisRotation(unitary_matrix, wires_up, wires_down, work_wires)
+            qp.BasisRotationPair(unitary_matrix, wires_up, wires_down, work_wires)
 
     def test_unitarity_check(self):
         """Test that a non-unitary matrix raises an error if and only if ``check=True``."""
         non_unitary = np.array([[1.0, 0.5], [0.0, 1.0]])
 
         with pytest.raises(ValueError, match="should be unitary"):
-            qp.DoubleBasisRotation(non_unitary, [0, 1], [2, 3], check=True)
-        qp.DoubleBasisRotation(non_unitary, [0, 1], [2, 3])
+            qp.BasisRotationPair(non_unitary, [0, 1], [2, 3], check=True)
+        qp.BasisRotationPair(non_unitary, [0, 1], [2, 3])
 
     @pytest.mark.parametrize("dtype", [np.float64, np.float32, np.complex128, np.complex64])
     def test_abstract_resource_rep(self, dtype):
         """Test that the resource representation is keyed by the shape and the exact dtype of the
         matrix, like that of BasisRotation, and by the numbers of wires."""
-        op = qp.DoubleBasisRotation(np.eye(3, dtype=dtype), [0, 2, 4], [1, 3, 5], [6, 7])
-        abstract_op = qp.DoubleBasisRotation(
+        op = qp.BasisRotationPair(np.eye(3, dtype=dtype), [0, 2, 4], [1, 3, 5], [6, 7])
+        abstract_op = qp.BasisRotationPair(
             AbstractArray((3, 3), dtype), wires_up=Wire[3], wires_down=Wire[3], work_wires=Wire[2]
         )
 
@@ -148,10 +150,10 @@ class TestInitialization:
         representation of a double-precision matrix."""
         unitary_matrix = np.eye(3, dtype=dtype)
         dtype_leaf, _ = qp.math.get_abstract_and_cast_dtype(unitary_matrix)
-        key = qp.DoubleBasisRotation(
+        key = qp.BasisRotationPair(
             dtype_leaf[3, 3], wires_up=Wire[3], wires_down=Wire[3], work_wires=Wire[2]
         )
-        op = qp.DoubleBasisRotation(unitary_matrix, [0, 2, 4], [1, 3, 5], [6, 7])
+        op = qp.BasisRotationPair(unitary_matrix, [0, 2, 4], [1, 3, 5], [6, 7])
 
         assert abstractify(op) == key
         assert hash(abstractify(op)) == hash(key)
@@ -165,7 +167,7 @@ class TestInitialization:
 def test_assert_valid(kind, num_wires, num_work_wires, seed):
     """Run the standard Operator2 validity checks, which include all decomposition rules."""
     unitary_matrix = _random_matrix(num_wires, kind, seed)
-    op = qp.DoubleBasisRotation(unitary_matrix, *_wires(num_wires, num_work_wires))
+    op = qp.BasisRotationPair(unitary_matrix, *_wires(num_wires, num_work_wires))
     qp.testing.assert_valid(op)
 
 
@@ -173,17 +175,17 @@ def test_assert_valid(kind, num_wires, num_work_wires, seed):
 def test_rule_conditions(kind, seed):
     """Test that the real Givens rule applies to real matrices and the complex Givens rule to
     complex matrices, while the rule with two BasisRotations applies to both."""
-    op = qp.DoubleBasisRotation(_random_matrix(2, kind, seed), [0, 1], [2, 3])
+    op = qp.BasisRotationPair(_random_matrix(2, kind, seed), [0, 1], [2, 3])
     params = abstractify(op).arguments
     is_complex = kind in COMPLEX_KINDS
 
-    assert _double_basis_rotation_two_basis_rotations.is_applicable(**params)
-    assert _real_double_basis_rotation_givens_pairs.is_applicable(**params) is not is_complex
-    assert _complex_double_basis_rotation_givens_pairs.is_applicable(**params) is is_complex
+    assert _basis_rotation_pair_two_basis_rotations.is_applicable(**params)
+    assert _real_basis_rotation_pair_givens_pairs.is_applicable(**params) is not is_complex
+    assert _complex_basis_rotation_pair_givens_pairs.is_applicable(**params) is is_complex
 
 
 class TestDecomposition:
-    """Tests for the decomposition rules of DoubleBasisRotation."""
+    """Tests for the decomposition rules of BasisRotationPair."""
 
     @pytest.mark.parametrize("rule, kind", GIVENS_RULE_CASES)
     @pytest.mark.parametrize("num_wires, num_work_wires", [(2, 0), (3, 1)])
@@ -195,11 +197,11 @@ class TestDecomposition:
         num_all_wires = 2 * num_wires + num_work_wires
         in_state = _random_state(num_all_wires, seed)
 
-        @_tape_decompose(gate_set=ELEMENTARY_GATES, fixed_decomps={qp.DoubleBasisRotation: rule})
+        @_tape_decompose(gate_set=ELEMENTARY_GATES, fixed_decomps={qp.BasisRotationPair: rule})
         @qp.qnode(qp.device("default.qubit", wires=num_all_wires))
         def circuit():
             qp.StatePrep(in_state, wires=range(num_all_wires))
-            qp.DoubleBasisRotation(unitary_matrix, wires_up, wires_down, work_wires)
+            qp.BasisRotationPair(unitary_matrix, wires_up, wires_down, work_wires)
             return qp.state()
 
         expected = _two_basis_rotations_state(unitary_matrix, wires_up, wires_down, in_state)
@@ -208,9 +210,9 @@ class TestDecomposition:
     def test_two_basis_rotations_rule_emits_basis_rotations(self, seed):
         """Test that the rule applies BasisRotation to the spin-up and to the spin-down wires."""
         unitary_matrix = _random_matrix(3, "complex", seed)
-        op = qp.DoubleBasisRotation(unitary_matrix, [0, 2, 4], [1, 3, 5], [6])
+        op = qp.BasisRotationPair(unitary_matrix, [0, 2, 4], [1, 3, 5], [6])
 
-        tape = qp.testing.decomp_rule_to_tape(op, _double_basis_rotation_two_basis_rotations)
+        tape = qp.testing.decomp_rule_to_tape(op, _basis_rotation_pair_two_basis_rotations)
 
         expected = [
             qp.BasisRotation(unitary_matrix, [0, 2, 4]),
@@ -224,8 +226,8 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         "rule, kind",
         [
-            (_real_double_basis_rotation_givens_pairs, "det-1"),
-            (_complex_double_basis_rotation_givens_pairs, "complex"),
+            (_real_basis_rotation_pair_givens_pairs, "det-1"),
+            (_complex_basis_rotation_pair_givens_pairs, "complex"),
         ],
     )
     def test_givens_rules_emit_givens_pairs(self, rule, kind, seed):
@@ -234,7 +236,7 @@ class TestDecomposition:
         ``[up[i], down[i]]``, and that all of them get the work wires."""
         unitary_matrix = _random_matrix(3, kind, seed)
         wires_up, wires_down, work_wires = [6, 1, 4], [0, 3, 2], [9, 8]
-        op = qp.DoubleBasisRotation(unitary_matrix, wires_up, wires_down, work_wires)
+        op = qp.BasisRotationPair(unitary_matrix, wires_up, wires_down, work_wires)
 
         ops = qp.testing.decomp_rule_to_tape(op, rule).operations
 
@@ -262,7 +264,7 @@ class TestDecomposition:
     def test_resources_are_upper_bounds(self, rule, kind, seed):
         """Test that the declared resources bound the gates that each Givens rule emits, and that
         they are attained for a negative determinant or generic complex entries."""
-        op = qp.DoubleBasisRotation(_random_matrix(3, kind, seed), *_wires(3, 1))
+        op = qp.BasisRotationPair(_random_matrix(3, kind, seed), *_wires(3, 1))
 
         estimated = rule.compute_resources(**abstractify(op).arguments).gate_counts
         tape = qp.testing.decomp_rule_to_tape(op, rule)
@@ -282,17 +284,17 @@ class TestDecomposition:
         givens_pair = qp.GivensPair(Float, Wire[4], Wire[num_work_wires])
 
         for dtype in (Float, Complex):
-            resources = _double_basis_rotation_two_basis_rotations.compute_resources(
+            resources = _basis_rotation_pair_two_basis_rotations.compute_resources(
                 unitary_matrix=dtype[n, n], **wire_args
             )
             assert resources.gate_counts == {qp.BasisRotation(dtype[n, n], wires=Wire[n]): 2}
 
-        resources = _real_double_basis_rotation_givens_pairs.compute_resources(
+        resources = _real_basis_rotation_pair_givens_pairs.compute_resources(
             unitary_matrix=Float[n, n], **wire_args
         )
         assert resources.gate_counts == {abstractify(qp.PauliZ): 2, givens_pair: num_givens}
 
-        resources = _complex_double_basis_rotation_givens_pairs.compute_resources(
+        resources = _complex_basis_rotation_pair_givens_pairs.compute_resources(
             unitary_matrix=Complex[n, n], **wire_args
         )
         assert resources.gate_counts == {
@@ -304,6 +306,47 @@ class TestDecomposition:
 
         for rule in RULES:
             assert rule.get_work_wire_spec(unitary_matrix=Float[n, n], **wire_args).total == 0
+
+
+@pytest.mark.parametrize("num_wires", [2, 3, 4])
+def test_phase_gradient_cost(num_wires, seed):
+    """Test that, with the Givens-pair rule for a real matrix and the phase gradient rule of
+    RZLayer, a BasisRotationPair costs as much as its N(N-1)/2 GivensPairs, i.e., two
+    TemporaryANDs outside of one SemiAdder each, and that it requests no further work wires."""
+    num_bits = 4
+    phase_gradient_wires = {
+        "angle_wires": [f"angle_{i}" for i in range(num_bits)],
+        "phase_grad_wires": [f"phase_grad_{i}" for i in range(num_bits)],
+        "work_wires": [f"adder_work_{i}" for i in range(num_bits - 1)],
+    }
+    wires_up, wires_down, work_wires = _wires(num_wires, 2)
+    op = qp.BasisRotationPair(
+        _random_matrix(num_wires, "det-1", seed), wires_up, wires_down, work_wires
+    )
+    rule = _real_basis_rotation_pair_givens_pairs
+    fixed_decomps = {
+        qp.BasisRotationPair: rule,
+        qp.GivensPair: _givens_pair_rzlayer,
+        qp.RZLayer: make_rzlayer_to_phase_gradient_decomp(**phase_gradient_wires),
+    }
+    gate_set = {
+        "PPR_4",
+        "PauliX",
+        "PauliZ",
+        "CNOT",
+        "TemporaryAND",
+        "Adjoint(TemporaryAND)",
+        "SemiAdder",
+    }
+
+    [tape], _ = _tape_decompose(
+        qp.tape.QuantumScript([op]), gate_set=gate_set, fixed_decomps=fixed_decomps
+    )
+    assert set(tape.wires) <= set(op.wires).union(*map(Wires, phase_gradient_wires.values()))
+    counts = Counter(gate.name for gate in tape.operations)
+    num_givens_pairs = num_wires * (num_wires - 1) // 2
+    assert (counts["TemporaryAND"], counts["SemiAdder"]) == (2 * num_givens_pairs, num_givens_pairs)
+    assert rule.get_work_wire_spec(**op.arguments).total == 0
 
 
 class TestInterfaces:
@@ -321,7 +364,7 @@ class TestInterfaces:
 
         @jax.jit
         def check_jit_resources(unitary_matrix):
-            resources = _real_double_basis_rotation_givens_pairs.compute_resources(
+            resources = _real_basis_rotation_pair_givens_pairs.compute_resources(
                 unitary_matrix, **wire_args
             )
             assert resources.gate_counts == {abstractify(qp.PhaseShift): 2, givens_pair: 3}
@@ -329,18 +372,16 @@ class TestInterfaces:
 
         check_jit_resources(np.eye(3))
 
-        resources = _real_double_basis_rotation_givens_pairs.compute_resources(
-            np.eye(3), **wire_args
-        )
+        resources = _real_basis_rotation_pair_givens_pairs.compute_resources(np.eye(3), **wire_args)
         assert resources.gate_counts == {abstractify(qp.PauliZ): 2, givens_pair: 3}
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "rule, kind",
         [
-            (_real_double_basis_rotation_givens_pairs, "det+1"),
-            (_real_double_basis_rotation_givens_pairs, "det-1"),
-            (_complex_double_basis_rotation_givens_pairs, "complex"),
+            (_real_basis_rotation_pair_givens_pairs, "det+1"),
+            (_real_basis_rotation_pair_givens_pairs, "det-1"),
+            (_complex_basis_rotation_pair_givens_pairs, "complex"),
         ],
     )
     def test_jax_jit(self, rule, kind, seed):
@@ -351,11 +392,11 @@ class TestInterfaces:
         unitary_matrix = _random_matrix(3, kind, seed)
         in_state = _random_state(6, seed)
 
-        @_tape_decompose(gate_set=ELEMENTARY_GATES, fixed_decomps={qp.DoubleBasisRotation: rule})
+        @_tape_decompose(gate_set=ELEMENTARY_GATES, fixed_decomps={qp.BasisRotationPair: rule})
         @qp.qnode(qp.device("default.qubit", wires=6))
         def circuit(matrix):
             qp.StatePrep(in_state, wires=range(6))
-            qp.DoubleBasisRotation(matrix, wires_up=[0, 2, 4], wires_down=[1, 3, 5])
+            qp.BasisRotationPair(matrix, wires_up=[0, 2, 4], wires_down=[1, 3, 5])
             return qp.state()
 
         res = jax.jit(circuit)(jax.numpy.array(unitary_matrix))
@@ -366,8 +407,8 @@ class TestInterfaces:
     @pytest.mark.parametrize(
         "rule, kind",
         [
-            (_real_double_basis_rotation_givens_pairs, "det-1"),
-            (_complex_double_basis_rotation_givens_pairs, "complex"),
+            (_real_basis_rotation_pair_givens_pairs, "det-1"),
+            (_complex_basis_rotation_pair_givens_pairs, "complex"),
         ],
     )
     def test_qjit(self, rule, kind, seed):
@@ -379,11 +420,11 @@ class TestInterfaces:
         in_state = _random_state(7, seed)
 
         @qp.qjit(capture=True)
-        @qp.decompose(gate_set=ELEMENTARY_GATES, fixed_decomps={qp.DoubleBasisRotation: rule})
+        @qp.decompose(gate_set=ELEMENTARY_GATES, fixed_decomps={qp.BasisRotationPair: rule})
         @qp.qnode(qp.device("lightning.qubit", wires=7))
         def circuit(matrix):
             qp.StatePrep(in_state, wires=range(7))
-            qp.DoubleBasisRotation(matrix, wires_up=[0, 2, 4], wires_down=[1, 3, 5], work_wires=[6])
+            qp.BasisRotationPair(matrix, wires_up=[0, 2, 4], wires_down=[1, 3, 5], work_wires=[6])
             return qp.state()
 
         expected = _two_basis_rotations_state(unitary_matrix, [0, 2, 4], [1, 3, 5], in_state)
