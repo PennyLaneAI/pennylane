@@ -197,8 +197,8 @@ Available Decomposition Rules:
 {'MidMeasure': 1, 'PauliRot': 1, 'PauliX': 1}
 >>> qp.track(circuit)(0.1)[1].resources.quantum_operations
 {'PauliRot-Phi-w1': 1, 'PauliX': 1}
->>> qp.track(circuit)(0.1)[1].resources.measurements
-TODO
+>>> qp.track(circuit)(0.1)[1].resources.measurement_processes
+{'expval(PauliX)': 1, 'expval(PauliZ)': 1, 'MidMeasure': 1}
 
 Note that the decomposition rule name given by default is
 ``qfunc.name + "_decomp"``.
