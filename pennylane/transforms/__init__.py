@@ -83,6 +83,7 @@ using the following decomposition rule factories with the graph-based decomposit
     ~transforms.decompositions.make_rz_to_phase_gradient_decomp
     ~transforms.decompositions.make_crz_to_phase_gradient_decomp
     ~transforms.decompositions.make_selectpaulirot_to_phase_gradient_decomp
+    ~transforms.decompositions.make_rzlayer_to_phase_gradient_decomp
     ~transforms.decompositions.phase_gradient_precision_stats
 
 Compilation passes using ZX calculus
