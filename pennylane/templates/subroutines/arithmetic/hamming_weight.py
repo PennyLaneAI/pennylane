@@ -65,6 +65,22 @@ def _HammingWeight(wires, work_wires):
     The gates with a ``⊕`` target are :class:`~.TemporaryAND` gates, all others are
     :class:`~.CNOT` gates.
 
+    The adders in this diagram add up the following bits:
+
+    .. code-block:: text
+
+        weight  adder  adds                            sum onto          carry onto
+        1       full   wires[0] + wires[1] + wires[5]  wires[5]          work[2]
+        1       full   wires[2] + wires[3] + wires[5]  wires[5]          work[3]
+        1       half   wires[4] + wires[5]             wires[5] = bit 0  work[0]
+        2       full   work[2] + work[3] + work[0]     work[0] = bit 1   work[1] = bit 2
+
+    At weight :math:`1`, we add the six input bits onto ``wires[5]``, one or two at a time,
+    so that it holds bit :math:`0` in the end. The three carries ``work[2]``, ``work[3]`` and
+    ``work[0]`` have weight :math:`2` and are raised to the next level, where we add them onto
+    ``work[0]``, which then holds bit :math:`1`. The carry of this last adder has weight
+    :math:`4`, so it is bit :math:`2`, and there is nothing left to add.
+
     Bit :math:`0` of the Hamming weight ends up on ``wires[-1]``, and bit :math:`j>0` on
     ``work_wires[j - 1]``. All other wires are left in garbage states, so that this helper
     method must be used in conjunction with its adjoint to return the system wires to their previous
