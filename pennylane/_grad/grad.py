@@ -243,7 +243,7 @@ class grad:  # pylint: disable=too-many-instance-attributes
     .. note::
 
         When used with :func:`~.qjit`, this function currently only supports the
-        Catalyst compiler. See :func:`catalyst.grad` for more details.
+        Catalyst compiler.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
@@ -452,7 +452,7 @@ class jacobian:  # pylint: disable=too-few-public-methods
     .. note::
 
         When used with :func:`~.qjit`, this function currently only supports the
-        Catalyst compiler. See :func:`catalyst.jacobian` for more details.
+        Catalyst compiler.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
@@ -653,8 +653,7 @@ class jacobian:  # pylint: disable=too-few-public-methods
     Array([[ 3.48786850e-16, -4.20735492e-01],
            [-8.71967125e-17,  4.20735492e-01]], dtype=float64)
 
-    You can further compute the Jacobian transformation using other supported differentiation
-    methods by :func:`catalyst.jacobian`.
+    To compute the Jacobian with finite differences, set ``method="fd"``:
 
     .. code-block:: python
 
