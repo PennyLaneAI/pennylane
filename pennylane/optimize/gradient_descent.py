@@ -13,10 +13,9 @@
 # limitations under the License.
 """Gradient descent optimizer"""
 
-from autoray import infer_backend
-
 from pennylane._grad import grad as get_gradient
 from pennylane._grad.grad import _interface_leaves
+from pennylane.math import get_interface
 
 
 class GradientDescentOptimizer:
@@ -105,7 +104,7 @@ class GradientDescentOptimizer:
     @staticmethod
     def _validate_parameters(args):
         if not any(getattr(arg, "requires_grad", False) for arg in args) and any(
-            infer_backend(leaf) == "jax" for leaf in _interface_leaves(args)
+            get_interface(leaf) == "jax" for leaf in _interface_leaves(args)
         ):
             raise ValueError(
                 "PennyLane's gradient-descent optimizers do not support JAX parameters. Use "

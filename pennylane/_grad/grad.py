@@ -27,12 +27,12 @@ from autograd.core import make_vjp as _make_vjp
 from autograd.extend import vspace
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
-from autoray import infer_backend
 from jax._src.core import trace_state_clean
 from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten, treedef_tuple
 
 from pennylane import capture
 from pennylane.compiler import compiler
+from pennylane.math.interface_utils import get_interface
 
 make_vjp = unary_to_nary(_make_vjp)
 
@@ -122,7 +122,7 @@ def _has_jax_inputs(args: tuple, argnums) -> bool:
             selected = args[:1]
     else:
         selected = tuple(args[i] for i in ((argnums,) if isinstance(argnums, int) else argnums))
-    return any(infer_backend(leaf) == "jax" for leaf in _interface_leaves(selected))
+    return any(get_interface(leaf) == "jax" for leaf in _interface_leaves(selected))
 
 
 def _args_and_argnums(args, argnums):
