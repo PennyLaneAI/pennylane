@@ -23,19 +23,21 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.core.transforms import BoundTransform, CompilePipeline, Transform
 from pennylane.exceptions import TransformError
-from pennylane.tape import QuantumTape
 from pennylane.typing import PostprocessingFn, TensorLike
 
 dev = qp.device("default.qubit", wires=2)
 
-with QuantumTape() as tape_circuit:
+with AnnotatedQueue() as tape_queue:
     qp.Hadamard(wires=0)
     qp.CNOT(wires=[0, 1])
     qp.PauliX(wires=0)
     qp.RZ(0.42, wires=1)
     qp.expval(qp.PauliZ(wires=0))
+
+tape_circuit = QuantumScript.from_queue(tape_queue)
 
 
 def qfunc_circuit(a: TensorLike):
@@ -547,16 +549,18 @@ class TestTransform:  # pylint: disable=too-many-public-methods
 
         assert inspect.signature(qfunc_transformed) == inspect.signature(qfunc_circuit)
 
-        with QuantumTape() as transformed_tape:
+        with AnnotatedQueue() as transformed_queue:
             qfunc_transformed(0.42)
 
+        transformed_tape = QuantumScript.from_queue(transformed_queue)
         assert isinstance(transformed_tape, QuantumScript)
         assert transformed_tape.circuit is not None
         assert len(transformed_tape.circuit) == 4
 
-        with QuantumTape() as tape:
+        with AnnotatedQueue() as queue:
             qfunc_circuit(0.42)
 
+        tape = QuantumScript.from_queue(queue)
         assert isinstance(transformed_tape, QuantumScript)
         assert tape.circuit is not None
         assert len(tape.circuit) == 5
