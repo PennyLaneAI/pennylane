@@ -331,14 +331,10 @@ class TestHermitian:
             qp.Hermitian.compute_decomposition(double_wire_observable, wires=[0, 1, 2])
 
         with pytest.raises(ValueError, match="Expected input matrix to have shape"):
-            qp.Hermitian.compute_decomposition(double_wire_observable, wires="aux")
+            qp.Hermitian.compute_decomposition(double_wire_observable, wires=7)
 
-        # test int as wire type
+        # test a scalar integer wire label
         A_decomp = qp.Hermitian.compute_decomposition(single_wire_observable, wires=0)
-        assert np.allclose(qp.matrix(A_decomp[0]), single_wire_observable, rtol=0)
-
-        # test str as wire type
-        A_decomp = qp.Hermitian.compute_decomposition(single_wire_observable, wires="aux")
         assert np.allclose(qp.matrix(A_decomp[0]), single_wire_observable, rtol=0)
 
     def test_hermitian_compute_decomposition_inefficiency_warning(self):

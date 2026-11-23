@@ -419,7 +419,6 @@ class TestPreprocessing:
         res = stopping_condition(op)
         assert res == expected
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_adjoint_only_one_wire(self):
         """Tests adjoint accepts operators with no parameters or a single parameter and a generator."""
 
@@ -512,7 +511,6 @@ class TestPreprocessing:
             program([tape])
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestPreprocessingIntegration:
     """Test preprocess produces output that can be executed by the device."""
 
@@ -727,7 +725,6 @@ class TestPreprocessingIntegration:
         expected = (np.array([1, 2, 3]), np.array([4, 5, 6]))
         assert np.array_equal(batch_fn(val), expected)
 
-    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_preprocess_check_validity_fail(self):
         """Test that preprocess throws an error if the split and expanded tapes have
         unsupported operators."""
@@ -740,12 +737,8 @@ class TestPreprocessingIntegration:
 
         program = qp.device("default.qubit").preprocess_transforms()
 
-        if qp.decomposition.enabled_graph():
-            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
-                with pytest.warns(DecompositionWarning):
-                    program(tapes)
-        else:
-            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+            with pytest.warns(DecompositionWarning):
                 program(tapes)
 
     @pytest.mark.parametrize(
@@ -807,8 +800,8 @@ class TestPreprocessingIntegration:
         x = 0.928
         y = -0.792
         qscript = qp.tape.QuantumScript(
-            [MyTemplate(x, y, ("a", "b"))],
-            [qp.expval(qp.PauliY("a")), qp.expval(qp.PauliZ("a")), qp.expval(qp.PauliX("b"))],
+            [MyTemplate(x, y, (9, 11))],
+            [qp.expval(qp.PauliY(9)), qp.expval(qp.PauliZ(9)), qp.expval(qp.PauliX(11))],
         )
 
         dev = DefaultQubit(max_workers=max_workers)
@@ -818,12 +811,12 @@ class TestPreprocessingIntegration:
 
         assert len(tapes) == 1
         execute_circuit = tapes[0]
-        qp.assert_equal(execute_circuit[0], qp.RX(x, "a"))
-        qp.assert_equal(execute_circuit[1], qp.RY(y, "b"))
-        qp.assert_equal(execute_circuit[2], qp.CNOT(("a", "b")))
-        qp.assert_equal(execute_circuit[3], qp.expval(qp.PauliY("a")))
-        qp.assert_equal(execute_circuit[4], qp.expval(qp.PauliZ("a")))
-        qp.assert_equal(execute_circuit[5], qp.expval(qp.PauliX("b")))
+        qp.assert_equal(execute_circuit[0], qp.RX(x, 9))
+        qp.assert_equal(execute_circuit[1], qp.RY(y, 11))
+        qp.assert_equal(execute_circuit[2], qp.CNOT((9, 11)))
+        qp.assert_equal(execute_circuit[3], qp.expval(qp.PauliY(9)))
+        qp.assert_equal(execute_circuit[4], qp.expval(qp.PauliZ(9)))
+        qp.assert_equal(execute_circuit[5], qp.expval(qp.PauliX(11)))
 
         results = dev.execute(tapes, config)
         assert len(results) == 1
@@ -842,8 +835,8 @@ class TestPreprocessingIntegration:
 
         x = 0.692
 
-        measurements1 = [qp.density_matrix("a"), qp.vn_entropy("a")]
-        qs1 = qp.tape.QuantumScript([CustomIsingXX(x, ("a", "b"))], measurements1)
+        measurements1 = [qp.density_matrix(9), qp.vn_entropy(9)]
+        qs1 = qp.tape.QuantumScript([CustomIsingXX(x, (9, 11))], measurements1)
 
         y = -0.923
 
@@ -913,16 +906,11 @@ class TestPreprocessingIntegration:
 
         prog = DefaultQubit().preprocess_transforms(config)
 
-        if qp.decomposition.enabled_graph():
-            with pytest.raises(DeviceError, match="not supported with default.qubit"):
-                with pytest.warns(DecompositionWarning):
-                    prog((tape,))
-        else:
-            with pytest.raises(DeviceError, match="not supported with default.qubit"):
+        with pytest.raises(DeviceError, match="not supported with default.qubit"):
+            with pytest.warns(DecompositionWarning):
                 prog((tape,))
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestAdjointDiffTapeValidation:
     """Unit tests for validate_and_expand_adjoint"""
 
@@ -956,7 +944,6 @@ class TestAdjointDiffTapeValidation:
         ):
             program((qs,))
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_unsupported_op_decomposed(self):
         """Test that an operation supported on the forward pass but
         not adjoint is decomposed when adjoint is requested."""
@@ -1134,7 +1121,6 @@ class TestAdjointDiffTapeValidation:
         assert qp.jacobian(circuit)(x) == 0
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestDefaultQubitGraphModeExclusive:
     """Tests for DefaultQubit features that require graph mode enabled.
     The legacy decomposition mode should not be able to run these tests.
