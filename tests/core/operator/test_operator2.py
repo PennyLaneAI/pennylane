@@ -306,8 +306,28 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
 
         assert not Op.arg_specs
 
-        op = Op(wires=[0, 1], ctrl_wires=[2, 3, 4])
-        assert op.wires == Wires([0, 1, 2, 3, 4])
+        op1 = Op(wires=[0], ctrl_wires=[1, 2])
+        op2 = Op(wires=[0, 1, 2, 3], ctrl_wires=[4])
+
+        assert op1.wires == Wires([0, 1, 2])
+        assert op2.wires == Wires([0, 1, 2, 3, 4])
+
+    def test_arg_specs_with_wire_argnames_enforces_matching_wire_count(self):
+        """Test that declaring both wire arguments and a fixed wire spec in
+        ``arg_specs`` enforces matching wire counts."""
+
+        class Op(Operator2):
+            wire_argnames = ("wires", "ctrl_wires")
+            arg_specs = {"wires": AbstractWires(2)}
+
+            def __init__(self, wires, ctrl_wires):
+                super().__init__(wires=wires, ctrl_wires=ctrl_wires)
+
+        op = Op(wires=[0, 1], ctrl_wires=[2, 3])
+        assert op.wires == Wires([0, 1, 2, 3])
+
+        with pytest.raises(ValueError, match="Incorrect number of wires"):
+            Op(wires=[0], ctrl_wires=[2])
 
     @pytest.mark.parametrize("attr", ["hybrid_argnames", "static_argnames", "compilable_argnames"])
     def test_arg_specs_incompatible_with_other_arg_groups(self, attr):
