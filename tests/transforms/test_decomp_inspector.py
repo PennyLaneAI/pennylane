@@ -353,7 +353,7 @@ class TestInspectDecompGraph:
              [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
             Estimated First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, Controlled(GlobalPhase, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(2), control_values=AbstractArray((1,), bool), work_wires=AbstractWires(2), work_wire_type=borrowed): 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool), work_wires=AbstractWires(1), work_wire_type=borrowed): 2, PauliX: 3, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
             Actual First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, Controlled(GlobalPhase, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(2), control_values=AbstractArray((1,), bool), work_wires=AbstractWires(2), work_wire_type=borrowed): 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool), work_wires=AbstractWires(1), work_wire_type=borrowed): 2, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
-            Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 18, RY: 8, RZ: 33}
+            Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 22, RY: 8, RZ: 29}
             Weighted Cost: 2974.0
 
             Decomposition 1 (name: one_borrowed_work_wire)

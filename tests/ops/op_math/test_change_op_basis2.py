@@ -597,10 +597,42 @@ class TestDecomposition:
 
         assert len(qp.list_decomps(op)) == 1
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_adjoint_decomposition_with_explicit_uncompute(self):
         """Test the generated adjoint rule with an asymmetric explicit uncompute operator."""
-        op = qp.adjoint(ChangeOpBasis2(qp.S(0), qp.T(1), qp.SX(2)))
+        with qp.capture.pause():
+            op = qp.adjoint(ChangeOpBasis2(qp.S(0), qp.T(1), qp.SX(2)))
         assert_decomposable(op)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_adjoint_with_explicit_uncompute_is_inverse(self):
+        """Test that the adjoint inverts an asymmetric explicit uncompute operator."""
+        with qp.capture.pause():
+            ops_lst = [qp.S(0), qp.CNOT([0, 1]), qp.SX(0)]
+            op = ChangeOpBasis2(*ops_lst)
+            expected = qp.matrix(qp.tape.QuantumScript(ops_lst), wire_order=[0, 1]).conj().T
+            assert np.allclose(qp.matrix(op.adjoint(), wire_order=[0, 1]), expected)
+            adj_op = qp.adjoint(op)
+
+        rule = qp.list_decomps(adj_op)["adjoint_target"]
+        decomp = qp.testing.decomp_rule_to_tape(adj_op, rule)
+        with qp.capture.pause():
+            assert np.allclose(qp.matrix(decomp, wire_order=[0, 1]), expected)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_adjoint_decomposition_preserves_change_op_basis(self):
+        """Test that the adjoint rule emits a basis change, so that controlling it later
+        only controls the inverted target operator."""
+        with qp.capture.pause():
+            op = qp.adjoint(ChangeOpBasis2(qp.H(0), qp.T(0)))
+        rule = qp.list_decomps(op)["adjoint_target"]
+        qp.testing.assert_valid_decomp_rule(op, rule)
+
+        [gate] = qp.testing.decomp_rule_to_tape(op, rule).operations
+        assert isinstance(gate, ChangeOpBasis2)
+        qp.assert_equal(gate.compute_op, qp.H(0))
+        qp.assert_equal(gate.target_op, qp.adjoint(qp.T(0)))
+        qp.assert_equal(gate.uncompute_op, qp.adjoint(qp.H(0)))
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_on_tape(self, ops_lst):
