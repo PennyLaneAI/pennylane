@@ -46,23 +46,24 @@ jobs:
       - name: Install pip and setuptools
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade setuptools
+          pip install --upgrade setuptools uv==0.9.12
 
-      - name: Install Catalyst and Lightning (dev)
-        run: |
-          pip install --upgrade --index-url https://test.pypi.org/simple/ --pre --no-deps pennylane-catalyst pennylane-lightning
+      - name: Prepare companion dependencies
+        uses: ./.github/actions/prepare-companion-dependencies
+        with:
+          catalyst: 'true'
+          github-token: ${{ github.token }}
 
-      - name: Install dependencies of Catalyst and Lightning
-        run: |
-          pip install --upgrade --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ pennylane-catalyst pennylane-lightning
+      - name: Install Catalyst and Lightning companions
+        run: uv pip install pennylane-catalyst pennylane-lightning
 
       - name: Install PyTorch (CPU-only)
         run: |
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          uv pip install torch --index-url https://download.pytorch.org/whl/cpu
 
       - name: Install PennyLane (editable)
         run: |
-          pip install --group doctest -e .
+          uv pip install --group doctest -e .
 
       - name: Print Dependencies
         run: |

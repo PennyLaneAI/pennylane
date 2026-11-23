@@ -76,6 +76,7 @@ jobs:
       pytest_additional_args: --import-mode=importlib
       pytest_coverage_flags:  --cov-config=pennylane2/labs/.coveragerc --cov=pennylane2/labs --cov-append --cov-report=term-missing --cov-report=xml --no-flaky-report --tb=native
       python_version: '3.12'
+      install_catalyst: true
       pytest_test_directory: pennylane2/labs/tests
       additional_pip_packages: |
         geometric h5py basis-set-exchange pyscf optax

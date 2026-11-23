@@ -65,11 +65,13 @@ jobs:
       
       - name: Nightly Catalyst Version
         id: catalyst
-        run: echo "nightly=--extra-index-url https://test.pypi.org/simple/ --index-strategy unsafe-best-match --prerelease=allow --upgrade-package PennyLane-Catalyst PennyLane-Catalyst" >> $GITHUB_OUTPUT
+        # Temporary: prepare-companion-dependencies selects the PR wheel.
+        run: echo "nightly=pennylane-catalyst" >> $GITHUB_OUTPUT
       
       - name: PennyLane-Lightning Latest Version
         id: pennylane-lightning
-        run: echo "latest=--extra-index-url https://test.pypi.org/simple/ --index-strategy unsafe-best-match --prerelease=allow --upgrade-package PennyLane-Lightning PennyLane-Lightning" >> $GITHUB_OUTPUT
+        # Temporary: prepare-companion-dependencies selects the companion branch.
+        run: echo "latest=pennylane-lightning" >> $GITHUB_OUTPUT
     
     outputs:
       catalyst-jax-version: jax==${{ steps.catalyst-jax.outputs.version }} jaxlib==${{ steps.catalyst-jax.outputs.version }}

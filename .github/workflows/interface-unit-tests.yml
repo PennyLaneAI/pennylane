@@ -479,6 +479,7 @@ jobs:
       pytest_markers: external
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}external-libraries-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
+      install_catalyst: true
       additional_pip_packages: |
         --group external-libraries
         mitiq>=0.45.1
@@ -517,6 +518,7 @@ jobs:
       pytest_markers: catalyst
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}catalyst-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
+      install_catalyst: true
       additional_pip_packages: |
         matplotlib
         ${{ needs.default-dependency-versions.outputs.jax-version }}
