@@ -24,7 +24,8 @@ jobs:
     name: Determine runner type to use
     uses: ./.github/workflows/determine-workflow-runner.yml
     with:
-      default_runner: ubuntu-latest
+      # Temporary: use Blacksmith while downloading the Catalyst PR wheel.
+      default_runner: blacksmith-4vcpu-ubuntu-2404
       force_large_runner: ${{ github.event_name == 'merge_group' }}
 
   documentation-tests:

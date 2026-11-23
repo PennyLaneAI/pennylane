@@ -17,7 +17,8 @@ on:
 
 jobs:
   rtd_check:
-    runs-on: ubuntu-24.04
+    # Temporary: use Blacksmith while downloading the Catalyst PR wheel.
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     env:
       PYTHON_VERSION: "3.12"
       TORCH_VERSION: "2.9.0"  # must match pyproject.toml [dependency-groups] docs
