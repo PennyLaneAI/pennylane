@@ -154,8 +154,8 @@ def test_value_and_grad_without_qjit():
 
 
 @pytest.mark.jax
-def test_jax_grad_forward():
-    """JAX gradients retain the forward value and respect keyword arguments."""
+def test_jax_grad_keywords_without_forward_cache():
+    """JAX gradients respect keyword arguments without caching forward values."""
 
     def cost(first, second, *, scale):
         return first**2 + scale * first * second
@@ -164,8 +164,9 @@ def test_jax_grad_forward():
     derivative = qp.grad(cost, argnums=0)
     assert derivative.forward is None
     assert qp.math.allclose(derivative(first, second, scale=4.0), 16.0)
-    assert qp.math.allclose(derivative.forward, 28.0)
-    assert qp.math.get_interface(derivative.forward) == "jax"
+    assert derivative.forward is None
+    assert qp.math.allclose(jax.jit(derivative)(first, second, scale=4.0), 16.0)
+    assert derivative.forward is None
 
 
 @pytest.mark.jax
@@ -211,7 +212,6 @@ def test_jax_qnode_gradients(diff_method):
     angle = jax.numpy.array(0.3)
     derivative = qp.grad(scalar_circuit)
     assert qp.math.allclose(derivative(angle), -qp.math.sin(angle))
-    assert qp.math.allclose(derivative.forward, qp.math.cos(angle))
     jacobian = qp.jacobian(vector_circuit)(angle)
     expected = qp.math.stack([-qp.math.sin(angle), qp.math.cos(angle)])
     assert tuple(qp.math.shape(component) for component in jacobian) == ((), ())
@@ -238,25 +238,6 @@ def test_jax_default_and_jit(diff_function):
     derivative = diff_function(cost)
     assert qp.math.allclose(derivative(first, second), 7.0)
     assert qp.math.allclose(jax.jit(derivative)(first, second), 7.0)
-
-
-@pytest.mark.jax
-@pytest.mark.parametrize("eager_first", [False, True])
-def test_jax_forward_remains_eager_value_after_jit(eager_first):
-    """Compiled JAX executions cannot leak tracers through the cached forward value."""
-    derivative = qp.grad(lambda value: value**3)
-    if eager_first:
-        assert qp.math.allclose(derivative(jax.numpy.array(2.0)), 12.0)
-    forward = derivative.forward
-    compiled_derivative = jax.jit(derivative)
-    assert qp.math.allclose(compiled_derivative(jax.numpy.array(3.0)), 27.0)
-    assert qp.math.allclose(compiled_derivative(jax.numpy.array(4.0)), 48.0)
-    assert derivative.forward is forward
-    assert not isinstance(derivative.forward, jax.core.Tracer)
-    if eager_first:
-        assert qp.math.allclose(derivative.forward + 1.0, 9.0)
-    else:
-        assert derivative.forward is None
 
 
 @pytest.mark.jax
@@ -349,17 +330,3 @@ def test_registered_dictionary_subclass(diff_function):
     result = derivative(Parameters(jax.numpy.array(2.0)))
     assert isinstance(result, Parameters)
     assert qp.math.allclose(result.value, 4.0)
-
-
-@pytest.mark.jax
-def test_constant_jax_forward_remains_eager_value_after_jit():
-    """Tracing a constant output leaves the cached eager forward value untouched."""
-    derivative = qp.grad(lambda value, *, offset: offset)
-    compiled_derivative = jax.jit(derivative, static_argnames="offset")
-    value = jax.numpy.array(2.0)
-    assert compiled_derivative(value, offset=1.0) == 0.0
-    assert derivative.forward is None
-    assert derivative(value, offset=2.0) == 0.0
-    forward = derivative.forward
-    assert compiled_derivative(value, offset=3.0) == 0.0
-    assert derivative.forward is forward

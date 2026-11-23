@@ -27,7 +27,6 @@ from autograd.core import make_vjp as _make_vjp
 from autograd.extend import vspace
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
-from jax._src.core import trace_state_clean
 from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten, treedef_tuple
 
 from pennylane import capture
@@ -255,7 +254,8 @@ class grad:  # pylint: disable=too-many-instance-attributes
 
     When the output gradient function is executed, both the forward pass
     *and* the backward pass will be performed in order to compute the gradient.
-    The value of the forward pass is available via the :attr:`~.forward` property.
+    With Autograd, the value of the forward pass is available via the
+    :attr:`~.forward` property.
 
     .. note::
 
@@ -379,12 +379,7 @@ class grad:  # pylint: disable=too-many-instance-attributes
 
         if _has_jax_inputs(args, self._argnums):
             argnums, unpack = _setup_argnums(self._argnums)
-            value, derivative = jax.value_and_grad(
-                self._func, argnums=argnums[0] if unpack else argnums
-            )(*args, **kwargs)
-            if trace_state_clean():
-                self._forward = value
-            return derivative
+            return jax.grad(self._func, argnums=argnums[0] if unpack else argnums)(*args, **kwargs)
 
         return self._autograd_call(*args, **kwargs)
 
@@ -409,9 +404,9 @@ class grad:  # pylint: disable=too-many-instance-attributes
 
     @property
     def forward(self):
-        """The last eager forward value, or ``None`` before the first eager call.
+        """The last forward value computed by Autograd, or ``None`` before such a call.
 
-        JAX tracing and compiled executions do not update this value.
+        JAX differentiation and compiled executions do not update this value.
         """
         return self._forward
 
