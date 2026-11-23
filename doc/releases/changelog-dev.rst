@@ -2525,6 +2525,9 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed resource callbacks in :class:`~.SingleExcitation` decompositions to accept positional arguments.
+  `(#10575) <https://github.com/PennyLaneAI/pennylane/pull/10575>`__
+
 * Fixed the adjoint of a :func:`~.change_op_basis` operator with an explicit ``uncompute_op`` that
   is not the adjoint of ``compute_op``. The adjoint now inverts and swaps the compute and uncompute
   operators instead of keeping them unchanged.

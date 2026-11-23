@@ -319,6 +319,27 @@ class TestSingleExcitationDecompositions:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
+        ("subcircuit_name", "arguments"),
+        [
+            ("_SingleExcitationBasis", {"wires": [0, 1], "reverse": False}),
+            ("_SingleExcitationRotations", {"phi": 0.5, "wires": [0, 1]}),
+            ("_SingleExcitationRZRotations", {"phi": 0.5, "wires": [0, 1]}),
+            ("_SingleExcitationCRZBasis", {"wires": [0, 1]}),
+        ],
+    )
+    def test_subcircuit_resources_accept_positionals(self, subcircuit_name, arguments):
+        """Subcircuit resources accept positional arguments as well as keyword arguments."""
+        from pennylane.decomposition_rules.qubit import qchem_ops
+
+        op = getattr(qchem_ops, subcircuit_name)(**arguments)
+        rule = qp.list_decomps(op)[0]
+
+        assert rule.compute_resources(*op.arguments.values()) == rule.compute_resources(
+            **op.arguments
+        )
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
         "rule_name",
         ["basis_change_ry", "to_ppr_rz", "to_ppr_crz"],
     )

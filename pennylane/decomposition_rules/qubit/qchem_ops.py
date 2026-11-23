@@ -40,7 +40,7 @@ from pennylane.wires import WiresLike
 
 
 @subcircuit(static_argnames=("reverse",))
-@register_resources(lambda **_: {qp.Hadamard: 1, qp.CNOT: 1})
+@register_resources(lambda *_, **__: {qp.Hadamard: 1, qp.CNOT: 1})
 def _SingleExcitationBasis(wires: WiresLike, reverse: bool):
     if not reverse:
         qp.Hadamard(wires[0])
@@ -50,7 +50,7 @@ def _SingleExcitationBasis(wires: WiresLike, reverse: bool):
 
 
 @subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": Float, "wires": Wire[2]})
-@register_resources(lambda **_: {qp.RY: 2})
+@register_resources(lambda *_, **__: {qp.RY: 2})
 def _SingleExcitationRotations(phi: TensorLike, wires: WiresLike):
     qp.RY(-phi / 2, wires[0])
     qp.RY(-phi / 2, wires[1])
@@ -77,7 +77,7 @@ def _single_excitation_standard(phi: TensorLike, wires: WiresLike):
 
 
 @subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": Float, "wires": Wire[2]})
-@register_resources(lambda **_: {qp.RZ: 2})
+@register_resources(lambda *_, **__: {qp.RZ: 2})
 def _SingleExcitationRZRotations(phi: TensorLike, wires: WiresLike):
     qp.RZ(phi / 2, wires[0])
     qp.RZ(-phi / 2, wires[1])
@@ -116,7 +116,7 @@ def _single_excitation_to_ppr_rz(phi: TensorLike, wires: WiresLike):
 
 
 @subcircuit
-@register_resources(lambda **_: {qp.PPR_4(1, "XX", wires=Wire[2]): 1, qp.CNOT: 1})
+@register_resources(lambda *_, **__: {qp.PPR_4(1, "XX", wires=Wire[2]): 1, qp.CNOT: 1})
 def _SingleExcitationCRZBasis(wires: WiresLike):
     qp.PPR_4(1, "XX", wires=wires)
     qp.CNOT(wires)
