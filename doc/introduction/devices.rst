@@ -1,15 +1,5 @@
-
-.. raw:: html
-
-    <style>
-    tr {
-        border-top: #d3d3d3 1px solid;
-        border-bottom: #d3d3d3 1px solid;
-    }
-    .row-odd {
-        background-color: #f7f7f7;
-    }
-    </style>
+ .. role:: html(raw)
+   :format: html
 
 Supported devices
 =================
@@ -40,7 +30,7 @@ include:
   * - ``lightning.amdgpu``
 
     - A fast state-vector qubit simulator based on the ``lightning.kokkos`` device to give maximum performance on AMD GPUs. See the
-      `Lightning-AMDGPU documentation <https://docs.pennylane.ai/projects/lightning/en/latest/lightning_amdgpu/device.html>`__
+      `Lightning-AMDGPU documentation <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_amdgpu/device.html>`__
       for more details, as well as its
       `Catalyst configuration file <https://github.com/PennyLaneAI/pennylane-lightning/blob/main/pennylane_lightning/lightning_kokkos/lightning_kokkos.toml>`__
       (shared with ``lightning.kokkos``) for natively supported instructions.
@@ -58,7 +48,7 @@ include:
 
     - Interact with quantum computing hardware devices and simulators through Amazon Braket. To use
       this device with PennyLane2, make sure to install the
-      `PennyLane-Braket plugin <https://amazon-braket-pennylane-plugin-python.readthedocs.io/en/latest/>`__.
+      `PennyLane-Braket plugin <https://amazon-braket-pennylane-plugin-python.readthedocs.io/en/stable/>`__.
       See the
       `Catalyst configuration file <https://github.com/PennyLaneAI/catalyst/blob/main/runtime/lib/backend/openqasm/braket_aws_qubit.toml>`__
       for natively supported instructions.
@@ -67,7 +57,7 @@ include:
 
     - Run gate-based circuits on the Braket SDK's local simulator. To use
       this device with PennyLane2, make sure to install the
-      `PennyLane-Braket plugin <https://amazon-braket-pennylane-plugin-python.readthedocs.io/en/latest/>`__.
+      `PennyLane-Braket plugin <https://amazon-braket-pennylane-plugin-python.readthedocs.io/en/stable/>`__.
       See the
       `Catalyst configuration file <https://github.com/PennyLaneAI/catalyst/blob/main/runtime/lib/backend/openqasm/braket_local_qubit.toml>`__
       for natively supported instructions.
@@ -77,7 +67,7 @@ include:
     - `Qrack <https://github.com/unitaryfund/qrack>`__ is a GPU-accelerated quantum computer
       simulator with many novel optimizations including hybrid stabilizer simulation. To use this
       device with PennyLane2, make sure to install the
-      `PennyLane-Qrack plugin <https://pennylane-qrack.readthedocs.io/en/latest/>`__, and check out
+      `PennyLane-Qrack plugin <https://pennylane-qrack.readthedocs.io/en/stable/>`__, and check out
       the `QJIT compilation with Qrack and Catalyst tutorial <https://pennylane.ai/qml/demos/qrack/>`__.
 
       See the `Catalyst configuration file <https://github.com/unitaryfund/pennylane-qrack/blob/master/pennylane_qrack/QrackDeviceConfig.toml>`__
@@ -97,8 +87,9 @@ include:
           os.environ["OQC_PASSWORD"] = "your_password"
           os.environ["OQC_URL"] = "oqc_url"
 
-          dev = qp.device("oqc.cloud", backend="lucy", shots=2012, wires=2)
+          dev = qp.device("oqc.cloud", backend="lucy", wires=2)
 
+      To specify ``shots``, please use the :func:`pennylane.set_shots` function.
       See the `Catalyst configuration file <https://github.com/PennyLaneAI/catalyst/blob/main/frontend/catalyst/third_party/oqc/src/oqc.toml>`__
       for natively supported instructions.
 
