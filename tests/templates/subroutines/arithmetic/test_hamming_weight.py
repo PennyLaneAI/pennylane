@@ -11,16 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the private in-place Hamming-weight helper."""
+"""Tests for the private in-place Hamming-weight subcircuit."""
 
 from collections import Counter
-from functools import partial
 
 import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.templates.subroutines.arithmetic.hamming_weight import _hamming_weight
+from pennylane.templates.subroutines.arithmetic.hamming_weight import _HammingWeight
 
 # (n, ANDs, CNOTs) of the circuit for n input bits
 GATE_COUNTS = [(1, 0, 0), (2, 1, 1), (3, 1, 5), (4, 3, 7), (5, 3, 11), (6, 4, 16), (7, 4, 20)]
@@ -29,21 +28,20 @@ GATE_COUNTS = [(1, 0, 0), (2, 1, 1), (3, 1, 5), (4, 3, 7), (5, 3, 11), (6, 4, 16
 def _hamming_weight_circuit(n):
     """Quantum function that copies the Hamming weight of ``n`` wires in a uniform superposition
     onto output wires, least significant bit first, computing and uncomputing it with
-    :func:`~._hamming_weight` in a :func:`~.change_op_basis`, and returns the probabilities of
-    the input, work and output wires."""
+    :func:`~._HammingWeight`, and returns the probabilities of the input, work and output
+    wires."""
     wires = list(range(n))
     work_wires = list(range(n, 2 * n - n.bit_count()))
     out_wires = [wires[-1], *work_wires[: n.bit_length() - 1]]
     copy_wires = list(range(2 * n - n.bit_count(), 2 * n - n.bit_count() + n.bit_length()))
 
-    def copy_out():
-        for out_wire, copy_wire in zip(out_wires, copy_wires):
-            qp.CNOT([out_wire, copy_wire])
-
     def circuit():
         for wire in wires:
             qp.H(wire)
-        qp.change_op_basis(partial(_hamming_weight, wires, work_wires), copy_out)
+        _HammingWeight(wires, work_wires)
+        for out_wire, copy_wire in zip(out_wires, copy_wires):
+            qp.CNOT([out_wire, copy_wire])
+        qp.adjoint(_HammingWeight(wires, work_wires))
         return qp.probs(wires=wires + work_wires + copy_wires)
 
     return circuit
@@ -82,9 +80,12 @@ def test_qjit():
 @pytest.mark.parametrize("n, num_ands, num_cnots", GATE_COUNTS)
 def test_gate_counts(n, num_ands, num_cnots):
     """Test that the circuit uses n - popcount(n) ANDs, each with its own work wire as target, and
-    5n - 4 * n.bit_length() - popcount(n) CNOTs, and no other gates."""
+    5n - 4 * n.bit_length() - popcount(n) CNOTs, and no other gates, matching the registered
+    resources."""
     work_wires = list(range(n, n + num_ands))
-    ops = qp.tape.make_qscript(_hamming_weight)(range(n), work_wires).operations
+    op = _HammingWeight(range(n), work_wires)
+    qp.testing.assert_valid_decomp_rule(op, qp.list_decomps(_HammingWeight)[0], check_matrix=False)
+    ops = op.decomposition()
     counts = Counter(type(op) for op in ops)
     assert set(counts) <= {qp.TemporaryAND, qp.CNOT}
     assert (counts[qp.TemporaryAND], counts[qp.CNOT]) == (num_ands, num_cnots)

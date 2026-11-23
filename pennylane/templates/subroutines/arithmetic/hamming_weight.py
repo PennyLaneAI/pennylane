@@ -16,27 +16,28 @@ Private helpers for computing the Hamming weight of a register in place, with
 :class:`~.TemporaryAND` and :class:`~.CNOT` gates.
 """
 
-from pennylane import capture
-from pennylane.core.operator import abstractify
-from pennylane.core.queuing import AnnotatedQueue
-from pennylane.ops import CNOT
-from pennylane.ops.op_math import prod
+from pennylane.decomposition import register_resources
+from pennylane.ops import CNOT, subcircuit
 
 from .semi_adder import _left_block, _left_block_zeroed
+from .temporary_and import TemporaryAND
 
 
-def _hamming_weight_resource_rep(num_wires):
-    """Abstract product of the gates of :func:`~._hamming_weight` on ``num_wires`` input wires,
-    e.g., to describe its use as the compute block of :func:`~.change_op_basis` in resource
-    functions."""
-    num_work_wires = num_wires - num_wires.bit_count()
-    with capture.pause(), AnnotatedQueue() as q:
-        _hamming_weight(range(num_wires), range(num_wires, num_wires + num_work_wires))
-    # The factors of a product are in matrix order, the reverse of the order of application
-    return prod(*(abstractify(op) for op in reversed(q.queue)))
+def _hamming_weight_resources(wires, **_):
+    num_full_adders, num_half_adders, num_bits = 0, 0, len(wires)
+    while num_bits > 1:
+        num_full_adders += (num_bits - 1) // 2
+        num_half_adders += 1 - num_bits % 2
+        num_bits //= 2
+    return {
+        TemporaryAND: num_full_adders + num_half_adders,
+        CNOT: 5 * num_full_adders + num_half_adders,
+    }
 
 
-def _hamming_weight(wires, work_wires):
+@subcircuit(wire_argnames=("wires", "work_wires"))
+@register_resources(_hamming_weight_resources)
+def _HammingWeight(wires, work_wires):
     r"""Compute the Hamming weight of ``wires`` in place.
 
     The bits are summed by their weight :math:`2^j`, starting with all inputs at weight
@@ -66,7 +67,7 @@ def _hamming_weight(wires, work_wires):
     Bit :math:`0` of the Hamming weight ends up on ``wires[-1]``, and bit :math:`j>0` on
     ``work_wires[j - 1]``. All other wires are left in garbage states, so that this helper
     method must be used in conjunction with its adjoint to return the system wires to their previous
-    state, and only specific operations (e.g. phases) are allowed between ``_hamming_weight``
+    state, and only specific operations (e.g. phases) are allowed between ``_HammingWeight``
     and its uncomputation.
 
     Args:
@@ -78,8 +79,8 @@ def _hamming_weight(wires, work_wires):
     For three bits, a single full adder leaves the sum on wire ``2`` and the carry on the work
     wire ``3``:
 
-    >>> from pennylane.templates.subroutines.arithmetic.hamming_weight import _hamming_weight
-    >>> qp.tape.make_qscript(_hamming_weight)([0, 1, 2], [3]).operations
+    >>> from pennylane.templates.subroutines.arithmetic.hamming_weight import _HammingWeight
+    >>> _HammingWeight([0, 1, 2], [3]).decomposition()
     [CNOT(wires=[1, 0]), CNOT(wires=[1, 2]), TemporaryAND(wires=[0, 2, 3]), CNOT(wires=[1, 3]),
      CNOT(wires=[1, 2]), CNOT(wires=[0, 2])]
 

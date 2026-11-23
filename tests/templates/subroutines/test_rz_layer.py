@@ -14,7 +14,6 @@
 """Tests for the RZLayer template."""
 
 from collections import Counter
-from functools import partial
 
 import numpy as np
 import pytest
@@ -202,18 +201,25 @@ class TestDecomposition:
         "num_angles, block_size, num_work_wires",
         [(1, 3, 1), (1, 4, 1), (1, 5, 3), (1, 6, 4), (1, 7, 4), (3, 3, 1), (2, 4, 1)],
     )
-    def test_hwp_synthesis_matrix(self, num_angles, block_size, num_work_wires, seed):
+    def test_hwp_synthesis_state(self, num_angles, block_size, num_work_wires, seed):
         """Test that the Hamming-weight phasing rule realizes the rotations including their global
-        phase if its work wires start in zero, and that it returns them to zero."""
+        phase on a random state if its work wires start in zero, and that it returns them to
+        zero."""
         op = _random_rz_layer(num_angles, block_size, num_work_wires, seed)
         wires = op.arguments["wires"]
+        state = np.array([1, 1j]) @ np.random.default_rng(seed).normal(size=(2, 2 ** len(wires)))
+        state /= np.linalg.norm(state)
 
-        rule = partial(_rzlayer_hwp_synthesis, op.angles, wires, op.work_wires)
-        matrix = qp.matrix(rule, wire_order=op.wires)()
-        dim, work_dim = 2 ** len(wires), 2**num_work_wires
-        # The block with the work wires in zero is unitary only if it maps them back to zero
-        matrix = matrix.reshape(dim, work_dim, dim, work_dim)[:, 0, :, 0]
-        assert np.allclose(matrix, qp.matrix(qp.RZLayer(op.angles, wires)))
+        @qp.qnode(qp.device("default.qubit", wires=op.wires))
+        def circuit():
+            qp.StatePrep(state, wires=wires)
+            _rzlayer_hwp_synthesis(op.angles, wires, op.work_wires)
+            return qp.state()
+
+        expected = np.kron(
+            qp.matrix(qp.RZLayer(op.angles, wires)) @ state, np.eye(2**num_work_wires)[0]
+        )
+        assert np.allclose(circuit(), expected)
 
     @pytest.mark.parametrize(
         "num_angles, block_size, num_work_wires", [(1, 3, 0), (2, 5, 1), (1, 6, 2)]
@@ -236,7 +242,6 @@ class TestDecomposition:
         expected = np.repeat(op.angles, block_size)
         assert np.allclose(circuit(), np.concatenate([np.cos(expected), np.sin(expected)]))
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("num_angles", [1, 3])
     @pytest.mark.parametrize("block_size", HWP_COUNTS)
     def test_hwp_synthesis_counts(self, num_angles, block_size, seed):
@@ -256,7 +261,6 @@ class TestDecomposition:
         assert set(tape.wires) == set(op.wires)
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "num_angles, block_size, num_work_wires", [(1, 3, 1), (2, 4, 1), (1, 6, 4)]
     )
