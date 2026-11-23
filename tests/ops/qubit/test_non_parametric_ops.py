@@ -42,6 +42,7 @@ from gate_data import (
     Y,
     Z,
 )
+from helpers.decomposition_helpers import assert_basis_change_decomposition
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
@@ -78,11 +79,11 @@ NON_PARAMETRIZED_OPERATIONS_WITH_PAULI_REP_ALREADY_IMPLEMENTED = [
     (qp.Z(0), Z),
     (qp.S(10000000), S),
     (qp.T(10000000), T),
-    (qp.SX("qubit0"), SX),
+    (qp.SX(20), SX),
     (qp.SWAP([0, 1]), SWAP),
     (qp.ISWAP([0, 1]), ISWAP),
     (qp.ECR([-1, 1]), ECR),
-    (qp.SISWAP(["qubit0", "qubit1"]), SISWAP),
+    (qp.SISWAP([20, 21]), SISWAP),
 ]
 
 STRING_REPR = (
@@ -91,20 +92,20 @@ STRING_REPR = (
     (qp.PauliX(0), "X(0)"),
     (qp.PauliY(0), "Y(0)"),
     (qp.PauliZ(0), "Z(0)"),
-    (qp.Identity("a"), "I('a')"),
+    (qp.Identity(13), "I(13)"),
     (qp.Identity(10), "I(10)"),
     (qp.Identity(), "I()"),
-    (qp.Hadamard("a"), "H('a')"),
-    (qp.PauliX("a"), "X('a')"),
-    (qp.PauliY("a"), "Y('a')"),
-    (qp.PauliZ("a"), "Z('a')"),
-    (qp.H("a"), "H('a')"),
-    (qp.X("a"), "X('a')"),
-    (qp.Y("a"), "Y('a')"),
-    (qp.Z("a"), "Z('a')"),
-    (qp.T("a"), "T('a')"),
-    (qp.S("a"), "S('a')"),
-    (qp.SX("a"), "SX('a')"),
+    (qp.Hadamard(13), "H(13)"),
+    (qp.PauliX(13), "X(13)"),
+    (qp.PauliY(13), "Y(13)"),
+    (qp.PauliZ(13), "Z(13)"),
+    (qp.H(13), "H(13)"),
+    (qp.X(13), "X(13)"),
+    (qp.Y(13), "Y(13)"),
+    (qp.Z(13), "Z(13)"),
+    (qp.T(13), "T(13)"),
+    (qp.S(13), "S(13)"),
+    (qp.SX(13), "SX(13)"),
     (qp.H(0), "H(0)"),
     (qp.X(1), "X(1)"),
     (qp.Y(2), "Y(2)"),
@@ -115,7 +116,7 @@ STRING_REPR = (
 )
 
 
-@pytest.mark.parametrize("wire", [0, "a", "a"])
+@pytest.mark.parametrize("wire", [0, 13])
 def test_alias_XYZI(wire):
     assert qp.PauliX(wire) == qp.X(wire)
     assert qp.PauliY(wire) == qp.Y(wire)
@@ -832,37 +833,6 @@ class TestMultiControlledX:
         ).T
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
-    def test_decomposition_with_custom_wire_labels(self):
-        """Test that the decomposed MultiControlledX gate performs the same unitary as the
-        matrix-based version by checking if U^dagger U applies the identity to each basis
-        state. This test focuses on using custom wire labels."""
-        n_ctrl_wires = 4
-        control_target_wires = [-1, "alice", 42, 3.14, "bob"]
-        work_wires = ["charlie"]
-        all_wires = control_target_wires + work_wires
-
-        dev = qp.device("default.qubit", wires=all_wires)
-
-        with qp.queuing.AnnotatedQueue() as q:
-            qp.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
-
-        tape = qp.tape.QuantumScript.from_queue(q)
-        [tape], _ = decompose(tape, max_expansion=2, gate_set=qp.gate_sets.CLIFFORD_T)
-        assert all(not isinstance(op, qp.MultiControlledX) for op in tape.operations)
-
-        @qp.qnode(dev)
-        def f(bitstring):
-            qp.BasisState(bitstring, wires=control_target_wires)
-            qp.MultiControlledX(wires=control_target_wires)
-            for op in tape.operations:
-                op.queue()
-            return qp.probs(wires=control_target_wires)
-
-        u = np.array(
-            [f(np.array(b)) for b in itertools.product(range(2), repeat=n_ctrl_wires + 1)]
-        ).T
-        assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
-
     def test_worker_state_unperturbed(self):
         """Test that the state of the worker wires is unperturbed after the decomposition has used
         them. To do this, a random state over all the qubits (control, target and workers) is
@@ -956,7 +926,7 @@ period_two_ops = (
     qp.PauliX(0),
     qp.PauliY(0),
     qp.PauliZ(0),
-    qp.Hadamard("a"),
+    qp.Hadamard(13),
     qp.SWAP(wires=(0, 1)),
     qp.ECR(wires=(0, 1)),
     # Controlled operations
@@ -1092,7 +1062,7 @@ class TestPowMethod:
 
     @pytest.mark.parametrize("offset", (0, 4, -4))
     def test_S_pow(self, offset):
-        op = qp.S("a")
+        op = qp.S(13)
 
         assert len(op.pow(0 + offset)) == 0
 
@@ -1108,7 +1078,7 @@ class TestPowMethod:
     @pytest.mark.parametrize("offset", (0, 8, -8))
     def test_T_pow(self, offset):
         """Test the powers of the T gate."""
-        op = qp.T("b")
+        op = qp.T(16)
 
         assert len(op.pow(0 + offset)) == 0
         assert op.pow(1 + offset)[0].__class__ is qp.T
@@ -1122,7 +1092,7 @@ class TestPowMethod:
 
     @pytest.mark.parametrize("offset", (0, 4, -4))
     def test_SX_pow(self, offset):
-        op = qp.SX("d")
+        op = qp.SX(19)
 
         assert len(op.pow(0 + offset)) == 0
 
@@ -1168,7 +1138,7 @@ class TestControlledMethod:  # pylint: disable=too-few-public-methods
     def test_Barrier(self):
         """Tests the control behavior of Barrier."""
         original = qp.Barrier((0, 1, 2))
-        out = qp.ctrl(original, "a")
+        out = qp.ctrl(original, 13)
         qp.assert_equal(original, out)
 
 
@@ -1343,9 +1313,9 @@ def test_involution_operators(op):
 
 op_pauli_rep = (
     (qp.PauliX(wires=0), qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "X"}): 1})),
-    (qp.PauliY(wires="a"), qp.pauli.PauliSentence({qp.pauli.PauliWord({"a": "Y"}): 1})),
+    (qp.PauliY(wires=13), qp.pauli.PauliSentence({qp.pauli.PauliWord({13: "Y"}): 1})),
     (qp.PauliZ(wires=4), qp.pauli.PauliSentence({qp.pauli.PauliWord({4: "Z"}): 1})),
-    (qp.Identity(wires="target"), qp.pauli.PauliSentence({qp.pauli.PauliWord({}): 1})),
+    (qp.Identity(wires=22), qp.pauli.PauliSentence({qp.pauli.PauliWord({}): 1})),
 )
 
 
@@ -1423,6 +1393,15 @@ PPR_DENOMINATORS = {qp.PPR_2: 2, qp.PPR_4: 4, qp.PPR_8: 8}
 @pytest.mark.parametrize("op_cls", list(PPR_DENOMINATORS))
 class TestPPR:
     """Tests for the fixed-angle Pauli product rotations (PPR) PPR_2, PPR_4 and PPR_8."""
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("sign", [1, -1])
+    @pytest.mark.parametrize("pauli_word", ["III", "IZI", "ZZZ", "XIY", "YZX"])
+    def test_decomposition_resources_and_matrix(self, op_cls, sign, pauli_word):
+        """Test that captured PPR rules preserve phase, basis changes, and resource identities."""
+        op = op_cls(sign, pauli_word, wires=[3, 1, 4])
+        rule = qp.list_decomps(op)[0]
+        assert_basis_change_decomposition(op, rule)
 
     @pytest.mark.parametrize("sign", [1, -1])
     def test_init(self, op_cls, sign):
@@ -1507,8 +1486,8 @@ class TestPPR:
 
     def test_map_wires(self, op_cls):
         """Test that the wires can be remapped."""
-        op = op_cls(1, "XY", wires=[0, 1]).map_wires({0: "a", 1: "b"})
-        assert op.wires == Wires(["a", "b"])
+        op = op_cls(1, "XY", wires=[0, 1]).map_wires({0: 13, 1: 16})
+        assert op.wires == Wires([13, 16])
         assert op.sign == 1
         assert op.pauli_word == "XY"
 

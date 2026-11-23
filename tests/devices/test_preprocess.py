@@ -620,8 +620,8 @@ class TestDecomposeTransformations:
         """Test that decompose works correctly when passing through ``fixed_decomps``
         and/or ``alt_decomps`` with the graph-based decomposer."""
 
-        # Mock a simple target gate set
-        target_gates = {"Hadamard": 1, "RX": 5, "RY": 5, "PhaseShift": 5, "GlobalPhase": 0}
+        # Keep the fake RX rule strictly cheaper than the standard PhaseShift decomposition.
+        target_gates = {"Hadamard": 1, "RX": 4, "RY": 5, "PhaseShift": 5, "GlobalPhase": 0}
 
         # Create a tape with an operation that needs decomposition
         tape = qp.tape.QuantumScript([qp.RZ(0.2, 0)])
