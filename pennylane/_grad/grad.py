@@ -218,69 +218,63 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
 
 
 class grad:  # pylint: disable=too-many-instance-attributes
-    """Returns the gradient as a callable function of hybrid quantum-classical functions.
-    Supports JAX, Autograd, and :func:`~.qjit`.
-
-    With JAX inputs, as within :func:`~.qjit`, the first positional argument is
-    differentiated by default, following JAX. Use ``argnums`` to select positional
-    arguments explicitly.
-
-    The backend is selected from the positional input leaves. Autograd takes
-    precedence whenever an Autograd input is present, including non-trainable inputs.
-
-    With Autograd, gradients are computed for arguments which contain
-    the property ``requires_grad=True``. Alternatively, the ``argnums`` keyword argument
-    can be specified to compute gradients for function arguments without this property,
-    such as scalars, lists, tuples, dicts, or vanilla NumPy arrays. Setting
-    ``argnums`` to the index of an argument with ``requires_grad=False`` will raise
-    a ``NonDifferentiableError``.
-
-    When the output gradient function is executed, both the forward pass
-    *and* the backward pass will be performed in order to compute the gradient.
-    With Autograd, the value of the forward pass is available via the
-    :attr:`~.forward` property.
-
-    .. note::
-
-        When used with :func:`~.qjit`, this function currently only supports the
-        Catalyst compiler.
-
-        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
-        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
-        page for an overview of the differences between Catalyst and PennyLane.
+    """Returns a callable that computes the gradient of a function with a real scalar output.
 
     Args:
-        func (function): a plain QNode, or a Python function that contains
-            a combination of quantum and classical nodes
-
-        argnums (int, Sequnece(int), None): Which argument(s) to take the gradient
-            with respect to. If ``None``, JAX inputs and :func:`~.qjit` programs
-            differentiate the first positional argument, following JAX, while
-            ``pennylane.numpy`` arrays are differentiated if their ``requires_grad``
-            attribute is ``True``.
-
-        method (str): Specifies the gradient method when used with the :func:`~.qjit`
-            decorator. Outside of :func:`~.qjit`, this keyword argument
-            has no effect and should not be set. In just-in-time (JIT) mode,
-            this can be any of ``["auto", "fd"]``, where:
-
-            - ``"auto"`` represents deferring the quantum differentiation to the method
-              specified by the QNode, while the classical computation is differentiated
-              using traditional auto-diff. Catalyst supports ``"parameter-shift"`` and
-              ``"adjoint"`` on internal QNodes. QNodes with ``diff_method="finite-diff"``
-              are not supported with ``"auto"``.
-
-            - ``"fd"`` represents first-order finite-differences for the entire hybrid
-              function.
-
-        h (float): The step-size value for the finite-difference (``"fd"``) method within
-            :func:`~.qjit` decorated functions. This value has
-            no effect in non-compiled functions.
+        func (function): A Python function or QNode that returns a real scalar and may
+            combine quantum and classical computations.
+        argnums (int, Sequence[int], None): Indices of the positional arguments to differentiate.
+            If ``None``, argument selection depends on the input interface.
+        method (str): Gradient method for :func:`~.qjit`: ``"auto"`` or ``"fd"``.
+            Leave unset for non-compiled functions.
+        h (float): Step size for finite differences within :func:`~.qjit`.
+            Leave unset for non-compiled functions.
 
     Returns:
         function: The function that returns the gradient of the input
         function with respect to the differentiable arguments, or, if specified,
         the arguments in ``argnums``.
+
+    .. details::
+        :title: Usage Details
+
+        Supports JAX, Autograd, and :func:`~.qjit`. For vector-valued outputs, use
+        :func:`~.jacobian`.
+
+        With JAX inputs, as within :func:`~.qjit`, the first positional argument is
+        differentiated by default, following JAX. Use ``argnums`` to select positional
+        arguments explicitly.
+
+        The backend is selected from the positional input leaves. Autograd takes
+        precedence whenever an Autograd input is present, including non-trainable inputs.
+
+        With Autograd, gradients are computed for arguments which contain
+        the property ``requires_grad=True``. Alternatively, the ``argnums`` keyword argument
+        can be specified to compute gradients for function arguments without this property,
+        such as scalars, lists, tuples, dicts, or vanilla NumPy arrays. Setting
+        ``argnums`` to the index of an argument with ``requires_grad=False`` will raise
+        a ``NonDifferentiableError``.
+
+        With Autograd, the most recent forward value is available via the
+        :attr:`~.forward` property.
+
+        With :func:`~.qjit`, ``method`` selects the differentiation method:
+
+        - ``"auto"`` defers quantum differentiation to the method specified by the QNode,
+          while the classical computation is differentiated using traditional auto-diff.
+          Catalyst supports ``"parameter-shift"`` and ``"adjoint"`` on internal QNodes.
+          QNodes with ``diff_method="finite-diff"`` are not supported with ``"auto"``.
+        - ``"fd"`` uses first-order finite differences for the entire hybrid function.
+
+        .. note::
+
+            When used with :func:`~.qjit`, this function currently only supports the
+            Catalyst compiler.
+
+            Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+            as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+            page for an overview of the differences between Catalyst and PennyLane.
+
     """
 
     def __init__(self, func, argnums=None, h=None, method=None):
