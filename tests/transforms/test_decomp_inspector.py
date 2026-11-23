@@ -111,10 +111,7 @@ class TestInspectDecompGraph:
             Decomposition 0 (name: ctrl_single_work_wire)
             Insufficient work wires: requires 1 but only 0 available.
 
-            Decomposition 1 (name: ctrl_many_zeroed_work_wires)
-            Not applicable (provided operator instance does not meet all conditions for this rule).
-
-            Decomposition 2 (name: controlled(_multi_rz_to_ppr))
+            Decomposition 1 (name: controlled(_multi_rz_to_ppr))
             0: ─╭RZZ(0.50)─┤
             1: ─├RZZ(0.50)─┤
             3: ─├●─────────┤
@@ -125,7 +122,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 46, GlobalPhase: 25, RX: 23, RZ: 22}
             Weighted Cost: 91.0
 
-            CHOSEN: Decomposition 3 (name: controlled(_multi_rz_decomposition))
+            CHOSEN: Decomposition 2 (name: controlled(_multi_rz_decomposition))
             0: ─╭(X)@RZ(0.50)@(X)─┤
             1: ─├(X)@RZ(0.50)@(X)─┤
             3: ─├●────────────────┤
@@ -144,13 +141,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### Decomposition 1 (name: ctrl_many_zeroed_work_wires)
-
-            _Not applicable (provided operator instance does not meet all conditions for this rule)._
-
-            ---
-
-            #### Decomposition 2 (name: controlled(_multi_rz_to_ppr))
+            #### Decomposition 1 (name: controlled(_multi_rz_to_ppr))
 
             ```
             0: ─╭RZZ(0.50)─┤
@@ -177,7 +168,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### **CHOSEN:** Decomposition 3 (name: controlled(_multi_rz_decomposition))
+            #### **CHOSEN:** Decomposition 2 (name: controlled(_multi_rz_decomposition))
 
             ```
             0: ─╭(X)@RZ(0.50)@(X)─┤
@@ -234,10 +225,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 26, GlobalPhase: 68, MidMeasure: 2, RX: 20, RY: 10, RZ: 42}
             Weighted Cost: 3628.0
 
-            Decomposition 1 (name: ctrl_many_zeroed_work_wires)
-            Not applicable (provided operator instance does not meet all conditions for this rule).
-
-            Decomposition 2 (name: controlled(_multi_rz_to_ppr))
+            Decomposition 1 (name: controlled(_multi_rz_to_ppr))
             0: ─╭RZZ(0.50)─┤
             1: ─├RZZ(0.50)─┤
             3: ─├●─────────┤
@@ -248,7 +236,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 46, GlobalPhase: 25, RX: 23, RZ: 22}
             Weighted Cost: 2296.0
 
-            CHOSEN: Decomposition 3 (name: controlled(_multi_rz_decomposition))
+            CHOSEN: Decomposition 2 (name: controlled(_multi_rz_decomposition))
             0: ─╭(X)@RZ(0.50)@(X)─┤
             1: ─├(X)@RZ(0.50)@(X)─┤
             3: ─├●────────────────┤
@@ -296,13 +284,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### Decomposition 1 (name: ctrl_many_zeroed_work_wires)
-
-            _Not applicable (provided operator instance does not meet all conditions for this rule)._
-
-            ---
-
-            #### Decomposition 2 (name: controlled(_multi_rz_to_ppr))
+            #### Decomposition 1 (name: controlled(_multi_rz_to_ppr))
 
             ```
             0: ─╭RZZ(0.50)─┤
@@ -329,7 +311,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### **CHOSEN:** Decomposition 3 (name: controlled(_multi_rz_decomposition))
+            #### **CHOSEN:** Decomposition 2 (name: controlled(_multi_rz_decomposition))
 
             ```
             0: ─╭(X)@RZ(0.50)@(X)─┤
