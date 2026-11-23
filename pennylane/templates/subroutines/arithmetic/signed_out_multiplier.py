@@ -22,7 +22,11 @@ from jax import numpy as jnp
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_resources,
+)
 from pennylane.ops import CNOT, ctrl
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit, validate_no_wire_overlaps
@@ -122,14 +126,14 @@ class SignedOutMultiplier(Operator2):
                 :math:`w` ``work_wires``
             :example: :math:`n=m=1`, :math:`k=2`
 
-            .. decomposition-rule:: _signed_out_multiplier_decomposition_not_zeroed
+            .. decomposition-rule:: borrowed
                 :image: /_static/decomposition_thumbnails/signed_out_multiplier_not_zeroed.svg
                 :requires: ``output_wires_zeroed=False`` and :math:`w \geq 2k + 1` work wires
 
                 :class:`~.SignedOutMultiplier` with ``output_wires_zeroed=True`` | :math:`1` | 1
                 :class:`~.SemiAdder` | :math:`1` | 1
 
-            .. decomposition-rule:: _signed_out_multiplier_decomposition_zeroed
+            .. decomposition-rule:: zeroed
                 :image: /_static/decomposition_thumbnails/signed_out_multiplier_zeroed.svg
                 :requires: ``output_wires_zeroed=True`` and :math:`w \geq 2` work wires
 
@@ -366,7 +370,7 @@ class SignedOutMultiplier(Operator2):
         return self.x_wires + self.y_wires + self.output_wires + self.work_wires
 
 
-def _zeroed_signed_out_multiplier_resources(  # pylint: disable=unused-argument
+def _signed_out_multiplier_zeroed_resources(  # pylint: disable=unused-argument
     x_wires,
     y_wires,
     output_wires,
@@ -406,7 +410,7 @@ def _zeroed_signed_out_multiplier_resources(  # pylint: disable=unused-argument
     return dict(resources)
 
 
-def _not_zeroed_signed_out_multiplier_resources(  # pylint: disable=unused-argument
+def _signed_out_multiplier_borrowed_resources(  # pylint: disable=unused-argument
     x_wires,
     y_wires,
     output_wires,
@@ -505,8 +509,8 @@ def _not_zeroed_condition(x_wires, y_wires, output_wires, work_wires, output_wir
 
 @register_condition(_zeroed_condition)
 @register_condition(_zeroed_work_wire_condition)
-@register_resources(_zeroed_signed_out_multiplier_resources)
-def _signed_out_multiplier_decomposition_zeroed(  # pylint: disable=unused-argument
+@register_resources(_signed_out_multiplier_zeroed_resources, name="zeroed")
+def _signed_out_multiplier_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
@@ -562,8 +566,8 @@ def _signed_out_multiplier_decomposition_zeroed(  # pylint: disable=unused-argum
 
 @register_condition(_not_zeroed_condition)
 @register_condition(_not_zeroed_work_wire_condition)
-@register_resources(_not_zeroed_signed_out_multiplier_resources)
-def _signed_out_multiplier_decomposition_not_zeroed(  # pylint: disable=unused-argument
+@register_resources(_signed_out_multiplier_borrowed_resources, name="borrowed")
+def _signed_out_multiplier_borrowed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
@@ -603,5 +607,5 @@ def _signed_out_multiplier_decomposition_not_zeroed(  # pylint: disable=unused-a
     )
 
 
-add_decomps(SignedOutMultiplier, _signed_out_multiplier_decomposition_not_zeroed)
-add_decomps(SignedOutMultiplier, _signed_out_multiplier_decomposition_zeroed)
+add_decomps(SignedOutMultiplier, _signed_out_multiplier_borrowed)
+add_decomps(SignedOutMultiplier, _signed_out_multiplier_zeroed)

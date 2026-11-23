@@ -187,7 +187,7 @@ def _PhaseAdderBasis(k: int, wires: WiresLike, reverse: bool):
 
 
 # pylint: disable-next=unused-argument
-def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
+def _phase_adder_standard_resources(k, x_wires, mod, work_wire) -> dict:
     num_x_wires = len(x_wires)
 
     if mod == 2**num_x_wires:
@@ -213,8 +213,8 @@ def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
     return resources
 
 
-@register_resources(_phase_adder_decomposition_resources)
-def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire):
+@register_resources(_phase_adder_standard_resources, name="fourier_phase_shifts")
+def _phase_adder_standard(k, x_wires: WiresLike, mod, work_wire):
 
     n_wires = len(x_wires)
 
@@ -239,4 +239,4 @@ def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire):
     )
 
 
-add_decomps(PhaseAdder, _phase_adder_decomposition)
+add_decomps(PhaseAdder, _phase_adder_standard)

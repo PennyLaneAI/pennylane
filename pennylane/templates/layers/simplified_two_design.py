@@ -231,7 +231,7 @@ class SimplifiedTwoDesign(Operation):
         return [(n_wires,), (n_layers, n_wires - 1, 2)]
 
 
-def _simplified_two_design_resources(n_layers, num_wires):
+def _simplified_two_design_standard_resources(n_layers, num_wires):
     if num_wires > 1:
         return {
             RY: num_wires + (n_layers * num_wires - n_layers) * 2,
@@ -240,8 +240,8 @@ def _simplified_two_design_resources(n_layers, num_wires):
     return {RY: num_wires}
 
 
-@register_resources(_simplified_two_design_resources)
-def _simplified_two_design_decomposition(initial_layer_weights, weights, wires):
+@register_resources(_simplified_two_design_standard_resources, name="to_ry_cz")
+def _simplified_two_design_standard(initial_layer_weights, weights, wires):
     n_layers = math.shape(weights)[0]
 
     if capture.enabled():
@@ -279,4 +279,4 @@ def _simplified_two_design_decomposition(initial_layer_weights, weights, wires):
     layers_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(SimplifiedTwoDesign, _simplified_two_design_decomposition)
+add_decomps(SimplifiedTwoDesign, _simplified_two_design_standard)

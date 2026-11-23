@@ -246,7 +246,7 @@ New features since last release
   .. code-block:: python
 
       @qp.subcircuit(dynamic_argnames=("phi",), wire_argnames=("wires",))
-      @qp.register_resources({qp.H: 1, qp.RZ: 1})
+      @qp.register_resources({qp.H: 1, qp.RZ: 1}, name="MyOp")
       def MyOp(phi, wires):
           """My custom operator created using qp.subcircuit."""
           qp.H(wires)
@@ -972,7 +972,7 @@ Improvements 🛠
   The original decomposition is used when fewer work wires are supplied.
   `(#10380) <https://github.com/PennyLaneAI/pennylane/pull/10380>`__
   
-* Added a new decomposition rule, ``_single_excitation_ppr_crz``, to :class:`~.SingleExcitation`, that
+* Added a new decomposition rule, ``_single_excitation_to_ppr_crz``, to :class:`~.SingleExcitation`, that
   realizes the Givens rotation with a single arbitrary-angle ``CRZ`` gate and four Clifford operations.
   `(#10358) <https://github.com/PennyLaneAI/pennylane/pull/10358>`__
 
@@ -1021,7 +1021,7 @@ Improvements 🛠
   installed Catalyst is older.
   `(#10369) <https://github.com/PennyLaneAI/pennylane/pull/10369>`__
 
-* The ``decompose_mcx_with_no_worker`` decomposition rule for :class:`~.MultiControlledX` now only
+* The ``_mcx_no_work_wires`` decomposition rule for :class:`~.MultiControlledX` now only
   applies when no work wires are provided, matching ``MultiControlledX.compute_decomposition``.
   This removes controlled ``GlobalPhase`` and ``PhaseShift`` rules from the decomposition graph and
   greatly reduces ``qp.qjit(capture=True)`` compile time for multi-controlled X gates with work wires.
@@ -1148,6 +1148,12 @@ Improvements 🛠
   :class:`~.SingleExcitation` to use :func:`~.change_op_basis`, which enables more
   efficient controlled decompositions.
   `(#10118) <https://github.com/PennyLaneAI/pennylane/pull/10118>`__
+
+* The decomposition of the adjoint of a :func:`~.change_op_basis` operator built from ``Operator2``
+  operands now produces another basis-change operator with an inverted target, instead of three
+  separate operators. This lets a controlled adjoint under program capture control only the target,
+  rather than every gate of the compute and uncompute operators.
+  `(#10568) <https://github.com/PennyLaneAI/pennylane/pull/10568>`__
 
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.
   `(#10017) <https://github.com/PennyLaneAI/pennylane/pull/10017>`__
@@ -1545,6 +1551,14 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
+
+* Decomposition rules can be named using the optional ``name`` argument of
+  :func:`~pennylane.register_resources`. Names cannot start with an underscore.
+  Built-in decomposition rules use short strategy names, such as
+  ``"to_cnot"`` for ``SWAP``, available through
+  ``qp.list_decomps(qp.SWAP)["to_cnot"]`` and ``fixed_decomps={qp.SWAP: "to_cnot"}``.
+  `(#10492) <https://github.com/PennyLaneAI/pennylane/pull/10492>`__
+  `(#10566) <https://github.com/PennyLaneAI/pennylane/pull/10566>`__
 
 * Removes :class:`pennylane.tape.OperationRecorder`. Use :class:`~.AnnotatedQueue` instead.
   [(#10574)](https://github.com/PennyLaneAI/pennylane/pull/10574)
@@ -2012,7 +2026,7 @@ Internal changes ⚙️
 * Update ``tach`` to ``0.35.1``.
   `(#10147 ) <https://github.com/PennyLaneAI/pennylane/pull/10147>`__
 
-* The ``_prepselprep_decomp`` decomposition rule of :class:`~.PrepSelPrep` now applies the linear-combination
+* The ``_prepselprep_standard`` decomposition rule of :class:`~.PrepSelPrep` now applies the linear-combination
   unitaries and their global phases as two separate :class:`~.Select` operators instead of a single ``Select``
   of products.
   `(#10020) <https://github.com/PennyLaneAI/pennylane/pull/10020>`__
@@ -2508,6 +2522,14 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed resource callbacks in :class:`~.SingleExcitation` decompositions to accept positional arguments.
+  `(#10575) <https://github.com/PennyLaneAI/pennylane/pull/10575>`__
+
+* Fixed the adjoint of a :func:`~.change_op_basis` operator with an explicit ``uncompute_op`` that
+  is not the adjoint of ``compute_op``. The adjoint now inverts and swaps the compute and uncompute
+  operators instead of keeping them unchanged.
+  `(#10568) <https://github.com/PennyLaneAI/pennylane/pull/10568>`__
+
 * Fixed reconstruction of wire pytrees containing mixed Python and JAX scalars, allowing
   nested captured operators to reuse these wires.
   `(#10511) <https://github.com/PennyLaneAI/pennylane/pull/10511>`__
@@ -2789,7 +2811,7 @@ Bug fixes 🐛
   decomposition path from being traced with abstract arrays only checked
   ``capture.enabled()``, missing the ``qjit`` context where
   ``compiler.active()`` is ``True``. Both ``two_qubit_decomposition`` and
-  ``two_qubit_decomp_rule`` are fixed.
+  ``_qubit_unitary_two_qubit`` are fixed.
   `(#9520) <https://github.com/PennyLaneAI/pennylane/pull/9520>`__
 
 * Fixed a bug in the :mod:`~.pennylane.qchem.vibrational` submodule to properly account for the number of modes.
