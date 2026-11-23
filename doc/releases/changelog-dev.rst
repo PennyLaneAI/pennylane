@@ -4,6 +4,11 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* The new :class:`~.GivensPair` applies the same :class:`~.SingleExcitation` to two pairs of
+  wires, such as a spin-up and a spin-down pair. Its decomposition can apply the shared angle with
+  one :class:`~.RZLayer`.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * The new :class:`~.RZLayer` applies a :class:`~.RZ` rotation gate to each of its target wires, with
   equal angles used for blocks of ``len(wires) // len(angles)`` wires. This includes the case of
   ``len(wires)=len(angles)`` (one angle per wire) and ``len(angles)=1`` (same angle on all wires). This

@@ -217,6 +217,8 @@ unmodified_templates_cases = [
     (qp.MultiX, (jnp.array([True, False, True]), [0, 1, 2]), {}),
     (qp.RZLayer, (jnp.array([0.1, 0.2]), [0, 1, 2, 3]), {}),
     (qp.RZLayer, (jnp.array([0.5]), [0, 1], [2]), {}),
+    (qp.GivensPair, (jnp.array(0.4), [0, 1, 2, 3]), {}),
+    (qp.GivensPair, (jnp.array(0.4), [0, 1, 2, 3], [4, 5]), {}),
     (
         qp.TwoLocalSwapNetwork,
         ([0, 1, 2, 3, 4],),

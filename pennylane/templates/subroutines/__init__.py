@@ -70,6 +70,7 @@ from .qchem import (
     AllSinglesDoubles,
     kUpCCGSD,
     BasisRotation,
+    GivensPair,
 )
 from .arithmetic import (
     PhaseAdder,
@@ -115,6 +116,7 @@ __all__ = [
     "LocalHilbertSchmidt",
     "FlipSign",
     "BasisRotation",
+    "GivensPair",
     "QuantumMonteCarlo",
     "FABLE",
     "FFFT",
