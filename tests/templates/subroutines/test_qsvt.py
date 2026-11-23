@@ -167,16 +167,8 @@ class TestQSVTBasics:
             jaxpr = qp.capture.make_plxpr(circuit)()
             tape = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
-            # NOTE: Need to flatten COB before comparing.
-            flat_expected = []
-            for op in expected:
-                if isinstance(op, qp.ops.op_math.ChangeOpBasis2):
-                    flat_expected.extend([op.compute_op, op.target_op, op.uncompute_op])
-                else:
-                    flat_expected.append(op)
-
-            assert len(tape.operations) == len(flat_expected)
-            for actual, op in zip(tape.operations, flat_expected, strict=True):
+            assert len(tape.operations) == len(expected)
+            for actual, op in zip(tape.operations, expected, strict=True):
                 qp.assert_equal(actual, op)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")

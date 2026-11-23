@@ -20,6 +20,7 @@ import pennylane as qp
 from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 from pennylane.templates.subroutines.alias_sampling import _build_alias_tables
 from pennylane.templates.subroutines.alias_sampling_thc import _build_thc_pairs, _lcu_signs
+from pennylane.templates.subroutines.qubitization_thc import _THCPrepare
 from pennylane.testing import assert_valid
 
 
@@ -159,6 +160,7 @@ def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, num_walks=1):
 class TestQubitizationTHC:
     """Test the QubitizationTHC class."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("num_batches", [1, 2])
     def test_standard_validity(self, seed, num_batches):
         """Test standard validity of the QubitizationTHC operator with assert_valid."""
@@ -174,6 +176,17 @@ class TestQubitizationTHC:
             zeta, t_ell, chi, t_eigenvectors, aleph, beth, **wires, num_batches=num_batches
         )
         assert_valid(op)
+
+        tape = qp.testing.decomp_rule_to_tape(op, qp.list_decomps(qp.QubitizationTHC)[0])
+        sandwich = tape.operations[0]
+        assert isinstance(sandwich, qp.ops.ChangeOpBasis2)
+        assert sandwich.compute_op.__class__ is _THCPrepare
+        assert isinstance(sandwich.target_op, qp.ops.Prod2)
+        selection, sign = sandwich.target_op.operands
+        assert isinstance(selection, qp.SelectTHC)
+        assert isinstance(sign, qp.Z)
+        for operand in (sandwich.compute_op, sandwich.target_op):
+            assert_valid(operand, skip_differentiation=True)
 
     @pytest.mark.parametrize(
         "register, match",

@@ -27,13 +27,17 @@ from gate_data import (
     SingleExcitationMinus,
     SingleExcitationPlus,
 )
+from helpers.decomposition_helpers import assert_basis_change_decomposition
 from scipy.linalg import expm, fractional_matrix_power
 
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.op_math.prod2 import Prod2
+from pennylane.ops.qubit.qchem_ops import (
+    _SingleExcitationBasis,
+    _SingleExcitationRotations,
+)
 from pennylane.typing import Float, Wire
 
 PARAMETRIZED_QCHEM_OPERATIONS = [
@@ -154,10 +158,11 @@ class TestSingleExcitation:
         assert len(q.queue) == 1
         cob = q.queue[0]
         assert cob.name == "ChangeOpBasis2"
-        qp.assert_equal(
-            cob.compute_op,
-            qp.prod(qp.CNOT([0, 1]), qp.PPR_4(1, "XX", wires=[0, 1])),
-        )
+        assert not isinstance(cob.compute_op, qp.ops.Prod2)
+        assert cob.compute_op.decomposition() == [
+            qp.PPR_4(1, "XX", wires=[0, 1]),
+            qp.CNOT([0, 1]),
+        ]
         qp.assert_equal(cob.target_op, qp.CRZ(0.2, wires=[1, 0]))
         qp.assert_equal(cob.uncompute_op, qp.adjoint(cob.compute_op))
 
@@ -317,6 +322,40 @@ class TestSingleExcitation:
 class TestSingleExcitationDecompositions:
     """Tests the decomposition rules registered for SingleExcitation with the graph system."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        "rule_name",
+        ["_single_excitation_decomp", "_single_excitation_ppr_rz", "_single_excitation_ppr_crz"],
+    )
+    def test_basis_change_resources_and_matrix(self, rule_name):
+        """Test that basis changes preserve the excitation matrix and resource identities."""
+        op = qp.SingleExcitation(0.37, wires=[3, 1])
+        rule = qp.list_decomps(op)[rule_name]
+        assert_basis_change_decomposition(op, rule)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        "rule_name",
+        ["_single_excitation_decomp", "_single_excitation_ppr_rz", "_single_excitation_ppr_crz"],
+    )
+    def test_subcircuit_replays_dynamic_arguments(self, rule_name):
+        """Test that captured target subcircuits retain dynamic angles and wire assignments."""
+        import jax
+        import jax.numpy as jnp
+
+        rule = qp.list_decomps(qp.SingleExcitation)[rule_name]
+        jaxpr = jax.make_jaxpr(lambda phi, wires: rule(phi, wires=wires))(
+            jnp.array(0.1), jnp.array([0, 1])
+        )
+        for phi, wires in ((0.37, [3, 1]), (-0.81, [1, 4])):
+            tape = qp.testing.plxpr_to_tape(
+                jaxpr.jaxpr, jaxpr.consts, jnp.array(phi), jnp.array(wires)
+            )
+            with qp.capture.pause():
+                expected = qp.SingleExcitation(phi, wires=wires).matrix()
+                actual = qp.matrix(tape, wire_order=wires)
+            assert np.allclose(actual, expected)
+
     def test_decomp_queuing(self):
         """Test the operations queued by the Hadamard/CNOT/RY decomposition rule."""
         phi = 0.5
@@ -326,22 +365,20 @@ class TestSingleExcitationDecompositions:
 
         tape = qp.testing.decomp_rule_to_tape(op, rule)
 
-        # the rule queues a single ChangeOpBasis, which is what lets a control skip the
-        # Hadamard/CNOT basis change. Operands are in matrix order, i.e. reversed relative to
-        # the order they are applied in.
+        # A single ChangeOpBasis lets a control skip the Hadamard/CNOT basis change.
         (cob,) = tape.operations
         for actual, exp in zip(
-            cob.compute_op.operands, [qp.CNOT(wires), qp.Hadamard(wires[0])], strict=True
+            cob.compute_op.decomposition(), [qp.Hadamard(wires[0]), qp.CNOT(wires)], strict=True
         ):
             qp.assert_equal(actual, exp)
         for actual, exp in zip(
-            cob.target_op.operands,
-            [qp.RY(-phi / 2, wires[1]), qp.RY(-phi / 2, wires[0])],
+            cob.target_op.decomposition(),
+            [qp.RY(-phi / 2, wires[0]), qp.RY(-phi / 2, wires[1])],
             strict=True,
         ):
             qp.assert_equal(actual, exp)
         for actual, exp in zip(
-            cob.uncompute_op.operands, [qp.Hadamard(wires[0]), qp.CNOT(wires)], strict=True
+            cob.uncompute_op.decomposition(), [qp.CNOT(wires), qp.Hadamard(wires[0])], strict=True
         ):
             qp.assert_equal(actual, exp)
 
@@ -362,31 +399,27 @@ class TestSingleExcitationDecompositions:
         jaxpr = jax.make_jaxpr(circuit)(phi, *wires)
         ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
 
-        # the rule queues a ChangeOpBasis with an explicit inverse basis change
-        expected = [
-            qp.Hadamard(wires[0]),
-            qp.CNOT(wires),
-            qp.RY(-phi / 2, wires[0]),
-            qp.RY(-phi / 2, wires[1]),
-            qp.CNOT(wires),
-            qp.Hadamard(wires[0]),
-        ]
-        for actual, exp in zip(ops, expected, strict=True):
-            qp.assert_equal(actual, exp)
+        (actual,) = ops
+        expected = qp.change_op_basis(
+            _SingleExcitationBasis(wires, reverse=False),
+            _SingleExcitationRotations(phi, wires),
+            _SingleExcitationBasis(wires, reverse=True),
+        )
+        qp.assert_equal(actual, expected)
 
     def test_decomp_resources(self):
         """Test the resources of the Hadamard/CNOT/RY decomposition rule."""
         rule = qp.list_decomps(qp.SingleExcitation)[0]
         op = qp.SingleExcitation(0.5, wires=(0, 1))
 
-        # the rule reports a single ChangeOpBasis; operands are in matrix order
-        basis = Prod2((qp.CNOT(Wire[2]), qp.Hadamard(Wire[1])))
-        unbasis = Prod2((qp.Hadamard(Wire[1]), qp.CNOT(Wire[2])))
+        # The rule reports a single ChangeOpBasis with registered subcircuit operands.
+        basis = _SingleExcitationBasis(Wire[2], reverse=False)
+        unbasis = _SingleExcitationBasis(Wire[2], reverse=True)
         expected = qp.decomposition.Resources(
             {
                 _change_op_basis_abstract(
                     basis,
-                    Prod2((qp.RY(Float, Wire[1]), qp.RY(Float, Wire[1]))),
+                    _SingleExcitationRotations(Float, Wire[2]),
                     unbasis,
                 ): 1
             }

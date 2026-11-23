@@ -547,6 +547,8 @@ New features since last release
   decomposition pathways to the ``target`` gate set are analyzed and the resulting operations are
   counted. Note that :func:`~pennylane.estimate` is only supported with ``qp.qjit(capture=True)``.
   `(#10296) <https://github.com/PennyLaneAI/pennylane/pull/10296>`__
+  `(#10572) <https://github.com/PennyLaneAI/pennylane/pull/10572>`__
+
 
   Consider the following circuit.
 
@@ -1562,6 +1564,9 @@ required.
           qp.probs()
       qp.core.QuantumScript.from_queue(queue)
 
+* Removes :class:`pennylane.tape.OperationRecorder`. Use :class:`~.AnnotatedQueue` instead.
+  [(#10574)](https://github.com/PennyLaneAI/pennylane/pull/10574)
+
 * :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly: use
   ``get_compile_pipeline(qnode, level)`` instead of
   ``get_compile_pipeline(qnode, level)(*args, **kwargs)``. The device preprocessing transforms
@@ -1897,6 +1902,24 @@ required.
   :mod:`pennylane.core.apply` module, and is no longer importable from
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
+
+* :func:`~.change_op_basis` now preserves the basis-change operator during program capture.
+  With program capture enabled, inputs must be operator instances; callables remain supported
+  when capture is disabled. For capture, convert quantum functions into operators
+  with :func:`~.subcircuit`
+  and instantiate the resulting operator class before passing it to ``change_op_basis``.
+  `(#10511) <https://github.com/PennyLaneAI/pennylane/pull/10511>`__
+
+  .. code-block:: python
+
+      @qp.subcircuit(dynamic_argnames=("angle",))
+      @qp.register_resources({qp.H: 1, qp.RX: 1})
+      def Compute(angle, wires):
+          qp.H(wires)
+          qp.RX(angle, wires)
+
+      def circuit(angle):
+          qp.change_op_basis(Compute(angle, wires=0), qp.RZ(0.3, 0))
 
 * Graph-based decomposition is now always enabled, and the ``qp.decomposition.enable_graph``,
   ``disable_graph``, ``enabled_graph``, and ``toggle_graph_ctx`` functions have been removed.
@@ -2502,6 +2525,10 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed reconstruction of wire pytrees containing mixed Python and JAX scalars, allowing
+  nested captured operators to reuse these wires.
+  `(#10511) <https://github.com/PennyLaneAI/pennylane/pull/10511>`__
 
 * Fixed the measurement-based decomposition of :class:`~.QROM` to support dynamic
   bitstrings with ``qjit(capture=True)``, including padding for extra control wires.
