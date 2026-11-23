@@ -24,7 +24,7 @@ from pennylane.labs.estimator_beta import (
     GateCount,
     ResourceOperator,
 )
-from pennylane.queuing import AnnotatedQueue, QueuingManager
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 
 

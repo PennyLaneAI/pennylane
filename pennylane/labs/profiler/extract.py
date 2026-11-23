@@ -28,7 +28,7 @@ from pennylane.labs.estimator_beta.wires_manager.wire_counting import (
     estimate_wires_from_circuit,
     estimate_wires_from_resources,
 )
-from pennylane.queuing import AnnotatedQueue
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.workflow.qnode import QNode
 
 from .resource_profile import ProfileNode, add_dicts

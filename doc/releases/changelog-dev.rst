@@ -1552,6 +1552,11 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* Removed the ``pennylane.queuing`` shim. Import directly from
+  ``pennylane.core.queuing``; ``qp.queuing`` now refers to that module.
+  Use ``qp.apply`` instead of ``qp.queuing.apply``.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * Decomposition rules can be named using the optional ``name`` argument of
   :func:`~pennylane.register_resources`. Names cannot start with an underscore.
   Built-in decomposition rules use short strategy names, such as
@@ -1895,7 +1900,7 @@ Breaking changes 💔
 
 * :func:`~pennylane.apply` has moved from :mod:`pennylane.core.queuing` to the standalone
   :mod:`pennylane.core.apply` module, and is no longer importable from
-  ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
+  ``pennylane.core.queuing``. The ``qp.apply`` path is unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
 * :func:`~.change_op_basis` now preserves the basis-change operator during program capture.
