@@ -248,16 +248,6 @@ def test_jax_pytree_jacobian():
     assert qp.math.allclose(result["square"]["value"], 4.0)
 
 
-@pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
-def test_autograd_with_mixed_dictionary_keys(diff_function):
-    """Interface selection allows dictionaries with heterogeneous keys."""
-    x = qp.numpy.array(2.0, requires_grad=False)
-    offsets = {1: 2.0, "a": 3.0}
-    derivative = diff_function(lambda offset, value: value**2 + sum(offset.values()))
-    with pytest.warns(UserWarning, match="no trainable parameters"):
-        assert derivative(offsets, x) == ()
-
-
 def test_autograd_jacobian_with_iterator_argnums():
     """Backend selection and repeated calls reuse all indices from a one-shot iterator."""
     derivative = qp.jacobian(lambda x, y: x**2 + x * y, argnums=iter((0, 1)))

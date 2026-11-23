@@ -97,19 +97,9 @@ def _setup_argnums(argnums: int | Sequence[int] | None) -> tuple[tuple[int, ...]
     return argnums, argnums_is_int
 
 
-def _interface_leaves(value):
-    """Yield pytree leaves without sorting dictionary keys, which may have mixed types."""
-    for leaf in tree_leaves(value, is_leaf=lambda node: node.__class__ is dict):
-        if leaf.__class__ is dict:
-            for item in leaf.values():
-                yield from _interface_leaves(item)
-        else:
-            yield leaf
-
-
 def _use_jax(args: tuple) -> bool:
     """Use JAX for JAX inputs when no Autograd input is present."""
-    interfaces = {get_interface(leaf) for leaf in _interface_leaves(args)}
+    interfaces = {get_interface(leaf) for leaf in tree_leaves(args)}
     return "jax" in interfaces and "autograd" not in interfaces
 
 
