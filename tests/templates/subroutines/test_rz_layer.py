@@ -13,12 +13,16 @@
 # limitations under the License.
 """Tests for the RZLayer template."""
 
+from collections import Counter
+
 import numpy as np
 import pytest
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
-from pennylane.templates.subroutines.rz_layer import _rzlayer_individual
+from pennylane.templates.subroutines.rz_layer import _rzlayer_hwp_synthesis, _rzlayer_individual
+from pennylane.testing import assert_valid_decomp_rule
+from pennylane.transforms import _tape_decompose
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
@@ -32,9 +36,28 @@ SMALL_CASES = [
     ([0.3, -1.2], [3, 1, 0, 5], [4, 2]),
 ]
 
+# Gate counts per block of the Hamming-weight phasing rule, by block size. It computes the Hamming
+# weight of all wires of a block, except for blocks of four wires, where it computes the Hamming
+# weight of three wires and rotates the fourth one separately. Each AND uses one work wire, and the
+# uncomputation repeats the CNOTs.
+HWP_COUNTS = {
+    m: {"TemporaryAND": a, "Adjoint(TemporaryAND)": a, "CNOT": c, "PhaseShift": r, "GlobalPhase": 1}
+    for m, a, c, r in [(3, 1, 10, 2), (4, 1, 10, 3), (5, 3, 22, 3), (6, 4, 32, 3), (7, 4, 40, 3)]
+}
+
 
 def _random_angles(num_angles, seed):
     return np.random.default_rng(seed).uniform(-2 * np.pi, 2 * np.pi, num_angles)
+
+
+def _random_rz_layer(num_angles, block_size, num_work_wires, seed):
+    """An RZLayer with random angles on the wires ``0, 1, ...``, followed by its work wires."""
+    num_wires = num_angles * block_size
+    return qp.RZLayer(
+        _random_angles(num_angles, seed),
+        wires=range(num_wires),
+        work_wires=range(num_wires, num_wires + num_work_wires),
+    )
 
 
 class TestInitialization:
@@ -162,6 +185,150 @@ class TestDecomposition:
         assert np.allclose(circuit(angles), np.concatenate([np.cos(expected), np.sin(expected)]))
         counts = qp.analyze(circuit, level="device")(angles).resources.counts
         assert counts == {"Hadamard": 2 * num_wires, "RZ": 2 * num_wires}
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        "num_angles, block_size, num_work_wires",
+        [(1, 3, 1), (3, 3, 0), (2, 4, 1), (1, 5, 2), (2, 6, 4), (1, 7, 0)],
+    )
+    def test_hwp_synthesis_rule_valid(self, num_angles, block_size, num_work_wires, seed):
+        """Test that the Hamming-weight phasing rule is valid, with enough work wires and with
+        too few, in which case it allocates the missing ones."""
+        op = _random_rz_layer(num_angles, block_size, num_work_wires, seed)
+        assert_valid_decomp_rule(op, _rzlayer_hwp_synthesis, check_matrix=False)
+
+    @pytest.mark.parametrize(
+        "num_angles, block_size, num_work_wires",
+        [(1, 3, 1), (1, 4, 1), (1, 5, 3), (1, 6, 4), (1, 7, 4), (3, 3, 1), (2, 4, 1)],
+    )
+    def test_hwp_synthesis_state(self, num_angles, block_size, num_work_wires, seed):
+        """Test that the Hamming-weight phasing rule realizes the rotations including their global
+        phase on a random state if its work wires start in zero, and that it returns them to
+        zero."""
+        op = _random_rz_layer(num_angles, block_size, num_work_wires, seed)
+        wires = op.arguments["wires"]
+        state = np.array([1, 1j]) @ np.random.default_rng(seed).normal(size=(2, 2 ** len(wires)))
+        state /= np.linalg.norm(state)
+
+        @qp.qnode(qp.device("default.qubit", wires=op.wires))
+        def circuit():
+            qp.StatePrep(state, wires=wires)
+            _rzlayer_hwp_synthesis(op.angles, wires, op.work_wires)
+            return qp.state()
+
+        expected = np.kron(
+            qp.matrix(qp.RZLayer(op.angles, wires)) @ state, np.eye(2**num_work_wires)[0]
+        )
+        assert np.allclose(circuit(), expected)
+
+    @pytest.mark.parametrize(
+        "num_angles, block_size, num_work_wires", [(1, 3, 0), (2, 5, 1), (1, 6, 2)]
+    )
+    def test_hwp_synthesis_allocates_missing_work_wires(
+        self, num_angles, block_size, num_work_wires, seed
+    ):
+        """Test that the Hamming-weight phasing rule realizes the rotations if it allocates the
+        missing work wires. On ``|+>``, ``RZ(a)`` gives ``<X> = cos(a)`` and ``<Y> = sin(a)``."""
+        op = _random_rz_layer(num_angles, block_size, num_work_wires, seed)
+        wires = op.arguments["wires"]
+
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit():
+            for wire in wires:
+                qp.H(wire)
+            _rzlayer_hwp_synthesis(op.angles, wires, op.work_wires)
+            return [qp.expval(qp.X(w)) for w in wires] + [qp.expval(qp.Y(w)) for w in wires]
+
+        expected = np.repeat(op.angles, block_size)
+        assert np.allclose(circuit(), np.concatenate([np.cos(expected), np.sin(expected)]))
+
+    @pytest.mark.parametrize("num_angles", [1, 3])
+    @pytest.mark.parametrize("block_size", HWP_COUNTS)
+    def test_hwp_synthesis_counts(self, num_angles, block_size, seed):
+        """Test the gate counts of the Hamming-weight phasing rule, which only uses the wires of
+        the operator if it has enough work wires."""
+        block_counts = HWP_COUNTS[block_size]
+        op = _random_rz_layer(num_angles, block_size, block_counts["TemporaryAND"], seed)
+
+        [tape], _ = _tape_decompose(
+            qp.tape.QuantumScript([op]),
+            gate_set=set(block_counts),
+            fixed_decomps={qp.RZLayer: _rzlayer_hwp_synthesis},
+        )
+
+        counts = Counter(gate.name for gate in tape.operations)
+        assert counts == {name: num_angles * count for name, count in block_counts.items()}
+        assert set(tape.wires) == set(op.wires)
+
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize(
+        "num_angles, block_size, num_work_wires", [(1, 3, 1), (2, 4, 1), (1, 6, 4)]
+    )
+    def test_hwp_synthesis_qjit(self, num_angles, block_size, num_work_wires, seed):
+        """Test that, compiled with qjit, the Hamming-weight phasing rule realizes the rotations.
+        The RZLayer provides all work wires the rule needs, as Catalyst does not support the
+        dynamic allocation of missing ones."""
+        pytest.importorskip("catalyst")
+        op = _random_rz_layer(num_angles, block_size, num_work_wires, seed)
+        wires = op.arguments["wires"]
+        gate_set = {"H", *HWP_COUNTS[block_size]}
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=gate_set, fixed_decomps={qp.RZLayer: _rzlayer_hwp_synthesis})
+        @qp.qnode(qp.device("lightning.qubit", wires=len(op.wires)))
+        def circuit(angles):
+            for wire in wires:
+                qp.H(wire)
+            qp.RZLayer(angles, wires, work_wires=op.work_wires)
+            return [qp.expval(qp.X(w)) for w in wires] + [qp.expval(qp.Y(w)) for w in wires]
+
+        expected = np.repeat(op.angles, block_size)
+        assert np.allclose(circuit(op.angles), np.concatenate([np.cos(expected), np.sin(expected)]))
+        counts = qp.analyze(circuit, level="device")(op.angles).resources.counts
+        assert counts["PhaseShift"] == num_angles * HWP_COUNTS[block_size]["PhaseShift"]
+
+    @pytest.mark.parametrize("num_angles", [1, 3])
+    @pytest.mark.parametrize("block_size", HWP_COUNTS)
+    def test_hwp_synthesis_work_wire_spec(self, num_angles, block_size, seed):
+        """Test that the Hamming-weight phasing rule only requests the missing work wires, so that
+        Catalyst does not exclude it if the operator has enough work wires."""
+        num_ands = HWP_COUNTS[block_size]["TemporaryAND"]
+        for num_work_wires in range(num_ands + 2):
+            op = _random_rz_layer(num_angles, block_size, num_work_wires, seed)
+            spec = _rzlayer_hwp_synthesis.get_work_wire_spec(**op.arguments)
+            assert spec.total == max(num_ands - num_work_wires, 0)
+
+    @pytest.mark.parametrize(
+        "num_angles, block_size, num_work_wires", [(1, 3, 0), (3, 4, 1), (2, 7, 4)]
+    )
+    def test_hwp_synthesis_resources_from_shapes(
+        self, num_angles, block_size, num_work_wires, seed
+    ):
+        """Test that the Hamming-weight phasing rule computes its resources and work wire spec
+        from the abstract shapes ``Float[k]``, ``Wire[k*m]`` and ``Wire[w]``."""
+        op = _random_rz_layer(num_angles, block_size, num_work_wires, seed)
+        abstract_args = {
+            "angles": Float[num_angles],
+            "wires": Wire[num_angles * block_size],
+            "work_wires": Wire[num_work_wires],
+        }
+        rule = _rzlayer_hwp_synthesis
+
+        assert rule.is_applicable(**abstract_args)
+        resources = rule.compute_resources(**abstract_args)
+        assert resources.gate_counts == rule.compute_resources(**op.arguments).gate_counts
+        assert rule.get_work_wire_spec(**abstract_args) == rule.get_work_wire_spec(**op.arguments)
+
+    @pytest.mark.parametrize("num_angles, block_size", [(1, 1), (3, 1), (1, 2), (2, 2)])
+    def test_hwp_synthesis_needs_three_wires_per_block(self, num_angles, block_size):
+        """Test that the Hamming-weight phasing rule does not apply to blocks of fewer than three
+        wires, which it would not make cheaper."""
+        abstract_args = {
+            "angles": Float[num_angles],
+            "wires": Wire[num_angles * block_size],
+            "work_wires": Wire[2],
+        }
+        assert not _rzlayer_hwp_synthesis.is_applicable(**abstract_args)
 
 
 def test_adjoint_negates_angles():
