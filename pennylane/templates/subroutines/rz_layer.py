@@ -41,6 +41,8 @@ class RZLayer(Operator2):
 
     Note that the block size :math:`m` is fixed by the shapes of ``angles`` and ``wires``.
 
+    .. seealso:: :func:`~.transforms.decompositions.make_rzlayer_to_phase_gradient_decomp`
+
     Args:
         angles (TensorLike): one-dimensional array of :math:`k\geq 1` rotation angles
         wires (WiresLike): the :math:`km` wires the rotations act on
