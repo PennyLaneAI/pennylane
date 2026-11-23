@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for ``qp.decomposition_rules.transforms.decompositions.crz_phase_gradient.make_crz_to_phase_gradient_decomp``"""
+"""Tests for the CRZ phase-gradient decomposition rule factory."""
 
 import numpy as np
 import phase_gradient_helpers

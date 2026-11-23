@@ -59,6 +59,23 @@ def test_loading_preserves_custom_registrations_and_exclusions():
     assert list(qp.list_decomps(qp.RX)) == expected
 
 
+@pytest.mark.parametrize(
+    "name",
+    ["_CRZPhaseGradientCompute", "_SelectPauliRotPhaseGradientCompute"],
+)
+def test_loading_preserves_phase_gradient_subcircuits(name):
+    """Repeated loading preserves helper classes without restoring excluded rules."""
+    operator = getattr(qp.decomposition_rules, name)
+    rules = list(qp.list_decomps(operator))
+    qp.exclude_decomps(operator, rules[0].name)
+
+    _load_builtin_rules()
+    _load_builtin_rules()
+
+    assert getattr(qp.decomposition_rules, name) is operator
+    assert not qp.list_decomps(operator)
+
+
 def test_package_exports_preserve_rule_identity():
     """Package imports expose the registered objects and their original implementations."""
     from pennylane.decomposition_rules import (
@@ -67,16 +84,39 @@ def test_package_exports_preserve_rule_identity():
         null_decomp,
     )
     from pennylane.decomposition_rules.common import null_decomp as defined_null_decomp
+    from pennylane.decomposition_rules.qubit.parametric_ops_single_qubit import (
+        make_rz_to_phase_gradient_decomp as defined_rz_factory,
+    )
     from pennylane.decomposition_rules.templates.state_preparations.mottonen import (
         mottonen_decomp as defined_mottonen_decomp,
-    )
-    from pennylane.decomposition_rules.transforms.decompositions.rz_phase_gradient import (
-        make_rz_to_phase_gradient_decomp as defined_rz_factory,
     )
 
     assert null_decomp is defined_null_decomp
     assert mottonen_decomp is defined_mottonen_decomp
     assert make_rz_to_phase_gradient_decomp is defined_rz_factory
+
+
+@pytest.mark.parametrize(
+    "name, module",
+    [
+        ("make_rz_to_phase_gradient_decomp", "qubit.parametric_ops_single_qubit"),
+        ("make_crz_to_phase_gradient_decomp", "op_math.controlled_ops"),
+        (
+            "make_selectpaulirot_to_phase_gradient_decomp",
+            "templates.subroutines.select_pauli_rot",
+        ),
+        (
+            "make_phase_gradient_distillation_decomp",
+            "templates.state_preparations.phase_gradient",
+        ),
+        ("_CRZPhaseGradientCompute", "op_math.controlled_ops"),
+        ("_SelectPauliRotPhaseGradientCompute", "templates.subroutines.select_pauli_rot"),
+    ],
+)
+def test_phase_gradient_rules_follow_operator_modules(name, module):
+    """Phase-gradient factories and helpers live beside the corresponding operator rules."""
+    value = getattr(qp.decomposition_rules, name)
+    assert value.__module__ == f"pennylane.decomposition_rules.{module}"
 
 
 @pytest.mark.parametrize(
@@ -86,6 +126,11 @@ def test_package_exports_preserve_rule_identity():
         "pennylane.decomposition",
         "pennylane.decomposition_rules.common",
         "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+        "pennylane.decomposition_rules.op_math.controlled_ops",
+        "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
+        "pennylane.decomposition_rules.templates.state_preparations.phase_gradient",
+        "pennylane.transforms",
+        "pennylane.transforms.rz_phase_gradient",
         "pennylane.ops.op_math.controlled2",
         "pennylane.templates.subroutines.qrom",
     ],
@@ -97,6 +142,8 @@ import importlib
 importlib.import_module({entrypoint!r})
 import pennylane as qp
 from pennylane.decomposition_rules import null_decomp, make_rz_to_phase_gradient_decomp
+from pennylane.transforms.rz_phase_gradient import rz_phase_gradient
+assert qp.transforms.rz_phase_gradient is rz_phase_gradient
 assert null_decomp.name == "null_decomp"
 assert callable(make_rz_to_phase_gradient_decomp)
 assert qp.list_decomps(qp.RX)

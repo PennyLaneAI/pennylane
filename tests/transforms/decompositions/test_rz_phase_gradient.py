@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for ``qp.decomposition_rules.transforms.decompositions.rz_phase_gradient.make_rz_to_phase_gradient_decomp``"""
+"""Tests for the RZ phase-gradient decomposition rule factory."""
 
 from collections import Counter
 

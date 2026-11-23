@@ -20,6 +20,7 @@ PennyLane can be directly imported.
 
 
 import warnings
+from importlib import import_module as _import_module
 
 from pennylane import decomposition_rules, exceptions
 from pennylane.boolean_fn import BooleanFn
@@ -130,6 +131,7 @@ from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
 from pennylane.resource import analyze, estimate, specs, track
 from pennylane import resource
+from pennylane import transforms as _transforms
 
 from pennylane.transforms import (
     transform,
@@ -252,6 +254,11 @@ if _find_spec("numpy") is not None:
 
 
 _load_builtin_rules()
+
+# This transform imports its circuit helper from the initialized built-in rules.
+_transforms.rz_phase_gradient = _import_module(
+    "pennylane.transforms.rz_phase_gradient"
+).rz_phase_gradient
 
 # add to _entry_point_groups as new groups are added and desired to be accessed top-level
 _entry_point_groups = ["pennylane.drawer"]

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for the decomposition rule qp.decomposition_rules.transforms.decompositions.select_pauli_rot_phase_gradient.make_selectpaulirot_to_phase_gradient_decomp"""
+"""Tests for the SelectPauliRot phase-gradient decomposition rule factory."""
 
 import warnings
 

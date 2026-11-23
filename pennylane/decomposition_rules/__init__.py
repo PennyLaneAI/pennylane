@@ -15,7 +15,7 @@
 r"""Built-in decomposition rules, organized like their operator and template modules.
 
 The modules directly beneath this package mirror :mod:`pennylane.ops`. The
-``templates``, ``transforms``, and ``drawer`` branches mirror their corresponding
+``templates`` and ``drawer`` branches mirror their corresponding
 PennyLane packages. Rules are loaded automatically when PennyLane is imported.
 Use :func:`pennylane.list_decomps` to retrieve the registered rules for an operator.
 Unambiguous rules, helpers, and factories can also be imported from this package.
@@ -31,7 +31,6 @@ Symbolic implementations with the same name remain in their respective modules.
     meta
     common
     templates
-    transforms
     drawer
 """
 
@@ -61,7 +60,7 @@ if TYPE_CHECKING:
     from .op_math.controlled_ops import (
         _toffoli_elbow,
     )
-    from .op_math.decompositions.controlled_decompositions import (
+    from .op_math.controlled_ops import (
         _mcx_many_work_wires,
         _mcx_no_work_wires,
         _mcx_one_work_wire,
@@ -240,23 +239,20 @@ if TYPE_CHECKING:
         _num_applied_terms,
         _validate_registers,
     )
-    from .transforms.decompositions.crz_phase_gradient import (
-        _CRZPhaseGradientCompute,
-        make_crz_to_phase_gradient_decomp,
-    )
-    from .transforms.decompositions.phase_gradient_state_prep_decomp import (
+    from .op_math.controlled_ops import _CRZPhaseGradientCompute, make_crz_to_phase_gradient_decomp
+    from .templates.state_preparations.phase_gradient import (
         _jones_num_rounds,
         _jones_register_sizes,
         _jones_seed,
         _jones_success_probabilities,
         make_phase_gradient_distillation_decomp,
     )
-    from .transforms.decompositions.rz_phase_gradient import (
+    from .qubit.parametric_ops_single_qubit import (
         make_rz_to_phase_gradient_decomp,
         phase_gradient_precision_stats,
         validate_phase_gradient_wires,
     )
-    from .transforms.decompositions.select_pauli_rot_phase_gradient import (
+    from .templates.subroutines.select_pauli_rot import (
         _SelectPauliRotPhaseGradientCompute,
         _select_pauli_rot_phase_gradient,
         make_selectpaulirot_to_phase_gradient_decomp,
@@ -488,15 +484,9 @@ _BUILTIN_MODULES = (
     "pennylane.decomposition_rules.templates.layers.particle_conserving_u2",
     "pennylane.decomposition_rules.templates.layers.simplified_two_design",
     "pennylane.decomposition_rules.templates.layers.strongly_entangling",
-    "pennylane.decomposition_rules.transforms.decompositions.phase_gradient_state_prep_decomp",
-    "pennylane.decomposition_rules.transforms.decompositions.rz_phase_gradient",
-    "pennylane.decomposition_rules.transforms.decompositions.select_pauli_rot_phase_gradient",
-    "pennylane.decomposition_rules.transforms.decompositions.crz_phase_gradient",
     "pennylane.decomposition_rules.drawer.label",
     "pennylane.decomposition_rules.op_math.adjoint2",
     "pennylane.decomposition_rules.op_math.controlled2",
-    "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
     "pennylane.decomposition_rules.op_math.pow2",
     "pennylane.decomposition_rules.op_math.adjoint",
     "pennylane.decomposition_rules.op_math.pow",
@@ -509,8 +499,18 @@ _BUILTIN_MODULES = (
 
 def _load_builtin_rules():
     """Load the built-in registrations after the operator and template definitions."""
+    modules = []
     for module_name in _BUILTIN_MODULES:
-        module = import_module(module_name)
+        if module_name == "pennylane.decomposition_rules.drawer.label":
+            # Phase-gradient helpers were historically registered after the template rules.
+            for helper_module in (
+                "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
+                "pennylane.decomposition_rules.op_math.controlled_ops",
+            ):
+                import_module(helper_module).register_phase_gradient_compute()
+        modules.append(import_module(module_name))
+    for module in modules:
+        module_name = module.__name__
         for name in __all__:
             value = vars(module).get(name)
             if getattr(value, "__module__", None) == module_name:
