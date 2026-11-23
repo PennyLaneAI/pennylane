@@ -15,8 +15,6 @@ r"""
 Contains the quantum-number-preserving GateFabric template.
 """
 
-from importlib import import_module as _import_module
-
 import numpy as np
 
 from pennylane import math
@@ -313,16 +311,3 @@ class GateFabric(Operation):
             )
 
         return n_layers, n_wires // 2 - 1, 2
-
-
-_RULE_MODULES = {
-    "_gate_fabric_standard_resources": "pennylane.decomposition_rules.templates.layers.gate_fabric",
-    "_gate_fabric_standard": "pennylane.decomposition_rules.templates.layers.gate_fabric",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

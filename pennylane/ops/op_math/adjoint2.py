@@ -13,7 +13,6 @@
 # limitations under the License.
 """Defines the base class for the adjoint of operators."""
 
-from importlib import import_module as _import_module
 from typing import override
 
 import pennylane as qp
@@ -193,28 +192,3 @@ def _adjoint_abstract(op: AbstractOperatorLike | type[Operator]):
 @to_name.register
 def _adjoint2_to_name(op: Adjoint2):
     return f"Adjoint({to_name(op.base)})"
-
-
-_RULE_MODULES = {
-    "_list_adjoint_decomps": "pennylane.decomposition_rules.op_math.adjoint2",
-    "_make_adjoint_decomp": "pennylane.decomposition_rules.op_math.adjoint2",
-    "_adjoint_cancel_resources": "pennylane.decomposition_rules.op_math.adjoint2",
-    "_adjoint_cancel": "pennylane.decomposition_rules.op_math.adjoint2",
-    "_adjoint_negate_angle_resources": "pennylane.decomposition_rules.op_math.adjoint2",
-    "_adjoint_negate_angle": "pennylane.decomposition_rules.op_math.adjoint2",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-_RULE_MODULES.update(
-    {
-        "adjoint_rotation": "pennylane.decomposition_rules.op_math.adjoint2",
-        "cancel_adjoint": "pennylane.decomposition_rules.op_math.adjoint2",
-    }
-)

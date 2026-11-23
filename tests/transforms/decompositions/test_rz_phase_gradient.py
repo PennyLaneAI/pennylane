@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for ``qp.transforms.decompositions.make_rz_to_phase_gradient_decomp``"""
+"""Tests for ``qp.decomposition_rules.transforms.decompositions.rz_phase_gradient.make_rz_to_phase_gradient_decomp``"""
 
 from collections import Counter
 
@@ -22,14 +22,14 @@ import phase_gradient_helpers
 import pytest
 
 import pennylane as qp
-from pennylane.testing import assert_valid_decomp_rule
-from pennylane.transforms.decompositions import (
+from pennylane.decomposition_rules import (
     make_crz_to_phase_gradient_decomp,
     make_rz_to_phase_gradient_decomp,
     make_selectpaulirot_to_phase_gradient_decomp,
     phase_gradient_precision_stats,
     validate_phase_gradient_wires,
 )
+from pennylane.testing import assert_valid_decomp_rule
 from pennylane.wires import WireError
 
 

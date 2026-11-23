@@ -23,7 +23,7 @@ import pennylane as qp
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition import gate_sets
-from pennylane.decomposition_rules._common import null_decomp
+from pennylane.decomposition_rules.common import null_decomp
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.transforms import transform
 from pennylane.wires import Wires

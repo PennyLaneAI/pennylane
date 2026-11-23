@@ -20,7 +20,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
-from pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier import (
+from pennylane.decomposition_rules import (
     _add_plus_one,
     _caddsub_multiplication,
     _out_multiplier_with_cache_resources,

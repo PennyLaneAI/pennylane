@@ -16,7 +16,6 @@ Contains the FlipSign template.
 """
 
 from collections.abc import Sequence
-from importlib import import_module as _import_module
 
 from pennylane import math
 from pennylane.core.operator import Operator2
@@ -124,16 +123,3 @@ class FlipSign(Operator2):
         state = self._canonicalize_state(state, num_wires)
         work_wires = () if work_wires is None else work_wires
         super().__init__(state, wires, work_wires)
-
-
-_RULE_MODULES = {
-    "_flip_sign_standard_resources": "pennylane.decomposition_rules.templates.subroutines.flip_sign",
-    "_flip_sign_standard": "pennylane.decomposition_rules.templates.subroutines.flip_sign",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

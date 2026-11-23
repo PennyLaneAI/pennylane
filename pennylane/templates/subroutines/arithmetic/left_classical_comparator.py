@@ -14,8 +14,6 @@
 """Contains the LeftClassicalComparator template for performing an inequality
 test of a quantum register and a classical integer."""
 
-from importlib import import_module as _import_module
-
 from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.typing import AbstractArray, AbstractWires, Int, Wire
@@ -172,17 +170,3 @@ class LeftClassicalComparator(Operator2):
             )
 
         super().__init__(x_wires, value, target_wire, work_wires, comparator)
-
-
-_RULE_MODULES = {
-    "_get_specific_bit": "pennylane.decomposition_rules.templates.subroutines.arithmetic.left_classical_comparator",
-    "_left_classical_comparator_standard_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.left_classical_comparator",
-    "_left_classical_comparator_standard": "pennylane.decomposition_rules.templates.subroutines.arithmetic.left_classical_comparator",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

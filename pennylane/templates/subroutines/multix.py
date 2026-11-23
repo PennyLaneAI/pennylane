@@ -13,8 +13,6 @@
 # limitations under the License.
 """Contains the MultiX template."""
 
-from importlib import import_module as _import_module
-
 import numpy as np
 from scipy import sparse
 
@@ -319,20 +317,3 @@ class MultiX(Operator2):
     def pow(self, z: int | float) -> list[Operator2]:
         # Only encodes the involutive property: MultiX^2 = I
         return super().pow(z % 2)
-
-
-_RULE_MODULES = {
-    "_multix_standard_resources": "pennylane.decomposition_rules.templates.subroutines.multix",
-    "_multix_standard": "pennylane.decomposition_rules.templates.subroutines.multix",
-    "_controlled_multix_ladder_standard_resources": "pennylane.decomposition_rules.templates.subroutines.multix",
-    "_multix_ladder_fanout": "pennylane.decomposition_rules.templates.subroutines.multix",
-    "_controlled_multix_ladder_standard_work_wires": "pennylane.decomposition_rules.templates.subroutines.multix",
-    "_controlled_multix_ladder_standard": "pennylane.decomposition_rules.templates.subroutines.multix",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -15,8 +15,6 @@ r"""
 Contains the QAOAEmbedding template.
 """
 
-from importlib import import_module as _import_module
-
 from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.ops import RX, RY, RZ
@@ -250,16 +248,3 @@ class QAOAEmbedding(Operation):
             return n_broadcast, n_layers, wire_dim
 
         return n_layers, wire_dim
-
-
-_RULE_MODULES = {
-    "_qaoa_embedding_standard_resources": "pennylane.decomposition_rules.templates.embeddings.qaoaembedding",
-    "_qaoa_embedding_standard": "pennylane.decomposition_rules.templates.embeddings.qaoaembedding",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

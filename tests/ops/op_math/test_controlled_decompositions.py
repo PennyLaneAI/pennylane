@@ -22,7 +22,7 @@ from scipy import sparse
 import pennylane as qp
 from pennylane import math
 from pennylane.decomposition.decomposition_rule import _fix_decomp
-from pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions import (
+from pennylane.decomposition_rules import (
     _mcx_many_work_wires,
     _mcx_no_work_wires,
     _mcx_one_work_wire,

@@ -19,9 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition_rules.templates.state_preparations.state_prep_mps import (
-    _mps_prep_standard,
-)
+from pennylane.decomposition_rules import _mps_prep_standard
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.templates.state_preparations.state_prep_mps import (
     _validate_mps_shape,

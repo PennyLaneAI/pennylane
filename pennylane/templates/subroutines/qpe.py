@@ -15,8 +15,6 @@
 Contains the QuantumPhaseEstimation template.
 """
 
-from importlib import import_module as _import_module
-
 from pennylane.core.operator import Operator, Operator2
 from pennylane.wires import Wires, validate_no_wire_overlaps
 
@@ -168,16 +166,3 @@ class QuantumPhaseEstimation(Operator2):
     def wires(self) -> Wires:
         """All wires involved in the operation: the target wires followed by the estimation wires."""
         return self.target_wires + self.estimation_wires
-
-
-_RULE_MODULES = {
-    "_qpe_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qpe",
-    "_qpe_standard": "pennylane.decomposition_rules.templates.subroutines.qpe",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

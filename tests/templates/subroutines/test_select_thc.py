@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
-from pennylane.decomposition_rules.templates.subroutines.select_thc import (
+from pennylane.decomposition_rules import (
     _apply_loaded_rotation,
     _build_qrom_givens_data,
     _cascade_angles,

@@ -18,7 +18,6 @@ core parametrized gates.
 """
 
 import functools
-from importlib import import_module as _import_module
 from operator import matmul
 from typing import Literal
 from warnings import warn
@@ -2041,56 +2040,3 @@ class CPhaseShift10(Operator2):
     def control_wires(self) -> Wires:
         """Wires: The control wire of the operation."""
         return self.wires[0:1]
-
-
-_RULE_MODULES = {
-    "_MultiRZLadder": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_multi_rz_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_multi_rz_standard": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_multi_rz_to_ppr_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_multi_rz_to_ppr": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_pauli_rot_basis_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_PauliRotBasis": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_pauli_rot_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_pauli_rot_standard": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_ctrl_phase_shift_resource": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_ctrl_phase_shift": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_decompose_pcphase_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_decompose_pcphase_standard": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_isingxx_to_cnot_rx_cnot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_isingxx_to_cnot_rx_cnot": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_isingxx_to_ppr_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_isingxx_to_ppr": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_isingyy_to_cy_ry_cy_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_isingyy_to_cy_ry_cy": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_isingyy_to_ppr_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_isingyy_to_ppr": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_isingzz_to_cnot_rz_cnot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_isingzz_to_cnot_rz_cnot": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_isingzz_to_ppr_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_isingzz_to_ppr": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_controlled_ising_zz_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_controlled_ising_zz_standard": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "controlled_ising_zz": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_IsingXYBasis": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_IsingXYRotations": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_isingxy_to_h_cy_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_isingxy_to_h_cy": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_pswap_to_swap_cnot_phaseshift_cnot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_pswap_to_swap_cnot_phaseshift_cnot": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_pswap_to_ppr_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_pswap_to_ppr": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_cphaseshift00_to_x_phaseshift_cnot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_cphaseshift00_to_x_phaseshift_cnot": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_cphaseshift01_to_x_phaseshift_cnot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_cphaseshift01_to_x_phaseshift_cnot": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_cphaseshift10_to_x_phaseshift_cnot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-    "_cphaseshift10_to_x_phaseshift_cnot": "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

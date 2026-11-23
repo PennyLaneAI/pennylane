@@ -32,7 +32,6 @@ from collections import defaultdict
 from collections.abc import Callable
 from copy import deepcopy
 from functools import update_wrapper
-from importlib import import_module as _import_module
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ParamSpec
 
@@ -836,16 +835,3 @@ __all__ = [
     "adjoint_subroutine_resource_rep",
     "change_op_basis_subroutine_resource_rep",
 ]
-
-
-_RULE_MODULES = {
-    "_subroutine_standard_resources": "pennylane.decomposition_rules.templates.core",
-    "_subroutine_standard": "pennylane.decomposition_rules.templates.core",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

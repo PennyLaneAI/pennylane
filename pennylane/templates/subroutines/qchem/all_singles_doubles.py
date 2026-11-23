@@ -20,7 +20,6 @@ Contains the AllSinglesDoubles template.
 
 import copy
 from collections.abc import Sequence
-from importlib import import_module as _import_module
 
 import numpy as np
 
@@ -276,16 +275,3 @@ def _(*args, **kwargs):  # pylint: disable=unused-argument
     # could be abstract when using tracing evaluation in interpreter
     wires = tuple(w if math.is_tracer(w) else int(w) for w in args[1])
     return type.__call__(AllSinglesDoubles, args[0], wires, args[2], args[3], args[4])
-
-
-_RULE_MODULES = {
-    "_all_singles_doubles_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qchem.all_singles_doubles",
-    "_all_singles_doubles_standard": "pennylane.decomposition_rules.templates.subroutines.qchem.all_singles_doubles",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

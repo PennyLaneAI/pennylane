@@ -13,7 +13,6 @@
 # limitations under the License.
 r"""Contains the PartialUnaryStatePreparation template."""
 
-from importlib import import_module as _import_module
 from numbers import Integral
 
 import numpy as np
@@ -768,27 +767,3 @@ class PartialUnaryStatePreparation(Operator2):
         work_wires = () if work_wires is None else work_wires
         validate_no_wire_overlaps({"wires": wires, "work_wires": work_wires})
         super().__init__(coefficients, wires, indices, work_wires)
-
-
-_RULE_MODULES = {
-    "_reduced_binary_row_basis": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
-    "_is_affine_subspace": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
-    "_clear_nonpivot_columns": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
-    "_move_pivots_to_leading_wires": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
-    "_find_affine_subspace_isometry": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
-    "_partial_unary_state_prep_standard_resources": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
-    "_select_isometry": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
-    "_apply_affine_isometry": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
-    "_branch_probs": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
-    "_partial_unary_dense_state": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
-    "_partial_unary_state_prep_core": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
-    "_partial_unary_state_prep_standard_work_wires": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
-    "_partial_unary_state_prep_standard": "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

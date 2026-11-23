@@ -16,7 +16,6 @@ This submodule contains the template for AQFT.
 """
 
 import warnings
-from importlib import import_module as _import_module
 
 from pennylane.core.operator import Operator2
 from pennylane.typing import Wire
@@ -136,16 +135,3 @@ class AQFT(Operator2):
             order = num_wires - 1
 
         super().__init__(order, wires)
-
-
-_RULE_MODULES = {
-    "_AQFT_standard_resources": "pennylane.decomposition_rules.templates.subroutines.aqft",
-    "_AQFT_standard": "pennylane.decomposition_rules.templates.subroutines.aqft",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

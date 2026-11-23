@@ -20,7 +20,6 @@ core parametrized gates.
 
 
 import functools
-from importlib import import_module as _import_module
 from typing import Literal, override
 from warnings import warn
 
@@ -1327,73 +1326,3 @@ class U3(Operator2):
             return RY(theta, wires=wires)
 
         return U3(theta, phi, delta, wires=wires)
-
-
-_RULE_MODULES = {
-    "_rx_to_rot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rx_to_rot": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rx_to_rz_ry_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rx_to_rz_ry": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rx_to_ry_cliff_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rx_to_ry_cliff": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rx_to_rz_cliff_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rx_to_rz_cliff": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rx_to_ppr_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rx_to_ppr": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_controlled_rx_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_controlled_rx_standard": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_ry_to_rot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_ry_to_rot": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_ry_to_rz_rx_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_ry_to_rz_rx": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_ry_to_rx_cliff_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_ry_to_rx_cliff": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_YToZBasis": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_ZToYBasis": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_ry_to_rz_cliff_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_ry_to_rz_cliff": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_ry_to_ppr_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_ry_to_ppr": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_controlled_ry_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_controlled_ry_standard": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rz_to_ps_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rz_to_ps": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rz_to_rot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rz_to_rot": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rz_to_ry_rx_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rz_to_ry_rx": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rz_to_rx_cliff_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rz_to_rx_cliff": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rz_to_ry_cliff_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rz_to_ry_cliff": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rz_to_ppr_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rz_to_ppr": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_controlled_rz_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_controlled_rz_standard": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_phaseshift_to_rz_gp_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_phaseshift_to_rz_gp": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_controlled_phase_shift_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_controlled_phase_shift_standard": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_controlled_phase_shift_single_phase_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_controlled_phase_shift_single_phase": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rot_to_rz_ry_rz_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_rot_to_rz_ry_rz": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_adjoint_rot_standard": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_controlled_rot_standard_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_controlled_rot_standard": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_u1_to_phaseshift_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_u1_to_phaseshift": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_u2_to_phaseshift_rot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_u2_to_phaseshift_rot": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_adjoint_u2_standard": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_u3_to_phaseshift_rot_resources": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_u3_to_phaseshift_rot": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-    "_adjoint_u3_standard": "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

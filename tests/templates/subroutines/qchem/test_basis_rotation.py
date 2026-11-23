@@ -209,7 +209,7 @@ class TestDecomposition:
     def test_real_determinant_correction_with_capture(self, det, seed):
         """Test that with program capture, the determinant correction of an orthogonal matrix is
         a PauliZ for a negative determinant and nothing otherwise."""
-        from pennylane.decomposition_rules.templates.subroutines.qchem.basis_rotation import (
+        from pennylane.decomposition_rules import (
             _basis_rotation_real,
             _basis_rotation_real_resources,
         )
@@ -240,9 +240,7 @@ class TestDecomposition:
         a PauliZ, except under plain jax.jit, where it is a PhaseShift."""
         import jax
 
-        from pennylane.decomposition_rules.templates.subroutines.qchem.basis_rotation import (
-            _basis_rotation_real_resources,
-        )
+        from pennylane.decomposition_rules import _basis_rotation_real_resources
 
         @jax.jit
         def check_jit_resources(unitary_matrix):

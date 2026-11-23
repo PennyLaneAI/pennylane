@@ -143,7 +143,3 @@ def _adjoint_negate_angle(base):
     assert len(base.dynamic_argnames) == 1
     angle = tuple(base.dynamic_args.values())[0]
     qp.ops.functions.bind_new_parameters(base, (-angle,))
-
-
-adjoint_rotation = _adjoint_negate_angle
-cancel_adjoint = _adjoint_cancel

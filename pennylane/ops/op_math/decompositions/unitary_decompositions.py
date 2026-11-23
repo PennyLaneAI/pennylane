@@ -15,7 +15,6 @@
 """This module defines decomposition functions for unitary matrices."""
 
 import warnings
-from importlib import import_module as _import_module
 from itertools import product
 
 import jax
@@ -1053,29 +1052,3 @@ def _qubit_unitary_multi_qubit_impl(U, wires, **__):
     )
 
     ops.QubitUnitary(u11, wires=wires[1:])
-
-
-_RULE_MODULES = {
-    "make_one_qubit_unitary_decomposition": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
-    "_su2_rot_resource": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
-    "_su2_zyz_resource": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
-    "_su2_xyx_resource": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
-    "_su2_xzx_resource": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
-    "_su2_zxz_resource": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
-    "rot_decomp_rule": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
-    "zyz_decomp_rule": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
-    "xyx_decomp_rule": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
-    "xzx_decomp_rule": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
-    "zxz_decomp_rule": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
-    "_qubit_unitary_two_qubit_resources": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
-    "_qubit_unitary_two_qubit": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
-    "_qubit_unitary_multi_qubit_resources": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
-    "_qubit_unitary_multi_qubit": "pennylane.decomposition_rules.op_math.decompositions.unitary_decompositions",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

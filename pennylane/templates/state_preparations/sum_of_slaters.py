@@ -14,7 +14,6 @@
 r"""Contains the SumOfSlatersPrep template."""
 
 from collections import namedtuple
-from importlib import import_module as _import_module
 from itertools import combinations, product
 
 import numpy as np
@@ -1166,19 +1165,3 @@ def _preprocess(v_bits, wires):
     assert b_bits.shape == (m, num_entries)
 
     return selected_wires, SoSData(u_bits, b_bits, d, r, m)
-
-
-_RULE_MODULES = {
-    "_sos_state_prep_standard_resources": "pennylane.decomposition_rules.templates.state_preparations.sum_of_slaters",
-    "_sos_state_prep_standard_work_wires": "pennylane.decomposition_rules.templates.state_preparations.sum_of_slaters",
-    "_pad_and_cast_coeffs": "pennylane.decomposition_rules.templates.state_preparations.sum_of_slaters",
-    "_sos_state_prep_with_wires": "pennylane.decomposition_rules.templates.state_preparations.sum_of_slaters",
-    "_sos_state_prep_standard": "pennylane.decomposition_rules.templates.state_preparations.sum_of_slaters",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

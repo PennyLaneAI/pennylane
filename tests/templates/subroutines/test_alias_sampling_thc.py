@@ -17,8 +17,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition_rules.templates.subroutines.alias_sampling import _build_alias_tables
-from pennylane.decomposition_rules.templates.subroutines.alias_sampling_thc import (
+from pennylane.decomposition_rules import (
+    _build_alias_tables,
     _build_qrom_data,
     _compute_contiguous_register,
     _cswap_pair,

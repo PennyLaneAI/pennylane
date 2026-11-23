@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for the decomposition rule qp.transforms.decompositions.make_selectpaulirot_to_phase_gradient_decomp"""
+"""Tests for the decomposition rule qp.decomposition_rules.transforms.decompositions.select_pauli_rot_phase_gradient.make_selectpaulirot_to_phase_gradient_decomp"""
 
 import warnings
 
@@ -21,10 +21,8 @@ import phase_gradient_helpers
 import pytest
 
 import pennylane as qp
+from pennylane.decomposition_rules import make_selectpaulirot_to_phase_gradient_decomp
 from pennylane.testing import assert_valid_decomp_rule
-from pennylane.transforms.decompositions import (
-    make_selectpaulirot_to_phase_gradient_decomp,
-)
 from pennylane.wires import WireError
 
 

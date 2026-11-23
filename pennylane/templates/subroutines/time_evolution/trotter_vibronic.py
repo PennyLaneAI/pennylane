@@ -14,7 +14,6 @@
 """Contains the ``TrotterVibronic`` template for vibronic Hamiltonian time evolution."""
 
 from functools import reduce
-from importlib import import_module as _import_module
 
 import numpy as np
 
@@ -710,29 +709,3 @@ def _validate_hamiltonian(hamiltonian):
             f"`hamiltonian` implies {n_states} electronic states, but TrotterVibronic currently "
             "only supports a number of electronic states that is a power of 2."
         )
-
-
-_RULE_MODULES = {
-    "_trotter_vibronic_standard_resources": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
-    "_num_applied_terms": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
-    "_coefficient_register_size": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
-    "_required_work_size": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
-    "_required_work_wire_sizes": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
-    "_trotter_vibronic_standard_work_wires": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
-    "_trotter_vibronic_standard": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
-    "_diagonalize_probs": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
-    "_diagonalize_vibronic_circuit": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
-    "_half_signed_out_multiplier": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
-    "_load_coefficients": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
-    "_extract_registers": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
-    "_trotter_step_second_order": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
-    "_run_trotter_vibronic": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
-    "_validate_registers": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

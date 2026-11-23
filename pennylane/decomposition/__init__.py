@@ -41,7 +41,6 @@ Defining Decomposition Rules
     ~DecompositionRule
     ~Resources
     ~CompressedResourceOp
-    ~null_decomp
 
 A decomposition rule must be defined as a quantum function that
 accepts ``(*op.parameters, op.wires, **op.hyperparameters)`` as arguments, where ``op`` is an
@@ -202,7 +201,6 @@ Utility Classes
 """
 
 from pennylane.exceptions import DecompositionError
-from pennylane.decomposition_rules._common import null_decomp
 
 from .gate_set import GateSet
 from .utils import (

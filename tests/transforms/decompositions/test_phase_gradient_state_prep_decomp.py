@@ -22,7 +22,7 @@ import pytest
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import _fix_decomp
-from pennylane.decomposition_rules.transforms.decompositions.phase_gradient_state_prep_decomp import (
+from pennylane.decomposition_rules import (
     _jones_num_rounds,
     _jones_register_sizes,
     _jones_seed,

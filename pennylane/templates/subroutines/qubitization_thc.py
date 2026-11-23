@@ -13,8 +13,6 @@
 # limitations under the License.
 """Qubitization walk operator for the tensor hypercontracted (THC) Hamiltonian."""
 
-from importlib import import_module as _import_module
-
 from pennylane.core.operator import Operator2
 from pennylane.templates.subroutines.alias_sampling_thc import (
     _build_thc_pairs,
@@ -389,20 +387,3 @@ class QubitizationTHC(Operator2):
             + self.gradient_wires
             + self.work_wires
         )
-
-
-_RULE_MODULES = {
-    "_prepare_registers": "pennylane.decomposition_rules.templates.subroutines.qubitization_thc",
-    "_thc_prepare_resources": "pennylane.decomposition_rules.templates.subroutines.qubitization_thc",
-    "_THCPrepare": "pennylane.decomposition_rules.templates.subroutines.qubitization_thc",
-    "_prepare_select": "pennylane.decomposition_rules.templates.subroutines.qubitization_thc",
-    "_qubitization_thc_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qubitization_thc",
-    "_qubitization_thc_standard": "pennylane.decomposition_rules.templates.subroutines.qubitization_thc",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

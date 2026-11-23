@@ -19,7 +19,6 @@ computing the product between operations.
 import itertools
 from collections import Counter
 from functools import reduce
-from importlib import import_module as _import_module
 from itertools import combinations
 from typing import Union
 
@@ -499,20 +498,3 @@ class Prod(CompositeOp):
                 coeffs.append(global_phase)
                 ops.append(factor)
         return coeffs, ops
-
-
-_RULE_MODULES = {
-    "_prod_standard_resources": "pennylane.decomposition_rules.op_math.prod",
-    "_prod_standard": "pennylane.decomposition_rules.op_math.prod",
-    "_controlled_product_with_work_wires_resources": "pennylane.decomposition_rules.op_math.prod",
-    "_controlled_product_with_work_wires": "pennylane.decomposition_rules.op_math.prod",
-    "_controlled_product_with_one_work_wire_resources": "pennylane.decomposition_rules.op_math.prod",
-    "_controlled_product_with_one_work_wire": "pennylane.decomposition_rules.op_math.prod",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

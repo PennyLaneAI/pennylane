@@ -18,14 +18,10 @@ Pytest helper functions for testing phase gradient decomposition rules.
 import numpy as np
 
 import pennylane as qp
-from pennylane.decomposition_rules.templates.subroutines.select_pauli_rot import (
-    _SelectPauliRotYBasis,
-)
-from pennylane.decomposition_rules.transforms.decompositions.crz_phase_gradient import (
+from pennylane.decomposition_rules import (
     _CRZPhaseGradientCompute,
-)
-from pennylane.decomposition_rules.transforms.decompositions.select_pauli_rot_phase_gradient import (
     _SelectPauliRotPhaseGradientCompute,
+    _SelectPauliRotYBasis,
 )
 from pennylane.ops.op_math.composite2 import CompositeOp2
 

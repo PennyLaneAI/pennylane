@@ -20,7 +20,6 @@ accept a hermitian or an unitary matrix as a parameter.
 
 
 import warnings
-from importlib import import_module as _import_module
 
 import numpy as np
 import scipy as sp
@@ -826,27 +825,3 @@ def _process_blockencode(A, subspace):
         u = _stack([col1, col2], h=True, like=interface)
 
     return u
-
-
-_RULE_MODULES = {
-    "_adjoint_qubit_unitary_standard": "pennylane.decomposition_rules.qubit.matrix_ops",
-    "_matrix_pow": "pennylane.decomposition_rules.qubit.matrix_ops",
-    "_pow_qubit_unitary_standard": "pennylane.decomposition_rules.qubit.matrix_ops",
-    "_controlled_qubit_unitary_standard_resources": "pennylane.decomposition_rules.qubit.matrix_ops",
-    "_controlled_qubit_unitary_standard": "pennylane.decomposition_rules.qubit.matrix_ops",
-    "_diagonal_qubit_unitary_recursive_resources": "pennylane.decomposition_rules.qubit.matrix_ops",
-    "_diagonal_qubit_unitary_recursive": "pennylane.decomposition_rules.qubit.matrix_ops",
-    "_diagonal_qubit_unitary_auxiliary_resources": "pennylane.decomposition_rules.qubit.matrix_ops",
-    "_diagonal_qubit_unitary_auxiliary": "pennylane.decomposition_rules.qubit.matrix_ops",
-    "_adjoint_diagonal_unitary_standard": "pennylane.decomposition_rules.qubit.matrix_ops",
-    "_pow_diagonal_unitary_standard": "pennylane.decomposition_rules.qubit.matrix_ops",
-    "_adjoint_block_encode_standard_resources": "pennylane.decomposition_rules.qubit.matrix_ops",
-    "_adjoint_block_encode_standard": "pennylane.decomposition_rules.qubit.matrix_ops",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

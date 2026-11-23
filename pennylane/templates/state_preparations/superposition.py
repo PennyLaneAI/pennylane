@@ -15,8 +15,6 @@ r"""
 Contains the Superposition template.
 """
 
-from importlib import import_module as _import_module
-
 import pennylane as qp
 from pennylane.core.operator import Operation
 from pennylane.wires import concatenate_wires
@@ -345,17 +343,3 @@ class Superposition(Operation):
             wires=new_dict["target_wires"],
             work_wire=new_dict["work_wire"],
         )
-
-
-_RULE_MODULES = {
-    "_permutation_operator_qfunc": "pennylane.decomposition_rules.templates.state_preparations.superposition",
-    "_superposition_standard_resources": "pennylane.decomposition_rules.templates.state_preparations.superposition",
-    "_superposition_standard": "pennylane.decomposition_rules.templates.state_preparations.superposition",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

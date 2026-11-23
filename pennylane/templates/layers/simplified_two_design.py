@@ -15,8 +15,6 @@ r"""
 Contains the SimplifiedTwoDesign template.
 """
 
-from importlib import import_module as _import_module
-
 from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.ops import CZ, RY
@@ -227,16 +225,3 @@ class SimplifiedTwoDesign(Operation):
             return [(n_wires,), (n_layers,)]
 
         return [(n_wires,), (n_layers, n_wires - 1, 2)]
-
-
-_RULE_MODULES = {
-    "_simplified_two_design_standard_resources": "pennylane.decomposition_rules.templates.layers.simplified_two_design",
-    "_simplified_two_design_standard": "pennylane.decomposition_rules.templates.layers.simplified_two_design",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

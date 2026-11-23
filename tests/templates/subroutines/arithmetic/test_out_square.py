@@ -21,10 +21,7 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
-from pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square import (
-    _out_square_with_adder_zeroed,
-    _out_square_with_caddsub,
-)
+from pennylane.decomposition_rules import _out_square_with_adder_zeroed, _out_square_with_caddsub
 from pennylane.ops.op_math import Adjoint
 from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
 from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare

@@ -24,7 +24,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition import list_decomps
-from pennylane.decomposition_rules.templates.state_preparations.partial_unary import (
+from pennylane.decomposition_rules import (
     _find_affine_subspace_isometry,
     _is_affine_subspace,
     _partial_unary_dense_state,

@@ -22,9 +22,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
-from pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_square import (
-    _signed_out_square_from_unsigned_resources,
-)
+from pennylane.decomposition_rules import _signed_out_square_from_unsigned_resources
 from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
 from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
 from pennylane.testing import assert_decomposable, assert_valid_decomp_rule

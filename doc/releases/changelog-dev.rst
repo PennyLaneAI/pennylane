@@ -1969,7 +1969,7 @@ Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
 * Built-in decomposition rules now live in ``pennylane.decomposition_rules``, with
-  modules mirroring their operators and templates. Existing public exports remain available.
+  modules mirroring their operators and templates. Rule imports now use the new package.
   `(#10520) <https://github.com/PennyLaneAI/pennylane/pull/10520>`__
 * Added pinned local ``ty`` tooling and a diagnostic baseline for the package. Performs fixes
   to improve ty compatibility.

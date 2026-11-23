@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder import (
+from pennylane.decomposition_rules import (
     _controlled_semi_adder_standard,
     _semi_adder_standard,
     _semi_adder_standard_resources,

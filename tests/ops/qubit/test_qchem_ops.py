@@ -32,10 +32,7 @@ from scipy.linalg import expm, fractional_matrix_power
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.decomposition_rules.qubit.qchem_ops import (
-    _SingleExcitationBasis,
-    _SingleExcitationRotations,
-)
+from pennylane.decomposition_rules import _SingleExcitationBasis, _SingleExcitationRotations
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import Float, Wire

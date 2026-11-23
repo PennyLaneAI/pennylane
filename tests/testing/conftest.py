@@ -32,44 +32,29 @@ from pennylane.core.operator import (
     StatePrepBase,
     StatePrepBase2,
 )
-from pennylane.decomposition_rules.qubit.non_parametric_ops import _PPRBasis
-from pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit import (
+from pennylane.decomposition_rules import (
+    _CRZPhaseGradientCompute,
     _IsingXYBasis,
     _IsingXYRotations,
     _MultiRZLadder,
+    _OutAdderTarget,
+    _OutMultiplierHadamards,
     _PauliRotBasis,
-)
-from pennylane.decomposition_rules.qubit.parametric_ops_single_qubit import _YToZBasis, _ZToYBasis
-from pennylane.decomposition_rules.qubit.qchem_ops import (
+    _PhaseAdderBasis,
+    _PPRBasis,
+    _SelectPauliRotPhaseGradientCompute,
+    _SelectPauliRotYBasis,
+    _SelectTHCBasis,
     _SingleExcitationBasis,
     _SingleExcitationCRZBasis,
     _SingleExcitationRotations,
     _SingleExcitationRZRotations,
-)
-from pennylane.decomposition_rules.templates.subroutines.arithmetic.out_adder import _OutAdderTarget
-from pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier import (
-    _OutMultiplierHadamards,
-)
-from pennylane.decomposition_rules.templates.subroutines.arithmetic.phase_adder import (
-    _PhaseAdderBasis,
-)
-from pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and import (
     _TemporaryANDBasis,
-)
-from pennylane.decomposition_rules.templates.subroutines.qubitization_thc import _THCPrepare
-from pennylane.decomposition_rules.templates.subroutines.select_pauli_rot import (
-    _SelectPauliRotYBasis,
-    _UniformRZ,
-)
-from pennylane.decomposition_rules.templates.subroutines.select_thc import (
-    _SelectTHCBasis,
     _THCIndexSwaps,
-)
-from pennylane.decomposition_rules.transforms.decompositions.crz_phase_gradient import (
-    _CRZPhaseGradientCompute,
-)
-from pennylane.decomposition_rules.transforms.decompositions.select_pauli_rot_phase_gradient import (
-    _SelectPauliRotPhaseGradientCompute,
+    _THCPrepare,
+    _UniformRZ,
+    _YToZBasis,
+    _ZToYBasis,
 )
 from pennylane.drawer.label import LabelledOp
 from pennylane.exceptions import DeviceError

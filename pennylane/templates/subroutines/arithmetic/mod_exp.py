@@ -15,8 +15,6 @@
 Contains the ModExp template.
 """
 
-from importlib import import_module as _import_module
-
 import numpy as np
 
 from pennylane.core.operator import Operation
@@ -243,16 +241,3 @@ class ModExp(Operation):
             ControlledSequence(Multiplier(base, output_wires, mod, work_wires), control=x_wires)
         )
         return op_list
-
-
-_RULE_MODULES = {
-    "_mod_exp_standard_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.mod_exp",
-    "_mod_exp_standard": "pennylane.decomposition_rules.templates.subroutines.arithmetic.mod_exp",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -16,7 +16,6 @@ This submodule contains the template for QROM.
 """
 
 from collections.abc import Sequence
-from importlib import import_module as _import_module
 
 from pennylane import math
 from pennylane.core.operator import Operator2
@@ -234,37 +233,3 @@ class QROM(Operator2):
     def wires(self):
         """All wires involved in the operation."""
         return self.control_wires + self.target_wires + self.work_wires
-
-
-_RULE_MODULES = {
-    "_select_ops": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_swap_ops": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_calculate_select_swap_sizes": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_select_swap_condition": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_qrom_select_swap_resources": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_qrom_select_swap": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_measure_masked_x": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_measurement_uncompute": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_measurement_qrom_inner": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_measurement_qrom_outer": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_count_tempAND_in_measurement_qrom": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_qrom_measurement_resources": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_flag_resources": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_qrom_measurement_condition": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_interleave_controls": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_build_flag": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_qrom_measurement": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_unary_iteration_split": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_qrom_unary_iteration_resources": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_load_block": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_flip_iteration_bit": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_main_unary_loop_monolithic": "pennylane.decomposition_rules.templates.subroutines.qrom",
-    "_qrom_unary_iteration": "pennylane.decomposition_rules.templates.subroutines.qrom",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

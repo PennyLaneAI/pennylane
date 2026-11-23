@@ -15,8 +15,6 @@
 Contains the SignedOutMultiplier template.
 """
 
-from importlib import import_module as _import_module
-
 from pennylane.core.operator import Operator2
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -354,23 +352,3 @@ class SignedOutMultiplier(Operator2):
     def wires(self):
         """All wires involved in the operation."""
         return self.x_wires + self.y_wires + self.output_wires + self.work_wires
-
-
-_RULE_MODULES = {
-    "_signed_out_multiplier_zeroed_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_multiplier",
-    "_signed_out_multiplier_borrowed_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_multiplier",
-    "_twos_complement_helper": "pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_multiplier",
-    "_not_zeroed_work_wire_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_multiplier",
-    "_zeroed_work_wire_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_multiplier",
-    "_zeroed_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_multiplier",
-    "_not_zeroed_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_multiplier",
-    "_signed_out_multiplier_zeroed": "pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_multiplier",
-    "_signed_out_multiplier_borrowed": "pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_multiplier",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

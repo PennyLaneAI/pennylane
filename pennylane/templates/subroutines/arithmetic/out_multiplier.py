@@ -15,8 +15,6 @@
 Contains the OutMultiplier template.
 """
 
-from importlib import import_module as _import_module
-
 from pennylane.core.operator import Operator2
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -319,36 +317,3 @@ class OutMultiplier(Operator2):
     def wires(self):
         """All wires involved in the operation."""
         return self.x_wires + self.y_wires + self.output_wires + self.work_wires
-
-
-_RULE_MODULES = {
-    "_OutMultiplierHadamards": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_out_multiplier_with_qft_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_out_multiplier_with_qft_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_out_multiplier_with_qft": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_out_multiplier_with_adder_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_out_multiplier_with_adder_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_out_multiplier_with_adder": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_out_multiplier_with_caddsub_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_caddsub_multiplication_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_out_multiplier_with_caddsub_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_adder_flipped_first_work_wire": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_add_plus_one": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_c_add_sub_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_c_add_sub": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_out_multiplier_with_caddsub": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_caddsub_multiplication": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_out_multiplier_with_cache_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_out_multiplier_with_cache_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_out_multiplier_with_cache": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_out_multiplier_swapped_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_out_multiplier_swapped_standard_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-    "_out_multiplier_swapped_standard": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

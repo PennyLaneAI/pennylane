@@ -20,7 +20,6 @@ Contains the UCCSD template.
 
 import copy
 from collections.abc import Sequence
-from importlib import import_module as _import_module
 
 import numpy as np
 
@@ -321,16 +320,3 @@ class UCCSD(Operation):
                 op_list.append(FermionicSingleExcitation(weights[layer][j], wires=s_wires_))
 
         return op_list
-
-
-_RULE_MODULES = {
-    "_UCCSD_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qchem.uccsd",
-    "_UCCSD_standard": "pennylane.decomposition_rules.templates.subroutines.qchem.uccsd",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

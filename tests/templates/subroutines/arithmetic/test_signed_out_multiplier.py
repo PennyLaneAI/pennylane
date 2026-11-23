@@ -25,7 +25,7 @@ import pennylane as qp
 from pennylane import SignedOutMultiplier, device, qnode
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import list_decomps
-from pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_multiplier import (
+from pennylane.decomposition_rules import (
     _signed_out_multiplier_borrowed_resources,
     _signed_out_multiplier_zeroed_resources,
     _twos_complement_helper,

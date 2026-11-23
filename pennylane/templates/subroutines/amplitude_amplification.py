@@ -20,7 +20,6 @@ This submodule contains the template for Amplitude Amplification.
 
 
 import copy
-from importlib import import_module as _import_module
 
 import numpy as np
 
@@ -177,16 +176,3 @@ class AmplitudeAmplification(Operation):
             context.remove(op)
         context.append(self)
         return self
-
-
-_RULE_MODULES = {
-    "_amplitude_amplification_standard_resources": "pennylane.decomposition_rules.templates.subroutines.amplitude_amplification",
-    "_amplitude_amplification_standard": "pennylane.decomposition_rules.templates.subroutines.amplitude_amplification",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

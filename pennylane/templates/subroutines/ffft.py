@@ -15,8 +15,6 @@
 This module contains the fast fermionic Fourier transform. Implemented based on the arXiv paper
 by Andrew J. Ferris: https://arxiv.org/pdf/1310.7605."""
 
-from importlib import import_module as _import_module
-
 from pennylane import math
 from pennylane.core.operator import Operator
 from pennylane.wires import WiresLike
@@ -149,18 +147,3 @@ class FFFT(Operator):
         return {
             "num_wires": len(self.wires),
         }
-
-
-_RULE_MODULES = {
-    "_fast_fermionic_fourier_transform_standard_resources": "pennylane.decomposition_rules.templates.subroutines.ffft",
-    "_fast_fermionic_fourier_transform_standard": "pennylane.decomposition_rules.templates.subroutines.ffft",
-    "_recursive_decompose": "pennylane.decomposition_rules.templates.subroutines.ffft",
-    "_permute_and_apply_parallel": "pennylane.decomposition_rules.templates.subroutines.ffft",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -15,8 +15,6 @@
 Contains the OutPoly template.
 """
 
-from importlib import import_module as _import_module
-
 from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.ops import adjoint, ctrl
@@ -460,16 +458,3 @@ class OutPoly(Operation):
         list_ops.append(adjoint(QFT)(wires=output_adder_mod))
 
         return list_ops
-
-
-_RULE_MODULES = {
-    "_out_poly_standard_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_poly",
-    "_out_poly_standard": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_poly",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

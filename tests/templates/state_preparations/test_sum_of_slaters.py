@@ -27,10 +27,7 @@ from jax import numpy as jnp
 import pennylane as qp
 from pennylane import math
 from pennylane.decomposition import list_decomps
-from pennylane.decomposition_rules.templates.state_preparations.sum_of_slaters import (
-    _sos_state_prep_standard,
-    _sos_state_prep_with_wires,
-)
+from pennylane.decomposition_rules import _sos_state_prep_standard, _sos_state_prep_with_wires
 from pennylane.math import binary_matrix_rank, ceil_log2
 from pennylane.templates.state_preparations.sum_of_slaters import (
     SumOfSlatersPrep,

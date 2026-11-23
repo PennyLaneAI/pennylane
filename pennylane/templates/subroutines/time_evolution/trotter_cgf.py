@@ -13,8 +13,6 @@
 # limitations under the License.
 """Contains the ``TrotterCGF`` template for Christiansen Greedy Fragmentation Hamiltonians."""
 
-from importlib import import_module as _import_module
-
 from pennylane.core.operator import Operator2
 from pennylane.numeric_hamiltonians import CGFHamiltonian
 from pennylane.typing import AbstractArray, AbstractWires
@@ -337,26 +335,3 @@ class TrotterCGF(Operator2):
                 f"leaf_tensors.ndim={U.ndim}. For electronic (CDF) Hamiltonians, use TrotterCDF."
             )
         super().__init__(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase)
-
-
-_RULE_MODULES = {
-    "_apply_system_basis_rotation": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cgf",
-    "_merge_leaves": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cgf",
-    "_transpose_leaf": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cgf",
-    "_apply_two_body_diagonal": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cgf",
-    "_apply_one_body_diagonal": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cgf",
-    "_energy_shift": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cgf",
-    "_CGF_HELPERS": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cgf",
-    "_cgf_resource_counts": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cgf",
-    "_trotter_cgf_standard_resources": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cgf",
-    "_trotter_cgf_standard": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cgf",
-    "_controlled_trotter_cgf_standard_resources": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cgf",
-    "_controlled_trotter_cgf_standard": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cgf",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

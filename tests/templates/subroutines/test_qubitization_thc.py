@@ -18,9 +18,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
-from pennylane.decomposition_rules.templates.subroutines.alias_sampling import _build_alias_tables
-from pennylane.decomposition_rules.templates.subroutines.alias_sampling_thc import _lcu_signs
-from pennylane.decomposition_rules.templates.subroutines.qubitization_thc import _THCPrepare
+from pennylane.decomposition_rules import _build_alias_tables, _lcu_signs, _THCPrepare
 from pennylane.templates.subroutines.alias_sampling_thc import _build_thc_pairs
 from pennylane.testing import assert_valid
 

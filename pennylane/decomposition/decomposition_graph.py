@@ -46,7 +46,7 @@ from pennylane.decomposition.decomposition_rule import (
     local_decomps,
 )
 from pennylane.decomposition.gate_set import GateSet
-from pennylane.decomposition_rules._common import null_decomp
+from pennylane.decomposition_rules.common import null_decomp
 from pennylane.decomposition_rules.op_math.adjoint import (
     _adjoint_cancel,
     _adjoint_negate_angle,

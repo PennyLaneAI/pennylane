@@ -28,16 +28,16 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.capture.primitives import for_loop_prim
 from pennylane.core.operator import abstractify
-from pennylane.decomposition_rules.templates.subroutines.qrom import (
+from pennylane.decomposition_rules import (
     _calculate_select_swap_sizes,
     _count_tempAND_in_measurement_qrom,
-    _measurement_qrom_inner,
     _qrom_measurement,
     _qrom_measurement_condition,
     _qrom_measurement_resources,
     _qrom_select_swap,
     _qrom_unary_iteration,
 )
+from pennylane.decomposition_rules.templates.subroutines.qrom import _measurement_qrom_inner
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.testing import assert_decomposable, extract_all_primitives

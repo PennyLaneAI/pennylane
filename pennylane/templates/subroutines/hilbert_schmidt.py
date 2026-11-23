@@ -17,7 +17,6 @@ This submodule contains the templates for the Hilbert-Schmidt tests.
 
 import copy
 from collections.abc import Iterable
-from importlib import import_module as _import_module
 
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator, Operator2, abstractify
@@ -407,19 +406,3 @@ def _local_hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
     V = ops[:num_v_ops]
     U = ops[num_v_ops:]
     return type.__call__(LocalHilbertSchmidt, V, U, **kwargs)
-
-
-_RULE_MODULES = {
-    "_hilbert_schmidt_standard_resources": "pennylane.decomposition_rules.templates.subroutines.hilbert_schmidt",
-    "_local_hilbert_schmidt_standard_resources": "pennylane.decomposition_rules.templates.subroutines.hilbert_schmidt",
-    "_up_to_last_layer": "pennylane.decomposition_rules.templates.subroutines.hilbert_schmidt",
-    "_hilbert_schmidt_standard": "pennylane.decomposition_rules.templates.subroutines.hilbert_schmidt",
-    "_local_hilbert_schmidt_standard": "pennylane.decomposition_rules.templates.subroutines.hilbert_schmidt",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

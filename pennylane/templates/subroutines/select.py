@@ -15,8 +15,6 @@
 Contains the Select template.
 """
 
-from importlib import import_module as _import_module
-
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2
 from pennylane.typing import Wire
@@ -391,28 +389,3 @@ r"""Multiplexor(ops, control, work_wires=None, partial=False)
 
 Alias for :class:`~.Select`.
 """
-
-
-_RULE_MODULES = {
-    "_partial_select": "pennylane.decomposition_rules.templates.subroutines.select",
-    "_multi_controlled_rep": "pennylane.decomposition_rules.templates.subroutines.select",
-    "_select_multi_control_resources": "pennylane.decomposition_rules.templates.subroutines.select",
-    "_select_multi_control": "pennylane.decomposition_rules.templates.subroutines.select",
-    "_add_first_k_units": "pennylane.decomposition_rules.templates.subroutines.select",
-    "_add_k_units": "pennylane.decomposition_rules.templates.subroutines.select",
-    "_select_resources_unary_not_partial": "pennylane.decomposition_rules.templates.subroutines.select",
-    "_select_unary_resources": "pennylane.decomposition_rules.templates.subroutines.select",
-    "_select_decomp_unary_not_partial": "pennylane.decomposition_rules.templates.subroutines.select",
-    "_unary_condition": "pennylane.decomposition_rules.templates.subroutines.select",
-    "_select_unary": "pennylane.decomposition_rules.templates.subroutines.select",
-    "_select_multi_control_work_wire_resources": "pennylane.decomposition_rules.templates.subroutines.select",
-    "_work_wire_condition": "pennylane.decomposition_rules.templates.subroutines.select",
-    "_select_multi_control_work_wire": "pennylane.decomposition_rules.templates.subroutines.select",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

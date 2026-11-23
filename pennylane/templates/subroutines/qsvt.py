@@ -1206,16 +1206,3 @@ def poly_to_angles(poly, routine, angle_solver="root-finding", **kwargs):
     if routine == "GQSP":
         return _compute_gqsp_angles(poly)
     raise AssertionError("Invalid routine. Valid values are 'GQSP', 'QSP' and 'QSVT'")
-
-
-_RULE_MODULES = {
-    "_QSVT_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qsvt",
-    "_QSVT_standard": "pennylane.decomposition_rules.templates.subroutines.qsvt",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

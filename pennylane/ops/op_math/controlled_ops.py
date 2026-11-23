@@ -21,7 +21,6 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 from collections.abc import Iterable, Sequence
 from functools import partial
-from importlib import import_module as _import_module
 from typing import Literal, override
 
 import numpy as np
@@ -2302,86 +2301,3 @@ class ControlledPhaseShift(Controlled2):
 
 
 CPhase = ControlledPhaseShift
-
-
-_RULE_MODULES = {
-    "_to_general_c_qu_standard_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_to_general_c_qu_standard": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_conj_transpose": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_adjoint_controlled_qubit_unitary_standard": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_ch_to_ry_cz_ry_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_ch_to_ry_cz_ry": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cy_to_ry_cnot_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cy_to_ry_cnot": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_pauli_ctrl_pauli_ppr_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_pauli_ctrl_pauli_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cy_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_pauli_ctrl_pauli_ppm": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cy_lattice_surgery_ppm": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cz_to_cps_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cz_to_cps": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cz_to_cnot_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cz_to_cnot": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cz_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cz_lattice_surgery_ppm_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cz_lattice_surgery_ppm": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cswap_to_cnot_toffoli_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cswap_to_cnot_toffoli": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cswap_to_ppr_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cswap_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_ccz_to_clifford_t_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_ccz_to_clifford_t": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_ccz_to_toffoli_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_ccz_to_toffoli": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cnot_to_cz_h_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cnot_to_cz_h": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cnot_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cnot_lattice_surgery_ppm_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cnot_lattice_surgery_ppm": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_ctrl_cnot_to_mcx_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_ctrl_cnot_to_mcx": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_toffoli_to_clifford_t_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_toffoli_to_clifford_t": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_toffoli_to_ppr_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_toffoli_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_toffoli_elbow_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_toffoli_elbow": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_ctrl_toffoli_to_mcx_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_ctrl_toffoli_to_mcx": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_list_mcx_decomps": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_list_mcx_no_work_wire_decomps": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_ctrl_mcx_to_mcx_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_ctrl_mcx_to_mcx": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_crx_to_rz_ry_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_crx_to_rz_ry": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_crx_to_rx_cz_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_crx_to_rx_cz": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_crx_to_h_crz_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_crx_to_h_crz": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_crx_to_ppr_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_crx_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cry_to_ry_cnot_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cry_to_ry_cnot": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cry_to_ppr_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cry_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_crz_to_rz_cnot_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_crz_to_rz_cnot": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_crz_to_ppr_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_crz_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_crot_to_rot_cnot_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_crot_to_rot_cnot": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_adjoint_crot_standard": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cphase_to_rz_cnot_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cphase_to_rz_cnot": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cphase_to_ppr_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cphase_to_ppr": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cphase_to_single_phase_resources": "pennylane.decomposition_rules.op_math.controlled_ops",
-    "_cphase_to_single_phase": "pennylane.decomposition_rules.op_math.controlled_ops",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

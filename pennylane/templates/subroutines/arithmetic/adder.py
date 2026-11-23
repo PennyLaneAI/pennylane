@@ -15,8 +15,6 @@
 Contains the Adder template.
 """
 
-from importlib import import_module as _import_module
-
 from pennylane.core.operator import Operator2
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -139,22 +137,3 @@ class Adder(Operator2):
     def wires(self):
         """All wires involved in the operation."""
         return self.x_wires + self.work_wires
-
-
-_RULE_MODULES = {
-    "_increment": "pennylane.decomposition_rules.templates.subroutines.arithmetic.adder",
-    "_add_constant": "pennylane.decomposition_rules.templates.subroutines.arithmetic.adder",
-    "_adder_fourier_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.adder",
-    "_adder_fourier": "pennylane.decomposition_rules.templates.subroutines.arithmetic.adder",
-    "_increment_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.adder",
-    "_add_constant_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.adder",
-    "_adder_arithmetic_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.adder",
-    "_adder_arithmetic": "pennylane.decomposition_rules.templates.subroutines.arithmetic.adder",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

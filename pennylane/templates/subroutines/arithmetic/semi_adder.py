@@ -13,8 +13,6 @@
 # limitations under the License.
 """Contains the SemiAdder template for performing the semi-out-place addition."""
 
-from importlib import import_module as _import_module
-
 from pennylane.core.operator import Operator2
 from pennylane.ops import CNOT, adjoint, ctrl
 from pennylane.typing import Wire
@@ -268,24 +266,3 @@ def _self_ctrl_one_sparse_add(x_wires, y_wires, work_wires, first_and_is_output_
     else:
         adjoint(TemporaryAND([x_wires[0], y_wires[0], work_wires[0]]))
     CNOT([x_wires[0], y_wires[0]])
-
-
-_RULE_MODULES = {
-    "_right_block": "pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder",
-    "_right_block_zeroed": "pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder",
-    "_left_ladder": "pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder",
-    "_right_ladder": "pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder",
-    "_controlled_right_ladder": "pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder",
-    "_semi_adder_standard_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder",
-    "_semi_adder_standard_work_wires": "pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder",
-    "_semi_adder_standard": "pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder",
-    "_controlled_semi_adder_standard_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder",
-    "_controlled_semi_adder_standard": "pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition_rules.templates.state_preparations.phase_gradient import (
+from pennylane.decomposition_rules import (
     _phase_gradient_state_prep_to_clifford_t,
     _phase_gradient_state_prep_to_ppr,
 )

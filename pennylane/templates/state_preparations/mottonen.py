@@ -15,8 +15,6 @@ r"""
 Contains the MottonenStatePreparation template.
 """
 
-from importlib import import_module as _import_module
-
 import numpy as np
 
 import pennylane as qp
@@ -442,16 +440,3 @@ class MottonenStatePreparation(Operation):
             op_list.extend([qp.GlobalPhase(global_phase)])
 
         return op_list
-
-
-_RULE_MODULES = {
-    "_mottonen_resources": "pennylane.decomposition_rules.templates.state_preparations.mottonen",
-    "mottonen_decomp": "pennylane.decomposition_rules.templates.state_preparations.mottonen",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

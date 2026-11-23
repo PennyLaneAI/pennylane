@@ -13,8 +13,6 @@
 # limitations under the License.
 """Uniform state preparation and coherent alias sampling templates."""
 
-from importlib import import_module as _import_module
-
 import numpy as np
 
 from pennylane.core.operator import Operator2
@@ -317,22 +315,3 @@ class AliasSampling(Operator2):
         )
 
         super().__init__(probs, mu, target_wires, temp_wires, work_wires)
-
-
-_RULE_MODULES = {
-    "_apply_hadamards": "pennylane.decomposition_rules.templates.subroutines.alias_sampling",
-    "_uniform_prep_standard_resources": "pennylane.decomposition_rules.templates.subroutines.alias_sampling",
-    "_uniform_prep_standard": "pennylane.decomposition_rules.templates.subroutines.alias_sampling",
-    "_build_alias_tables": "pennylane.decomposition_rules.templates.subroutines.alias_sampling",
-    "_split_temp_wires": "pennylane.decomposition_rules.templates.subroutines.alias_sampling",
-    "_qrom_data": "pennylane.decomposition_rules.templates.subroutines.alias_sampling",
-    "_alias_sampling_standard_resources": "pennylane.decomposition_rules.templates.subroutines.alias_sampling",
-    "_alias_sampling_standard": "pennylane.decomposition_rules.templates.subroutines.alias_sampling",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -30,8 +30,7 @@ from pennylane import numpy as pnp
 from pennylane.core import Operator2
 from pennylane.core.operator import Operation, Operator
 from pennylane.core.qscript import QuantumScript
-from pennylane.decomposition import gate_sets
-from pennylane.decomposition_rules._common import register_resources
+from pennylane.decomposition import gate_sets, register_resources
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl

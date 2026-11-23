@@ -15,8 +15,6 @@ r"""
 Contains the ArbitraryUnitary template.
 """
 
-from importlib import import_module as _import_module
-
 from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.ops import PauliRot
@@ -149,16 +147,3 @@ class ArbitraryUnitary(Operation):
             n_wires (int): number of wires that template acts on
         """
         return (4**n_wires - 1,)
-
-
-_RULE_MODULES = {
-    "_arbitrary_unitary_standard_resources": "pennylane.decomposition_rules.templates.subroutines.arbitrary_unitary",
-    "_arbitrary_unitary_standard": "pennylane.decomposition_rules.templates.subroutines.arbitrary_unitary",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -131,9 +131,3 @@ def _list_pow_decomps(op: Pow2) -> DecompCollection:
     custom_rules = _get_registered_decomps(to_name(abs_op))
 
     return custom_rules + [_pow_repeat_base] if is_integer(op.z) else custom_rules
-
-
-pow_rotation = _pow_scale_angle
-repeat_pow_base = _pow_repeat_base
-merge_powers = _pow_merge_powers
-flip_pow_adjoint = _pow_flip_adjoint

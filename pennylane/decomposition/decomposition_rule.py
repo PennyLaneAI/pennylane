@@ -24,7 +24,6 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
 from functools import singledispatch, update_wrapper
-from importlib import import_module as _import_module
 from textwrap import dedent
 from typing import overload
 
@@ -1234,13 +1233,3 @@ def _decomp_contains_mcm(rule, params):
         return False
     resources = rule.compute_resources(**params).gate_counts
     return any(_is_measurement(resource_op) for resource_op in resources)
-
-
-_RULE_MODULES = {"null_decomp": "pennylane.decomposition_rules._common"}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

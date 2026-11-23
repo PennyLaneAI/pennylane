@@ -37,11 +37,14 @@ from pennylane.decomposition.resources import (
     pow_resource_rep,
     resource_rep,
 )
-from pennylane.decomposition_rules.op_math.adjoint import (
-    _adjoint_cancel,
-    _adjoint_negate_angle,
+from pennylane.decomposition_rules import _make_controlled_decomp as make_controlled_decomp2
+from pennylane.decomposition_rules import (
     make_adjoint_decomp,
+    make_controlled_decomp,
+    self_adjoint,
+    self_adjoint_legacy,
 )
+from pennylane.decomposition_rules.op_math.adjoint import _adjoint_cancel, _adjoint_negate_angle
 from pennylane.decomposition_rules.op_math.adjoint2 import _adjoint_cancel as cancel_adjoint2
 from pennylane.decomposition_rules.op_math.controlled import (
     _controlled_flip_adjoint,
@@ -52,16 +55,12 @@ from pennylane.decomposition_rules.op_math.controlled import (
 from pennylane.decomposition_rules.op_math.controlled import (
     ctrl_single_work_wire,
     flip_zero_control,
-    make_controlled_decomp,
 )
 from pennylane.decomposition_rules.op_math.controlled2 import (
     _controlled_flip_adjoint as flip_control_adjoint2,
 )
 from pennylane.decomposition_rules.op_math.controlled2 import (
     _controlled_to_unitary,
-)
-from pennylane.decomposition_rules.op_math.controlled2 import (
-    _make_controlled_decomp as make_controlled_decomp2,
 )
 from pennylane.decomposition_rules.op_math.controlled2 import (
     ctrl_single_work_wire as ctrl_single_work_wire2,
@@ -80,8 +79,6 @@ from pennylane.decomposition_rules.op_math.pow2 import _pow_flip_adjoint as flip
 from pennylane.decomposition_rules.op_math.pow2 import _pow_merge_powers as merge_powers2
 from pennylane.decomposition_rules.op_math.pow2 import _pow_repeat_base as repeat_pow_base2
 from pennylane.decomposition_rules.op_math.pow2 import pow_involutory as pow_involutory2
-from pennylane.decomposition_rules.op_math.symbolicop import self_adjoint_legacy
-from pennylane.decomposition_rules.op_math.symbolicop2 import self_adjoint
 from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow import pow

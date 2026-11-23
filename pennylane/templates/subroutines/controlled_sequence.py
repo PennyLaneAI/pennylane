@@ -15,8 +15,6 @@ r"""
 Contains the ControlledSequence template.
 """
 
-from importlib import import_module as _import_module
-
 from pennylane.ops.op_math import SymbolicOp2
 from pennylane.wires import Wires, validate_no_wire_overlaps
 
@@ -156,18 +154,3 @@ class ControlledSequence(SymbolicOp2):
 
     def __repr__(self):
         return f"ControlledSequence({self.base}, control={list(self.control)})"
-
-
-_RULE_MODULES = {
-    "_ctrl_seq_execution_optimized_decomposition_resources": "pennylane.decomposition_rules.templates.subroutines.controlled_sequence",
-    "_ctrl_seq_execution_optimized_decomposition": "pennylane.decomposition_rules.templates.subroutines.controlled_sequence",
-    "_ctrl_seq_ir_optimized_resources": "pennylane.decomposition_rules.templates.subroutines.controlled_sequence",
-    "_ctrl_seq_ir_optimized_decomposition": "pennylane.decomposition_rules.templates.subroutines.controlled_sequence",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

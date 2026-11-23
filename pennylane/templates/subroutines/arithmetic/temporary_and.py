@@ -15,7 +15,6 @@
 Contains the TemporaryAND template, which also is known as Elbow.
 """
 
-from importlib import import_module as _import_module
 from typing import override
 
 from pennylane import math
@@ -240,27 +239,3 @@ Args:
         the target operator is applied. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
         Default is ``(1,1)``, corresponding to a traditional ``AND`` gate.
 """
-
-
-_RULE_MODULES = {
-    "_number_xs": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
-    "_temporary_and_basis_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
-    "_TemporaryANDBasis": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
-    "_temporary_and_to_clifford_t_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
-    "_temporary_and_to_clifford_t": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
-    "_toffoli_with_cvals": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
-    "_temporary_and_to_toffoli": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
-    "_temporary_and_to_ppr_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
-    "_temporary_and_to_ppr": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
-    "_adjoint_temporary_and_measurement_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
-    "_adjoint_temporary_and_measurement": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
-    "_adjoint_temporary_and_to_ppm": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
-    "_adjoint_temporary_and_to_toffoli": "pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

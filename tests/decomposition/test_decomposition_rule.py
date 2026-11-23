@@ -38,9 +38,9 @@ from pennylane.decomposition.decomposition_rule import (
 )
 from pennylane.decomposition.resources import Resources
 from pennylane.decomposition.utils import to_name
+from pennylane.decomposition_rules import ctrl_many_zeroed_work_wires
 from pennylane.decomposition_rules.op_math.controlled2 import (
     _controlled_to_unitary,
-    ctrl_many_zeroed_work_wires,
     ctrl_single_work_wire,
 )
 from pennylane.decomposition_rules.op_math.pow2 import (

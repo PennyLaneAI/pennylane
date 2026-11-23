@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
-from pennylane.decomposition_rules.templates.subroutines.arithmetic.temporary_and import (
+from pennylane.decomposition_rules import (
     _adjoint_temporary_and_measurement,
     _adjoint_temporary_and_to_ppm,
     _adjoint_temporary_and_to_toffoli,

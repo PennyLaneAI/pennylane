@@ -16,7 +16,6 @@ This module contains the template for the Fast Approximate BLock Encoding (FABLE
 """
 
 import warnings
-from importlib import import_module as _import_module
 
 import numpy as np
 
@@ -199,16 +198,3 @@ class FABLE(Operation):
             op_list.append(Hadamard(w))
 
         return op_list
-
-
-_RULE_MODULES = {
-    "_fable_standard_resources": "pennylane.decomposition_rules.templates.subroutines.fable",
-    "_fable_standard": "pennylane.decomposition_rules.templates.subroutines.fable",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

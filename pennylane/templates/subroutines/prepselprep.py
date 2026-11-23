@@ -18,8 +18,6 @@ Contains the PrepSelPrep template.
 # pylint: disable=arguments-differ
 
 
-from importlib import import_module as _import_module
-
 from pennylane import math
 from pennylane import ops as qp_ops
 from pennylane.core.operator import Operation, abstractify
@@ -205,16 +203,3 @@ class PrepSelPrep(Operation):
 def _(*args, n_wires, **kwargs):
     (lcu,), control = args[:-n_wires], args[-n_wires:]
     return type.__call__(PrepSelPrep, lcu, control, **kwargs)
-
-
-_RULE_MODULES = {
-    "_prepselprep_standard_resources": "pennylane.decomposition_rules.templates.subroutines.prepselprep",
-    "_prepselprep_standard": "pennylane.decomposition_rules.templates.subroutines.prepselprep",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

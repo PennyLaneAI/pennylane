@@ -22,7 +22,6 @@ not depend on any parameters.
 import cmath
 from copy import copy
 from functools import lru_cache
-from importlib import import_module as _import_module
 from typing import Literal, override
 from warnings import warn
 
@@ -2316,98 +2315,3 @@ class PPR_8(_FixedAnglePPR):
     """
 
     _denominator = 8
-
-
-_RULE_MODULES = {
-    "_hadamard_to_rz_rx_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_hadamard_to_rz_rx": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_hadamard_to_rz_ry_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_hadamard_to_rz_ry": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_hadamard_to_ppm_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_hadamard_to_ppm": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_hadamard_to_ppr_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_hadamard_to_ppr": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_controlled_hadamard_standard_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_controlled_hadamard_standard": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_paulix_to_rx_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_paulix_to_rx": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pow_x_to_sx": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pow_x_to_rx": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_paulix_to_ppr_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_paulix_to_ppr": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_ctrl_x_to_mcx_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_ctrl_x_to_mcx": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pauliy_to_ry_gp_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pauliy_to_ry_gp": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pow_y_standard": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pauliy_to_ppr_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pauliy_to_ppr": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_controlled_y_standard_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_controlled_y_standard": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pauliz_to_ps_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pauliz_to_ps": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pow_z_to_s": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pow_z_to_t": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pow_z_standard": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pauliz_to_ppr_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pauliz_to_ppr": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_controlled_z_standard_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_controlled_z_standard": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_controlled_z_to_ccz": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_s_to_phaseshift_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_s_to_phaseshift": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_s_to_ppr_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_s_to_ppr": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pow_s_to_t": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pow_s_to_z": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pow_s_standard": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_t_to_phaseshift_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_t_to_phaseshift": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_t_to_ppr_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_t_to_ppr": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pow_t_standard": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_sx_to_rx_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_sx_to_rx": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pow_sx_to_x": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pow_sx_standard": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_swap_to_cnot_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_swap_to_cnot": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_swap_to_ppr_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_swap_to_ppr": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_controlled_swap_standard_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_controlled_swap_standard": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_controlled_swap_to_cswap": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_ecr_standard_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_ecr_standard": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_iswap_standard_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_iswap_standard": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_iswap_to_ppr_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_iswap_to_ppr": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pow_iswap_to_siswap": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pow_iswap_to_zz": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_siswap_standard_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_siswap_standard": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_siswap_to_ppr_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_siswap_to_ppr": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pow_siswap_to_iswap": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_pow_siswap_to_zz": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_PAULI_OPS": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_ppr2_to_paulis_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_ppr2_to_paulis": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_z_gate": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_ppr_basis_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_PPRBasis": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_ppr_via_z_gate_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_ppr_via_z_gate": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_ppr4_to_cliffords": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_ppr8_to_clifford_t": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_adjoint_ppr_flip_sign_standard_resources": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-    "_adjoint_ppr_flip_sign_standard": "pennylane.decomposition_rules.qubit.non_parametric_ops",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

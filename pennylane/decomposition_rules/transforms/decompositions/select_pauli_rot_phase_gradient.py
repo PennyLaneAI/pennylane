@@ -147,7 +147,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(
     .. code-block:: python
 
         import pennylane as qp
-        from pennylane.transforms.decompositions import make_selectpaulirot_to_phase_gradient_decomp
+        from pennylane.decomposition_rules import make_selectpaulirot_to_phase_gradient_decomp
         import numpy as np
 
         prec = 3
@@ -219,7 +219,9 @@ def make_selectpaulirot_to_phase_gradient_decomp(
 
         .. code-block:: python
 
-            from pennylane.transforms.decompositions import phase_gradient_precision_stats
+            from pennylane.decomposition_rules.transforms.decompositions.rz_phase_gradient import (
+                phase_gradient_precision_stats,
+            )
 
             angles = [
                 np.array([0, 1/2, 1/4, 0, 0, 1/2, 0, 1/4]) * 4 * np.pi, # at most 2 bits

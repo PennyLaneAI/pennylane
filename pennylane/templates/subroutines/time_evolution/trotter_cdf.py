@@ -13,8 +13,6 @@
 # limitations under the License.
 """Contains the ``TrotterCDF`` template for Compressed Double Factorization Hamiltonians."""
 
-from importlib import import_module as _import_module
-
 from pennylane.core.operator import Operator2
 from pennylane.numeric_hamiltonians import CDFHamiltonian
 from pennylane.typing import AbstractArray, AbstractWires
@@ -416,30 +414,3 @@ class TrotterCDF(Operator2):
         super().__init__(
             evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, work_wires
         )
-
-
-_RULE_MODULES = {
-    "_apply_system_basis_rotation": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf",
-    "_merge_leaves": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf",
-    "_transpose_leaf": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf",
-    "_apply_two_body_diagonal": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf",
-    "_apply_one_body_diagonal": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf",
-    "_apply_two_body_diagonal_with_work_wires": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf",
-    "_energy_shift": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf",
-    "_CDF_HELPERS": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf",
-    "_use_work_wire_decomposition": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf",
-    "_cdf_decomposition_helpers": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf",
-    "_cdf_resource_counts": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf",
-    "_trotter_cdf_standard_resources": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf",
-    "_trotter_cdf_standard": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf",
-    "_controlled_trotter_cdf_standard_resources": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf",
-    "_controlled_trotter_cdf_standard": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf",
-    "_trotter_cdf_multi_control": "pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

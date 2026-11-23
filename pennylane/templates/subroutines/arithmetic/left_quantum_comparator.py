@@ -13,8 +13,6 @@
 # limitations under the License.
 """Contains the LeftQuantumComparator template for performing inequality test of two quantum registers."""
 
-from importlib import import_module as _import_module
-
 from pennylane.core.operator import Operator2
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires, WiresLike
@@ -137,16 +135,3 @@ class LeftQuantumComparator(Operator2):
             raise ValueError("None of the wires in y_wires should be the target wire.")
 
         super().__init__(x_wires, y_wires, target_wire, work_wires, comparator)
-
-
-_RULE_MODULES = {
-    "_left_quantum_comparator_standard_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.left_quantum_comparator",
-    "_left_quantum_comparator_standard": "pennylane.decomposition_rules.templates.subroutines.arithmetic.left_quantum_comparator",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

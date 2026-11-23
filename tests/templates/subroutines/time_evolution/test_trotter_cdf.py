@@ -36,15 +36,17 @@ jax = pytest.importorskip("jax")
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import Resources
-from pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf import (
-    _apply_system_basis_rotation,
+from pennylane.decomposition_rules import (
     _apply_two_body_diagonal_with_work_wires,
     _cdf_resource_counts,
     _controlled_trotter_cdf_standard,
-    _energy_shift,
-    _merge_leaves,
     _trotter_cdf_multi_control,
     _trotter_cdf_standard,
+)
+from pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_cdf import (
+    _apply_system_basis_rotation,
+    _energy_shift,
+    _merge_leaves,
 )
 from pennylane.exceptions import CaptureWarning
 from pennylane.numeric_hamiltonians import CDFHamiltonian

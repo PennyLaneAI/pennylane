@@ -119,7 +119,9 @@ def phase_gradient_precision_stats(angles, precision, op_type):
     and thus only requires one bit, whereas :math:`0.1 \cdot 2\pi` is rounded to
     :math:`(0.0010)_2`, requiring three bits:
 
-    >>> from pennylane.transforms.decompositions import phase_gradient_precision_stats
+    >>> from pennylane.decomposition_rules import (
+    ...     phase_gradient_precision_stats,
+    ... )
     >>> angles = np.array([1 / 2, 1 / 4, 3 / 8, 0.1]) * 2 * np.pi
     >>> phase_gradient_precision_stats(angles, precision=4, op_type=qp.RZ)
     {1: 1, 2: 1, 3: 2}
@@ -245,7 +247,9 @@ def make_rz_to_phase_gradient_decomp(
     .. code-block:: python
 
         import pennylane as qp
-        from pennylane.transforms.decompositions import make_rz_to_phase_gradient_decomp
+        from pennylane.decomposition_rules.transforms.decompositions.rz_phase_gradient import (
+            make_rz_to_phase_gradient_decomp,
+        )
         import numpy as np
 
         prec = 3
@@ -308,7 +312,9 @@ def make_rz_to_phase_gradient_decomp(
 
         .. code-block:: python
 
-            from pennylane.transforms.decompositions import phase_gradient_precision_stats
+            from pennylane.decomposition_rules.transforms.decompositions.rz_phase_gradient import (
+                phase_gradient_precision_stats,
+            )
 
             angles = np.array([1/2, 1/4 + 1/8, 1/2 + 1/4 + 1/8]) * 2 * np.pi # (100), (011), (111)
             precision_stats = phase_gradient_precision_stats(angles, prec, qp.RZ)

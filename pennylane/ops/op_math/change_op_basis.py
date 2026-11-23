@@ -18,7 +18,6 @@ This submodule defines a class for compute-uncompute patterns.
 import inspect
 from collections.abc import Callable
 from functools import reduce
-from importlib import import_module as _import_module
 
 from pennylane import capture, math
 from pennylane.core import queuing
@@ -363,21 +362,3 @@ class ChangeOpBasis(CompositeOp):
         if all(operand_pauli_reps := [op.pauli_rep for op in self.operands[::-1]]):
             return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
         return None
-
-
-_RULE_MODULES = {
-    "_change_op_basis_standard_resources": "pennylane.decomposition_rules.op_math.change_op_basis",
-    "_inverse_abstract": "pennylane.decomposition_rules.op_math.change_op_basis",
-    "_adjoint_change_op_basis_standard_resources": "pennylane.decomposition_rules.op_math.change_op_basis",
-    "_adjoint_change_op_basis_standard": "pennylane.decomposition_rules.op_math.change_op_basis",
-    "_controlled_change_op_basis_standard_resources": "pennylane.decomposition_rules.op_math.change_op_basis",
-    "_controlled_change_op_basis_standard": "pennylane.decomposition_rules.op_math.change_op_basis",
-    "_change_op_basis_standard": "pennylane.decomposition_rules.op_math.change_op_basis",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

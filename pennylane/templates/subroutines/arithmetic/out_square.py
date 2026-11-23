@@ -15,8 +15,6 @@
 Contains the OutSquare template.
 """
 
-from importlib import import_module as _import_module
-
 from pennylane.core.operator import Operator2
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -245,21 +243,3 @@ class OutSquare(_SquareArithmeticOp):
     @staticmethod
     def _min_work_wires(n, m, output_wires_zeroed):
         return min(n - 1, max(m - 4, 0)) if output_wires_zeroed else m - 1
-
-
-_RULE_MODULES = {
-    "_out_square_with_adder_zeroed_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square",
-    "_out_square_with_adder_zeroed_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square",
-    "_out_square_with_adder_zeroed": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square",
-    "_out_square_with_caddsub_condition": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square",
-    "_out_square_with_caddsub_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square",
-    "_shifted_adder": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square",
-    "_out_square_with_caddsub": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_square",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -15,7 +15,6 @@
 """Defines the base class for the power of operators."""
 
 from functools import reduce
-from importlib import import_module as _import_module
 from typing import Union, override
 
 from scipy.linalg import fractional_matrix_power
@@ -323,33 +322,3 @@ def _pow_abstract(op: AbstractOperatorLike | type[Operator], z: int | float = 1)
 @to_name.register
 def _pow2_to_name(op: Pow2):
     return f"Pow({to_name(op.base)})"
-
-
-_RULE_MODULES = {
-    "_pow_repeat_base": "pennylane.decomposition_rules.op_math.pow2",
-    "_pow_merge_powers": "pennylane.decomposition_rules.op_math.pow2",
-    "_pow_flip_adjoint_resources": "pennylane.decomposition_rules.op_math.pow2",
-    "_pow_flip_adjoint": "pennylane.decomposition_rules.op_math.pow2",
-    "make_pow_decomp_with_period": "pennylane.decomposition_rules.op_math.pow2",
-    "pow_involutory": "pennylane.decomposition_rules.op_math.pow2",
-    "_pow_scale_angle_resources": "pennylane.decomposition_rules.op_math.pow2",
-    "_pow_scale_angle": "pennylane.decomposition_rules.op_math.pow2",
-    "_list_pow_decomps": "pennylane.decomposition_rules.op_math.pow2",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-_RULE_MODULES.update(
-    {
-        "pow_rotation": "pennylane.decomposition_rules.op_math.pow2",
-        "repeat_pow_base": "pennylane.decomposition_rules.op_math.pow2",
-        "merge_powers": "pennylane.decomposition_rules.op_math.pow2",
-        "flip_pow_adjoint": "pennylane.decomposition_rules.op_math.pow2",
-    }
-)

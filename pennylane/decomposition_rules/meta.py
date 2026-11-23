@@ -16,7 +16,7 @@
 """Built-in decomposition rules for meta."""
 
 from pennylane.decomposition.decomposition_rule import add_decomps
-from pennylane.decomposition_rules._common import null_decomp
+from pennylane.decomposition_rules.common import null_decomp
 from pennylane.ops.meta import Barrier
 
 add_decomps(Barrier, null_decomp)

@@ -105,7 +105,9 @@ def make_crz_to_phase_gradient_decomp(
     .. code-block:: python
 
         import pennylane as qp
-        from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
+        from pennylane.decomposition_rules.transforms.decompositions.crz_phase_gradient import (
+            make_crz_to_phase_gradient_decomp,
+        )
         import numpy as np
 
         prec = 3
@@ -176,7 +178,9 @@ def make_crz_to_phase_gradient_decomp(
 
         .. code-block:: python
 
-            from pennylane.transforms.decompositions import phase_gradient_precision_stats
+            from pennylane.decomposition_rules.transforms.decompositions.rz_phase_gradient import (
+                phase_gradient_precision_stats,
+            )
 
             angles = np.array([1/4, 1/2 + 1/8]) * 4 * np.pi # (010) and (101)
             precision_stats = phase_gradient_precision_stats(angles, prec, qp.CRZ)

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-"""Built-in decomposition rules for _common."""
+"""Decomposition rules shared by multiple operator families."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ def null_decomp(*_, **__):
     .. code-block:: python
 
         import pennylane as qp
-        from pennylane.decomposition import null_decomp
+        from pennylane.decomposition_rules import null_decomp
 
         @qp.transforms._tape_decompose(
             gate_set={qp.RZ},

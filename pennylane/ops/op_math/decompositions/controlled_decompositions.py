@@ -15,7 +15,6 @@
 """This submodule defines functions to decompose controlled operations."""
 
 from functools import partial
-from importlib import import_module as _import_module
 from typing import Literal
 
 import numpy as np
@@ -860,43 +859,3 @@ def _mcx_no_work_wires_impl(wires, control_values, *_, **__):
     _ctrl_decomp_bisect_md(U, wires)
     ops.ctrl(ops.GlobalPhase(-np.pi / 2), control=wires[:-1])
     _x_flips()  # pylint: disable=no-value-for-parameter
-
-
-_RULE_MODULES = {
-    "_ctrl_decomp_bisect_condition": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_controlled_unitary_bisect_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_controlled_unitary_bisect": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_single_ctrl_decomp_zyz_condition": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_controlled_unitary_single_control_zyz_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_controlled_unitary_single_control_zyz": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_multi_ctrl_decomp_zyz_condition": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_controlled_unitary_multi_control_zyz_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_controlled_unitary_multi_control_zyz": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_controlled_unitary_two_qubit_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_controlled_unitary_two_qubit": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_wrap_mcx_rule_w_alloc": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_mcx_to_cnot_or_toffoli_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_mcx_to_cnot_or_toffoli": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_mcx_two_controls_elbows_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_2cx_elbow_explicit_condition": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_mcx_two_controls_elbows": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_mcx_many_workers_condition": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_mcx_many_work_wires_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_mcx_many_work_wires": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_mcx_two_workers_condition": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_mcx_two_work_wires_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_mcx_two_work_wires": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_mcx_one_worker_condition": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_mcx_one_work_wire_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_mcx_one_work_wire": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_mcx_no_work_wires_resources": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_mcx_no_worker_condition": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-    "_mcx_no_work_wires": "pennylane.decomposition_rules.op_math.decompositions.controlled_decompositions",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

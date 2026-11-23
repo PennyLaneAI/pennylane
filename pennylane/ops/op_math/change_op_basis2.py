@@ -16,7 +16,6 @@ This submodule defines a class for compute-uncompute patterns.
 """
 
 from functools import reduce
-from importlib import import_module as _import_module
 
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2, abstractify
@@ -169,21 +168,3 @@ def _change_op_basis_abstract(compute_op, target_op, uncompute_op):
     if all(isinstance(op, Operator2) for op in (compute_op, target_op, uncompute_op)):
         return ChangeOpBasis2(compute_op, target_op, uncompute_op)
     return change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
-
-
-_RULE_MODULES = {
-    "_controlled_change_op_basis_standard_resources": "pennylane.decomposition_rules.op_math.change_op_basis2",
-    "_controlled_change_op_basis_standard": "pennylane.decomposition_rules.op_math.change_op_basis2",
-    "_change_op_basis_standard_resources": "pennylane.decomposition_rules.op_math.change_op_basis2",
-    "_change_op_basis_standard": "pennylane.decomposition_rules.op_math.change_op_basis2",
-    "_inverse": "pennylane.decomposition_rules.op_math.change_op_basis2",
-    "_adjoint_change_op_basis_standard_resources": "pennylane.decomposition_rules.op_math.change_op_basis2",
-    "_adjoint_change_op_basis_standard": "pennylane.decomposition_rules.op_math.change_op_basis2",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

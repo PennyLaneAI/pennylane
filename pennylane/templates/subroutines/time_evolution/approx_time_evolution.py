@@ -16,7 +16,6 @@ Contains the ApproxTimeEvolution template.
 """
 
 import copy
-from importlib import import_module as _import_module
 
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation
@@ -232,16 +231,3 @@ class ApproxTimeEvolution(Operation):
             _ = [apply(op) for op in full_decomp]
 
         return full_decomp
-
-
-_RULE_MODULES = {
-    "_approx_time_evolution_standard_resources": "pennylane.decomposition_rules.templates.subroutines.time_evolution.approx_time_evolution",
-    "_approx_time_evolution_standard": "pennylane.decomposition_rules.templates.subroutines.time_evolution.approx_time_evolution",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -15,8 +15,6 @@
 Contains the OutAdder template.
 """
 
-from importlib import import_module as _import_module
-
 from pennylane.core.operator import Operation
 from pennylane.wires import Wires, WiresLike
 
@@ -233,18 +231,3 @@ class OutAdder(Operation):
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
-
-
-_RULE_MODULES = {
-    "_out_adder_target_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_adder",
-    "_OutAdderTarget": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_adder",
-    "_out_adder_standard_resources": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_adder",
-    "_out_adder_standard": "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_adder",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

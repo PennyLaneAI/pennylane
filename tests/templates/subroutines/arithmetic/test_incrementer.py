@@ -21,10 +21,7 @@ import numpy as np
 import pytest
 
 from pennylane import Incrementer, ctrl, device, qnode
-from pennylane.decomposition_rules.templates.subroutines.arithmetic.incrementer import (
-    _adjoint_incrementer_bit_flips,
-    _decompose_mcxs,
-)
+from pennylane.decomposition_rules import _adjoint_incrementer_bit_flips, _decompose_mcxs
 from pennylane.measurements import state
 from pennylane.ops import CNOT, PauliX
 from pennylane.templates import BasisEmbedding, TemporaryAND

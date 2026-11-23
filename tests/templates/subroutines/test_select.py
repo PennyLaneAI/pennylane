@@ -25,7 +25,7 @@ import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import CompressedResourceOp
-from pennylane.decomposition_rules.templates.subroutines.select import (
+from pennylane.decomposition_rules import (
     _partial_select,
     _select_multi_control_work_wire,
     _select_unary,

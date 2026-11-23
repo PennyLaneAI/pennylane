@@ -15,8 +15,6 @@ r"""
 Contains the SelectPauliRot template.
 """
 
-from importlib import import_module as _import_module
-
 from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.typing import Float, Wire
@@ -141,19 +139,3 @@ r"""UniformlyControlledRotation(angles, control_wires, target_wire, rot_axis="Z"
 
 Alias for :class:`~.SelectPauliRot`.
 """
-
-
-_RULE_MODULES = {
-    "_uniform_rz_resources": "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
-    "_UniformRZ": "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
-    "_SelectPauliRotYBasis": "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
-    "_select_pauli_rot_standard_resources": "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
-    "_select_pauli_rot_standard": "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

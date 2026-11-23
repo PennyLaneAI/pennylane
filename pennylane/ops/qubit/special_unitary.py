@@ -20,7 +20,6 @@ its utility functions.
 
 
 from functools import lru_cache, reduce
-from importlib import import_module as _import_module
 from itertools import product
 from typing import Literal
 
@@ -771,18 +770,3 @@ class TmpPauliRot(PauliRot):
         if qp.math.isclose(theta, theta * 0) and not qp.math.requires_grad(theta):
             return []
         return [PauliRot(theta, pauli_word, wires)]
-
-
-_RULE_MODULES = {
-    "_adjoint_special_unitary_standard": "pennylane.decomposition_rules.qubit.special_unitary",
-    "_tmp_paulirot_standard_resources": "pennylane.decomposition_rules.qubit.special_unitary",
-    "_tmp_paulirot_standard": "pennylane.decomposition_rules.qubit.special_unitary",
-    "_adjoint_tmp_paulirot_standard": "pennylane.decomposition_rules.qubit.special_unitary",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

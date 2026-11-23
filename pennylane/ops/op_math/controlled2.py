@@ -15,7 +15,6 @@
 """Defines the base class for controlled operators."""
 
 from collections.abc import Sequence
-from importlib import import_module as _import_module
 from inspect import signature
 from typing import Literal, override
 
@@ -640,28 +639,3 @@ def _ctrl_abstract(
 @to_name.register
 def _controlledop2_to_name(op: ControlledOp2):
     return f"C({to_name(op.base)})"
-
-
-_RULE_MODULES = {
-    "_list_controlled_decomps": "pennylane.decomposition_rules.op_math.controlled2",
-    "_make_controlled_decomp": "pennylane.decomposition_rules.op_math.controlled2",
-    "_controlled_flip_adjoint_resources": "pennylane.decomposition_rules.op_math.controlled2",
-    "_controlled_flip_adjoint": "pennylane.decomposition_rules.op_math.controlled2",
-    "_controlled_to_unitary_resources": "pennylane.decomposition_rules.op_math.controlled2",
-    "_controlled_to_unitary": "pennylane.decomposition_rules.op_math.controlled2",
-    "flip_zero_control": "pennylane.decomposition_rules.op_math.controlled2",
-    "_controlled_single_work_wire_resources": "pennylane.decomposition_rules.op_math.controlled2",
-    "_controlled_single_work_wire": "pennylane.decomposition_rules.op_math.controlled2",
-    "ctrl_single_work_wire": "pennylane.decomposition_rules.op_math.controlled2",
-    "_controlled_many_zeroed_work_wires_resources": "pennylane.decomposition_rules.op_math.controlled2",
-    "_ctrl_many_zeroed_work_wires_condition": "pennylane.decomposition_rules.op_math.controlled2",
-    "_controlled_many_zeroed_work_wires": "pennylane.decomposition_rules.op_math.controlled2",
-    "ctrl_many_zeroed_work_wires": "pennylane.decomposition_rules.op_math.controlled2",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

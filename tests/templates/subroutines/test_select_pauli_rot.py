@@ -23,7 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.decomposition_rules.templates.subroutines.select_pauli_rot import (
+from pennylane.decomposition_rules import (
     _select_pauli_rot_standard,
     _SelectPauliRotYBasis,
     _UniformRZ,

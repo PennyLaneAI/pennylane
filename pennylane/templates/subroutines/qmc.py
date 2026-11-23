@@ -19,7 +19,6 @@ Contains the QuantumMonteCarlo template and utility functions.
 
 
 import copy
-from importlib import import_module as _import_module
 
 import numpy as np
 
@@ -458,16 +457,3 @@ def _quantum_monte_carlo_impl(probs, *wires, func, num_target_wires):
     target_wires = wires[:num_target_wires]
     estimation_wires = wires[num_target_wires:]
     return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires)
-
-
-_RULE_MODULES = {
-    "_quantum_monte_carlo_standard_resources": "pennylane.decomposition_rules.templates.subroutines.qmc",
-    "_quantum_monte_carlo_standard": "pennylane.decomposition_rules.templates.subroutines.qmc",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

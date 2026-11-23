@@ -15,8 +15,6 @@
 Contains the MPSPrep template.
 """
 
-from importlib import import_module as _import_module
-
 import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.typing import Wire
@@ -361,17 +359,3 @@ class MPSPrep(Operator2):
         super().__init__(
             mps, wires=wires, work_wires=work_wires, right_canonicalize=right_canonicalize
         )
-
-
-_RULE_MODULES = {
-    "_mps_prep_standard_resources": "pennylane.decomposition_rules.templates.state_preparations.state_prep_mps",
-    "_work_wires_bond_dimension_condition": "pennylane.decomposition_rules.templates.state_preparations.state_prep_mps",
-    "_mps_prep_standard": "pennylane.decomposition_rules.templates.state_preparations.state_prep_mps",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

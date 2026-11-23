@@ -20,7 +20,6 @@ from quantum chemistry applications.
 
 
 import functools
-from importlib import import_module as _import_module
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -1116,38 +1115,3 @@ class FermionicSWAP(Operator2):
         cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "FSWAP", cache=cache)
-
-
-_RULE_MODULES = {
-    "_SingleExcitationBasis": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_SingleExcitationRotations": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_single_excitation_standard_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_single_excitation_standard": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_SingleExcitationRZRotations": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_single_excitation_to_ppr_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_single_excitation_to_ppr": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_single_excitation_to_ppr_rz_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_single_excitation_to_ppr_rz": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_SingleExcitationCRZBasis": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_single_excitation_to_ppr_crz_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_single_excitation_to_ppr_crz": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_single_excitation_minus_standard_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_single_excitation_minus_standard": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_single_excitation_plus_standard_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_single_excitation_plus_standard": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_double_excitation_to_gates_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_double_excitation_to_gates": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_double_excitation_to_ppr_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_double_excitation_to_ppr": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_orbital_rotation_standard_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_orbital_rotation_standard": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_fermionic_swap_standard_resources": "pennylane.decomposition_rules.qubit.qchem_ops",
-    "_fermionic_swap_standard": "pennylane.decomposition_rules.qubit.qchem_ops",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

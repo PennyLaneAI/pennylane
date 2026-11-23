@@ -13,8 +13,6 @@
 # limitations under the License.
 """Contains the ``PREPARE`` template for tensor hypercontraction (THC) qubitization."""
 
-from importlib import import_module as _import_module
-
 import numpy as np
 
 from pennylane.core.operator import Operator2
@@ -406,21 +404,3 @@ class AliasSamplingTHC(Operator2):
     def wires(self):
         """All wires involved in the operation."""
         return self.mu_wires + self.nu_wires + self.edge_flag + self.work_wires
-
-
-_RULE_MODULES = {
-    "_lcu_signs": "pennylane.decomposition_rules.templates.subroutines.alias_sampling_thc",
-    "_build_qrom_data": "pennylane.decomposition_rules.templates.subroutines.alias_sampling_thc",
-    "_compute_contiguous_register": "pennylane.decomposition_rules.templates.subroutines.alias_sampling_thc",
-    "_cswap_pair": "pennylane.decomposition_rules.templates.subroutines.alias_sampling_thc",
-    "_symmetrize": "pennylane.decomposition_rules.templates.subroutines.alias_sampling_thc",
-    "_alias_sampling_thc_standard_resources": "pennylane.decomposition_rules.templates.subroutines.alias_sampling_thc",
-    "_alias_sampling_thc_standard": "pennylane.decomposition_rules.templates.subroutines.alias_sampling_thc",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

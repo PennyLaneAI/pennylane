@@ -24,14 +24,12 @@ import pytest
 
 import pennylane as qp
 from pennylane.allocation import Allocate, Deallocate
-from pennylane.decomposition_rules.templates.subroutines.time_evolution.trotter_vibronic import (
+from pennylane.decomposition_rules import (
     _diagonalize_probs,
     _diagonalize_vibronic_circuit,
     _half_signed_out_multiplier,
     _num_applied_terms,
     _validate_registers,
-)
-from pennylane.decomposition_rules.transforms.decompositions.rz_phase_gradient import (
     make_rz_to_phase_gradient_decomp,
 )
 from pennylane.templates.subroutines import AQFT, QROM, SemiAdder

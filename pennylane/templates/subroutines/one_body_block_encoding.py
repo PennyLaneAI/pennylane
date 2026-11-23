@@ -13,8 +13,6 @@
 # limitations under the License.
 """Block-encoding of a one-body operator."""
 
-from importlib import import_module as _import_module
-
 import numpy as np
 
 from pennylane.core.operator import Operator2
@@ -283,18 +281,3 @@ class OneBodyBlockEncoding(Operator2):
         )
 
         super().__init__(op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires)
-
-
-_RULE_MODULES = {
-    "_block_encoding_data": "pennylane.decomposition_rules.templates.subroutines.one_body_block_encoding",
-    "_split_prep_wires": "pennylane.decomposition_rules.templates.subroutines.one_body_block_encoding",
-    "_one_body_block_encoding_standard_resources": "pennylane.decomposition_rules.templates.subroutines.one_body_block_encoding",
-    "_one_body_block_encoding_standard": "pennylane.decomposition_rules.templates.subroutines.one_body_block_encoding",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

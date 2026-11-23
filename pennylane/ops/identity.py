@@ -16,7 +16,6 @@ This module contains the Identity operation that is common to qubit computing pa
 """
 
 from functools import lru_cache
-from importlib import import_module as _import_module
 
 from scipy import sparse
 
@@ -373,16 +372,3 @@ class GlobalPhase(Operator2):
         # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
         # it otherwise can't handle Identity with no wires, see PR #5194
         return qp.s_prod(-1, qp.I())
-
-
-_RULE_MODULES = {
-    "_controlled_g_phase_standard_resources": "pennylane.decomposition_rules.identity",
-    "_controlled_g_phase_standard": "pennylane.decomposition_rules.identity",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

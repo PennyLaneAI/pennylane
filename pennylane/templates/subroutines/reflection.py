@@ -17,7 +17,6 @@ This submodule contains the template for the Reflection operation.
 """
 
 import copy
-from importlib import import_module as _import_module
 
 import numpy as np
 
@@ -225,16 +224,3 @@ class Reflection(Operation):
 def _(*args, n_wires, **kwargs):
     (U, alpha), reflection_wires = args[:-n_wires], args[-n_wires:]
     return type.__call__(Reflection, U, alpha, reflection_wires=reflection_wires, **kwargs)
-
-
-_RULE_MODULES = {
-    "_reflection_standard_resources": "pennylane.decomposition_rules.templates.subroutines.reflection",
-    "_reflection_standard": "pennylane.decomposition_rules.templates.subroutines.reflection",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

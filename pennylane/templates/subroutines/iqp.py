@@ -16,7 +16,6 @@ Contains the IQP template.
 """
 
 from functools import reduce
-from importlib import import_module as _import_module
 
 from pennylane import math
 from pennylane.core.operator import Operator2
@@ -148,16 +147,3 @@ class IQP(Operator2):
                 layers.append(rx_mat)
 
         return reduce(math.matmul, layers[::-1])
-
-
-_RULE_MODULES = {
-    "_instantaneous_quantum_polynomial_standard_resources": "pennylane.decomposition_rules.templates.subroutines.iqp",
-    "_instantaneous_quantum_polynomial_standard": "pennylane.decomposition_rules.templates.subroutines.iqp",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

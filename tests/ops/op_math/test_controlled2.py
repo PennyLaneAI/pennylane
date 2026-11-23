@@ -25,7 +25,7 @@ import pytest
 import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
-from pennylane.decomposition_rules.op_math.controlled2 import _make_controlled_decomp
+from pennylane.decomposition_rules import _make_controlled_decomp
 from pennylane.operation import abstractify
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2

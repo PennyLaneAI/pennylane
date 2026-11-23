@@ -242,9 +242,10 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
     .. code-block:: python
 
         import pennylane as qp
+        from pennylane.decomposition_rules import make_phase_gradient_distillation_decomp
 
         registers = qp.registers({"grad": 3, "aux": 3, "work": 2})
-        rule = qp.transforms.decompositions.make_phase_gradient_distillation_decomp(
+        rule = make_phase_gradient_distillation_decomp(
             registers["aux"], registers["work"]
         )
         gate_set = {

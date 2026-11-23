@@ -17,7 +17,6 @@ arithmetic operations on their input states.
 """
 
 from copy import copy
-from importlib import import_module as _import_module
 
 import numpy as np
 
@@ -735,24 +734,3 @@ def _integer_comparator_greater_equal_impl(wires, value, work_wires, **_):
     for i in range(num_controls):
         if control_value_tracker[i]:
             qp.X(wires[i])
-
-
-_RULE_MODULES = {
-    "_qubitcarry_to_cnot_toffolis_resources": "pennylane.decomposition_rules.qubit.arithmetic_ops",
-    "_qubitcarry_to_cnot_toffolis": "pennylane.decomposition_rules.qubit.arithmetic_ops",
-    "_qubitsum_to_cnots_resources": "pennylane.decomposition_rules.qubit.arithmetic_ops",
-    "_qubitsum_to_cnots": "pennylane.decomposition_rules.qubit.arithmetic_ops",
-    "_integer_comparator_less_than_resources": "pennylane.decomposition_rules.qubit.arithmetic_ops",
-    "_integer_comparator_less_than": "pennylane.decomposition_rules.qubit.arithmetic_ops",
-    "_integer_comparator_greater_equal_resources": "pennylane.decomposition_rules.qubit.arithmetic_ops",
-    "_integer_comparator_greater_equal": "pennylane.decomposition_rules.qubit.arithmetic_ops",
-    "_integer_comparator_flip_greater_equal_resources": "pennylane.decomposition_rules.qubit.arithmetic_ops",
-    "_integer_comparator_flip_greater_equal": "pennylane.decomposition_rules.qubit.arithmetic_ops",
-}
-
-
-def __getattr__(name):
-    """Resolve compatibility exports for relocated decomposition rules."""
-    if name in _RULE_MODULES:
-        return getattr(_import_module(_RULE_MODULES[name]), name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

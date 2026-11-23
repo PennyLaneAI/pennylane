@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests the initialization and compatibility exports of the built-in rule package."""
+"""Tests initialization and registration of the built-in rule package."""
 
-import importlib
 import inspect
 import subprocess
 import sys
@@ -60,45 +59,24 @@ def test_loading_preserves_custom_registrations_and_exclusions():
     assert list(qp.list_decomps(qp.RX)) == expected
 
 
-@pytest.mark.parametrize(
-    ("original_module", "canonical_module", "name"),
-    [
-        ("decomposition", "decomposition_rules._common", "null_decomp"),
-        ("decomposition.decomposition_rule", "decomposition_rules._common", "null_decomp"),
-        (
-            "decomposition.symbolic_decomposition",
-            "decomposition_rules.op_math.symbolicop2",
-            "self_adjoint",
-        ),
-        ("ops.op_math.adjoint2", "decomposition_rules.op_math.adjoint2", "adjoint_rotation"),
-        ("ops.op_math.pow2", "decomposition_rules.op_math.pow2", "pow_rotation"),
-        (
-            "transforms.decompositions",
-            "decomposition_rules.transforms.decompositions.rz_phase_gradient",
-            "make_rz_to_phase_gradient_decomp",
-        ),
-        (
-            "transforms.decompositions.crz_phase_gradient",
-            "decomposition_rules.transforms.decompositions.crz_phase_gradient",
-            "make_crz_to_phase_gradient_decomp",
-        ),
-        (
-            "transforms.decompositions.select_pauli_rot_phase_gradient",
-            "decomposition_rules.transforms.decompositions.select_pauli_rot_phase_gradient",
-            "make_selectpaulirot_to_phase_gradient_decomp",
-        ),
-        (
-            "transforms.decompositions.phase_gradient_state_prep_decomp",
-            "decomposition_rules.transforms.decompositions.phase_gradient_state_prep_decomp",
-            "make_phase_gradient_distillation_decomp",
-        ),
-    ],
-)
-def test_existing_public_exports(original_module, canonical_module, name):
-    """Existing public paths resolve to the same relocated objects."""
-    original = importlib.import_module(f"pennylane.{original_module}")
-    canonical = importlib.import_module(f"pennylane.{canonical_module}")
-    assert getattr(original, name) is getattr(canonical, name)
+def test_package_exports_preserve_rule_identity():
+    """Package imports expose the registered objects and their original implementations."""
+    from pennylane.decomposition_rules import (
+        make_rz_to_phase_gradient_decomp,
+        mottonen_decomp,
+        null_decomp,
+    )
+    from pennylane.decomposition_rules.common import null_decomp as defined_null_decomp
+    from pennylane.decomposition_rules.templates.state_preparations.mottonen import (
+        mottonen_decomp as defined_mottonen_decomp,
+    )
+    from pennylane.decomposition_rules.transforms.decompositions.rz_phase_gradient import (
+        make_rz_to_phase_gradient_decomp as defined_rz_factory,
+    )
+
+    assert null_decomp is defined_null_decomp
+    assert mottonen_decomp is defined_mottonen_decomp
+    assert make_rz_to_phase_gradient_decomp is defined_rz_factory
 
 
 @pytest.mark.parametrize(
@@ -106,6 +84,7 @@ def test_existing_public_exports(original_module, canonical_module, name):
     [
         "pennylane",
         "pennylane.decomposition",
+        "pennylane.decomposition_rules.common",
         "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
         "pennylane.ops.op_math.controlled2",
         "pennylane.templates.subroutines.qrom",
@@ -117,6 +96,9 @@ def test_fresh_import_registers_builtin_rules(entrypoint):
 import importlib
 importlib.import_module({entrypoint!r})
 import pennylane as qp
+from pennylane.decomposition_rules import null_decomp, make_rz_to_phase_gradient_decomp
+assert null_decomp.name == "null_decomp"
+assert callable(make_rz_to_phase_gradient_decomp)
 assert qp.list_decomps(qp.RX)
 assert qp.list_decomps(qp.QFT)
 assert qp.list_decomps(qp.QROM)
