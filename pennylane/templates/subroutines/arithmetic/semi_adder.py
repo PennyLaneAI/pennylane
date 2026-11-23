@@ -260,8 +260,10 @@ class SemiAdder(Operator2):
     .. details::
         :title: Available decompositions
 
-        The PPM diagrams show the block order, including measurement-based corrections.
-        Their measurement and correction counts are upper bounds; counts for
+        Read the PPM circuit panels from top to bottom; wires absent from a panel are
+        unchanged. Both measurement-dependent branches are shown, with dashed boxes
+        around conditional measurements. Measurement and correction counts are upper
+        bounds for a single execution; counts for
         :class:`~.PPR_8` and :func:`~.pauli_measure` are summed over Pauli words.
 
         .. decomposition-table:: qp.SemiAdder
@@ -280,6 +282,7 @@ class SemiAdder(Operator2):
 
             .. decomposition-rule:: _semi_adder_ppm
                 :image: /_static/decomposition_thumbnails/semi_adder_ppm.svg
+                :lightbox:
                 :requires: capture or an active compiler, and :math:`n + 1` zeroed work wires
 
                 :class:`~.PPR_8` | :math:`4n - 4` | 8
@@ -290,6 +293,7 @@ class SemiAdder(Operator2):
 
             .. decomposition-rule:: flip_zero_ctrl_values(_controlled_semi_adder_ppm)
                 :image: /_static/decomposition_thumbnails/semi_adder_controlled_ppm.svg
+                :lightbox:
                 :region: controlled
                 :requires: capture or an active compiler, and :math:`n + c + 1` zeroed work wires
                 :where: :math:`c \geq 1` is the number of control wires; the circuit shows
