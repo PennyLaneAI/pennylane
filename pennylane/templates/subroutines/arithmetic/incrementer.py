@@ -17,7 +17,11 @@ from pennylane import capture, compiler, math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_resources,
+)
 from pennylane.ops import CNOT, MultiControlledX, PauliX, X, adjoint, change_op_basis, cond
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -96,7 +100,7 @@ class Incrementer(Operator2):
                 :class:`~.MultiX` on :math:`n` wires | :math:`2`
                 :class:`~.Incrementer` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(ctrl_incrementer_elbow_ladder)
+            .. decomposition-rule:: ctrl_incrementer_elbow_ladder
                 :image: /_static/decomposition_thumbnails/incrementer_controlled.svg
                 :region: controlled
                 :requires: :math:`n + c - 1` work wires in total, from ``work_wires`` and the
@@ -138,10 +142,10 @@ class Incrementer(Operator2):
             3   : ────╭●─│──│──│────│───│──●╮────────╭●─│──│────│──●╮────────╭●─│───●╮────────╭X───────────┤
             4   : ─╭●─│──│──│──│────│───│───│──●╮─╭●─│──│──│────│───│──●╮─╭●─│──│────│──●╮─╭●─│───●╮─╭X────┤
             5   : ─├●─│──│──│──│────│───│───│──●┤─├●─│──│──│────│───│──●┤─├●─│──│────│──●┤─├●─│───●┤─╰●──X─┤
-               6: ─│──│──├⊕─├●─│───●┤──⊕┤───│───│─│──│──│──│────│───│───│─│──│──│────│───│─│──│────│───────┤
-               7: ─│──├⊕─╰●─│──│────│──●╯──⊕┤───│─│──├⊕─├●─│───●┤──⊕┤───│─│──│──│────│───│─│──│────│───────┤
-               8: ─╰⊕─╰●────│──│────│──────●╯──⊕╯─╰⊕─╰●─│──│────│──●╯──⊕╯─╰⊕─├●─│───●┤──⊕╯─│──│────│───────┤
-               9: ──────────╰⊕─╰●──⊕╯───────────────────╰⊕─╰●──⊕╯────────────╰⊕─╰●──⊕╯─────╰⊕─╰●──⊕╯───────┤
+            aux0: ─│──│──├⊕─├●─│───●┤──⊕┤───│───│─│──│──│──│────│───│───│─│──│──│────│───│─│──│────│───────┤
+            aux1: ─│──├⊕─╰●─│──│────│──●╯──⊕┤───│─│──├⊕─├●─│───●┤──⊕┤───│─│──│──│────│───│─│──│────│───────┤
+            aux2: ─╰⊕─╰●────│──│────│──────●╯──⊕╯─╰⊕─╰●─│──│────│──●╯──⊕╯─╰⊕─├●─│───●┤──⊕╯─│──│────│───────┤
+            aux3: ──────────╰⊕─╰●──⊕╯───────────────────╰⊕─╰●──⊕╯────────────╰⊕─╰●──⊕╯─────╰⊕─╰●──⊕╯───────┤
 
         Cancel neighbouring right and left elbows (moving some work wire usage around in the process)
 
@@ -153,10 +157,10 @@ class Incrementer(Operator2):
             3   : ────╭●─│──│──│────│─│───│──│──●╮─╭X───────────┤
             4   : ─╭●─│──│──│──│────│─│───│──│───│─│───●╮─╭X────┤
             5   : ─├●─│──│──│──│────│─│───│──│───│─│───●┤─╰●──X─┤
-               6: ─│──│──├⊕─├●─│───●┤─╰●─⊕┤──│───│─│────│───────┤
-               7: ─│──├⊕─╰●─│──│────│────●╯──╰●─⊕┤─│────│───────┤
-               8: ─╰⊕─╰●────│──│────│───────────●╯─╰●──⊕╯───────┤
-               9: ──────────╰⊕─╰●──⊕╯───────────────────────────┤
+            aux0: ─│──│──├⊕─├●─│───●┤─╰●─⊕┤──│───│─│────│───────┤
+            aux1: ─│──├⊕─╰●─│──│────│────●╯──╰●─⊕┤─│────│───────┤
+            aux2: ─╰⊕─╰●────│──│────│───────────●╯─╰●──⊕╯───────┤
+            aux3: ──────────╰⊕─╰●──⊕╯───────────────────────────┤
 
         We see a leading ladder of left elbows and a backwards ladder of CNOT+right elbow pairs.
         This circuit is derived, e.g., in
@@ -191,11 +195,11 @@ class Incrementer(Operator2):
             3   : ───────╭●─│──│──│────│─│────│─│───●╮─╭X───────────────┤
             4   : ────╭●─│──│──│──│────│─│────│─│────│─│───●╮─╭X────────┤
             5   : ─╭●─│──│──│──│──│────│─│────│─│────│─│────│─│───●╮─╭X─┤
-               6: ─├⊕─├●─│──│──│──│────│─│────│─│────│─│───●┤─╰●──⊕┤─│──┤
-               7: ─│──╰⊕─├●─│──│──│────│─│────│─│───●┤─╰●──⊕╯──────│─│──┤
-               8: ─│─────╰⊕─├●─│──│────│─│───●┤─╰●──⊕╯─────────────│─│──┤
-               9: ─│────────╰⊕─├●─│───●┤─╰●──⊕╯────────────────────│─│──┤
-              10: ─│───────────╰⊕─╰●──⊕╯───────────────────────────│─│──┤
+            aux0: ─├⊕─├●─│──│──│──│────│─│────│─│────│─│───●┤─╰●──⊕┤─│──┤
+            aux1: ─│──╰⊕─├●─│──│──│────│─│────│─│───●┤─╰●──⊕╯──────│─│──┤
+            aux2: ─│─────╰⊕─├●─│──│────│─│───●┤─╰●──⊕╯─────────────│─│──┤
+            aux3: ─│────────╰⊕─├●─│───●┤─╰●──⊕╯────────────────────│─│──┤
+            aux4: ─│───────────╰⊕─╰●──⊕╯───────────────────────────│─│──┤
             12  : ─╰●─────────────────────────────────────────────●╯─╰●─┤
 
     """
@@ -402,5 +406,8 @@ def _adjoint_incrementer_bit_flips(base):
 
 
 add_decomps(Incrementer, _incrementer_elbow_ladder, _incrementer_multicontrolledx)
-add_decomps("C(Incrementer)", flip_zero_control2(_ctrl_incrementer_elbow_ladder))
+add_decomps(
+    "C(Incrementer)",
+    flip_zero_control2(_ctrl_incrementer_elbow_ladder, name="ctrl_incrementer_elbow_ladder"),
+)
 add_decomps("Adjoint(Incrementer)", _adjoint_incrementer_bit_flips)
