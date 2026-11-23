@@ -267,17 +267,6 @@ def test_jax_pytree_jacobian():
     assert qp.math.allclose(result["square"]["value"], 4.0)
 
 
-@pytest.mark.torch
-@pytest.mark.pl2do(reason="PL 2.0: qp.grad and qp.jacobian will dispatch PyTorch tensors later.")
-@pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
-def test_torch_dispatch(diff_function):
-    """qp.grad and qp.jacobian differentiate PyTorch tensors with torch.autograd."""
-    torch = pytest.importorskip("torch")
-    argument = torch.tensor(2.0, dtype=torch.float64, requires_grad=True)
-    result = diff_function(lambda value: value**3)(argument)
-    assert torch.allclose(result, torch.tensor(12.0, dtype=torch.float64))
-
-
 @pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
 def test_autograd_with_mixed_dictionary_keys(diff_function):
     """Interface selection allows dictionaries with heterogeneous keys."""

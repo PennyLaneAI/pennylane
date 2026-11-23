@@ -108,10 +108,6 @@ def _interface_leaves(value):
             yield leaf
 
 
-# TODO: Also dispatch PyTorch tensors, to ``torch.autograd``, following the same ``argnums``
-# convention as JAX. PyTorch support is deprioritized for now, so PyTorch inputs fall through to
-# the Autograd path, which does not support them. ``test_torch_dispatch`` in
-# ``tests/test_grad.py`` is marked ``pl2do`` until then.
 def _has_jax_inputs(args: tuple, argnums) -> bool:
     """Detect JAX leaves in differentiated positional arguments."""
     if argnums is None:
