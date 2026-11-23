@@ -859,9 +859,7 @@ class TestUnaryIterator:
         ][:K]
         control = [19 + i for i in range(c)]
         work_wires = [22 + i for i in range(c - 1)]
-        decomp = _select_unary(
-            ops=ops, control=control, work_wires=work_wires, partial=partial
-        )
+        decomp = _select_unary(ops=ops, control=control, work_wires=work_wires, partial=partial)
 
         if partial and expected_ops_partial is not None:
             expected = expected_ops_partial
