@@ -921,7 +921,8 @@ def test_taper_wire_order(symbols, geometry):
     assert tapered_ham.wires.tolist() == list(sorted(tapered_ham.wires))
 
 
-@pytest.mark.jax
+# The static Hamiltonian needs PySCF, so run this JAX integration in the qchem job.
+@pytest.mark.qchem
 @pytest.mark.parametrize(
     ("symbols", "geometry", "charge"),
     [

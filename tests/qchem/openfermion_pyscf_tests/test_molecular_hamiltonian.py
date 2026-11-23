@@ -282,6 +282,25 @@ def test_molecular_hamiltonian_error_molecule_class():
         qchem.molecular_hamiltonian(molecule, mapping="bksf")
 
 
+def test_real_hamiltonian(tmp_path):
+    """The retained PySCF backend produces real Hamiltonian coefficients."""
+    symbols = ["H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
+    hamiltonian, _ = qchem.molecular_hamiltonian(
+        symbols, geometry, method="pyscf", outpath=str(tmp_path)
+    )
+
+    assert np.isrealobj(hamiltonian.terms()[0])
+
+
+def test_real_hamiltonian_molecule_class(tmp_path):
+    """The Molecule interface preserves real PySCF Hamiltonian coefficients."""
+    molecule = qchem.Molecule(["H", "H"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]))
+    hamiltonian, _ = qchem.molecular_hamiltonian(molecule, method="pyscf", outpath=str(tmp_path))
+
+    assert np.isrealobj(hamiltonian.terms()[0])
+
+
 @pytest.mark.parametrize(
     ("symbols", "geometry", "core_ref", "one_ref", "two_ref"),
     [

@@ -311,6 +311,14 @@ def test_molecular_dipole_error():
         qchem.molecular_dipole(molecule, mapping="bksf")
 
 
+def test_real_dipole(tmp_path):
+    """The retained OpenFermion backend produces real dipole coefficients."""
+    molecule = qchem.Molecule(["H", "H"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]))
+    dipole = qchem.molecular_dipole(molecule, method="openfermion", outpath=str(tmp_path))
+
+    assert all(np.isrealobj(operator.terms()[0]) for operator in dipole)
+
+
 @pytest.mark.parametrize(
     ("method"),
     [

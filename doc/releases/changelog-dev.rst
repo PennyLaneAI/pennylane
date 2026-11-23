@@ -2098,6 +2098,18 @@ Breaking changes 💔
   ``alpha``, ``coeff``, and ``normalize`` arguments have been removed, along with the
   ``n_orbitals``, ``n_basis``, ``basis_data``, ``basis_set``, and ``mo_coefficients``
   attributes and the ``atomic_orbital`` and ``molecular_orbital`` methods.
+  Obtain the active spatial-orbital count from ``qubits // 2`` or
+  ``len(hamiltonian.wires) // 2`` after constructing the Hamiltonian. This is the total
+  spatial-orbital count when no active-space restriction is applied.
+
+  PySCF uses spherical basis functions, whereas the removed solver used Cartesian basis
+  functions. Basis sets containing d orbitals can therefore give different qubit counts:
+  with ``cc-pVDZ``, LiH changes from 40 to 38, H₂O from 50 to 48, and N₂ from 60 to 56
+  qubits when all orbitals are active.
+
+  Newly written :class:`~.data.DatasetMolecule` attributes omit the removed ``l``, ``alpha``,
+  and ``coeff`` fields. Older PennyLane readers that require those fields cannot read this
+  new format. Existing datasets containing the fields remain readable.
   `(#10581) <https://github.com/PennyLaneAI/pennylane/pull/10581>`__
 
   .. code-block:: python
@@ -2107,6 +2119,7 @@ Breaking changes 💔
 
       molecule = qp.qchem.Molecule(["H", "H"], np.array([[0., 0., 0.], [0., 0., 1.4]]))
       hamiltonian, qubits = qp.qchem.molecular_hamiltonian(molecule)
+      n_orbitals = qubits // 2
       core, one, two = qp.qchem.molecular_integrals(molecule)
 
 Deprecations 👋
