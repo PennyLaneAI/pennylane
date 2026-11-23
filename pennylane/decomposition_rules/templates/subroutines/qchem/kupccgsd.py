@@ -51,7 +51,7 @@ def _kupccgsd_standard_resources(num_wires: int, k: int, d_wires: list, s_wires:
 
 
 @register_resources(_kupccgsd_standard_resources, name="paired_excitation_layers")
-def _kupccgsd_standard(  # pylint: disable=unused-argument
+def kupccgsd_standard(  # pylint: disable=unused-argument
     weights: list,
     wires: WiresLike,
     s_wires: list,
@@ -60,6 +60,7 @@ def _kupccgsd_standard(  # pylint: disable=unused-argument
     init_state: tuple[int],
     delta_sz: int = None,
 ):
+    """Decompose ``kUpCCGSD`` using the ``paired_excitation_layers`` strategy."""
     BasisState(init_state, wires=wires)
 
     @for_loop(k)
@@ -81,4 +82,4 @@ def _kupccgsd_standard(  # pylint: disable=unused-argument
     layer_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(kUpCCGSD, _kupccgsd_standard)
+add_decomps(kUpCCGSD, kupccgsd_standard)

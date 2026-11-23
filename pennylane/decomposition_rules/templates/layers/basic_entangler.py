@@ -36,7 +36,8 @@ def _basic_entangler_standard_resources(repeat, num_wires, rotation):
 
 
 @register_resources(_basic_entangler_standard_resources, name="rotations_cnot_ring")
-def _basic_entangler_standard(weights, wires, rotation):
+def basic_entangler_standard(weights, wires, rotation):
+    """Decompose ``BasicEntanglerLayers`` using the ``rotations_cnot_ring`` strategy."""
     repeat = math.shape(weights)[-2]
 
     if capture.enabled():
@@ -64,4 +65,4 @@ def _basic_entangler_standard(weights, wires, rotation):
     repeat_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(BasicEntanglerLayers, _basic_entangler_standard)
+add_decomps(BasicEntanglerLayers, basic_entangler_standard)

@@ -28,10 +28,7 @@ def _left_quantum_comparator_standard_resources(
     x_wires, y_wires, target_wire, work_wires, comparator  # pylint: disable=unused-argument
 ):
     num_y_wires = len(y_wires)
-    resources = {
-        Elbow: num_y_wires,
-        CNOT: 2 + 5 * (num_y_wires - 1),
-    }
+    resources = {Elbow: num_y_wires, CNOT: 2 + 5 * (num_y_wires - 1)}
 
     if comparator in [">=", "<="]:
         resources[X] = 1
@@ -40,9 +37,10 @@ def _left_quantum_comparator_standard_resources(
 
 
 @register_resources(_left_quantum_comparator_standard_resources, exact=True, name="elbow_ladder")
-def _left_quantum_comparator_standard(x_wires, y_wires, target_wire, work_wires, comparator, **_):
+def left_quantum_comparator_standard(x_wires, y_wires, target_wire, work_wires, comparator, **_):
 
     # revert to follow PL convention
+    """Decompose ``LeftQuantumComparator`` using the ``elbow_ladder`` strategy."""
     x_wires = x_wires[::-1]
     y_wires = y_wires[::-1]
 
@@ -75,4 +73,4 @@ def _left_quantum_comparator_standard(x_wires, y_wires, target_wire, work_wires,
         X(target_wire)
 
 
-add_decomps(LeftQuantumComparator, _left_quantum_comparator_standard)
+add_decomps(LeftQuantumComparator, left_quantum_comparator_standard)

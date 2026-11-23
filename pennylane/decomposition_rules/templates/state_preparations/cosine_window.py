@@ -35,7 +35,8 @@ def _cosine_window_standard_resources(num_wires):
 
 
 @register_resources(_cosine_window_standard_resources, name="inverse_qft")
-def _cosine_window_standard(wires, **_):
+def cosine_window_standard(wires, **_):
+    """Decompose ``CosineWindow`` using the ``inverse_qft`` strategy."""
     ops.Hadamard(wires=wires[-1])
     ops.RZ(np.pi, wires=wires[-1])
     ops.adjoint(templates.QFT)(wires=wires)
@@ -51,4 +52,4 @@ def _cosine_window_standard(wires, **_):
     wires_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(CosineWindow, _cosine_window_standard)
+add_decomps(CosineWindow, cosine_window_standard)

@@ -36,7 +36,7 @@ from pennylane.decomposition.symbolic_decomposition import is_integer
     lambda base_class, base_params, z: {resource_rep(base_class, **base_params): z},
     name="repeat_base",
 )
-def _pow_repeat_base(*params, wires, base, z, **__):  # pylint: disable=unused-argument
+def pow_repeat_base(*params, wires, base, z, **__):  # pylint: disable=unused-argument
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
 
@@ -58,7 +58,7 @@ def _pow_merge_powers_resources(base_class, base_params, z):  # pylint: disable=
 
 
 @register_resources(_pow_merge_powers_resources, name="merge_powers")
-def _pow_merge_powers(*params, wires, base, z, **__):  # pylint: disable=unused-argument
+def pow_merge_powers(*params, wires, base, z, **__):  # pylint: disable=unused-argument
     """Decompose nested powers by combining them."""
     ops = import_module("pennylane.ops")
     ops.pow(base.base, z * base.z)
@@ -76,7 +76,7 @@ def _pow_flip_adjoint_resources(base_class, base_params, z):  # pylint: disable=
 
 
 @register_resources(_pow_flip_adjoint_resources, name="flip_adjoint")
-def _pow_flip_adjoint(*params, wires, base, z, **__):  # pylint: disable=unused-argument
+def pow_flip_adjoint(*params, wires, base, z, **__):  # pylint: disable=unused-argument
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
     ops = import_module("pennylane.ops")
@@ -120,7 +120,7 @@ def _pow_scale_angle_resources(base_class, base_params, z):  # pylint: disable=u
 
 
 @register_resources(_pow_scale_angle_resources, name="scale_angle")
-def _pow_scale_angle(phi, wires, base, z, **__):  # pylint: disable=unused-argument
+def pow_scale_angle(phi, wires, base, z, **__):  # pylint: disable=unused-argument
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
     ops = import_module("pennylane.ops")
     ops.functions.bind_new_parameters(base, (phi * z,))

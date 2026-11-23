@@ -120,7 +120,8 @@ def _leaf_ops_for_bit(wire_manager, bitstrings, n_k, j):
 
 
 @register_resources(_bucket_brigade_qram_standard_resources, exact=False, name="router_swap_tree")
-def _bucket_brigade_qram_standard(bitstrings, wire_manager, **__):
+def bucket_brigade_qram_standard(bitstrings, wire_manager, **__):
+    """Decompose ``BBQRAM`` using the ``router_swap_tree`` strategy."""
     bus_wire = wire_manager.bus_wire
     control_wires = wire_manager.control_wires
     n_k = len(control_wires)
@@ -139,7 +140,7 @@ def _bucket_brigade_qram_standard(bitstrings, wire_manager, **__):
     adjoint(_mark_routers_via_bus)(wire_manager, n_k)
 
 
-add_decomps(BBQRAM, _bucket_brigade_qram_standard)
+add_decomps(BBQRAM, bucket_brigade_qram_standard)
 
 
 def _hybrid_qram_standard_resources(num_target_wires, num_select_wires, num_tree_control_wires):
@@ -216,11 +217,7 @@ def _tree_route_bus_down_first_k_levels_ctrl(k_levels, tree_wire_manager, signal
             ctrl(SWAP(wires=[in_w, R]), control=[signal, d], control_values=[1, 1])
 
             # dir==0: SWAP(in_w, L) controlled on (d == 0) and signal == 1
-            ctrl(
-                SWAP(wires=[in_w, L]),
-                control=[signal, d],
-                control_values=[1, 0],
-            )
+            ctrl(SWAP(wires=[in_w, L]), control=[signal, d], control_values=[1, 0])
 
 
 def _swap_controlled_on_signal(tree_wire_manager, signal, level, k):
@@ -296,7 +293,8 @@ def _block_tree_query_ops(bitstrings, block_index, tree_wire_manager, n_tree, k,
 
 
 @register_resources(_hybrid_qram_standard_resources, exact=False, name="block_tree_queries")
-def _hybrid_qram_standard(bitstrings, tree_wire_manager, select_wires, signal_wire, **_):
+def hybrid_qram_standard(bitstrings, tree_wire_manager, select_wires, signal_wire, **_):
+    """Decompose ``HybridQRAM`` using the ``block_tree_queries`` strategy."""
     k = len(select_wires)
 
     signal = signal_wire[0]
@@ -330,7 +328,7 @@ def _hybrid_qram_standard(bitstrings, tree_wire_manager, select_wires, signal_wi
             PauliX(wires=signal)
 
 
-add_decomps(HybridQRAM, _hybrid_qram_standard)
+add_decomps(HybridQRAM, hybrid_qram_standard)
 
 
 def _select_only_qram_standard_resources(
@@ -368,9 +366,10 @@ def _flip_controls(control_wires, control_vals):
 @register_resources(
     _select_only_qram_standard_resources, exact=False, name="controlled_data_loading"
 )
-def _select_only_qram_standard(
+def select_only_qram_standard(
     bitstrings, select_value, select_wires, control_wires, target_wires, **_
 ):
+    """Decompose ``SelectOnlyQRAM`` using the ``controlled_data_loading`` strategy."""
     controls = select_wires + control_wires
     num_select = len(select_wires)
     n_total = num_select + len(control_wires)
@@ -402,7 +401,7 @@ def _select_only_qram_standard(
         _flip_controls(controls, control_values)
 
 
-add_decomps(SelectOnlyQRAM, _select_only_qram_standard)
+add_decomps(SelectOnlyQRAM, select_only_qram_standard)
 
 
 def _flip_zero_bits(address_wires, addr_bits):
@@ -438,7 +437,8 @@ def _ffqram_standard_resources(num_zero_bits, num_address_wires, num_entries):
 
 
 @register_resources(_ffqram_standard_resources, name="controlled_amplitude_rotations")
-def _ffqram_standard(amplitudes, wires, address, **_):
+def ffqram_standard(amplitudes, wires, address, **_):
+    """Decompose ``FFQRAM`` using the ``controlled_amplitude_rotations`` strategy."""
     address_wires = wires[:-1]
     reg_wire = wires[-1]
 
@@ -475,4 +475,4 @@ def _ffqram_standard(amplitudes, wires, address, **_):
     main_loop(address)  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(FFQRAM, _ffqram_standard)
+add_decomps(FFQRAM, ffqram_standard)

@@ -19,12 +19,10 @@ import numpy as np
 
 from pennylane import ops
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition_rules.op_math.adjoint import _adjoint_negate_angle
-from pennylane.decomposition_rules.op_math.adjoint2 import (
-    _adjoint_negate_angle as adjoint_rotation2,
-)
-from pennylane.decomposition_rules.op_math.pow import _pow_scale_angle
-from pennylane.decomposition_rules.op_math.pow2 import _pow_scale_angle as pow_rotation2
+from pennylane.decomposition_rules.op_math.adjoint import adjoint_negate_angle
+from pennylane.decomposition_rules.op_math.adjoint2 import adjoint_negate_angle as adjoint_rotation2
+from pennylane.decomposition_rules.op_math.pow import pow_scale_angle
+from pennylane.decomposition_rules.op_math.pow2 import pow_scale_angle as pow_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.qubit.qchem_ops import (
     DoubleExcitation,
@@ -68,7 +66,8 @@ def _single_excitation_standard_resources(phi, wires):  # pylint: disable=unused
 
 
 @register_resources(_single_excitation_standard_resources, name="basis_change_ry")
-def _single_excitation_standard(phi: TensorLike, wires: WiresLike):
+def single_excitation_standard(phi: TensorLike, wires: WiresLike):
+    """Decompose ``SingleExcitation`` using the ``basis_change_ry`` strategy."""
     ops.change_op_basis(
         _SingleExcitationBasis(wires=wires, reverse=False),
         _SingleExcitationRotations(phi, wires=wires),
@@ -91,7 +90,8 @@ def _single_excitation_to_ppr_resources(phi, wires):  # pylint: disable=unused-a
 
 
 @register_resources(_single_excitation_to_ppr_resources, name="to_paulirot")
-def _single_excitation_to_ppr(phi: TensorLike, wires: WiresLike):
+def single_excitation_to_ppr(phi: TensorLike, wires: WiresLike):
+    """Decompose ``SingleExcitation`` using the ``to_paulirot`` strategy."""
     ops.PauliRot(phi / 2, "YX", wires=wires)
     ops.PauliRot(-phi / 2, "XY", wires=wires)
 
@@ -107,7 +107,8 @@ def _single_excitation_to_ppr_rz_resources(phi, wires):  # pylint: disable=unuse
 
 
 @register_resources(_single_excitation_to_ppr_rz_resources, name="to_ppr_rz")
-def _single_excitation_to_ppr_rz(phi: TensorLike, wires: WiresLike):
+def single_excitation_to_ppr_rz(phi: TensorLike, wires: WiresLike):
+    """Decompose ``SingleExcitation`` using the ``to_ppr_rz`` strategy."""
     ops.change_op_basis(
         ops.PPR_4(1, "XX", wires=wires),
         _SingleExcitationRZRotations(phi, wires=wires),
@@ -134,10 +135,10 @@ def _single_excitation_to_ppr_crz_resources(phi, wires):  # pylint: disable=unus
 
 
 @register_resources(_single_excitation_to_ppr_crz_resources, name="to_ppr_crz")
-def _single_excitation_to_ppr_crz(phi: TensorLike, wires: WiresLike):
+def single_excitation_to_ppr_crz(phi: TensorLike, wires: WiresLike):
     r"""A single arbitrary-angle rotation per Givens rotation.
 
-    In the basis of ``_single_excitation_to_ppr_rz``, the two rotations
+    In the basis of ``single_excitation_to_ppr_rz``, the two rotations
     :math:`RZ(\phi/2)_i\, RZ(-\phi/2)_j = e^{-i\phi(Z_i - Z_j)/4}` are a rotation whose angle
     depends only on whether the two wires differ. In the parity frame ``CNOT(i, j)`` this reads
     :math:`e^{-i\phi Z_i n_j/2}`, i.e. a single :class:`~.CRZ` controlled on ``j`` and targeting
@@ -152,10 +153,10 @@ def _single_excitation_to_ppr_crz(phi: TensorLike, wires: WiresLike):
 
 add_decomps(
     SingleExcitation,
-    _single_excitation_standard,
-    _single_excitation_to_ppr,
-    _single_excitation_to_ppr_rz,
-    _single_excitation_to_ppr_crz,
+    single_excitation_standard,
+    single_excitation_to_ppr,
+    single_excitation_to_ppr_rz,
+    single_excitation_to_ppr_crz,
 )
 
 add_decomps("Adjoint(SingleExcitation)", adjoint_rotation2)
@@ -176,7 +177,8 @@ def _single_excitation_minus_standard_resources():
 
 
 @register_resources(_single_excitation_minus_standard_resources, name="to_single_qubit_cnot_cy")
-def _single_excitation_minus_standard(phi, wires: WiresLike, **__):
+def single_excitation_minus_standard(phi, wires: WiresLike, **__):
+    """Decompose ``SingleExcitationMinus`` using the ``to_single_qubit_cnot_cy`` strategy."""
     ops.Hadamard(wires[1])
     ops.CNOT([wires[1], wires[0]])
     ops.RY(phi / 2, wires[0])
@@ -189,11 +191,11 @@ def _single_excitation_minus_standard(phi, wires: WiresLike, **__):
     ops.GlobalPhase(phi / 4)
 
 
-add_decomps(SingleExcitationMinus, _single_excitation_minus_standard)
+add_decomps(SingleExcitationMinus, single_excitation_minus_standard)
 
-add_decomps("Adjoint(SingleExcitationMinus)", _adjoint_negate_angle)
+add_decomps("Adjoint(SingleExcitationMinus)", adjoint_negate_angle)
 
-add_decomps("Pow(SingleExcitationMinus)", _pow_scale_angle)
+add_decomps("Pow(SingleExcitationMinus)", pow_scale_angle)
 
 
 def _single_excitation_plus_standard_resources():
@@ -209,7 +211,8 @@ def _single_excitation_plus_standard_resources():
 
 
 @register_resources(_single_excitation_plus_standard_resources, name="to_single_qubit_cnot_cy")
-def _single_excitation_plus_standard(phi, wires: WiresLike, **__):
+def single_excitation_plus_standard(phi, wires: WiresLike, **__):
+    """Decompose ``SingleExcitationPlus`` using the ``to_single_qubit_cnot_cy`` strategy."""
     ops.Hadamard(wires[1])
     ops.CNOT([wires[1], wires[0]])
     ops.RY(phi / 2, wires[0])
@@ -222,11 +225,11 @@ def _single_excitation_plus_standard(phi, wires: WiresLike, **__):
     ops.GlobalPhase(-phi / 4)
 
 
-add_decomps(SingleExcitationPlus, _single_excitation_plus_standard)
+add_decomps(SingleExcitationPlus, single_excitation_plus_standard)
 
-add_decomps("Adjoint(SingleExcitationPlus)", _adjoint_negate_angle)
+add_decomps("Adjoint(SingleExcitationPlus)", adjoint_negate_angle)
 
-add_decomps("Pow(SingleExcitationPlus)", _pow_scale_angle)
+add_decomps("Pow(SingleExcitationPlus)", pow_scale_angle)
 
 
 def _double_excitation_to_gates_resources(phi, wires):  # pylint: disable=unused-argument
@@ -234,7 +237,8 @@ def _double_excitation_to_gates_resources(phi, wires):  # pylint: disable=unused
 
 
 @register_resources(_double_excitation_to_gates_resources, name="to_gates")
-def _double_excitation_to_gates(phi: TensorLike, wires: WiresLike):
+def double_excitation_to_gates(phi: TensorLike, wires: WiresLike):
+    """Decompose ``DoubleExcitation`` using the ``to_gates`` strategy."""
     ops.CNOT(wires=[wires[2], wires[3]])
     ops.CNOT(wires=[wires[0], wires[2]])
     ops.Hadamard(wires=wires[3])
@@ -279,7 +283,8 @@ def _double_excitation_to_ppr_resources(phi, wires):  # pylint: disable=unused-a
 
 
 @register_resources(_double_excitation_to_ppr_resources, name="to_paulirot")
-def _double_excitation_to_ppr(phi: TensorLike, wires: WiresLike):
+def double_excitation_to_ppr(phi: TensorLike, wires: WiresLike):
+    """Decompose ``DoubleExcitation`` using the ``to_paulirot`` strategy."""
     ops.PauliRot(phi / 8, pauli_word="YYYX", wires=wires)
     ops.PauliRot(phi / 8, pauli_word="YYXY", wires=wires)
     ops.PauliRot(-phi / 8, pauli_word="YXYY", wires=wires)
@@ -290,21 +295,21 @@ def _double_excitation_to_ppr(phi: TensorLike, wires: WiresLike):
     ops.PauliRot(-phi / 8, pauli_word="XXXY", wires=wires)
 
 
-add_decomps(DoubleExcitation, _double_excitation_to_gates, _double_excitation_to_ppr)
+add_decomps(DoubleExcitation, double_excitation_to_gates, double_excitation_to_ppr)
 
 add_decomps("Adjoint(DoubleExcitation)", adjoint_rotation2)
 
 add_decomps("Pow(DoubleExcitation)", pow_rotation2)
 
 
-add_decomps("Adjoint(DoubleExcitationPlus)", _adjoint_negate_angle)
+add_decomps("Adjoint(DoubleExcitationPlus)", adjoint_negate_angle)
 
-add_decomps("Pow(DoubleExcitationPlus)", _pow_scale_angle)
+add_decomps("Pow(DoubleExcitationPlus)", pow_scale_angle)
 
 
-add_decomps("Adjoint(DoubleExcitationMinus)", _adjoint_negate_angle)
+add_decomps("Adjoint(DoubleExcitationMinus)", adjoint_negate_angle)
 
-add_decomps("Pow(DoubleExcitationMinus)", _pow_scale_angle)
+add_decomps("Pow(DoubleExcitationMinus)", pow_scale_angle)
 
 
 # pylint: disable-next=unused-argument
@@ -315,14 +320,15 @@ def _orbital_rotation_standard_resources(phi: TensorLike, wires: WiresLike):
 @register_resources(
     _orbital_rotation_standard_resources, name="to_fermionic_swap_single_excitation"
 )
-def _orbital_rotation_standard(phi: TensorLike, wires: WiresLike):
+def orbital_rotation_standard(phi: TensorLike, wires: WiresLike):
+    """Decompose ``OrbitalRotation`` using the ``to_fermionic_swap_single_excitation`` strategy."""
     FermionicSWAP(np.pi, wires=[wires[1], wires[2]])
     SingleExcitation(phi, wires=[wires[0], wires[1]])
     SingleExcitation(phi, wires=[wires[2], wires[3]])
     FermionicSWAP(np.pi, wires=[wires[1], wires[2]])
 
 
-add_decomps(OrbitalRotation, _orbital_rotation_standard)
+add_decomps(OrbitalRotation, orbital_rotation_standard)
 
 add_decomps("Adjoint(OrbitalRotation)", adjoint_rotation2)
 
@@ -341,7 +347,8 @@ def _fermionic_swap_standard_resources(phi: TensorLike = None, wires: WiresLike 
 
 
 @register_resources(_fermionic_swap_standard_resources, name="to_multirz_single_qubit")
-def _fermionic_swap_standard(phi, wires: WiresLike, **__):
+def fermionic_swap_standard(phi, wires: WiresLike, **__):
+    """Decompose ``FermionicSWAP`` using the ``to_multirz_single_qubit`` strategy."""
     ops.Hadamard(wires=wires[0])
     ops.Hadamard(wires=wires[1])
     ops.MultiRZ(phi / 2, wires=[wires[0], wires[1]])
@@ -358,7 +365,7 @@ def _fermionic_swap_standard(phi, wires: WiresLike, **__):
     ops.GlobalPhase(-0.5 * phi)
 
 
-add_decomps(FermionicSWAP, _fermionic_swap_standard)
+add_decomps(FermionicSWAP, fermionic_swap_standard)
 
 add_decomps("Adjoint(FermionicSWAP)", adjoint_rotation2)
 

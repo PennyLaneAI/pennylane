@@ -34,8 +34,8 @@ def _iqp_embedding_standard_resources(features, wires, n_repeats, pattern):
 
 
 @register_resources(_iqp_embedding_standard_resources, exact=False, name="to_h_rz_multirz")
-def _iqp_embedding_standard(features, wires: WiresLike, n_repeats, pattern):
-
+def iqp_embedding_standard(features, wires: WiresLike, n_repeats, pattern):
+    """Decompose ``IQPEmbedding`` using the ``to_h_rz_multirz`` strategy."""
     if capture.enabled() or compiler.active():
         wires = math.array(wires, like="jax")
 
@@ -62,4 +62,4 @@ def _iqp_embedding_standard(features, wires: WiresLike, n_repeats, pattern):
     outer_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(IQPEmbedding, _iqp_embedding_standard)
+add_decomps(IQPEmbedding, iqp_embedding_standard)

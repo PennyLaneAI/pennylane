@@ -34,7 +34,8 @@ def _simplified_two_design_standard_resources(n_layers, num_wires):
 
 
 @register_resources(_simplified_two_design_standard_resources, name="to_ry_cz")
-def _simplified_two_design_standard(initial_layer_weights, weights, wires):
+def simplified_two_design_standard(initial_layer_weights, weights, wires):
+    """Decompose ``SimplifiedTwoDesign`` using the ``to_ry_cz`` strategy."""
     n_layers = math.shape(weights)[0]
 
     if capture.enabled():
@@ -72,4 +73,4 @@ def _simplified_two_design_standard(initial_layer_weights, weights, wires):
     layers_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(SimplifiedTwoDesign, _simplified_two_design_standard)
+add_decomps(SimplifiedTwoDesign, simplified_two_design_standard)

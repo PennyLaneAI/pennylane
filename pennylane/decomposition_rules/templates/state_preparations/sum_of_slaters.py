@@ -22,11 +22,7 @@ import numpy as np
 from pennylane import capture, compiler, math, ops, templates
 from pennylane.allocation import allocate
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.state_preparations.sum_of_slaters import (
     SoSData,
@@ -39,7 +35,7 @@ from pennylane.typing import Bool, Wire
 
 
 def _sos_state_prep_standard_resources(coefficients, wires, indices, **_):
-    """Compute the resources for _sos_state_prep_standard. It is an upper bound due to
+    """Compute the resources for sos_state_prep_standard. It is an upper bound due to
     conditionally applied CNOT and X gates."""
 
     n = 1 if isinstance(wires, int) else len(wires)
@@ -280,7 +276,7 @@ def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
     work_wires=_sos_state_prep_standard_work_wires,
     name="sparse_state_isometry",
 )
-def _sos_state_prep_standard(  # pylint: disable=too-many-arguments
+def sos_state_prep_standard(  # pylint: disable=too-many-arguments
     coefficients,
     wires,
     indices,
@@ -336,4 +332,4 @@ def _sos_state_prep_standard(  # pylint: disable=too-many-arguments
         _sos_state_prep_with_wires(data, **all_wires)
 
 
-add_decomps(SumOfSlatersPrep, _sos_state_prep_standard)
+add_decomps(SumOfSlatersPrep, sos_state_prep_standard)

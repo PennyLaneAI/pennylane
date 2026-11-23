@@ -56,7 +56,8 @@ def _fast_fermionic_fourier_transform_standard_resources(num_wires):
 @register_resources(
     _fast_fermionic_fourier_transform_standard_resources, name="recursive_butterfly"
 )
-def _fast_fermionic_fourier_transform_standard(*_, wires: WiresLike, **__):
+def fast_fermionic_fourier_transform_standard(*_, wires: WiresLike, **__):
+    """Decompose ``FFFT`` using the ``recursive_butterfly`` strategy."""
     if capture.enabled():
         wires = math.array(wires, like="jax")
 
@@ -130,4 +131,4 @@ def _permute_and_apply_parallel(wires, operator):
     permutation_out_layers()
 
 
-add_decomps(FFFT, _fast_fermionic_fourier_transform_standard)
+add_decomps(FFFT, fast_fermionic_fourier_transform_standard)

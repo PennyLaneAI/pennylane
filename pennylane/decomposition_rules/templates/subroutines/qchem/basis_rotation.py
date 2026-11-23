@@ -91,8 +91,8 @@ def _basis_rotation_real_resources(unitary_matrix, wires, check=False):
 
 @register_condition(lambda unitary_matrix, **_: not math.is_complex_dtype(unitary_matrix))
 @register_resources(_basis_rotation_real_resources, exact=False, name="real")
-def _basis_rotation_real(unitary_matrix, wires, **_):
-
+def basis_rotation_real(unitary_matrix, wires, **_):
+    """Decompose ``BasisRotation`` using the ``real`` strategy."""
     unitary, wires = _prepare_args(unitary_matrix, wires)
 
     was_negative, unitary = _adjust_determinant(unitary)
@@ -137,8 +137,8 @@ def _basis_rotation_complex_resources(unitary_matrix, wires, check=False):
 
 @register_condition(lambda unitary_matrix, **_: math.is_complex_dtype(unitary_matrix))
 @register_resources(_basis_rotation_complex_resources, exact=False, name="complex")
-def _basis_rotation_complex(unitary_matrix, wires, **_):
-
+def basis_rotation_complex(unitary_matrix, wires, **_):
+    """Decompose ``BasisRotation`` using the ``complex`` strategy."""
     unitary, wires = _prepare_args(unitary_matrix, wires)
 
     phase_list, givens_list = math.decomposition.givens_decomposition(unitary)
@@ -173,4 +173,4 @@ def _basis_rotation_complex(unitary_matrix, wires, **_):
     givens_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(BasisRotation, _basis_rotation_real, _basis_rotation_complex)
+add_decomps(BasisRotation, basis_rotation_real, basis_rotation_complex)

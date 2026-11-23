@@ -35,7 +35,8 @@ def _grover_standard_resources(num_wires, num_work_wires):
 
 
 @register_resources(_grover_standard_resources, name="to_h_mcx")
-def _grover_standard(wires, work_wires, n_wires):
+def grover_standard(wires, work_wires, n_wires):
+    """Decompose ``GroverOperator`` using the ``to_h_mcx`` strategy."""
     ctrl_values = [0] * (n_wires - 1)
 
     if capture.enabled():
@@ -48,11 +49,7 @@ def _grover_standard(wires, work_wires, n_wires):
     apply_hadamards()  # pylint: disable=no-value-for-parameter
 
     PauliZ(wires[-1])
-    MultiControlledX(
-        control_values=ctrl_values,
-        wires=wires,
-        work_wires=work_wires,
-    )
+    MultiControlledX(control_values=ctrl_values, wires=wires, work_wires=work_wires)
     PauliZ(wires[-1])
 
     apply_hadamards()  # pylint: disable=no-value-for-parameter
@@ -60,4 +57,4 @@ def _grover_standard(wires, work_wires, n_wires):
     GlobalPhase(np.pi)
 
 
-add_decomps(GroverOperator, _grover_standard)
+add_decomps(GroverOperator, grover_standard)

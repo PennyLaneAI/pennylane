@@ -64,7 +64,7 @@ def _phase_gradient_state_prep_to_ppr_resources(wires: AbstractWires):
 
 @register_condition(lambda wires: len(wires) <= len(PI_OVER_8_PPRS))
 @register_resources(_phase_gradient_state_prep_to_ppr_resources, name="to_ppr")
-def _phase_gradient_state_prep_to_ppr(wires: WiresLike):
+def phase_gradient_state_prep_to_ppr(wires: WiresLike):
     # Wire j is prepared in the state (|0> + exp(-i pi / 2**j)|1>) / sqrt(2) by the PPR
     # ``INITIAL_PPRS[j]`` (angle denominator, Pauli word; no gate if ``None``), followed by the π/8
     # PPRs in ``PI_OVER_8_PPRS[j]``, where upper (lower) case letters denote PPRs with angle π/8
@@ -72,6 +72,7 @@ def _phase_gradient_state_prep_to_ppr(wires: WiresLike):
     # the state prepared on 30 wires deviates from the phase gradient state by
     # less than 1e-12 in the 2-norm.
 
+    """Decompose ``PhaseGradientStatePrep`` using the ``to_ppr`` strategy."""
     num_wires = len(wires)
     for wire, init, pprs in zip(
         wires, INITIAL_PPRS[:num_wires], PI_OVER_8_PPRS[:num_wires], strict=True
@@ -92,12 +93,13 @@ def _phase_gradient_state_prep_to_clifford_t_resources(wires: AbstractWires):
 
 @register_condition(lambda wires: len(wires) <= len(CLIFFORD_T_SEQUENCES))
 @register_resources(_phase_gradient_state_prep_to_clifford_t_resources, name="to_clifford_t")
-def _phase_gradient_state_prep_to_clifford_t(wires: WiresLike):
+def phase_gradient_state_prep_to_clifford_t(wires: WiresLike):
     # Wire j is prepared by the gates in ``CLIFFORD_T_SEQUENCES[j]``, which are obtained from the
     # PPR decomposition and contain one T gate per π/8 PPR. Together with the global phase
     # given by summing ``CLIFFORD_T_GLOBAL_PHASES`` over the wires, the state prepared on 30 wires
     # deviates from the phase gradient state by less than 1e-12 in the 2-norm.
 
+    """Decompose ``PhaseGradientStatePrep`` using the ``to_clifford_t`` strategy."""
     num_wires = len(wires)
     for wire, sequence in zip(wires, CLIFFORD_T_SEQUENCES[:num_wires], strict=True):
         for gate in sequence:
@@ -107,8 +109,8 @@ def _phase_gradient_state_prep_to_clifford_t(wires: WiresLike):
 
 add_decomps(
     PhaseGradientStatePrep,
-    _phase_gradient_state_prep_to_ppr,
-    _phase_gradient_state_prep_to_clifford_t,
+    phase_gradient_state_prep_to_ppr,
+    phase_gradient_state_prep_to_clifford_t,
 )
 
 

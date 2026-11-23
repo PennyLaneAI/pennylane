@@ -23,16 +23,10 @@ import numpy as np
 from pennylane import math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition_rules.op_math.controlled2 import (
     ctrl_many_zeroed_work_wires,
-)
-from pennylane.decomposition_rules.op_math.controlled2 import (
-    flip_zero_control as flip_zero_control2,
+    flip_zero_control,
 )
 from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math import adjoint, ctrl
@@ -329,7 +323,7 @@ def _trotter_cdf_standard_resources(  # pylint: disable=too-many-arguments,unuse
 
 
 @register_resources(_trotter_cdf_standard_resources, exact=False, name="double_factorized_steps")
-def _trotter_cdf_standard(  # pylint: disable=too-many-arguments,unused-argument
+def trotter_cdf_standard(  # pylint: disable=too-many-arguments,unused-argument
     evolution_time,
     num_trotter_steps,
     hamiltonian,
@@ -339,6 +333,7 @@ def _trotter_cdf_standard(  # pylint: disable=too-many-arguments,unused-argument
 ):
     # ``double_phase`` only affects the controlled decomposition; the base operator is
     # always the plain (uncontrolled) e^{-iHt} circuit.
+    """Decompose ``TrotterCDF`` using the ``double_factorized_steps`` strategy."""
     if num_trotter_steps > 0:
         _run_trotter_steps(
             evolution_time,
@@ -352,7 +347,7 @@ def _trotter_cdf_standard(  # pylint: disable=too-many-arguments,unused-argument
         GlobalPhase(phi)
 
 
-add_decomps(TrotterCDF, _trotter_cdf_standard)
+add_decomps(TrotterCDF, trotter_cdf_standard)
 
 
 def _controlled_trotter_cdf_standard_resources(  # pylint: disable=unused-argument
@@ -377,13 +372,14 @@ def _controlled_trotter_cdf_standard_resources(  # pylint: disable=unused-argume
     exact=False,
     name="controlled_double_factorized_steps",
 )
-def _controlled_trotter_cdf_standard(
+def controlled_trotter_cdf_standard(
     base,
     control_wires,
     control_values,  # pylint: disable=unused-argument
     work_wires,  # pylint: disable=unused-argument
     work_wire_type,  # pylint: disable=unused-argument
 ):
+    """Decompose ``C(TrotterCDF)`` using the ``controlled_double_factorized_steps`` strategy."""
     evolution_time = base.arguments["evolution_time"]
     num_trotter_steps = base.arguments["num_trotter_steps"]
     hamiltonian = base.arguments["hamiltonian"]
@@ -444,7 +440,7 @@ def _controlled_trotter_cdf_standard(
     exact=False,
     name="multi_control",
 )
-def _trotter_cdf_multi_control(base, control_wires, control_values, work_wires, work_wire_type):
+def trotter_cdf_multi_control(base, control_wires, control_values, work_wires, work_wire_type):
     """Reuse the single-control CDF decomposition after combining multiple controls."""
     validate_no_wire_overlaps(
         {
@@ -458,6 +454,6 @@ def _trotter_cdf_multi_control(base, control_wires, control_values, work_wires, 
 
 add_decomps(
     "C(TrotterCDF)",
-    flip_zero_control2(_controlled_trotter_cdf_standard, name="controlled_double_factorized_steps"),
-    _trotter_cdf_multi_control,
+    flip_zero_control(controlled_trotter_cdf_standard, name="controlled_double_factorized_steps"),
+    trotter_cdf_multi_control,
 )

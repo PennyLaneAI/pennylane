@@ -77,7 +77,7 @@ def _adjoint_cancel_resources(base_class, base_params):
 
 
 @register_resources(_adjoint_cancel_resources, name="cancel")
-def _adjoint_cancel(*params, wires, base):  # pylint: disable=unused-argument
+def adjoint_cancel(*params, wires, base):  # pylint: disable=unused-argument
     """Decompose the adjoint of the adjoint of an operator."""
     apply(base.base)
 
@@ -87,7 +87,7 @@ def _adjoint_negate_angle_resources(base_class, base_params):
 
 
 @register_resources(_adjoint_negate_angle_resources, name="negate_angle")
-def _adjoint_negate_angle(phi, wires, base):  # pylint: disable=unused-argument
+def adjoint_negate_angle(phi, wires, base):  # pylint: disable=unused-argument
     """Decompose the adjoint of a rotation operator by inverting the angle."""
     ops = import_module("pennylane.ops")
     ops.functions.bind_new_parameters(base, (-phi,))

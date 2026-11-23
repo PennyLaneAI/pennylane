@@ -21,14 +21,8 @@ import numpy as np
 
 from pennylane import math
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-)
-from pennylane.decomposition_rules.op_math.controlled2 import (
-    flip_zero_control as flip_zero_control2,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition_rules.op_math.controlled2 import flip_zero_control
 from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math import ctrl
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
@@ -234,9 +228,10 @@ def _trotter_cgf_standard_resources(
     _trotter_cgf_standard_resources, exact=False, name="compressed_factorized_steps"
 )
 # pylint: disable-next=unused-argument
-def _trotter_cgf_standard(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
+def trotter_cgf_standard(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
     # ``double_phase`` only affects the controlled decomposition; the base operator is
     # always the plain (uncontrolled) e^{-iHt} circuit.
+    """Decompose ``TrotterCGF`` using the ``compressed_factorized_steps`` strategy."""
     if num_trotter_steps > 0:
         _run_trotter_steps(
             evolution_time,
@@ -250,7 +245,7 @@ def _trotter_cgf_standard(evolution_time, num_trotter_steps, hamiltonian, wires,
         GlobalPhase(phi)
 
 
-add_decomps(TrotterCGF, _trotter_cgf_standard)
+add_decomps(TrotterCGF, trotter_cgf_standard)
 
 
 def _controlled_trotter_cgf_standard_resources(  # pylint: disable=unused-argument
@@ -274,13 +269,14 @@ def _controlled_trotter_cgf_standard_resources(  # pylint: disable=unused-argume
     exact=False,
     name="controlled_compressed_factorized_steps",
 )
-def _controlled_trotter_cgf_standard(
+def controlled_trotter_cgf_standard(
     base,
     control_wires,
     control_values,  # pylint: disable=unused-argument
     work_wires,  # pylint: disable=unused-argument
     work_wire_type,  # pylint: disable=unused-argument
 ):
+    """Decompose ``C(TrotterCGF)`` using the ``controlled_compressed_factorized_steps`` strategy."""
     evolution_time = base.arguments["evolution_time"]
     num_trotter_steps = base.arguments["num_trotter_steps"]
     hamiltonian = base.arguments["hamiltonian"]
@@ -329,7 +325,7 @@ def _controlled_trotter_cgf_standard(
 
 add_decomps(
     "C(TrotterCGF)",
-    flip_zero_control2(
-        _controlled_trotter_cgf_standard, name="controlled_compressed_factorized_steps"
+    flip_zero_control(
+        controlled_trotter_cgf_standard, name="controlled_compressed_factorized_steps"
     ),
 )

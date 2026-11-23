@@ -32,19 +32,16 @@ def _prod_standard_resources(resources):
 
 
 @decomposition.register_resources(_prod_standard_resources, name="expand_factors")
-def _prod_standard(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
+def prod_standard(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
+    """Apply the ``expand_factors`` decomposition strategy to the operator."""
     for op in reversed(operands):
         apply(op)
 
 
-decomposition.add_decomps(Prod, _prod_standard)
+decomposition.add_decomps(Prod, prod_standard)
 
 
-def _controlled_product_with_work_wires_resources(
-    num_control_wires,
-    base_params,
-    **_,
-):
+def _controlled_product_with_work_wires_resources(num_control_wires, base_params, **_):
     factor_reps = base_params["resources"]
 
     resources = Counter()
@@ -66,7 +63,7 @@ def _controlled_product_with_work_wires_resources(
 @decomposition.register_resources(
     _controlled_product_with_work_wires_resources, name="with_work_wires"
 )
-def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **__):
+def controlled_product_with_work_wires(*_, control_wires, work_wires, base, **__):
     """Decomposition of ``C(Prod)`` with at least ``num_control_wires - 1`` work wires.
 
     Assumes that all ``control_values`` are 1. Zero-control flipping is handled
@@ -78,11 +75,7 @@ def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **_
     ops.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
 
 
-def _controlled_product_with_one_work_wire_resources(
-    num_control_wires,
-    base_params,
-    **_,
-):
+def _controlled_product_with_one_work_wire_resources(num_control_wires, base_params, **_):
     factor_reps = base_params["resources"]  # {rep: count} from Prod
     multicx_rep = ops.MultiControlledX(Wire[num_control_wires + 1])
 
@@ -104,7 +97,7 @@ def _controlled_product_with_one_work_wire_resources(
 @decomposition.register_resources(
     _controlled_product_with_one_work_wire_resources, name="with_one_work_wire"
 )
-def _controlled_product_with_one_work_wire(*_, control_wires, work_wires, base, **__):
+def controlled_product_with_one_work_wire(*_, control_wires, work_wires, base, **__):
     """Decomposition of ``C(Prod)`` with a single zeroed work wire.
 
     Assumes that all ``control_values`` are 1. Zero-control flipping is handled
@@ -118,6 +111,6 @@ def _controlled_product_with_one_work_wire(*_, control_wires, work_wires, base, 
 
 decomposition.add_decomps(
     "C(Prod)",
-    flip_zero_control(_controlled_product_with_work_wires, name="with_work_wires"),
-    flip_zero_control(_controlled_product_with_one_work_wire, name="with_one_work_wire"),
+    flip_zero_control(controlled_product_with_work_wires, name="with_work_wires"),
+    flip_zero_control(controlled_product_with_one_work_wire, name="with_one_work_wire"),
 )

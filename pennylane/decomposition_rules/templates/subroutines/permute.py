@@ -44,8 +44,9 @@ def _permute_standard_resources(wires, permutation):
 
 
 @register_resources(_permute_standard_resources, name="swap_network")
-def _permute_standard(wires, permutation):
+def permute_standard(wires, permutation):
     # Temporary storage to keep track as we permute
+    """Decompose ``Permute`` using the ``swap_network`` strategy."""
     working_order = wires.tolist()
 
     if capture.enabled():
@@ -85,4 +86,4 @@ def _permute_standard(wires, permutation):
             )
 
 
-add_decomps(Permute, _permute_standard)
+add_decomps(Permute, permute_standard)

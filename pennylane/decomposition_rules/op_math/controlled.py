@@ -169,7 +169,7 @@ def _controlled_flip_adjoint_resources(  # pylint: disable=too-many-arguments,un
 
 
 @register_resources(_controlled_flip_adjoint_resources, name="flip_adjoint")
-def _controlled_flip_adjoint(  # pylint: disable=too-many-arguments
+def controlled_flip_adjoint(  # pylint: disable=too-many-arguments
     *_, wires, control_wires, control_values, work_wires, work_wire_type, base, **__
 ):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
@@ -199,7 +199,7 @@ def _controlled_single_work_wire_resources(base_class, base_params, num_control_
     _controlled_single_work_wire_resources, work_wires={"zeroed": 1}, name="single_work_wire"
 )
 # pylint: disable-next=unused-argument
-def _controlled_single_work_wire(*params, wires, control_wires, base, **__):
+def controlled_single_work_wire(*params, wires, control_wires, base, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     ops = import_module("pennylane.ops")
     with allocation.allocate(1, state="zero", restored=True) as work_wires:
@@ -208,7 +208,7 @@ def _controlled_single_work_wire(*params, wires, control_wires, base, **__):
         ops.MultiControlledX([*control_wires, work_wires[0]])
 
 
-ctrl_single_work_wire = flip_zero_control(_controlled_single_work_wire, name="single_work_wire")
+ctrl_single_work_wire = flip_zero_control(controlled_single_work_wire, name="single_work_wire")
 
 
 def _to_controlled_qu_condition(base_class, **__):
@@ -236,7 +236,7 @@ def _controlled_to_unitary_resources(  # pylint: disable=unused-argument
 
 @register_condition(_to_controlled_qu_condition)
 @register_resources(_controlled_to_unitary_resources, name="to_unitary")
-def _controlled_to_unitary(*_, wires, control_values, work_wires, work_wire_type, base, **__):
+def controlled_to_unitary(*_, wires, control_values, work_wires, work_wire_type, base, **__):
     """Convert a controlled operator to a controlled qubit unitary."""
     ops = import_module("pennylane.ops")
     matrix = base.matrix()

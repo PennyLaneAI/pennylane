@@ -49,7 +49,8 @@ def _work_wires_bond_dimension_condition(mps, wires, work_wires=None, right_cano
 
 @decomposition.register_condition(_work_wires_bond_dimension_condition)
 @register_resources(_mps_prep_standard_resources, name="sequential_unitaries")
-def _mps_prep_standard(mps, wires, work_wires=None, right_canonicalize=False):
+def mps_prep_standard(mps, wires, work_wires=None, right_canonicalize=False):
+    """Decompose ``MPSPrep`` using the ``sequential_unitaries`` strategy."""
     mps = list(mps)
 
     n_wires = len(work_wires) + 1
@@ -94,4 +95,4 @@ def _mps_prep_standard(mps, wires, work_wires=None, right_canonicalize=False):
         ops.QubitUnitary(unitary_matrix, wires=[wires[i], *work_wires])
 
 
-add_decomps(MPSPrep, _mps_prep_standard)
+add_decomps(MPSPrep, mps_prep_standard)

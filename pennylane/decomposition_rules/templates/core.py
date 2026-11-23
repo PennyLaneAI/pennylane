@@ -30,8 +30,9 @@ def _subroutine_standard_resources(subroutine: "Subroutine", signature_key):
 
 
 @register_resources(_subroutine_standard_resources, name="expand_operations")
-def _subroutine_standard(*data, wires, decomposition):  # pylint: disable=unused-argument
+def subroutine_standard(*data, wires, decomposition):  # pylint: disable=unused-argument
+    """Decompose ``SubroutineOp`` using the ``expand_operations`` strategy."""
     _ = [apply(op) for op in decomposition]
 
 
-add_decomps(SubroutineOp, _subroutine_standard)
+add_decomps(SubroutineOp, subroutine_standard)

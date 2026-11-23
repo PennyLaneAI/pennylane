@@ -17,10 +17,7 @@
 
 from collections import defaultdict
 
-from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, ChangeOpBasis2, MultiControlledX, PauliX
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint import adjoint
@@ -84,7 +81,8 @@ def _adder_fourier_resources(k: int, x_wires: WiresLike, mod: int, work_wires: W
 
 
 @register_resources(_adder_fourier_resources, name="fourier")
-def _adder_fourier(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike):
+def adder_fourier(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike):
+    """Decompose ``Adder`` using the ``fourier`` strategy."""
     if mod == 2 ** len(x_wires):
         change_op_basis(QFT(x_wires), PhaseAdder(k, x_wires, mod))
         return
@@ -141,7 +139,8 @@ def _adder_arithmetic_resources(
 
 
 @register_resources(_adder_arithmetic_resources, exact=False, name="arithmetic")
-def _adder_arithmetic(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike):
+def adder_arithmetic(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike):
+    """Decompose ``Adder`` using the ``arithmetic`` strategy."""
     x_wires = Wires(x_wires)
     work_wires = Wires(work_wires)
     n = len(x_wires)
@@ -170,4 +169,4 @@ def _adder_arithmetic(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLik
     _add_constant(k, aug)  # aug <- (x + k) mod mod, work wires restored
 
 
-add_decomps(Adder, _adder_fourier, _adder_arithmetic)
+add_decomps(Adder, adder_fourier, adder_arithmetic)

@@ -50,7 +50,8 @@ def _UCCSD_standard_resources(num_wires, n_repeats, num_d_wires, num_s_wires):
 
 
 @register_resources(_UCCSD_standard_resources, name="fermionic_excitation_layers")
-def _UCCSD_standard(weights, wires, s_wires, d_wires, init_state, n_repeats):
+def UCCSD_standard(weights, wires, s_wires, d_wires, init_state, n_repeats):
+    """Decompose ``UCCSD`` using the ``fermionic_excitation_layers`` strategy."""
     BasisState(init_state, wires=wires)
 
     if n_repeats == 1 and len(math.shape(weights)) == 1:
@@ -77,4 +78,4 @@ def _UCCSD_standard(weights, wires, s_wires, d_wires, init_state, n_repeats):
     apply_layers()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(UCCSD, _UCCSD_standard)
+add_decomps(UCCSD, UCCSD_standard)

@@ -17,18 +17,14 @@
 
 from collections import defaultdict
 
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier import (
     _c_add_sub,
     _c_add_sub_resources,
 )
 from pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder import (
-    _semi_adder_standard,
     _semi_adder_standard_resources,
+    semi_adder_standard,
 )
 from pennylane.ops import CNOT
 from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
@@ -81,12 +77,13 @@ def _out_square_with_adder_zeroed_resources(  # pylint: disable=unused-argument
 
 @register_condition(_out_square_with_adder_zeroed_condition)
 @register_resources(_out_square_with_adder_zeroed_resources, name="with_adder_zeroed")
-def _out_square_with_adder_zeroed(  # pylint: disable=unused-argument
+def out_square_with_adder_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
     output_wires_zeroed: bool = False,
 ):
+    """Decompose ``OutSquare`` using the ``with_adder_zeroed`` strategy."""
     n = len(x_wires)
     m = len(output_wires)
     x_wires = x_wires[::-1]
@@ -180,7 +177,7 @@ def _shifted_adder(x_wires, output_wires, work_wires):
 
 @register_condition(_out_square_with_caddsub_condition)
 @register_resources(_out_square_with_caddsub_resources, name="with_caddsub")
-def _out_square_with_caddsub(
+def out_square_with_caddsub(
     x_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
@@ -210,7 +207,7 @@ def _out_square_with_caddsub(
         CNOT([x_wires[-1], output_wires[-1]])
     else:
         zeroed = [1] + [2 * j for j in range(1, n)]
-        _semi_adder_standard(x_wires, output_wires, work_wires, skip_input_pos=zeroed)
+        semi_adder_standard(x_wires, output_wires, work_wires, skip_input_pos=zeroed)
 
     if n > 1 and m > 1:
         _output = output_wires[:-1]
@@ -225,8 +222,4 @@ def _out_square_with_caddsub(
             _shifted_adder(x_wires[1:], output_wires[: m - n], work_wires)
 
 
-add_decomps(
-    OutSquare,
-    _out_square_with_adder_zeroed,
-    _out_square_with_caddsub,
-)
+add_decomps(OutSquare, out_square_with_adder_zeroed, out_square_with_caddsub)

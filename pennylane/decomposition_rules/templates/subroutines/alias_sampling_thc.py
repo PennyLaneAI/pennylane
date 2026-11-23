@@ -241,9 +241,10 @@ def _alias_sampling_thc_standard_resources(  # pylint: disable=too-many-argument
 
 
 @register_resources(_alias_sampling_thc_standard_resources, name="qrom_comparator_swap")
-def _alias_sampling_thc_standard(  # pylint: disable=too-many-arguments
+def alias_sampling_thc_standard(  # pylint: disable=too-many-arguments
     M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, **_
 ):
+    """Decompose ``AliasSamplingTHC`` using the ``qrom_comparator_swap`` strategy."""
     n = len(mu_wires)
     n_d = _num_address_wires(M, N)
     work_wires = list(work_wires)
@@ -321,4 +322,4 @@ def _alias_sampling_thc_standard(  # pylint: disable=too-many-arguments
     _symmetrize(mu_wires, nu_wires, symmetrize_flag, edge_flag, sym_cswap_work)
 
 
-add_decomps(AliasSamplingTHC, _alias_sampling_thc_standard)
+add_decomps(AliasSamplingTHC, alias_sampling_thc_standard)

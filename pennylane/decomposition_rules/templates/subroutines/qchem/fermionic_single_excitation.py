@@ -32,9 +32,10 @@ def _fermionic_single_excitation_standard_resources(num_wires):
 
 
 @register_resources(_fermionic_single_excitation_standard_resources, name="jordan_wigner_rotations")
-def _fermionic_single_excitation_standard(weight, wires, **_):
+def fermionic_single_excitation_standard(weight, wires, **_):
     # pylint: disable=no-value-for-parameter
     # Interpret first and last wire as r and p
+    """Decompose ``FermionicSingleExcitation`` using the ``jordan_wigner_rotations`` strategy."""
     r = wires[0]
     p = wires[-1]
 
@@ -91,4 +92,4 @@ def _fermionic_single_excitation_standard(weight, wires, **_):
     RX(np.pi / 2, wires=p)
 
 
-add_decomps(FermionicSingleExcitation, _fermionic_single_excitation_standard)
+add_decomps(FermionicSingleExcitation, fermionic_single_excitation_standard)

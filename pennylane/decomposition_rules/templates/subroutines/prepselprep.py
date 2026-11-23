@@ -17,11 +17,7 @@
 
 from pennylane import math
 from pennylane.core.operator import abstractify
-from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import GlobalPhase, StatePrep, change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -53,7 +49,8 @@ def _prepselprep_standard_resources(op_reps, num_control):
 
 
 @register_resources(_prepselprep_standard_resources, name="state_prep_select")
-def _prepselprep_standard(*_, wires, lcu, control, target_wires):  # pylint: disable=unused-argument
+def prepselprep_standard(*_, wires, lcu, control, target_wires):  # pylint: disable=unused-argument
+    """Decompose ``PrepSelPrep`` using the ``state_prep_select`` strategy."""
     coeffs, ops, phases = _get_new_terms(lcu)
     sqrt_coeffs = math.sqrt(coeffs)
     change_op_basis(
@@ -62,4 +59,4 @@ def _prepselprep_standard(*_, wires, lcu, control, target_wires):  # pylint: dis
     )
 
 
-add_decomps(PrepSelPrep, _prepselprep_standard)
+add_decomps(PrepSelPrep, prepselprep_standard)

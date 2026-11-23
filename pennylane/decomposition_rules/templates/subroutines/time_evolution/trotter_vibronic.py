@@ -238,7 +238,7 @@ def _trotter_vibronic_standard_work_wires(  # pylint: disable=too-many-arguments
     work_wires=_trotter_vibronic_standard_work_wires,
     name="vibronic_trotter_steps",
 )
-def _trotter_vibronic_standard(  # pylint: disable=too-many-arguments
+def trotter_vibronic_standard(  # pylint: disable=too-many-arguments
     evolution_time,
     num_trotter_steps,
     hamiltonian,
@@ -251,6 +251,7 @@ def _trotter_vibronic_standard(  # pylint: disable=too-many-arguments
     aqft_order,
     branch_probs,
 ):
+    """Decompose ``TrotterVibronic`` using the ``vibronic_trotter_steps`` strategy."""
     n_states = hamiltonian.num_states
     n_modes = hamiltonian.num_modes
     n_elec = len(electronic_wires)
@@ -313,7 +314,7 @@ def _trotter_vibronic_standard(  # pylint: disable=too-many-arguments
         _run(coefficients, cache, work)
 
 
-add_decomps(TrotterVibronic, _trotter_vibronic_standard)
+add_decomps(TrotterVibronic, trotter_vibronic_standard)
 
 
 def _diagonalize_probs(num_fragments, n):
@@ -479,10 +480,7 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
 
     if term == "bilinear":
         k, ell = mode_ids
-        mode_mult_wires = {
-            "output_wires": "cache",
-            "work_wires": "work",
-        }
+        mode_mult_wires = {"output_wires": "cache", "work_wires": "work"}
         mode_mult_wires = {new: registers[old] for new, old in mode_mult_wires.items()}
         mode_mult_wires["x_wires"] = mode_registers[k]
         mode_mult_wires["y_wires"] = mode_registers[ell]
@@ -506,11 +504,7 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
     if term == "linear":
         (k,) = mode_ids
         # The signed register for _half_signed_out_multiplier must be the _second_ input
-        reg = {
-            "x_wires": "coefficients",
-            "output_wires": "phase_gradient",
-            "work_wires": "work",
-        }
+        reg = {"x_wires": "coefficients", "output_wires": "phase_gradient", "work_wires": "work"}
         mult_wires = {new: registers[old] for new, old in reg.items()}
         mult_wires["y_wires"] = mode_registers[k]
         return mult_wires

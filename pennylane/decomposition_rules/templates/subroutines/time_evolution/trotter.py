@@ -46,7 +46,8 @@ def _trotter_product_standard_resources(n, order, ops):
 
 
 @register_resources(_trotter_product_standard_resources, name="suzuki_trotter")
-def _trotter_product_standard(*args, **kwargs):
+def trotter_product_standard(*args, **kwargs):
+    """Decompose ``TrotterProduct`` using the ``suzuki_trotter`` strategy."""
     time = args[-1]
     n = kwargs["n"]
     order = kwargs["order"]
@@ -76,4 +77,4 @@ def _trotter_product_standard(*args, **kwargs):
         _recursive(time / n, order, ops)
 
 
-add_decomps(TrotterProduct, _trotter_product_standard)
+add_decomps(TrotterProduct, trotter_product_standard)

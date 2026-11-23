@@ -65,10 +65,10 @@ def _amplitude_amplification_standard_resources(fixed_point, O, iters, num_refle
 
 
 @register_resources(_amplitude_amplification_standard_resources, name="reflection_iterations")
-def _amplitude_amplification_standard(
+def amplitude_amplification_standard(
     *_, U, O, iters, fixed_point, work_wire, p_min, reflection_wires, **__
 ):
-
+    """Decompose ``AmplitudeAmplification`` using the ``reflection_iterations`` strategy."""
     delta = np.sqrt(1 - p_min)
     gamma = np.cos(np.arccos(1 / delta, dtype=np.complex128) / iters, dtype=np.complex128) ** -1
 
@@ -105,4 +105,4 @@ def _amplitude_amplification_standard(
         iter_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(AmplitudeAmplification, _amplitude_amplification_standard)
+add_decomps(AmplitudeAmplification, amplitude_amplification_standard)

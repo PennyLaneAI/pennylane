@@ -50,13 +50,14 @@ def _controlled_change_op_basis_standard_resources(  # pylint: disable=unused-ar
 
 
 @register_resources(_controlled_change_op_basis_standard_resources, name="control_target")
-def _controlled_change_op_basis_standard(
+def controlled_change_op_basis_standard(
     base,
     control_wires,
     control_values,
     work_wires,
     work_wire_type,
 ):
+    """Decompose ``C(ChangeOpBasis2)`` using the ``control_target`` strategy."""
     apply(base.compute_op)
     ctrl(
         base.target_op,
@@ -79,17 +80,18 @@ def _change_op_basis_standard_resources(compute_op, target_op, uncompute_op):
 
 
 @register_resources(_change_op_basis_standard_resources, name="expand_basis_change")
-def _change_op_basis_standard(compute_op, target_op, uncompute_op):
+def change_op_basis_standard(compute_op, target_op, uncompute_op):
+    """Decompose ``ChangeOpBasis2`` using the ``expand_basis_change`` strategy."""
     apply(compute_op)
     apply(target_op)
     apply(uncompute_op)
 
 
-add_decomps(ChangeOpBasis2, _change_op_basis_standard)
+add_decomps(ChangeOpBasis2, change_op_basis_standard)
 
 add_decomps(
     "C(ChangeOpBasis2)",
-    flip_zero_control(_controlled_change_op_basis_standard, name="control_target"),
+    flip_zero_control(controlled_change_op_basis_standard, name="control_target"),
 )
 
 
@@ -109,8 +111,9 @@ def _adjoint_change_op_basis_standard_resources(base):
 
 
 @register_resources(_adjoint_change_op_basis_standard_resources, name="adjoint_target")
-def _adjoint_change_op_basis_standard(base):
+def adjoint_change_op_basis_standard(base):
+    """Decompose ``Adjoint(ChangeOpBasis2)`` using the ``adjoint_target`` strategy."""
     ChangeOpBasis2(_inverse(base.uncompute_op), adjoint(base.target_op), _inverse(base.compute_op))
 
 
-add_decomps("Adjoint(ChangeOpBasis2)", _adjoint_change_op_basis_standard)
+add_decomps("Adjoint(ChangeOpBasis2)", adjoint_change_op_basis_standard)

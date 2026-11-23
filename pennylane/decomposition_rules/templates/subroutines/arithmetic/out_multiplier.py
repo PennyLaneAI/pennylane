@@ -18,14 +18,10 @@
 from collections import defaultdict
 
 from pennylane import capture, compiler, math
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder import (
-    _semi_adder_standard,
     _semi_adder_standard_resources,
+    semi_adder_standard,
 )
 from pennylane.ops import H, MultiControlledX, X, adjoint, change_op_basis, ctrl, prod
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -98,7 +94,7 @@ def _out_multiplier_with_qft_condition(  # pylint: disable=too-many-arguments,un
 
 @register_condition(_out_multiplier_with_qft_condition)
 @register_resources(_out_multiplier_with_qft_resources, name="with_qft")
-def _out_multiplier_with_qft(  # pylint: disable=too-many-arguments
+def out_multiplier_with_qft(  # pylint: disable=too-many-arguments
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
@@ -106,7 +102,7 @@ def _out_multiplier_with_qft(  # pylint: disable=too-many-arguments
     work_wires: WiresLike,
     output_wires_zeroed: bool,
 ):
-
+    """Decompose ``OutMultiplier`` using the ``with_qft`` strategy."""
     if capture.enabled() or compiler.active():
         work_wires = math.array(work_wires, like="jax")
         output_wires = math.array(output_wires, like="jax")
@@ -192,7 +188,7 @@ def _out_multiplier_with_adder_condition(  # pylint: disable=too-many-arguments,
 
 @register_condition(_out_multiplier_with_adder_condition)
 @register_resources(_out_multiplier_with_adder_resources, name="with_adder")
-def _out_multiplier_with_adder(  # pylint: disable=too-many-arguments,unused-argument
+def out_multiplier_with_adder(  # pylint: disable=too-many-arguments,unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
@@ -326,7 +322,7 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
     or a tuple ``(c_wire, c_val)`` for a single control wire.
     """
     if len(work_wires) == 0:
-        _semi_adder_standard(x_wires, y_wires, work_wires)
+        semi_adder_standard(x_wires, y_wires, work_wires)
         return
 
     def carry_flip(wire):
@@ -336,7 +332,7 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
             c_wire, c_val = flip_control
             MultiControlledX(concatenate_wires(c_wire, [wire]), control_values=[c_val])
 
-    _semi_adder_standard(x_wires, y_wires, work_wires, carry_flip=carry_flip)
+    semi_adder_standard(x_wires, y_wires, work_wires, carry_flip=carry_flip)
 
 
 def _add_plus_one(x_wires, y_wires, work_wires):
@@ -414,7 +410,7 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
 
 @register_condition(_out_multiplier_with_caddsub_condition)
 @register_resources(_out_multiplier_with_caddsub_resources, name="with_caddsub")
-def _out_multiplier_with_caddsub(  # pylint: disable=too-many-arguments,unused-argument
+def out_multiplier_with_caddsub(  # pylint: disable=too-many-arguments,unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
@@ -551,7 +547,7 @@ def _out_multiplier_with_cache_resources(  # pylint: disable=too-many-arguments,
 
 @register_condition(_out_multiplier_with_cache_condition)
 @register_resources(_out_multiplier_with_cache_resources, name="with_cache")
-def _out_multiplier_with_cache(  # pylint: disable=too-many-arguments,unused-argument
+def out_multiplier_with_cache(  # pylint: disable=too-many-arguments,unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
@@ -596,7 +592,7 @@ def _out_multiplier_swapped_standard_resources(  # pylint: disable=too-many-argu
 @register_condition(_out_multiplier_swapped_condition)
 @register_resources(_out_multiplier_swapped_standard_resources, name="swap_factors")
 # pylint: disable-next=too-many-arguments
-def _out_multiplier_swapped_standard(
+def out_multiplier_swapped_standard(
     x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
 ):
     """Swap the factors of an ``OutMultiplier`` so that ``x_wires`` is the shorter register.
@@ -616,9 +612,9 @@ def _out_multiplier_swapped_standard(
 
 add_decomps(
     OutMultiplier,
-    _out_multiplier_with_qft,
-    _out_multiplier_with_adder,
-    _out_multiplier_with_caddsub,
-    _out_multiplier_with_cache,
-    _out_multiplier_swapped_standard,
+    out_multiplier_with_qft,
+    out_multiplier_with_adder,
+    out_multiplier_with_caddsub,
+    out_multiplier_with_cache,
+    out_multiplier_swapped_standard,
 )

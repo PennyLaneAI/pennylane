@@ -436,7 +436,7 @@ def _partial_unary_state_prep_standard_work_wires(coefficients, wires, indices, 
     exact=False,
     name="partial_unary_isometry",
 )
-def _partial_unary_state_prep_standard(coefficients, wires, indices, work_wires):
+def partial_unary_state_prep_standard(coefficients, wires, indices, work_wires):
     """Compute the decomposition of the partial unary iteration state preparation technique.
 
     Dynamically allocates any work wires still missing after the ones passed to
@@ -451,4 +451,4 @@ def _partial_unary_state_prep_standard(coefficients, wires, indices, work_wires)
         _partial_unary_state_prep_core(coefficients, wires, indices, work_wires)
 
 
-decomposition.add_decomps(PartialUnaryStatePreparation, _partial_unary_state_prep_standard)
+decomposition.add_decomps(PartialUnaryStatePreparation, partial_unary_state_prep_standard)

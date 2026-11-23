@@ -27,9 +27,9 @@ def _operator1_to_base_resources(base_class, base_params, **__):
 
 
 @register_resources(_operator1_to_base_resources, name="to_base")
-def _operator1_to_base(*params, wires, base, **__):  # pylint: disable=unused-argument
+def operator1_to_base(*params, wires, base, **__):  # pylint: disable=unused-argument
     """Decompose a symbolic operator to its base."""
     apply(base)
 
 
-self_adjoint_legacy: DecompositionRule = _operator1_to_base
+self_adjoint_legacy: DecompositionRule = operator1_to_base

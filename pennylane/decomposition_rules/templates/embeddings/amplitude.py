@@ -16,7 +16,7 @@
 """Built-in decomposition rules for templates.embeddings.amplitude."""
 
 from pennylane.decomposition import add_decomps
-from pennylane.decomposition_rules.qubit.state_preparation import _state_prep_standard
+from pennylane.decomposition_rules.qubit.state_preparation import state_prep_standard
 from pennylane.templates.embeddings.amplitude import AmplitudeEmbedding
 
-add_decomps(AmplitudeEmbedding, _state_prep_standard)
+add_decomps(AmplitudeEmbedding, state_prep_standard)

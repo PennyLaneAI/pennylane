@@ -41,7 +41,8 @@ def _qubitization_standard_resources(num_control_wires, hamiltonian):
 
 
 @register_resources(_qubitization_standard_resources, name="prep_select_reflection")
-def _qubitization_standard(*_, **kwargs):
+def qubitization_standard(*_, **kwargs):
+    """Decompose ``Qubitization`` using the ``prep_select_reflection`` strategy."""
     hamiltonian = kwargs["hamiltonian"]
     control = kwargs["control"]
 
@@ -49,4 +50,4 @@ def _qubitization_standard(*_, **kwargs):
     PrepSelPrep(hamiltonian, control=control)
 
 
-add_decomps(Qubitization, _qubitization_standard)
+add_decomps(Qubitization, qubitization_standard)

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests initialization and registration of the built-in rule package."""
 
+import importlib
 import inspect
 import subprocess
 import sys
@@ -20,8 +21,8 @@ import sys
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition.decomposition_rule import _decompositions_var
-from pennylane.decomposition_rules import _load_builtin_rules
+from pennylane.decomposition.decomposition_rule import DecompositionRule, _decompositions_var
+from pennylane.decomposition_rules import _BUILTIN_MODULES, _load_builtin_rules
 
 
 def test_builtin_rule_implementations_have_moved():
@@ -43,6 +44,20 @@ def test_builtin_rule_implementations_have_moved():
     ]
     assert any(module.startswith("pennylane.decomposition_rules.") for module in implementations)
     assert not any(module.startswith(original_packages) for module in implementations)
+
+
+def test_module_level_rule_names_are_public():
+    """Rule implementations are public while internal support functions may stay private."""
+    for module_name in _BUILTIN_MODULES:
+        module = importlib.import_module(module_name)
+        private_rules = [
+            name
+            for name, value in vars(module).items()
+            if name.startswith("_")
+            and isinstance(value, DecompositionRule)
+            and value.__module__ == module_name
+        ]
+        assert not private_rules, (module_name, private_rules)
 
 
 def test_loading_preserves_custom_registrations_and_exclusions():

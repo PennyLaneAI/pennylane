@@ -367,13 +367,13 @@ class TestDecomposition:
 
     def test_multix_decomposition_unrolls_for_dynamic_wire(self):
         """``DynamicWire`` handles cannot be stacked for ``for_loop`` indexing, so unroll."""
-        from pennylane.decomposition_rules import _multix_standard
+        from pennylane.decomposition_rules import multix_standard
         from pennylane.wires import DynamicWire
 
         qp.capture.disable()
         wires = [DynamicWire() for _ in range(3)]
         with qp.queuing.AnnotatedQueue() as q:
-            _multix_standard([1, 0, 1], wires)
+            multix_standard([1, 0, 1], wires)
         tape = qp.tape.QuantumScript.from_queue(q)
         assert len(tape.operations) == 2
 
@@ -524,13 +524,13 @@ class TestDecomposition:
 
     def test_controlled_multix_ladder_with_supplied_work_wires(self, mocker):
         """When enough zeroed work wires are supplied, the ladder decomp does not allocate."""
-        from pennylane.decomposition_rules import _controlled_multix_ladder_standard
+        from pennylane.decomposition_rules import controlled_multix_ladder_standard
 
         fanout = mocker.patch(
             "pennylane.decomposition_rules.templates.subroutines.multix._multix_ladder_fanout"
         )
         base = qp.MultiX([1, 0, 1], wires=[3, 4, 5])
-        _controlled_multix_ladder_standard(
+        controlled_multix_ladder_standard(
             base=base,
             control_wires=[0, 1, 2],
             work_wires=[6, 7],

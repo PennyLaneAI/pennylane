@@ -37,7 +37,8 @@ def _qft_standard_resources(wires: AbstractWires):
 
 
 @register_resources(_qft_standard_resources, name="controlled_phase_shifts")
-def _qft_standard(wires: WiresLike):
+def qft_standard(wires: WiresLike):
+    """Decompose ``QFT`` using the ``controlled_phase_shifts`` strategy."""
     num_wires = len(wires)
     shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
     if compiler.active() or capture.enabled():
@@ -66,4 +67,4 @@ def _qft_standard(wires: WiresLike):
     swaps()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(QFT, _qft_standard)
+add_decomps(QFT, qft_standard)

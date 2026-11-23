@@ -37,7 +37,8 @@ def _gate_fabric_standard_resources(n_layers, num_wires, len_wire_pattern, inclu
 
 
 @register_resources(_gate_fabric_standard_resources, name="excitation_orbital_layers")
-def _gate_fabric_standard(weights, wires, init_state, include_pi):
+def gate_fabric_standard(weights, wires, init_state, include_pi):
+    """Decompose ``GateFabric`` using the ``excitation_orbital_layers`` strategy."""
     if isinstance(wires, Wires):
         wires = wires.labels
 
@@ -80,4 +81,4 @@ def _gate_fabric_standard(weights, wires, init_state, include_pi):
     layers_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(GateFabric, _gate_fabric_standard)
+add_decomps(GateFabric, gate_fabric_standard)

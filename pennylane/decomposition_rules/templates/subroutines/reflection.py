@@ -30,11 +30,7 @@ def _reflection_standard_resources(base_rep, num_wires, num_reflection_wires=Non
 
     num_wires = num_reflection_wires if num_reflection_wires is not None else num_wires
 
-    resources = {
-        ops.GlobalPhase: 1,
-        _adjoint_abstract(base_rep): 1,
-        ops.PauliX: 2,
-    }
+    resources = {ops.GlobalPhase: 1, _adjoint_abstract(base_rep): 1, ops.PauliX: 2}
 
     if num_wires > 1:
         resources[
@@ -53,7 +49,8 @@ def _reflection_standard_resources(base_rep, num_wires, num_reflection_wires=Non
 
 
 @register_resources(_reflection_standard_resources, name="prepare_phase_unprepare")
-def _reflection_standard(*parameters, wires=None, **hyperparameters):
+def reflection_standard(*parameters, wires=None, **hyperparameters):
+    """Decompose ``Reflection`` using the ``prepare_phase_unprepare`` strategy."""
     alpha = parameters[0]
     U = hyperparameters["base"]
     reflection_wires = hyperparameters["reflection_wires"]
@@ -82,4 +79,4 @@ def _reflection_standard(*parameters, wires=None, **hyperparameters):
     apply(U)
 
 
-add_decomps(Reflection, _reflection_standard)
+add_decomps(Reflection, reflection_standard)

@@ -18,10 +18,7 @@
 import numpy as np
 
 from pennylane import ops
-from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.subcircuit import subcircuit
 from pennylane.templates.subroutines.arithmetic.phase_adder import PhaseAdder
@@ -88,8 +85,8 @@ def _phase_adder_standard_resources(k, x_wires, mod, work_wire) -> dict:
 
 
 @register_resources(_phase_adder_standard_resources, name="fourier_phase_shifts")
-def _phase_adder_standard(k, x_wires: WiresLike, mod, work_wire):
-
+def phase_adder_standard(k, x_wires: WiresLike, mod, work_wire):
+    """Decompose ``PhaseAdder`` using the ``fourier_phase_shifts`` strategy."""
     n_wires = len(x_wires)
 
     _add_k_fourier(k, x_wires)
@@ -113,4 +110,4 @@ def _phase_adder_standard(k, x_wires: WiresLike, mod, work_wire):
     )
 
 
-add_decomps(PhaseAdder, _phase_adder_standard)
+add_decomps(PhaseAdder, phase_adder_standard)

@@ -27,8 +27,8 @@ from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition_rules import (
     _partial_select,
-    _select_multi_control_work_wire,
-    _select_unary,
+    select_multi_control_work_wire,
+    select_unary,
 )
 from pennylane.typing import AbstractWires, Bool, Wire
 from tests.decomposition.conftest import to_resources
@@ -712,7 +712,7 @@ class TestUnaryIterator:
         """Test that the unary iteration decomposition is registered correctly with
         pml.Select."""
         decomp = qp.list_decomps(qp.Select)[1]
-        assert decomp is _select_unary
+        assert decomp is select_unary
 
     @pytest.mark.parametrize(
         "c, K, expected_ops, expected_ops_partial",
@@ -859,7 +859,7 @@ class TestUnaryIterator:
         ][:K]
         control = [19 + i for i in range(c)]
         work_wires = [22 + i for i in range(c - 1)]
-        decomp = _select_unary(ops=ops, control=control, work_wires=work_wires, partial=partial)
+        decomp = select_unary(ops=ops, control=control, work_wires=work_wires, partial=partial)
 
         if partial and expected_ops_partial is not None:
             expected = expected_ops_partial
@@ -877,7 +877,7 @@ class TestUnaryIterator:
         work = list(range(num_controls, 2 * num_controls - 1))
 
         with qp.queuing.AnnotatedQueue() as q:
-            _select_unary(ops=[], control=control, work_wires=work, partial=partial)
+            select_unary(ops=[], control=control, work_wires=work, partial=partial)
 
         assert len(q) == 0
 
@@ -900,7 +900,7 @@ class TestUnaryIterator:
         @qp.qnode(qp.device("lightning.qubit"))
         def node():
             qp.StatePrep(state, wires=state_prep_wires)
-            _select_unary(ops=ops, control=control, work_wires=work, partial=partial)
+            select_unary(ops=ops, control=control, work_wires=work, partial=partial)
             for i, op in enumerate(ops):
                 cvals = (i >> np.arange(4, -1, -1)) & 1
                 qp.ctrl(qp.adjoint(op), control=control, control_values=cvals)
@@ -937,7 +937,7 @@ class TestUnaryIterator:
         def circuit():
             for w, angle in zip(control, angles, strict=True):
                 qp.RX(angle, w)
-            _select_unary(ops=ops, control=control, work_wires=work, partial=partial)
+            select_unary(ops=ops, control=control, work_wires=work, partial=partial)
             return qp.probs(target)
 
         probs = circuit()
@@ -957,7 +957,7 @@ class TestUnaryIterator:
         ]
 
         with pytest.raises(ValueError, match=msg_match):
-            _select_unary(
+            select_unary(
                 ops=ops, control=wires["control"], work_wires=wires["work"], partial=partial
             )
 
@@ -970,12 +970,12 @@ class TestUnaryIterator:
         kwargs = {"control": [1, 2, 3], "work_wires": [4, 5], "partial": partial}
 
         with pytest.raises(ValueError, match="At least 4 control wires are required"):
-            _select_unary(ops=too_many_ops, **kwargs)
+            select_unary(ops=too_many_ops, **kwargs)
 
         # Test that no error is raised for exactly right number of ops for three controls
-        _ = _select_unary(ops=exactly_right_ops, **kwargs)
+        _ = select_unary(ops=exactly_right_ops, **kwargs)
         # Test that no error is raised for fewer than exactly right number of ops
-        _ = _select_unary(ops=fewer_ops, **kwargs)
+        _ = select_unary(ops=fewer_ops, **kwargs)
 
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
     def test_comparison_with_select(self, num_controls, num_ops, seed, partial):
@@ -999,7 +999,7 @@ class TestUnaryIterator:
         def circuit():
             for w, angle in zip(control, angles, strict=True):
                 qp.RX(angle, w)
-            _select_unary(ops=ops, control=control, work_wires=work, partial=partial)
+            select_unary(ops=ops, control=control, work_wires=work, partial=partial)
             qp.Select(adj_ops, control=control, work_wires=None, partial=partial)
             return qp.probs(target)
 
@@ -1045,7 +1045,7 @@ class TestSelectWithWorkWire:
         work = [3 * num_controls]
 
         with qp.queuing.AnnotatedQueue() as q:
-            _select_multi_control_work_wire(
+            select_multi_control_work_wire(
                 ops=[], control=control, work_wires=work, partial=partial
             )
 
@@ -1076,7 +1076,7 @@ class TestSelectWithWorkWire:
         def circuit():
             for w, angle in zip(control, angles, strict=True):
                 qp.RX(angle, w)
-            _select_multi_control_work_wire(
+            select_multi_control_work_wire(
                 ops=ops, control=control, work_wires=work, partial=partial
             )
             return qp.probs(target)
@@ -1106,7 +1106,7 @@ class TestSelectWithWorkWire:
         def circuit():
             for w, angle in zip(control, angles, strict=True):
                 qp.RX(angle, w)
-            _select_multi_control_work_wire(
+            select_multi_control_work_wire(
                 ops=ops, control=control, work_wires=work, partial=partial
             )
             qp.Select(adj_ops, control=control, work_wires=None, partial=partial)

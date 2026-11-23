@@ -21,7 +21,7 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
-from pennylane.decomposition_rules import _out_square_with_adder_zeroed, _out_square_with_caddsub
+from pennylane.decomposition_rules import out_square_with_adder_zeroed, out_square_with_caddsub
 from pennylane.ops.op_math import Adjoint
 from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
 from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
@@ -354,7 +354,7 @@ class TestOutSquare:
             [7, 8, 9, 10],
         )
         with qp.queuing.AnnotatedQueue() as q:
-            _out_square_with_adder_zeroed(x_wires, output_wires, work_wires)
+            out_square_with_adder_zeroed(x_wires, output_wires, work_wires)
 
         expected = [
             # controlled copy
@@ -381,7 +381,7 @@ class TestOutSquare:
         x_wires, output_wires, work_wires = [0, 1], [2, 3, 4], [5, 6, 7, 8]
 
         with qp.queuing.AnnotatedQueue() as q:
-            _out_square_with_caddsub(x_wires, output_wires, work_wires, output_wires_zeroed=True)
+            out_square_with_caddsub(x_wires, output_wires, work_wires, output_wires_zeroed=True)
 
         expected = [
             # Controlled add-subtract block (contains decomposed adder)
@@ -418,7 +418,7 @@ class TestOutSquare:
         x_wires, output_wires, work_wires = [0, 1, 2], [3, 4, 5], [6, 7]
 
         with qp.queuing.AnnotatedQueue() as q:
-            _out_square_with_caddsub(x_wires, output_wires, work_wires, output_wires_zeroed=False)
+            out_square_with_caddsub(x_wires, output_wires, work_wires, output_wires_zeroed=False)
 
         expected = [
             # Controlled add-subtract block (contains decomposed adder)

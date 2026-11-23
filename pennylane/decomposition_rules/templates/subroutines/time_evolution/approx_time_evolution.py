@@ -40,12 +40,13 @@ def _approx_time_evolution_standard_resources(words: tuple[PauliWord], n: int):
 
 
 @register_resources(_approx_time_evolution_standard_resources, name="pauli_rotations")
-def _approx_time_evolution_standard(  # pylint: disable=unused-argument
+def approx_time_evolution_standard(  # pylint: disable=unused-argument
     *coeffs_and_time: list,
     wires: WiresLike,
     hamiltonian: Hamiltonian,
     n: int,
 ):
+    """Decompose ``ApproxTimeEvolution`` using the ``pauli_rotations`` strategy."""
     time = coeffs_and_time[-1]
 
     @for_loop(n)
@@ -65,4 +66,4 @@ def _approx_time_evolution_standard(  # pylint: disable=unused-argument
     rounds_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(ApproxTimeEvolution, _approx_time_evolution_standard)
+add_decomps(ApproxTimeEvolution, approx_time_evolution_standard)

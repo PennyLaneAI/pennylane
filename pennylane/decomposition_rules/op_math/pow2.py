@@ -37,7 +37,7 @@ from pennylane.ops.op_math.pow2 import Pow2, _pow_abstract
 
 @register_condition(lambda base, z, **_: is_integer(z) and z >= 0)
 @register_resources(lambda base, z: {abstractify(base): z}, name="repeat_base")
-def _pow_repeat_base(base, z):
+def pow_repeat_base(base, z):
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
 
@@ -51,7 +51,7 @@ def _pow_repeat_base(base, z):
 @register_resources(
     lambda base, z: {ops.pow(abstractify(base.base), z * base.z): 1}, name="merge_powers"
 )
-def _pow_merge_powers(base, z):
+def pow_merge_powers(base, z):
     """Decompose nested powers by combining them."""
     ops.pow(base.base, z * base.z)
 
@@ -62,7 +62,7 @@ def _pow_flip_adjoint_resources(base, z):
 
 
 @register_resources(_pow_flip_adjoint_resources, name="flip_adjoint")
-def _pow_flip_adjoint(base, z, **__):
+def pow_flip_adjoint(base, z, **__):
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
     adjoint(ops.pow(base.base, z))
@@ -102,7 +102,7 @@ def _pow_scale_angle_resources(base, z):  # pylint: disable=unused-argument
 
 
 @register_resources(_pow_scale_angle_resources, name="scale_angle")
-def _pow_scale_angle(base, z):
+def pow_scale_angle(base, z):
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
     # A rotation should only have 1 dynamic parameter
     assert len(base.dynamic_argnames) == 1
@@ -120,13 +120,13 @@ def _list_pow_decomps(op: Pow2) -> DecompCollection:
 
     # special case of merging nested powers.
     if isinstance(abs_op.base, Pow2):
-        return DecompCollection([_pow_merge_powers])
+        return DecompCollection([pow_merge_powers])
 
     # special case that the base is an Adjoint.
     if isinstance(abs_op.base, (Adjoint, Adjoint2)):
-        return DecompCollection([_pow_flip_adjoint])
+        return DecompCollection([pow_flip_adjoint])
 
     # Custom decomposition rules registered specifically to the pow operator
     custom_rules = _get_registered_decomps(to_name(abs_op))
 
-    return custom_rules + [_pow_repeat_base] if is_integer(op.z) else custom_rules
+    return custom_rules + [pow_repeat_base] if is_integer(op.z) else custom_rules

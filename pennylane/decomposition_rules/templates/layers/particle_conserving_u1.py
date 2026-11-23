@@ -75,7 +75,8 @@ def _decompose_ua_qfunc(phi: float, wires: WiresLike):
 
 
 @register_resources(_particle_conserving_u1_standard_resources, name="to_crot_cz")
-def _particle_conserving_u1_standard(weights: list, wires: WiresLike, init_state: tuple[int]):
+def particle_conserving_u1_standard(weights: list, wires: WiresLike, init_state: tuple[int]):
+    """Decompose ``ParticleConservingU1`` using the ``to_crot_cz`` strategy."""
     nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
     nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
     n_layers = math.shape(weights)[0]
@@ -119,4 +120,4 @@ def _particle_conserving_u1_standard(weights: list, wires: WiresLike, init_state
     layers_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(ParticleConservingU1, _particle_conserving_u1_standard)
+add_decomps(ParticleConservingU1, particle_conserving_u1_standard)

@@ -55,7 +55,8 @@ def _adjoint_change_op_basis_standard_resources(base_params, **_):
 
 
 @register_resources(_adjoint_change_op_basis_standard_resources, name="adjoint_target")
-def _adjoint_change_op_basis_standard(*_, base, **__):
+def adjoint_change_op_basis_standard(*_, base, **__):
+    """Decompose ``Adjoint(ChangeOpBasis)`` using the ``adjoint_target`` strategy."""
     for op in base.operands:
         if isinstance(op, (Adjoint, Adjoint2)):
             apply(op.base)
@@ -63,7 +64,7 @@ def _adjoint_change_op_basis_standard(*_, base, **__):
             adjoint(apply(op))
 
 
-add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_standard)
+add_decomps("Adjoint(ChangeOpBasis)", adjoint_change_op_basis_standard)
 
 
 # pylint: disable-next=too-many-arguments
@@ -93,7 +94,7 @@ def _controlled_change_op_basis_standard_resources(
 
 
 @register_resources(_controlled_change_op_basis_standard_resources, name="control_target")
-def _controlled_change_op_basis_standard(
+def controlled_change_op_basis_standard(
     *_,
     control_wires,
     control_values,
@@ -102,6 +103,7 @@ def _controlled_change_op_basis_standard(
     base,
     **__,
 ):
+    """Decompose ``C(ChangeOpBasis)`` using the ``control_target`` strategy."""
     apply(base.operands[2])
     ctrl(
         apply(base.operands[1]),
@@ -114,11 +116,12 @@ def _controlled_change_op_basis_standard(
 
 
 @register_resources(_change_op_basis_standard_resources, name="expand_basis_change")
-def _change_op_basis_standard(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
+def change_op_basis_standard(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
+    """Decompose ``ChangeOpBasis`` using the ``expand_basis_change`` strategy."""
     for op in operands[::-1]:
         apply(op)
 
 
-add_decomps(ChangeOpBasis, _change_op_basis_standard)
+add_decomps(ChangeOpBasis, change_op_basis_standard)
 
-add_decomps("C(ChangeOpBasis)", _controlled_change_op_basis_standard)
+add_decomps("C(ChangeOpBasis)", controlled_change_op_basis_standard)

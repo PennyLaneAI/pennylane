@@ -20,11 +20,7 @@ from collections import Counter
 from pennylane import capture, compiler, control_flow, math, ops, templates
 from pennylane.core.apply import apply
 from pennylane.core.operator import abstractify
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition_rules.op_math.controlled2 import flip_zero_control
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Wire
@@ -36,7 +32,8 @@ def _prod2_standard_resources(operands, _init_pauli_rep=None):
 
 
 @register_resources(_prod2_standard_resources, name="expand_factors")
-def _prod2_standard(operands, _init_pauli_rep=None):
+def prod2_standard(operands, _init_pauli_rep=None):
+    """Decompose ``Prod2`` using the ``expand_factors`` strategy."""
     for op in reversed(operands):
         apply(op)
 
@@ -57,10 +54,7 @@ def _controlled_prod2_with_work_wires_resources(
     return dict(resources)
 
 
-def _multi_temporary_and_all_ones(
-    control,
-    work_wires,
-):
+def _multi_temporary_and_all_ones(control, work_wires):
     """Controlled decomposition using a ``TemporaryAND`` ladder.
 
     Assumes all control values are 1 and returns the last ancilla as the
@@ -99,7 +93,7 @@ def _multi_temporary_and_all_ones(
 )
 @register_resources(_controlled_prod2_with_work_wires_resources, name="with_work_wires")
 # pylint: disable-next=unused-argument
-def _controlled_prod2_with_work_wires(base, control_wires, control_values, work_wires, **_):
+def controlled_prod2_with_work_wires(base, control_wires, control_values, work_wires, **_):
     """Decomposition of ``C(Prod2)`` with at least ``num_control_wires - 1`` zeroed work wires.
 
     ``Operator2`` port of :func:`~._controlled_product_with_work_wires`. Assumes all
@@ -131,7 +125,7 @@ def _controlled_prod2_with_one_work_wire_resources(base, control_wires, work_wir
 )
 @register_resources(_controlled_prod2_with_one_work_wire_resources, name="with_one_work_wire")
 # pylint: disable-next=unused-argument
-def _controlled_prod2_with_one_work_wire(base, control_wires, control_values, work_wires, **_):
+def controlled_prod2_with_one_work_wire(base, control_wires, control_values, work_wires, **_):
     """Decomposition of ``C(Prod2)`` with a single zeroed work wire.
 
     ``Operator2`` port of :func:`~._controlled_product_with_one_work_wire`. Assumes all
@@ -143,10 +137,10 @@ def _controlled_prod2_with_one_work_wire(base, control_wires, control_values, wo
     ops.MultiControlledX([*control_wires, work_wires[0]])
 
 
-add_decomps(Prod2, _prod2_standard)
+add_decomps(Prod2, prod2_standard)
 
 add_decomps(
     "C(Prod2)",
-    flip_zero_control(_controlled_prod2_with_work_wires, name="with_work_wires"),
-    flip_zero_control(_controlled_prod2_with_one_work_wire, name="with_one_work_wire"),
+    flip_zero_control(controlled_prod2_with_work_wires, name="with_work_wires"),
+    flip_zero_control(controlled_prod2_with_one_work_wire, name="with_one_work_wire"),
 )

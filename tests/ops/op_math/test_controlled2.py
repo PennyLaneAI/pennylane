@@ -13,8 +13,6 @@
 
 """Tests for the Controlled2 class."""
 
-# pylint: disable=too-few-public-methods
-
 import copy
 import pickle
 from typing import override
@@ -25,7 +23,7 @@ import pytest
 import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
-from pennylane.decomposition_rules import _make_controlled_decomp
+from pennylane.decomposition_rules.op_math.controlled2 import make_controlled_decomp
 from pennylane.operation import abstractify
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
@@ -40,7 +38,7 @@ class CustomBase(Operator2):
 
     arg_specs = {"wires": Wire[1]}
 
-    def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+    def __init__(self, wires):
         super().__init__(wires)
 
     @override
@@ -171,7 +169,6 @@ class TestControlled2:
 
             arg_specs = {"phi": Float, "theta": Float, "omega": Float, "wires": Wire[1]}
 
-            # pylint: disable-next=useless-parent-delegation
             def __init__(self, phi, theta, omega, wires):
                 super().__init__(phi, theta, omega, wires)
 
@@ -659,7 +656,7 @@ class TestControlledOp2:
 
 @pytest.mark.catalyst
 def test_make_controlled_decomp_closes_over_compilable_args():
-    """Regression test for ``_make_controlled_decomp``: ``static_argnames``/``compilable_argnames``
+    """Regression test for ``make_controlled_decomp``: ``static_argnames``/``compilable_argnames``
     must be closed over (via ``functools.partial``) rather than forwarded as keyword arguments
     to ``qp.ctrl(...)``. Catalyst's controlled-callable tracing traces *all* keyword arguments
     passed to the wrapped callable, so forwarding a compilable arg would turn it into a tracer
@@ -674,7 +671,7 @@ def test_make_controlled_decomp_closes_over_compilable_args():
             qp.Y(wires[0])
 
     op = CompilableOp(True, wires=[0])
-    rule = _make_controlled_decomp(_some_decomp)
+    rule = make_controlled_decomp(_some_decomp)
 
     @qp.qjit(capture=False)
     @qp.qnode(qp.device("lightning.qubit", wires=2))

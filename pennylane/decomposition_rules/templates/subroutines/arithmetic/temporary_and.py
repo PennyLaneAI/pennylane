@@ -18,10 +18,7 @@
 from collections.abc import Sequence
 
 from pennylane import math, ops
-from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.subcircuit import subcircuit
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
@@ -58,7 +55,8 @@ def _temporary_and_to_clifford_t_resources(*_, **__):
 
 
 @register_resources(_temporary_and_to_clifford_t_resources, exact=False, name="to_clifford_t")
-def _temporary_and_to_clifford_t(wires: WiresLike, control_values: Sequence[bool]):
+def temporary_and_to_clifford_t(wires: WiresLike, control_values: Sequence[bool]):
+    """Decompose ``TemporaryAND`` using the ``to_clifford_t`` strategy."""
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
 
@@ -81,7 +79,8 @@ def _toffoli_with_cvals(wires, cvals):
 
 
 @register_resources({ops.Toffoli: 1, ops.X: _number_xs}, exact=False, name="to_toffoli")
-def _temporary_and_to_toffoli(wires: WiresLike, control_values: Sequence[bool]):
+def temporary_and_to_toffoli(wires: WiresLike, control_values: Sequence[bool]):
+    """Decompose ``TemporaryAND`` using the ``to_toffoli`` strategy."""
     _toffoli_with_cvals(wires, control_values)
 
 
@@ -95,7 +94,8 @@ def _temporary_and_to_ppr_resources(*_, **__):
 
 
 @register_resources(_temporary_and_to_ppr_resources, exact=False, name="to_ppr")
-def _temporary_and_to_ppr(wires: WiresLike, control_values: Sequence[bool]):
+def temporary_and_to_ppr(wires: WiresLike, control_values: Sequence[bool]):
+    """Decompose ``TemporaryAND`` using the ``to_ppr`` strategy."""
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
     ops.PPR_8(1, "ZZY", wires)
@@ -107,21 +107,16 @@ def _temporary_and_to_ppr(wires: WiresLike, control_values: Sequence[bool]):
 
 
 add_decomps(
-    TemporaryAND, _temporary_and_to_clifford_t, _temporary_and_to_toffoli, _temporary_and_to_ppr
+    TemporaryAND, temporary_and_to_clifford_t, temporary_and_to_toffoli, temporary_and_to_ppr
 )
 
 
 def _adjoint_temporary_and_measurement_resources(*_, **__):
-    return {
-        ops.Hadamard: 1,
-        ops.MidMeasure(Wire[1], reset=True): 1,
-        ops.CZ: 1,
-        ops.X: _number_xs,
-    }
+    return {ops.Hadamard: 1, ops.MidMeasure(Wire[1], reset=True): 1, ops.CZ: 1, ops.X: _number_xs}
 
 
 @register_resources(_adjoint_temporary_and_measurement_resources, exact=False, name="measurement")
-def _adjoint_temporary_and_measurement(base):
+def adjoint_temporary_and_measurement(base):
     r"""The implementation of adjoint TemporaryAND by mid-circuit measurements
     as found in https://arxiv.org/abs/1805.03662."""
     cvals = base.control_values
@@ -144,9 +139,9 @@ def _adjoint_temporary_and_measurement(base):
     exact=False,
     name="to_ppm",
 )
-def _adjoint_temporary_and_to_ppm(base):
+def adjoint_temporary_and_to_ppm(base):
     r"""The implementation of adjoint TemporaryAND by Pauli product measurements + Pauli/Clifford
-    corrections, similar to _adjoint_temporary_and_measurement above from https://arxiv.org/abs/1805.03662.
+    corrections, similar to adjoint_temporary_and_measurement above from https://arxiv.org/abs/1805.03662.
     """
     cvals = base.control_values
     ops.cond(math.logical_not(cvals[0]), ops.X)(base.wires[0])
@@ -164,13 +159,14 @@ def _adjoint_temporary_and_to_ppm(base):
 
 
 @register_resources({ops.Toffoli: 1, ops.X: _number_xs}, exact=False, name="to_toffoli")
-def _adjoint_temporary_and_to_toffoli(base):
+def adjoint_temporary_and_to_toffoli(base):
+    """Decompose ``Adjoint(TemporaryAND)`` using the ``to_toffoli`` strategy."""
     _toffoli_with_cvals(base.wires, base.control_values)
 
 
 add_decomps(
     "Adjoint(TemporaryAND)",
-    _adjoint_temporary_and_to_toffoli,
-    _adjoint_temporary_and_to_ppm,
-    _adjoint_temporary_and_measurement,
+    adjoint_temporary_and_to_toffoli,
+    adjoint_temporary_and_to_ppm,
+    adjoint_temporary_and_measurement,
 )

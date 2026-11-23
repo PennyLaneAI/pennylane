@@ -24,8 +24,8 @@ from pennylane.decomposition_rules import (
     _add_plus_one,
     _caddsub_multiplication,
     _out_multiplier_with_cache_resources,
-    _out_multiplier_with_caddsub,
-    _out_multiplier_with_qft,
+    out_multiplier_with_caddsub,
+    out_multiplier_with_qft,
 )
 from pennylane.ops import adjoint
 from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier
@@ -406,7 +406,7 @@ class TestOutMultiplier:
     def test_operation_result(self, x_wires, y_wires, output_wires, mod, work_wires, seed):
         """Test the correctness of the OutMultiplier template output."""
         all_wires = (x_wires, y_wires, output_wires, work_wires)
-        _test_mult_correctness(all_wires, mod, _out_multiplier_with_qft, seed)
+        _test_mult_correctness(all_wires, mod, out_multiplier_with_qft, seed)
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "msg_match"),
@@ -543,7 +543,7 @@ class TestOutMultiplier:
         output_wires = [8, 3][:num_output_wires]
         modulus = 2**num_output_wires
         with qp.queuing.AnnotatedQueue() as queue:
-            _out_multiplier_with_qft([5], [1], output_wires, modulus, [], True)
+            out_multiplier_with_qft([5], [1], output_wires, modulus, [], True)
 
         with qp.capture.pause():
             tape = qp.tape.QuantumScript.from_queue(queue)
@@ -572,8 +572,8 @@ class TestOutMultiplier:
             output_wires_zeroed=output_wires_zeroed,
         )
 
-        assert _out_multiplier_with_qft.is_applicable(**op.arguments)
-        assert_valid_decomp_rule(op, _out_multiplier_with_qft)
+        assert out_multiplier_with_qft.is_applicable(**op.arguments)
+        assert_valid_decomp_rule(op, out_multiplier_with_qft)
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "applicable_rules"),
@@ -651,15 +651,15 @@ class TestOutMultiplier:
     def test_decomposition_caddsub_rule(  # pylint: disable=too-many-arguments
         self, x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
     ):
-        """Regression test (#10065): ``_out_multiplier_with_caddsub`` relies internally on
+        """Regression test (#10065): ``out_multiplier_with_caddsub`` relies internally on
         ``_adder_flipped_first_work_wire``, whose collect-reorder-replay strategy used to be
         capture-unsafe. Verify the rule still decomposes correctly with program capture
         enabled."""
         op = OutMultiplier(
             x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=output_wires_zeroed
         )
-        assert _out_multiplier_with_caddsub.is_applicable(**op.arguments)
-        assert_valid_decomp_rule(op, _out_multiplier_with_caddsub)
+        assert out_multiplier_with_caddsub.is_applicable(**op.arguments)
+        assert_valid_decomp_rule(op, out_multiplier_with_caddsub)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""

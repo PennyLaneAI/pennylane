@@ -19,10 +19,8 @@ from pennylane import capture, compiler, control_flow, math, ops
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition_rules.common import null_decomp
-from pennylane.decomposition_rules.op_math.adjoint2 import (
-    _adjoint_negate_angle as adjoint_rotation2,
-)
-from pennylane.decomposition_rules.op_math.pow2 import _pow_scale_angle as pow_rotation2
+from pennylane.decomposition_rules.op_math.adjoint2 import adjoint_negate_angle
+from pennylane.decomposition_rules.op_math.pow2 import pow_scale_angle
 from pennylane.ops.identity import Identity
 from pennylane.typing import Wire
 
@@ -70,13 +68,7 @@ def _controlled_g_phase_standard_resources(
 @register_resources(
     _controlled_g_phase_standard_resources, exact=False, name="to_controlled_phaseshift"
 )
-def _controlled_g_phase_standard(
-    base,
-    control_wires,
-    control_values,
-    work_wires,
-    work_wire_type,
-):
+def controlled_g_phase_standard(base, control_wires, control_values, work_wires, work_wire_type):
     """The decomposition rule for a controlled global phase."""
 
     if compiler.active() or capture.enabled():
@@ -109,8 +101,8 @@ def _controlled_g_phase_standard(
     _x_flips()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps("Adjoint(GlobalPhase)", adjoint_rotation2)
+add_decomps("Adjoint(GlobalPhase)", adjoint_negate_angle)
 
-add_decomps("Pow(GlobalPhase)", pow_rotation2)
+add_decomps("Pow(GlobalPhase)", pow_scale_angle)
 
-add_decomps("C(GlobalPhase)", _controlled_g_phase_standard)
+add_decomps("C(GlobalPhase)", controlled_g_phase_standard)

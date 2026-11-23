@@ -34,8 +34,8 @@ def _strongly_entangling_standard_resources(imprimitive, n_wires, n_layers):
 
 
 @register_resources(_strongly_entangling_standard_resources, name="rotations_entangler_layers")
-def _strongly_entangling_standard(weights, wires, ranges, imprimitive):
-
+def strongly_entangling_standard(weights, wires, ranges, imprimitive):
+    """Decompose ``StronglyEntanglingLayers`` using the ``rotations_entangler_layers`` strategy."""
     if capture.enabled():
         wires = math.array(wires, like="jax")
         ranges = math.array(ranges, like="jax")
@@ -48,12 +48,7 @@ def _strongly_entangling_standard(weights, wires, ranges, imprimitive):
     def layers(l):
         @for_loop(n_wires)
         def rot_loop(i):
-            Rot(
-                weights[..., l, i, 0],
-                weights[..., l, i, 1],
-                weights[..., l, i, 2],
-                wires=wires[i],
-            )
+            Rot(weights[..., l, i, 0], weights[..., l, i, 1], weights[..., l, i, 2], wires=wires[i])
 
         def imprim_true():
             @for_loop(n_wires)
@@ -75,4 +70,4 @@ def _strongly_entangling_standard(weights, wires, ranges, imprimitive):
     layers()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(StronglyEntanglingLayers, _strongly_entangling_standard)
+add_decomps(StronglyEntanglingLayers, strongly_entangling_standard)

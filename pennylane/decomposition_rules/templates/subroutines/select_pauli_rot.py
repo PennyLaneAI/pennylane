@@ -91,7 +91,7 @@ def _select_pauli_rot_standard_resources(angles, control_wires, target_wire, rot
 
 # Not exact resources because rotations might be skipped based on angles
 @register_resources(_select_pauli_rot_standard_resources, exact=False, name="gray_code")
-def _select_pauli_rot_standard(angles, control_wires, target_wire, rot_axis):
+def select_pauli_rot_standard(angles, control_wires, target_wire, rot_axis):
     r"""Decomposes the SelectPauliRot"""
 
     wires = Wires(control_wires) + Wires(target_wire)
@@ -116,7 +116,7 @@ def _select_pauli_rot_standard(angles, control_wires, target_wire, rot_axis):
             _apply_uniform_rotation_dagger(RZ, angles, wires[-2::-1], wires[-1])
 
 
-add_decomps(SelectPauliRot, _select_pauli_rot_standard)
+add_decomps(SelectPauliRot, select_pauli_rot_standard)
 
 
 def _select_phase_gradient_compute_resources(

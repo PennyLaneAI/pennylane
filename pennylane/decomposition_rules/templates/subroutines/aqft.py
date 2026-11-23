@@ -28,15 +28,12 @@ from pennylane.templates.subroutines.aqft import AQFT
 def _AQFT_standard_resources(order, wires):
     num_wires = len(wires)
     num_ctrl_ps = sum(min(num_wires - 1 - i, order) for i in range(num_wires))
-    return {
-        Hadamard: num_wires,
-        ControlledPhaseShift: num_ctrl_ps,
-        SWAP: num_wires // 2,
-    }
+    return {Hadamard: num_wires, ControlledPhaseShift: num_ctrl_ps, SWAP: num_wires // 2}
 
 
 @register_resources(_AQFT_standard_resources, name="truncated_controlled_phases")
-def _AQFT_standard(wires, order):
+def AQFT_standard(wires, order):
+    """Decompose ``AQFT`` using the ``truncated_controlled_phases`` strategy."""
     num_wires = len(wires)
     shifts = [2 * np.pi / (2**i) for i in range(2, num_wires + 1)]
 
@@ -72,4 +69,4 @@ def _AQFT_standard(wires, order):
     half_wire_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(AQFT, _AQFT_standard)
+add_decomps(AQFT, AQFT_standard)

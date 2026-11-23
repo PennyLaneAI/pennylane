@@ -37,7 +37,8 @@ def _arbitrary_state_preparation_standard_resources(num_wires):
 
 
 @register_resources(_arbitrary_state_preparation_standard_resources, name="pauli_rotations")
-def _arbitrary_state_preparation_standard(weights, wires, **_):
+def arbitrary_state_preparation_standard(weights, wires, **_):
+    """Decompose ``ArbitraryStatePreparation`` using the ``pauli_rotations`` strategy."""
     pauli_words = _state_preparation_pauli_words(len(wires))
 
     @for_loop(len(pauli_words))
@@ -48,4 +49,4 @@ def _arbitrary_state_preparation_standard(weights, wires, **_):
     pauli_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(ArbitraryStatePreparation, _arbitrary_state_preparation_standard)
+add_decomps(ArbitraryStatePreparation, arbitrary_state_preparation_standard)

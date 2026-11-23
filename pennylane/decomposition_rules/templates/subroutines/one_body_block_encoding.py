@@ -126,9 +126,10 @@ def _one_body_block_encoding_standard_resources(
 @register_resources(
     _one_body_block_encoding_standard_resources, name="alias_sampling_basis_rotation"
 )
-def _one_body_block_encoding_standard(
+def one_body_block_encoding_standard(
     op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires, **_
 ):
+    """Decompose ``OneBodyBlockEncoding`` using the ``alias_sampling_basis_rotation`` strategy."""
     norbs = len(op_matrix)
     absmu, n_neg, unitary_matrix = _block_encoding_data(op_matrix)
 
@@ -206,4 +207,4 @@ def _one_body_block_encoding_standard(
     GlobalPhase(np.pi)
 
 
-add_decomps(OneBodyBlockEncoding, _one_body_block_encoding_standard)
+add_decomps(OneBodyBlockEncoding, one_body_block_encoding_standard)

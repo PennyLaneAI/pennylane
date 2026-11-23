@@ -42,13 +42,14 @@ def _qubitcarry_to_cnot_toffolis_resources():
 
 
 @register_resources(_qubitcarry_to_cnot_toffolis_resources, name="to_cnot_toffolis")
-def _qubitcarry_to_cnot_toffolis(wires: WiresLike, **__):
+def qubitcarry_to_cnot_toffolis(wires: WiresLike, **__):
+    """Decompose ``QubitCarry`` using the ``to_cnot_toffolis`` strategy."""
     ops.Toffoli(wires=wires[1:])
     ops.CNOT(wires=[wires[1], wires[2]])
     ops.Toffoli(wires=[wires[0], wires[2], wires[3]])
 
 
-add_decomps(QubitCarry, _qubitcarry_to_cnot_toffolis)
+add_decomps(QubitCarry, qubitcarry_to_cnot_toffolis)
 
 
 def _qubitsum_to_cnots_resources():
@@ -56,12 +57,13 @@ def _qubitsum_to_cnots_resources():
 
 
 @register_resources(_qubitsum_to_cnots_resources, name="to_cnots")
-def _qubitsum_to_cnots(wires: WiresLike, **__):
+def qubitsum_to_cnots(wires: WiresLike, **__):
+    """Decompose ``QubitSum`` using the ``to_cnots`` strategy."""
     ops.CNOT(wires=[wires[1], wires[2]])
     ops.CNOT(wires=[wires[0], wires[2]])
 
 
-add_decomps(QubitSum, _qubitsum_to_cnots)
+add_decomps(QubitSum, qubitsum_to_cnots)
 
 add_decomps("Adjoint(QubitSum)", self_adjoint_legacy)
 
@@ -102,7 +104,7 @@ def _integer_comparator_less_than_resources(num_wires, value, num_work_wires, **
 
 @register_condition(lambda geq, **_: not geq)
 @register_resources(_integer_comparator_less_than_resources, name="less_than")
-def _integer_comparator_less_than(wires, value, work_wires, **_):
+def integer_comparator_less_than(wires, value, work_wires, **_):
     """Decompose the ``IntegerComparator`` for when the flipping condition is ``n < value``.
 
     This decomposition uses the minimum number of ``MultiControlledX`` gates. For a given value,
@@ -191,7 +193,7 @@ def _integer_comparator_greater_equal_resources(num_wires, value, num_work_wires
 
 @register_condition(lambda geq, **_: geq)
 @register_resources(_integer_comparator_greater_equal_resources, name="greater_equal")
-def _integer_comparator_greater_equal(wires, value, work_wires, **_):
+def integer_comparator_greater_equal(wires, value, work_wires, **_):
     """Decompose the ``IntegerComparator`` for when the flipping condition is ``n >= value``.
 
     This decomposition rule mirrors the implementation for the ``n < value`` case.
@@ -215,7 +217,7 @@ def _integer_comparator_flip_greater_equal_resources(num_wires, value, num_work_
 
 
 @register_resources(_integer_comparator_flip_greater_equal_resources, name="flip_greater_equal")
-def _integer_comparator_flip_greater_equal(value, geq, wires, work_wires, **_):
+def integer_comparator_flip_greater_equal(value, geq, wires, work_wires, **_):
     """Decompose the IntegerComparator by flipping geq to lt or vice versa."""
     ops.X(wires[-1])
     IntegerComparator(value, wires, geq=not geq, work_wires=work_wires)
@@ -223,9 +225,9 @@ def _integer_comparator_flip_greater_equal(value, geq, wires, work_wires, **_):
 
 add_decomps(
     IntegerComparator,
-    _integer_comparator_less_than,
-    _integer_comparator_greater_equal,
-    _integer_comparator_flip_greater_equal,
+    integer_comparator_less_than,
+    integer_comparator_greater_equal,
+    integer_comparator_flip_greater_equal,
 )
 
 

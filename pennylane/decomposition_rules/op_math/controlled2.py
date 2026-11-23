@@ -53,7 +53,7 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     # wrapping a controlled operator instead of the other way around because there is more
     # likely custom decomposition rules registered for the controlled version.
     if isinstance(op.base, Adjoint2):
-        return DecompCollection([_controlled_flip_adjoint])
+        return DecompCollection([controlled_flip_adjoint])
 
     # Retrieve only rules registered directly for this controlled operator.
     custom_rules = _get_registered_decomps(to_name(op))
@@ -70,7 +70,7 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     # Populate controlled versions of the base decomposition rules.
     wrapped_rules = DecompCollection(
         [
-            _make_controlled_decomp(rule)
+            make_controlled_decomp(rule)
             for rule in list_decomps(op.base)
             if not _decomp_contains_mcm(rule, op.base.arguments)
         ]
@@ -79,7 +79,8 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     return custom_rules + wrapped_rules + general_rules
 
 
-def _make_controlled_decomp(base_rule: DecompositionRule):
+def make_controlled_decomp(base_rule: DecompositionRule):
+    """Create a controlled decomposition rule from a base rule."""
 
     def _condition_fn(base, *_, **__):
         return base_rule.is_applicable(**base.arguments)
@@ -162,7 +163,7 @@ def _controlled_flip_adjoint_resources(
 
 
 @register_resources(_controlled_flip_adjoint_resources, name="flip_adjoint")
-def _controlled_flip_adjoint(base, control_wires, control_values, work_wires, work_wire_type):
+def controlled_flip_adjoint(base, control_wires, control_values, work_wires, work_wire_type):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
     ops.adjoint(
@@ -197,7 +198,7 @@ def _controlled_to_unitary_resources(
 
 @register_condition(lambda base, *_, **__: base.has_matrix and len(base.wires) == 1)
 @register_resources(_controlled_to_unitary_resources, name="to_unitary")
-def _controlled_to_unitary(base, control_wires, control_values, work_wires, work_wire_type):
+def controlled_to_unitary(base, control_wires, control_values, work_wires, work_wire_type):
     """Convert a controlled operator to a controlled qubit unitary."""
     ops.ControlledQubitUnitary(
         base.matrix(),
@@ -283,7 +284,7 @@ def _controlled_single_work_wire_resources(base, control_wires, *_, **__):
 @register_resources(
     _controlled_single_work_wire_resources, work_wires={"zeroed": 1}, name="single_work_wire"
 )
-def _controlled_single_work_wire(base, control_wires, *_, **__):
+def controlled_single_work_wire(base, control_wires, *_, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     with allocation.allocate(1, state="zero", restored=True) as aux:
         ops.MultiControlledX([*control_wires, aux[0]])
@@ -291,7 +292,7 @@ def _controlled_single_work_wire(base, control_wires, *_, **__):
         ops.MultiControlledX([*control_wires, aux[0]])
 
 
-ctrl_single_work_wire = flip_zero_control(_controlled_single_work_wire, name="single_work_wire")
+ctrl_single_work_wire = flip_zero_control(controlled_single_work_wire, name="single_work_wire")
 
 
 def _controlled_many_zeroed_work_wires_resources(base, control_wires, *_, **__):
@@ -313,7 +314,8 @@ def _ctrl_many_zeroed_work_wires_condition(control_wires, work_wires, work_wire_
 
 @register_condition(_ctrl_many_zeroed_work_wires_condition)
 @register_resources(_controlled_many_zeroed_work_wires_resources, name="many_zeroed_work_wires")
-def _controlled_many_zeroed_work_wires(base, control_wires, work_wires, *_, **__):
+def controlled_many_zeroed_work_wires(base, control_wires, work_wires, *_, **__):
+    """Apply the ``many_zeroed_work_wires`` decomposition strategy to the operator."""
     # pylint: disable-next=import-outside-toplevel
     from pennylane.decomposition_rules.op_math.prod2 import _multi_temporary_and_all_ones
 
@@ -323,9 +325,9 @@ def _controlled_many_zeroed_work_wires(base, control_wires, work_wires, *_, **__
 
 
 ctrl_many_zeroed_work_wires = flip_zero_control(
-    _controlled_many_zeroed_work_wires, name="many_zeroed_work_wires"
+    controlled_many_zeroed_work_wires, name="many_zeroed_work_wires"
 )
 
 add_decomps(
-    "ControlledOp", _controlled_to_unitary, ctrl_many_zeroed_work_wires, ctrl_single_work_wire
+    "ControlledOp", controlled_to_unitary, ctrl_many_zeroed_work_wires, ctrl_single_work_wire
 )

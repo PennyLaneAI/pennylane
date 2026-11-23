@@ -40,7 +40,8 @@ def _instantaneous_quantum_polynomial_standard_resources(weights, wires, pattern
 
 
 @register_resources(_instantaneous_quantum_polynomial_standard_resources, name="to_h_multirz")
-def _instantaneous_quantum_polynomial_standard(weights, wires, pattern, spin_sym):
+def instantaneous_quantum_polynomial_standard(weights, wires, pattern, spin_sym):
+    """Decompose ``IQP`` using the ``to_h_multirz`` strategy."""
     num_wires = len(wires)
 
     if spin_sym:
@@ -57,4 +58,4 @@ def _instantaneous_quantum_polynomial_standard(weights, wires, pattern, spin_sym
         Hadamard(wires[i])
 
 
-add_decomps(IQP, _instantaneous_quantum_polynomial_standard)
+add_decomps(IQP, instantaneous_quantum_polynomial_standard)

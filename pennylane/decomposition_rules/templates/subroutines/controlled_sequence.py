@@ -46,7 +46,7 @@ def _ctrl_seq_execution_optimized_decomposition_resources(base, control) -> dict
 
 
 @register_resources(_ctrl_seq_execution_optimized_decomposition_resources, name="controlled_powers")
-def _ctrl_seq_execution_optimized_decomposition(*_, base=None, control=None, **__):
+def ctrl_seq_execution_optimized_decomposition(*_, base=None, control=None, **__):
     """
     A decomposition optimized for execution time, over IR size and compilation time.
 
@@ -80,7 +80,7 @@ def _ctrl_seq_ir_optimized_resources(base, control) -> dict:
 
 
 @register_resources(_ctrl_seq_ir_optimized_resources, name="looped_controlled_repetitions")
-def _ctrl_seq_ir_optimized_decomposition(*_, base=None, control=None, **__):
+def ctrl_seq_ir_optimized_decomposition(*_, base=None, control=None, **__):
     """
     A decomposition optimized for IR size and compilation time, over execution time.
 
@@ -113,6 +113,6 @@ def _ctrl_seq_ir_optimized_decomposition(*_, base=None, control=None, **__):
 # TODO: worth exploring how Catalyst can handle these situations (execution versus compilation optimization)
 add_decomps(
     ControlledSequence,
-    _ctrl_seq_execution_optimized_decomposition,
-    _ctrl_seq_ir_optimized_decomposition,
+    ctrl_seq_execution_optimized_decomposition,
+    ctrl_seq_ir_optimized_decomposition,
 )

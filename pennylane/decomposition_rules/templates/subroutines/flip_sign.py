@@ -46,7 +46,8 @@ def _flip_sign_standard_resources(state: tuple[int], wires: WiresLike, work_wire
 
 
 @register_resources(_flip_sign_standard_resources, name="to_controlled_z")
-def _flip_sign_standard(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
+def flip_sign_standard(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
+    """Decompose ``FlipSign`` using the ``to_controlled_z`` strategy."""
     if state[-1] == 0:
         X(wires[-1])
 
@@ -67,4 +68,4 @@ def _flip_sign_standard(state: tuple[int], wires: WiresLike, work_wires: WiresLi
         X(wires[-1])
 
 
-add_decomps(FlipSign, _flip_sign_standard)
+add_decomps(FlipSign, flip_sign_standard)

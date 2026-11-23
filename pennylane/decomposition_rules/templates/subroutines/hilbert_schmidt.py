@@ -22,11 +22,7 @@ from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator
-from pennylane.decomposition import (
-    CompressedResourceOp,
-    add_decomps,
-    register_resources,
-)
+from pennylane.decomposition import CompressedResourceOp, add_decomps, register_resources
 from pennylane.ops import CNOT, Hadamard, QubitUnitary
 from pennylane.templates.subroutines.hilbert_schmidt import HilbertSchmidt, LocalHilbertSchmidt
 from pennylane.typing import Complex, TensorLike, Wire
@@ -139,12 +135,13 @@ def _up_to_last_layer(
 
 
 @register_resources(_hilbert_schmidt_standard_resources, name="bell_basis")
-def _hilbert_schmidt_standard(  # pylint: disable=unused-argument
+def hilbert_schmidt_standard(  # pylint: disable=unused-argument
     *params: TensorLike,
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
 ):
+    """Decompose ``HilbertSchmidt`` using the ``bell_basis`` strategy."""
     _, first_range, second_range, wires = _up_to_last_layer(wires, U, V)
 
     @for_loop(min(len(first_range), len(second_range)))
@@ -161,18 +158,19 @@ def _hilbert_schmidt_standard(  # pylint: disable=unused-argument
 
 
 @register_resources(_local_hilbert_schmidt_standard_resources, name="local_bell_basis")
-def _local_hilbert_schmidt_standard(  # pylint: disable=unused-argument
+def local_hilbert_schmidt_standard(  # pylint: disable=unused-argument
     *params: TensorLike,
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
     V: Operator | Iterable[Operator],
 ):
+    """Decompose ``LocalHilbertSchmidt`` using the ``local_bell_basis`` strategy."""
     n_wires, _, _, wires = _up_to_last_layer(wires, U, V)
 
     CNOT(wires=[wires[0], wires[n_wires // 2]])
     Hadamard(wires[0])
 
 
-add_decomps(HilbertSchmidt, _hilbert_schmidt_standard)
+add_decomps(HilbertSchmidt, hilbert_schmidt_standard)
 
-add_decomps(LocalHilbertSchmidt, _local_hilbert_schmidt_standard)
+add_decomps(LocalHilbertSchmidt, local_hilbert_schmidt_standard)

@@ -470,7 +470,8 @@ def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
 
 @register_resources(_fermionic_double_excitation_standard_resources, name="jordan_wigner_rotations")
 # pylint: disable-next=unused-argument
-def _fermionic_double_excitation_standard(weight, wires, wires1, wires2):
+def fermionic_double_excitation_standard(weight, wires, wires1, wires2):
+    """Decompose ``FermionicDoubleExcitation`` using the ``jordan_wigner_rotations`` strategy."""
     s = wires1[0]
     r = wires1[-1]
     q = wires2[0]
@@ -492,4 +493,4 @@ def _fermionic_double_excitation_standard(weight, wires, wires1, wires2):
     _layer_qfunc8(weight, s, r, q, p, set_cnot_wires)
 
 
-add_decomps(FermionicDoubleExcitation, _fermionic_double_excitation_standard)
+add_decomps(FermionicDoubleExcitation, fermionic_double_excitation_standard)

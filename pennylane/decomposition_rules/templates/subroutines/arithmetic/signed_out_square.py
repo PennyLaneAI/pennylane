@@ -20,8 +20,8 @@ from types import SimpleNamespace
 
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder import (
-    _controlled_semi_adder_standard,
     _controlled_semi_adder_standard_resources,
+    controlled_semi_adder_standard,
 )
 from pennylane.ops import X
 from pennylane.templates.subroutines.arithmetic import OutSquare, SemiAdder
@@ -65,7 +65,7 @@ def _c_subtract_then_add_one(c_wire, x_wires, y_wires, work_wires):
     # Inject a work wire bit flip where a carry-in qubit would cause one, i.e. after the very
     # first left elbow and before the last right elbow.
     carry_flip = X if len(work_wires) > 0 else None
-    _controlled_semi_adder_standard(
+    controlled_semi_adder_standard(
         base,
         control_wires=[c_wire],
         work_wires=work_wires[m - 1 :],
@@ -110,7 +110,7 @@ def _signed_out_square_from_unsigned_resources(
 
 
 @register_resources(_signed_out_square_from_unsigned_resources, name="from_unsigned")
-def _signed_out_square_from_unsigned(
+def signed_out_square_from_unsigned(
     x_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
@@ -145,4 +145,4 @@ def _signed_out_square_from_unsigned(
             _ = [X(w) for w in output]
 
 
-add_decomps(SignedOutSquare, _signed_out_square_from_unsigned)
+add_decomps(SignedOutSquare, signed_out_square_from_unsigned)

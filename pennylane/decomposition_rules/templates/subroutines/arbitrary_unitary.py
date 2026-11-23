@@ -33,11 +33,12 @@ def _arbitrary_unitary_standard_resources(num_wires: int) -> dict:
 
 
 @register_resources(_arbitrary_unitary_standard_resources, name="pauli_rotations")
-def _arbitrary_unitary_standard(weights: list, wires: WiresLike, **_):
+def arbitrary_unitary_standard(weights: list, wires: WiresLike, **_):
+    """Decompose ``ArbitraryUnitary`` using the ``pauli_rotations`` strategy."""
     words = list(_all_pauli_words_but_identity(len(wires)))
 
     for i, word in enumerate(words):
         PauliRot(weights[..., i], word, wires=wires)
 
 
-add_decomps(ArbitraryUnitary, _arbitrary_unitary_standard)
+add_decomps(ArbitraryUnitary, arbitrary_unitary_standard)

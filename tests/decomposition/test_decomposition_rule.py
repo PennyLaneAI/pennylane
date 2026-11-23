@@ -14,8 +14,6 @@
 
 """Unit tests for the DecompositionRule class."""
 
-# pylint: disable=too-few-public-methods
-
 import inspect
 from textwrap import dedent
 
@@ -40,13 +38,13 @@ from pennylane.decomposition.resources import Resources
 from pennylane.decomposition.utils import to_name
 from pennylane.decomposition_rules import ctrl_many_zeroed_work_wires
 from pennylane.decomposition_rules.op_math.controlled2 import (
-    _controlled_to_unitary,
+    controlled_to_unitary,
     ctrl_single_work_wire,
 )
 from pennylane.decomposition_rules.op_math.pow2 import (
-    _pow_flip_adjoint,
-    _pow_merge_powers,
-    _pow_repeat_base,
+    pow_flip_adjoint,
+    pow_merge_powers,
+    pow_repeat_base,
 )
 from pennylane.ops.mid_measure import MidMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
@@ -450,7 +448,7 @@ class TestDecompositionRule:  # pylint: disable=too-many-public-methods
 
             arg_specs = my_arg_specs
 
-            def __init__(self, angles, eps, wires):  # pylint: disable=useless-parent-delegation
+            def __init__(self, angles, eps, wires):
                 super().__init__(angles, eps, wires)
 
         @register_resources({MissingFixedSigOp: 1}, name="custom_decomp")
@@ -489,7 +487,7 @@ class TestDecompositionRule:  # pylint: disable=too-many-public-methods
 
             arg_specs = abstract_sig
 
-            def __init__(self, phi, matrix, wires):  # pylint: disable=useless-parent-delegation
+            def __init__(self, phi, matrix, wires):
                 super().__init__(phi, matrix, wires)
 
         @register_resources(
@@ -837,8 +835,8 @@ class TestDecompDictionary:
         # a fixed decomposition rule overrides everything else
         op = pow(DynOp(0.5, wires=0), 2)
         with qp.decomposition.local_decomps():
-            _fix_decomp(op, _pow_repeat_base)
-            assert list(qp.list_decomps(op)) == [_pow_repeat_base]
+            _fix_decomp(op, pow_repeat_base)
+            assert list(qp.list_decomps(op)) == [pow_repeat_base]
 
         # custom decomp registered for the power
         with qp.decomposition.local_decomps():
@@ -852,19 +850,19 @@ class TestDecompDictionary:
 
         # nested powers list only the _pow_merge_powers rule
         nested = pow(pow(qp.S(0), 3), 2)
-        assert list(qp.list_decomps(nested)) == [_pow_merge_powers]
+        assert list(qp.list_decomps(nested)) == [pow_merge_powers]
 
         # a power of an adjoint lists only the _pow_flip_adjoint rule
         pow_adjoint = pow(qp.adjoint(DynOp(0.5, wires=0)), 2)
-        assert list(qp.list_decomps(pow_adjoint)) == [_pow_flip_adjoint]
+        assert list(qp.list_decomps(pow_adjoint)) == [pow_flip_adjoint]
 
         # an integer power appends _pow_repeat_base to the custom rules
         integer_pow = pow(DynOp(0.5, wires=0), 3)
-        assert _pow_repeat_base in qp.list_decomps(integer_pow)
+        assert pow_repeat_base in qp.list_decomps(integer_pow)
 
         # a non-integer power does not append _pow_repeat_base
         fractional_pow = pow(DynOp(0.5, wires=0), 0.5)
-        assert _pow_repeat_base not in qp.list_decomps(fractional_pow)
+        assert pow_repeat_base not in qp.list_decomps(fractional_pow)
 
     def test_mcm_and_allocation_rules_skipped_for_adjoint2(self):
         """Tests that rules containing MCMs and wire allocations can't be adjointed."""
@@ -902,7 +900,7 @@ class TestListDecompsByName:
     def test_generic_rules_are_registered(self):
         """The generic category contains the built-in controlled candidates in order."""
         assert list(qp.list_decomps("ControlledOp")) == [
-            _controlled_to_unitary,
+            controlled_to_unitary,
             ctrl_many_zeroed_work_wires,
             ctrl_single_work_wire,
         ]
@@ -928,10 +926,10 @@ class TestListDecompsByName:
         """Excluding a generic rule applies to name and concrete-operator lookups."""
         base = DynOpWithMatrix(Float, Float, Float, Wire[1])
         op = ControlledOp2(base, control_wires=Wire[1])
-        assert _controlled_to_unitary in qp.list_decomps(op)
+        assert controlled_to_unitary in qp.list_decomps(op)
         with qp.exclude_decomps("ControlledOp", "to_unitary"):
-            assert _controlled_to_unitary not in qp.list_decomps(op.name)
-            assert _controlled_to_unitary not in qp.list_decomps(op)
+            assert controlled_to_unitary not in qp.list_decomps(op.name)
+            assert controlled_to_unitary not in qp.list_decomps(op)
 
     def test_fixed_generic_rule(self):
         """A fixed generic rule replaces the generic category's candidates."""
@@ -956,7 +954,7 @@ class TestListDecompsByName:
         qp.add_decomps("C(DynOp)", custom_rule)
         expected = [
             custom_rule,
-            _controlled_to_unitary,
+            controlled_to_unitary,
             ctrl_many_zeroed_work_wires,
             ctrl_single_work_wire,
         ]
@@ -987,7 +985,7 @@ class TestListDecompsByName:
     def test_unregistered_controlled_name(self, op_name):
         """Controlled names without custom registrations still have generic candidates."""
         assert list(qp.list_decomps(op_name)) == [
-            _controlled_to_unitary,
+            controlled_to_unitary,
             ctrl_many_zeroed_work_wires,
             ctrl_single_work_wire,
         ]
@@ -1014,7 +1012,7 @@ class TestListDecompsByName:
             assert list(_get_registered_decomps("C(DynOp)")) == [custom_rule]
             assert list(_list_control_decomps("C(DynOp)")) == [
                 custom_rule,
-                _controlled_to_unitary,
+                controlled_to_unitary,
                 ctrl_many_zeroed_work_wires,
                 ctrl_single_work_wire,
             ]
@@ -1031,7 +1029,7 @@ class TestListDecompsByName:
         qp.add_decomps("C(DynOp)", custom_rule)
         with qp.decomposition.exclude_decomps("C(DynOp)", "custom_rule", "single_work_wire"):
             assert list(qp.list_decomps("C(DynOp)")) == [
-                _controlled_to_unitary,
+                controlled_to_unitary,
                 ctrl_many_zeroed_work_wires,
             ]
 
@@ -1149,7 +1147,7 @@ class TestExcludeDecomps:
         assert [rule.name for rule in qp.list_decomps(qp.CRX)] == all_names
 
         with pytest.raises(ValueError, match="Cannot find a decomposition rule named"):
-            qp.exclude_decomps("Pow(DynOp)", _pow_repeat_base.name)
+            qp.exclude_decomps("Pow(DynOp)", pow_repeat_base.name)
 
     def test_excluded_rules_can_be_excluded_again(self):
         """Tests that an already excluded rule is still recognized as an existing rule."""

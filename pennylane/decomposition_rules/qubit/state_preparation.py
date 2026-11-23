@@ -26,7 +26,8 @@ def _basis_state_standard_resources(state, wires):  # pylint: disable=unused-arg
 
 
 @register_resources(_basis_state_standard_resources, exact=False, name="to_x")
-def _basis_state_standard(state, wires):
+def basis_state_standard(state, wires):
+    """Decompose ``BasisState`` using the ``to_x`` strategy."""
     if capture.enabled() or compiler.active():
         # This branch makes sure that state and wires are cast to objects into which
         # a traced loop index is allowed to index (if they aren't already traced)
@@ -40,7 +41,7 @@ def _basis_state_standard(state, wires):
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(BasisState, _basis_state_standard)
+add_decomps(BasisState, basis_state_standard)
 
 
 def _state_prep_standard_resources(num_wires):
@@ -48,8 +49,9 @@ def _state_prep_standard_resources(num_wires):
 
 
 @register_resources(_state_prep_standard_resources, name="mottonen")
-def _state_prep_standard(state, wires, **_):
+def state_prep_standard(state, wires, **_):
+    """Decompose ``StatePrep`` using the ``mottonen`` strategy."""
     templates.MottonenStatePreparation(state, wires)
 
 
-add_decomps(StatePrep, _state_prep_standard)
+add_decomps(StatePrep, state_prep_standard)

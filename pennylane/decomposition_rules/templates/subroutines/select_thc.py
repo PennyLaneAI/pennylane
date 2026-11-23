@@ -23,17 +23,7 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import (
-    CNOT,
-    SWAP,
-    Hadamard,
-    S,
-    X,
-    Z,
-    adjoint,
-    change_op_basis,
-    ctrl,
-)
+from pennylane.ops import CNOT, SWAP, Hadamard, S, X, Z, adjoint, change_op_basis, ctrl
 from pennylane.ops.subcircuit import subcircuit
 from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
 from pennylane.templates.subroutines.multix import MultiX
@@ -409,12 +399,7 @@ def _THCIndexSwaps(
             work_wires=work_wires,
             work_wire_type="zeroed",
         )
-    ctrl(
-        SWAP(wires=[spin1, spin2]),
-        control=edge,
-        work_wires=work_wires,
-        work_wire_type="zeroed",
-    )
+    ctrl(SWAP(wires=[spin1, spin2]), control=edge, work_wires=work_wires, work_wire_type="zeroed")
 
 
 # pylint: disable-next=too-many-arguments
@@ -502,7 +487,7 @@ def _select_thc_standard_resources(  # pylint: disable=too-many-arguments
 
 
 @register_resources(_select_thc_standard_resources, name="selected_basis_rotations")
-def _select_thc_standard(  # pylint: disable=too-many-arguments
+def select_thc_standard(  # pylint: disable=too-many-arguments
     chi,
     t_eigenvectors,
     beth,
@@ -514,6 +499,7 @@ def _select_thc_standard(  # pylint: disable=too-many-arguments
     num_batches=1,
     **_,
 ):
+    """Decompose ``SelectTHC`` using the ``selected_basis_rotations`` strategy."""
     M = len(chi)
     n = math.ceil_log2(M + 1)
     mu_wires = index_wires[:n]
@@ -556,4 +542,4 @@ def _select_thc_standard(  # pylint: disable=too-many-arguments
     X(swap)
 
 
-add_decomps(SelectTHC, _select_thc_standard)
+add_decomps(SelectTHC, select_thc_standard)

@@ -30,7 +30,8 @@ def _angle_embedding_standard_resources(rotation: Operation, num_wires: int) -> 
 
 
 @register_resources(_angle_embedding_standard_resources, name="single_qubit_rotations")
-def _angle_embedding_standard(features: list, wires: WiresLike, rotation: Operation):
+def angle_embedding_standard(features: list, wires: WiresLike, rotation: Operation):
+    """Decompose ``AngleEmbedding`` using the ``single_qubit_rotations`` strategy."""
     batched = math.ndim(features) > 1
     # We will iterate over the first axis of `features` together with iterating over the wires.
     # If the leading dimension is a batch dimension, exchange the wire and batching axes.
@@ -46,4 +47,4 @@ def _angle_embedding_standard(features: list, wires: WiresLike, rotation: Operat
     rotation_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(AngleEmbedding, _angle_embedding_standard)
+add_decomps(AngleEmbedding, angle_embedding_standard)

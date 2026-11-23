@@ -259,15 +259,11 @@ def _qubitization_thc_standard_resources(  # pylint: disable=too-many-arguments
     num_reflected = len(registers["reflected"])
     reflection = FlipSign([0] * num_reflected, Wire[num_reflected], work_wires=Wire[len(work)])
 
-    return {
-        abstractify(prepselprep): 1,
-        reflection: 1,
-        GlobalPhase: 1,
-    }
+    return {abstractify(prepselprep): 1, reflection: 1, GlobalPhase: 1}
 
 
 @register_resources(_qubitization_thc_standard_resources, name="thc_prepare_select_reflection")
-def _qubitization_thc_standard(  # pylint: disable=too-many-arguments
+def qubitization_thc_standard(  # pylint: disable=too-many-arguments
     zeta,
     t_ell,
     chi,
@@ -282,6 +278,7 @@ def _qubitization_thc_standard(  # pylint: disable=too-many-arguments
     num_batches=1,
     **_,
 ):
+    """Decompose ``QubitizationTHC`` using the ``thc_prepare_select_reflection`` strategy."""
     M = len(zeta)
     N = 2 * len(chi[0])
 
@@ -314,4 +311,4 @@ def _qubitization_thc_standard(  # pylint: disable=too-many-arguments
     GlobalPhase(np.pi)
 
 
-add_decomps(QubitizationTHC, _qubitization_thc_standard)
+add_decomps(QubitizationTHC, qubitization_thc_standard)

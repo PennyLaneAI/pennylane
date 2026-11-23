@@ -24,11 +24,7 @@ from pennylane import capture, compiler, math
 from pennylane import ops as qp_ops
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, MultiControlledX, X, Z, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
@@ -215,7 +211,8 @@ def _qrom_select_swap_resources(bitstrings, control_wires, target_wires, work_wi
 
 @register_condition(_select_swap_condition)
 @register_resources(_qrom_select_swap_resources, name="select_swap")
-def _qrom_select_swap(bitstrings, control_wires, target_wires, work_wires, clean):
+def qrom_select_swap(bitstrings, control_wires, target_wires, work_wires, clean):
+    """Decompose ``QROM`` using the ``select_swap`` strategy."""
     if len(control_wires) == 0:
         MultiX(bitstrings[0, :], wires=target_wires)
         return
@@ -626,7 +623,7 @@ def _build_flag(extra_wires, work_wires):
 
 @register_condition(_qrom_measurement_condition)
 @register_resources(_qrom_measurement_resources, exact=False, name="measurement")
-def _qrom_measurement(  # pylint: disable=too-many-arguments,unused-argument
+def qrom_measurement(  # pylint: disable=too-many-arguments,unused-argument
     bitstrings=None,
     control_wires=None,
     target_wires=None,
@@ -937,7 +934,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
 
 @register_resources(_qrom_unary_iteration_resources, name="unary_iteration")
 # pylint: disable-next=unused-argument
-def _qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires, clean, **__):
+def qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires, clean, **__):
     """Unary iteration decomposition of QROM.
 
     The unary iteration tree is grown over the most-significant control wires, one level per
@@ -992,11 +989,6 @@ def _qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires, c
     _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control_wires)
 
 
-add_decomps(
-    QROM,
-    _qrom_select_swap,
-    _qrom_unary_iteration,
-    _qrom_measurement,
-)
+add_decomps(QROM, qrom_select_swap, qrom_unary_iteration, qrom_measurement)
 
-add_decomps("Adjoint(QROM)", _qrom_measurement)
+add_decomps("Adjoint(QROM)", qrom_measurement)

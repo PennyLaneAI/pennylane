@@ -17,10 +17,7 @@
 
 from collections import defaultdict
 
-from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -79,7 +76,8 @@ def _out_adder_standard_resources(num_output_wires, num_x_wires, num_y_wires, mo
 
 
 @register_resources(_out_adder_standard_resources, name="fourier_phase_adders")
-def _out_adder_standard(x_wires, y_wires, output_wires, mod, work_wires, **__):
+def out_adder_standard(x_wires, y_wires, output_wires, mod, work_wires, **__):
+    """Decompose ``OutAdder`` using the ``fourier_phase_adders`` strategy."""
     if mod != 2 ** len(output_wires) and mod is not None:
         qft_new_output_wires = work_wires[:1] + output_wires
         work_wire = work_wires[1:]
@@ -91,4 +89,4 @@ def _out_adder_standard(x_wires, y_wires, output_wires, mod, work_wires, **__):
     change_op_basis(QFT(wires=qft_new_output_wires), target)
 
 
-add_decomps(OutAdder, _out_adder_standard)
+add_decomps(OutAdder, out_adder_standard)

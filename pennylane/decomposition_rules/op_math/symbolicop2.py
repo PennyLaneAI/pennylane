@@ -27,9 +27,9 @@ def _operator_to_base_resources(base):
 
 
 @register_resources(_operator_to_base_resources, name="to_base")
-def _operator_to_base(base):
+def operator_to_base(base):
     """Decompose a symbolic operator to its base."""
     apply(base)
 
 
-self_adjoint: DecompositionRule = _operator_to_base
+self_adjoint: DecompositionRule = operator_to_base

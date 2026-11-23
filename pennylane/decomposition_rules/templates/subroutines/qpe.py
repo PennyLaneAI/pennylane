@@ -17,10 +17,7 @@
 
 from pennylane import capture, compiler, math, ops
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import adjoint
 from pennylane.ops import pow as qp_pow
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -32,24 +29,19 @@ from pennylane.typing import Wire
 
 def _qpe_standard_resources(unitary, estimation_wires):
     num_estimation_wires = len(estimation_wires)
-    gate_count = {
-        ops.Hadamard: num_estimation_wires,
-        adjoint(QFT(Wire[num_estimation_wires])): 1,
-    }
+    gate_count = {ops.Hadamard: num_estimation_wires, adjoint(QFT(Wire[num_estimation_wires])): 1}
 
     # NOTE: Need abstract resource representations just in case
     # the unitary is an operator1.
     for i in range(num_estimation_wires):
-        pow_rep = _pow_abstract(
-            unitary,
-            2**i,
-        )
+        pow_rep = _pow_abstract(unitary, 2**i)
         gate_count[_ctrl_abstract(pow_rep, control_wires=Wire[1])] = 1
     return gate_count
 
 
 @register_resources(_qpe_standard_resources, name="controlled_powers_inverse_qft")
-def _qpe_standard(unitary, estimation_wires):
+def qpe_standard(unitary, estimation_wires):
+    """Decompose ``QuantumPhaseEstimation`` using the ``controlled_powers_inverse_qft`` strategy."""
     if compiler.active() or capture.enabled():
         estimation_wires = math.array(estimation_wires, like="jax")
 
@@ -69,4 +61,4 @@ def _qpe_standard(unitary, estimation_wires):
     ops.adjoint(QFT(wires=estimation_wires))
 
 
-add_decomps(QuantumPhaseEstimation, _qpe_standard)
+add_decomps(QuantumPhaseEstimation, qpe_standard)

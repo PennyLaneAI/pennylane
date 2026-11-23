@@ -18,14 +18,8 @@
 from pennylane import capture, compiler, math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-)
-from pennylane.decomposition_rules.op_math.controlled2 import (
-    flip_zero_control as flip_zero_control2,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition_rules.op_math.controlled2 import flip_zero_control
 from pennylane.decomposition_rules.templates.subroutines.qrom import _interleave_controls
 from pennylane.ops import CNOT, MultiControlledX, PauliX, X, adjoint, change_op_basis, cond
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
@@ -140,26 +134,24 @@ def _incrementer_fallback_resources(wires, work_wires):
 
 @register_condition(_work_wire_inverse_condition)
 @register_resources(_incrementer_fallback_resources, name="incrementer_multicontrolledx")
-def _incrementer_multicontrolledx(wires, work_wires, **_):
+def incrementer_multicontrolledx(wires, work_wires, **_):
     # This loop is intentionally a plain Python loop rather than a ``qp.for_loop``: each
     # iteration emits a ``MultiControlledX`` with a different number of controls (``i - 1``),
     # so the loop body has no fixed structure and cannot be traced as a dynamic loop. Keeping
     # it unrolled lets this fallback run under program capture without any extra gating.
+    """Decompose ``Incrementer`` using the ``incrementer_multicontrolledx`` strategy."""
     num_wires = len(wires)
 
     for i in range(num_wires, 1, -1):
-        MultiControlledX(
-            wires[num_wires - i :][::-1],
-            [1] * (i - 1),
-            work_wires=work_wires,
-        )
+        MultiControlledX(wires[num_wires - i :][::-1], [1] * (i - 1), work_wires=work_wires)
 
     X(wires[-1])
 
 
 @register_condition(_work_wire_condition)
 @register_resources(_incrementer_resources, name="incrementer_elbow_ladder")
-def _incrementer_elbow_ladder(wires, work_wires, **_):
+def incrementer_elbow_ladder(wires, work_wires, **_):
+    """Decompose ``Incrementer`` using the ``incrementer_elbow_ladder`` strategy."""
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
 
@@ -179,7 +171,8 @@ def _controlled_incrementer_resources(base, control_wires, **_):
 
 @register_condition(_ctrl_work_wire_condition)
 @register_resources(_controlled_incrementer_resources, name="ctrl_incrementer_elbow_ladder")
-def _ctrl_incrementer_elbow_ladder(base, control_wires, work_wires, **_):
+def ctrl_incrementer_elbow_ladder(base, control_wires, work_wires, **_):
+    """Decompose ``C(Incrementer)`` using the ``ctrl_incrementer_elbow_ladder`` strategy."""
     wires = base.increment_wires
     base_work_wires = base.work_wires
 
@@ -209,7 +202,7 @@ def _adjoint_incrementer_resources(base):
 
 
 @register_resources(_adjoint_incrementer_resources, name="adjoint_incrementer_bit_flips")
-def _adjoint_incrementer_bit_flips(base):
+def adjoint_incrementer_bit_flips(base):
     """Decompose a decrement into an increment conjugated by bit flips, ``x - 1 = ~(~x + 1)``."""
     wires = base.increment_wires
     ones = [1] * len(wires)
@@ -220,11 +213,11 @@ def _adjoint_incrementer_bit_flips(base):
     )
 
 
-add_decomps(Incrementer, _incrementer_elbow_ladder, _incrementer_multicontrolledx)
+add_decomps(Incrementer, incrementer_elbow_ladder, incrementer_multicontrolledx)
 
 add_decomps(
     "C(Incrementer)",
-    flip_zero_control2(_ctrl_incrementer_elbow_ladder, name="ctrl_incrementer_elbow_ladder"),
+    flip_zero_control(ctrl_incrementer_elbow_ladder, name="ctrl_incrementer_elbow_ladder"),
 )
 
-add_decomps("Adjoint(Incrementer)", _adjoint_incrementer_bit_flips)
+add_decomps("Adjoint(Incrementer)", adjoint_incrementer_bit_flips)

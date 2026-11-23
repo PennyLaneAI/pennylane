@@ -54,7 +54,7 @@ def _multiplexer_state_prep_real_resources(state_vector, wires, check=False) -> 
 
 @register_condition(lambda state_vector, **_: not math.is_complex_dtype(state_vector))
 @register_resources(_multiplexer_state_prep_real_resources, name="real")
-def _multiplexer_state_prep_real(state_vector, wires, **_):
+def multiplexer_state_prep_real(state_vector, wires, **_):
     r"""Decomposition of MultiplexerStatePreparation for a real-valued state vector."""
     _select_pauli_rots(state_vector, wires)
 
@@ -72,7 +72,7 @@ def _multiplexer_state_prep_complex_resources(state_vector, wires, check=False) 
 
 @register_condition(lambda state_vector, **_: math.is_complex_dtype(state_vector))
 @register_resources(_multiplexer_state_prep_complex_resources, exact=False, name="complex")
-def _multiplexer_state_prep_complex(state_vector, wires, **_):
+def multiplexer_state_prep_complex(state_vector, wires, **_):
     r"""Decomposition of MultiplexerStatePreparation for a complex-valued state vector."""
 
     # A complex state vector that is (close to) real-valued can be prepared from its signed
@@ -90,6 +90,6 @@ def _multiplexer_state_prep_complex(state_vector, wires, **_):
 
 add_decomps(
     MultiplexerStatePreparation,
-    _multiplexer_state_prep_real,
-    _multiplexer_state_prep_complex,
+    multiplexer_state_prep_real,
+    multiplexer_state_prep_complex,
 )

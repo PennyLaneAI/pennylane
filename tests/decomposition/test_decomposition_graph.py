@@ -28,7 +28,7 @@ from pennylane.decomposition import DecompositionGraph, resource_rep
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_decomp
 from pennylane.decomposition_rules import self_adjoint
-from pennylane.decomposition_rules.op_math.controlled2 import _controlled_flip_adjoint
+from pennylane.decomposition_rules.op_math.controlled2 import controlled_flip_adjoint
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
@@ -48,7 +48,7 @@ def test_fixed_decomposition_by_public_name(op_key):
     """A public name selects the same rule as a rule object."""
     rule = qp.list_decomps(qp.SWAP)["to_cnot"]
     assert rule.name == "to_cnot"
-    assert rule.__name__ == "_swap_to_cnot"
+    assert rule.__name__ == "swap_to_cnot"
     assert rule._compute_resources.__name__ == "_swap_to_cnot_resources"
     op = qp.SWAP(wires=[0, 1])
     named = DecompositionGraph([op], gate_set={qp.CNOT}, fixed_decomps={op_key: "to_cnot"})
@@ -121,7 +121,7 @@ class MultiWireRot(Operation):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, phi, wires):  # pylint: disable=useless-parent-delegation
+    def __init__(self, phi, wires):
         super().__init__(phi, wires)
 
     @property
@@ -1383,7 +1383,7 @@ class TestControlledDecompositions:
 
         op = qp.ctrl(qp.adjoint(qp.U1(0.5, wires=0)), control=[1])
         # Modifier interchange preserves the symbolic controlled U1.
-        tape = qp.testing.decomp_rule_to_tape(op, _controlled_flip_adjoint)
+        tape = qp.testing.decomp_rule_to_tape(op, controlled_flip_adjoint)
         assert tape.operations == [qp.adjoint(ControlledOp2(qp.U1(0.5, wires=0), [1]))]
 
     def test_flip_controlled_adjoint_full_solve(self):

@@ -51,7 +51,7 @@ def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
 
     # special case of cancelling nested adjoints.
     if isinstance(abs_op.base, Adjoint2):
-        return DecompCollection([_adjoint_cancel])
+        return DecompCollection([adjoint_cancel])
 
     # Custom decomposition rules registered specifically to the adjoint operator
     custom_rules = _get_registered_decomps(to_name(abs_op))
@@ -63,7 +63,7 @@ def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
     # Decomposition rules populated by applying adjoint on the base decomp rules
     wrapped_rules = DecompCollection(
         [
-            _make_adjoint_decomp(rule)
+            make_adjoint_decomp(rule)
             for rule in list_decomps(abs_op.base)
             # It only makes sense to wrap a decomposition rule with adjoint if the decomposition
             # does not dynamically allocate wires and does not contain mid-circuit measurements.
@@ -74,7 +74,7 @@ def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
     return custom_rules + wrapped_rules
 
 
-def _make_adjoint_decomp(base_rule: DecompositionRule):
+def make_adjoint_decomp(base_rule: DecompositionRule):
     """Wraps a decomposition rule with adjoint."""
 
     def _condition_fn(base):
@@ -126,7 +126,7 @@ def _adjoint_cancel_resources(base):
 
 
 @register_resources(_adjoint_cancel_resources, name="cancel")
-def _adjoint_cancel(base):
+def adjoint_cancel(base):
     """Decompose the adjoint of the adjoint of an operator."""
     assert isinstance(base, Adjoint2)
     type(base.base)(**base.base.arguments)
@@ -137,7 +137,7 @@ def _adjoint_negate_angle_resources(base):
 
 
 @register_resources(_adjoint_negate_angle_resources, name="negate_angle")
-def _adjoint_negate_angle(base):
+def adjoint_negate_angle(base):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
     # A rotation should only have 1 dynamic parameter
     assert len(base.dynamic_argnames) == 1

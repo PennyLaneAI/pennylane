@@ -35,8 +35,9 @@ def _mod_exp_standard_resources(num_x_wires, num_output_wires, mod, num_work_wir
 
 
 @register_resources(_mod_exp_standard_resources, name="controlled_multipliers")
-def _mod_exp_standard(x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike, **__):
+def mod_exp_standard(x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike, **__):
+    """Decompose ``ModExp`` using the ``controlled_multipliers`` strategy."""
     ControlledSequence(Multiplier(base, output_wires, mod, work_wires), control=x_wires)
 
 
-add_decomps(ModExp, _mod_exp_standard)
+add_decomps(ModExp, mod_exp_standard)

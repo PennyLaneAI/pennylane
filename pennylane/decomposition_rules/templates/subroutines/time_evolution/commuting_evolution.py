@@ -31,13 +31,14 @@ def _commuting_evolution_standard_resources(words: tuple[PauliWord]):
 
 
 @register_resources(_commuting_evolution_standard_resources, name="to_approx_time_evolution")
-def _commuting_evolution_standard(  # pylint: disable=unused-argument
+def commuting_evolution_standard(  # pylint: disable=unused-argument
     time: list,
     *_,
     wires: WiresLike,
     hamiltonian: Hamiltonian,
     **__,
 ):
+    """Decompose ``CommutingEvolution`` using the ``to_approx_time_evolution`` strategy."""
     if capture.enabled() and isinstance(hamiltonian, Operator1):
         # Reconstruct the closed-over Hamiltonian as a captured value. It is consumed by
         # ``ApproxTimeEvolution`` below, so it is not collected as a separate circuit operation.
@@ -45,14 +46,15 @@ def _commuting_evolution_standard(  # pylint: disable=unused-argument
     ApproxTimeEvolution(hamiltonian, time, 1)
 
 
-add_decomps(CommutingEvolution, _commuting_evolution_standard)
+add_decomps(CommutingEvolution, commuting_evolution_standard)
 
 
 @register_resources(
     lambda base_params, **_: {resource_rep(CommutingEvolution, **base_params): 1},
     name="negate_time",
 )
-def _adjoint_commuting_evolution_standard(time, *params, base, **__):
+def adjoint_commuting_evolution_standard(time, *params, base, **__):
+    """Decompose ``Adjoint(CommutingEvolution)`` using the ``negate_time`` strategy."""
     hamiltonian = ops.functions.bind_new_parameters(base.hyperparameters["hamiltonian"], params)
     CommutingEvolution(
         hamiltonian,
@@ -62,4 +64,4 @@ def _adjoint_commuting_evolution_standard(time, *params, base, **__):
     )
 
 
-add_decomps("Adjoint(CommutingEvolution)", _adjoint_commuting_evolution_standard)
+add_decomps("Adjoint(CommutingEvolution)", adjoint_commuting_evolution_standard)

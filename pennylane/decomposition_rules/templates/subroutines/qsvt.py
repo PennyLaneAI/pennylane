@@ -39,8 +39,8 @@ def _QSVT_standard_resources(UA, projectors):
 
 
 @register_resources(_QSVT_standard_resources, name="alternating_block_encodings")
-def _QSVT_standard(UA, projectors):
-
+def QSVT_standard(UA, projectors):
+    """Decompose ``QSVT`` using the ``alternating_block_encodings`` strategy."""
     apply(projectors[0])
 
     for i in range(1, len(projectors) - 1, 2):
@@ -52,4 +52,4 @@ def _QSVT_standard(UA, projectors):
         apply(projectors[-1])
 
 
-add_decomps(QSVT, _QSVT_standard)
+add_decomps(QSVT, QSVT_standard)

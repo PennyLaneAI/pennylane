@@ -18,9 +18,7 @@
 from pennylane.allocation import allocate
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import resolve_work_wire_type
-from pennylane.decomposition_rules.op_math.controlled2 import (
-    flip_zero_control as flip_zero_control2,
-)
+from pennylane.decomposition_rules.op_math.controlled2 import flip_zero_control
 from pennylane.ops import CNOT, adjoint, ctrl
 from pennylane.templates.subroutines.arithmetic.semi_adder import (
     SemiAdder,
@@ -197,7 +195,8 @@ def _semi_adder_standard_work_wires(x_wires, y_wires, work_wires):
 @register_resources(
     _semi_adder_standard_resources, work_wires=_semi_adder_standard_work_wires, name="carry_ladder"
 )
-def _semi_adder_standard(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_pos=None):
+def semi_adder_standard(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_pos=None):
+    """Decompose ``SemiAdder`` using the ``carry_ladder`` strategy."""
     num_y_wires = len(y_wires)
     num_x_wires = len(x_wires)
 
@@ -238,7 +237,7 @@ def _semi_adder_standard(x_wires, y_wires, work_wires=None, carry_flip=None, ski
         )
 
 
-add_decomps(SemiAdder, _semi_adder_standard)
+add_decomps(SemiAdder, semi_adder_standard)
 
 
 def _controlled_semi_adder_standard_resources(
@@ -313,7 +312,7 @@ def _controlled_semi_adder_standard_resources(
     work_wires=lambda base, *_, **__: _semi_adder_standard_work_wires(**base.arguments),
     name="controlled_carry_ladder",
 )
-def _controlled_semi_adder_standard(  # pylint: disable=too-many-arguments
+def controlled_semi_adder_standard(  # pylint: disable=too-many-arguments
     base,
     control_wires,
     control_values=None,
@@ -375,5 +374,5 @@ def _controlled_semi_adder_standard(  # pylint: disable=too-many-arguments
 
 add_decomps(
     "C(SemiAdder)",
-    flip_zero_control2(_controlled_semi_adder_standard, name="controlled_carry_ladder"),
+    flip_zero_control(controlled_semi_adder_standard, name="controlled_carry_ladder"),
 )

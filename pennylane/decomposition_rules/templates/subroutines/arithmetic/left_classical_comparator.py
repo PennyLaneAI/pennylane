@@ -38,15 +38,12 @@ def _left_classical_comparator_standard_resources(
     n = len(x_wires)
     # Count every conditional gate: two Xs for bit 0, four per remaining low bit,
     # and one for bit n. The final negation depends only on the comparator.
-    return {
-        Elbow: n - 1,
-        CNOT: n,
-        X: 4 * n - 1 + int(comparator in [">", ">="]),
-    }
+    return {Elbow: n - 1, CNOT: n, X: 4 * n - 1 + int(comparator in [">", ">="])}
 
 
 @register_resources(_left_classical_comparator_standard_resources, exact=False, name="elbow_ladder")
-def _left_classical_comparator_standard(x_wires, value, target_wire, work_wires, comparator, **_):
+def left_classical_comparator_standard(x_wires, value, target_wire, work_wires, comparator, **_):
+    """Decompose ``LeftClassicalComparator`` using the ``elbow_ladder`` strategy."""
     x_wires = x_wires[::-1]
 
     def _negate_output():
@@ -89,4 +86,4 @@ def _left_classical_comparator_standard(x_wires, value, target_wire, work_wires,
     cond(comparator.startswith(">"), _negate_output)()
 
 
-add_decomps(LeftClassicalComparator, _left_classical_comparator_standard)
+add_decomps(LeftClassicalComparator, left_classical_comparator_standard)

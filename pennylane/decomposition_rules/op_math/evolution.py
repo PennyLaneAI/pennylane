@@ -37,7 +37,7 @@ def _exp_to_pauli_rot_resources(base, **__):
 
 @decomposition.register_condition(_pauli_rot_decomp_condition)
 @decomposition.register_resources(_exp_to_pauli_rot_resources, name="to_pauli_rot")
-def _exp_to_pauli_rot(*params, wires, base, **_):  # pylint: disable=unused-argument
+def exp_to_pauli_rot(*params, wires, base, **_):  # pylint: disable=unused-argument
     """Decompose the operator into a single PauliRot operator."""
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
@@ -54,4 +54,4 @@ def _exp_to_pauli_rot(*params, wires, base, **_):  # pylint: disable=unused-argu
     ops.PauliRot(coeff, pauli_word, base.wires)
 
 
-decomposition.add_decomps(Evolution, _exp_to_pauli_rot)
+decomposition.add_decomps(Evolution, exp_to_pauli_rot)

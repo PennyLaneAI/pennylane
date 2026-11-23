@@ -43,8 +43,9 @@ def _qaoa_embedding_standard_resources(repeat, n_features, num_wires, local_fiel
 
 
 @register_resources(_qaoa_embedding_standard_resources, name="feature_and_ansatz_layers")
-def _qaoa_embedding_standard(features, weights, wires, local_field):
+def qaoa_embedding_standard(features, weights, wires, local_field):
     # pylint: disable=no-value-for-parameter
+    """Decompose ``QAOAEmbedding`` using the ``feature_and_ansatz_layers`` strategy."""
     if capture.enabled():
         weights, wires, features = jnp.array(weights), jnp.array(wires), jnp.array(features)
 
@@ -109,4 +110,4 @@ def _qaoa_embedding_standard(features, weights, wires, local_field):
     final_hadamard_loop()
 
 
-add_decomps(QAOAEmbedding, _qaoa_embedding_standard)
+add_decomps(QAOAEmbedding, qaoa_embedding_standard)

@@ -18,14 +18,8 @@
 from pennylane import capture, compiler, math
 from pennylane.allocation import allocate
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-)
-from pennylane.decomposition_rules.op_math.controlled2 import (
-    flip_zero_control as flip_zero_control2,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition_rules.op_math.controlled2 import flip_zero_control
 from pennylane.decomposition_rules.op_math.pow2 import pow_involutory
 from pennylane.decomposition_rules.op_math.prod2 import _multi_temporary_and_all_ones
 from pennylane.decomposition_rules.op_math.symbolicop2 import self_adjoint
@@ -50,11 +44,12 @@ def _multix_standard_resources(
 
 # Decomposition function for MultiX
 @register_resources(_multix_standard_resources, exact=False, name="to_x")
-def _multix_standard(bitstring: TensorLike, wires: WiresLike) -> None:
+def multix_standard(bitstring: TensorLike, wires: WiresLike) -> None:
     # Dynamically-allocated wires (``AbstractQubit`` handles, e.g. from ``qp.allocate``) cannot
     # be stacked into a numeric array for ``for_loop``-based dynamic indexing, so unroll instead
     # (``bitstring`` may still be traced data, indexed with a static index). Remove this fallback
     # once dynamic-wire indexing is supported (shortcut.com/story/129521).
+    """Decompose ``MultiX`` using the ``to_x`` strategy."""
     if any(is_abstract_qubit(w) or isinstance(w, DynamicWire) for w in wires):
         if compiler.active() or capture.enabled():
             bitstring = math.array(bitstring, like="jax")
@@ -73,7 +68,7 @@ def _multix_standard(bitstring: TensorLike, wires: WiresLike) -> None:
     locally_apply_paulix()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(MultiX, _multix_standard)
+add_decomps(MultiX, multix_standard)
 
 add_decomps("Adjoint(MultiX)", self_adjoint)
 
@@ -143,7 +138,7 @@ def _controlled_multix_ladder_standard_work_wires(control_wires, work_wires, wor
     exact=False,
     name="ancilla_fanout",
 )
-def _controlled_multix_ladder_standard(base, control_wires, work_wires, work_wire_type, **_):
+def controlled_multix_ladder_standard(base, control_wires, work_wires, work_wire_type, **_):
     """Controlled-``MultiX`` decomposition that loads the fanout through a single work wire
     holding ``AND(control_wires)``, rather than repeating the multi-control structure once per
     target wire. Uses as many of the caller-supplied zeroed work wires as needed, dynamically
@@ -156,5 +151,5 @@ def _controlled_multix_ladder_standard(base, control_wires, work_wires, work_wir
 
 
 add_decomps(
-    "C(MultiX)", flip_zero_control2(_controlled_multix_ladder_standard, name="ancilla_fanout")
+    "C(MultiX)", flip_zero_control(controlled_multix_ladder_standard, name="ancilla_fanout")
 )

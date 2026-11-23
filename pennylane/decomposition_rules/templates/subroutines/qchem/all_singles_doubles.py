@@ -34,7 +34,8 @@ def _all_singles_doubles_standard_resources(num_singles, num_doubles, num_wires)
 
 
 @register_resources(_all_singles_doubles_standard_resources, name="excitation_layers")
-def _all_singles_doubles_standard(weights, wires, hf_state, singles, doubles):
+def all_singles_doubles_standard(weights, wires, hf_state, singles, doubles):
+    """Decompose ``AllSinglesDoubles`` using the ``excitation_layers`` strategy."""
     BasisState(hf_state, wires=wires)
 
     if capture.enabled():
@@ -53,4 +54,4 @@ def _all_singles_doubles_standard(weights, wires, hf_state, singles, doubles):
     singles_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(AllSinglesDoubles, _all_singles_doubles_standard)
+add_decomps(AllSinglesDoubles, all_singles_doubles_standard)

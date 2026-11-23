@@ -23,10 +23,10 @@ import pennylane as qp
 from pennylane import math
 from pennylane.decomposition.decomposition_rule import _fix_decomp
 from pennylane.decomposition_rules import (
-    _mcx_many_work_wires,
-    _mcx_no_work_wires,
-    _mcx_one_work_wire,
-    _mcx_two_work_wires,
+    mcx_many_work_wires,
+    mcx_no_work_wires,
+    mcx_one_work_wire,
+    mcx_two_work_wires,
 )
 from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
 from pennylane.ops.op_math.decompositions.controlled_decompositions import (
@@ -612,10 +612,10 @@ class TestMCXDecomposition:
             if work_wire_type == "zeroed":
                 qp.Projector([0] * len(work_wires), wires=work_wires)
             with qp.capture.pause():
-                _mcx_many_work_wires(**mcx.arguments)
+                mcx_many_work_wires(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
-        assert_valid_decomp_rule(mcx, _mcx_many_work_wires, check_matrix=False)
+        assert_valid_decomp_rule(mcx, mcx_many_work_wires, check_matrix=False)
 
         tape = qp.tape.QuantumScript.from_queue(q)
         matrix = _tape_to_matrix(tape, wire_order=control_wires + work_wires + [target_wire])
@@ -649,10 +649,10 @@ class TestMCXDecomposition:
             if work_wire_type == "zeroed":
                 qp.Projector([0], wires=work_wire)
             with qp.capture.pause():
-                _mcx_one_work_wire(**mcx.arguments)
+                mcx_one_work_wire(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
-        assert_valid_decomp_rule(mcx, _mcx_one_work_wire, check_matrix=False)
+        assert_valid_decomp_rule(mcx, mcx_one_work_wire, check_matrix=False)
 
         # Verify that the decomposition produces an equivalent matrix.
         tape = qp.tape.QuantumScript.from_queue(q)
@@ -687,10 +687,10 @@ class TestMCXDecomposition:
             if work_wire_type == "zeroed":
                 qp.Projector([0, 0], wires=work_wires)
             with qp.capture.pause():
-                _mcx_two_work_wires(**mcx.arguments)
+                mcx_two_work_wires(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
-        assert_valid_decomp_rule(mcx, _mcx_two_work_wires, check_matrix=False)
+        assert_valid_decomp_rule(mcx, mcx_two_work_wires, check_matrix=False)
 
         # Verify that the decomposition produces an equivalent matrix.
         tape = qp.tape.QuantumScript.from_queue(q)
@@ -717,10 +717,10 @@ class TestMCXDecomposition:
 
         with qp.queuing.AnnotatedQueue() as q:
             with qp.capture.pause():
-                _mcx_no_work_wires(**mcx.arguments)
+                mcx_no_work_wires(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
-        assert_valid_decomp_rule(mcx, _mcx_no_work_wires, check_matrix=False)
+        assert_valid_decomp_rule(mcx, mcx_no_work_wires, check_matrix=False)
 
         # Verify that the decomposition produces an equivalent matrix.
         tape = qp.tape.QuantumScript.from_queue(q)
@@ -776,8 +776,8 @@ class TestMCXDecomposition:
         """Tests that a fixed decomposition rule is used instead of the stock ones."""
 
         mcx = qp.MultiControlledX(wires=[0, 1, 2, 3])
-        _fix_decomp(qp.MultiControlledX, _mcx_no_work_wires)
-        assert list(qp.list_decomps(mcx)) == [_mcx_no_work_wires]
+        _fix_decomp(qp.MultiControlledX, mcx_no_work_wires)
+        assert list(qp.list_decomps(mcx)) == [mcx_no_work_wires]
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("num_control_wires, num_work_wires", [(4, 1), (4, 2)])
@@ -843,4 +843,4 @@ class TestMCXDecomposition:
         wires = list(range(n_ctrl + 1))
         work_wires = list(range(n_ctrl + 1, n_ctrl + 1 + n_work))
         op = qp.MultiControlledX(wires=wires, work_wires=work_wires)
-        assert _mcx_no_work_wires.is_applicable(**op.arguments) is expected
+        assert mcx_no_work_wires.is_applicable(**op.arguments) is expected

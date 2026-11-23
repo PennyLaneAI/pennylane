@@ -42,11 +42,7 @@ def _GQSP_standard_resources(unitary, angles, control, work_wires, work_wire_typ
     unitary = abstractify(unitary)
     ctrl_kwargs = {"work_wires": Wire[len(work_wires)], "work_wire_type": work_wire_type}
 
-    resources = {
-        ops.X: 2 + 2 * (num_iters - 1),
-        ops.U3: num_iters,
-        ops.Z: num_iters,
-    }
+    resources = {ops.X: 2 + 2 * (num_iters - 1), ops.U3: num_iters, ops.Z: num_iters}
     if num_iters - 1 - num_absorbed > 0:
         resources[_ctrl_abstract(unitary, Wire[1], num_zero_control_values=1, **ctrl_kwargs)] = (
             num_iters - 1 - num_absorbed
@@ -62,7 +58,8 @@ def _GQSP_standard_resources(unitary, angles, control, work_wires, work_wire_typ
 
 @register_resources(_GQSP_standard_resources, name="controlled_unitary_rotations")
 # pylint: disable-next=too-many-arguments
-def _GQSP_standard(unitary, angles, control, work_wires, work_wire_type, shift):
+def GQSP_standard(unitary, angles, control, work_wires, work_wire_type, shift):
+    """Decompose ``GQSP`` using the ``controlled_unitary_rotations`` strategy."""
     if compiler.active() or capture.enabled():
         angles = math.array(angles, like="jax")
 
@@ -116,4 +113,4 @@ def _GQSP_standard(unitary, angles, control, work_wires, work_wire_type, shift):
     gqsp_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(GQSP, _GQSP_standard)
+add_decomps(GQSP, GQSP_standard)

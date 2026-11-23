@@ -210,8 +210,8 @@ class TestDecomposition:
         """Test that with program capture, the determinant correction of an orthogonal matrix is
         a PauliZ for a negative determinant and nothing otherwise."""
         from pennylane.decomposition_rules import (
-            _basis_rotation_real,
             _basis_rotation_real_resources,
+            basis_rotation_real,
         )
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
@@ -224,7 +224,7 @@ class TestDecomposition:
         def circuit(unitary_matrix):
             resources = _basis_rotation_real_resources(unitary_matrix, wires=[0, 1, 2])
             assert resources == {qp.PauliZ: 1, qp.SingleExcitation: 3}
-            _basis_rotation_real(unitary_matrix, wires=[0, 1, 2])
+            basis_rotation_real(unitary_matrix, wires=[0, 1, 2])
 
         plxpr = qp.capture.make_plxpr(circuit)(ortho_matrix)
         collector = CollectOpsandMeas()

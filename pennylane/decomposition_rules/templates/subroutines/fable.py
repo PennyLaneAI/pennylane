@@ -62,7 +62,8 @@ def _fable_standard_resources(wires, thetas, control_wires, tol):
 
 
 @register_resources(_fable_standard_resources, name="gray_code_rotations")
-def _fable_standard(input_matrix, wires, tol=0):
+def fable_standard(input_matrix, wires, tol=0):
+    """Decompose ``FABLE`` using the ``gray_code_rotations`` strategy."""
     alphas = math.arccos(input_matrix).flatten()
     thetas = compute_theta(alphas)
 
@@ -141,4 +142,4 @@ def _fable_standard(input_matrix, wires, tol=0):
     wires_i_hadamard_loop()
 
 
-add_decomps(FABLE, _fable_standard)
+add_decomps(FABLE, fable_standard)

@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition_rules import _mps_prep_standard
+from pennylane.decomposition_rules import mps_prep_standard
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.templates.state_preparations.state_prep_mps import (
     _validate_mps_shape,
@@ -659,7 +659,7 @@ class TestMPSPrep:
         num_wires = 4
 
         def circuit(*_mps):
-            _mps_prep_standard(
+            mps_prep_standard(
                 list(_mps),
                 wires=range(2, num_wires + 2),
                 work_wires=[0, 1],

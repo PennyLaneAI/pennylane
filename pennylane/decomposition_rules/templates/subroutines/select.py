@@ -23,11 +23,7 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.core.apply import apply
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, MultiControlledX, adjoint, ctrl
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -106,8 +102,8 @@ def _select_multi_control_resources(ops, control, work_wires, partial):
 
 
 @register_resources(_select_multi_control_resources, name="multi_control")
-def _select_multi_control(*_, ops, control, work_wires, partial, **__):
-
+def select_multi_control(*_, ops, control, work_wires, partial, **__):
+    """Decompose ``Select`` using the ``multi_control`` strategy."""
     if partial:
         if len(ops) == 1:
             apply(ops[0])
@@ -122,7 +118,7 @@ def _select_multi_control(*_, ops, control, work_wires, partial, **__):
             ctrl(op, control, control_values=ctrl_state, work_wires=work_wires)
 
 
-add_decomps(Select, _select_multi_control)
+add_decomps(Select, select_multi_control)
 
 
 # Decomposition of Select using unary iterator
@@ -349,7 +345,7 @@ def _select_unary_resources(ops, control, work_wires, partial):
 def _select_decomp_unary_not_partial(ops, control, work_wires):
     """Decompose Select operator into unary iterator, without applying the partial Select
     reduction. The control structure is simpler without the Select reduction, so that we do
-    not use the same recursive structure as for ``_select_unary`` but a simple ``for`` loop
+    not use the same recursive structure as for ``select_unary`` but a simple ``for`` loop
     instead.
 
     Args:
@@ -526,7 +522,7 @@ def _unary_condition(ops, control, work_wires, partial):  # pylint: disable=unus
 
 @register_condition(_unary_condition)
 @register_resources(_select_unary_resources, name="unary")
-def _select_unary(*_, ops, control, work_wires, partial, **__):
+def select_unary(*_, ops, control, work_wires, partial, **__):
     r"""This function reproduces the unary iterator behaviour in https://arxiv.org/abs/1805.03662.
     For :math:`K` operators this decomposition requires at least :math:`c=\lceil\log_2 K\rceil`
     control wires (as usual for Select), and :math:`c-1` additional work wires.
@@ -585,7 +581,7 @@ def _select_unary(*_, ops, control, work_wires, partial, **__):
     return _add_first_k_units(ops, aux_control, work_wires, len(ops))
 
 
-add_decomps(Select, _select_unary)
+add_decomps(Select, select_unary)
 
 
 # Decomposition of Select using one work wire to control the target operations
@@ -645,7 +641,7 @@ def _work_wire_condition(ops, control, work_wires, partial):  # pylint: disable=
 
 @register_condition(_work_wire_condition)
 @register_resources(_select_multi_control_work_wire_resources, name="multi_control_work_wire")
-def _select_multi_control_work_wire(*_, ops, control, work_wires, partial, **__):
+def select_multi_control_work_wire(*_, ops, control, work_wires, partial, **__):
     """
     Multi-controlled gate decomposition, in which, instead of directly controlling the target operator with all control
     wires, an auxiliary qubit is employed to encode whether the control condition is satisfied. The target operator
@@ -693,4 +689,4 @@ def _select_multi_control_work_wire(*_, ops, control, work_wires, partial, **__)
     return []
 
 
-add_decomps(Select, _select_multi_control_work_wire)
+add_decomps(Select, select_multi_control_work_wire)

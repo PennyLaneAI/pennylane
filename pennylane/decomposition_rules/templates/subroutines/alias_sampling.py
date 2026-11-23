@@ -74,7 +74,8 @@ def _uniform_prep_standard_resources(n_states, target_wires, work_wires):
 
 
 @register_resources(_uniform_prep_standard_resources, name="amplitude_amplification")
-def _uniform_prep_standard(n_states, target_wires, work_wires, **_):
+def uniform_prep_standard(n_states, target_wires, work_wires, **_):
+    """Decompose ``UniformPrep`` using the ``amplitude_amplification`` strategy."""
     k = (n_states & -n_states).bit_length() - 1
     L = n_states >> k
     logL = ceil_log2(L)
@@ -103,7 +104,7 @@ def _uniform_prep_standard(n_states, target_wires, work_wires, **_):
     GlobalPhase(np.pi / 2)
 
 
-add_decomps(UniformPrep, _uniform_prep_standard)
+add_decomps(UniformPrep, uniform_prep_standard)
 
 
 def _build_alias_tables(probs, mu):
@@ -216,7 +217,8 @@ def _alias_sampling_standard_resources(probs, mu, target_wires, temp_wires, work
 
 
 @register_resources(_alias_sampling_standard_resources, name="qrom_comparator_swap")
-def _alias_sampling_standard(probs, mu, target_wires, temp_wires, work_wires, **_):
+def alias_sampling_standard(probs, mu, target_wires, temp_wires, work_wires, **_):
+    """Decompose ``AliasSampling`` using the ``qrom_comparator_swap`` strategy."""
     L = len(probs)
     logL = ceil_log2(L)
     sigma_wires, alt_wires, keep_wires, flag, cmp_work = _split_temp_wires(temp_wires, mu, logL)
@@ -247,4 +249,4 @@ def _alias_sampling_standard(probs, mu, target_wires, temp_wires, work_wires, **
     _swap()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(AliasSampling, _alias_sampling_standard)
+add_decomps(AliasSampling, alias_sampling_standard)

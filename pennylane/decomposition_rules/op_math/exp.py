@@ -17,11 +17,7 @@
 
 from pennylane import math, ops, pauli
 from pennylane.core import queuing
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops.op_math.exp import Exp
 from pennylane.typing import Float, Wire
 
@@ -43,7 +39,7 @@ def _exp_to_pauli_rot_resources(base):
 
 @register_condition(_pauli_rot_decomp_condition)
 @register_resources(_exp_to_pauli_rot_resources, name="to_pauli_rot")
-def _exp_to_pauli_rot(*params, wires, base, **_):  # pylint: disable=unused-argument
+def exp_to_pauli_rot(*params, wires, base, **_):  # pylint: disable=unused-argument
     """Decompose the operator into a single PauliRot operator."""
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
@@ -60,4 +56,4 @@ def _exp_to_pauli_rot(*params, wires, base, **_):  # pylint: disable=unused-argu
     ops.PauliRot(coeff, pauli_word, base.wires)
 
 
-add_decomps(Exp, _exp_to_pauli_rot)
+add_decomps(Exp, exp_to_pauli_rot)

@@ -48,22 +48,22 @@ from pennylane.decomposition.decomposition_rule import (
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.decomposition_rules.common import null_decomp
 from pennylane.decomposition_rules.op_math.adjoint import (
-    _adjoint_cancel,
-    _adjoint_negate_angle,
+    adjoint_cancel,
+    adjoint_negate_angle,
     make_adjoint_decomp,
 )
 from pennylane.decomposition_rules.op_math.controlled import (
-    _controlled_flip_adjoint,
-    _controlled_to_unitary,
+    controlled_flip_adjoint,
+    controlled_to_unitary,
     ctrl_single_work_wire,
     make_controlled_decomp,
 )
 from pennylane.decomposition_rules.op_math.pow import (
-    _pow_flip_adjoint,
-    _pow_merge_powers,
-    _pow_repeat_base,
+    pow_flip_adjoint,
+    pow_merge_powers,
+    pow_repeat_base,
 )
-from pennylane.decomposition_rules.op_math.symbolicop import _operator1_to_base, self_adjoint_legacy
+from pennylane.decomposition_rules.op_math.symbolicop import operator1_to_base, self_adjoint_legacy
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 
 from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, resource_rep
@@ -620,7 +620,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if (
             issubclass(op.op_type, qp.ops.Adjoint)
             and self_adjoint_legacy not in decomps
-            and _adjoint_negate_angle not in decomps
+            and adjoint_negate_angle not in decomps
         ):
             # In general, we decompose the adjoint of an operator by applying adjoint to the
             # decompositions of the operator. However, this is not necessary if the operator
@@ -647,7 +647,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         # Special case: adjoint of an adjoint cancels out
         if issubclass(base_class, qp.ops.Adjoint):
-            return [_adjoint_cancel]
+            return [adjoint_cancel]
 
         # General case: apply adjoint to each of the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
@@ -667,18 +667,18 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return [null_decomp]
 
         if op.params["z"] == 1:
-            return [_operator1_to_base]
+            return [operator1_to_base]
 
         # Special case: power of a power
         if issubclass(op.params["base_class"], qp.ops.Pow):
-            return [_pow_merge_powers]
+            return [pow_merge_powers]
 
         # Special case: power of an adjoint
         if issubclass(op.params["base_class"], qp.ops.Adjoint):
-            return [_pow_flip_adjoint]
+            return [pow_flip_adjoint]
 
         # General case: repeat the operator z times
-        return [_pow_repeat_base]
+        return [pow_repeat_base]
 
     def _get_controlled_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Adds a controlled decomposition node to the graph."""
@@ -687,7 +687,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         # Special case: control of an adjoint
         if issubclass(base_class, qp.ops.Adjoint):
-            return [_controlled_flip_adjoint]
+            return [controlled_flip_adjoint]
 
         # Special case: when the base is GlobalPhase, none of the following automatically
         # generated decomposition rules apply. Also, controlled ChangeOpBasis defines its
@@ -706,7 +706,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         # There's always the option of turning the controlled operator into a controlled
         # qubit unitary if the base operator has a matrix form.
-        rules.append(_controlled_to_unitary)
+        rules.append(controlled_to_unitary)
 
         # There's always Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016.
         rules.append(ctrl_single_work_wire)
@@ -1009,7 +1009,7 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
         cost = self.distances[d_node_idx].weighted_cost - self.distances[op_node_idx].weighted_cost
         return math.inf if math.isnan(cost) else cost
 
-    def discover_vertex(self, v, score):  # pylint: disable=unused-argument
+    def discover_vertex(self, v, score):
         """Triggered when a vertex is about to be explored during the Dijkstra search."""
         self.unsolved_op_indices.discard(v)
         if not self.unsolved_op_indices and self._lazy:

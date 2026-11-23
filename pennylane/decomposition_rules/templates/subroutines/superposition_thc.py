@@ -147,13 +147,14 @@ def _superposition_thc_standard_resources(M, N, mu_wires, nu_wires, work_wires):
 
 
 @register_resources(_superposition_thc_standard_resources, name="amplitude_amplification")
-def _superposition_thc_standard(M, N, mu_wires, nu_wires, work_wires, **_):
+def superposition_thc_standard(M, N, mu_wires, nu_wires, work_wires, **_):
     #
     # The first seven `work_wires` correspond to the flag/auxiliary register in Fig. 3 of
     # https://arxiv.org/pdf/2011.03494. After the routine, all work wires return to the zero
     # state except the flags work_wires[3] and work_wires[6], and work_wires[0], whose cleaning
     # rotation we omit. Note that the paper uses 1-based indexing, whereas we use 0-based indexing.
 
+    """Decompose ``SuperpositionTHC`` using the ``amplitude_amplification`` strategy."""
     mu_wires = Wires(mu_wires)
     nu_wires = Wires(nu_wires)
     work_wires = Wires(work_wires)
@@ -232,4 +233,4 @@ def _superposition_thc_standard(M, N, mu_wires, nu_wires, work_wires, **_):
     adjoint(lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires, keep_eq=True))()
 
 
-add_decomps(SuperpositionTHC, _superposition_thc_standard)
+add_decomps(SuperpositionTHC, superposition_thc_standard)

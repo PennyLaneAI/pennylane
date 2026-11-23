@@ -17,10 +17,7 @@
 
 from collections import Counter
 
-from pennylane.decomposition import (
-    add_decomps,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import adjoint, ctrl
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.subroutines.arithmetic.out_poly import OutPoly
@@ -61,7 +58,7 @@ def _out_poly_standard_resources(num_output_wires, num_work_wires, mod, coeffs_l
 
 
 @register_resources(_out_poly_standard_resources, name="fourier_polynomial_phases")
-def _out_poly_standard(  # pylint: disable=unused-argument
+def out_poly_standard(  # pylint: disable=unused-argument
     polynomial_function,
     input_registers,
     output_wires: WiresLike,
@@ -69,6 +66,7 @@ def _out_poly_standard(  # pylint: disable=unused-argument
     work_wires: WiresLike = (),
     **kwargs,
 ):
+    """Decompose ``OutPoly`` using the ``fourier_polynomial_phases`` strategy."""
     registers_wires = [*input_registers, output_wires]
 
     if len(work_wires) == 0:
@@ -105,4 +103,4 @@ def _out_poly_standard(  # pylint: disable=unused-argument
     adjoint(QFT(wires=output_adder_mod))
 
 
-add_decomps(OutPoly, _out_poly_standard)
+add_decomps(OutPoly, out_poly_standard)
