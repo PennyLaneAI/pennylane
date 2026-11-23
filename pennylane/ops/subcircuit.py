@@ -47,6 +47,7 @@ def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator2]:
     attrs["__init__"] = _init
     attrs["__doc__"] = qfunc._impl.__doc__
     attrs["__module__"] = qfunc._impl.__module__
+    attrs["__qualname__"] = qfunc._impl.__qualname__
 
     # creates a new class
     new_operator = type(qfunc.name, (Operator2,), attrs)
@@ -78,7 +79,7 @@ def subcircuit(  # pylint: disable=too-many-arguments
 
     The quantum function decorated with `subcircuit` can be any valid quantum
     function, provided that nothing is returned from it (e.g., terminal measurements are
-    not allowed) and that it has resources registered to it via :func:`~.register_resources`.
+    not allowed) and that it has resources registered to it via :func:`~pennylane.register_resources`.
 
     The decorated quantum function will automatically be registered as an :class:`~.Operator2`
     subclass with a single decomposition rule that corresponds to the quantum function body.
@@ -121,7 +122,7 @@ def subcircuit(  # pylint: disable=too-many-arguments
     .. code-block:: python
 
         @qp.subcircuit(dynamic_argnames=("phi",))
-        @qp.register_resources({qp.H: 1, qp.RZ: 1})
+        @qp.register_resources({qp.H: 1, qp.RZ: 1}, name="MyOp")
         def MyOp(phi, wires):
             qp.H(wires)
             qp.RZ(phi, wires)

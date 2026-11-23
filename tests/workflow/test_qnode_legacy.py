@@ -922,7 +922,7 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qp.RX(3 * self.data[0], wires=self.wires)]
 
-        @qp.register_resources({qp.RX: 1})
+        @qp.register_resources({qp.RX: 1}, name="decomp")
         def _decomp(param, wires):
             qp.RX(3 * param, wires)
 
@@ -962,7 +962,7 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qp.RX(3 * self.data[0], wires=self.wires)]
 
-        @qp.register_resources({qp.RX: 1})
+        @qp.register_resources({qp.RX: 1}, name="decomp")
         def _decomp(data, wires):
             qp.RX(3 * data, wires)
 
@@ -993,7 +993,7 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qp.RY(3 * self.data[0], wires=self.wires)]
 
-        @qp.register_resources({qp.RY: 1})
+        @qp.register_resources({qp.RY: 1}, name="custom_decomposition")
         def custom_decomposition(phi, wires):
             qp.RY(3 * phi, wires=wires)
 
