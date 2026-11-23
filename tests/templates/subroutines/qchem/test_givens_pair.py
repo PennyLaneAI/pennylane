@@ -27,6 +27,7 @@ from pennylane.templates.subroutines.qchem.givens_pair import (
     _GivensPairFrame,
 )
 from pennylane.transforms import _tape_decompose
+from pennylane.transforms.decompositions import make_rzlayer_to_phase_gradient_decomp
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
@@ -37,6 +38,23 @@ SMALL_CASES = [
     (0.4, [0, 1, 2, 3], []),
     (-1.3, [3, 1, 0, 2], [5, 4]),
 ]
+
+# Registers of b-bit phase gradient rules, and the gates that the frame rule decomposes into with
+# the phase gradient rule of RZLayer
+NUM_BITS = 4
+PHASE_GRADIENT_WIRES = {
+    "angle_wires": Wires([f"angle_{i}" for i in range(NUM_BITS)]),
+    "phase_grad_wires": Wires([f"phase_grad_{i}" for i in range(NUM_BITS)]),
+    "work_wires": Wires([f"adder_work_{i}" for i in range(NUM_BITS - 1)]),
+}
+PHASE_GRADIENT_GATES = {
+    "PPR_4",
+    "PauliX",
+    "CNOT",
+    "TemporaryAND",
+    "Adjoint(TemporaryAND)",
+    "SemiAdder",
+}
 
 
 def _two_single_excitations_matrix(phi, wires, wire_order):
@@ -184,6 +202,27 @@ class TestDecomposition:
 
         assert np.isclose(circuit(0.4), np.cos(0.4) ** 2)
         assert qp.analyze(circuit, level=1)(0.4).resources.counts == expected_counts
+
+
+@pytest.mark.parametrize("phi", [0.4, 0.0])
+def test_phase_gradient_cost(phi):
+    """Test that, with the phase gradient rule of RZLayer and two work wires, a GivensPair costs
+    two TemporaryANDs outside of one SemiAdder, also at phi = 0, and that neither rule requests
+    further work wires."""
+    rzlayer_rule = make_rzlayer_to_phase_gradient_decomp(**PHASE_GRADIENT_WIRES)
+    op = qp.GivensPair(phi, [0, 1, 2, 3], work_wires=[4, 5])
+    fixed_decomps = {qp.GivensPair: _givens_pair_rzlayer, qp.RZLayer: rzlayer_rule}
+
+    [tape], _ = _tape_decompose(
+        QuantumScript([op]), gate_set=PHASE_GRADIENT_GATES, fixed_decomps=fixed_decomps
+    )
+    assert set(tape.wires) <= set(op.wires).union(*PHASE_GRADIENT_WIRES.values())
+    counts = Counter(gate.name for gate in tape.operations)
+    assert (counts["TemporaryAND"], counts["SemiAdder"]) == (2, 1)
+
+    [cob] = qp.testing.decomp_rule_to_tape(op, _givens_pair_rzlayer).operations
+    assert _givens_pair_rzlayer.get_work_wire_spec(**op.arguments).total == 0
+    assert rzlayer_rule.get_work_wire_spec(**cob.target_op.arguments).total == 0
 
 
 class TestInterfaces:
