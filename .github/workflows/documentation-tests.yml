@@ -120,7 +120,6 @@ jobs:
           --ignore=doc/introduction/data.rst
           --ignore=doc/introduction/dynamic_quantum_circuits.rst
           --ignore=doc/introduction/importing_workflows.rst
-          --ignore=doc/introduction/inspecting_circuits.rst
           --ignore=doc/introduction/interfaces.rst
           --ignore=doc/introduction/interfaces
           --ignore=doc/introduction/logging.rst
