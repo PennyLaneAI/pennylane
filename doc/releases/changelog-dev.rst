@@ -1013,7 +1013,7 @@ Improvements 🛠
   :func:`~.qchem.fermionic_observable` and :func:`~.qchem.basis_rotation`. Convert the
   two-electron tensor to chemists' notation with ``np.swapaxes(two, 1, 3)`` before using
   :func:`~.qchem.factorize`.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10581) <https://github.com/PennyLaneAI/pennylane/pull/10581>`__
 
 * :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
   powers that can simplify eagerly for faster execution, while the other uses nested
@@ -2098,7 +2098,7 @@ Breaking changes 💔
   ``alpha``, ``coeff``, and ``normalize`` arguments have been removed, along with the
   ``n_orbitals``, ``n_basis``, ``basis_data``, ``basis_set``, and ``mo_coefficients``
   attributes and the ``atomic_orbital`` and ``molecular_orbital`` methods.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10581) <https://github.com/PennyLaneAI/pennylane/pull/10581>`__
 
   .. code-block:: python
 
@@ -2711,7 +2711,7 @@ Bug fixes 🐛
 
 * :func:`~.qchem.molecular_hamiltonian` with ``method="pyscf"`` now applies ``active_orbitals``
   when no core orbitals are frozen. Previously, the virtual orbitals were not truncated in this case.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10581) <https://github.com/PennyLaneAI/pennylane/pull/10581>`__
 
 * Fixed resource callbacks in :class:`~.SingleExcitation` decompositions to accept positional arguments.
   `(#10575) <https://github.com/PennyLaneAI/pennylane/pull/10575>`__
