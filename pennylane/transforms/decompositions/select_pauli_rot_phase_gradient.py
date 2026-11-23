@@ -15,19 +15,51 @@ r"""
 Decomposition rule for SelectPauliRot in terms of `phase gradient states <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__
 """
 
-from functools import partial
-
 import numpy as np
 
 import pennylane as qp
-from pennylane.core.operator import Operator, abstractify
+from pennylane.core.operator import Operator
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.subcircuit import subcircuit
+from pennylane.templates.subroutines.select_pauli_rot import _SelectPauliRotYBasis
 from pennylane.typing import Bool, Wire
 from pennylane.wires import WireError, Wires
 
 from .rz_phase_gradient import _precision_dispatcher, validate_phase_gradient_wires
+
+
+def _select_phase_gradient_compute_resources(
+    bitstrings, wires, angle_wires, phase_grad_wires, work_wires
+):
+    """Resources for loading selected angles and flipping phase-gradient wires."""
+    return {
+        qp.QROMLoad(bitstrings, wires[:-1], angle_wires, work_wires=work_wires): 1,
+        qp.MultiControlledX(Wire[2], control_values=Bool[1]): len(phase_grad_wires),
+    }
+
+
+@subcircuit(
+    dynamic_argnames=("bitstrings",),
+    wire_argnames=("wires", "angle_wires", "phase_grad_wires", "work_wires"),
+    arg_specs={
+        "bitstrings": Bool[-1, -1],
+        "wires": Wire[-1],
+        "angle_wires": Wire[-1],
+        "phase_grad_wires": Wire[-1],
+        "work_wires": Wire[-1],
+    },
+    grad_method=None,
+)
+@qp.register_resources(_select_phase_gradient_compute_resources)
+def _SelectPauliRotPhaseGradientCompute(
+    bitstrings, wires, angle_wires, phase_grad_wires, work_wires
+) -> None:
+    """Load selected angle bits and flip phase-gradient wires when the target is zero."""
+    qp.QROMLoad(bitstrings, wires[:-1], angle_wires, work_wires=work_wires)
+    for wire in phase_grad_wires:
+        qp.MultiControlledX(Wires(wires[-1:]) + Wires(wire), control_values=[0])
 
 
 def _select_pauli_rot_phase_gradient(  # pylint: disable=too-many-arguments
@@ -44,45 +76,30 @@ def _select_pauli_rot_phase_gradient(  # pylint: disable=too-many-arguments
     """
 
     precision = len(angle_wires)
-    binary_int = qp.math.binary_decimals(phis, precision, unit=4 * np.pi)
+    binary_int = qp.math.cast(qp.math.binary_decimals(phis, precision, unit=4 * np.pi), bool)
 
-    load = partial(qp.QROMLoad, binary_int, control_wires, angle_wires, work_wires)
-
-    def fanout():
-        for wire in phase_grad_wires:
-            qp.MultiControlledX(Wires(target_wire) + Wires(wire), control_values=[0])
-
-    def compute_fn():
-        load()
-        fanout()
-
-    def target_fn():
-        qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
-
-    def uncompute_fn():
-        fanout()
-        qp.adjoint(load)()
-
-    def inner_cob():
-        return change_op_basis(compute_fn, target_fn, uncompute_fn)
+    compute_op = _SelectPauliRotPhaseGradientCompute(
+        binary_int,
+        Wires(control_wires) + Wires(target_wire),
+        angle_wires,
+        phase_grad_wires,
+        work_wires,
+    )
+    target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
+    inner_cob = change_op_basis(compute_op, target_op)
 
     match rot_axis:
         case "X":
-
-            def x_basis_comp():
-                qp.Hadamard(target_wire)
-
-            return qp.change_op_basis(x_basis_comp, inner_cob, x_basis_comp)
+            return qp.change_op_basis(qp.Hadamard(target_wire), inner_cob, qp.Hadamard(target_wire))
 
         case "Y":
+            return qp.change_op_basis(
+                _SelectPauliRotYBasis(target_wire, reverse=False),
+                inner_cob,
+                _SelectPauliRotYBasis(target_wire, reverse=True),
+            )
 
-            def y_basis_comp():
-                qp.adjoint(qp.S(target_wire))
-                qp.Hadamard(target_wire)
-
-            return qp.change_op_basis(y_basis_comp, inner_cob)
-
-    return inner_cob()
+    return inner_cob
 
 
 def make_selectpaulirot_to_phase_gradient_decomp(
@@ -130,8 +147,6 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         import pennylane as qp
         from pennylane.transforms.decompositions import make_selectpaulirot_to_phase_gradient_decomp
         import numpy as np
-
-        qp.decomposition.enable_graph()
 
         prec = 3
         np.random.seed(35)
@@ -276,32 +291,22 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         return {_resource_rep(num_control_wires, rot_axis, p): 1 for p in precisions - {0}}
 
     def _resource_rep(num_control_wires, rot_axis, p):
-        # 1. QROMLoad compressed rep
-        load_rep = qp.QROMLoad(
+        compute_rep = _SelectPauliRotPhaseGradientCompute(
             bitstrings=Bool[2**num_control_wires, p],
-            control_wires=Wire[num_control_wires],
-            target_wires=Wire[p],
+            wires=Wire[num_control_wires + 1],
+            angle_wires=Wire[p],
+            phase_grad_wires=Wire[p],
             work_wires=Wire[len(work_wires)],
         )
-
-        # 2. MultiControlledX with one control (the runtime control value is zero).
-        ctrl_x_rep = qp.MultiControlledX(Wire[2], control_values=Bool[1])
-
-        # 3. The callable decompositions produce products in reverse queuing order.
-        compute_rep = qp.ops.prod(*((ctrl_x_rep,) * p + (load_rep,)))
-        uncompute_rep = qp.ops.prod(*((_adjoint_abstract(load_rep),) + (ctrl_x_rep,) * p))
-
-        # 4. SemiAdder as the target_op
         semi_adder_rep = qp.SemiAdder(Wire[p], Wire[p], Wire[len(work_wires)])
 
-        # 5. change_op_basis(compute_op, target_op, uncompute_op)
         change_basis_rep = _change_op_basis_abstract(
             compute_op=compute_rep,
             target_op=semi_adder_rep,
-            uncompute_op=uncompute_rep,
+            uncompute_op=_adjoint_abstract(compute_rep),
         )
 
-        # 6. Basis adaptation depending on rot_axis
+        # Basis adaptation depending on rot_axis
         match rot_axis:
             case "X":
                 change_basis_rep_basis_adapted = _change_op_basis_abstract(
@@ -310,11 +315,10 @@ def make_selectpaulirot_to_phase_gradient_decomp(
                     qp.Hadamard,
                 )
             case "Y":
-                comp_rep = qp.ops.prod(abstractify(qp.Hadamard), _adjoint_abstract(qp.S))
                 change_basis_rep_basis_adapted = _change_op_basis_abstract(
-                    comp_rep,
+                    _SelectPauliRotYBasis(Wire[1], reverse=False),
                     change_basis_rep,
-                    _adjoint_abstract(comp_rep),
+                    _SelectPauliRotYBasis(Wire[1], reverse=True),
                 )
             case "Z":
                 change_basis_rep_basis_adapted = change_basis_rep

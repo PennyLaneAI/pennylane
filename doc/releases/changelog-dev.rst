@@ -447,7 +447,6 @@ New features since last release
 
       import pennylane as qp
       import numpy as np
-      qp.decomposition.enable_graph()
 
       coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
       indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
@@ -630,6 +629,8 @@ New features since last release
   decomposition pathways to the ``target`` gate set are analyzed and the resulting operations are
   counted. Note that :func:`~pennylane.estimate` is only supported with ``qp.qjit(capture=True)``.
   `(#10296) <https://github.com/PennyLaneAI/pennylane/pull/10296>`__
+  `(#10572) <https://github.com/PennyLaneAI/pennylane/pull/10572>`__
+
 
   Consider the following circuit.
 
@@ -1235,6 +1236,12 @@ Improvements 🛠
   efficient controlled decompositions.
   `(#10118) <https://github.com/PennyLaneAI/pennylane/pull/10118>`__
 
+* The decomposition of the adjoint of a :func:`~.change_op_basis` operator built from ``Operator2``
+  operands now produces another basis-change operator with an inverted target, instead of three
+  separate operators. This lets a controlled adjoint under program capture control only the target,
+  rather than every gate of the compute and uncompute operators.
+  `(#10568) <https://github.com/PennyLaneAI/pennylane/pull/10568>`__
+
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.
   `(#10017) <https://github.com/PennyLaneAI/pennylane/pull/10017>`__
 
@@ -1428,8 +1435,7 @@ Improvements 🛠
 * :class:`~.Adder` now registers an additional QFT-free, carry-ripple decomposition rule that avoids
   the arbitrarily precise rotations of the existing QFT-based decomposition and supports an arbitrary
   modulus. Its multi-controlled gates reuse the remaining register wires as borrowed work wires for a
-  cheaper decomposition, and the graph-based decomposition system
-  (:func:`~pennylane.decomposition.enable_graph`) automatically selects the cheaper rule.
+  cheaper decomposition, and the graph-based decomposition system automatically selects the cheaper rule.
   `(#9698) <https://github.com/PennyLaneAI/pennylane/pull/9698>`__
 
 * :func:`~pennylane.apply` is now compatible with program capture.
@@ -1637,6 +1643,9 @@ Breaking changes 💔
   decomposition, which is available for :class:`~.QROMLoad` and :class:`~.SelectSwap` instead.
   See the corresponding entry under "New features" for when to use which of the three operators.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
+
+* Removes :class:`pennylane.tape.OperationRecorder`. Use :class:`~.AnnotatedQueue` instead.
+  [(#10574)](https://github.com/PennyLaneAI/pennylane/pull/10574)
 
 * :func:`~.workflow.get_compile_pipeline` now returns the compile pipeline(s) directly: use
   ``get_compile_pipeline(qnode, level)`` instead of
@@ -1973,6 +1982,37 @@ Breaking changes 💔
   :mod:`pennylane.core.apply` module, and is no longer importable from
   ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
+
+* :func:`~.change_op_basis` now preserves the basis-change operator during program capture.
+  With program capture enabled, inputs must be operator instances; callables remain supported
+  when capture is disabled. For capture, convert quantum functions into operators
+  with :func:`~.subcircuit`
+  and instantiate the resulting operator class before passing it to ``change_op_basis``.
+  `(#10511) <https://github.com/PennyLaneAI/pennylane/pull/10511>`__
+
+  .. code-block:: python
+
+      @qp.subcircuit(dynamic_argnames=("angle",))
+      @qp.register_resources({qp.H: 1, qp.RX: 1})
+      def Compute(angle, wires):
+          qp.H(wires)
+          qp.RX(angle, wires)
+
+      def circuit(angle):
+          qp.change_op_basis(Compute(angle, wires=0), qp.RZ(0.3, 0))
+
+* Graph-based decomposition is now always enabled, and the ``qp.decomposition.enable_graph``,
+  ``disable_graph``, ``enabled_graph``, and ``toggle_graph_ctx`` functions have been removed.
+
+  As a result:
+
+  * :func:`~pennylane.transforms.decompose` and :func:`~pennylane.transforms._tape_decompose`
+    now require a ``gate_set`` argument.
+  * The ``compute_decomposition`` methods of :class:`~.AmplitudeAmplification`,
+    :class:`~.Multiplier`, :class:`~.OutAdder`, and :class:`~.QAOAEmbedding` have been removed.
+    ``op.decomposition()`` now uses their registered decomposition rules.
+
+  `(#10510) <https://github.com/PennyLaneAI/pennylane/pull/10510>`__
 
 * PyQuil and Qualtran interoperability has been removed from ``qp.io`` and the top-level
   PennyLane namespace. The removed APIs are ``from_pyquil``, ``from_quil``, ``from_quil_file``,
@@ -2565,6 +2605,15 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed the adjoint of a :func:`~.change_op_basis` operator with an explicit ``uncompute_op`` that
+  is not the adjoint of ``compute_op``. The adjoint now inverts and swaps the compute and uncompute
+  operators instead of keeping them unchanged.
+  `(#10568) <https://github.com/PennyLaneAI/pennylane/pull/10568>`__
+
+* Fixed reconstruction of wire pytrees containing mixed Python and JAX scalars, allowing
+  nested captured operators to reuse these wires.
+  `(#10511) <https://github.com/PennyLaneAI/pennylane/pull/10511>`__
 
 * Fixed the measurement-based decomposition of :class:`~.QROM` to support dynamic
   bitstrings with ``qjit(capture=True)``, including padding for extra control wires.

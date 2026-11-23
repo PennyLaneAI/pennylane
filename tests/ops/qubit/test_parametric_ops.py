@@ -21,6 +21,7 @@ from functools import partial, reduce
 import numpy as np
 import pytest
 from gate_data import CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
+from helpers.decomposition_helpers import assert_basis_change_decomposition
 from scipy import sparse
 
 import pennylane as qp
@@ -164,6 +165,46 @@ SKIP_ASSERT_VALID = {
 
 
 class TestOperations:
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        "op, rule_name",
+        [
+            (qp.RY(0.37, wires=3), "_ry_to_rz_cliff"),
+            (qp.RZ(-0.29, wires=3), "_rz_to_ry_cliff"),
+            (qp.MultiRZ(0.37, wires=[3]), "_multi_rz_decomposition"),
+            (qp.MultiRZ(-0.29, wires=[3, 1]), "_multi_rz_decomposition"),
+            (qp.MultiRZ(0.37, wires=[3, 1, 4, 0]), "_multi_rz_decomposition"),
+            (qp.PauliRot(0.37, "III", wires=[3, 1, 4]), "_pauli_rot_decomposition"),
+            (qp.PauliRot(0.37, "ZIZ", wires=[3, 1, 4]), "_pauli_rot_decomposition"),
+            (qp.PauliRot(-0.29, "XIY", wires=[3, 1, 4]), "_pauli_rot_decomposition"),
+            (qp.PauliRot(0.37, "YYZZ", wires=[3, 1, 4, 0]), "_pauli_rot_decomposition"),
+            (qp.IsingXY(-0.29, wires=[3, 1]), "_isingxy_to_h_cy"),
+        ],
+    )
+    def test_basis_change_decomposition(self, op, rule_name):
+        """Test that basis changes preserve their matrices and declared resources during capture."""
+        rule = qp.list_decomps(op)[rule_name]
+        assert_basis_change_decomposition(op, rule)
+
+    @pytest.mark.capture
+    def test_isingxy_subcircuit_replays_dynamic_arguments(self):
+        """Test that a captured rotation subcircuit uses each invocation's angle and wires."""
+        import jax
+        import jax.numpy as jnp
+
+        rule = qp.list_decomps(qp.IsingXY)["_isingxy_to_h_cy"]
+        jaxpr = jax.make_jaxpr(lambda phi, wires: rule(phi, wires=wires))(
+            jnp.array(0.1), jnp.array([0, 1])
+        )
+        for phi, wires in ((0.37, [3, 1]), (-0.81, [1, 4])):
+            tape = qp.testing.plxpr_to_tape(
+                jaxpr.jaxpr, jaxpr.consts, jnp.array(phi), jnp.array(wires)
+            )
+            with qp.capture.pause():
+                expected = qp.IsingXY(phi, wires=wires).matrix()
+                actual = qp.matrix(tape, wire_order=wires)
+            assert np.allclose(actual, expected)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("op", ALL_OPERATIONS)
@@ -512,17 +553,19 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         op = qp.IsingXY(param, wires=[3, 2])
         (cob,) = op.decomposition()
 
-        # operands are in matrix order, i.e. reversed relative to the order they are applied in
-        assert [gate.name for gate in cob.compute_op.operands] == ["CY", "Hadamard"]
-        assert [gate.wires for gate in cob.compute_op.operands] == [Wires([3, 2]), Wires([3])]
+        compute = cob.compute_op.decomposition()
+        target_rotations = cob.target_op.decomposition()
+        uncompute = cob.uncompute_op.decomposition()
+        assert [gate.name for gate in compute] == ["Hadamard", "CY"]
+        assert [gate.wires for gate in compute] == [Wires([3]), Wires([3, 2])]
 
-        assert [gate.name for gate in cob.target_op.operands] == ["RX", "RY"]
-        assert [gate.wires for gate in cob.target_op.operands] == [Wires([2]), Wires([3])]
+        assert [gate.name for gate in target_rotations] == ["RY", "RX"]
+        assert [gate.wires for gate in target_rotations] == [Wires([3]), Wires([2])]
 
-        assert [gate.name for gate in cob.uncompute_op.operands] == ["Hadamard", "CY"]
-        assert [gate.wires for gate in cob.uncompute_op.operands] == [
-            Wires([3]),
+        assert [gate.name for gate in uncompute] == ["CY", "Hadamard"]
+        assert [gate.wires for gate in uncompute] == [
             Wires([3, 2]),
+            Wires([3]),
         ]
 
         decomposed_matrix = qp.matrix(qp.tape.QuantumScript([cob]), wire_order=[3, 2])
@@ -724,7 +767,6 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         assert_valid_decomp_rule(op, rule)
 
     @pytest.mark.integration
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_isingzz_decomposition_graph(self):
         r"""Controlling ``IsingZZ`` should control only the inner ``RZ``, leaving the two
         conjugating ``CNOT``'s bare. There's no dedicated ``C(IsingZZ)`` rule for this: writing
@@ -780,7 +822,23 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         mat = qp.matrix(decomp, wire_order=[2, 3, 4])
         assert qp.math.allclose(mat, expected_matrix)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.catalyst
+    def test_controlled_isingzz_qjit_without_toffoli(self):
+        """Test that captured controlled IsingZZ compiles and analyzes without Toffoli (#10357)."""
+        gate_set = {qp.CNOT, qp.RZ, qp.GlobalPhase, qp.PauliX}
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("null.qubit", wires=5))
+        def circuit(angle):
+            qp.ctrl(qp.IsingZZ(angle, wires=[2, 3]), control=[4])
+            return qp.state()
+
+        operations = qp.analyze(circuit, level="user")(0.6931).resources.quantum_operations
+        assert operations["CNOT"] > 0
+        assert operations["RZ"] > 0
+        assert set(operations).issubset({"CNOT", "RZ", "GlobalPhase", "PauliX"})
+
     def test_controlled_multirz_decomposition_graph(self):
         r"""Controlling ``MultiRZ`` should control only the inner ``RZ``, leaving the conjugating
         CNOT ladder bare. This comes out of the generic ``C(ChangeOpBasis)`` rule rather than a
@@ -831,7 +889,6 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         assert_decomposable(op)
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("base_type", [qp.PhaseShift, qp.U1])
     @pytest.mark.parametrize("num_controls", [1, 2, 3])
     def test_controlled_phase_shift_single_phase_with_work_wires(self, base_type, num_controls):
@@ -898,7 +955,6 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
         assert_decomposable(op)
 
     @pytest.mark.integration
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_pcphase_decomposition_graph(self):
         """Tests that the PCPhase can be decomposed all the way down."""
 
@@ -1978,7 +2034,6 @@ class TestEigvals:
         assert np.allclose(op.eigvals(), expected)
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestGrad:
     device_methods = [
         ["default.qubit", "finite-diff"],
@@ -2851,15 +2906,17 @@ class TestPauliRot:  # pylint: disable=too-many-public-methods
         op = qp.PauliRot(theta, "XY", wires=[0, 1])
         (cob,) = op.decomposition()
 
-        assert [gate.name for gate in cob.compute_op.operands] == ["PPR_4", "Hadamard"]
-        qp.assert_equal(cob.compute_op.operands[0], qp.PPR_4(1, "X", wires=1))
-        qp.assert_equal(cob.compute_op.operands[1], qp.Hadamard(wires=0))
+        compute = cob.compute_op.decomposition()
+        uncompute = cob.uncompute_op.decomposition()
+        assert [gate.name for gate in compute] == ["Hadamard", "PPR_4"]
+        qp.assert_equal(compute[0], qp.Hadamard(wires=0))
+        qp.assert_equal(compute[1], qp.PPR_4(1, "X", wires=1))
 
         qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0, 1]))
 
-        assert [gate.name for gate in cob.uncompute_op.operands] == ["PPR_4", "Hadamard"]
-        qp.assert_equal(cob.uncompute_op.operands[0], qp.PPR_4(-1, "X", wires=1))
-        qp.assert_equal(cob.uncompute_op.operands[1], qp.Hadamard(wires=0))
+        assert [gate.name for gate in uncompute] == ["Hadamard", "PPR_4"]
+        qp.assert_equal(uncompute[0], qp.Hadamard(wires=0))
+        qp.assert_equal(uncompute[1], qp.PPR_4(-1, "X", wires=1))
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_PauliRot_decomposition_XIYZ(self, theta):
@@ -2868,29 +2925,31 @@ class TestPauliRot:  # pylint: disable=too-many-public-methods
         op = qp.PauliRot(theta, "XIYZ", wires=[0, 1, 2, 3])
         (cob,) = op.decomposition()
 
-        assert [gate.name for gate in cob.compute_op.operands] == ["PPR_4", "Hadamard"]
-        qp.assert_equal(cob.compute_op.operands[0], qp.PPR_4(1, "X", wires=2))
-        qp.assert_equal(cob.compute_op.operands[1], qp.Hadamard(wires=0))
+        compute = cob.compute_op.decomposition()
+        uncompute = cob.uncompute_op.decomposition()
+        assert [gate.name for gate in compute] == ["Hadamard", "PPR_4"]
+        qp.assert_equal(compute[0], qp.Hadamard(wires=0))
+        qp.assert_equal(compute[1], qp.PPR_4(1, "X", wires=2))
 
         qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0, 2, 3]))
 
-        assert [gate.name for gate in cob.uncompute_op.operands] == ["PPR_4", "Hadamard"]
-        qp.assert_equal(cob.uncompute_op.operands[0], qp.PPR_4(-1, "X", wires=2))
-        qp.assert_equal(cob.uncompute_op.operands[1], qp.Hadamard(wires=0))
+        assert [gate.name for gate in uncompute] == ["Hadamard", "PPR_4"]
+        qp.assert_equal(uncompute[0], qp.Hadamard(wires=0))
+        qp.assert_equal(uncompute[1], qp.PPR_4(-1, "X", wires=2))
 
-    def test_PauliRot_single_basis_gate_is_unwrapped(self):
-        """Test that a single basis gate is not wrapped in a product."""
+    def test_PauliRot_single_basis_gate(self):
+        """Test that basis subcircuits for single-qubit Pauli words decompose correctly."""
         theta = 0.4
         (cob,) = qp.PauliRot(theta, "X", wires=0).decomposition()
 
-        qp.assert_equal(cob.compute_op, qp.Hadamard(0))
+        qp.assert_equal(cob.compute_op.decomposition()[0], qp.Hadamard(0))
         qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0]))
-        qp.assert_equal(cob.uncompute_op, qp.Hadamard(0))
+        qp.assert_equal(cob.uncompute_op.decomposition()[0], qp.Hadamard(0))
 
         (cob,) = qp.PauliRot(theta, "Y", wires=0).decomposition()
-        qp.assert_equal(cob.compute_op, qp.PPR_4(1, "X", wires=0))
+        qp.assert_equal(cob.compute_op.decomposition()[0], qp.PPR_4(1, "X", wires=0))
         qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0]))
-        qp.assert_equal(cob.uncompute_op, qp.PPR_4(-1, "X", wires=0))
+        qp.assert_equal(cob.uncompute_op.decomposition()[0], qp.PPR_4(-1, "X", wires=0))
 
     @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
@@ -3138,14 +3197,15 @@ class TestMultiRZ:
         # which is what lets a control skip the ladder entirely.
         (cob,) = op.decomposition()
 
-        assert cob.compute_op.name == "CNOT"
-        assert cob.compute_op.wires == Wires([1, 0])
+        (compute,) = cob.compute_op.decomposition()
+        assert compute.name == "CNOT"
+        assert compute.wires == Wires([1, 0])
 
         assert cob.target_op.name == "RZ"
         assert cob.target_op.wires == Wires([0])
         assert np.allclose(cob.target_op.data[0], theta)
 
-        qp.assert_equal(cob.uncompute_op, qp.CNOT(wires=[1, 0]))
+        qp.assert_equal(cob.uncompute_op.decomposition()[0], qp.CNOT(wires=[1, 0]))
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_MultiRZ_decomposition_ZZZ(self, theta):
@@ -3156,18 +3216,17 @@ class TestMultiRZ:
         # which is what lets a control skip the ladder entirely.
         (cob,) = op.decomposition()
 
-        # the ladder is applied outermost-first, so its operands are in reverse circuit order
-        ladder = cob.compute_op.operands
+        ladder = cob.compute_op.decomposition()
         assert [gate.name for gate in ladder] == ["CNOT", "CNOT"]
-        assert [gate.wires for gate in ladder] == [Wires([2, 0]), Wires([3, 2])]
+        assert [gate.wires for gate in ladder] == [Wires([3, 2]), Wires([2, 0])]
 
         assert cob.target_op.name == "RZ"
         assert cob.target_op.wires == Wires([0])
         assert np.allclose(cob.target_op.data[0], theta)
 
-        unladder = cob.uncompute_op.operands
+        unladder = cob.uncompute_op.decomposition()
         assert [gate.name for gate in unladder] == ["CNOT", "CNOT"]
-        assert [gate.wires for gate in unladder] == [Wires([3, 2]), Wires([2, 0])]
+        assert [gate.wires for gate in unladder] == [Wires([2, 0]), Wires([3, 2])]
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_MultiRZ_assert_valid(self):
