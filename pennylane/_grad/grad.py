@@ -235,6 +235,45 @@ class grad:  # pylint: disable=too-many-instance-attributes
         function with respect to the differentiable arguments, or, if specified,
         the arguments in ``argnums``.
 
+    **Examples**
+
+    Differentiate a classical function of JAX inputs. By default, only the first
+    positional argument is differentiated:
+
+    .. code-block:: python
+
+        import jax.numpy as jnp
+
+        def cost(first, second):
+            return first**2 + first * second
+
+        first, second = jnp.array(2.0), jnp.array(3.0)
+
+    >>> qp.grad(cost)(first, second)
+    Array(7., dtype=float32, weak_type=True)
+
+    Select another argument by its index:
+
+    >>> qp.grad(cost, argnums=1)(first, second)
+    Array(2., dtype=float32, weak_type=True)
+
+    A sequence of indices returns a tuple of gradients:
+
+    >>> qp.grad(cost, argnums=(0, 1))(first, second)
+    (Array(7., dtype=float32, weak_type=True), Array(2., dtype=float32, weak_type=True))
+
+    Differentiate a QNode with a scalar expectation value:
+
+    .. code-block:: python
+
+        @qp.qnode(qp.device("default.qubit"), interface="jax")
+        def circuit(angle):
+            qp.RY(angle, wires=0)
+            return qp.expval(qp.Z(0))
+
+    >>> qp.grad(circuit)(jnp.array(0.5))
+    Array(-0.47942555, dtype=float32, weak_type=True)
+
     .. details::
         :title: Usage Details
 
