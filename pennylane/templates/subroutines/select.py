@@ -39,7 +39,7 @@ def _partial_select(K, control):
 
     Args:
         K (int): The number of operators in ``Select``.
-        control (Sequence[hashable]): Control wires.
+        control (Sequence[int]): Control wires.
 
     Returns:
         list[list[tuple]]: a list of length ``K`` with each entry being a list of length two.
@@ -223,16 +223,16 @@ class Select(Operator2):
             3: ─├U(M0)─├U(M1)─├U(M2)─├U(M3)─├U(M4)─├U(M5)─├U(M6)─├U(M7)─┤
             4: ─╰U(M0)─╰U(M1)─╰U(M2)─╰U(M3)─╰U(M4)─╰U(M5)─╰U(M6)─╰U(M7)─┤.
 
-        Unary iteration then uses :math:`c-1=2` auxiliary wires, denoted ``aux0`` and ``aux1``
+        Unary iteration then uses :math:`c-1=2` auxiliary wires, labelled ``5`` and ``6``
         below, to first rewrite the control structure:
 
         .. code-block::
 
             0:    ─╭○───────○╮─╭○───────○╮─╭○───────○╮─╭○───────○╮─╭●───────●╮─╭●───────●╮─╭●───────●╮─╭●───────●╮─┤
             1:    ─├○───────○┤─├○───────○┤─├●───────●┤─├●───────●┤─├○───────○┤─├○───────○┤─├●───────●┤─├●───────●┤─┤
-            aux0:  ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ │
+            5:     ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ ╰─╭●───●╮─╯ │
             2:    ───├○───○┤─────├●───●┤─────├○───○┤─────├●───●┤─────├○───○┤─────├●───●┤─────├○───○┤─────├●───●┤───┤
-            aux1:    ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯   │
+            6:       ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯     ╰─╭●──╯   │
             3:    ─────├U(M0)──────├U(M1)──────├U(M2)──────├U(M3)──────├U(M4)──────├U(M5)──────├U(M6)──────├U(M7)──┤
             4:    ─────╰U(M0)──────╰U(M1)──────╰U(M2)──────╰U(M3)──────╰U(M4)──────╰U(M5)──────╰U(M6)──────╰U(M7)──┤
 
@@ -261,9 +261,9 @@ class Select(Operator2):
 
             0:    ─╭○────────────────╭○──────────────────╭●─────────────────────╭●─────────────────●╮─┤
             1:    ─├○────────────────│───────────────────│──╭●──────────────────│──────────────────●┤─┤
-            aux0:  ╰─╭●─────╭●────●╮─╰X─╭●─────╭●─────●╮─╰X─╰X─╭●─────╭●─────●╮─╰X─╭●─────╭●─────●╮─╯ │
+            5:     ╰─╭●─────╭●────●╮─╰X─╭●─────╭●─────●╮─╰X─╰X─╭●─────╭●─────●╮─╰X─╭●─────╭●─────●╮─╯ │
             2:    ───├○─────│─────●┤────├○─────│──────●┤───────├○─────│──────●┤────├○─────│──────●┤───┤
-            aux1:    ╰─╭●───╰X─╭●──╯    ╰─╭●───╰X──╭●──╯       ╰─╭●───╰X──╭●──╯    ╰─╭●───╰X──╭●──╯   │
+            6:       ╰─╭●───╰X─╭●──╯    ╰─╭●───╰X──╭●──╯       ╰─╭●───╰X──╭●──╯    ╰─╭●───╰X──╭●──╯   │
             3:    ─────├U(M0)──├U(M1)─────├U(M2)───├U(M3)────────├U(M4)───├U(M5)─────├U(M6)───├U(M7)──┤
             4:    ─────╰U(M0)──╰U(M1)─────╰U(M2)───╰U(M3)────────╰U(M4)───╰U(M5)─────╰U(M6)───╰U(M7)──┤
 
@@ -299,11 +299,11 @@ class Select(Operator2):
         #. Apply the left-most ``TemporaryAND`` controlled on qubits ``0`` and ``1``.
         #. Split the target operators into four "quarters" (often with varying sizes)
            and apply the first quarter using ``R``.
-        #. Apply ``[X(0), CNOT([0, "aux0"]), X(0)]``.
+        #. Apply ``[X(0), CNOT([0, 5]), X(0)]``.
         #. Apply the second quarter using ``R``.
-        #. Apply ``[CNOT([0, "aux0"]), CNOT([1, "aux0"])]``.
+        #. Apply ``[CNOT([0, 5]), CNOT([1, 5])]``.
         #. Apply the third quarter using ``R``.
-        #. Apply ``[CNOT([0, "aux0"])]``.
+        #. Apply ``[CNOT([0, 5])]``.
         #. Apply the last quarter using ``R``.
         #. Apply the right-most ``adjoint(TemporaryAND)`` controlled on qubits ``0`` and ``1``.
 
@@ -334,9 +334,9 @@ class Select(Operator2):
 
               0:    ─╭○─────╭○─────╭●────────╭●─────●─╮─
               1:    ─├○─────│──────│──╭●─────│──────●─┤─
-              aux0:  ╰──╭R──╰X─╭R──╰X─╰X─╭R──╰X─╭R────╯
+              5:     ╰──╭R──╰X─╭R──╰X─╰X─╭R──╰X─╭R────╯
               2:    ────├R─────├R────────├R─────├R──────
-              aux1:     ╰R     ╰R        ╰R     ╰R      .
+              6:        ╰R     ╰R        ╰R     ╰R      .
 
           Here, each operator with three ``R`` labels symbolizes a call to ``R``. The first
           call in the second half applies :math:`2^{\lceil\log_2(\ell)\rceil-1}` operators.
@@ -351,9 +351,9 @@ class Select(Operator2):
 
               0:    ─╭○─────╭○─────○─╮╭●─────╭●─────●─╮─
               1:    ─├○─────│──────●─┤│──────│────────│─
-              aux0:  ╰──╭R──╰X─╭R────╯│      │        │
+              5:     ╰──╭R──╰X─╭R────╯│      │        │
               2:    ────├R─────├R─────├○─────│──────●─┤─
-              aux1:     ╰R     ╰R     ╰───R──╰X──R────╯
+              6:        ╰R     ╰R     ╰───R──╰X──R────╯
 
           where the second half may skip more than one control and auxiliary wire each.
           In this diagram, both the operators with three and one ``R`` labels represent calls to
@@ -368,9 +368,9 @@ class Select(Operator2):
 
               0:    ─╭○─────╭○─────○─╮╭●──
               1:    ─├○─────│──────●─┤│───
-              aux0:  ╰──╭R──╰X─╭R────╯│───
+              5:     ╰──╭R──╰X─╭R────╯│───
               2:    ────├R─────├R─────│───
-              aux1:     ╰R     ╰R     ╰U  .
+              6:        ╰R     ╰R     ╰U  .
 
           Here, the three connected ``R`` labels symbolize a call to ``R`` and
           apply :math:`2^{c-2}` operators each.
@@ -708,38 +708,38 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
 
     Args:
         ops (Sequence[Operator]): Operators applied by the Select unary iterator.
-        control (Sequence[hashable]): Control wires. Should be at least ``ceil(log2(len(ops)))`` many.
-        work_wires (Sequence[hashable]): Work wires. Should be at least ``len(control)-1`` many.
+        control (Sequence[int]): Control wires. Should be at least ``ceil(log2(len(ops)))`` many.
+        work_wires (Sequence[int]): Work wires. Should be at least ``len(control)-1`` many.
 
     Returns:
         Sequence[Operator]: Decomposition of a non-partial ``Select`` using unary iteration.
 
     Denote the number of control qubits as ``c`` and the number of operators as ``K``.
-    Arrange the control wires and ``c-1`` work wires as ``["c0", "c1", "w0", "c2", "w1", ...]``.
+    Use control wires ``range(c)`` and work wires ``range(c, 2*c-1)``.
+    The diagrams below use ``c=4`` and target wires ``[7, 8]``.
 
     We begin with a ladder of ``TemporaryAND`` operators:
 
     ```
-    c0: ─╭○──────────
-    c1: ─├○──────────
-    w0: ─╰──╭●───────
-    c2: ────├○───────
-    w1: ────╰──╭●────
+    0: ─╭○──────────
+    1: ─├○──────────
+    4: ─╰──╭●───────
+    2: ────├○───────
+    5: ────╰──╭●────
      :         :
      :            :
-    wp: ──────────╰──
-    t1: ─────────────
+    6: ──────────╰──
+    7: ─────────────
      :
-    tn: ─────────────
+    8: ─────────────
     ```
 
-    Here, the ``p`` in ``wp`` is the number of work wires, and ``n`` is the number of target
-    wires.
+    The last work wire is ``6``, and the target wires are ``7`` and ``8``.
     Then we iterate over the target operators and perform the following steps for each, except
     for the last operator.
 
-    1. Apply the operator, controlled on the last wire ``"wp"`` of the control structure, to the
-       target wires ``["t1", ... "tn"]``.
+    1. Apply the operator, controlled on the last work wire ``6`` of the control structure, to the
+       target wires ``[7, 8]``.
     2. For the ``k``-th operator (in 0-based indexing), find the position ``a`` of the most
        significant bit that flips when incrementing ``k`` to ``k+1``. It will be the position of
        the last bit that is ``0`` in the bit string of ``k``.
@@ -750,20 +750,20 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     5. Apply left elbows corresponding to the right elbows applied in step 3, but starting at
        position ``a`` (exclusive).
 
-    As an example, let ``c=4`` and the operator ``SWAP(["t1", "t2"])`` be the ``k=3``-rd operator
+    As an example, let ``c=4`` and the operator ``SWAP([7, 8])`` be the ``k=3``-rd operator
     that is applied, the following subcircuit is appended (using that ``k=0011_2`` and
     ``k+1=0100_2``, so that ``a=1`` is the position of the most significant flipped bit)
 
     ```
-    c0: ─────────────╭●──────────
-    c1: ─────────────│───────────
-    w0: ──────────●╮─╰X──╭●──────
-    c2: ──────────●┤─────├○──────
-    w1: ───────●╮──╯─────╰──╭●───
-    c3: ───────●┤───────────├○───
-    w2: ─╭●─────╯───────────╰────
-    t1: ─├SWAP───────────────────
-    t2: ─╰SWAP───────────────────
+    0: ─────────────╭●──────────
+    1: ─────────────│───────────
+    4: ──────────●╮─╰X──╭●──────
+    2: ──────────●┤─────├○──────
+    5: ───────●╮──╯─────╰──╭●───
+    3: ───────●┤───────────├○───
+    6: ─╭●─────╯───────────╰────
+    7: ─├SWAP───────────────────
+    8: ─╰SWAP───────────────────
          1.      3.  4.   5.
     ```
 
@@ -772,17 +772,17 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     low end:
 
     ```
-    c0: ──────────●╮── *
-    c1: ──────────○┤── *
-    w0: ───────●╮──╯──
-    c2: ───────●┤───── *
-    w1: ────●╮──╯─────
+    0: ──────────●╮── *
+    1: ──────────○┤── *
+    4: ───────●╮──╯──
+    2: ───────●┤───── *
+    5: ────●╮──╯─────
      :       :
      :    :
-    wp: ──╯───────────
-    t1: ──────────────
+    6: ──╯───────────
+    7: ──────────────
      :
-    tn: ──────────────
+    8: ──────────────
     ```
 
     The value of the control node (filled or open) on the control wires (marked with an

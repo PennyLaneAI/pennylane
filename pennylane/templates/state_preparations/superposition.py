@@ -99,7 +99,7 @@ def _permutation_operator(basis1, basis2, wires, work_wire):
         basis1 (List): The initial basis state, represented as a list of binary digits.
         basis2 (List): The target basis state, represented as a list of binary digits.
         wires (Sequence[int]): The list of wires that the operator acts on.
-        work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation.
+        work_wire (Wires or int): The auxiliary wire used for the permutation.
 
     Returns:
         list: A list of operators that map :math:`|\text{basis1}\rangle` to :math:`|\text{basis2}\rangle`.
@@ -125,7 +125,7 @@ def _permutation_operator_qfunc(basis1, basis2, wires, work_wire):
         basis1 (List): The initial basis state, represented as a list of binary digits.
         basis2 (List): The target basis state, represented as a list of binary digits.
         wires (Sequence[int]): The list of wires that the operator acts on.
-        work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation.
+        work_wire (Wires or int): The auxiliary wire used for the permutation.
     """
 
     qp.MultiControlledX(concatenate_wires(wires, work_wire), control_values=basis1)
@@ -161,7 +161,7 @@ class Superposition(Operation):
         coeffs (tensor-like[float]): normalized coefficients of the superposition
         bases (tensor-like[int]): basis states of the superposition
         wires (Sequence[int]): wires that the operator acts on
-        work_wire (Union[Wires, int, str]): the auxiliary wire used for the permutation
+        work_wire (Wires or int): the auxiliary wire used for the permutation
 
     **Example**
 
@@ -306,7 +306,7 @@ class Superposition(Operation):
             coeffs (tensor-like[float]): normalized coefficients of the superposition
             bases (tensor-like[int]): basis states of the superposition
             wires (Sequence[int]): wires that the operator acts on
-            work_wire (Union[Wires, int, str]): the auxiliary wire used for the permutation
+            work_wire (Wires or int): the auxiliary wire used for the permutation
 
         Returns:
             list[.Operator]: Decomposition of the operator

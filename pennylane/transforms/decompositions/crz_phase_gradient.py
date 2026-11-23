@@ -108,19 +108,17 @@ def make_crz_to_phase_gradient_decomp(
         import numpy as np
 
         prec = 3
-        phi = (1/2 + 1/4 + 1/8) * 4 * np.pi # binary rep is (111)
+        phi = (1 / 2 + 1 / 4 + 1 / 8) * 4 * np.pi  # binary rep is (111)
 
-        angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-        phase_grad_wires = qp.wires.Wires([f"phg_{i}" for i in range(prec)])
-        work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
+        angle_wires = qp.wires.Wires(range(2, 2 + prec))
+        phase_grad_wires = qp.wires.Wires(range(2 + prec, 2 + 2 * prec))
+        work_wires = qp.wires.Wires(range(2 + 2 * prec, 2 + 3 * prec - 1))
 
-        custom_decomp = make_crz_to_phase_gradient_decomp(
-            angle_wires, phase_grad_wires, work_wires
-        )
+        custom_decomp = make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
+
 
         @qp.transforms._tape_decompose(
-            gate_set={"CNOT", "SemiAdder", "PauliX"},
-            fixed_decomps={qp.CRZ: custom_decomp}
+            gate_set={"CNOT", "SemiAdder", "PauliX"}, fixed_decomps={qp.CRZ: custom_decomp}
         )
         @qp.qnode(qp.device("null.qubit"))
         def circuit():
@@ -139,14 +137,14 @@ def make_crz_to_phase_gradient_decomp(
     >>> print(qp.draw(circuit, wire_order=wire_order)())
          0: ─╭●─╭●─╭●────────────────────────╭●─╭●─╭●────────────────┤ ╭State
          1: ─│──│──│───X─╭●─╭●─╭●──X─────────│──│──│───X─╭●─╭●─╭●──X─┤ ├State
-     aux_0: ─╰X─│──│─────│──│──│──╭SemiAdder─╰X─│──│─────│──│──│─────┤ ├State
-     aux_1: ────╰X─│─────│──│──│──├SemiAdder────╰X─│─────│──│──│─────┤ ├State
-     aux_2: ───────╰X────│──│──│──├SemiAdder───────╰X────│──│──│─────┤ ├State
-     phg_0: ─────────────╰X─│──│──├SemiAdder─────────────╰X─│──│─────┤ ├State
-     phg_1: ────────────────╰X─│──├SemiAdder────────────────╰X─│─────┤ ├State
-     phg_2: ───────────────────╰X─├SemiAdder───────────────────╰X────┤ ├State
-    work_0: ──────────────────────├SemiAdder─────────────────────────┤ ├State
-    work_1: ──────────────────────╰SemiAdder─────────────────────────┤ ╰State
+     2: ─╰X─│──│─────│──│──│──╭SemiAdder─╰X─│──│─────│──│──│─────┤ ├State
+     3: ────╰X─│─────│──│──│──├SemiAdder────╰X─│─────│──│──│─────┤ ├State
+     4: ───────╰X────│──│──│──├SemiAdder───────╰X────│──│──│─────┤ ├State
+     5: ─────────────╰X─│──│──├SemiAdder─────────────╰X─│──│─────┤ ├State
+     6: ────────────────╰X─│──├SemiAdder────────────────╰X─│─────┤ ├State
+     7: ───────────────────╰X─├SemiAdder───────────────────╰X────┤ ├State
+    8: ──────────────────────├SemiAdder─────────────────────────┤ ├State
+    9: ──────────────────────╰SemiAdder─────────────────────────┤ ╰State
 
     .. details::
         :title: Usage details
@@ -200,12 +198,12 @@ def make_crz_to_phase_gradient_decomp(
         >>> print(qp.draw(truncated_circuit, wire_order=wire_order)(angles[0]))
              0: ─╭●─────────────────────╭●─────────────┤ ╭State
              1: ─│───X─╭●─╭●──X─────────│───X─╭●─╭●──X─┤ ├State
-         aux_0: ─│─────│──│──╭SemiAdder─│─────│──│─────┤ ├State
-         aux_1: ─╰X────│──│──├SemiAdder─╰X────│──│─────┤ ├State
-         phg_0: ───────╰X─│──├SemiAdder───────╰X─│─────┤ ├State
-         phg_1: ──────────╰X─├SemiAdder──────────╰X────┤ ├State
-        work_0: ─────────────├SemiAdder────────────────┤ ├State
-        work_1: ─────────────╰SemiAdder────────────────┤ ╰State
+         2: ─│─────│──│──╭SemiAdder─│─────│──│─────┤ ├State
+         3: ─╰X────│──│──├SemiAdder─╰X────│──│─────┤ ├State
+         5: ───────╰X─│──├SemiAdder───────╰X─│─────┤ ├State
+         6: ──────────╰X─├SemiAdder──────────╰X────┤ ├State
+        8: ─────────────├SemiAdder────────────────┤ ├State
+        9: ─────────────╰SemiAdder────────────────┤ ╰State
 
         Finally, keep the following in mind when using ``precision_stats``:
 

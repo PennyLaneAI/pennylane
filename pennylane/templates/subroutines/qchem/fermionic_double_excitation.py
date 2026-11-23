@@ -582,7 +582,7 @@ class FermionicDoubleExcitation(Operation):
 
         Args:
             weight (float or tensor_like): angle :math:`\theta` entering the Z rotation
-            wires (Any or Iterable[Any]): full set of wires that the operator acts on
+            wires (int or Iterable[int]): full set of wires that the operator acts on
             wires1 (Iterable): Wires of the qubits representing the subset of occupied orbitals
                 in the interval ``[s, r]``.
             wires2 (Iterable): Wires of the qubits representing the subset of unoccupied

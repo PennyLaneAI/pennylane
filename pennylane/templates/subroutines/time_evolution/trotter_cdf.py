@@ -172,8 +172,8 @@ class TrotterCDF(Operator2):
 
             double_phase=True:
 
-                c: ─╭●──────┤ ->        c: ─╭●────────╭●─┤
-            wires: ─╰RZ(2ϕ)─┤       wires: ─╰X──RZ(ϕ)─╰X─┤
+                0: ─╭●──────┤ ->        0: ─╭●────────╭●─┤
+                1: ─╰RZ(2ϕ)─┤           1: ─╰X──RZ(ϕ)─╰X─┤
 
         This is not a true controlled operation, but can be used to reduce the cost in Hadamard test circuits instead of the controlled evolution.
         The two circuits above are not equal as unitaries; only the relative phase between the
@@ -183,14 +183,16 @@ class TrotterCDF(Operator2):
         :title: Combining four IsingZZ gates into one CRZ
 
         Consider only the four interactions between distinct orbitals :math:`p<q`, with
-        :math:`a=p\alpha`, :math:`b=p\beta`, :math:`c=q\alpha`, and :math:`d=q\beta`:
+        :math:`a=p\alpha`, :math:`b=p\beta`, :math:`c=q\alpha`, and :math:`d=q\beta`, assigned to
+        wires ``0, 1, 2, 3``
+        respectively:
 
         .. code-block:: text
 
-            a: ─╭ZZ(θ)─╭ZZ(θ)───────────────┤
-            b: ─│──────│──────╭ZZ(θ)─╭ZZ(θ)─┤
-            c: ─╰ZZ(θ)─│──────╰ZZ(θ)─│──────┤
-            d: ────────╰ZZ(θ)────────╰ZZ(θ)─┤
+            0: ─╭ZZ(θ)─╭ZZ(θ)───────────────┤
+            1: ─│──────│──────╭ZZ(θ)─╭ZZ(θ)─┤
+            2: ─╰ZZ(θ)─│──────╰ZZ(θ)─│──────┤
+            3: ────────╰ZZ(θ)────────╰ZZ(θ)─┤
 
         Here ``ZZ(θ)`` denotes :class:`~.IsingZZ` with
         :math:`\theta=\lambda_{pq}\tau/2`, where :math:`\lambda_{pq}=`
@@ -205,15 +207,16 @@ class TrotterCDF(Operator2):
             e^{2i\theta},1,1,e^{-2i\theta}\right).
 
         Only states with :math:`a=b` and :math:`c=d` acquire a phase. These are precisely
-        the cases selected by the clean work wire :math:`e` in the following circuit:
+        the cases selected by the clean work wire ``4``, denoted :math:`e`, in the following
+        circuit:
 
         .. code-block:: text
 
-            a: ─╭●────╭●─────────╭●────╭●─┤
-            b: ─╰X─╭○─│──────────│──○╮─╰X─┤
-            c: ─╭●─│──╰X─╭RZ(4θ)─╰X──│─╭●─┤
-            d: ─╰X─├○────│──────────○┤─╰X─┤
-            e: ────╰⊕────╰●─────────⊕╯────┤
+            0: ─╭●────╭●─────────╭●────╭●─┤
+            1: ─╰X─╭○─│──────────│──○╮─╰X─┤
+            2: ─╭●─│──╰X─╭RZ(4θ)─╰X──│─╭●─┤
+            3: ─╰X─├○────│──────────○┤─╰X─┤
+            4: ────╰⊕────╰●─────────⊕╯────┤
 
         The symbols ``○`` indicate controls on zero. The left AND gate on :math:`(b,d,e)`
         is :class:`~.TemporaryAND` with ``control_values=(0, 0)``; the mirrored gate is its

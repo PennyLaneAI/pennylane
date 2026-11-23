@@ -255,7 +255,7 @@ class GateFabric(Operation):
             weights (tensor_like): Array of weights of shape ``(D, L, 2)``,
                 where ``D`` is the number of gate fabric layers and ``L = N/2-1``
                 is the number of :math:`\hat{Q}(\theta, \phi)` gates per layer with N being the total number of qubits.
-            wires (Any or Iterable[Any]): wires that the operator acts on.
+            wires (int or Iterable[int]): wires that the operator acts on.
             init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
                 in the Jordan-Wigner representation.
             include_pi (boolean): If ``True``, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
@@ -267,8 +267,10 @@ class GateFabric(Operation):
         **Example**
 
         >>> weights = torch.tensor([[[0.3, 1.]]])
-        >>> qp.GateFabric.compute_decomposition(weights, wires=["a", "b", "c", "d"], init_state=[0, 1, 0, 1], include_pi=False)
-        [BasisState([0 1 0 1], wires=['a', 'b', 'c', 'd']), DoubleExcitation(0.3..., wires=['a', 'b', 'c', 'd']), OrbitalRotation(1.0, wires=['a', 'b', 'c', 'd'])]
+        >>> qp.GateFabric.compute_decomposition(
+        ...     weights, wires=[0, 1, 2, 3], init_state=[0, 1, 0, 1], include_pi=False
+        ... )
+        [BasisState([0 1 0 1], wires=[0, 1, 2, 3]), DoubleExcitation(0.3..., wires=[0, 1, 2, 3]), OrbitalRotation(1.0, wires=[0, 1, 2, 3])]
 
         """
         op_list = []

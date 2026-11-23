@@ -31,11 +31,10 @@ class Permute(Operation):
     r"""Applies a permutation to a set of wires.
 
     Args:
-        permutation (Sequence): A list of wire labels that represents the new ordering of wires
-            after the permutation. The list may consist of integers or strings, so long as
-            they match the labels of ``wires``.
-        wires (Iterable or Wires): Wires that the permutation acts on. Accepts an iterable
-            of numbers or strings, or a Wires object.
+        permutation (Sequence[int]): Non-negative integer wire labels representing the new
+            ordering of wires after the permutation. They must match the labels of ``wires``.
+        wires (Iterable[int] or Wires): Wires that the permutation acts on. Accepts an iterable
+            of non-negative integers, or a Wires object.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -99,18 +98,19 @@ class Permute(Operation):
         3: ─│───────────│─────╭SWAP─┤
         4: ─╰SWAP───────╰SWAP─╰SWAP─┤
 
-        ``Permute`` can also be applied to wires with arbitrary labels, like so:
+        ``Permute`` can also be applied to wires with nonconsecutive integer labels, like so:
 
         .. code-block:: python
 
-            wire_labels = [3, 2, "a", 0, "c"]
+            wire_labels = [3, 2, 6, 0, 7]
 
-            dev = qp.device('default.qubit', wires=wire_labels)
+            dev = qp.device("default.qubit", wires=wire_labels)
+
 
             @qp.qnode(dev)
             def circuit():
-                qp.Permute(["c", 3,"a",2,0], wires=wire_labels)
-                return qp.expval(qp.Z("c"))
+                qp.Permute([7, 3, 6, 2, 0], wires=wire_labels)
+                return qp.expval(qp.Z(7))
 
         The permuted circuit is:
 
@@ -118,31 +118,32 @@ class Permute(Operation):
         3: ─╭SWAP─────────────┤
         2: ─│─────╭SWAP───────┤
         0: ─│─────│─────╭SWAP─┤
-        c: ─╰SWAP─╰SWAP─╰SWAP─┤  <Z>
+        7: ─╰SWAP─╰SWAP─╰SWAP─┤  <Z>
 
         It is also possible to permute a subset of wires by
         specifying a subset of labels. For example,
 
         .. code-block:: python
 
-            wire_labels = [3, 2, "a", 0, "c"]
+            wire_labels = [3, 2, 6, 0, 7]
 
-            dev = qp.device('default.qubit', wires=wire_labels)
+            dev = qp.device("default.qubit", wires=wire_labels)
+
 
             @qp.qnode(dev)
             def circuit():
                 # Only permute the order of 3 of them
-                qp.Permute(["c", 2, 0], wires=[2, 0, "c"])
-                return qp.expval(qp.Z("c"))
+                qp.Permute([7, 2, 0], wires=[2, 0, 7])
+                return qp.expval(qp.Z(7))
 
         will permute only the second, third, and fifth wires as follows:
 
         >>> print(qp.draw(circuit, level="device", show_all_wires=True)())
         3: ─────────────┤
         2: ─╭SWAP───────┤
-        a: ─│───────────┤
+        6: ─│───────────┤
         0: ─│─────╭SWAP─┤
-        c: ─╰SWAP─╰SWAP─┤  <Z>
+        7: ─╰SWAP─╰SWAP─┤  <Z>
 
     """
 
@@ -204,8 +205,8 @@ class Permute(Operation):
         .. seealso:: :meth:`~.Permute.decomposition`.
 
         Args:
-            wires (Any or Iterable[Any]): wires that the operator acts on
-            permutation (list[Any]): A list of wire labels that represents the new ordering of wires
+            wires (int or Iterable[int]): wires that the operator acts on
+            permutation (list[int]): Non-negative integer wire labels representing the new order
                 after the permutation.
 
         Returns:

@@ -169,8 +169,8 @@ class TrotterCGF(Operator2):
 
             double_phase=True:
 
-                c: ─╭●──────┤ ->        c: ─╭●────────╭●─┤
-            wires: ─╰RZ(2ϕ)─┤       wires: ─╰X──RZ(ϕ)─╰X─┤
+                0: ─╭●──────┤ ->        0: ─╭●────────╭●─┤
+                1: ─╰RZ(2ϕ)─┤           1: ─╰X──RZ(ϕ)─╰X─┤
 
         This is not a true controlled operation, but can be used to reduce the cost in Hadamard test
         circuits instead of the controlled evolution.

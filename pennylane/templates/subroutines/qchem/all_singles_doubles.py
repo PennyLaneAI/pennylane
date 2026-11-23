@@ -220,7 +220,7 @@ class AllSinglesDoubles(Operation):
             weights (tensor_like): size ``(len(singles) + len(doubles),)`` tensor containing the
                 angles entering the :class:`~.pennylane.SingleExcitation` and
                 :class:`~.pennylane.DoubleExcitation` operations, in that order
-            wires (Any or Iterable[Any]): wires that the BasisState operator acts on
+            wires (int or Iterable[int]): wires that the BasisState operator acts on
             hf_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
                 Hartree-Fock state. ``hf_state`` is used to initialize the wires.
             singles (Sequence[Sequence]): sequence of lists with the indices of the two qubits

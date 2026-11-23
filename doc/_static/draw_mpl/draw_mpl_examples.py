@@ -55,7 +55,7 @@ def wire_order(circuit):
 
 
 def show_all_wires(circuit):
-    fig, ax = draw_mpl(circuit, wire_order=["aux"], show_all_wires=True)(1.2345, 1.2345)
+    fig, ax = draw_mpl(circuit, wire_order=[4], show_all_wires=True)(1.2345, 1.2345)
 
     plt.savefig(folder / "show_all_wires.png")
     plt.close()
@@ -152,7 +152,7 @@ def _levels_circ():
 
 
 def levels():
-    for level in ("top", "user", None, slice(1, 2)):
+    for level in ("top", "user", "device", slice(1, 2)):
         draw_mpl(_levels_circ, level=level)()
         plt.savefig(folder / f"level_{str(level).split('(')[0].lower()}.png")
         plt.close

@@ -1222,7 +1222,7 @@ class Rot(Operator2):
         phi (float): rotation angle :math:`\phi`
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
-        wires (Any, Wires): the wire the operation acts on
+        wires (int, Wires): the wire the operation acts on
 
     .. details::
         :title: Available decompositions

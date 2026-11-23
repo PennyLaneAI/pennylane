@@ -53,7 +53,7 @@ class GQSP(Operator2):
         unitary (Operator): the operator to be encoded by the GQSP circuit
         angles (tensor[float]): array of angles defining the polynomial transformation. The
             shape of the array must be `(3, d+1)`, where `d` is the degree of the polynomial.
-        control (Union[Wires, int, str]): control qubit used to encode the polynomial
+        control (Wires or int): control qubit used to encode the polynomial
             transformation
         work_wires (WiresLike): auxiliary qubits that are passed to the controlled ``unitary``.
         work_wire_type (str): the type of the ``work_wires``. Must be ``"borrowed"`` (default)

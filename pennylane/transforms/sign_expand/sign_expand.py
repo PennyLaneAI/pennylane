@@ -33,7 +33,7 @@ def controlled_pauli_evolution(theta, wires, pauli_word, controls):
         theta (float): rotation angle :math:`\theta`
         pauli_word (string): the Pauli word defining the rotation
         wires (Iterable, Wires): the wires the operation acts on
-        controls (List[control1, control2]): The two additional controls to implement the
+        controls (Sequence[int]): Two additional non-negative integer wire labels to implement the
           Hadamard test and the quantum signal processing part on
 
     Returns:
@@ -235,13 +235,13 @@ def sign_expand(
 
     .. code-block:: python
 
-        dev = qp.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
+        dev = qp.device("default.qubit", wires=[0, 1, 2, 3, 4])
 
     and a circuit of the form, with the transform as decorator.
 
     .. code-block:: python
 
-        @qp.transforms.sign_expand
+        @qp.transforms.sign_expand(controls=[3, 4])
         @qp.qnode(dev)
         def circuit():
             qp.Hadamard(wires=0)
@@ -263,12 +263,12 @@ def sign_expand(
     We can use the ``sign_expand`` transform to generate new tapes and a classical
     post-processing function for computing the expectation value of the Hamiltonian in these new decompositions
 
-    >>> tapes, fn = qp.transforms.sign_expand(tape)
+    >>> tapes, fn = qp.transforms.sign_expand(tape, controls=[3, 4])
 
-    We can evaluate these tapes on a device, it needs two additional auxiliary gates labeled 'Hadamard' and 'Target' if
-    one wants to make the circuit approximation of the decomposition:
+    We can evaluate these tapes on a device. It needs two additional auxiliary wires labelled
+    ``3`` and ``4`` for the circuit approximation of the decomposition:
 
-    >>> dev = qp.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
+    >>> dev = qp.device("default.qubit", wires=[0, 1, 2, 3, 4])
     >>> res = dev.execute(tapes)
     >>> fn(res)
     np.float64(-0.499...)
@@ -276,8 +276,8 @@ def sign_expand(
     To evaluate the circuit approximation of the decomposition one can construct the sgn-decomposition by changing the
     kwarg circuit to True:
 
-    >>> tapes, fn = qp.transforms.sign_expand(tape, circuit=True, J=20, delta=0)
-    >>> dev = qp.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
+    >>> tapes, fn = qp.transforms.sign_expand(tape, circuit=True, J=20, delta=0, controls=[3, 4])
+    >>> dev = qp.device("default.qubit", wires=[0, 1, 2, 3, 4])
     >>> dev.execute(tapes)
     (np.float64(0.017...), np.float64(0.006...), np.float64(-0.0009...), np.float64(0.0023...), np.float64(-0.977...))
     >>> fn(res)
@@ -294,8 +294,8 @@ def sign_expand(
         measurements = [qp.var(H)]
         tape = qp.tape.QuantumTape(operations, measurements)
 
-    >>> tapes, fn = qp.transforms.sign_expand(tape, circuit=True, J=20, delta=0)
-    >>> dev = qp.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])
+    >>> tapes, fn = qp.transforms.sign_expand(tape, circuit=True, J=20, delta=0, controls=[3, 4])
+    >>> dev = qp.device("default.qubit", wires=[0, 1, 2, 3, 4])
     >>> res = dev.execute(tapes)
     >>> fn(res)
     np.float64(10.108...)

@@ -184,7 +184,7 @@ class CommutingEvolution(Operation):
         Args:
             *time_and_coeffs (list[tensor_like or float]): list of coefficients of the Hamiltonian, prepended by the time
                 variable
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
             hamiltonian (.Hamiltonian): The commuting Hamiltonian defining the time-evolution operator.
             frequencies (tuple[int or float]): The unique positive differences between eigenvalues in
                 the spectrum of the Hamiltonian.
