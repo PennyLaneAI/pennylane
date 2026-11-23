@@ -156,7 +156,7 @@ with :func:`~pennylane.register_resources`.
     @qp.register_resources(flip_rotate_resources)
     def FlipAndRotate(angle, rot_axes, wires):
         qp.X(wires[0])
-        m = qp.measure(wires[1])
+        m = qp.measure(wires[0])
 
         def true_fn():
             qp.PauliRot(2 * angle, rot_axes[0], wires=wires[1])
@@ -194,9 +194,11 @@ Available Decomposition Rules:
 >>> qp.analyze(circuit, level=1)(0.1).resources.quantum_operations
 {'MidCircuitMeasure': 1, 'PauliRot': 1, 'PauliX': 1}
 >>> qp.estimate(circuit, target={"PauliX", "MidMeasureMP", "PauliRot"})(0.1).resources.quantum_operations
-{'MidCircuitMeasure': 1, 'PauliRot': 1, 'PauliX': 1}
+{'MidMeasure': 1, 'PauliRot': 1, 'PauliX': 1}
 >>> qp.track(circuit)(0.1)[1].resources.quantum_operations
-{'MidCircuitMeasure': 1, 'PauliRot-Phi-w1': 1, 'PauliX': 1}
+{'PauliRot-Phi-w1': 1, 'PauliX': 1}
+>>> qp.track(circuit)(0.1)[1].resources.measurements
+TODO
 
 Note that the decomposition rule name given by default is
 ``qfunc.name + "_decomp"``.
