@@ -584,7 +584,7 @@ class TestControlledMultiXLatticeSurgeryPPM:
     @pytest.mark.parametrize("control_values", [[0], [1], [1, 1], [0, 1], [1, 1, 1], [0, 1, 0]])
     @pytest.mark.parametrize("bitstring", [[0], [1], [0, 0, 0], [1, 0, 1], [1, 1, 1]])
     def test_resources(self, control_values, bitstring):
-        """The rule supports multiple controls with a restored AND ladder and one burnable wire."""
+        """The PPM rule requires one control and one burnable wire."""
         num_controls = len(control_values)
         op = qp.ctrl(
             qp.MultiX(bitstring, wires=range(num_controls, num_controls + len(bitstring))),
@@ -592,67 +592,37 @@ class TestControlledMultiXLatticeSurgeryPPM:
             control_values,
         )
         rule = qp.list_decomps(op)["_controlled_multix_lattice_surgery_ppm"]
-        assert rule.is_applicable(**op.arguments)
+        assert rule.is_applicable(**op.arguments) == (num_controls == 1)
         qp.testing.assert_valid_decomp_rule(op, rule)
         work_wires = rule.get_work_wire_spec(**op.arguments)
-        assert work_wires.zeroed == num_controls - 1
-        assert work_wires.burnable == 1
-        assert work_wires.total == num_controls
+        assert work_wires.burnable == work_wires.total == 1
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("num_controls", [1, 2, 3])
     @pytest.mark.parametrize("num_work_wires", [0, 1, 3])
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
-    def test_supplied_work_wires(self, num_controls, num_work_wires, work_wire_type):
-        """Only supplied zeroed wires reduce the restored workspace required by the ladder."""
+    def test_supplied_work_wires(self, num_work_wires, work_wire_type):
+        """Supplied work wires do not change the PPM rule's one burnable wire requirement."""
         op = qp.ctrl(
-            qp.MultiX([1, 0, 1], wires=range(num_controls, num_controls + 3)),
-            control=range(num_controls),
-            work_wires=range(num_controls + 3, num_controls + 3 + num_work_wires),
+            qp.MultiX([1, 0, 1], wires=[1, 2, 3]),
+            control=0,
+            work_wires=range(4, 4 + num_work_wires),
             work_wire_type=work_wire_type,
         )
         rule = qp.list_decomps(op)["_controlled_multix_lattice_surgery_ppm"]
         qp.testing.assert_valid_decomp_rule(op, rule)
         work_wires = rule.get_work_wire_spec(**op.arguments)
-        num_available = num_work_wires if work_wire_type == "zeroed" else 0
-        assert work_wires.zeroed == max(0, num_controls - 1 - num_available)
-        assert work_wires.burnable == 1
-        assert work_wires.total == work_wires.zeroed + 1
-
-    @pytest.mark.parametrize(
-        ("num_controls", "num_work_wires", "work_wire_type", "applicable"),
-        [
-            (1, 0, "borrowed", True),
-            (2, 0, "zeroed", False),
-            (2, 1, "zeroed", True),
-            (3, 1, "zeroed", False),
-            (3, 2, "zeroed", True),
-            (3, 2, "borrowed", False),
-            (3, 3, "zeroed", True),
-        ],
-    )
-    def test_compiler_requires_supplied_ladder_wires(
-        self, num_controls, num_work_wires, work_wire_type, applicable, mocker
-    ):
-        """The compiler only supports AND ladders entirely on the supplied input register."""
-        op = qp.ctrl(
-            qp.MultiX([1, 0, 1], wires=range(num_controls, num_controls + 3)),
-            control=range(num_controls),
-            work_wires=range(num_controls + 3, num_controls + 3 + num_work_wires),
-            work_wire_type=work_wire_type,
-        )
-        rule = qp.list_decomps(op)["_controlled_multix_lattice_surgery_ppm"]
-        mocker.patch("pennylane.templates.subroutines.multix.compiler.active", return_value=True)
-        assert rule.is_applicable(**op.arguments) == applicable
+        assert work_wires.burnable == work_wires.total == 1
 
     @pytest.mark.parametrize("num_controls", [1, 2, 3])
     @pytest.mark.parametrize("use_ppm", [False, True])
     def test_graph_decomposition(self, num_controls, use_ppm):
-        """The graph uses PPMs when workspace permits, otherwise the unitary fanout."""
+        """Generic control reduction reaches the PPM rule when a burnable wire is available."""
         op = qp.ctrl(
             qp.MultiX([1, 0, 1], wires=range(num_controls, num_controls + 3)),
             control=range(num_controls),
             control_values=[i % 2 for i in range(num_controls)],
+            work_wires=range(num_controls + 3, 2 * num_controls + 2),
+            work_wire_type="zeroed",
         )
         gate_set = {
             qp.ops.PauliMeasure,
@@ -667,7 +637,7 @@ class TestControlledMultiXLatticeSurgeryPPM:
         (decomposed,), _ = _tape_decompose(
             qp.tape.QuantumScript([op]),
             gate_set=gate_set,
-            num_work_wires=num_controls - 1 + use_ppm,
+            num_work_wires=int(use_ppm),
         )
         names = [gate.name for gate in decomposed.operations]
         assert names.count("PauliMeasure") == 3 * use_ppm
@@ -675,25 +645,18 @@ class TestControlledMultiXLatticeSurgeryPPM:
         assert names.count("TemporaryAND") == num_controls - 1
         assert names.count("Adjoint(TemporaryAND)") == num_controls - 1
 
-    @pytest.mark.parametrize(
-        ("bitstring", "control_values"),
-        list(product([[0], [1], [0, 0, 0], [1, 0, 1], [1, 1, 1]], [[0], [1]]))
-        + list(product([[0, 0], [1, 0], [1, 1]], [[1, 1], [0, 1], [1, 1, 1], [0, 1, 0]])),
-    )
+    @pytest.mark.parametrize("bitstring", [[0], [1], [0, 0, 0], [1, 0, 1], [1, 1, 1]])
+    @pytest.mark.parametrize("control_value", [0, 1])
     @pytest.mark.parametrize("outcomes", list(product([0, 1], repeat=3)))
-    def test_all_measurement_branches(self, bitstring, control_values, outcomes, mocker):
+    def test_all_measurement_branches(self, bitstring, control_value, outcomes, mocker):
         """Every branch has the correct map, phase, probability, and final auxiliary state."""
-        num_controls = len(control_values)
-        num_wires = len(bitstring) + num_controls
-        op = qp.ctrl(
-            qp.MultiX(bitstring, wires=range(num_controls, num_wires)),
-            range(num_controls),
-            control_values,
-        )
+        num_wires = len(bitstring) + 1
+        op = qp.ctrl(qp.MultiX(bitstring, wires=range(1, num_wires)), 0, [control_value])
         rule = qp.list_decomps(op)["_controlled_multix_lattice_surgery_ppm"]
         outcomes = iter(outcomes)
 
-        # Unnormalized projectors retain each branch's probability and global phase.
+        # Replace measurements with unnormalized projectors to retain each branch's
+        # probability and global phase without relying on postselection.
         def measure_branch(word, wires):
             outcome = next(outcomes)
             with qp.QueuingManager.stop_recording():
@@ -707,54 +670,48 @@ class TestControlledMultiXLatticeSurgeryPPM:
             new=measure_branch,
         )
         tape = qp.tape.make_qscript(rule)(**op.arguments)
-        (tape,), _ = qp.transforms.resolve_dynamic_wires(
-            tape, zeroed=reversed(range(num_wires, num_wires + num_controls))
-        )
+        (tape,), _ = qp.transforms.resolve_dynamic_wires(tape, zeroed=[num_wires])
 
-        # Select every data input with all auxiliaries initially in |0>.
-        actual = qp.matrix(tape, wire_order=range(num_wires + num_controls))[:, :: 2**num_controls]
-        # Each branch has probability 1/8, restores the ladder, and leaves the burnable in |+>.
-        auxiliary_state = qp.math.zeros((2**num_controls, 1))
-        auxiliary_state[:2] = 1 / 4
-        expected = qp.math.kron(op.matrix(), auxiliary_state)
+        # Select every data input with the auxiliary initially in |0>.
+        actual = qp.matrix(tape, wire_order=range(num_wires + 1))[:, ::2]
+        # Each branch has probability 1/8 and leaves the auxiliary in |+>.
+        expected = qp.math.kron(op.matrix(), qp.math.array([[1 / 4], [1 / 4]]))
         assert qp.math.allclose(actual, expected)
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize("num_controls", [1, 2, 3])
-    def test_qjit_runtime_bitstring_and_control_value(self, num_controls, seed):
+    def test_qjit_runtime_bitstring_and_control_value(self, seed):
         """One compiled circuit accepts different target masks and control values at runtime."""
         pytest.importorskip("catalyst")
         rule = qp.list_decomps("C(MultiX)")["_controlled_multix_lattice_surgery_ppm"]
-        num_wires = num_controls + 3
+        num_wires = 4
         rng = np.random.default_rng(seed)
         initial_state = rng.random(2**num_wires) + 1j * rng.random(2**num_wires)
         initial_state /= np.linalg.norm(initial_state)
-        auxiliary_state = qp.math.zeros(2**num_controls)
-        auxiliary_state[0] = 1
+        auxiliary_state = qp.math.array([1, 0])
 
         @qp.qjit(capture=True)
-        @qp.qnode(qp.device("lightning.qubit", wires=num_wires + num_controls))
+        @qp.qnode(qp.device("lightning.qubit", wires=num_wires + 1))
         def circuit(bitstring, control_values):
             qp.StatePrep(initial_state, wires=range(num_wires))
             # Construct the rule argument without applying another MultiX.
             with qp.capture.pause():
-                base = qp.MultiX(bitstring, wires=range(num_controls, num_wires))
+                base = qp.MultiX(bitstring, wires=range(1, num_wires))
             rule(
                 base=base,
-                control_wires=list(range(num_controls)),
+                control_wires=[0],
                 control_values=control_values,
-                work_wires=list(range(num_wires, num_wires + num_controls - 1)),
-                work_wire_type="zeroed",
+                work_wires=[],
+                work_wire_type="borrowed",
             )
             return qp.state()
 
         for bitstring, control_values in product(
             [[0, 0, 0], [1, 0, 1], [0, 1, 0], [1, 1, 1]],
-            [[0] * num_controls, [1] * num_controls, [i % 2 for i in range(num_controls)]],
+            [[0], [1]],
         ):
             op = qp.ctrl(
-                qp.MultiX(bitstring, wires=range(num_controls, num_wires)),
-                range(num_controls),
+                qp.MultiX(bitstring, wires=range(1, num_wires)),
+                0,
                 control_values,
             )
             # Catalyst resets released auxiliaries before returning the full state.

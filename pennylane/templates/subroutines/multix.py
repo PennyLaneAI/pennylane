@@ -95,20 +95,21 @@ class MultiX(Operator2):
             .. decomposition-rule:: _controlled_multix_lattice_surgery_ppm
                 :image: /_static/decomposition_thumbnails/multix_lattice_surgery_ppm.svg
                 :region: controlled
-                :requires: :math:`c - 1` zeroed work wires and 1 work wire (not restored)
-                :where: :math:`c \geq 1` is the number of control wires. Both control values
-                    are supported; the circuit shows :math:`c = 1` with control value 1.
-                    Tracing requires numeric control and target wire labels. Under
-                    :func:`~.qjit`, supply the zeroed ladder wires through :func:`~.ctrl`
-                    using ``work_wires`` and ``work_wire_type="zeroed"``.
+                :requires: 1 work wire (not restored)
+                :where: One control wire. Both control values are supported; the circuit
+                    shows control value 1. Tracing requires numeric control and target
+                    wire labels.
 
-                :class:`~.TemporaryAND` | :math:`c - 1` | 0
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`c - 1` | 0
                 :func:`Pauli product measurement <.pauli_measure>` | :math:`3` | 3
                 :class:`~.PauliZ` (conditional) | :math:`2` | 2
                 :class:`~.MultiX` (conditional) | :math:`1` | 1
                 :class:`~.GlobalPhase` (conditional) | :math:`1` | 1
-                :class:`~.PauliX` (control-value flips) | :math:`\leq 2c` | 0
+                :class:`~.PauliX` (control-value flips) | :math:`\leq 2` | 0
+
+        For :math:`c > 1` controls, supplying at least :math:`c - 1` zeroed work wires to
+        :func:`~.ctrl` through ``work_wires`` and ``work_wire_type="zeroed"`` allows the
+        generic controlled-operator decomposition to reduce to this single-control PPM rule.
+        The PPM rule requires one additional work wire that is not restored.
     """
 
     dynamic_argnames = ("bitstring",)
@@ -412,6 +413,7 @@ def _multix_ladder_fanout(base, control_wires, work_wires):
     if compiler.active() or capture.enabled():
         bitstring = math.array(bitstring, like="jax")
 
+    num_needed = len(control_wires) - 1
     target_wire = _multi_temporary_and_all_ones(control_wires, work_wires)
 
     def _apply_cnot(wire):
@@ -424,7 +426,8 @@ def _multix_ladder_fanout(base, control_wires, work_wires):
         for i, wire in enumerate(wires):
             cond(bitstring[i], _apply_cnot)(wire)
     else:
-        wires = math.array(wires, like="jax")
+        if compiler.active() or capture.enabled():
+            wires = math.array(wires, like="jax")
 
         @for_loop(0, len(wires), 1)
         def _locally_apply_cnot(i):
@@ -432,16 +435,11 @@ def _multix_ladder_fanout(base, control_wires, work_wires):
 
         _locally_apply_cnot()  # pylint: disable=no-value-for-parameter
 
-    _uncompute_multix_ladder(control_wires, work_wires)
-
-
-def _uncompute_multix_ladder(control_wires, work_wires):
-    """Uncompute the AND ladder, including when work wires are dynamically allocated."""
-    # Adjoint-of-a-qfunc doesn't support DynamicRegister arguments under capture.
-    for i in range(len(control_wires) - 2, 0, -1):
+    # Uncompute the ladder. Rebuilt inline rather than via adjoint(_multi_temporary_and_all_ones)(),
+    # since adjoint-of-a-qfunc doesn't support DynamicRegister arguments under capture.
+    for i in range(num_needed - 1, 0, -1):
         adjoint(TemporaryAND)(wires=[work_wires[i - 1], control_wires[i + 1], work_wires[i]])
-    if len(control_wires) > 1:
-        adjoint(TemporaryAND)(wires=[control_wires[0], control_wires[1], work_wires[0]])
+    adjoint(TemporaryAND)(wires=[control_wires[0], control_wires[1], work_wires[0]])
 
 
 def _controlled_multix_ladder_extra_work_wires(control_wires, work_wires, work_wire_type, **_):
@@ -499,7 +497,7 @@ def _measure_z_multix(work_wire, bitstring, wires):
     )()
 
 
-def _controlled_multix_lattice_surgery_ppm_resources(base, control_wires, **_):
+def _controlled_multix_lattice_surgery_ppm_resources(base, *_, **__):
     resources = {
         PauliMeasure("Z" + "X" * width, wires=Wire[width + 1]): 1
         for width in range(len(base.wires) + 1)
@@ -509,55 +507,26 @@ def _controlled_multix_lattice_surgery_ppm_resources(base, control_wires, **_):
     resources[PauliZ] = 2
     resources[base] = 1
     resources[GlobalPhase] = 1
-    if len(control_wires) > 1:
-        resources[TemporaryAND] = len(control_wires) - 1
-        resources[adjoint(TemporaryAND(Wire[3]))] = len(control_wires) - 1
     return resources
 
 
-def _controlled_multix_lattice_surgery_ppm_work_wires(
-    control_wires, work_wires, work_wire_type, **_
-):
-    return {
-        **_controlled_multix_ladder_extra_work_wires(control_wires, work_wires, work_wire_type),
-        "burnable": 1,
-    }
-
-
-@register_condition(
-    lambda control_wires, work_wires, work_wire_type, **_: not compiler.active()
-    or len(control_wires) == 1
-    or (work_wire_type == "zeroed" and len(work_wires) >= len(control_wires) - 1)
-)
+@register_condition(lambda control_wires, **_: len(control_wires) == 1)
 @register_resources(
     _controlled_multix_lattice_surgery_ppm_resources,
-    work_wires=_controlled_multix_lattice_surgery_ppm_work_wires,
+    work_wires={"burnable": 1},
     exact=False,
 )
-def _controlled_multix_lattice_surgery_ppm(base, control_wires, work_wires, work_wire_type, **_):
-    """Implement controlled MultiX with an AND ladder and three PPMs.
-
-    Under compilation, the ladder needs supplied zeroed wires because TemporaryAND
-    cannot yet be decomposed across the input and a dynamically allocated register.
-    """
-    num_needed = len(control_wires) - 1
-    available = list(work_wires[:num_needed]) if work_wire_type == "zeroed" else []
-    with allocate(num_needed - len(available), state="zero", restored=True) as allocated:
-        ladder_wires = available + list(allocated)
-        control = (
-            _multi_temporary_and_all_ones(control_wires, ladder_wires)
-            if num_needed
-            else control_wires[0]
-        )
-        with allocate(1, state="zero", restored=False) as auxiliary:
-            m0 = pauli_measure("ZX", [control, auxiliary[0]])
-            m1 = _measure_z_multix(auxiliary[0], base.bitstring, base.wires)
-            m2 = pauli_measure("X", auxiliary)
-            cond(m1, PauliZ)(control)
-            cond(m0 != m2, MultiX)(base.bitstring, wires=base.wires)
-            cond(m1 & (m0 != m2), GlobalPhase)(pi)
-            cond(m2, PauliZ)(auxiliary[0])  # Leave the auxiliary qubit in |+>.
-        _uncompute_multix_ladder(control_wires, ladder_wires)
+def _controlled_multix_lattice_surgery_ppm(base, control_wires, **_):
+    """Implement a single-control MultiX with three PPMs and one consumed auxiliary qubit."""
+    control = control_wires[0]
+    with allocate(1, state="zero", restored=False) as auxiliary:
+        m0 = pauli_measure("ZX", [control, auxiliary[0]])
+        m1 = _measure_z_multix(auxiliary[0], base.bitstring, base.wires)
+        m2 = pauli_measure("X", auxiliary)
+        cond(m1, PauliZ)(control)
+        cond(m0 != m2, MultiX)(base.bitstring, wires=base.wires)
+        cond(m1 & (m0 != m2), GlobalPhase)(pi)
+        cond(m2, PauliZ)(auxiliary[0])  # Leave the auxiliary qubit in |+>.
 
 
 add_decomps(
