@@ -91,7 +91,6 @@ class TestInitialization:
         assert hash(abstractify(op)) == hash(abstract_op)
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_traced_angles_in_list(self):
         """Test that angles given as a list of traced scalars are compiled into one RZLayer."""
         pytest.importorskip("catalyst")
@@ -138,7 +137,6 @@ class TestDecomposition:
         assert _rzlayer_individual.get_work_wire_spec(**abstract_args).total == 0
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("num_angles, block_size", [(1, 1), (1, 5), (3, 2)])
     def test_qjit_graph_decomposition(self, num_angles, block_size, seed):
         """Test that, compiled with the graph, an RZLayer and its adjoint apply one RZ per wire,
