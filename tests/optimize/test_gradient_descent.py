@@ -211,14 +211,13 @@ def test_optimizer_rejects_jax_parameters(grad_fn):
 
 @pytest.mark.jax
 def test_optimizer_with_jax_auxiliary_data():
-    """Only the trainable NumPy argument is updated when JAX positional data is present."""
+    """Mixed inputs require an explicit gradient function instead of automatic dispatch."""
     optimizer = qp.GradientDescentOptimizer(stepsize=0.1)
     value = qp.numpy.array(2.0)
     data = jax.numpy.array([1.0])
     objective = lambda parameter, aux: parameter**2
-    updated, unchanged = optimizer.step(objective, value, data)
-    assert qp.math.allclose(updated, 1.6)
-    assert unchanged is data
+    with pytest.raises(ValueError, match="Autograd and JAX inputs cannot be mixed"):
+        optimizer.step(objective, value, data)
     updated, unchanged = optimizer.step(objective, value, data, grad_fn=lambda x, aux: 2 * x)
     assert qp.math.allclose(updated, 1.6)
     assert unchanged is data

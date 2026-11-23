@@ -268,40 +268,45 @@ def test_jax_jacobian_output_pytree_with_multiple_arguments():
 
 @pytest.mark.jax
 @pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
-def test_autograd_with_jax_auxiliary_data(diff_function):
-    """Auxiliary JAX data does not change inference of trainable NumPy arguments."""
+def test_mixed_autograd_jax_inputs_rejected(diff_function):
+    """Mixed Autograd/JAX inputs are rejected whether passed positionally or by keyword."""
     first, second = qp.numpy.array(2.0), qp.numpy.array(3.0)
     data = jax.numpy.array([1.0])
     derivative = diff_function(lambda x, y, aux: x**2 + y**2)
-    assert qp.math.allclose(derivative(first, second, aux=data), (4.0, 6.0))
-    assert qp.math.allclose(derivative(first, second, data), (4.0, 6.0))
+    with pytest.raises(ValueError, match="Autograd and JAX inputs cannot be mixed"):
+        derivative(first, second, aux=data)
+    with pytest.raises(ValueError, match="Autograd and JAX inputs cannot be mixed"):
+        derivative(first, second, data)
 
 
 @pytest.mark.jax
 @pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
-def test_autograd_precedence_with_explicit_argnums(diff_function):
-    """Autograd inputs take precedence when explicit argument indices are supplied."""
+def test_mixed_autograd_jax_inputs_rejected_with_argnums(diff_function):
+    """Explicit argument indices do not permit mixed Autograd/JAX inputs."""
     derivative = diff_function(lambda data, value: value**2, argnums=1)
     value = qp.numpy.array(3.0)
-    assert qp.math.allclose(derivative(jax.numpy.array([1.0]), value), 6.0)
+    with pytest.raises(ValueError, match="Autograd and JAX inputs cannot be mixed"):
+        derivative(jax.numpy.array([1.0]), value)
 
 
 @pytest.mark.jax
 @pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
-def test_autograd_precedence_with_nontrainable_auxiliary_data(diff_function):
-    """Non-trainable Autograd auxiliary data also selects Autograd differentiation."""
+def test_nontrainable_autograd_input_rejected_with_jax(diff_function):
+    """Non-trainable Autograd data cannot silently change JAX differentiation."""
     derivative = diff_function(lambda value, data: value**2)
     data = qp.numpy.array(3.0, requires_grad=False)
-    with pytest.warns(UserWarning, match="no trainable parameters"):
-        assert derivative(jax.numpy.array(2.0), data) == ()
+    with pytest.raises(ValueError, match="Autograd and JAX inputs cannot be mixed"):
+        derivative(jax.numpy.array(2.0), data)
 
 
 @pytest.mark.jax
 @pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
-def test_jax_auxiliary_data_before_trainable_parameter(diff_function):
-    """Default Autograd inference also applies when auxiliary JAX data comes first."""
-    derivative = diff_function(lambda data, value: value**2)
-    assert qp.math.allclose(derivative(jax.numpy.array([1.0]), qp.numpy.array(3.0)), 6.0)
+def test_jax_with_numpy_auxiliary_data(diff_function):
+    """Ordinary NumPy constants can accompany JAX parameters."""
+    derivative = diff_function(lambda value, data: value**2 + qp.math.sum(data))
+    data = qp.math.array([1.0, 2.0])
+    assert qp.math.get_interface(data) == "numpy"
+    assert qp.math.allclose(derivative(jax.numpy.array(2.0), data), 4.0)
 
 
 @pytest.mark.jax

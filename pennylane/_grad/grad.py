@@ -97,10 +97,12 @@ def _setup_argnums(argnums: int | Sequence[int] | None) -> tuple[tuple[int, ...]
     return argnums, argnums_is_int
 
 
-def _use_jax(args: tuple) -> bool:
-    """Use JAX for JAX inputs when no Autograd input is present."""
-    interfaces = {get_interface(leaf) for leaf in tree_leaves(args)}
-    return "jax" in interfaces and "autograd" not in interfaces
+def _use_jax(args: tuple, kwargs: dict) -> bool:
+    """Detect JAX inputs and reject mixed Autograd/JAX inputs."""
+    interfaces = {get_interface(leaf) for leaf in tree_leaves((args, kwargs))}
+    if {"autograd", "jax"} <= interfaces:
+        raise ValueError("Autograd and JAX inputs cannot be mixed. Use a single interface.")
+    return "jax" in interfaces
 
 
 def _args_and_argnums(args, argnums):
@@ -284,8 +286,8 @@ class grad:  # pylint: disable=too-many-instance-attributes
         differentiated by default, following JAX. Use ``argnums`` to select positional
         arguments explicitly.
 
-        The backend is selected from the positional input leaves. Autograd takes
-        precedence whenever an Autograd input is present, including non-trainable inputs.
+        For eager differentiation, JAX and Autograd inputs cannot be mixed in the same call.
+        Ordinary NumPy arrays and Python constants can accompany either interface.
 
         With Autograd, gradients are computed for arguments which contain
         the property ``requires_grad=True``. Alternatively, the ``argnums`` keyword argument
@@ -393,7 +395,7 @@ class grad:  # pylint: disable=too-many-instance-attributes
         if self._h:
             raise ValueError(f"h = {self._h} unsupported without QJIT. Must be ``None``.")
 
-        if _use_jax(args):
+        if _use_jax(args, kwargs):
             argnums, unpack = _setup_argnums(self._argnums)
             return jax.grad(self._func, argnums=argnums[0] if unpack else argnums)(*args, **kwargs)
 
@@ -740,7 +742,7 @@ class jacobian:  # pylint: disable=too-few-public-methods
         if self._h:
             raise ValueError(f"h = {self._h} unsupported without QJIT. Must be ``None``.")
 
-        if _use_jax(args):
+        if _use_jax(args, kwargs):
             argnums, unpack = _setup_argnums(self._argnums)
             return jax.jacobian(self._func, argnums=argnums[0] if unpack else argnums)(
                 *args, **kwargs
