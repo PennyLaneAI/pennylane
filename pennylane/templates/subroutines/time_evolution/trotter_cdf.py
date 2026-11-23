@@ -30,6 +30,8 @@ from pennylane.ops.op_math.controlled2 import ctrl_many_zeroed_work_wires
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
+from pennylane.templates.subroutines.qchem.double_basis_rotation import DoubleBasisRotation
+from pennylane.templates.subroutines.rz_layer import RZLayer
 from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
@@ -147,6 +149,23 @@ class TrotterCDF(Operator2):
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`BN(N-1)/2` if :math:`w \geq 1` | 0
                 :class:`~.GlobalPhase` | :math:`1` | 1
 
+            .. decomposition-rule:: _trotter_cdf_parallel_decomposition
+                :image: /_static/decomposition_thumbnails/trotter_cdf_parallel.svg
+                :requires: :math:`w \geq 1` work wire
+                :where: :math:`B = (2L-1)n + 1` two-body blocks, and the
+                    :class:`~.DoubleBasisRotation` and :class:`~.RZLayer` gates receive the
+                    :math:`w` work wires. The counts are upper bounds, as basis rotations that are
+                    the identity are skipped. The circuit shows :math:`w = 1`
+
+                :class:`~.DoubleBasisRotation` on :math:`2N` wires | :math:`2Ln + 2` | 4
+                :class:`~.RZLayer` with :math:`N` angles on :math:`2N` wires | :math:`n` | 1
+                :class:`~.RZLayer` with :math:`N` angles on :math:`N` wires | :math:`B` | 2
+                :class:`~.CRZ` | :math:`BN(N-1)/2` | 2
+                :class:`~.CNOT` | :math:`BN(N+1)` | 12
+                :class:`~.TemporaryAND` | :math:`BN(N-1)/2` | 2
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`BN(N-1)/2` | 2
+                :class:`~.GlobalPhase` | :math:`1` | 1
+
     .. details ::
         :title: Usage Details
 
@@ -178,6 +197,15 @@ class TrotterCDF(Operator2):
         This is not a true controlled operation, but can be used to reduce the cost in Hadamard test circuits instead of the controlled evolution.
         The two circuits above are not equal as unitaries; only the relative phase between the
         control-0 and control-1 branches -- which is what the Hadamard test reads out -- agrees.
+
+        With enough ``work_wires`` (one, or two under genuine control), the graph-based
+        decomposition can also use rules that apply the basis rotations of both spin channels as
+        one :class:`~.DoubleBasisRotation` and, except under genuine control, the one-body and
+        same-orbital rotations as :class:`~.RZLayer` operators. These operators receive the
+        ``work_wires`` as well, so that their decompositions can combine rotations, e.g., with
+        :func:`~.transforms.decompositions.make_rzlayer_to_phase_gradient_decomp`. The rule it
+        creates needs two work wires for the four equal rotations of a :class:`~.GivensPair`, and
+        four for a batch of four distinct angles.
 
     .. details::
         :title: Combining four IsingZZ gates into one CRZ
@@ -440,6 +468,13 @@ def _apply_system_basis_rotation(U, wires):
         BasisRotation(unitary_matrix=U, wires=wires[1::2])
 
 
+def _apply_double_basis_rotation(U, wires, work_wires):
+    """Apply a fragment's basis rotation on both spin channels as one ``DoubleBasisRotation``,
+    which may use the clean ``work_wires``."""
+    if math.is_tracer(U) or not np.allclose(U, np.eye(len(U))):
+        DoubleBasisRotation(U, wires[::2], wires[1::2], work_wires=work_wires)
+
+
 def _merge_leaves(U_prev, U_curr):
     """Fragment-rotation merge rule: conjugate-transpose of ``U_prev`` times ``U_curr``."""
     return _transpose_leaf(U_prev) @ U_curr
@@ -519,8 +554,25 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
     z_rotations()  # pylint: disable=no-value-for-parameter
 
 
+def _apply_rz_layer(angles, wires, control_wires, double_phase, work_wires):
+    """Apply ``RZLayer(angles, wires, work_wires)`` (base / double-phase controlled).
+
+    Under double phase, CNOTs from the control onto every wire turn each rotation into the
+    ``IsingZZ`` of ``_emit_one_body_rz``, so that the ``RZLayer`` itself stays uncontrolled.
+    """
+
+    def _control_cnot(wire_idx):
+        CNOT([control_wires[0], wires[wire_idx]])
+
+    if double_phase:
+        for_loop(len(wires))(_control_cnot)()
+    RZLayer(angles, wires, work_wires)
+    if double_phase:
+        for_loop(len(wires))(_control_cnot)()
+
+
 def _apply_two_body_diagonal_with_work_wires(  # pylint: disable=too-many-arguments
-    Z, wires, first_order_time_step, control_wires, double_phase, work_wires
+    Z, wires, first_order_time_step, control_wires, double_phase, work_wires, rz_layer=False
 ):
     """Combine each orbital pair's four ZZ rotations using clean work wires.
 
@@ -529,6 +581,9 @@ def _apply_two_body_diagonal_with_work_wires(  # pylint: disable=too-many-argume
     shares the AND of the external control and the first orbital's zero parity
     across the inner loop. The work wires and original system basis are restored
     at the end of the layer.
+
+    With ``rz_layer=True`` (base / double-phase controlled), the same-orbital rotations on the
+    beta wires are one ``RZLayer``, which gets the work wires as they are still clean then.
     """
     # pylint: disable=no-value-for-parameter
     assert len(control_wires) <= 1, "The work-wire decomposition supports at most one control wire."
@@ -582,7 +637,11 @@ def _apply_two_body_diagonal_with_work_wires(  # pylint: disable=too-many-argume
             adjoint(TemporaryAND)(control_and_wires, control_values=(0, 1))
 
     orbital_parity_cnots()
-    same_orbital_rotations()
+    if rz_layer:
+        angles = 0.5 * math.diag(Z) * first_order_time_step
+        _apply_rz_layer(angles, wires[1::2], control_wires, double_phase, work_wires)
+    else:
+        same_orbital_rotations()
     orbital_pairs()
     orbital_parity_cnots()
 
@@ -636,6 +695,32 @@ def _cdf_decomposition_helpers(work_wires, has_control=False, double_phase=False
             ),
         }
     return _CDF_HELPERS
+
+
+def _cdf_parallel_helpers(work_wires, genuine_control=False):
+    """Select the helpers that pass the clean work wires on to the basis rotations and, without
+    genuine control, to the one-body and same-orbital rotations, as RZLayers."""
+    helpers = {
+        **_CDF_HELPERS,
+        "apply_system_basis_rotation": partial(_apply_double_basis_rotation, work_wires=work_wires),
+        "apply_two_body_diagonal": partial(
+            _apply_two_body_diagonal_with_work_wires,
+            work_wires=work_wires,
+            rz_layer=not genuine_control,
+        ),
+    }
+    if not genuine_control:
+
+        def _apply_one_body_rz_layer(
+            Z_one_body, wires, first_order_time_step, control_wires, double_phase
+        ):
+            """Apply the one-body layer as one ``RZLayer`` with the two wires of each orbital as a
+            block (base / double-phase controlled)."""
+            angles = -2.0 * math.diag(Z_one_body) * first_order_time_step
+            _apply_rz_layer(angles, wires, control_wires, double_phase, work_wires)
+
+        helpers["apply_one_body_diagonal"] = _apply_one_body_rz_layer
+    return helpers
 
 
 def _cdf_resource_counts(
@@ -701,6 +786,47 @@ def _cdf_resource_counts(
     return {op: count for op, count in resources.items() if count}
 
 
+def _cdf_parallel_resource_counts(
+    num_trotter_steps, hamiltonian, has_control, double_phase, num_work_wires
+):
+    """Upper-bound gate counts of the work-wire CDF circuits of ``_cdf_resource_counts``, with
+    one ``DoubleBasisRotation`` per pair of ``BasisRotation`` operators and, without genuine
+    control, one ``RZLayer`` per one-body or same-orbital layer."""
+    if num_trotter_steps <= 0:
+        return {}
+
+    leaf_tensors = hamiltonian.leaf_tensors
+    num_two_body_fragments = leaf_tensors.shape[0] - 1
+    num_cas = leaf_tensors.shape[-1]
+    num_sysrot_calls = 2 * num_two_body_fragments * num_trotter_steps + 2
+    num_twobody_blocks = (2 * num_two_body_fragments - 1) * num_trotter_steps + 1
+    num_onebody_blocks = num_trotter_steps
+
+    resources = _cdf_resource_counts(
+        num_trotter_steps, hamiltonian, has_control, double_phase, num_work_wires
+    )
+    dtype_leaf, _ = math.get_abstract_and_cast_dtype(leaf_tensors)
+    del resources[BasisRotation(dtype_leaf[num_cas, num_cas], wires=Wire[num_cas])]
+    sysrot_key = DoubleBasisRotation(
+        dtype_leaf[num_cas, num_cas],
+        wires_up=Wire[num_cas],
+        wires_down=Wire[num_cas],
+        work_wires=Wire[num_work_wires],
+    )
+    resources[sysrot_key] = num_sysrot_calls
+    if has_control and not double_phase:
+        return resources
+
+    # In the work-wire circuits, the one-body and same-orbital rotations are the only RZ
+    # (IsingZZ under double phase) rotations.
+    del resources[IsingZZ if has_control else RZ]
+    resources[RZLayer(Float[num_cas], Wire[2 * num_cas], Wire[num_work_wires])] = num_onebody_blocks
+    resources[RZLayer(Float[num_cas], Wire[num_cas], Wire[num_work_wires])] = num_twobody_blocks
+    if has_control:
+        resources[CNOT] += 4 * num_cas * num_onebody_blocks + 2 * num_cas * num_twobody_blocks
+    return resources
+
+
 def _trotter_cdf_resources(  # pylint: disable=too-many-arguments,unused-argument
     evolution_time,
     num_trotter_steps,
@@ -739,6 +865,41 @@ def _trotter_cdf_decomposition(  # pylint: disable=too-many-arguments,unused-arg
 
 
 add_decomps(TrotterCDF, _trotter_cdf_decomposition)
+
+
+def _trotter_cdf_parallel_resources(num_trotter_steps, hamiltonian, work_wires=(), **_):
+    return _cdf_parallel_resource_counts(
+        num_trotter_steps,
+        hamiltonian,
+        has_control=False,
+        double_phase=False,
+        num_work_wires=len(work_wires),
+    )
+
+
+@register_condition(
+    lambda work_wires, **_: _use_work_wire_decomposition(
+        len(work_wires), has_control=False, double_phase=False
+    )
+)
+@register_resources(_trotter_cdf_parallel_resources, exact=False)
+def _trotter_cdf_parallel_decomposition(
+    evolution_time, num_trotter_steps, hamiltonian, wires, work_wires=(), **_
+):
+    if num_trotter_steps > 0:
+        _run_trotter_steps(
+            evolution_time,
+            num_trotter_steps,
+            hamiltonian.normalize_leaf_determinant(),
+            wires,
+            (),
+            **_cdf_parallel_helpers(work_wires),
+        )
+        phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
+        GlobalPhase(phi)
+
+
+add_decomps(TrotterCDF, _trotter_cdf_parallel_decomposition)
 
 
 def _controlled_trotter_cdf_resource(  # pylint: disable=unused-argument
@@ -839,3 +1000,54 @@ add_decomps(
     flip_zero_control2(_controlled_trotter_cdf_decomp),
     _multi_controlled_trotter_cdf_decomp,
 )
+
+
+def _controlled_trotter_cdf_parallel_resource(base, *_, **__):
+    return _cdf_parallel_resource_counts(
+        base.arguments["num_trotter_steps"],
+        base.arguments["hamiltonian"],
+        has_control=True,
+        double_phase=base.arguments["double_phase"],
+        num_work_wires=len(base.arguments["work_wires"]),
+    )
+
+
+def _controlled_trotter_cdf_parallel_condition(base, control_wires, **_):
+    num_cdf_work_wires = len(base.arguments["work_wires"])
+    double_phase = base.arguments["double_phase"]
+    return len(control_wires) == 1 and _use_work_wire_decomposition(
+        num_cdf_work_wires, has_control=True, double_phase=double_phase
+    )
+
+
+@register_condition(_controlled_trotter_cdf_parallel_condition)
+@register_resources(_controlled_trotter_cdf_parallel_resource, exact=False)
+def _controlled_trotter_cdf_parallel_decomp(base, control_wires, *_, **__):
+    evolution_time = base.arguments["evolution_time"]
+    num_trotter_steps = base.arguments["num_trotter_steps"]
+    hamiltonian = base.arguments["hamiltonian"]
+    wires = base.arguments["wires"]
+    double_phase = base.arguments["double_phase"]
+    cdf_work_wires = base.arguments["work_wires"]
+    validate_no_wire_overlaps({"control_wires": control_wires, "work_wires": cdf_work_wires})
+
+    if num_trotter_steps == 0:
+        return
+
+    phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
+    _run_trotter_steps(
+        evolution_time,
+        num_trotter_steps,
+        hamiltonian.normalize_leaf_determinant(),
+        wires,
+        control_wires,
+        double_phase,
+        **_cdf_parallel_helpers(cdf_work_wires, genuine_control=not double_phase),
+    )
+    if double_phase:
+        RZ(2 * phi, control_wires)
+    else:
+        PhaseShift(-phi, control_wires)
+
+
+add_decomps("C(TrotterCDF)", flip_zero_control2(_controlled_trotter_cdf_parallel_decomp))

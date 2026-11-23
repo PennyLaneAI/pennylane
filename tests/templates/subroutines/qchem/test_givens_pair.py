@@ -21,12 +21,16 @@ import pytest
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.tape import QuantumScript
+from pennylane.templates.subroutines.qchem.double_basis_rotation import (
+    _real_double_basis_rotation_givens_pairs,
+)
 from pennylane.templates.subroutines.qchem.givens_pair import (
     _givens_pair_rzlayer,
     _givens_pair_two_single_excitations,
     _GivensPairFrame,
 )
 from pennylane.transforms import _tape_decompose
+from pennylane.transforms.decompositions import make_rzlayer_to_phase_gradient_decomp
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
@@ -37,6 +41,25 @@ SMALL_CASES = [
     (0.4, [0, 1, 2, 3], []),
     (-1.3, [3, 1, 0, 2], [5, 4]),
 ]
+
+# Registers of b-bit phase gradient rules, and the gates that the frame rule decomposes into with
+# the phase gradient rule of RZLayer, plus the PauliZ gates of the DoubleBasisRotation rule for a
+# real matrix with determinant -1
+NUM_BITS = 4
+PHASE_GRADIENT_WIRES = {
+    "angle_wires": Wires([f"angle_{i}" for i in range(NUM_BITS)]),
+    "phase_grad_wires": Wires([f"phase_grad_{i}" for i in range(NUM_BITS)]),
+    "work_wires": Wires([f"adder_work_{i}" for i in range(NUM_BITS - 1)]),
+}
+PHASE_GRADIENT_GATES = {
+    "PPR_4",
+    "PauliX",
+    "PauliZ",
+    "CNOT",
+    "TemporaryAND",
+    "Adjoint(TemporaryAND)",
+    "SemiAdder",
+}
 
 
 def _two_single_excitations_matrix(phi, wires, wire_order):
@@ -54,6 +77,17 @@ def _givens_pair_circuit(phi):
     qp.X(2)
     qp.GivensPair(phi, wires=[0, 1, 2, 3])
     return qp.expval(qp.Z(0) @ qp.Z(2))
+
+
+def _phase_gradient_counts(op, fixed_decomps):
+    """Gate counts of ``op``, decomposed with ``fixed_decomps`` into the gates of the phase
+    gradient rules, checking that no auxiliary wires other than the phase gradient registers are
+    used."""
+    [tape], _ = _tape_decompose(
+        QuantumScript([op]), gate_set=PHASE_GRADIENT_GATES, fixed_decomps=fixed_decomps
+    )
+    assert set(tape.wires) <= set(op.wires).union(*PHASE_GRADIENT_WIRES.values())
+    return Counter(gate.name for gate in tape.operations)
 
 
 class TestInitialization:
@@ -184,6 +218,52 @@ class TestDecomposition:
 
         assert np.isclose(circuit(0.4), np.cos(0.4) ** 2)
         assert qp.analyze(circuit, level=1)(0.4).resources.counts == expected_counts
+
+
+class TestPhaseGradientCost:
+    """Costs of the frame rule with the phase gradient rule of RZLayer, which applies the four
+    equal rotations of a GivensPair with one SemiAdder."""
+
+    @pytest.mark.parametrize("phi", [0.4, 0.0])
+    def test_givens_pair(self, phi):
+        """Test that, with two work wires, a GivensPair costs two TemporaryANDs outside of one
+        SemiAdder, also at phi = 0, and that neither rule requests further work wires."""
+        rzlayer_rule = make_rzlayer_to_phase_gradient_decomp(**PHASE_GRADIENT_WIRES)
+        op = qp.GivensPair(phi, [0, 1, 2, 3], work_wires=[4, 5])
+
+        counts = _phase_gradient_counts(
+            op, {qp.GivensPair: _givens_pair_rzlayer, qp.RZLayer: rzlayer_rule}
+        )
+        assert (counts["TemporaryAND"], counts["SemiAdder"]) == (2, 1)
+
+        [cob] = qp.testing.decomp_rule_to_tape(op, _givens_pair_rzlayer).operations
+        assert _givens_pair_rzlayer.get_work_wire_spec(**op.arguments).total == 0
+        assert rzlayer_rule.get_work_wire_spec(**cob.target_op.arguments).total == 0
+
+    @pytest.mark.parametrize("num_wires", [2, 3, 4])
+    def test_double_basis_rotation(self, num_wires, seed):
+        """Test that, with the Givens-pair rule for a real matrix, a DoubleBasisRotation costs as
+        much as its N(N-1)/2 GivensPairs."""
+        rng = np.random.default_rng(seed)
+        q, r = np.linalg.qr(rng.normal(size=(num_wires, num_wires)))
+        wires = list(range(2 * num_wires))
+        work_wires = [2 * num_wires, 2 * num_wires + 1]
+        op = qp.DoubleBasisRotation(q * np.sign(np.diag(r)), wires[::2], wires[1::2], work_wires)
+        rule = _real_double_basis_rotation_givens_pairs
+        rzlayer_rule = make_rzlayer_to_phase_gradient_decomp(**PHASE_GRADIENT_WIRES)
+
+        counts = _phase_gradient_counts(
+            op,
+            {
+                qp.DoubleBasisRotation: rule,
+                qp.GivensPair: _givens_pair_rzlayer,
+                qp.RZLayer: rzlayer_rule,
+            },
+        )
+        num_givens_pairs = num_wires * (num_wires - 1) // 2
+        assert counts["TemporaryAND"] == 2 * num_givens_pairs
+        assert counts["SemiAdder"] == num_givens_pairs
+        assert rule.get_work_wire_spec(**op.arguments).total == 0
 
 
 class TestInterfaces:
