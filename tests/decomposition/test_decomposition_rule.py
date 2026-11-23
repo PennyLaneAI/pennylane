@@ -43,11 +43,11 @@ from pennylane2.ops.op_math.adjoint2 import Adjoint2
 from pennylane2.ops.op_math.change_op_basis2 import ChangeOpBasis2, _change_op_basis_abstract
 from pennylane2.ops.op_math.controlled2 import (
     ControlledOp2,
+    _controlled_to_unitary,
     ctrl_many_zeroed_work_wires,
     ctrl_single_work_wire,
-    to_controlled_unitary,
 )
-from pennylane2.ops.op_math.pow2 import flip_pow_adjoint, merge_powers, repeat_pow_base
+from pennylane2.ops.op_math.pow2 import _pow_flip_adjoint, _pow_merge_powers, _pow_repeat_base
 from pennylane2.ops.op_math.prod2 import Prod2
 from pennylane2.testing.decompositions import assert_valid_decomp_rule
 from pennylane2.typing import Bool, Float, Int, Wire
@@ -64,8 +64,132 @@ class CustomOp(Operator):
 
 
 @pytest.mark.unit
-class TestDecompositionRule:
+class TestDecompositionRule:  # pylint: disable=too-many-public-methods
     """Unit tests for DecompositionRule."""
+
+    @pytest.mark.parametrize("name", [None, "custom_strategy"])
+    def test_register_resources_optional_name(self, name):
+        """Names can be supplied with resources or derived from the function."""
+
+        @register_resources({qp.CNOT: 1}, name=name)
+        def _rule(wires):
+            qp.CNOT(wires=wires)
+
+        assert _rule.name == ("rule" if name is None else name)
+        assert _rule.compute_resources().gate_counts == {abstractify(qp.CNOT): 1}
+
+    @pytest.mark.parametrize("name", ["", " ", "\t\n", 1, False, [], {}])
+    def test_register_resources_rejects_invalid_names(self, name):
+        """Invalid names fail clearly without modifying an existing rule."""
+
+        def rule(wires):
+            qp.CNOT(wires=wires)
+
+        error = ValueError if isinstance(name, str) else TypeError
+        message = "must not be blank" if isinstance(name, str) else "must be strings"
+        with pytest.raises(error, match=message):
+            register_resources(None, rule, name=name)
+
+        named_rule = register_resources({qp.CNOT: 1}, rule, name="public")
+        with pytest.raises(error, match=message):
+            register_resources(None, named_rule, name=name)
+        assert named_rule.name == "public"
+
+    @pytest.mark.parametrize("condition_first", [False, True])
+    def test_register_resources_name_preserves_metadata(self, condition_first):
+        """Naming with resources preserves conditions and work wire metadata."""
+
+        def rule(wires):
+            qp.CNOT(wires=wires)
+
+        conditioned = register_condition(lambda **_: True, rule) if condition_first else rule
+        registered = register_resources(
+            {qp.CNOT: 1}, conditioned, name="to_cnot", work_wires={"zeroed": 1}, exact=False
+        )
+        if not condition_first:
+            assert register_condition(lambda **_: True, registered) is registered
+
+        assert registered.name == "to_cnot"
+        assert registered.compute_resources().gate_counts == {abstractify(qp.CNOT): 1}
+        assert registered.get_work_wire_spec().zeroed == 1
+        assert registered.is_applicable()
+        assert not registered.exact_resources
+
+    def test_named_rule_without_resources(self):
+        """Naming a rule does not register resource requirements."""
+
+        @register_resources(None, name="to_cnot")
+        def rule(wires):
+            qp.CNOT(wires=wires)
+
+        assert rule.name == "to_cnot"
+        assert rule._compute_resources is None  # pylint: disable=protected-access
+
+    @pytest.mark.parametrize("name", ["_hidden", "__hidden"])
+    def test_underscore_names_rejected(self, name):
+        """Private function names cannot be used as public rule names."""
+
+        def _rule(wires):
+            qp.CNOT(wires=wires)
+
+        with pytest.raises(ValueError, match="must not start with an underscore"):
+            register_resources(None, name=name)(_rule)
+
+        rule = register_resources({qp.CNOT: 1}, _rule, name="public")
+        with pytest.raises(ValueError, match="must not start with an underscore"):
+            register_resources(None, rule, name=name)
+        assert rule.name == "public"
+
+    def test_register_resources_rejects_renaming_registered_rule(self):
+        """Registered rules retain their original lookup name."""
+
+        @register_resources({qp.CNOT: 1}, name="custom")
+        def rule(wires):
+            qp.CNOT(wires=wires)
+
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(CustomOp, rule)
+            with pytest.raises(ValueError, match="already registered"):
+                register_resources(None, rule, name="renamed")
+            assert rule.name == "custom"
+            assert qp.list_decomps(CustomOp)["custom"] is rule
+            assert "renamed" not in qp.list_decomps(CustomOp)
+
+    def test_private_function_default_name(self):
+        """Undecorated rule objects derive a public name without leading underscores."""
+
+        def __private_rule(wires):
+            qp.CNOT(wires=wires)
+
+        assert DecompositionRule(__private_rule).name == "private_rule"
+
+    @pytest.mark.parametrize("name", [None, "custom_strategy"])
+    @pytest.mark.parametrize("existing_rule", [False, True])
+    def test_register_resources_direct_name(self, name, existing_rule):
+        """The direct form names fresh rules and preserves existing names when omitted."""
+
+        def _rule(wires):
+            qp.CNOT(wires=wires)
+
+        func = DecompositionRule(_rule, name="original") if existing_rule else _rule
+        if existing_rule:
+            func.add_condition(lambda num_wires: num_wires == 2)
+
+        rule = register_resources(
+            {qp.CNOT: 1},
+            func,
+            name=name,
+            work_wires={"zeroed": 1},
+            exact=False,
+        )
+        expected_name = name if name is not None else ("original" if existing_rule else "rule")
+        assert rule.name == expected_name
+        assert inspect.signature(rule) == inspect.signature(_rule)
+        assert rule.compute_resources().gate_counts == {abstractify(qp.CNOT): 1}
+        assert rule.get_work_wire_spec() == WorkWireSpec(zeroed=1)
+        assert not rule.exact_resources
+        assert rule.is_applicable(num_wires=2)
+        assert rule.is_applicable(num_wires=3) is not existing_rule
 
     def test_wraps_rule(self):
         """Test that a DecompositionRule has the same sig and docstring as the qfunc."""
@@ -96,7 +220,10 @@ class TestDecompositionRule:
             }
 
         multi_rz_decomposition = register_resources(
-            _multi_rz_resources, multi_rz_decomposition, exact=exact_resources
+            _multi_rz_resources,
+            multi_rz_decomposition,
+            exact=exact_resources,
+            name="multi_rz_decomposition",
         )
 
         assert isinstance(multi_rz_decomposition, DecompositionRule)
@@ -127,7 +254,9 @@ class TestDecompositionRule:
                 qp.CNOT: 2 * (num_wires - 1),
             }
 
-        @register_resources(_multi_rz_resources, exact=exact_resources)
+        @register_resources(
+            _multi_rz_resources, exact=exact_resources, name="multi_rz_decomposition"
+        )
         def multi_rz_decomposition(theta, wires, **__):
             for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
                 qp.CNOT(wires=(w0, w1))
@@ -156,7 +285,7 @@ class TestDecompositionRule:
     def test_decomposition_condition(self):
         """Tests that the register_condition works."""
 
-        @register_resources({qp.H: 2, qp.Toffoli: 1})
+        @register_resources({qp.H: 2, qp.Toffoli: 1}, name="rule_1")
         @register_condition(lambda num_wires: num_wires == 3)
         def rule_1(wires, **__):
             raise NotImplementedError
@@ -169,7 +298,7 @@ class TestDecompositionRule:
         )
 
         @register_condition(lambda num_wires: num_wires == 3)
-        @register_resources({qp.H: 2, qp.Toffoli: 1})
+        @register_resources({qp.H: 2, qp.Toffoli: 1}, name="rule_2")
         def rule_2(wires, **__):
             raise NotImplementedError
 
@@ -183,7 +312,7 @@ class TestDecompositionRule:
         def _resource_fn(**_):
             return {qp.H: 2, qp.Toffoli: 1}
 
-        @register_resources(_resource_fn)
+        @register_resources(_resource_fn, name="rule_3")
         @register_condition(lambda num_wires: num_wires == 3)
         def rule_3(wires, **__):
             raise NotImplementedError
@@ -199,25 +328,24 @@ class TestDecompositionRule:
     def test_inspect_decomposition_rule(self, exact_resources):
         """Tests that the source code for a decomposition rule can be inspected."""
 
-        @register_resources({qp.H: 2, qp.CNOT: 1}, exact=exact_resources)
+        @register_resources({qp.H: 2, qp.CNOT: 1}, exact=exact_resources, name="my_cz")
         def my_cz(wires):
             qp.H(wires[0])
             qp.CNOT(wires=wires)
             qp.H(wires[0])
 
         assert str(my_cz) == dedent("""
-                @register_resources({qp.H: 2, qp.CNOT: 1}, exact=exact_resources)
+                @register_resources({qp.H: 2, qp.CNOT: 1}, exact=exact_resources, name="my_cz")
                 def my_cz(wires):
                     qp.H(wires[0])
                     qp.CNOT(wires=wires)
                     qp.H(wires[0])
                 """).strip()
 
-    @pytest.mark.parametrize("use_custom_name", [True, False])
-    def test_decomposition_rule_name(self, use_custom_name):
+    def test_decomposition_rule_name(self):
         """Tests the name attribute of a decomposition rule."""
 
-        name = "custom_cz" if use_custom_name else ""
+        name = "custom_cz"
 
         # Test that the name is correctly set when creating a fresh rule.
 
@@ -227,7 +355,7 @@ class TestDecompositionRule:
             qp.CNOT(wires=wires)
             qp.H(wires[0])
 
-        expected_name = name or "my_cz"
+        expected_name = name
         assert my_cz.name == expected_name
         assert repr(my_cz) == f"DecompositionRule(name={expected_name})"
 
@@ -241,7 +369,7 @@ class TestDecompositionRule:
             qp.CNOT(wires=wires)
             qp.H(wires[0])
 
-        expected_name = name or "my_cz_second"
+        expected_name = name
         assert my_cz_second.name == expected_name
         assert repr(my_cz_second) == f"DecompositionRule(name={expected_name})"
 
@@ -255,7 +383,9 @@ class TestDecompositionRule:
             for w0, w1 in zip(wires[1:], wires[:-1]):
                 qp.CNOT(wires=(w0, w1))
 
-        multi_rz_decomposition = register_resources(None, multi_rz_decomposition)
+        multi_rz_decomposition = register_resources(
+            None, multi_rz_decomposition, name="multi_rz_decomposition"
+        )
 
         with pytest.raises(NotImplementedError, match="No resource estimation found"):
             multi_rz_decomposition.compute_resources(num_wires=3)
@@ -263,7 +393,7 @@ class TestDecompositionRule:
     def test_custom_symbolic_decomposition(self):
         """Tests that custom decomposition rules for symbolic operators can be registered."""
 
-        @register_resources({qp.RX: 1, qp.RZ: 1})
+        @register_resources({qp.RX: 1, qp.RZ: 1}, name="my_adjoint_custom_op")
         def my_adjoint_custom_op(theta, wires, **__):
             qp.RX(theta, wires=wires[0])
             qp.RZ(theta, wires=wires[1])
@@ -280,7 +410,7 @@ class TestDecompositionRule:
         class DummyOp(Operator):
             resource_keys = set()
 
-        @register_resources({DummyOp: 1})
+        @register_resources({DummyOp: 1}, name="custom_decomp")
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
@@ -289,7 +419,9 @@ class TestDecompositionRule:
         def custom_decomp_2(*_, **__):
             raise NotImplementedError
 
-        custom_decomp_2 = register_resources({abstractify(DummyOp): 1}, custom_decomp_2)
+        custom_decomp_2 = register_resources(
+            {abstractify(DummyOp): 1}, custom_decomp_2, name="custom_decomp_2"
+        )
 
         assert custom_decomp_2.compute_resources() == Resources(
             gate_counts={abstractify(DummyOp): 1}
@@ -317,7 +449,7 @@ class TestDecompositionRule:
             def __init__(self, angles, eps, wires):  # pylint: disable=useless-parent-delegation
                 super().__init__(angles, eps, wires)
 
-        @register_resources({MissingFixedSigOp: 1})
+        @register_resources({MissingFixedSigOp: 1}, name="custom_decomp")
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
@@ -362,7 +494,8 @@ class TestDecompositionRule:
                 FixedSigOp: 1,
                 FixedSigOp(**abstract_sig): 2,
                 FixedSigOp(**concrete_sig): 3,
-            }
+            },
+            name="custom_decomp",
         )
         def custom_decomp(*_, **__):
             raise NotImplementedError
@@ -377,7 +510,7 @@ class TestDecompositionRule:
         class DummyOp(Operator):
             resource_keys = {"foo"}
 
-        @register_resources({DummyOp: 1})
+        @register_resources({DummyOp: 1}, name="custom_decomp")
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
@@ -388,14 +521,16 @@ class TestDecompositionRule:
             raise NotImplementedError
 
         with pytest.raises(TypeError, match="must be a subclass of Operator"):
-            custom_decomp_2 = register_resources({int: 1}, custom_decomp_2)
+            custom_decomp_2 = register_resources({int: 1}, custom_decomp_2, name="custom_decomp_2")
             custom_decomp_2.compute_resources()
 
     def test_register_work_wires(self):
         """Tests that a decomposition can register work wire requirements"""
 
         @register_resources(
-            {qp.CNOT: 3}, work_wires={"zeroed": 1, "garbage": 2, "borrowed": 3, "burnable": 4}
+            {qp.CNOT: 3},
+            work_wires={"zeroed": 1, "garbage": 2, "borrowed": 3, "burnable": 4},
+            name="custom_decomp",
         )
         def custom_decomp(*_, **__):
             raise NotImplementedError
@@ -408,6 +543,7 @@ class TestDecompositionRule:
                 "zeroed": num_wires // 2,
                 "borrowed": num_wires - num_wires // 2,
             },
+            name="custom_decomp_2",
         )
         @register_condition(lambda num_wires: num_wires > 2)
         def custom_decomp_2(*_, **__):
@@ -439,7 +575,10 @@ class TestDecompositionRule:
             }
 
         multi_rz_decomposition = register_resources(
-            _multi_rz_resources_old, multi_rz_decomposition, exact=exact_resources
+            _multi_rz_resources_old,
+            multi_rz_decomposition,
+            exact=exact_resources,
+            name="multi_rz_decomposition",
         )
 
         assert isinstance(multi_rz_decomposition, DecompositionRule)
@@ -491,19 +630,19 @@ class TestDecompDictionary:
 
         assert not qp.decomposition.has_decomp(SomeOtherOp)
 
-        @register_resources({qp.RZ: 2, qp.CNOT: 1})
+        @register_resources({qp.RZ: 2, qp.CNOT: 1}, name="custom_decomp")
         def custom_decomp(theta, wires, **__):
             qp.RZ(theta, wires=wires[0])
             qp.CNOT(wires=[wires[0], wires[1]])
             qp.RZ(theta, wires=wires[0])
 
-        @register_resources({qp.RX: 2, qp.CZ: 1})
+        @register_resources({qp.RX: 2, qp.CZ: 1}, name="custom_decomp2")
         def custom_decomp2(theta, wires, **__):
             qp.RX(theta, wires=wires[0])
             qp.CZ(wires=[wires[0], wires[1]])
             qp.RX(theta, wires=wires[0])
 
-        @register_resources({qp.RY: 2, qp.CNOT: 1})
+        @register_resources({qp.RY: 2, qp.CNOT: 1}, name="custom_decomp3")
         def custom_decomp3(theta, wires, **__):
             qp.RY(theta, wires=wires[0])
             qp.CNOT(wires=[wires[0], wires[1]])
@@ -539,7 +678,7 @@ class TestDecompDictionary:
         class AnotherOp(Operator):
             pass
 
-        @register_resources({qp.RZ: 2, qp.CNOT: 1})
+        @register_resources({qp.RZ: 2, qp.CNOT: 1}, name="custom_decomp")
         def custom_decomp(theta, wires, **_):
             qp.RZ(theta, wires=wires[0])
             qp.CNOT(wires=[wires[0], wires[1]])
@@ -563,7 +702,7 @@ class TestDecompDictionary:
         class AnotherOp(Operator):
             pass
 
-        @register_resources({qp.RZ: 2, qp.CNOT: 1})
+        @register_resources({qp.RZ: 2, qp.CNOT: 1}, name="custom_decomp")
         def custom_decomp(theta, wires, **_):
             qp.RZ(theta, wires=wires[0])
             qp.CNOT(wires=[wires[0], wires[1]])
@@ -581,19 +720,19 @@ class TestDecompDictionary:
 
         assert not qp.decomposition.has_decomp(CustomOp)
 
-        @register_resources({qp.RZ: 2, qp.CNOT: 1})
+        @register_resources({qp.RZ: 2, qp.CNOT: 1}, name="custom_decomp")
         def custom_decomp(theta, wires, **__):
             qp.RZ(theta, wires=wires[0])
             qp.CNOT(wires=[wires[0], wires[1]])
             qp.RZ(theta, wires=wires[0])
 
-        @register_resources({qp.RX: 2, qp.CZ: 1})
+        @register_resources({qp.RX: 2, qp.CZ: 1}, name="custom_decomp2")
         def custom_decomp2(theta, wires, **__):
             qp.RX(theta, wires=wires[0])
             qp.CZ(wires=[wires[0], wires[1]])
             qp.RX(theta, wires=wires[0])
 
-        @register_resources({qp.RY: 2, qp.CNOT: 1})
+        @register_resources({qp.RY: 2, qp.CNOT: 1}, name="custom_decomp3")
         def custom_decomp3(theta, wires, **__):
             qp.RY(theta, wires=wires[0])
             qp.CNOT(wires=[wires[0], wires[1]])
@@ -621,15 +760,15 @@ class TestDecompDictionary:
     def test_list_decomps_adjoint2(self):
         """Tests that list_decomps populate the adjoint decomposition rules."""
 
-        @register_resources({qp.RZ: 2, qp.CNOT: 1})
+        @register_resources({qp.RZ: 2, qp.CNOT: 1}, name="adjoint_rule")
         def _adjoint_rule(theta, wires):
             raise NotImplementedError
 
-        @register_resources({qp.RX: 2, qp.CZ: 1})
+        @register_resources({qp.RX: 2, qp.CZ: 1}, name="custom_rule")
         def custom_rule(theta, wires):
             raise NotImplementedError
 
-        @register_resources({qp.RY: 2, qp.CNOT: 1})
+        @register_resources({qp.RY: 2, qp.CNOT: 1}, name="custom_rule2")
         def custom_rule2(theta, wires):
             raise NotImplementedError
 
@@ -638,23 +777,23 @@ class TestDecompDictionary:
         qp.add_decomps(DynOp, custom_rule2)
 
         rule_names = {rule.name for rule in qp.list_decomps(Adjoint2(DynOp(Float, Wire[1])))}
-        assert rule_names == {"_adjoint_rule", "adjoint(custom_rule)", "adjoint(custom_rule2)"}
+        assert rule_names == {"adjoint_rule", "adjoint(custom_rule)", "adjoint(custom_rule2)"}
 
         op = qp.adjoint(qp.adjoint(NonParametricOp(wires=[0, 1])))
-        assert [rule.name for rule in qp.list_decomps(op)] == ["cancel_adjoint"]
+        assert [rule.name for rule in qp.list_decomps(op)] == ["cancel"]
 
     def test_list_decomps_controlled2(self):
         """Tests that list_decomps populate the adjoint decomposition rules."""
 
-        @register_resources({qp.RZ: 2, qp.CNOT: 1})
+        @register_resources({qp.RZ: 2, qp.CNOT: 1}, name="controlled_rule")
         def _controlled_rule(base, control_wires, control_values, **_):
             raise NotImplementedError
 
-        @register_resources({qp.RX: 2, qp.CZ: 1})
+        @register_resources({qp.RX: 2, qp.CZ: 1}, name="custom_rule")
         def custom_rule(theta, wires):
             raise NotImplementedError
 
-        @register_resources({qp.RY: 2, qp.CNOT: 1}, work_wires={"zeroed": 1})
+        @register_resources({qp.RY: 2, qp.CNOT: 1}, work_wires={"zeroed": 1}, name="custom_rule2")
         def custom_rule2(theta, wires):
             raise NotImplementedError
 
@@ -664,12 +803,12 @@ class TestDecompDictionary:
 
         op = qp.ctrl(qp.adjoint(DynOp(Float, Wire[1])), control=Wire[1])
         rule_names = {rule.name for rule in qp.list_decomps(op)}
-        assert rule_names == {"flip_control_adjoint"}
+        assert rule_names == {"flip_adjoint"}
 
         op = qp.ctrl(DynOp(Float, Wire[1]), control=Wire[1])
         rule_names = {rule.name for rule in qp.list_decomps(op)}
         assert rule_names == {
-            "_controlled_rule",
+            "controlled_rule",
             "controlled(custom_rule)",
             "controlled(custom_rule2)",
         }
@@ -681,12 +820,12 @@ class TestDecompDictionary:
         op = qp.ctrl(AnotherOp(Float, Wire[1]), control=Wire[4])
         rule_names = {rule.name for rule in qp.list_decomps(op)}
         assert rule_names == {
-            "_controlled_rule",
+            "controlled_rule",
             "controlled(custom_rule)",
             "controlled(custom_rule2)",
-            "ctrl_many_zeroed_work_wires",
-            "ctrl_single_work_wire",
-            "to_controlled_unitary",
+            "many_zeroed_work_wires",
+            "single_work_wire",
+            "to_unitary",
         }
 
     def test_list_pow_decomps2(self):
@@ -695,43 +834,43 @@ class TestDecompDictionary:
         # a fixed decomposition rule overrides everything else
         op = pow(DynOp(0.5, wires=0), 2)
         with qp.decomposition.local_decomps():
-            _fix_decomp(op, repeat_pow_base)
-            assert list(qp.list_decomps(op)) == [repeat_pow_base]
+            _fix_decomp(op, _pow_repeat_base)
+            assert list(qp.list_decomps(op)) == [_pow_repeat_base]
 
         # custom decomp registered for the power
         with qp.decomposition.local_decomps():
 
-            @register_resources({DynOp: 1})
+            @register_resources({DynOp: 1}, name="custom_decomp")
             def _custom_decomp(base, z):
                 raise NotImplementedError
 
             qp.add_decomps("Pow(DynOp)", _custom_decomp)
             assert _custom_decomp in qp.list_decomps(op)
 
-        # nested powers list only the merge_powers rule
+        # nested powers list only the _pow_merge_powers rule
         nested = pow(pow(qp.S(0), 3), 2)
-        assert list(qp.list_decomps(nested)) == [merge_powers]
+        assert list(qp.list_decomps(nested)) == [_pow_merge_powers]
 
-        # a power of an adjoint lists only the flip_pow_adjoint rule
+        # a power of an adjoint lists only the _pow_flip_adjoint rule
         pow_adjoint = pow(qp.adjoint(DynOp(0.5, wires=0)), 2)
-        assert list(qp.list_decomps(pow_adjoint)) == [flip_pow_adjoint]
+        assert list(qp.list_decomps(pow_adjoint)) == [_pow_flip_adjoint]
 
-        # an integer power appends repeat_pow_base to the custom rules
+        # an integer power appends _pow_repeat_base to the custom rules
         integer_pow = pow(DynOp(0.5, wires=0), 3)
-        assert repeat_pow_base in qp.list_decomps(integer_pow)
+        assert _pow_repeat_base in qp.list_decomps(integer_pow)
 
-        # a non-integer power does not append repeat_pow_base
+        # a non-integer power does not append _pow_repeat_base
         fractional_pow = pow(DynOp(0.5, wires=0), 0.5)
-        assert repeat_pow_base not in qp.list_decomps(fractional_pow)
+        assert _pow_repeat_base not in qp.list_decomps(fractional_pow)
 
     def test_mcm_and_allocation_rules_skipped_for_adjoint2(self):
         """Tests that rules containing MCMs and wire allocations can't be adjointed."""
 
-        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure(wires=Wire[1]): 1})
+        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure(wires=Wire[1]): 1}, name="custom_rule")
         def custom_rule(theta, wires):
             raise NotImplementedError
 
-        @register_resources({qp.RY: 2, qp.CNOT: 1}, work_wires={"zeroed": 1})
+        @register_resources({qp.RY: 2, qp.CNOT: 1}, work_wires={"zeroed": 1}, name="custom_rule2")
         def custom_rule2(theta, wires, **__):
             raise NotImplementedError
 
@@ -743,7 +882,7 @@ class TestDecompDictionary:
     def test_mcm_rules_skipped_for_controlled2(self):
         """Tests that rules containing MCMs are skipped for controlled."""
 
-        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure(wires=Wire[1]): 1})
+        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure(wires=Wire[1]): 1}, name="custom_rule")
         def custom_rule(theta, wires):
             raise NotImplementedError
 
@@ -768,7 +907,7 @@ class TestListDecompsByName:
         qp.add_decomps("C(DynOp)", custom_rule)
         expected = [
             custom_rule,
-            to_controlled_unitary,
+            _controlled_to_unitary,
             ctrl_many_zeroed_work_wires,
             ctrl_single_work_wire,
         ]
@@ -793,13 +932,13 @@ class TestListDecompsByName:
         assert custom_rule in _get_registered_decomps(to_name(op_name))
         assert custom_rule not in _get_registered_decomps(op_name)
         assert custom_rule in qp.list_decomps(op_name)
-        assert "to_controlled_unitary" in qp.list_decomps(op_name)
+        assert "to_unitary" in qp.list_decomps(op_name)
 
     @pytest.mark.parametrize("op_name", ["C(UnregisteredOp)", "Controlled(UnregisteredOp)"])
     def test_unregistered_controlled_name(self, op_name):
         """Controlled names without custom registrations still have generic candidates."""
         assert list(qp.list_decomps(op_name)) == [
-            to_controlled_unitary,
+            _controlled_to_unitary,
             ctrl_many_zeroed_work_wires,
             ctrl_single_work_wire,
         ]
@@ -826,7 +965,7 @@ class TestListDecompsByName:
             assert list(_get_registered_decomps("C(DynOp)")) == [custom_rule]
             assert list(_list_control_decomps("C(DynOp)")) == [
                 custom_rule,
-                to_controlled_unitary,
+                _controlled_to_unitary,
                 ctrl_many_zeroed_work_wires,
                 ctrl_single_work_wire,
             ]
@@ -841,9 +980,9 @@ class TestListDecompsByName:
             raise NotImplementedError
 
         qp.add_decomps("C(DynOp)", custom_rule)
-        with qp.decomposition.exclude_decomps("C(DynOp)", "custom_rule", "ctrl_single_work_wire"):
+        with qp.decomposition.exclude_decomps("C(DynOp)", "custom_rule", "single_work_wire"):
             assert list(qp.list_decomps("C(DynOp)")) == [
-                to_controlled_unitary,
+                _controlled_to_unitary,
                 ctrl_many_zeroed_work_wires,
             ]
 
@@ -874,14 +1013,14 @@ class TestListDecompsByName:
             else DynOp(Float, Wire[num_target_wires])
         )
         op = ControlledOp2(base, control_wires=Wire[1])
-        rule = qp.list_decomps(op.name)["to_controlled_unitary"]
+        rule = qp.list_decomps(op.name)["to_unitary"]
         assert rule.is_applicable(**op.arguments) == (has_matrix and num_target_wires == 1)
 
     @pytest.mark.parametrize("num_control_wires", [1, 2, 3, 4])
     def test_single_work_wire_condition(self, num_control_wires):
         """The wrapped candidate requires more than two control wires."""
         op = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[num_control_wires])
-        rule = qp.list_decomps(op.name)["ctrl_single_work_wire"]
+        rule = qp.list_decomps(op.name)["single_work_wire"]
         assert rule.is_applicable(**op.arguments) == (num_control_wires > 2)
 
     @pytest.mark.parametrize(
@@ -905,7 +1044,7 @@ class TestListDecompsByName:
             work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         )
-        rule = qp.list_decomps(op.name)["ctrl_many_zeroed_work_wires"]
+        rule = qp.list_decomps(op.name)["many_zeroed_work_wires"]
         assert rule.is_applicable(**op.arguments) == expected
 
 
@@ -918,9 +1057,9 @@ class TestExcludeDecomps:
         all_names = [rule.name for rule in qp.list_decomps(qp.CRX)]
 
         with qp.decomposition.local_decomps():
-            qp.exclude_decomps(qp.CRX, "_crx_to_ppr", "_crx_to_h_crz")
-            assert "_crx_to_ppr" not in qp.list_decomps(qp.CRX)
-            assert "_crx_to_h_crz" not in qp.list_decomps(qp.CRX)
+            qp.exclude_decomps(qp.CRX, "to_paulirot", "to_h_crz")
+            assert "to_paulirot" not in qp.list_decomps(qp.CRX)
+            assert "to_h_crz" not in qp.list_decomps(qp.CRX)
 
         assert [rule.name for rule in qp.list_decomps(qp.CRX)] == all_names
 
@@ -929,8 +1068,8 @@ class TestExcludeDecomps:
 
         all_names = [rule.name for rule in qp.list_decomps(qp.CRX)]
 
-        with qp.exclude_decomps(qp.CRX, "_crx_to_ppr"):
-            assert "_crx_to_ppr" not in qp.list_decomps(qp.CRX)
+        with qp.exclude_decomps(qp.CRX, "to_paulirot"):
+            assert "to_paulirot" not in qp.list_decomps(qp.CRX)
 
         assert [rule.name for rule in qp.list_decomps(qp.CRX)] == all_names
 
@@ -938,11 +1077,11 @@ class TestExcludeDecomps:
         """Tests that rules excluded before a context remain excluded after it exits."""
 
         with qp.decomposition.local_decomps():
-            qp.exclude_decomps(qp.CRX, "_crx_to_ppr")
-            with qp.exclude_decomps(qp.CRX, "_crx_to_ppr", "_crx_to_h_crz"):
-                assert "_crx_to_h_crz" not in qp.list_decomps(qp.CRX)
-            assert "_crx_to_h_crz" in qp.list_decomps(qp.CRX)
-            assert "_crx_to_ppr" not in qp.list_decomps(qp.CRX)
+            qp.exclude_decomps(qp.CRX, "to_paulirot")
+            with qp.exclude_decomps(qp.CRX, "to_paulirot", "to_h_crz"):
+                assert "to_h_crz" not in qp.list_decomps(qp.CRX)
+            assert "to_h_crz" in qp.list_decomps(qp.CRX)
+            assert "to_paulirot" not in qp.list_decomps(qp.CRX)
 
     def test_rule_instance_raises_error(self):
         """Tests that passing a DecompositionRule instead of its name raises an error."""
@@ -957,19 +1096,19 @@ class TestExcludeDecomps:
 
         all_names = [rule.name for rule in qp.list_decomps(qp.CRX)]
         with pytest.raises(ValueError, match="Cannot find a decomposition rule named '_crx_typo'"):
-            qp.exclude_decomps(qp.CRX, "_crx_to_ppr", "_crx_typo")
+            qp.exclude_decomps(qp.CRX, "to_paulirot", "_crx_typo")
         assert [rule.name for rule in qp.list_decomps(qp.CRX)] == all_names
 
         with pytest.raises(ValueError, match="Cannot find a decomposition rule named"):
-            qp.exclude_decomps("Pow(DynOp)", repeat_pow_base.name)
+            qp.exclude_decomps("Pow(DynOp)", _pow_repeat_base.name)
 
     def test_excluded_rules_can_be_excluded_again(self):
         """Tests that an already excluded rule is still recognized as an existing rule."""
 
         with qp.decomposition.local_decomps():
-            qp.exclude_decomps(qp.CRX, "_crx_to_ppr")
-            qp.exclude_decomps(qp.CRX, "_crx_to_ppr")
-            assert "_crx_to_ppr" not in qp.list_decomps(qp.CRX)
+            qp.exclude_decomps(qp.CRX, "to_paulirot")
+            qp.exclude_decomps(qp.CRX, "to_paulirot")
+            assert "to_paulirot" not in qp.list_decomps(qp.CRX)
 
 
 class TestDecompCollection:
@@ -979,7 +1118,7 @@ class TestDecompCollection:
     def setup(self):
         """Sets up decomposition rules for CustomOp."""
 
-        @register_resources({qp.RZ: 2, qp.CNOT: 1})
+        @register_resources({qp.RZ: 2, qp.CNOT: 1}, name="custom_decomp")
         def custom_decomp(theta, wires, **_):
             qp.RZ(theta, wires=wires[0])
             qp.CNOT(wires=[wires[0], wires[1]])
@@ -991,7 +1130,7 @@ class TestDecompCollection:
             qp.CZ(wires=[wires[0], wires[1]])
             qp.RX(theta, wires=wires[0])
 
-        @register_resources({qp.RY: 2, qp.CNOT: 1})
+        @register_resources({qp.RY: 2, qp.CNOT: 1}, name="custom_decomp3")
         def custom_decomp3(theta, wires, **_):
             qp.RY(theta, wires=wires[0])
             qp.CNOT(wires=[wires[0], wires[1]])
@@ -1039,10 +1178,31 @@ class TestDecompCollection:
         with pytest.raises(KeyError, match="Cannot find a decomposition with the given name: abc"):
             collection["abc"]  # pylint: disable=pointless-statement
 
+    @pytest.mark.parametrize("use_inspect", [False, True])
+    def test_unknown_name_lists_available_names(self, use_inspect):
+        """Failed public lookups report the available names in registration order."""
+        with pytest.raises(KeyError) as exc:
+            if use_inspect:
+                qp.inspect_decomps(CustomOp(wires=[0, 1]), "abc")
+            else:
+                _ = qp.list_decomps(CustomOp)["abc"]
+        assert exc.value.args[0] == (
+            "Cannot find a decomposition with the given name: abc. "
+            "Available names: ['custom_decomp', 'custom2', 'custom_decomp3']."
+        )
+
+    def test_unknown_name_in_empty_collection(self):
+        """Failed lookups in an empty collection report that no names are available."""
+        with pytest.raises(KeyError) as exc:
+            _ = DecompCollection()["abc"]
+        assert exc.value.args[0] == (
+            "Cannot find a decomposition with the given name: abc. Available names: []."
+        )
+
     def test_append(self):
         """Tests the append method."""
 
-        @register_resources({qp.RZ: 2, qp.CNOT: 1})
+        @register_resources({qp.RZ: 2, qp.CNOT: 1}, name="custom_decomp")
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
@@ -1101,7 +1261,9 @@ class TestInspectDecomps:
             qp.CNOT(wires=[wires[0], wires[1]])
             qp.RZ(theta, wires=wires[0])
 
-        @register_resources(lambda num_wires: {qp.RX: 2, qp.CZ: 2 * (num_wires - 1), qp.H: 1})
+        @register_resources(
+            lambda num_wires: {qp.RX: 2, qp.CZ: 2 * (num_wires - 1), qp.H: 1}, name="general_decomp"
+        )
         def general_decomp(theta, wires, **_):
             @qp.for_loop(len(wires) - 1)
             def _loop(i):
@@ -1422,7 +1584,7 @@ class TestInspectDecomps:
         assert result._repr_markdown_() == "No available decomposition rules."
 
         @qp.register_condition(lambda **_: False)
-        @qp.register_resources({})
+        @qp.register_resources({}, name="invalid_rule")
         def invalid_rule(*_, **__):
             raise NotImplementedError
 
@@ -1538,7 +1700,7 @@ class TestChangeOpBasisResources:
             inner_cob = _change_op_basis_abstract(qp.H, qp.Z(Wire[1]), qp.H)
             return {_change_op_basis_abstract(qp.X, inner_cob, qp.X): 1}
 
-        @register_resources(resources)
+        @register_resources(resources, name="rule")
         def rule(wires, **_):
             inner = qp.change_op_basis(qp.H(wires), qp.Z(wires), qp.H(wires))
             qp.change_op_basis(qp.X(wires), inner, qp.X(wires))

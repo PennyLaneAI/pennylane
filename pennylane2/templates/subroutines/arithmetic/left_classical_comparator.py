@@ -87,7 +87,7 @@ class LeftClassicalComparator(Operator2):
             :symbols: :math:`n` ``x_wires``, the constant :math:`L` and ``comparator`` :math:`c`
             :example: :math:`n=3`, :math:`L=6`, :math:`c={<}`
 
-            .. decomposition-rule:: _left_classical_comparator
+            .. decomposition-rule:: elbow_ladder
                 :image: /_static/decomposition_thumbnails/left_classical_comparator_elbow_ladder.svg
                 :where: :math:`[\cdot]` is 1 if the condition holds and 0 otherwise.
                     Conditional gates depend on :math:`L` and :math:`c`.
@@ -182,8 +182,9 @@ def _get_specific_bit(value, i):
     return (value >> i) & 1
 
 
-# pylint: disable-next=unused-argument
-def _left_classical_comparator_resources(x_wires, value, target_wire, work_wires, comparator, **_):
+def _left_classical_comparator_standard_resources(
+    x_wires, value, target_wire, work_wires, comparator, **_  # pylint: disable=unused-argument
+):
     """Return conservative worst-case gate counts without knowing the runtime threshold."""
     n = len(x_wires)
     # Count every conditional gate: two Xs for bit 0, four per remaining low bit,
@@ -195,8 +196,8 @@ def _left_classical_comparator_resources(x_wires, value, target_wire, work_wires
     }
 
 
-@register_resources(_left_classical_comparator_resources, exact=False)
-def _left_classical_comparator(x_wires, value, target_wire, work_wires, comparator, **_):
+@register_resources(_left_classical_comparator_standard_resources, exact=False, name="elbow_ladder")
+def _left_classical_comparator_standard(x_wires, value, target_wire, work_wires, comparator, **_):
     x_wires = x_wires[::-1]
 
     def _negate_output():
@@ -239,4 +240,4 @@ def _left_classical_comparator(x_wires, value, target_wire, work_wires, comparat
     cond(comparator.startswith(">"), _negate_output)()
 
 
-add_decomps(LeftClassicalComparator, _left_classical_comparator)
+add_decomps(LeftClassicalComparator, _left_classical_comparator_standard)

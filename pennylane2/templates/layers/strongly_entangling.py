@@ -256,7 +256,7 @@ class StronglyEntanglingLayers(Operation):
         return n_layers, n_wires, 3
 
 
-def _strongly_entangling_resources(imprimitive, n_wires, n_layers):
+def _strongly_entangling_standard_resources(imprimitive, n_wires, n_layers):
     resources = {}
 
     resources[Rot] = n_wires * n_layers
@@ -266,8 +266,8 @@ def _strongly_entangling_resources(imprimitive, n_wires, n_layers):
     return resources
 
 
-@register_resources(_strongly_entangling_resources)
-def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
+@register_resources(_strongly_entangling_standard_resources, name="rotations_entangler_layers")
+def _strongly_entangling_standard(weights, wires, ranges, imprimitive):
 
     if capture.enabled():
         wires = math.array(wires, like="jax")
@@ -308,4 +308,4 @@ def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
     layers()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(StronglyEntanglingLayers, _strongly_entangling_decomposition)
+add_decomps(StronglyEntanglingLayers, _strongly_entangling_standard)

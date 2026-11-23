@@ -101,7 +101,7 @@ class SelectPauliRot(Operator2):
             :symbols: :math:`c \geq 1` control wires and rotation axis :math:`P` (``rot_axis``)
             :example: :math:`c=1`, :math:`P=Y`
 
-            .. decomposition-rule:: decompose_select_pauli_rot
+            .. decomposition-rule:: gray_code
                 :image: /_static/decomposition_thumbnails/select_pauli_rot_cnot_ladder.svg
                 :where: :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
 
@@ -171,7 +171,7 @@ def _SelectPauliRotYBasis(wires, reverse: bool) -> None:
         Hadamard(wires)
 
 
-def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
+def _select_pauli_rot_standard_resources(angles, control_wires, target_wire, rot_axis):
     if rot_axis == "Z":
         return _uniform_rz_resources(control_wires)
 
@@ -190,8 +190,8 @@ def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
 
 
 # Not exact resources because rotations might be skipped based on angles
-@register_resources(_select_pauli_rot_resource, exact=False)
-def decompose_select_pauli_rot(angles, control_wires, target_wire, rot_axis):
+@register_resources(_select_pauli_rot_standard_resources, exact=False, name="gray_code")
+def _select_pauli_rot_standard(angles, control_wires, target_wire, rot_axis):
     r"""Decomposes the SelectPauliRot"""
 
     wires = Wires(control_wires) + Wires(target_wire)
@@ -216,7 +216,7 @@ def decompose_select_pauli_rot(angles, control_wires, target_wire, rot_axis):
             _apply_uniform_rotation_dagger(RZ, angles, wires[-2::-1], wires[-1])
 
 
-add_decomps(SelectPauliRot, decompose_select_pauli_rot)
+add_decomps(SelectPauliRot, _select_pauli_rot_standard)
 
 
 MultiplexedRotation = SelectPauliRot

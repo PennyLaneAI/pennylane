@@ -93,7 +93,7 @@ def test_decomp_has_name():
     }
 
     custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
-    assert custom_decomp.name == "_rz_phase_gradient_decomp"
+    assert custom_decomp.name == "phase_gradient"
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -157,17 +157,17 @@ def test_phase_gradient_capture_reuses_dynamic_inputs(rotation, seed):
         assert isinstance(tape.operations[-1], qp.ops.ChangeOpBasis2)
         basis_change = tape.operations[-1]
         if rotation == "CRZ":
-            assert basis_change.compute_op.name == "_CRZPhaseGradientCompute"
+            assert basis_change.compute_op.name == "CRZPhaseGradientCompute"
             qp.testing.assert_decomposable(basis_change.compute_op, check_matrix=False)
         elif rotation in ("X", "Y", "Z"):
             if rotation == "Y":
-                assert basis_change.compute_op.name == "_SelectPauliRotYBasis"
-                assert basis_change.uncompute_op.name == "_SelectPauliRotYBasis"
+                assert basis_change.compute_op.name == "SelectPauliRotYBasis"
+                assert basis_change.uncompute_op.name == "SelectPauliRotYBasis"
                 assert basis_change.compute_op.arguments["reverse"] is False
                 assert basis_change.uncompute_op.arguments["reverse"] is True
             if rotation in ("X", "Y"):
                 basis_change = basis_change.target_op
-            assert basis_change.compute_op.name == "_SelectPauliRotPhaseGradientCompute"
+            assert basis_change.compute_op.name == "SelectPauliRotPhaseGradientCompute"
             qp.testing.assert_decomposable(basis_change.compute_op, check_matrix=False)
         phase_gradient_helpers.assert_decomp_realizes_op(op, tape, phase_grad_wires, seed)
 

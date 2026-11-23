@@ -163,7 +163,7 @@ def _pauli_rot_decomp_condition(base, **__):
     return qp.pauli.is_pauli_word(base)
 
 
-def _pauli_rot_decomp_resource(base, **__):
+def _exp_to_pauli_rot_resources(base, **__):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
     pauli_word = qp.pauli.pauli_word_to_string(base)
@@ -171,8 +171,8 @@ def _pauli_rot_decomp_resource(base, **__):
 
 
 @qp.register_condition(_pauli_rot_decomp_condition)
-@qp.register_resources(_pauli_rot_decomp_resource)
-def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argument
+@qp.register_resources(_exp_to_pauli_rot_resources, name="to_pauli_rot")
+def _exp_to_pauli_rot(*params, wires, base, **_):  # pylint: disable=unused-argument
     """Decompose the operator into a single PauliRot operator."""
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
@@ -189,4 +189,4 @@ def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argum
     qp.PauliRot(coeff, pauli_word, base.wires)
 
 
-qp.add_decomps(Evolution, pauli_rot_decomp)
+qp.add_decomps(Evolution, _exp_to_pauli_rot)

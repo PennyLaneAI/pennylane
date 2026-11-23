@@ -21,8 +21,8 @@ import pytest
 import pennylane2 as qp
 from pennylane2.core.operator import abstractify
 from pennylane2.templates.subroutines.arithmetic.temporary_and import (
-    _adjoint_temporary_and,
-    _adjoint_temporary_and_ppm,
+    _adjoint_temporary_and_measurement,
+    _adjoint_temporary_and_to_ppm,
     _adjoint_temporary_and_to_toffoli,
 )
 from pennylane2.testing import assert_valid_decomp_rule
@@ -30,7 +30,7 @@ from pennylane2.typing import Bool, Wire
 
 expected_adjoint_temporary_and_rule_ops = [
     (
-        _adjoint_temporary_and,
+        _adjoint_temporary_and_measurement,
         [
             "H(2)",
             "MidMeasure(wires=[2], postselect=None, reset=True)",
@@ -39,7 +39,7 @@ expected_adjoint_temporary_and_rule_ops = [
     ),
     (_adjoint_temporary_and_to_toffoli, ["Toffoli(wires=[0, 1, 2])"]),
     (
-        _adjoint_temporary_and_ppm,
+        _adjoint_temporary_and_to_ppm,
         [
             "PauliMeasure('X', wires=[2])",
             "Conditional(CZ)(wires=[0, 1])",
@@ -203,7 +203,7 @@ class TestTemporaryAND:
     def test_adjoint_temporary_and_decomposition(self, control_values, rule, seed):
         """Validate various decompositions of Adjoint(TemporaryAND), excluding the PPM-based rule,
         which is tested in test_adjoint_temporary_and_ppm_decomposition below."""
-        if rule == _adjoint_temporary_and_ppm:
+        if rule == _adjoint_temporary_and_to_ppm:
             pytest.skip(
                 reason=(
                     "The PPM-based decomposition requires special handling and is tested separately "
@@ -246,7 +246,7 @@ class TestTemporaryAND:
             # Prepare control state
             qp.StatePrep(state, wires=sys_wires[:2])
             op = qp.TemporaryAND(wires=sys_wires, control_values=control_values)
-            _adjoint_temporary_and_ppm(op)
+            _adjoint_temporary_and_to_ppm(op)
             qp.adjoint(qp.MottonenStatePreparation.compute_decomposition)(
                 state, wires=sys_wires[:2]
             )

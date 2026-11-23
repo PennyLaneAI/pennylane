@@ -81,7 +81,7 @@ def test_decomp_has_name():
     }
 
     custom_decomp = make_crz_to_phase_gradient_decomp(**kwargs)
-    assert custom_decomp.name == "_crz_phase_gradient_decomp"
+    assert custom_decomp.name == "phase_gradient"
 
 
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])

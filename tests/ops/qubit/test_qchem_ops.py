@@ -149,7 +149,7 @@ class TestSingleExcitation:
 
     def test_single_excitation_ppr_crz_decomp(self):
         """Tests that the Clifford operations belong to the basis change, leaving only CRZ as target."""
-        rule = qp.list_decomps(qp.SingleExcitation)["_single_excitation_ppr_crz"]
+        rule = qp.list_decomps(qp.SingleExcitation)["to_ppr_crz"]
         with qp.queuing.AnnotatedQueue() as q:
             rule(0.2, [0, 1])
 
@@ -323,7 +323,7 @@ class TestSingleExcitationDecompositions:
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         "rule_name",
-        ["_single_excitation_decomp", "_single_excitation_ppr_rz", "_single_excitation_ppr_crz"],
+        ["basis_change_ry", "to_ppr_rz", "to_ppr_crz"],
     )
     def test_basis_change_resources_and_matrix(self, rule_name):
         """Test that basis changes preserve the excitation matrix and resource identities."""
@@ -334,7 +334,7 @@ class TestSingleExcitationDecompositions:
     @pytest.mark.capture
     @pytest.mark.parametrize(
         "rule_name",
-        ["_single_excitation_decomp", "_single_excitation_ppr_rz", "_single_excitation_ppr_crz"],
+        ["basis_change_ry", "to_ppr_rz", "to_ppr_crz"],
     )
     def test_subcircuit_replays_dynamic_arguments(self, rule_name):
         """Test that captured target subcircuits retain dynamic angles and wire assignments."""
@@ -1159,7 +1159,7 @@ class TestFermionicSWAP:
     def test_decomposition_rule(self, phi, wires):
         """Test the registered decomposition matrix and resource counts."""
         op = qp.FermionicSWAP(phi, wires=wires)
-        rule = qp.list_decomps(qp.FermionicSWAP)["_fermionic_swap_decomp"]
+        rule = qp.list_decomps(qp.FermionicSWAP)["to_multirz_single_qubit"]
         qp.testing.assert_valid_decomp_rule(op, rule)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])

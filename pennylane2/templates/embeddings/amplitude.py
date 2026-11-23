@@ -17,7 +17,7 @@ Contains the AmplitudeEmbedding template.
 
 from pennylane2.decomposition import add_decomps
 from pennylane2.ops import StatePrep
-from pennylane2.ops.qubit.state_preparation import _state_prep_decomp
+from pennylane2.ops.qubit.state_preparation import _state_prep_standard
 
 
 class AmplitudeEmbedding(StatePrep):
@@ -120,4 +120,4 @@ class AmplitudeEmbedding(StatePrep):
         )
 
 
-add_decomps(AmplitudeEmbedding, _state_prep_decomp)
+add_decomps(AmplitudeEmbedding, _state_prep_standard)

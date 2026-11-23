@@ -365,7 +365,7 @@ class QubitizationTHC(Operator2):
         .. decomposition-table:: qp.QubitizationTHC
             :stacked:
 
-            .. decomposition-rule:: _qubitization_thc_decomp
+            .. decomposition-rule:: thc_prepare_select_reflection
                 :image: /_static/decomposition_thumbnails/qubitization_thc_walk.svg
 
                 :class:`~.SuperpositionTHC` | :math:`1`
@@ -573,7 +573,7 @@ def _prepare_select(  # pylint: disable=too-many-arguments
     return change_op_basis(prepare, select)
 
 
-def _qubitization_thc_resources(  # pylint: disable=too-many-arguments
+def _qubitization_thc_standard_resources(  # pylint: disable=too-many-arguments
     zeta,
     t_ell,
     chi,
@@ -630,8 +630,8 @@ def _qubitization_thc_resources(  # pylint: disable=too-many-arguments
     }
 
 
-@register_resources(_qubitization_thc_resources)
-def _qubitization_thc_decomp(  # pylint: disable=too-many-arguments
+@register_resources(_qubitization_thc_standard_resources, name="thc_prepare_select_reflection")
+def _qubitization_thc_standard(  # pylint: disable=too-many-arguments
     zeta,
     t_ell,
     chi,
@@ -678,4 +678,4 @@ def _qubitization_thc_decomp(  # pylint: disable=too-many-arguments
     GlobalPhase(np.pi)
 
 
-add_decomps(QubitizationTHC, _qubitization_thc_decomp)
+add_decomps(QubitizationTHC, _qubitization_thc_standard)

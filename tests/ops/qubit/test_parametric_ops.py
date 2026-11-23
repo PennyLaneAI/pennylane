@@ -170,16 +170,16 @@ class TestOperations:
     @pytest.mark.parametrize(
         "op, rule_name",
         [
-            (qp.RY(0.37, wires=3), "_ry_to_rz_cliff"),
-            (qp.RZ(-0.29, wires=3), "_rz_to_ry_cliff"),
-            (qp.MultiRZ(0.37, wires=[3]), "_multi_rz_decomposition"),
-            (qp.MultiRZ(-0.29, wires=[3, 1]), "_multi_rz_decomposition"),
-            (qp.MultiRZ(0.37, wires=[3, 1, 4, 0]), "_multi_rz_decomposition"),
-            (qp.PauliRot(0.37, "III", wires=[3, 1, 4]), "_pauli_rot_decomposition"),
-            (qp.PauliRot(0.37, "ZIZ", wires=[3, 1, 4]), "_pauli_rot_decomposition"),
-            (qp.PauliRot(-0.29, "XIY", wires=[3, 1, 4]), "_pauli_rot_decomposition"),
-            (qp.PauliRot(0.37, "YYZZ", wires=[3, 1, 4, 0]), "_pauli_rot_decomposition"),
-            (qp.IsingXY(-0.29, wires=[3, 1]), "_isingxy_to_h_cy"),
+            (qp.RY(0.37, wires=3), "to_rz_cliff"),
+            (qp.RZ(-0.29, wires=3), "to_ry_cliff"),
+            (qp.MultiRZ(0.37, wires=[3]), "cnot_ladder"),
+            (qp.MultiRZ(-0.29, wires=[3, 1]), "cnot_ladder"),
+            (qp.MultiRZ(0.37, wires=[3, 1, 4, 0]), "cnot_ladder"),
+            (qp.PauliRot(0.37, "III", wires=[3, 1, 4]), "basis_change_multirz"),
+            (qp.PauliRot(0.37, "ZIZ", wires=[3, 1, 4]), "basis_change_multirz"),
+            (qp.PauliRot(-0.29, "XIY", wires=[3, 1, 4]), "basis_change_multirz"),
+            (qp.PauliRot(0.37, "YYZZ", wires=[3, 1, 4, 0]), "basis_change_multirz"),
+            (qp.IsingXY(-0.29, wires=[3, 1]), "to_h_cy"),
         ],
     )
     def test_basis_change_decomposition(self, op, rule_name):
@@ -193,7 +193,7 @@ class TestOperations:
         import jax
         import jax.numpy as jnp
 
-        rule = qp.list_decomps(qp.IsingXY)["_isingxy_to_h_cy"]
+        rule = qp.list_decomps(qp.IsingXY)["to_h_cy"]
         jaxpr = jax.make_jaxpr(lambda phi, wires: rule(phi, wires=wires))(
             jnp.array(0.1), jnp.array([0, 1])
         )
@@ -3236,11 +3236,11 @@ class TestMultiRZ:
         qp.testing.assert_valid(op)
 
     @pytest.mark.parametrize("wires", [[0], [0, 2], [3, 1, 0]])
-    def test_MultiRZ_to_ppr(self, wires):
+    def test_MultiRZ_to_paulirot(self, wires):
         """Test that MultiRZ decomposes into a PauliRot on a pure-Z Pauli word."""
 
         op = qp.MultiRZ(0.123, wires=wires)
-        rule = qp.list_decomps(qp.MultiRZ)["_multi_rz_to_ppr"]
+        rule = qp.list_decomps(qp.MultiRZ)["to_paulirot"]
         tape = decomp_rule_to_tape(op, rule)
         (actual,) = tape.operations
         qp.assert_equal(actual, qp.PauliRot(0.123, "Z" * len(wires), wires=wires))

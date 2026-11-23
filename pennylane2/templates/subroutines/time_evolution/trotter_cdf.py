@@ -22,7 +22,11 @@ from pennylane2 import math
 from pennylane2.capture import hint
 from pennylane2.control_flow import for_loop
 from pennylane2.core.operator import Operator2
-from pennylane2.decomposition import add_decomps, register_condition, register_resources
+from pennylane2.decomposition import (
+    add_decomps,
+    register_condition,
+    register_resources,
+)
 from pennylane2.numeric_hamiltonians import CDFHamiltonian
 from pennylane2.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane2.ops.op_math import adjoint, ctrl
@@ -132,7 +136,7 @@ class TrotterCDF(Operator2):
                 ``num_trotter_steps``
             :example: the Hamiltonian above, :math:`N=2`, :math:`L=1`, :math:`n=1`. Note that all expressions below assume :math:`n \gt 0`
 
-            .. decomposition-rule:: _trotter_cdf_decomposition
+            .. decomposition-rule:: double_factorized_steps
                 :image: /_static/decomposition_thumbnails/trotter_cdf_second_order.svg
                 :where: :math:`B = (2L-1)n + 1` two-body blocks and :math:`w` work wires. The
                     counts are upper bounds, as basis rotations that are the identity are
@@ -701,7 +705,7 @@ def _cdf_resource_counts(
     return {op: count for op, count in resources.items() if count}
 
 
-def _trotter_cdf_resources(  # pylint: disable=too-many-arguments,unused-argument
+def _trotter_cdf_standard_resources(  # pylint: disable=too-many-arguments,unused-argument
     evolution_time,
     num_trotter_steps,
     hamiltonian,
@@ -714,8 +718,8 @@ def _trotter_cdf_resources(  # pylint: disable=too-many-arguments,unused-argumen
     )
 
 
-@register_resources(_trotter_cdf_resources, exact=False)
-def _trotter_cdf_decomposition(  # pylint: disable=too-many-arguments,unused-argument
+@register_resources(_trotter_cdf_standard_resources, exact=False, name="double_factorized_steps")
+def _trotter_cdf_standard(  # pylint: disable=too-many-arguments,unused-argument
     evolution_time,
     num_trotter_steps,
     hamiltonian,
@@ -738,10 +742,10 @@ def _trotter_cdf_decomposition(  # pylint: disable=too-many-arguments,unused-arg
         GlobalPhase(phi)
 
 
-add_decomps(TrotterCDF, _trotter_cdf_decomposition)
+add_decomps(TrotterCDF, _trotter_cdf_standard)
 
 
-def _controlled_trotter_cdf_resource(  # pylint: disable=unused-argument
+def _controlled_trotter_cdf_standard_resources(  # pylint: disable=unused-argument
     base,
     control_wires,
     control_values,
@@ -758,9 +762,18 @@ def _controlled_trotter_cdf_resource(  # pylint: disable=unused-argument
 
 
 @register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
-@register_resources(_controlled_trotter_cdf_resource, exact=False)
-# pylint: disable-next=unused-argument
-def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+@register_resources(
+    _controlled_trotter_cdf_standard_resources,
+    exact=False,
+    name="controlled_double_factorized_steps",
+)
+def _controlled_trotter_cdf_standard(
+    base,
+    control_wires,
+    control_values,  # pylint: disable=unused-argument
+    work_wires,  # pylint: disable=unused-argument
+    work_wire_type,  # pylint: disable=unused-argument
+):
     evolution_time = base.arguments["evolution_time"]
     num_trotter_steps = base.arguments["num_trotter_steps"]
     hamiltonian = base.arguments["hamiltonian"]
@@ -819,10 +832,9 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
         *args, **kwargs
     ).gate_counts,
     exact=False,
+    name="multi_control",
 )
-def _multi_controlled_trotter_cdf_decomp(
-    base, control_wires, control_values, work_wires, work_wire_type
-):
+def _trotter_cdf_multi_control(base, control_wires, control_values, work_wires, work_wire_type):
     """Reuse the single-control CDF decomposition after combining multiple controls."""
     validate_no_wire_overlaps(
         {
@@ -836,6 +848,6 @@ def _multi_controlled_trotter_cdf_decomp(
 
 add_decomps(
     "C(TrotterCDF)",
-    flip_zero_control2(_controlled_trotter_cdf_decomp),
-    _multi_controlled_trotter_cdf_decomp,
+    flip_zero_control2(_controlled_trotter_cdf_standard, name="controlled_double_factorized_steps"),
+    _trotter_cdf_multi_control,
 )

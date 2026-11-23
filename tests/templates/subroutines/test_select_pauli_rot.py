@@ -24,9 +24,9 @@ import pytest
 import pennylane2 as qp
 from pennylane2 import numpy as np
 from pennylane2.templates.subroutines.select_pauli_rot import (
+    _select_pauli_rot_standard,
     _SelectPauliRotYBasis,
     _UniformRZ,
-    decompose_select_pauli_rot,
 )
 from pennylane2.testing import assert_decomposable
 from pennylane2.typing import AbstractWires, Float
@@ -271,7 +271,7 @@ class TestSelectPauliRot:
 
         angles = jnp.array([0.1, 0.2, 0.3, 0.4])
         controls, target = jnp.array([0, 2]), jnp.array([1])
-        rule = partial(decompose_select_pauli_rot, rot_axis=axis)
+        rule = partial(_select_pauli_rot_standard, rot_axis=axis)
         program = qp.capture.make_plxpr(rule)(angles, controls, target)
 
         for scale, control_wires, target_wire in [(1.0, [3, 1], [2]), (2.0, [4, 0], [1])]:
@@ -286,11 +286,11 @@ class TestSelectPauliRot:
             assert len(tape.operations) == 1
             assert isinstance(tape.operations[0], qp.ops.ChangeOpBasis2)
             basis_change = tape.operations[0]
-            assert basis_change.target_op.name == "_UniformRZ"
+            assert basis_change.target_op.name == "UniformRZ"
             assert_decomposable(basis_change.target_op)
             if axis == "Y":
-                assert basis_change.compute_op.name == "_SelectPauliRotYBasis"
-                assert basis_change.uncompute_op.name == "_SelectPauliRotYBasis"
+                assert basis_change.compute_op.name == "SelectPauliRotYBasis"
+                assert basis_change.uncompute_op.name == "SelectPauliRotYBasis"
                 assert basis_change.compute_op.arguments["reverse"] is False
                 assert basis_change.uncompute_op.arguments["reverse"] is True
                 assert_decomposable(basis_change.compute_op)

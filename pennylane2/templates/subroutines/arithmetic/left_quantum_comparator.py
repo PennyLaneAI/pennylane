@@ -84,7 +84,7 @@ class LeftQuantumComparator(Operator2):
             :symbols: :math:`n` ``x_wires``, :math:`n` ``y_wires`` and ``comparator`` :math:`c`
             :example: :math:`n=2`, :math:`c={\leq}`
 
-            .. decomposition-rule:: _left_quantum_comparator
+            .. decomposition-rule:: elbow_ladder
                 :image: /_static/decomposition_thumbnails/left_quantum_comparator_elbow_ladder.svg
                 :where: :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
 
@@ -143,8 +143,9 @@ class LeftQuantumComparator(Operator2):
         super().__init__(x_wires, y_wires, target_wire, work_wires, comparator)
 
 
-# pylint: disable-next=unused-argument
-def _left_quantum_comparator_resources(x_wires, y_wires, target_wire, work_wires, comparator):
+def _left_quantum_comparator_standard_resources(
+    x_wires, y_wires, target_wire, work_wires, comparator  # pylint: disable=unused-argument
+):
     num_y_wires = len(y_wires)
     resources = {
         Elbow: num_y_wires,
@@ -157,8 +158,8 @@ def _left_quantum_comparator_resources(x_wires, y_wires, target_wire, work_wires
     return resources
 
 
-@register_resources(_left_quantum_comparator_resources, exact=True)
-def _left_quantum_comparator(x_wires, y_wires, target_wire, work_wires, comparator, **_):
+@register_resources(_left_quantum_comparator_standard_resources, exact=True, name="elbow_ladder")
+def _left_quantum_comparator_standard(x_wires, y_wires, target_wire, work_wires, comparator, **_):
 
     # revert to follow PL convention
     x_wires = x_wires[::-1]
@@ -193,4 +194,4 @@ def _left_quantum_comparator(x_wires, y_wires, target_wire, work_wires, comparat
         X(target_wire)
 
 
-add_decomps(LeftQuantumComparator, _left_quantum_comparator)
+add_decomps(LeftQuantumComparator, _left_quantum_comparator_standard)

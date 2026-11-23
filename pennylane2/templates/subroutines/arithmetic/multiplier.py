@@ -195,7 +195,7 @@ class Multiplier(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
 
-def _multiplier_decomposition_resources(
+def _multiplier_standard_resources(
     num_x_wires,
     mod,
     num_work_wires,
@@ -223,8 +223,8 @@ def _multiplier_decomposition_resources(
     return resources
 
 
-@register_resources(_multiplier_decomposition_resources)
-def _multiplier_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
+@register_resources(_multiplier_standard_resources, name="fourier_phase_adders")
+def _multiplier_standard(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
     if mod != 2 ** len(x_wires):
         work_wire_aux = work_wires[:1]
         wires_aux = work_wires[1:]
@@ -257,4 +257,4 @@ def _multiplier_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike,
     )
 
 
-add_decomps(Multiplier, _multiplier_decomposition)
+add_decomps(Multiplier, _multiplier_standard)

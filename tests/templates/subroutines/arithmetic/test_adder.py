@@ -19,7 +19,7 @@ import pytest
 
 import pennylane2 as qp
 from pennylane2 import numpy as np
-from pennylane2.templates.subroutines.arithmetic.adder import _adder_arithmetic_decomposition
+from pennylane2.templates.subroutines.arithmetic.adder import _adder_arithmetic
 from pennylane2.testing import assert_valid_decomp_rule
 
 
@@ -268,7 +268,7 @@ class TestAdder:
         all_wires = x_wires + work_wires
         mat_op = qp.matrix(op, wire_order=all_wires)
 
-        mat_arith = qp.matrix(_adder_arithmetic_decomposition, wire_order=all_wires)(**op.arguments)
+        mat_arith = qp.matrix(_adder_arithmetic, wire_order=all_wires)(**op.arguments)
 
         assert qp.math.allclose(mat_op, mat_arith)
 

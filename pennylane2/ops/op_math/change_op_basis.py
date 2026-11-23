@@ -370,7 +370,7 @@ class ChangeOpBasis(CompositeOp):
         return None
 
 
-def _change_op_basis_resources(compute_op, target_op, uncompute_op):
+def _change_op_basis_standard_resources(compute_op, target_op, uncompute_op):
     resources = Counter()
 
     resources[compute_op] += 1
@@ -389,15 +389,15 @@ def _inverse_abstract(op):
     return _adjoint_abstract(op)
 
 
-def _adjoint_change_op_basis_resources(base_params, **_):
+def _adjoint_change_op_basis_standard_resources(base_params, **_):
     resources = defaultdict(int)
     for name in ("uncompute_op", "target_op", "compute_op"):
         resources[_inverse_abstract(base_params[name])] += 1
     return resources
 
 
-@register_resources(_adjoint_change_op_basis_resources)
-def _adjoint_change_op_basis_decomp(*_, base, **__):
+@register_resources(_adjoint_change_op_basis_standard_resources, name="adjoint_target")
+def _adjoint_change_op_basis_standard(*_, base, **__):
     for op in base.operands:
         if isinstance(op, (Adjoint, Adjoint2)):
             apply(op.base)
@@ -405,16 +405,17 @@ def _adjoint_change_op_basis_decomp(*_, base, **__):
             adjoint(apply(op))
 
 
-add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_decomp)
+add_decomps("Adjoint(ChangeOpBasis)", _adjoint_change_op_basis_standard)
 
 
-def _controlled_change_op_basis_resources(  # pylint: disable=too-many-arguments,unused-argument
+# pylint: disable-next=too-many-arguments
+def _controlled_change_op_basis_standard_resources(
     *_,
     num_control_wires,
     num_zero_control_values,
     num_work_wires,
     work_wire_type,
-    base_class,
+    base_class,  # pylint: disable=unused-argument
     base_params,
     **__,
 ):
@@ -433,8 +434,8 @@ def _controlled_change_op_basis_resources(  # pylint: disable=too-many-arguments
     return resources
 
 
-@register_resources(_controlled_change_op_basis_resources)
-def _controlled_change_op_basis_decomposition(
+@register_resources(_controlled_change_op_basis_standard_resources, name="control_target")
+def _controlled_change_op_basis_standard(
     *_,
     control_wires,
     control_values,
@@ -454,11 +455,11 @@ def _controlled_change_op_basis_decomposition(
     apply(base.operands[0])
 
 
-@register_resources(_change_op_basis_resources)
-def _change_op_basis_decomp(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
+@register_resources(_change_op_basis_standard_resources, name="expand_basis_change")
+def _change_op_basis_standard(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
     for op in operands[::-1]:
         apply(op)
 
 
-add_decomps(ChangeOpBasis, _change_op_basis_decomp)
-add_decomps("C(ChangeOpBasis)", _controlled_change_op_basis_decomposition)
+add_decomps(ChangeOpBasis, _change_op_basis_standard)
+add_decomps("C(ChangeOpBasis)", _controlled_change_op_basis_standard)

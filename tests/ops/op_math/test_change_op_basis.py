@@ -566,7 +566,7 @@ class TestDecomposition:
         assert isinstance(op.base, ChangeOpBasis)
         assert_decomposable(op)
 
-        rule = qp.list_decomps(op)["_adjoint_change_op_basis_decomp"]
+        rule = qp.list_decomps(op)["adjoint_target"]
         tape = qp.testing.decomp_rule_to_tape(op, rule)
         assert [gate.name for gate in tape.operations] == expected_names
         with qp.capture.pause():
