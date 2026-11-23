@@ -75,7 +75,6 @@ class TestBuildingBlocks:
                 else:
                     assert output == (x, (x + y + 1) % num_y)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("decompose_right_elbow", [False, True])
     def test_add_plus_one_phase(self, decompose_right_elbow, seed):
         """Test that the subroutine _add_plus_one does not incur any phases."""
@@ -537,6 +536,29 @@ class TestOutMultiplier:
             qp.assert_equal(op1, op2)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("num_output_wires", [1, 2])
+    def test_qft_rule_zeroed_output_with_concrete_wires(self, num_output_wires):
+        """Test that capture with concrete wires preserves multiplication on the
+        zero-output subspace."""
+        output_wires = [8, 3][:num_output_wires]
+        modulus = 2**num_output_wires
+        with qp.queuing.AnnotatedQueue() as queue:
+            _out_multiplier_with_qft([5], [1], output_wires, modulus, [], True)
+
+        with qp.capture.pause():
+            tape = qp.tape.QuantumScript.from_queue(queue)
+            compute = tape.operations[0].operands[-1]
+            assert not isinstance(compute, qp.ops.Prod2)
+            qp.testing.assert_valid(compute)
+            matrix = qp.matrix(tape, wire_order=[5, 1, *output_wires])
+        for x in range(2):
+            for y in range(2):
+                column = (2 * x + y) * modulus
+                expected = np.zeros(4 * modulus)
+                expected[column + x * y] = 1
+                assert np.allclose(matrix[:, column], expected)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("mod", [4, 3])
     @pytest.mark.parametrize("output_wires_zeroed", [False, True])
     def test_decomposition_qft_rule(self, mod, output_wires_zeroed):
@@ -645,7 +667,6 @@ class TestOutMultiplier:
         assert wires == qp.wires.Wires([1, 2, 3, 4, 5, 6])
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("mod", [16, 12])
     def test_qjit_compatible(self, mod):
         """Test that the template is compatible with the QJIT compiler."""

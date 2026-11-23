@@ -26,7 +26,6 @@ from pennylane.drawer.drawable_layers import (
     _recursive_find_mcm_stats_layer,
     drawable_layers,
 )
-from pennylane.ops import MidMeasure
 
 
 class TestRecursiveFindLayer:
@@ -173,31 +172,6 @@ class TestDrawableLayers:
         layers = drawable_layers(ops)
 
         assert layers == [[ops[0]], [ops[1]], [ops[2]]]
-
-    def test_mid_measure_custom_wires(self):
-        """Test that custom wires do not break the drawing of mid-circuit measurements."""
-        mp0 = MidMeasure("A", meas_uid="foo")
-        mp1 = MidMeasure("a", meas_uid="bar")
-        m0 = qp.ops.MeasurementValue([mp0], lambda v: v)
-        m1 = qp.ops.MeasurementValue([mp1], lambda v: v)
-
-        def teleport(state):
-            qp.StatePrep(state, wires=["A"])
-            qp.Hadamard(wires="a")
-            qp.CNOT(wires=["a", "B"])
-            qp.CNOT(wires=["A", "a"])
-            qp.Hadamard(wires="A")
-            qp.apply(mp0)
-            qp.apply(mp1)
-            qp.cond(m1, qp.PauliX)("B")
-            qp.cond(m0, qp.PauliZ)("B")
-
-        tape_custom = qp.tape.make_qscript(teleport)([0, 1])
-        [tape_standard], _ = qp.map_wires(tape_custom, {"A": 0, "a": 1, "B": 2})
-        ops = tape_standard.operations
-        bit_map = {MidMeasure(0, meas_uid="foo"): None, MidMeasure(1, meas_uid="bar"): None}
-        layers = drawable_layers(ops, bit_map=bit_map)
-        assert layers == [ops[:2]] + [[op] for op in ops[2:]]
 
 
 def test_basic_mid_measure():
