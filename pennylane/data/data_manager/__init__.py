@@ -311,7 +311,7 @@ def load(  # pylint: disable=too-many-arguments
     ...     bondlength=1.1,
     ...     attributes=["molecule", "fci_energy"])[0]
     >>> part.molecule
-    <Molecule = H2, Charge: 0, Basis: STO-3G, Orbitals: 2, Electrons: 2>
+    <Molecule = H2, Charge: 0, Basis: STO-3G, Electrons: 2>
 
     To determine what attributes are available, please see :func:`~.list_attributes`.
 

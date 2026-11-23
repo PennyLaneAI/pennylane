@@ -16,19 +16,33 @@ Unit tests for the ``AdaptiveOptimizer``.
 """
 
 import copy
+from functools import cache
 
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
 
-symbols = ["H", "H", "H"]
-geometry = np.array(
-    [[0.01076341, 0.04449877, 0.0], [0.98729513, 1.63059094, 0.0], [1.87262415, -0.00815842, 0.0]],
-    requires_grad=False,
-)
-H, qubits = qp.qchem.molecular_hamiltonian(symbols, geometry, charge=1)
+# Building the molecular Hamiltonian requires PySCF, which only the qchem CI job installs.
+pytestmark = pytest.mark.qchem
 
+
+@cache
+def h3p_hamiltonian():
+    """Build the H3+ Hamiltonian on first use, so that collecting this module needs no PySCF."""
+    symbols = ["H", "H", "H"]
+    geometry = np.array(
+        [
+            [0.01076341, 0.04449877, 0.0],
+            [0.98729513, 1.63059094, 0.0],
+            [1.87262415, -0.00815842, 0.0],
+        ],
+        requires_grad=False,
+    )
+    return qp.qchem.molecular_hamiltonian(symbols, geometry, charge=1)[0]
+
+
+qubits = 6
 hf_state = np.array([1, 1, 0, 0, 0, 0])
 dev = qp.device("default.qubit", wires=qubits)
 
@@ -40,7 +54,7 @@ energy_h3p = -1.274397672040264
 @qp.qnode(dev)
 def initial_circuit():
     qp.BasisState(hf_state, wires=range(qubits))
-    return qp.expval(H)
+    return qp.expval(h3p_hamiltonian())
 
 
 @pytest.mark.parametrize(

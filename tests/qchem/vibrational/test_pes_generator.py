@@ -182,7 +182,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
 def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_dip_onemode):
     r"""Test that the correct onemode PES is obtained."""
 
-    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
     mol_eq = _single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
@@ -243,7 +243,7 @@ def test_onemode_pes(sym, geom, harmonic_res, do_dipole, exp_pes_onemode, exp_di
 def test_twomode_pes(sym, geom, freqs, vectors, ref_file):
     r"""Test that the correct twomode PES is obtained."""
 
-    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
     mol_eq = _single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
@@ -314,7 +314,7 @@ def test_twomode_pes(sym, geom, freqs, vectors, ref_file):
 def test_threemode_pes(sym, geom, freqs, vectors, ref_file):
     r"""Test that the correct threemode PES is obtained."""
 
-    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
     mol_eq = _single_point(mol)
 
     gauss_grid, _ = np.polynomial.hermite.hermgauss(9)
@@ -353,7 +353,7 @@ def test_quad_order_error():
 
     sym = ["H", "F"]
     geom = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
-    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
 
     with pytest.raises(ValueError, match="Number of sample points cannot be less than 1."):
         vibrational.vibrational_pes(mol, n_points=-1)
@@ -364,7 +364,7 @@ def test_dipole_order_error():
 
     sym = ["H", "F"]
     geom = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]])
-    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
 
     with pytest.raises(
         ValueError,
@@ -392,7 +392,7 @@ def test_vibrational_pes(  # pylint: disable=too-many-arguments
     if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
         pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
 
-    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom", load_data=True)
+    mol = qchem.Molecule(sym, geom, basis_name="6-31g", unit="Angstrom")
 
     vib_obj = vibrational.vibrational_pes(
         mol, dipole_level=dipole_level, cubic=True, num_workers=max_workers, backend=backend

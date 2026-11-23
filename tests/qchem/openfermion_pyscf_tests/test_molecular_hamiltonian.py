@@ -151,462 +151,6 @@ def test_building_hamiltonian_molecule_class(
 
 
 @pytest.mark.parametrize(
-    ("symbols", "geometry", "mapping", "h_ref_data"),
-    [
-        (
-            ["H", "H"],
-            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
-            "jordan_wigner",
-            # computed with OpenFermion; data reordered
-            # h_mol = molecule.get_molecular_hamiltonian()
-            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
-            # h_q = openfermion.transforms.jordan_wigner(h_f)
-            (
-                np.array(
-                    [
-                        0.2981788017,
-                        0.2081336485,
-                        0.2081336485,
-                        0.1786097698,
-                        0.042560361,
-                        -0.042560361,
-                        -0.042560361,
-                        0.042560361,
-                        -0.3472487379,
-                        0.1329029281,
-                        -0.3472487379,
-                        0.175463289,
-                        0.175463289,
-                        0.1329029281,
-                        0.1847091733,
-                    ]
-                ),
-                [
-                    I(0),
-                    Z(0),
-                    Z(1),
-                    Z(0) @ Z(1),
-                    Y(0) @ X(1) @ X(2) @ Y(3),
-                    Y(0) @ Y(1) @ X(2) @ X(3),
-                    X(0) @ X(1) @ Y(2) @ Y(3),
-                    X(0) @ Y(1) @ Y(2) @ X(3),
-                    Z(2),
-                    Z(0) @ Z(2),
-                    Z(3),
-                    Z(0) @ Z(3),
-                    Z(1) @ Z(2),
-                    Z(1) @ Z(3),
-                    Z(2) @ Z(3),
-                ],
-            ),
-        ),
-        (
-            ["H", "H"],
-            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
-            "parity",
-            # computed with OpenFermion; data reordered
-            # h_mol = molecule.get_molecular_hamiltonian()
-            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
-            # binary_code = openfermion.parity_code(molecule.n_qubits)
-            # h_q = openfermion.transforms.binary_code_transform(h_f, binary_code)
-            (
-                np.array(
-                    [
-                        0.2981787007221673,
-                        0.04256036141425139,
-                        0.04256036141425139,
-                        0.04256036141425139,
-                        0.04256036141425139,
-                        0.20813364101195764,
-                        0.20813364101195767,
-                        0.13290292584331462,
-                        0.13290292584331462,
-                        0.175463287257566,
-                        0.175463287257566,
-                        0.17860976802544348,
-                        -0.34724871015550757,
-                        0.18470917137696227,
-                        -0.3472487101555076,
-                    ]
-                ),
-                [
-                    I(0),
-                    X(0) @ Z(1) @ X(2),
-                    X(0) @ Z(1) @ X(2) @ Z(3),
-                    Y(0) @ Y(2),
-                    Y(0) @ Y(2) @ Z(3),
-                    Z(0),
-                    Z(0) @ Z(1),
-                    Z(0) @ Z(1) @ Z(2),
-                    Z(0) @ Z(1) @ Z(2) @ Z(3),
-                    Z(0) @ Z(2),
-                    Z(0) @ Z(2) @ Z(3),
-                    Z(1),
-                    Z(1) @ Z(2),
-                    Z(1) @ Z(3),
-                    Z(2) @ Z(3),
-                ],
-            ),
-        ),
-        (
-            ["H", "H"],
-            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
-            "bravyi_kitaev",
-            # computed with OpenFermion; data reordered
-            # h_mol = molecule.get_molecular_hamiltonian()
-            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
-            # h_q = openfermion.transforms.bravyi_kitaev(h_f)
-            (
-                np.array(
-                    [
-                        0.2981787007221673,
-                        0.04256036141425139,
-                        0.04256036141425139,
-                        0.04256036141425139,
-                        0.04256036141425139,
-                        0.20813364101195764,
-                        0.20813364101195767,
-                        0.175463287257566,
-                        0.175463287257566,
-                        0.13290292584331462,
-                        0.13290292584331462,
-                        0.17860976802544348,
-                        -0.3472487101555076,
-                        0.18470917137696227,
-                        -0.34724871015550757,
-                    ]
-                ),
-                [
-                    I(0),
-                    X(0) @ Z(1) @ X(2),
-                    X(0) @ Z(1) @ X(2) @ Z(3),
-                    Y(0) @ Z(1) @ Y(2),
-                    Y(0) @ Z(1) @ Y(2) @ Z(3),
-                    Z(0),
-                    Z(0) @ Z(1),
-                    Z(0) @ Z(1) @ Z(2),
-                    Z(0) @ Z(1) @ Z(2) @ Z(3),
-                    Z(0) @ Z(2),
-                    Z(0) @ Z(2) @ Z(3),
-                    Z(1),
-                    Z(1) @ Z(2) @ Z(3),
-                    Z(1) @ Z(3),
-                    Z(2),
-                ],
-            ),
-        ),
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
-            "jordan_wigner",
-            # computed with OpenFermion; data reordered
-            # h_mol = molecule.get_molecular_hamiltonian()
-            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
-            # h_q = openfermion.transforms.jordan_wigner(h_f)
-            (
-                np.array(
-                    [
-                        0.2981788017,
-                        0.2081336485,
-                        0.2081336485,
-                        0.1786097698,
-                        0.042560361,
-                        -0.042560361,
-                        -0.042560361,
-                        0.042560361,
-                        -0.3472487379,
-                        0.1329029281,
-                        -0.3472487379,
-                        0.175463289,
-                        0.175463289,
-                        0.1329029281,
-                        0.1847091733,
-                    ]
-                ),
-                [
-                    I(0),
-                    Z(0),
-                    Z(1),
-                    Z(0) @ Z(1),
-                    Y(0) @ X(1) @ X(2) @ Y(3),
-                    Y(0) @ Y(1) @ X(2) @ X(3),
-                    X(0) @ X(1) @ Y(2) @ Y(3),
-                    X(0) @ Y(1) @ Y(2) @ X(3),
-                    Z(2),
-                    Z(0) @ Z(2),
-                    Z(3),
-                    Z(0) @ Z(3),
-                    Z(1) @ Z(2),
-                    Z(1) @ Z(3),
-                    Z(2) @ Z(3),
-                ],
-            ),
-        ),
-    ],
-)
-def test_differentiable_hamiltonian(symbols, geometry, mapping, h_ref_data):
-    r"""Test that molecular_hamiltonian returns the correct Hamiltonian with the differentiable
-    backend."""
-
-    geometry.requires_grad = True
-    args = [geometry.reshape(2, 3)]
-    h_args = qchem.molecular_hamiltonian(
-        symbols, geometry, method="dhf", args=args, mapping=mapping
-    )[0]
-
-    geometry.requires_grad = False
-    h_noargs = qchem.molecular_hamiltonian(symbols, geometry, method="dhf", mapping=mapping)[0]
-
-    ops = list(map(qp.simplify, h_ref_data[1]))
-    h_ref = qp.Hamiltonian(h_ref_data[0], ops)
-
-    h_ref_coeffs, h_ref_ops = h_ref.terms()
-    h_args_coeffs, h_args_ops = h_args.terms()
-    h_noargs_coeffs, h_noargs_ops = h_noargs.terms()
-
-    assert all(coeff.requires_grad is True for coeff in h_args_coeffs)
-    assert all(coeff.requires_grad is False for coeff in h_noargs_coeffs)
-
-    assert np.allclose(np.sort(h_args_coeffs), np.sort(h_ref_coeffs))
-    assert qp.Hamiltonian(np.ones(len(h_args_coeffs)), h_args_ops) == (
-        qp.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
-    )
-
-    assert np.allclose(np.sort(h_noargs_coeffs), np.sort(h_ref_coeffs))
-    assert qp.Hamiltonian(np.ones(len(h_noargs_coeffs)), h_noargs_ops) == (
-        qp.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
-    )
-
-
-@pytest.mark.parametrize(
-    ("symbols", "geometry", "mapping", "h_ref_data"),
-    [
-        (
-            ["H", "H"],
-            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
-            "jordan_wigner",
-            # computed with OpenFermion; data reordered
-            # h_mol = molecule.get_molecular_hamiltonian()
-            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
-            # h_q = openfermion.transforms.jordan_wigner(h_f)
-            (
-                np.array(
-                    [
-                        0.2981788017,
-                        0.2081336485,
-                        0.2081336485,
-                        0.1786097698,
-                        0.042560361,
-                        -0.042560361,
-                        -0.042560361,
-                        0.042560361,
-                        -0.3472487379,
-                        0.1329029281,
-                        -0.3472487379,
-                        0.175463289,
-                        0.175463289,
-                        0.1329029281,
-                        0.1847091733,
-                    ]
-                ),
-                [
-                    I(0),
-                    Z(0),
-                    Z(1),
-                    Z(0) @ Z(1),
-                    Y(0) @ X(1) @ X(2) @ Y(3),
-                    Y(0) @ Y(1) @ X(2) @ X(3),
-                    X(0) @ X(1) @ Y(2) @ Y(3),
-                    X(0) @ Y(1) @ Y(2) @ X(3),
-                    Z(2),
-                    Z(0) @ Z(2),
-                    Z(3),
-                    Z(0) @ Z(3),
-                    Z(1) @ Z(2),
-                    Z(1) @ Z(3),
-                    Z(2) @ Z(3),
-                ],
-            ),
-        ),
-        (
-            ["H", "H"],
-            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
-            "parity",
-            # computed with OpenFermion; data reordered
-            # h_mol = molecule.get_molecular_hamiltonian()
-            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
-            # binary_code = openfermion.parity_code(molecule.n_qubits)
-            # h_q = openfermion.transforms.binary_code_transform(h_f, binary_code)
-            (
-                np.array(
-                    [
-                        0.2981787007221673,
-                        0.04256036141425139,
-                        0.04256036141425139,
-                        0.04256036141425139,
-                        0.04256036141425139,
-                        0.20813364101195764,
-                        0.20813364101195767,
-                        0.13290292584331462,
-                        0.13290292584331462,
-                        0.175463287257566,
-                        0.175463287257566,
-                        0.17860976802544348,
-                        -0.34724871015550757,
-                        0.18470917137696227,
-                        -0.3472487101555076,
-                    ]
-                ),
-                [
-                    I(0),
-                    X(0) @ Z(1) @ X(2),
-                    X(0) @ Z(1) @ X(2) @ Z(3),
-                    Y(0) @ Y(2),
-                    Y(0) @ Y(2) @ Z(3),
-                    Z(0),
-                    Z(0) @ Z(1),
-                    Z(0) @ Z(1) @ Z(2),
-                    Z(0) @ Z(1) @ Z(2) @ Z(3),
-                    Z(0) @ Z(2),
-                    Z(0) @ Z(2) @ Z(3),
-                    Z(1),
-                    Z(1) @ Z(2),
-                    Z(1) @ Z(3),
-                    Z(2) @ Z(3),
-                ],
-            ),
-        ),
-        (
-            ["H", "H"],
-            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
-            "bravyi_kitaev",
-            # computed with OpenFermion; data reordered
-            # h_mol = molecule.get_molecular_hamiltonian()
-            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
-            # h_q = openfermion.transforms.bravyi_kitaev(h_f)
-            (
-                np.array(
-                    [
-                        0.2981787007221673,
-                        0.04256036141425139,
-                        0.04256036141425139,
-                        0.04256036141425139,
-                        0.04256036141425139,
-                        0.20813364101195764,
-                        0.20813364101195767,
-                        0.175463287257566,
-                        0.175463287257566,
-                        0.13290292584331462,
-                        0.13290292584331462,
-                        0.17860976802544348,
-                        -0.3472487101555076,
-                        0.18470917137696227,
-                        -0.34724871015550757,
-                    ]
-                ),
-                [
-                    I(0),
-                    X(0) @ Z(1) @ X(2),
-                    X(0) @ Z(1) @ X(2) @ Z(3),
-                    Y(0) @ Z(1) @ Y(2),
-                    Y(0) @ Z(1) @ Y(2) @ Z(3),
-                    Z(0),
-                    Z(0) @ Z(1),
-                    Z(0) @ Z(1) @ Z(2),
-                    Z(0) @ Z(1) @ Z(2) @ Z(3),
-                    Z(0) @ Z(2),
-                    Z(0) @ Z(2) @ Z(3),
-                    Z(1),
-                    Z(1) @ Z(2) @ Z(3),
-                    Z(1) @ Z(3),
-                    Z(2),
-                ],
-            ),
-        ),
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
-            "jordan_wigner",
-            # computed with OpenFermion; data reordered
-            # h_mol = molecule.get_molecular_hamiltonian()
-            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
-            # h_q = openfermion.transforms.jordan_wigner(h_f)
-            (
-                np.array(
-                    [
-                        0.2981788017,
-                        0.2081336485,
-                        0.2081336485,
-                        0.1786097698,
-                        0.042560361,
-                        -0.042560361,
-                        -0.042560361,
-                        0.042560361,
-                        -0.3472487379,
-                        0.1329029281,
-                        -0.3472487379,
-                        0.175463289,
-                        0.175463289,
-                        0.1329029281,
-                        0.1847091733,
-                    ]
-                ),
-                [
-                    I(0),
-                    Z(0),
-                    Z(1),
-                    Z(0) @ Z(1),
-                    Y(0) @ X(1) @ X(2) @ Y(3),
-                    Y(0) @ Y(1) @ X(2) @ X(3),
-                    X(0) @ X(1) @ Y(2) @ Y(3),
-                    X(0) @ Y(1) @ Y(2) @ X(3),
-                    Z(2),
-                    Z(0) @ Z(2),
-                    Z(3),
-                    Z(0) @ Z(3),
-                    Z(1) @ Z(2),
-                    Z(1) @ Z(3),
-                    Z(2) @ Z(3),
-                ],
-            ),
-        ),
-    ],
-)
-def test_differentiable_hamiltonian_molecule_class(symbols, geometry, mapping, h_ref_data):
-    r"""Test that molecular_hamiltonian generated using the molecule class
-    returns the correct Hamiltonian with the differentiable backend."""
-
-    geometry.requires_grad = True
-    args = [geometry.reshape(2, 3)]
-    molecule = qchem.Molecule(symbols, geometry)
-    h_args = qchem.molecular_hamiltonian(molecule, method="dhf", args=args, mapping=mapping)[0]
-
-    geometry.requires_grad = False
-    molecule = qchem.Molecule(symbols, geometry)
-    h_noargs = qchem.molecular_hamiltonian(molecule, method="dhf", mapping=mapping)[0]
-
-    ops = list(map(qp.simplify, h_ref_data[1]))
-    h_ref = qp.Hamiltonian(h_ref_data[0], ops)
-
-    h_ref_coeffs, h_ref_ops = h_ref.terms()
-    h_args_coeffs, h_args_ops = h_args.terms()
-    h_noargs_coeffs, h_noargs_ops = h_noargs.terms()
-
-    assert all(coeff.requires_grad is True for coeff in h_args_coeffs)
-    assert all(coeff.requires_grad is False for coeff in h_noargs_coeffs)
-
-    assert np.allclose(np.sort(h_args_coeffs), np.sort(h_ref_coeffs))
-    assert qp.Hamiltonian(np.ones(len(h_args_coeffs)), h_args_ops) == (
-        qp.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
-    )
-
-    assert np.allclose(np.sort(h_noargs_coeffs), np.sort(h_ref_coeffs))
-    assert qp.Hamiltonian(np.ones(len(h_noargs_coeffs)), h_noargs_ops) == (
-        qp.Hamiltonian(np.ones(len(h_ref_coeffs)), h_ref_ops)
-    )
-
-
-@pytest.mark.parametrize(
     ("wiremap"),
     [
         [6, 8, 9, 10],
@@ -657,85 +201,6 @@ def test_custom_wiremap_hamiltonian_pyscf_molecule_class(wiremap, tmpdir):
     assert set(hamiltonian.wires) == set(wiremap)
 
 
-@pytest.mark.parametrize(
-    ("wiremap", "args"),
-    [
-        (
-            [0, 11, 3, 7],
-            None,
-        ),
-        (
-            [0, 11, 3, 7],
-            [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
-        ),
-    ],
-)
-def test_custom_wiremap_hamiltonian_dhf(wiremap, args, tmpdir):
-    r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
-
-    symbols = ["H", "H"]
-    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-    wiremap_dict = dict(zip(range(len(wiremap)), wiremap))
-
-    hamiltonian_ref, _ = qchem.molecular_hamiltonian(
-        symbols=symbols,
-        coordinates=geometry,
-        args=args,
-        outpath=tmpdir.strpath,
-    )
-
-    hamiltonian, _ = qchem.molecular_hamiltonian(
-        symbols=symbols,
-        coordinates=geometry,
-        wires=wiremap,
-        args=args,
-        outpath=tmpdir.strpath,
-    )
-
-    wiremap_calc = dict(zip(list(hamiltonian_ref.wires), list(hamiltonian.wires)))
-
-    assert wiremap_calc == wiremap_dict
-
-
-@pytest.mark.parametrize(
-    ("wiremap", "args"),
-    [
-        (
-            [0, 11, 3, 7],
-            None,
-        ),
-        (
-            [0, 11, 3, 7],
-            [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
-        ),
-    ],
-)
-def test_custom_wiremap_hamiltonian_dhf_molecule_class(wiremap, args, tmpdir):
-    r"""Test that the generated Hamiltonian has the correct wire labels given by a custom wiremap."""
-
-    symbols = ["H", "H"]
-    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-    wiremap_dict = dict(zip(range(len(wiremap)), wiremap))
-
-    molecule = qchem.Molecule(symbols, geometry)
-    hamiltonian_ref, _ = qchem.molecular_hamiltonian(
-        molecule,
-        args=args,
-        outpath=tmpdir.strpath,
-    )
-
-    hamiltonian, _ = qchem.molecular_hamiltonian(
-        molecule,
-        wires=wiremap,
-        args=args,
-        outpath=tmpdir.strpath,
-    )
-
-    wiremap_calc = dict(zip(list(hamiltonian_ref.wires), list(hamiltonian.wires)))
-
-    assert wiremap_calc == wiremap_dict
-
-
 file_content = """\
 2
 in Angstrom
@@ -776,15 +241,13 @@ def test_mol_hamiltonian_with_read_structure_molecule_class(tmpdir):
     assert num_qubits == 4
 
 
-def test_diff_hamiltonian_error():
+def test_molecular_hamiltonian_error():
     r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
 
     symbols = ["H", "H"]
     geometry = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
 
-    with pytest.raises(
-        ValueError, match="Only 'dhf', 'pyscf' and 'openfermion' backends are supported"
-    ):
+    with pytest.raises(ValueError, match="Only 'pyscf' and 'openfermion' backends are supported"):
         qchem.molecular_hamiltonian(symbols, geometry, method="psi4")
 
     with pytest.raises(ValueError, match="Open-shell systems are not supported"):
@@ -805,90 +268,18 @@ def test_pyscf_hamiltonian_error():
         qchem.molecular_hamiltonian(molecule, method="pyscf")
 
 
-def test_diff_hamiltonian_error_molecule_class():
+def test_molecular_hamiltonian_error_molecule_class():
     r"""Test that molecular_hamiltonian raises an error with unsupported mapping."""
 
     symbols = ["H", "H"]
     geometry = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
 
     molecule = qchem.Molecule(symbols, geometry)
-    with pytest.raises(
-        ValueError, match="Only 'dhf', 'pyscf' and 'openfermion' backends are supported"
-    ):
+    with pytest.raises(ValueError, match="Only 'pyscf' and 'openfermion' backends are supported"):
         qchem.molecular_hamiltonian(molecule, method="psi4")
 
     with pytest.raises(ValueError, match="'bksf' is not supported."):
         qchem.molecular_hamiltonian(molecule, mapping="bksf")
-
-
-@pytest.mark.parametrize(
-    ("method", "args"),
-    [
-        (
-            "pyscf",
-            None,
-        ),
-        (
-            "dhf",
-            None,
-        ),
-        (
-            "dhf",
-            [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
-        ),
-    ],
-)
-@pytest.mark.usefixtures("skip_if_no_openfermion_support")
-def test_real_hamiltonian(method, args, tmpdir):
-    r"""Test that the generated Hamiltonian has real coefficients."""
-
-    symbols = ["H", "H"]
-    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-
-    hamiltonian, _ = qchem.molecular_hamiltonian(
-        symbols=symbols,
-        coordinates=geometry,
-        method=method,
-        args=args,
-        outpath=tmpdir.strpath,
-    )
-
-    assert np.isrealobj(hamiltonian.terms()[0])
-
-
-@pytest.mark.parametrize(
-    ("method", "args"),
-    [
-        (
-            "pyscf",
-            None,
-        ),
-        (
-            "dhf",
-            None,
-        ),
-        (
-            "dhf",
-            [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
-        ),
-    ],
-)
-@pytest.mark.usefixtures("skip_if_no_openfermion_support")
-def test_real_hamiltonian_molecule_class(method, args, tmpdir):
-    r"""Test that the generated Hamiltonian has real coefficients."""
-
-    symbols = ["H", "H"]
-    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-
-    molecule = qchem.Molecule(symbols, geometry)
-    hamiltonian, _ = qchem.molecular_hamiltonian(
-        molecule,
-        method=method,
-        args=args,
-        outpath=tmpdir.strpath,
-    )
-
-    assert np.isrealobj(hamiltonian.terms()[0])
 
 
 @pytest.mark.parametrize(
@@ -916,7 +307,7 @@ def test_real_hamiltonian_molecule_class(method, args, tmpdir):
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_pyscf_integrals(symbols, geometry, core_ref, one_ref, two_ref):
-    r"""Test that _pyscf_integrals returns correct integrals."""
+    r"""Test that _pyscf_integrals and molecular_integrals return correct integrals."""
 
     # pylint: disable-next=protected-access
     core, one, two = qchem.openfermion_pyscf._pyscf_integrals(symbols, geometry)
@@ -924,6 +315,32 @@ def test_pyscf_integrals(symbols, geometry, core_ref, one_ref, two_ref):
     assert np.allclose(core, core_ref)
     assert np.allclose(one, one_ref)
     assert np.allclose(two, two_ref)
+
+    core, one, two = qchem.molecular_integrals(qchem.Molecule(symbols, geometry))
+
+    assert np.allclose(core, core_ref)
+    assert np.allclose(one, one_ref)
+    assert np.allclose(two, two_ref)
+
+
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
+def test_molecular_integrals_active_space():
+    r"""Test that molecular_integrals uses the charge, basis and active space of the molecule."""
+
+    symbols = ["H", "H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.8], [0.0, 1.6, 0.9]])
+    molecule = qchem.Molecule(symbols, geometry, charge=1, basis_name="6-31g")
+
+    integrals = qchem.molecular_integrals(molecule, active_electrons=2, active_orbitals=3)
+    hamiltonian = qp.jordan_wigner(qchem.fermionic_observable(*integrals))
+    expected, qubits = qchem.molecular_hamiltonian(molecule, active_electrons=2, active_orbitals=3)
+
+    # No core orbitals are frozen here, so only the virtual orbitals are truncated.
+    assert integrals[1].shape == (3, 3)
+    assert qubits == 6
+    assert np.allclose(
+        qp.matrix(hamiltonian, wire_order=range(6)), qp.matrix(expected, wire_order=range(6))
+    )
 
 
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
@@ -957,7 +374,7 @@ def test_error_raised_for_incompatible_type():
         NotImplementedError,
         match="molecular_hamiltonian supports only list or molecule object types.",
     ):
-        qchem.molecular_hamiltonian(symbols=1, coordinates=test_coordinates, method="dhf")
+        qchem.molecular_hamiltonian(symbols=1, coordinates=test_coordinates, method="pyscf")
 
 
 def test_error_raised_for_missing_molecule_information():
@@ -969,7 +386,7 @@ def test_error_raised_for_missing_molecule_information():
         NotImplementedError,
         match="The provided arguments do not contain information about symbols in the molecule.",
     ):
-        qchem.molecular_hamiltonian(charge=0, mult=1, method="dhf")
+        qchem.molecular_hamiltonian(charge=0, mult=1, method="pyscf")
 
 
 @pytest.mark.parametrize(
@@ -1245,7 +662,6 @@ def test_mapped_hamiltonian_pyscf_openfermion(
     ("method"),
     [
         "pyscf",
-        "dhf",
         "openfermion",
     ],
 )
@@ -1278,7 +694,6 @@ def test_coordinate_units_for_molecular_hamiltonian(method, tmpdir):
     ("method"),
     [
         "pyscf",
-        "dhf",
         "openfermion",
     ],
 )

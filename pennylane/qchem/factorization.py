@@ -122,18 +122,13 @@ def factorize(  # pylint: disable=too-many-arguments
 
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0],
-    ...                      [1.398397361, 0.0, 0.0]], requires_grad=False)
+    ...                      [1.398397361, 0.0, 0.0]])
     >>> mol = qp.qchem.Molecule(symbols, geometry)
-    >>> core, one, two = qp.qchem.electron_integrals(mol)()
+    >>> core, one, two = qp.qchem.molecular_integrals(mol)
     >>> two = np.swapaxes(two, 1, 3) # convert to chemist notation
     >>> factors, cores, leaves = qp.qchem.factorize(two, 1e-5, 1e-5)
-    >>> print(factors)
-    [[[-1.06723440e-01  6.42958741e-15]
-      [ 7.71977824e-15  1.04898533e-01]]
-     [[ 1.71099288e-13 -4.25688222e-01]
-      [-4.25688222e-01  2.31561666e-13]]
-     [[-8.14472856e-01 -3.89054708e-13]
-      [-3.88994463e-13 -8.28642140e-01]]]
+    >>> factors.shape
+    (3, 2, 2)
 
     .. details::
         :title: Theory
@@ -539,20 +534,12 @@ def basis_rotation(one_electron, two_electron, tol_factor=1.0e-5, **factorizatio
 
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0],
-    ...                      [1.398397361, 0.0, 0.0]], requires_grad=False)
+    ...                      [1.398397361, 0.0, 0.0]])
     >>> mol = qp.qchem.Molecule(symbols, geometry)
-    >>> core, one, two = qp.qchem.electron_integrals(mol)()
+    >>> core, one, two = qp.qchem.molecular_integrals(mol)
     >>> coeffs, ops, unitaries = basis_rotation(one, two, tol_factor=1.0e-5)
-    >>> print(coeffs)
-    [array([-2.59579282,  0.84064649,  0.84064649,  0.45724992,  0.45724992]),
-     array([ 5.60006390e-03, -9.73801723e-05, -9.73801723e-05,  2.84747318e-03,
-             9.57150297e-05, -2.79878310e-03,  9.57150297e-05, -2.79878310e-03,
-            -2.79878310e-03, -2.79878310e-03,  2.75092558e-03]),
-     array([ 0.09060523,  0.04530262, -0.04530262, -0.04530262, -0.04530262,
-            -0.04530262,  0.04530262]),
-     array([ 1.6874169 , -0.68077716, -0.68077716,  0.17166195, -0.66913628,
-             0.16872663, -0.66913628,  0.16872663,  0.16872663,  0.16872663,
-             0.16584151])]
+    >>> len(coeffs), len(ops), len(unitaries)
+    (4, 4, 4)
 
     .. details::
         :title: Theory
@@ -694,20 +681,13 @@ def _chemist_transform(one_body_tensor=None, two_body_tensor=None, spatial_basis
 
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0],
-    ...                      [1.398397361, 0.0, 0.0]], requires_grad=False)
+    ...                      [1.398397361, 0.0, 0.0]])
     >>> mol = qp.qchem.Molecule(symbols, geometry)
-    >>> core, one, two = qp.qchem.electron_integrals(mol)()
-    >>> qp.qchem.factorization._chemist_transform(two_body_tensor=two, spatial_basis=True)
-    (tensor([[-0.427983, -0.      ],
-             [-0.      , -0.439431]], requires_grad=True),
-    tensor([[[[0.337378, 0.      ],
-             [0.       , 0.331856]],
-             [[0.      , 0.090605],
-             [0.090605 , 0.      ]]],
-            [[[0.      , 0.090605],
-             [0.090605 , 0.      ]],
-             [[0.331856, 0.      ],
-             [0.       , 0.348826]]]], requires_grad=True))
+    >>> core, one, two = qp.qchem.molecular_integrals(mol)
+    >>> one_chemist, two_chemist = qp.qchem.factorization._chemist_transform(
+    ...     two_body_tensor=two, spatial_basis=True)
+    >>> one_chemist.shape, two_chemist.shape
+    ((2, 2), (2, 2, 2, 2))
 
     .. details::
         :title: Theory
@@ -794,20 +774,13 @@ def symmetry_shift(core, one_electron, two_electron, n_elec, method="L-BFGS-B", 
 
     >>> symbols  = ['H', 'H']
     >>> geometry = qp.numpy.array([[0.0, 0.0, 0.0],
-    ...                             [1.398397361, 0.0, 0.0]], requires_grad=False)
+    ...                             [1.398397361, 0.0, 0.0]])
     >>> mol = qp.qchem.Molecule(symbols, geometry, basis_name="STO-3G")
-    >>> core, one, two = qp.qchem.electron_integrals(mol)()
+    >>> core, one, two = qp.qchem.molecular_integrals(mol)
     >>> ctwo = np.swapaxes(two, 1, 3)
     >>> s_core, s_one, s_two = symmetry_shift(core, one, ctwo, n_elec=mol.n_electrons)
-    >>> print(s_two)
-    [[[[ 1.12461110e-02 -1.70030746e-09]
-      [-1.70030746e-09 -1.12461660e-02]]
-     [[-1.70030746e-09  1.81210462e-01]
-      [ 1.81210462e-01 -1.70032620e-09]]]
-     [[[-1.70030763e-09  1.81210462e-01]
-      [ 1.81210462e-01 -1.70032598e-09]]
-     [[-1.12461660e-02 -1.70032620e-09]
-      [-1.70032620e-09  1.12461854e-02]]]]
+    >>> s_one.shape, s_two.shape
+    ((2, 2), (2, 2, 2, 2))
     """
     norb = one_electron.shape[0]
     ki_vec = np.array([0.0, 0.0])

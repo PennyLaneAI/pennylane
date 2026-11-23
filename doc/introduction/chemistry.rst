@@ -7,8 +7,8 @@ Quantum Chemistry
 =================
 
 PennyLane provides the :mod:`~.qchem` module to perform quantum chemistry simulations. It
-contains a differentiable Hartree-Fock solver and the functionality to construct a
-fully-differentiable molecular Hamiltonian that can be used as input to quantum algorithms
+uses external Hartree-Fock backends to construct a
+molecular Hamiltonian that can be used as input to quantum algorithms
 such as the variational quantum eigensolver (VQE) algorithm. The :mod:`~.qchem` module
 also provides tools for building other observables such as molecular dipole moment, spin
 and particle number observables. The theoretical foundation of the quantum chemistry functionality
@@ -23,7 +23,7 @@ to generate the electronic Hamiltonian in a single call. For example,
 .. code-block:: python
 
     import pennylane as qp
-    from pennylane import numpy as np
+    import numpy as np
 
     symbols = ["H", "H"]
     geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
@@ -36,12 +36,12 @@ where:
 
 * ``qubits`` is the number of qubits needed to perform the quantum simulation.
 
-The :func:`~.molecular_hamiltonian` function can also be used to construct the molecular Hamiltonian
-with external backends that use the
-`OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin or the
-electronic structure package `PySCF <https://github.com/pyscf/pyscf>`_, which requires separate
-installation. These backends are non-differentiable and can be selected by setting
-``method='openfermion'`` or ``method='pyscf'`` in ``molecular_hamiltonian``.
+The :func:`~.molecular_hamiltonian` function uses the electronic structure package
+`PySCF <https://github.com/pyscf/pyscf>`_ by default. Install ``pyscf`` separately to use it.
+Alternatively, select ``method='openfermion'`` to use the
+`OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin, which requires
+``openfermionpyscf``. These backends do not support automatic differentiation of molecular
+parameters.
 
 Furthermore, the net charge,
 the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_, the
@@ -99,6 +99,9 @@ expectation value of a Hamiltonian can be calculated using ``qp.expval``:
 
 .. code-block:: python
 
+    import jax
+    import jax.numpy as jnp
+
     dev = qp.device('default.qubit', wires=4)
 
     symbols = ["H", "H"]
@@ -106,18 +109,19 @@ expectation value of a Hamiltonian can be calculated using ``qp.expval``:
     molecule = qp.qchem.Molecule(symbols, geometry)
     hamiltonian, qubits = qp.qchem.molecular_hamiltonian(molecule)
 
-    @qp.qnode(dev)
+    @qp.qnode(dev, interface="jax")
     def circuit(params):
         qp.BasisState(np.array([1, 1, 0, 0]), wires=[0, 1, 2, 3])
         qp.DoubleExcitation(params, wires=[0, 1, 2, 3])
         return qp.expval(hamiltonian)
 
-    params = np.array(0.20885146442480412, requires_grad=True)
-    circuit(params)
+    with jax.experimental.enable_x64():
+        params = jnp.array(0.20885146442480412)
+        print(f"{float(circuit(params)):.8f}")
 
 .. code-block:: text
 
-    tensor(-1.13618912, requires_grad=True)
+    -1.13618912
 
 The circuit parameter can be optimized using the interface of choice.
 
@@ -131,56 +135,6 @@ Quantum chemistry functions and classes
 ---------------------------------------
 
 PennyLane supports the following quantum chemistry functions and classes.
-
-Molecular integrals and matrices
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.qchem.attraction_integral
-    ~pennylane.qchem.attraction_matrix
-    ~pennylane.qchem.contracted_norm
-    ~pennylane.qchem.core_matrix
-    ~pennylane.qchem.dipole_integrals
-    ~pennylane.qchem.electron_integrals
-    ~pennylane.qchem.electron_repulsion
-    ~pennylane.qchem.expansion
-    ~pennylane.qchem.gaussian_kinetic
-    ~pennylane.qchem.gaussian_moment
-    ~pennylane.qchem.gaussian_overlap
-    ~pennylane.qchem.hermite_moment
-    ~pennylane.qchem.kinetic_integral
-    ~pennylane.qchem.kinetic_matrix
-    ~pennylane.qchem.mol_density_matrix
-    ~pennylane.qchem.moment_integral
-    ~pennylane.qchem.moment_matrix
-    ~pennylane.qchem.nuclear_attraction
-    ~pennylane.qchem.overlap_integral
-    ~pennylane.qchem.overlap_matrix
-    ~pennylane.qchem.primitive_norm
-    ~pennylane.qchem.repulsion_integral
-    ~pennylane.qchem.repulsion_tensor
-
-:html:`</div>`
-
-
-Differentiable Hartree-Fock
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.qchem.hf_energy
-    ~pennylane.qchem.nuclear_energy
-    ~pennylane.qchem.scf
-
-:html:`</div>`
-
 
 Hartree-Fock with external packages
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -198,21 +152,18 @@ Hartree-Fock with external packages
 :html:`</div>`
 
 
-Differentiable observables
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+Molecular observables
+^^^^^^^^^^^^^^^^^^^^^
 
 :html:`<div class="summary-table">`
 
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.qchem.diff_hamiltonian
-    ~pennylane.qchem.dipole_moment
-    ~pennylane.qchem.fermionic_dipole
-    ~pennylane.qchem.fermionic_hamiltonian
     ~pennylane.qchem.fermionic_observable
     ~pennylane.jordan_wigner
     ~pennylane.qchem.molecular_hamiltonian
+    ~pennylane.qchem.molecular_integrals
     ~pennylane.qchem.qubit_observable
 
 :html:`</div>`
@@ -282,9 +233,6 @@ Molecule class and basis functions
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.qchem.atom_basis_data
-    ~pennylane.qchem.BasisFunction
     ~pennylane.qchem.Molecule
-    ~pennylane.qchem.mol_basis_data
 
 :html:`</div>`

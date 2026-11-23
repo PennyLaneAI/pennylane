@@ -99,6 +99,17 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
+* The differentiable Hartree-Fock solver and ``method="dhf"`` have been removed from the
+  ``qp.qchem`` module, including ``hf_energy``, ``scf``, ``nuclear_energy``,
+  ``electron_integrals``, ``fermionic_hamiltonian``, ``diff_hamiltonian``, ``dipole_integrals``,
+  ``fermionic_dipole``, ``dipole_moment``, ``load_basisset``, ``BasisFunction``,
+  ``atom_basis_data``, ``mol_basis_data``, and the Gaussian integral and matrix functions.
+  :func:`~.qchem.molecular_hamiltonian` now uses ``method="pyscf"`` by default, and
+  :func:`~.qchem.molecular_dipole` uses ``method="openfermion"``. Use
+  :func:`~.qchem.molecular_integrals` to compute the one- and two-electron integrals.
+
+  - Removed in releases after v0.45
+
 * PyQuil and Qualtran interoperability has been removed from ``qp.io`` and the top-level
   PennyLane namespace. The removed APIs are ``from_pyquil``, ``from_quil``, ``from_quil_file``,
   ``FromBloq``, ``ToBloq``, ``to_bloq``, and ``bloq_registers``.

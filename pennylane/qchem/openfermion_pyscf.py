@@ -23,7 +23,7 @@ from scipy.constants import physical_constants
 
 import pennylane as qp
 
-from .basis_data import atomic_numbers
+from .atomic_numbers import atomic_numbers
 
 #: Conversion factor from Bohr radii to Angstroms.
 BOHR_TO_ANG = physical_constants["Bohr radius"][0] * 1e10
@@ -856,7 +856,7 @@ def _pyscf_integrals(
         mol.nelectron, mol.nao, mult, active_electrons, active_orbitals
     )
 
-    if core and active:
+    if core or len(active) < mol.nao:
         for i in core:
             core_constant = core_constant + 2 * one_mo[i][i]
             for j in core:

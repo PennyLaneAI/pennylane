@@ -139,7 +139,7 @@ def test_symmetry_generators(symbols, geometry, res_generators):
     r"""Test that symmetry_generators returns the correct result."""
 
     mol = qp.qchem.Molecule(symbols, geometry)
-    hamiltonian = qp.qchem.diff_hamiltonian(mol)()
+    hamiltonian = qp.qchem.molecular_hamiltonian(mol)[0]
     generators = qp.symmetry_generators(hamiltonian)
     for g1, g2 in zip(generators, res_generators):
         assert pauli_sentence(g1) == pauli_sentence(g2)
@@ -207,7 +207,7 @@ def test_clifford(generator, paulixops, result):
 def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_sector, ham_ref):
     r"""Test that transform_hamiltonian returns the correct hamiltonian."""
     mol = qp.qchem.Molecule(symbols, geometry)
-    h = qp.qchem.diff_hamiltonian(mol)()
+    h = qp.qchem.molecular_hamiltonian(mol)[0]
     ham_calc = qp.taper(h, generator, paulixops, paulix_sector)
     # sort Hamiltonian terms and then compare with reference
     sorted_terms = list(sorted(zip(ham_calc.terms()[0], ham_calc.terms()[1])))
@@ -263,7 +263,7 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
 def test_optimal_sector(symbols, geometry, charge, generators, num_electrons, result):
     r"""Test that find_optimal_sector returns the correct result."""
     mol = qp.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qp.qchem.diff_hamiltonian(mol)()
+    hamiltonian = qp.qchem.molecular_hamiltonian(mol)[0]
 
     perm = optimal_sector(hamiltonian, generators, num_electrons)
     assert perm == result
@@ -293,7 +293,7 @@ def test_optimal_sector(symbols, geometry, charge, generators, num_electrons, re
 def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons, msg_match):
     r"""Test that find_optimal_sector returns the correct result."""
     mol = qp.qchem.Molecule(symbols, geometry)
-    hamiltonian = qp.qchem.diff_hamiltonian(mol)()
+    hamiltonian = qp.qchem.molecular_hamiltonian(mol)[0]
 
     with pytest.raises(ValueError, match=msg_match):
         optimal_sector(hamiltonian, generators, num_electrons)
@@ -417,7 +417,7 @@ def test_taper_obs(symbols, geometry, charge):
     tapered Hartree-Fock state (:math:`\langle HF|obs|HF \rangle`) are consistent."""
 
     mol = qp.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qp.qchem.diff_hamiltonian(mol)(geometry)
+    hamiltonian = qp.qchem.molecular_hamiltonian(mol)[0]
     hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
     generators = qp.symmetry_generators(hamiltonian)
     paulixops = qp.paulix_ops(generators, len(hamiltonian.wires))
@@ -514,12 +514,13 @@ def test_taper_excitations(
     are consistent with the tapered Hartree-Fock state."""
 
     mol = qp.qchem.Molecule(symbols, geometry, charge)
-    num_electrons, num_wires = mol.n_electrons, 2 * mol.n_orbitals
+    hamiltonian, num_wires = qp.qchem.molecular_hamiltonian(mol)
+    num_electrons = mol.n_electrons
     hf_state = np.where(np.arange(num_wires) < num_electrons, 1, 0)
     hf_tapered = taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires)
 
     observables = [
-        qp.qchem.diff_hamiltonian(mol)(geometry),
+        hamiltonian,
         qp.qchem.particle_number(num_wires),
         qp.qchem.spin2(num_electrons, num_wires),
         qp.qchem.spinz(num_wires),
@@ -597,7 +598,7 @@ def test_inconsistent_taper_ops(operation, op_gen, message_match):
         1,
     )
     mol = qp.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qp.qchem.diff_hamiltonian(mol)(geometry)
+    hamiltonian = qp.qchem.molecular_hamiltonian(mol)[0]
 
     generators = qp.symmetry_generators(hamiltonian)
     paulixops = qp.paulix_ops(generators, len(hamiltonian.wires))
@@ -650,7 +651,7 @@ def test_consistent_taper_ops(operation, op_gen):
         1,
     )
     mol = qp.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qp.qchem.diff_hamiltonian(mol)(geometry)
+    hamiltonian = qp.qchem.molecular_hamiltonian(mol)[0]
 
     generators = qp.symmetry_generators(hamiltonian)
     paulixops = qp.paulix_ops(generators, len(hamiltonian.wires))
@@ -751,7 +752,7 @@ def test_taper_callable_ops(operation, op_wires, op_gen):
         1,
     )
     mol = qp.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qp.qchem.diff_hamiltonian(mol)(geometry)
+    hamiltonian = qp.qchem.molecular_hamiltonian(mol)[0]
 
     generators = qp.symmetry_generators(hamiltonian)
     paulixops = qp.paulix_ops(generators, len(hamiltonian.wires))
@@ -808,7 +809,7 @@ def test_taper_matrix_ops(operation, op_wires, op_gen):
         1,
     )
     mol = qp.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qp.qchem.diff_hamiltonian(mol)(geometry)
+    hamiltonian = qp.qchem.molecular_hamiltonian(mol)[0]
 
     generators = qp.symmetry_generators(hamiltonian)
     paulixops = qp.paulix_ops(generators, len(hamiltonian.wires))
@@ -873,7 +874,7 @@ def test_inconsistent_callable_ops(operation, op_wires, op_gen, message_match):
         1,
     )
     mol = qp.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qp.qchem.diff_hamiltonian(mol)(geometry)
+    hamiltonian = qp.qchem.molecular_hamiltonian(mol)[0]
 
     generators = qp.symmetry_generators(hamiltonian)
     paulixops = qp.paulix_ops(generators, len(hamiltonian.wires))
@@ -967,9 +968,9 @@ def test_taper_jax_jit(symbols, geometry, charge):
 
     tapered_ham2 = qp.simplify(taper_coefficients(jax.numpy.array(coeffs)))
 
-    assert qp.math.get_deep_interface(tapered_ham1.terms()[0]) == "jax"
+    assert qp.math.get_deep_interface(tapered_ham1.terms()[0]) == "numpy"
     assert qp.math.get_deep_interface(tapered_ham2.terms()[0]) == "jax"
-    qp.assert_equal(tapered_ham1, tapered_ham2)
+    qp.assert_equal(tapered_ham1, tapered_ham2, check_interface=False)
 
     with pytest.raises(ValueError, match="wire labels are abstract"):
         jax.jit(qp.taper, static_argnums=[3])(hamiltonian, generators, paulixops, paulix_sector)
