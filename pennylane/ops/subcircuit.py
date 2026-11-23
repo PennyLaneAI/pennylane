@@ -53,7 +53,7 @@ def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator2]:
     new_operator = type(qfunc.name, (Operator2,), attrs)
 
     # registers the decomposition
-    decomp_name = qfunc.name + "decomp"
+    decomp_name = qfunc.name + "_decomp"
     decomp_rule = DecompositionRule(
         qfunc._impl,
         resources=qfunc._compute_resources,
@@ -139,7 +139,7 @@ def subcircuit(  # pylint: disable=too-many-arguments
     The body of the quantum function is registered as its decomposition rule:
 
     >>> qp.inspect_decomps(op)
-    Decomposition 0 (name: MyOpdecomp)
+    Decomposition 0 (name: MyOp_decomp)
     0: ──H──RZ(0.50)─┤
     Gate Count: {Hadamard: 1, RZ: 1}
     """
