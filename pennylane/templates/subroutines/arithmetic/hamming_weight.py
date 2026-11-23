@@ -24,11 +24,12 @@ from .temporary_and import TemporaryAND
 
 
 def _hamming_weight_resources(wires, **_):
-    num_full_adders, num_half_adders, num_bits = 0, 0, len(wires)
-    while num_bits > 1:
-        num_full_adders += (num_bits - 1) // 2
-        num_half_adders += 1 - num_bits % 2
-        num_bits //= 2
+    # Level j adds floor(n / 2^j) bits, with a half adder if this number is even, i.e., if bit j
+    # of n is zero. Summing over all levels gives n - popcount(n) adders, ell(n) - popcount(n) of
+    # which are half adders, with ell(n) the number of bits of n.
+    n = len(wires)
+    num_full_adders = n - n.bit_length()
+    num_half_adders = n.bit_length() - n.bit_count()
     return {
         TemporaryAND: num_full_adders + num_half_adders,
         CNOT: 5 * num_full_adders + num_half_adders,
@@ -73,21 +74,14 @@ def _HammingWeight(wires, work_wires):
     Args:
         wires (Sequence): the ``n`` input wires
         work_wires (Sequence): at least ``n - popcount(n)`` work wires in the zero state
-
-    **Example**
-
-    For three bits, a single full adder leaves the sum on wire ``2`` and the carry on the work
-    wire ``3``:
-
-    >>> from pennylane.templates.subroutines.arithmetic.hamming_weight import _HammingWeight
-    >>> _HammingWeight([0, 1, 2], [3]).decomposition()
-    [CNOT(wires=[1, 0]), CNOT(wires=[1, 2]), TemporaryAND(wires=[0, 2, 3]), CNOT(wires=[1, 3]),
-     CNOT(wires=[1, 2]), CNOT(wires=[0, 2])]
-
     """
+    # Each bit of the Hamming weight above bit 0 needs one level of adders. The last carry of
+    # level j is bit j + 1, so it goes onto out_wires[j], all other carries go onto spare wires
     log_n = len(wires).bit_length() - 1
     out_wires, spare_wires = work_wires[:log_n], work_wires[log_n:]
     for j in range(log_n):
+        # Add all bits of weight 2^j onto the last one, and collect their carries, which are
+        # the bits of weight 2^(j+1) for the next level
         *addends, total = wires
         num_adders = len(wires) // 2
         carry_wires = [*spare_wires[: num_adders - 1], out_wires[j]]
@@ -95,10 +89,12 @@ def _HammingWeight(wires, work_wires):
         for i, carry in enumerate(carry_wires):
             a = addends[2 * i]
             if 2 * i + 1 < len(addends):
+                # Full adder: compute the carry of a + c + total, and leave the sum bit on total
                 c = addends[2 * i + 1]
                 _left_block([c, a, total, carry])
                 CNOT([c, total])
             else:
+                # For an even number of bits, a is left over and only needs a half adder
                 _left_block_zeroed([a, total, carry])
             CNOT([a, total])
         wires = carry_wires

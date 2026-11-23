@@ -41,7 +41,7 @@ SMALL_CASES = [
 # weight of three wires and rotates the fourth one separately. Each AND uses one work wire, and the
 # uncomputation repeats the CNOTs.
 HWP_COUNTS = {
-    m: {"TemporaryAND": a, "Adjoint(TemporaryAND)": a, "CNOT": c, "PhaseShift": r, "GlobalPhase": 1}
+    m: {"TemporaryAND": a, "Adjoint(TemporaryAND)": a, "CNOT": c, "PhaseShift": r}
     for m, a, c, r in [(3, 1, 10, 2), (4, 1, 10, 3), (5, 3, 22, 3), (6, 4, 32, 3), (7, 4, 40, 3)]
 }
 
@@ -252,12 +252,13 @@ class TestDecomposition:
 
         [tape], _ = _tape_decompose(
             qp.tape.QuantumScript([op]),
-            gate_set=set(block_counts),
+            gate_set=set(block_counts) | {"GlobalPhase"},
             fixed_decomps={qp.RZLayer: _rzlayer_hwp_synthesis},
         )
 
         counts = Counter(gate.name for gate in tape.operations)
-        assert counts == {name: num_angles * count for name, count in block_counts.items()}
+        expected = {name: num_angles * count for name, count in block_counts.items()}
+        assert counts == expected | {"GlobalPhase": 1}
         assert set(tape.wires) == set(op.wires)
 
     @pytest.mark.catalyst
@@ -271,7 +272,7 @@ class TestDecomposition:
         pytest.importorskip("catalyst")
         op = _random_rz_layer(num_angles, block_size, num_work_wires, seed)
         wires = op.arguments["wires"]
-        gate_set = {"H", *HWP_COUNTS[block_size]}
+        gate_set = {"H", "GlobalPhase", *HWP_COUNTS[block_size]}
 
         @qp.qjit(capture=True)
         @qp.decompose(gate_set=gate_set, fixed_decomps={qp.RZLayer: _rzlayer_hwp_synthesis})
