@@ -58,7 +58,7 @@ def _measure_with_samples_diagonalizing_gates(  # pylint: disable=too-many-argum
     is_state_batched: bool = False,
     rng=None,
     prng_key=None,
-    readout_errors: list[Callable] = None,
+    readout_errors: list[Callable] | None = None,
 ) -> TensorLike:
     """Returns the samples of the measurement process performed on the given state,
     by rotating the state into the measurement basis using the diagonalizing gates
@@ -213,7 +213,7 @@ def _measure_sum_with_samples(  # pylint: disable=too-many-arguments
     is_state_batched: bool = False,
     rng=None,
     prng_key=None,
-    readout_errors: list[Callable] = None,
+    readout_errors: list[Callable] | None = None,
 ):
     """Compute expectation values of Sum Observables"""
     mp = mp[0]
@@ -244,7 +244,7 @@ def sample_state(  # pylint: disable=too-many-arguments
     wires=None,
     rng=None,
     prng_key=None,
-    readout_errors: list[Callable] = None,
+    readout_errors: list[Callable] | None = None,
 ) -> np.ndarray:
     """Returns a series of computational basis samples of a state.
 
@@ -286,7 +286,7 @@ def measure_with_samples(  # pylint: disable=too-many-arguments
     is_state_batched: bool = False,
     rng=None,
     prng_key=None,
-    readout_errors: list[Callable] = None,
+    readout_errors: list[Callable] | None = None,
 ) -> TensorLike:
     """Returns the samples of the measurement process performed on the given state.
     This function assumes that the user-defined wire labels in the measurement process

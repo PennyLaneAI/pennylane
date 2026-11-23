@@ -15,8 +15,6 @@
 A transform for decomposing RZ rotations using a phase gradient catalyst state.
 """
 
-from functools import partial
-
 import numpy as np
 
 import pennylane as qp
@@ -41,17 +39,11 @@ def _rz_phase_gradient(
 
     binary_int = math.binary_decimals(phi, precision, unit=2 * np.pi)
 
-    # NOTE: To be capture compatible, must wrap in function
-    # so operators are only constructed when called
     control_wire = Wires(wire)[0]
+    compute_op = qp.ctrl(qp.MultiX(binary_int, angle_wires), control=control_wire)
+    target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires)
 
-    def compute_fn():
-        qp.ctrl(qp.MultiX(binary_int, angle_wires), control=control_wire)
-
-    target_fn = partial(qp.SemiAdder, angle_wires, phase_grad_wires, work_wires)
-
-    # NOTE: Compute function is self-inverse, pass it for the uncompute function
-    return change_op_basis(compute_fn, target_fn, compute_fn)
+    return change_op_basis(compute_op, target_op, compute_op)
 
 
 @transform
@@ -129,7 +121,7 @@ def rz_phase_gradient(
         wire_order = [wire] + angle_wires + phase_grad_wires + work_wires
 
         @qp.transforms.combine_global_phases
-        @qp.transforms._tape_decompose(max_expansion=1)
+        @qp.transforms._tape_decompose(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1)
         @rz_phase_gradient(
             angle_wires=angle_wires,
             phase_grad_wires=phase_grad_wires,
@@ -156,15 +148,25 @@ def rz_phase_gradient(
     Overall, the full circuit looks like the following:
 
     >>> print(qp.draw(rz_circ, wire_order=wire_order)(phi, wire))
-      targ: ──H────────────╭●──────────────────────╭●───────────H─╭GlobalPhase(2.36)─┤  Probs
-     ang_0: ───────────────├MultiX(M0)──╭SemiAdder─├MultiX(M0)────├GlobalPhase(2.36)─┤
-     ang_1: ───────────────├MultiX(M0)──├SemiAdder─├MultiX(M0)────├GlobalPhase(2.36)─┤
-     ang_2: ───────────────╰MultiX(M0)──├SemiAdder─╰MultiX(M0)────├GlobalPhase(2.36)─┤
-     phg_0: ──PPR(-π/4, Y)──────────────├SemiAdder────────────────├GlobalPhase(2.36)─┤
-     phg_1: ──PPR(π/4, X)───────────────├SemiAdder────────────────├GlobalPhase(2.36)─┤
-     phg_2: ──PPR(π/4, X)───PPR(π/8, Z)─├SemiAdder────────────────├GlobalPhase(2.36)─┤
-    work_0: ────────────────────────────├SemiAdder────────────────├GlobalPhase(2.36)─┤
-    work_1: ────────────────────────────╰SemiAdder────────────────╰GlobalPhase(2.36)─┤
+      targ: ──RZ(3.14)──RY(1.57)─╭●─────────────────────╭●───────────RZ(3.14)──RY(1.57) ···
+     ang_0: ─────────────────────├MultiX(M0)─╭SemiAdder─├MultiX(M0)──────────────────── ···
+     ang_1: ─────────────────────├MultiX(M0)─├SemiAdder─├MultiX(M0)──────────────────── ···
+     ang_2: ─────────────────────╰MultiX(M0)─├SemiAdder─╰MultiX(M0)──────────────────── ···
+     phg_0: ──H─────────Z────────────────────├SemiAdder──────────────────────────────── ···
+     phg_1: ──H─────────S─────────H──────────├SemiAdder──────────────────────────────── ···
+     phg_2: ──H─────────T─────────X──────────├SemiAdder──────────────────────────────── ···
+    work_0: ─────────────────────────────────├SemiAdder──────────────────────────────── ···
+    work_1: ─────────────────────────────────╰SemiAdder──────────────────────────────── ···
+    <BLANKLINE>
+      targ: ··· ─╭GlobalPhase(1.18)─┤  Probs
+     ang_0: ··· ─├GlobalPhase(1.18)─┤
+     ang_1: ··· ─├GlobalPhase(1.18)─┤
+     ang_2: ··· ─├GlobalPhase(1.18)─┤
+     phg_0: ··· ─├GlobalPhase(1.18)─┤
+     phg_1: ··· ─├GlobalPhase(1.18)─┤
+     phg_2: ··· ─├GlobalPhase(1.18)─┤
+    work_0: ··· ─├GlobalPhase(1.18)─┤
+    work_1: ··· ─╰GlobalPhase(1.18)─┤
     <BLANKLINE>
     M0 =
     [ True  True  True]

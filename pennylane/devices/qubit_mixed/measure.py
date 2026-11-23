@@ -57,7 +57,7 @@ def state_diagonalizing_gates(
     measurementprocess: StateMeasurement,
     state: TensorLike,
     is_state_batched: bool = False,
-    readout_errors: list[Callable] = None,
+    readout_errors: list[Callable] | None = None,
 ) -> TensorLike:
     """Apply a measurement to state when the measurement process has an observable with diagonalizing gates.
 
@@ -98,7 +98,7 @@ def csr_dot_products_density_matrix(
     measurementprocess: ExpectationMP,
     state: TensorLike,
     is_state_batched: bool = False,
-    readout_errors: list[Callable] = None,
+    readout_errors: list[Callable] | None = None,
 ) -> TensorLike:
     """Measure the expectation value of an observable from a density matrix using dot products between
     ``scipy.csr_matrix`` representations.
@@ -154,7 +154,7 @@ def full_dot_products_density_matrix(
     measurementprocess: ExpectationMP,
     state: TensorLike,
     is_state_batched: bool = False,
-    readout_errors: list[Callable] = None,
+    readout_errors: list[Callable] | None = None,
 ) -> TensorLike:
     """Measure the expectation value of an observable from a density matrix using full matrix
     multiplication.
@@ -198,7 +198,7 @@ def sum_of_terms_method(
     measurementprocess: ExpectationMP,
     state: TensorLike,
     is_state_batched: bool = False,
-    readout_errors: list[Callable] = None,
+    readout_errors: list[Callable] | None = None,
 ) -> TensorLike:
     """Measure the expectation value of the state when the measured observable is a ``Hamiltonian`` or ``Sum``
     and it must be backpropagation compatible.
@@ -226,7 +226,7 @@ def sum_of_terms_method(
 
 def get_measurement_function(  # pylint: disable=too-many-return-statements,too-many-branches
     measurementprocess: MeasurementProcess, state: TensorLike
-) -> Callable[[MeasurementProcess, TensorLike, bool, list[Callable]], TensorLike]:
+) -> Callable[[MeasurementProcess, TensorLike, bool, list[Callable] | None], TensorLike]:
     """Get the appropriate method for performing a measurement.
 
     Args:
@@ -285,7 +285,7 @@ def measure(
     measurementprocess: MeasurementProcess,
     state: TensorLike,
     is_state_batched: bool = False,
-    readout_errors: list[Callable] = None,
+    readout_errors: list[Callable] | None = None,
 ) -> TensorLike:
     """Apply a measurement process to a state.
 
