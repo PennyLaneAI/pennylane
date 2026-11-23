@@ -39,9 +39,9 @@ from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import CaptureWarning
 from pennylane.numeric_hamiltonians import CDFHamiltonian
-from pennylane.templates.subroutines.qchem.double_basis_rotation import (
-    _complex_double_basis_rotation_givens_pairs,
-    _real_double_basis_rotation_givens_pairs,
+from pennylane.templates.subroutines.qchem.basis_rotation_pair import (
+    _complex_basis_rotation_pair_givens_pairs,
+    _real_basis_rotation_pair_givens_pairs,
 )
 from pennylane.templates.subroutines.qchem.givens_pair import _givens_pair_rzlayer
 from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
@@ -1028,7 +1028,7 @@ CONTROLLED_PARALLEL_RULE = qp.list_decomps("C(TrotterCDF)")[
 ]
 
 # Both sides of the equivalence tests are lowered to these gates, so that neither side relies on
-# the matrices of BasisRotation, DoubleBasisRotation, GivensPair or RZLayer.
+# the matrices of BasisRotation, BasisRotationPair, GivensPair or RZLayer.
 ELEMENTARY_GATES = {
     "SingleExcitation",
     "PhaseShift",
@@ -1104,7 +1104,7 @@ def _final_state(ops, in_state, wire_order):
 
 class TestParallelDecomposition:
     """Tests of the parallel-rotation rules, which apply each pair of basis rotations as one
-    DoubleBasisRotation and, without genuine control, the one-body and same-orbital rotations as
+    BasisRotationPair and, without genuine control, the one-body and same-orbital rotations as
     RZLayers, all of which get the CDF work wires."""
 
     @pytest.mark.parametrize(
@@ -1146,14 +1146,14 @@ class TestParallelDecomposition:
         )
         gate_set, fixed_decomps = ELEMENTARY_GATES, None
         if pin_givens_pairs:
-            double_basis_rotation_rule = (
-                _complex_double_basis_rotation_givens_pairs
+            basis_rotation_pair_rule = (
+                _complex_basis_rotation_pair_givens_pairs
                 if complex_leaves
-                else _real_double_basis_rotation_givens_pairs
+                else _real_basis_rotation_pair_givens_pairs
             )
             gate_set = WEIGHTED_ELEMENTARY_GATES
             fixed_decomps = {
-                qp.DoubleBasisRotation: double_basis_rotation_rule,
+                qp.BasisRotationPair: basis_rotation_pair_rule,
                 qp.GivensPair: _givens_pair_rzlayer,
             }
         existing_ops = _lower(qp.testing.decomp_rule_to_tape(op, existing_rule), ELEMENTARY_GATES)
@@ -1174,8 +1174,8 @@ class TestParallelDecomposition:
         assert np.isclose(overlap, 1, rtol=0, atol=1e-9), f"Overlap: {overlap}"
 
         if pin_givens_pairs:
-            num_double_basis_rotations = 2 * num_fragments * num_steps + 2
-            num_givens_pairs = num_double_basis_rotations * num_orbitals * (num_orbitals - 1) // 2
+            num_basis_rotation_pairs = 2 * num_fragments * num_steps + 2
+            num_givens_pairs = num_basis_rotation_pairs * num_orbitals * (num_orbitals - 1) // 2
             existing_ands, new_ands = (
                 sum(isinstance(gate, qp.TemporaryAND) for gate in ops)
                 for ops in (existing_ops, new_ops)
@@ -1271,7 +1271,7 @@ class TestParallelDecomposition:
         op = _cdf_op(ham, False, False, 1)
 
         tape = qp.testing.decomp_rule_to_tape(op, _trotter_cdf_parallel_decomposition)
-        assert not any(isinstance(gate, qp.DoubleBasisRotation) for gate in tape.operations)
+        assert not any(isinstance(gate, qp.BasisRotationPair) for gate in tape.operations)
         assert_valid_decomp_rule(op, _trotter_cdf_parallel_decomposition, check_matrix=False)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -1346,7 +1346,7 @@ class TestParallelDecomposition:
         [(False, False, 1), (True, True, 2), (True, False, 2)],
     )
     def test_work_wires_and_blocks(self, seed, has_control, double_phase, num_work_wires):
-        """Every DoubleBasisRotation acts on the spin-up wires ``wires[::2]`` and the spin-down
+        """Every BasisRotationPair acts on the spin-up wires ``wires[::2]`` and the spin-down
         wires ``wires[1::2]``, every RZLayer applies one angle to both wires of each orbital
         (one-body) or to the beta wire of each orbital (same-orbital), and all of them get the
         CDF work wires."""
@@ -1361,14 +1361,14 @@ class TestParallelDecomposition:
         rule = CONTROLLED_PARALLEL_RULE if has_control else _trotter_cdf_parallel_decomposition
 
         operations = qp.testing.decomp_rule_to_tape(op, rule).operations
-        double_basis_rotations = [gate for gate in operations if gate.name == "DoubleBasisRotation"]
+        basis_rotation_pairs = [gate for gate in operations if gate.name == "BasisRotationPair"]
         rz_layers = [gate for gate in operations if gate.name == "RZLayer"]
-        assert len(double_basis_rotations) == 2 * num_fragments * num_steps + 2
+        assert len(basis_rotation_pairs) == 2 * num_fragments * num_steps + 2
         assert all(
             (gate.wires_up, gate.wires_down) == (wires[::2], wires[1::2])
-            for gate in double_basis_rotations
+            for gate in basis_rotation_pairs
         )
-        assert all(gate.work_wires == work_wires for gate in double_basis_rotations + rz_layers)
+        assert all(gate.work_wires == work_wires for gate in basis_rotation_pairs + rz_layers)
 
         if has_control and not double_phase:
             assert not rz_layers

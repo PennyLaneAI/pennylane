@@ -30,7 +30,7 @@ from pennylane.ops.op_math.controlled2 import ctrl_many_zeroed_work_wires
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
-from pennylane.templates.subroutines.qchem.double_basis_rotation import DoubleBasisRotation
+from pennylane.templates.subroutines.qchem.basis_rotation_pair import BasisRotationPair
 from pennylane.templates.subroutines.rz_layer import RZLayer
 from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -153,11 +153,11 @@ class TrotterCDF(Operator2):
                 :image: /_static/decomposition_thumbnails/trotter_cdf_parallel.svg
                 :requires: :math:`w \geq 1` work wire
                 :where: :math:`B = (2L-1)n + 1` two-body blocks, and the
-                    :class:`~.DoubleBasisRotation` and :class:`~.RZLayer` gates receive the
+                    :class:`~.BasisRotationPair` and :class:`~.RZLayer` gates receive the
                     :math:`w` work wires. The counts are upper bounds, as basis rotations that are
                     the identity are skipped. The circuit shows :math:`w = 1`
 
-                :class:`~.DoubleBasisRotation` on :math:`2N` wires | :math:`2Ln + 2` | 4
+                :class:`~.BasisRotationPair` on :math:`2N` wires | :math:`2Ln + 2` | 4
                 :class:`~.RZLayer` with :math:`N` angles on :math:`2N` wires | :math:`n` | 1
                 :class:`~.RZLayer` with :math:`N` angles on :math:`N` wires | :math:`B` | 2
                 :class:`~.CRZ` | :math:`BN(N-1)/2` | 2
@@ -200,7 +200,7 @@ class TrotterCDF(Operator2):
 
         With enough ``work_wires`` (one, or two under genuine control), the graph-based
         decomposition can also use rules that apply the basis rotations of both spin channels as
-        one :class:`~.DoubleBasisRotation` and, except under genuine control, the one-body and
+        one :class:`~.BasisRotationPair` and, except under genuine control, the one-body and
         same-orbital rotations as :class:`~.RZLayer` operators. These operators receive the
         ``work_wires`` as well, so that their decompositions can combine rotations, e.g., with
         :func:`~.transforms.decompositions.make_rzlayer_to_phase_gradient_decomp`. The rule it
@@ -468,11 +468,11 @@ def _apply_system_basis_rotation(U, wires):
         BasisRotation(unitary_matrix=U, wires=wires[1::2])
 
 
-def _apply_double_basis_rotation(U, wires, work_wires):
-    """Apply a fragment's basis rotation on both spin channels as one ``DoubleBasisRotation``,
+def _apply_basis_rotation_pair(U, wires, work_wires):
+    """Apply a fragment's basis rotation on both spin channels as one ``BasisRotationPair``,
     which may use the clean ``work_wires``."""
     if math.is_tracer(U) or not np.allclose(U, np.eye(len(U))):
-        DoubleBasisRotation(U, wires[::2], wires[1::2], work_wires=work_wires)
+        BasisRotationPair(U, wires[::2], wires[1::2], work_wires=work_wires)
 
 
 def _merge_leaves(U_prev, U_curr):
@@ -702,7 +702,7 @@ def _cdf_parallel_helpers(work_wires, genuine_control=False):
     genuine control, to the one-body and same-orbital rotations, as RZLayers."""
     helpers = {
         **_CDF_HELPERS,
-        "apply_system_basis_rotation": partial(_apply_double_basis_rotation, work_wires=work_wires),
+        "apply_system_basis_rotation": partial(_apply_basis_rotation_pair, work_wires=work_wires),
         "apply_two_body_diagonal": partial(
             _apply_two_body_diagonal_with_work_wires,
             work_wires=work_wires,
@@ -790,7 +790,7 @@ def _cdf_parallel_resource_counts(
     num_trotter_steps, hamiltonian, has_control, double_phase, num_work_wires
 ):
     """Upper-bound gate counts of the work-wire CDF circuits of ``_cdf_resource_counts``, with
-    one ``DoubleBasisRotation`` per pair of ``BasisRotation`` operators and, without genuine
+    one ``BasisRotationPair`` per pair of ``BasisRotation`` operators and, without genuine
     control, one ``RZLayer`` per one-body or same-orbital layer."""
     if num_trotter_steps <= 0:
         return {}
@@ -807,7 +807,7 @@ def _cdf_parallel_resource_counts(
     )
     dtype_leaf, _ = math.get_abstract_and_cast_dtype(leaf_tensors)
     del resources[BasisRotation(dtype_leaf[num_cas, num_cas], wires=Wire[num_cas])]
-    sysrot_key = DoubleBasisRotation(
+    sysrot_key = BasisRotationPair(
         dtype_leaf[num_cas, num_cas],
         wires_up=Wire[num_cas],
         wires_down=Wire[num_cas],

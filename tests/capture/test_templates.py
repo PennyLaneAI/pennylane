@@ -219,8 +219,8 @@ unmodified_templates_cases = [
     (qp.RZLayer, (jnp.array([0.5]), [0, 1], [2]), {}),
     (qp.GivensPair, (jnp.array(0.4), [0, 1, 2, 3]), {}),
     (qp.GivensPair, (jnp.array(0.4), [0, 1, 2, 3], [4, 5]), {}),
-    (qp.DoubleBasisRotation, (jnp.eye(2), [0, 1], [2, 3]), {}),
-    (qp.DoubleBasisRotation, (jnp.eye(2), [0, 2], [1, 3], [4, 5]), {}),
+    (qp.BasisRotationPair, (jnp.eye(2), [0, 1], [2, 3]), {}),
+    (qp.BasisRotationPair, (jnp.eye(2), [0, 2], [1, 3], [4, 5]), {}),
     (
         qp.TwoLocalSwapNetwork,
         ([0, 1, 2, 3, 4],),
