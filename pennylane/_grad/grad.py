@@ -107,17 +107,10 @@ def _interface_leaves(value):
             yield leaf
 
 
-def _has_jax_inputs(args: tuple, argnums) -> bool:
-    """Detect JAX leaves in differentiated positional arguments."""
-    if argnums is None:
-        selected = tuple(
-            arg for arg in args if getattr(arg, "requires_grad", False) or isinstance(arg, ArrayBox)
-        )
-        if not selected:
-            selected = args[:1]
-    else:
-        selected = tuple(args[i] for i in ((argnums,) if isinstance(argnums, int) else argnums))
-    return any(get_interface(leaf) == "jax" for leaf in _interface_leaves(selected))
+def _use_jax(args: tuple) -> bool:
+    """Use JAX for JAX inputs when no Autograd input is present."""
+    interfaces = {get_interface(leaf) for leaf in _interface_leaves(args)}
+    return "jax" in interfaces and "autograd" not in interfaces
 
 
 def _args_and_argnums(args, argnums):
@@ -242,8 +235,8 @@ class grad:  # pylint: disable=too-many-instance-attributes
     differentiated by default, following JAX. Use ``argnums`` to select positional
     arguments explicitly.
 
-    The backend is selected from the differentiated positional arguments.
-    Auxiliary JAX data does not override Autograd's trainable-argument inference.
+    The backend is selected from the positional input leaves. Autograd takes
+    precedence whenever an Autograd input is present, including non-trainable inputs.
 
     With Autograd, gradients are computed for arguments which contain
     the property ``requires_grad=True``. Alternatively, the ``argnums`` keyword argument
@@ -377,7 +370,7 @@ class grad:  # pylint: disable=too-many-instance-attributes
         if self._h:
             raise ValueError(f"h = {self._h} unsupported without QJIT. Must be ``None``.")
 
-        if _has_jax_inputs(args, self._argnums):
+        if _use_jax(args):
             argnums, unpack = _setup_argnums(self._argnums)
             return jax.grad(self._func, argnums=argnums[0] if unpack else argnums)(*args, **kwargs)
 
@@ -725,7 +718,7 @@ class jacobian:  # pylint: disable=too-few-public-methods
         if self._h:
             raise ValueError(f"h = {self._h} unsupported without QJIT. Must be ``None``.")
 
-        if _has_jax_inputs(args, self._argnums):
+        if _use_jax(args):
             argnums, unpack = _setup_argnums(self._argnums)
             return jax.jacobian(self._func, argnums=argnums[0] if unpack else argnums)(
                 *args, **kwargs

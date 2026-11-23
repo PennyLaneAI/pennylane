@@ -289,11 +289,21 @@ def test_autograd_with_jax_auxiliary_data(diff_function):
 
 @pytest.mark.jax
 @pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
-def test_dispatch_uses_explicit_argnums(diff_function):
-    """Explicit argument selection excludes auxiliary JAX positional arguments."""
+def test_autograd_precedence_with_explicit_argnums(diff_function):
+    """Autograd inputs take precedence when explicit argument indices are supplied."""
     derivative = diff_function(lambda data, value: value**2, argnums=1)
     value = qp.numpy.array(3.0)
     assert qp.math.allclose(derivative(jax.numpy.array([1.0]), value), 6.0)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
+def test_autograd_precedence_with_nontrainable_auxiliary_data(diff_function):
+    """Non-trainable Autograd auxiliary data also selects Autograd differentiation."""
+    derivative = diff_function(lambda value, data: value**2)
+    data = qp.numpy.array(3.0, requires_grad=False)
+    with pytest.warns(UserWarning, match="no trainable parameters"):
+        assert derivative(jax.numpy.array(2.0), data) == ()
 
 
 @pytest.mark.jax
