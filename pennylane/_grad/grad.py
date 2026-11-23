@@ -253,7 +253,7 @@ class grad:  # pylint: disable=too-many-instance-attributes
         func (function): a plain QNode, or a Python function that contains
             a combination of quantum and classical nodes
 
-        argnums (int, list(int), None): Which argument(s) to take the gradient
+        argnums (int, Sequnece(int), None): Which argument(s) to take the gradient
             with respect to. If ``None``, JAX inputs and :func:`~.qjit` programs
             differentiate the first positional argument, following JAX, while
             ``pennylane.numpy`` arrays are differentiated if their ``requires_grad``
