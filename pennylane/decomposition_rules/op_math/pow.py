@@ -17,10 +17,11 @@
 
 from __future__ import annotations
 
-import pennylane as qp
-from pennylane import math
-from pennylane.core import Operator2
-from pennylane.core.operator import abstractify
+from importlib import import_module
+
+from pennylane import control_flow, math
+from pennylane.core.apply import apply
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition.decomposition_rule import (
     DecompositionRule,
     register_condition,
@@ -39,9 +40,9 @@ def _pow_repeat_base(*params, wires, base, z, **__):  # pylint: disable=unused-a
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
 
-    @qp.for_loop(0, z)
+    @control_flow.for_loop(0, z)
     def _loop(i):  # pylint: disable=unused-argument
-        qp.apply(base)
+        apply(base)
 
     _loop()  # pylint: disable=no-value-for-parameter
 
@@ -59,15 +60,17 @@ def _pow_merge_powers_resources(base_class, base_params, z):  # pylint: disable=
 @register_resources(_pow_merge_powers_resources, name="merge_powers")
 def _pow_merge_powers(*params, wires, base, z, **__):  # pylint: disable=unused-argument
     """Decompose nested powers by combining them."""
-    qp.pow(base.base, z * base.z)
+    ops = import_module("pennylane.ops")
+    ops.pow(base.base, z * base.z)
 
 
 def _pow_flip_adjoint_resources(base_class, base_params, z):  # pylint: disable=unused-argument
+    ops = import_module("pennylane.ops")
     # base class is adjoint, and the base of the base is the target class
     target_class, target_params = base_params["base_class"], base_params["base_params"]
     return {
         adjoint_resource_rep(
-            qp.ops.Pow, {"base_class": target_class, "base_params": target_params, "z": z}
+            ops.Pow, {"base_class": target_class, "base_params": target_params, "z": z}
         ): 1
     }
 
@@ -76,7 +79,8 @@ def _pow_flip_adjoint_resources(base_class, base_params, z):  # pylint: disable=
 def _pow_flip_adjoint(*params, wires, base, z, **__):  # pylint: disable=unused-argument
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
-    qp.adjoint(qp.pow(base.base, z))
+    ops = import_module("pennylane.ops")
+    ops.adjoint(ops.pow(base.base, z))
 
 
 def make_pow_decomp_with_period(period) -> DecompositionRule:
@@ -98,11 +102,12 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
     @register_condition(_condition_fn)
     @register_resources(_pow_reduce_period_resources, name="reduce_period")
     def _pow_reduce_period(*params, wires, base, z, **__):  # pylint: disable=unused-argument
+        ops = import_module("pennylane.ops")
         z_mod_period = z % period
         if z_mod_period == 1:
-            qp.apply(base)
+            apply(base)
         elif z_mod_period > 0 and z_mod_period != period:
-            qp.pow(base, z_mod_period)
+            ops.pow(base, z_mod_period)
 
     return _pow_reduce_period
 
@@ -117,4 +122,5 @@ def _pow_scale_angle_resources(base_class, base_params, z):  # pylint: disable=u
 @register_resources(_pow_scale_angle_resources, name="scale_angle")
 def _pow_scale_angle(phi, wires, base, z, **__):  # pylint: disable=unused-argument
     """Decompose the power of a general rotation operator by multiplying the power by the angle."""
-    qp.ops.functions.bind_new_parameters(base, (phi * z,))
+    ops = import_module("pennylane.ops")
+    ops.functions.bind_new_parameters(base, (phi * z,))

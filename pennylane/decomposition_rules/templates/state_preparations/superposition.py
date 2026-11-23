@@ -18,7 +18,7 @@
 from collections import Counter
 from functools import reduce
 
-import pennylane as qp
+from pennylane import math, ops
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.templates.state_preparations.superposition import Superposition, order_states
@@ -37,20 +37,20 @@ def _permutation_operator_qfunc(basis1, basis2, wires, work_wire):
         work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation.
     """
 
-    qp.MultiControlledX(concatenate_wires(wires, work_wire), control_values=basis1)
+    ops.MultiControlledX(concatenate_wires(wires, work_wire), control_values=basis1)
 
     @for_loop(len(basis1))
     def apply_cnots(i):
         b = basis1[i]
 
         def apply_cnot():
-            qp.CNOT(wires=work_wire + wires[i])
+            ops.CNOT(wires=work_wire + wires[i])
 
-        qp.cond(b != basis2[i], apply_cnot)()
+        ops.cond(b != basis2[i], apply_cnot)()
 
     apply_cnots()  # pylint: disable=no-value-for-parameter
 
-    qp.MultiControlledX(concatenate_wires(wires, work_wire), control_values=basis2)
+    ops.MultiControlledX(concatenate_wires(wires, work_wire), control_values=basis2)
 
 
 def _superposition_standard_resources(num_wires, num_coeffs, bases):
@@ -58,13 +58,15 @@ def _superposition_standard_resources(num_wires, num_coeffs, bases):
 
     resources = Counter()
 
-    resources[resource_rep(qp.StatePrep, num_wires=qp.math.ceil_log2(num_coeffs))] += 1
+    resources[resource_rep(ops.StatePrep, num_wires=math.ceil_log2(num_coeffs))] += 1
 
     for basis2, basis1 in perms.items():
-        if not qp.math.allclose(basis1, basis2):
-            resources[qp.MultiControlledX(Wire[num_wires + 1], control_values=Bool[num_wires])] += 2
+        if not math.allclose(basis1, basis2):
+            resources[
+                ops.MultiControlledX(Wire[num_wires + 1], control_values=Bool[num_wires])
+            ] += 2
 
-            resources[qp.CNOT] += reduce(
+            resources[ops.CNOT] += reduce(
                 lambda acc, ib: acc
                 + int(ib[1] != basis2[ib[0]]),  # pylint: disable=cell-var-from-loop
                 enumerate(basis1),
@@ -88,9 +90,9 @@ def _superposition_standard(coeffs, bases, wires, target_wires, work_wire):
         )
     ]
 
-    qp.StatePrep(
-        qp.math.stack(sorted_coefficients),
-        wires=target_wires[-qp.math.ceil_log2(len(coeffs)) :],
+    ops.StatePrep(
+        math.stack(sorted_coefficients),
+        wires=target_wires[-math.ceil_log2(len(coeffs)) :],
         pad_with=0,
     )
 
@@ -99,7 +101,7 @@ def _superposition_standard(coeffs, bases, wires, target_wires, work_wire):
     @for_loop(len(list(perms.keys())))
     def apply_permutations(i):
         basis2, basis1 = bas[i][0], bas[i][1]
-        if not qp.math.allclose(basis1, basis2):
+        if not math.allclose(basis1, basis2):
             _permutation_operator_qfunc(basis1, basis2, target_wires, work_wire)
 
     apply_permutations()  # pylint: disable=no-value-for-parameter

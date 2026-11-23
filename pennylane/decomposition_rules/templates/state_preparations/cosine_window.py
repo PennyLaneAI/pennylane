@@ -17,10 +17,9 @@
 
 import numpy as np
 
-import pennylane as qp
-from pennylane import capture, register_resources
+from pennylane import capture, math, ops, templates
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import add_decomps
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.state_preparations.cosine_window import CosineWindow
 from pennylane.typing import Wire
@@ -28,26 +27,26 @@ from pennylane.typing import Wire
 
 def _cosine_window_standard_resources(num_wires):
     return {
-        qp.Hadamard: 1,
-        qp.RZ: 1,
-        _adjoint_abstract(qp.QFT(Wire[num_wires])): 1,
-        qp.PhaseShift: num_wires,
+        ops.Hadamard: 1,
+        ops.RZ: 1,
+        _adjoint_abstract(templates.QFT(Wire[num_wires])): 1,
+        ops.PhaseShift: num_wires,
     }
 
 
 @register_resources(_cosine_window_standard_resources, name="inverse_qft")
 def _cosine_window_standard(wires, **_):
-    qp.Hadamard(wires=wires[-1])
-    qp.RZ(np.pi, wires=wires[-1])
-    qp.adjoint(qp.QFT)(wires=wires)
+    ops.Hadamard(wires=wires[-1])
+    ops.RZ(np.pi, wires=wires[-1])
+    ops.adjoint(templates.QFT)(wires=wires)
 
     if capture.enabled():
-        wires = qp.math.array(wires, like="jax")
+        wires = math.array(wires, like="jax")
 
     @for_loop(len(wires))
     def wires_loop(ind):
         wire = wires[ind]
-        qp.PhaseShift(np.pi * 2 ** (-ind - 1), wires=wire)
+        ops.PhaseShift(np.pi * 2 ** (-ind - 1), wires=wire)
 
     wires_loop()  # pylint: disable=no-value-for-parameter
 

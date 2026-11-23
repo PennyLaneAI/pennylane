@@ -22,8 +22,7 @@ from itertools import combinations
 
 import numpy as np
 
-import pennylane as qp
-from pennylane import math
+from pennylane import capture, math, ops, templates
 from pennylane.core.operator import Operator, abstractify
 from pennylane.decomposition import (
     add_decomps,
@@ -47,52 +46,52 @@ from pennylane.wires import WireError, Wires, WiresLike, concatenate_wires
 
 
 def _rx_to_rot_resources(*_, **__):
-    return {qp.Rot: 1}
+    return {Rot: 1}
 
 
 @register_resources(_rx_to_rot_resources, name="to_rot")
 def _rx_to_rot(phi, wires: WiresLike):
-    qp.Rot(np.pi / 2, phi, 3.5 * np.pi, wires=wires)
+    Rot(np.pi / 2, phi, 3.5 * np.pi, wires=wires)
 
 
 def _rx_to_rz_ry_resources(*_, **__):
-    return {qp.RZ: 2, qp.RY: 1}
+    return {RZ: 2, RY: 1}
 
 
 @register_resources(_rx_to_rz_ry_resources, name="to_rz_ry")
 def _rx_to_rz_ry(phi, wires: WiresLike):
-    qp.RZ(np.pi / 2, wires=wires)
-    qp.RY(phi, wires=wires)
-    qp.RZ(-np.pi / 2, wires=wires)
+    RZ(np.pi / 2, wires=wires)
+    RY(phi, wires=wires)
+    RZ(-np.pi / 2, wires=wires)
 
 
 def _rx_to_ry_cliff_resources(*_, **__):
-    resources = {_change_op_basis_abstract(qp.S, qp.RY, qp.adjoint(qp.S(Wire[1]))): 1}
+    resources = {_change_op_basis_abstract(ops.S, RY, ops.adjoint(ops.S(Wire[1]))): 1}
     return resources
 
 
 @register_resources(_rx_to_ry_cliff_resources, name="to_ry_cliff")
 def _rx_to_ry_cliff(phi, wires: WiresLike):
-    qp.change_op_basis(qp.S(wires), qp.RY(phi, wires))
+    change_op_basis(ops.S(wires), RY(phi, wires))
 
 
 def _rx_to_rz_cliff_resources(*_, **__):
-    resources = {_change_op_basis_abstract(qp.Hadamard, qp.RZ, qp.Hadamard): 1}
+    resources = {_change_op_basis_abstract(ops.Hadamard, RZ, ops.Hadamard): 1}
     return resources
 
 
 @register_resources(_rx_to_rz_cliff_resources, name="to_rz_cliff")
 def _rx_to_rz_cliff(phi, wires: WiresLike):
-    qp.change_op_basis(qp.Hadamard(wires), qp.RZ(phi, wires), qp.Hadamard(wires))
+    change_op_basis(ops.Hadamard(wires), RZ(phi, wires), ops.Hadamard(wires))
 
 
 def _rx_to_ppr_resources(*_, **__):
-    return {qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1}
+    return {ops.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1}
 
 
 @register_resources(_rx_to_ppr_resources, name="to_paulirot")
 def _rx_to_ppr(phi, wires):
-    qp.PauliRot(phi, "X", wires=wires)
+    ops.PauliRot(phi, "X", wires=wires)
 
 
 add_decomps(RX, _rx_to_rot, _rx_to_rz_ry, _rx_to_ppr, _rx_to_ry_cliff, _rx_to_rz_cliff)
@@ -110,11 +109,11 @@ def _controlled_rx_standard_resources(
     work_wire_type,
 ):
     if len(control_wires) == 1:
-        return {qp.CRX: 1}
+        return {ops.CRX: 1}
     return {
-        qp.H: 2,
-        qp.RZ: 2,
-        qp.MultiControlledX(
+        ops.H: 2,
+        RZ: 2,
+        ops.MultiControlledX(
             Wire[len(control_wires) + 1],
             work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
@@ -127,69 +126,69 @@ def _controlled_rx_standard_resources(
 def _controlled_rx_standard(base, control_wires, control_values, work_wires, work_wire_type):
     wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
-        qp.CRX(base.phi, wires=wires)
+        ops.CRX(base.phi, wires=wires)
         return
 
-    qp.H(wires=wires[-1])
-    qp.RZ(base.phi / 2, wires=wires[-1])
-    qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
-    qp.RZ(-base.phi / 2, wires=wires[-1])
-    qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
-    qp.H(wires=wires[-1])
+    ops.H(wires=wires[-1])
+    RZ(base.phi / 2, wires=wires[-1])
+    ops.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    RZ(-base.phi / 2, wires=wires[-1])
+    ops.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    ops.H(wires=wires[-1])
 
 
 add_decomps("C(RX)", flip_zero_control2(_controlled_rx_standard, name="to_rz_mcx"))
 
 
 def _ry_to_rot_resources(*_, **__):
-    return {qp.Rot: 1}
+    return {Rot: 1}
 
 
 @register_resources(_ry_to_rot_resources, name="to_rot")
 def _ry_to_rot(phi, wires: WiresLike):
-    qp.Rot(0, phi, 0, wires=wires)
+    Rot(0, phi, 0, wires=wires)
 
 
 def _ry_to_rz_rx_resources(*_, **__):
-    return {qp.RZ: 2, qp.RX: 1}
+    return {RZ: 2, RX: 1}
 
 
 @register_resources(_ry_to_rz_rx_resources, name="to_rz_rx")
 def _ry_to_rz_rx(phi, wires: WiresLike):
-    qp.RZ(-np.pi / 2, wires=wires)
-    qp.RX(phi, wires=wires)
-    qp.RZ(np.pi / 2, wires=wires)
+    RZ(-np.pi / 2, wires=wires)
+    RX(phi, wires=wires)
+    RZ(np.pi / 2, wires=wires)
 
 
 def _ry_to_rx_cliff_resources(*_, **__):
-    resources = {_change_op_basis_abstract(_adjoint_abstract(qp.S), qp.RX, qp.S): 1}
+    resources = {_change_op_basis_abstract(_adjoint_abstract(ops.S), RX, ops.S): 1}
     return resources
 
 
 @register_resources(_ry_to_rx_cliff_resources, name="to_rx_cliff")
 def _ry_to_rx_cliff(phi, wires: WiresLike):
-    qp.change_op_basis(qp.adjoint(qp.S(wires)), qp.RX(phi, wires), qp.S(wires))
+    change_op_basis(ops.adjoint(ops.S(wires)), RX(phi, wires), ops.S(wires))
 
 
 @subcircuit
-@register_resources(lambda **_: {qp.Hadamard: 1, _adjoint_abstract(qp.S): 1})
+@register_resources(lambda **_: {ops.Hadamard: 1, _adjoint_abstract(ops.S): 1})
 def _YToZBasis(wires: WiresLike):
-    qp.adjoint(qp.S(wires))
-    qp.Hadamard(wires)
+    ops.adjoint(ops.S(wires))
+    ops.Hadamard(wires)
 
 
 @subcircuit
-@register_resources(lambda **_: {qp.Hadamard: 1, qp.S: 1})
+@register_resources(lambda **_: {ops.Hadamard: 1, ops.S: 1})
 def _ZToYBasis(wires: WiresLike):
-    qp.Hadamard(wires)
-    qp.S(wires)
+    ops.Hadamard(wires)
+    ops.S(wires)
 
 
 def _ry_to_rz_cliff_resources(*_, **__):
     resources = {
         _change_op_basis_abstract(
             _YToZBasis(Wire[1]),
-            qp.RZ,
+            RZ,
             _ZToYBasis(Wire[1]),
         ): 1
     }
@@ -198,20 +197,20 @@ def _ry_to_rz_cliff_resources(*_, **__):
 
 @register_resources(_ry_to_rz_cliff_resources, name="to_rz_cliff")
 def _ry_to_rz_cliff(phi, wires: WiresLike, **__):
-    qp.change_op_basis(
+    change_op_basis(
         _YToZBasis(wires),
-        qp.RZ(phi, wires),
+        RZ(phi, wires),
         _ZToYBasis(wires),
     )
 
 
 def _ry_to_ppr_resources(*_, **__):
-    return {qp.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1}
+    return {ops.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1}
 
 
 @register_resources(_ry_to_ppr_resources, name="to_paulirot")
 def _ry_to_ppr(phi, wires):
-    qp.PauliRot(phi, "Y", wires=wires)
+    ops.PauliRot(phi, "Y", wires=wires)
 
 
 add_decomps(RY, _ry_to_rot, _ry_to_rz_rx, _ry_to_ppr, _ry_to_rx_cliff, _ry_to_rz_cliff)
@@ -229,10 +228,10 @@ def _controlled_ry_standard_resources(
     work_wire_type,
 ):
     if len(control_wires) == 1:
-        return {qp.CRY: 1}
+        return {ops.CRY: 1}
     return {
-        qp.RY: 2,
-        qp.MultiControlledX(
+        RY: 2,
+        ops.MultiControlledX(
             Wire[len(control_wires) + 1],
             work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
@@ -245,63 +244,63 @@ def _controlled_ry_standard_resources(
 def _controlled_ry_standard(base, control_wires, control_values, work_wires, work_wire_type):
     wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
-        qp.CRY(base.phi, wires=wires)
+        ops.CRY(base.phi, wires=wires)
         return
 
-    qp.RY(base.phi / 2, wires=wires[-1])
-    qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
-    qp.RY(-base.phi / 2, wires=wires[-1])
-    qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    RY(base.phi / 2, wires=wires[-1])
+    ops.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    RY(-base.phi / 2, wires=wires[-1])
+    ops.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
 add_decomps("C(RY)", flip_zero_control2(_controlled_ry_standard, name="to_ry_mcx"))
 
 
 def _rz_to_ps_resources(phi, wires):  # pylint: disable=unused-argument
-    return {qp.PhaseShift: 1, qp.GlobalPhase: 1}
+    return {PhaseShift: 1, ops.GlobalPhase: 1}
 
 
 @register_resources(_rz_to_ps_resources, name="to_ps")
 def _rz_to_ps(phi, wires: WiresLike):
-    qp.PhaseShift(phi, wires)
-    qp.GlobalPhase(phi / 2)
+    PhaseShift(phi, wires)
+    ops.GlobalPhase(phi / 2)
 
 
 def _rz_to_rot_resources(phi, wires):  # pylint: disable=unused-argument
-    return {qp.Rot: 1}
+    return {Rot: 1}
 
 
 @register_resources(_rz_to_rot_resources, name="to_rot")
 def _rz_to_rot(phi, wires: WiresLike):
-    qp.Rot(0, 0, phi, wires=wires)
+    Rot(0, 0, phi, wires=wires)
 
 
 def _rz_to_ry_rx_resources(phi, wires):  # pylint: disable=unused-argument
-    return {qp.RY: 2, qp.RX: 1}
+    return {RY: 2, RX: 1}
 
 
 @register_resources(_rz_to_ry_rx_resources, name="to_ry_rx")
 def _rz_to_ry_rx(phi, wires: WiresLike):
-    qp.RY(np.pi / 2, wires=wires)
-    qp.RX(phi, wires=wires)
-    qp.RY(-np.pi / 2, wires=wires)
+    RY(np.pi / 2, wires=wires)
+    RX(phi, wires=wires)
+    RY(-np.pi / 2, wires=wires)
 
 
 def _rz_to_rx_cliff_resources(phi, wires):  # pylint: disable=unused-argument
-    resources = {_change_op_basis_abstract(qp.Hadamard, qp.RX, qp.Hadamard): 1}
+    resources = {_change_op_basis_abstract(ops.Hadamard, RX, ops.Hadamard): 1}
     return resources
 
 
 @register_resources(_rz_to_rx_cliff_resources, name="to_rx_cliff")
 def _rz_to_rx_cliff(phi, wires: WiresLike):
-    qp.change_op_basis(qp.Hadamard(wires), qp.RX(phi, wires), qp.Hadamard(wires))
+    change_op_basis(ops.Hadamard(wires), RX(phi, wires), ops.Hadamard(wires))
 
 
 def _rz_to_ry_cliff_resources(phi, wires):  # pylint: disable=unused-argument
     resources = {
         _change_op_basis_abstract(
             _ZToYBasis(Wire[1]),
-            qp.RY,
+            RY,
             _YToZBasis(Wire[1]),
         ): 1
     }
@@ -310,20 +309,20 @@ def _rz_to_ry_cliff_resources(phi, wires):  # pylint: disable=unused-argument
 
 @register_resources(_rz_to_ry_cliff_resources, name="to_ry_cliff")
 def _rz_to_ry_cliff(phi, wires: WiresLike):
-    qp.change_op_basis(
+    change_op_basis(
         _ZToYBasis(wires),
-        qp.RY(phi, wires),
+        RY(phi, wires),
         _YToZBasis(wires),
     )
 
 
 def _rz_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
-    return {qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1}
+    return {ops.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1}
 
 
 @register_resources(_rz_to_ppr_resources, name="to_paulirot")
 def _rz_to_ppr(phi, wires, **_):
-    qp.PauliRot(phi, "Z", wires=wires)
+    ops.PauliRot(phi, "Z", wires=wires)
 
 
 add_decomps(RZ, _rz_to_ps, _rz_to_rot, _rz_to_ry_rx, _rz_to_ppr, _rz_to_rx_cliff, _rz_to_ry_cliff)
@@ -341,10 +340,10 @@ def _controlled_rz_standard_resources(
     work_wire_type,
 ):
     if len(control_wires) == 1:
-        return {qp.CRZ: 1}
+        return {ops.CRZ: 1}
     return {
-        qp.RZ: 2,
-        qp.MultiControlledX(
+        RZ: 2,
+        ops.MultiControlledX(
             Wire[len(control_wires) + 1],
             work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
@@ -357,17 +356,17 @@ def _controlled_rz_standard_resources(
 def _controlled_rz_standard(base, control_wires, control_values, work_wires, work_wire_type):
 
     if len(control_wires) == 1:
-        qp.CRZ(base.phi, wires=concatenate_wires(control_wires, base.wires))
+        ops.CRZ(base.phi, wires=concatenate_wires(control_wires, base.wires))
         return
 
-    qp.RZ(base.phi / 2, wires=base.wires)
-    qp.MultiControlledX(
+    RZ(base.phi / 2, wires=base.wires)
+    ops.MultiControlledX(
         concatenate_wires(control_wires, base.wires),
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    qp.RZ(-base.phi / 2, wires=base.wires)
-    qp.MultiControlledX(
+    RZ(-base.phi / 2, wires=base.wires)
+    ops.MultiControlledX(
         concatenate_wires(control_wires, base.wires),
         work_wires=work_wires,
         work_wire_type=work_wire_type,
@@ -378,13 +377,13 @@ add_decomps("C(RZ)", flip_zero_control2(_controlled_rz_standard, name="to_rz_mcx
 
 
 def _phaseshift_to_rz_gp_resources(phi, wires):  # pylint: disable=unused-argument
-    return {qp.RZ: 1, qp.GlobalPhase: 1}
+    return {RZ: 1, ops.GlobalPhase: 1}
 
 
 @register_resources(_phaseshift_to_rz_gp_resources, name="to_rz_gp")
 def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
     RZ(phi, wires=wires)
-    qp.GlobalPhase(-phi / 2)
+    ops.GlobalPhase(-phi / 2)
 
 
 # pylint: disable-next=unused-argument
@@ -393,15 +392,15 @@ def _controlled_phase_shift_standard_resources(base, control_wires, *_, **__):
     # behaviour (and its cheaper ``RZ``/``CNOT`` decomposition) rather than the general
     # phase-polynomial (``PauliRot``) expansion, which is only used for multiple control wires.
     if len(control_wires) == 1:
-        return {qp.ControlledPhaseShift: 1}
+        return {ops.ControlledPhaseShift: 1}
     num_control_wires = len(control_wires)
     resources = {
-        qp.PauliRot(Float, pauli_word="Z" * i, wires=Wire[len("Z" * i)]): builtin_math.comb(
+        ops.PauliRot(Float, pauli_word="Z" * i, wires=Wire[len("Z" * i)]): builtin_math.comb(
             num_control_wires + 1, i
         )
         for i in range(1, num_control_wires + 2)
     }
-    resources[qp.GlobalPhase] = 1
+    resources[ops.GlobalPhase] = 1
     return resources
 
 
@@ -409,24 +408,24 @@ def _controlled_phase_shift_standard_resources(base, control_wires, *_, **__):
 def _controlled_phase_shift_standard(base, control_wires, *_, **__):
     wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
-        qp.ControlledPhaseShift(base.phi, wires=wires)
+        ops.ControlledPhaseShift(base.phi, wires=wires)
         return
 
     n = len(wires)
     for l in range(1, n + 1):
         for sub_wires in combinations(wires, l):
             phi = -base.phi / 2 ** (n - 1) * (-1) ** l
-            qp.PauliRot(phi, pauli_word="Z" * l, wires=sub_wires)
-    qp.GlobalPhase(-base.phi / 2**n)
+            ops.PauliRot(phi, pauli_word="Z" * l, wires=sub_wires)
+    ops.GlobalPhase(-base.phi / 2**n)
 
 
 def _controlled_phase_shift_single_phase_resources(base, control_wires, *_, **__):
     #  pylint: disable=unused-argument
     num_control_wires = len(control_wires)
     return {
-        qp.TemporaryAND: num_control_wires,
+        templates.TemporaryAND: num_control_wires,
         PhaseShift: 1,
-        qp.adjoint(qp.TemporaryAND(Wire[3])): num_control_wires,
+        ops.adjoint(templates.TemporaryAND(Wire[3])): num_control_wires,
     }
 
 
@@ -445,10 +444,10 @@ def _controlled_phase_shift_single_phase(base, control_wires, work_wires, **_):
     and_wires = list(zip([and_controls[0], *and_targets[:-1]], and_controls[1:], and_targets))
 
     for wires in and_wires:
-        qp.TemporaryAND(wires=wires)
+        templates.TemporaryAND(wires=wires)
     PhaseShift(base.phi, wires=and_targets[-1])
     for wires in reversed(and_wires):
-        qp.adjoint(qp.TemporaryAND)(wires=wires)
+        ops.adjoint(templates.TemporaryAND)(wires=wires)
 
 
 add_decomps(PhaseShift, _phaseshift_to_rz_gp)
@@ -465,7 +464,7 @@ add_decomps(
 
 
 def _rot_to_rz_ry_rz_resources(phi, theta, omega, wires):  # pylint: disable=unused-argument
-    return {qp.RZ: 2, qp.RY: 1}
+    return {RZ: 2, RY: 1}
 
 
 @register_resources(_rot_to_rz_ry_rz_resources, name="to_rz_ry_rz")
@@ -494,11 +493,11 @@ def _controlled_rot_standard_resources(
     work_wire_type,
 ):
     if len(control_wires) == 1:
-        return {qp.CRot: 1}
+        return {ops.CRot: 1}
     return {
-        qp.RZ: 3,
-        qp.RY: 2,
-        qp.MultiControlledX(
+        RZ: 3,
+        RY: 2,
+        ops.MultiControlledX(
             Wire[len(control_wires) + 1],
             work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
@@ -514,16 +513,16 @@ def _controlled_rot_standard(base, control_wires, control_values, work_wires, wo
     wires = concatenate_wires(control_wires, base.wires)
 
     if len(control_wires) == 1:
-        qp.CRot(phi, theta, omega, wires=wires)
+        ops.CRot(phi, theta, omega, wires=wires)
         return
 
-    qp.RZ((phi - omega) / 2, wires=wires[-1])
-    qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
-    qp.RZ(-(phi + omega) / 2, wires=wires[-1])
-    qp.RY(-theta / 2, wires=wires[-1])
-    qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
-    qp.RY(theta / 2, wires=wires[-1])
-    qp.RZ(omega, wires=wires[-1])
+    RZ((phi - omega) / 2, wires=wires[-1])
+    ops.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    RZ(-(phi + omega) / 2, wires=wires[-1])
+    RY(-theta / 2, wires=wires[-1])
+    ops.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    RY(theta / 2, wires=wires[-1])
+    RZ(omega, wires=wires[-1])
 
 
 add_decomps("C(Rot)", flip_zero_control2(_controlled_rot_standard, name="to_rz_ry_mcx"))
@@ -551,7 +550,7 @@ def _u2_to_phaseshift_rot_resources(phi, delta, wires):  # pylint: disable=unuse
 
 @register_resources(_u2_to_phaseshift_rot_resources, name="to_phaseshift_rot")
 def _u2_to_phaseshift_rot(phi, delta, wires):
-    pi_half = qp.math.ones_like(delta) * (np.pi / 2)
+    pi_half = math.ones_like(delta) * (np.pi / 2)
     Rot(delta, pi_half, -delta, wires=wires)
     PhaseShift(delta, wires=wires)
     PhaseShift(phi, wires=wires)
@@ -562,8 +561,8 @@ add_decomps(U2, _u2_to_phaseshift_rot)
 
 @register_resources(lambda base: {abstractify(U2): 1}, name="invert_angles")
 def _adjoint_u2_standard(base):
-    new_delta = qp.math.mod((np.pi - base.phi), (2 * np.pi))
-    new_phi = qp.math.mod((np.pi - base.delta), (2 * np.pi))
+    new_delta = math.mod((np.pi - base.phi), (2 * np.pi))
+    new_phi = math.mod((np.pi - base.delta), (2 * np.pi))
     U2(new_phi, new_delta, wires=base.wires)
 
 
@@ -586,8 +585,8 @@ add_decomps(U3, _u3_to_phaseshift_rot)
 
 @register_resources(lambda base: {abstractify(U3): 1}, name="invert_angles")
 def _adjoint_u3_standard(base):
-    new_delta = qp.math.mod((np.pi - base.phi), (2 * np.pi))
-    new_phi = qp.math.mod((np.pi - base.delta), (2 * np.pi))
+    new_delta = math.mod((np.pi - base.phi), (2 * np.pi))
+    new_phi = math.mod((np.pi - base.delta), (2 * np.pi))
     U3(base.theta, new_phi, new_delta, wires=base.wires)
 
 
@@ -607,8 +606,8 @@ def _rz_phase_gradient(
     binary_int = math.binary_decimals(phi, precision, unit=2 * np.pi)
 
     control_wire = Wires(wire)[0]
-    compute_op = qp.ctrl(qp.MultiX(binary_int, angle_wires), control=control_wire)
-    target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires)
+    compute_op = ops.ctrl(templates.MultiX(binary_int, angle_wires), control=control_wire)
+    target_op = templates.SemiAdder(angle_wires, phase_grad_wires, work_wires)
 
     return change_op_basis(compute_op, target_op, compute_op)
 
@@ -660,7 +659,7 @@ def _required_precision(binary_int):
     """Position of the last set bit across all binary representations in ``binary_int``, with
     the precision along the last axis. This is the number of bits required to represent all of
     them exactly."""
-    return qp.math.max(binary_int * qp.math.arange(1, qp.math.shape(binary_int)[-1] + 1))
+    return math.max(binary_int * math.arange(1, math.shape(binary_int)[-1] + 1))
 
 
 def phase_gradient_precision_stats(angles, precision, op_type):
@@ -737,7 +736,7 @@ def phase_gradient_precision_stats(angles, precision, op_type):
     """
     unit = _angle_unit(op_type)
     required = (
-        int(_required_precision(qp.math.binary_decimals(a, precision, unit=unit))) for a in angles
+        int(_required_precision(math.binary_decimals(a, precision, unit=unit))) for a in angles
     )
     return dict(sorted(Counter(required).items()))
 
@@ -785,15 +784,15 @@ def _precision_dispatcher(precision_stats, precision, op_type):
         # The circuit at precision p reproduces the bits of the angles exactly if p >= required,
         # because the bits beyond p are zero, so that rounding at precision p yields the same
         # bits as rounding at the full precision.
-        required = _required_precision(qp.math.binary_decimals(angles, precision, unit=unit))
+        required = _required_precision(math.binary_decimals(angles, precision, unit=unit))
         branches = [
-            (required <= p, qp.hint(partial(_branch, p), {"branch-prob": prob}))
+            (required <= p, capture.hint(partial(_branch, p), {"branch-prob": prob}))
             for p, prob in probs.items()
         ]
         # Without full precision in ``precision_stats``, the fallback is unhinted (probability 0)
         otherwise = branches.pop()[1] if precision in probs else partial(_branch, precision)
         (pred, true_fn), *elifs = branches
-        qp.cond(pred, true_fn, otherwise, elifs=elifs)()
+        ops.cond(pred, true_fn, otherwise, elifs=elifs)()
 
     return precisions, dispatch
 
@@ -963,19 +962,17 @@ def make_rz_to_phase_gradient_decomp(
     def _rz_phase_gradient_standard_resources(phi, wires):  # pylint: disable=unused-argument
         # rz decomposition costs, using information about angle_wires etc from the outer scope.
         # Each non-zero precision that may be applied is counted once.
-        resources = {qp.GlobalPhase: 1}
+        resources = {ops.GlobalPhase: 1}
         for p in precisions - {0}:
-            target_op = qp.SemiAdder(Wire[p], Wire[p], Wire[len(work_wires)])
-            fanout = qp.ctrl(qp.MultiX(Bool[p], Wire[p]), control=Wire[1])
+            target_op = templates.SemiAdder(Wire[p], Wire[p], Wire[len(work_wires)])
+            fanout = ops.ctrl(templates.MultiX(Bool[p], Wire[p]), control=Wire[1])
             resources[ChangeOpBasis2(fanout, target_op, fanout)] = 1
         return resources
 
     # MultiX only emits a gate per set bit, so the gate count depends on the concrete angle.
-    @qp.register_resources(
-        _rz_phase_gradient_standard_resources, exact=False, name="phase_gradient"
-    )
+    @register_resources(_rz_phase_gradient_standard_resources, exact=False, name="phase_gradient")
     def _rz_phase_gradient_standard(phi, wires):
-        qp.GlobalPhase(phi / 2)
+        ops.GlobalPhase(phi / 2)
         dispatch(
             phi,
             lambda p: _rz_phase_gradient(

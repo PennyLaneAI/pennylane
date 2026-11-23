@@ -15,7 +15,10 @@
 Contains the 'label' function for customizing operator labels.
 """
 
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, abstractify
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.decomposition_rule import _get_registered_decomps
 from pennylane.ops.functions.equal import (
     BASE_OPERATION_MISMATCH_ERROR_MESSAGE,
     _equal,
@@ -148,3 +151,18 @@ def label(op: Operator, new_label: str) -> LabelledOp:
 
     """
     return LabelledOp(op, new_label)
+
+
+def _custom_label_standard_resources(base):
+    return {base: 1}
+
+
+@register_resources(_custom_label_standard_resources, name="unwrap_base")
+def _custom_label_standard(*params, wires, base, **_):  # pylint: disable=unused-argument
+    apply(base)
+
+
+def register_label_decomposition():
+    """Register the drawing-specific rule after built-in operator and template rules."""
+    if _custom_label_standard not in _get_registered_decomps("LabelledOp"):
+        add_decomps(LabelledOp, _custom_label_standard)

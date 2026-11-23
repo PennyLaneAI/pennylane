@@ -15,8 +15,7 @@
 
 """Built-in decomposition rules for op_math.pow2."""
 
-import pennylane as qp
-from pennylane import math
+from pennylane import control_flow, math, ops
 from pennylane.core.apply import apply
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import (
@@ -42,31 +41,31 @@ def _pow_repeat_base(base, z):
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
 
-    @qp.for_loop(0, z)
+    @control_flow.for_loop(0, z)
     def _loop(_):
-        qp.apply(base)
+        apply(base)
 
     _loop()  # pylint: disable=no-value-for-parameter
 
 
 @register_resources(
-    lambda base, z: {qp.pow(abstractify(base.base), z * base.z): 1}, name="merge_powers"
+    lambda base, z: {ops.pow(abstractify(base.base), z * base.z): 1}, name="merge_powers"
 )
 def _pow_merge_powers(base, z):
     """Decompose nested powers by combining them."""
-    qp.pow(base.base, z * base.z)
+    ops.pow(base.base, z * base.z)
 
 
 def _pow_flip_adjoint_resources(base, z):
     # base class is adjoint, and the base of the base is the target class
-    return {qp.adjoint(Pow2(base.base, z=z)): 1}
+    return {adjoint(Pow2(base.base, z=z)): 1}
 
 
 @register_resources(_pow_flip_adjoint_resources, name="flip_adjoint")
 def _pow_flip_adjoint(base, z, **__):
     """Decompose the power of an adjoint by power to the base of the adjoint and
     then taking the adjoint of the power."""
-    adjoint(qp.pow(base.base, z))
+    adjoint(ops.pow(base.base, z))
 
 
 def make_pow_decomp_with_period(period) -> DecompositionRule:
@@ -90,7 +89,7 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
         if z_mod_period == 1:
             apply(base)
         elif z_mod_period > 0 and z_mod_period != period:
-            qp.pow(base, z_mod_period)
+            ops.pow(base, z_mod_period)
 
     return _pow_reduce_period
 
@@ -108,7 +107,7 @@ def _pow_scale_angle(base, z):
     # A rotation should only have 1 dynamic parameter
     assert len(base.dynamic_argnames) == 1
     angle = tuple(base.dynamic_args.values())[0]
-    qp.ops.functions.bind_new_parameters(base, (angle * z,))
+    ops.functions.bind_new_parameters(base, (angle * z,))
 
 
 @_list_decomps.register

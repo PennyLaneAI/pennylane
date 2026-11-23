@@ -17,10 +17,9 @@
 
 from collections import Counter
 
-import pennylane as qp
-from pennylane import register_resources
+from pennylane import ops
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import add_decomps
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.templates.state_preparations.arbitrary_state_preparation import (
     ArbitraryStatePreparation,
     _state_preparation_pauli_words,
@@ -31,7 +30,7 @@ from pennylane.typing import Float, Wire
 def _arbitrary_state_preparation_standard_resources(num_wires):
     return dict(
         Counter(
-            qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)])
+            ops.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)])
             for pauli_word in _state_preparation_pauli_words(num_wires)
         )
     )
@@ -44,7 +43,7 @@ def _arbitrary_state_preparation_standard(weights, wires, **_):
     @for_loop(len(pauli_words))
     def pauli_loop(i):
         pauli_word = pauli_words[i]
-        qp.PauliRot(weights[i], pauli_word, wires=wires)
+        ops.PauliRot(weights[i], pauli_word, wires=wires)
 
     pauli_loop()  # pylint: disable=no-value-for-parameter
 

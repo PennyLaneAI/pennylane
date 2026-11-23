@@ -19,7 +19,9 @@ import math
 from collections import Counter, defaultdict
 from functools import lru_cache
 
-import pennylane as qp
+from pennylane import capture, control_flow
+from pennylane import math as pl_math
+from pennylane import ops, templates
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -47,7 +49,7 @@ def _ppr_counts(num_wires):
 
 
 def _ppr(denominator, pauli_word, wires):
-    op_class = {2: qp.PPR_2, 4: qp.PPR_4, 8: qp.PPR_8}[abs(denominator)]
+    op_class = {2: ops.PPR_2, 4: ops.PPR_4, 8: ops.PPR_8}[abs(denominator)]
     return op_class(1 if denominator > 0 else -1, pauli_word, wires=wires)
 
 
@@ -56,7 +58,7 @@ def _phase_gradient_state_prep_to_ppr_resources(wires: AbstractWires):
         _ppr(denominator, pauli, wires=Wire[1]): count
         for (denominator, pauli), count in _ppr_counts(len(wires)).items()
     }
-    resources[qp.GlobalPhase] = 1
+    resources[ops.GlobalPhase] = 1
     return resources
 
 
@@ -77,14 +79,14 @@ def _phase_gradient_state_prep_to_ppr(wires: WiresLike):
         if init is not None:
             _ppr(*init, wires=wire)
         for p in pprs:
-            qp.PPR_8(1 if p.isupper() else -1, p.upper(), wires=wire)
-    qp.GlobalPhase(sum(GLOBAL_PHASES[: len(wires)]))
+            ops.PPR_8(1 if p.isupper() else -1, p.upper(), wires=wire)
+    ops.GlobalPhase(sum(GLOBAL_PHASES[: len(wires)]))
 
 
 def _phase_gradient_state_prep_to_clifford_t_resources(wires: AbstractWires):
     counts = Counter("".join(CLIFFORD_T_SEQUENCES[: len(wires)]))
-    resources = {getattr(qp, gate): count for gate, count in counts.items()}
-    resources[qp.GlobalPhase] = 1
+    resources = {getattr(ops, gate): count for gate, count in counts.items()}
+    resources[ops.GlobalPhase] = 1
     return resources
 
 
@@ -99,8 +101,8 @@ def _phase_gradient_state_prep_to_clifford_t(wires: WiresLike):
     num_wires = len(wires)
     for wire, sequence in zip(wires, CLIFFORD_T_SEQUENCES[:num_wires], strict=True):
         for gate in sequence:
-            getattr(qp, gate)(wire)
-    qp.GlobalPhase(sum(CLIFFORD_T_GLOBAL_PHASES[:num_wires]))
+            getattr(ops, gate)(wire)
+    ops.GlobalPhase(sum(CLIFFORD_T_GLOBAL_PHASES[:num_wires]))
 
 
 add_decomps(
@@ -144,7 +146,7 @@ def _jones_success_probabilities(register_sizes):
     simulated.
     """
     dim = 2 ** register_sizes[0]
-    state = qp.math.exp(-2j * math.pi * qp.math.arange(dim, like="numpy") / dim) / math.sqrt(dim)
+    state = pl_math.exp(-2j * math.pi * pl_math.arange(dim, like="numpy") / dim) / math.sqrt(dim)
 
     probabilities = []
     for child_size, output_size in zip(register_sizes[:-1], register_sizes[1:], strict=True):
@@ -154,10 +156,10 @@ def _jones_success_probabilities(register_sizes):
 
         dim = 2**output_size
         tail_dim = 2 ** (output_size - child_size)
-        tail = qp.math.ones(tail_dim, like="numpy") / math.sqrt(tail_dim)
-        squared = (qp.math.fft.ifft(qp.math.kron(state, tail)) * math.sqrt(dim)) ** 2
-        probabilities.append(float(qp.math.sum(qp.math.abs(squared) ** 2)))
-        state = qp.math.fft.fft(squared / qp.math.linalg.norm(squared)) / math.sqrt(dim)
+        tail = pl_math.ones(tail_dim, like="numpy") / math.sqrt(tail_dim)
+        squared = (pl_math.fft.ifft(pl_math.kron(state, tail)) * math.sqrt(dim)) ** 2
+        probabilities.append(float(pl_math.sum(pl_math.abs(squared) ** 2)))
+        state = pl_math.fft.fft(squared / pl_math.linalg.norm(squared)) / math.sqrt(dim)
 
     return tuple(probabilities)
 
@@ -166,17 +168,17 @@ def _jones_seed(wires):
     """Prepare the Clifford seed from Jones, Eq. (4), conjugated to the negative-phase convention,
     i.e., with S replaced by S†."""
     for wire in wires:
-        qp.Hadamard(wire)
+        ops.Hadamard(wire)
     if wires:
-        qp.Z(wires[0])
+        ops.Z(wires[0])
     if len(wires) > 1:
-        qp.adjoint(qp.S(wires[1]))
+        ops.adjoint(ops.S(wires[1]))
 
 
 def _reset(wires):
     """Reset a register with Z Pauli measurements and X corrections."""
     for wire in wires:
-        qp.cond(qp.pauli_measure("Z", wire), qp.X)(wire)
+        ops.cond(ops.pauli_measure("Z", wire), ops.X)(wire)
 
 
 def _distillation_attempt(level, output_wires, scratch_wires, register_sizes, mode):
@@ -206,25 +208,25 @@ def _distillation_attempt(level, output_wires, scratch_wires, register_sizes, mo
     )
 
     for wire in output_tail + source_tail:
-        qp.Hadamard(wire)
+        ops.Hadamard(wire)
 
-    qp.SemiAdder(source_wires, output_wires, work_wires)
+    templates.SemiAdder(source_wires, output_wires, work_wires)
 
     if mode == "postselect":
         # Catalyst does not honour postselection on pauli_measure yet, and default.qubit cannot
         # execute pauli_measure, so the postselected branch uses standard mid-circuit measurements
         for wire in source_wires:
-            qp.Hadamard(wire)
-            qp.measure(wire, reset=True, postselect=0)
+            ops.Hadamard(wire)
+            ops.measure(wire, reset=True, postselect=0)
         return True
 
-    measurements = [qp.pauli_measure("X", wire) for wire in source_wires]
+    measurements = [ops.pauli_measure("X", wire) for wire in source_wires]
     _reset(source_wires)
-    success = qp.math.sum(qp.math.array(measurements, like="jax")) == 0
+    success = pl_math.sum(pl_math.array(measurements, like="jax")) == 0
     success_probability = _jones_success_probabilities(register_sizes)[level - 1]
 
-    @qp.cond(qp.math.logical_not(success))
-    @qp.hint({"branch-prob": 1 - success_probability})
+    @ops.cond(pl_math.logical_not(success))
+    @capture.hint({"branch-prob": 1 - success_probability})
     def reset_output():
         _reset(output_wires)
 
@@ -239,7 +241,7 @@ def _prepare_distilled_state(level, output_wires, scratch_wires, register_sizes,
         return
 
     def not_success(success):
-        return qp.math.logical_not(success)
+        return pl_math.logical_not(success)
 
     expected_attempts = (
         1 / _jones_success_probabilities(register_sizes)[level - 1]
@@ -247,11 +249,11 @@ def _prepare_distilled_state(level, output_wires, scratch_wires, register_sizes,
         else 1
     )
 
-    @qp.hint({"num-iters": expected_attempts})
-    @qp.while_loop(not_success)
+    @capture.hint({"num-iters": expected_attempts})
+    @control_flow.while_loop(not_success)
     def retry(success):
         # Using the carry keeps MLIR canonicalization from rebuilding the loop and dropping the hint
-        return qp.math.logical_or(
+        return pl_math.logical_or(
             success,
             _distillation_attempt(level, output_wires, scratch_wires, register_sizes, mode),
         )
@@ -265,35 +267,35 @@ def _distillation_resources(num_wires, mode):
     resources = defaultdict(int)
 
     if len(register_sizes) == 1:
-        resources[qp.Hadamard] += num_wires
+        resources[ops.Hadamard] += num_wires
         if num_wires:
-            resources[qp.Z] += 1
+            resources[ops.Z] += 1
         if num_wires > 1:
-            resources[qp.adjoint(qp.S(Wire[1]))] += 1
+            resources[ops.adjoint(ops.S(Wire[1]))] += 1
         return resources
 
     num_states = 2 ** (len(register_sizes) - 1)
     seed_size = register_sizes[0]
-    resources[qp.Hadamard] += num_states * seed_size
-    resources[qp.Z] += num_states
-    resources[qp.adjoint(qp.S(Wire[1]))] += num_states
+    resources[ops.Hadamard] += num_states * seed_size
+    resources[ops.Z] += num_states
+    resources[ops.adjoint(ops.S(Wire[1]))] += num_states
 
     for level, (child_size, output_size) in enumerate(
         zip(register_sizes[:-1], register_sizes[1:], strict=True), start=1
     ):
         num_nodes = 2 ** (len(register_sizes) - level - 1)
-        adder = qp.SemiAdder(Wire[output_size], Wire[output_size], Wire[output_size - 1])
+        adder = templates.SemiAdder(Wire[output_size], Wire[output_size], Wire[output_size - 1])
         resources[adder] += num_nodes
-        resources[qp.Hadamard] += num_nodes * 2 * (output_size - child_size)
+        resources[ops.Hadamard] += num_nodes * 2 * (output_size - child_size)
         if mode == "postselect":
-            resources[qp.Hadamard] += num_nodes * output_size
-            mid_measure = qp.ops.MidMeasure(Wire[1], reset=True, postselect=0)
+            resources[ops.Hadamard] += num_nodes * output_size
+            mid_measure = ops.MidMeasure(Wire[1], reset=True, postselect=0)
             resources[mid_measure] += num_nodes * output_size
         else:
             # source measurements, then source and output resets
-            resources[qp.ops.PauliMeasure("X", Wire[1])] += num_nodes * output_size
-            resources[qp.ops.PauliMeasure("Z", Wire[1])] += 2 * num_nodes * output_size
-            resources[qp.X] += 2 * num_nodes * output_size
+            resources[ops.PauliMeasure("X", Wire[1])] += num_nodes * output_size
+            resources[ops.PauliMeasure("Z", Wire[1])] += 2 * num_nodes * output_size
+            resources[ops.X] += 2 * num_nodes * output_size
 
     return resources
 

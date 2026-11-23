@@ -17,8 +17,7 @@
 
 from collections import Counter
 
-import pennylane as qp
-from pennylane import compiler, control_flow, math
+from pennylane import capture, compiler, control_flow, math, ops, templates
 from pennylane.core.apply import apply
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import (
@@ -48,12 +47,12 @@ def _controlled_prod2_with_work_wires_resources(
 
     num_control_wires = len(control_wires)
     resources = Counter()
-    resources[qp.TemporaryAND] += num_control_wires - 1
-    resources[qp.adjoint(abstractify(qp.TemporaryAND))] += num_control_wires - 1
+    resources[templates.TemporaryAND] += num_control_wires - 1
+    resources[ops.adjoint(abstractify(templates.TemporaryAND))] += num_control_wires - 1
 
     # Per-factor single-control fan-out from the single aux qubit
     for op in base.operands:
-        resources[qp.ctrl(abstractify(op), Wire[1])] += 1
+        resources[ops.ctrl(abstractify(op), Wire[1])] += 1
 
     return dict(resources)
 
@@ -73,20 +72,20 @@ def _multi_temporary_and_all_ones(
     if any(is_abstract_qubit(w) or isinstance(w, DynamicWire) for w in (*control, *work_wires)):
         # Dynamically allocated wires can't be cast to a JAX array for the traced indexing below.
         # The ladder length is static either way, so just unroll it directly.
-        qp.TemporaryAND(wires=[control[0], control[1], work_wires[0]])
+        templates.TemporaryAND(wires=[control[0], control[1], work_wires[0]])
         for i in range(1, num_needed):
-            qp.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
+            templates.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
         return work_wires[num_needed - 1]
 
-    if compiler.active() or qp.capture.enabled():
+    if compiler.active() or capture.enabled():
         control = math.array(control, like="jax")
         work_wires = math.array(work_wires, like="jax")
 
-    qp.TemporaryAND(wires=[control[0], control[1], work_wires[0]])
+    templates.TemporaryAND(wires=[control[0], control[1], work_wires[0]])
 
     @control_flow.for_loop(1, num_needed, 1)
     def _ladder(i):
-        qp.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
+        templates.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
 
     _ladder()  # pylint: disable=no-value-for-parameter
 
@@ -108,19 +107,19 @@ def _controlled_prod2_with_work_wires(base, control_wires, control_values, work_
     """
     target_wire = _multi_temporary_and_all_ones(control_wires, work_wires)
     for op in base.operands[::-1]:
-        qp.ctrl(op, control=[target_wire])
-    qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
+        ops.ctrl(op, control=[target_wire])
+    ops.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
 
 
 # pylint: disable-next=unused-argument
 def _controlled_prod2_with_one_work_wire_resources(base, control_wires, work_wires, **_):
 
     resources = Counter()
-    resources[qp.MultiControlledX(Wire[len(control_wires) + 1])] += 2
+    resources[ops.MultiControlledX(Wire[len(control_wires) + 1])] += 2
 
     # Per-factor single-control fan-out from the single aux qubit
     for op in base.operands:
-        resources[qp.ctrl(abstractify(op), Wire[1])] += 1
+        resources[ops.ctrl(abstractify(op), Wire[1])] += 1
 
     return dict(resources)
 
@@ -138,10 +137,10 @@ def _controlled_prod2_with_one_work_wire(base, control_wires, control_values, wo
     ``Operator2`` port of :func:`~._controlled_product_with_one_work_wire`. Assumes all
     ``control_values`` are 1; zero-control flipping is handled by ``flip_zero_control``.
     """
-    qp.MultiControlledX([*control_wires, work_wires[0]])
+    ops.MultiControlledX([*control_wires, work_wires[0]])
     for op in base.operands[::-1]:
-        qp.ctrl(op, control=work_wires[:1])
-    qp.MultiControlledX([*control_wires, work_wires[0]])
+        ops.ctrl(op, control=work_wires[:1])
+    ops.MultiControlledX([*control_wires, work_wires[0]])
 
 
 add_decomps(Prod2, _prod2_standard)

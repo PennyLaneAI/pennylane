@@ -19,8 +19,8 @@ from collections import Counter, defaultdict
 
 import numpy as np
 
-import pennylane as qp
-from pennylane import allocate, math
+from pennylane import capture, compiler, control_flow, decomposition, math, ops, templates
+from pennylane.allocation import allocate
 from pennylane.templates.state_preparations.partial_unary import (
     PartialUnaryStatePreparation,
     PUIsometryFinder,
@@ -149,7 +149,7 @@ def _partial_unary_state_prep_standard_resources(coefficients, wires, indices, w
     num_entries = len(indices)
     num_wires = 1 if isinstance(wires, int) else len(wires)
     if num_entries == 1:
-        return {qp.MultiX(Bool[num_wires], Wire[num_wires]): 1}
+        return {templates.MultiX(Bool[num_wires], Wire[num_wires]): 1}
 
     n_subspace = max(math.ceil_log2(num_entries), 1)
     is_affine = _is_affine_subspace(indices, n_subspace)
@@ -159,13 +159,13 @@ def _partial_unary_state_prep_standard_resources(coefficients, wires, indices, w
     effective_num_wires = num_wires + max(len(work_wires) - needed_work_wires, 0)
     state_type, _ = math.get_abstract_and_cast_dtype(coefficients)
     resources[
-        qp.MultiplexerStatePreparation(state_type[2**n_subspace], wires=Wire[n_subspace])
+        templates.MultiplexerStatePreparation(state_type[2**n_subspace], wires=Wire[n_subspace])
     ] += 1
 
     if is_affine:
-        resources[qp.X] += effective_num_wires
-        resources[qp.CNOT] += n_subspace * max(effective_num_wires - n_subspace, 1)
-        resources[qp.SWAP] += effective_num_wires
+        resources[ops.X] += effective_num_wires
+        resources[ops.CNOT] += n_subspace * max(effective_num_wires - n_subspace, 1)
+        resources[ops.SWAP] += effective_num_wires
         return resources
 
     R = effective_num_wires - n_subspace
@@ -175,7 +175,7 @@ def _partial_unary_state_prep_standard_resources(coefficients, wires, indices, w
     main_pui_batch_size = min(1 << math.floor_log2(max(R, 1)), num_entries)
 
     qrom_reps = {
-        p: qp.QROM(
+        p: templates.QROM(
             bitstrings=Bool[p, p],
             control_wires=Wire[n_subspace],
             target_wires=Wire[p],
@@ -189,20 +189,20 @@ def _partial_unary_state_prep_standard_resources(coefficients, wires, indices, w
     for p in range(1, main_pui_batch_size):
         resources[qrom_reps[p]] += 1
 
-    ctrl_basis_rep = qp.ctrl(
-        qp.MultiX(Bool[effective_num_wires - 1], Wire[effective_num_wires - 1]), Wire[1]
+    ctrl_basis_rep = ops.ctrl(
+        templates.MultiX(Bool[effective_num_wires - 1], Wire[effective_num_wires - 1]), Wire[1]
     )
     resources[ctrl_basis_rep] += num_entries
 
-    embed_rep = qp.MultiX(Bool[n_subspace], Wire[n_subspace])
+    embed_rep = templates.MultiX(Bool[n_subspace], Wire[n_subspace])
     resources[embed_rep] += 2 * (num_entries // main_pui_batch_size + 1)
 
-    resources[qp.SWAP] += effective_num_wires
+    resources[ops.SWAP] += effective_num_wires
 
     num_toffolis = int(effective_num_wires / 10) + 1
-    mcx_rep = qp.MultiControlledX(Wire[3], work_wires=Wire[1], work_wire_type="zeroed")
+    mcx_rep = ops.MultiControlledX(Wire[3], work_wires=Wire[1], work_wire_type="zeroed")
     resources[mcx_rep] += num_toffolis
-    resources[qp.MultiX(Bool[1], Wire[1])] += 2 * num_toffolis
+    resources[templates.MultiX(Bool[1], Wire[1])] += 2 * num_toffolis
 
     return resources
 
@@ -223,11 +223,11 @@ def _apply_affine_isometry(circuit, wires):
     """Apply the inverse of a Clifford-only affine isometry."""
     for op_type, *data in reversed(circuit):
         if op_type == "X":
-            qp.X(wires[data[0]])
+            ops.X(wires[data[0]])
         elif op_type == "CNOT":
-            qp.CNOT([wires[data[0]], wires[data[1]]])
+            ops.CNOT([wires[data[0]], wires[data[1]]])
         else:
-            qp.SWAP([wires[idx] for idx in data[0]])
+            ops.SWAP([wires[idx] for idx in data[0]])
 
 
 def _branch_probs(circuit):
@@ -268,7 +268,7 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
     wire management."""
     num_entries = len(indices)
     if num_entries == 1:
-        qp.MultiX(math.int_to_binary(indices[0], len(wires)), wires)
+        templates.MultiX(math.int_to_binary(indices[0], len(wires)), wires)
         return
 
     n_subspace = max(math.ceil_log2(num_entries), 1)
@@ -290,7 +290,7 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
     # Step 1: Dense state preparation
     dense_state = _partial_unary_dense_state(coefficients, bijection, n_subspace)
     _, cast_dtype = math.get_abstract_and_cast_dtype(coefficients)
-    qp.MultiplexerStatePreparation(math.cast(dense_state, cast_dtype), subspace_wires)
+    templates.MultiplexerStatePreparation(math.cast(dense_state, cast_dtype), subspace_wires)
 
     if not circuit:
         return
@@ -302,14 +302,14 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
     # The keys of batch_probs are the occurring batch sizes
     type_probs, batch_probs = _branch_probs(circuit)
 
-    if qp.compiler.active() or qp.capture.enabled():
-        fanout_bits = qp.math.array(fanout_bits, like="jax")
-        circuit = qp.math.array(circuit, like="jax")
-        wires = qp.math.array(wires, like="jax")
+    if compiler.active() or capture.enabled():
+        fanout_bits = math.array(fanout_bits, like="jax")
+        circuit = math.array(circuit, like="jax")
+        wires = math.array(wires, like="jax")
 
         def del_cwire(control):
             """Return wires with the wire at position ``control`` deleted (qjit-compatible)"""
-            return qp.math.delete(wires, control, assume_unique_indices=True)
+            return math.delete(wires, control, assume_unique_indices=True)
 
     else:
 
@@ -318,7 +318,7 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
             return wires[:control] + wires[control + 1 :]
 
     # Step 2: Apply the inverse of the isometry circuit
-    @qp.for_loop(len(circuit) - 1, -1, -1)
+    @control_flow.for_loop(len(circuit) - 1, -1, -1)
     def main_loop(i):
         """This main loop exclusively reads ``circuit[i]`` and then calls a conditional function,
         with the branches corresponding to the different data put into ``circuit`` by
@@ -338,8 +338,8 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
 
         _type, *data = circuit[i]
 
-        @qp.cond(_type == 0)
-        @qp.hint({"branch-prob": type_probs[0]})
+        @ops.cond(_type == 0)
+        @capture.hint({"branch-prob": type_probs[0]})
         def branches():
             """The first branch calls a partial unary iterator, in form of a ``QROM`` of a given
             size. In order to avoid dynamic shapes, we define an inner conditional function
@@ -353,30 +353,34 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
 
             first_case_b, *other_case_bs = batch_probs
 
-            @qp.cond(b == first_case_b)
-            @qp.hint({"branch-prob": batch_probs[first_case_b]})
+            @ops.cond(b == first_case_b)
+            @capture.hint({"branch-prob": batch_probs[first_case_b]})
             def qrom_branches():
                 target_wires = nonsubspace_wires[:first_case_b]
-                qp.QROM(np.eye(first_case_b, dtype=int), subspace_wires, target_wires, _work_wires)
+                templates.QROM(
+                    np.eye(first_case_b, dtype=int), subspace_wires, target_wires, _work_wires
+                )
 
             for case_b in other_case_bs:
                 # Register an additional branch to ``qrom_branches`` for each occurring batch size.
                 # Passing a default argument makes sure that we don't use an outdated closure
                 # variable `case_b` when calling the function.
                 @qrom_branches.else_if(b == case_b)
-                @qp.hint({"branch-prob": batch_probs[case_b]})
+                @capture.hint({"branch-prob": batch_probs[case_b]})
                 def _(case_b=case_b):
                     target_wires = nonsubspace_wires[:case_b]
-                    qp.QROM(np.eye(case_b, dtype=int), subspace_wires, target_wires, _work_wires)
+                    templates.QROM(
+                        np.eye(case_b, dtype=int), subspace_wires, target_wires, _work_wires
+                    )
 
             # Realize PUI via QROM, shifted by k_start
             k_start_bits = math.int_to_binary(k_start, n_subspace)
-            qp.MultiX(k_start_bits, subspace_wires)
+            templates.MultiX(k_start_bits, subspace_wires)
             qrom_branches()
-            qp.MultiX(k_start_bits, subspace_wires)
+            templates.MultiX(k_start_bits, subspace_wires)
 
         @branches.else_if(_type == 1)
-        @qp.hint({"branch-prob": type_probs[1]})
+        @capture.hint({"branch-prob": type_probs[1]})
         def fanout():
             """The second branch calls a fan-out, in form of a controlled ``MultiX``,
             controlled by one of the (first ``iso_finder.m``) remainder qubits and targeting
@@ -384,17 +388,19 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
             """
             control, fanout_bit_pointer = data[:2]
             target_wires = del_cwire(control)
-            qp.ctrl(qp.MultiX(fanout_bits[fanout_bit_pointer], target_wires), wires[control])
+            ops.ctrl(
+                templates.MultiX(fanout_bits[fanout_bit_pointer], target_wires), wires[control]
+            )
 
         @branches.else_if(_type == 2)
-        @qp.hint({"branch-prob": type_probs[2]})
+        @capture.hint({"branch-prob": type_probs[2]})
         def swap():
             """The third branch is a simple SWAP gate."""
             _wires = [wires[idx] for idx in data[:2]]
-            qp.SWAP(_wires)
+            ops.SWAP(_wires)
 
         @branches.else_if(_type == 3)
-        @qp.hint({"branch-prob": type_probs[3]})
+        @capture.hint({"branch-prob": type_probs[3]})
         def toffoli():
             """The fourth branch is a simple Toffoli gate. We manually realize the control values
             in order to avoid dynamic control values in MultiControlledX. We don't use ``Toffoli``
@@ -403,9 +409,9 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
             """
             _wires = [wires[idx] for idx in data[:3]]
             cval = 1 - math.array(data[3:4], like=math.get_interface(data[3]))
-            qp.MultiX(cval, _wires[1:2])
-            qp.MultiControlledX(_wires, work_wires=work_wires[0], work_wire_type="zeroed")
-            qp.MultiX(cval, _wires[1:2])
+            templates.MultiX(cval, _wires[1:2])
+            ops.MultiControlledX(_wires, work_wires=work_wires[0], work_wire_type="zeroed")
+            templates.MultiX(cval, _wires[1:2])
 
         branches()
 
@@ -424,7 +430,7 @@ def _partial_unary_state_prep_standard_work_wires(coefficients, wires, indices, 
     return {"zeroed": need_to_allocate}
 
 
-@qp.register_resources(
+@decomposition.register_resources(
     _partial_unary_state_prep_standard_resources,
     work_wires=_partial_unary_state_prep_standard_work_wires,
     exact=False,
@@ -445,4 +451,4 @@ def _partial_unary_state_prep_standard(coefficients, wires, indices, work_wires)
         _partial_unary_state_prep_core(coefficients, wires, indices, work_wires)
 
 
-qp.add_decomps(PartialUnaryStatePreparation, _partial_unary_state_prep_standard)
+decomposition.add_decomps(PartialUnaryStatePreparation, _partial_unary_state_prep_standard)

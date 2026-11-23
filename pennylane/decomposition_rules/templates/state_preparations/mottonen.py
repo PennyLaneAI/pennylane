@@ -15,20 +15,20 @@
 
 """Built-in decomposition rules for templates.state_preparations.mottonen."""
 
-import pennylane as qp
+from pennylane import decomposition, ops
 from pennylane.templates.state_preparations.mottonen import MottonenStatePreparation
 
 
 def _mottonen_resources(num_wires):
     n = 2**num_wires - 1  # Equal to `sum(2**i for i in range(num_wires))`
 
-    return {qp.GlobalPhase: 1, qp.RY: n, qp.RZ: n, qp.CNOT: 2 * (n - 1)}
+    return {ops.GlobalPhase: 1, ops.RY: n, ops.RZ: n, ops.CNOT: 2 * (n - 1)}
 
 
-@qp.register_resources(_mottonen_resources, exact=False, name="standard")
+@decomposition.register_resources(_mottonen_resources, exact=False, name="standard")
 def mottonen_decomp(state_vector, wires, **_):
     """Decompose a state vector using the Mottonen preparation algorithm."""
     return MottonenStatePreparation.compute_decomposition(state_vector, wires, **_)
 
 
-qp.add_decomps(MottonenStatePreparation, mottonen_decomp)
+decomposition.add_decomps(MottonenStatePreparation, mottonen_decomp)

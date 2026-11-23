@@ -17,7 +17,8 @@
 
 from collections import Counter
 
-import pennylane as qp
+from pennylane import decomposition, ops, templates
+from pennylane.core.apply import apply
 from pennylane.decomposition_rules.op_math.controlled import flip_zero_control
 from pennylane.decomposition_rules.op_math.prod2 import _multi_temporary_and_all_ones
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
@@ -30,13 +31,13 @@ def _prod_standard_resources(resources):
     return resources
 
 
-@qp.register_resources(_prod_standard_resources, name="expand_factors")
+@decomposition.register_resources(_prod_standard_resources, name="expand_factors")
 def _prod_standard(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
     for op in reversed(operands):
-        qp.apply(op)
+        apply(op)
 
 
-qp.add_decomps(Prod, _prod_standard)
+decomposition.add_decomps(Prod, _prod_standard)
 
 
 def _controlled_product_with_work_wires_resources(
@@ -47,8 +48,8 @@ def _controlled_product_with_work_wires_resources(
     factor_reps = base_params["resources"]
 
     resources = Counter()
-    resources[qp.TemporaryAND] += num_control_wires - 1
-    resources[_adjoint_abstract(qp.TemporaryAND)] += num_control_wires - 1
+    resources[templates.TemporaryAND] += num_control_wires - 1
+    resources[_adjoint_abstract(templates.TemporaryAND)] += num_control_wires - 1
 
     # Per-factor single-control fan-out from the single aux qubit
     for rep, count in factor_reps.items():
@@ -57,12 +58,14 @@ def _controlled_product_with_work_wires_resources(
     return dict(resources)
 
 
-@qp.register_condition(
+@decomposition.register_condition(
     lambda num_control_wires, num_work_wires, work_wire_type, **_: num_control_wires >= 2
     and num_work_wires >= num_control_wires - 1
     and work_wire_type == "zeroed"
 )
-@qp.register_resources(_controlled_product_with_work_wires_resources, name="with_work_wires")
+@decomposition.register_resources(
+    _controlled_product_with_work_wires_resources, name="with_work_wires"
+)
 def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **__):
     """Decomposition of ``C(Prod)`` with at least ``num_control_wires - 1`` work wires.
 
@@ -71,8 +74,8 @@ def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **_
     """
     target_wire = _multi_temporary_and_all_ones(control_wires, work_wires)
     for op in base.operands[::-1]:
-        qp.ctrl(op, control=[target_wire])
-    qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
+        ops.ctrl(op, control=[target_wire])
+    ops.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
 
 
 def _controlled_product_with_one_work_wire_resources(
@@ -81,7 +84,7 @@ def _controlled_product_with_one_work_wire_resources(
     **_,
 ):
     factor_reps = base_params["resources"]  # {rep: count} from Prod
-    multicx_rep = qp.MultiControlledX(Wire[num_control_wires + 1])
+    multicx_rep = ops.MultiControlledX(Wire[num_control_wires + 1])
 
     resources = Counter()
     resources[multicx_rep] += 2
@@ -93,25 +96,27 @@ def _controlled_product_with_one_work_wire_resources(
     return dict(resources)
 
 
-@qp.register_condition(
+@decomposition.register_condition(
     lambda num_control_wires, num_work_wires, work_wire_type, **_: num_control_wires >= 2
     and num_work_wires >= 1
     and work_wire_type == "zeroed"
 )
-@qp.register_resources(_controlled_product_with_one_work_wire_resources, name="with_one_work_wire")
+@decomposition.register_resources(
+    _controlled_product_with_one_work_wire_resources, name="with_one_work_wire"
+)
 def _controlled_product_with_one_work_wire(*_, control_wires, work_wires, base, **__):
     """Decomposition of ``C(Prod)`` with a single zeroed work wire.
 
     Assumes that all ``control_values`` are 1. Zero-control flipping is handled
     by wrapping this rule with ``flip_zero_control``.
     """
-    qp.MultiControlledX([*control_wires, work_wires[0]])
+    ops.MultiControlledX([*control_wires, work_wires[0]])
     for op in base.operands[::-1]:
-        qp.ctrl(op, control=work_wires[:1])
-    qp.MultiControlledX([*control_wires, work_wires[0]])
+        ops.ctrl(op, control=work_wires[:1])
+    ops.MultiControlledX([*control_wires, work_wires[0]])
 
 
-qp.add_decomps(
+decomposition.add_decomps(
     "C(Prod)",
     flip_zero_control(_controlled_product_with_work_wires, name="with_work_wires"),
     flip_zero_control(_controlled_product_with_one_work_wire, name="with_one_work_wire"),

@@ -17,7 +17,7 @@
 
 from __future__ import annotations
 
-import pennylane as qp
+from pennylane.core.apply import apply
 from pennylane.decomposition.decomposition_rule import DecompositionRule, register_resources
 from pennylane.decomposition.resources import resource_rep
 
@@ -29,7 +29,7 @@ def _operator1_to_base_resources(base_class, base_params, **__):
 @register_resources(_operator1_to_base_resources, name="to_base")
 def _operator1_to_base(*params, wires, base, **__):  # pylint: disable=unused-argument
     """Decompose a symbolic operator to its base."""
-    qp.apply(base)
+    apply(base)
 
 
 self_adjoint_legacy: DecompositionRule = _operator1_to_base

@@ -19,8 +19,9 @@ from collections import defaultdict
 
 import numpy as np
 
-import pennylane as qp
-from pennylane import allocate, for_loop, math
+from pennylane import capture, compiler, math, ops, templates
+from pennylane.allocation import allocate
+from pennylane.control_flow import for_loop
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -50,7 +51,7 @@ def _sos_state_prep_standard_resources(coefficients, wires, indices, **_):
     num_wires = n
 
     if num_entries == 1:
-        return {qp.BasisState(Bool[num_wires], Wire[num_wires]): 1}
+        return {ops.BasisState(Bool[num_wires], Wire[num_wires]): 1}
     d = math.ceil_log2(num_entries)
     m = _sos_encoding_size(num_bits, num_entries)
 
@@ -60,11 +61,11 @@ def _sos_state_prep_standard_resources(coefficients, wires, indices, **_):
 
     # Step 1 in paper (p.7)
     state_type, _ = math.get_abstract_and_cast_dtype(coefficients)
-    resources[qp.MultiplexerStatePreparation(state_type[2**d], wires=Wire[d])] += 1
+    resources[templates.MultiplexerStatePreparation(state_type[2**d], wires=Wire[d])] += 1
 
     # Step 2 in paper (p.7)
     resources[
-        qp.QROM(
+        templates.QROM(
             bitstrings=Bool[num_entries, num_wires],
             control_wires=Wire[d],
             target_wires=Wire[num_wires],
@@ -75,24 +76,24 @@ def _sos_state_prep_standard_resources(coefficients, wires, indices, **_):
 
     if not identity_encoding:
         ## Step 3 & 4 in paper (p.7). This is an upper bound
-        resources[qp.CNOT] += m * num_wires  # size {u_k} * bits in u_k
+        resources[ops.CNOT] += m * num_wires  # size {u_k} * bits in u_k
 
     ## Step 5 in paper (p.7)
-    resources[qp.TemporaryAND] += (num_entries - 1) * (m - 1)
-    resources[_adjoint_abstract(qp.TemporaryAND)] += (num_entries - 1) * (m - 1)
+    resources[templates.TemporaryAND] += (num_entries - 1) * (m - 1)
+    resources[_adjoint_abstract(templates.TemporaryAND)] += (num_entries - 1) * (m - 1)
 
     # Calculate the bit counts of all integers that need to be uncomputed and sum them up.
     number_of_bits_to_unset = int(np.sum(np.bitwise_count(np.arange(1, num_entries))))
-    resources[qp.CNOT] += number_of_bits_to_unset
+    resources[ops.CNOT] += number_of_bits_to_unset
 
     # We have to flip at most m control bits between any pair of the `num_entries-1` uncomputing
     # MCX groups (skipping 0 because nothing needs to be done) as well as before the first
     # and after the last group. This amounts to `num_entries` layers of bit flips
-    resources[qp.X] += num_entries * m
+    resources[ops.X] += num_entries * m
 
     if not identity_encoding:
         ## Step 6 in paper (p.7). This is an upper bound
-        resources[qp.CNOT] += m * num_wires  # size {u_k} * bits in u_k
+        resources[ops.CNOT] += m * num_wires  # size {u_k} * bits in u_k
 
     return resources
 
@@ -138,10 +139,10 @@ def _pad_and_cast_coeffs(coefficients, enumeration_wires):
     dtype in the resource function."""
     missing_dim = 2 ** len(enumeration_wires) - len(coefficients)
     _, cast_dtype = math.get_abstract_and_cast_dtype(coefficients)
-    zeros = qp.math.cast_like(qp.math.zeros(missing_dim), coefficients)
-    interface = qp.math.get_interface(coefficients)
-    coefficients = qp.math.concatenate([coefficients, zeros], like=interface)
-    return qp.math.cast(coefficients, cast_dtype)
+    zeros = math.cast_like(math.zeros(missing_dim), coefficients)
+    interface = math.get_interface(coefficients)
+    coefficients = math.concatenate([coefficients, zeros], like=interface)
+    return math.cast(coefficients, cast_dtype)
 
 
 def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
@@ -162,10 +163,10 @@ def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
 
     # Step 1: Dense state preparation in enumeration register
     padded_coefficients = _pad_and_cast_coeffs(coefficients, enumeration_wires)
-    qp.MultiplexerStatePreparation(padded_coefficients, wires=enumeration_wires)
+    templates.MultiplexerStatePreparation(padded_coefficients, wires=enumeration_wires)
 
     # Step 2 in paper (p.7): QROM to load v_bits into system register
-    qp.QROM(
+    templates.QROM(
         v_bits.T,
         control_wires=enumeration_wires,
         target_wires=wires,
@@ -182,24 +183,24 @@ def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
     elbow_triples = [elbow_wires[2 * k : 2 * k + 3] for k in range(data.m - 1)]
     cnot_control_wire = elbow_wires[-1]
 
-    if qp.compiler.active() or qp.capture.enabled():
-        enumeration_wires = qp.math.array(enumeration_wires, like="jax")
-        b_bits = qp.math.array(b_bits, like="jax")
-        mcx_ctrl_wires = qp.math.array(mcx_ctrl_wires, like="jax")
-        elbow_triples = qp.math.array(elbow_triples, like="jax")
+    if compiler.active() or capture.enabled():
+        enumeration_wires = math.array(enumeration_wires, like="jax")
+        b_bits = math.array(b_bits, like="jax")
+        mcx_ctrl_wires = math.array(mcx_ctrl_wires, like="jax")
+        elbow_triples = math.array(elbow_triples, like="jax")
 
     if not identity_encoding:
         u_bits = data.u_bits
-        if qp.compiler.active() or qp.capture.enabled():
-            u_bits = qp.math.array(u_bits, like="jax")
-            selected_wires = qp.math.array(selected_wires, like="jax")
-            identification_wires = qp.math.array(identification_wires, like="jax")
+        if compiler.active() or capture.enabled():
+            u_bits = math.array(u_bits, like="jax")
+            selected_wires = math.array(selected_wires, like="jax")
+            identification_wires = math.array(identification_wires, like="jax")
 
         # Step 3-4) in paper (p.7): Encode the b_bits from Lemma 1 in the identification
         # register. Note that we skip this step if identity_encoding=True, because the encoding
         # is trivial in this case. This is an additional optimization compared to the paper.
         # Across all iterations, one CNOT is applied per set bit in u_bits.
-        encoding_cnot = qp.hint(qp.CNOT, {"branch-prob": np.mean(data.u_bits)})
+        encoding_cnot = capture.hint(ops.CNOT, {"branch-prob": np.mean(data.u_bits)})
 
         @for_loop(data.m)
         def encoding(i):
@@ -207,7 +208,7 @@ def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
 
             @for_loop(data.r)
             def inner_loop(j):
-                qp.cond(u[j], encoding_cnot)([selected_wires[j], identification_wires[i]])
+                ops.cond(u[j], encoding_cnot)([selected_wires[j], identification_wires[i]])
 
             inner_loop()
 
@@ -215,32 +216,32 @@ def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
 
     @for_loop(data.m - 1)
     def left_elbow_ladder(i):
-        qp.TemporaryAND(elbow_triples[i])
+        templates.TemporaryAND(elbow_triples[i])
 
     # Across all k > 0, one CNOT is applied per set bit in k.
-    enumeration_cnot = qp.hint(
-        qp.CNOT,
-        {"branch-prob": np.mean(qp.math.int_to_binary(np.arange(1, num_entries), data.d))},
+    enumeration_cnot = capture.hint(
+        ops.CNOT,
+        {"branch-prob": np.mean(math.int_to_binary(np.arange(1, num_entries), data.d))},
     )
 
     @for_loop(data.d)
     def cnot_loop(j, k):
         bit_is_set = (k >> (data.d - 1 - j)) & 1
-        qp.cond(bit_is_set, enumeration_cnot)([cnot_control_wire, enumeration_wires[j]])
+        ops.cond(bit_is_set, enumeration_cnot)([cnot_control_wire, enumeration_wires[j]])
         return k
 
     @for_loop(data.m - 2, -1, -1)
     def right_elbow_ladder(i):
-        qp.adjoint(qp.TemporaryAND(elbow_triples[i]))
+        ops.adjoint(templates.TemporaryAND(elbow_triples[i]))
 
     # Across all k > 0, the flipped bits are data.b_bits[:, k] ^ prev_bits, where prev_bits
     # is data.b_bits[:, k - 1], or all ones for k = 1.
     prev_bits = np.concatenate([np.ones((data.m, 1), dtype=int), data.b_bits[:, 1:-1]], axis=1)
-    flip_x = qp.hint(qp.X, {"branch-prob": np.mean(data.b_bits[:, 1:] ^ prev_bits)})
+    flip_x = capture.hint(ops.X, {"branch-prob": np.mean(data.b_bits[:, 1:] ^ prev_bits)})
 
     @for_loop(data.m)
     def flip(i, bits_to_flip):
-        qp.cond(bits_to_flip[i], flip_x)(mcx_ctrl_wires[i])
+        ops.cond(bits_to_flip[i], flip_x)(mcx_ctrl_wires[i])
         return bits_to_flip
 
     # Start the for loop at 1 because we don't need to do anything for 0 anyway
@@ -257,11 +258,11 @@ def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
 
     last_bits = uncompute_enumeration(np.ones(data.m, dtype=int))
 
-    last_flip_x = qp.hint(qp.X, {"branch-prob": np.mean(1 - data.b_bits[:, -1])})
+    last_flip_x = capture.hint(ops.X, {"branch-prob": np.mean(1 - data.b_bits[:, -1])})
 
     @for_loop(data.m)
     def last_flip(i):
-        qp.cond(1 - last_bits[i], last_flip_x)(mcx_ctrl_wires[i])
+        ops.cond(1 - last_bits[i], last_flip_x)(mcx_ctrl_wires[i])
 
     last_flip()
 
@@ -300,7 +301,7 @@ def _sos_state_prep_standard(  # pylint: disable=too-many-arguments
     v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
     if num_entries == 1:
         # This is only correct up to a global phase that might be contained in coefficients
-        qp.BasisState(v_bits[:, 0], wires=wires)
+        ops.BasisState(v_bits[:, 0], wires=wires)
         return
     assert v_bits.shape == (n, num_entries)
 

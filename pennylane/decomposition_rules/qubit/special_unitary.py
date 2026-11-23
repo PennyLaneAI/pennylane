@@ -15,7 +15,6 @@
 
 """Built-in decomposition rules for qubit.special_unitary."""
 
-import pennylane as qp
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.qubit.parametric_ops_multi_qubit import PauliRot
 from pennylane.ops.qubit.special_unitary import SpecialUnitary, TmpPauliRot
@@ -33,7 +32,7 @@ add_decomps("Adjoint(SpecialUnitary)", _adjoint_special_unitary_standard)
 
 # pylint: disable-next=unused-argument
 def _tmp_paulirot_standard_resources(theta, wires, pauli_word: str):
-    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
+    return {PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
 @register_resources(_tmp_paulirot_standard_resources, name="to_pauli_rot")

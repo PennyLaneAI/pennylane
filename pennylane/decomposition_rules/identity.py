@@ -15,7 +15,7 @@
 
 """Built-in decomposition rules for identity."""
 
-import pennylane as qp
+from pennylane import capture, compiler, control_flow, math, ops
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition_rules.common import null_decomp
@@ -48,16 +48,16 @@ def _controlled_g_phase_standard_resources(
     resources = {}
 
     if num_control_wires == 1:  # Worst-case we need a GlobalPhase if control on zero
-        resources[qp.PhaseShift] = 1
-        resources[qp.GlobalPhase] = 1
+        resources[ops.PhaseShift] = 1
+        resources[ops.GlobalPhase] = 1
         return resources
 
     # NOTE: Take average case scenario for number of X required for zero control values
-    resources[qp.X] = num_control_wires
+    resources[ops.X] = num_control_wires
 
     resources[
-        qp.ctrl(
-            abstractify(qp.PhaseShift),
+        ops.ctrl(
+            abstractify(ops.PhaseShift),
             control=Wire[num_control_wires - 1],
             work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
@@ -79,29 +79,29 @@ def _controlled_g_phase_standard(
 ):
     """The decomposition rule for a controlled global phase."""
 
-    if qp.compiler.active() or qp.capture.enabled():
-        control_wires = qp.math.array(control_wires, like="jax")
-        control_values = qp.math.array(control_values, like="jax")
+    if compiler.active() or capture.enabled():
+        control_wires = math.array(control_wires, like="jax")
+        control_values = math.array(control_values, like="jax")
 
     if len(control_wires) == 1:
 
         def _true():
-            qp.PhaseShift(-base.phi, wires=control_wires[-1])
+            ops.PhaseShift(-base.phi, wires=control_wires[-1])
 
         def _false():
-            qp.PhaseShift(base.phi, wires=control_wires[-1])
-            qp.GlobalPhase(base.phi)
+            ops.PhaseShift(base.phi, wires=control_wires[-1])
+            ops.GlobalPhase(base.phi)
 
-        qp.cond(control_values[0], _true, _false)()
+        ops.cond(control_values[0], _true, _false)()
         return
 
-    @qp.for_loop(0, len(control_values))
+    @control_flow.for_loop(0, len(control_values))
     def _x_flips(i):
-        qp.cond(qp.math.logical_not(control_values[i]), qp.X)(control_wires[i])
+        ops.cond(math.logical_not(control_values[i]), ops.X)(control_wires[i])
 
     _x_flips()  # pylint: disable=no-value-for-parameter
-    qp.ctrl(
-        qp.PhaseShift(-base.phi, wires=control_wires[-1]),
+    ops.ctrl(
+        ops.PhaseShift(-base.phi, wires=control_wires[-1]),
         control=control_wires[:-1],
         work_wires=work_wires,
         work_wire_type=work_wire_type,

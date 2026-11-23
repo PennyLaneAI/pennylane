@@ -14,9 +14,10 @@
 
 r"""Built-in decomposition rules, organized like their operator and template modules.
 
-The modules directly beneath this package mirror :mod:`pennylane.ops`. The
-``templates`` and ``drawer`` branches mirror their corresponding
-PennyLane packages. Rules are loaded automatically when PennyLane is imported.
+The modules directly beneath this package mirror :mod:`pennylane.ops`, and the
+``templates`` branch mirrors :mod:`pennylane.templates`.
+The drawing-specific ``LabelledOp`` rule remains in :mod:`pennylane.drawer.label`.
+Rules are loaded automatically when PennyLane is imported.
 Use :func:`pennylane.list_decomps` to retrieve the registered rules for an operator.
 Unambiguous rules, helpers, and factories can also be imported from this package.
 Symbolic implementations with the same name remain in their respective modules.
@@ -31,7 +32,6 @@ Symbolic implementations with the same name remain in their respective modules.
     meta
     common
     templates
-    drawer
 """
 
 from importlib import import_module
@@ -484,7 +484,6 @@ _BUILTIN_MODULES = (
     "pennylane.decomposition_rules.templates.layers.particle_conserving_u2",
     "pennylane.decomposition_rules.templates.layers.simplified_two_design",
     "pennylane.decomposition_rules.templates.layers.strongly_entangling",
-    "pennylane.decomposition_rules.drawer.label",
     "pennylane.decomposition_rules.op_math.adjoint2",
     "pennylane.decomposition_rules.op_math.controlled2",
     "pennylane.decomposition_rules.op_math.pow2",
@@ -501,7 +500,7 @@ def _load_builtin_rules():
     """Load the built-in registrations after the operator and template definitions."""
     modules = []
     for module_name in _BUILTIN_MODULES:
-        if module_name == "pennylane.decomposition_rules.drawer.label":
+        if module_name == "pennylane.decomposition_rules.op_math.adjoint2":
             # Phase-gradient helpers were historically registered after the template rules.
             for helper_module in (
                 "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",

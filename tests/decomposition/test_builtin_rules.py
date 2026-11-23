@@ -25,16 +25,20 @@ from pennylane.decomposition_rules import _load_builtin_rules
 
 
 def test_builtin_rule_implementations_have_moved():
-    """No main-package built-in rule implementation remains in its old package."""
+    """Built-in rules have moved, except the drawing-specific LabelledOp rule."""
     original_packages = (
         "pennylane.ops.",
         "pennylane.templates.",
         "pennylane.drawer.",
         "pennylane.decomposition.",
     )
+    registry = _decompositions_var.get()
+    assert len(registry["LabelledOp"]) == 1
+    assert inspect.unwrap(registry["LabelledOp"][0]).__module__ == "pennylane.drawer.label"
     implementations = [
         inspect.unwrap(rule).__module__
-        for rules in _decompositions_var.get().values()
+        for name, rules in registry.items()
+        if name != "LabelledOp"
         for rule in rules
     ]
     assert any(module.startswith("pennylane.decomposition_rules.") for module in implementations)
@@ -57,6 +61,21 @@ def test_loading_preserves_custom_registrations_and_exclusions():
     _load_builtin_rules()
 
     assert list(qp.list_decomps(qp.RX)) == expected
+
+
+def test_loading_preserves_drawer_rule_exclusions():
+    """The drawer initializer preserves its registered rule when it is excluded."""
+    from pennylane.drawer.label import register_label_decomposition
+
+    before = list(_decompositions_var.get()["LabelledOp"])
+    qp.exclude_decomps("LabelledOp", "unwrap_base")
+
+    register_label_decomposition()
+    register_label_decomposition()
+    _load_builtin_rules()
+
+    assert not qp.list_decomps("LabelledOp")
+    assert list(_decompositions_var.get()["LabelledOp"]) == before
 
 
 @pytest.mark.parametrize(
@@ -131,6 +150,7 @@ def test_phase_gradient_rules_follow_operator_modules(name, module):
         "pennylane.decomposition_rules.templates.state_preparations.phase_gradient",
         "pennylane.transforms",
         "pennylane.transforms.rz_phase_gradient",
+        "pennylane.drawer.label",
         "pennylane.ops.op_math.controlled2",
         "pennylane.templates.subroutines.qrom",
     ],
@@ -144,6 +164,7 @@ import pennylane as qp
 from pennylane.decomposition_rules import null_decomp, make_rz_to_phase_gradient_decomp
 from pennylane.transforms.rz_phase_gradient import rz_phase_gradient
 assert qp.transforms.rz_phase_gradient is rz_phase_gradient
+assert [rule.name for rule in qp.list_decomps("LabelledOp")] == ["unwrap_base"]
 assert null_decomp.name == "null_decomp"
 assert callable(make_rz_to_phase_gradient_decomp)
 assert qp.list_decomps(qp.RX)

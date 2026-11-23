@@ -18,8 +18,7 @@
 from functools import partial
 from textwrap import dedent
 
-import pennylane as qp
-from pennylane import allocation, capture, compiler, math
+from pennylane import allocation, capture, compiler, control_flow, math, ops, templates
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
@@ -61,7 +60,7 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
 
     # The specialized ChangeOpBasis rule leaves the compute and uncompute operations
     # uncontrolled, so it must always take precedence over general controlled fallbacks.
-    if isinstance(op.base, (qp.ops.ChangeOpBasis, qp.ops.ChangeOpBasis2)):
+    if isinstance(op.base, (ops.ChangeOpBasis, ops.ChangeOpBasis2)):
         return custom_rules
 
     general_rules = DecompCollection(
@@ -94,7 +93,7 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
             _ctrl_abstract(op, control_wires, work_wires, work_wire_type): count
             for op, count in base_counts.items()
         }
-        gate_counts[qp.X] = len(control_wires)
+        gate_counts[ops.X] = len(control_wires)
         return gate_counts
 
     def _wrap_work_wire_spec(base_rule):
@@ -119,18 +118,18 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
 
         _cvals = control_values
         _cwires = control_wires
-        if qp.capture.enabled() or qp.compiler.active():
-            _cvals = qp.math.array(control_values, like="jax")
-            _cwires = qp.math.array(control_wires, like="jax")
+        if capture.enabled() or compiler.active():
+            _cvals = math.array(control_values, like="jax")
+            _cwires = math.array(control_wires, like="jax")
 
-        @qp.for_loop(0, len(control_values))
+        @control_flow.for_loop(0, len(control_values))
         def _x_flips(i):
-            qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_cwires[i])
+            ops.cond(math.logical_not(_cvals[i]), ops.X)(_cwires[i])
 
         _x_flips()  # pylint: disable=no-value-for-parameter
         non_traced_args, traced_args = get_traced_and_non_traced_args(base)
         impl = partial(base_rule._impl, **non_traced_args)  # pylint: disable=protected-access
-        qp.ctrl(
+        ops.ctrl(
             impl,
             control=control_wires,
             work_wires=work_wires,
@@ -151,7 +150,7 @@ def _controlled_flip_adjoint_resources(
 ):
     return {
         Adjoint2(
-            qp.ctrl(
+            ops.ctrl(
                 base.base,
                 control=control_wires,
                 control_values=control_values,
@@ -166,8 +165,8 @@ def _controlled_flip_adjoint_resources(
 def _controlled_flip_adjoint(base, control_wires, control_values, work_wires, work_wire_type):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
-    qp.adjoint(
-        qp.ctrl(
+    ops.adjoint(
+        ops.ctrl(
             base.base,
             control=control_wires,
             control_values=control_values,
@@ -186,7 +185,7 @@ def _controlled_to_unitary_resources(
 ):
     num_control_wires = len(control_wires)
     return {
-        qp.ControlledQubitUnitary(
+        ops.ControlledQubitUnitary(
             Complex[2, 2],
             wires=Wire[num_control_wires + 1],
             control_values=Bool[num_control_wires],
@@ -200,7 +199,7 @@ def _controlled_to_unitary_resources(
 @register_resources(_controlled_to_unitary_resources, name="to_unitary")
 def _controlled_to_unitary(base, control_wires, control_values, work_wires, work_wire_type):
     """Convert a controlled operator to a controlled qubit unitary."""
-    qp.ControlledQubitUnitary(
+    ops.ControlledQubitUnitary(
         base.matrix(),
         wires=concatenate_wires(control_wires, base.wires),
         control_values=control_values,
@@ -224,8 +223,8 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
             work_wire_type=work_wire_type,
         )
         gate_counts = base_resources.gate_counts
-        base_x_count = gate_counts.get(qp.X, 0)
-        gate_counts[qp.X] = base_x_count + len(control_values)
+        base_x_count = gate_counts.get(ops.X, 0)
+        gate_counts[ops.X] = base_x_count + len(control_values)
         return gate_counts
 
     @register_condition(_condition_fn)
@@ -247,9 +246,9 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
             _cwires = math.array(_cwires, like="jax")
             _cvals = math.array(_cvals, like="jax")
 
-        @qp.for_loop(0, len(_cwires))
+        @control_flow.for_loop(0, len(_cwires))
         def _x_flips(i):
-            qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_cwires[i])
+            ops.cond(math.logical_not(_cvals[i]), ops.X)(_cwires[i])
 
         _x_flips()  # pylint: disable=no-value-for-parameter
         rule(
@@ -275,8 +274,8 @@ def _controlled_single_work_wire_resources(base, control_wires, *_, **__):
     # as this rule assumes that no work wires are *explicitly* provided and instead
     # the only work wire comes from allocation.
     return {
-        qp.ctrl(base, control=Wire[1], control_values=Bool[1]): 1,
-        qp.MultiControlledX(Wire[len(control_wires) + 1]): 2,
+        ops.ctrl(base, control=Wire[1], control_values=Bool[1]): 1,
+        ops.MultiControlledX(Wire[len(control_wires) + 1]): 2,
     }
 
 
@@ -287,9 +286,9 @@ def _controlled_single_work_wire_resources(base, control_wires, *_, **__):
 def _controlled_single_work_wire(base, control_wires, *_, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     with allocation.allocate(1, state="zero", restored=True) as aux:
-        qp.MultiControlledX([*control_wires, aux[0]])
-        qp.ctrl(base, control=aux[0])
-        qp.MultiControlledX([*control_wires, aux[0]])
+        ops.MultiControlledX([*control_wires, aux[0]])
+        ops.ctrl(base, control=aux[0])
+        ops.MultiControlledX([*control_wires, aux[0]])
 
 
 ctrl_single_work_wire = flip_zero_control(_controlled_single_work_wire, name="single_work_wire")
@@ -298,9 +297,9 @@ ctrl_single_work_wire = flip_zero_control(_controlled_single_work_wire, name="si
 def _controlled_many_zeroed_work_wires_resources(base, control_wires, *_, **__):
     num_control_wires = len(control_wires)
     return {
-        qp.TemporaryAND: num_control_wires - 1,
-        qp.adjoint(qp.TemporaryAND(Wire[3])): num_control_wires - 1,
-        qp.ctrl(base, control=Wire[1], control_values=Bool[1]): 1,
+        templates.TemporaryAND: num_control_wires - 1,
+        ops.adjoint(templates.TemporaryAND(Wire[3])): num_control_wires - 1,
+        ops.ctrl(base, control=Wire[1], control_values=Bool[1]): 1,
     }
 
 
@@ -319,8 +318,8 @@ def _controlled_many_zeroed_work_wires(base, control_wires, work_wires, *_, **__
     from pennylane.decomposition_rules.op_math.prod2 import _multi_temporary_and_all_ones
 
     effective_control = _multi_temporary_and_all_ones(control_wires, work_wires)
-    qp.ctrl(base, control=effective_control)
-    qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
+    ops.ctrl(base, control=effective_control)
+    ops.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
 
 
 ctrl_many_zeroed_work_wires = flip_zero_control(

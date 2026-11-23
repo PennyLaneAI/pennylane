@@ -14,8 +14,6 @@
 
 """Tests the decomposition rules defined for symbolic operations other than controlled."""
 
-# pylint: disable=too-few-public-methods
-
 import warnings
 from textwrap import dedent
 
@@ -165,8 +163,9 @@ class TestAdjointDecompositionRules:
                 name=f"adjoint({base_decomposition.name})",
             )
             def _impl(*params, wires, base):
+                ops = import_module("pennylane.ops")
                 # pylint: disable-next=protected-access
-                qp.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
+                ops.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
 
             where base_decomposition is defined as:
 
@@ -665,22 +664,23 @@ class TestControlledDecomposition:
             )
             # pylint: disable-next=too-many-arguments
             def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
+                ops = import_module("pennylane.ops")
                 zero_control_wires = [
                     w for w, val in zip(control_wires, control_values, strict=True) if not val
                 ]
                 for w in zero_control_wires:
-                    qp.PauliX(w)
+                    ops.PauliX(w)
                 # We're extracting control wires and base wires from the wires argument instead
                 # of directly using control_wires and base.wires, `wires` is properly traced, but
                 # `control_wires` and `base.wires` are not.
-                qp.ctrl(
+                ops.ctrl(
                     base_decomposition._impl,  # pylint: disable=protected-access
                     control=wires[: len(control_wires)],
                     work_wires=work_wires,
                     work_wire_type=work_wire_type,
                 )(*params, wires=wires[-len(base.wires) :], **base.hyperparameters)
                 for w in zero_control_wires:
-                    qp.PauliX(w)
+                    ops.PauliX(w)
 
             where base_decomposition is defined as:
 
@@ -1040,11 +1040,12 @@ class TestControlledDecomposition:
                 name=name or f"flip_zero_ctrl_values({inner_decomp.name})",
             )
             def _impl(*params, wires, control_wires, control_values, **kwargs):
+                ops = import_module("pennylane.ops")
                 zero_control_wires = [
                     w for w, val in zip(control_wires, control_values, strict=True) if not val
                 ]
                 for w in zero_control_wires:
-                    qp.PauliX(w)
+                    ops.PauliX(w)
                 inner_decomp(
                     *params,
                     wires=wires,
@@ -1053,7 +1054,7 @@ class TestControlledDecomposition:
                     **kwargs,
                 )
                 for w in zero_control_wires:
-                    qp.PauliX(w)
+                    ops.PauliX(w)
 
             where inner_decomp is defined as:
 

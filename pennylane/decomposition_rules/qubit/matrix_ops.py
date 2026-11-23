@@ -19,8 +19,7 @@ import numpy as np
 import scipy as sp
 from scipy import sparse
 
-import pennylane as qp
-from pennylane import capture, compiler, math, ops, templates
+from pennylane import allocation, capture, compiler, math, ops, templates
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import is_integer
@@ -214,7 +213,7 @@ def _controlled_qubit_unitary_standard_resources(
     num_target_wires = len(base.wires)
     num_control_wires = len(control_wires)
     return {
-        qp.ControlledQubitUnitary(
+        ops.ControlledQubitUnitary(
             Complex[2**num_target_wires, 2**num_target_wires],
             wires=Wire[num_control_wires + num_target_wires],
             control_values=Bool[num_control_wires],
@@ -230,7 +229,7 @@ def _controlled_qubit_unitary_standard_resources(
 def _controlled_qubit_unitary_standard(
     base, control_wires, control_values, work_wires, work_wire_type
 ):
-    qp.ControlledQubitUnitary(
+    ops.ControlledQubitUnitary(
         base.U,
         concatenate_wires(control_wires, base.wires),
         control_values=control_values,
@@ -245,11 +244,11 @@ add_decomps("C(QubitUnitary)", _controlled_qubit_unitary_standard)
 def _diagonal_qubit_unitary_recursive_resources(D, wires):  # pylint: disable=unused-argument
     num_wires = len(wires)
     if num_wires == 1:
-        return {qp.RZ: 1, qp.GlobalPhase: 1}
+        return {ops.RZ: 1, ops.GlobalPhase: 1}
 
     return {
         DiagonalQubitUnitary(Complex[2 ** (num_wires - 1)], wires=Wire[num_wires - 1]): 1,
-        qp.SelectPauliRot(
+        templates.SelectPauliRot(
             Float[2 ** (num_wires - 1)],
             control_wires=Wire[num_wires - 1],
             target_wire=Wire[1],
@@ -264,17 +263,17 @@ def _diagonal_qubit_unitary_recursive(D, wires):
     diff = angles[..., 1::2] - angles[..., ::2]
     mean = (angles[..., ::2] + angles[..., 1::2]) / 2
     if len(wires) == 1:
-        qp.GlobalPhase(-math.squeeze(mean, axis=-1))
-        qp.RZ(math.squeeze(diff, axis=-1), wires=wires)
+        ops.GlobalPhase(-math.squeeze(mean, axis=-1))
+        ops.RZ(math.squeeze(diff, axis=-1), wires=wires)
     else:
-        qp.DiagonalQubitUnitary(math.exp(1j * mean), wires=wires[:-1])
-        qp.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
+        DiagonalQubitUnitary(math.exp(1j * mean), wires=wires[:-1])
+        templates.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
 
 
 def _diagonal_qubit_unitary_auxiliary_resources(D, wires):  # pylint: disable=unused-argument
     num_wires = len(wires)
     return {
-        qp.SelectPauliRot(
+        templates.SelectPauliRot(
             Float[2**num_wires],
             control_wires=Wire[num_wires],
             target_wire=Wire[1],
@@ -288,8 +287,8 @@ def _diagonal_qubit_unitary_auxiliary_resources(D, wires):  # pylint: disable=un
 )
 def _diagonal_qubit_unitary_auxiliary(D, wires, **_):
     angles = -2 * math.angle(D)
-    with qp.allocate(1, "zero", restored=True) as aux_wire:
-        qp.SelectPauliRot(angles, control_wires=wires, target_wire=aux_wire)
+    with allocation.allocate(1, "zero", restored=True) as aux_wire:
+        templates.SelectPauliRot(angles, control_wires=wires, target_wire=aux_wire)
 
 
 add_decomps(

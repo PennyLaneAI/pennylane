@@ -255,6 +255,9 @@ if _find_spec("numpy") is not None:
 
 _load_builtin_rules()
 
+# Drawing-specific rules are owned and registered by the drawer module.
+_import_module("pennylane.drawer.label").register_label_decomposition()
+
 # This transform imports its circuit helper from the initialized built-in rules.
 _transforms.rz_phase_gradient = _import_module(
     "pennylane.transforms.rz_phase_gradient"

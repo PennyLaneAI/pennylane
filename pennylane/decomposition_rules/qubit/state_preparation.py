@@ -15,27 +15,27 @@
 
 """Built-in decomposition rules for qubit.state_preparation."""
 
-import pennylane as qp
+from pennylane import capture, compiler, control_flow, decomposition, math, ops, templates
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.qubit.state_preparation import BasisState, StatePrep
 
 
 def _basis_state_standard_resources(state, wires):  # pylint: disable=unused-argument
     num_wires = len(wires)
-    return {qp.X: num_wires - num_wires // 2}  # Estimate 50% of wires (rounded up) to get flipped
+    return {ops.X: num_wires - num_wires // 2}  # Estimate 50% of wires (rounded up) to get flipped
 
 
 @register_resources(_basis_state_standard_resources, exact=False, name="to_x")
 def _basis_state_standard(state, wires):
-    if qp.capture.enabled() or qp.compiler.active():
+    if capture.enabled() or compiler.active():
         # This branch makes sure that state and wires are cast to objects into which
         # a traced loop index is allowed to index (if they aren't already traced)
-        state = qp.math.array(state, like="jax")
-        wires = qp.math.array(wires, like="jax")
+        state = math.array(state, like="jax")
+        wires = math.array(wires, like="jax")
 
-    @qp.for_loop(len(state))
+    @control_flow.for_loop(len(state))
     def _loop(i):
-        qp.cond(qp.math.allclose(state[i], 1), qp.X)(wires[i])
+        ops.cond(math.allclose(state[i], 1), ops.X)(wires[i])
 
     _loop()  # pylint: disable=no-value-for-parameter
 
@@ -44,12 +44,12 @@ add_decomps(BasisState, _basis_state_standard)
 
 
 def _state_prep_standard_resources(num_wires):
-    return {qp.resource_rep(qp.MottonenStatePreparation, num_wires=num_wires): 1}
+    return {decomposition.resource_rep(templates.MottonenStatePreparation, num_wires=num_wires): 1}
 
 
 @register_resources(_state_prep_standard_resources, name="mottonen")
 def _state_prep_standard(state, wires, **_):
-    qp.MottonenStatePreparation(state, wires)
+    templates.MottonenStatePreparation(state, wires)
 
 
 add_decomps(StatePrep, _state_prep_standard)

@@ -18,7 +18,7 @@
 from functools import partial
 from textwrap import dedent
 
-import pennylane as qp
+from pennylane import ops
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
@@ -108,7 +108,7 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
     def _impl(base):
         non_traced_args, traced_args = get_traced_and_non_traced_args(base)
         impl = partial(base_rule._impl, **non_traced_args)  # pylint: disable=protected-access
-        qp.adjoint(impl)(**traced_args)
+        ops.adjoint(impl)(**traced_args)
 
     _impl._source = (
         dedent(_impl._source).strip()
@@ -142,4 +142,4 @@ def _adjoint_negate_angle(base):
     # A rotation should only have 1 dynamic parameter
     assert len(base.dynamic_argnames) == 1
     angle = tuple(base.dynamic_args.values())[0]
-    qp.ops.functions.bind_new_parameters(base, (-angle,))
+    ops.functions.bind_new_parameters(base, (-angle,))

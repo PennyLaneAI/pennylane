@@ -17,9 +17,9 @@
 
 from __future__ import annotations
 
+from importlib import import_module
 from textwrap import dedent
 
-import pennylane as qp
 from pennylane import allocation
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import (
@@ -40,6 +40,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
     def _resource_fn(
         base_params, num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, **_
     ):
+        ops = import_module("pennylane.ops")
 
         # pylint: disable-next=import-outside-toplevel
         from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -56,7 +57,7 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
         }
         # None of the other gates in gate_counts will be X, because they are all
         # controlled operations. So we can safely set the X gate counts here.
-        gate_counts[abstractify(qp.PauliX)] = num_zero_control_values * 2
+        gate_counts[abstractify(ops.PauliX)] = num_zero_control_values * 2
         return gate_counts
 
     @register_condition(_condition_fn)
@@ -68,22 +69,23 @@ def make_controlled_decomp(base_decomposition: DecompositionRule):
     )
     # pylint: disable-next=too-many-arguments
     def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
+        ops = import_module("pennylane.ops")
         zero_control_wires = [
             w for w, val in zip(control_wires, control_values, strict=True) if not val
         ]
         for w in zero_control_wires:
-            qp.PauliX(w)
+            ops.PauliX(w)
         # We're extracting control wires and base wires from the wires argument instead
         # of directly using control_wires and base.wires, `wires` is properly traced, but
         # `control_wires` and `base.wires` are not.
-        qp.ctrl(
+        ops.ctrl(
             base_decomposition._impl,  # pylint: disable=protected-access
             control=wires[: len(control_wires)],
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )(*params, wires=wires[-len(base.wires) :], **base.hyperparameters)
         for w in zero_control_wires:
-            qp.PauliX(w)
+            ops.PauliX(w)
 
     _impl._source = (
         dedent(_impl._source).strip()
@@ -102,13 +104,14 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
         return inner_decomp.is_applicable(**new_params)
 
     def _resource_fn(**resource_params):
+        ops = import_module("pennylane.ops")
         new_params = resource_params.copy()
         new_params["num_zero_control_values"] = 0
         inner_resource = inner_decomp.compute_resources(**new_params)
         num_x = resource_params["num_zero_control_values"]
         gate_counts = inner_resource.gate_counts.copy()
         # Add the counts of the flipping X gates to the gate count
-        gate_counts[abstractify(qp.X)] = gate_counts.get(abstractify(qp.X), 0) + num_x * 2
+        gate_counts[abstractify(ops.X)] = gate_counts.get(abstractify(ops.X), 0) + num_x * 2
         return gate_counts
 
     @register_condition(_condition_fn)
@@ -119,11 +122,12 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
         name=name or f"flip_zero_ctrl_values({inner_decomp.name})",
     )
     def _impl(*params, wires, control_wires, control_values, **kwargs):
+        ops = import_module("pennylane.ops")
         zero_control_wires = [
             w for w, val in zip(control_wires, control_values, strict=True) if not val
         ]
         for w in zero_control_wires:
-            qp.PauliX(w)
+            ops.PauliX(w)
         inner_decomp(
             *params,
             wires=wires,
@@ -132,7 +136,7 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
             **kwargs,
         )
         for w in zero_control_wires:
-            qp.PauliX(w)
+            ops.PauliX(w)
 
     base_source = inner_decomp._source
     _impl._source = (
@@ -170,8 +174,9 @@ def _controlled_flip_adjoint(  # pylint: disable=too-many-arguments
 ):
     """Decompose the control of an adjoint by applying control to the base of the adjoint
     and taking the adjoint of the control."""
-    qp.adjoint(
-        qp.ctrl(
+    ops = import_module("pennylane.ops")
+    ops.adjoint(
+        ops.ctrl(
             base.base,
             control=wires[: len(control_wires)],
             control_values=control_values,
@@ -182,8 +187,9 @@ def _controlled_flip_adjoint(  # pylint: disable=too-many-arguments
 
 
 def _controlled_single_work_wire_resources(base_class, base_params, num_control_wires, **__):
+    ops = import_module("pennylane.ops")
     return {
-        qp.MultiControlledX(Wire[num_control_wires + 1]): 2,
+        ops.MultiControlledX(Wire[num_control_wires + 1]): 2,
         controlled_resource_rep(base_class, base_params, 1): 1,
     }
 
@@ -195,10 +201,11 @@ def _controlled_single_work_wire_resources(base_class, base_params, num_control_
 # pylint: disable-next=unused-argument
 def _controlled_single_work_wire(*params, wires, control_wires, base, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
+    ops = import_module("pennylane.ops")
     with allocation.allocate(1, state="zero", restored=True) as work_wires:
-        qp.MultiControlledX([*control_wires, work_wires[0]])
-        qp.ctrl(base, control=work_wires[0])
-        qp.MultiControlledX([*control_wires, work_wires[0]])
+        ops.MultiControlledX([*control_wires, work_wires[0]])
+        ops.ctrl(base, control=work_wires[0])
+        ops.MultiControlledX([*control_wires, work_wires[0]])
 
 
 ctrl_single_work_wire = flip_zero_control(_controlled_single_work_wire, name="single_work_wire")
@@ -215,8 +222,9 @@ def _controlled_to_unitary_resources(  # pylint: disable=unused-argument
     work_wire_type,
     **__,
 ):
+    ops = import_module("pennylane.ops")
     return {
-        qp.ControlledQubitUnitary(
+        ops.ControlledQubitUnitary(
             Complex[2, 2],
             wires=Wire[num_control_wires + 1],
             control_values=Bool[num_control_wires],
@@ -230,8 +238,9 @@ def _controlled_to_unitary_resources(  # pylint: disable=unused-argument
 @register_resources(_controlled_to_unitary_resources, name="to_unitary")
 def _controlled_to_unitary(*_, wires, control_values, work_wires, work_wire_type, base, **__):
     """Convert a controlled operator to a controlled qubit unitary."""
+    ops = import_module("pennylane.ops")
     matrix = base.matrix()
-    qp.ControlledQubitUnitary(
+    ops.ControlledQubitUnitary(
         matrix,
         wires,
         control_values=control_values,

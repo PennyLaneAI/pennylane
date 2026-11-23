@@ -17,7 +17,7 @@
 
 from collections import Counter
 
-import pennylane as qp
+from pennylane import ops
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -38,27 +38,27 @@ from pennylane.wires import WiresLike
 
 
 def _qubitcarry_to_cnot_toffolis_resources():
-    return {qp.CNOT: 1, qp.Toffoli: 2}
+    return {ops.CNOT: 1, ops.Toffoli: 2}
 
 
 @register_resources(_qubitcarry_to_cnot_toffolis_resources, name="to_cnot_toffolis")
 def _qubitcarry_to_cnot_toffolis(wires: WiresLike, **__):
-    qp.Toffoli(wires=wires[1:])
-    qp.CNOT(wires=[wires[1], wires[2]])
-    qp.Toffoli(wires=[wires[0], wires[2], wires[3]])
+    ops.Toffoli(wires=wires[1:])
+    ops.CNOT(wires=[wires[1], wires[2]])
+    ops.Toffoli(wires=[wires[0], wires[2], wires[3]])
 
 
 add_decomps(QubitCarry, _qubitcarry_to_cnot_toffolis)
 
 
 def _qubitsum_to_cnots_resources():
-    return {qp.CNOT: 2}
+    return {ops.CNOT: 2}
 
 
 @register_resources(_qubitsum_to_cnots_resources, name="to_cnots")
 def _qubitsum_to_cnots(wires: WiresLike, **__):
-    qp.CNOT(wires=[wires[1], wires[2]])
-    qp.CNOT(wires=[wires[0], wires[2]])
+    ops.CNOT(wires=[wires[1], wires[2]])
+    ops.CNOT(wires=[wires[0], wires[2]])
 
 
 add_decomps(QubitSum, _qubitsum_to_cnots)
@@ -74,16 +74,16 @@ def _integer_comparator_less_than_resources(num_wires, value, num_work_wires, **
         return {}
 
     if value > 2 ** (num_wires - 1) - 1:
-        return {qp.X: 1}
+        return {ops.X: 1}
 
     num_controls = num_wires - 1
     binary_str = format(value, f"0{num_controls}b")
     last_significant = binary_str.rfind("1")
-    gate_counts = {qp.X: (last_significant + 1) * 2}
+    gate_counts = {ops.X: (last_significant + 1) * 2}
 
     first_significant = binary_str.find("1")
     gate_counts[
-        qp.MultiControlledX(
+        ops.MultiControlledX(
             Wire[first_significant + 2],
             work_wires=Wire[num_work_wires + num_wires - 2 - first_significant],
         )
@@ -91,7 +91,7 @@ def _integer_comparator_less_than_resources(num_wires, value, num_work_wires, **
 
     while (first_significant := binary_str.find("1", first_significant + 1)) != -1:
         gate_counts[
-            qp.MultiControlledX(
+            ops.MultiControlledX(
                 Wire[first_significant + 2],
                 work_wires=Wire[num_work_wires + num_wires - 2 - first_significant],
             )
@@ -154,7 +154,7 @@ def _integer_comparator_greater_equal_resources(num_wires, value, num_work_wires
 
     # If the value is 0, the flipping condition is always satisfied.
     if value == 0:
-        return {qp.X: 1}
+        return {ops.X: 1}
 
     num_controls = num_wires - 1
 
@@ -165,26 +165,26 @@ def _integer_comparator_greater_equal_resources(num_wires, value, num_work_wires
     first_zero = binary_str.find("0")
 
     if first_zero == -1:
-        return {qp.MultiControlledX(Wire[num_controls + 1], work_wires=Wire[num_work_wires]): 1}
+        return {ops.MultiControlledX(Wire[num_controls + 1], work_wires=Wire[num_work_wires]): 1}
 
     gate_set = Counter()
 
     gate_set[
-        qp.MultiControlledX(
+        ops.MultiControlledX(
             Wire[first_zero + 2], work_wires=Wire[num_work_wires + num_wires - 2 - first_zero]
         )
     ] = 1
-    gate_set[qp.X] = 2
+    gate_set[ops.X] = 2
 
     while (first_zero := binary_str.find("0", first_zero + 1)) != -1:
         gate_set[
-            qp.MultiControlledX(
+            ops.MultiControlledX(
                 Wire[first_zero + 2], work_wires=Wire[num_work_wires + num_wires - 2 - first_zero]
             )
         ] = 1
-        gate_set[qp.X] += 2
+        gate_set[ops.X] += 2
 
-    gate_set[qp.MultiControlledX(Wire[num_controls + 1], work_wires=Wire[num_work_wires])] += 1
+    gate_set[ops.MultiControlledX(Wire[num_controls + 1], work_wires=Wire[num_work_wires])] += 1
 
     return dict(gate_set)
 
@@ -203,9 +203,9 @@ def _integer_comparator_greater_equal(wires, value, work_wires, **_):
 def _integer_comparator_flip_greater_equal_resources(num_wires, value, num_work_wires, geq, **_):
     """Resource estimation for flipping the geq condition."""
     return {
-        qp.X: 1,
+        ops.X: 1,
         resource_rep(
-            qp.IntegerComparator,
+            IntegerComparator,
             num_wires=num_wires,
             value=value,
             geq=not geq,
@@ -217,7 +217,7 @@ def _integer_comparator_flip_greater_equal_resources(num_wires, value, num_work_
 @register_resources(_integer_comparator_flip_greater_equal_resources, name="flip_greater_equal")
 def _integer_comparator_flip_greater_equal(value, geq, wires, work_wires, **_):
     """Decompose the IntegerComparator by flipping geq to lt or vice versa."""
-    qp.X(wires[-1])
+    ops.X(wires[-1])
     IntegerComparator(value, wires, geq=not geq, work_wires=work_wires)
 
 
