@@ -516,17 +516,6 @@ class TestPauliWordPauliSentence:
         true_res = qp.matrix(qp.s_prod(0.5, op))
         assert qp.math.allclose(res, true_res)
 
-    @pytest.mark.xfail
-    def test_PauliSentence_matrix_xfail(self, pw, op):
-        """Test that a PauliWord is correctly transformed using qp.matrix"""
-        # needs fix https://github.com/PennyLaneAI/pennylane/pull/5041
-        # once fixed, uncomment the last line in op_pairs above, i.e. add
-        # (pw3, qp.prod(qp.PauliY(6), qp.PauliZ(7))),
-        pw, op = pw3, qp.prod(qp.PauliY(6), qp.PauliZ(7))
-        res = qp.matrix(PauliSentence({pw: 0.5}), wire_order=[6, 7])
-        true_res = qp.matrix(qp.s_prod(0.5, op))
-        assert qp.math.allclose(res, true_res)
-
 
 class TestTemplates:
     """These tests are useful as they test operators that might not have
