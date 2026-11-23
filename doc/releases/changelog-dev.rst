@@ -905,6 +905,11 @@ Improvements 🛠
   real-valued leaves.
   `(#10362) <https://github.com/PennyLaneAI/pennylane/pull/10362>`__
 
+* :class:`~.TrotterCGF` now fuses the one-body evolution with the basis rotations around it into
+  a single complex-valued :class:`~.BasisRotation` per mode, as :class:`~.TrotterCDF` does. This
+  applies to uncontrolled and double-phase-controlled ``TrotterCGF``.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
   powers that can simplify eagerly for faster execution, while the other uses nested
   loops to keep the captured intermediate representation compact. Both variants include

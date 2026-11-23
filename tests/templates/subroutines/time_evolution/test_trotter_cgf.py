@@ -464,6 +464,66 @@ class TestDecomposition:
             double_phase,
         )
 
+    @pytest.mark.parametrize("num_fragments", [1, 2])
+    @pytest.mark.parametrize("num_steps", [1, 3])
+    def test_fused_one_body_block(self, seed, num_fragments, num_steps):
+        """The one-body evolution and its surrounding basis rotations are fused into one
+        complex-valued BasisRotation per mode and Trotter step, without any RZ gates."""
+        rng = np.random.default_rng(seed)
+        num_modes, n_states = 2, 3
+        core = rng.normal(size=(num_fragments + 1, num_modes, num_modes, n_states, n_states))
+        leaf = np.stack(
+            [
+                np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])
+                for _ in range(num_fragments + 1)
+            ]
+        )
+        ham = CGFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
+        wires = list(range(num_modes * n_states))
+        tape = qp.tape.make_qscript(_trotter_cgf_decomposition)(0.7, num_steps, ham, wires, False)
+
+        rotations = [op for op in tape.operations if isinstance(op, qp.BasisRotation)]
+        fused = [op for op in rotations if np.iscomplexobj(op.parameters[0])]
+        assert not any(isinstance(op, qp.RZ) for op in tape.operations)
+        assert len(fused) == num_modes * num_steps
+        assert len(rotations) - len(fused) == num_modes * (2 * (num_fragments - 1) * num_steps + 2)
+
+    @pytest.mark.parametrize(
+        ("evolution_time", "atol"),
+        [
+            # The 1e-8 cutoff in ``givens_decomposition`` drops small entries of the fused
+            # unitary, which limits the accuracy for small time steps (#10536).
+            (1e-4, 1e-7),
+            (1e-6, 1e-7),
+            pytest.param(
+                1e-9,
+                1e-13,
+                marks=pytest.mark.xfail(
+                    reason="``givens_decomposition`` drops entries below 1e-8 (#10536)",
+                    strict=True,
+                ),
+            ),
+        ],
+    )
+    def test_fused_one_body_precision_close_to_identity(self, evolution_time, atol, seed):
+        """The fused one-body block stays accurate for small time steps, i.e., close to the
+        identity, in the base and double-phase circuits."""
+        rng = np.random.default_rng(seed)
+        num_modes, n_states = 2, 3
+        core = rng.normal(size=(2, num_modes, num_modes, n_states, n_states)) * 0.4
+        leaf = np.stack(
+            [np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])] * 2
+        )
+        ham = CGFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
+        wires = list(range(num_modes * n_states))
+        expected = cgf_second_order_trotter_matrix(ham, evolution_time, 1)
+
+        actual = qp.matrix(qp.TrotterCGF(evolution_time, 1, ham, wires=wires), wire_order=wires)
+        block0, block1 = control_branches(qp.TrotterCGF, ham, wires, evolution_time, 1, True)
+        assert np.allclose(actual, expected, atol=atol, rtol=0)
+        assert np.allclose(block0, expected, atol=atol, rtol=0)
+        assert np.allclose(block1, expected.conj().T, atol=atol, rtol=0)
+
     @pytest.mark.slow
     def test_base_matches_expm_nonidentity_leaves(self, seed):
         """With random real-orthogonal leaves the circuit is no longer Trotter-exact, but
@@ -685,7 +745,14 @@ class TestDoublePhaseControlledDecomposition:
             jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
 
         ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
-        assert {type(op).__name__ for op in ops} == {"BasisRotation", "CNOT", "RZ", "IsingZZ"}
+        assert {type(op).__name__ for op in ops} == {
+            "BasisRotation",
+            "CNOT",
+            "CY",
+            "RZ",
+            "IsingZZ",
+            "GlobalPhase",
+        }
 
     def test_double_phase_controlled_matches_expm(self, diagonal_hamiltonian_cgf):
         """With double_phase=True, ctrl(TrotterCGF) realizes diag(U, U^dagger): for an
