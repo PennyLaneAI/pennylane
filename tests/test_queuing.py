@@ -331,5 +331,7 @@ def test_public_import():
 def test_error_on_nonexistent_item():
     """Test an AttributeError is raised if an object does not exist."""
 
-    with pytest.raises(AttributeError, match="module 'pennylane.core.queuing' has no attribute 'thing'"):
+    with pytest.raises(
+        AttributeError, match="module 'pennylane.core.queuing' has no attribute 'thing'"
+    ):
         _ = qp.queuing.thing
