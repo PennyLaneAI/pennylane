@@ -95,7 +95,6 @@ class TestQROMLoad:
     """Test the qp.QROMLoad template."""
 
     @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("bitstrings", "target_wires", "control_wires", "work_wires"),
         [
@@ -234,7 +233,6 @@ class TestQROMLoad:
             assert np.isclose(target_probs[bitstring[0]], 1.0)
             assert np.isclose(work_probs[0], 1.0)
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_adjoint_unloads(self, seed):
         """Test that the adjoint of ``QROMLoad`` unloads the data again, returning the target and
         work wires to the zero state."""

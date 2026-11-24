@@ -20,10 +20,12 @@ from collections import Counter
 from pennylane import capture, compiler, math
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import abstractify
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.ops.op_math import SymbolicOp2, ctrl, pow
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.pow2 import _pow_abstract
 from pennylane.typing import Wire
 from pennylane.wires import Wires, validate_no_wire_overlaps
 
@@ -52,13 +54,34 @@ class ControlledSequence(SymbolicOp2):
 
     .. seealso:: :class:`~.QuantumPhaseEstimation`
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.ControlledSequence
+            :stacked:
+            :symbols: :math:`U=` ``base`` and :math:`n` control wires
+            :example: :math:`n=3`
+
+            .. decomposition-rule:: controlled_powers
+                :image: /_static/decomposition_thumbnails/controlled_sequence_powers.svg
+                :where: Powers are simplified eagerly when the base operator supports it.
+
+                :math:`U^{2^k}` with 1 control | :math:`n` (one per :math:`k < n`) | 3
+
+            .. decomposition-rule:: looped_controlled_repetitions
+                :image: /_static/decomposition_thumbnails/controlled_sequence_repetitions.svg
+                :where: Nested loops keep the circuit representation compact. The image shows
+                    the operations executed for three control wires.
+
+                :math:`U` with 1 control | :math:`2^n - 1` | 7
+
     **Examples**
 
     .. code-block:: python
 
         dev = qp.device("default.qubit")
 
-        @qp.transforms._tape_decompose(max_expansion=1)
+        @qp.transforms._tape_decompose(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1)
         @qp.qnode(dev)
         def circuit():
             qp.ControlledSequence(qp.RX(0.25, wires = 3), control = [0, 1, 2])
@@ -151,12 +174,14 @@ def _ctrl_seq_execution_optimized_decomposition_resources(base, control) -> dict
     if not control:
         return {}
     controlled_base = _ctrl_abstract(base_rep, Wire[1])
+    if isinstance(controlled_base, CompressedResourceOp):
+        return dict(Counter(_pow_abstract(controlled_base, 2**i) for i in range(len(control))))
     return dict(
         Counter(abstractify(pow(controlled_base, 2**i, lazy=False)) for i in range(len(control)))
     )
 
 
-@register_resources(_ctrl_seq_execution_optimized_decomposition_resources)
+@register_resources(_ctrl_seq_execution_optimized_decomposition_resources, name="controlled_powers")
 def _ctrl_seq_execution_optimized_decomposition(*_, base=None, control=None, **__):
     """
     A decomposition optimized for execution time, over IR size and compilation time.
@@ -169,6 +194,8 @@ def _ctrl_seq_execution_optimized_decomposition(*_, base=None, control=None, **_
         control = math.array(control, like="jax")
 
     num_controls = len(control)
+    # To match legacy behaviour
+    lazy = not isinstance(base, Operator2)
 
     for i in range(num_controls - 1, -1, -1):
         j = num_controls - 1 - i
@@ -177,7 +204,7 @@ def _ctrl_seq_execution_optimized_decomposition(*_, base=None, control=None, **_
         controlled_base = ctrl(base, control=ctrl_wire)
         if capture.enabled():
             pop_op_eqns((controlled_base,))
-        pow(controlled_base, 2**i, lazy=False)
+        pow(controlled_base, 2**i, lazy=lazy)
 
 
 def _ctrl_seq_ir_optimized_resources(base, control) -> dict:
@@ -188,7 +215,7 @@ def _ctrl_seq_ir_optimized_resources(base, control) -> dict:
     return {controlled_base: 2 ** len(control) - 1}
 
 
-@register_resources(_ctrl_seq_ir_optimized_resources)
+@register_resources(_ctrl_seq_ir_optimized_resources, name="looped_controlled_repetitions")
 def _ctrl_seq_ir_optimized_decomposition(*_, base=None, control=None, **__):
     """
     A decomposition optimized for IR size and compilation time, over execution time.

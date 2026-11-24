@@ -22,7 +22,11 @@ import numpy as np
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import StatePrepBase2
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_resources,
+)
 from pennylane.exceptions import WireError
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires, WiresLike
@@ -95,12 +99,11 @@ class PhaseGradientStatePrep(StatePrepBase2):
     mid-circuit measurements and supports any number of wires. Construct it and pass it to
     ``fixed_decomps``:
 
-    >>> qp.decomposition.enable_graph()
     >>> registers = qp.registers({"grad": 5, "aux": 5, "work": 4})
     >>> rule = qp.transforms.decompositions.make_phase_gradient_distillation_decomp(
     ...     registers["aux"], registers["work"], mode="postselect"
     ... )
-    >>> @qp.transforms.decompose(
+    >>> @qp.transforms._tape_decompose(
     ...     gate_set={"Hadamard", "PauliZ", "Adjoint(S)", "SemiAdder", "MidMeasure"},
     ...     fixed_decomps={qp.PhaseGradientStatePrep: rule},
     ... )
@@ -160,7 +163,7 @@ def _ppr(denominator, pauli_word, wires):
     return op_class(1 if denominator > 0 else -1, pauli_word, wires=wires)
 
 
-def _phase_gradient_state_prep_ppr_resources(wires: AbstractWires):
+def _phase_gradient_state_prep_to_ppr_resources(wires: AbstractWires):
     resources = {
         _ppr(denominator, pauli, wires=Wire[1]): count
         for (denominator, pauli), count in _ppr_counts(len(wires)).items()
@@ -170,8 +173,8 @@ def _phase_gradient_state_prep_ppr_resources(wires: AbstractWires):
 
 
 @register_condition(lambda wires: len(wires) <= len(PI_OVER_8_PPRS))
-@register_resources(_phase_gradient_state_prep_ppr_resources)
-def _phase_gradient_state_prep_ppr_decomposition(wires: WiresLike):
+@register_resources(_phase_gradient_state_prep_to_ppr_resources, name="to_ppr")
+def _phase_gradient_state_prep_to_ppr(wires: WiresLike):
     # Wire j is prepared in the state (|0> + exp(-i pi / 2**j)|1>) / sqrt(2) by the PPR
     # ``INITIAL_PPRS[j]`` (angle denominator, Pauli word; no gate if ``None``), followed by the π/8
     # PPRs in ``PI_OVER_8_PPRS[j]``, where upper (lower) case letters denote PPRs with angle π/8
@@ -190,7 +193,7 @@ def _phase_gradient_state_prep_ppr_decomposition(wires: WiresLike):
     qp.GlobalPhase(sum(GLOBAL_PHASES[: len(wires)]))
 
 
-def _phase_gradient_state_prep_clifford_t_resources(wires: AbstractWires):
+def _phase_gradient_state_prep_to_clifford_t_resources(wires: AbstractWires):
     counts = Counter("".join(CLIFFORD_T_SEQUENCES[: len(wires)]))
     resources = {getattr(qp, gate): count for gate, count in counts.items()}
     resources[qp.GlobalPhase] = 1
@@ -198,8 +201,8 @@ def _phase_gradient_state_prep_clifford_t_resources(wires: AbstractWires):
 
 
 @register_condition(lambda wires: len(wires) <= len(CLIFFORD_T_SEQUENCES))
-@register_resources(_phase_gradient_state_prep_clifford_t_resources)
-def _phase_gradient_state_prep_clifford_t_decomposition(wires: WiresLike):
+@register_resources(_phase_gradient_state_prep_to_clifford_t_resources, name="to_clifford_t")
+def _phase_gradient_state_prep_to_clifford_t(wires: WiresLike):
     # Wire j is prepared by the gates in ``CLIFFORD_T_SEQUENCES[j]``, which are obtained from the
     # PPR decomposition and contain one T gate per π/8 PPR. Together with the global phase
     # given by summing ``CLIFFORD_T_GLOBAL_PHASES`` over the wires, the state prepared on 30 wires
@@ -214,6 +217,6 @@ def _phase_gradient_state_prep_clifford_t_decomposition(wires: WiresLike):
 
 add_decomps(
     PhaseGradientStatePrep,
-    _phase_gradient_state_prep_ppr_decomposition,
-    _phase_gradient_state_prep_clifford_t_decomposition,
+    _phase_gradient_state_prep_to_ppr,
+    _phase_gradient_state_prep_to_clifford_t,
 )

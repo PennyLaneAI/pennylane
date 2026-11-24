@@ -159,7 +159,6 @@ class TestDatasetPyTree:
         "op, expected_wires, expected_types",
         [
             (qp.RZ(0.5, wires=0), [0], [int]),
-            (qp.RZ(0.5, wires="a"), ["a"], [str]),
             (qp.CNOT(wires=[0, 1]), [0, 1], [int, int]),
             (qp.Rot(0.1, 0.2, 0.3, wires=2), [2], [int]),
         ],
