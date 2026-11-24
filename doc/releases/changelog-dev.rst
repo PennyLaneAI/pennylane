@@ -1652,6 +1652,13 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
+  ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
+  ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
+  ``exponential_extrapolate``), and ``from_qiskit_noise``. Noise channels such as
+  :class:`~.AmplitudeDamping` are unaffected.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * Removed the ``pennylane.queuing`` shim. Import directly from
   ``pennylane.core.queuing``; ``qp.queuing`` now refers to that module.
   Use ``qp.apply`` instead of ``qp.queuing.apply``.
@@ -2560,7 +2567,7 @@ Documentation 📝
   `(#10530) <https://github.com/PennyLaneAI/pennylane/pull/10530>`__
 
 * The ``level`` argument of :func:`~.drawer.draw`, :func:`~.drawer.draw_mpl`,
-  :func:`~.workflow.construct_tape` and :func:`~.noise.add_noise` is now documented in
+  :func:`~.workflow.construct_tape` and ``add_noise`` is now documented in
   :func:`~.workflow.construct_batch`.
   `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
