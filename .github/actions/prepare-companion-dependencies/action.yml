@@ -7,7 +7,7 @@ inputs:
   catalyst-run-id:
     # Temporary PR #3505 build; update this after rebuilding the companion PR.
     description: Successful Linux x86_64 wheel build from Catalyst PR 3505.
-    default: '44810365583'
+    default: '45280597785'
   github-token:
     description: GitHub token used to download the Catalyst artifact.
     required: true
