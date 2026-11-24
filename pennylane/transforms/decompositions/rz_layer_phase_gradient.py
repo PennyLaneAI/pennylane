@@ -146,8 +146,9 @@ def _signed_add(table, var_wires, mono_wires, sign_wires, registers):
 
     The table is loaded into the angle wires from its ANF, controlled on the monomials of the
     variables, which are computed into the zeroed ``mono_wires``. The monomials that do not fit
-    into ``mono_wires`` are skipped, which leaves the entries at the inputs up to
-    ``len(var_wires) + len(mono_wires)`` intact. The subtraction complements the
+    into ``mono_wires`` are skipped. For inputs up to :math:`n` and :math:`r` variables, with
+    :math:`r` the bit length of :math:`n`, :math:`n - r` wires in ``mono_wires`` thus leave the
+    entries at these inputs intact. The subtraction complements the
     phase gradient register around the addition. The load and the complement are their own
     inverse, because they only target the angle and phase gradient wires, controlled on wires
     that they leave unchanged.

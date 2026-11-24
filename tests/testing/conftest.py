@@ -69,6 +69,10 @@ from pennylane.templates.subroutines.select_pauli_rot import (
 from pennylane.templates.subroutines.select_thc import _SelectTHCBasis, _THCIndexSwaps
 from pennylane.templates.subroutines.time_evolution.trotter import TrotterizedQfunc
 from pennylane.transforms.decompositions.crz_phase_gradient import _CRZPhaseGradientCompute
+from pennylane.transforms.decompositions.rz_layer_phase_gradient import (
+    _Monomials,
+    _RZLayerPhaseGradientCompute,
+)
 from pennylane.transforms.decompositions.select_pauli_rot_phase_gradient import (
     _SelectPauliRotPhaseGradientCompute,
 )
@@ -129,6 +133,13 @@ def _subcircuit_instances():
         (_THCIndexSwaps([0], [1], [2, 3, 4], []), {}),
         (_HammingWeight([0, 1, 2], [3]), {}),
         (_HWPPhaseShifts(0.37, [0, 1], [2]), {}),
+        (_Monomials([0, 1, 2], [3, 4, 5, 6]), {}),
+        (
+            _RZLayerPhaseGradientCompute(
+                jax.numpy.array([[False, True], [True, True]]), [0], [1], [2, 3], [4, 5]
+            ),
+            {"skip_differentiation": True, "skip_bind_new_parameters": True},
+        ),
     ]
 
 

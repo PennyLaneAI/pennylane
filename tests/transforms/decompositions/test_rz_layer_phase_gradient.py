@@ -97,12 +97,13 @@ def test_state(case, seed):
     _check_state(*_rule_and_op(*case, seed), seed)
 
 
-@pytest.mark.parametrize("block_size", [3, 4])
-def test_state_with_products(block_size, seed):
+@pytest.mark.parametrize("block_size, num_work_wires", [(3, 2), (4, 2), (5, 5)])
+def test_state_with_products(block_size, num_work_wires, seed):
     """Test that the rule realizes a rotation whose lookup table contains a product of the bits of
     the Hamming weight, see ``_check_state``. With three bits, the angle ``11π/4``, which also lies
-    in ``[2π, 4π)``, has such a table for blocks of three and four wires."""
-    rule, op, registers = _rule_and_op(1, block_size, 2, seed, b=3)
+    in ``[2π, 4π)``, has such a table for blocks of three to five wires. For five wires, the rule
+    skips some of the monomials."""
+    rule, op, registers = _rule_and_op(1, block_size, num_work_wires, seed, b=3)
     op = qp.RZLayer([11 * np.pi / 4], op.arguments["wires"], op.work_wires)
     _check_state(rule, op, registers, seed)
 
