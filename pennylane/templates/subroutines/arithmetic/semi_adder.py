@@ -260,12 +260,6 @@ class SemiAdder(Operator2):
     .. details::
         :title: Available decompositions
 
-        Read the PPM circuit panels from top to bottom; wires absent from a panel are
-        unchanged. Both measurement-dependent branches are shown, with dashed boxes
-        around conditional measurements. Measurement and correction counts are upper
-        bounds for a single execution; counts for
-        :class:`~.PPR_8` and :func:`~.pauli_measure` are summed over Pauli words.
-
         .. decomposition-table:: qp.SemiAdder
             :stacked:
             :symbols: :math:`m` ``x_wires`` and :math:`n \geq 2` ``y_wires``
@@ -280,16 +274,29 @@ class SemiAdder(Operator2):
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`n - 1` | 2
                 :class:`~.CNOT` | :math:`n + 5\ell - 5 + [m \geq n]` | 9
 
+        The PPM circuits below use one-bit registers. The uncontrolled example reduces to
+        addition modulo two and needs no :class:`~.PPR_8` rotations.
+        Read the controlled circuit panels from top to bottom; wires absent from a panel
+        are unchanged. Both measurement-dependent branches are shown, with dashed boxes
+        around conditional measurements. Measurement and correction counts are upper
+        bounds for a single execution; counts for
+        :class:`~.PPR_8` and :func:`~.pauli_measure` are summed over Pauli words.
+
+        .. decomposition-table:: qp.SemiAdder
+            :stacked:
+            :symbols: :math:`m` ``x_wires`` and :math:`n \geq 1` ``y_wires``
+            :example: :math:`m=n=1`
+
             .. decomposition-rule:: _semi_adder_ppm
                 :image: /_static/decomposition_thumbnails/semi_adder_ppm.svg
                 :lightbox:
                 :requires: capture or an active compiler, and :math:`n + 1` zeroed work wires
 
-                :class:`~.PPR_8` | :math:`4n - 4` | 8
-                :func:`PauliMeasure <.pauli_measure>` | :math:`\leq 10n - 6` | :math:`\leq 24`
-                :class:`~.X` | :math:`\leq 4n - 2` | :math:`\leq 10`
-                :class:`~.Z` | :math:`\leq 9n - 6` | :math:`\leq 21`
-                :class:`~.GlobalPhase` | :math:`\leq 3n - 2` | :math:`\leq 7`
+                :class:`~.PPR_8` | :math:`4n - 4` | 0
+                :func:`PauliMeasure <.pauli_measure>` | :math:`\leq 10n - 6` | :math:`\leq 4`
+                :class:`~.X` | :math:`\leq 4n - 2` | :math:`\leq 2`
+                :class:`~.Z` | :math:`\leq 9n - 6` | :math:`\leq 3`
+                :class:`~.GlobalPhase` | :math:`\leq 3n - 2` | :math:`\leq 1`
 
             .. decomposition-rule:: flip_zero_ctrl_values(_controlled_semi_adder_ppm)
                 :image: /_static/decomposition_thumbnails/semi_adder_controlled_ppm.svg
@@ -300,11 +307,11 @@ class SemiAdder(Operator2):
                     :math:`c = 1`. Each control value :math:`0` adds two :class:`~.X` gates
                     beyond the counts shown.
 
-                :class:`~.PPR_8` | :math:`8n + 4c - 8` | 20
-                :func:`PauliMeasure <.pauli_measure>` | :math:`\leq 14n + 4c - 10` | :math:`\leq 36`
-                :class:`~.X` | :math:`\leq 5n + c - 3` | :math:`\leq 13`
-                :class:`~.Z` | :math:`\leq 13n + 3c - 10` | :math:`\leq 32`
-                :class:`~.GlobalPhase` | :math:`\leq 4n + c - 3` | :math:`\leq 10`
+                :class:`~.PPR_8` | :math:`8n + 4c - 8` | 4
+                :func:`PauliMeasure <.pauli_measure>` | :math:`\leq 14n + 4c - 10` | :math:`\leq 8`
+                :class:`~.X` | :math:`\leq 5n + c - 3` | :math:`\leq 3`
+                :class:`~.Z` | :math:`\leq 13n + 3c - 10` | :math:`\leq 6`
+                :class:`~.GlobalPhase` | :math:`\leq 4n + c - 3` | :math:`\leq 2`
     """
 
     grad_method = None
