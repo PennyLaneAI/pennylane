@@ -4,6 +4,10 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* Added a lattice-surgery decomposition for :class:`~.MultiX` with one control wire,
+  using three Pauli product measurements and one auxiliary qubit.
+  `(#10558) <https://github.com/PennyLaneAI/pennylane/pull/10558>`__
+
 * :class:`~.QROM` has been divided by splitting off two new operators, :class:`~.QROMLoad` and
   :class:`~.SelectSwap`, for the specific scenario of zeroed target wires, i.e., for data
   loading rather than XORing. The latter is now done by :class:`~.QROM`. 
