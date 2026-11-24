@@ -126,17 +126,17 @@ class TestNoiseFunctions:
         [
             (0, 0, True),
             ([1, 2, 3], 0, False),
-            (qp.wires.Wires(["aurora", "borealis"]), "borealis", True),
+            (qp.wires.Wires([14, 17]), 17, True),
             (qp.wires.Wires(1), [0], False),
             (qp.Y(2), 2, True),
-            (qp.CNOT(["a", "c"]), "b", False),
-            (qp.CZ(["a", "c"]), "c", True),
-            (qp.DoubleExcitation(1.2, ["alpha", "beta", "gamma", "delta"]), "alpha", True),
+            (qp.CNOT([6, 19]), 15, False),
+            (qp.CZ([6, 19]), 19, True),
+            (qp.DoubleExcitation(1.2, [13, 16, 24, 22]), 13, True),
             (qp.TrotterProduct(qp.Z(0) + qp.Z(1), -3j), 2, False),
-            (qp.TrotterProduct(qp.Z("a") + qp.Z("b"), -3j), "b", True),
+            (qp.TrotterProduct(qp.Z(6) + qp.Z(15), -3j), 15, True),
             (qp.expval(qp.CNOT([0, 1])), qp.Z(0), True),
-            ([qp.counts(qp.Z("a")), qp.sample(qp.Y("b"))], qp.Y(0), False),
-            (qp.mutual_info([0, 1], ["a", "b"]), qp.CNOT([0, "b"]), True),
+            ([qp.counts(qp.Z(6)), qp.sample(qp.Y(15))], qp.Y(0), False),
+            (qp.mutual_info([0, 1], [6, 15]), qp.CNOT([0, 15]), True),
         ],
     )
     def test_wires_in(self, obj, wires, result):
@@ -153,14 +153,14 @@ class TestNoiseFunctions:
         [
             (0, 0, True),
             ([1, 2], [1, 2], True),
-            (qp.wires.Wires(["street", "fighter"]), "fighter", False),
+            (qp.wires.Wires([28, 23]), 23, False),
             (qp.wires.Wires(1), [1], True),
             (qp.Y(2), 2, True),
-            (qp.CNOT(["a", "c"]), "b", False),
-            (qp.CNOT(["c", "d"]), ["c", "d"], True),
+            (qp.CNOT([6, 19]), 15, False),
+            (qp.CNOT([19, 21]), [19, 21], True),
             (qp.TrotterProduct(qp.Z(0) + qp.Z(1), -3j), 2, False),
-            (qp.TrotterProduct(qp.Z("b") + qp.Z("a"), -3j), ["b", "a"], True),
-            (qp.counts(qp.Z("a")), qp.Y("a"), True),
+            (qp.TrotterProduct(qp.Z(15) + qp.Z(6), -3j), [15, 6], True),
+            (qp.counts(qp.Z(6)), qp.Y(6), True),
             (qp.shadow_expval(qp.X(0) + qp.Y(1) @ qp.Z(2)), qp.CSWAP([0, 1, 2]), True),
             (qp.measure(0), qp.RX(1.23, wires=1), False),
         ],
@@ -189,26 +189,26 @@ class TestNoiseFunctions:
             ("RX", qp.RX(0, 1), True),
             (["CZ", "RY", "CNOT"], qp.CNOT([0, 1]), True),
             (qp.Y(1), qp.RY(1.0, 1), False),
-            (qp.CNOT(["a", "c"]), qp.CNOT([0, 1]), True),
-            ([qp.S("a"), qp.adjoint(qp.T)("b")], qp.adjoint(qp.T)([0]), True),
-            ([qp.CZ(["a", "c"]), qp.Y(1)], qp.CZ([0, 1]), True),
-            ([qp.RZ(1.9, 0), qp.Z(0) @ qp.Z(1)], qp.Z("b") @ qp.Z("a"), True),
-            ([qp.Z(0) + qp.Z(1), qp.Z(2)], qp.Z("b") + qp.Z("a"), True),
-            ([qp.Z(0), qp.Z(0) + 1.2 * qp.Z(1)], qp.Y("b") + qp.Y("a"), False),
-            ([qp.expval(qp.Z(0)), qp.var(qp.Y("a"))], qp.Z("b"), True),
+            (qp.CNOT([6, 19]), qp.CNOT([0, 1]), True),
+            ([qp.S(6), qp.adjoint(qp.T)(15)], qp.adjoint(qp.T)([0]), True),
+            ([qp.CZ([6, 19]), qp.Y(1)], qp.CZ([0, 1]), True),
+            ([qp.RZ(1.9, 0), qp.Z(0) @ qp.Z(1)], qp.Z(15) @ qp.Z(6), True),
+            ([qp.Z(0) + qp.Z(1), qp.Z(2)], qp.Z(15) + qp.Z(6), True),
+            ([qp.Z(0), qp.Z(0) + 1.2 * qp.Z(1)], qp.Y(15) + qp.Y(6), False),
+            ([qp.expval(qp.Z(0)), qp.var(qp.Y(6))], qp.Z(15), True),
             (
-                [qp.counts(qp.Z(0) @ qp.X(1)), qp.sample(qp.Y("a") @ qp.Z("b"))],
-                qp.Z("b") @ qp.X(2),
+                [qp.counts(qp.Z(0) @ qp.X(1)), qp.sample(qp.Y(6) @ qp.Z(15))],
+                qp.Z(15) @ qp.X(2),
                 True,
             ),
             (
-                [qp.counts(qp.Z(0) @ qp.X(1)), qp.sample(qp.Y("a") @ qp.Z("b"))],
-                qp.X("b") @ qp.Y(2),
+                [qp.counts(qp.Z(0) @ qp.X(1)), qp.sample(qp.Y(6) @ qp.Z(15))],
+                qp.X(15) @ qp.Y(2),
                 False,
             ),
             (
                 [qp.shadow_expval(qp.X(0) + qp.Y(1)), qp.purity(0)],
-                qp.X("a") + qp.Y("b"),
+                qp.X(6) + qp.Y(15),
                 True,
             ),
         ],
@@ -229,7 +229,7 @@ class TestNoiseFunctions:
         [
             ("I", qp.I(wires=[0, 1]), True),
             (qp.Y(1), qp.RY(1.0, 1), False),
-            (qp.CNOT(["a", "c"]), qp.CNOT([0, 1]), True),
+            (qp.CNOT([6, 19]), qp.CNOT([0, 1]), True),
             (qp.RX(0, 1), qp.RY(1.0, 1), False),
             ("RX", qp.RX(0, 1), True),
             ([qp.RX, qp.RY], qp.RX, False),
@@ -237,16 +237,16 @@ class TestNoiseFunctions:
             (qp.measure(1, reset=True), qp.measure(1, reset=False), False),
             ([qp.RX, qp.RY], [qp.RX(1.0, 1), qp.RY(2.0, 2)], True),
             (["CZ", "RY"], [qp.CZ([0, 1]), qp.RY(1.0, [1])], True),
-            (qp.Z(0) @ qp.Z(1), qp.Z("b") @ qp.Z("a"), True),
-            (qp.Z(0) + qp.Z(1), qp.Z("b") + qp.Z("a"), True),
-            (qp.Z(0) + 1.2 * qp.Z(1), 2.4 * qp.Z("b") + qp.Z("a"), False),
-            (qp.Z(0) + 1.2 * qp.Z(1), qp.Z("b") + qp.Z("a"), False),
-            (qp.exp(qp.RX(1.2, 0), 1.2), qp.exp(qp.RX(2.3, "a"), 1.2), True),
-            (qp.exp(qp.Z(0) + qp.Z(1), 1.2), qp.exp(qp.Z("b") + qp.Z("a"), 1.2), True),
-            (qp.exp(qp.Z(0) @ qp.Z(1), 2j), qp.exp(qp.Z("b") @ qp.Z("a"), 1j), False),
-            (qp.expval(qp.Z(0) @ qp.Y(1)), qp.Z("b"), False),
-            (qp.sample(qp.Y("a") @ qp.Z("b")), qp.Y("b") @ qp.Z(2), True),
-            (qp.shadow_expval(qp.X(0) + qp.Y(1)), qp.X("a") + qp.Y("b"), True),
+            (qp.Z(0) @ qp.Z(1), qp.Z(15) @ qp.Z(6), True),
+            (qp.Z(0) + qp.Z(1), qp.Z(15) + qp.Z(6), True),
+            (qp.Z(0) + 1.2 * qp.Z(1), 2.4 * qp.Z(15) + qp.Z(6), False),
+            (qp.Z(0) + 1.2 * qp.Z(1), qp.Z(15) + qp.Z(6), False),
+            (qp.exp(qp.RX(1.2, 0), 1.2), qp.exp(qp.RX(2.3, 6), 1.2), True),
+            (qp.exp(qp.Z(0) + qp.Z(1), 1.2), qp.exp(qp.Z(15) + qp.Z(6), 1.2), True),
+            (qp.exp(qp.Z(0) @ qp.Z(1), 2j), qp.exp(qp.Z(15) @ qp.Z(6), 1j), False),
+            (qp.expval(qp.Z(0) @ qp.Y(1)), qp.Z(15), False),
+            (qp.sample(qp.Y(6) @ qp.Z(15)), qp.Y(15) @ qp.Z(2), True),
+            (qp.shadow_expval(qp.X(0) + qp.Y(1)), qp.X(6) + qp.Y(15), True),
         ],
     )
     def test_op_eq(self, obj, op, result):
@@ -265,9 +265,9 @@ class TestNoiseFunctions:
         [
             (qp.expval(qp.X(0)), qp.expval(qp.Z(0)), True),
             (qp.expval(qp.X(0)), qp.sample(qp.X(0)), False),
-            (qp.purity(wires=[0, 1]), qp.purity(wires=["a"]), True),
-            (qp.mutual_info([0], [1]), qp.mutual_info(["a", "b"], ["c"]), True),
-            (qp.vn_entropy([0, 1], log_base=3), qp.vn_entropy(["a"], log_base=10), True),
+            (qp.purity(wires=[0, 1]), qp.purity(wires=[6]), True),
+            (qp.mutual_info([0], [1]), qp.mutual_info([6, 15], [19]), True),
+            (qp.vn_entropy([0, 1], log_base=3), qp.vn_entropy([6], log_base=10), True),
             (qp.shadow_expval(qp.X(0) + qp.Y(1)), qp.shadow_expval(qp.X(0) @ qp.Y(1)), True),
             (qp.measure(1, reset=True), qp.measure(1, reset=False), True),
             (qp.counts(wires=[0, 1]), qp.state(), False),
@@ -332,8 +332,8 @@ class TestNoiseFunctions:
     def test_partial_wires(self):
         """Test for checking partial_wires work as expected for building callables to make op with correct wires"""
 
-        op = qp.noise.partial_wires(qp.RX(1.2, [12]))(qp.RY(1.0, ["wires"]))
-        qp.assert_equal(op, qp.RX(1.2, wires=["wires"]))
+        op = qp.noise.partial_wires(qp.RX(1.2, [12]))(qp.RY(1.0, [29]))
+        qp.assert_equal(op, qp.RX(1.2, wires=[29]))
 
         op = qp.noise.partial_wires(qp.RX, 3.2, [20])(qp.RY(1.0, [0]))
         qp.assert_equal(op, qp.RX(3.2, wires=[0]))
@@ -344,8 +344,8 @@ class TestNoiseFunctions:
         op = qp.noise.partial_wires(qp.PauliRot(1.2, "XY", wires=(0, 1)))(qp.CNOT([2, 1]))
         qp.assert_equal(op, qp.PauliRot(1.2, "XY", wires=(2, 1)))
 
-        op = qp.noise.partial_wires(qp.RX(1.2, [12]), phi=2.3)(qp.RY(1.0, ["light"]))
-        qp.assert_equal(op, qp.RX(2.3, wires=["light"]))
+        op = qp.noise.partial_wires(qp.RX(1.2, [12]), phi=2.3)(qp.RY(1.0, [26]))
+        qp.assert_equal(op, qp.RX(2.3, wires=[26]))
 
         op = qp.noise.partial_wires(qp.adjoint(qp.X(2)))(3)
         qp.assert_equal(op, qp.adjoint(qp.X(3)))
@@ -353,14 +353,14 @@ class TestNoiseFunctions:
         op = qp.noise.partial_wires(qp.adjoint)(op=qp.X(7) @ qp.Y(8))
         qp.assert_equal(op, qp.adjoint(qp.X(7) @ qp.Y(8)))
 
-        op = qp.noise.partial_wires(qp.ctrl, op=qp.Hadamard(0), control=[1, 2])("a")
-        qp.assert_equal(op, qp.ctrl(qp.Hadamard("a"), control=[1, 2]))
+        op = qp.noise.partial_wires(qp.ctrl, op=qp.Hadamard(0), control=[1, 2])(6)
+        qp.assert_equal(op, qp.ctrl(qp.Hadamard(6), control=[1, 2]))
 
         op = qp.noise.partial_wires(qp.PrepSelPrep(qp.X(1) + qp.Z(2), control=3))([2, 3, 4])
         qp.assert_equal(op, qp.PrepSelPrep(qp.X(3) + qp.Z(4), control=2))
 
-        mp = qp.noise.partial_wires(qp.expval, op=qp.Z(9))("photon")
-        qp.assert_equal(mp, qp.expval(qp.Z("photon")))
+        mp = qp.noise.partial_wires(qp.expval, op=qp.Z(9))(27)
+        qp.assert_equal(mp, qp.expval(qp.Z(27)))
 
         mp = qp.noise.partial_wires(qp.density_matrix, wires=2)(1)
         qp.assert_equal(mp, qp.density_matrix([1]))
@@ -368,14 +368,14 @@ class TestNoiseFunctions:
         mp = qp.noise.partial_wires(qp.mutual_info(1, 2))([2, 3])
         qp.assert_equal(mp, qp.mutual_info(2, 3))
 
-        mp = qp.noise.partial_wires(qp.shadow_expval, H=qp.X(0) @ qp.Y(1))(["bra", "ket"])
-        qp.assert_equal(mp, qp.shadow_expval(H=qp.X("bra") @ qp.Y("ket")))
+        mp = qp.noise.partial_wires(qp.shadow_expval, H=qp.X(0) @ qp.Y(1))([18, 25])
+        qp.assert_equal(mp, qp.shadow_expval(H=qp.X(18) @ qp.Y(25)))
 
         mp = qp.noise.partial_wires(qp.probs)(op=qp.X(7))
         qp.assert_equal(mp, qp.probs(op=qp.X(7)))
 
-        mp = qp.noise.partial_wires(qp.counts)(qp.X("light"))
-        qp.assert_equal(mp, qp.counts(wires=["light"]))
+        mp = qp.noise.partial_wires(qp.counts)(qp.X(26))
+        qp.assert_equal(mp, qp.counts(wires=[26]))
 
     def test_partial_wires_queuing(self):
         """Test for checking partial_wires correctly queue operations"""
@@ -385,7 +385,7 @@ class TestNoiseFunctions:
         qs2 = qp.tape.make_qscript(qp.noise.partial_wires(qp.DepolarizingChannel(0.01, [0])))
         assert qs1(op1).operations == qs2(op1).operations and len(qs1(op1).operations) == 1
 
-        op1 = qp.CNOT(["a", "b"])
+        op1 = qp.CNOT([6, 15])
         d1, d2 = [-0.9486833] * 4, [-0.31622777] * 2
         krs = [qp.math.diag(d1), qp.math.diag(d2, k=2) + qp.math.diag(d2, k=-2)]
         qs1 = qp.tape.make_qscript(qp.noise.partial_wires(qp.QubitChannel, krs))
@@ -398,4 +398,4 @@ class TestNoiseFunctions:
         with pytest.raises(
             ValueError, match="Args cannot be provided when operation is an instance"
         ):
-            qp.noise.partial_wires(qp.RX(1.2, [12]), 1.2)(qp.RY(1.0, ["wires"]))
+            qp.noise.partial_wires(qp.RX(1.2, [12]), 1.2)(qp.RY(1.0, [29]))

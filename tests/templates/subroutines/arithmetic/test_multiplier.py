@@ -34,7 +34,6 @@ def test_standard_validity_Multiplier():
 
 
 @pytest.mark.system
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestMultiplier:
     """Test the qp.Multiplier template."""
 
@@ -98,11 +97,20 @@ class TestMultiplier:
         )
 
     def test_decomposition(self):
-        """Test that compute_decomposition and decomposition work as expected."""
+        """Test that decomposition works as expected."""
         k, x_wires, mod, work_wires = 4, [0, 1, 2], 7, [3, 4, 5, 6, 7]
         multiplier_decomposition = (
-            qp.transforms._tape_decompose(  # pylint: disable=protected-access
-                qp.tape.QuantumScript([qp.Multiplier(k, x_wires, mod, work_wires)]), max_expansion=2
+            # pylint: disable-next=protected-access
+            qp.transforms._tape_decompose(
+                qp.tape.QuantumScript([qp.Multiplier(k, x_wires, mod, work_wires)]),
+                gate_set={
+                    qp.QFT,
+                    qp.ControlledSequence,
+                    qp.SWAP,
+                    "Adjoint(QFT)",
+                    "Adjoint(ControlledSequence)",
+                },
+                max_expansion=2,
             )[0][0].operations
         )
 

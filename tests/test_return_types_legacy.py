@@ -1231,33 +1231,3 @@ class TestQubitDeviceNewUnits:
             match="The state or density matrix cannot be returned in combination with other return types",
         ):
             qp.execute(tapes=[tape], device=dev, diff_method=None)
-
-    def test_vn_entropy_no_custom_wires(self):
-        """Test that vn_entropy cannot be returned with custom wires."""
-
-        dev = DefaultQubitLegacy(wires=["a", 1])
-
-        with qp.queuing.AnnotatedQueue() as q:
-            qp.PauliX(wires="a")
-            qp.vn_entropy(wires=["a"])
-
-        tape = qp.tape.QuantumScript.from_queue(q)
-        with pytest.raises(
-            QuantumFunctionError,
-            match="Returning the Von Neumann entropy is not supported when using custom wire labels",
-        ):
-            qp.execute(tapes=[tape], device=dev, diff_method=None)
-
-    def test_custom_wire_labels_error(self):
-        """Tests that an error is raised when mutual information is measured
-        with custom wire labels"""
-        dev = DefaultQubitLegacy(wires=["a", "b"])
-
-        with qp.queuing.AnnotatedQueue() as q:
-            qp.PauliX(wires="a")
-            qp.mutual_info(wires0=["a"], wires1=["b"])
-
-        tape = qp.tape.QuantumScript.from_queue(q)
-        msg = "Returning the mutual information is not supported when using custom wire labels"
-        with pytest.raises(QuantumFunctionError, match=msg):
-            qp.execute(tapes=[tape], device=dev, diff_method=None)

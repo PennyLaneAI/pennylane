@@ -332,7 +332,7 @@ class ZOmega:
         """
         return ZOmega(-self.a, self.b, -self.c, self.d)
 
-    def norm(self: ZOmega) -> float:
+    def norm(self: ZOmega) -> ZOmega:
         """Return the norm squared."""
         return self * self.conj()
 

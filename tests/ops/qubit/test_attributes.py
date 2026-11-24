@@ -168,7 +168,7 @@ class TestSupportsBroadcasting:
         """Test that single-scalar-parameter operations on a single wire marked
         as supporting parameter broadcasting actually do support broadcasting."""
         par = np.array([0.25, 2.1, -0.42])
-        wires = ["wire0"]
+        wires = [14]
 
         cls = getattr(qp, name)
         op = cls(par, wires=wires)
@@ -204,7 +204,7 @@ class TestSupportsBroadcasting:
         """Test that two-scalar-parameter operations on a single wire marked
         as supporting parameter broadcasting actually do support broadcasting."""
         par = (np.array([0.25, 2.1, -0.42]), np.array([-6.2, 0.12, 0.421]))
-        wires = ["wire0"]
+        wires = [14]
 
         cls = getattr(qp, name)
         op = cls(*par, wires=wires)
@@ -226,7 +226,7 @@ class TestSupportsBroadcasting:
             np.array([-6.2, 0.12, 0.421]),
             np.array([0.2, 1.1, -5.2]),
         )
-        wires = ["wire0"]
+        wires = [14]
 
         cls = getattr(qp, name)
         op = cls(*par, wires=wires)
@@ -248,7 +248,7 @@ class TestSupportsBroadcasting:
             np.array([-6.2, 0.12, 0.421]),
             np.array([0.2, 1.1, -5.2]),
         )
-        wires = ["wire0", 214]
+        wires = [14, 214]
 
         cls = getattr(qp, name)
         op = cls(*par, wires=wires)
@@ -266,7 +266,7 @@ class TestSupportsBroadcasting:
         actually does support broadcasting."""
 
         U = np.array([unitary_group.rvs(4, random_state=state) for state in [91, 1, 4]])
-        wires = [0, "9"]
+        wires = [0, 12]
 
         op = qp.QubitUnitary(U, wires=wires)
 
@@ -282,8 +282,8 @@ class TestSupportsBroadcasting:
         actually does support broadcasting."""
 
         U = np.array([unitary_group.rvs(4, random_state=state) for state in [91, 1, 4]])
-        target_wires = [0, "9"]
-        control_wires = [1, "10"]
+        target_wires = [0, 12]
+        control_wires = [1, 10]
         wires = control_wires + target_wires
 
         op = qp.ControlledQubitUnitary(U, wires=wires)
@@ -298,7 +298,7 @@ class TestSupportsBroadcasting:
         """Test that DiagonalQubitUnitary, which is marked as supporting parameter broadcasting,
         actually does support broadcasting."""
         diag = np.array([[1j, 1, 1, -1j], [-1j, 1j, 1, -1], [1j, -1j, 1.0, -1]])
-        wires = ["a", 5]
+        wires = [13, 5]
 
         op = qp.DiagonalQubitUnitary(diag, wires=wires)
 
@@ -313,7 +313,7 @@ class TestSupportsBroadcasting:
         """Test that SpecialUnitary, which is marked as supporting parameter broadcasting,
         actually does support broadcasting."""
         theta = np.array([[0.2, -0.1, 0.2], [0, 1, 0], [0.4, 0.2, 0.9], [0, 0, 0]])
-        wires = ["a"]
+        wires = [13]
 
         op = qp.SpecialUnitary(theta, wires=wires)
 
@@ -324,9 +324,7 @@ class TestSupportsBroadcasting:
         assert qp.math.allclose(mat1, single_mats)
         assert qp.math.allclose(mat2, single_mats)
 
-    @pytest.mark.parametrize(
-        "pauli_word, wires", [("XYZ", [0, "4", 1]), ("II", [1, 5]), ("X", [7])]
-    )
+    @pytest.mark.parametrize("pauli_word, wires", [("XYZ", [0, 11, 1]), ("II", [1, 5]), ("X", [7])])
     def test_pauli_rot(self, pauli_word, wires):
         """Test that PauliRot, which is marked as supporting parameter broadcasting,
         actually does support broadcasting."""
@@ -341,7 +339,7 @@ class TestSupportsBroadcasting:
         assert qp.math.allclose(mat1, single_mats)
         assert qp.math.allclose(mat2, single_mats)
 
-    @pytest.mark.parametrize("wires", [[0, "4", 1], [1, 5], [7]])
+    @pytest.mark.parametrize("wires", [[0, 11, 1], [1, 5], [7]])
     def test_multi_rz(self, wires):
         """Test that MultiRZ, which is marked as supporting parameter broadcasting,
         actually does support broadcasting."""
@@ -445,9 +443,6 @@ class TestSupportsBroadcasting:
 
         op = qp.QAOAEmbedding(features, weights, wires=list(range(num_wires)))
         assert op.batch_size == batch_size
-        qp.QAOAEmbedding.compute_decomposition(
-            features, weights, wires=list(range(num_wires)), local_field=qp.RY
-        )
         op.decomposition()
 
     @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")

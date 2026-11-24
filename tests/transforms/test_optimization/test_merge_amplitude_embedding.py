@@ -65,7 +65,7 @@ class TestMergeAmplitudeEmbedding:
         """Check that AmplitudeEmbedding cannot be applied if the qubit has already been used."""
 
         def qfunc():
-            qp.CNOT(wires=[0.0, 1.0])
+            qp.CNOT(wires=[0, 1])
             qp.AmplitudeEmbedding([0.0, 1.0], wires=1)
 
         transformed_qfunc = merge_amplitude_embedding(qfunc)

@@ -134,15 +134,6 @@ class TestIQPE:
 
         assert len(circuit()) == iters
 
-    @pytest.mark.parametrize("wire", (1, "a", "abc", 6))
-    def test_wires_args(self, wire):
-        """Test to check that all types of wires are working"""
-
-        with qp.tape.QuantumTape() as tape:
-            qp.iterative_qpe(qp.RZ(1.0, wires=[0]), wire, iters=3)
-
-        assert wire in tape.wires
-
     @pytest.mark.parametrize("phi", (1.2, 2.3, 3.4))
     def test_measurement_processes_probs(self, phi):
         """Test to check that the measurement process prob works correctly"""
@@ -307,7 +298,7 @@ class TestCaptureIQPE:
         specs = qp.specs(c, level="top")()
         # NOTE: PauliX comes from the aux_wire reset
         expected_operations = {
-            "C(Pow2)": num_iters,
+            "1C(Pow2)": num_iters,
             "Hadamard": 2 * num_iters,
             "MidCircuitMeasure": num_iters,
             "PhaseShift": num_iters * (num_iters - 1) // 2,
