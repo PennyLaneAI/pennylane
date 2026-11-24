@@ -17,6 +17,7 @@ This module contains utilities for testing decomposition rules.
 
 from collections import defaultdict
 from functools import partial, singledispatch
+from inspect import Parameter, signature
 
 import jax
 
@@ -242,6 +243,7 @@ def assert_decomposable(op: Operator, check_matrix: bool = True) -> None:
 
     At least one rule registered for ``op`` with :func:`~.decomposition.add_decomps` must be applicable to
     ``op``, and every applicable rule is checked with :func:`~.testing.assert_valid_decomp_rule`.
+    Applicable rules must accept positional arguments for compatibility with Catalyst.
 
     Args:
         op (Operator): the operator to decompose
@@ -278,6 +280,14 @@ def assert_decomposable(op: Operator, check_matrix: bool = True) -> None:
     assert applicable_rules, f"None of the decomposition rules registered for {op} are applicable."
 
     for rule in applicable_rules:
+        assert any(
+            param.kind
+            in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD, Parameter.VAR_POSITIONAL)
+            for param in signature(rule).parameters.values()
+        ), (
+            f"Decomposition rule {rule.name} for {op.name} must accept positional arguments. "
+            "i.e. use *_, **__ instead of a keyword-only signature."
+        )
         try:
             assert_valid_decomp_rule(op, rule, check_matrix=check_matrix)
         except AssertionError as e:

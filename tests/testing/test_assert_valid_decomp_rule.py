@@ -357,6 +357,31 @@ def _to_x_bad_resources(wires):
 class TestAssertDecomposable:
     """Tests for ``qp.testing.assert_decomposable``."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_keyword_only_rule(self):
+        """Test that rules accepting only keyword arguments are rejected."""
+
+        def rule(**kwargs):
+            qp.X(kwargs["wires"])
+
+        rule = qp.register_resources({qp.X: 1}, name="keyword_only")(rule)
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(MyOneWireOp, rule)
+            with pytest.raises(AssertionError, match="must accept positional arguments"):
+                assert_decomposable(MyOneWireOp(0))
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_variadic_rule(self):
+        """Test that rules accepting positional and keyword arguments pass."""
+
+        @qp.register_resources({qp.X: 1}, name="variadic")
+        def rule(*_, **__):
+            qp.X(__["wires"])
+
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(MyOneWireOp, rule)
+            assert_decomposable(MyOneWireOp(0))
+
     def test_valid_rules(self):
         """Test that no error is raised if the registered rules are valid."""
         assert_decomposable(qp.CNOT([0, 1]))
