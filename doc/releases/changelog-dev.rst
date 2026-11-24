@@ -897,17 +897,13 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
-* :class:`~.TrotterCDF` now fuses the one-body evolution with the basis rotations around it into
-  a single complex-valued :class:`~.BasisRotation`. Half of the two-qubit
-  :class:`~.SingleExcitation` gates of the one-body block become single-qubit
-  :class:`~.PhaseShift` gates; for real-valued leaves, the number of rotation gates stays the same.
-  This applies to uncontrolled ``TrotterCDF`` and double-phase-controlled ``TrotterCDF`` with
-  real-valued leaves.
+* :class:`~.TrotterCDF` and :class:`~.TrotterCGF` now fuse the one-body evolution with the basis
+  rotations around it into a single complex-valued :class:`~.BasisRotation` (per spin channel or
+  mode, respectively). Half of the two-qubit :class:`~.SingleExcitation` gates of the one-body
+  block become single-qubit :class:`~.PhaseShift` gates; for real-valued leaves, the number of
+  rotation gates stays the same. This applies to the uncontrolled templates and their
+  double-phase-controlled variants with real-valued leaves, which ``TrotterCGF`` always has.
   `(#10362) <https://github.com/PennyLaneAI/pennylane/pull/10362>`__
-
-* :class:`~.TrotterCGF` now fuses the one-body evolution with the basis rotations around it into
-  a single complex-valued :class:`~.BasisRotation` per mode, as :class:`~.TrotterCDF` does. This
-  applies to uncontrolled and double-phase-controlled ``TrotterCGF``.
   `(#10585) <https://github.com/PennyLaneAI/pennylane/pull/10585>`__
 
 * :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
