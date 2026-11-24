@@ -275,6 +275,18 @@ class TestMethods:
         with pytest.raises(SparseMatrixUndefinedError, match="batched operators"):
             _ = op.sparse_matrix(wire_order=[0, 1], format=_format)
 
+    def test_diagonalizing_gates_different_wire_order(self):
+        """Test that the diagonalizing gates work for equal operators in a different wire order."""
+        op1 = Prod2((qp.Hadamard(0), qp.T(1), qp.CNOT([0, 1])))
+        op2 = Prod2((qp.T(1), qp.Hadamard(0), qp.CNOT([0, 1])))
+
+        assert op1 == op2
+        for op in (op1, op2):
+            u = op.diagonalizing_gates()[0].matrix()
+            rotated = u @ op.matrix() @ np.conj(u.T)
+            off_diagonal = rotated - np.diag(np.diagonal(rotated))
+            assert np.allclose(off_diagonal, 0)
+
 
 class TestEqualityAndHash:
     """Test equality and hashing, including commuting operands."""

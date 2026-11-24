@@ -284,7 +284,8 @@ class TestInitialization:
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
 
-        eigs_cache = diag_sum_op._eigs[diag_sum_op]  # pylint: disable=protected-access
+        key = (diag_sum_op, diag_sum_op.wires)
+        eigs_cache = diag_sum_op._eigs[key]  # pylint: disable=protected-access
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
@@ -679,6 +680,18 @@ class TestProperties:
         assert op1.diagonalizing_gates() == op2.diagonalizing_gates()
         assert qp.math.allclose(op1.eigvals(), np.array([-3.0, 3.0]))
         assert qp.math.allclose(op2.eigvals(), np.array([-2.0, 2.0]))
+
+    def test_eigendecomposition_different_wire_order(self):
+        """Test that the eigendecomposition works for equal operators in a different wire order."""
+        op1 = qp.Z(1) @ qp.X(0) + qp.Y(0)
+        op2 = qp.Y(0) + qp.X(0) @ qp.Z(1)
+
+        assert op1 == op2
+        for op in (op1, op2):
+            u = op.diagonalizing_gates()[0].matrix()
+            rotated = u @ op.matrix() @ np.conj(u.T)
+            off_diagonal = rotated - np.diag(np.diagonal(rotated))
+            assert np.allclose(off_diagonal, 0)
 
     op_pauli_reps = (
         (

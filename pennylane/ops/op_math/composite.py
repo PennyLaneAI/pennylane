@@ -275,12 +275,13 @@ class CompositeOp(Operator):  # pylint: disable=too-many-instance-attributes
         """
         eigen_func = math.linalg.eigh if self.is_verified_hermitian else math.linalg.eig
 
-        if self not in self._eigs:
+        key = (self, self.wires)
+        if key not in self._eigs:
             mat = self.matrix()
             w, U = eigen_func(mat)
-            self._eigs[self] = {"eigvec": U, "eigval": w}
+            self._eigs[key] = {"eigvec": U, "eigval": w}
 
-        return self._eigs[self]
+        return self._eigs[key]
 
     @property
     # pylint: disable-next=arguments-renamed,invalid-overridden-method
