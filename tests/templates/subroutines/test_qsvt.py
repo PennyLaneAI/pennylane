@@ -326,7 +326,7 @@ class TestQSVTIntegration:
     )
     def test_queuing_ops(self, U_A, lst_projectors, results):
         """Test that qp.QSVT queues operations in the correct order."""
-        with qp.queuing.AnnotatedQueue() as tape_queue:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             qp.QSVT(U_A, lst_projectors)
 
         tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
@@ -409,7 +409,7 @@ class TestQSVTIntegration:
     def test_queuing_callables(self, quantum_function, phi_func, A, phis, results):
         """Test that qp.QSVT queues operations correctly when a function is called"""
 
-        with qp.queuing.AnnotatedQueue() as tape_queue:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             qp.QSVT(quantum_function(A), phi_func(phis))
 
         tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)

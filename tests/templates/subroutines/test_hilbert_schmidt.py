@@ -355,7 +355,7 @@ class TestHilbertSchmidt:
     )
     def test_queuing_ops(self, U, V, results):
         """Test that qp.HilbertSchmidt queues operations in the correct order."""
-        with qp.queuing.AnnotatedQueue() as tape_queue:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             qp.HilbertSchmidt(V, U)
 
         tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)

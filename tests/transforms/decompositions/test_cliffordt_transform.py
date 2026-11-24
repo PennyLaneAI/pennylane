@@ -524,7 +524,7 @@ class TestCliffordCompile:
     def test_zero_global_phase(self):
         """Test that global phase operation is added only when it is non-zero"""
 
-        with qp.queuing.AnnotatedQueue() as tape_queue:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             qp.CNOT([0, 1])
 
         tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)

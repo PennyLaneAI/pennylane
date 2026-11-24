@@ -1661,7 +1661,7 @@ required.
       # after
       qp.core.QuantumScript([qp.X(0)], [qp.probs()])
 
-      with qp.queuing.AnnotatedQueue() as queue:
+      with qp.core.queuing.AnnotatedQueue() as queue:
           qp.X(0)
           qp.probs()
       qp.core.QuantumScript.from_queue(queue)

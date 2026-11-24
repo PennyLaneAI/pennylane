@@ -158,7 +158,7 @@ class TestVar:
     def test_hermitian_variance(self, theta, phi, dev):
         """Tests an Hermitian operator."""
 
-        with qp.queuing.AnnotatedQueue() as tape_queue:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             qp.RX(theta, wires=0)
             qp.RX(phi, wires=1)
             qp.RX(theta + phi, wires=2)
@@ -187,7 +187,7 @@ class TestVar:
             ],
         )
 
-        with qp.queuing.AnnotatedQueue() as tape1_queue:
+        with qp.core.queuing.AnnotatedQueue() as tape1_queue:
             qp.RX(theta, wires=0)
             qp.RX(phi, wires=1)
             qp.RX(theta + phi, wires=2)
@@ -220,7 +220,7 @@ class TestVar:
             wires=[0, 1],
         )
 
-        with qp.queuing.AnnotatedQueue() as tape1_queue:
+        with qp.core.queuing.AnnotatedQueue() as tape1_queue:
             qp.RX(theta, wires=0)
             qp.RX(phi, wires=1)
 
@@ -299,7 +299,7 @@ class TestTensorVar:
     def test_PauliX_PauliY(self, theta, phi, varphi, dev):
         """Tests a tensor product involving PauliX and PauliY."""
 
-        with qp.queuing.AnnotatedQueue() as tape_queue:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
             qp.RX(varphi, wires=[2])
@@ -319,7 +319,7 @@ class TestTensorVar:
     def test_PauliZ_identity(self, theta, phi, varphi, dev):
         """Tests a tensor product involving PauliZ and Identity."""
 
-        with qp.queuing.AnnotatedQueue() as tape_queue:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             qp.Identity(wires=[0])
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
@@ -340,7 +340,7 @@ class TestTensorVar:
     def test_PauliZ_hadamard_PauliY(self, theta, phi, varphi, dev):
         """Tests a tensor product involving PauliY, PauliZ and Hadamard."""
 
-        with qp.queuing.AnnotatedQueue() as tape_queue:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             qp.RX(theta, wires=[0])
             qp.RX(phi, wires=[1])
             qp.RX(varphi, wires=[2])

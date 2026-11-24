@@ -173,7 +173,7 @@ class TestControlledQubitUnitary:  # pylint: disable=too-many-public-methods
 
         dev = qp.device("default.qubit", wires=5)
 
-        with qp.queuing.AnnotatedQueue() as tape_queue:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             arbitrary_input(wires=wires)
             qp.Toffoli(
                 wires=wires,

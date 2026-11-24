@@ -140,7 +140,7 @@ class TestSingleExcitation:
         decomp2 = qp.SingleExcitation.compute_decomposition(phi, wires=[0, 1])
 
         for decomp in [decomp1, decomp2]:
-            with qp.queuing.AnnotatedQueue() as tape_queue:
+            with qp.core.queuing.AnnotatedQueue() as tape_queue:
                 for op in decomp:
                     qp.apply(op)
 

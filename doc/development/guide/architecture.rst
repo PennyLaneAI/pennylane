@@ -137,7 +137,7 @@ Call the quantum function in an :class:`~.AnnotatedQueue` context, then construc
 from the queue. Gates are stored in the script's ``operations`` property, and measurement
 processes are stored in its ``measurements`` property.
 
->>> with qp.queuing.AnnotatedQueue() as queue:
+>>> with qp.core.queuing.AnnotatedQueue() as queue:
 ...     qfunc(params)
 >>> tape = qp.core.QuantumScript.from_queue(queue)
 

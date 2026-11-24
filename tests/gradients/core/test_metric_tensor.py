@@ -625,7 +625,7 @@ class TestMetricTensor:
 
         weights = getattr(mod, array_cls)([0.1, 0.2, 0.3, 0.5])
 
-        with qp.queuing.AnnotatedQueue() as tape_queue:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             circuit(weights)
 
         tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
@@ -681,7 +681,7 @@ class TestMetricTensor:
 
         weights = np.array([0.1, 0.2, 0.3, 0.5], requires_grad=True)
 
-        with qp.queuing.AnnotatedQueue() as tape_queue:
+        with qp.core.queuing.AnnotatedQueue() as tape_queue:
             circuit(weights)
 
         tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)

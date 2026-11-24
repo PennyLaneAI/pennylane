@@ -86,7 +86,7 @@ def commutator(op1, op2, pauli=False):
 
         .. code-block:: python3
 
-            with qp.queuing.AnnotatedQueue() as queue:
+            with qp.core.queuing.AnnotatedQueue() as queue:
                 a = qp.X(0)      # gets recorded
                 b = PauliWord({0:"Y"}) # does not get recorded
                 comm = qp.commutator(a, b) # does not get recorded
@@ -100,7 +100,7 @@ def commutator(op1, op2, pauli=False):
 
         .. code-block:: python3
 
-            with qp.queuing.AnnotatedQueue() as queue:
+            with qp.core.queuing.AnnotatedQueue() as queue:
                 comm = qp.commutator(qp.X(0), qp.Y(0))
 
             tape = qp.core.QuantumScript.from_queue(queue)
