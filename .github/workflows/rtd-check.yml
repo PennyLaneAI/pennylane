@@ -60,3 +60,12 @@ jobs:
       run: |
         cd doc
         python -m sphinx -T -b html -d ./_build/doctrees -D language=en . ./html --keep-going 
+
+    # Temporary for PR review while hosted Read the Docs is blocked.
+    - name: Upload Sphinx HTML
+      uses: actions/upload-artifact@v6
+      with:
+        name: rtd-html
+        path: doc/html/
+        if-no-files-found: error
+        retention-days: 14
