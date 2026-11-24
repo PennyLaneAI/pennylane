@@ -1657,7 +1657,7 @@ Breaking changes 💔
   ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
   ``exponential_extrapolate``), and ``from_qiskit_noise``. Noise channels such as
   :class:`~.AmplitudeDamping` are unaffected.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10593) <https://github.com/PennyLaneAI/pennylane/pull/10593>`__
 
 * Removed the ``pennylane.queuing`` shim. Import directly from
   ``pennylane.core.queuing``; ``qp.queuing`` now refers to that module.
