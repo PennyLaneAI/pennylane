@@ -2075,7 +2075,7 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
-* :func:`~.testing.assert_valid_decomp_rule` now checks that applicable decomposition rules accept
+* :func:`~.testing.assert_valid_decomp_rule` now checks that decomposition rules accept
   positional arguments for compatibility with Catalyst.
   `(#10589) <https://github.com/PennyLaneAI/pennylane/pull/10589>`__
 

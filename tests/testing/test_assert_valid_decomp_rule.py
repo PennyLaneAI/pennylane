@@ -112,6 +112,63 @@ class TestAssertValidDecompositionRule:
     """Tests for assert_valid_decomp_rule."""
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_keyword_only_rule(self):
+        """Test that rules accepting only keyword arguments are rejected."""
+
+        def rule(**kwargs):
+            qp.X(kwargs["wires"])
+
+        rule = qp.register_resources({qp.X: 1}, name="keyword_only")(rule)
+        with pytest.raises(AssertionError, match="must accept positional arguments"):
+            assert_valid_decomp_rule(MyOneWireOp(0), rule)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_explicit_keyword_only_rule(self):
+        """Test that an explicit keyword-only parameter is rejected."""
+
+        @qp.register_resources({qp.X: 1}, name="explicit_keyword_only")
+        def rule(*, wires):
+            qp.X(wires)
+
+        with pytest.raises(AssertionError, match="must accept positional arguments"):
+            assert_valid_decomp_rule(MyOneWireOp(0), rule)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_positional_only_rule(self):
+        """Test that a positional-only parameter is accepted."""
+
+        @qp.register_resources({qp.RX: 1}, name="positional_only")
+        def rule(theta, /, *, wires):
+            qp.RX(theta, wires=wires)
+
+        assert_valid_decomp_rule(MyOneWireOp(0.5, wires=0), rule)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_variadic_rule(self):
+        """Test that rules accepting positional and keyword arguments pass."""
+
+        @qp.register_resources({qp.X: 1}, name="variadic")
+        def rule(*_, **__):
+            qp.X(__["wires"])
+
+        assert_valid_decomp_rule(MyOneWireOp(0), rule)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_inapplicable_keyword_only_rule(self):
+        """Test that signature validation precedes applicability evaluation."""
+
+        def condition():
+            pytest.fail("Applicability must not be evaluated before signature validation")
+
+        @qp.register_condition(condition)
+        @qp.register_resources({}, name="keyword_only")
+        def rule(**__):
+            pytest.fail("An invalid rule must not be executed")
+
+        with pytest.raises(AssertionError, match="must accept positional arguments"):
+            assert_valid_decomp_rule(qp.X(0), rule)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_valid_rule(self):
         """Test that a correct rule passes in both capture modes."""
         assert_valid_decomp_rule(qp.CNOT([0, 1]), _cnot_to_cz)
@@ -356,64 +413,6 @@ def _to_x_bad_resources(wires):
 
 class TestAssertDecomposable:
     """Tests for ``qp.testing.assert_decomposable``."""
-
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_keyword_only_rule(self):
-        """Test that rules accepting only keyword arguments are rejected."""
-
-        def rule(**kwargs):
-            qp.X(kwargs["wires"])
-
-        rule = qp.register_resources({qp.X: 1}, name="keyword_only")(rule)
-        with pytest.raises(AssertionError, match="must accept positional arguments"):
-            assert_valid_decomp_rule(MyOneWireOp(0), rule)
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(MyOneWireOp, rule)
-            with pytest.raises(AssertionError, match="fails the validity check") as exc_info:
-                assert_decomposable(MyOneWireOp(0))
-            assert "must accept positional arguments" in str(exc_info.value.__cause__)
-
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_explicit_keyword_only_rule(self):
-        """Test that an explicit keyword-only parameter is rejected."""
-
-        @qp.register_resources({qp.X: 1}, name="explicit_keyword_only")
-        def rule(*, wires):
-            qp.X(wires)
-
-        with pytest.raises(AssertionError, match="must accept positional arguments"):
-            assert_valid_decomp_rule(MyOneWireOp(0), rule)
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(MyOneWireOp, rule)
-            with pytest.raises(AssertionError, match="fails the validity check") as exc_info:
-                assert_decomposable(MyOneWireOp(0))
-            assert "must accept positional arguments" in str(exc_info.value.__cause__)
-
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_positional_only_rule(self):
-        """Test that a positional-only parameter is accepted."""
-
-        @qp.register_resources({qp.RX: 1}, name="positional_only")
-        def rule(theta, /, *, wires):
-            qp.RX(theta, wires=wires)
-
-        assert_valid_decomp_rule(MyOneWireOp(0.5, wires=0), rule)
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(MyOneWireOp, rule)
-            assert_decomposable(MyOneWireOp(0.5, wires=0))
-
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_variadic_rule(self):
-        """Test that rules accepting positional and keyword arguments pass."""
-
-        @qp.register_resources({qp.X: 1}, name="variadic")
-        def rule(*_, **__):
-            qp.X(__["wires"])
-
-        assert_valid_decomp_rule(MyOneWireOp(0), rule)
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(MyOneWireOp, rule)
-            assert_decomposable(MyOneWireOp(0))
 
     def test_valid_rules(self):
         """Test that no error is raised if the registered rules are valid."""

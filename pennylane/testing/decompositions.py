@@ -138,10 +138,10 @@ def assert_valid_decomp_rule(
 ) -> None:
     """Check that a decomposition rule is consistent with the operator it decomposes.
 
-    The checks are skipped if the rule is not applicable to ``op``. Otherwise, the gate counts
-    declared by the rule's resource function must match the operations the rule produces, and the
-    matrix of the decomposition must match the matrix of ``op``.
-    Applicable rules must accept positional arguments for compatibility with Catalyst.
+    Rules must accept positional arguments for compatibility with Catalyst. The remaining checks
+    are skipped if the rule is not applicable to ``op``. Otherwise, the gate counts declared by the
+    rule's resource function must match the operations the rule produces, and the matrix of the
+    decomposition must match the matrix of ``op``.
 
     Args:
         op (Operator): the operator to decompose
@@ -177,11 +177,6 @@ def assert_valid_decomp_rule(
 
     """
 
-    params, _, _ = _get_decomp_args(op)
-
-    if not rule.is_applicable(**params):
-        return
-
     accepts_positional_args = any(
         param.kind
         in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD, Parameter.VAR_POSITIONAL)
@@ -191,6 +186,11 @@ def assert_valid_decomp_rule(
         f"Decomposition rule {rule.name} for {op.name} must accept positional arguments. "
         "i.e. use *_, **__ instead of a keyword-only signature."
     )
+
+    params, _, _ = _get_decomp_args(op)
+
+    if not rule.is_applicable(**params):
+        return
 
     # Test that the resource function is correct
     resources = rule.compute_resources(**params)
