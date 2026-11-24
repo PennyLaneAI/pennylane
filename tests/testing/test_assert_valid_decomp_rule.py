@@ -371,6 +371,31 @@ class TestAssertDecomposable:
                 assert_decomposable(MyOneWireOp(0))
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_explicit_keyword_only_rule(self):
+        """Test that an explicit keyword-only parameter is rejected."""
+
+        @qp.register_resources({qp.X: 1}, name="explicit_keyword_only")
+        def rule(*, wires):
+            qp.X(wires)
+
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(MyOneWireOp, rule)
+            with pytest.raises(AssertionError, match="must accept positional arguments"):
+                assert_decomposable(MyOneWireOp(0))
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_positional_only_rule(self):
+        """Test that a positional-only parameter is accepted."""
+
+        @qp.register_resources({qp.RX: 1}, name="positional_only")
+        def rule(theta, /, *, wires):
+            qp.RX(theta, wires=wires)
+
+        with qp.decomposition.local_decomps():
+            qp.add_decomps(MyOneWireOp, rule)
+            assert_decomposable(MyOneWireOp(0.5, wires=0))
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_variadic_rule(self):
         """Test that rules accepting positional and keyword arguments pass."""
 
