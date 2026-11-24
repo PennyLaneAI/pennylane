@@ -39,12 +39,12 @@ from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import CaptureWarning
 from pennylane.numeric_hamiltonians import CGFHamiltonian
+from pennylane.templates.subroutines.time_evolution._trotter_utils import _merge_leaves
 from pennylane.templates.subroutines.time_evolution.trotter_cgf import (
     _apply_system_basis_rotation,
     _cgf_resource_counts,
     _controlled_trotter_cgf_decomp,
     _energy_shift,
-    _merge_leaves,
     _trotter_cgf_decomposition,
 )
 from pennylane.testing import assert_decomposable
@@ -296,19 +296,19 @@ class TestCGFScheme:
     and both controlled structures are all covered by the ``*_matches_expm`` tests)."""
 
     def test_merge_leaves(self, seed):
-        """Test the CGF per-mode merge rule ``U_curr @ U_prev^T`` that combines consecutive
-        fragment rotations, so the ``leaf_prev`` un-rotation and ``leaf_curr`` rotation
-        telescope into a single (transposed) BasisRotation per mode."""
+        """Test that the merge rule ``U_prev^T @ U_curr``, which telescopes the ``leaf_prev``
+        un-rotation and the ``leaf_curr`` rotation into a single BasisRotation, is applied per
+        mode."""
         rng = np.random.default_rng(seed)
         num_modes, n_states = 2, 3
         U_prev = np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])
         U_curr = np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])
-        expected = np.stack([U_curr[l] @ U_prev[l].T for l in range(num_modes)])
+        expected = np.stack([U_prev[l].T @ U_curr[l] for l in range(num_modes)])
         assert np.allclose(_merge_leaves(U_prev, U_curr), expected)
 
     def test_apply_system_basis_rotation(self, seed):
-        """Test that per-mode leaves are applied as (transposed) BasisRotations and that a
-        mode whose rotation is the identity is skipped."""
+        """Test that per-mode leaves are applied as BasisRotations and that a mode whose
+        rotation is the identity is skipped."""
         num_modes, n_states = 2, 2
         wires = list(range(num_modes * n_states))
         U0 = random_orthogonal(n_states, np.random.default_rng(seed))
@@ -316,7 +316,7 @@ class TestCGFScheme:
         tape = qp.tape.make_qscript(_apply_system_basis_rotation)(U, wires)
         assert [type(op) for op in tape.operations] == [qp.BasisRotation]
         assert list(tape.operations[0].wires) == wires[:n_states]
-        assert np.allclose(tape.operations[0].parameters[0], U0.T)
+        assert np.allclose(tape.operations[0].parameters[0], U0)
 
 
 class TestResourceRule:
@@ -463,6 +463,66 @@ class TestDecomposition:
             has_control,
             double_phase,
         )
+
+    @pytest.mark.parametrize("num_fragments", [1, 2])
+    @pytest.mark.parametrize("num_steps", [1, 3])
+    def test_fused_one_body_block(self, seed, num_fragments, num_steps):
+        """The one-body evolution and its surrounding basis rotations are fused into one
+        complex-valued BasisRotation per mode and Trotter step, without any RZ gates."""
+        rng = np.random.default_rng(seed)
+        num_modes, n_states = 2, 3
+        core = rng.normal(size=(num_fragments + 1, num_modes, num_modes, n_states, n_states))
+        leaf = np.stack(
+            [
+                np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])
+                for _ in range(num_fragments + 1)
+            ]
+        )
+        ham = CGFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
+        wires = list(range(num_modes * n_states))
+        tape = qp.tape.make_qscript(_trotter_cgf_decomposition)(0.7, num_steps, ham, wires, False)
+
+        rotations = [op for op in tape.operations if isinstance(op, qp.BasisRotation)]
+        fused = [op for op in rotations if np.iscomplexobj(op.parameters[0])]
+        assert not any(isinstance(op, qp.RZ) for op in tape.operations)
+        assert len(fused) == num_modes * num_steps
+        assert len(rotations) - len(fused) == num_modes * (2 * (num_fragments - 1) * num_steps + 2)
+
+    @pytest.mark.parametrize(
+        ("evolution_time", "atol"),
+        [
+            # The 1e-8 cutoff in ``givens_decomposition`` drops small entries of the fused
+            # unitary, which limits the accuracy for small time steps (#10536).
+            (1e-4, 1e-7),
+            (1e-6, 1e-7),
+            pytest.param(
+                1e-9,
+                1e-13,
+                marks=pytest.mark.xfail(
+                    reason="``givens_decomposition`` drops entries below 1e-8 (#10536)",
+                    strict=True,
+                ),
+            ),
+        ],
+    )
+    def test_fused_one_body_precision_close_to_identity(self, evolution_time, atol, seed):
+        """The fused one-body block stays accurate for small time steps, i.e., close to the
+        identity, in the base and double-phase circuits."""
+        rng = np.random.default_rng(seed)
+        num_modes, n_states = 2, 3
+        core = rng.normal(size=(2, num_modes, num_modes, n_states, n_states)) * 0.4
+        leaf = np.stack(
+            [np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])] * 2
+        )
+        ham = CGFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
+        wires = list(range(num_modes * n_states))
+        expected = cgf_second_order_trotter_matrix(ham, evolution_time, 1)
+
+        actual = qp.matrix(qp.TrotterCGF(evolution_time, 1, ham, wires=wires), wire_order=wires)
+        block0, block1 = control_branches(qp.TrotterCGF, ham, wires, evolution_time, 1, True)
+        assert np.allclose(actual, expected, atol=atol, rtol=0)
+        assert np.allclose(block0, expected, atol=atol, rtol=0)
+        assert np.allclose(block1, expected.conj().T, atol=atol, rtol=0)
 
     @pytest.mark.slow
     def test_base_matches_expm_nonidentity_leaves(self, seed):
@@ -685,7 +745,14 @@ class TestDoublePhaseControlledDecomposition:
             jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
 
         ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
-        assert {type(op).__name__ for op in ops} == {"BasisRotation", "CNOT", "RZ", "IsingZZ"}
+        assert {type(op).__name__ for op in ops} == {
+            "BasisRotation",
+            "CNOT",
+            "CY",
+            "RZ",
+            "IsingZZ",
+            "GlobalPhase",
+        }
 
     def test_double_phase_controlled_matches_expm(self, diagonal_hamiltonian_cgf):
         """With double_phase=True, ctrl(TrotterCGF) realizes diag(U, U^dagger): for an

@@ -16,7 +16,84 @@
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.ops import CRZ, RZ, IsingZZ
+from pennylane.ops import CNOT, CRZ, CY, RZ, IsingZZ
+from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
+from pennylane.typing import Complex, Wire
+
+
+def _transpose_leaf(U):
+    """Conjugate transpose (adjoint) of a leaf rotation, batched over leading axes."""
+    return math.conj(math.swapaxes(U, -2, -1))
+
+
+def _merge_leaves(U_prev, U_curr):
+    """Fragment-rotation merge rule ``U_prev^dagger @ U_curr``, batched over leading axes.
+
+    It combines the un-rotation of the previous fragment and the rotation of the current one,
+    so that their basis rotations telescope into one.
+    """
+    return _transpose_leaf(U_prev) @ U_curr
+
+
+def _fused_one_body_unitary(leaf_tensors, one_body_energies, time_step):
+    r"""Single-particle rotation :math:`W = A\, \operatorname{diag}(e^{-i\epsilon_p \Delta t})\,
+    A^\dagger` of the fused one-body block, with :math:`A = U^{(L)\dagger} U^{(0)}`, batched over
+    leading axes (e.g., modes).
+
+    It combines the basis rotations into and out of the one-body frame with the one-body diagonal
+    layer, in the frame of the last two-body fragment.
+    """
+    if compiler.active() or capture.enabled():
+        leaf_tensors = math.array(leaf_tensors, like="jax")
+        one_body_energies = math.array(one_body_energies, like="jax")
+
+    A = _merge_leaves(leaf_tensors[-1], leaf_tensors[0])
+    one_body_phases = math.exp(-1j * one_body_energies * time_step)
+    return (A * one_body_phases[..., None, :]) @ _transpose_leaf(A)
+
+
+def _apply_fused_one_body(unitaries, registers, control_wires):
+    r"""Apply the fused one-body block as one :class:`~.BasisRotation` per register.
+
+    For the double-phase circuit, we sandwich each basis rotation with the controlled
+    particle-hole transformation :math:`P = X_0 Y_1 X_2 Y_3 \cdots` on its register. For real
+    leaves, this flips :math:`\Delta t\to-\Delta t` in the control-1 branch, up to the phase
+    :math:`e^{-i\sum_p\epsilon_p\Delta t}` per register, which the decomposition compensates.
+    """
+    # pylint: disable=no-value-for-parameter
+
+    def controlled_particle_hole(register):
+        @for_loop(0, len(register), 2)
+        def controlled_x(p):
+            CNOT([control_wires[0], register[p]])
+
+        @for_loop(1, len(register), 2)
+        def controlled_y(p):
+            CY([control_wires[0], register[p]])
+
+        if len(control_wires) > 0:
+            controlled_x()
+            controlled_y()
+
+    for unitary, register in zip(unitaries, registers):
+        controlled_particle_hole(register)
+        BasisRotation(unitary_matrix=unitary, wires=register)
+        controlled_particle_hole(register)
+
+
+def _fused_one_body_resource_counts(num_trotter_steps, num_registers, register_size, has_control):
+    """Gate counts of the fused one-body blocks: one complex-valued ``BasisRotation`` per Trotter
+    step and register. The double-phase circuit adds the controlled Paulis around it, i.e.,
+    ``CNOT`` for even and ``CY`` for odd register positions."""
+    resources = {
+        BasisRotation(Complex[register_size, register_size], wires=Wire[register_size]): (
+            num_registers * num_trotter_steps
+        )
+    }
+    if has_control:
+        resources[CNOT] = 2 * num_trotter_steps * num_registers * ((register_size + 1) // 2)
+        resources[CY] = 2 * num_trotter_steps * num_registers * (register_size // 2)
+    return resources
 
 
 def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
@@ -51,8 +128,6 @@ def _run_trotter_steps(  # pylint: disable=too-many-arguments
     apply_system_basis_rotation,
     apply_two_body_diagonal,
     apply_one_body_diagonal,
-    merge_leaves,
-    transpose_leaf,
     apply_fused_one_body=None,
 ):
     r"""Emit the second-order Trotter step sequence and the trailing basis rotation.
@@ -92,11 +167,6 @@ def _run_trotter_steps(  # pylint: disable=too-many-arguments
         apply_one_body_diagonal (callable):
             Qfunc with inputs ``(Z, wires, first_order_time_step, control_wires, double_phase)`` that applies the
             one-body :class:`~.RZ` layer, one per wire, from the diagonal of ``Z``.
-        merge_leaves (callable): Function that merges the current unitary basis change
-            with the previous: ``(U_prev, U_curr) -> U``. Combines consecutive leaves so their
-            basis rotations telescope into one.
-        transpose_leaf (callable): ``(U) -> U``. Inverse of a leaf, for the trailing basis
-            rotation that closes the final fragment.
         apply_fused_one_body (callable | None): Optional qfunc ``(wires, control_wires,
             double_phase)`` that applies the full one-body evolution in the frame of the last
             two-body fragment. It replaces the basis rotations into and out of the one-body frame
@@ -119,7 +189,7 @@ def _run_trotter_steps(  # pylint: disable=too-many-arguments
     num_two_body_fragments = U_tensor.shape[0] - 1
 
     def rotate(prev_fragment_idx, fragment_idx):
-        U = merge_leaves(U_tensor[prev_fragment_idx], U_tensor[fragment_idx])
+        U = _merge_leaves(U_tensor[prev_fragment_idx], U_tensor[fragment_idx])
         apply_system_basis_rotation(U, wires)
 
     def two_body_diagonal(fragment_idx, time_step):
@@ -162,5 +232,4 @@ def _run_trotter_steps(  # pylint: disable=too-many-arguments
     two_body_diagonal(1, first_order_time_step)
     for_loop(num_trotter_steps)(remainder_of_step)()
 
-    very_last_U = transpose_leaf(U_tensor[1])
-    apply_system_basis_rotation(very_last_U, wires)
+    apply_system_basis_rotation(_transpose_leaf(U_tensor[1]), wires)
