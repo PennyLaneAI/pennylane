@@ -138,9 +138,10 @@ class OutSquare(_SquareArithmeticOp):
         m = 6
         wires = qp.registers({"x": n, "out": m, "work": m})
 
-        dev = qp.device("lightning.qubit", wires=n + 2 * m, seed=295)
+        dev = qp.device("lightning.qubit", wires=n + 2 * m)
 
-        @qp.qnode(dev, shots=1_000)
+        @qp.qjit(capture=True, static_argnums=0)
+        @qp.qnode(dev)
         def circuit(output_wires):
             # Create a uniform superposition between integers 3 and 7
             qp.H(wires["x"][0]) # Superposition between 0 and 4
@@ -150,12 +151,14 @@ class OutSquare(_SquareArithmeticOp):
             qp.BasisState(qp.math.int_to_binary(5, len(output_wires)), wires=output_wires)
             # Square
             qp.OutSquare(wires["x"], output_wires, wires["work"])
-            return qp.counts(wires=output_wires)
+            return qp.probs(wires=output_wires)
 
-    >>> counts = circuit(wires["out"])
-    >>> counts = {int(k, 2): val for k, val in counts.items()}
-    >>> print(counts)
-    {14: np.int64(498), 54: np.int64(502)}
+    >>> probabilities = circuit(wires["out"])
+    >>> outcomes = np.flatnonzero(np.round(probabilities, 8))
+    >>> print(outcomes)
+    [14 54]
+    >>> print(probabilities[outcomes])
+    [0.5 0.5]
 
     We correctly obtain the squared numbers added to :math:`y=5`, namely
     :math:`5+3^2=14` and :math:`5+7^2=54`.
@@ -163,10 +166,12 @@ class OutSquare(_SquareArithmeticOp):
     Note that reducing the size of the output register (here from ``m=6`` to ``m=4``)
     changes the computed numbers via the reduced modulus:
 
-    >>> counts = circuit(wires["out"][:4])
-    >>> counts = {int(k, 2): val for k, val in counts.items()}
-    >>> print(counts)
-    {6: np.int64(501), 14: np.int64(499)}
+    >>> probabilities = circuit(wires["out"][:4])
+    >>> outcomes = np.flatnonzero(np.round(probabilities, 8))
+    >>> print(outcomes)
+    [ 6 14]
+    >>> print(probabilities[outcomes])
+    [0.5 0.5]
 
     The new results are consistent with the previous ones: the smaller output :math:`14` remains
     unchanged because :math:`14 < 16=2^4`, and :math:`54` is changed to :math:`54\!\mod\!2^4=6`.
@@ -179,8 +184,8 @@ class OutSquare(_SquareArithmeticOp):
         If we know that the qubits in ``output_wires`` are in the state
         :math:`|0\rangle^{\otimes m}` before ``OutSquare`` is applied, we can pass this information
         to the template via ``output_wires_zeroed``, leading to a cheaper decomposition.
-        Consider the following example, where we control this information with the ``QNode``
-        argument ``zeroed``:
+        The following factory binds ``zeroed`` before tracing, so the information is a
+        compile-time constant:
 
         .. code-block:: python
 
@@ -190,39 +195,55 @@ class OutSquare(_SquareArithmeticOp):
             output_wires = list(range(n, n + m))
             work_wires = list(range(n + m, n + 2 * m))
 
-            dev = qp.device("lightning.qubit", wires=20, seed=295)
+            dev = qp.device("lightning.qubit", wires=20)
 
-            @qp.transforms._tape_decompose(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1) # To see resources easily
-            @qp.qnode(dev, shots=1_000)
-            def circuit(zeroed):
-                qp.BasisState(qp.math.int_to_binary(13, len(x_wires)), wires=x_wires)
-                qp.OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
-                return qp.counts(wires=output_wires)
+            def make_circuit(zeroed: bool):
+                @qp.qnode(dev)
+                def circuit():
+                    qp.BasisState(qp.math.int_to_binary(13, len(x_wires)), wires=x_wires)
+                    qp.OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
+                    return qp.probs(wires=output_wires)
+
+                return circuit
+
+            gate_set = {
+                qp.BasisState, qp.CNOT, qp.MultiX, qp.MultiControlledX, qp.TemporaryAND,
+                "Adjoint(TemporaryAND)", qp.SemiAdder, "C(MultiX)",
+            }
+            circuit_false = qp.qjit(
+                qp.transforms.decompose(make_circuit(False), gate_set=gate_set), capture=True
+            )
+            circuit_true = qp.qjit(
+                qp.transforms.decompose(make_circuit(True), gate_set=gate_set), capture=True
+            )
 
         We can compute the required resources with ``zeroed=False``, i.e., when not passing
         the information to the template:
 
-        >>> specs_false = qp.specs(circuit)(False).resources.quantum_operations  # doctest: +SKIP
-        >>> print(specs_false)  # doctest: +SKIP
-        {'BasisState': 1, 'C(MultiX)': 4, 'MultiControlledX': 12, 'TemporaryAND': 19, 'CNOT': 49, 'Adjoint(TemporaryAND)': 19, 'MultiX': 4, 'SemiAdder': 2}
+        >>> specs_false = qp.specs(circuit_false, level="user", compute_depth=False)()
+        >>> print(specs_false.resources.quantum_operations)
+        {'1C(MultiX)': 4, 'Adjoint(TemporaryAND)': 19, 'BasisState': 1, 'CNOT': 49, 'MultiControlledX': 12, 'MultiX': 4, 'SemiAdder': 2, 'TemporaryAND': 19}
 
         When we do pass the information, we reduce the required resources by a lot:
 
-        >>> specs_true = qp.specs(circuit)(True).resources.quantum_operations  # doctest: +SKIP
-        >>> print(specs_true)  # doctest: +SKIP
-        {'BasisState': 1, 'TemporaryAND': 10, 'CNOT': 24, 'MultiControlledX': 8, 'Adjoint(TemporaryAND)': 7}
+        >>> specs_true = qp.specs(circuit_true, level="user", compute_depth=False)()
+        >>> print(specs_true.resources.quantum_operations)
+        {'Adjoint(TemporaryAND)': 7, 'BasisState': 1, 'CNOT': 24, 'MultiControlledX': 8, 'TemporaryAND': 10}
 
         Of course, both decompositions are correctly implementing the squaring operation:
 
-        >>> print(circuit(False))
-        {np.str_('10101001'): np.int64(1000)}
-        >>> print(circuit(True))
-        {np.str_('10101001'): np.int64(1000)}
+        >>> print(np.argmax(circuit_false()), np.argmax(circuit_true()))
+        169 169
+        >>> print(np.allclose(circuit_false(), circuit_true()))
+        True
 
-        Here, :math:`(10101001)_2=128 + 32 + 8 + 1=169` is the expected result of :math:`13^2`.
-        To conclude, we draw the more efficient circuit variant:
+        Here, :math:`169` is the expected result of :math:`13^2`.
+        We can draw the more efficient variant using tape decomposition:
 
-        >>> print(qp.draw(circuit)(True))
+        >>> decomposed = qp.transforms._tape_decompose(
+        ...     make_circuit(True), gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1
+        ... )
+        >>> print(qp.draw(decomposed)())
          0: ──X───────╭●─────────────╭X────╭●───────────●╮─╭●────╭X─────────────────────────────────── ···
          1: ──X────╭●─│──╭X────╭●────│─────│─────────────│─│─────│──────●╮─╭●────╭X──────────────╭●─── ···
          2: ────╭●─│──│──│─────│─────│─────│─────╭●──────│─├●────│───────│─├●────│──────╭●────╭●─│──── ···
@@ -244,14 +265,14 @@ class OutSquare(_SquareArithmeticOp):
          1: ··· ─│─────│─────╭●──────│─├●────│──────╭●──●╮─╭●─│──│────│─│─────┤
          2: ··· ─│─────│─────│───────│─│─────│──────│────│─│──│──│────│─│─────┤
          3: ··· ─│─────│─────│───────│─│─────│──────│────│─│──│──│────│─│──╭●─┤
-         4: ··· ─│─────│─────├X──────│─│─────│──────│────│─│──│──├X───│─│──│──┤ ╭Counts
-         5: ··· ─│──╭X─├●────│──────●┤─╰X─╭X─│──────│────│─│──├●─│───●┤─╰X─│──┤ ├Counts
-         6: ··· ─│──│──│─────│───────│────│──│───●╮─├X───│─│──│──│────│────│──┤ ├Counts
-         7: ··· ─│──│──│─────│───────│────│──│────│─│───●┤─╰X─│──│────│────│──┤ ├Counts
-         8: ··· ─│──│──│─────│───────│────│──│────│─│────│────│──│────│────│──┤ ├Counts
-         9: ··· ─│──│──│─────│───────│────│──│────│─│────│────│──│────│────│──┤ ├Counts
-        10: ··· ─│──│──│─────│───────│────│──│────│─│────│────│──│────│────│──┤ ├Counts
-        11: ··· ─│──│──│─────│───────│────│──│────│─│────│────│──│────│────╰X─┤ ╰Counts
+         4: ··· ─│─────│─────├X──────│─│─────│──────│────│─│──│──├X───│─│──│──┤ ╭Probs
+         5: ··· ─│──╭X─├●────│──────●┤─╰X─╭X─│──────│────│─│──├●─│───●┤─╰X─│──┤ ├Probs
+         6: ··· ─│──│──│─────│───────│────│──│───●╮─├X───│─│──│──│────│────│──┤ ├Probs
+         7: ··· ─│──│──│─────│───────│────│──│────│─│───●┤─╰X─│──│────│────│──┤ ├Probs
+         8: ··· ─│──│──│─────│───────│────│──│────│─│────│────│──│────│────│──┤ ├Probs
+         9: ··· ─│──│──│─────│───────│────│──│────│─│────│────│──│────│────│──┤ ├Probs
+        10: ··· ─│──│──│─────│───────│────│──│────│─│────│────│──│────│────│──┤ ├Probs
+        11: ··· ─│──│──│─────│───────│────│──│────│─│────│────│──│────│────╰X─┤ ╰Probs
         12: ··· ─│──│──│─────│───────│────│──│───●┤─╰●──⊕╯────╰⊕─╰●──⊕╯───────┤
         13: ··· ─╰●─╰●─│──╭●─│──╭●───│────╰●─╰●──⊕╯───────────────────────────┤
         14: ··· ───────╰⊕─╰X─╰●─╰X──⊕╯────────────────────────────────────────┤

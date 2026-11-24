@@ -76,7 +76,7 @@ class NoOperandsOp(CompositeOp2):
         return mat
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None):  # pylint: disable=unused-argument
+    def _sort(cls, op_list, wire_map: dict = None):
         return op_list
 
 
@@ -106,11 +106,11 @@ class ValidOp(CompositeOp2):
         return mat
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None):  # pylint: disable=unused-argument
+    def _sort(cls, op_list, wire_map: dict = None):
         return op_list
 
 
-class NoMatrixOp(Operator2):  # pylint: disable=too-few-public-methods
+class NoMatrixOp(Operator2):
 
     def __init__(self, wires: WiresLike):
         super().__init__(wires=wires)
@@ -159,12 +159,6 @@ class TestConstruction:
         """Test directly initializing a CompositeOp2 fails"""
         with pytest.raises(TypeError, match="Can't instantiate abstract class CompositeOp2"):
             _ = CompositeOp2(self.simple_operands)
-
-    @pytest.mark.xfail
-    def test_raise_error_fewer_than_2_operands(self):
-        """Test that initializing a composite operator with less than 2 operands raises a ValueError."""
-        with pytest.raises(ValueError, match="Require at least two operators to combine;"):
-            _ = ValidOp(qp.PauliX(0))
 
     def test_raise_error_with_mcm_input(self):
         """Test that composite ops of mid-circuit measurements are not supported."""
@@ -222,7 +216,7 @@ class TestConstruction:
         with pytest.raises(
             AttributeError, match="property 'data' of 'ValidOp' object has no setter"
         ):
-            op.data = (1.23, 0.0, -1.0, -2.0)  # pylint: disable=attribute-defined-outside-init
+            op.data = (1.23, 0.0, -1.0, -2.0)
 
     def test_initialization_in_queuing_context(self):
         """Test that valid child classes can be initialized in a queuing context"""

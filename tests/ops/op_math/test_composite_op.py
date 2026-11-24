@@ -54,14 +54,14 @@ class ValidOp(CompositeOp):
     def is_verified_hermitian(self):
         return False
 
-    def matrix(self, wire_order=None):  # pylint: disable=unused-argument
+    def matrix(self, wire_order=None):
         return np.eye(2**self.num_wires)
 
     def eigvals(self):
         return self.eigendecomposition["eigval"]
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None):  # pylint: disable=unused-argument
+    def _sort(cls, op_list, wire_map: dict = None):
         return op_list
 
 
@@ -74,12 +74,6 @@ class TestConstruction:
         """Test directly initializing a CompositeOp fails"""
         with pytest.raises(TypeError, match="Can't instantiate abstract class CompositeOp"):
             _ = CompositeOp(*self.simple_operands)
-
-    @pytest.mark.xfail
-    def test_raise_error_fewer_than_2_operands(self):
-        """Test that initializing a composite operator with less than 2 operands raises a ValueError."""
-        with pytest.raises(ValueError, match="Require at least two operators to combine;"):
-            _ = ValidOp(qp.PauliX(0))
 
     def test_raise_error_with_mcm_input(self):
         """Test that composite ops of mid-circuit measurements are not supported."""
@@ -201,7 +195,7 @@ class TestConstruction:
     def test_map_wires(self, construct_overlapping_ops, expected_overlapping_ops):
         """Test the map_wires method."""
         diag_op = ValidOp(*self.simple_operands)
-        # pylint: disable-next=attribute-defined-outside-init,protected-access
+        # pylint: disable-next=protected-access
         diag_op._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "X", 1: "Y"}): 1})
         if construct_overlapping_ops:
             _ = diag_op.overlapping_ops

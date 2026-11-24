@@ -712,6 +712,7 @@ class PartialUnaryStatePreparation(Operator2):
 
         dev = qp.device("lightning.qubit", wires=9)
 
+        @qp.qjit(capture=True)
         @qp.qnode(dev)
         def circuit():
             qp.PartialUnaryStatePreparation(coefficients, wires, indices, work_wires)
@@ -775,16 +776,35 @@ class PartialUnaryStatePreparation(Operator2):
         indices = tuple(np.random.choice(2**15, num_entries, replace=False))
         wires = list(range(15))
         num_work_wires = qp.math.ceil_log2(num_entries) - 1
-        work_wires = list(range(15, 15 + num_work_wires))
 
-    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
+        def make_resource_circuit(num_work_wires: int):
+            work_wires = list(range(15, 15 + num_work_wires))
+            gate_set = {
+                qp.MultiplexerStatePreparation, qp.MultiX, qp.QROM,
+                "C(MultiX)", qp.MultiControlledX, qp.SWAP,
+            }
+
+            @qp.qjit(capture=True, target="mlir")
+            @qp.transforms.decompose(gate_set=gate_set)
+            @qp.qnode(qp.device("null.qubit", wires=15 + num_work_wires))
+            def resource_circuit():
+                qp.PartialUnaryStatePreparation(coefficients, wires, indices, work_wires)
+                return qp.state()
+
+            return resource_circuit
+
+    These circuits use ``null.qubit`` and compilation to MLIR to analyze resources without
+    allocating a state vector for the large register.
+
+    >>> resource_circuit = make_resource_circuit(num_work_wires)
+    >>> print(qp.specs(resource_circuit, level="user", compute_depth=False)().resources)
     Quantum operations:
     - Total: 6,046
-      - MultiplexerStatePreparation: 1
-      - MultiX: 2,420
-      - QROM: 1,207
-      - C(MultiX): 2,414
+      - 1C(MultiX): 2,414
       - MultiControlledX: 3
+      - MultiX: 2,420
+      - MultiplexerStatePreparation: 1
+      - QROM: 1,207
       - SWAP: 1
     Measurement processes:
     - state(all wires): 1
@@ -795,15 +815,15 @@ class PartialUnaryStatePreparation(Operator2):
     makes the isometry circuit of the state preparation cheaper:
 
     >>> new_num_work_wires = 3*num_work_wires
-    >>> work_wires = list(range(15, 15 + new_num_work_wires))
-    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
+    >>> resource_circuit = make_resource_circuit(new_num_work_wires)
+    >>> print(qp.specs(resource_circuit, level="user", compute_depth=False)().resources)
     Quantum operations:
     - Total: 3,068
-      - MultiplexerStatePreparation: 1
-      - MultiX: 332
-      - QROM: 160
-      - C(MultiX): 2,553
+      - 1C(MultiX): 2,553
       - MultiControlledX: 6
+      - MultiX: 332
+      - MultiplexerStatePreparation: 1
+      - QROM: 160
       - SWAP: 16
     Measurement processes:
     - state(all wires): 1
