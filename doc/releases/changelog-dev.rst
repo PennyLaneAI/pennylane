@@ -2619,6 +2619,10 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed the extra-control-wire test for :class:`~.QROM` to omit work-register sampling
+  when no work wires are present, and removed its outdated expected-failure marker.
+  `(#10586) <https://github.com/PennyLaneAI/pennylane/pull/10586>`__
+
 * Fixed resource callbacks in :class:`~.SingleExcitation` decompositions to accept positional arguments.
   `(#10575) <https://github.com/PennyLaneAI/pennylane/pull/10575>`__
 
