@@ -57,10 +57,10 @@ def test_units_select_pauli_rot_phase_gradient(p):
 
     assert op.compute_op.name == "SelectPauliRotPhaseGradientCompute"
     assert op.target_op.name == "SemiAdder"
-    qp.assert_equal(op.uncompute_op, op.compute_op)
+    qp.assert_equal(op.uncompute_op, qp.adjoint(op.compute_op))
 
     for g, exp_name in zip(
-        op.compute_op.decomposition(), ["QROM"] + ["MultiControlledX"] * p, strict=True
+        op.compute_op.decomposition(), ["QROMLoad"] + ["MultiControlledX"] * p, strict=True
     ):
         assert g.name == exp_name
 
