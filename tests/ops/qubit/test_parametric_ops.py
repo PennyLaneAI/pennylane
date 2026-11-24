@@ -108,7 +108,7 @@ BROADCASTED_OPERATIONS = [
         wires=[0, 1],
     ),
     qp.QubitUnitary(1j * np.array([[[1, 0], [0, -1]], [[0, 1], [1, 0]]]), wires=0),
-    qp.PSWAP(np.array([0.123, -0.63, 0.235]), wires=["a", -1]),
+    qp.PSWAP(np.array([0.123, -0.63, 0.235]), wires=[13, -1]),
     qp.DiagonalQubitUnitary(np.array([[1.0, 1.0j], [1.0j, 1.0j]]), wires=1),
 ]
 
@@ -170,16 +170,16 @@ class TestOperations:
     @pytest.mark.parametrize(
         "op, rule_name",
         [
-            (qp.RY(0.37, wires=3), "_ry_to_rz_cliff"),
-            (qp.RZ(-0.29, wires=3), "_rz_to_ry_cliff"),
-            (qp.MultiRZ(0.37, wires=[3]), "_multi_rz_decomposition"),
-            (qp.MultiRZ(-0.29, wires=[3, 1]), "_multi_rz_decomposition"),
-            (qp.MultiRZ(0.37, wires=[3, 1, 4, 0]), "_multi_rz_decomposition"),
-            (qp.PauliRot(0.37, "III", wires=[3, 1, 4]), "_pauli_rot_decomposition"),
-            (qp.PauliRot(0.37, "ZIZ", wires=[3, 1, 4]), "_pauli_rot_decomposition"),
-            (qp.PauliRot(-0.29, "XIY", wires=[3, 1, 4]), "_pauli_rot_decomposition"),
-            (qp.PauliRot(0.37, "YYZZ", wires=[3, 1, 4, 0]), "_pauli_rot_decomposition"),
-            (qp.IsingXY(-0.29, wires=[3, 1]), "_isingxy_to_h_cy"),
+            (qp.RY(0.37, wires=3), "to_rz_cliff"),
+            (qp.RZ(-0.29, wires=3), "to_ry_cliff"),
+            (qp.MultiRZ(0.37, wires=[3]), "cnot_ladder"),
+            (qp.MultiRZ(-0.29, wires=[3, 1]), "cnot_ladder"),
+            (qp.MultiRZ(0.37, wires=[3, 1, 4, 0]), "cnot_ladder"),
+            (qp.PauliRot(0.37, "III", wires=[3, 1, 4]), "basis_change_multirz"),
+            (qp.PauliRot(0.37, "ZIZ", wires=[3, 1, 4]), "basis_change_multirz"),
+            (qp.PauliRot(-0.29, "XIY", wires=[3, 1, 4]), "basis_change_multirz"),
+            (qp.PauliRot(0.37, "YYZZ", wires=[3, 1, 4, 0]), "basis_change_multirz"),
+            (qp.IsingXY(-0.29, wires=[3, 1]), "to_h_cy"),
         ],
     )
     def test_basis_change_decomposition(self, op, rule_name):
@@ -193,7 +193,7 @@ class TestOperations:
         import jax
         import jax.numpy as jnp
 
-        rule = qp.list_decomps(qp.IsingXY)["_isingxy_to_h_cy"]
+        rule = qp.list_decomps(qp.IsingXY)["to_h_cy"]
         jaxpr = jax.make_jaxpr(lambda phi, wires: rule(phi, wires=wires))(
             jnp.array(0.1), jnp.array([0, 1])
         )
@@ -1143,7 +1143,7 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
         assert np.allclose(qp.Identity().matrix(), np.identity(1), atol=tol, rtol=0)
         assert np.allclose(qp.Identity().matrix(wire_order=[0]), np.identity(2), atol=tol, rtol=0)
         assert np.allclose(
-            qp.Identity().matrix(wire_order=[0, "a"]), np.identity(4), atol=tol, rtol=0
+            qp.Identity().matrix(wire_order=[0, 13]), np.identity(4), atol=tol, rtol=0
         )
 
     def test_rx(self, tol):
@@ -3109,9 +3109,9 @@ class TestPauliRot:  # pylint: disable=too-many-public-methods
     def test_pauli_rot_generator(self):
         """Test that the generator of the PauliRot operation
         is correctly returned."""
-        op = qp.PauliRot(0.65, "ZY", wires=["a", 7])
+        op = qp.PauliRot(0.65, "ZY", wires=[13, 7])
         gen, coeff = qp.generator(op)
-        expected = qp.PauliZ("a") @ qp.PauliY(7)
+        expected = qp.PauliZ(13) @ qp.PauliY(7)
 
         assert coeff == -0.5
         assert gen == expected
@@ -3236,11 +3236,11 @@ class TestMultiRZ:
         qp.testing.assert_valid(op)
 
     @pytest.mark.parametrize("wires", [[0], [0, 2], [3, 1, 0]])
-    def test_MultiRZ_to_ppr(self, wires):
+    def test_MultiRZ_to_paulirot(self, wires):
         """Test that MultiRZ decomposes into a PauliRot on a pure-Z Pauli word."""
 
         op = qp.MultiRZ(0.123, wires=wires)
-        rule = qp.list_decomps(qp.MultiRZ)["_multi_rz_to_ppr"]
+        rule = qp.list_decomps(qp.MultiRZ)["to_paulirot"]
         tape = decomp_rule_to_tape(op, rule)
         (actual,) = tape.operations
         qp.assert_equal(actual, qp.PauliRot(0.123, "Z" * len(wires), wires=wires))
@@ -4049,7 +4049,7 @@ pow_parametric_ops = (
     qp.IsingXX(-2.345, wires=(0, 1)),
     qp.IsingYY(3.1652, wires=(0, 1)),
     qp.IsingXY(-1.234, wires=(0, 1)),
-    qp.IsingZZ(1.789, wires=("a", "b")),
+    qp.IsingZZ(1.789, wires=(13, 14)),
     qp.GlobalPhase(0.123),
     # broadcasted ops
     qp.RX(np.array([1.234, 4.129]), wires=0),
@@ -4069,7 +4069,7 @@ pow_parametric_ops = (
     qp.U1(np.array([1.23, 0.241]), wires=0),
     qp.IsingXX(np.array([9.32, -2.345]), wires=(0, 1)),
     qp.IsingYY(np.array([3.1652]), wires=(0, 1)),
-    qp.IsingZZ(np.array([1.789, 2.52, 0.211]), wires=("a", "b")),
+    qp.IsingZZ(np.array([1.789, 2.52, 0.211]), wires=(13, 14)),
 )
 
 

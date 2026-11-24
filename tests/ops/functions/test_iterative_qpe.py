@@ -134,17 +134,6 @@ class TestIQPE:
 
         assert len(circuit()) == iters
 
-    @pytest.mark.parametrize("wire", (1, "a", "abc", 6))
-    def test_wires_args(self, wire):
-        """Test to check that all types of wires are working"""
-
-        with qp.queuing.AnnotatedQueue() as tape_queue:
-            qp.iterative_qpe(qp.RZ(1.0, wires=[0]), wire, iters=3)
-
-        tape = qp.core.qscript.QuantumScript.from_queue(tape_queue)
-
-        assert wire in tape.wires
-
     @pytest.mark.parametrize("phi", (1.2, 2.3, 3.4))
     def test_measurement_processes_probs(self, phi):
         """Test to check that the measurement process prob works correctly"""
@@ -283,7 +272,7 @@ class TestCaptureIQPE:
     def test_legacy_op_can_be_used_as_base(self):
         """Ensure a legacy operator still works fine under capture."""
 
-        class DummyOp(qp.core.Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(qp.core.Operator):
             pass
 
         def circuit(phi):

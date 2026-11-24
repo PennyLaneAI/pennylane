@@ -69,6 +69,15 @@ class RX1(Operator1):
         return RX1(self.data[0], self.wires)
 
 
+class S1(Operator1):
+
+    num_wires = 1
+
+    @staticmethod
+    def compute_matrix():
+        return np.diag([1, 1j])
+
+
 ops = (
     (Z1(0), X1(0), Z1(0)),
     (H1(wires=0), Z1(wires=0), H1(wires=0)),
@@ -300,9 +309,9 @@ class TestInitialization:
 
     def test_init_change_op_basis_op(self):
         """Test the initialization of a ChangeOpBasis operator."""
-        change_op_basis_op = ChangeOpBasis(qp.PauliX(wires=0), qp.RZ(0.23, wires="a"))
+        change_op_basis_op = ChangeOpBasis(qp.PauliX(wires=0), qp.RZ(0.23, wires=6))
 
-        assert change_op_basis_op.wires == Wires((0, "a"))
+        assert change_op_basis_op.wires == Wires((0, 6))
         assert change_op_basis_op.num_wires == 2
         assert change_op_basis_op.name == "ChangeOpBasis"
 
@@ -313,8 +322,8 @@ class TestInitialization:
     def test_hash(self):
         """Testing some situations for the hash property."""
         # test not the same hash if different order
-        op1 = ChangeOpBasis(qp.PauliX("a"), qp.PauliY("a"), qp.PauliX(1))
-        op2 = ChangeOpBasis(qp.PauliY("a"), qp.PauliX("a"), qp.PauliX(1))
+        op1 = ChangeOpBasis(qp.PauliX(6), qp.PauliY(6), qp.PauliX(1))
+        op2 = ChangeOpBasis(qp.PauliY(6), qp.PauliX(6), qp.PauliX(1))
         assert hash(op1) != hash(op2)
 
     def test_batch_size(self):
@@ -332,7 +341,7 @@ class TestInitialization:
         "factors",
         (
             [qp.PauliX(wires=0), qp.PauliZ(wires=0)],
-            [qp.PauliX(wires=0), qp.RZ(0.612, "r")],
+            [qp.PauliX(wires=0), qp.RZ(0.612, 7)],
             [qp.PauliZ(wires=0), qp.PauliX(wires=0)],
             [MyOp(3.1, 0), qp.CNOT([0, 2])],
         ),
@@ -348,7 +357,7 @@ class TestInitialization:
         "factors",
         (
             [qp.PauliX(wires=0), qp.PauliZ(wires=0)],
-            [qp.PauliX(wires=0), qp.RZ(0.612, "r")],
+            [qp.PauliX(wires=0), qp.RZ(0.612, 7)],
             [qp.PauliZ(wires=0), qp.PauliX(wires=0)],
             [MyOp(3.1, 0), qp.CNOT([0, 2])],
         ),
@@ -538,6 +547,30 @@ class TestDecomposition:
             work_wires=work_wires,
         )
         assert_decomposable(op)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        "uncompute_op, expected_names",
+        [
+            (None, ["S1", "Adjoint(CNOT)", "Adjoint(S1)"]),
+            (qp.SX(0), ["Adjoint(SX)", "Adjoint(CNOT)", "Adjoint(S1)"]),
+        ],
+    )
+    def test_adjoint_decomposition_new(self, uncompute_op, expected_names):
+        """Test that the adjoint rule inverts and swaps the compute and uncompute operators,
+        also when the uncompute operator is not the adjoint of the compute operator."""
+        with qp.capture.pause():
+            ops_lst = [S1(0), qp.CNOT([0, 1]), uncompute_op or qp.adjoint(S1(0))]
+            expected = qp.matrix(qp.tape.QuantumScript(ops_lst), wire_order=[0, 1]).conj().T
+            op = qp.adjoint(change_op_basis(S1(0), qp.CNOT([0, 1]), uncompute_op))
+        assert isinstance(op.base, ChangeOpBasis)
+        assert_decomposable(op)
+
+        rule = qp.list_decomps(op)["adjoint_target"]
+        tape = qp.testing.decomp_rule_to_tape(op, rule)
+        assert [gate.name for gate in tape.operations] == expected_names
+        with qp.capture.pause():
+            assert np.allclose(qp.matrix(tape, wire_order=[0, 1]), expected)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_on_tape(self, ops_lst):

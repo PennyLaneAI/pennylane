@@ -30,13 +30,13 @@ from pennylane import math
 from pennylane.capture.autograph import disable_autograph
 from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition.symbolic_decomposition import adjoint_rotation
+from pennylane.decomposition.symbolic_decomposition import _adjoint_negate_angle
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
-from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control
-from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
+from pennylane.ops.op_math.pow2 import _pow_scale_angle as pow_rotation2
 from pennylane.ops.subcircuit import subcircuit
 from pennylane.typing import Bool, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
@@ -77,25 +77,25 @@ class MultiRZ(Operator2):
             :symbols: :math:`n` wires
             :example: :math:`n=3`
 
-            .. decomposition-rule:: _multi_rz_decomposition
+            .. decomposition-rule:: cnot_ladder
                 :image: /_static/decomposition_thumbnails/multirz_cnot_ladder.svg
 
                 :class:`~.CNOT` | :math:`2(n-1)` | 4
                 :class:`~.RZ` | :math:`1` | 1
 
-            .. decomposition-rule:: _multi_rz_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/multirz_to_ppr.svg
 
                 :class:`PauliRot("Z...Z") <.PauliRot>` on :math:`n` wires | :math:`1` | 1
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/multirz_adjoint.svg
                 :region: adjoint
                 :where: ``theta`` changes sign
 
                 :class:`~.MultiRZ` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/multirz_pow.svg
                 :region: pow
                 :where: ``theta`` is multiplied by the power :math:`z`
@@ -234,7 +234,7 @@ def _MultiRZLadder(wires: WiresLike, reverse: bool):
 
 
 # pylint: disable-next=unused-argument
-def _multi_rz_decomposition_resources(theta: TensorLike, wires: WiresLike):
+def _multi_rz_standard_resources(theta: TensorLike, wires: WiresLike):
     num_wires = len(wires)
     if num_wires == 1:
         return {qp.RZ: 1}
@@ -243,8 +243,8 @@ def _multi_rz_decomposition_resources(theta: TensorLike, wires: WiresLike):
     return {_change_op_basis_abstract(ladder, RZ(Float, wires=Wire[1]), unladder): 1}
 
 
-@register_resources(_multi_rz_decomposition_resources)
-def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike):
+@register_resources(_multi_rz_standard_resources, name="cnot_ladder")
+def _multi_rz_standard(theta: TensorLike, wires: WiresLike):
     """CNOT ladder around an ``RZ``, so a control applies only to the rotation."""
     if len(wires) == 1:
         qp.RZ(theta, wires=wires[0])
@@ -263,12 +263,12 @@ def _multi_rz_to_ppr_resources(theta: TensorLike, wires: WiresLike):
     return {qp.PauliRot(Float, pauli_word="Z" * num_wires, wires=Wire[num_wires]): 1}
 
 
-@register_resources(_multi_rz_to_ppr_resources)
+@register_resources(_multi_rz_to_ppr_resources, name="to_paulirot")
 def _multi_rz_to_ppr(theta: TensorLike, wires: WiresLike):
     qp.PauliRot(theta, "Z" * len(wires), wires=wires)
 
 
-add_decomps(MultiRZ, _multi_rz_decomposition, _multi_rz_to_ppr)
+add_decomps(MultiRZ, _multi_rz_standard, _multi_rz_to_ppr)
 add_decomps("Adjoint(MultiRZ)", adjoint_rotation2)
 add_decomps("Pow(MultiRZ)", pow_rotation2)
 
@@ -318,7 +318,7 @@ class PauliRot(Operator2):
                 :math:`z` ``"Z"`` entries, and :math:`k = x + y + z`
             :example: :math:`P=` ``"XYZ"``
 
-            .. decomposition-rule:: _pauli_rot_decomposition
+            .. decomposition-rule:: basis_change_multirz
                 :image: /_static/decomposition_thumbnails/paulirot_basis_change.svg
                 :where: :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
 
@@ -328,14 +328,14 @@ class PauliRot(Operator2):
                 :class:`~.MultiRZ` on :math:`k` wires | :math:`[k > 0]` | 1
                 :class:`~.GlobalPhase` | :math:`[k = 0]` | 0
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/paulirot_adjoint.svg
                 :region: adjoint
                 :where: ``theta`` changes sign
 
                 :class:`~.PauliRot` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/paulirot_pow.svg
                 :region: pow
                 :where: ``theta`` is multiplied by the power :math:`z`
@@ -356,7 +356,6 @@ class PauliRot(Operator2):
     dynamic_argnames = ("theta",)
     compilable_argnames = ("pauli_word",)
     wire_argnames = ("wires",)
-    wire_sizes = (None,)
     arg_specs = {"theta": Float, "wires": Wire[-1]}
 
     grad_recipe = (None,)
@@ -583,7 +582,7 @@ def _PauliRotBasis(sign: int, pauli_word: str, wires: WiresLike):
             qp.PPR_4(sign, "X", wires=[wire])
 
 
-def _pauli_rot_resources(theta, pauli_word, wires):  # pylint: disable=unused-argument
+def _pauli_rot_standard_resources(theta, pauli_word, wires):  # pylint: disable=unused-argument
     if set(pauli_word) == {"I"}:
         return {qp.GlobalPhase: 1}
     active_word = pauli_word.replace("I", "")
@@ -601,9 +600,9 @@ def _pauli_rot_resources(theta, pauli_word, wires):  # pylint: disable=unused-ar
     }
 
 
-@register_resources(_pauli_rot_resources)
+@register_resources(_pauli_rot_standard_resources, name="basis_change_multirz")
 @disable_autograph
-def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLike):
+def _pauli_rot_standard(theta: TensorLike, pauli_word: str, wires: WiresLike):
     if set(pauli_word) == {"I"}:
         qp.GlobalPhase(theta / 2)
         return
@@ -624,7 +623,7 @@ def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLik
     )
 
 
-add_decomps(PauliRot, _pauli_rot_decomposition)
+add_decomps(PauliRot, _pauli_rot_standard)
 add_decomps("Adjoint(PauliRot)", adjoint_rotation2)
 add_decomps("Pow(PauliRot)", pow_rotation2)
 
@@ -710,7 +709,7 @@ class PCPhase(Operator2):
             :symbols: :math:`n` wires and ``dim`` :math:`=d`
             :example: :math:`n=4`, :math:`d=3`
 
-            .. decomposition-rule:: _decompose_pcphase
+            .. decomposition-rule:: controlled_phase_shifts
                 :image: /_static/decomposition_thumbnails/pcphase_ctrl_phase_shifts.svg
                 :where: :math:`d = f\,2^n + \sum_{i=0}^{n-1} p_i 2^{n-1-i}` in non-adjacent form,
                     i.e., :math:`f\in\{0, 1\}` and :math:`p_i\in\{-1, 0, 1\}` with no two adjacent
@@ -722,7 +721,7 @@ class PCPhase(Operator2):
                 :class:`~.X` | :math:`2M_+` | 2
                 :class:`~.GlobalPhase` | :math:`1` | 1
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/pcphase_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
@@ -1014,7 +1013,7 @@ def _ctrl_phase_shift(phi, target_wire, subspace, control_wires, control_values,
 
 
 # pylint: disable-next=unused-argument
-def _decompose_pcphase_resource(phi: TensorLike, dim: int, wires: WiresLike):
+def _decompose_pcphase_standard_resources(phi: TensorLike, dim: int, wires: WiresLike):
     """Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates."""
 
     num_wires = len(wires)
@@ -1040,8 +1039,8 @@ def _decompose_pcphase_resource(phi: TensorLike, dim: int, wires: WiresLike):
     return dict(gate_count)
 
 
-@register_resources(_decompose_pcphase_resource)
-def _decompose_pcphase(phi: TensorLike, dim: int, wires: WiresLike):
+@register_resources(_decompose_pcphase_standard_resources, name="controlled_phase_shifts")
+def _decompose_pcphase_standard(phi: TensorLike, dim: int, wires: WiresLike):
     """Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates."""
 
     # Use one more bit than there are wires, according to flipping all relevant bits for the
@@ -1093,7 +1092,7 @@ def _decompose_pcphase(phi: TensorLike, dim: int, wires: WiresLike):
     qp.GlobalPhase(global_phase)
 
 
-add_decomps(PCPhase, _decompose_pcphase)
+add_decomps(PCPhase, _decompose_pcphase_standard)
 add_decomps("Adjoint(PCPhase)", adjoint_rotation2)
 
 
@@ -1133,25 +1132,25 @@ class IsingXX(Operator2):
 
         .. decomposition-table:: qp.IsingXX
 
-            .. decomposition-rule:: _isingxx_to_cnot_rx_cnot
+            .. decomposition-rule:: to_cnot_rx_cnot
                 :image: /_static/decomposition_thumbnails/isingxx_cnot_rx.svg
 
                 :class:`~.CNOT` | :math:`2`
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: _isingxx_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/isingxx_ppr.svg
 
                 :class:`PauliRot("XX") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/isingxx_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.IsingXX` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/isingxx_pow.svg
                 :region: pow
                 :where: ``phi`` is multiplied by the power :math:`z`
@@ -1238,17 +1237,17 @@ def _isingxx_to_cnot_rx_cnot_resources(phi: TensorLike, wires: WiresLike | None 
     }
 
 
-@register_resources(_isingxx_to_cnot_rx_cnot_resources)
+@register_resources(_isingxx_to_cnot_rx_cnot_resources, name="to_cnot_rx_cnot")
 def _isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
     qp.change_op_basis(qp.CNOT(wires=wires), RX(phi, wires=[wires[0]]), qp.CNOT(wires=wires))
 
 
 # pylint: disable-next=unused-argument
-def _isingxx_to_ppr_resource(phi: TensorLike, wires: WiresLike | None = None):
+def _isingxx_to_ppr_resources(phi: TensorLike, wires: WiresLike | None = None):
     return {PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1}
 
 
-@register_resources(_isingxx_to_ppr_resource)
+@register_resources(_isingxx_to_ppr_resources, name="to_paulirot")
 def _isingxx_to_ppr(phi: TensorLike, wires: WiresLike, **_):
     qp.PauliRot(phi, "XX", wires=wires)
 
@@ -1294,25 +1293,25 @@ class IsingYY(Operator2):
 
         .. decomposition-table:: qp.IsingYY
 
-            .. decomposition-rule:: _isingyy_to_cy_ry_cy
+            .. decomposition-rule:: to_cy_ry_cy
                 :image: /_static/decomposition_thumbnails/isingyy_cy_ry.svg
 
                 :class:`~.CY` | :math:`2`
                 :class:`~.RY` | :math:`1`
 
-            .. decomposition-rule:: _isingyy_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/isingyy_ppr.svg
 
                 :class:`PauliRot("YY") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/isingyy_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.IsingYY` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/isingyy_pow.svg
                 :region: pow
                 :where: ``phi`` is multiplied by the power :math:`z`
@@ -1409,17 +1408,17 @@ def _isingyy_to_cy_ry_cy_resources(phi: TensorLike, wires: WiresLike | None = No
     }
 
 
-@register_resources(_isingyy_to_cy_ry_cy_resources)
+@register_resources(_isingyy_to_cy_ry_cy_resources, name="to_cy_ry_cy")
 def _isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
     qp.change_op_basis(qp.CY(wires=wires), RY(phi, wires=[wires[0]]), qp.CY(wires=wires))
 
 
 # pylint: disable-next=unused-argument
-def _isingyy_to_ppr_resource(phi: TensorLike, wires: WiresLike | None = None):
+def _isingyy_to_ppr_resources(phi: TensorLike, wires: WiresLike | None = None):
     return {PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1}
 
 
-@register_resources(_isingyy_to_ppr_resource)
+@register_resources(_isingyy_to_ppr_resources, name="to_paulirot")
 def _isingyy_to_ppr(phi: TensorLike, wires: WiresLike, **_):
     qp.PauliRot(phi, "YY", wires=wires)
 
@@ -1468,18 +1467,18 @@ class IsingZZ(Operator2):
             :symbols: :math:`c` control wires, :math:`z` controls on :math:`0`
             :example: :math:`c=1`, :math:`z=0`
 
-            .. decomposition-rule:: _isingzz_to_cnot_rz_cnot
+            .. decomposition-rule:: to_cnot_rz_cnot
                 :image: /_static/decomposition_thumbnails/isingzz_cnot_rz.svg
 
                 :class:`~.CNOT` | :math:`2`
                 :class:`~.RZ` | :math:`1`
 
-            .. decomposition-rule:: _isingzz_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/isingzz_ppr.svg
 
                 :class:`PauliRot("ZZ") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_ising_zz)
+            .. decomposition-rule:: parity_controlled_rz
                 :image: /_static/decomposition_thumbnails/controlled_ising_zz.svg
                 :region: controlled
                 :where: The CNOT gates compute and uncompute the parity of the two target wires. Only the RZ rotation requires the :math:`c` control wires. Controls on :math:`0` are flipped with X gates before and after the decomposition.
@@ -1488,14 +1487,14 @@ class IsingZZ(Operator2):
                 :class:`Controlled(RZ) <.Controlled>` | :math:`1` | 1
                 :class:`~.PauliX` | :math:`2z` | 0
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/isingzz_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.IsingZZ` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/isingzz_pow.svg
                 :region: pow
                 :where: ``phi`` is multiplied by the power :math:`z`
@@ -1615,7 +1614,7 @@ def _isingzz_to_cnot_rz_cnot_resources(phi: TensorLike, wires: WiresLike | None 
     }
 
 
-@register_resources(_isingzz_to_cnot_rz_cnot_resources)
+@register_resources(_isingzz_to_cnot_rz_cnot_resources, name="to_cnot_rz_cnot")
 def _isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     r"""Expressing ``IsingZZ``  via :func:`~.change_op_basis` (instead of three bare gates) lets
     PennyLane's generic ``C(ChangeOpBasis)`` rule automatically control it in an efficient way."""
@@ -1623,17 +1622,22 @@ def _isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
 
 
 # pylint: disable-next=unused-argument
-def _isingzz_to_ppr_resource(phi: TensorLike, wires: WiresLike | None = None):
+def _isingzz_to_ppr_resources(phi: TensorLike, wires: WiresLike | None = None):
     return {PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1}
 
 
-@register_resources(_isingzz_to_ppr_resource)
+@register_resources(_isingzz_to_ppr_resources, name="to_paulirot")
 def _isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
     qp.PauliRot(phi, "ZZ", wires=wires)
 
 
-# pylint: disable-next=unused-argument
-def _controlled_ising_zz_resource(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_ising_zz_standard_resources(
+    base,  # pylint: disable=unused-argument
+    control_wires,
+    control_values,  # pylint: disable=unused-argument
+    work_wires,
+    work_wire_type,
+):
     return {
         qp.CNOT: 2,
         qp.ctrl(
@@ -1645,9 +1649,9 @@ def _controlled_ising_zz_resource(base, control_wires, control_values, work_wire
     }
 
 
-@qp.register_resources(_controlled_ising_zz_resource)
+@qp.register_resources(_controlled_ising_zz_standard_resources, name="parity_controlled_rz")
 # pylint: disable-next=unused-argument
-def _controlled_ising_zz(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_ising_zz_standard(base, control_wires, control_values, work_wires, work_wire_type):
     r"""``ctrl_c[IsingZZ(phi)_{a,b}] = CNOT_{a,b} ctrl_c[RZ(phi)_b] CNOT_{a,b}``.
 
     ``IsingZZ(phi)`` phases the parity of its two wires, so copying that parity onto ``b`` with
@@ -1666,7 +1670,7 @@ def _controlled_ising_zz(base, control_wires, control_values, work_wires, work_w
     qp.CNOT(wires=[a, b])
 
 
-controlled_ising_zz = flip_zero_control(_controlled_ising_zz)
+controlled_ising_zz = flip_zero_control(_controlled_ising_zz_standard, name="parity_controlled_rz")
 
 add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot, _isingzz_to_ppr)
 add_decomps("Adjoint(IsingZZ)", adjoint_rotation2)
@@ -1721,7 +1725,7 @@ class IsingXY(Operator2):
 
         .. decomposition-table:: qp.IsingXY
 
-            .. decomposition-rule:: _isingxy_to_h_cy
+            .. decomposition-rule:: to_h_cy
                 :image: /_static/decomposition_thumbnails/isingxy_h_cy.svg
 
                 :class:`~.Hadamard` | :math:`2`
@@ -1729,14 +1733,14 @@ class IsingXY(Operator2):
                 :class:`~.RY` | :math:`1`
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/isingxy_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.IsingXY` | :math:`1`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/isingxy_pow.svg
                 :region: pow
                 :where: ``phi`` is multiplied by the power :math:`z`
@@ -1891,7 +1895,7 @@ def _isingxy_to_h_cy_resources(phi: TensorLike, wires: WiresLike | None = None):
     }
 
 
-@register_resources(_isingxy_to_h_cy_resources)
+@register_resources(_isingxy_to_h_cy_resources, name="to_h_cy")
 def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
     qp.change_op_basis(
         _IsingXYBasis(wires=wires, reverse=False),
@@ -2069,7 +2073,9 @@ def _pswap_to_swap_cnot_phaseshift_cnot_resources():
     return {qp.SWAP: 1, qp.CNOT: 2, PhaseShift: 1}
 
 
-@register_resources(_pswap_to_swap_cnot_phaseshift_cnot_resources)
+@register_resources(
+    _pswap_to_swap_cnot_phaseshift_cnot_resources, name="to_swap_cnot_phaseshift_cnot"
+)
 def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__):
     qp.SWAP(wires=wires)
     qp.CNOT(wires=wires)
@@ -2086,7 +2092,7 @@ def _pswap_to_ppr_resources():
     }
 
 
-@register_resources(_pswap_to_ppr_resources)
+@register_resources(_pswap_to_ppr_resources, name="to_ppr")
 def _pswap_to_ppr(phi: TensorLike, wires: WiresLike, **__):
     qp.PPR_4(-1, pauli_word="YY", wires=wires)
     qp.PPR_4(-1, pauli_word="XX", wires=wires)
@@ -2095,7 +2101,7 @@ def _pswap_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot, _pswap_to_ppr)
-add_decomps("Adjoint(PSWAP)", adjoint_rotation)
+add_decomps("Adjoint(PSWAP)", _adjoint_negate_angle)
 
 
 class CPhaseShift00(Operator2):
@@ -2132,7 +2138,6 @@ class CPhaseShift00(Operator2):
     dynamic_argnames = ("phi",)
     wire_argnames = ("wires",)
     arg_specs = {"phi": Float, "wires": Wire[2]}
-    wire_sizes = (2,)
 
     num_wires = 2
     num_params = 1
@@ -2250,12 +2255,12 @@ class CPhaseShift00(Operator2):
         return self.wires[0:1]
 
 
-def _cphaseshift00_resources(*_, **__):
+def _cphaseshift00_to_x_phaseshift_cnot_resources(*_, **__):
     return {PauliX: 4, PhaseShift: 3, qp.CNOT: 2}
 
 
-@register_resources(_cphaseshift00_resources)
-def _cphaseshift00(phi: TensorLike, wires: WiresLike, **__):
+@register_resources(_cphaseshift00_to_x_phaseshift_cnot_resources, name="to_x_phaseshift_cnot")
+def _cphaseshift00_to_x_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__):
     PauliX(wires[0])
     PauliX(wires[1])
     PhaseShift(phi / 2, wires=[wires[0]])
@@ -2267,7 +2272,7 @@ def _cphaseshift00(phi: TensorLike, wires: WiresLike, **__):
     PauliX(wires[0])
 
 
-add_decomps(CPhaseShift00, _cphaseshift00)
+add_decomps(CPhaseShift00, _cphaseshift00_to_x_phaseshift_cnot)
 add_decomps("Adjoint(CPhaseShift00)", adjoint_rotation2)
 add_decomps("Pow(CPhaseShift00)", pow_rotation2)
 
@@ -2306,7 +2311,6 @@ class CPhaseShift01(Operator2):
     dynamic_argnames = ("phi",)
     wire_argnames = ("wires",)
     arg_specs = {"phi": Float, "wires": Wire[2]}
-    wire_sizes = (2,)
 
     num_wires = 2
     num_params = 1
@@ -2424,12 +2428,12 @@ class CPhaseShift01(Operator2):
         return self.wires[0:1]
 
 
-def _cphaseshift01_resources(*_, **__):
+def _cphaseshift01_to_x_phaseshift_cnot_resources(*_, **__):
     return {PauliX: 2, PhaseShift: 3, qp.CNOT: 2}
 
 
-@register_resources(_cphaseshift01_resources)
-def _cphaseshift01(phi: TensorLike, wires: WiresLike, **__):
+@register_resources(_cphaseshift01_to_x_phaseshift_cnot_resources, name="to_x_phaseshift_cnot")
+def _cphaseshift01_to_x_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__):
     PauliX(wires[0])
     PhaseShift(phi / 2, wires=[wires[0]])
     PhaseShift(phi / 2, wires=[wires[1]])
@@ -2439,7 +2443,7 @@ def _cphaseshift01(phi: TensorLike, wires: WiresLike, **__):
     PauliX(wires[0])
 
 
-add_decomps(CPhaseShift01, _cphaseshift01)
+add_decomps(CPhaseShift01, _cphaseshift01_to_x_phaseshift_cnot)
 add_decomps("Adjoint(CPhaseShift01)", adjoint_rotation2)
 add_decomps("Pow(CPhaseShift01)", pow_rotation2)
 
@@ -2477,7 +2481,6 @@ class CPhaseShift10(Operator2):
     dynamic_argnames = ("phi",)
     wire_argnames = ("wires",)
     arg_specs = {"phi": Float, "wires": Wire[2]}
-    wire_sizes = (2,)
 
     num_wires = 2
     num_params = 1
@@ -2590,12 +2593,12 @@ class CPhaseShift10(Operator2):
         return self.wires[0:1]
 
 
-def _cphaseshift10_resources(*_, **__):
+def _cphaseshift10_to_x_phaseshift_cnot_resources(*_, **__):
     return {PauliX: 2, PhaseShift: 3, qp.CNOT: 2}
 
 
-@register_resources(_cphaseshift10_resources)
-def _cphaseshift10(phi: TensorLike, wires: WiresLike, **__):
+@register_resources(_cphaseshift10_to_x_phaseshift_cnot_resources, name="to_x_phaseshift_cnot")
+def _cphaseshift10_to_x_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__):
     PauliX(wires[1])
     PhaseShift(phi / 2, wires=[wires[0]])
     PhaseShift(phi / 2, wires=[wires[1]])
@@ -2605,6 +2608,6 @@ def _cphaseshift10(phi: TensorLike, wires: WiresLike, **__):
     PauliX(wires[1])
 
 
-add_decomps(CPhaseShift10, _cphaseshift10)
+add_decomps(CPhaseShift10, _cphaseshift10_to_x_phaseshift_cnot)
 add_decomps("Adjoint(CPhaseShift10)", adjoint_rotation2)
 add_decomps("Pow(CPhaseShift10)", pow_rotation2)

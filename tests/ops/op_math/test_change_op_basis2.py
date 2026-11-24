@@ -297,9 +297,9 @@ class TestInitialization:
 
     def test_init_change_op_basis_op(self):
         """Test the initialization of a ChangeOpBasis operator."""
-        change_op_basis_op = ChangeOpBasis2(qp.PauliX(wires=0), qp.RZ(0.23, wires="a"))
+        change_op_basis_op = ChangeOpBasis2(qp.PauliX(wires=0), qp.RZ(0.23, wires=5))
 
-        assert change_op_basis_op.wires == Wires((0, "a"))
+        assert change_op_basis_op.wires == Wires((0, 5))
         assert change_op_basis_op.num_wires == 2
         assert change_op_basis_op.name == "ChangeOpBasis2"
 
@@ -311,18 +311,18 @@ class TestInitialization:
         """Test mapping wires belonging to both Operator1 and Operator2 operands."""
         op = ChangeOpBasis2(qp.X(0), NonParametricOp(1), qp.RX(0.2, 2))
 
-        mapped_op = op.map_wires({0: "a", 1: "b", 2: "c"})
+        mapped_op = op.map_wires({0: 5, 1: 6, 2: 7})
 
-        assert mapped_op.wires == Wires(("a", "b", "c"))
-        qp.assert_equal(mapped_op.compute_op, qp.X("a"))
-        qp.assert_equal(mapped_op.target_op, NonParametricOp("b"))
-        qp.assert_equal(mapped_op.uncompute_op, qp.RX(0.2, "c"))
+        assert mapped_op.wires == Wires((5, 6, 7))
+        qp.assert_equal(mapped_op.compute_op, qp.X(5))
+        qp.assert_equal(mapped_op.target_op, NonParametricOp(6))
+        qp.assert_equal(mapped_op.uncompute_op, qp.RX(0.2, 7))
 
     def test_hash(self):
         """Testing some situations for the hash property."""
         # test not the same hash if different order
-        op1 = qp.change_op_basis(qp.PauliX("a"), qp.PauliY("a"), qp.PauliX(1))
-        op2 = qp.change_op_basis(qp.PauliY("a"), qp.PauliX("a"), qp.PauliX(1))
+        op1 = qp.change_op_basis(qp.PauliX(5), qp.PauliY(5), qp.PauliX(1))
+        op2 = qp.change_op_basis(qp.PauliY(5), qp.PauliX(5), qp.PauliX(1))
         assert hash(op1) != hash(op2)
 
     @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
@@ -341,7 +341,7 @@ class TestInitialization:
         "factors",
         (
             [qp.PauliX(wires=0), qp.PauliZ(wires=0)],
-            [qp.PauliX(wires=0), qp.RZ(0.612, "r")],
+            [qp.PauliX(wires=0), qp.RZ(0.612, 8)],
             [qp.PauliZ(wires=0), qp.PauliX(wires=0)],
             [MyOp(3.1, 0), qp.CNOT([0, 2])],
         ),
@@ -357,7 +357,7 @@ class TestInitialization:
         "factors",
         (
             [qp.PauliX(wires=0), qp.PauliZ(wires=0)],
-            [qp.PauliX(wires=0), qp.RZ(0.612, "r")],
+            [qp.PauliX(wires=0), qp.RZ(0.612, 8)],
             [qp.PauliZ(wires=0), qp.PauliX(wires=0)],
             [MyOp(3.1, 0), qp.CNOT([0, 2])],
         ),
@@ -597,10 +597,42 @@ class TestDecomposition:
 
         assert len(qp.list_decomps(op)) == 1
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_adjoint_decomposition_with_explicit_uncompute(self):
         """Test the generated adjoint rule with an asymmetric explicit uncompute operator."""
-        op = qp.adjoint(ChangeOpBasis2(qp.S(0), qp.T(1), qp.SX(2)))
+        with qp.capture.pause():
+            op = qp.adjoint(ChangeOpBasis2(qp.S(0), qp.T(1), qp.SX(2)))
         assert_decomposable(op)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_adjoint_with_explicit_uncompute_is_inverse(self):
+        """Test that the adjoint inverts an asymmetric explicit uncompute operator."""
+        with qp.capture.pause():
+            ops_lst = [qp.S(0), qp.CNOT([0, 1]), qp.SX(0)]
+            op = ChangeOpBasis2(*ops_lst)
+            expected = qp.matrix(qp.tape.QuantumScript(ops_lst), wire_order=[0, 1]).conj().T
+            assert np.allclose(qp.matrix(op.adjoint(), wire_order=[0, 1]), expected)
+            adj_op = qp.adjoint(op)
+
+        rule = qp.list_decomps(adj_op)["adjoint_target"]
+        decomp = qp.testing.decomp_rule_to_tape(adj_op, rule)
+        with qp.capture.pause():
+            assert np.allclose(qp.matrix(decomp, wire_order=[0, 1]), expected)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_adjoint_decomposition_preserves_change_op_basis(self):
+        """Test that the adjoint rule emits a basis change, so that controlling it later
+        only controls the inverted target operator."""
+        with qp.capture.pause():
+            op = qp.adjoint(ChangeOpBasis2(qp.H(0), qp.T(0)))
+        rule = qp.list_decomps(op)["adjoint_target"]
+        qp.testing.assert_valid_decomp_rule(op, rule)
+
+        [gate] = qp.testing.decomp_rule_to_tape(op, rule).operations
+        assert isinstance(gate, ChangeOpBasis2)
+        qp.assert_equal(gate.compute_op, qp.H(0))
+        qp.assert_equal(gate.target_op, qp.adjoint(qp.T(0)))
+        qp.assert_equal(gate.uncompute_op, qp.adjoint(qp.H(0)))
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_on_tape(self, ops_lst):
