@@ -35,7 +35,7 @@ NUM_BITS = 2
 GATE_SET = {"CNOT", "PauliX", "TemporaryAND", "Adjoint(TemporaryAND)", "SemiAdder", "GlobalPhase"}
 
 # (num_angles, block_size, batch_size, num_work_wires): (num_adders, num_ands), where the RZLayer
-# provides the work wires the rule needs, and num_ands counts the ANDs outside of the adders. Each
+# provides the work wires the rule needs, and num_ands counts the ANDs on top of the adders. Each
 # of them targets a work wire: 0, 2 and 7 per block of 2, 4 and 6 equal angles, and 0, 1 and 4 per
 # batch of 2, 3 and 4 distinct angles. The cases cover even blocks, batches with a smaller last
 # batch and with fewer angles than ``batch_size``, and the RZ rule on every wire for odd blocks,
@@ -72,12 +72,6 @@ def _rule_and_op(num_angles, block_size, batch_size, num_work_wires, seed):
     return rule, op, registers
 
 
-def test_precision_stats_not_implemented():
-    """Test that ``precision_stats`` is not supported."""
-    with pytest.raises(NotImplementedError, match="precision_stats"):
-        make_rzlayer_to_phase_gradient_decomp([0, 1], [2, 3], [4], precision_stats={2: 1})
-
-
 @pytest.mark.parametrize("case", CASES)
 def test_state(case, seed):
     """Test that the rule realizes the rotations including their global phase on a random state
@@ -107,7 +101,7 @@ def test_allocates_missing_work_wires(num_angles, block_size, seed):
     """Test that the rule allocates the work wires that the RZLayer does not provide and realizes
     the rotations, for equal angles and for batches of four distinct angles. On ``|+>``, ``RZ(a)``
     gives ``<X> = cos(a)`` and ``<Y> = sin(a)``."""
-    rule, op, registers = _rule_and_op(num_angles, block_size, 4, 1, seed)
+    rule, op, registers = _rule_and_op(num_angles, block_size, 4, 0, seed)
     wires, phase_grad_wires = op.arguments["wires"], registers[1]
     assert rule.get_work_wire_spec(**op.arguments).total > 0
 
@@ -122,6 +116,32 @@ def test_allocates_missing_work_wires(num_angles, block_size, seed):
 
     expected = np.repeat(op.angles, block_size)
     assert np.allclose(circuit(), np.concatenate([np.cos(expected), np.sin(expected)]))
+
+
+def test_uses_spare_work_wires(seed):
+    """Test that the TemporaryAND gates use the work wires of the rule that the adder does not
+    need, together with those of the RZLayer, and that the rule realizes the rotations without
+    requesting further work wires. On ``|+>``, ``RZ(a)`` gives ``<X> = cos(a)`` and
+    ``<Y> = sin(a)``."""
+    _, op, registers = _rule_and_op(2, 4, None, 1, seed)
+    wires, phase_grad_wires = op.arguments["wires"], registers[1]
+    spare_wire = registers[2][-1] + 1
+    rule = make_rzlayer_to_phase_gradient_decomp(*registers[:2], [*registers[2], spare_wire])
+    assert rule.get_work_wire_spec(**op.arguments).total == 0
+
+    @qp.qnode(qp.device("default.qubit", wires=spare_wire + 1))
+    def circuit():
+        for wire in wires:
+            qp.H(wire)
+        qp.PhaseGradientStatePrep(phase_grad_wires)
+        rule(op.angles, wires, op.work_wires)
+        qp.adjoint(qp.PhaseGradientStatePrep(phase_grad_wires))
+        return [qp.expval(qp.X(w)) for w in wires] + [qp.expval(qp.Y(w)) for w in wires]
+
+    expected = np.repeat(op.angles, 4)
+    assert np.allclose(circuit(), np.concatenate([np.cos(expected), np.sin(expected)]))
+    tape = qp.workflow.construct_tape(circuit)()
+    assert spare_wire in tape.wires
 
 
 class TestRule:
@@ -144,7 +164,7 @@ class TestRule:
 
     @pytest.mark.parametrize("case, num_adders, num_ands", [(c, *n) for c, n in CASES.items()])
     def test_counts(self, case, num_adders, num_ands, seed):
-        """Test the number of adders and of ANDs outside of them, and that the rule only uses the
+        """Test the number of adders and of ANDs on top of them, and that the rule only uses the
         wires of the RZLayer and the registers if the RZLayer provides enough work wires. With
         fewer work wires, it requests the missing ones."""
         rule, op, registers = _rule_and_op(*case, seed)
