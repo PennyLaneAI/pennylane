@@ -610,8 +610,8 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
   now-preferred alternative to the old `"T*"` and `"S*"` convention for gate adjoints.
   [(#9231)](https://github.com/PennyLaneAI/pennylane/pull/9231)
 
-* Some decomposition rules for :class:`~.MultiControlledX` (e.g., `_mcx_two_borrowed_workers` and
-  `_mcx_one_borrowed_worker`) became identical for instances of this operator on less than 6 wires.
+* Some decomposition rules for :class:`~.MultiControlledX` (e.g., `_mcx_two_borrowed_work_wires` and
+  `_mcx_one_borrowed_work_wire`) became identical for instances of this operator on less than 6 wires.
   To prevent this, stricter conditions have been applied on these decompositions.
   [(#9324)](https://github.com/PennyLaneAI/pennylane/pull/9324)
 
