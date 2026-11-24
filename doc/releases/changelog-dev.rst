@@ -1644,6 +1644,9 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* :func:`~.sign_expand` now requires `controls` wires instead of defaulting to ``("Hadamard", "Target")``
+  as string wires will no longer be supported.
+
 * :class:`~.QROM` no longer takes a ``clean`` argument and no longer has a Select-SWAP
   decomposition, which is available for :class:`~.QROMLoad` and :class:`~.SelectSwap` instead.
   See the corresponding entry under "New features" for when to use which of the three operators.
