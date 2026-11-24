@@ -268,7 +268,7 @@ class grad:  # pylint: disable=too-many-instance-attributes
 
     .. code-block:: python
 
-        @qp.qnode(qp.device("default.qubit"), interface="jax")
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
         def circuit(angle):
             qp.RY(angle, wires=0)
             return qp.expval(qp.Z(0))
