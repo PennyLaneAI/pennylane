@@ -34,11 +34,11 @@ from pennylane.ops.op_math.condition import Conditional
 terminal_meas = [
     qp.probs(wires=[1, 0]),
     qp.expval(qp.PauliZ(0)),
-    qp.expval(qp.PauliZ("a") @ qp.PauliZ(3) @ qp.PauliZ(-1)),
-    qp.var(qp.PauliX("b")),
+    qp.expval(qp.PauliZ(6) @ qp.PauliZ(3) @ qp.PauliZ(-1)),
+    qp.var(qp.PauliX(7)),
     qp.state(),
     qp.density_matrix(wires=[2, 3]),
-    qp.density_matrix(wires=["b", -231]),
+    qp.density_matrix(wires=[7, -231]),
 ]
 
 
@@ -245,9 +245,9 @@ class TestAdditionalCond:
             qp.cond(m_0, qp.PauliX)(1)
 
         meas, cond_op = q.queue
-        mapped_cond = cond_op.map_wires({0: "a", 1: "b"})
-        assert mapped_cond.meas_val.measurements == [meas.map_wires({0: "a"})]
-        assert mapped_cond.base == qp.PauliX("b")
+        mapped_cond = cond_op.map_wires({0: 6, 1: 7})
+        assert mapped_cond.meas_val.measurements == [meas.map_wires({0: 6})]
+        assert mapped_cond.base == qp.PauliX(7)
 
     @pytest.mark.parametrize(
         "op", [qp.RX(0.123, 0), qp.RX([0.123, 4.56], 0), qp.Rot(1.23, 4.56, 7.89, 0)]
@@ -424,8 +424,8 @@ class TestProperties:
     def test_data_is_read_only(self):
         """Test that Conditional data is read-only."""
         x = np.array(1.234)
-        m = qp.measure("a")
-        base = qp.RX(x, wires="a")
+        m = qp.measure(6)
+        base = qp.RX(x, wires=6)
         cond_op = Conditional(m, base)
 
         assert cond_op.data == (x,)
