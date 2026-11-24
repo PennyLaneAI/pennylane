@@ -1648,6 +1648,11 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* Removed the ``pennylane.queuing`` shim. Import directly from
+  ``pennylane.core.queuing``; ``qp.queuing`` now refers to that module.
+  Use ``qp.apply`` instead of ``qp.queuing.apply``.
+  `(#10582) <https://github.com/PennyLaneAI/pennylane/pull/10582>`__
+  
 * :class:`~.QROM` no longer takes a ``clean`` argument and no longer has a Select-SWAP
   decomposition, which is available for :class:`~.QROMLoad` and :class:`~.SelectSwap` instead.
   See the corresponding entry under "New features" for when to use which of the three operators.
@@ -1997,7 +2002,7 @@ Breaking changes 💔
 
 * :func:`~pennylane.apply` has moved from :mod:`pennylane.core.queuing` to the standalone
   :mod:`pennylane.core.apply` module, and is no longer importable from
-  ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
+  ``pennylane.core.queuing``. The ``qp.apply`` path is unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
 * :func:`~.change_op_basis` now preserves the basis-change operator during program capture.

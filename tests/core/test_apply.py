@@ -28,9 +28,8 @@ class TestApplyOp:
     """Tests for the apply function."""
 
     def test_public_imports(self):
-        """Test that the public and legacy imports expose the standalone utility."""
+        """Test that the public import exposes the standalone utility."""
         assert qp.apply is apply
-        assert qp.queuing.apply is apply
 
     def test_error(self):
         """Test that applying an operation without an active context raises an error."""
