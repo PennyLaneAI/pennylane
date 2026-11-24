@@ -68,7 +68,7 @@ class MultiRZ(Operator2):
 
     Args:
         theta (TensorLike): rotation angle :math:`\theta`
-        wires (int): the wires the operation acts on
+        wires (Sequence[int] or int): the wires the operation acts on
 
     .. details::
         :title: Available decompositions
@@ -298,7 +298,7 @@ class PauliRot(Operator2):
     Args:
         theta (float): rotation angle :math:`\theta`
         pauli_word (string): the Pauli word defining the rotation
-        wires (int): the wire the operation acts on
+        wires (Sequence[int] or int): the wires the operation acts on
 
     **Example**
 

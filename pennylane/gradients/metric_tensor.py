@@ -856,7 +856,7 @@ def _get_aux_wire(aux_wire, tape, device_wires):
     r"""Determine an unused wire to be used as auxiliary wire for Hadamard tests.
 
     Args:
-        aux_wire (int or Sequence[int] or Wires): Input auxiliary wire. May be one of a variety of
+        aux_wire (int or Sequence[int] or Wires or None): Input auxiliary wire. May be one of a variety of
             input formats:
             If ``None``, try to infer a reasonable choice based on the number of wires used
             in the ``tape``, and based on ``device_wires``, if they are not ``None``.

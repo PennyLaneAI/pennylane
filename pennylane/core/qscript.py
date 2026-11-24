@@ -944,8 +944,7 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
         """Draw the quantum script as a circuit diagram. See :func:`~.drawer.tape_text` for more information.
 
         Args:
-            wire_order (Sequence[int]): the order (from top to bottom) to print the wires of the
-                circuit
+            wire_order (Sequence[int]): the order (from top to bottom) to print the circuit wires
             show_all_wires (bool): If True, all wires, including empty wires, are printed.
             decimals (int): How many decimal points to include when formatting operation parameters.
                 Default ``None`` will omit parameters from operation labels.
