@@ -833,14 +833,13 @@ class TestTransform:  # pylint: disable=too-many-public-methods
         """Test a device transform on a device that overrides ``preprocess``."""
 
         class DummyDev(qp.devices.Device):
-            # pylint: disable-next=unused-argument
             def preprocess(self, execution_config=None):
                 prog = qp.CompilePipeline()
                 prog.add_transform(qp.defer_measurements)
                 prog.add_transform(qp.compile)
                 return prog, execution_config
 
-            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
+            def execute(self, circuits, execution_config=None):
                 return [0] * len(circuits)
 
         _dev = DummyDev()
