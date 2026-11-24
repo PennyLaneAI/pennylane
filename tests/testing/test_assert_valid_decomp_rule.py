@@ -365,10 +365,13 @@ class TestAssertDecomposable:
             qp.X(kwargs["wires"])
 
         rule = qp.register_resources({qp.X: 1}, name="keyword_only")(rule)
+        with pytest.raises(AssertionError, match="must accept positional arguments"):
+            assert_valid_decomp_rule(MyOneWireOp(0), rule)
         with qp.decomposition.local_decomps():
             qp.add_decomps(MyOneWireOp, rule)
-            with pytest.raises(AssertionError, match="must accept positional arguments"):
+            with pytest.raises(AssertionError, match="fails the validity check") as exc_info:
                 assert_decomposable(MyOneWireOp(0))
+            assert "must accept positional arguments" in str(exc_info.value.__cause__)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_explicit_keyword_only_rule(self):
@@ -378,10 +381,13 @@ class TestAssertDecomposable:
         def rule(*, wires):
             qp.X(wires)
 
+        with pytest.raises(AssertionError, match="must accept positional arguments"):
+            assert_valid_decomp_rule(MyOneWireOp(0), rule)
         with qp.decomposition.local_decomps():
             qp.add_decomps(MyOneWireOp, rule)
-            with pytest.raises(AssertionError, match="must accept positional arguments"):
+            with pytest.raises(AssertionError, match="fails the validity check") as exc_info:
                 assert_decomposable(MyOneWireOp(0))
+            assert "must accept positional arguments" in str(exc_info.value.__cause__)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_positional_only_rule(self):
@@ -391,6 +397,7 @@ class TestAssertDecomposable:
         def rule(theta, /, *, wires):
             qp.RX(theta, wires=wires)
 
+        assert_valid_decomp_rule(MyOneWireOp(0.5, wires=0), rule)
         with qp.decomposition.local_decomps():
             qp.add_decomps(MyOneWireOp, rule)
             assert_decomposable(MyOneWireOp(0.5, wires=0))
@@ -403,6 +410,7 @@ class TestAssertDecomposable:
         def rule(*_, **__):
             qp.X(__["wires"])
 
+        assert_valid_decomp_rule(MyOneWireOp(0), rule)
         with qp.decomposition.local_decomps():
             qp.add_decomps(MyOneWireOp, rule)
             assert_decomposable(MyOneWireOp(0))
