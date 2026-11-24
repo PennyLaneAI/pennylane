@@ -31,9 +31,9 @@ from pennylane.decomposition.decomposition_rule import (
     get_fixed_decomp,
 )
 from pennylane.decomposition.resources import resolve_work_wire_type
-from pennylane.decomposition_rules.op_math.adjoint2 import adjoint_negate_angle
-from pennylane.decomposition_rules.op_math.pow2 import pow_involutory, pow_scale_angle
-from pennylane.decomposition_rules.op_math.symbolicop2 import self_adjoint
+from pennylane.decomposition_rules.op_math import adjoint_negate_angle
+from pennylane.decomposition_rules.op_math import pow_involutory, pow_scale_angle
+from pennylane.decomposition_rules.op_math import self_adjoint
 from pennylane.decomposition_rules.qubit.matrix_ops import qubit_unitary_two_qubit
 from pennylane.ops.mid_measure.pauli_measure import pauli_measure
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract

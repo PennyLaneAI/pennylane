@@ -36,12 +36,12 @@ from pennylane.decomposition.decomposition_rule import (
 )
 from pennylane.decomposition.resources import Resources
 from pennylane.decomposition.utils import to_name
-from pennylane.decomposition_rules import ctrl_many_zeroed_work_wires
-from pennylane.decomposition_rules.op_math.controlled2 import (
+from pennylane.decomposition_rules.op_math import ctrl_many_zeroed_work_wires
+from pennylane.decomposition_rules.op_math import (
     controlled_to_unitary,
     ctrl_single_work_wire,
 )
-from pennylane.decomposition_rules.op_math.pow2 import (
+from pennylane.decomposition_rules.op_math import (
     pow_flip_adjoint,
     pow_merge_powers,
     pow_repeat_base,

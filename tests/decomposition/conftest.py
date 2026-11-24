@@ -30,13 +30,13 @@ from pennylane.decomposition_rules import (
     controlled_z_standard,
     controlled_z_to_ccz,
     ctrl_x_to_mcx,
-    self_adjoint,
 )
-from pennylane.decomposition_rules.op_math import adjoint2
+from pennylane.decomposition_rules.op_math import self_adjoint
+from pennylane.decomposition_rules.op_math import adjoint_negate_angle as adjoint_negate_angle2
 from pennylane.decomposition_rules.op_math.adjoint import adjoint_negate_angle
-from pennylane.decomposition_rules.op_math.controlled2 import flip_zero_control
+from pennylane.decomposition_rules.op_math import flip_zero_control
 from pennylane.decomposition_rules.op_math.pow import pow_scale_angle
-from pennylane.decomposition_rules.op_math.pow2 import pow_involutory
+from pennylane.decomposition_rules.op_math import pow_involutory
 
 _decompositions = defaultdict(DecompCollection)
 decompositions = ContextVar("_test_decompositions", default=_decompositions)
@@ -183,5 +183,5 @@ decompositions.get()["Pow(Hadamard)"].append(pow_involutory)
 decompositions.get()["Adjoint(RX)"].append(adjoint_negate_angle)
 decompositions.get()["Pow(RX)"].append(pow_scale_angle)
 decompositions.get()["Adjoint(CNOT)"].append(self_adjoint)
-decompositions.get()["Adjoint(PhaseShift)"].append(adjoint2.adjoint_negate_angle)
-decompositions.get()["Adjoint(ControlledPhaseShift)"].append(adjoint2.adjoint_negate_angle)
+decompositions.get()["Adjoint(PhaseShift)"].append(adjoint_negate_angle2)
+decompositions.get()["Adjoint(ControlledPhaseShift)"].append(adjoint_negate_angle2)

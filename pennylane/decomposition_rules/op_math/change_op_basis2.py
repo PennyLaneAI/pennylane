@@ -19,7 +19,7 @@ from collections import Counter, defaultdict
 
 from pennylane.core.apply import apply
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition_rules.op_math.controlled2 import flip_zero_control
+from pennylane.decomposition_rules.op_math import flip_zero_control
 from pennylane.ops.op_math import adjoint, ctrl
 from pennylane.ops.op_math.adjoint import Adjoint
 from pennylane.ops.op_math.adjoint2 import Adjoint2

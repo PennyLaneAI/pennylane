@@ -22,7 +22,7 @@ import numpy as np
 from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.decomposition_rules.op_math.controlled2 import flip_zero_control
+from pennylane.decomposition_rules.op_math import flip_zero_control
 from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math import ctrl
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation

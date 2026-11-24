@@ -25,9 +25,9 @@ import numpy as np
 
 from pennylane import allocation, math, ops
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.decomposition_rules.op_math.controlled2 import flip_zero_control
-from pennylane.decomposition_rules.op_math.pow2 import make_pow_decomp_with_period, pow_involutory
-from pennylane.decomposition_rules.op_math.symbolicop2 import self_adjoint
+from pennylane.decomposition_rules.op_math import flip_zero_control
+from pennylane.decomposition_rules.op_math import make_pow_decomp_with_period, pow_involutory
+from pennylane.decomposition_rules.op_math import self_adjoint
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract

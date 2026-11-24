@@ -21,7 +21,8 @@ The drawing-specific ``LabelledOp`` rule remains in :mod:`pennylane.drawer.label
 Rules are loaded automatically when PennyLane is imported.
 Use :func:`pennylane.list_decomps` to retrieve the registered rules for an operator.
 Unambiguous rules, helpers, and factories can also be imported from this package.
-Symbolic implementations with the same name remain in their respective modules.
+Operator2 symbolic rules and factories are exported from ``op_math``.
+Legacy symbolic rules remain in their individual modules.
 
 .. currentmodule:: pennylane.decomposition_rules
 
@@ -274,14 +275,7 @@ from .phase_gradient.state_preparation import (
     _jones_success_probabilities,
 )
 from .phase_gradient.select_pauli_rot import _select_pauli_rot_phase_gradient
-from .op_math import adjoint2
-from .op_math.controlled2 import ctrl_many_zeroed_work_wires
-from .op_math import pow2
-from .op_math.adjoint import make_adjoint_decomp
 from .op_math import pow
-from .op_math.symbolicop import self_adjoint_legacy
-from .op_math.symbolicop2 import self_adjoint
-from .op_math.controlled import make_controlled_decomp
 from .common import null_decomp
 
 __all__ = [
@@ -403,9 +397,6 @@ __all__ = [
     "trotter_cgf_standard",
     "_twos_complement_helper",
     "_validate_registers",
-    "ctrl_many_zeroed_work_wires",
-    "make_adjoint_decomp",
-    "make_controlled_decomp",
     "make_crz_to_phase_gradient_decomp",
     "make_phase_gradient_distillation_decomp",
     "make_rz_to_phase_gradient_decomp",
@@ -413,7 +404,5 @@ __all__ = [
     "mottonen_decomp",
     "null_decomp",
     "phase_gradient_precision_stats",
-    "self_adjoint",
-    "self_adjoint_legacy",
     "validate_phase_gradient_wires",
 ]

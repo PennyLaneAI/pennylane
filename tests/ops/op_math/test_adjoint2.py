@@ -22,7 +22,7 @@ import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.decomposition.resources import Resources
-from pennylane.decomposition_rules.op_math.adjoint2 import adjoint_negate_angle, make_adjoint_decomp
+from pennylane.decomposition_rules.op_math import adjoint_negate_angle, make_adjoint_decomp
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.typing import Float, Wire

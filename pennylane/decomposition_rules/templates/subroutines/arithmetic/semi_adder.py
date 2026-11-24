@@ -18,7 +18,7 @@
 from pennylane.allocation import allocate
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import resolve_work_wire_type
-from pennylane.decomposition_rules.op_math.controlled2 import flip_zero_control
+from pennylane.decomposition_rules.op_math import flip_zero_control
 from pennylane.ops import CNOT, adjoint, ctrl
 from pennylane.templates.subroutines.arithmetic.semi_adder import (
     SemiAdder,

@@ -589,7 +589,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         """Helper function to get a list of decomposition rules."""
 
         # pylint: disable=import-outside-toplevel
-        from pennylane.decomposition_rules import self_adjoint_legacy
+        from pennylane.decomposition_rules.op_math.symbolicop import self_adjoint_legacy
         from pennylane.decomposition_rules.op_math.adjoint import adjoint_negate_angle
 
         decomps = list_decomps(op)

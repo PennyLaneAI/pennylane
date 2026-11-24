@@ -22,13 +22,10 @@ from pennylane import capture, compiler, math
 from pennylane.allocation import allocate
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.decomposition_rules.op_math.controlled2 import (
-    _multi_temporary_and_all_ones,
-    flip_zero_control,
-    make_controlled_decomp,
-)
-from pennylane.decomposition_rules.op_math.pow2 import pow_involutory
-from pennylane.decomposition_rules.op_math.symbolicop2 import self_adjoint
+from pennylane.decomposition_rules.op_math.controlled2 import _multi_temporary_and_all_ones
+from pennylane.decomposition_rules.op_math import flip_zero_control, make_controlled_decomp
+from pennylane.decomposition_rules.op_math import pow_involutory
+from pennylane.decomposition_rules.op_math import self_adjoint
 from pennylane.ops import CNOT, GlobalPhase, PauliX, PauliZ, adjoint, cond
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND

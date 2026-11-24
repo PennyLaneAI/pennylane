@@ -136,6 +136,83 @@ def test_package_exports_preserve_rule_identity():
 
 
 @pytest.mark.parametrize(
+    "module_name, names",
+    [
+        ("adjoint2", ("adjoint_cancel", "adjoint_negate_angle", "make_adjoint_decomp")),
+        (
+            "controlled2",
+            (
+                "controlled_flip_adjoint",
+                "controlled_many_zeroed_work_wires",
+                "controlled_single_work_wire",
+                "controlled_to_unitary",
+                "ctrl_many_zeroed_work_wires",
+                "ctrl_single_work_wire",
+                "flip_zero_control",
+                "make_controlled_decomp",
+            ),
+        ),
+        (
+            "pow2",
+            (
+                "make_pow_decomp_with_period",
+                "pow_flip_adjoint",
+                "pow_involutory",
+                "pow_merge_powers",
+                "pow_repeat_base",
+                "pow_scale_angle",
+            ),
+        ),
+        ("symbolicop2", ("operator_to_base", "self_adjoint")),
+    ],
+)
+def test_operator2_symbolic_exports_preserve_identity(module_name, names):
+    """The op_math exports are the Operator2 rules and factories."""
+    from pennylane.decomposition_rules import op_math
+
+    defined_module = getattr(op_math, module_name)
+    for name in names:
+        assert name in op_math.__all__
+        assert getattr(op_math, name) is getattr(defined_module, name)
+
+
+@pytest.mark.parametrize(
+    "module_name, name",
+    [
+        ("adjoint", "make_adjoint_decomp"),
+        ("adjoint", "adjoint_cancel"),
+        ("adjoint", "adjoint_negate_angle"),
+        ("controlled", "make_controlled_decomp"),
+        ("controlled", "controlled_to_unitary"),
+        ("controlled", "flip_zero_control"),
+        ("pow", "pow_involutory"),
+        ("pow", "pow_scale_angle"),
+    ],
+)
+def test_legacy_symbolic_rules_remain_distinct(module_name, name):
+    """Legacy modules expose their own implementations without overriding Operator2 exports."""
+    from pennylane.decomposition_rules import op_math
+
+    legacy_module = getattr(op_math, module_name)
+    assert getattr(op_math, name) is not getattr(legacy_module, name)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "make_adjoint_decomp",
+        "make_controlled_decomp",
+        "self_adjoint",
+        "self_adjoint_legacy",
+        "ctrl_many_zeroed_work_wires",
+    ],
+)
+def test_symbolic_rules_are_not_root_exports(name):
+    """Symbolic rules use the op_math package or their legacy modules."""
+    assert not hasattr(qp.decomposition_rules, name)
+
+
+@pytest.mark.parametrize(
     "name, module",
     [
         ("make_rz_to_phase_gradient_decomp", "phase_gradient.rz"),

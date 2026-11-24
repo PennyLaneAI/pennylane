@@ -24,7 +24,7 @@ from pennylane import math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.decomposition_rules.op_math.controlled2 import (
+from pennylane.decomposition_rules.op_math import (
     ctrl_many_zeroed_work_wires,
     flip_zero_control,
 )

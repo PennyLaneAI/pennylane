@@ -19,7 +19,7 @@ from pennylane import capture, compiler, math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.decomposition_rules.op_math.controlled2 import flip_zero_control
+from pennylane.decomposition_rules.op_math import flip_zero_control
 from pennylane.decomposition_rules.templates.subroutines.qrom import _interleave_controls
 from pennylane.ops import CNOT, MultiControlledX, PauliX, X, adjoint, change_op_basis, cond
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract

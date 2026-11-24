@@ -25,7 +25,7 @@ from scipy.linalg import fractional_matrix_power
 import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.decomposition.resources import Resources
-from pennylane.decomposition_rules.op_math.pow2 import pow_scale_angle
+from pennylane.decomposition_rules.op_math import pow_scale_angle
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
