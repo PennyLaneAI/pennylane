@@ -104,9 +104,7 @@ def hadamard_to_ppr(wires: WiresLike, **__):
 
 
 add_decomps(Hadamard, hadamard_to_rz_rx, hadamard_to_rz_ry, hadamard_to_ppm, hadamard_to_ppr)
-
 add_decomps("Adjoint(Hadamard)", self_adjoint)
-
 add_decomps("Pow(Hadamard)", pow_involutory)
 
 
@@ -174,9 +172,7 @@ def paulix_to_ppr(wires: WiresLike):
 
 
 add_decomps(PauliX, paulix_to_rx, paulix_to_ppr)
-
 add_decomps("Adjoint(PauliX)", self_adjoint)
-
 add_decomps("Pow(PauliX)", pow_involutory, pow_x_to_rx, pow_x_to_sx)
 
 
@@ -228,9 +224,7 @@ def pauliy_to_ppr(wires: WiresLike):
 
 
 add_decomps(PauliY, pauliy_to_ry_gp, pauliy_to_ppr)
-
 add_decomps("Adjoint(PauliY)", self_adjoint)
-
 add_decomps("Pow(PauliY)", pow_involutory, pow_y_standard)
 
 
@@ -302,9 +296,7 @@ def pauliz_to_ppr(wires: WiresLike):
 
 
 add_decomps(PauliZ, pauliz_to_ps, pauliz_to_ppr)
-
 add_decomps("Adjoint(PauliZ)", self_adjoint)
-
 add_decomps("Pow(PauliZ)", pow_involutory, pow_z_standard, pow_z_to_s, pow_z_to_t)
 
 
@@ -412,7 +404,6 @@ def pow_t_standard(base, z):
 
 
 add_decomps(T, t_to_phaseshift, t_to_ppr)
-
 add_decomps("Pow(T)", make_pow_decomp_with_period(8), pow_t_standard)
 
 
@@ -470,9 +461,7 @@ def swap_to_ppr(wires, **_):
 
 
 add_decomps(SWAP, swap_to_cnot, swap_to_ppr)
-
 add_decomps("Adjoint(SWAP)", self_adjoint)
-
 add_decomps("Pow(SWAP)", pow_involutory)
 
 
@@ -528,9 +517,7 @@ def ecr_standard(wires, **_):
 
 
 add_decomps(ECR, ecr_standard)
-
 add_decomps("Adjoint(ECR)", self_adjoint)
-
 add_decomps("Pow(ECR)", pow_involutory)
 
 
@@ -750,9 +737,7 @@ def ppr8_to_clifford_t(sign, pauli_word, wires):
 
 
 add_decomps(PPR_2, ppr2_to_paulis)
-
 add_decomps(PPR_4, ppr4_to_cliffords)
-
 add_decomps(PPR_8, ppr8_to_clifford_t)
 
 
@@ -767,7 +752,5 @@ def adjoint_ppr_flip_sign_standard(base):
 
 
 add_decomps("Adjoint(PPR_2)", adjoint_ppr_flip_sign_standard)
-
 add_decomps("Adjoint(PPR_4)", adjoint_ppr_flip_sign_standard)
-
 add_decomps("Adjoint(PPR_8)", adjoint_ppr_flip_sign_standard)

@@ -154,9 +154,7 @@ add_decomps(
     single_excitation_to_ppr_rz,
     single_excitation_to_ppr_crz,
 )
-
 add_decomps("Adjoint(SingleExcitation)", adjoint_rotation2)
-
 add_decomps("Pow(SingleExcitation)", pow_rotation2)
 
 
@@ -179,9 +177,7 @@ def single_excitation_minus_standard(phi, wires: WiresLike, **__):
 
 
 add_decomps(SingleExcitationMinus, single_excitation_minus_standard)
-
 add_decomps("Adjoint(SingleExcitationMinus)", adjoint_negate_angle)
-
 add_decomps("Pow(SingleExcitationMinus)", pow_scale_angle)
 
 
@@ -204,9 +200,7 @@ def single_excitation_plus_standard(phi, wires: WiresLike, **__):
 
 
 add_decomps(SingleExcitationPlus, single_excitation_plus_standard)
-
 add_decomps("Adjoint(SingleExcitationPlus)", adjoint_negate_angle)
-
 add_decomps("Pow(SingleExcitationPlus)", pow_scale_angle)
 
 
@@ -269,19 +263,11 @@ def double_excitation_to_ppr(phi: TensorLike, wires: WiresLike):
 
 
 add_decomps(DoubleExcitation, double_excitation_to_gates, double_excitation_to_ppr)
-
 add_decomps("Adjoint(DoubleExcitation)", adjoint_rotation2)
-
 add_decomps("Pow(DoubleExcitation)", pow_rotation2)
-
-
 add_decomps("Adjoint(DoubleExcitationPlus)", adjoint_negate_angle)
-
 add_decomps("Pow(DoubleExcitationPlus)", pow_scale_angle)
-
-
 add_decomps("Adjoint(DoubleExcitationMinus)", adjoint_negate_angle)
-
 add_decomps("Pow(DoubleExcitationMinus)", pow_scale_angle)
 
 
@@ -298,9 +284,7 @@ def orbital_rotation_standard(phi: TensorLike, wires: WiresLike):
 
 
 add_decomps(OrbitalRotation, orbital_rotation_standard)
-
 add_decomps("Adjoint(OrbitalRotation)", adjoint_rotation2)
-
 add_decomps("Pow(OrbitalRotation)", pow_rotation2)
 
 
@@ -327,7 +311,5 @@ def fermionic_swap_standard(phi, wires: WiresLike, **__):
 
 
 add_decomps(FermionicSWAP, fermionic_swap_standard)
-
 add_decomps("Adjoint(FermionicSWAP)", adjoint_rotation2)
-
 add_decomps("Pow(FermionicSWAP)", pow_rotation2)

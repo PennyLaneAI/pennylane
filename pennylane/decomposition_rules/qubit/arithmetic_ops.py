@@ -56,9 +56,7 @@ def qubitsum_to_cnots(wires: WiresLike, **__):
 
 
 add_decomps(QubitSum, qubitsum_to_cnots)
-
 add_decomps("Adjoint(QubitSum)", self_adjoint_legacy)
-
 add_decomps("Pow(QubitSum)", pow_involutory)
 
 
@@ -221,6 +219,4 @@ add_decomps(
     integer_comparator_greater_equal,
     integer_comparator_flip_greater_equal,
 )
-
-
 add_decomps("Adjoint(IntegerComparator)", self_adjoint_legacy)

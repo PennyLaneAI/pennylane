@@ -74,9 +74,7 @@ def rx_to_ppr(phi, wires):
 
 
 add_decomps(RX, rx_to_rot, rx_to_rz_ry, rx_to_ppr, rx_to_ry_cliff, rx_to_rz_cliff)
-
 add_decomps("Adjoint(RX)", adjoint_negate_angle)
-
 add_decomps("Pow(RX)", pow_scale_angle)
 
 
@@ -173,9 +171,7 @@ def ry_to_ppr(phi, wires):
 
 
 add_decomps(RY, ry_to_rot, ry_to_rz_rx, ry_to_ppr, ry_to_rx_cliff, ry_to_rz_cliff)
-
 add_decomps("Adjoint(RY)", adjoint_negate_angle)
-
 add_decomps("Pow(RY)", pow_scale_angle)
 
 
@@ -262,9 +258,7 @@ def rz_to_ppr(phi, wires, **_):
 
 
 add_decomps(RZ, rz_to_ps, rz_to_rot, rz_to_ry_rx, rz_to_ppr, rz_to_rx_cliff, rz_to_ry_cliff)
-
 add_decomps("Adjoint(RZ)", adjoint_negate_angle)
-
 add_decomps("Pow(RZ)", pow_scale_angle)
 
 
@@ -385,11 +379,8 @@ def controlled_phase_shift_single_phase(base, control_wires, work_wires, **_):
 
 
 add_decomps(PhaseShift, phaseshift_to_rz_gp)
-
 add_decomps("Adjoint(PhaseShift)", adjoint_negate_angle)
-
 add_decomps("Pow(PhaseShift)", pow_scale_angle)
-
 add_decomps(
     "C(PhaseShift)",
     flip_zero_control(controlled_phase_shift_standard, name="to_pauli_rot"),
@@ -467,9 +458,7 @@ def u1_to_phaseshift(phi, wires):
 
 
 add_decomps(U1, u1_to_phaseshift)
-
 add_decomps("Adjoint(U1)", adjoint_negate_angle)
-
 add_decomps("Pow(U1)", pow_scale_angle)
 
 

@@ -101,9 +101,7 @@ def multi_rz_to_ppr(theta: TensorLike, wires: WiresLike):
 
 
 add_decomps(MultiRZ, multi_rz_standard, multi_rz_to_ppr)
-
 add_decomps("Adjoint(MultiRZ)", adjoint_rotation2)
-
 add_decomps("Pow(MultiRZ)", pow_scale_angle)
 
 
@@ -171,9 +169,7 @@ def pauli_rot_standard(theta: TensorLike, pauli_word: str, wires: WiresLike):
 
 
 add_decomps(PauliRot, pauli_rot_standard)
-
 add_decomps("Adjoint(PauliRot)", adjoint_rotation2)
-
 add_decomps("Pow(PauliRot)", pow_scale_angle)
 
 
@@ -341,7 +337,6 @@ def decompose_pcphase_standard(phi: TensorLike, dim: int, wires: WiresLike):
 
 
 add_decomps(PCPhase, decompose_pcphase_standard)
-
 add_decomps("Adjoint(PCPhase)", adjoint_rotation2)
 
 
@@ -367,9 +362,7 @@ def isingxx_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(IsingXX, isingxx_to_cnot_rx_cnot, isingxx_to_ppr)
-
 add_decomps("Adjoint(IsingXX)", adjoint_rotation2)
-
 add_decomps("Pow(IsingXX)", pow_scale_angle)
 
 
@@ -395,9 +388,7 @@ def isingyy_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(IsingYY, isingyy_to_cy_ry_cy, isingyy_to_ppr)
-
 add_decomps("Adjoint(IsingYY)", adjoint_rotation2)
-
 add_decomps("Pow(IsingYY)", pow_scale_angle)
 
 
@@ -466,11 +457,8 @@ controlled_ising_zz = flip_zero_control(controlled_ising_zz_standard, name="pari
 
 
 add_decomps(IsingZZ, isingzz_to_cnot_rz_cnot, isingzz_to_ppr)
-
 add_decomps("Adjoint(IsingZZ)", adjoint_rotation2)
-
 add_decomps("Pow(IsingZZ)", pow_scale_angle)
-
 add_decomps("C(IsingZZ)", controlled_ising_zz)
 
 
@@ -511,9 +499,7 @@ def isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(IsingXY, isingxy_to_h_cy)
-
 add_decomps("Adjoint(IsingXY)", adjoint_rotation2)
-
 add_decomps("Pow(IsingXY)", pow_scale_angle)
 
 
@@ -544,7 +530,6 @@ def pswap_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(PSWAP, pswap_to_swap_cnot_phaseshift_cnot, pswap_to_ppr)
-
 add_decomps("Adjoint(PSWAP)", adjoint_negate_angle)
 
 
@@ -563,9 +548,7 @@ def cphaseshift00_to_x_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CPhaseShift00, cphaseshift00_to_x_phaseshift_cnot)
-
 add_decomps("Adjoint(CPhaseShift00)", adjoint_rotation2)
-
 add_decomps("Pow(CPhaseShift00)", pow_scale_angle)
 
 
@@ -582,9 +565,7 @@ def cphaseshift01_to_x_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CPhaseShift01, cphaseshift01_to_x_phaseshift_cnot)
-
 add_decomps("Adjoint(CPhaseShift01)", adjoint_rotation2)
-
 add_decomps("Pow(CPhaseShift01)", pow_scale_angle)
 
 
@@ -601,7 +582,5 @@ def cphaseshift10_to_x_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(CPhaseShift10, cphaseshift10_to_x_phaseshift_cnot)
-
 add_decomps("Adjoint(CPhaseShift10)", adjoint_rotation2)
-
 add_decomps("Pow(CPhaseShift10)", pow_scale_angle)

@@ -42,17 +42,14 @@ from pennylane.typing import Bool, Complex, Float, Wire
 from pennylane.wires import concatenate_wires
 
 
-def make_one_qubit_unitary_decomposition(su2_rule, su2_resource, name=""):
+def make_one_qubit_unitary_decomposition(su2_rule, su2_resources, name=""):
     """Wrapper around a naive one-qubit decomposition rule that adds a global phase."""
-
-    def _resource_fn(*_, **__):
-        return su2_resource() | {ops.GlobalPhase: 1}
 
     name = name or su2_rule.name
 
     # Resources are not exact because the global phase or rotations might be skipped
     @register_condition(lambda U, wires, **_: len(wires) == 1)
-    @register_resources(_resource_fn, exact=False, name=name)
+    @register_resources(su2_resources | {ops.GlobalPhase: 1}, exact=False, name=name)
     def _impl(U, wires, **__):
         if sparse.issparse(U):
             U = U.todense()
@@ -65,38 +62,22 @@ def make_one_qubit_unitary_decomposition(su2_rule, su2_resource, name=""):
     return _impl
 
 
-def _su2_rot_resource():
-    return {
-        ops.Rot: 1,
-        ops.RZ: 1,  # RZ is produced in a special case, which has to be accounted for.
-    }
-
-
-def _su2_zyz_resource():
-    return {ops.RZ: 2, ops.RY: 1}
-
-
-def _su2_xyx_resource():
-    return {ops.RX: 2, ops.RY: 1}
-
-
-def _su2_xzx_resource():
-    return {ops.RX: 2, ops.RZ: 1}
-
-
-def _su2_zxz_resource():
-    return {ops.RZ: 2, ops.RX: 1}
-
-
-rot_decomp_rule = make_one_qubit_unitary_decomposition(_su2_rot_decomp, _su2_rot_resource, "rot")
-
-zyz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zyz_decomp, _su2_zyz_resource, "zyz")
-
-xyx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xyx_decomp, _su2_xyx_resource, "xyx")
-
-xzx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xzx_decomp, _su2_xzx_resource, "xzx")
-
-zxz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zxz_decomp, _su2_zxz_resource, "zxz")
+# RZ is produced in a special case, which has to be accounted for.
+rot_decomp_rule = make_one_qubit_unitary_decomposition(
+    _su2_rot_decomp, {ops.Rot: 1, ops.RZ: 1}, "rot"
+)
+zyz_decomp_rule = make_one_qubit_unitary_decomposition(
+    _su2_zyz_decomp, {ops.RZ: 2, ops.RY: 1}, "zyz"
+)
+xyx_decomp_rule = make_one_qubit_unitary_decomposition(
+    _su2_xyx_decomp, {ops.RX: 2, ops.RY: 1}, "xyx"
+)
+xzx_decomp_rule = make_one_qubit_unitary_decomposition(
+    _su2_xzx_decomp, {ops.RX: 2, ops.RZ: 1}, "xzx"
+)
+zxz_decomp_rule = make_one_qubit_unitary_decomposition(
+    _su2_zxz_decomp, {ops.RZ: 2, ops.RX: 1}, "zxz"
+)
 
 
 # Worst-case resource estimate for the two-qubit unitary decomposition.

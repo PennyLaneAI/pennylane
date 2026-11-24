@@ -25,11 +25,8 @@ from pennylane.ops.identity import Identity
 from pennylane.typing import Wire
 
 add_decomps(Identity, null_decomp)
-
 add_decomps("Adjoint(Identity)", null_decomp)
-
 add_decomps("C(Identity)", null_decomp)
-
 add_decomps("Pow(Identity)", null_decomp)
 
 
@@ -102,7 +99,5 @@ def controlled_g_phase_standard(base, control_wires, control_values, work_wires,
 
 
 add_decomps("Adjoint(GlobalPhase)", adjoint_negate_angle)
-
 add_decomps("Pow(GlobalPhase)", pow_scale_angle)
-
 add_decomps("C(GlobalPhase)", controlled_g_phase_standard)
