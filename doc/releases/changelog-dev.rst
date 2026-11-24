@@ -4,6 +4,10 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* Added a lattice-surgery decomposition for :class:`~.MultiX` with one control wire,
+  using three Pauli product measurements and one auxiliary qubit.
+  `(#10558) <https://github.com/PennyLaneAI/pennylane/pull/10558>`__
+
 * :class:`~.QROM` has been divided by splitting off two new operators, :class:`~.QROMLoad` and
   :class:`~.SelectSwap`, for the specific scenario of zeroed target wires, i.e., for data
   loading rather than XORing. The latter is now done by :class:`~.QROM`. 
@@ -1644,6 +1648,11 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* Removed the ``pennylane.queuing`` shim. Import directly from
+  ``pennylane.core.queuing``; ``qp.queuing`` now refers to that module.
+  Use ``qp.apply`` instead of ``qp.queuing.apply``.
+  `(#10582) <https://github.com/PennyLaneAI/pennylane/pull/10582>`__
+  
 * :class:`~.QROM` no longer takes a ``clean`` argument and no longer has a Select-SWAP
   decomposition, which is available for :class:`~.QROMLoad` and :class:`~.SelectSwap` instead.
   See the corresponding entry under "New features" for when to use which of the three operators.
@@ -1993,7 +2002,7 @@ Breaking changes 💔
 
 * :func:`~pennylane.apply` has moved from :mod:`pennylane.core.queuing` to the standalone
   :mod:`pennylane.core.apply` module, and is no longer importable from
-  ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
+  ``pennylane.core.queuing``. The ``qp.apply`` path is unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
 * :func:`~.change_op_basis` now preserves the basis-change operator during program capture.
@@ -2353,6 +2362,8 @@ Internal changes ⚙️
   `(#10077) <https://github.com/PennyLaneAI/pennylane/pull/10077>`__
   `(#10150) <https://github.com/PennyLaneAI/pennylane/pull/10150>`__
   `(#10298) <https://github.com/PennyLaneAI/pennylane/pull/10298>`__
+  `(#10531) <https://github.com/PennyLaneAI/pennylane/pull/10531>`__
+  
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
@@ -2618,6 +2629,10 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed the extra-control-wire test for :class:`~.QROM` to omit work-register sampling
+  when no work wires are present, and removed its outdated expected-failure marker.
+  `(#10586) <https://github.com/PennyLaneAI/pennylane/pull/10586>`__
 
 * Fixed resource callbacks in :class:`~.SingleExcitation` decompositions to accept positional arguments.
   `(#10575) <https://github.com/PennyLaneAI/pennylane/pull/10575>`__
@@ -2992,6 +3007,7 @@ Sümeyye Nur Esin,
 Thomas C. Fraser,
 Connor Gambla,
 Vellala Gowthami,
+Pragati Gupta,
 Sengthai Heng,
 Austin Huang,
 Harshal Janjani,
