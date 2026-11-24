@@ -359,7 +359,7 @@ class TestInputs:
             ([0], "Permutations must involve at least 2 qubits."),
             ([2, 9, 7, 0], "Permutation must specify outcome of all wires."),
             ([2, 7, 9, 9, 1], "Values in a permutation must all be unique"),
-            ([2, 7, "d", 9, 1], r"not present in wire set"),
+            ([2, 7, 3, 9, 1], r"not present in wire set"),
         ],
     )
     def test_invalid_inputs_tape(self, permutation_order, expected_error_message):
