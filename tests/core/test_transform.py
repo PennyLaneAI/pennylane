@@ -839,7 +839,7 @@ class TestTransform:  # pylint: disable=too-many-public-methods
                 prog.add_transform(qp.compile)
                 return prog, execution_config
 
-            def execute(self, circuits, execution_config=None):
+            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
                 return [0] * len(circuits)
 
         _dev = DummyDev()
