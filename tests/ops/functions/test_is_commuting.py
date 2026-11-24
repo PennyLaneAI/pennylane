@@ -92,7 +92,7 @@ class TestGetTargetName:
     @pytest.mark.parametrize("op", (qp.PauliX(0), qp.RX(1.2, 0), qp.IsingXX(0, range(2))))
     def test_Controlled_op(self, op):
         """Test it gets the base's name for a controlled op."""
-        c_op = qp.ops.op_math.Controlled(op, control_wires=("a", "b"))
+        c_op = qp.ops.op_math.Controlled(op, control_wires=(5, 6))
         assert _get_target_name(c_op) == op.name
 
     @pytest.mark.parametrize("op", (qp.PauliX(0), qp.RX(1.2, 0), qp.IsingXX(0, range(2))))
@@ -821,30 +821,30 @@ class TestCommutingFunction:  # pylint: disable=too-many-public-methods
             (qp.Identity(0), qp.PauliZ(0), True),
             (qp.PauliY(0), qp.PauliZ(0), False),
             (qp.PauliX(0), qp.PauliX(1), True),
-            (qp.PauliY("x"), qp.PauliX("y"), True),
+            (qp.PauliY(9), qp.PauliX(10), True),
             (
-                qp.prod(qp.PauliZ("a"), qp.PauliY("b"), qp.PauliZ("d")),
-                qp.prod(qp.PauliX("a"), qp.PauliZ("c"), qp.PauliY("d")),
+                qp.prod(qp.PauliZ(5), qp.PauliY(6), qp.PauliZ(8)),
+                qp.prod(qp.PauliX(5), qp.PauliZ(7), qp.PauliY(8)),
                 True,
             ),
             (
-                qp.prod(qp.PauliX("a"), qp.PauliY("b"), qp.PauliZ("d")),
-                qp.prod(qp.PauliX("a"), qp.PauliZ("c"), qp.PauliY("d")),
+                qp.prod(qp.PauliX(5), qp.PauliY(6), qp.PauliZ(8)),
+                qp.prod(qp.PauliX(5), qp.PauliZ(7), qp.PauliY(8)),
                 False,
             ),
             (
-                qp.sum(qp.PauliZ("a"), qp.PauliY("b"), qp.PauliZ("d")),
-                qp.sum(qp.PauliX("a"), qp.PauliZ("c"), qp.PauliY("d")),
+                qp.sum(qp.PauliZ(5), qp.PauliY(6), qp.PauliZ(8)),
+                qp.sum(qp.PauliX(5), qp.PauliZ(7), qp.PauliY(8)),
                 False,
             ),
             (
-                qp.sum(qp.PauliZ("a"), qp.PauliY("a"), qp.PauliZ("b")),
-                qp.sum(qp.PauliX("c"), qp.PauliZ("c"), qp.PauliY("d")),
+                qp.sum(qp.PauliZ(5), qp.PauliY(5), qp.PauliZ(6)),
+                qp.sum(qp.PauliX(7), qp.PauliZ(7), qp.PauliY(8)),
                 True,
             ),
             (
-                qp.sum(qp.PauliZ("a"), qp.PauliY("b"), qp.PauliZ("d")),
-                qp.sum(qp.PauliZ("a"), qp.PauliY("c"), qp.PauliZ("d")),
+                qp.sum(qp.PauliZ(5), qp.PauliY(6), qp.PauliZ(8)),
+                qp.sum(qp.PauliZ(5), qp.PauliY(7), qp.PauliZ(8)),
                 True,
             ),
         ],
