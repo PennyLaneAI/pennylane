@@ -185,9 +185,9 @@ def make_selectpaulirot_to_phase_gradient_decomp(
      aux_0: ─├QROMLoad(M0)─│──│──│──╭SemiAdder─│──│──│──├QROMLoad(M0)†─┤ ├State
      aux_1: ─├QROMLoad(M0)─│──│──│──├SemiAdder─│──│──│──├QROMLoad(M0)†─┤ ├State
      aux_2: ─├QROMLoad(M0)─│──│──│──├SemiAdder─│──│──│──├QROMLoad(M0)†─┤ ├State
-     phg_0: ─│─────────────╰X─│──│──├SemiAdder─╰X─│──│──│──────────────┤ ├State
-     phg_1: ─│────────────────╰X─│──├SemiAdder────╰X─│──│──────────────┤ ├State
-     phg_2: ─│───────────────────╰X─├SemiAdder───────╰X─│──────────────┤ ├State
+     phg_0: ─│─────────────╰X─│──│──├SemiAdder─│──│──╰X─│──────────────┤ ├State
+     phg_1: ─│────────────────╰X─│──├SemiAdder─│──╰X────│──────────────┤ ├State
+     phg_2: ─│───────────────────╰X─├SemiAdder─╰X───────│──────────────┤ ├State
     work_0: ─├work──────────────────├SemiAdder──────────├work──────────┤ ├State
     work_1: ─╰work──────────────────╰SemiAdder──────────╰work──────────┤ ╰State
 
@@ -250,8 +250,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(
              3: ─│─────────────╭○─╭○────────────╭○─╭○─│──────────────┤ ├State
          aux_0: ─├QROMLoad(M0)─│──│──╭SemiAdder─│──│──├QROMLoad(M0)†─┤ ├State
          aux_1: ─├QROMLoad(M0)─│──│──├SemiAdder─│──│──├QROMLoad(M0)†─┤ ├State
-         phg_0: ─│─────────────╰X─│──├SemiAdder─╰X─│──│──────────────┤ ├State
-         phg_1: ─│────────────────╰X─├SemiAdder────╰X─│──────────────┤ ├State
+         phg_0: ─│─────────────╰X─│──├SemiAdder─│──╰X─│──────────────┤ ├State
+         phg_1: ─│────────────────╰X─├SemiAdder─╰X────│──────────────┤ ├State
         work_0: ─├work───────────────├SemiAdder───────├work──────────┤ ├State
         work_1: ─╰work───────────────╰SemiAdder───────╰work──────────┤ ╰State
 
@@ -279,8 +279,9 @@ def make_selectpaulirot_to_phase_gradient_decomp(
     precision = len(angle_wires)
     precisions, dispatch = _precision_dispatcher(precision_stats, precision, "SelectPauliRot")
 
-    # pylint: disable-next=unused-argument
-    def _resource_fn(angles, control_wires, target_wire, rot_axis):
+    def _select_pauli_rot_phase_gradient_standard_resources(
+        angles, control_wires, target_wire, rot_axis  # pylint: disable=unused-argument
+    ):
         # decomposition costs, using information about angle_wires etc from the outer scope.
         # Each non-zero precision that may be applied is counted once.
 
@@ -326,8 +327,14 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         return change_basis_rep_basis_adapted
 
     # The resources are inexact if conditional branches are used
-    @qp.register_resources(_resource_fn, exact=precisions == {precision})
-    def _select_pauli_rot_phase_gradient_decomp(angles, control_wires, target_wire, rot_axis, **_):
+    @qp.register_resources(
+        _select_pauli_rot_phase_gradient_standard_resources,
+        exact=precisions == {precision},
+        name="phase_gradient",
+    )
+    def _select_pauli_rot_phase_gradient_standard(
+        angles, control_wires, target_wire, rot_axis, **_
+    ):
         if len(control_wires) == 0:
             rot_class = {"X": qp.RX, "Y": qp.RY, "Z": qp.RZ}[rot_axis]
             rot_class(angles[0], target_wire)
@@ -353,4 +360,4 @@ def make_selectpaulirot_to_phase_gradient_decomp(
             ),
         )
 
-    return _select_pauli_rot_phase_gradient_decomp
+    return _select_pauli_rot_phase_gradient_standard

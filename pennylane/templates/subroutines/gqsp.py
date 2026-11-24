@@ -103,7 +103,7 @@ class GQSP(Operator2):
                 ``(3, d+1)``) and shift :math:`s`
             :example: :math:`d=1`, :math:`s=0`
 
-            .. decomposition-rule:: _GQSP_decomposition
+            .. decomposition-rule:: controlled_unitary_rotations
                 :image: /_static/decomposition_thumbnails/gqsp_signal_processing.svg
                 :where: :math:`a = \min(\max(-s, 0), d)` is the number of controlled unitaries
                     absorbing a negative shift, and :math:`[\cdot]` is 1 if the condition holds
@@ -186,7 +186,7 @@ def _num_shifted_ctrl_ops(shift, num_ctrl_ops):
 
 
 # pylint: disable-next=too-many-arguments,unused-argument
-def _GQSP_resources(unitary, angles, control, work_wires, work_wire_type, shift):
+def _GQSP_standard_resources(unitary, angles, control, work_wires, work_wire_type, shift):
     num_iters = angles.shape[1]
     num_absorbed, remaining = _num_shifted_ctrl_ops(shift, num_iters - 1)
     unitary = abstractify(unitary)
@@ -210,9 +210,9 @@ def _GQSP_resources(unitary, angles, control, work_wires, work_wire_type, shift)
     return resources
 
 
-@register_resources(_GQSP_resources)
+@register_resources(_GQSP_standard_resources, name="controlled_unitary_rotations")
 # pylint: disable-next=too-many-arguments
-def _GQSP_decomposition(unitary, angles, control, work_wires, work_wire_type, shift):
+def _GQSP_standard(unitary, angles, control, work_wires, work_wire_type, shift):
     if compiler.active() or capture.enabled():
         angles = math.array(angles, like="jax")
 
@@ -266,4 +266,4 @@ def _GQSP_decomposition(unitary, angles, control, work_wires, work_wire_type, sh
     gqsp_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(GQSP, _GQSP_decomposition)
+add_decomps(GQSP, _GQSP_standard)

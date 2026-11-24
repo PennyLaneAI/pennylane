@@ -114,7 +114,7 @@ class SelectSwap(Operator2):
                 :math:`w` work wires
             :example: :math:`L=32`, :math:`n=1`, :math:`c=5` and :math:`w=5`
 
-            .. decomposition-rule:: _select_swap
+            .. decomposition-rule:: select_swap
                 :image: /_static/decomposition_thumbnails/select_swap.svg
                 :where: :math:`k = 2^j` bitstrings are loaded in parallel, with :math:`j` chosen to
                     minimize the cost among all :math:`j` with
@@ -182,7 +182,7 @@ def _select_swap_resources(bitstrings, control_wires, target_wires, work_wires):
     return resources
 
 
-@register_resources(_select_swap_resources)
+@register_resources(_select_swap_resources, name="select_swap")
 def _select_swap(bitstrings, control_wires, target_wires, work_wires):
     num_control_wires_select, _, num_work_wires_swap, num_work_wires_cswap, depth = (
         _select_swap_sizes(bitstrings, control_wires, target_wires, work_wires)
