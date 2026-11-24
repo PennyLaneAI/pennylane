@@ -280,11 +280,12 @@ def assert_decomposable(op: Operator, check_matrix: bool = True) -> None:
     assert applicable_rules, f"None of the decomposition rules registered for {op} are applicable."
 
     for rule in applicable_rules:
-        assert any(
+        accepts_positional_args = any(
             param.kind
             in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD, Parameter.VAR_POSITIONAL)
             for param in signature(rule).parameters.values()
-        ), (
+        )
+        assert accepts_positional_args, (
             f"Decomposition rule {rule.name} for {op.name} must accept positional arguments. "
             "i.e. use *_, **__ instead of a keyword-only signature."
         )
