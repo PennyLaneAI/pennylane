@@ -23,14 +23,12 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):
     """A decorator for just-in-time compilation of hybrid quantum programs in PennyLane.
 
     This decorator enables both just-in-time and ahead-of-time compilation,
-    depending on the compiler package and whether function argument type hints
-    are provided.
+    using Catalyst, depending on whether function argument type hints are provided.
 
     .. note::
 
         PennyLane uses the :doc:`Catalyst <catalyst:index>` hybrid quantum-classical compiler by
-        default. Other compiler packages can integrate with :func:`~.qjit` through the
-        :mod:`~.compiler` API.
+        for compilation.
 
         For more details on Catalyst, see the :doc:`Catalyst documentation <catalyst:index>` and
         :func:`catalyst.qjit`.
@@ -46,9 +44,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):
 
     Args:
         fn (Callable): Hybrid (quantum-classical) function to compile
-        compiler (str): Name of the registered compiler to use for just-in-time compilation.
-            Use :func:`~.compiler.available_compilers` to list the compiler packages available in
-            the current environment. The default is ``"catalyst"``.
+        compiler (str): Must be ``"catalyst"``, the only supported compiler.
         autograph (bool): Experimental support for automatically converting Python control
             flow statements to Catalyst-compatible control flow. Currently supports Python ``if``,
             ``elif``, ``else``, and ``for`` statements. Note that this feature requires the
@@ -77,10 +73,12 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):
             below.
 
     Returns:
-        Callable: A compiler-specific callable that, when executed, just-in-time compiles and
+        Callable: A Catalyst callable that, when executed, just-in-time compiles and
         executes the decorated function
 
     Raises:
+        CompileError: Raised if a compiler other than Catalyst is requested, or if Catalyst
+            is unavailable or incompatible.
         FileExistsError: Unable to create temporary directory
         PermissionError: Problems creating temporary directory
         OSError: Problems while creating folder for intermediate files
@@ -287,12 +285,15 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):
         reused for subsequent function calls.
     """
 
-    if not available(compiler):
-        raise CompileError(f"The {compiler} package is not installed.")  # pragma: no cover
+    if compiler != "catalyst":
+        raise CompileError("Catalyst is the only supported compiler for qjit.")
+
+    if not available("catalyst"):
+        raise CompileError("The catalyst package is not installed.")
 
     # Check the minimum version of 'compiler' if installed
-    _check_compiler_version(compiler)
+    _check_compiler_version("catalyst")
 
     compilers = AvailableCompilers.names_entrypoints
-    qjit_loader = compilers[compiler]["qjit"].load()
+    qjit_loader = compilers["catalyst"]["qjit"].load()
     return qjit_loader(fn=fn, *args, **kwargs)

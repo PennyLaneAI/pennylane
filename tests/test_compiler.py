@@ -66,6 +66,19 @@ def test_catalyst_incompatible():
 class TestCatalyst:
     """Test ``qp.qjit`` with Catalyst"""
 
+    @pytest.mark.parametrize("name", ["other", "", None])
+    @pytest.mark.parametrize("decorator", [False, True])
+    def test_reject_other_compiler(self, mocker, name, decorator):
+        """Reject unsupported compilers before looking up or loading any entry point."""
+        distribution = mocker.patch("importlib.metadata.distribution")
+        load = mocker.patch("importlib.metadata.EntryPoint.load")
+        fn = None if decorator else lambda x: x
+
+        with pytest.raises(CompileError, match="Catalyst is the only supported compiler"):
+            qp.qjit(fn, compiler=name)
+        distribution.assert_not_called()
+        load.assert_not_called()
+
     def test_compiler(self):
         """Test compiler active and available methods"""
 

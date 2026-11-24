@@ -1648,6 +1648,11 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* :func:`~.qjit` now supports only Catalyst. The ``compiler`` argument accepts only
+  ``"catalyst"``, and compiler discovery ignores entry points from other packages.
+  The generic compiler-plugin interface and its documentation have been removed.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * Removed the ``pennylane.queuing`` shim. Import directly from
   ``pennylane.core.queuing``; ``qp.queuing`` now refers to that module.
   Use ``qp.apply`` instead of ``qp.queuing.apply``.
