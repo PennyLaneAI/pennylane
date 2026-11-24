@@ -20,7 +20,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import RZ, GlobalPhase, PhaseShift, subcircuit
 from pennylane.ops.op_math import ChangeOpBasis2, change_op_basis
-from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
@@ -79,12 +79,12 @@ class RZLayer(Operator2):
             :symbols: :math:`k` angles on :math:`km` wires and :math:`w` ``work_wires``
             :example: :math:`k=2`, :math:`m=3`, :math:`w=1`
 
-            .. decomposition-rule:: _rzlayer_individual
+            .. decomposition-rule:: to_rz
                 :image: /_static/decomposition_thumbnails/rz_layer_individual.svg
 
                 :class:`~.RZ` | :math:`km` | 6
 
-            .. decomposition-rule:: _rzlayer_hwp_synthesis
+            .. decomposition-rule:: hamming_weight_phasing
                 :image: /_static/decomposition_thumbnails/rz_layer_hwp_synthesis.svg
                 :lightbox:
                 :requires: :math:`m \geq 3` and :math:`a` work wires
@@ -99,7 +99,7 @@ class RZLayer(Operator2):
                 :class:`~.PhaseShift` | :math:`k\ell(m)` | 4
                 :class:`~.GlobalPhase` | :math:`1` | 1
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/rz_layer_adjoint.svg
                 :region: adjoint
                 :where: ``angles`` change sign
@@ -141,7 +141,7 @@ class RZLayer(Operator2):
         return RZLayer(-self.angles, **self.wire_args)
 
 
-@register_resources(lambda wires, **_: {RZ: len(wires)})
+@register_resources(lambda wires, **_: {RZ: len(wires)}, name="to_rz")
 def _rzlayer_individual(angles, wires, **_):
     block_size = len(wires) // len(angles)
     if capture.enabled() or compiler.active():
@@ -198,7 +198,11 @@ def _rzlayer_hwp_synthesis_work_wires(angles, wires, work_wires):
 
 
 @register_condition(lambda angles, wires, **_: len(wires) // len(angles) >= 3)
-@register_resources(_rzlayer_hwp_synthesis_resources, work_wires=_rzlayer_hwp_synthesis_work_wires)
+@register_resources(
+    _rzlayer_hwp_synthesis_resources,
+    work_wires=_rzlayer_hwp_synthesis_work_wires,
+    name="hamming_weight_phasing",
+)
 def _rzlayer_hwp_synthesis(angles, wires, work_wires):
     """Hamming-weight phasing (HWP) decomposition: :math:`m` rotations ``RZ(theta)`` equal
     ``PhaseShift(2**j * theta)`` on bit :math:`j` of the Hamming weight of their wires and

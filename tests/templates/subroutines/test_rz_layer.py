@@ -199,7 +199,7 @@ class TestDecomposition:
 
     @pytest.mark.parametrize(
         "num_angles, block_size, num_work_wires",
-        [(1, 3, 1), (1, 4, 1), (1, 5, 3), (1, 6, 4), (1, 7, 4), (3, 3, 1), (2, 4, 1)],
+        [(1, 3, 1), (1, 4, 1), (1, 5, 3), (1, 5, 4), (1, 6, 4), (1, 7, 4), (3, 3, 1), (2, 4, 1)],
     )
     def test_hwp_synthesis_state(self, num_angles, block_size, num_work_wires, seed):
         """Test that the Hamming-weight phasing rule realizes the rotations including their global
@@ -330,6 +330,14 @@ class TestDecomposition:
             "work_wires": Wire[2],
         }
         assert not _rzlayer_hwp_synthesis.is_applicable(**abstract_args)
+
+
+def test_rule_names():
+    """Test the names of the decomposition rules, which select them in ``fixed_decomps``."""
+    assert {"to_rz", "hamming_weight_phasing"} <= {
+        rule.name for rule in qp.list_decomps(qp.RZLayer)
+    }
+    assert "negate_angle" in [rule.name for rule in qp.list_decomps("Adjoint(RZLayer)")]
 
 
 def test_adjoint_negates_angles():

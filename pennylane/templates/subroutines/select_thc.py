@@ -136,7 +136,7 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
 
     Each row holds the ``beth``-bit angles that rotate one leaf onto
     :math:`\lvert e_0 \rangle`, one field per pair in the batch; addresses not backed by a
-    leaf are all-zero and load the identity. Since ``QROM(clean=True)`` writes with an
+    leaf are all-zero and load the identity. Since ``QROM`` writes with an
     XOR, table :math:`b` is stored as its difference with table :math:`b - 1`, which carries
     the angle register from one batch to the next instead of erasing and reloading it. The
     first table is absolute, so re-loading it clears the register.
@@ -287,10 +287,8 @@ def select_thc_wires(M, N, beth, num_batches=1):
     .. note::
 
         Only ``work_wires`` is a minimum; the other four are exact and must be matched.
-        Extra work wires are forwarded to the internal :class:`~.QROM`, which splits them
-        between the unary iteration of its ``Select`` and the ``SelectSwap`` space-time
-        trade-off. Which split it picks depends on ``M``, ``N`` and ``beth``, so extra
-        wires do not necessarily lower the gate count.
+        Extra work wires are forwarded to the internal :class:`~.QROM`, which only uses as
+        many as its unary iteration needs, so extra wires do not lower the gate count.
 
     .. note::
 
@@ -359,7 +357,6 @@ def _select_basis_resources(  # pylint: disable=too-many-arguments
                 control_wires=Wire[len(control_wires) - 1],
                 target_wires=angle_wires,
                 work_wires=work_wires,
-                clean=True,
             )
         ] += 1
     num_pairs = sum(len(batch) for batch in batches)
@@ -416,7 +413,6 @@ def _SelectTHCBasis(  # pylint: disable=too-many-arguments
             control_wires=control_wires[1:],
             target_wires=angle_wires,
             work_wires=work_wires,
-            clean=True,
         )
         _apply_loaded_rotation(
             system_wires[:n_half], angle_wires, beth, batch, gradient_wires, work_wires
@@ -688,7 +684,7 @@ class SelectTHC(Operator2):
                 :math:`P = 0`), and :math:`n = \lceil \log_2(M+1) \rceil` wires per index
             :example: :math:`M=1`, :math:`N=4` (:math:`h=2`, :math:`P=1`, :math:`B=1`, :math:`n=1`)
 
-            .. decomposition-rule:: _select_thc_decomp
+            .. decomposition-rule:: selected_basis_rotations
                 :image: /_static/decomposition_thumbnails/select_thc_double_factorized.svg
                 :lightbox:
 
@@ -779,7 +775,7 @@ class SelectTHC(Operator2):
         )
 
 
-def _select_thc_resources(  # pylint: disable=too-many-arguments
+def _select_thc_standard_resources(  # pylint: disable=too-many-arguments
     chi,
     t_eigenvectors,
     beth,
@@ -841,8 +837,8 @@ def _select_thc_resources(  # pylint: disable=too-many-arguments
     return resources
 
 
-@register_resources(_select_thc_resources)
-def _select_thc_decomp(  # pylint: disable=too-many-arguments
+@register_resources(_select_thc_standard_resources, name="selected_basis_rotations")
+def _select_thc_standard(  # pylint: disable=too-many-arguments
     chi,
     t_eigenvectors,
     beth,
@@ -896,4 +892,4 @@ def _select_thc_decomp(  # pylint: disable=too-many-arguments
     X(swap)
 
 
-add_decomps(SelectTHC, _select_thc_decomp)
+add_decomps(SelectTHC, _select_thc_standard)

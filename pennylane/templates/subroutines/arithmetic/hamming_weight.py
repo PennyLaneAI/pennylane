@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Private helpers for computing the Hamming weight of a register in place, with
+Private helper for computing the Hamming weight of a register in place, with
 :class:`~.TemporaryAND` and :class:`~.CNOT` gates.
 """
 
@@ -92,7 +92,8 @@ def _HammingWeight(wires, work_wires):
         work_wires (Sequence): at least ``n - popcount(n)`` work wires in the zero state
     """
     # Each bit of the Hamming weight above bit 0 needs one level of adders. The last carry of
-    # level j is bit j + 1, so it goes onto out_wires[j], all other carries go onto spare wires
+    # level j goes onto out_wires[j], which ends up holding bit j + 1, and all other carries go
+    # onto spare wires
     log_n = len(wires).bit_length() - 1
     out_wires, spare_wires = work_wires[:log_n], work_wires[log_n:]
     for j in range(log_n):
