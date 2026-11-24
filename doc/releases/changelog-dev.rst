@@ -1651,7 +1651,7 @@ Breaking changes 💔
 * :func:`~.qjit` now supports only Catalyst. The ``compiler`` argument accepts only
   ``"catalyst"``, and compiler discovery ignores entry points from other packages.
   The generic compiler-plugin interface and its documentation have been removed.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10591) <https://github.com/PennyLaneAI/pennylane/pull/10591>`__
 
 * Removed the ``pennylane.queuing`` shim. Import directly from
   ``pennylane.core.queuing``; ``qp.queuing`` now refers to that module.
