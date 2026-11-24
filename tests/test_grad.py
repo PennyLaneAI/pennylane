@@ -308,4 +308,3 @@ def test_jax_with_numpy_auxiliary_data(diff_function):
     assert qp.math.get_interface(data) == "numpy"
     assert qp.math.allclose(derivative(jax.numpy.array(2.0), data), 4.0)
     assert qp.math.allclose(derivative(jax.numpy.array(2.0), data=data), 4.0)
-

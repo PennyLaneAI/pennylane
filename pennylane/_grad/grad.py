@@ -296,6 +296,14 @@ class grad:  # pylint: disable=too-many-instance-attributes
         ``argnums`` to the index of an argument with ``requires_grad=False`` will raise
         a ``NonDifferentiableError``.
 
+        Using the ``cost`` function above, both trainable Autograd arguments are
+        differentiated by default:
+
+        >>> first = qp.numpy.array(2.0, requires_grad=True)
+        >>> second = qp.numpy.array(3.0, requires_grad=True)
+        >>> qp.grad(cost)(first, second)
+        (tensor(7., requires_grad=True), tensor(2., requires_grad=True))
+
         With Autograd, the most recent forward value is available via the
         :attr:`~.forward` property.
 
