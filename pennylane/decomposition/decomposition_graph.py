@@ -46,8 +46,6 @@ from pennylane.decomposition.decomposition_rule import (
     local_decomps,
 )
 from pennylane.decomposition.gate_set import GateSet
-
-# Rule implementations are loaded after operator definitions during PennyLane initialization.
 from pennylane.decomposition_rules import op_math as op_math_rules
 from pennylane.decomposition_rules.common import null_decomp
 from pennylane.decomposition_rules.op_math.symbolicop import operator1_to_base, self_adjoint_legacy
