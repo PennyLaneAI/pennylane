@@ -24,7 +24,7 @@ performance improvements.
 
 PennyLane uses the
 `Catalyst <https://github.com/pennylaneai/catalyst>`__ hybrid compiler
-by default with the :func:`~.qjit` decorator. A significant benefit of Catalyst
+with the :func:`~.qjit` decorator. A significant benefit of Catalyst
 is the ability to preserve complex control flow around quantum operations — such
 as if statements and for loops, and including measurement feedback — during
 compilation, while continuing to support end-to-end autodifferentiation.
@@ -39,7 +39,7 @@ Overview
 
 The main entry point to hybrid compilation in PennyLane
 is via the :func:`~.qjit` decorator that can be mixed with
-other compiler-specific decorators and functions:
+Catalyst decorators and functions:
 
 .. autosummary::
     :toctree: api
@@ -49,7 +49,7 @@ other compiler-specific decorators and functions:
     ~vjp
 
 In addition, several developer functions are available to probe
-available hybrid compilers.
+Catalyst availability and its active compilation context.
 
 .. autosummary::
     :toctree: api
@@ -74,13 +74,8 @@ PennyLane primitives.
 Compiler
 --------
 
-The compiler module provides the infrastructure to integrate external
-hybrid quantum-classical compilers with PennyLane, but does not provide
-a built-in compiler.
-
-The default and best-supported compiler is the
-`Catalyst <https://github.com/pennylaneai/catalyst>`__ hybrid compiler. Other compiler
-packages can integrate with PennyLane through the experimental compiler API described below.
+PennyLane supports hybrid quantum-classical compilation through the
+`Catalyst <https://github.com/pennylaneai/catalyst>`__ compiler, which is installed separately.
 
 .. note::
 
@@ -179,76 +174,6 @@ as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
 page for an overview of the differences between Catalyst and PennyLane, and
 how to best structure your workflows to improve performance when
 using Catalyst.
-
-Adding a compiler
------------------
-
-.. warning::
-
-    The PennyLane compiler API is experimental and subject to change.
-
-To register any compiler packages, an experimental interface is available.
-This interface exposes the ``entry_points``
-metadata under the designated group name ``pennylane.compilers``, including the
-following entry points:
-
-- ``compiler_name.context"``: Path to the compilation evaluation context manager.
-  This context manager should have the method ``context.is_tracing()``,
-  which returns ``True`` if called within a program that is being traced
-  or captured.
-
-- ``compiler_name.ops``: Path to the compiler operations module. This operations module
-  may contain compiler specific versions of PennyLane operations,
-  for example :func:`~.cond`, :func:`~.measure`, and :func:`~.adjoint`.
-  Within a JIT context, PennyLane operations may dispatch to these functions.
-
-- ``compiler_name.qjit``: Path to the JIT decorator provided by the compiler.
-  This decorator should have the signature ``qjit(fn, *args, **kwargs)``,
-  where ``fn`` is the function to be compiled.
-
-where ``compiler_name`` should be replaced with the name of the compiler.
-For example, for Catalyst, we define the entry points ``catalyst.context``,
-``catalyst.ops`` and ``catalyst.qjit``. This allows the catalyst package to define
-multiple compilers.
-
-The name of the compiler can then be used by the user to denote which compiler should be used.
-For example:
-
-.. code-block:: python
-
-    @qp.qjit(compiler="catalyst")
-    def function(x, y):
-        ...
-
-    @qp.qjit(compiler="compiler_name")
-    def function(x, y):
-        ...
-
-In order to support applying the ``qjit`` decorator with and without arguments,
-
-.. code-block:: python
-
-    @qp.qjit
-    def function(x, y):
-        ...
-
-    @qp.qjit(verbose=True, additional_args, ...)
-    def function(x, y):
-        ...
-
-You should ensure that the ``qjit`` decorator itself returns a decorator
-if no function is provided:
-
-.. code-block:: python
-
-    def qjit(fn=None, **kwargs):
-        if fn is not None:
-            return compile_fn(fn, **kwargs)
-
-        def wrapper_fn(fn):
-            return compile_fn(fn, **kwargs)
-
-        return wrapper_fn
 
 """
 

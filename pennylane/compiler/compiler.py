@@ -11,13 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Compiler developer functions"""
+"""Catalyst availability and compilation-context helpers."""
 
-import dataclasses
 import re
 import sys
-from collections import defaultdict
-from importlib import metadata, reload
+from importlib import metadata
 
 from packaging.version import Version
 
@@ -26,24 +24,11 @@ from pennylane.exceptions import CompileError
 PL_CATALYST_MIN_VERSION = Version("0.15.0")
 
 
-@dataclasses.dataclass
-class AvailableCompilers:
-    """This contains data of installed PennyLane compiler packages."""
+class AvailableCompilers:  # pylint: disable=too-few-public-methods
+    """Entry-point loaders exported by the installed Catalyst distribution."""
 
-    # The collection of entry points that compiler packages must export.
-    # Note that this is still an experimental interface and is subject to change.
-    # This variable is used for validity checks of installed packages entry points.
-    # For any compiler packages seeking to be registered, it is imperative
-    # that they expose the ``entry_points`` metadata under the designated
-    # group name ``pennylane.compilers``, with the following entry points:
-    # - ``context``: Path to the compilation evaluation context manager.
-    # - ``ops``: Path to the compiler operations module.
-    # - ``qjit``: Path to the JIT decorator provided by the compiler.
     entrypoints_interface = ("context", "qjit", "ops")
-
-    # The dictionary of installed compiler packages
-    # and their entry point loaders.
-    names_entrypoints = defaultdict(dict)
+    names_entrypoints = {}
 
 
 def _check_compiler_version(name):
@@ -59,61 +44,41 @@ def _check_compiler_version(name):
 
 
 def _refresh_compilers():
-    """Scan installed PennyLane compiler packages to refresh the compilers
-    names and entry points.
-    """
+    """Refresh entry points from the installed Catalyst distribution."""
 
-    # Refresh the list of compilers
-    AvailableCompilers.names_entrypoints = defaultdict(dict)
+    AvailableCompilers.names_entrypoints = {}
+    try:
+        distribution = metadata.distribution("pennylane-catalyst")
+    except metadata.PackageNotFoundError:
+        return
 
-    # Iterator packages entry-points with the 'pennylane.compilers' group name
-    entries = metadata.entry_points(group="pennylane.compilers")
-
-    for entry in entries:
-        try:
-            # First element of split is the compiler name
-            # New convention for entry point.
-            compiler_name, e_name = entry.name.split(".")
-            AvailableCompilers.names_entrypoints[compiler_name][e_name] = entry  # pragma: no cover
-        except ValueError:
-            # Keep old behaviour.
-            # TODO: Deprecate in 0.35 release
-            compiler_name = entry.module.split(".")[0]
-            AvailableCompilers.names_entrypoints[compiler_name][entry.name] = entry
-
-    # Check whether available compilers follow the entry_point interface
-    # by validating that all entry points (qjit, context, and ops) are defined.
-    for _, eps_dict in AvailableCompilers.names_entrypoints.items():
-        ep_interface = AvailableCompilers.entrypoints_interface
-        if any(ep not in eps_dict.keys() for ep in ep_interface):
-            raise KeyError(f"expected {ep_interface}, but recieved {eps_dict}")  # pragma: no cover
+    ep_interface = AvailableCompilers.entrypoints_interface
+    eps_dict = {
+        name: entry
+        for entry in distribution.entry_points
+        for name in ep_interface
+        if entry.group == "pennylane.compilers" and entry.name == f"catalyst.{name}"
+    }
+    if any(name not in eps_dict for name in ep_interface):
+        raise KeyError(f"expected Catalyst entry points {ep_interface}, but received {eps_dict}")
+    AvailableCompilers.names_entrypoints = {"catalyst": eps_dict}
 
 
-# Scan installed compiler packages
-# and update AvailableCompilers
 _refresh_compilers()
 
 
 def _reload_compilers():
-    """Reload and scan installed PennyLane compiler packages to refresh the
-    compilers names and entry points.
-    """
+    """Refresh Catalyst's installed package metadata."""
 
-    # Note re-importing ``importlib.metadata`` can be a very slow operation
-    # on systems with a large number of installed packages.
-
-    reload(metadata)
     _refresh_compilers()
 
 
 def available_compilers() -> list[str]:
-    """Load and return a list of available compilers that are
-    installed and compatible with the :func:`~.qjit` decorator.
+    """Return ``["catalyst"]`` if Catalyst is installed, or an empty list otherwise.
 
     **Example**
 
-    This method returns the name of installed compiler packages supported in
-    PennyLane. For example, after installing the
+    For example, after installing the
     `Catalyst <https://github.com/pennylaneai/catalyst>`__
     compiler, this will now appear as an available compiler:
 
@@ -121,21 +86,19 @@ def available_compilers() -> list[str]:
     ['catalyst']
     """
 
-    # Reload installed packages and updates
-    # the class variable names_entrypoints
     _reload_compilers()
 
     return list(AvailableCompilers.names_entrypoints.keys())
 
 
 def available(compiler="catalyst") -> bool:
-    """Check the availability of the given compiler package.
+    """Check whether Catalyst is installed.
 
     Args:
-        compiler (str): Name of the compiler package (default value is ``catalyst``)
+        compiler (str): Only ``"catalyst"`` is supported. Other names return ``False``.
 
     Returns:
-        bool: ``True`` if the compiler package is installed on the system
+        bool: ``True`` if Catalyst is requested and installed on the system
 
     **Example**
 
@@ -150,33 +113,29 @@ def available(compiler="catalyst") -> bool:
     True
     """
 
-    # It only refreshes the compilers names and entry points if
-    # the name is not already stored.
+    if compiler != "catalyst":
+        return False
 
     if compiler not in AvailableCompilers.names_entrypoints:
-        # Reload installed packages and updates
-        # the class variable names_entrypoints
         _reload_compilers()
 
     return compiler in AvailableCompilers.names_entrypoints
 
 
 def active_compiler() -> str | None:
-    """Check which compiler is activated inside a :func:`~.qjit` evaluation context.
+    """Check whether Catalyst is activated inside a :func:`~.qjit` evaluation context.
 
     This helper function may be used during implementation
     to allow differing logic for transformations or operations that are
     just-in-time compiled, versus those that are not.
 
     Returns:
-        Optional[str]: Name of the active compiler inside a :func:`~.qjit` evaluation
-        context. If there is no active compiler, ``None`` will be returned.
+        Optional[str]: ``"catalyst"`` inside a Catalyst tracing context, or ``None`` otherwise.
 
     **Example**
 
     This method can be used to execute logical
-    branches that are conditioned on whether hybrid compilation with a specific
-    compiler is occurring.
+    branches that are conditioned on whether Catalyst compilation is occurring.
 
     .. code-block:: python
 
@@ -197,12 +156,11 @@ def active_compiler() -> str | None:
 
     """
 
-    for name, eps in AvailableCompilers.names_entrypoints.items():
-        if name not in sys.modules:
-            continue
+    eps = AvailableCompilers.names_entrypoints.get("catalyst")
+    if eps is not None and "catalyst" in sys.modules:
         tracer_loader = eps["context"].load()
         if tracer_loader.is_tracing():
-            return name
+            return "catalyst"
 
     return None
 

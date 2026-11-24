@@ -24,6 +24,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.compiler import compiler
 from pennylane.exceptions import CompileError
 from pennylane.transforms.dynamic_one_shot import fill_in_value
 
@@ -65,6 +66,28 @@ def test_catalyst_incompatible():
 
 class TestCatalyst:
     """Test ``qp.qjit`` with Catalyst"""
+
+    def test_incomplete_catalyst_entry_points(self, mocker, monkeypatch):
+        """Test that missing Catalyst entry points raise a descriptive error."""
+        monkeypatch.setattr(compiler.AvailableCompilers, "names_entrypoints", {})
+        distribution = mocker.patch("importlib.metadata.distribution")
+        distribution.return_value.entry_points = []
+
+        with pytest.raises(KeyError, match="expected Catalyst entry points .*but received"):
+            qp.compiler.available_compilers()
+
+    @pytest.mark.parametrize("name", ["other", "", None])
+    @pytest.mark.parametrize("decorator", [False, True])
+    def test_reject_other_compiler(self, mocker, name, decorator):
+        """Reject unsupported compilers before looking up or loading any entry point."""
+        distribution = mocker.patch("importlib.metadata.distribution")
+        load = mocker.patch("importlib.metadata.EntryPoint.load")
+        fn = None if decorator else lambda x: x
+
+        with pytest.raises(CompileError, match="Catalyst is the only supported compiler"):
+            qp.qjit(fn, compiler=name)
+        distribution.assert_not_called()
+        load.assert_not_called()
 
     def test_compiler(self):
         """Test compiler active and available methods"""
