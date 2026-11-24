@@ -806,6 +806,68 @@ class TestCatalystGrad:
         reference = np.array([[-0.37120096, -0.45467246], [0.37120096, 0.45467246]])
         assert jnp.allclose(result, reference)
 
+    @pytest.mark.parametrize(
+        "argnums, expected",
+        [
+            pytest.param(None, -jnp.sin(0.2) * jnp.cos(0.5), id="default-argnums"),
+            pytest.param(1, -jnp.cos(0.2) * jnp.sin(0.5), id="argnums-1"),
+            pytest.param(
+                (0, 1),
+                (-jnp.sin(0.2) * jnp.cos(0.5), -jnp.cos(0.2) * jnp.sin(0.5)),
+                id="argnums-0-1",
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
+    def test_eager_jax_matches_qjit(self, diff_function, argnums, expected):
+        """Test that the same derivative call gives the same result with eager JAX inputs and
+        with Catalyst."""
+        dev = qp.device("lightning.qubit", wires=1)
+
+        @qp.qnode(dev)
+        def circuit(x, y):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=0)
+            return qp.expval(qp.PauliZ(0))
+
+        x, y = jnp.array(0.2), jnp.array(0.5)
+        eager = diff_function(circuit, argnums=argnums)(x, y)
+        compiled = qp.qjit(diff_function(circuit, argnums=argnums))(x, y)
+
+        assert jax.tree_util.tree_structure(eager) == jax.tree_util.tree_structure(compiled)
+        assert jnp.allclose(jnp.array(eager), jnp.array(expected))
+        assert jnp.allclose(jnp.array(compiled), jnp.array(expected))
+
+    @pytest.mark.parametrize(
+        "argnums",
+        [pytest.param(None, id="default-argnums"), pytest.param((0, 1, 2), id="argnums-0-1-2")],
+    )
+    def test_jacobian_argnums_follow_jax(self, argnums):
+        """Test that ``argnums=None`` differentiates only the first of several arguments, both
+        eagerly with JAX inputs and with Catalyst, while a sequence selects each argument."""
+        dev = qp.device("lightning.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit(x, y, z):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            qp.RZ(z, wires=0)
+            return qp.probs()
+
+        x, y, z = jnp.array(0.2), jnp.array(0.9), jnp.array(-1.4)
+        probs_x = jnp.array([jnp.cos(x / 2) ** 2, jnp.sin(x / 2) ** 2])
+        probs_y = jnp.array([jnp.cos(y / 2) ** 2, jnp.sin(y / 2) ** 2])
+        jac_x = jnp.kron(jnp.sin(x) / 2 * jnp.array([-1.0, 1.0]), probs_y)
+        jac_y = jnp.kron(probs_x, jnp.sin(y) / 2 * jnp.array([-1.0, 1.0]))
+        expected = jac_x if argnums is None else (jac_x, jac_y, jnp.zeros(4))
+
+        eager = qp.jacobian(circuit, argnums=argnums)(x, y, z)
+        compiled = qp.qjit(qp.jacobian(circuit, argnums=argnums))(x, y, z)
+
+        for result in (eager, compiled):
+            assert jax.tree_util.tree_structure(result) == jax.tree_util.tree_structure(expected)
+            assert jnp.allclose(jnp.array(result), jnp.array(expected))
+
     def test_jvp(self):
         """Test that the correct JVP is returned with QJIT."""
 

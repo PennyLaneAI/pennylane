@@ -200,6 +200,7 @@ class QNGOptimizer(GradientDescentOptimizer):
             tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
             prior to the step
         """
+        self._validate_parameters(args)
         if not isinstance(qnode, QNode) and metric_tensor_fn is None:
             raise ValueError(
                 "The objective function must be encoded as a single QNode for the natural gradient "
