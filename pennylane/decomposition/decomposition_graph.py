@@ -48,7 +48,7 @@ from pennylane.decomposition.decomposition_rule import (
 from pennylane.decomposition.gate_set import GateSet
 
 # Rule implementations are loaded after operator definitions during PennyLane initialization.
-from pennylane.decomposition_rules import op_math
+from pennylane.decomposition_rules import op_math as op_math_rules
 from pennylane.decomposition_rules.common import null_decomp
 from pennylane.decomposition_rules.op_math.symbolicop import operator1_to_base, self_adjoint_legacy
 from pennylane.exceptions import DecompositionError, DecompositionWarning
@@ -607,7 +607,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if (
             issubclass(op.op_type, qp.ops.Adjoint)
             and self_adjoint_legacy not in decomps
-            and op_math.adjoint.adjoint_negate_angle not in decomps
+            and op_math_rules.adjoint.adjoint_negate_angle not in decomps
         ):
             # In general, we decompose the adjoint of an operator by applying adjoint to the
             # decompositions of the operator. However, this is not necessary if the operator
@@ -634,12 +634,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         # Special case: adjoint of an adjoint cancels out
         if issubclass(base_class, qp.ops.Adjoint):
-            return [op_math.adjoint.adjoint_cancel]
+            return [op_math_rules.adjoint.adjoint_cancel]
 
         # General case: apply adjoint to each of the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
         return [
-            op_math.adjoint.make_adjoint_decomp(base_decomp)
+            op_math_rules.adjoint.make_adjoint_decomp(base_decomp)
             for base_decomp in self._get_decompositions(base)
             if base_decomp.get_work_wire_spec(**base_params).total == 0
             and not _decomp_contains_mcm(base_decomp, base_params)
@@ -658,14 +658,14 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         # Special case: power of a power
         if issubclass(op.params["base_class"], qp.ops.Pow):
-            return [op_math.pow.pow_merge_powers]
+            return [op_math_rules.pow.pow_merge_powers]
 
         # Special case: power of an adjoint
         if issubclass(op.params["base_class"], qp.ops.Adjoint):
-            return [op_math.pow.pow_flip_adjoint]
+            return [op_math_rules.pow.pow_flip_adjoint]
 
         # General case: repeat the operator z times
-        return [op_math.pow.pow_repeat_base]
+        return [op_math_rules.pow.pow_repeat_base]
 
     def _get_controlled_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Adds a controlled decomposition node to the graph."""
@@ -674,7 +674,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         # Special case: control of an adjoint
         if issubclass(base_class, qp.ops.Adjoint):
-            return [op_math.controlled.controlled_flip_adjoint]
+            return [op_math_rules.controlled.controlled_flip_adjoint]
 
         # Special case: when the base is GlobalPhase, none of the following automatically
         # generated decomposition rules apply. Also, controlled ChangeOpBasis defines its
@@ -686,17 +686,17 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # General case: apply control to the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
         rules = [
-            op_math.controlled.make_controlled_decomp(decomp)
+            op_math_rules.controlled.make_controlled_decomp(decomp)
             for decomp in self._get_decompositions(base)
             if not _decomp_contains_mcm(decomp, base_params)
         ]
 
         # There's always the option of turning the controlled operator into a controlled
         # qubit unitary if the base operator has a matrix form.
-        rules.append(op_math.controlled.controlled_to_unitary)
+        rules.append(op_math_rules.controlled.controlled_to_unitary)
 
         # There's always Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016.
-        rules.append(op_math.controlled.ctrl_single_work_wire)
+        rules.append(op_math_rules.controlled.ctrl_single_work_wire)
 
         return rules
 
