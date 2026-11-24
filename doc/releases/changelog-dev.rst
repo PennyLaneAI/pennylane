@@ -1000,6 +1000,14 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* :func:`~.grad` and :func:`~.jacobian` now use JAX to differentiate functions of JAX arrays
+  outside of :func:`~.qjit`. For example, ``qp.grad(lambda x: x**2)(jax.numpy.array(2.0))``
+  returns a JAX gradient. As within :func:`~.qjit`, JAX inputs follow JAX's ``argnums``
+  convention: by default, only the first positional argument is differentiated.
+  :class:`~.GradientDescentOptimizer` and its subclasses raise an error for JAX parameters
+  and point to native JAX optimizers such as Optax.
+  `(#10560) <https://github.com/PennyLaneAI/pennylane/pull/10560>`__
+
 * :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
   powers that can simplify eagerly for faster execution, while the other uses nested
   loops to keep the captured intermediate representation compact. Both variants include
@@ -1268,6 +1276,10 @@ Improvements 🛠
 
 * Added decompositions of ``CNOT``, ``CZ``, ``CY``, and ``Hadamard`` directly to PPMs.
   `(#9865) <https://github.com/PennyLaneAI/pennylane/pull/9865>`__
+
+* Added decompositions of :class:`~.SemiAdder` and its controlled versions using Pauli
+  product rotations and measurements, available with capture or an active compiler.
+  `(#10099) <https://github.com/PennyLaneAI/pennylane/pull/10099>`__
 
 * Sorts the gate counts in the display of resources produced from decompositions.
   `(#9916) <https://github.com/PennyLaneAI/pennylane/pull/9916>`__
@@ -1660,6 +1672,11 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* Removed the ``pennylane.queuing`` shim. Import directly from
+  ``pennylane.core.queuing``; ``qp.queuing`` now refers to that module.
+  Use ``qp.apply`` instead of ``qp.queuing.apply``.
+  `(#10582) <https://github.com/PennyLaneAI/pennylane/pull/10582>`__
+  
 * :class:`~.QROM` no longer takes a ``clean`` argument and no longer has a Select-SWAP
   decomposition, which is available for :class:`~.QROMLoad` and :class:`~.SelectSwap` instead.
   See the corresponding entry under "New features" for when to use which of the three operators.
@@ -2009,7 +2026,7 @@ Breaking changes 💔
 
 * :func:`~pennylane.apply` has moved from :mod:`pennylane.core.queuing` to the standalone
   :mod:`pennylane.core.apply` module, and is no longer importable from
-  ``pennylane.core.queuing``. The ``qp.apply`` and ``qp.queuing.apply`` paths are unchanged.
+  ``pennylane.core.queuing``. The ``qp.apply`` path is unchanged.
   `(#10114) <https://github.com/PennyLaneAI/pennylane/pull/10114>`__
 
 * :func:`~.change_op_basis` now preserves the basis-change operator during program capture.
@@ -2086,6 +2103,10 @@ Internal changes ⚙️
   :func:`~pennylane.estimate` now inserts the requested analysis pass at every level, instead of
   ``resource-analysis`` at every level other than 0.
   `(#10541) <https://github.com/PennyLaneAI/pennylane/pull/10541>`__
+
+* :func:`~.testing.assert_valid_decomp_rule` now checks that decomposition rules accept
+  positional arguments for compatibility with Catalyst.
+  `(#10589) <https://github.com/PennyLaneAI/pennylane/pull/10589>`__
 
 * Added pinned local ``ty`` tooling and a diagnostic baseline for the package. Performs fixes
   to improve ty compatibility.
@@ -2283,6 +2304,7 @@ Internal changes ⚙️
     `(#10495) <https://github.com/PennyLaneAI/pennylane/pull/10495>`__
     `(#10459) <https://github.com/PennyLaneAI/pennylane/pull/10459>`__
     `(#10240) <https://github.com/PennyLaneAI/pennylane/pull/10240>`__
+    `(#10587) <https://github.com/PennyLaneAI/pennylane/pull/10587>`__
 
   - Quantum chemistry operators are ported:
 

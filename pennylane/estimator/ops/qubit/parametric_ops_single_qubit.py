@@ -56,7 +56,7 @@ class PhaseShift(ResourceOperator):
         precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires | None): The wires the operation acts on.
+        wires (int or Wires | None): The wires the operation acts on.
 
     Resources:
         The phase shift gate is equivalent to a Z-rotation up to some global phase,
@@ -227,7 +227,7 @@ class RX(ResourceOperator):
         precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires | None): The wires the operation acts on.
+        wires (int or Wires | None): The wires the operation acts on.
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -394,7 +394,7 @@ class RY(ResourceOperator):
         precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires | None): The wires the operation acts on.
+        wires (int or Wires | None): The wires the operation acts on.
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -557,7 +557,7 @@ class RZ(ResourceOperator):
         precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires | None): The wires the operation acts on.
+        wires (int or Wires | None): The wires the operation acts on.
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -722,7 +722,7 @@ class Rot(ResourceOperator):
         precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires | None): The wires the operation acts on.
+        wires (int or Wires | None): The wires the operation acts on.
 
     Resources:
         The resources are obtained according to the definition of the ``Rot`` gate:

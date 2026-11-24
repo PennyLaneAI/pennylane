@@ -101,9 +101,9 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
       into the observable eigenbasis.
 
     Args:
-        wires (int, Iterable[Number, str]]): Number of subsystems represented by the device,
-            or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
+        wires (int, Iterable[int]): Number of subsystems represented by the device,
+            or an iterable of unique non-negative integer labels (e.g., ``[0, 2, 5]``). Default 1 if
+            not specified.
         shots (None, int, list[int]): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. If ``None``, the device calculates probability, expectation values,
             and variances analytically. If an integer, it specifies the number of samples to estimate these quantities.
@@ -1154,7 +1154,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
             to calculate the marginal probability distribution.
 
         Args:
-            wires (Iterable[Number, str], Number, str, Wires): wires to return
+            wires (Iterable[int], int, Wires): wires to return
                 marginal probabilities for. Wires not provided are traced out of the system.
 
         Returns:
@@ -1167,7 +1167,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         using the generated samples.
 
         Args:
-            wires (Iterable[Number, str], Number, str, Wires): wires to calculate
+            wires (Iterable[int], int, Wires): wires to calculate
                 marginal probabilities for. Wires not provided are traced out of the system.
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
@@ -1264,7 +1264,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         estimated probability.
 
         Args:
-            wires (Iterable[Number, str], Number, str, Wires): wires to return
+            wires (Iterable[int], int, Wires): wires to return
                 marginal probabilities for. Wires not provided are traced out of the system.
 
         Returns:
@@ -1310,7 +1310,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         Args:
             prob: The probabilities to return the marginal probabilities
                 for
-            wires (Iterable[Number, str], Number, str, Wires): wires to return
+            wires (Iterable[int], int, Wires): wires to return
                 marginal probabilities for. Wires not provided
                 are traced out of the system.
 

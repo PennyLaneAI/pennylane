@@ -305,10 +305,10 @@ class kUpCCGSD(Operation):
 
         Args:
             weights (tensor_like): tensor containing the parameters entering the Z rotation
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
             k (int): number of times UpCCGSD unitary is repeated
-            s_wires (Iterable[Any]): single excitation wires
-            d_wires (Iterable[Any]): double excitation wires
+            s_wires (Iterable[int]): single excitation wires
+            d_wires (Iterable[int]): double excitation wires
             init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
                 HF state.
 
