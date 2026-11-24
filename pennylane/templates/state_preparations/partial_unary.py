@@ -712,13 +712,12 @@ class PartialUnaryStatePreparation(Operator2):
 
         dev = qp.device("lightning.qubit", wires=9)
 
-        @qp.qjit
         @qp.qnode(dev)
         def circuit():
             qp.PartialUnaryStatePreparation(coefficients, wires, indices, work_wires)
             return qp.state()
 
-        prepared_state = circuit()[::8] # Slice out three work wires
+        prepared_state = qp.qjit(circuit)()[::8] # Slice out three work wires
 
     We can check that the correct basis states are populated with the correct amplitudes:
 
@@ -776,28 +775,19 @@ class PartialUnaryStatePreparation(Operator2):
         indices = tuple(np.random.choice(2**15, num_entries, replace=False))
         wires = list(range(15))
         num_work_wires = qp.math.ceil_log2(num_entries) - 1
+        work_wires = list(range(15, 15 + num_work_wires))
 
-        def make_resource_circuit(num_work_wires: int):
-            work_wires = list(range(15, 15 + num_work_wires))
-            gate_set = {
-                qp.MultiplexerStatePreparation, qp.MultiX, qp.QROM,
-                "C(MultiX)", qp.MultiControlledX, qp.SWAP,
-            }
+        gate_set = {
+            qp.MultiplexerStatePreparation, qp.MultiX, qp.QROM,
+            "C(MultiX)", qp.MultiControlledX, qp.SWAP,
+        }
+        resource_circuit = qp.transforms.decompose(circuit, gate_set=gate_set)
+        resource_circuit.device = qp.device("lightning.qubit", wires=15 + num_work_wires)
 
-            @qp.qjit(target="mlir")
-            @qp.transforms.decompose(gate_set=gate_set)
-            @qp.qnode(qp.device("null.qubit", wires=15 + num_work_wires))
-            def resource_circuit():
-                qp.PartialUnaryStatePreparation(coefficients, wires, indices, work_wires)
-                return qp.state()
+    We reuse the circuit with a decomposition pass and a device sized for the larger register.
+    Resource analysis compiles the circuit without executing it or allocating a state vector.
 
-            return resource_circuit
-
-    These circuits use ``null.qubit`` and compilation to MLIR to analyze resources without
-    allocating a state vector for the large register.
-
-    >>> resource_circuit = make_resource_circuit(num_work_wires)
-    >>> print(qp.analyze(resource_circuit, level="user")().resources)
+    >>> print(qp.analyze(qp.qjit(resource_circuit, target="mlir"), level="user")().resources)
     Quantum operations:
     - Total: 6,046
       - 1C(MultiX): 2,414
@@ -815,8 +805,9 @@ class PartialUnaryStatePreparation(Operator2):
     makes the isometry circuit of the state preparation cheaper:
 
     >>> new_num_work_wires = 3*num_work_wires
-    >>> resource_circuit = make_resource_circuit(new_num_work_wires)
-    >>> print(qp.analyze(resource_circuit, level="user")().resources)
+    >>> work_wires = list(range(15, 15 + new_num_work_wires))
+    >>> resource_circuit.device = qp.device("lightning.qubit", wires=15 + new_num_work_wires)
+    >>> print(qp.analyze(qp.qjit(resource_circuit, target="mlir"), level="user")().resources)
     Quantum operations:
     - Total: 3,068
       - 1C(MultiX): 2,553
