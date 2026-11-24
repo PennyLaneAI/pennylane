@@ -561,11 +561,11 @@ class ControlledOp2(Controlled2):
         if not qp.capture.enabled():
             return
 
-        if self.base.tracer is None:
+        if not self.base.has_tracer:
             self.base._bind_primitive()  # pylint: disable=protected-access
             # NOTE: `self.base.tracer` can still be `None` if we're not in a tracing context.
             # In that case, there is nothing to do, so return early.
-            if self.base.tracer is None:
+            if not self.base.has_tracer:
                 return
 
         eqns = pop_op_eqns((self.base,))

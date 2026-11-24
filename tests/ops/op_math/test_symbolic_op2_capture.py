@@ -102,7 +102,7 @@ class TestAdjointCapture:
         def f(x):
             op = adjoint_fn(RX2(x, wires=0))
             assert isinstance(op, Adjoint2)
-            assert op.tracer is not None
+            assert op.has_tracer
             assert isinstance(op.tracer.aval, AbstractOperator)
             assert op.base.tracer is None
 
@@ -189,7 +189,7 @@ class TestControlledCapture:
         def f(x):
             op = ctrl_fn(RX2(x, wires=1), [0])
             assert isinstance(op, ControlledOp2)
-            assert op.tracer is not None
+            assert op.has_tracer
             assert isinstance(op.tracer.aval, AbstractOperator)
             assert op.base.tracer is None
 

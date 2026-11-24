@@ -830,6 +830,15 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         # a single statement
         return self
 
+    @property
+    def has_tracer(self) -> bool:
+        """Bool: Whether or not an operator has a valid tracer.
+
+        If ``True``, the operator has been captured as an instruction in the
+        active tracing context. If ``False``, the operator has not been captured
+        or the tracing context is no longer active."""
+        return self.tracer is not None and self.tracer._trace.is_valid()
+
     @classproperty
     @classmethod
     def has_adjoint(cls) -> bool:
@@ -1569,6 +1578,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
 
     def _bind_primitive(self):
         """Bind the operator plxpr primitive."""
+        self.tracer = None
 
         # Skip if program capture is disabled
         if not capture.enabled():

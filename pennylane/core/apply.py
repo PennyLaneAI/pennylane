@@ -145,7 +145,7 @@ def _capture_apply(op):
         # NOTE: Reset tracer attribute to prevent tracer leaks
         op.tracer = None
         op._bind_primitive()  # pylint: disable=protected-access
-        if op.tracer is None:
+        if not op.has_tracer:
             raise RuntimeError("Trying to use apply in a non-tracing context.")
         return op
 
