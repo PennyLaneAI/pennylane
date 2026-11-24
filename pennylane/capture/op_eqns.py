@@ -36,7 +36,7 @@ def pop_op_eqns(ops: Iterable):
 
     # Phase 1: Collect equation targets and group them by their frame
     for op in ops:
-        if op.tracer is not None:
+        if hasattr(op, "tracer") and op.tracer is not None:
             frame = op.tracer._trace.frame  # pylint: disable=protected-access
             assert frame.auto_dce is False  # eqns are stored differently if this is enabled
 

@@ -500,6 +500,17 @@ class TestOpmath:
         assert len(collector.state["ops"]) == 1
         qp.assert_equal(collector.state["ops"][0], op)
 
+    def test_ctrl_empty_controls(self):
+        """Empty controls capture the base operator once without adding controls."""
+
+        def circuit(angle):
+            qp.ctrl(qp.RX(angle, wires=0), control=[])
+
+        closed = jax.make_jaxpr(circuit)(0.123)
+        assert len(closed.eqns) == 1
+        assert_eqn_matches_op(closed.eqns[0], qp.RX)
+        assert closed.eqns[0].params["n_ctrls"] == 0
+
     def test_ctrl_op_constructed_outside_qfunc(self):
         """Test an op constructed outside the qfunc can be controlled."""
 

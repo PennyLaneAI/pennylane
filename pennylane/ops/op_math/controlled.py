@@ -74,6 +74,8 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     r"""Construct a symbolic controlled operator or a function that applies controlled operators.
     :func:`~.qjit` compatible.
 
+    If the control wires are empty, the operator or callable is returned without adding controls.
+
     .. note::
 
         When used with :func:`~.qjit`, this function only supports the Catalyst compiler.
@@ -160,6 +162,14 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     >>> workflow(jnp.pi/4, 1, 0)
     Array([0.25      , 0.25      , 0.03661165, 0.46338835], dtype=float64)
     """
+
+    control = Wires(control)
+    if len(control) == 0:
+        if isinstance(op, Operator):
+            qp.queuing.remove_from_program(op)
+            return _apply_if_recording(op)
+        if callable(op) or math.is_tracer(op):
+            return op
 
     if (active_jit := compiler.active_compiler()) and not isinstance(op, Operator2):
         available_eps = compiler.AvailableCompilers.names_entrypoints
