@@ -76,7 +76,7 @@ class NoOperandsOp(CompositeOp2):
         return mat
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None):
+    def _sort(cls, op_list, wire_map: dict = None):  # pylint: disable=unused-argument
         return op_list
 
 
@@ -106,11 +106,11 @@ class ValidOp(CompositeOp2):
         return mat
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None):
+    def _sort(cls, op_list, wire_map: dict = None):  # pylint: disable=unused-argument
         return op_list
 
 
-class NoMatrixOp(Operator2):
+class NoMatrixOp(Operator2):  # pylint: disable=too-few-public-methods
 
     def __init__(self, wires: WiresLike):
         super().__init__(wires=wires)
@@ -216,7 +216,7 @@ class TestConstruction:
         with pytest.raises(
             AttributeError, match="property 'data' of 'ValidOp' object has no setter"
         ):
-            op.data = (1.23, 0.0, -1.0, -2.0)
+            op.data = (1.23, 0.0, -1.0, -2.0)  # pylint: disable=attribute-defined-outside-init
 
     def test_initialization_in_queuing_context(self):
         """Test that valid child classes can be initialized in a queuing context"""

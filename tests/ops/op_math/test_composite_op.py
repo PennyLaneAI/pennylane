@@ -54,14 +54,14 @@ class ValidOp(CompositeOp):
     def is_verified_hermitian(self):
         return False
 
-    def matrix(self, wire_order=None):
+    def matrix(self, wire_order=None):  # pylint: disable=unused-argument
         return np.eye(2**self.num_wires)
 
     def eigvals(self):
         return self.eigendecomposition["eigval"]
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None):
+    def _sort(cls, op_list, wire_map: dict = None):  # pylint: disable=unused-argument
         return op_list
 
 
@@ -195,7 +195,7 @@ class TestConstruction:
     def test_map_wires(self, construct_overlapping_ops, expected_overlapping_ops):
         """Test the map_wires method."""
         diag_op = ValidOp(*self.simple_operands)
-        # pylint: disable-next=protected-access
+        # pylint: disable-next=attribute-defined-outside-init,protected-access
         diag_op._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "X", 1: "Y"}): 1})
         if construct_overlapping_ops:
             _ = diag_op.overlapping_ops
