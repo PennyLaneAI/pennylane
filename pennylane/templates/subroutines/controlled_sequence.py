@@ -54,6 +54,27 @@ class ControlledSequence(SymbolicOp2):
 
     .. seealso:: :class:`~.QuantumPhaseEstimation`
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.ControlledSequence
+            :stacked:
+            :symbols: :math:`U=` ``base`` and :math:`n` control wires
+            :example: :math:`n=3`
+
+            .. decomposition-rule:: controlled_powers
+                :image: /_static/decomposition_thumbnails/controlled_sequence_powers.svg
+                :where: Powers are simplified eagerly when the base operator supports it.
+
+                :math:`U^{2^k}` with 1 control | :math:`n` (one per :math:`k < n`) | 3
+
+            .. decomposition-rule:: looped_controlled_repetitions
+                :image: /_static/decomposition_thumbnails/controlled_sequence_repetitions.svg
+                :where: Nested loops keep the circuit representation compact. The image shows
+                    the operations executed for three control wires.
+
+                :math:`U` with 1 control | :math:`2^n - 1` | 7
+
     **Examples**
 
     .. code-block:: python
@@ -160,7 +181,7 @@ def _ctrl_seq_execution_optimized_decomposition_resources(base, control) -> dict
     )
 
 
-@register_resources(_ctrl_seq_execution_optimized_decomposition_resources)
+@register_resources(_ctrl_seq_execution_optimized_decomposition_resources, name="controlled_powers")
 def _ctrl_seq_execution_optimized_decomposition(*_, base=None, control=None, **__):
     """
     A decomposition optimized for execution time, over IR size and compilation time.
@@ -194,7 +215,7 @@ def _ctrl_seq_ir_optimized_resources(base, control) -> dict:
     return {controlled_base: 2 ** len(control) - 1}
 
 
-@register_resources(_ctrl_seq_ir_optimized_resources)
+@register_resources(_ctrl_seq_ir_optimized_resources, name="looped_controlled_repetitions")
 def _ctrl_seq_ir_optimized_decomposition(*_, base=None, control=None, **__):
     """
     A decomposition optimized for IR size and compilation time, over execution time.

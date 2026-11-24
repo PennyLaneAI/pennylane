@@ -69,6 +69,15 @@ class RX1(Operator1):
         return RX1(self.data[0], self.wires)
 
 
+class S1(Operator1):
+
+    num_wires = 1
+
+    @staticmethod
+    def compute_matrix():
+        return np.diag([1, 1j])
+
+
 ops = (
     (Z1(0), X1(0), Z1(0)),
     (H1(wires=0), Z1(wires=0), H1(wires=0)),
@@ -538,6 +547,30 @@ class TestDecomposition:
             work_wires=work_wires,
         )
         assert_decomposable(op)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        "uncompute_op, expected_names",
+        [
+            (None, ["S1", "Adjoint(CNOT)", "Adjoint(S1)"]),
+            (qp.SX(0), ["Adjoint(SX)", "Adjoint(CNOT)", "Adjoint(S1)"]),
+        ],
+    )
+    def test_adjoint_decomposition_new(self, uncompute_op, expected_names):
+        """Test that the adjoint rule inverts and swaps the compute and uncompute operators,
+        also when the uncompute operator is not the adjoint of the compute operator."""
+        with qp.capture.pause():
+            ops_lst = [S1(0), qp.CNOT([0, 1]), uncompute_op or qp.adjoint(S1(0))]
+            expected = qp.matrix(qp.tape.QuantumScript(ops_lst), wire_order=[0, 1]).conj().T
+            op = qp.adjoint(change_op_basis(S1(0), qp.CNOT([0, 1]), uncompute_op))
+        assert isinstance(op.base, ChangeOpBasis)
+        assert_decomposable(op)
+
+        rule = qp.list_decomps(op)["adjoint_target"]
+        tape = qp.testing.decomp_rule_to_tape(op, rule)
+        assert [gate.name for gate in tape.operations] == expected_names
+        with qp.capture.pause():
+            assert np.allclose(qp.matrix(tape, wire_order=[0, 1]), expected)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_on_tape(self, ops_lst):

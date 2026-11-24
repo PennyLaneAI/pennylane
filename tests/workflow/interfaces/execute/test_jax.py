@@ -173,8 +173,8 @@ class TestJaxExecuteIntegration:
             ops1 = [qp.RY(a, wires=0), qp.RX(b, wires=0)]
             tape1 = qp.tape.QuantumScript(ops1, [qp.expval(qp.PauliZ(0))], shots=shots)
 
-            ops2 = [qp.RY(a, wires="a"), qp.RX(b, wires="a")]
-            tape2 = qp.tape.QuantumScript(ops2, [qp.expval(qp.PauliZ("a"))], shots=shots)
+            ops2 = [qp.RY(a, wires=9), qp.RX(b, wires=9)]
+            tape2 = qp.tape.QuantumScript(ops2, [qp.expval(qp.PauliZ(9))], shots=shots)
 
             return execute([tape1, tape2], device, **execute_kwargs)
 
@@ -510,7 +510,7 @@ class TestJaxExecuteIntegration:
             )
             return execute([tape], device, **execute_kwargs)[0]
 
-        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1}, name="decomp")
         def _decomp(theta, phi, delta, wires):
             qp.Rot(delta, theta, -delta, wires)
             qp.PhaseShift(phi + delta, wires)
