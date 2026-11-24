@@ -39,7 +39,7 @@ def default(tape):
 
 def decimals():
 
-    with qp.queuing.AnnotatedQueue() as tape2_queue:
+    with qp.core.queuing.AnnotatedQueue() as tape2_queue:
         qp.RX(1.23456, wires=0)
         qp.Rot(1.2345, 2.3456, 3.456, wires=0)
         qp.expval(qp.PauliZ(0))
