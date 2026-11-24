@@ -108,25 +108,27 @@ def _Monomials(var_wires, mono_wires):
             qp.TemporaryAND([monomials[i], var, monomials[2**j + i]])
 
 
-def _rzlayer_phase_gradient_compute_resources(control_wires, angle_wires, phase_grad_wires, **_):
+def _rzlayer_phase_gradient_compute_resources(
+    control_wires, sign_wires, angle_wires, phase_grad_wires, **_
+):
     """Resources of :func:`~._RZLayerPhaseGradientCompute`."""
     load = qp.MultiX(Bool[len(angle_wires)], Wire[len(angle_wires)])
     flip = qp.MultiX(Bool[len(phase_grad_wires)], Wire[len(phase_grad_wires)])
     resources = Counter({load: 1, qp.ctrl(load, control=Wire[1]): len(control_wires)})
-    resources[qp.ctrl(flip, control=Wire[1])] += 1
+    resources[qp.ctrl(flip, control=Wire[1])] += len(sign_wires)
     return resources
 
 
 @subcircuit(
     dynamic_argnames=("bits",),
-    wire_argnames=("control_wires", "sign_wire", "angle_wires", "phase_grad_wires"),
+    wire_argnames=("control_wires", "sign_wires", "angle_wires", "phase_grad_wires"),
     arg_specs={"bits": Bool[-1, -1]},
     grad_method=None,
 )
 @qp.register_resources(_rzlayer_phase_gradient_compute_resources)
-def _RZLayerPhaseGradientCompute(bits, control_wires, sign_wire, angle_wires, phase_grad_wires):
-    r"""XOR a lookup table into ``angle_wires`` and flip ``phase_grad_wires`` if ``sign_wire`` is
-    in the state :math:`|1\rangle`.
+def _RZLayerPhaseGradientCompute(bits, control_wires, sign_wires, angle_wires, phase_grad_wires):
+    r"""XOR a lookup table into ``angle_wires`` and flip ``phase_grad_wires`` if the sign wire, if
+    any, is in the state :math:`|1\rangle`. ``sign_wires`` holds zero or one wire.
 
     ``bits`` holds the ANF coefficients of the table, see :func:`~._anf_bits`. The constant
     coefficient ``bits[0]`` is loaded unconditionally, and ``bits[i]`` controlled on the monomial
@@ -136,13 +138,15 @@ def _RZLayerPhaseGradientCompute(bits, control_wires, sign_wire, angle_wires, ph
     qp.MultiX(bits[0], angle_wires)
     for i, wire in enumerate(control_wires):
         qp.ctrl(qp.MultiX(bits[i + 1], angle_wires), control=wire)
-    qp.ctrl(qp.MultiX([1] * len(phase_grad_wires), phase_grad_wires), control=sign_wire)
+    for wire in sign_wires:
+        qp.ctrl(qp.MultiX([1] * len(phase_grad_wires), phase_grad_wires), control=wire)
 
 
-def _signed_add(table, var_wires, mono_wires, sign_wire, registers):
+def _signed_add(table, var_wires, mono_wires, sign_wires, registers):
     r"""Add the entry of the lookup table ``table`` at the input on ``var_wires`` to the phase
-    gradient register if ``sign_wire`` is in the state :math:`|0\rangle`, and subtract it
-    otherwise. ``registers`` holds the angle, phase gradient and adder work wires.
+    gradient register, or subtract it if the sign wire, if any, is in the state :math:`|1\rangle`.
+    ``sign_wires`` holds zero or one wire, and ``registers`` the angle, phase gradient and adder
+    work wires.
 
     The table is loaded into the angle wires from its ANF, controlled on the monomials of the
     variables, which are computed into the zeroed ``mono_wires``. The subtraction complements the
@@ -158,17 +162,22 @@ def _signed_add(table, var_wires, mono_wires, sign_wire, registers):
     bits = qp.math.cast(_anf_bits(table, len(angle_wires)), bool)
     control_wires = _monomial_wires(var_wires, mono_wires)
     load = _RZLayerPhaseGradientCompute(
-        bits, control_wires, [sign_wire], angle_wires, phase_grad_wires
+        bits, control_wires, sign_wires, angle_wires, phase_grad_wires
     )
     add = qp.change_op_basis(load, qp.SemiAdder(angle_wires, phase_grad_wires, work_wires), load)
     return qp.change_op_basis(_Monomials(var_wires, mono_wires), add)
 
 
-def _signed_add_rep(num_vars, num_bits, num_work_wires):
+def _signed_add_rep(num_vars, num_bits, num_work_wires, num_sign_wires=1):
     """Resource representation of :func:`~._signed_add` for a table over ``num_vars`` variables,
-    ``num_bits`` angle wires and ``num_work_wires`` adder work wires."""
+    ``num_bits`` angle wires, ``num_work_wires`` adder work wires and ``num_sign_wires`` sign
+    wires."""
     load = _RZLayerPhaseGradientCompute(
-        Bool[2**num_vars, num_bits], Wire[2**num_vars - 1], Wire[1], Wire[num_bits], Wire[num_bits]
+        Bool[2**num_vars, num_bits],
+        Wire[2**num_vars - 1],
+        Wire[num_sign_wires],
+        Wire[num_bits],
+        Wire[num_bits],
     )
     target = qp.SemiAdder(Wire[num_bits], Wire[num_bits], Wire[num_work_wires])
     add = ChangeOpBasis2(load, target, load)
@@ -182,39 +191,59 @@ def _angle_ints(angles, num_bits, unit):
     return qp.math.binary_decimals(angles, num_bits, unit=unit) @ powers_of_two
 
 
-def _equal_angle_block(theta, wires, work_wires, registers):
-    r"""Apply :math:`R_Z(\theta)` to each of an even number :math:`m` of ``wires`` with a single
-    :func:`~._signed_add`, with the sign wire :math:`s` = ``wires[-1]``.
+def _num_hw_wires(block_size):
+    """Number of wires of a block of equal angles whose Hamming weight the rule computes: all but
+    the sign wire for an even block size, and all of them for an odd one."""
+    return block_size - 1 + block_size % 2
 
+
+def _equal_angle_block(theta, wires, work_wires, registers):
+    r"""Apply :math:`R_Z(\theta)` to each of the :math:`m > 1` ``wires`` with a single
+    :func:`~._signed_add`, up to a ``GlobalPhase(m * theta / 2)`` for odd :math:`m`.
+
+    For odd :math:`m`, the rotations apply the phase :math:`\exp(-i\theta (m/2 - h))`, where
+    :math:`h` is the Hamming weight of the wires. We compute :math:`h` in place, see
+    :func:`~._HammingWeight`, and add the lookup table :math:`L(h) = k h \bmod 2^b` to the phase
+    gradient register of :math:`b` wires, where :math:`\theta \approx 2\pi k / 2^b`.
+
+    For even :math:`m`, we avoid the global phase with the sign wire :math:`s` = ``wires[-1]``.
     With the parities :math:`y_i = x_i \oplus x_s` of the other wires, the rotations apply the
     phase :math:`\exp(-i\theta z_s (m/2 - h))`, where :math:`z_s = (-1)^{x_s}` and :math:`h` is
-    the Hamming weight of the parities. The parities and :math:`h` are computed in place, see
-    :func:`~._HammingWeight`, and the lookup table :math:`L(h) = -k (m/2 - h) \bmod 2^b` is added
-    to the phase gradient register of :math:`b` wires, where
-    :math:`\theta \approx 2\pi k / 2^b`. Each AND of the Hamming weight and of the monomials of
-    its bits targets one of the ``work_wires``.
+    the Hamming weight of the parities. We compute the parities and :math:`h` in place, and add
+    the lookup table :math:`L(h) = -k (m/2 - h) \bmod 2^b`, or subtract it if :math:`x_s = 1`.
+
+    Each AND of the Hamming weight and of the monomials of its bits targets one of the
+    ``work_wires``.
     """
-    sign_wire, others = wires[-1], wires[:-1]
-    n = len(others)
-    num_hw_wires = n - n.bit_count()
-    var_wires = [others[-1], *work_wires[: n.bit_length() - 1]]
-    mono_wires = work_wires[num_hw_wires : num_hw_wires + _num_monomials(len(var_wires))]
+    m = len(wires)
+    n = _num_hw_wires(m)
+    hw_wires, sign_wires = wires[:n], wires[n:]
+    num_hw_work_wires = n - n.bit_count()
+    var_wires = [hw_wires[-1], *work_wires[: n.bit_length() - 1]]
+    mono_wires = work_wires[num_hw_work_wires : num_hw_work_wires + _num_monomials(len(var_wires))]
     k = _angle_ints(theta, len(registers[0]), 2 * np.pi)
-    table = -k * (len(wires) // 2 - qp.math.arange(2 ** len(var_wires)))
-    signed_add = _signed_add(table, var_wires, mono_wires, sign_wire, registers)
-    hamming_weight = _HammingWeight(others, work_wires[:num_hw_wires])
+    weights = qp.math.arange(2 ** len(var_wires))
+    table = k * weights if m % 2 else -k * (m // 2 - weights)
+    signed_add = _signed_add(table, var_wires, mono_wires, sign_wires, registers)
+    hamming_weight = _HammingWeight(hw_wires, work_wires[:num_hw_work_wires])
+    if m % 2:
+        qp.change_op_basis(hamming_weight, signed_add)
+        return
     # XOR the sign wire into the other wires, which is its own inverse
-    parities = qp.ctrl(qp.MultiX([1] * n, others), control=sign_wire)
+    parities = qp.ctrl(qp.MultiX([1] * n, hw_wires), control=sign_wires[0])
     qp.change_op_basis(parities, qp.change_op_basis(hamming_weight, signed_add), parities)
 
 
 def _equal_angle_block_rep(block_size, num_bits, num_work_wires):
     """Resource representation of :func:`~._equal_angle_block` on ``block_size`` wires, with
     ``num_bits`` angle wires and ``num_work_wires`` adder work wires."""
-    n = block_size - 1
-    parities = qp.ctrl(qp.MultiX(Bool[n], Wire[n]), control=Wire[1])
+    n = _num_hw_wires(block_size)
+    num_sign_wires = 1 - block_size % 2
     hamming_weight = _HammingWeight(Wire[n], Wire[n - n.bit_count()])
-    signed_add = _signed_add_rep(n.bit_length(), num_bits, num_work_wires)
+    signed_add = _signed_add_rep(n.bit_length(), num_bits, num_work_wires, num_sign_wires)
+    if block_size % 2:
+        return ChangeOpBasis2(hamming_weight, signed_add)
+    parities = qp.ctrl(qp.MultiX(Bool[n], Wire[n]), control=Wire[1])
     return ChangeOpBasis2(parities, ChangeOpBasis2(hamming_weight, signed_add), parities)
 
 
@@ -254,10 +283,10 @@ def _distinct_angle_batch_rep(size, num_bits, num_work_wires):
 def _num_and_work_wires(num_angles, block_size, batch_size):
     """Number of work wires that the TemporaryAND gates of the phase gradient rule use on top of
     the adder."""
-    if block_size % 2 == 0:
-        n = block_size - 1
+    if block_size > 1:
+        n = _num_hw_wires(block_size)
         return n - n.bit_count() + _num_monomials(n.bit_length())
-    if block_size == 1 and batch_size is not None:
+    if batch_size is not None:
         return _num_monomials(min(batch_size, num_angles) - 1)
     return 0
 
@@ -276,21 +305,23 @@ def make_rzlayer_to_phase_gradient_decomp(
     :class:`~.RZLayer` with :math:`k` angles on :math:`km` wires depending on the block size
     :math:`m` of wires per angle:
 
-    * **Even m.** The :math:`m` rotations by an equal angle use one addition. They apply a
-      multiple of the angle that only depends on the parities of the first :math:`m-1` wires with
-      the last one, through their Hamming weight. The rule computes the Hamming weight in place,
-      loads the multiple from a lookup table into the angle wires, and adds or subtracts it,
-      depending on the last wire. On top of the adder, this uses :math:`(m-1) -
-      \operatorname{popcount}(m-1) + 2^r - r - 1` :class:`~.TemporaryAND` gates, with :math:`r`
-      the number of bits of :math:`m-1`, i.e., 0, 2 and 7 for :math:`m = 2, 4, 6`.
+    * **m > 1.** The :math:`m` rotations by an equal angle use one addition. Up to a global
+      phase, they apply a multiple of the angle that only depends on the Hamming weight of the
+      wires. The rule computes the Hamming weight in place, loads the multiple from a lookup
+      table into the angle wires, and adds it. For odd :math:`m`, the rule applies a single
+      :class:`~.GlobalPhase` for all blocks. For even :math:`m`, it avoids the global phase by
+      using the Hamming weight of the parities of the first :math:`m-1` wires with the last one,
+      and by adding or subtracting the multiple depending on the last wire. On top of the adder,
+      this uses :math:`n - \operatorname{popcount}(n) + 2^r - r - 1` :class:`~.TemporaryAND`
+      gates, with :math:`n=m` for odd and :math:`n=m-1` for even :math:`m`, and :math:`r` the
+      number of bits of :math:`n`, i.e., 0, 2, 2, 7 and 7 for :math:`m = 2, \dots, 6`.
     * **m = 1 with batch_size.** Consecutive batches of :math:`s` = ``batch_size`` rotations with
       distinct angles use one addition, from a lookup table over the parities of the first
       :math:`s-1` wires with the last one. On top of the adder, this uses :math:`2^{s-1} - s`
       :class:`~.TemporaryAND` gates, i.e., 0, 1 and 4 for :math:`s = 2, 3, 4`. The last batch is
       smaller if ``batch_size`` does not divide :math:`k`.
-    * **Otherwise**, i.e., for odd :math:`m > 1` and for :math:`m=1` without ``batch_size``,
-      each rotation uses the circuit of :func:`~.make_rz_to_phase_gradient_decomp`, including its
-      :class:`~.GlobalPhase`.
+    * **m = 1 without batch_size.** Each rotation uses the circuit of
+      :func:`~.make_rz_to_phase_gradient_decomp`, including its :class:`~.GlobalPhase`.
 
     Each of these :class:`~.TemporaryAND` gates targets a work wire, which is reused for every
     block and batch. The rule takes these work wires from the ``work_wires`` that the adder does
@@ -438,8 +469,10 @@ def make_rzlayer_to_phase_gradient_decomp(
         :class:`~.TemporaryAND` in each adder. All other rotations only use the leading :math:`b`
         wires of the registers, as above.
 
-        In both cases, the rotations by equal angles and the batches apply the product of
-        :class:`~.RZ` rotations by the rounded angles exactly, without a global phase.
+        In both cases, the blocks of an even number of equal angles and the batches apply the
+        product of :class:`~.RZ` rotations by the rounded angles exactly, without a global phase.
+        The other rotations do so up to a global phase, as in
+        :func:`~.make_rz_to_phase_gradient_decomp`.
     """
     angle_wires, phase_grad_wires, rule_work_wires = validate_phase_gradient_wires(
         angle_wires, phase_grad_wires, work_wires
@@ -462,15 +495,18 @@ def make_rzlayer_to_phase_gradient_decomp(
         """Resources of the rule."""
         num_angles = len(angles)
         block_size = len(wires) // num_angles
-        if block_size % 2 == 0:
+        if block_size > 1:
             block = _equal_angle_block_rep(block_size, num_bits, len(rz_registers[2]))
+            if block_size % 2:
+                return {block: num_angles, qp.GlobalPhase: 1}
             return {block: num_angles}
-        if block_size == 1 and batch_size is not None:
+        if batch_size is not None:
             batch_args = (len(angle_wires), len(batch_registers[2]))
-            reps = {_distinct_angle_batch_rep(batch_size, *batch_args): num_angles // batch_size}
-            if num_angles % batch_size:
-                reps[_distinct_angle_batch_rep(num_angles % batch_size, *batch_args)] = 1
-            return reps
+            starts = range(0, num_angles, batch_size)
+            return Counter(
+                _distinct_angle_batch_rep(min(batch_size, num_angles - start), *batch_args)
+                for start in starts
+            )
         rz_resources = rz_rule.compute_resources(Float, Wire[1]).gate_counts
         return {op: count * len(wires) for op, count in rz_resources.items()}
 
@@ -491,6 +527,8 @@ def make_rzlayer_to_phase_gradient_decomp(
             _equal_angle_block(angles[i], block, work_wires, rz_registers)
 
         qp.for_loop(len(angles))(_block)()
+        if block_size % 2:
+            qp.GlobalPhase(block_size * qp.math.sum(angles) / 2)
 
     def _distinct_batches(angles, wires, work_wires):
         """Apply the batches of rotations by distinct angles."""
@@ -523,9 +561,9 @@ def make_rzlayer_to_phase_gradient_decomp(
         needed = _num_and_work_wires(num_angles, block_size, batch_size)
         with qp.allocate(max(needed - len(work_wires), 0), restored=True) as extra_work_wires:
             work_wires = [*work_wires, *extra_work_wires]
-            if block_size % 2 == 0:
+            if block_size > 1:
                 _equal_angle_blocks(angles, wires, work_wires)
-            elif block_size == 1 and batch_size is not None:
+            elif batch_size is not None:
                 _distinct_batches(angles, wires, work_wires)
             else:
                 _rotations(angles, wires)

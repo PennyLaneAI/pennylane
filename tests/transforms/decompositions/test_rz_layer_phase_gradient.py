@@ -36,10 +36,11 @@ GATE_SET = {"CNOT", "PauliX", "TemporaryAND", "Adjoint(TemporaryAND)", "SemiAdde
 
 # (num_angles, block_size, batch_size, num_work_wires): (num_adders, num_ands), where the RZLayer
 # provides the work wires the rule needs, and num_ands counts the ANDs on top of the adders. Each
-# of them targets a work wire: 0, 2 and 7 per block of 2, 4 and 6 equal angles, and 0, 1 and 4 per
-# batch of 2, 3 and 4 distinct angles. The cases cover even blocks, batches with a smaller last
-# batch and with fewer angles than ``batch_size``, and the RZ rule on every wire for odd blocks,
-# also with ``batch_size``, and for single rotations without ``batch_size``.
+# of them targets a work wire: 0, 2, 2, 7 and 7 per block of 2 to 6 equal angles, and 0, 1 and 4
+# per batch of 2, 3 and 4 distinct angles. The cases cover even and odd blocks, batches with a
+# smaller last batch and with fewer angles than ``batch_size``, odd blocks with ``batch_size``,
+# which leaves a work wire of the rule spare, and the RZ rule on every wire for single rotations
+# without ``batch_size``.
 CASES = {
     (2, 2, None, 0): (2, 0),
     (2, 4, None, 2): (2, 4),
@@ -47,7 +48,8 @@ CASES = {
     (5, 1, 2, 0): (3, 0),
     (3, 1, 4, 1): (1, 1),
     (5, 1, 4, 4): (2, 4),
-    (2, 3, 2, 0): (6, 0),
+    (2, 3, 2, 1): (2, 4),
+    (1, 5, None, 7): (1, 7),
     (3, 1, None, 0): (3, 0),
 }
 
@@ -203,8 +205,13 @@ class TestRule:
 @pytest.mark.catalyst
 @pytest.mark.parametrize(
     "case, num_ands",
-    [((2, 4, None, 2), 4 + 2), ((5, 1, 4, 4), 4 + 2 * 2), ((2, 3, None, 0), 6)],
-    ids=["equal_angles", "batches", "per_wire"],
+    [
+        ((2, 4, None, 2), 4 + 2),
+        ((2, 3, None, 2), 4 + 2),
+        ((5, 1, 4, 4), 4 + 2 * 2),
+        ((3, 1, None, 0), 3),
+    ],
+    ids=["even_blocks", "odd_blocks", "batches", "per_wire"],
 )
 def test_qjit(case, num_ands, seed):
     """Test that, compiled with qjit, the rule realizes the rotations. The RZLayer provides all
