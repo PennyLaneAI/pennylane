@@ -549,10 +549,12 @@ class jacobian:  # pylint: disable=too-few-public-methods
 
     The returned function takes the same arguments as the original function.
     With JAX, its result preserves the output pytree, with a derivative for each
-    selected argument at every output leaf. For example, outputs ``(x**2, x*y)``
-    with ``argnums=(0, 1)`` produce ``((2*x, 0), (y, x))``. Each derivative has shape
-    ``(*output leaf shape, *input leaf shape)``. A single integer ``argnums``, or
-    ``None``, omits the argument tuple at each output leaf.
+    selected argument at every output leaf. For scalar arguments ``x`` and ``y``,
+    outputs ``(x**2, x*y)`` with ``argnums=(0, 1)`` produce ``((2*x, 0), (y, x))``.
+    The tuple nesting reflects the output and argument structure. Each array leaf
+    has shape ``(*output leaf shape, *input leaf shape)``, which is ``()`` in this
+    scalar example. A single integer ``argnums``, or ``None``, omits the argument
+    tuple at each output leaf.
 
     With Autograd, the result is a tuple with one entry per differentiated argument,
     each with shape ``(*output shape, *argument shape)``. The tuple is unpacked
