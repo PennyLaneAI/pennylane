@@ -829,6 +829,43 @@ class TestTransform:  # pylint: disable=too-many-public-methods
         circuit()
 
     @pytest.mark.parametrize("valid_transform", valid_transforms)
+    def test_device_transform_with_preprocess(self, valid_transform):
+        """Test a device transform on a device that overrides ``preprocess``."""
+
+        class DummyDev(qp.devices.Device):
+            # pylint: disable-next=unused-argument
+            def preprocess(self, execution_config=None):
+                prog = qp.CompilePipeline()
+                prog.add_transform(qp.defer_measurements)
+                prog.add_transform(qp.compile)
+                return prog, execution_config
+
+            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
+                return [0] * len(circuits)
+
+        _dev = DummyDev()
+
+        dispatched_transform = qp.transform(valid_transform)
+        new_dev = dispatched_transform(_dev, index=0)
+
+        assert new_dev.original_device is _dev
+        assert repr(new_dev).startswith("Transformed Device")
+
+        program, _ = _dev.preprocess()
+        new_program, _ = new_dev.preprocess()
+
+        assert len(program) == 2
+        assert len(new_program) == 3
+        assert new_program[-1].tape_transform is valid_transform
+
+        @qp.qnode(new_dev)
+        def circuit():
+            qp.PauliX(0)
+            return qp.state()
+
+        circuit()
+
+    @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_old_device_transform(self, valid_transform):
         """Test a device transform."""
         device = qp.devices.LegacyDeviceFacade(DefaultQubitLegacy(wires=2))
