@@ -274,7 +274,7 @@ class grad:  # pylint: disable=too-many-instance-attributes
             return qp.expval(qp.Z(0))
 
     >>> qp.grad(circuit)(jnp.array(0.5))
-    Array(-0.47942555, dtype=float32, weak_type=True)
+    Array(-0.47942555, dtype=float32)
 
     .. details::
         :title: Usage Details
