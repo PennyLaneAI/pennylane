@@ -25,15 +25,15 @@ from pennylane import numpy as np
 from pennylane.core.operator import abstractify
 from pennylane.ops import CNOT, adjoint
 from pennylane.templates.subroutines.arithmetic.semi_adder import (
-    _controlled_semi_adder,
     _controlled_semi_adder_ppm,
     _controlled_semi_adder_ppm_condition,
     _controlled_semi_adder_ppm_work_wires,
+    _controlled_semi_adder_standard,
     _effective_skip_input_pos,
-    _semi_adder,
     _semi_adder_ppm,
     _semi_adder_ppm_work_wires,
-    _semi_adder_resources,
+    _semi_adder_standard,
+    _semi_adder_standard_resources,
 )
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
 from pennylane.testing import assert_decomposable
@@ -184,7 +184,7 @@ class TestSemiAdder:
         """Tests that SemiAdder is decomposed properly."""
 
         # The generic tape validator does not flatten nested measurement branches.
-        with qp.exclude_decomps(qp.SemiAdder, "_semi_adder_ppm"):
+        with qp.exclude_decomps(qp.SemiAdder, "semi_adder_ppm"):
             assert_decomposable(qp.SemiAdder(x_wires, [5, 6, 7, 8], work_wires))
 
     @pytest.mark.capture
@@ -319,7 +319,7 @@ class TestSemiAdder:
             qp.BasisState(x_value_bin, x_wires)
             qp.BasisState(y_value_bin, y_wires)
             qp.BasisState(c_value_bin, control_wires)
-            _controlled_semi_adder(
+            _controlled_semi_adder_standard(
                 op, control_wires, control_values, work_wires_ctrl, work_wire_type="zeroed"
             )
             return (
@@ -353,7 +353,7 @@ class TestSemiAdder:
         base = qp.SemiAdder([0, 1, 2], y_wires, [6, 7, 8, 9])
 
         with qp.queuing.AnnotatedQueue() as q:
-            _controlled_semi_adder(base, [10], [1], work_wire_type="borrowed")
+            _controlled_semi_adder_standard(base, [10], [1], work_wire_type="borrowed")
 
         ops = qp.tape.QuantumScript.from_queue(q).operations
         ctrl_ops = [o for o in ops if isinstance(o, qp.ops.ControlledOp2)]
@@ -398,7 +398,7 @@ class TestSemiAdder:
 
 
 class TestSemiAdderSkipInputPos:
-    """Independent tests for the ``skip_input_pos`` feature of ``_semi_adder``."""
+    """Independent tests for the ``skip_input_pos`` feature of ``_semi_adder_standard``."""
 
     @staticmethod
     def _sparse_addend(x, num_x_wires, num_y_wires, skip_input_pos):
@@ -436,7 +436,7 @@ class TestSemiAdderSkipInputPos:
         def circuit():
             qp.BasisEmbedding(qp.math.int_to_binary(x, n), wires=x_wires)
             qp.BasisEmbedding(qp.math.int_to_binary(y, m), wires=y_wires)
-            _semi_adder(x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos)
+            _semi_adder_standard(x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos)
             return qp.sample(wires=y_wires), qp.probs(wires=work_wires)
 
         sample, work_probs = circuit()
@@ -445,16 +445,16 @@ class TestSemiAdderSkipInputPos:
         assert np.isclose(work_probs[0], 1.0)
 
     def test_resources_match_decomposition(self):
-        """Test that ``_semi_adder_resources`` matches the queued ``skip_input_pos``
+        """Test that ``_semi_adder_standard_resources`` matches the queued ``skip_input_pos``
         decomposition."""
         x_wires, y_wires, work_wires = [0, 1, 2], [3, 4, 5, 6], [7, 8, 9]
         skip_input_pos = [1, 2]
 
         with qp.queuing.AnnotatedQueue() as q:
-            _semi_adder(x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos)
+            _semi_adder_standard(x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos)
 
         names = [op.name for op in qp.tape.QuantumScript.from_queue(q).operations]
-        resources = _semi_adder_resources(
+        resources = _semi_adder_standard_resources(
             x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos
         )
 
@@ -638,13 +638,13 @@ class TestControlledSemiAdderPPM:
         def reference():
             prepare()
             qp.ctrl(
-                _semi_adder,
+                _semi_adder_standard,
                 control=wires["control"],
                 control_values=control_values,
             )(wires["x"], wires["y"], wires["work"][: num_y - 1])
             return qp.state()
 
-        rule = qp.list_decomps("C(SemiAdder)")["flip_zero_ctrl_values(_controlled_semi_adder_ppm)"]
+        rule = qp.list_decomps("C(SemiAdder)")["flip_zero_ctrl_values(controlled_semi_adder_ppm)"]
         base = qp.SemiAdder(wires["x"], wires["y"], wires["work"])
 
         @qp.qjit(capture=True)
@@ -720,7 +720,7 @@ class TestControlledSemiAdderPPM:
         @qp.qnode(qp.device("default.qubit", wires=11))
         def reference():
             prepare()
-            qp.ctrl(_semi_adder, control=[0, 1])([2, 3], [4, 5], [6])
+            qp.ctrl(_semi_adder_standard, control=[0, 1])([2, 3], [4, 5], [6])
             return qp.state()
 
         @qp.qjit(capture=True)
@@ -819,9 +819,9 @@ class TestControlledSemiAdderPPM:
         )
         solution = graph.solve()
         expected_rule = (
-            "flip_zero_ctrl_values(_controlled_semi_adder_ppm)"
+            "flip_zero_ctrl_values(controlled_semi_adder_ppm)"
             if qp.capture.enabled()
-            else "flip_zero_ctrl_values(_controlled_semi_adder)"
+            else "controlled_carry_ladder"
         )
         assert solution.decomposition(op).name == expected_rule
 
@@ -890,9 +890,7 @@ class TestSemiAdderPPM:
             },
         )
         expected_rule = (
-            "flip_zero_ctrl_values(_controlled_semi_adder_ppm)"
-            if num_controls
-            else "_semi_adder_ppm"
+            "flip_zero_ctrl_values(controlled_semi_adder_ppm)" if num_controls else "semi_adder_ppm"
         )
         needed = num_controls + 2
         solution = graph.solve(num_work_wires=needed - 1)
@@ -950,7 +948,7 @@ class TestSemiAdderPPM:
         @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
         def reference():
             prepare()
-            _semi_adder(x_wires, y_wires, work_wires[: num_y_wires - 1])
+            _semi_adder_standard(x_wires, y_wires, work_wires[: num_y_wires - 1])
             return qp.state()
 
         @qp.qjit(capture=True)

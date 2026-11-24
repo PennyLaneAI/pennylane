@@ -26,7 +26,7 @@ from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_con
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
-from .temporary_and import TemporaryAND, _temporary_and_ppr
+from .temporary_and import TemporaryAND, _temporary_and_to_ppr
 
 
 def _left_block(wires: list):
@@ -265,7 +265,7 @@ class SemiAdder(Operator2):
             :symbols: :math:`m` ``x_wires`` and :math:`n \geq 2` ``y_wires``
             :example: :math:`m=n=3`
 
-            .. decomposition-rule:: _semi_adder
+            .. decomposition-rule:: carry_ladder
                 :image: /_static/decomposition_thumbnails/semi_adder_elbow_ladder.svg
                 :where: :math:`\ell = \min(m, n - 1)`, and :math:`[m \geq n]` equal to 1 if
                     :math:`m \geq n` and 0 otherwise
@@ -287,7 +287,7 @@ class SemiAdder(Operator2):
             :symbols: :math:`m` ``x_wires`` and :math:`n \geq 1` ``y_wires``
             :example: :math:`m=n=1`
 
-            .. decomposition-rule:: _semi_adder_ppm
+            .. decomposition-rule:: semi_adder_ppm
                 :image: /_static/decomposition_thumbnails/semi_adder_ppm.svg
                 :lightbox:
                 :requires: capture or an active compiler, and :math:`n + 1` zeroed work wires
@@ -298,7 +298,7 @@ class SemiAdder(Operator2):
                 :class:`~.Z` | :math:`\leq 9n - 6` | :math:`\leq 3`
                 :class:`~.GlobalPhase` | :math:`\leq 3n - 2` | :math:`\leq 1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_semi_adder_ppm)
+            .. decomposition-rule:: flip_zero_ctrl_values(controlled_semi_adder_ppm)
                 :image: /_static/decomposition_thumbnails/semi_adder_controlled_ppm.svg
                 :lightbox:
                 :region: controlled
@@ -351,7 +351,7 @@ def _effective_skip_input_pos(num_x_wires, num_y_wires, skip_input_pos):
 
 
 # pylint: disable-next=unused-argument
-def _semi_adder_resources(x_wires, y_wires, work_wires=None, skip_input_pos=None):
+def _semi_adder_standard_resources(x_wires, y_wires, work_wires=None, skip_input_pos=None):
     num_x_wires = len(x_wires)
     num_y_wires = len(y_wires)
     if num_y_wires == 1:
@@ -379,15 +379,23 @@ def _semi_adder_resources(x_wires, y_wires, work_wires=None, skip_input_pos=None
     }
 
 
-def _semi_adder_work_wires(x_wires, y_wires, work_wires):  # pylint: disable=unused-argument
-    """The work wires that the ladders need, minus the ones that were already provided."""
+# pylint: disable-next=unused-argument
+def _semi_adder_standard_work_wires(x_wires, y_wires, work_wires):
+    """The work wires that the ladders need, minus the ones that were already provided.
+
+    Symbolic rules like ``C(SemiAdder)`` reuse this spec but are called with the symbolic
+    operator's arguments, so ``base`` is set instead of ``y_wires``. The requirement is the one
+    of the wrapped ``SemiAdder``, whose own ``work_wires`` are the relevant ones.
+    """
     num_work_wires_needed = len(y_wires) - 1
     num_work_wires_provided = len(work_wires)
     return {"zeroed": max(num_work_wires_needed - num_work_wires_provided, 0)}
 
 
-@register_resources(_semi_adder_resources, work_wires=_semi_adder_work_wires)
-def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_pos=None):
+@register_resources(
+    _semi_adder_standard_resources, work_wires=_semi_adder_standard_work_wires, name="carry_ladder"
+)
+def _semi_adder_standard(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_pos=None):
     num_y_wires = len(y_wires)
     num_x_wires = len(x_wires)
 
@@ -598,12 +606,23 @@ def _semi_adder_ppm(x_wires, y_wires, work_wires=None):
         _ppm_ladder(x_wires, y_wires, work_wires + list(new_wires))
 
 
-add_decomps(SemiAdder, _semi_adder, _semi_adder_ppm)
+add_decomps(SemiAdder, _semi_adder_standard, _semi_adder_ppm)
 
 
-# pylint: disable-next=unused-argument
-def _ctrl_semi_adder_resource(base, control_wires, control_values, work_wires, work_wire_type):
-    """Resources for Gidney's Fig. 4, with control values normalized by ``flip_zero_control``."""
+def _controlled_semi_adder_standard_resources(
+    base,
+    control_wires,
+    control_values,  # pylint: disable=unused-argument
+    work_wires,
+    work_wire_type,
+):
+    r"""
+    Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
+
+    ``control_values`` is unused: this resource function is only ever registered wrapped in
+    ``flip_zero_control``, which normalizes control values to all-ones (accounting for any
+    zero-valued controls itself via extra ``X`` gates) before this function ever runs.
+    """
     x_wires = base.x_wires
     y_wires = base.y_wires
     base_work_wires = base.work_wires
@@ -652,10 +671,11 @@ def _ctrl_semi_adder_resource(base, control_wires, control_values, work_wires, w
 
 
 @register_resources(
-    _ctrl_semi_adder_resource,
-    work_wires=lambda base, *_, **__: _semi_adder_work_wires(**base.arguments),
+    _controlled_semi_adder_standard_resources,
+    work_wires=lambda base, *_, **__: _semi_adder_standard_work_wires(**base.arguments),
+    name="controlled_carry_ladder",
 )
-def _controlled_semi_adder(  # pylint: disable=too-many-arguments
+def _controlled_semi_adder_standard(  # pylint: disable=too-many-arguments
     base,
     control_wires,
     control_values=None,
@@ -872,7 +892,7 @@ def _controlled_semi_adder_ppm(
             # A control flag from new_wires and an input control belong to different qregs;
             # TemporaryAND then fails with "register-mode decomposition rule cannot span
             # multiple qregs yet". Calling its PPR rule directly also supports this case.
-            _temporary_and_ppr(
+            _temporary_and_to_ppr(
                 [control_chain[i], control_wires[i + 1], control_chain[i + 1]], [True, True]
             )
 
@@ -884,7 +904,7 @@ def _controlled_semi_adder_ppm(
 
 add_decomps(
     "C(SemiAdder)",
-    flip_zero_control2(_controlled_semi_adder),
+    flip_zero_control2(_controlled_semi_adder_standard, name="controlled_carry_ladder"),
     flip_zero_control2(_controlled_semi_adder_ppm),
 )
 

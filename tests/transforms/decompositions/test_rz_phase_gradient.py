@@ -24,7 +24,9 @@ import pytest
 import pennylane as qp
 from pennylane.testing import assert_valid_decomp_rule
 from pennylane.transforms.decompositions import (
+    make_crz_to_phase_gradient_decomp,
     make_rz_to_phase_gradient_decomp,
+    make_selectpaulirot_to_phase_gradient_decomp,
     phase_gradient_precision_stats,
     validate_phase_gradient_wires,
 )
@@ -62,9 +64,13 @@ def _expected_rz_specs(phi, p):
 )
 def test_validate_phase_gradient_wires(n_angle_wires, n_phase_grad_wires, n_work_wires, msg_match):
     """Test that a WireError is raised correctly for wrongly-sized registers"""
-    angle_wires = qp.wires.Wires([f"ang_{i}" for i in range(n_angle_wires)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(n_phase_grad_wires)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(n_work_wires)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(n_angle_wires)])
+    phase_grad_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + i for i in range(n_phase_grad_wires)]
+    )
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(n_work_wires)]
+    )
 
     with pytest.raises(WireError, match=msg_match):
         _ = validate_phase_gradient_wires(angle_wires, phase_grad_wires, work_wires)
@@ -87,7 +93,7 @@ def test_decomp_has_name():
     }
 
     custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
-    assert custom_decomp.name == "_rz_phase_gradient_decomp"
+    assert custom_decomp.name == "phase_gradient"
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -111,15 +117,71 @@ def test_valid_decomp(p):
     assert_valid_decomp_rule(qp.RZ(phi, 0), custom_decomp, check_matrix=False)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
+@pytest.mark.capture
+@pytest.mark.parametrize("rotation", ["RZ", "CRZ", "X", "Y", "Z"])
+def test_phase_gradient_capture_reuses_dynamic_inputs(rotation, seed):
+    """Test that the captured factories apply new angles on new system wires on each evaluation."""
+    import jax.numpy as jnp
+
+    factories = {
+        "RZ": make_rz_to_phase_gradient_decomp,
+        "CRZ": make_crz_to_phase_gradient_decomp,
+        "X": make_selectpaulirot_to_phase_gradient_decomp,
+        "Y": make_selectpaulirot_to_phase_gradient_decomp,
+        "Z": make_selectpaulirot_to_phase_gradient_decomp,
+    }
+    phase_grad_wires = qp.wires.Wires([12, 13])
+    rule = factories[rotation]([10, 11], phase_grad_wires, [14])
+
+    def decomp(angles, wires):
+        if rotation in ("RZ", "CRZ"):
+            rule(angles, wires)
+        else:
+            rule(angles, wires[:1], wires[1:], rot_axis=rotation)
+
+    angles = np.pi if rotation in ("RZ", "CRZ") else jnp.array([np.pi, 2 * np.pi])
+    wires = jnp.array([0] if rotation == "RZ" else [0, 1])
+    program = qp.capture.make_plxpr(decomp)(angles, wires)
+
+    for scale, runtime_wires in [(1, wires), (2, wires[::-1] + 3)]:
+        runtime_angles = angles * scale
+        tape = qp.testing.plxpr_to_tape(
+            program.jaxpr, program.consts, runtime_angles, runtime_wires
+        )
+        if rotation in ("RZ", "CRZ"):
+            op = getattr(qp, rotation)(runtime_angles, runtime_wires)
+        else:
+            op = qp.SelectPauliRot(
+                runtime_angles, runtime_wires[:1], runtime_wires[1:], rot_axis=rotation
+            )
+        assert isinstance(tape.operations[-1], qp.ops.ChangeOpBasis2)
+        basis_change = tape.operations[-1]
+        if rotation == "CRZ":
+            assert basis_change.compute_op.name == "CRZPhaseGradientCompute"
+            qp.testing.assert_decomposable(basis_change.compute_op, check_matrix=False)
+        elif rotation in ("X", "Y", "Z"):
+            if rotation == "Y":
+                assert basis_change.compute_op.name == "SelectPauliRotYBasis"
+                assert basis_change.uncompute_op.name == "SelectPauliRotYBasis"
+                assert basis_change.compute_op.arguments["reverse"] is False
+                assert basis_change.uncompute_op.arguments["reverse"] is True
+            if rotation in ("X", "Y"):
+                basis_change = basis_change.target_op
+            assert basis_change.compute_op.name == "SelectPauliRotPhaseGradientCompute"
+            qp.testing.assert_decomposable(basis_change.compute_op, check_matrix=False)
+        phase_gradient_helpers.assert_decomp_realizes_op(op, tape, phase_grad_wires, seed)
+
+
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_as_fixed_decomps(phi, p):
     """Test that the decomposition rule from make_rz_to_phase_gradient_decomp works as expected
     as a fixed decomposition and yields the correct resources."""
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([100 + len(angle_wires) + i for i in range(p)])
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(p - 1)]
+    )
 
     kwargs = {
         "angle_wires": angle_wires,
@@ -142,15 +204,16 @@ def test_as_fixed_decomps(phi, p):
     assert specs == _expected_rz_specs(phi, p)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_as_alt_decomps(phi, p):
     """Test that the decomposition rule from ``make_rz_to_phase_gradient_decomp works`` as
     expected as an alternative decomposition and yields the correct resources."""
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([100 + len(angle_wires) + i for i in range(p)])
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(p - 1)]
+    )
 
     kwargs = {
         "angle_wires": angle_wires,
@@ -173,7 +236,6 @@ def test_as_alt_decomps(phi, p):
     assert specs == _expected_rz_specs(phi, p)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_integration_multi_wire(seed):
     """
     Tests that the decomposition correctly realizes the phase gradient decomposition of RZ as described in
@@ -185,9 +247,11 @@ def test_integration_multi_wire(seed):
     phi = (1 / 2 + 0 / 4 + 1 / 8) * 4 * np.pi
     wires = [0]
 
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
+    angle_wires = qp.wires.Wires([100 + i for i in range(prec)])
+    phase_grad_wires = qp.wires.Wires([100 + len(angle_wires) + i for i in range(prec)])
+    work_wires = qp.wires.Wires(
+        [100 + len(angle_wires) + len(phase_grad_wires) + i for i in range(prec - 1)]
+    )
 
     all_wires = angle_wires + phase_grad_wires + work_wires + wires
 
@@ -330,8 +394,8 @@ def test_precision_stats_hints(precision_stats, expected):
 @pytest.mark.catalyst
 def test_precision_stats_hint_weighted_resources():
     """Test that the resources estimated from the hinted branches for a batch of rotations match
-    the decompositions of the individual rotations if ``precision_stats`` is computed from the
-    angles."""
+    the directly emitted operators for the individual rotations if ``precision_stats`` is
+    computed from the angles."""
     pytest.importorskip("catalyst")
     bits = [[0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 0, 0], [1, 0, 1, 1]]
     angles = phase_gradient_helpers.bits_to_angles(bits, 2 * np.pi)
@@ -352,6 +416,6 @@ def test_precision_stats_hint_weighted_resources():
     for phi in angles:
         with qp.queuing.AnnotatedQueue() as q:
             rule(phi, wires=[0])
-        expected.update(op.name for op in phase_gradient_helpers.leaf_ops(q.queue))
-    expected["1C(MultiX)"] = expected.pop("C(MultiX)")
+        # Level 0 retains each basis-change block rather than decomposing its operands.
+        expected.update(op.name for op in q.queue)
     assert qp.analyze(circuit, level=0)(angles).resources.counts == expected

@@ -263,7 +263,7 @@ class TestAdjointMetricTensorTape:
         expected = autodiff_metric_tensor(ansatz, 3)(*params)
         dev = qp.device("default.qubit")
 
-        wires = ("a", "b", "c")
+        wires = (6, 7, 8)
 
         @qp.qnode(dev, interface=interface)
         def circuit(*params):
