@@ -921,6 +921,36 @@ class TestEstimate:  # pylint: disable=too-many-public-methods
         with pytest.raises(ValueError, match=match):
             qp.estimate(circuit, target="user")()
 
+    def test_other_compile_errors_of_decompositions_before_level_target(self, monkeypatch):
+        """Test that a compile error unrelated to a missing decomposition rule, raised when the
+        decompositions before a level target are compiled to find the failing one, is raised as
+        it is."""
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set={"RZ", "RY", "CNOT", "GlobalPhase"})
+        @qp.decompose(gate_set={"RX", "CNOT"})
+        @qp.qnode(qp.device("null.qubit", wires=2))
+        def circuit():
+            qp.CNOT([0, 1])
+            return qp.probs()
+
+        compile_error = catalyst.utils.exceptions.CompileError
+        errors = iter(
+            [
+                compile_error("Decomposition rule not found for operator 'CNOT'"),
+                compile_error("some other compile error"),
+            ]
+        )
+
+        def fail(*_, **__):
+            raise next(errors)
+
+        estimate_module = importlib.import_module("pennylane.resource.estimate")
+        monkeypatch.setattr(estimate_module, "resources_from_analysis_pass", fail)
+
+        with pytest.raises(compile_error, match="some other"):
+            qp.estimate(circuit, target="user")()
+
     def test_device_without_decomposition(self, circuit, monkeypatch):
         """Test that an error is raised for target="device" if the device preprocessing has no
         decomposition."""
