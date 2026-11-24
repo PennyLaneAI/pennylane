@@ -39,12 +39,12 @@ from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import CaptureWarning
 from pennylane.numeric_hamiltonians import CGFHamiltonian
+from pennylane.templates.subroutines.time_evolution._trotter_utils import _merge_leaves
 from pennylane.templates.subroutines.time_evolution.trotter_cgf import (
     _apply_system_basis_rotation,
     _cgf_resource_counts,
     _controlled_trotter_cgf_decomp,
     _energy_shift,
-    _merge_leaves,
     _trotter_cgf_decomposition,
 )
 from pennylane.testing import assert_decomposable
@@ -296,19 +296,19 @@ class TestCGFScheme:
     and both controlled structures are all covered by the ``*_matches_expm`` tests)."""
 
     def test_merge_leaves(self, seed):
-        """Test the CGF per-mode merge rule ``U_curr @ U_prev^T`` that combines consecutive
-        fragment rotations, so the ``leaf_prev`` un-rotation and ``leaf_curr`` rotation
-        telescope into a single (transposed) BasisRotation per mode."""
+        """Test that the merge rule ``U_prev^T @ U_curr``, which telescopes the ``leaf_prev``
+        un-rotation and the ``leaf_curr`` rotation into a single BasisRotation, is applied per
+        mode."""
         rng = np.random.default_rng(seed)
         num_modes, n_states = 2, 3
         U_prev = np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])
         U_curr = np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])
-        expected = np.stack([U_curr[l] @ U_prev[l].T for l in range(num_modes)])
+        expected = np.stack([U_prev[l].T @ U_curr[l] for l in range(num_modes)])
         assert np.allclose(_merge_leaves(U_prev, U_curr), expected)
 
     def test_apply_system_basis_rotation(self, seed):
-        """Test that per-mode leaves are applied as (transposed) BasisRotations and that a
-        mode whose rotation is the identity is skipped."""
+        """Test that per-mode leaves are applied as BasisRotations and that a mode whose
+        rotation is the identity is skipped."""
         num_modes, n_states = 2, 2
         wires = list(range(num_modes * n_states))
         U0 = random_orthogonal(n_states, np.random.default_rng(seed))
@@ -316,7 +316,7 @@ class TestCGFScheme:
         tape = qp.tape.make_qscript(_apply_system_basis_rotation)(U, wires)
         assert [type(op) for op in tape.operations] == [qp.BasisRotation]
         assert list(tape.operations[0].wires) == wires[:n_states]
-        assert np.allclose(tape.operations[0].parameters[0], U0.T)
+        assert np.allclose(tape.operations[0].parameters[0], U0)
 
 
 class TestResourceRule:

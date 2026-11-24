@@ -456,9 +456,9 @@ class TestConcreteCDFCGF:  # pylint: disable=too-many-public-methods
         dets = qp.math.sign(qp.math.linalg.det(normalized))
         assert np.allclose(dets, np.ones_like(dets))
 
-    def test_cgf_align_one_body_leaf(self, seed):
-        """The one-body leaf (eigenvectors stored as columns) is transposed per mode to match
-        the two-body row convention; the two-body leaves are returned untouched."""
+    def test_cgf_transpose_two_body_leaves(self, seed):
+        """The two-body leaves (modal index on the rows) are transposed per mode to match the
+        one-body column convention; the one-body leaf is returned untouched."""
 
         rng = np.random.default_rng(seed)
         leaf = np.stack(
@@ -470,9 +470,9 @@ class TestConcreteCDFCGF:  # pylint: disable=too-many-public-methods
             leaf_tensors=leaf,
             nuc_constant=0.0,
         )
-        aligned = ham.align_one_body_leaf().leaf_tensors
-        assert np.allclose(aligned[0], np.swapaxes(leaf[0], -2, -1))
-        assert np.allclose(aligned[1:], leaf[1:])
+        aligned = ham.transpose_two_body_leaves().leaf_tensors
+        assert np.allclose(aligned[0], leaf[0])
+        assert np.allclose(aligned[1:], np.swapaxes(leaf[1:], -2, -1))
 
     def test_setattr_attribute_error(self, seed):
         cgf_ham = CGFHamiltonian(**cgf_tensors(seed))

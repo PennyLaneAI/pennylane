@@ -38,13 +38,13 @@ from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import CaptureWarning
 from pennylane.numeric_hamiltonians import CDFHamiltonian
+from pennylane.templates.subroutines.time_evolution._trotter_utils import _merge_leaves
 from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
     _apply_system_basis_rotation,
     _apply_two_body_diagonal_with_work_wires,
     _cdf_resource_counts,
     _controlled_trotter_cdf_decomp,
     _energy_shift,
-    _merge_leaves,
     _multi_controlled_trotter_cdf_decomp,
     _trotter_cdf_decomposition,
 )

@@ -586,21 +586,21 @@ class CGFHamiltonian(NumericHamiltonian):
 
         return replace(self, leaf_tensors=math.concatenate([one_body, two_body], axis=0))
 
-    def align_one_body_leaf(self) -> CGFHamiltonian:
-        """Transpose the one-body leaf so both sectors share the scaffolding's row convention.
+    def transpose_two_body_leaves(self) -> CGFHamiltonian:
+        """Transpose the two-body leaves so that all leaves store their orbitals on the columns.
 
-        The scaffolding assumes each ``leaf_tensors[nu][l]`` stores its per-mode diagonalizing
-        rotation with the modal index on the *rows* (the two-body :math:`U^{(l)}_{pa}` convention
-        of `arXiv:2508.11865 <https://arxiv.org/abs/2508.11865>`__). The one-body leaf, however,
-        is the eigenvector matrix of the effective one-body integrals and stores its eigenvectors
-        as *columns*, so it is transposed here to match. Leaves are (special) orthogonal, so this
-        is the inverse rotation.
+        The two-body leaves store their per-mode diagonalizing rotation with the modal index on
+        the *rows* (the :math:`U^{(l)}_{pa}` convention of `arXiv:2508.11865
+        <https://arxiv.org/abs/2508.11865>`__). The one-body leaf, however, is the eigenvector
+        matrix of the effective one-body integrals and stores its eigenvectors as *columns*, like
+        the leaves of :class:`~.CDFHamiltonian`. The two-body leaves are transposed here to match.
+        Leaves are (special) orthogonal, so this is the inverse rotation.
         """
         leaves = self.leaf_tensors
 
         return replace(
             self,
-            leaf_tensors=math.concatenate([math.swapaxes(leaves[:1], -2, -1), leaves[1:]], axis=0),
+            leaf_tensors=math.concatenate([leaves[:1], math.swapaxes(leaves[1:], -2, -1)], axis=0),
         )
 
 

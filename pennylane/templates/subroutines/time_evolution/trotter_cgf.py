@@ -14,23 +14,28 @@
 """Contains the ``TrotterCGF`` template for Christiansen Greedy Fragmentation Hamiltonians."""
 
 from collections import defaultdict
-from functools import partial
 
 import numpy as np
 
-from pennylane import capture, compiler, math
+from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.numeric_hamiltonians import CGFHamiltonian
-from pennylane.ops import CNOT, CRZ, CY, RZ, GlobalPhase, IsingZZ, PhaseShift
+from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math import ctrl
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
-from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import WiresLike
 
-from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
+from ._trotter_utils import (
+    _apply_fused_one_body,
+    _emit_one_body_rz,
+    _fused_one_body_resource_counts,
+    _fused_one_body_unitary,
+    _run_trotter_steps,
+)
 
 
 class TrotterCGF(Operator2):
@@ -246,7 +251,7 @@ class TrotterCGF(Operator2):
         fragment rotations telescope: at each fragment boundary the previous fragment's inverse
         rotation and the next fragment's rotation combine into a single per-mode
         :class:`~.BasisRotation`, so only one basis rotation is emitted per mode per boundary. The
-        leaves are assumed real orthogonal (they are merged by transpose, not adjoint). Each leaf is
+        leaves are assumed real orthogonal. Each leaf is
         first normalized to determinant :math:`+1` (negating one orbital line, a no-op on
         :math:`\tilde{n}_{lp}`) so that no :class:`~.BasisRotation` needs a determinant-correcting
         phase flip.
@@ -388,34 +393,17 @@ class TrotterCGF(Operator2):
         super().__init__(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase)
 
 
+def _mode_registers(wires, num_modes, n_states):
+    """Split the mode-major system wires into one register per mode."""
+    return [wires[l * n_states : (l + 1) * n_states] for l in range(num_modes)]
+
+
 def _apply_system_basis_rotation(U, wires):
-    """Apply a fragment's per-mode basis rotation on the whole system."""
+    """Apply a fragment's per-mode basis rotations on the mode registers."""
     num_modes, n_states, _ = U.shape
-    # The fragment's leaf O stores the "rotate-from-bare-to-diagonal-basis" direction.
-    # qml.BasisRotation(U) with U = O^T implements the single-particle map O^T (moving
-    # from bare modal states to the diagonal basis), so we pass the transpose.
-    for l in range(num_modes):
-        U_l = math.swapaxes(U[l], -2, -1)
-        mode_wires = wires[l * n_states : (l + 1) * n_states]
+    for U_l, mode_wires in zip(U, _mode_registers(wires, num_modes, n_states)):
         if math.is_tracer(U_l) or not np.allclose(U_l, np.eye(n_states)):
             BasisRotation(unitary_matrix=U_l, wires=mode_wires)
-
-
-def _merge_leaves(U_prev, U_curr):
-    """Per-mode fragment-rotation merge rule ``U_curr @ U_prev^T`` (vectorized via einsum).
-
-    ``_apply_system_basis_rotation`` emits ``BasisRotation(leaf^T)``, so the single
-    :class:`~.BasisRotation` that replaces the ``leaf_prev`` un-rotation followed by the
-    ``leaf_curr`` rotation must be ``BasisRotation((U_curr @ U_prev^T)^T)`` for the frames
-    to telescope. (This differs from :class:`~.TrotterCDF`, whose ``apply`` does not
-    transpose and whose merge is therefore ``U_prev^dagger @ U_curr``.)
-    """
-    return math.einsum("lij,lkj->lik", U_curr, U_prev)
-
-
-def _transpose_leaf(U):
-    """Batch-transpose a leaf over the leading mode axis."""
-    return math.swapaxes(U, -2, -1)
 
 
 def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, double_phase):
@@ -496,58 +484,18 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
     mode_loop()  # pylint: disable=no-value-for-parameter
 
 
-def _fused_one_body_unitary(hamiltonian, time_step):
-    r"""Per-mode single-particle rotations :math:`W_l = A_l\,
-    \operatorname{diag}(e^{-i\epsilon_{lp} \Delta t})\, A_l^T` of the fused one-body block, with
-    :math:`A_l` the merged rotation from the frame of the last two-body fragment into the one-body
-    frame.
-
-    It combines the basis rotations into and out of the one-body frame with the one-body diagonal
-    layer, in the frame of the last two-body fragment. ``hamiltonian`` must already have its
-    one-body leaf aligned (see :meth:`~.CGFHamiltonian.align_one_body_leaf`).
-    """
-    U_tensor = hamiltonian.leaf_tensors
-    Z_tensor = hamiltonian.core_tensors
-    if compiler.active() or capture.enabled():
-        U_tensor = math.array(U_tensor, like="jax")
-        Z_tensor = math.array(Z_tensor, like="jax")
-
-    A = _transpose_leaf(_merge_leaves(U_tensor[-1], U_tensor[0]))
-    one_body_phases = math.exp(-1j * math.einsum("llpp->lp", Z_tensor[0]) * time_step)
-    return math.einsum("lpa,la,lqa->lpq", A, one_body_phases, A)
-
-
-def _apply_fused_one_body(  # pylint: disable=unused-argument
-    unitaries, wires, control_wires, double_phase
-):
-    r"""Apply the fused one-body block as one :class:`~.BasisRotation` per mode.
-
-    For the double-phase circuit, we sandwich it with the controlled particle-hole transformation
-    :math:`P = X_0 Y_1 X_2 Y_3 \cdots` on each mode register. Leaves are real, so this flips
-    :math:`\Delta t\to-\Delta t` in the control-1 branch, up to the phase
-    :math:`e^{-i\sum_p\epsilon_{lp}\Delta t}` per mode, which the decomposition compensates.
-    """
-    # pylint: disable=no-value-for-parameter
+def _fused_one_body(hamiltonian, time_step):
+    """Qfunc ``(wires, control_wires, double_phase)`` applying the fused one-body block, one
+    single-particle rotation per mode."""
+    unitaries = _fused_one_body_unitary(
+        hamiltonian.leaf_tensors, math.einsum("llpp->lp", hamiltonian.core_tensors[0]), time_step
+    )
     num_modes, n_states, _ = unitaries.shape
 
-    def controlled_paulis(mode_wires):
-        @for_loop(0, n_states, 2)
-        def controlled_x(p):
-            CNOT([control_wires[0], mode_wires[p]])
+    def apply_fused_one_body(wires, control_wires, double_phase):  # pylint: disable=unused-argument
+        _apply_fused_one_body(unitaries, _mode_registers(wires, num_modes, n_states), control_wires)
 
-        @for_loop(1, n_states, 2)
-        def controlled_y(p):
-            CY([control_wires[0], mode_wires[p]])
-
-        if len(control_wires) > 0:
-            controlled_x()
-            controlled_y()
-
-    for l in range(num_modes):
-        mode_wires = wires[l * n_states : (l + 1) * n_states]
-        controlled_paulis(mode_wires)
-        BasisRotation(unitary_matrix=unitaries[l], wires=mode_wires)
-        controlled_paulis(mode_wires)
+    return apply_fused_one_body
 
 
 def _one_body_trace(hamiltonian):
@@ -569,23 +517,7 @@ _CGF_HELPERS = {
     "apply_system_basis_rotation": _apply_system_basis_rotation,
     "apply_two_body_diagonal": _apply_two_body_diagonal,
     "apply_one_body_diagonal": _apply_one_body_diagonal,
-    "merge_leaves": _merge_leaves,
-    "transpose_leaf": _transpose_leaf,
 }
-
-
-def _fused_one_body_resource_counts(num_trotter_steps, num_modes, n_states, has_control):
-    """Gate counts of the fused one-body blocks: one complex-valued ``BasisRotation`` per Trotter
-    step and mode. The double-phase circuit adds the controlled Paulis around it, i.e., ``CNOT``
-    for even and ``CY`` for odd modals."""
-    resources = {
-        BasisRotation(Complex[n_states, n_states], wires=Wire[n_states]): num_modes
-        * num_trotter_steps
-    }
-    if has_control:
-        resources[CNOT] = 2 * num_trotter_steps * num_modes * ((n_states + 1) // 2)
-        resources[CY] = 2 * num_trotter_steps * num_modes * (n_states // 2)
-    return resources
 
 
 def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_phase=False):
@@ -657,8 +589,7 @@ def _trotter_cgf_decomposition(evolution_time, num_trotter_steps, hamiltonian, w
     # ``double_phase`` only affects the controlled decomposition; the base operator is
     # always the plain (uncontrolled) e^{-iHt} circuit.
     if num_trotter_steps > 0:
-        hamiltonian = hamiltonian.normalize_leaf_determinant().align_one_body_leaf()
-        unitaries = _fused_one_body_unitary(hamiltonian, evolution_time / num_trotter_steps)
+        hamiltonian = hamiltonian.normalize_leaf_determinant().transpose_two_body_leaves()
         _run_trotter_steps(
             evolution_time,
             num_trotter_steps,
@@ -666,7 +597,7 @@ def _trotter_cgf_decomposition(evolution_time, num_trotter_steps, hamiltonian, w
             wires,
             (),
             **_CGF_HELPERS,
-            apply_fused_one_body=partial(_apply_fused_one_body, unitaries),
+            apply_fused_one_body=_fused_one_body(hamiltonian, evolution_time / num_trotter_steps),
         )
         # The fused block implements the one-body identity part, so only the constant remains.
         phi = (hamiltonian.nuc_constant * evolution_time) % (4 * np.pi)
@@ -705,7 +636,7 @@ def _controlled_trotter_cgf_decomp(base, control_wires, control_values, work_wir
         return
 
     phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
-    hamiltonian = hamiltonian.normalize_leaf_determinant().align_one_body_leaf()
+    hamiltonian = hamiltonian.normalize_leaf_determinant().transpose_two_body_leaves()
 
     if double_phase:
         # Double-phase (Fig. 6 https://arxiv.org/abs/2506.15784) circuit: each full-time diagonal block is CNOT-sandwiched by
@@ -717,7 +648,6 @@ def _controlled_trotter_cgf_decomp(base, control_wires, control_values, work_wir
         # E/2 = sum(eps)/2 itself, and its controlled particle-hole sandwich adds e^{-iEt} to the
         # control-1 branch, so the control phase we need, diag(e^{-i(s - E/2)t}, e^{i(s + E/2)t}),
         # is RZ(2*phi) up to e^{iEt/2}.
-        unitaries = _fused_one_body_unitary(hamiltonian, evolution_time / num_trotter_steps)
         _run_trotter_steps(
             evolution_time,
             num_trotter_steps,
@@ -726,7 +656,7 @@ def _controlled_trotter_cgf_decomp(base, control_wires, control_values, work_wir
             control_wires,
             True,
             **_CGF_HELPERS,
-            apply_fused_one_body=partial(_apply_fused_one_body, unitaries),
+            apply_fused_one_body=_fused_one_body(hamiltonian, evolution_time / num_trotter_steps),
         )
         RZ(2 * phi, control_wires)
         GlobalPhase(-_one_body_trace(hamiltonian) * evolution_time / 2)
