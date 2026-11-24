@@ -117,7 +117,7 @@ def cdf_reference_hamiltonian_leaves(ham):
 def cdf_second_order_trotter_matrix(ham, evolution_time, num_steps):
     """Build the unmerged second-order Trotter product from independently assembled fragments."""
     Z = np.asarray(ham.core_tensors, dtype=float)
-    U = np.asarray(ham.leaf_tensors, dtype=float)
+    U = np.asarray(ham.leaf_tensors)
     num_orbitals = Z.shape[-1]
     n_wires = 2 * num_orbitals
     dim = 2**n_wires
@@ -450,13 +450,22 @@ class TestResourceRule:
             (3, True, True, 1),
         ],
     )
+    @pytest.mark.parametrize("leaf_dtype", [float, complex])
     @pytest.mark.capture
     def test_merged_resource_counts_match_traced_decomposition(
-        self, num_steps, num_fragments, num_orbitals, has_control, double_phase, num_work_wires
+        self,
+        num_steps,
+        num_fragments,
+        num_orbitals,
+        has_control,
+        double_phase,
+        num_work_wires,
+        leaf_dtype,
     ):
-        """Check exact counts after H1 merging; assert_valid only checks gate kinds here."""
+        """Check exact counts after H1 merging and fusing the one-body block (double-phase
+        circuits only fuse for real leaves). assert_valid only checks gate kinds here."""
         core = np.zeros((num_fragments + 1, num_orbitals, num_orbitals))
-        leaf = np.stack([np.eye(num_orbitals)] * (num_fragments + 1))
+        leaf = np.stack([np.eye(num_orbitals, dtype=leaf_dtype)] * (num_fragments + 1))
         ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.0)
         resources = _cdf_resource_counts(num_steps, ham, has_control, double_phase, num_work_wires)
         num_system_wires = 2 * num_orbitals
@@ -594,16 +603,22 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         ("has_control", "double_phase"), [(False, False), (True, False), (True, True)]
     )
+    @pytest.mark.parametrize("complex_leaves", [False, True])
     def test_matches_independent_second_order_trotter_product(
-        self, seed, num_fragments, num_steps, has_control, double_phase
+        self, seed, num_fragments, num_steps, has_control, double_phase, complex_leaves
     ):
-        """Merging boundary blocks preserves the full matrix, including global phase,
-        for uncontrolled, genuine-controlled, and double-phase circuits."""
+        """Merging boundary blocks and fusing the one-body block preserve the full matrix,
+        including global phase, for all three circuit types and real and complex leaves."""
         rng = np.random.default_rng(seed)
         num_orbitals = 2
         core = rng.normal(size=(num_fragments + 1, num_orbitals, num_orbitals)) * 0.4
         core = 0.5 * (core + np.transpose(core, (0, 2, 1)))
         leaf = np.stack([random_orthogonal(num_orbitals, rng) for _ in range(num_fragments + 1)])
+        if complex_leaves:
+            phases = np.exp(
+                1j * rng.uniform(0, 2 * np.pi, size=(num_fragments + 1, 1, num_orbitals))
+            )
+            leaf = np.stack([random_orthogonal(num_orbitals, rng) @ u for u in leaf * phases])
         ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
         wires = list(range(2 * num_orbitals))
         evolution_time = 0.7
@@ -618,6 +633,42 @@ class TestDecomposition:
             has_control,
             double_phase,
         )
+
+    @pytest.mark.parametrize(
+        ("evolution_time", "atol"),
+        [
+            # The 1e-8 cutoff in ``givens_decomposition`` drops small entries of the fused
+            # unitary, which limits the accuracy for small time steps (#10536).
+            (1e-4, 1e-7),
+            (1e-5, 1e-7),
+            (1e-6, 1e-7),
+            pytest.param(
+                1e-9,
+                1e-13,
+                marks=pytest.mark.xfail(
+                    reason="``givens_decomposition`` drops entries below 1e-8 (#10536)",
+                    strict=True,
+                ),
+            ),
+        ],
+    )
+    def test_fused_one_body_precision_close_to_identity(self, evolution_time, atol, seed):
+        """The fused one-body block stays accurate for small time steps, i.e., close to the
+        identity, in the base and double-phase circuits."""
+        rng = np.random.default_rng(seed)
+        num_orbitals = 3
+        core = rng.normal(size=(2, num_orbitals, num_orbitals)) * 0.4
+        core = 0.5 * (core + np.transpose(core, (0, 2, 1)))
+        leaf = np.stack([random_orthogonal(num_orbitals, rng) for _ in range(2)])
+        ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
+        wires = list(range(2 * num_orbitals))
+        expected = cdf_second_order_trotter_matrix(ham, evolution_time, 1)
+
+        actual = qp.matrix(qp.TrotterCDF(evolution_time, 1, ham, wires=wires), wire_order=wires)
+        block0, block1 = control_branches(qp.TrotterCDF, ham, wires, evolution_time, 1, True)
+        assert np.allclose(actual, expected, atol=atol, rtol=0)
+        assert np.allclose(block0, expected, atol=atol, rtol=0)
+        assert np.allclose(block1, expected.conj().T, atol=atol, rtol=0)
 
     @pytest.mark.slow
     def test_base_matches_expm_nonidentity_leaves(self, seed):
@@ -982,7 +1033,14 @@ class TestDoublePhaseControlledDecomposition:
             jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
 
         ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
-        assert {type(op).__name__ for op in ops} == {"BasisRotation", "CNOT", "RZ", "IsingZZ"}
+        assert {type(op).__name__ for op in ops} == {
+            "BasisRotation",
+            "CNOT",
+            "CY",
+            "RZ",
+            "IsingZZ",
+            "GlobalPhase",
+        }
 
     def test_double_phase_controlled_matches_expm(self, diagonal_hamiltonian_cdf):
         """With double_phase=True, ctrl(TrotterCDF) realizes diag(U, U^dagger): for an
