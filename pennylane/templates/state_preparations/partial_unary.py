@@ -797,7 +797,7 @@ class PartialUnaryStatePreparation(Operator2):
     allocating a state vector for the large register.
 
     >>> resource_circuit = make_resource_circuit(num_work_wires)
-    >>> print(qp.specs(resource_circuit, level="user", compute_depth=False)().resources)
+    >>> print(qp.analyze(resource_circuit, level="user")().resources)
     Quantum operations:
     - Total: 6,046
       - 1C(MultiX): 2,414
@@ -816,7 +816,7 @@ class PartialUnaryStatePreparation(Operator2):
 
     >>> new_num_work_wires = 3*num_work_wires
     >>> resource_circuit = make_resource_circuit(new_num_work_wires)
-    >>> print(qp.specs(resource_circuit, level="user", compute_depth=False)().resources)
+    >>> print(qp.analyze(resource_circuit, level="user")().resources)
     Quantum operations:
     - Total: 3,068
       - 1C(MultiX): 2,553

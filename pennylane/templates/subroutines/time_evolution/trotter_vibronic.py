@@ -155,7 +155,7 @@ class TrotterVibronic(Operator2):
             )
             return qp.probs(wires=wires["electronic"])
 
-    >>> qp.specs(circuit, level="user", compute_depth=False)().resources.quantum_operations
+    >>> qp.analyze(circuit, level="user")().resources.quantum_operations
     {'1C(MultiX)': 8, 'AQFT': 1, 'Adjoint(AQFT)': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(TemporaryAND)': 10, 'CNOT': 48, 'GlobalPhase': 28, 'MultiControlledX': 16, 'MultiX': 2, 'OutMultiplier': 1, 'PhaseGradientStatePrep': 1, 'QROM': 6, 'RX': 28, 'SemiAdder': 4, 'SignedOutSquare': 1, 'TemporaryAND': 10}
 
     Resource analysis takes the maximum count over conditional branches that cannot be resolved
