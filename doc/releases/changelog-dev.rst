@@ -4,19 +4,17 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* :func:`~.transforms.decompositions.make_rzlayer_to_phase_gradient_decomp` creates a phase
-  gradient decomposition rule for :class:`~.RZLayer`, which needs a single adder for each block
-  with an even number of wires, or for each batch of ``batch_size`` distinct angles.
-  `(#10577) <https://github.com/PennyLaneAI/pennylane/pull/10577>`__
-
 * The new :class:`~.RZLayer` applies a :class:`~.RZ` rotation gate to each of its target wires, with
   equal angles used for blocks of ``len(wires) // len(angles)`` wires. This includes the case of
   ``len(wires)=len(angles)`` (one angle per wire) and ``len(angles)=1`` (same angle on all wires). This
   allows for more efficient decomposition rules, such as Hamming-weight phasing, which applies
   :math:`\lfloor \log_2 m \rfloor + 1` rotations instead of :math:`m` to each block of
-  :math:`m \geq 3` wires.
+  :math:`m \geq 3` wires. Phase gradient rules created with
+  :func:`~.transforms.decompositions.make_rzlayer_to_phase_gradient_decomp` need a single adder
+  for each block with an even number of wires, or for each batch of ``batch_size`` distinct angles.
   `(#10508) <https://github.com/PennyLaneAI/pennylane/pull/10508>`__
   `(#10519) <https://github.com/PennyLaneAI/pennylane/pull/10519>`__
+  `(#10577) <https://github.com/PennyLaneAI/pennylane/pull/10577>`__
 
 * A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
   `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
