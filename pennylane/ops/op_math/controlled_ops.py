@@ -1488,7 +1488,7 @@ class MultiControlledX(Controlled2):
         """Chooses the best decomposition rule for MCX."""
 
         # pylint: disable=import-outside-toplevel
-        from pennylane.decomposition_rules.op_math.controlled_ops import (
+        from pennylane.decomposition_rules.op_math.multi_controlled_x import (
             _mcx_many_work_wires_impl,
             _mcx_no_work_wires_impl,
             _mcx_one_work_wire_impl,

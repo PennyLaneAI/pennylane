@@ -30,7 +30,7 @@ from pennylane.decomposition_rules import (
     mcx_one_work_wire,
     mcx_two_work_wires,
 )
-from pennylane.decomposition_rules.op_math.controlled_ops import (
+from pennylane.decomposition_rules.op_math.controlled_qubit_unitary import (
     _bisect_compute_a,
     _bisect_compute_b,
     _ctrl_decomp_bisect_md,
@@ -565,7 +565,7 @@ class TestControlledDecompBisect:
         """Tests that the correct shortcut is chosen if possible."""
 
         op, best_rule = op
-        spy = mocker.spy(qp.decomposition_rules.op_math.controlled_ops, best_rule)
+        spy = mocker.spy(qp.decomposition_rules.op_math.controlled_qubit_unitary, best_rule)
         ctrl_decomp_bisect(op, control_wires)
         spy.assert_called_once()
 

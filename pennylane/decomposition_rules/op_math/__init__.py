@@ -40,6 +40,15 @@ available from the ``adjoint``, ``controlled``, ``pow`` and ``symbolicop`` modul
     pow_repeat_base
     pow_scale_angle
     self_adjoint
+
+Concrete controlled operators
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+
+    controlled_ops
+    controlled_qubit_unitary
+    multi_controlled_x
 """
 
 from .symbolicop2 import operator_to_base, self_adjoint

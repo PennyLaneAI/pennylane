@@ -126,7 +126,6 @@ from pennylane.templates.tensornetworks import *
 from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
-from pennylane import decomposition_rules
 from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
 from pennylane.resource import analyze, estimate, specs, track
@@ -178,6 +177,7 @@ from pennylane.ops.functions import (
     comm,
     single_qubit_zyz_angles,
 )
+from pennylane import decomposition_rules
 from pennylane.ops.identity import I
 from pennylane.optimize import *
 from pennylane.debugging import (

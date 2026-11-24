@@ -28,7 +28,10 @@ from pennylane.decomposition.decomposition_rule import (
     register_resources,
 )
 from pennylane.decomposition.resources import adjoint_resource_rep, controlled_resource_rep
-from pennylane.decomposition_rules.op_math.controlled_ops import ctrl_decomp_bisect, ctrl_decomp_zyz
+from pennylane.decomposition_rules.op_math.controlled_qubit_unitary import (
+    ctrl_decomp_bisect,
+    ctrl_decomp_zyz,
+)
 from pennylane.ops.op_math.controlled import (
     Controlled,
     _decompose_custom_ops,

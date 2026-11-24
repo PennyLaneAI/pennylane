@@ -87,10 +87,9 @@ from .templates.state_preparations.partial_unary import (
     _partial_unary_state_prep_standard_resources,
 )
 from .qubit import state_preparation
-from .op_math.controlled_ops import (
-    ctrl_decomp_bisect,
-    ctrl_decomp_zyz,
-    toffoli_elbow,
+from .op_math.controlled_qubit_unitary import ctrl_decomp_bisect, ctrl_decomp_zyz
+from .op_math.controlled_ops import toffoli_elbow
+from .op_math.multi_controlled_x import (
     mcx_many_work_wires,
     mcx_no_work_wires,
     mcx_one_work_wire,

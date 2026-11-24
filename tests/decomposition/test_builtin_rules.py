@@ -119,10 +119,12 @@ def test_package_exports_preserve_rule_identity():
         null_decomp,
     )
     from pennylane.decomposition_rules.common import null_decomp as defined_null_decomp
-    from pennylane.decomposition_rules.op_math.controlled_ops import (
+    from pennylane.decomposition_rules.op_math.controlled_qubit_unitary import (
         ctrl_decomp_bisect as defined_bisect,
     )
-    from pennylane.decomposition_rules.op_math.controlled_ops import ctrl_decomp_zyz as defined_zyz
+    from pennylane.decomposition_rules.op_math.controlled_qubit_unitary import (
+        ctrl_decomp_zyz as defined_zyz,
+    )
     from pennylane.decomposition_rules.phase_gradient.rz import (
         make_rz_to_phase_gradient_decomp as defined_rz_factory,
     )
@@ -257,6 +259,8 @@ def test_phase_gradient_rules_use_phase_gradient_package(name, module):
         "pennylane.decomposition_rules.op_math.prod2",
         "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
         "pennylane.decomposition_rules.op_math.controlled_ops",
+        "pennylane.decomposition_rules.op_math.controlled_qubit_unitary",
+        "pennylane.decomposition_rules.op_math.multi_controlled_x",
         "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
         "pennylane.decomposition_rules.phase_gradient",
         "pennylane.decomposition_rules.phase_gradient.common",
