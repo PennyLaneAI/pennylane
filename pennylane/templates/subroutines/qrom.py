@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule contains the template for QROM.
+This submodule contains the template QROM.
 """
 
 from collections.abc import Sequence
-
 from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.math import ceil_log2
@@ -24,161 +23,180 @@ from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 
-class QROM(Operator2):
-    r"""Applies the QROM operator.
+def preprocess_qrom_inputs(bitstrings, control_wires, target_wires, work_wires):
+    """Pre-process and validate the inputs to :class:`~.QROM` or :class:`~.QROMLoad` (excluding
+    ``clean`` for the latter).
+    """
+    control_wires = Wires(control_wires)
+    target_wires = Wires(target_wires)
+    work_wires = Wires(() if work_wires is None else work_wires)
 
-    This operator encodes bitstrings associated with indexes:
+    if not isinstance(bitstrings, AbstractArray):
+        if isinstance(bitstrings[0], str):
+            bitstrings = [[int(bit) for bit in bitstring] for bitstring in bitstrings]
+
+        if isinstance(bitstrings, (list, tuple)):
+            bitstrings = math.array(bitstrings, dtype=bool)
+
+        else:
+            bitstrings = bitstrings.astype(bool)
+
+    wire_args = {
+        "control_wires": control_wires,
+        "target_wires": target_wires,
+        "work_wires": work_wires,
+    }
+    validate_no_wire_overlaps(wire_args)
+
+    if 2 ** len(control_wires) < bitstrings.shape[0]:
+        raise ValueError(
+            f"Not enough control wires ({len(control_wires)}) for the desired number of "
+            f"bitstrings ({bitstrings.shape[0]}). At least {ceil_log2(bitstrings.shape[0])} "
+            "control wires are required."
+        )
+
+    if bitstrings.shape[1] != len(target_wires):
+        raise ValueError("Bitstring length must match the number of target wires.")
+
+    return bitstrings, control_wires, target_wires, work_wires
+
+
+class QROM(Operator2):
+    r"""Flip bits of a target register, depending on the index stored in a control register.
+
+    For :math:`L` classical bitstrings :math:`b_0,\dots,b_{L-1}`, ``QROM`` reads the index
+    :math:`i` from the control register and XORs :math:`b_i` onto the target register:
 
     .. math::
-        \text{QROM}|i\rangle|0\rangle = |i\rangle |b_i\rangle,
 
-    where :math:`b_i` is the bitstring associated with index :math:`i`.
+        \text{QROM}|i\rangle|t\rangle = \begin{cases}
+            |i\rangle|t\oplus b_i\rangle & \text{if } i < L,\\
+            |i\rangle|t\rangle & \text{otherwise.}
+        \end{cases}
+
+    The target register can be in any state, including superpositions. ``QROM`` is
+    its own inverse, so applying it a second time uncomputes the data again.
+
+    If you know that the target register starts out in :math:`|0\rangle`, use :class:`~.QROMLoad`
+    instead. Given enough work wires, it switches to a cheaper decomposition, which ``QROM``
+    cannot do. The same goes for uncomputation: if the target is known to end up in
+    :math:`|0\rangle`, use the adjoint of :class:`~.QROMLoad`. If, in addition, you can afford to
+    leave garbage in the work wires until unloading, use :class:`~.SelectSwap`.
+
+    .. seealso:: :class:`~.QROMLoad`, :class:`~.SelectSwap`, :class:`~.BBQRAM`,
+        :class:`~.QROMStatePreparation`
 
     Args:
-        bitstrings (TensorLike): the data to be encoded
-        control_wires (WiresLike):
-            The register that stores the index for the entry of the classical data we want to
-            read.
-        target_wires (Sequence[int]): the wires where the bitstring is loaded
-        work_wires (Sequence[int]): the auxiliary wires used for the computation
-        clean (bool): if True, the work wires are not altered by operator, default is ``True``
-
-    .. seealso:: :class:`~.BBQRAM`, :class:`~.QROMStatePreparation`
+        bitstrings (TensorLike | Sequence[str]): the :math:`L` bitstrings, either as a 2D array of
+            bits or as a sequence of strings like ``"0110"``. ``bitstrings[i]`` is XORed onto the
+            target register if the control register is in the state :math:`|i\rangle`.
+        control_wires (WiresLike): the control register holding the index :math:`i`, most
+            significant bit first. Requires at least :math:`\lceil\log_2 L\rceil` wires.
+        target_wires (WiresLike): the target register, with one wire per bit of the bitstrings.
+        work_wires (WiresLike): auxiliary wires, which need to start in :math:`|0\rangle` and are
+            returned to it. Up to ``len(control_wires) - 1`` work wires make the decomposition
+            cheaper; more are not used.
 
     .. note::
-        QRAM and QROM, though similar, have different applications and purposes. QRAM is intended
-        for read-and-write capabilities, where the stored data can be loaded and changed. QROM is
-        designed to only load stored data into a quantum register.
+
+        QROM and QRAM sound alike, but QRAM is about reading *and* writing data stored in a
+        quantum memory, whereas QROM only reads classical data that is hardcoded into the circuit.
 
     **Example**
 
-    In this example, the QROM operator is applied to encode the third bitstring, associated with index 2, in the target wires.
+    Let us take four 3-bit strings, store the index :math:`i=2` in the control register, and
+    prepare the target register in some basis state :math:`|t\rangle=|101\rangle`:
 
     .. code-block:: python
 
-        # a list of bitstrings is defined
-        bitstrings = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
+        bitstrings = ["010", "111", "110", "000"]
 
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev, shots=1)
+        @qp.qnode(qp.device("default.qubit"), shots=1)
         def circuit():
-
-            # the third index is encoded in the control wires [0, 1]
-            qp.BasisState([1, 0], wires = [0,1])
-
-            qp.QROM(bitstrings = bitstrings,
-                    control_wires = [0,1],
-                    target_wires = [2,3,4],
-                    work_wires = [5,6,7])
-
-            return qp.sample(wires = [2,3,4])
+            qp.BasisState([1, 0], wires=[0, 1])
+            qp.BasisState([1, 0, 1], wires=[2, 3, 4])
+            qp.QROM(bitstrings, control_wires=[0, 1], target_wires=[2, 3, 4], work_wires=[5])
+            return qp.sample(wires=[2, 3, 4])
 
     >>> print(circuit())
-    [[1 1 0]]
+    [[0 1 1]]
+
+    This is the prepared target register state XORed with the :math:`i=2` bitstring,
+    :math:`101\oplus 110=011`, as expected.
+
+    Since indices :math:`i\geq L` leave the target untouched, a ``QROM`` controlled on
+    :math:`|0\rangle` is just a ``QROM`` with an additional control wire in front:
+
+    >>> bitstrings = ["01", "11", "10"]
+    >>> op = qp.QROM(bitstrings, control_wires=[0, 1, 2], target_wires=[3, 4], work_wires=[])
+    >>> base = qp.QROM(bitstrings, control_wires=[1, 2], target_wires=[3, 4], work_wires=[])
+    >>> ctrl_op = qp.ctrl(base, control=0, control_values=0)
+    >>> np.allclose(qp.matrix(op), qp.matrix(ctrl_op, wire_order=op.wires))
+    True
 
     .. details::
         :title: Available decompositions
 
         .. decomposition-table:: qp.QROM
             :stacked:
-            :symbols: :math:`K` bitstrings of length :math:`b`, :math:`c \geq 2` control wires,
-                :math:`w` work wires and ``clean=True``
-            :example: :math:`K=4`, :math:`b=2`, :math:`c=2`, :math:`w=2`, bitstrings
-                ``[[0, 0], [0, 1], [1, 0], [1, 1]]``
-
-            .. decomposition-rule:: select_swap
-                :image: /_static/decomposition_thumbnails/qrom_select_swap.svg
-                :requires: :math:`w \geq c - 1` work wires and :math:`\lambda \geq 2`
-                :where: :math:`\lambda` is the number of bitstrings loaded in parallel: the largest
-                    power of 2 with :math:`\lambda \leq K`, :math:`b(\lambda - 1) \leq w` and
-                    :math:`w - b(\lambda - 1) \geq c - \log_2 \lambda - 1`. The nested
-                    :class:`~.QROM` loads :math:`\lceil K/\lambda \rceil` bitstrings of length
-                    :math:`\lambda b`
-
-                :class:`~.QROM` | :math:`2` | 2
-                :class:`~.Hadamard` | :math:`2b` | 4
-                :class:`~.CSWAP` | :math:`4b(\lambda - 1)` | 8
+            :symbols: :math:`L > 2` bitstrings of length :math:`n`, :math:`c` control wires and
+                :math:`w` work wires
+            :example: :math:`L=8`, :math:`n=2`, :math:`c=3`, :math:`w=2`
 
             .. decomposition-rule:: unary_iteration
                 :image: /_static/decomposition_thumbnails/qrom_unary_iteration.svg
-                :where: :math:`t = \min(c, w + 1)` control wires span the unary iteration tree and
-                    the other :math:`e = c - t` are added as controls to each load,
-                    :math:`B = \lceil K / 2^e \rceil`,
-                    :math:`N = t + B - 2 - \mathrm{wt}(B-1) - [B > 2^{t-1}]`, with
-                    :math:`\mathrm{wt}` the number of ones in the binary representation, and
-                    :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise. With no work
-                    wires (:math:`w = 0`), each bitstring is instead loaded by a :class:`~.MultiX`
-                    with :math:`c` controls
+                :lightbox:
+                :where: the iteration tree spans :math:`c' = \min(c, w + 1)` control wires and the
+                    other :math:`e = c - c'` control wires control each load, so that the tree
+                    iterates over :math:`B = \lceil L / 2^e \rceil` blocks of bitstrings,
+                    :math:`N = c' + B - 2 - \mathrm{wt}(B - 1) - [B > 2^{c' - 1}]`,
+                    :math:`\mathrm{wt}(k)` is the number of ones in the binary representation of
+                    :math:`k`, and :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
 
-                :class:`~.TemporaryAND` | :math:`N` | 1
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`N` | 1
-                :class:`~.CNOT` | :math:`B - 1 + [B > 2^{t-1}]` | 4
-                :class:`~.X` | :math:`2[B > 2^{t-2}]` | 2
-                :class:`~.MultiX` with :math:`e + 1` controls | :math:`K` | 4
+                :class:`~.TemporaryAND` | :math:`N` if :math:`w \geq 1` | 5
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`N` if :math:`w \geq 1` | 5
+                :class:`~.CNOT` | :math:`B - 1 + [B > 2^{c' - 1}]` if :math:`w \geq 1` | 8
+                :class:`~.PauliX` | :math:`2[B > 2^{c' - 2}]` if :math:`w \geq 1` | 2
+                :class:`~.MultiX` with :math:`e + 1` controls | :math:`L` | 8
 
             .. decomposition-rule:: measurement
-                :image: /_static/decomposition_thumbnails/qrom_measurement.svg
-                :requires: :math:`w \geq c - 1` work wires and compilation with :func:`~.qjit`
-                :where: :math:`L = 2^c` (the data is padded to :math:`L` entries, assuming
-                    :math:`c = \lceil \log_2 K \rceil`) and :math:`A = L - 3`. Gates marked as
-                    conditional are applied depending on mid-circuit measurement outcomes,
-                    and the number of :class:`~.CNOT` gates depends on the bitstrings
+                :image: /_static/decomposition_thumbnails/qrom_measurement_based.svg
+                :lightbox:
+                :requires: :math:`w \geq c - 1` work wires
+                :where: :math:`K = 2^{\lceil \log_2 L \rceil}`, :math:`e = c - \lceil \log_2 L \rceil`
+                    extra control wires, :math:`A = K - 3 + 2[e > 0]` temporary ANDs that are
+                    uncomputed with measurements, and :math:`[\cdot]` is 1 if the condition holds
+                    and 0 otherwise. Each X-type measurement acts on a work wire and on the target
+                    wires flipped by the XOR of two bitstrings, so its width depends on the data
 
-                :class:`~.MultiX` | :math:`1 + A` (:math:`A` conditional) | 2
-                :class:`~.TemporaryAND` | :math:`A` | 1
-                :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`1` | 1
-                :class:`~.CNOT` | at most :math:`\max(3, L/2 - 1) + 2b` | 5
-                :func:`PauliMeasure <.pauli_measure>` (:math:`X`-type, :math:`\leq b + 1` wires) | :math:`A` | 1
-                :func:`PauliMeasure <.pauli_measure>` (:math:`Z`, 1 wire) | :math:`A` | 1
-                :class:`~.CZ` (conditional) | :math:`A` | 1
-                :class:`~.Z` (conditional) | :math:`A` | 1
-                :class:`~.X` (conditional) | :math:`A` | 1
+                :class:`~.TemporaryAND` | :math:`A + \max(e - 1, 0)` | 5
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`\max(e - 1, 0)` | 0
+                :func:`PauliMeasure("X...X") <.pauli_measure>` | :math:`A` | 5
+                :func:`PauliMeasure("Z") <.pauli_measure>` | :math:`A` | 5
+                :class:`~.CZ` (conditional) | :math:`A` | 5
+                :class:`~.PauliZ` (conditional) | :math:`A` | 5
+                :class:`~.PauliX` (conditional) | :math:`A` | 5
+                :class:`~.MultiX` (conditional) | :math:`A` | 5
+                :class:`~.MultiX` | :math:`[e = 0]` | 1
+                :class:`~.MultiX` with 1 control | :math:`1 + [e = 0]` | 2
+                :class:`~.MultiControlledX` with 1 control | :math:`[e = 0]` | 1
+                :class:`~.CNOT` | :math:`3 + \max(K/2 - 4, 0)` if :math:`e = 0`, :math:`K/2 - 1` if :math:`e > 0` | 3
+                :class:`~.PauliX` | :math:`[e = 1]` | 0
+                :class:`Adjoint(PauliX) <.PauliX>` | :math:`[e = 1]` | 0
 
-    .. details::
-        :title: Usage Details
+            .. decomposition-rule:: measurement
+                :image: /_static/decomposition_thumbnails/qrom_measurement_based.svg
+                :lightbox:
+                :region: adjoint
+                :requires: :math:`w \geq c - 1` work wires
+                :where: :class:`~.QROM` is self-adjoint, so this is the same rule as above
 
-        This template takes as input three different sets of wires. The first one is ``control_wires`` which is used
-        to encode the desired index. Therefore, if we have :math:`m` bitstrings, we need
-        at least :math:`\lceil \log_2(m)\rceil` control wires.
-
-        The second set of wires is ``target_wires`` which stores the bitstrings.
-        For instance, if the bitstring is ``[0, 1, 1, 0]``, we will need four target wires. Internally,
-        the bitstrings are encoded using the :class:`~.MultiX` template.
-
-
-        The ``work_wires`` are auxiliary qubits used to reduce the gate complexity of the
-        operator. These wires are dynamically partitioned into two sets: one for the
-        :class:`~.Select` block and another to facilitate parallel data loading via a
-        `SWAP network <https://pennylane.ai/compilation/swap-network>`__.
-
-        The template determines the depth, :math:`\lambda` (a power of 2),
-        based on the available ``work_wires``. Let :math:`b` be the length of the bitstrings.
-        The number of wires allocated to the SWAP network is :math:`k_{swap} = b \cdot (\lambda - 1)`.
-        The remaining wires, :math:`k_{select}`, are assigned to the :class:`~.Select` block.
-
-        To ensure the decomposition is valid, the template guarantees that
-        :math:`k_{select} \geq c - \log_2(\lambda) - 1`, where :math:`c` is the number of
-        control wires, updating the depth if needed.
-
-        The QROM template has two variants. The first one (``clean = False``) is based on [`arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__] that alternates the state in the ``work_wires``.
-        The second one (``clean = True``), based on [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__], solves that issue by
-        returning ``work_wires`` to their initial state. This technique can be applied when the ``work_wires`` are not
-        initialized to zero.
-
-        .. note::
-
-            More ``control_wires`` than the minimum :math:`\lceil \log_2(m) \rceil` may be
-            provided. The extra wires are treated as the most-significant address bits: the data
-            is loaded only when they are all in :math:`|0\rangle`, and the operation acts as the
-            identity otherwise. This turns ``QROM`` into a *controlled* load gated by those extra
-            wires.
+                Gates of ``measurement`` above | same counts
 
     """
 
     dynamic_argnames = ("bitstrings",)
     wire_argnames = ("control_wires", "target_wires", "work_wires")
-    compilable_argnames = ("clean",)
 
     arg_specs = {
         "bitstrings": Bool[-1, -1],
@@ -193,41 +211,9 @@ class QROM(Operator2):
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
-        clean=True,
     ):
-
-        control_wires = Wires(control_wires)
-        target_wires = Wires(target_wires)
-        work_wires = Wires(() if work_wires is None else work_wires)
-
-        if not isinstance(bitstrings, AbstractArray):
-            if isinstance(bitstrings[0], str):
-                bitstrings = [[int(bit) for bit in bitstring] for bitstring in bitstrings]
-
-            if isinstance(bitstrings, (list, tuple)):
-                bitstrings = math.array(bitstrings, dtype=bool)
-
-            else:
-                bitstrings = bitstrings.astype(bool)
-
-        wire_args = {
-            "control_wires": control_wires,
-            "target_wires": target_wires,
-            "work_wires": work_wires,
-        }
-        validate_no_wire_overlaps(wire_args)
-
-        if 2 ** len(control_wires) < bitstrings.shape[0]:
-            raise ValueError(
-                f"Not enough control wires ({len(control_wires)}) for the desired number of "
-                f"bitstrings ({bitstrings.shape[0]}). At least {ceil_log2(bitstrings.shape[0])} "
-                "control wires are required."
-            )
-
-        if bitstrings.shape[1] != len(target_wires):
-            raise ValueError("Bitstring length must match the number of target wires.")
-
-        super().__init__(bitstrings, control_wires, target_wires, work_wires, clean)
+        args = (bitstrings, control_wires, target_wires, work_wires)
+        super().__init__(*preprocess_qrom_inputs(*args))
 
     @property
     def wires(self):

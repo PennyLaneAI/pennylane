@@ -29,7 +29,7 @@ from pennylane.templates.subroutines.arithmetic.left_classical_comparator import
     LeftClassicalComparator,
 )
 from pennylane.templates.subroutines.arithmetic.left_quantum_comparator import LeftQuantumComparator
-from pennylane.templates.subroutines.qrom import QROM
+from pennylane.templates.subroutines.qrom_load import QROMLoad
 from pennylane.typing import Wire
 
 
@@ -199,12 +199,11 @@ def _alias_sampling_standard_resources(probs, mu, target_wires, temp_wires, work
     n_target = len(target_wires)
     n_work = len(work_wires)
     data = _qrom_data(probs, mu, logL)
-    qrom = QROM(
+    qrom = QROMLoad(
         data,
         control_wires=Wire[n_target],
         target_wires=Wire[logL + mu],
         work_wires=Wire[max(n_work - 1, 0)],
-        clean=True,
     )
     lqc = LeftQuantumComparator(Wire[mu], Wire[mu], Wire[1], Wire[max(mu - 1, 0)], comparator="<=")
     return {
@@ -226,12 +225,11 @@ def alias_sampling_standard(probs, mu, target_wires, temp_wires, work_wires, **_
 
     UniformPrep(L, target_wires, work_wires)
     _apply_hadamards(sigma_wires)
-    QROM(
+    QROMLoad(
         data,
         control_wires=list(target_wires),
         target_wires=list(alt_wires) + list(keep_wires),
         work_wires=work_wires[1:],
-        clean=True,
     )
     LeftQuantumComparator(keep_wires, sigma_wires, flag, cmp_work, comparator="<=")
 

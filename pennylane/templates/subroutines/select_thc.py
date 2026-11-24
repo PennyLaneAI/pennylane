@@ -116,10 +116,8 @@ def select_thc_wires(M, N, beth, num_batches=1):
     .. note::
 
         Only ``work_wires`` is a minimum; the other four are exact and must be matched.
-        Extra work wires are forwarded to the internal :class:`~.QROM`, which splits them
-        between the unary iteration of its ``Select`` and the ``SelectSwap`` space-time
-        trade-off. Which split it picks depends on ``M``, ``N`` and ``beth``, so extra
-        wires do not necessarily lower the gate count.
+        Extra work wires are forwarded to the internal :class:`~.QROM`, which only uses as
+        many as its unary iteration needs, so extra wires do not lower the gate count.
 
     .. note::
 

@@ -147,7 +147,7 @@ def alias_sampling_thc_wires(M, N, aleph):
         * ``work_wires``: the minimum auxiliary register of :class:`~.AliasSamplingTHC`.
           Most of these wires retain data and are uncomputed by
           ``qp.adjoint(AliasSamplingTHC(...))``. Additional wires are forwarded to the internal
-          :class:`~.QROM`, which uses them for a ``SelectSwap`` decomposition that lowers the
+          :class:`~.QROMLoad`, which uses them for a ``SelectSwap`` decomposition that lowers the
           T-gate count.
         * ``sign_wire``: the *index into* ``work_wires`` of the wire holding the sign bit
           of the selected coefficient.
@@ -277,7 +277,7 @@ class AliasSamplingTHC(Operator2):
             number is
             :math:`n_d + 2n + 2\aleph + 4 + \max(\aleph, n_d-2)`, computed as ``"work_wires"``
             entry in :func:`~.alias_sampling_thc_wires`. Excess wires are forwarded to
-            the internal :class:`~.QROM`; every work wire must be initialized
+            the internal :class:`~.QROMLoad`; every work wire must be initialized
             in :math:`\lvert 0\rangle`.
         aleph (int): the number of bits used to encode the keep-probabilities
 
@@ -322,11 +322,11 @@ class AliasSamplingTHC(Operator2):
 
                 :class:`~.OutSquare` | :math:`1` | 1
                 :class:`~.SemiAdder` | :math:`2` | 2
-                :class:`~.QROM` | :math:`1` | 1
+                :class:`~.QROMLoad` | :math:`1` | 1
                 :class:`~.Hadamard` | :math:`\aleph + 1` | 2
                 :class:`~.LeftQuantumComparator` | :math:`1` | 1
                 :class:`Adjoint(LeftQuantumComparator) <.LeftQuantumComparator>` | :math:`1` | 1
-                :class:`~.CSWAP` | :math:`3n + 2` | 5
+                :class:`~.SWAP` with 1 control | :math:`3n + 2` | 5
                 :class:`~.TemporaryAND` | :math:`1` | 1
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`1` | 1
     """

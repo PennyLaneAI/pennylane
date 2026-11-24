@@ -156,14 +156,19 @@ if TYPE_CHECKING:
         _basis_rotation_real_resources,
     )
     from .templates.subroutines.qrom import (
-        _calculate_select_swap_sizes,
         _count_tempAND_in_measurement_qrom,
         qrom_measurement,
         _qrom_measurement_condition,
         _qrom_measurement_resources,
-        qrom_select_swap,
         qrom_unary_iteration,
     )
+    from .templates.subroutines.qrom_load import (
+        _calculate_select_swap_sizes,
+        adjoint_qrom_load_measurement,
+        qrom_load_select_swap,
+        qrom_load_to_qrom,
+    )
+    from .templates.subroutines.select_swap import adjoint_select_swap_measurement, select_swap
     from .templates.subroutines.qubitization_thc import _THCPrepare
     from .templates.subroutines.select import (
         _partial_select,
@@ -314,8 +319,12 @@ __all__ = [
     "qrom_measurement",
     "_qrom_measurement_condition",
     "_qrom_measurement_resources",
-    "qrom_select_swap",
     "qrom_unary_iteration",
+    "adjoint_qrom_load_measurement",
+    "qrom_load_select_swap",
+    "qrom_load_to_qrom",
+    "adjoint_select_swap_measurement",
+    "select_swap",
     "_select_half",
     "select_multi_control_work_wire",
     "_select_pauli_rot_phase_gradient",
@@ -397,6 +406,8 @@ _BUILTIN_MODULES = (
     "pennylane.decomposition_rules.templates.subroutines.arithmetic.semi_adder",
     "pennylane.decomposition_rules.templates.subroutines.multix",
     "pennylane.decomposition_rules.templates.subroutines.qrom",
+    "pennylane.decomposition_rules.templates.subroutines.qrom_load",
+    "pennylane.decomposition_rules.templates.subroutines.select_swap",
     "pennylane.decomposition_rules.templates.subroutines.arithmetic.incrementer",
     "pennylane.decomposition_rules.templates.subroutines.arithmetic.out_multiplier",
     "pennylane.decomposition_rules.templates.subroutines.arithmetic.signed_out_multiplier",

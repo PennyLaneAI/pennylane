@@ -17,7 +17,6 @@ Tests for the QROM template.
 
 import math
 from collections import Counter
-from functools import partial
 
 import hint_helpers
 import jax
@@ -28,18 +27,18 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.capture.primitives import for_loop_prim
 from pennylane.core.operator import abstractify
-from pennylane.decomposition_rules import (
-    _calculate_select_swap_sizes,
-    _count_tempAND_in_measurement_qrom,
-    _qrom_measurement_condition,
-    _qrom_measurement_resources,
-    qrom_measurement,
-    qrom_select_swap,
-    qrom_unary_iteration,
-)
-from pennylane.decomposition_rules.templates.subroutines.qrom import _measurement_qrom_inner
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.templates.subroutines.arithmetic import TemporaryAND
+from pennylane.decomposition_rules import (
+    qrom_measurement,
+    qrom_unary_iteration,
+)
+from pennylane.decomposition_rules.templates.subroutines.qrom import (
+    _count_tempAND_in_measurement_qrom,
+    _measurement_qrom_inner,
+    _qrom_measurement_condition,
+    _qrom_measurement_resources,
+)
 from pennylane.testing import assert_decomposable, extract_all_primitives
 from pennylane.typing import Bool, Wire
 
@@ -79,7 +78,7 @@ class TestQROM:
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
-        ("bitstrings", "target_wires", "control_wires", "work_wires", "clean"),
+        ("bitstrings", "target_wires", "control_wires", "work_wires"),
         [
             (
                 np.array(
@@ -93,42 +92,24 @@ class TestQROM:
                 np.array([0, 1, 2]),
                 np.array([3, 4]),
                 None,
-                False,
-            ),
-            (
-                np.array(
-                    [
-                        [1, 1, 1],
-                        [1, 0, 1],
-                        [1, 0, 0],
-                        [1, 1, 0],
-                    ]
-                ),
-                np.array([0, 1, 2]),
-                np.array([3, 4]),
-                None,
-                True,
             ),
             (
                 [[1, 1], [0, 1], [0, 0], [1, 0]],
                 [0, 1],
                 [2, 3],
                 [4, 5],
-                True,
             ),
             (
                 [[1, 1], [0, 1], [0, 0], [1, 0]],
                 [0, 1],
                 [2, 3],
                 [4, 5, 6, 7, 8, 9],
-                True,
             ),
             (
                 np.array([[0, 1], [0, 1], [0, 0], [0, 0]]),
                 np.array(["a", "b"]),
                 np.array([2, 3]),
                 np.array([4, 5, 6]),
-                False,
             ),
             (
                 np.array(
@@ -142,7 +123,6 @@ class TestQROM:
                 np.array([0, 1, "b"]),
                 np.array([2, 3]),
                 None,
-                False,
             ),
             (
                 np.array(
@@ -156,7 +136,6 @@ class TestQROM:
                 np.array([0, 1, "b", "d"]),
                 np.array([2, 3]),
                 np.array(["a", 5, 6, 7]),
-                True,
             ),
             # Single bitstring with multiple controls and work wires (num_blocks=1 unary path).
             (
@@ -164,25 +143,22 @@ class TestQROM:
                 [0, 1],
                 [2, 3],
                 [4],
-                True,
             ),
             (
                 np.array([[1, 0, 1]]),
                 np.array([0, 1, 2]),
                 np.array([3, 4, 5]),
                 np.array([6]),
-                True,
             ),
             (
                 [[0, 1]],
                 [0, 1],
                 [2, 3, 4],
                 [5, 6],
-                False,
             ),
         ],
     )
-    def test_operation_result(self, bitstrings, target_wires, control_wires, work_wires, clean):
+    def test_operation_result(self, bitstrings, target_wires, control_wires, work_wires):
         """Test the correctness of the QROM template output."""
         dev = qp.device("default.qubit")
 
@@ -198,13 +174,34 @@ class TestQROM:
         @qp.qnode(dev)
         def circuit(j):
             qp.BasisEmbedding(qp.math.int_to_binary(j, len(control_wires)), wires=control_wires)
-            qp.QROM(bitstrings, control_wires, target_wires, work_wires, clean)
+            qp.QROM(bitstrings, control_wires, target_wires, work_wires)
             return qp.sample(wires=target_wires)
 
         num_bitstrings = len(bitstrings)
         for j in range(2 ** len(control_wires)):
             expected = bitstrings[j] if j < num_bitstrings else [0] * len(target_wires)
             assert np.allclose(circuit(j), [int(bit) for bit in expected])
+
+    @pytest.mark.parametrize("work_wires", [[], [6, 7]])
+    def test_operation_result_nonzero_target(self, work_wires):
+        """Test that QROM XORs the bitstrings onto a non-zero target state."""
+        bitstrings = [[0, 1, 1], [1, 1, 0], [1, 0, 0], [0, 0, 1]]
+        control_wires = [0, 1]
+        target_wires = [2, 3, 4]
+        initial_target = [1, 0, 1]
+        dev = qp.device("default.qubit")
+
+        @qp.set_shots(1)
+        @qp.qnode(dev)
+        def circuit(j):
+            qp.BasisEmbedding(qp.math.int_to_binary(j, len(control_wires)), wires=control_wires)
+            qp.BasisEmbedding(initial_target, wires=target_wires)
+            qp.QROM(bitstrings, control_wires, target_wires, work_wires)
+            return qp.sample(wires=target_wires)
+
+        for j, bitstring in enumerate(bitstrings):
+            expected = np.bitwise_xor(bitstring, initial_target)
+            assert np.allclose(circuit(j), expected)
 
     @pytest.mark.parametrize(
         ("bitstrings", "target_wires", "control_wires", "work_wires"),
@@ -246,7 +243,7 @@ class TestQROM:
         ],
     )
     def test_work_wires_output(self, bitstrings, target_wires, control_wires, work_wires):
-        """Tests that the ``clean = True`` version don't modify the initial state in work_wires."""
+        """Tests that QROM does not modify the initial state in work_wires."""
         dev = qp.device("default.qubit")
 
         @qp.set_shots(1)
@@ -268,86 +265,32 @@ class TestQROM:
 
         assert np.isclose(circuit()[0], 1.0)
 
-    @pytest.mark.parametrize("work_wires", [[3, 4, 5, 6], [3, 4, 5, 6, 7]])
-    def test_clean_with_excess_select_work_wires(self, work_wires):
-        """Test that the ``clean=True`` Select-SWAP decomposition is correct when the nested Select
-        QROM would have enough work wires to use a Select-SWAP decomposition itself."""
-        bitstrings = [[1], [1], [0]]
-        control_wires = [0, 1]
-        target_wires = [2]
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev)
-        def circuit(j):
-            qp.BasisEmbedding(qp.math.int_to_binary(j, len(control_wires)), wires=control_wires)
-            qp.QROM(bitstrings, control_wires, target_wires, work_wires, clean=True)
-            return qp.probs(wires=target_wires), qp.probs(wires=work_wires)
-
-        for j, bitstring in enumerate(bitstrings):
-            target_probs, work_probs = circuit(j)
-            assert np.isclose(target_probs[bitstring[0]], 1.0)
-            assert np.isclose(work_probs[0], 1.0)
-
-    def test_decomposition(self):
-        """Test that compute_decomposition and decomposition work as expected."""
-        qrom_decomposition = qp.QROM(
-            [[1], [0], [0], [1]],
-            control_wires=[0, 1],
-            target_wires=[2],
-            work_wires=[3],
-            clean=True,
-        ).decomposition()
-
-        expected_gates = [
-            qp.Hadamard(wires=[2]),
-            qp.ctrl(qp.SWAP([2, 3]), control=1, work_wire_type="zeroed"),
-            qp.QROM(
-                [[1, 0], [0, 1]], control_wires=[0], target_wires=[2, 3], work_wires=[], clean=False
-            ),
-            qp.ctrl(qp.SWAP([2, 3]), control=1, work_wire_type="zeroed"),
-            qp.Hadamard(wires=[2]),
-            qp.ctrl(qp.SWAP([2, 3]), control=1, work_wire_type="zeroed"),
-            qp.QROM(
-                [[1, 0], [0, 1]], control_wires=[0], target_wires=[2, 3], work_wires=[], clean=False
-            ),
-            qp.ctrl(qp.SWAP([2, 3]), control=1, work_wire_type="zeroed"),
-        ]
-
-        for op1, op2 in zip(qrom_decomposition, expected_gates):
-            qp.assert_equal(op1, op2)
-
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
-        ("num_bitstrings", "control_wires", "target_wires", "work_wires", "clean"),
+        ("num_bitstrings", "control_wires", "target_wires", "work_wires"),
         [
-            (1, [], [0], [1], True),
-            (1, [0], [1], [], True),
-            (1, [0], [1], [], False),
-            (2, [0], [1], [], True),
-            (2, [0], [1], [], False),
-            (4, [2, 3], [0, 1], [4, 5, 6, 7, 8, 9], True),
-            (3, [0, 1], [2], [3], True),
-            (4, [0, 1], [2], [], False),
-            (3, [0, 1], [2], [3, 4], False),
-            (8, [0, 1, 2], [3, 4], [5, 6, 7, 8, 9, 10, 11], False),
-            (8, [0, 1, 2], [3, 4], [5], True),
-            (8, [0, 1, 2], [3, 4], [5, 6], True),
-            (8, [0, 1, 2], [3, 4], [5, 6], False),
-            (7, [0, 1, 2], [3, 4], [5, 6, 7, 8, 9, 10, 11], False),
-            (5, [0, 1, 2], [3, 4], [5], True),
-            (2, [0, 1, 2], [3, 4], [5, 6], True),
-            (6, [0, 1, 2], [3, 4], [5, 6], False),
-            (1, [0, 1], [2, 3], [4], True),
-            (1, [0, 1, 2], [3, 4, 5], [6], True),
-            (1, [0, 1, 2, 6], [3, 4, 5], [7, 8, 9], True),
-            (1, [0, 1, 2, 6], [3, 4, 5], [7, 8, 9], False),
-            (11, [0, 1, 2, 3], [4, 5], [6, 7], True),
-            (5, [0, 1, 2, 3], [4], [], False),
+            (1, [], [0], [1]),
+            (1, [0], [1], []),
+            (2, [0], [1], []),
+            (4, [2, 3], [0, 1], [4, 5, 6, 7, 8, 9]),
+            (3, [0, 1], [2], [3]),
+            (4, [0, 1], [2], []),
+            (3, [0, 1], [2], [3, 4]),
+            (8, [0, 1, 2], [3, 4], [5, 6, 7, 8, 9, 10, 11]),
+            (8, [0, 1, 2], [3, 4], [5]),
+            (8, [0, 1, 2], [3, 4], [5, 6]),
+            (7, [0, 1, 2], [3, 4], [5, 6, 7, 8, 9, 10, 11]),
+            (5, [0, 1, 2], [3, 4], [5]),
+            (2, [0, 1, 2], [3, 4], [5, 6]),
+            (6, [0, 1, 2], [3, 4], [5, 6]),
+            (1, [0, 1], [2, 3], [4]),
+            (1, [0, 1, 2], [3, 4, 5], [6]),
+            (1, [0, 1, 2, 6], [3, 4, 5], [7, 8, 9]),
+            (11, [0, 1, 2, 3], [4, 5], [6, 7]),
+            (5, [0, 1, 2, 3], [4], []),
         ],
     )
-    def test_decomposition_new(  # pylint: disable=too-many-arguments
-        self, num_bitstrings, control_wires, target_wires, work_wires, clean, seed
-    ):
+    def test_decomposition_new(self, num_bitstrings, control_wires, target_wires, work_wires, seed):
         """Tests the decomposition rule implemented with the new system."""
         rng = np.random.default_rng(seed)
         bitstrings = rng.integers(0, 2, size=(num_bitstrings, len(target_wires)))
@@ -356,7 +299,6 @@ class TestQROM:
             control_wires=control_wires,
             target_wires=target_wires,
             work_wires=work_wires,
-            clean=clean,
         )
         assert_decomposable(op)
 
@@ -368,7 +310,6 @@ class TestQROM:
             target_wires=[0, 1],
             work_wires=None,
             control_wires=[],
-            clean=False,
         ).decomposition()
 
         assert len(ops) == 1
@@ -396,34 +337,6 @@ class TestQROM:
 
     @pytest.mark.capture
     @pytest.mark.parametrize(
-        ("wire_lens", "clean"),
-        [
-            ({"control_wires": 1, "target_wires": 1, "work_wires": 0}, False),
-            ({"control_wires": 2, "target_wires": 1, "work_wires": 1}, True),
-        ],
-    )
-    def test_decomposition_rule_capture_dynamic_wires(self, wire_lens, clean):
-        """Test that the QROM decomposition rule can be captured with dynamic wires."""
-        registers = qp.registers(wire_lens)
-        kwargs = {
-            "bitstrings": qp.math.zeros(
-                (2 ** wire_lens["control_wires"], wire_lens["target_wires"]),
-                like="jax",
-                dtype=int,
-            ),
-            **{
-                name: qp.math.array(wires, like="jax", dtype=int)
-                for name, wires in registers.items()
-            },
-        }
-
-        # ``clean`` is compilable and is therefore static when Catalyst captures this rule.
-        # pylint: disable-next=protected-access
-        rule = qp.capture.subroutine(partial(qrom_select_swap._impl, clean=clean))
-        _ = jax.make_jaxpr(rule)(**kwargs)
-
-    @pytest.mark.capture
-    @pytest.mark.parametrize(
         ("num_bitstrings", "num_controls"),
         [(3, 2), (4, 2), (5, 3), (6, 3), (8, 3), (11, 4), (16, 4), (21, 5)],
     )
@@ -437,9 +350,7 @@ class TestQROM:
         work_wires = list(range(num_controls + 2, 2 * num_controls + 1))
 
         plxpr = jax.make_jaxpr(
-            lambda: qrom_unary_iteration(
-                bitstrings, control_wires, target_wires, work_wires, clean=True
-            )
+            lambda: qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires)
         )()
         ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
         num_left_elbows = sum(isinstance(op, TemporaryAND) for op in ops)
@@ -492,9 +403,7 @@ class TestQROM:
         work_wires = list(range(num_controls + 2, 2 * num_controls + 1))
 
         plxpr = jax.make_jaxpr(
-            lambda: qrom_unary_iteration(
-                bitstrings, control_wires, target_wires, work_wires, clean=True
-            )
+            lambda: qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires)
         )()
         ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
         num_x = sum(isinstance(op, qp.X) for op in ops)
@@ -570,103 +479,6 @@ def test_wrong_wires_error(bitstrings, control_wires, target_wires, msg_match):
     """Test that error is raised if more ops are requested than can fit in control wires"""
     with pytest.raises(ValueError, match=msg_match):
         qp.QROM(bitstrings, control_wires, target_wires, work_wires=None)
-
-
-def test_none_work_wires_case():
-    """Test that clean version is not applied if work wires are not used"""
-
-    gates_clean = qp.QROM(
-        np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=True
-    ).decomposition()
-    gates_not_clean = qp.QROM(
-        np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=False
-    ).decomposition()
-
-    assert gates_clean == gates_not_clean
-
-
-def test_too_many_work_wires_case():
-    """Test that QROM works when more work wires are given than necessary"""
-
-    gates_few_work = qp.QROM(
-        np.array([[1], [0], [1], [1]]), [0, 1], [2], [3, 4, 5], clean=False
-    ).decomposition()
-    gates_many_work = qp.QROM(
-        np.array([[1], [0], [1], [1]]),
-        [0, 1],
-        [2],
-        [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
-        clean=False,
-    ).decomposition()
-
-    assert len(gates_few_work) == 4 == len(gates_many_work)
-    # Compare the QROM manually because the work wires are expected to differ
-    for qrom_op in [gates_few_work[0], gates_many_work[0]]:
-        assert isinstance(qrom_op, qp.QROM)
-        assert np.allclose(qrom_op.bitstrings, np.array([[1, 0, 1, 1]]))
-        assert qrom_op.control_wires == qp.wires.Wires([])
-        assert qrom_op.target_wires == qp.wires.Wires([2, 3, 4, 5])
-
-    for few, many in zip(gates_few_work[1:], gates_many_work[1:], strict=True):
-        assert few.work_wires == qp.wires.Wires([])
-        assert many.work_wires == qp.wires.Wires([16])
-        qp.assert_equal(
-            many,
-            qp.ctrl(
-                few.base,
-                few.control_wires,
-                control_values=few.control_values,
-                work_wires=[16],
-                work_wire_type=few.work_wire_type,
-            ),
-        )
-
-
-@pytest.mark.parametrize(
-    ("num_bitstrings", "n_ctrl", "n_target", "n_work", "expected"),
-    [
-        (16, 4, 1, 3, (3, 2, 1, 0, 2)),
-        (16, 4, 10, 5, (4, 5, 0, 1, 1)),
-        (7, 3, 2, 2, (3, 2, 0, 0, 1)),
-        (14, 4, 2, 10, (2, 4, 6, 1, 4)),
-        (256, 8, 2, 10, (7, 8, 2, 1, 2)),
-        (4, 2, 1, 1, (1, 0, 1, 0, 2)),
-        # Quick-return path (n_work < n_ctrl-1): We get depth 1, no swap work wires and copied
-        # control/work wires for the Select part
-        (14, 4, 2, 2, (4, 2, 0, 0, 1)),
-        (256, 8, 2, 6, (8, 6, 0, 0, 1)),
-        (4, 2, 1, 0, (2, 0, 0, 0, 1)),
-    ],
-)
-def test_calculate_select_swap_sizes(num_bitstrings, n_ctrl, n_target, n_work, expected):
-    """Test the allocation logic for Select vs Swap work wires."""
-
-    # result contains (num_control_wires_select, num_work_wires_select, num_work_wires_swap, depth)
-    output = _calculate_select_swap_sizes(
-        num_bitstrings=num_bitstrings,
-        num_control_wires=n_ctrl,
-        num_targets=n_target,
-        num_work_wires=n_work,
-    )
-    assert output == expected
-
-    # Extra validation on top of hardcoded expected values
-    (
-        num_control_wires_select,
-        num_work_wires_select,
-        num_work_wires_swap,
-        num_work_wires_cswap,
-        depth,
-    ) = output
-    assert num_work_wires_select + num_work_wires_swap == n_work  # all work wires are used
-    new_n_target = int(np.ceil(n_target / depth))
-    new_n_ctrl = qp.math.ceil_log2(new_n_target)
-    # Select has enough work wires for unary iteration if originally that was the case
-    if n_work >= n_ctrl - 1:
-        assert num_work_wires_select >= num_control_wires_select - 1
-    else:
-        assert num_work_wires_cswap == 0
-    assert num_work_wires_select >= new_n_ctrl - 1
 
 
 class TestMeasurementQROM:
@@ -794,11 +606,9 @@ class TestMeasurementQROM:
             {"control_wires": n_control, "work_wires": n_control, "target_wires": n_targets}
         )
 
-        estimate = qrom_measurement.compute_resources(
-            bitstrings=bitstrings, **wires, clean=True
-        ).gate_counts
+        estimate = qrom_measurement.compute_resources(bitstrings=bitstrings, **wires).gate_counts
         with qp.queuing.AnnotatedQueue() as q:
-            qrom_measurement(bitstrings=bitstrings, **wires, clean=True)
+            qrom_measurement(bitstrings=bitstrings, **wires)
         actual = Counter(
             abstractify(op.base if isinstance(op, qp.ops.Conditional) else op) for op in q.queue
         )
@@ -821,7 +631,10 @@ class TestMeasurementQROM:
 
     def test_condition_with_compiler(self, mocker):
         """Test the condition logic when a compiler is active."""
-        mocker.patch("pennylane.templates.subroutines.qrom.compiler.active", return_value=True)
+        mocker.patch(
+            "pennylane.decomposition_rules.templates.subroutines.qrom.compiler.active",
+            return_value=True,
+        )
 
         # Small tables (<= 2 bitstrings) are always applicable.
         assert _qrom_measurement_condition(Bool[2, 1], Wire[1], Wire[1], Wire[0]) is True
@@ -1026,7 +839,7 @@ class TestMeasurementQROM:
             qp.BasisState(
                 qp.math.int_to_binary(j, len(wires["control_wires"])), wires=wires["control_wires"]
             )
-            qrom_measurement(bitstrings=bitstrings, **wires, clean=True)
+            qrom_measurement(bitstrings=bitstrings, **wires)
             return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
 
         for j in range(L):
@@ -1077,7 +890,6 @@ class TestMeasurementQROM:
                 control_wires=control_wires,
                 target_wires=target_wires,
                 work_wires=work_wires,
-                clean=True,
             )
 
             return qp.state()
@@ -1135,7 +947,7 @@ class TestMeasurementQROM:
             qp.BasisState(
                 qp.math.int_to_binary(j, len(wires["control_wires"])), wires=wires["control_wires"]
             )
-            qrom_measurement(bitstrings=bitstrings, **wires, clean=True)
+            qrom_measurement(bitstrings=bitstrings, **wires)
             return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
 
         for j in range(L, 2**n_input):
@@ -1202,7 +1014,7 @@ class TestMeasurementQROM:
             qp.BasisState(
                 qp.math.int_to_binary(j, len(wires["control_wires"])), wires=wires["control_wires"]
             )
-            qrom_measurement(bitstrings=bitstrings, **wires, clean=True)
+            qrom_measurement(bitstrings=bitstrings, **wires)
             return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
 
         for j in range(2**n_input):

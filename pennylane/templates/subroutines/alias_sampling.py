@@ -142,9 +142,9 @@ def alias_sampling_wires(n_states, mu):
 
         The reported ``work_wires`` is the minimum required by :class:`~.AliasSampling`.
         More work_wires can be added to be forwarded to the internal
-        ``QROM``, which uses them for a ``SelectSwap`` decomposition that lowers
+        ``QROMLoad``, which uses them for a ``SelectSwap`` decomposition that lowers
         the T-gate count at the cost of the additional qubits. At exactly the
-        minimum, ``QROM`` uses its unary decomposition (more T-gates, fewer qubits).
+        minimum, ``QROMLoad`` uses unary iteration (more T-gates, fewer qubits).
         ``target_wires`` and ``temp_wires`` are exact and must be matched exactly.
     """
     if isinstance(mu, bool) or not isinstance(mu, int) or mu < 1:
@@ -204,7 +204,7 @@ class AliasSampling(Operator2):
     satisfying  :math:`|\widetilde{\rho}_\ell - w_\ell / \lambda| \le 2^{-\mu}`.
 
     The gate sequence is: ``UNIFORM_L`` on ``target_wires``, ``H^mu`` on the sigma part of
-    ``temp_wires``, a ``QROM`` load of ``alt_l``/``keep_l``, the inequality test
+    ``temp_wires``, a ``QROMLoad`` of ``alt_l``/``keep_l``, the inequality test
     ``keep_l <= sigma``, and a flag-controlled SWAP of ``target_wires`` with ``alt_l``.
 
     Use :func:`~.alias_sampling_wires` for the required register sizes.
@@ -262,7 +262,7 @@ class AliasSampling(Operator2):
 
                 :class:`~.UniformPrep` | :math:`1` | 1
                 :class:`~.Hadamard` | :math:`\mu` | 2
-                :class:`~.QROM` | :math:`1` | 1
+                :class:`~.QROMLoad` | :math:`1` | 1
                 :class:`~.LeftQuantumComparator` | :math:`1` | 1
                 :class:`~.CSWAP` | :math:`\ell` | 2
     """

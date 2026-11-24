@@ -596,14 +596,14 @@ WIRE_MAP_FOR_FERMI_SENTENCE = [
         ],
     ),
     (
-        {0: "b", 1: "a"},
+        {0: 7, 1: 6},
         [
-            qp.s_prod(-0.25j, qp.prod(qp.PauliY("b"), qp.PauliX("a"))),
-            qp.s_prod((0.25 + 0j), qp.prod(qp.PauliY("b"), qp.PauliY("a"))),
-            qp.s_prod((0.25 + 0j), qp.prod(qp.PauliX("b"), qp.PauliX("a"))),
-            qp.s_prod(0.25j, qp.prod(qp.PauliX("b"), qp.PauliY("a"))),
-            qp.s_prod((0.5 + 0j), qp.Identity("b")),
-            qp.s_prod((-0.5 + 0j), qp.PauliZ("b")),
+            qp.s_prod(-0.25j, qp.prod(qp.PauliY(7), qp.PauliX(6))),
+            qp.s_prod((0.25 + 0j), qp.prod(qp.PauliY(7), qp.PauliY(6))),
+            qp.s_prod((0.25 + 0j), qp.prod(qp.PauliX(7), qp.PauliX(6))),
+            qp.s_prod(0.25j, qp.prod(qp.PauliX(7), qp.PauliY(6))),
+            qp.s_prod((0.5 + 0j), qp.Identity(7)),
+            qp.s_prod((-0.5 + 0j), qp.PauliZ(7)),
         ],
     ),
 ]
@@ -661,12 +661,12 @@ WIRE_MAP_FOR_FERMI_WORDS = [
         ],
     ),
     (
-        {0: "b", 1: "a"},
+        {0: 7, 1: 6},
         [
-            qp.s_prod(-0.25j, qp.prod(qp.PauliY("b"), qp.PauliX("a"))),
-            qp.s_prod(-0.25 + 0j, qp.prod(qp.PauliY("b"), qp.PauliY("a"))),
-            qp.s_prod(0.25 + 0j, qp.prod(qp.PauliX("b"), qp.PauliX("a"))),
-            qp.s_prod(-0.25j, qp.prod(qp.PauliX("b"), qp.PauliY("a"))),
+            qp.s_prod(-0.25j, qp.prod(qp.PauliY(7), qp.PauliX(6))),
+            qp.s_prod(-0.25 + 0j, qp.prod(qp.PauliY(7), qp.PauliY(6))),
+            qp.s_prod(0.25 + 0j, qp.prod(qp.PauliX(7), qp.PauliX(6))),
+            qp.s_prod(-0.25j, qp.prod(qp.PauliX(7), qp.PauliY(6))),
         ],
     ),
 ]

@@ -35,7 +35,7 @@ from pennylane.templates.subroutines.arithmetic.left_quantum_comparator import L
 from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
 from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
-from pennylane.templates.subroutines.qrom import QROM
+from pennylane.templates.subroutines.qrom_load import QROMLoad
 from pennylane.typing import Wire
 from pennylane.wires import Wires
 
@@ -74,7 +74,7 @@ def _lcu_signs(M, entries, weights):
 @lru_cache(maxsize=16)
 # pylint: disable-next=too-many-arguments
 def _build_qrom_data(M, N, zeta, t_ell, num_index_wires, aleph):
-    r"""Pack the alias tables into the bitstrings consumed by :class:`~.QROM`.
+    r"""Pack the alias tables into the bitstrings consumed by :class:`~.QROMLoad`.
 
     The QROM is addressed by the contiguous two-body index
     ``s = mu + nu (nu + 1) / 2`` (matching :func:`_compute_contiguous_register`). Each
@@ -186,17 +186,16 @@ def _alias_sampling_thc_standard_resources(  # pylint: disable=too-many-argument
     # ``f`` and the QROM work pool are spelled exactly as in the decomposition below, where the
     # pool is ``work_wires[f + 2 * aleph + 3:]``. Declaring a different size hands the graph a
     # resource rep that no emitted QROM ever matches, and an op with no node in the graph
-    # silently bypasses fixed_decomps and falls back to QROM.decomposition().
+    # silently bypasses fixed_decomps and falls back to QROMLoad.decomposition().
     f = n_d + 1 + 2 * n
     n_qrom_target = 2 + 2 * n + aleph + 1
     n_qrom_work = max(n_work - (f + 2 * aleph + 3), 0)
     data = _build_qrom_data(M, N, zeta, t_ell, n, aleph)
-    qrom = QROM(
+    qrom = QROMLoad(
         data,
         control_wires=Wire[n_d - 1],
         target_wires=Wire[n_qrom_target],
         work_wires=Wire[n_qrom_work],
-        clean=True,
     )
     out_sq = OutSquare(Wire[n], Wire[n_d], Wire[n_d], output_wires_zeroed=True)
     adder_0 = SemiAdder(Wire[n], Wire[n_d], Wire[n_d - 1])
@@ -296,7 +295,7 @@ def alias_sampling_thc_standard(  # pylint: disable=too-many-arguments
     _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires)
 
     data = _build_qrom_data(M, N, zeta, t_ell, n, aleph)
-    QROM(
+    QROMLoad(
         data,
         control_wires=contiguous_register,
         target_wires=work_wires[n_d - 1 : f + aleph] + [alt_edge_flag],
