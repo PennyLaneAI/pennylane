@@ -29,35 +29,29 @@ from pennylane.transforms.decompositions.rz_layer_phase_gradient import (
 )
 from pennylane.typing import Float, Wire
 
-# Bits of the rotation angles, in units of 2π. Batches of distinct angles use one more bit.
+# Bits of the rotation angles, in units of 2π
 NUM_BITS = 2
 
 GATE_SET = {"CNOT", "PauliX", "TemporaryAND", "Adjoint(TemporaryAND)", "SemiAdder", "GlobalPhase"}
 
-# (num_angles, block_size, batch_size, num_work_wires): (num_adders, num_ands), where the RZLayer
-# provides the work wires the rule needs, and num_ands counts the ANDs on top of the adders. Each
-# of them targets a work wire: 0, 2, 2, 7 and 7 per block of 2 to 6 equal angles, and 0, 1 and 4
-# per batch of 2, 3 and 4 distinct angles. The cases cover even and odd blocks, batches with a
-# smaller last batch and with fewer angles than ``batch_size``, odd blocks with ``batch_size``,
-# which leaves a work wire of the rule spare, and the RZ rule on every wire for single rotations
-# without ``batch_size``.
+# (num_angles, block_size, num_work_wires): (num_adders, num_ands), where the RZLayer provides the
+# work wires the rule needs, and num_ands counts the ANDs on top of the adders. Each of them
+# targets a work wire: 0, 2, 2, 7 and 7 per block of 2 to 6 equal angles. The cases cover even and
+# odd blocks, and the RZ rule on every wire for single rotations.
 CASES = {
-    (2, 2, None, 0): (2, 0),
-    (2, 4, None, 2): (2, 4),
-    (1, 6, None, 7): (1, 7),
-    (5, 1, 2, 0): (3, 0),
-    (3, 1, 4, 1): (1, 1),
-    (5, 1, 4, 4): (2, 4),
-    (2, 3, 2, 1): (2, 4),
-    (1, 5, None, 7): (1, 7),
-    (3, 1, None, 0): (3, 0),
+    (2, 2, 0): (2, 0),
+    (2, 4, 2): (2, 4),
+    (1, 6, 7): (1, 7),
+    (2, 3, 2): (2, 4),
+    (1, 5, 7): (1, 7),
+    (3, 1, 0): (3, 0),
 }
 
 
-def _rule_and_op(num_angles, block_size, batch_size, num_work_wires, seed):
+def _rule_and_op(num_angles, block_size, num_work_wires, seed):
     """A rule and an RZLayer with random angles on the wires ``0, 1, ...``, followed by its work
-    wires and by the angle, phase gradient and adder work registers of the rule. The angles have
-    ``NUM_BITS + 1`` binary decimals in units of 4π, so that all branches of the rule realize them
+    wires and by the angle, phase gradient and adder work registers of the rule. The angles lie in
+    ``[0, 4π)`` and have ``NUM_BITS`` binary decimals in units of 2π, so that the rule realizes them
     exactly."""
     num_wires = num_angles * block_size
     bits = np.random.default_rng(seed).integers(0, 2, size=(num_angles, NUM_BITS + 1))
@@ -66,11 +60,11 @@ def _rule_and_op(num_angles, block_size, batch_size, num_work_wires, seed):
         wires=range(num_wires),
         work_wires=range(num_wires, num_wires + num_work_wires),
     )
-    b = NUM_BITS + (batch_size is not None)
+    b = NUM_BITS
     start = num_wires + num_work_wires
     registers = [range(start, start + b), range(start + b, start + 2 * b)]
     registers.append(range(start + 2 * b, start + 3 * b - 1))
-    rule = make_rzlayer_to_phase_gradient_decomp(*registers, batch_size=batch_size)
+    rule = make_rzlayer_to_phase_gradient_decomp(*registers)
     return rule, op, registers
 
 
@@ -98,12 +92,11 @@ def test_state(case, seed):
     assert np.allclose(circuit(), expected)
 
 
-@pytest.mark.parametrize("num_angles, block_size", [(2, 4), (5, 1)])
-def test_allocates_missing_work_wires(num_angles, block_size, seed):
+@pytest.mark.parametrize("block_size", [3, 4])
+def test_allocates_missing_work_wires(block_size, seed):
     """Test that the rule allocates the work wires that the RZLayer does not provide and realizes
-    the rotations, for equal angles and for batches of four distinct angles. On ``|+>``, ``RZ(a)``
-    gives ``<X> = cos(a)`` and ``<Y> = sin(a)``."""
-    rule, op, registers = _rule_and_op(num_angles, block_size, 4, 0, seed)
+    the rotations. On ``|+>``, ``RZ(a)`` gives ``<X> = cos(a)`` and ``<Y> = sin(a)``."""
+    rule, op, registers = _rule_and_op(2, block_size, 0, seed)
     wires, phase_grad_wires = op.arguments["wires"], registers[1]
     assert rule.get_work_wire_spec(**op.arguments).total > 0
 
@@ -125,7 +118,7 @@ def test_uses_spare_work_wires(seed):
     need, together with those of the RZLayer, and that the rule realizes the rotations without
     requesting further work wires. On ``|+>``, ``RZ(a)`` gives ``<X> = cos(a)`` and
     ``<Y> = sin(a)``."""
-    _, op, registers = _rule_and_op(2, 4, None, 1, seed)
+    _, op, registers = _rule_and_op(2, 4, 1, seed)
     wires, phase_grad_wires = op.arguments["wires"], registers[1]
     spare_wire = registers[2][-1] + 1
     rule = make_rzlayer_to_phase_gradient_decomp(*registers[:2], [*registers[2], spare_wire])
@@ -206,12 +199,11 @@ class TestRule:
 @pytest.mark.parametrize(
     "case, num_ands",
     [
-        ((2, 4, None, 2), 4 + 2),
-        ((2, 3, None, 2), 4 + 2),
-        ((5, 1, 4, 4), 4 + 2 * 2),
-        ((3, 1, None, 0), 3),
+        ((2, 4, 2), 4 + 2),
+        ((2, 3, 2), 4 + 2),
+        ((3, 1, 0), 3),
     ],
-    ids=["even_blocks", "odd_blocks", "batches", "per_wire"],
+    ids=["even_blocks", "odd_blocks", "per_wire"],
 )
 def test_qjit(case, num_ands, seed):
     """Test that, compiled with qjit, the rule realizes the rotations. The RZLayer provides all

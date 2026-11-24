@@ -11,7 +11,7 @@ New features since last release
   :math:`\lfloor \log_2 m \rfloor + 1` rotations instead of :math:`m` to each block of
   :math:`m \geq 3` wires. Phase gradient rules created with
   :func:`~.transforms.decompositions.make_rzlayer_to_phase_gradient_decomp` need a single adder
-  for each block with an even number of wires, or for each batch of ``batch_size`` distinct angles.
+  for each block of :math:`m \geq 2` wires.
   `(#10508) <https://github.com/PennyLaneAI/pennylane/pull/10508>`__
   `(#10519) <https://github.com/PennyLaneAI/pennylane/pull/10519>`__
   `(#10577) <https://github.com/PennyLaneAI/pennylane/pull/10577>`__

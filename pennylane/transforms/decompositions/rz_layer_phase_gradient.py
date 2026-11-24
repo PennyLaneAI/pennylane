@@ -167,7 +167,7 @@ def _signed_add(table, var_wires, mono_wires, sign_wires, registers):
     return qp.change_op_basis(_Monomials(var_wires, mono_wires), add)
 
 
-def _signed_add_rep(num_vars, num_bits, num_work_wires, num_sign_wires=1):
+def _signed_add_rep(num_vars, num_bits, num_work_wires, num_sign_wires):
     """Resource representation of :func:`~._signed_add` for a table over ``num_vars`` variables,
     ``num_bits`` angle wires, ``num_work_wires`` adder work wires and ``num_sign_wires`` sign
     wires."""
@@ -183,11 +183,11 @@ def _signed_add_rep(num_vars, num_bits, num_work_wires, num_sign_wires=1):
     return ChangeOpBasis2(_Monomials(Wire[num_vars], Wire[_num_monomials(num_vars)]), add)
 
 
-def _angle_ints(angles, num_bits, unit):
-    """Integers whose ``num_bits`` bits are the binary decimals of ``angles`` in units of
-    ``unit``."""
+def _angle_ints(angles, num_bits):
+    r"""Integers whose ``num_bits`` bits are the binary decimals of ``angles`` in units of
+    :math:`2\pi`."""
     powers_of_two = 2 ** qp.math.arange(num_bits - 1, -1, -1)
-    return qp.math.binary_decimals(angles, num_bits, unit=unit) @ powers_of_two
+    return qp.math.binary_decimals(angles, num_bits, unit=2 * np.pi) @ powers_of_two
 
 
 def _equal_angle_block(theta, wires, work_wires, registers):
@@ -216,7 +216,7 @@ def _equal_angle_block(theta, wires, work_wires, registers):
     num_hw_work_wires = n - n.bit_count()
     var_wires = [hw_wires[-1], *work_wires[: n.bit_length() - 1]]
     mono_wires = work_wires[num_hw_work_wires : num_hw_work_wires + _num_monomials(len(var_wires))]
-    k = _angle_ints(theta, len(registers[0]), 2 * np.pi)
+    k = _angle_ints(theta, len(registers[0]))
     weights = qp.math.arange(2 ** len(var_wires))
     table = k * weights if m % 2 else -k * (m // 2 - weights)
     signed_add = _signed_add(table, var_wires, mono_wires, sign_wires, registers)
@@ -242,56 +242,19 @@ def _equal_angle_block_rep(block_size, num_bits, num_work_wires):
     return ChangeOpBasis2(parities, ChangeOpBasis2(hamming_weight, signed_add), parities)
 
 
-def _distinct_angle_batch(thetas, wires, work_wires, registers):
-    r"""Apply :math:`R_Z(\theta_i)` to each of the ``wires`` with a single
-    :func:`~._signed_add`, with the sign wire :math:`s` = ``wires[-1]``.
-
-    With the parities :math:`y_i = x_i \oplus x_s` of the other wires, the rotations apply the
-    phase :math:`\exp(-\tfrac{i}{2} z_s (\theta_s + \sum_{i<s} \theta_i (1 - 2 y_i)))`, where
-    :math:`z_s = (-1)^{x_s}`. The parities are computed in place, and the lookup table
-    :math:`L(y) = -(k_s + \sum_{i<s} k_i (1 - 2 y_i)) \bmod 2^b` is added to the phase gradient
-    register of :math:`b` wires, where :math:`\theta_i \approx 4\pi k_i / 2^b`. Each AND of the
-    monomials of the parities targets one of the ``work_wires``.
-    """
-    sign_wire, others = wires[-1], wires[:-1]
-    k = _angle_ints(thetas, len(registers[0]), 4 * np.pi)
-    inputs = qp.math.arange(2 ** len(others))
-    signs = 1 - 2 * ((inputs[:, None] >> qp.math.arange(len(others))) & 1)
-    table = -(k[-1] + signs @ k[:-1])
-    mono_wires = work_wires[: _num_monomials(len(others))]
-    signed_add = _signed_add(table, others, mono_wires, sign_wire, registers)
-    if others:
-        parities = qp.ctrl(qp.MultiX([1] * len(others), others), control=sign_wire)
-        qp.change_op_basis(parities, signed_add, parities)
-
-
-def _distinct_angle_batch_rep(size, num_bits, num_work_wires):
-    """Resource representation of :func:`~._distinct_angle_batch` on ``size`` wires, with
-    ``num_bits`` angle wires and ``num_work_wires`` adder work wires."""
-    signed_add = _signed_add_rep(size - 1, num_bits, num_work_wires)
-    if size == 1:
-        return signed_add
-    parities = qp.ctrl(qp.MultiX(Bool[size - 1], Wire[size - 1]), control=Wire[1])
-    return ChangeOpBasis2(parities, signed_add, parities)
-
-
-def _num_and_work_wires(num_angles, block_size, batch_size):
+def _num_and_work_wires(block_size):
     """Number of work wires that the TemporaryAND gates of the phase gradient rule use on top of
     the adder."""
-    if block_size > 1:
-        n = block_size - 1 + block_size % 2
-        return n - n.bit_count() + _num_monomials(n.bit_length())
-    if batch_size is not None:
-        return _num_monomials(min(batch_size, num_angles) - 1)
-    return 0
+    if block_size == 1:
+        return 0
+    n = block_size - 1 + block_size % 2
+    return n - n.bit_count() + _num_monomials(n.bit_length())
 
 
-def make_rzlayer_to_phase_gradient_decomp(
-    angle_wires, phase_grad_wires, work_wires, batch_size=None
-):
+def make_rzlayer_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     r"""
-    Create a custom decomposition rule for :class:`~.RZLayer` operators, in which rotations by
-    equal angles or batches of rotations share one :class:`~.SemiAdder` of the
+    Create a custom decomposition rule for :class:`~.RZLayer` operators, in which the rotations by
+    an equal angle share one :class:`~.SemiAdder` of the
     `phase gradient decomposition <https://pennylane.ai/compilation/phase-gradient/b-rotations>`__.
 
     As for :func:`~.make_rz_to_phase_gradient_decomp`, the auxiliary wires of the phase gradient
@@ -310,18 +273,17 @@ def make_rzlayer_to_phase_gradient_decomp(
       this uses :math:`n - \operatorname{popcount}(n) + 2^r - r - 1` :class:`~.TemporaryAND`
       gates, with :math:`n=m` for odd and :math:`n=m-1` for even :math:`m`, and :math:`r` the
       number of bits of :math:`n`, i.e., 0, 2, 2, 7 and 7 for :math:`m = 2, \dots, 6`.
-    * **m = 1 with batch_size.** Consecutive batches of :math:`s` = ``batch_size`` rotations with
-      distinct angles use one addition, from a lookup table over the parities of the first
-      :math:`s-1` wires with the last one. On top of the adder, this uses :math:`2^{s-1} - s`
-      :class:`~.TemporaryAND` gates, i.e., 0, 1 and 4 for :math:`s = 2, 3, 4`. The last batch is
-      smaller if ``batch_size`` does not divide :math:`k`.
-    * **m = 1 without batch_size.** Each rotation uses the circuit of
-      :func:`~.make_rz_to_phase_gradient_decomp`, including its :class:`~.GlobalPhase`.
+    * **m = 1.** Each rotation uses the circuit of :func:`~.make_rz_to_phase_gradient_decomp`,
+      including its :class:`~.GlobalPhase`.
 
     Each of these :class:`~.TemporaryAND` gates targets a work wire, which is reused for every
-    block and batch. The rule takes these work wires from the ``work_wires`` that the adder does
+    block. The rule takes these work wires from the ``work_wires`` that the adder does
     not need, together with the ``work_wires`` of the :class:`~.RZLayer`. If there are too few,
     it allocates the missing ones dynamically, which excludes it from compilation with Catalyst.
+
+    Every rotation has the precision of :func:`~.make_rz_to_phase_gradient_decomp` with the same
+    registers: its angle is rounded to :math:`b` = ``len(angle_wires)`` binary decimals in units
+    of :math:`2\pi`.
 
     Parameters:
         angle_wires (Wires): wires that encode the binary representation of the rotation angles
@@ -330,10 +292,6 @@ def make_rzlayer_to_phase_gradient_decomp(
         work_wires (Wires): work wires for the :class:`~.SemiAdder` decomposition, of which at
             least ``len(angle_wires) - 1`` are required. Any further ones are used by the
             :class:`~.TemporaryAND` gates described above.
-        batch_size (int | None): Number of rotations with distinct angles that share one adder
-            if the block size is :math:`m=1`. If given, the registers hold one more wire than the
-            other rotations use, see below. Defaults to ``None``, which applies the rotations
-            individually.
 
     Returns:
         qp.decomposition.DecompositionRule: decomposition rule to be used within
@@ -427,65 +385,30 @@ def make_rzlayer_to_phase_gradient_decomp(
         :math:`v_0`, :math:`v_1` and :math:`v_0 v_1`, respectively. For :math:`r` bits, the
         products of two or more bits take :math:`2^r - r - 1` :class:`~.TemporaryAND` gates.
 
-    .. details::
-        :title: Precision
-
-        Without ``batch_size``, every rotation has the precision of
-        :func:`~.make_rz_to_phase_gradient_decomp` with the same registers: its angle is rounded
-        to :math:`b` = ``len(angle_wires)`` binary decimals in units of :math:`2\pi`.
-
-        With ``batch_size``, ``angle_wires`` and ``phase_grad_wires`` hold :math:`b+1` wires. A
-        batch adds half of a signed sum of its angles, :math:`\pm\theta_s/2 \pm \theta_1/2
-        \pm \dots`, which is a half-integer multiple of :math:`2\pi/2^b` if the angles have
-        :math:`b` binary decimals in units of :math:`2\pi`. The batches therefore round the
-        angles to :math:`b+1` binary decimals in units of :math:`4\pi`, i.e., with the same
-        precision, and use all :math:`b+1` wires, which costs one more :class:`~.TemporaryAND`
-        in each adder. All other rotations only use the leading :math:`b` wires of the
-        registers, as above.
     """
     angle_wires, phase_grad_wires, rule_work_wires = validate_phase_gradient_wires(
         angle_wires, phase_grad_wires, work_wires
     )
-    num_bits = len(angle_wires) - (batch_size is not None)
-    rz_registers = (
-        angle_wires[:num_bits],
-        phase_grad_wires[:num_bits],
-        rule_work_wires[: num_bits - 1],
-    )
-    batch_registers = (angle_wires, phase_grad_wires, rule_work_wires[: len(angle_wires) - 1])
-    rz_rule = make_rz_to_phase_gradient_decomp(*rz_registers)
-
-    def _spare_work_wires(block_size):
-        """The ``work_wires`` of the rule that the adder does not need."""
-        registers = batch_registers if block_size == 1 and batch_size is not None else rz_registers
-        return rule_work_wires[len(registers[2]) :]
+    registers = (angle_wires, phase_grad_wires, rule_work_wires[: len(angle_wires) - 1])
+    spare_work_wires = rule_work_wires[len(angle_wires) - 1 :]
+    rz_rule = make_rz_to_phase_gradient_decomp(*registers)
 
     def _resource_fn(angles, wires, **_):
         """Resources of the rule."""
         num_angles = len(angles)
         block_size = len(wires) // num_angles
-        if block_size > 1:
-            block = _equal_angle_block_rep(block_size, num_bits, len(rz_registers[2]))
-            if block_size % 2:
-                return {block: num_angles, qp.GlobalPhase: 1}
-            return {block: num_angles}
-        if batch_size is not None:
-            batch_args = (len(angle_wires), len(batch_registers[2]))
-            starts = range(0, num_angles, batch_size)
-            return Counter(
-                _distinct_angle_batch_rep(min(batch_size, num_angles - start), *batch_args)
-                for start in starts
-            )
-        rz_resources = rz_rule.compute_resources(Float, Wire[1]).gate_counts
-        return {op: count * len(wires) for op, count in rz_resources.items()}
+        if block_size == 1:
+            rz_resources = rz_rule.compute_resources(Float, Wire[1]).gate_counts
+            return {op: count * num_angles for op, count in rz_resources.items()}
+        block = _equal_angle_block_rep(block_size, len(angle_wires), len(registers[2]))
+        if block_size % 2:
+            return {block: num_angles, qp.GlobalPhase: 1}
+        return {block: num_angles}
 
     def _work_wires_fn(angles, wires, work_wires):
         """Work wires that the rule needs on top of the spare ones and those of the RZLayer."""
-        num_angles = len(angles)
-        block_size = len(wires) // num_angles
-        needed = _num_and_work_wires(num_angles, block_size, batch_size)
-        available = len(_spare_work_wires(block_size)) + len(work_wires)
-        return {"zeroed": max(needed - available, 0)}
+        needed = _num_and_work_wires(len(wires) // len(angles))
+        return {"zeroed": max(needed - len(spare_work_wires) - len(work_wires), 0)}
 
     def _equal_angle_blocks(angles, wires, work_wires):
         """Apply the blocks of rotations by an equal angle."""
@@ -493,48 +416,26 @@ def make_rzlayer_to_phase_gradient_decomp(
 
         def _block(i):
             block = [wires[i * block_size + j] for j in range(block_size)]
-            _equal_angle_block(angles[i], block, work_wires, rz_registers)
+            _equal_angle_block(angles[i], block, work_wires, registers)
 
         qp.for_loop(len(angles))(_block)()
         if block_size % 2:
             qp.GlobalPhase(block_size * qp.math.sum(angles) / 2)
 
-    def _distinct_batches(angles, wires, work_wires):
-        """Apply the batches of rotations by distinct angles."""
-
-        def _batch(start, size):
-            batch = [wires[start + j] for j in range(size)]
-            thetas = qp.math.stack([angles[start + j] for j in range(size)])
-            _distinct_angle_batch(thetas, batch, work_wires, batch_registers)
-
-        num_batches, rest = divmod(len(angles), batch_size)
-        qp.for_loop(num_batches)(lambda i: _batch(i * batch_size, batch_size))()
-        if rest:
-            _batch(num_batches * batch_size, rest)
-
-    def _rotations(angles, wires):
-        """Apply the rotations individually."""
-        block_size = len(wires) // len(angles)
-        qp.for_loop(len(wires))(lambda i: rz_rule(angles[i // block_size], wires[i]))()
-
     @qp.register_resources(_resource_fn, work_wires=_work_wires_fn)
     def _rzlayer_phase_gradient_decomp(angles, wires, work_wires):
         """Phase gradient decomposition of an :class:`~.RZLayer`."""
-        num_angles = len(angles)
-        block_size = len(wires) // num_angles
+        block_size = len(wires) // len(angles)
         if qp.capture.enabled() or qp.compiler.active():
             angles = qp.math.array(angles, like="jax")
             wires = qp.math.array(wires, like="jax")
 
-        work_wires = [*work_wires, *_spare_work_wires(block_size)]
-        needed = _num_and_work_wires(num_angles, block_size, batch_size)
+        if block_size == 1:
+            qp.for_loop(len(wires))(lambda i: rz_rule(angles[i], wires[i]))()
+            return
+        work_wires = [*work_wires, *spare_work_wires]
+        needed = _num_and_work_wires(block_size)
         with qp.allocate(max(needed - len(work_wires), 0), restored=True) as extra_work_wires:
-            work_wires = [*work_wires, *extra_work_wires]
-            if block_size > 1:
-                _equal_angle_blocks(angles, wires, work_wires)
-            elif batch_size is not None:
-                _distinct_batches(angles, wires, work_wires)
-            else:
-                _rotations(angles, wires)
+            _equal_angle_blocks(angles, wires, [*work_wires, *extra_work_wires])
 
     return _rzlayer_phase_gradient_decomp
