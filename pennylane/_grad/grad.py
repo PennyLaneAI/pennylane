@@ -280,7 +280,7 @@ class grad:  # pylint: disable=too-many-instance-attributes
         :title: Usage Details
 
         Supports JAX, Autograd, and :func:`~.qjit`. For vector-valued outputs, use
-        :func:`~.jacobian`.
+        :func:`pennylane.jacobian`.
 
         With JAX inputs, as within :func:`~.qjit`, the first positional argument is
         differentiated by default, following JAX. Use ``argnums`` to select positional
