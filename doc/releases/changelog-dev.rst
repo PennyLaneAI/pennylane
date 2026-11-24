@@ -908,7 +908,7 @@ Improvements 🛠
 * :class:`~.TrotterCGF` now fuses the one-body evolution with the basis rotations around it into
   a single complex-valued :class:`~.BasisRotation` per mode, as :class:`~.TrotterCDF` does. This
   applies to uncontrolled and double-phase-controlled ``TrotterCGF``.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10585) <https://github.com/PennyLaneAI/pennylane/pull/10585>`__
 
 * :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
   powers that can simplify eagerly for faster execution, while the other uses nested
