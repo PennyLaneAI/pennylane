@@ -24,6 +24,7 @@ from pennylane.templates.subroutines.select_thc import (
     _apply_loaded_rotation,
     _build_qrom_givens_data,
     _cascade_angles,
+    _PhaseGradientAdder,
     _select_half,
     _SelectTHCBasis,
     _THCIndexSwaps,
@@ -377,7 +378,7 @@ class TestSelectTHCOperator:
                 qp.testing.assert_decomposable(operand, check_matrix=False)
                 if type(operand) in (_SelectTHCBasis, _THCIndexSwaps):
                     assert_valid(operand, skip_differentiation=True)
-                if isinstance(operand, _SelectTHCBasis):
+                if operand.__class__ is _SelectTHCBasis:
                     n_angle = len(operand.rotation_data[1][0]) * op.beth if n_half > 1 else 0
                     assert operand.angle_wires == wires["work_wires"][:n_angle]
                     assert operand.work_wires == wires["work_wires"][n_angle:]
@@ -553,11 +554,20 @@ class TestSelectTHCOperator:
                 expected += 0.25 * 0.5 * (v_nu_b @ v_mu_a + v_mu_b @ v_nu_a) @ psi
         assert np.allclose(result, expected, atol=1e-8)
 
-    def test_one_body_branch(self):
+    @pytest.mark.parametrize(
+        "M, ell",
+        [
+            (2, 0),  # the one-body table follows the two-body one at address 2
+            (3, 1),  # no offset fits into the address register, so edge is an address bit
+            (5, 1),  # the one-body table starts at address 6, which sets two address bits
+        ],
+    )
+    def test_one_body_branch(self, M, ell):
         """Test that when the sentinel flag is set the oracle applies a single one-body V from the
         t_eigenvectors table."""
-        ell, spin = 0, 0
-        M, N, beth = self.M, self.N, self.beth
+        spin = 0
+        N, beth = self.N, self.beth
+        chi = np.random.default_rng(M).standard_normal((M, N // 2))
         theta = np.pi * np.array([3, 1]) / (1 << beth)  # grid leaves, as columns
         tev = np.stack([np.cos(theta), np.sin(theta)])
         _, index, flags, _, _, _ = _layout(M, N, beth)
@@ -570,7 +580,7 @@ class TestSelectTHCOperator:
         prep.update({flags[0]: 1, flags[1]: 1, flags[2]: 0, flags[3]: spin, flags[4]: 1 - spin})
 
         # the indices and the spins are NOT exchanged on edge=1
-        result = self._run(psi, prep, {flags[2]: 1}, (self.chi, tev))
+        result = self._run(psi, prep, {flags[2]: 1}, (chi, tev))
         assert np.allclose(result, _reference_V(tev[:, ell], N, spin) @ psi, atol=1e-8)
 
     def test_discretization_bound(self):
@@ -828,7 +838,7 @@ class TestControlledSelectTHC:
 
         # one ChangeOpBasis per V sandwich plus one for the index swaps, and the control
         # lands on the outside of each of them
-        gate_set = ROTATIONS_PLUS_CNOT | {qp.QROM, qp.SemiAdder}
+        gate_set = ROTATIONS_PLUS_CNOT | {qp.QROM, qp.QROMLoad, _PhaseGradientAdder}
         # pylint: disable-next=protected-access
         tape = qp.transforms._tape_decompose(tape, gate_set=gate_set, max_expansion=1)[0][0]
         names = [op.name for op in tape.operations]
@@ -839,7 +849,9 @@ class TestControlledSelectTHC:
         # pylint: disable-next=protected-access
         tape = qp.transforms._tape_decompose(tape, gate_set=gate_set, max_expansion=1)[0][0]
 
-        loads = [op for op in tape.operations if "QROM" in op.name or "SemiAdder" in op.name]
+        loads = [
+            op for op in tape.operations if "QROM" in op.name or "PhaseGradientAdder" in op.name
+        ]
         assert len(loads) == 12
         assert all(control not in op.wires for op in loads)
 

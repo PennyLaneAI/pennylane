@@ -228,6 +228,28 @@ class QROMLoad(Operator2):
 
                 :class:`~.QROM` | :math:`1` | 1
 
+            .. decomposition-rule:: select_swap_measure_garbage
+                :requires: program capture, as with :func:`qjit(capture=True) <.qjit>`,
+                    and :math:`k > 1`
+                :where: :math:`k` is the number of bitstrings that :class:`~.SelectSwap` loads in
+                    parallel, whose :math:`n(k - 1)` work wires holding the bitstrings that
+                    were not swapped into the target register are measured and reset. Then, the
+                    :math:`s` least-significant control wires are encoded into a one-hot
+                    register of :math:`m = 2^s` auxiliary wires, taken from the work wires, with
+                    :math:`s \leq \min(c, \lfloor \log_2 w \rfloor)` chosen to minimize the
+                    estimated T-count, and :math:`L' = k \lceil L/k \rceil`
+
+                :class:`~.SelectSwap` | :math:`1` | 1
+                :class:`~.QROM` with :math:`\lceil L'/m \rceil` bitstrings of length :math:`m` on :math:`c - s` control wires and :math:`w - m` work wires | :math:`1` | 1
+                :func:`PauliMeasure("X") <.pauli_measure>` | :math:`n(k - 1)` | 3
+                :func:`PauliMeasure("Z") <.pauli_measure>` | :math:`n(k - 1)` | 3
+                :class:`~.PauliX` (conditional) | :math:`n(k - 1)` | 3
+                :class:`~.PauliX` | :math:`2` | 2
+                :class:`~.TemporaryAND` | :math:`m - 1` | 3
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`m - 1` | 3
+                :class:`~.CNOT` | :math:`2(m - 1)` | 6
+                :class:`~.Hadamard` | :math:`2m` | 8
+
             .. decomposition-rule:: _adjoint_qrom_load_measurement
                 :image: /_static/decomposition_thumbnails/qrom_load_adjoint_measurement.svg
                 :lightbox:

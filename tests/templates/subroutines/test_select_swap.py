@@ -31,6 +31,7 @@ from pennylane.templates.subroutines import qrom_load as qrom_load_module
 from pennylane.templates.subroutines.select_swap import (
     _adjoint_select_swap_measurement,
     _select_swap,
+    _select_swap_measure_garbage,
     _select_swap_sizes,
 )
 from pennylane.testing import assert_decomposable
@@ -255,7 +256,7 @@ class TestAdjointSelectSwapMeasurement:
         T counts."""
         op = qp.adjoint(_adjoint_select_swap_setup(*case)[0])
         measurement_rule = _adjoint_select_swap_measurement
-        inverse_rule = qp.list_decomps(op)["adjoint(_select_swap)"]
+        inverse_rule = qp.list_decomps(op)["adjoint(select_swap)"]
         gate_set = {"T": 100, "Adjoint(T)": 100, "H": 1, "S": 1, "Adjoint(S)": 1, "CNOT": 1, "X": 1}
         gate_set |= {"Z": 1, "CZ": 1, "GlobalPhase": 1, "MidMeasure": 1, "PauliMeasure": 1}
 
@@ -276,7 +277,6 @@ class TestAdjointSelectSwapMeasurement:
         assert solution.decomposition(op).name == chosen_rule.name
         assert t_count < other_t_count
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("case", ADJOINT_SELECT_SWAP_CASES)
     def test_correctness(self, case):
         """Test that applying SelectSwap followed by the measurement-based uncomputation acts as
@@ -331,7 +331,6 @@ class TestAdjointSelectSwapMeasurement:
             op
         )
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize("case", [(8, 1, 3, 0), (11, 1, 4, 0), (6, 2, 3, 0), (4, 1, 3, 1)])
     def test_qjit(self, case, mocker):
@@ -355,6 +354,185 @@ class TestAdjointSelectSwapMeasurement:
                 qp.H(wire)
             _select_swap(**op.dynamic_args, **op.wire_args)
             qp.adjoint(qp.SelectSwap(**op.dynamic_args, **op.wire_args))
+            for wire in control_wires:
+                qp.H(wire)
+            return qp.sample(wires=op.wires)
+
+        samples = circuit()
+        assert spy.call_count == 1
+        assert samples.shape == (shots, len(op.wires))
+        assert np.allclose(samples, 0)
+
+
+def _measure_garbage_setup(num_bitstrings, num_targets, num_work_wires, num_extra_controls):
+    op, rng = _adjoint_select_swap_setup(
+        num_bitstrings, num_targets, num_work_wires, num_extra_controls
+    )
+    return qp.QROMLoad(**op.dynamic_args, **op.wire_args), rng
+
+
+def _num_garbage_wires(op):
+    """Number of work wires that hold loaded bitstrings after ``SelectSwap``."""
+    return _num_data_wires(op) - len(op.target_wires)
+
+
+# (num_bitstrings, num_targets, num_work_wires, num_extra_control_wires)
+MEASURE_GARBAGE_CASES = [
+    (8, 1, 3, 0),  # two in parallel
+    (5, 1, 3, 0),  # two in parallel, with padding
+    (6, 2, 3, 0),
+    (16, 2, 4, 0),
+    (11, 1, 4, 0),  # four in parallel, with padding
+    (16, 1, 5, 0),
+    (4, 1, 3, 1),  # extra control wire
+]
+
+
+class TestSelectSwapMeasureGarbage:
+    """Tests for the decomposition of QROMLoad into SelectSwap, followed by the
+    measurement-based uncomputation of the garbage on its work wires, following Appendix C of
+    arXiv:1902.02134."""
+
+    def test_registered(self):
+        """Test that the rule is registered for ``QROMLoad``."""
+        assert _select_swap_measure_garbage in qp.list_decomps(qp.QROMLoad)
+
+    @pytest.mark.parametrize("case", MEASURE_GARBAGE_CASES)
+    def test_loads_in_parallel(self, case):
+        """Test that the test cases load several bitstrings in parallel."""
+        op, _ = _measure_garbage_setup(*case)
+        assert _num_garbage_wires(op) > 0
+
+    def test_condition(self):
+        """Test that the rule requires program capture and several bitstrings loaded in
+        parallel."""
+        op = qp.QROMLoad(Bool[8, 1], Wire[3], Wire[1], Wire[3])
+        assert not _select_swap_measure_garbage.is_applicable(**op.arguments)
+        with qp.capture.toggle_ctx(True):
+            assert _select_swap_measure_garbage.is_applicable(**op.arguments)
+            op = qp.QROMLoad(Bool[8, 1], Wire[3], Wire[1], Wire[0])
+            assert not _select_swap_measure_garbage.is_applicable(**op.arguments)
+            op = qp.QROMLoad(Bool[1, 1], Wire[0], Wire[1], Wire[3])
+            assert not _select_swap_measure_garbage.is_applicable(**op.arguments)
+
+    @pytest.mark.parametrize("case", MEASURE_GARBAGE_CASES)
+    def test_resources(self, case):
+        """Test that the resource function matches the decomposition when all measurement
+        outcomes are 1, so that all conditional corrections are applied."""
+        op, _ = _measure_garbage_setup(*case)
+
+        def measure(pauli_word, wire):
+            qp.pauli_measure(pauli_word, wire)
+            return 1
+
+        with mock.patch.object(qrom_load_module, "pauli_measure", measure):
+            with qp.queuing.AnnotatedQueue() as q:
+                _select_swap_measure_garbage(**op.dynamic_args, **op.wire_args)
+
+        tape = qp.tape.QuantumScript.from_queue(q)
+        actual = Counter(
+            abstractify(o.base if isinstance(o, qp.ops.Conditional) else o) for o in tape.operations
+        )
+        expected = _select_swap_measure_garbage.compute_resources(**op.arguments)
+        expected = expected.gate_counts
+        _assert_counts_match({k: v for k, v in expected.items() if v > 0}, actual)
+
+    def test_chosen_by_graph(self):
+        """Test that the graph chooses the rule for ``QROMLoad`` with program capture, and that
+        this reduces the T count."""
+        op, _ = _measure_garbage_setup(64, 8, 24, 0)
+        gate_set = {"T": 100, "Adjoint(T)": 100, "H": 1, "S": 1, "Adjoint(S)": 1, "CNOT": 1, "X": 1}
+        gate_set |= {"Z": 1, "CZ": 1, "GlobalPhase": 1, "MidMeasure": 1, "PauliMeasure": 1}
+
+        def solve():
+            solution = DecompositionGraph([op], gate_set).solve()
+            counts = solution.resource_estimate(op).gate_counts
+            t_count = sum(n for gate, n in counts.items() if str(gate) in {"T", "Adjoint(T)"})
+            return solution, t_count
+
+        _, clean_t_count = solve()
+        with qp.capture.toggle_ctx(True):
+            solution, t_count = solve()
+        assert solution.decomposition(op).name == _select_swap_measure_garbage.name
+        assert t_count < clean_t_count
+
+    @pytest.mark.parametrize("case", MEASURE_GARBAGE_CASES)
+    def test_correctness(self, case):
+        """Test that the rule loads the bitstrings into the target wires and leaves the work
+        wires in the zero state without relative phases, for outcomes of the X-basis measurements
+        on the garbage. This is tested by unloading the bitstrings with a QROM.
+
+        The measurements are replaced by postselected measurements, so that the
+        measurement-dependent fixup table can be computed from concrete outcomes without capture.
+        """
+        op, rng = _measure_garbage_setup(*case)
+        control_wires = list(op.control_wires)
+        state = rng.random(2 ** len(control_wires)) + 1j * rng.random(2 ** len(control_wires))
+        state /= np.linalg.norm(state)
+
+        @qp.qnode(qp.device("default.qubit"), mcm_method="deferred")
+        def circuit():
+            qp.StatePrep(state, wires=control_wires)
+            _select_swap_measure_garbage(**op.dynamic_args, **op.wire_args)
+            qp.QROM(**op.dynamic_args, **op.wire_args)
+            qp.adjoint(qp.StatePrep(state, wires=control_wires))
+            return qp.probs(wires=op.wires)
+
+        def postselected_measure(outcome_iter, pauli_word, wire):
+            if pauli_word == "Z":
+                # Exercise the conditional reset of the measured wire.
+                qp.measure(wire, postselect=1)
+                return 1
+            outcome = next(outcome_iter)
+            qp.H(wire)
+            qp.measure(wire, postselect=outcome)
+            qp.H(wire)
+            return outcome
+
+        all_outcomes = list(product([0, 1], repeat=_num_garbage_wires(op)))
+        if len(all_outcomes) > 8:
+            all_outcomes = [all_outcomes[i] for i in rng.choice(len(all_outcomes), 8, False)]
+        for outcomes in all_outcomes:
+            measure = partial(postselected_measure, iter(outcomes))
+            with mock.patch.object(qrom_load_module, "pauli_measure", measure):
+                probs = circuit()
+            assert np.isclose(probs[0] / np.sum(probs), 1.0), f"outcomes={outcomes}"
+
+    @pytest.mark.usefixtures("enable_capture")
+    @pytest.mark.parametrize("case", MEASURE_GARBAGE_CASES)
+    def test_capture(self, case):
+        """Test that the decomposition can be captured, with an X-basis measurement and a Z-basis
+        reset measurement per work wire that holds a loaded bitstring."""
+        op, _ = _measure_garbage_setup(*case)
+        jaxpr = jax.make_jaxpr(
+            partial(_select_swap_measure_garbage, **op.dynamic_args, **op.wire_args)
+        )()
+        measurements = [eqn for eqn in jaxpr.eqns if eqn.primitive.name == "pauli_measure"]
+        assert [eqn.params["pauli_word"] for eqn in measurements] == [
+            "X",
+            "Z",
+        ] * _num_garbage_wires(op)
+
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize("case", [(8, 1, 3, 0), (11, 1, 4, 0), (6, 2, 3, 0), (4, 1, 3, 1)])
+    def test_qjit(self, case, mocker):
+        """Test that the rule can be compiled with ``qjit`` and program capture, and that
+        loading with it and unloading with a QROM leaves the target and work wires in the zero
+        state, without introducing relative phases on a uniform superposition of addresses."""
+        op, _ = _measure_garbage_setup(*case)
+        control_wires = list(op.control_wires)
+        shots = 20
+        spy = mocker.spy(_select_swap_measure_garbage, "_impl")
+
+        @qp.qjit(capture=True)
+        @qp.decompose(gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ | {"PauliMeasure"})
+        @qp.set_shots(shots)
+        @qp.qnode(qp.device("lightning.qubit", wires=len(op.wires)))
+        def circuit():
+            for wire in control_wires:
+                qp.H(wire)
+            _select_swap_measure_garbage(**op.dynamic_args, **op.wire_args)
+            qp.QROM(**op.dynamic_args, **op.wire_args)
             for wire in control_wires:
                 qp.H(wire)
             return qp.sample(wires=op.wires)

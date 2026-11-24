@@ -34,6 +34,9 @@ New features since last release
   measurement-based uncomputation from
   Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, which reduces their Toffoli 
   cost to roughly :math:`2\sqrt{L}` for :math:`L` bitstrings, given enough work wires.
+  The same technique gives ``QROMLoad`` a new decomposition, which loads with ``SelectSwap`` and
+  then cleans up the garbage on the work wires with measurements and a phase fixup, instead of
+  repeating the Select-SWAP circuit.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
   `(#10363) <https://github.com/PennyLaneAI/pennylane/pull/10363>`__
 
@@ -869,7 +872,7 @@ New features since last release
 * Added :class:`~.QubitizationTHC`, the qubitization walk operator of a tensor hypercontracted
   Hamiltonian. It composes the (also newly added) :class:`~.SuperpositionTHC` and
   :class:`~.AliasSamplingTHC` into ``PREPARE``, applies :class:`~.SelectTHC`, and reflects about
-  :math:`|\vec 0\rangle` on the ``PREPARE`` register. Use :func:`~.qubitization_thc_wires` to
+  :math:`|\vec 0\rangle` on the ``PREPARE`` wires that end up in superposition. Use :func:`~.qubitization_thc_wires` to
   determine the register sizes, as well as :func:`~.alias_sampling_thc_wires` and
   :func:`~.select_thc_wires` to determine the register sizes of the respective component.
   `(#9554) <https://github.com/PennyLaneAI/pennylane/pull/9554>`__

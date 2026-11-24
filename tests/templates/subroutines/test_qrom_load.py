@@ -32,7 +32,7 @@ from pennylane.core.operator import abstractify
 from pennylane.decomposition import DecompositionGraph
 from pennylane.templates.subroutines import qrom_load
 from pennylane.templates.subroutines.qrom import (
-    _qrom_measurement_decomposition,
+    _qrom_measurement,
     _qrom_unary_iteration,
 )
 from pennylane.templates.subroutines.qrom_load import (
@@ -43,6 +43,7 @@ from pennylane.templates.subroutines.qrom_load import (
     _select_swap,
     _swap_ops,
 )
+from pennylane.templates.subroutines.select_swap import _select_swap_measure_garbage
 from pennylane.testing import assert_decomposable
 from pennylane.testing.decompositions import _assert_counts_match
 from pennylane.typing import Bool, Wire
@@ -71,8 +72,10 @@ BITSTRINGS = (
 def test_assert_valid_qrom_load(work_wires, mocker):
     """Run standard validity tests."""
     # Under capture, assert_valid cannot convert the classical processing of measurement outcomes
-    # into a tape. The rule is tested in TestAdjointQROMLoadMeasurement instead.
+    # into a tape. The rules are tested in TestAdjointQROMLoadMeasurement and in
+    # TestSelectSwapMeasureGarbage of test_select_swap.py instead.
     mocker.patch.object(_adjoint_qrom_load_measurement, "is_applicable", return_value=False)
+    mocker.patch.object(_select_swap_measure_garbage, "is_applicable", return_value=False)
     op = qp.QROMLoad(BITSTRINGS, [0, 1, 2], [3, 4, 5], work_wires)
     qp.testing.assert_valid(op, skip_differentiation=True)
 
@@ -82,6 +85,7 @@ def test_falsy_zero_as_work_wire(mocker):
     """Test that work wire is not treated as a falsy zero."""
     # See test_assert_valid_qrom_load
     mocker.patch.object(_adjoint_qrom_load_measurement, "is_applicable", return_value=False)
+    mocker.patch.object(_select_swap_measure_garbage, "is_applicable", return_value=False)
     op = qp.QROMLoad(
         ((1,), (0,), (0,), (1,)),
         control_wires=[1, 2],
@@ -308,8 +312,13 @@ class TestQROMLoad:
             (11, [0, 1, 2, 3], [4, 5], [6, 7]),
         ],
     )
-    def test_decomposition_new(self, num_bitstrings, control_wires, target_wires, work_wires, seed):
+    # pylint: disable-next=too-many-arguments
+    def test_decomposition_new(
+        self, num_bitstrings, control_wires, target_wires, work_wires, seed, mocker
+    ):
         """Tests the decomposition rule implemented with the new system."""
+        # See test_assert_valid_qrom_load
+        mocker.patch.object(_select_swap_measure_garbage, "is_applicable", return_value=False)
         rng = np.random.default_rng(seed)
         bitstrings = rng.integers(0, 2, size=(num_bitstrings, len(target_wires)))
         op = qp.QROMLoad(
@@ -668,7 +677,6 @@ class TestAdjointQROMLoadMeasurement:
         assert solution.decomposition(op) == _adjoint_qrom_load_measurement
         assert t_count < inverse_t_count
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("case", ADJOINT_QROM_LOAD_CASES)
     def test_correctness(self, case):
         """Test that applying QROMLoad followed by the measurement-based uncomputation acts as
@@ -720,7 +728,6 @@ class TestAdjointQROMLoadMeasurement:
             op.target_wires
         )
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "case", [(4, 2, 0, 1), (8, 2, 0, 2), (11, 2, 0, 3), (4, 2, 1, 2), (16, 2, 0, 3)]
@@ -744,7 +751,7 @@ class TestAdjointQROMLoadMeasurement:
         def circuit():
             for wire in control_wires:
                 qp.H(wire)
-            _qrom_measurement_decomposition(**op.dynamic_args, **op.wire_args)
+            _qrom_measurement(**op.dynamic_args, **op.wire_args)
             qp.adjoint(qp.QROMLoad(**op.dynamic_args, **op.wire_args))
             for wire in control_wires:
                 qp.H(wire)
