@@ -2522,6 +2522,10 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed a bug where :class:`~.ops.op_math.Sum` and :class:`~.ops.op_math.Prod` returned incorrect
+  eigenvalues and diagonalizing gates after an equal operator with a different wire order was used.
+  `(#10584) <https://github.com/PennyLaneAI/pennylane/pull/10584>`__
+
 * Fixed resource callbacks in :class:`~.SingleExcitation` decompositions to accept positional arguments.
   `(#10575) <https://github.com/PennyLaneAI/pennylane/pull/10575>`__
 
