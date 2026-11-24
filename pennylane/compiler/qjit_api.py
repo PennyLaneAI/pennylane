@@ -289,7 +289,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):
         raise CompileError("Catalyst is the only supported compiler for qjit.")
 
     if not available("catalyst"):
-        raise CompileError("The catalyst package is not installed.")
+        raise CompileError("The catalyst package is not installed.")  # pragma: no cover
 
     # Check the minimum version of 'compiler' if installed
     _check_compiler_version("catalyst")

@@ -24,6 +24,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.compiler import compiler
 from pennylane.exceptions import CompileError
 from pennylane.transforms.dynamic_one_shot import fill_in_value
 
@@ -65,6 +66,15 @@ def test_catalyst_incompatible():
 
 class TestCatalyst:
     """Test ``qp.qjit`` with Catalyst"""
+
+    def test_incomplete_catalyst_entry_points(self, mocker, monkeypatch):
+        """Test that missing Catalyst entry points raise a descriptive error."""
+        monkeypatch.setattr(compiler.AvailableCompilers, "names_entrypoints", {})
+        distribution = mocker.patch("importlib.metadata.distribution")
+        distribution.return_value.entry_points = []
+
+        with pytest.raises(KeyError, match="expected Catalyst entry points .*but received"):
+            qp.compiler.available_compilers()
 
     @pytest.mark.parametrize("name", ["other", "", None])
     @pytest.mark.parametrize("decorator", [False, True])
