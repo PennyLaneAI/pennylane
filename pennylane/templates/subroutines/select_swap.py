@@ -138,14 +138,14 @@ class SelectSwap(Operator2):
                 :class:`~.QROMLoad` with :math:`\lceil L/k \rceil` bitstrings of length :math:`kn` on :math:`c - j` control wires | :math:`1` | 1
                 :class:`~.SWAP` with 1 control | :math:`n(k - 1)` | 3
 
-            .. decomposition-rule:: _adjoint_select_swap_measurement
+            .. decomposition-rule:: measurement
                 :image: /_static/decomposition_thumbnails/select_swap_adjoint_measurement.svg
                 :lightbox:
                 :region: adjoint
                 :requires: program capture, as with :func:`qjit(capture=True) <.qjit>`,
                     and :math:`c \geq 1` control wires
                 :where: the :math:`nk` target and work wires holding the :math:`k` bitstrings
-                    loaded in parallel, with :math:`k` as for ``_select_swap``, are measured and
+                    loaded in parallel, with :math:`k` as for ``select_swap``, are measured and
                     reset. Then, the :math:`s` least-significant control wires are encoded into a
                     one-hot register of :math:`m = 2^s` auxiliary wires, taken from the target
                     and work wires, with :math:`s \leq \min(c, \lfloor \log_2 (n + w) \rfloor)`
@@ -274,7 +274,7 @@ def _adjoint_select_swap_measurement_resources(base):
 
 
 @register_condition(lambda base: capture.enabled() and len(base.control_wires) > 0)
-@register_resources(_adjoint_select_swap_measurement_resources, exact=False)
+@register_resources(_adjoint_select_swap_measurement_resources, exact=False, name="measurement")
 def _adjoint_select_swap_measurement(base):
     r"""Uncomputation of SelectSwap with measurements and a phase fixup, following Appendix C of
     `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__.

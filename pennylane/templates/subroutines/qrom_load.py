@@ -228,7 +228,7 @@ class QROMLoad(Operator2):
 
                 :class:`~.QROM` | :math:`1` | 1
 
-            .. decomposition-rule:: _adjoint_qrom_load_measurement
+            .. decomposition-rule:: measurement
                 :image: /_static/decomposition_thumbnails/qrom_load_adjoint_measurement.svg
                 :lightbox:
                 :region: adjoint
@@ -690,7 +690,7 @@ def _adjoint_qrom_load_measurement_resources(base):
 
 
 @register_condition(lambda base: capture.enabled() and len(base.control_wires) > 0)
-@register_resources(_adjoint_qrom_load_measurement_resources, exact=False)
+@register_resources(_adjoint_qrom_load_measurement_resources, exact=False, name="measurement")
 def _adjoint_qrom_load_measurement(base):
     r"""Uncomputation of QROMLoad with measurements and a phase fixup, following Appendix C of
     `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__.
