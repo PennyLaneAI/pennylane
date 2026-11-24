@@ -349,6 +349,8 @@ tested_modified_templates = [
     qp.MultiplexerStatePreparation,
     qp.TTN,
     qp.QROM,
+    qp.QROMLoad,
+    qp.SelectSwap,
     qp.PhaseAdder,
     qp.Adder,
     qp.SemiAdder,
@@ -1159,8 +1161,9 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.HybridQRAM(**kwargs))
 
-    def test_qrom(self):
-        """Test the primitive bind call of QROM."""
+    @pytest.mark.parametrize("cls", [qp.QROM, qp.QROMLoad, qp.SelectSwap])
+    def test_qrom(self, cls):
+        """Test the primitive bind call of QROM, QROMLoad and SelectSwap."""
 
         kwargs = {
             "bitstrings": ((0,), (1,)),
@@ -1170,7 +1173,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         }
 
         def qfunc():
-            qp.QROM(**kwargs)
+            cls(**kwargs)
 
         # Validate inputs
         qfunc()
@@ -1181,7 +1184,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert_eqn_matches_op(eqn, qp.QROM)
+        assert_eqn_matches_op(eqn, cls)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 

@@ -417,7 +417,33 @@ def _(op: qtemps.QROM):
     return re_temps.QROM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
-        restored=op.clean,
+        select_swap_depth=1,
+        wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.QROMLoad):
+    bitstrings = op.data[0]
+    num_bitstrings = bitstrings.shape[0]
+    size_bitstring = bitstrings.shape[1] if num_bitstrings > 0 else 0
+    return re_temps.QROM(
+        num_bitstrings=num_bitstrings,
+        size_bitstring=size_bitstring,
+        restored=True,
+        wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.SelectSwap):
+    bitstrings = op.data[0]
+    num_bitstrings = bitstrings.shape[0]
+    size_bitstring = bitstrings.shape[1] if num_bitstrings > 0 else 0
+    return re_temps.QROM(
+        num_bitstrings=num_bitstrings,
+        size_bitstring=size_bitstring,
+        restored=False,
         wires=op.wires,
     )
 

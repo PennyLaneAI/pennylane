@@ -21,6 +21,7 @@ import pennylane2 as qp
 import pennylane2.estimator as pl_qre
 import pennylane2.labs.estimator_beta as qre
 from pennylane2.templates.subroutines.qrom import QROM
+from pennylane2.templates.subroutines.qrom_load import QROMLoad
 
 
 @pytest.mark.parametrize("mod, work_wires", [(7, [3, 4]), (8, [])])
@@ -33,16 +34,30 @@ def test_adder_mapping(mod, work_wires):
     assert mapped.wires == qp.wires.Wires([0, 1, 2])
 
 
-@pytest.mark.parametrize("clean", [True, False])
-def test_qrom_mapping(clean):
-    """Test that the qrom operator gets mapped correctly"""
+def test_qrom_mapping():
+    """Test that the QROM operator gets mapped correctly"""
     qrom = QROM(
         bitstrings=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
         control_wires=[0, 1],
         target_wires=[2, 3, 4],
         work_wires=[5, 6, 7],
-        clean=clean,
+    )
+
+    mapped = pl_qre.resource_mapping._map_to_resource_op(qrom)  # pylint: disable=protected-access
+    assert isinstance(mapped, qre.LabsQROM)
+    assert mapped.select_swap_depth == 1
+
+
+def test_qrom_load_mapping():
+    """Test that the QROMLoad operator gets mapped correctly"""
+    qrom = QROMLoad(
+        bitstrings=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
+        control_wires=[0, 1],
+        target_wires=[2, 3, 4],
+        work_wires=[5, 6, 7],
     )
 
     # pylint: disable-next=protected-access
-    assert isinstance(pl_qre.resource_mapping._map_to_resource_op(qrom), qre.LabsQROM)
+    mapped = pl_qre.resource_mapping._map_to_resource_op(qrom)
+    assert isinstance(mapped, qre.LabsQROM)
+    assert mapped.borrow_qubits is False  # We don't support the garbage-state version of SelectSWAP

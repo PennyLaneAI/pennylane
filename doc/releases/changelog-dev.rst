@@ -4,6 +4,93 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* :class:`~.QROM` has been divided by splitting off two new operators, :class:`~.QROMLoad` and
+  :class:`~.SelectSwap`, for the specific scenario of zeroed target wires, i.e., for data
+  loading rather than XORing. The latter is now done by :class:`~.QROM`. 
+  Use the three operators as follows:
+
+  .. list-table::
+      :header-rows: 1
+      :stub-columns: 1
+
+      * -
+        - Work wires reset
+        - Work wires not reset
+      * - Target wires zeroed
+        - :class:`~.QROMLoad`
+        - :class:`~.SelectSwap`
+      * - Target wires not zeroed
+        - :class:`~.QROM`
+        - currently not supported
+
+  Note that :class:`~.QROMLoad` also has a decomposition using Select-SWAP, but is not allowed to
+  leave the work wires in a garbage state. When using :class:`~.SelectSwap` for data loading, it
+  can only be unloaded with ``Adjoint(SelectSwap)`` and the work wires are dirty between loading
+  and unloading.
+  The promise of zeroed target wires and the permission to leave a garbage state behind lead to 
+  reduced quantum resources, so that ``SelectSwap`` is cheaper than ``QROMLoad``, which is cheaper
+  than ``QROM``.
+  In addition, ``Adjoint(QROMLoad)`` and ``Adjoint(SelectSwap)`` have new decompositions based on 
+  measurement-based uncomputation from
+  Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, which reduces their Toffoli 
+  cost to roughly :math:`2\sqrt{L}` for :math:`L` bitstrings, given enough work wires.
+  `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
+  `(#10363) <https://github.com/PennyLaneAI/pennylane/pull/10363>`__
+
+  For example, we may use ``QROMLoad`` on a zeroed target register, but need ``QROM`` to XOR more
+  data onto it afterwards:
+
+  .. code-block:: python
+
+      bitstrings = ["010", "111", "110", "000"]
+      xor_updates = ["001", "011", "101", "111"]
+
+      @qp.qjit
+      @qp.set_shots(1)
+      @qp.qnode(qp.device("lightning.qubit", wires=8))
+      def circuit():
+          qp.BasisState([1, 0], wires=[0, 1])
+          # target wires 2, 3, 4 start in |000>
+          qp.QROMLoad(bitstrings, [0, 1], [2, 3, 4], work_wires=[5, 6, 7])
+          # target wires now hold |110>
+          qp.QROM(xor_updates, [0, 1], [2, 3, 4], work_wires=[5])
+          return qp.sample(wires=[2, 3, 4])
+
+  .. code-block:: pycon
+
+      >>> print(circuit())
+      [[0 1 1]]
+
+  If we want to load with ``SelectSwap``, we need to use it for unloading as well, and can only
+  use the work wires as dirty, or borrowed, wires inbetween.
+
+  .. code-block:: python
+
+      @qp.qjit
+      @qp.set_shots(1)
+      @qp.qnode(qp.device("lightning.qubit", wires=9))
+      def circuit():
+          qp.BasisState([1, 0], wires=[0, 1])
+          # target wires 2, 3, 4 start in |000>
+          qp.SelectSwap(bitstrings, [0, 1], [2, 3, 4], work_wires=[5, 6, 7])
+          # target wires now hold |110>, let's control a bit flip on that state
+          work_wire_specs = {"work_wires": [5, 6, 7], "work_wire_type": "borrowed"}
+          qp.ctrl(qp.X(8), control=[2, 3, 4], control_values=[1, 1, 0], **work_wire_specs)
+          # Unload the target wires, cleaning up the work wires as well
+          qp.adjoint(qp.SelectSwap(bitstrings, [0, 1], [2, 3, 4], work_wires=[5, 6, 7]))
+          return qp.sample(wires=[2, 3, 4]), qp.sample(wires=[5, 6, 7]), qp.sample(wires=[8])
+
+  .. code-block:: pycon
+
+      >>> output = circuit()
+      >>> print(f"Target:  {output[0]}\nWork:    {output[1]}\nFlipped: {output[2]}")
+      Target:  [[0 0 0]]
+      Work:    [[0 0 0]]
+      Flipped: [[1]]
+
+  The bitstring has been unloaded from the target wires, and the work wires have been cleaned. The
+  wire ``8`` has been flipped in the meantime.
+
 * A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
   `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
 
@@ -1039,10 +1126,15 @@ Improvements 🛠
   unhinted conditionals by the exact average counts when compiling them with Catalyst.
   `(#10311) <https://github.com/PennyLaneAI/pennylane/pull/10311>`__
 
-* The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
-  but instead expresses the Select block as another ``QROM`` with fewer controls and more target
-  qubits. This allows for scalable compilation of this decomposition rule.
+* The Select-SWAP decomposition previously attributed to :class:`~.QROM`
+  (``qp.list_decomps(qp.QROM)["_qrom_decomposition"]``) is now attributed to :class:`~.QROMLoad`
+  (``qp.list_decomps(qp.QROMLoad)["select_swap"]``), and its ``clean=False`` variant has been
+  split off into the operator :class:`~.SelectSwap`. 
+  Additionally, this decomposition rule no longer uses :class:`~.Select`, but
+  a :class:`~.QROM` with fewer controls and more target qubits instead. This allows for 
+  scalable compilation of this decomposition rule.
   `(#10207) <https://github.com/PennyLaneAI/pennylane/pull/10207>`__
+  `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
 
 * A :class:`~.Controller` now takes the size of its messages in each direction, with the
   ``in_bytes`` and ``out_bytes`` keyword arguments. Left unset, they take the sizes its
@@ -1558,6 +1650,11 @@ Breaking changes 💔
   The device test command is now ``pl2-device-test``.
   Serialized objects containing Classic module paths are not migrated automatically.
   Importing PennyLane2 after Classic raises an error; use separate processes or kernels.
+
+* :class:`~.QROM` no longer takes a ``clean`` argument and no longer has a Select-SWAP
+  decomposition, which is available for :class:`~.QROMLoad` and :class:`~.SelectSwap` instead.
+  See the corresponding entry under "New features" for when to use which of the three operators.
+  `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
 
 * Decomposition rules can be named using the optional ``name`` argument of
   :func:`~pennylane2.register_resources`. Names cannot start with an underscore.
