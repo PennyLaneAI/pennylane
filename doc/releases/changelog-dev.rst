@@ -2362,6 +2362,8 @@ Internal changes ⚙️
   `(#10077) <https://github.com/PennyLaneAI/pennylane/pull/10077>`__
   `(#10150) <https://github.com/PennyLaneAI/pennylane/pull/10150>`__
   `(#10298) <https://github.com/PennyLaneAI/pennylane/pull/10298>`__
+  `(#10531) <https://github.com/PennyLaneAI/pennylane/pull/10531>`__
+  
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
@@ -3005,6 +3007,7 @@ Sümeyye Nur Esin,
 Thomas C. Fraser,
 Connor Gambla,
 Vellala Gowthami,
+Pragati Gupta,
 Sengthai Heng,
 Austin Huang,
 Harshal Janjani,
