@@ -159,7 +159,7 @@ class QROM(Operator2):
                 :math:`w` work wires
             :example: :math:`L=8`, :math:`n=2`, :math:`c=3`, :math:`w=2`
 
-            .. decomposition-rule:: _qrom_unary_iteration
+            .. decomposition-rule:: unary_iteration
                 :image: /_static/decomposition_thumbnails/qrom_unary_iteration.svg
                 :lightbox:
                 :where: the iteration tree spans :math:`c' = \min(c, w + 1)` control wires and the
@@ -175,7 +175,7 @@ class QROM(Operator2):
                 :class:`~.PauliX` | :math:`2[B > 2^{c' - 2}]` if :math:`w \geq 1` | 2
                 :class:`~.MultiX` with :math:`e + 1` controls | :math:`L` | 8
 
-            .. decomposition-rule:: _qrom_measurement_decomposition
+            .. decomposition-rule:: measurement
                 :image: /_static/decomposition_thumbnails/qrom_measurement_based.svg
                 :lightbox:
                 :requires: :math:`w \geq c - 1` work wires
@@ -200,14 +200,14 @@ class QROM(Operator2):
                 :class:`~.PauliX` | :math:`[e = 1]` | 0
                 :class:`Adjoint(PauliX) <.PauliX>` | :math:`[e = 1]` | 0
 
-            .. decomposition-rule:: _qrom_measurement_decomposition
+            .. decomposition-rule:: measurement
                 :image: /_static/decomposition_thumbnails/qrom_measurement_based.svg
                 :lightbox:
                 :region: adjoint
                 :requires: :math:`w \geq c - 1` work wires
                 :where: :class:`~.QROM` is self-adjoint, so this is the same rule as above
 
-                Gates of ``_qrom_measurement_decomposition`` above | same counts
+                Gates of ``measurement`` above | same counts
 
     """
 
@@ -593,8 +593,8 @@ def _build_flag(extra_wires, work_wires):
 
 
 @register_condition(_qrom_measurement_condition)
-@register_resources(_qrom_measurement_resources, exact=False)
-def _qrom_measurement_decomposition(
+@register_resources(_qrom_measurement_resources, exact=False, name="measurement")
+def _qrom_measurement(
     bitstrings=None, control_wires=None, target_wires=None, work_wires=None, base=None
 ):
     """QROM decomposition using measurement-based uncomputation.
@@ -896,7 +896,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
     qp_ops.adjoint(TemporaryAND(wires=triples[0], control_values=tuple(closing_bits[:2])))
 
 
-@register_resources(_qrom_unary_iteration_resources)
+@register_resources(_qrom_unary_iteration_resources, name="unary_iteration")
 def _qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires, **__):
     """Unary iteration decomposition of QROM.
 
@@ -952,5 +952,5 @@ def _qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires, *
     _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control_wires)
 
 
-add_decomps(QROM, _qrom_unary_iteration, _qrom_measurement_decomposition)
-add_decomps("Adjoint(QROM)", _qrom_measurement_decomposition)
+add_decomps(QROM, _qrom_unary_iteration, _qrom_measurement)
+add_decomps("Adjoint(QROM)", _qrom_measurement)

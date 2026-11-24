@@ -233,7 +233,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
                 resources[qp.Rot] = 1
                 return resources
 
-            @qp.register_resources(_my_op_resources)
+            @qp.register_resources(_my_op_resources, name="my_op_decomp")
             def _my_op_decomp(pauli_string, angle_array, wires, rot_wire):
                 wire_map = {wires[i]: i for i in range(len(wires))}
                 for wire, pauli in zip(wires, pauli_string):
@@ -255,10 +255,9 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
                 MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,))
                 return qp.expval(qp.Z(0))
 
-        >>> qp.decomposition.enable_graph()
         >>> inspector = qp.decomp_inspector(f)()
         >>> inspector.inspect_decomps(MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,)))
-        CHOSEN: Decomposition 0 (name: _my_op_decomp)
+        CHOSEN: Decomposition 0 (name: my_op_decomp)
         0: ──X───────────────────┤
         1: ──Y───────────────────┤
         2: ──Y───────────────────┤
@@ -266,7 +265,6 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         First-Level Expansion Gates: {PauliX: 1, PauliY: 2, Rot: 1}
         Full Expansion Gates: {PauliX: 1, PauliY: 2, Rot: 1}
         Weighted Cost: 4.0
-        >>> qp.decomposition.disable_graph()
 
         **Downstream effects of static_argnames, compilable_argnames**
 

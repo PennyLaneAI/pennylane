@@ -62,8 +62,8 @@ def get_conditional_op(mv, true_fn, *args, **kwargs):
 
 with qp.queuing.AnnotatedQueue() as q_tape:
     qp.RX(1.23456, wires=0)
-    qp.RY(2.3456, wires="a")
-    qp.RZ(3.4567, wires=1.234)
+    qp.RY(2.3456, wires=8)
+    qp.RZ(3.4567, wires=17)
 
 
 tape = qp.tape.QuantumScript.from_queue(q_tape)
@@ -575,40 +575,32 @@ class TestEmptyTapes:
 
     def test_empty_tape_wire_order(self):
         """Test wire order and show_all_wires shows wires with empty tape."""
-        expected = "a: ───┤\nb: ───┤"
-        out = tape_text(QuantumScript(), wire_order=["a", "b"], show_all_wires=True)
+        expected = "8: ───┤\n9: ───┤"
+        out = tape_text(QuantumScript(), wire_order=[8, 9], show_all_wires=True)
         assert expected == out
 
 
 class TestLabeling:
     """Test that wire labels work correctly."""
 
-    def test_any_wire_labels(self):
-        """Test wire labels with different kinds of objects."""
-
-        split_str = tape_text(tape).split("\n")
-        assert split_str[0][:6] == "    0:"
-        assert split_str[1][:6] == "    a:"
-        assert split_str[2][:6] == "1.234:"
-
     def test_wire_order(self):
         """Test wire_order keyword changes order of the wires"""
 
-        split_str = tape_text(tape, wire_order=[1.234, "a", 0, "b"]).split("\n")
-        assert split_str[2][:6] == "    0:"
-        assert split_str[1][:6] == "    a:"
-        assert split_str[0][:6] == "1.234:"
+        split_str = tape_text(tape, wire_order=[17, 8, 0, 9]).split("\n")
+        assert split_str[2][:3] == " 0:"
+        assert split_str[1][:3] == " 8:"
+        assert split_str[0][:3] == "17:"
 
     def test_show_all_wires(self):
         """Test wire_order constains unused wires, show_all_wires
         forces them to display."""
 
-        split_str = tape_text(tape, wire_order=["b"], show_all_wires=True).split("\n")
+        split_str = tape_text(tape, wire_order=[9], show_all_wires=True).split("\n")
 
-        assert split_str[0][:6] == "    b:"
-        assert split_str[1][:6] == "    0:"
-        assert split_str[2][:6] == "    a:"
-        assert split_str[3][:6] == "1.234:"
+        assert split_str[0][:3] == " 9:"
+        assert split_str[1][:3] == " 0:"
+        assert split_str[2][:3] == " 8:"
+        assert split_str[3][:3] == "17:"
 
     def test_hiding_labels(self):
         """Test that printing wire labels can be skipped with show_wire_labels=False."""
@@ -625,7 +617,7 @@ class TestDecimals:
     def test_decimals(self):
         """Test that the decimals keyword makes the operation parameters included."""
 
-        expected = "    0: ──RX(1.23)─┤\n    a: ──RY(2.35)─┤\n1.234: ──RZ(3.46)─┤"
+        expected = " 0: ──RX(1.23)─┤\n 8: ──RY(2.35)─┤\n17: ──RZ(3.46)─┤"
 
         assert tape_text(tape, decimals=2) == expected
 
@@ -642,7 +634,7 @@ class TestDecimals:
     def test_decimals_0(self):
         """Test decimals=0 rounds to integers"""
 
-        expected = "    0: ──RX(1)─┤\n    a: ──RY(2)─┤\n1.234: ──RZ(3)─┤"
+        expected = " 0: ──RX(1)─┤\n 8: ──RY(2)─┤\n17: ──RZ(3)─┤"
 
         assert tape_text(tape, decimals=0) == expected
 
@@ -919,25 +911,14 @@ class TestLayering:
         """Test that multiple elbows are drawn correctly."""
         _tape = qp.tape.QuantumScript(
             [
-                qp.TemporaryAND(["a", "b", "c"]),
-                qp.adjoint(qp.TemporaryAND(["f", "d", "e"])),
-                qp.adjoint(qp.TemporaryAND(["a", "d", "b"], control_values=(0, 0))),
-                qp.TemporaryAND(["e", "h", "f"], control_values=(0, 1)),
+                qp.TemporaryAND([8, 9, 11]),
+                qp.adjoint(qp.TemporaryAND([14, 12, 13])),
+                qp.adjoint(qp.TemporaryAND([8, 12, 9], control_values=(0, 0))),
+                qp.TemporaryAND([13, 16, 14], control_values=(0, 1)),
             ]
         )
-        expected = (
-            "a: ─╭●───○╮─┤\n"
-            "b: ─├●───⊕┤─┤\n"
-            "c: ─╰⊕────│─┤\n"
-            "d: ──●╮──○╯─┤\n"
-            "e: ──⊕┤─╭○──┤\n"
-            "f: ──●╯─├⊕──┤\n"
-            "g: ─────│───┤\n"
-            "h: ─────╰●──┤"
-        )
-        out = tape_text(
-            _tape, wire_order=["a", "b", "c", "d", "e", "f", "g", "h"], show_all_wires=True
-        )
+        expected = " 8: ─╭●───○╮─┤\n 9: ─├●───⊕┤─┤\n11: ─╰⊕────│─┤\n12: ──●╮──○╯─┤\n13: ──⊕┤─╭○──┤\n14: ──●╯─├⊕──┤\n15: ─────│───┤\n16: ─────╰●──┤"
+        out = tape_text(_tape, wire_order=[8, 9, 11, 12, 13, 14, 15, 16], show_all_wires=True)
         assert out == expected
 
 

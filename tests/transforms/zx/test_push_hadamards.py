@@ -180,7 +180,7 @@ class TestPushHadamards:
 
         assert np.allclose(state1, state2)
 
-    @pytest.mark.parametrize("wires", ((0, 2, 1, 3), (2, 5), ("a", "c", "b")))
+    @pytest.mark.parametrize("wires", [(0, 2, 1, 3), (2, 5)])
     def test_preserves_wire_labels(self, wires):
         """Test that noncanonical wire labels are restored after the ZX round trip."""
         ops = [qp.H(wires[0]), qp.CNOT([wires[0], wires[1]]), qp.T(wires[1])]

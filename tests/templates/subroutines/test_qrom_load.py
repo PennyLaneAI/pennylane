@@ -32,7 +32,7 @@ from pennylane.core.operator import abstractify
 from pennylane.decomposition import DecompositionGraph
 from pennylane.templates.subroutines import qrom_load
 from pennylane.templates.subroutines.qrom import (
-    _qrom_measurement_decomposition,
+    _qrom_measurement,
     _qrom_unary_iteration,
 )
 from pennylane.templates.subroutines.qrom_load import (
@@ -95,7 +95,6 @@ class TestQROMLoad:
     """Test the qp.QROMLoad template."""
 
     @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("bitstrings", "target_wires", "control_wires", "work_wires"),
         [
@@ -234,7 +233,6 @@ class TestQROMLoad:
             assert np.isclose(target_probs[bitstring[0]], 1.0)
             assert np.isclose(work_probs[0], 1.0)
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_adjoint_unloads(self, seed):
         """Test that the adjoint of ``QROMLoad`` unloads the data again, returning the target and
         work wires to the zero state."""
@@ -670,7 +668,6 @@ class TestAdjointQROMLoadMeasurement:
         assert solution.decomposition(op) == _adjoint_qrom_load_measurement
         assert t_count < inverse_t_count
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("case", ADJOINT_QROM_LOAD_CASES)
     def test_correctness(self, case):
         """Test that applying QROMLoad followed by the measurement-based uncomputation acts as
@@ -722,7 +719,6 @@ class TestAdjointQROMLoadMeasurement:
             op.target_wires
         )
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "case", [(4, 2, 0, 1), (8, 2, 0, 2), (11, 2, 0, 3), (4, 2, 1, 2), (16, 2, 0, 3)]
@@ -746,7 +742,7 @@ class TestAdjointQROMLoadMeasurement:
         def circuit():
             for wire in control_wires:
                 qp.H(wire)
-            _qrom_measurement_decomposition(**op.dynamic_args, **op.wire_args)
+            _qrom_measurement(**op.dynamic_args, **op.wire_args)
             qp.adjoint(qp.QROMLoad(**op.dynamic_args, **op.wire_args))
             for wire in control_wires:
                 qp.H(wire)

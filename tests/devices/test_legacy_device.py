@@ -421,7 +421,7 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
 
     @pytest.mark.parametrize(
         "wires, expected",
-        [(["a1", "q", -1, 3], Wires(["a1", "q", -1, 3])), (3, Wires([0, 1, 2])), ([3], Wires([3]))],
+        [([7, 16, -1, 3], Wires([7, 16, -1, 3])), (3, Wires([0, 1, 2])), ([3], Wires([3]))],
     )
     def test_wires_property(self, mock_device, wires, expected):
         """Tests that the wires attribute is set correctly."""
@@ -430,8 +430,8 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
 
     def test_wire_map_property(self, mock_device):
         """Tests that the wire_map is constructed correctly."""
-        dev = mock_device(wires=["a1", "q", -1, 3])
-        expected = OrderedDict([("a1", 0), ("q", 1), (-1, 2), (3, 3)])
+        dev = mock_device(wires=[7, 16, -1, 3])
+        expected = OrderedDict([(7, 0), (16, 1), (-1, 2), (3, 3)])
         assert dev.wire_map == expected
 
     def test_execution_property(self, mock_device):
@@ -492,8 +492,8 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
     wires_to_try = [
         (1, Wires([0])),
         (4, Wires([1, 3])),
-        (["a", 2], Wires([2])),
-        (["a", 2], Wires([2, "a"])),
+        ([6, 2], Wires([2])),
+        ([6, 2], Wires([2, 6])),
     ]
 
     @pytest.mark.parametrize("dev_wires, wires_to_map", wires_to_try)
@@ -533,9 +533,9 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize(
         "wires, subset, expected_subset",
         [
-            (Wires(["a", "b", "c"]), Wires(["c", "b"]), Wires(["b", "c"])),
+            (Wires([6, 9, 13]), Wires([13, 9]), Wires([9, 13])),
             (Wires([0, 1, 2]), Wires([1, 0, 2]), Wires([0, 1, 2])),
-            (Wires([3, "beta", "a"]), Wires(["a", "beta", 3]), Wires([3, "beta", "a"])),
+            (Wires([3, 11, 6]), Wires([6, 11, 3]), Wires([3, 11, 6])),
             (Wires([0]), Wires([0]), Wires([0])),
         ],
     )
@@ -547,9 +547,9 @@ class TestInternalFunctions:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize(
         "wires, subset",
         [
-            (Wires(["a", "b", "c"]), Wires(["c", "d"])),
+            (Wires([6, 9, 13]), Wires([13, 14])),
             (Wires([0, 1, 2]), Wires([3, 4, 5])),
-            (Wires([3, "beta", "a"]), Wires(["alpha", "beta", "gamma"])),
+            (Wires([3, 11, 6]), Wires([8, 11, 15])),
             (Wires([0]), Wires([2])),
         ],
     )

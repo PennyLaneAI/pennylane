@@ -146,7 +146,7 @@ class QROMLoad(Operator2):
         let us draw the Select-SWAP decomposition:
 
         >>> op = qp.QROMLoad(*args)
-        >>> rule = qp.list_decomps(qp.QROMLoad)["_select_swap"]
+        >>> rule = qp.list_decomps(qp.QROMLoad)["select_swap"]
         >>> print(qp.draw(rule, show_matrices=False)(**op.arguments))
          0: ────────────────────────────────────────╭◑────────────────────────────────────────────── ···
          1: ────────────────────────────────────────├◑────────────────────────────────────────────── ···
@@ -210,7 +210,7 @@ class QROMLoad(Operator2):
                 :math:`w` work wires
             :example: :math:`L=32`, :math:`n=1`, :math:`c=5` and :math:`w=5`
 
-            .. decomposition-rule:: _select_swap
+            .. decomposition-rule:: select_swap
                 :image: /_static/decomposition_thumbnails/qrom_load_select_swap.svg
                 :lightbox:
                 :requires: :math:`w \geq c - 1` work wires, and :math:`k > 1` to be the cheapest
@@ -223,7 +223,7 @@ class QROMLoad(Operator2):
                 :class:`~.SWAP` with 1 control | :math:`4n(k - 1)` | 12
                 :class:`~.Hadamard` | :math:`2n` | 2
 
-            .. decomposition-rule:: _qrom_load_to_qrom
+            .. decomposition-rule:: to_qrom
                 :image: /_static/decomposition_thumbnails/qrom_load_to_qrom.svg
 
                 :class:`~.QROM` | :math:`1` | 1
@@ -477,7 +477,7 @@ def _select_swap_resources(bitstrings, control_wires, target_wires, work_wires):
 
 
 @register_condition(_select_swap_condition)
-@register_resources(_select_swap_resources)
+@register_resources(_select_swap_resources, name="select_swap")
 def _select_swap(bitstrings, control_wires, target_wires, work_wires):
     num_control_wires_select, _, num_work_wires_swap, num_work_wires_cswap, depth = (
         _calculate_select_swap_sizes(
@@ -531,7 +531,7 @@ def _qrom_load_to_qrom_resources(bitstrings, control_wires, target_wires, work_w
     }
 
 
-@register_resources(_qrom_load_to_qrom_resources)
+@register_resources(_qrom_load_to_qrom_resources, name="to_qrom")
 def _qrom_load_to_qrom(bitstrings, control_wires, target_wires, work_wires):
     QROM(bitstrings, control_wires, target_wires, work_wires)
 

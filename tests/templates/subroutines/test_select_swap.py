@@ -255,7 +255,7 @@ class TestAdjointSelectSwapMeasurement:
         T counts."""
         op = qp.adjoint(_adjoint_select_swap_setup(*case)[0])
         measurement_rule = _adjoint_select_swap_measurement
-        inverse_rule = qp.list_decomps(op)["adjoint(_select_swap)"]
+        inverse_rule = qp.list_decomps(op)["adjoint(select_swap)"]
         gate_set = {"T": 100, "Adjoint(T)": 100, "H": 1, "S": 1, "Adjoint(S)": 1, "CNOT": 1, "X": 1}
         gate_set |= {"Z": 1, "CZ": 1, "GlobalPhase": 1, "MidMeasure": 1, "PauliMeasure": 1}
 
@@ -276,7 +276,6 @@ class TestAdjointSelectSwapMeasurement:
         assert solution.decomposition(op).name == chosen_rule.name
         assert t_count < other_t_count
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("case", ADJOINT_SELECT_SWAP_CASES)
     def test_correctness(self, case):
         """Test that applying SelectSwap followed by the measurement-based uncomputation acts as
@@ -331,7 +330,6 @@ class TestAdjointSelectSwapMeasurement:
             op
         )
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize("case", [(8, 1, 3, 0), (11, 1, 4, 0), (6, 2, 3, 0), (4, 1, 3, 1)])
     def test_qjit(self, case, mocker):

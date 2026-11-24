@@ -416,7 +416,7 @@ def _local_hilbert_schmidt_impl(*ops, num_v_ops, **kwargs):
     return type.__call__(LocalHilbertSchmidt, V, U, **kwargs)
 
 
-def _hilbert_schmidt_resources(
+def _hilbert_schmidt_standard_resources(
     num_wires: int, u_reps: list[CompressedResourceOp], v_wires: list[int]
 ):
     num_first_range = num_wires // 2
@@ -437,7 +437,7 @@ def _hilbert_schmidt_resources(
     return resources
 
 
-def _local_hilbert_schmidt_resources(
+def _local_hilbert_schmidt_standard_resources(
     num_wires: int, u_reps: list[CompressedResourceOp], v_wires: list[int]
 ):
     num_first_range = num_wires // 2
@@ -521,8 +521,8 @@ def _up_to_last_layer(
     return n_wires, first_range, second_range, wires
 
 
-@register_resources(_hilbert_schmidt_resources)
-def _hilbert_schmidt_decomposition(  # pylint: disable=unused-argument
+@register_resources(_hilbert_schmidt_standard_resources, name="bell_basis")
+def _hilbert_schmidt_standard(  # pylint: disable=unused-argument
     *params: TensorLike,
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
@@ -543,8 +543,8 @@ def _hilbert_schmidt_decomposition(  # pylint: disable=unused-argument
     layer_hadamards()  # pylint: disable=no-value-for-parameter
 
 
-@register_resources(_local_hilbert_schmidt_resources)
-def _local_hilbert_schmidt_decomposition(  # pylint: disable=unused-argument
+@register_resources(_local_hilbert_schmidt_standard_resources, name="local_bell_basis")
+def _local_hilbert_schmidt_standard(  # pylint: disable=unused-argument
     *params: TensorLike,
     wires: int | Iterable[int | str] | Wires,
     U: Operator | Iterable[Operator],
@@ -556,5 +556,5 @@ def _local_hilbert_schmidt_decomposition(  # pylint: disable=unused-argument
     Hadamard(wires[0])
 
 
-add_decomps(HilbertSchmidt, _hilbert_schmidt_decomposition)
-add_decomps(LocalHilbertSchmidt, _local_hilbert_schmidt_decomposition)
+add_decomps(HilbertSchmidt, _hilbert_schmidt_standard)
+add_decomps(LocalHilbertSchmidt, _local_hilbert_schmidt_standard)
