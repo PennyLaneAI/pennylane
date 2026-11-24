@@ -120,7 +120,8 @@ external-libraries = [
     "scipy-openblas32>=0.3.26",
     "openqasm3",
     "antlr4_python3_runtime",
-    "pennylane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master",
+    # Temporary: restore once PennyLane-Qiskit supports PennyLane2 instead of Classic.
+    # "pennylane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master",
     # ibm-cloud-sdk-core (via qiskit-ibm-runtime) caps python-dateutil<3; dateutil 3.0.0 (2026-10-21) breaks resolution
     "python-dateutil<3",
 ]
