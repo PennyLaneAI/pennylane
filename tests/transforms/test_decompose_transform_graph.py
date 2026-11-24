@@ -105,10 +105,6 @@ def test_decompose_rejects_alt_decomps(transform):
 @pytest.mark.catalyst
 @pytest.mark.capture
 @pytest.mark.parametrize("use_name", [False, True])
-@pytest.mark.xfail(
-    strict=True,
-    reason="Waiting for a Catalyst build with updated precompiled decomposition rule names.",
-)
 def test_compiled_decompose_exclusions(use_name):
     """Compiled exclusions are local to a pass."""
     pytest.importorskip("catalyst")

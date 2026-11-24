@@ -141,7 +141,7 @@ class TestcommPauli:
         ),
         (
             PauliWord({0: "X", 1: "X"}),
-            PauliWord({"a": "X", "b": "Y"}),
+            PauliWord({3: "X", 4: "Y"}),
             PauliSentence({}),
         ),
     )
@@ -202,8 +202,8 @@ class TestcommPauliFalse:
         ),
         (
             PauliWord({0: "X", 1: "X"}),
-            PauliWord({"a": "X", "b": "Y"}),
-            qp.s_prod(0.0, Id([0, 1, "a", "b"])),
+            PauliWord({3: "X", 4: "Y"}),
+            qp.s_prod(0.0, Id([0, 1, 3, 4])),
         ),
     )
 
