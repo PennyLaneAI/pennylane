@@ -19,12 +19,12 @@ from inspect import signature
 
 import pennylane2.labs.estimator_beta as qre
 from pennylane2.core.operator import Operator
+from pennylane2.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane2.labs.estimator_beta import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
 )
-from pennylane2.queuing import AnnotatedQueue, QueuingManager
 from pennylane2.wires import Wires
 
 

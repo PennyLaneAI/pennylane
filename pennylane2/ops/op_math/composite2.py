@@ -24,7 +24,7 @@ from inspect import signature
 import pennylane2 as qp
 from pennylane2 import math
 from pennylane2.core.operator import Operator, Operator2
-from pennylane2.queuing import remove_from_program
+from pennylane2.core.queuing import remove_from_program
 from pennylane2.typing import AbstractWires
 
 from .composite import handle_recursion_error

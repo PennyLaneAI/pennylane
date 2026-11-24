@@ -321,17 +321,17 @@ class TestWrappedObj:
         assert wo.__repr__() == "Wrapped(test_repr)"  # pylint: disable=unnecessary-dunder-call
 
 
-def test_error_on_process_queue():
-    """Test that an informative error is raised indicating that process_queue has moved."""
+def test_public_import():
+    """Test that the public queuing module is the core module."""
+    from pennylane2.core import queuing
 
-    with pytest.raises(AttributeError, match="has been moved to qp.tape.qscript.from_queue"):
-        _ = qp.queuing.process_queue
+    assert qp.queuing is queuing
 
 
 def test_error_on_nonexistent_item():
     """Test an AttributeError is raised if an object does not exist."""
 
     with pytest.raises(
-        AttributeError, match="module 'pennylane2.queuing' has no attribute 'thing'"
+        AttributeError, match="module 'pennylane2.core.queuing' has no attribute 'thing'"
     ):
         _ = qp.queuing.thing

@@ -16,7 +16,8 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 
-# pylint: disable=wrong-import-order
+# The Classic compatibility guard must run before package initialization.
+# pylint: disable=wrong-import-order,wrong-import-position
 
 
 import warnings
@@ -28,7 +29,7 @@ _compatibility.check_classic_import()
 from pennylane2 import exceptions
 from pennylane2.boolean_fn import BooleanFn
 from pennylane2 import numpy
-from pennylane2 import queuing
+from pennylane2.core import queuing
 from pennylane2.core.apply import apply
 from pennylane2.core.queuing import QueuingManager
 

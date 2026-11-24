@@ -25,9 +25,9 @@ import pennylane2 as qp
 from pennylane2 import math
 from pennylane2.core.operator import Operator, Operator2, abstractify
 from pennylane2.core.pauli import PauliWord
+from pennylane2.core.queuing import AnnotatedQueue
 from pennylane2.exceptions import DecompositionUndefinedError
 from pennylane2.ops.op_math import CompositeOp2
-from pennylane2.queuing import AnnotatedQueue
 from pennylane2.testing import assert_valid
 from pennylane2.typing import Float, Wire
 from pennylane2.wires import WiresLike
