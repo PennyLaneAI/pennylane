@@ -164,6 +164,12 @@ class TestDecomposition:
         assert counts == {"Hadamard": 2 * num_wires, "RZ": 2 * num_wires}
 
 
+def test_rule_names():
+    """Test the names of the decomposition rules, which select them in ``fixed_decomps``."""
+    assert "to_rz" in [rule.name for rule in qp.list_decomps(qp.RZLayer)]
+    assert "negate_angle" in [rule.name for rule in qp.list_decomps("Adjoint(RZLayer)")]
+
+
 def test_adjoint_negates_angles():
     """Test that the adjoint negates the angles and keeps the wires and work wires."""
     op = qp.RZLayer([0.3, -1.2], wires=[0, 1, 2, 3], work_wires=[4])
