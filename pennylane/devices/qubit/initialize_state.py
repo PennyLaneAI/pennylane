@@ -23,8 +23,8 @@ import pennylane as qp
 
 def create_initial_state(
     wires: qp.wires.Wires | Iterable,
-    prep_operation: qp.operation.StatePrepBase = None,
-    like: str = None,
+    prep_operation: qp.operation.StatePrepBase | None = None,
+    like: str | None = None,
 ):
     r"""
     Returns an initial state, defaulting to :math:`\ket{0}` if no state-prep operator is provided.

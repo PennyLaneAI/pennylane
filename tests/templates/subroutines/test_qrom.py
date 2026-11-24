@@ -34,11 +34,11 @@ from pennylane.templates.subroutines.qrom import (
     _calculate_select_swap_sizes,
     _count_tempAND_in_measurement_qrom,
     _measurement_qrom_inner,
+    _qrom_measurement,
     _qrom_measurement_condition,
-    _qrom_measurement_decomposition,
     _qrom_measurement_resources,
+    _qrom_select_swap,
     _qrom_unary_iteration,
-    _select_swap,
 )
 from pennylane.testing import assert_decomposable, extract_all_primitives
 from pennylane.typing import Bool, Wire
@@ -78,7 +78,6 @@ class TestQROM:
     """Test the qp.QROM template."""
 
     @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("bitstrings", "target_wires", "control_wires", "work_wires", "clean"),
         [
@@ -420,7 +419,7 @@ class TestQROM:
 
         # ``clean`` is compilable and is therefore static when Catalyst captures this rule.
         # pylint: disable-next=protected-access
-        rule = qp.capture.subroutine(partial(_select_swap._impl, clean=clean))
+        rule = qp.capture.subroutine(partial(_qrom_select_swap._impl, clean=clean))
         _ = jax.make_jaxpr(rule)(**kwargs)
 
     @pytest.mark.capture
@@ -795,11 +794,11 @@ class TestMeasurementQROM:
             {"control_wires": n_control, "work_wires": n_control, "target_wires": n_targets}
         )
 
-        estimate = _qrom_measurement_decomposition.compute_resources(
+        estimate = _qrom_measurement.compute_resources(
             bitstrings=bitstrings, **wires, clean=True
         ).gate_counts
         with qp.queuing.AnnotatedQueue() as q:
-            _qrom_measurement_decomposition(bitstrings=bitstrings, **wires, clean=True)
+            _qrom_measurement(bitstrings=bitstrings, **wires, clean=True)
         actual = Counter(
             abstractify(op.base if isinstance(op, qp.ops.Conditional) else op) for op in q.queue
         )
@@ -867,7 +866,6 @@ class TestMeasurementQROM:
         assert for_loop_prim in extract_all_primitives(plxpr.jaxpr)
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         ("num_bitstrings", "num_extra_controls", "adjoint", "dtype"),
         [
@@ -913,8 +911,8 @@ class TestMeasurementQROM:
         @qp.decompose(
             gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ | {"PauliMeasure"},
             fixed_decomps={
-                "QROM": "_qrom_measurement_decomposition",
-                "Adjoint(QROM)": "_qrom_measurement_decomposition",
+                "QROM": "measurement",
+                "Adjoint(QROM)": "measurement",
             },
         )
         @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
@@ -947,7 +945,7 @@ class TestMeasurementQROM:
     def test_decomposition_single_bitstring(self):
         """Test the L == 1 branch of the measurement decomposition (no control wires)."""
         with qp.queuing.AnnotatedQueue() as q:
-            _qrom_measurement_decomposition(
+            _qrom_measurement(
                 bitstrings=np.array([[1, 0, 1]]),
                 control_wires=[],
                 target_wires=[1, 2, 3],
@@ -962,7 +960,7 @@ class TestMeasurementQROM:
     def test_decomposition_two_bitstrings(self):
         """Test the L == 2 branch of the measurement decomposition."""
         with qp.queuing.AnnotatedQueue() as q:
-            _qrom_measurement_decomposition(
+            _qrom_measurement(
                 bitstrings=np.array([[1, 0, 1], [0, 0, 1]]),
                 control_wires=[0],
                 target_wires=[1, 2, 3],
@@ -984,9 +982,9 @@ class TestMeasurementQROM:
             work_wires=[3],
         )
         with qp.queuing.AnnotatedQueue() as q_base:
-            _qrom_measurement_decomposition(base=op)
+            _qrom_measurement(base=op)
         with qp.queuing.AnnotatedQueue() as q_direct:
-            _qrom_measurement_decomposition(
+            _qrom_measurement(
                 bitstrings=op.bitstrings,
                 control_wires=op.control_wires,
                 target_wires=op.target_wires,
@@ -997,7 +995,6 @@ class TestMeasurementQROM:
             assert type(op_base) is type(op_direct)
             assert op_base.wires == op_direct.wires
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L",
@@ -1029,7 +1026,7 @@ class TestMeasurementQROM:
             qp.BasisState(
                 qp.math.int_to_binary(j, len(wires["control_wires"])), wires=wires["control_wires"]
             )
-            _qrom_measurement_decomposition(bitstrings=bitstrings, **wires, clean=True)
+            _qrom_measurement(bitstrings=bitstrings, **wires, clean=True)
             return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
 
         for j in range(L):
@@ -1041,7 +1038,6 @@ class TestMeasurementQROM:
             ), f"L={L}, j={j}: got {target_samples}, expected {bitstrings[j]} (x{shots})"
             assert np.allclose(work_samples, 0), f"j={j}: work wires not clean, got {work_samples}"
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize("L", range(1, 26))
     def test_no_phases_error(self, L, seed):
@@ -1076,7 +1072,7 @@ class TestMeasurementQROM:
             for wire in target_wires:
                 qp.Hadamard(wire)
 
-            _qrom_measurement_decomposition(
+            _qrom_measurement(
                 bitstrings=bitstrings,
                 control_wires=control_wires,
                 target_wires=target_wires,
@@ -1098,7 +1094,6 @@ class TestMeasurementQROM:
         for _ in range(10):
             assert np.allclose(circuit(), expected)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "L",
@@ -1140,7 +1135,7 @@ class TestMeasurementQROM:
             qp.BasisState(
                 qp.math.int_to_binary(j, len(wires["control_wires"])), wires=wires["control_wires"]
             )
-            _qrom_measurement_decomposition(bitstrings=bitstrings, **wires, clean=True)
+            _qrom_measurement(bitstrings=bitstrings, **wires, clean=True)
             return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
 
         for j in range(L, 2**n_input):
@@ -1154,7 +1149,6 @@ class TestMeasurementQROM:
                 work_samples, 0
             ), f"L={L}, out-of-range j={j}: work wires not clean, got {work_samples}"
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         ("L", "n_extra"),
@@ -1208,7 +1202,7 @@ class TestMeasurementQROM:
             qp.BasisState(
                 qp.math.int_to_binary(j, len(wires["control_wires"])), wires=wires["control_wires"]
             )
-            _qrom_measurement_decomposition(bitstrings=bitstrings, **wires, clean=True)
+            _qrom_measurement(bitstrings=bitstrings, **wires, clean=True)
             return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
 
         for j in range(2**n_input):
