@@ -25,12 +25,17 @@ New features since last release
 
   Note that :class:`~.QROMLoad` also has a decomposition using Select-SWAP, but is not allowed to
   leave the work wires in a garbage state. When using :class:`~.SelectSwap` for data loading, it
-  can only be unloaded with ``adjoint(SelectSwap)`` and the work wires are dirty between loading
+  can only be unloaded with ``Adjoint(SelectSwap)`` and the work wires are dirty between loading
   and unloading.
   The promise of zeroed target wires and the permission to leave a garbage state behind lead to 
   reduced quantum resources, so that ``SelectSwap`` is cheaper than ``QROMLoad``, which is cheaper
   than ``QROM``.
+  In addition, ``Adjoint(QROMLoad)`` and ``Adjoint(SelectSwap)`` have new decompositions based on 
+  measurement-based uncomputation from
+  Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, which reduces their Toffoli 
+  cost to roughly :math:`2\sqrt{L}` for :math:`L` bitstrings, given enough work wires.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
+  `(#10363) <https://github.com/PennyLaneAI/pennylane/pull/10363>`__
 
   For example, we may use ``QROMLoad`` on a zeroed target register, but need ``QROM`` to XOR more
   data onto it afterwards:
