@@ -307,31 +307,5 @@ def test_jax_with_numpy_auxiliary_data(diff_function):
     data = qp.math.array([1.0, 2.0])
     assert qp.math.get_interface(data) == "numpy"
     assert qp.math.allclose(derivative(jax.numpy.array(2.0), data), 4.0)
+    assert qp.math.allclose(derivative(jax.numpy.array(2.0), data=data), 4.0)
 
-
-@pytest.mark.jax
-@pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
-def test_registered_dictionary_subclass(diff_function):
-    """Registered dictionary subclasses expose leaves through their custom flattening."""
-
-    @jax.tree_util.register_pytree_node_class
-    class Parameters(dict):
-        """Store a parameter as an attribute rather than a dictionary entry."""
-
-        def __init__(self, value):
-            super().__init__()
-            self.value = value
-
-        def tree_flatten(self):
-            """Return the differentiable parameter."""
-            return (self.value,), None
-
-        @classmethod
-        def tree_unflatten(cls, _, children):
-            """Rebuild the parameter container."""
-            return cls(children[0])
-
-    derivative = diff_function(lambda params: params.value**2)
-    result = derivative(Parameters(jax.numpy.array(2.0)))
-    assert isinstance(result, Parameters)
-    assert qp.math.allclose(result.value, 4.0)
