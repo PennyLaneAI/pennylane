@@ -13,8 +13,6 @@
 # limitations under the License.
 """Defines the base class for the adjoint of operators."""
 
-from functools import partial
-from textwrap import dedent
 from typing import override
 
 import pennylane as qp
@@ -25,23 +23,12 @@ from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.operator.operator2 import operator_p  # tach-ignore
 from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import remove_from_program
-from pennylane.decomposition.decomposition_rule import (
-    DecompCollection,
-    DecompositionRule,
-    _decomp_contains_mcm,
-    _get_registered_decomps,
-    _list_decomps,
-    get_fixed_decomp,
-    list_decomps,
-    register_condition,
-    register_resources,
-)
+from pennylane.decomposition.decomposition_rule import list_decomps
 from pennylane.decomposition.resources import (
     AbstractOperatorLike,
     CompressedResourceOp,
     adjoint_resource_rep,
 )
-from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.decomposition.utils import to_name
 
 from .symbolicop2 import SymbolicOp2
@@ -195,116 +182,11 @@ class Adjoint2(SymbolicOp2):
             self.tracer = res
 
 
-@_list_decomps.register
-def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
-
-    abs_op = abstractify(op)
-
-    # fixed_decomps would override everything.
-    if fixed_rule := get_fixed_decomp(op):
-        return DecompCollection([fixed_rule])
-
-    # special case of cancelling nested adjoints.
-    if isinstance(abs_op.base, Adjoint2):
-        return DecompCollection([_adjoint_cancel])
-
-    # Custom decomposition rules registered specifically to the adjoint operator
-    custom_rules = _get_registered_decomps(to_name(abs_op))
-
-    # Shortcut that ignores general rules if an operator is self-adjoint
-    if self_adjoint in custom_rules:
-        return custom_rules
-
-    # Decomposition rules populated by applying adjoint on the base decomp rules
-    wrapped_rules = DecompCollection(
-        [
-            _make_adjoint_decomp(rule)
-            for rule in list_decomps(abs_op.base)
-            # It only makes sense to wrap a decomposition rule with adjoint if the decomposition
-            # does not dynamically allocate wires and does not contain mid-circuit measurements.
-            if rule.get_work_wire_spec(**abs_op.base.arguments).total == 0
-            and not _decomp_contains_mcm(rule, abs_op.base.arguments)
-        ]
-    )
-    return custom_rules + wrapped_rules
-
-
-def _make_adjoint_decomp(base_rule: DecompositionRule):
-    """Wraps a decomposition rule with adjoint."""
-
-    def _condition_fn(base):
-        return base_rule.is_applicable(**base.arguments)
-
-    def _resource_fn(base):
-        base_res = base_rule.compute_resources(**base.arguments)
-        base_gates = base_res.gate_counts
-        return {_adjoint_abstract(op): count for op, count in base_gates.items()}
-
-    def _wrap_work_wire_spec(base_rule):
-        # pylint: disable=protected-access
-
-        if isinstance(base_rule._work_wire_spec, dict):
-            return base_rule._work_wire_spec
-
-        def _wrapper(base, *_, **__):
-            return base_rule._work_wire_spec(**base.arguments)
-
-        return _wrapper
-
-    base_source = base_rule._source
-
-    @register_condition(_condition_fn)
-    @register_resources(
-        _resource_fn,
-        work_wires=_wrap_work_wire_spec(base_rule),
-        exact=base_rule.exact_resources,
-        name=f"adjoint({base_rule.name})",
-    )
-    def _impl(base):
-        non_traced_args, traced_args = get_traced_and_non_traced_args(base)
-        impl = partial(base_rule._impl, **non_traced_args)  # pylint: disable=protected-access
-        qp.adjoint(impl)(**traced_args)
-
-    _impl._source = (
-        dedent(_impl._source).strip()
-        + "\n\nwhere base_decomposition is defined as:\n\n"
-        + dedent(base_source).strip()
-    )
-
-    return _impl
-
-
 def _adjoint_abstract(op: AbstractOperatorLike | type[Operator]):
     op = abstractify(op)
     if isinstance(op, CompressedResourceOp):
         return adjoint_resource_rep(op.op_type, op.params)
     return qp.adjoint(op)
-
-
-def _adjoint_cancel_resources(base):
-    assert isinstance(base, Adjoint2)
-    inner_base = base.base
-    return {inner_base: 1}
-
-
-@register_resources(_adjoint_cancel_resources, name="cancel")
-def _adjoint_cancel(base):
-    """Decompose the adjoint of the adjoint of an operator."""
-    assert isinstance(base, Adjoint2)
-    type(base.base)(**base.base.arguments)
-
-
-def _adjoint_negate_angle_resources(base):
-    return {abstractify(base): 1}
-
-
-@register_resources(_adjoint_negate_angle_resources, name="negate_angle")
-def _adjoint_negate_angle(base):
-    """Decompose the adjoint of a rotation operator by inverting the angle."""
-    # A rotation should only have 1 dynamic parameter
-    assert len(base.dynamic_argnames) == 1
-    angle = tuple(base.dynamic_args.values())[0]
-    qp.ops.functions.bind_new_parameters(base, (-angle,))
 
 
 @to_name.register

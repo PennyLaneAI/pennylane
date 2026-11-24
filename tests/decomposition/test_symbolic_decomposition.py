@@ -14,8 +14,6 @@
 
 """Tests the decomposition rules defined for symbolic operations other than controlled."""
 
-# pylint: disable=too-few-public-methods
-
 import warnings
 from textwrap import dedent
 
@@ -37,41 +35,49 @@ from pennylane.decomposition.resources import (
     pow_resource_rep,
     resource_rep,
 )
-from pennylane.decomposition.symbolic_decomposition import (
-    _adjoint_cancel,
-    _adjoint_negate_angle,
-    _controlled_flip_adjoint,
+from pennylane.decomposition_rules.op_math import adjoint_cancel as cancel_adjoint2
+from pennylane.decomposition_rules.op_math import controlled_flip_adjoint as flip_control_adjoint2
+from pennylane.decomposition_rules.op_math import (
+    controlled_to_unitary,
 )
-from pennylane.decomposition.symbolic_decomposition import (
-    _controlled_to_unitary as _controlled1_to_unitary,
+from pennylane.decomposition_rules.op_math import ctrl_single_work_wire as ctrl_single_work_wire2
+from pennylane.decomposition_rules.op_math import flip_zero_control as flip_zero_control2
+from pennylane.decomposition_rules.op_math import make_controlled_decomp as make_controlled_decomp2
+from pennylane.decomposition_rules.op_math import pow_flip_adjoint as flip_pow_adjoint2
+from pennylane.decomposition_rules.op_math import pow_involutory as pow_involutory2
+from pennylane.decomposition_rules.op_math import pow_merge_powers as merge_powers2
+from pennylane.decomposition_rules.op_math import pow_repeat_base as repeat_pow_base2
+from pennylane.decomposition_rules.op_math import (
+    self_adjoint,
 )
-from pennylane.decomposition.symbolic_decomposition import (
-    _pow_flip_adjoint,
-    _pow_merge_powers,
-    _pow_repeat_base,
-    _pow_scale_angle,
+from pennylane.decomposition_rules.op_math.adjoint import (
+    adjoint_cancel,
+    adjoint_negate_angle,
+    make_adjoint_decomp,
+)
+from pennylane.decomposition_rules.op_math.controlled import (
+    controlled_flip_adjoint,
+)
+from pennylane.decomposition_rules.op_math.controlled import (
+    controlled_to_unitary as _controlled1_to_unitary,
+)
+from pennylane.decomposition_rules.op_math.controlled import (
     ctrl_single_work_wire,
     flip_zero_control,
-    make_adjoint_decomp,
     make_controlled_decomp,
-    pow_involutory,
-    self_adjoint,
-    self_adjoint_legacy,
 )
+from pennylane.decomposition_rules.op_math.pow import (
+    pow_flip_adjoint,
+    pow_involutory,
+    pow_merge_powers,
+    pow_repeat_base,
+    pow_scale_angle,
+)
+from pennylane.decomposition_rules.op_math.symbolicop import self_adjoint_legacy
 from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
-from pennylane.ops.op_math.adjoint2 import _adjoint_cancel as cancel_adjoint2
 from pennylane.ops.op_math.controlled2 import ControlledOp2
-from pennylane.ops.op_math.controlled2 import _controlled_flip_adjoint as flip_control_adjoint2
-from pennylane.ops.op_math.controlled2 import _controlled_to_unitary
-from pennylane.ops.op_math.controlled2 import _make_controlled_decomp as make_controlled_decomp2
-from pennylane.ops.op_math.controlled2 import ctrl_single_work_wire as ctrl_single_work_wire2
-from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow import pow
 from pennylane.ops.op_math.pow2 import Pow2, _pow_abstract
-from pennylane.ops.op_math.pow2 import _pow_flip_adjoint as flip_pow_adjoint2
-from pennylane.ops.op_math.pow2 import _pow_merge_powers as merge_powers2
-from pennylane.ops.op_math.pow2 import _pow_repeat_base as repeat_pow_base2
-from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.testing import decomp_rule_to_tape
 from pennylane.typing import Bool, Complex, Float, Wire
 from tests.core.operator.operator2_utils import (
@@ -105,15 +111,15 @@ class TestAdjointDecompositionRules:
 
         op = qp.adjoint(qp.adjoint(CustomOp(0.5, wires=0)))
 
-        tape = decomp_rule_to_tape(op, _adjoint_cancel)
+        tape = decomp_rule_to_tape(op, adjoint_cancel)
 
         assert tape.operations == [CustomOp(0.5, wires=0)]
-        assert _adjoint_cancel.compute_resources(**op.resource_params) == to_resources(
+        assert adjoint_cancel.compute_resources(**op.resource_params) == to_resources(
             {resource_rep(CustomOp, key=0): 1}
         )
 
     def test_cancel_adjoint2(self):
-        """Tests the _adjoint_cancel rule written for Operator2."""
+        """Tests the adjoint_cancel rule written for Operator2."""
 
         op = qp.adjoint(qp.adjoint(OneWireDynOp(0.5, wires=[0])))
 
@@ -128,7 +134,7 @@ class TestAdjointDecompositionRules:
 
         op = qp.adjoint(qp.adjoint(CustomOp(0.5, wires=0)))
 
-        tape = decomp_rule_to_tape(op, _adjoint_cancel)
+        tape = decomp_rule_to_tape(op, adjoint_cancel)
         assert tape.operations == [CustomOp(0.5, wires=0)]
 
     def test_adjoint_general(self):
@@ -155,7 +161,7 @@ class TestAdjointDecompositionRules:
             )
             def _impl(*params, wires, base):
                 # pylint: disable-next=protected-access
-                qp.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
+                ops.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
 
             where base_decomposition is defined as:
 
@@ -228,13 +234,13 @@ class TestAdjointDecompositionRules:
         ]
 
     def test_adjoint_rotation(self):
-        """Tests the _adjoint_negate_angle decomposition."""
+        """Tests the adjoint_negate_angle decomposition."""
 
         op = qp.adjoint(CustomOp(0.5, wires=[0, 1, 2]))
-        tape = decomp_rule_to_tape(op, _adjoint_negate_angle)
+        tape = decomp_rule_to_tape(op, adjoint_negate_angle)
 
         assert tape.operations == [CustomOp(-0.5, wires=[0, 1, 2])]
-        assert _adjoint_negate_angle.compute_resources(**op.resource_params) == Resources(
+        assert adjoint_negate_angle.compute_resources(**op.resource_params) == Resources(
             {resource_rep(CustomOp, key=0): 1}
         )
 
@@ -267,10 +273,10 @@ class TestPowDecomposition:
         """Test the decomposition rule for nested powers."""
 
         op = qp.pow(qp.pow(DummyHadamard(0), 3), 2)
-        tape = decomp_rule_to_tape(op, _pow_merge_powers)
+        tape = decomp_rule_to_tape(op, pow_merge_powers)
 
         assert tape.operations == [qp.pow(DummyHadamard(0), 6)]
-        assert _pow_merge_powers.compute_resources(**op.resource_params) == to_resources(
+        assert pow_merge_powers.compute_resources(**op.resource_params) == to_resources(
             {pow_resource_rep(DummyHadamard, {}, 6): 1}
         )
 
@@ -289,10 +295,10 @@ class TestPowDecomposition:
         """Tests repeating the same op z number of times."""
 
         op = qp.pow(DummyHadamard(0), 3)
-        tape = decomp_rule_to_tape(op, _pow_repeat_base)
+        tape = decomp_rule_to_tape(op, pow_repeat_base)
 
         assert tape.operations == [DummyHadamard(0), DummyHadamard(0), DummyHadamard(0)]
-        assert _pow_repeat_base.compute_resources(**op.resource_params) == to_resources(
+        assert pow_repeat_base.compute_resources(**op.resource_params) == to_resources(
             {DummyHadamard: 3}
         )
 
@@ -314,7 +320,7 @@ class TestPowDecomposition:
         op = qp.pow(qp.H(0), 3)
 
         def circuit():
-            _pow_repeat_base(*op.parameters, wires=op.wires, **op.hyperparameters)
+            pow_repeat_base(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         plxpr = qp.capture.make_plxpr(circuit)()
         collector = CollectOpsandMeas()
@@ -334,9 +340,9 @@ class TestPowDecomposition:
         """Tests that is_applicable returns False when z isn't a positive integer."""
 
         op = qp.pow(DummyHadamard(0), 0.5)
-        assert not _pow_repeat_base.is_applicable(**op.resource_params)
+        assert not pow_repeat_base.is_applicable(**op.resource_params)
         op = qp.pow(DummyHadamard(0), -1)
-        assert not _pow_repeat_base.is_applicable(**op.resource_params)
+        assert not pow_repeat_base.is_applicable(**op.resource_params)
 
     def test_non_integer_pow_not_applicable2(self):
         """Tests that is_applicable returns False when z isn't a positive integer."""
@@ -347,14 +353,14 @@ class TestPowDecomposition:
         assert not repeat_pow_base2.is_applicable(**op.arguments)
 
     def test_flip_pow_adjoint(self):
-        """Tests the _pow_flip_adjoint decomposition."""
+        """Tests the pow_flip_adjoint decomposition."""
 
         op = qp.pow(qp.adjoint(CustomOp(0.5, wires=[0, 1, 2])), 2)
 
-        tape = decomp_rule_to_tape(op, _pow_flip_adjoint)
+        tape = decomp_rule_to_tape(op, pow_flip_adjoint)
 
         assert tape.operations == [qp.adjoint(qp.pow(CustomOp(0.5, wires=[0, 1, 2]), 2))]
-        assert _pow_flip_adjoint.compute_resources(**op.resource_params) == Resources(
+        assert pow_flip_adjoint.compute_resources(**op.resource_params) == Resources(
             {
                 adjoint_resource_rep(
                     qp.ops.Pow,
@@ -364,7 +370,7 @@ class TestPowDecomposition:
         )
 
     def test_flip_pow_adjoint2(self):
-        """Tests the _pow_flip_adjoint decomposition."""
+        """Tests the pow_flip_adjoint decomposition."""
 
         op = pow(qp.adjoint(DynOp(0.5, wires=[0, 1, 2])), 2)
 
@@ -453,10 +459,10 @@ class TestPowDecomposition:
         """Tests the pow_rotations decomposition."""
 
         op = qp.pow(CustomOp(0.3, wires=[0, 1, 2]), 2.5)
-        tape = decomp_rule_to_tape(op, _pow_scale_angle)
+        tape = decomp_rule_to_tape(op, pow_scale_angle)
 
         assert tape.operations == [CustomOp(0.3 * 2.5, wires=[0, 1, 2])]
-        assert _pow_scale_angle.compute_resources(**op.resource_params) == Resources(
+        assert pow_scale_angle.compute_resources(**op.resource_params) == Resources(
             {resource_rep(CustomOp, key=0): 1}
         )
 
@@ -658,18 +664,18 @@ class TestControlledDecomposition:
                     w for w, val in zip(control_wires, control_values, strict=True) if not val
                 ]
                 for w in zero_control_wires:
-                    qp.PauliX(w)
+                    ops.PauliX(w)
                 # We're extracting control wires and base wires from the wires argument instead
                 # of directly using control_wires and base.wires, `wires` is properly traced, but
                 # `control_wires` and `base.wires` are not.
-                qp.ctrl(
+                ops.ctrl(
                     base_decomposition._impl,  # pylint: disable=protected-access
                     control=wires[: len(control_wires)],
                     work_wires=work_wires,
                     work_wire_type=work_wire_type,
                 )(*params, wires=wires[-len(base.wires) :], **base.hyperparameters)
                 for w in zero_control_wires:
-                    qp.PauliX(w)
+                    ops.PauliX(w)
 
             where base_decomposition is defined as:
 
@@ -973,13 +979,13 @@ class TestControlledDecomposition:
         )
 
     def test_flip_control_adjoint(self):
-        """Tests the _controlled_flip_adjoint decomposition."""
+        """Tests the controlled_flip_adjoint decomposition."""
 
         op = qp.ctrl(qp.adjoint(CustomMultiQubitOp(0.5, wires=[0, 1])), control=2)
-        tape = decomp_rule_to_tape(op, _controlled_flip_adjoint)
+        tape = decomp_rule_to_tape(op, controlled_flip_adjoint)
 
         assert tape.operations == [qp.adjoint(qp.ctrl(CustomMultiQubitOp(0.5, wires=[0, 1]), 2))]
-        assert _controlled_flip_adjoint.compute_resources(**op.resource_params) == Resources(
+        assert controlled_flip_adjoint.compute_resources(**op.resource_params) == Resources(
             {
                 adjoint_resource_rep(
                     qp.ops.Controlled,
@@ -996,7 +1002,7 @@ class TestControlledDecomposition:
         )
 
     def test_flip_control_adjoint2(self):
-        """Tests the _controlled_flip_adjoint decomposition."""
+        """Tests the controlled_flip_adjoint decomposition."""
 
         op = qp.ctrl(qp.adjoint(DynOp(0.5, wires=[0, 1])), control=2)
         tape = decomp_rule_to_tape(op, flip_control_adjoint2)
@@ -1033,7 +1039,7 @@ class TestControlledDecomposition:
                     w for w, val in zip(control_wires, control_values, strict=True) if not val
                 ]
                 for w in zero_control_wires:
-                    qp.PauliX(w)
+                    ops.PauliX(w)
                 inner_decomp(
                     *params,
                     wires=wires,
@@ -1042,7 +1048,7 @@ class TestControlledDecomposition:
                     **kwargs,
                 )
                 for w in zero_control_wires:
-                    qp.PauliX(w)
+                    ops.PauliX(w)
 
             where inner_decomp is defined as:
 
@@ -1290,14 +1296,14 @@ class TestControlledDecomposition:
         """Tests the decomposition to controlled qubit unitary."""
 
         op = qp.ctrl(DynOpWithMatrix(0.1, 0.2, 0.3, wires=0), control=[1, 2, 3], work_wires=[4, 5])
-        tape = decomp_rule_to_tape(op, _controlled_to_unitary)
+        tape = decomp_rule_to_tape(op, controlled_to_unitary)
 
         assert tape.operations == [
             qp.ControlledQubitUnitary(
                 qp.Rot.compute_matrix(0.1, 0.2, 0.3), wires=[1, 2, 3, 0], work_wires=[4, 5]
             )
         ]
-        assert _controlled_to_unitary.compute_resources(**op.arguments) == Resources(
+        assert controlled_to_unitary.compute_resources(**op.arguments) == Resources(
             {
                 qp.ControlledQubitUnitary(
                     Complex[2, 2],

@@ -126,6 +126,7 @@ from pennylane.templates.tensornetworks import *
 from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
+from pennylane import decomposition_rules
 from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
 from pennylane.resource import analyze, estimate, specs, track
@@ -229,6 +230,7 @@ from pennylane.liealg import lie_closure, structure_constants, center
 from pennylane import estimator
 
 from pennylane import testing
+from ._entry_points_utils import _setup_entry_points
 
 from importlib.metadata import version as _metadata_version
 
@@ -248,7 +250,6 @@ if _find_spec("numpy") is not None:
             exceptions.PennyLaneDeprecationWarning,
         )
 
-from ._entry_points_utils import _setup_entry_points
 
 # add to _entry_point_groups as new groups are added and desired to be accessed top-level
 _entry_point_groups = ["pennylane.drawer"]

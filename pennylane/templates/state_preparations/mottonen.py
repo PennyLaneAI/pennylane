@@ -440,19 +440,3 @@ class MottonenStatePreparation(Operation):
             op_list.extend([qp.GlobalPhase(global_phase)])
 
         return op_list
-
-
-def _mottonen_resources(num_wires):
-    n = 2**num_wires - 1  # Equal to `sum(2**i for i in range(num_wires))`
-
-    return {qp.GlobalPhase: 1, qp.RY: n, qp.RZ: n, qp.CNOT: 2 * (n - 1)}
-
-
-mottonen_decomp = qp.register_resources(
-    _mottonen_resources,
-    MottonenStatePreparation.compute_decomposition,
-    exact=False,
-    name="standard",
-)
-
-qp.add_decomps(MottonenStatePreparation, mottonen_decomp)

@@ -25,6 +25,7 @@ from scipy.linalg import fractional_matrix_power
 import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.decomposition.resources import Resources
+from pennylane.decomposition_rules.op_math import pow_scale_angle
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -34,7 +35,7 @@ from pennylane.exceptions import (
 from pennylane.ops import ISWAP, Identity, PhaseShift, S, T, Z
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow import pow
-from pennylane.ops.op_math.pow2 import Pow2, _pow_scale_angle
+from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 from tests.ops.op_math.test_adjoint2 import RX2, SX2
@@ -51,7 +52,7 @@ class NoPowOp(Operator2):
 
     arg_specs = {"wires": Wire[1]}
 
-    def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+    def __init__(self, wires):
         super().__init__(wires)
 
     def pow(self, z):
@@ -63,7 +64,7 @@ class BadPowOp(Operator2):
 
     arg_specs = {"wires": Wire[1]}
 
-    def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+    def __init__(self, wires):
         super().__init__(wires)
 
     def pow(self, z):
@@ -77,7 +78,7 @@ class RealPowOp(Operator2):
 
     arg_specs = {"wires": Wire[1]}
 
-    def __init__(self, phi, wires):  # pylint: disable=useless-parent-delegation
+    def __init__(self, phi, wires):
         super().__init__(phi, wires)
 
     def pow(self, z):
@@ -328,15 +329,15 @@ def test_label(exp, sup):
 
 
 def test_pow_rotation2():
-    """Tests the _pow_scale_angle decomposition with an ``Operator2`` base."""
+    """Tests the pow_scale_angle decomposition with an ``Operator2`` base."""
 
     op = pow(OneWireDynOp(0.3, wires=[0]), 2.5)
     assert isinstance(op, Pow2)
 
-    tape = qp.testing.decomp_rule_to_tape(op, _pow_scale_angle)
+    tape = qp.testing.decomp_rule_to_tape(op, pow_scale_angle)
 
     assert tape.operations == [OneWireDynOp(0.3 * 2.5, wires=[0])]
-    assert _pow_scale_angle.compute_resources(**op.arguments) == Resources(
+    assert pow_scale_angle.compute_resources(**op.arguments) == Resources(
         {OneWireDynOp(Float, wires=Wire[1]): 1}
     )
 

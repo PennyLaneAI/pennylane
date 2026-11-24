@@ -104,18 +104,6 @@ class LabelledOp(SymbolicOp):
         return self.base.matrix(wire_order=wire_order)
 
 
-def _custom_label_standard_resources(base):
-    return {base: 1}
-
-
-@register_resources(_custom_label_standard_resources, name="unwrap_base")
-def _custom_label_standard(*params, wires, base, **_):  # pylint: disable=unused-argument
-    apply(base)
-
-
-add_decomps(LabelledOp, _custom_label_standard)
-
-
 @_equal_dispatch.register
 def _equal_labelled_op(op1: LabelledOp, op2: LabelledOp, **kwargs):
     if op1.custom_label != op2.custom_label:
@@ -162,3 +150,15 @@ def label(op: Operator, new_label: str) -> LabelledOp:
 
     """
     return LabelledOp(op, new_label)
+
+
+def _custom_label_standard_resources(base):
+    return {base: 1}
+
+
+@register_resources(_custom_label_standard_resources, name="unwrap_base")
+def _custom_label_standard(*params, wires, base, **_):  # pylint: disable=unused-argument
+    apply(base)
+
+
+add_decomps(LabelledOp, _custom_label_standard)

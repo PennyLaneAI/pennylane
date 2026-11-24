@@ -21,29 +21,25 @@ import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import Resources
 from pennylane.decomposition.decomposition_rule import DecompCollection
-from pennylane.decomposition.symbolic_decomposition import (
-    _adjoint_negate_angle,
-    _pow_scale_angle,
-    self_adjoint,
+from pennylane.decomposition_rules import (
+    controlled_g_phase_standard,
+    controlled_hadamard_standard,
+    controlled_phase_shift_standard,
+    controlled_rot_standard,
+    controlled_rx_standard,
+    controlled_z_standard,
+    controlled_z_to_ccz,
+    ctrl_x_to_mcx,
 )
-from pennylane.ops.identity import _controlled_g_phase_standard
-from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
-from pennylane.ops.op_math.controlled2 import flip_zero_control
-from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
-from pennylane.ops.qubit.non_parametric_ops import (
-    _controlled_hadamard_standard,
-    _controlled_z_standard,
-    _controlled_z_to_ccz,
-    _ctrl_x_to_mcx,
-)
-from pennylane.ops.qubit.parametric_ops_single_qubit import (
-    _controlled_phase_shift_standard,
-    _controlled_rot_standard,
-    _controlled_rx_standard,
-)
+from pennylane.decomposition_rules.op_math import adjoint_negate_angle as adjoint_negate_angle2
+from pennylane.decomposition_rules.op_math import flip_zero_control, pow_involutory, self_adjoint
+from pennylane.decomposition_rules.op_math.adjoint import adjoint_negate_angle
+from pennylane.decomposition_rules.op_math.pow import pow_scale_angle
 
 _decompositions = defaultdict(DecompCollection)
 decompositions = ContextVar("_test_decompositions", default=_decompositions)
+
+decompositions.get()["ControlledOp"].extend(qp.list_decomps("ControlledOp"))
 
 
 def to_resources(gate_count: dict, weighted_cost: float | None = None) -> Resources:
@@ -172,18 +168,18 @@ decompositions.get()["CRot"].append(_crot_to_rot_cnot)
 # Custom Decompositions For Symbolic Operators #
 ################################################
 
-decompositions.get()["C(GlobalPhase)"].append(_controlled_g_phase_standard)
-decompositions.get()["C(Hadamard)"].append(_controlled_hadamard_standard)
-decompositions.get()["C(PauliX)"].append(_ctrl_x_to_mcx)
-decompositions.get()["C(PauliZ)"].append(flip_zero_control(_controlled_z_to_ccz))
-decompositions.get()["C(PauliZ)"].append(flip_zero_control(_controlled_z_standard))
-decompositions.get()["C(PhaseShift)"].append(flip_zero_control(_controlled_phase_shift_standard))
-decompositions.get()["C(RX)"].append(flip_zero_control(_controlled_rx_standard))
-decompositions.get()["C(Rot)"].append(flip_zero_control(_controlled_rot_standard))
+decompositions.get()["C(GlobalPhase)"].append(controlled_g_phase_standard)
+decompositions.get()["C(Hadamard)"].append(controlled_hadamard_standard)
+decompositions.get()["C(PauliX)"].append(ctrl_x_to_mcx)
+decompositions.get()["C(PauliZ)"].append(flip_zero_control(controlled_z_to_ccz))
+decompositions.get()["C(PauliZ)"].append(flip_zero_control(controlled_z_standard))
+decompositions.get()["C(PhaseShift)"].append(flip_zero_control(controlled_phase_shift_standard))
+decompositions.get()["C(RX)"].append(flip_zero_control(controlled_rx_standard))
+decompositions.get()["C(Rot)"].append(flip_zero_control(controlled_rot_standard))
 decompositions.get()["Adjoint(Hadamard)"].append(self_adjoint)
-decompositions.get()["Pow(Hadamard)"].append(pow_involutory2)
-decompositions.get()["Adjoint(RX)"].append(_adjoint_negate_angle)
-decompositions.get()["Pow(RX)"].append(_pow_scale_angle)
+decompositions.get()["Pow(Hadamard)"].append(pow_involutory)
+decompositions.get()["Adjoint(RX)"].append(adjoint_negate_angle)
+decompositions.get()["Pow(RX)"].append(pow_scale_angle)
 decompositions.get()["Adjoint(CNOT)"].append(self_adjoint)
-decompositions.get()["Adjoint(PhaseShift)"].append(adjoint_rotation2)
-decompositions.get()["Adjoint(ControlledPhaseShift)"].append(adjoint_rotation2)
+decompositions.get()["Adjoint(PhaseShift)"].append(adjoint_negate_angle2)
+decompositions.get()["Adjoint(ControlledPhaseShift)"].append(adjoint_negate_angle2)

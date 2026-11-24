@@ -95,10 +95,7 @@ class TestInspectDecompGraph:
             Decomposition 0 (name: single_work_wire)
             Insufficient work wires: requires 1 but only 0 available.
 
-            Decomposition 1 (name: many_zeroed_work_wires)
-            Not applicable (provided operator instance does not meet all conditions for this rule).
-
-            Decomposition 2 (name: controlled(to_paulirot))
+            Decomposition 1 (name: controlled(to_paulirot))
             0: ─╭RZZ(0.50)─┤
             1: ─├RZZ(0.50)─┤
             3: ─├●─────────┤
@@ -109,7 +106,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 46, GlobalPhase: 25, RX: 23, RZ: 22}
             Weighted Cost: 91.0
 
-            CHOSEN: Decomposition 3 (name: controlled(cnot_ladder))
+            CHOSEN: Decomposition 2 (name: controlled(cnot_ladder))
             0: ─╭MultiRZLadder@RZ(0.50)@MultiRZLadder─┤
             1: ─├MultiRZLadder@RZ(0.50)@MultiRZLadder─┤
             3: ─├●────────────────────────────────────┤
@@ -129,13 +126,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### Decomposition 1 (name: many_zeroed_work_wires)
-
-            _Not applicable (provided operator instance does not meet all conditions for this rule)._
-
-            ---
-
-            #### Decomposition 2 (name: controlled(to_paulirot))
+            #### Decomposition 1 (name: controlled(to_paulirot))
 
             ```
             0: ─╭RZZ(0.50)─┤
@@ -162,7 +153,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### **CHOSEN:** Decomposition 3 (name: controlled(cnot_ladder))
+            #### **CHOSEN:** Decomposition 2 (name: controlled(cnot_ladder))
 
             ```
             0: ─╭MultiRZLadder@RZ(0.50)@MultiRZLadder─┤
@@ -219,10 +210,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 26, GlobalPhase: 68, MidMeasure: 2, RX: 20, RY: 10, RZ: 42}
             Weighted Cost: 3628.0
 
-            Decomposition 1 (name: many_zeroed_work_wires)
-            Not applicable (provided operator instance does not meet all conditions for this rule).
-
-            Decomposition 2 (name: controlled(to_paulirot))
+            Decomposition 1 (name: controlled(to_paulirot))
             0: ─╭RZZ(0.50)─┤
             1: ─├RZZ(0.50)─┤
             3: ─├●─────────┤
@@ -233,7 +221,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 46, GlobalPhase: 25, RX: 23, RZ: 22}
             Weighted Cost: 2296.0
 
-            CHOSEN: Decomposition 3 (name: controlled(cnot_ladder))
+            CHOSEN: Decomposition 2 (name: controlled(cnot_ladder))
             0: ─╭MultiRZLadder@RZ(0.50)@MultiRZLadder─┤
             1: ─├MultiRZLadder@RZ(0.50)@MultiRZLadder─┤
             3: ─├●────────────────────────────────────┤
@@ -282,13 +270,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### Decomposition 1 (name: many_zeroed_work_wires)
-
-            _Not applicable (provided operator instance does not meet all conditions for this rule)._
-
-            ---
-
-            #### Decomposition 2 (name: controlled(to_paulirot))
+            #### Decomposition 1 (name: controlled(to_paulirot))
 
             ```
             0: ─╭RZZ(0.50)─┤
@@ -315,7 +297,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### **CHOSEN:** Decomposition 3 (name: controlled(cnot_ladder))
+            #### **CHOSEN:** Decomposition 2 (name: controlled(cnot_ladder))
 
             ```
             0: ─╭MultiRZLadder@RZ(0.50)@MultiRZLadder─┤

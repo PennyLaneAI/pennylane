@@ -15,12 +15,9 @@
 Contains the MPSPrep template.
 """
 
-import numpy as np
-
 import pennylane as qp
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
-from pennylane.typing import Complex, Wire
+from pennylane.typing import Wire
 
 
 def _validate_mps_shape(mps):
@@ -362,77 +359,3 @@ class MPSPrep(Operator2):
         super().__init__(
             mps, wires=wires, work_wires=work_wires, right_canonicalize=right_canonicalize
         )
-
-
-# pylint: disable-next=unused-argument
-def _mps_prep_standard_resources(mps, wires, work_wires=None, right_canonicalize=False):
-    num_work_wires = len(work_wires)
-    num_sites = len(mps)
-    return {
-        qp.QubitUnitary(
-            Complex[2 ** (1 + num_work_wires), 2 ** (1 + num_work_wires)],
-            wires=Wire[1 + num_work_wires],
-        ): num_sites
-    }
-
-
-# pylint: disable-next=unused-argument
-def _work_wires_bond_dimension_condition(mps, wires, work_wires=None, right_canonicalize=False):
-    bond_dimensions = [data.shape[-1] for data in mps]
-    max_bond_dimension = max(bond_dimensions[:-1])
-
-    return (
-        work_wires is not None
-        and len(work_wires) > 0
-        and 2 ** len(work_wires) >= max_bond_dimension
-    )
-
-
-@qp.register_condition(_work_wires_bond_dimension_condition)
-@register_resources(_mps_prep_standard_resources, name="sequential_unitaries")
-def _mps_prep_standard(mps, wires, work_wires=None, right_canonicalize=False):
-    mps = list(mps)
-
-    n_wires = len(work_wires) + 1
-
-    mps = mps.copy()
-
-    # Transform the MPS to ensure that the generated matrix is unitary
-    if right_canonicalize:
-        mps = right_canonicalize_mps(mps)
-
-    #  NOTE: tensor legs assignment convention is (vL, p, vR)
-    mps[0] = mps[0].reshape((1, *mps[0].shape))
-    mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
-
-    interface, dtype = qp.math.get_interface(mps[0]), mps[0].dtype
-
-    for i, Ai in enumerate(mps):
-
-        vectors = []
-        for column in Ai:
-            vector = qp.math.zeros(2**n_wires, like=interface, dtype=dtype)
-            if interface == "jax":
-                vector = vector.at[: len(column[0])].set(column[0])
-                vector = vector.at[2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])].set(
-                    column[1]
-                )
-            else:
-                vector[: len(column[0])] = column[0]
-                vector[2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])] = column[1]
-            vectors.append(vector)
-        vectors = qp.math.stack(vectors).T
-        # The unitary is completed using QR decomposition
-        d, k = vectors.shape
-        assert d == 2**n_wires, "The first dimension of the vectors must match 2**n_wires."
-        assert (
-            k <= d
-        ), "The second dimension of the vectors must be less than or equal to 2**(n_wires-1)."
-        new_columns = qp.math.array(np.random.RandomState(42).random((d, d - k)))
-        unitary_matrix, R = qp.math.linalg.qr(qp.math.hstack([vectors, new_columns]))
-        unitary_matrix *= qp.math.sign(qp.math.diag(R))  # Enforce uniqueness for QR decomposition
-
-        qp.QubitUnitary(unitary_matrix, wires=[wires[i], *work_wires])
-
-
-add_decomps(MPSPrep, _mps_prep_standard)

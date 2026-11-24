@@ -36,10 +36,7 @@ from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 import pennylane as qp
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.decomposition.gate_set import GateSet
-from pennylane.exceptions import DecompositionError, DecompositionWarning
-
-from .decomposition_rule import (
+from pennylane.decomposition.decomposition_rule import (
     DecompositionRule,
     WorkWireSpec,
     _decomp_contains_mcm,
@@ -47,23 +44,11 @@ from .decomposition_rule import (
     add_decomps,
     list_decomps,
     local_decomps,
-    null_decomp,
 )
+from pennylane.decomposition.gate_set import GateSet
+from pennylane.exceptions import DecompositionError, DecompositionWarning
+
 from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, resource_rep
-from .symbolic_decomposition import (
-    _adjoint_cancel,
-    _adjoint_negate_angle,
-    _controlled_flip_adjoint,
-    _controlled_to_unitary,
-    _operator1_to_base,
-    _pow_flip_adjoint,
-    _pow_merge_powers,
-    _pow_repeat_base,
-    ctrl_single_work_wire,
-    make_adjoint_decomp,
-    make_controlled_decomp,
-    self_adjoint_legacy,
-)
 from .utils import to_name
 
 IGNORED_UNSOLVED_OPS = {"Allocate", "Deallocate", "Barrier", "Snapshot"}
@@ -603,6 +588,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _get_decompositions(self, op: AbstractOperatorLike) -> Iterable[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
 
+        # pylint: disable=import-outside-toplevel
+        from pennylane.decomposition_rules.op_math.adjoint import adjoint_negate_angle
+        from pennylane.decomposition_rules.op_math.symbolicop import self_adjoint_legacy
+
         decomps = list_decomps(op)
 
         # Symbolic decomposition rules of Operator2 are handled differently, i.e., they
@@ -617,12 +606,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if (
             issubclass(op.op_type, qp.ops.Adjoint)
             and self_adjoint_legacy not in decomps
-            and _adjoint_negate_angle not in decomps
+            and adjoint_negate_angle not in decomps
         ):
             # In general, we decompose the adjoint of an operator by applying adjoint to the
             # decompositions of the operator. However, this is not necessary if the operator
             # is self-adjoint or if it has a single rotation angle which can be trivially
-            # inverted to obtain its adjoint. In this case, `self_adjoint` or `_adjoint_negate_angle`
+            # inverted to obtain its adjoint. In this case, `self_adjoint` or `adjoint_negate_angle`
             # would've already been retrieved as a potential decomposition rule for this
             # operator, so there is no need to consider the general case.
             decomps.extend(self._get_adjoint_decompositions(op))
@@ -640,11 +629,17 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _get_adjoint_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Gets the decomposition rules for the adjoint of an operator."""
 
+        # pylint: disable=import-outside-toplevel
+        from pennylane.decomposition_rules.op_math.adjoint import (
+            adjoint_cancel,
+            make_adjoint_decomp,
+        )
+
         base_class, base_params = (op.params["base_class"], op.params["base_params"])
 
         # Special case: adjoint of an adjoint cancels out
         if issubclass(base_class, qp.ops.Adjoint):
-            return [_adjoint_cancel]
+            return [adjoint_cancel]
 
         # General case: apply adjoint to each of the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
@@ -659,32 +654,49 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _get_pow_decompositions(op: CompressedResourceOp) -> list[DecompositionRule]:
         """Gets the decomposition rules for the power of an operator."""
 
+        # pylint: disable=import-outside-toplevel
+        from pennylane.decomposition_rules import null_decomp
+        from pennylane.decomposition_rules.op_math.pow import (
+            pow_flip_adjoint,
+            pow_merge_powers,
+            pow_repeat_base,
+        )
+        from pennylane.decomposition_rules.op_math.symbolicop import operator1_to_base
+
         # Special case: power of zero
         if op.params["z"] == 0:
             return [null_decomp]
 
         if op.params["z"] == 1:
-            return [_operator1_to_base]
+            return [operator1_to_base]
 
         # Special case: power of a power
         if issubclass(op.params["base_class"], qp.ops.Pow):
-            return [_pow_merge_powers]
+            return [pow_merge_powers]
 
         # Special case: power of an adjoint
         if issubclass(op.params["base_class"], qp.ops.Adjoint):
-            return [_pow_flip_adjoint]
+            return [pow_flip_adjoint]
 
         # General case: repeat the operator z times
-        return [_pow_repeat_base]
+        return [pow_repeat_base]
 
     def _get_controlled_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Adds a controlled decomposition node to the graph."""
+
+        # pylint: disable=import-outside-toplevel
+        from pennylane.decomposition_rules.op_math.controlled import (
+            controlled_flip_adjoint,
+            controlled_to_unitary,
+            ctrl_single_work_wire,
+            make_controlled_decomp,
+        )
 
         base_class, base_params = op.params["base_class"], op.params["base_params"]
 
         # Special case: control of an adjoint
         if issubclass(base_class, qp.ops.Adjoint):
-            return [_controlled_flip_adjoint]
+            return [controlled_flip_adjoint]
 
         # Special case: when the base is GlobalPhase, none of the following automatically
         # generated decomposition rules apply. Also, controlled ChangeOpBasis defines its
@@ -703,7 +715,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         # There's always the option of turning the controlled operator into a controlled
         # qubit unitary if the base operator has a matrix form.
-        rules.append(_controlled_to_unitary)
+        rules.append(controlled_to_unitary)
 
         # There's always Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016.
         rules.append(ctrl_single_work_wire)
@@ -1006,7 +1018,7 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
         cost = self.distances[d_node_idx].weighted_cost - self.distances[op_node_idx].weighted_cost
         return math.inf if math.isnan(cost) else cost
 
-    def discover_vertex(self, v, score):  # pylint: disable=unused-argument
+    def discover_vertex(self, v, score):
         """Triggered when a vertex is about to be explored during the Dijkstra search."""
         self.unsolved_op_indices.discard(v)
         if not self.unsolved_op_indices and self._lazy:

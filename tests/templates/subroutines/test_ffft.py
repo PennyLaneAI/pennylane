@@ -19,9 +19,10 @@ import pytest
 
 import pennylane as qp
 from pennylane import FermionicSWAP, PauliZ, device, qnode
+from pennylane.decomposition_rules import _permute_and_apply_parallel
 from pennylane.measurements import state
 from pennylane.templates import BasisEmbedding
-from pennylane.templates.subroutines.ffft import FFFT, TwoWireFFT, _permute_and_apply_parallel
+from pennylane.templates.subroutines.ffft import FFFT, TwoWireFFT
 from pennylane.testing import assert_decomposable
 from pennylane.wires import Wires
 

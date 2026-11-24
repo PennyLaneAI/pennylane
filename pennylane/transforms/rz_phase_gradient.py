@@ -15,35 +15,12 @@
 A transform for decomposing RZ rotations using a phase gradient catalyst state.
 """
 
-import numpy as np
-
 import pennylane as qp
-from pennylane import math
-from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
-from pennylane.ops.op_math import change_op_basis
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
-
-
-def _rz_phase_gradient(
-    phi: float, wire: Wires, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
-) -> Operator:
-    """Function that transforms the RZ gate to the phase gradient circuit
-    The precision is implicitly defined by the length of ``angle_wires``
-    Note that the global phases are collected and added as one big global phase in the main function
-    """
-    precision = len(angle_wires)
-
-    binary_int = math.binary_decimals(phi, precision, unit=2 * np.pi)
-
-    control_wire = Wires(wire)[0]
-    compute_op = qp.ctrl(qp.MultiX(binary_int, angle_wires), control=control_wire)
-    target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires)
-
-    return change_op_basis(compute_op, target_op, compute_op)
 
 
 @transform
@@ -201,7 +178,7 @@ def rz_phase_gradient(
 
             with QueuingManager.stop_recording():
                 operations.append(
-                    _rz_phase_gradient(
+                    qp.decomposition_rules.phase_gradient.rz._rz_phase_gradient(
                         phi,
                         wire,
                         angle_wires=angle_wires,

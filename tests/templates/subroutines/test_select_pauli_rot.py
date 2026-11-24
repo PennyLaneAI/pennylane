@@ -23,10 +23,10 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.templates.subroutines.select_pauli_rot import (
-    _select_pauli_rot_standard,
+from pennylane.decomposition_rules import (
     _SelectPauliRotYBasis,
     _UniformRZ,
+    select_pauli_rot_standard,
 )
 from pennylane.testing import assert_decomposable
 from pennylane.typing import AbstractWires, Float
@@ -271,7 +271,7 @@ class TestSelectPauliRot:
 
         angles = jnp.array([0.1, 0.2, 0.3, 0.4])
         controls, target = jnp.array([0, 2]), jnp.array([1])
-        rule = partial(_select_pauli_rot_standard, rot_axis=axis)
+        rule = partial(select_pauli_rot_standard, rot_axis=axis)
         program = qp.capture.make_plxpr(rule)(angles, controls, target)
 
         for scale, control_wires, target_wire in [(1.0, [3, 1], [2]), (2.0, [4, 0], [1])]:

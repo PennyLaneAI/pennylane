@@ -18,9 +18,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
-from pennylane.templates.subroutines import SelectTHC, select_thc_wires
-from pennylane.templates.subroutines.select_thc import (
-    _angle_batches,
+from pennylane.decomposition_rules import (
     _apply_loaded_rotation,
     _build_qrom_givens_data,
     _cascade_angles,
@@ -28,6 +26,8 @@ from pennylane.templates.subroutines.select_thc import (
     _SelectTHCBasis,
     _THCIndexSwaps,
 )
+from pennylane.templates.subroutines import SelectTHC, select_thc_wires
+from pennylane.templates.subroutines.select_thc import _angle_batches
 from pennylane.testing import assert_valid
 from pennylane.typing import AbstractWires
 

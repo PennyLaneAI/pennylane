@@ -32,6 +32,30 @@ from pennylane.core.operator import (
     StatePrepBase,
     StatePrepBase2,
 )
+from pennylane.decomposition_rules import (
+    _CRZPhaseGradientCompute,
+    _IsingXYBasis,
+    _IsingXYRotations,
+    _MultiRZLadder,
+    _OutAdderTarget,
+    _OutMultiplierHadamards,
+    _PauliRotBasis,
+    _PhaseAdderBasis,
+    _PPRBasis,
+    _SelectPauliRotPhaseGradientCompute,
+    _SelectPauliRotYBasis,
+    _SelectTHCBasis,
+    _SingleExcitationBasis,
+    _SingleExcitationCRZBasis,
+    _SingleExcitationRotations,
+    _SingleExcitationRZRotations,
+    _TemporaryANDBasis,
+    _THCIndexSwaps,
+    _THCPrepare,
+    _UniformRZ,
+    _YToZBasis,
+    _ZToYBasis,
+)
 from pennylane.drawer.label import LabelledOp
 from pennylane.exceptions import DeviceError
 from pennylane.ops.op_math import ChangeOpBasis
@@ -41,35 +65,7 @@ from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.ops.op_math.pow import PowOperation
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
-from pennylane.ops.qubit.non_parametric_ops import _PPRBasis
-from pennylane.ops.qubit.parametric_ops_multi_qubit import (
-    _IsingXYBasis,
-    _IsingXYRotations,
-    _MultiRZLadder,
-    _PauliRotBasis,
-)
-from pennylane.ops.qubit.parametric_ops_single_qubit import _YToZBasis, _ZToYBasis
-from pennylane.ops.qubit.qchem_ops import (
-    _SingleExcitationBasis,
-    _SingleExcitationCRZBasis,
-    _SingleExcitationRotations,
-    _SingleExcitationRZRotations,
-)
-from pennylane.templates.subroutines.arithmetic.out_adder import _OutAdderTarget
-from pennylane.templates.subroutines.arithmetic.out_multiplier import _OutMultiplierHadamards
-from pennylane.templates.subroutines.arithmetic.phase_adder import _PhaseAdderBasis
-from pennylane.templates.subroutines.arithmetic.temporary_and import _TemporaryANDBasis
-from pennylane.templates.subroutines.qubitization_thc import _THCPrepare
-from pennylane.templates.subroutines.select_pauli_rot import (
-    _SelectPauliRotYBasis,
-    _UniformRZ,
-)
-from pennylane.templates.subroutines.select_thc import _SelectTHCBasis, _THCIndexSwaps
 from pennylane.templates.subroutines.time_evolution.trotter import TrotterizedQfunc
-from pennylane.transforms.decompositions.crz_phase_gradient import _CRZPhaseGradientCompute
-from pennylane.transforms.decompositions.select_pauli_rot_phase_gradient import (
-    _SelectPauliRotPhaseGradientCompute,
-)
 
 
 def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):

@@ -22,8 +22,9 @@ import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.decomposition.resources import Resources
+from pennylane.decomposition_rules.op_math import adjoint_negate_angle, make_adjoint_decomp
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
-from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_negate_angle, _make_adjoint_decomp
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import CompilableOp, OneWireDynOp
@@ -36,7 +37,7 @@ class SX2(Operator2):
 
     is_verified_hermitian = True
 
-    def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+    def __init__(self, wires):
         super().__init__(wires)
 
     @property
@@ -74,7 +75,7 @@ class RX2(Operator2):
 
     is_verified_hermitian = True
 
-    def __init__(self, theta, wires):  # pylint: disable=useless-parent-delegation
+    def __init__(self, theta, wires):
         super().__init__(theta, wires)
 
     @staticmethod
@@ -242,22 +243,22 @@ def test_adjoint_equality():
 
 
 def test_adjoint_rotation_decomposition_rule():
-    """Tests the _adjoint_negate_angle decomposition with an ``Operator2`` base."""
+    """Tests the adjoint_negate_angle decomposition with an ``Operator2`` base."""
 
     op = qp.adjoint(OneWireDynOp(0.5, wires=[0]))
     assert isinstance(op, Adjoint2)
 
-    tape = qp.testing.decomp_rule_to_tape(op, _adjoint_negate_angle)
+    tape = qp.testing.decomp_rule_to_tape(op, adjoint_negate_angle)
 
     assert tape.operations == [OneWireDynOp(-0.5, wires=[0])]
-    assert _adjoint_negate_angle.compute_resources(**op.arguments) == Resources(
+    assert adjoint_negate_angle.compute_resources(**op.arguments) == Resources(
         {OneWireDynOp(Float, wires=Wire[1]): 1}
     )
 
 
 @pytest.mark.catalyst
 def test_make_adjoint_decomp_closes_over_compilable_args():
-    """Regression test for ``_make_adjoint_decomp``: ``static_argnames``/``compilable_argnames``
+    """Regression test for ``make_adjoint_decomp``: ``static_argnames``/``compilable_argnames``
     must be closed over (via ``functools.partial``) rather than forwarded as keyword arguments
     to ``qp.adjoint(...)``. Catalyst's ``AdjointCallable`` traces *all* keyword arguments passed
     to the wrapped callable, so forwarding a compilable arg would turn it into a tracer and break
@@ -272,7 +273,7 @@ def test_make_adjoint_decomp_closes_over_compilable_args():
             qp.Y(wires[0])
 
     op = CompilableOp(True, wires=[0])
-    rule = _make_adjoint_decomp(_some_decomp)
+    rule = make_adjoint_decomp(_some_decomp)
 
     @qp.qjit(capture=False)
     @qp.qnode(qp.device("lightning.qubit", wires=1))

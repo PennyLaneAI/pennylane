@@ -714,18 +714,7 @@ def _list_control_decomps(op_name: str) -> DecompCollection:
     Args:
         op_name (str): operator name, including symbolic names such as ``"C(RX)"``
     """
-    # TODO: the circular dependency can be eliminated when we move the decomposition
-    #       rule library to a separate module [sc-136709]
-    from pennylane.ops.op_math.controlled2 import (  # pylint: disable=import-outside-toplevel
-        _controlled_to_unitary,
-        ctrl_many_zeroed_work_wires,
-        ctrl_single_work_wire,
-    )
-
-    registered_rules = _get_registered_decomps(op_name)
-    generic_decomps = [_controlled_to_unitary, ctrl_many_zeroed_work_wires, ctrl_single_work_wire]
-    generic_rules = DecompCollection(generic_decomps)
-    return registered_rules + generic_rules
+    return _get_registered_decomps(op_name) + list_decomps("ControlledOp")
 
 
 def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
@@ -767,12 +756,13 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     >>> qp.list_decomps(qp.CRX)['to_paulirot']
     DecompositionRule(name=to_paulirot)
     >>> print(qp.list_decomps(qp.CRX)[0])
-    @register_resources(_crx_to_rx_cz_resources, name="to_rx_cz")
-    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
-        qp.RX(phi / 2, wires=wires[1])
-        qp.CZ(wires=wires)
-        qp.RX(-phi / 2, wires=wires[1])
-        qp.CZ(wires=wires)
+    @register_resources({ops.RX: 2, ops.CZ: 2}, name="to_rx_cz")
+    def crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
+        \"\"\"Decompose ``CRX`` using the ``to_rx_cz`` strategy.\"\"\"
+        ops.RX(phi / 2, wires=wires[1])
+        ops.CZ(wires=wires)
+        ops.RX(-phi / 2, wires=wires[1])
+        ops.CZ(wires=wires)
     >>> print(qp.draw(qp.list_decomps(qp.CRX)[0])(0.5, wires=[0, 1]))
     0: ───────────╭●────────────╭●─┤
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
@@ -1200,32 +1190,6 @@ def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
         actual_gate_counts[op_rep] += 1
 
     return dict(actual_gate_counts), dict(allocations)
-
-
-@register_resources({}, name="null_decomp")
-def null_decomp(*_, **__):
-    """A decomposition rule that can be assigned to an operator so that the operator decomposes to nothing.
-
-    **Example**
-
-    .. code-block:: python
-
-        import pennylane as qp
-        from pennylane.decomposition import null_decomp
-
-        @qp.transforms._tape_decompose(
-            gate_set={qp.RZ},
-            fixed_decomps={qp.GlobalPhase: null_decomp}
-        )
-        @qp.qnode(qp.device("default.qubit"))
-        def circuit():
-            qp.Z(0)
-
-    >>> print(qp.draw(circuit)())
-    0: ──RZ(3.14)─┤
-
-    """
-    return
 
 
 def _is_abstract_and_fixed(val, is_leaf=False):

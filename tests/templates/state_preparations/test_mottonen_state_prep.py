@@ -21,12 +21,12 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.operator import abstractify
+from pennylane.decomposition_rules import mottonen_decomp
 from pennylane.templates.state_preparations.mottonen import (
     _get_alpha_y,
     _get_alpha_z,
     compute_theta,
     gray_code,
-    mottonen_decomp,
 )
 
 

@@ -27,16 +27,18 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.capture.primitives import for_loop_prim
 from pennylane.core.operator import abstractify
-from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.templates.subroutines.arithmetic import TemporaryAND
-from pennylane.templates.subroutines.qrom import (
+from pennylane.decomposition_rules import (
+    qrom_measurement,
+    qrom_unary_iteration,
+)
+from pennylane.decomposition_rules.templates.subroutines.qrom import (
     _count_tempAND_in_measurement_qrom,
     _measurement_qrom_inner,
-    _qrom_measurement,
     _qrom_measurement_condition,
     _qrom_measurement_resources,
-    _qrom_unary_iteration,
 )
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.testing import assert_decomposable, extract_all_primitives
 from pennylane.typing import Bool, Wire
 
@@ -348,7 +350,7 @@ class TestQROM:
         work_wires = list(range(num_controls + 2, 2 * num_controls + 1))
 
         plxpr = jax.make_jaxpr(
-            lambda: _qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires)
+            lambda: qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires)
         )()
         ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
         num_left_elbows = sum(isinstance(op, TemporaryAND) for op in ops)
@@ -401,7 +403,7 @@ class TestQROM:
         work_wires = list(range(num_controls + 2, 2 * num_controls + 1))
 
         plxpr = jax.make_jaxpr(
-            lambda: _qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires)
+            lambda: qrom_unary_iteration(bitstrings, control_wires, target_wires, work_wires)
         )()
         ops = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
         num_x = sum(isinstance(op, qp.X) for op in ops)
@@ -604,9 +606,9 @@ class TestMeasurementQROM:
             {"control_wires": n_control, "work_wires": n_control, "target_wires": n_targets}
         )
 
-        estimate = _qrom_measurement.compute_resources(bitstrings=bitstrings, **wires).gate_counts
+        estimate = qrom_measurement.compute_resources(bitstrings=bitstrings, **wires).gate_counts
         with qp.queuing.AnnotatedQueue() as q:
-            _qrom_measurement(bitstrings=bitstrings, **wires)
+            qrom_measurement(bitstrings=bitstrings, **wires)
         actual = Counter(
             abstractify(op.base if isinstance(op, qp.ops.Conditional) else op) for op in q.queue
         )
@@ -629,7 +631,10 @@ class TestMeasurementQROM:
 
     def test_condition_with_compiler(self, mocker):
         """Test the condition logic when a compiler is active."""
-        mocker.patch("pennylane.templates.subroutines.qrom.compiler.active", return_value=True)
+        mocker.patch(
+            "pennylane.decomposition_rules.templates.subroutines.qrom.compiler.active",
+            return_value=True,
+        )
 
         # Small tables (<= 2 bitstrings) are always applicable.
         assert _qrom_measurement_condition(Bool[2, 1], Wire[1], Wire[1], Wire[0]) is True
@@ -753,7 +758,7 @@ class TestMeasurementQROM:
     def test_decomposition_single_bitstring(self):
         """Test the L == 1 branch of the measurement decomposition (no control wires)."""
         with qp.queuing.AnnotatedQueue() as q:
-            _qrom_measurement(
+            qrom_measurement(
                 bitstrings=np.array([[1, 0, 1]]),
                 control_wires=[],
                 target_wires=[1, 2, 3],
@@ -768,7 +773,7 @@ class TestMeasurementQROM:
     def test_decomposition_two_bitstrings(self):
         """Test the L == 2 branch of the measurement decomposition."""
         with qp.queuing.AnnotatedQueue() as q:
-            _qrom_measurement(
+            qrom_measurement(
                 bitstrings=np.array([[1, 0, 1], [0, 0, 1]]),
                 control_wires=[0],
                 target_wires=[1, 2, 3],
@@ -790,9 +795,9 @@ class TestMeasurementQROM:
             work_wires=[3],
         )
         with qp.queuing.AnnotatedQueue() as q_base:
-            _qrom_measurement(base=op)
+            qrom_measurement(base=op)
         with qp.queuing.AnnotatedQueue() as q_direct:
-            _qrom_measurement(
+            qrom_measurement(
                 bitstrings=op.bitstrings,
                 control_wires=op.control_wires,
                 target_wires=op.target_wires,
@@ -834,7 +839,7 @@ class TestMeasurementQROM:
             qp.BasisState(
                 qp.math.int_to_binary(j, len(wires["control_wires"])), wires=wires["control_wires"]
             )
-            _qrom_measurement(bitstrings=bitstrings, **wires)
+            qrom_measurement(bitstrings=bitstrings, **wires)
             return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
 
         for j in range(L):
@@ -880,7 +885,7 @@ class TestMeasurementQROM:
             for wire in target_wires:
                 qp.Hadamard(wire)
 
-            _qrom_measurement(
+            qrom_measurement(
                 bitstrings=bitstrings,
                 control_wires=control_wires,
                 target_wires=target_wires,
@@ -942,7 +947,7 @@ class TestMeasurementQROM:
             qp.BasisState(
                 qp.math.int_to_binary(j, len(wires["control_wires"])), wires=wires["control_wires"]
             )
-            _qrom_measurement(bitstrings=bitstrings, **wires)
+            qrom_measurement(bitstrings=bitstrings, **wires)
             return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
 
         for j in range(L, 2**n_input):
@@ -1001,7 +1006,7 @@ class TestMeasurementQROM:
             qp.BasisState(
                 qp.math.int_to_binary(j, len(wires["control_wires"])), wires=wires["control_wires"]
             )
-            _qrom_measurement(bitstrings=bitstrings, **wires)
+            qrom_measurement(bitstrings=bitstrings, **wires)
             if n_work:
                 return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
             return qp.sample(wires=wires["target_wires"])

@@ -15,24 +15,18 @@
 This submodule defines a class for compute-uncompute patterns.
 """
 
-from collections import Counter, defaultdict
 from functools import reduce
 
 from pennylane import math
-from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import change_op_basis_resource_rep
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
     MatrixUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops.op_math import adjoint, ctrl
-from pennylane.ops.op_math.adjoint import Adjoint, _adjoint_eager
-from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.ops.op_math.controlled2 import flip_zero_control
-from pennylane.typing import Bool
+from pennylane.ops.op_math import adjoint
+from pennylane.ops.op_math.adjoint import _adjoint_eager
 
 from .composite import handle_recursion_error
 from .composite2 import CompositeOp2
@@ -174,91 +168,3 @@ def _change_op_basis_abstract(compute_op, target_op, uncompute_op):
     if all(isinstance(op, Operator2) for op in (compute_op, target_op, uncompute_op)):
         return ChangeOpBasis2(compute_op, target_op, uncompute_op)
     return change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
-
-
-def _controlled_change_op_basis_standard_resources(  # pylint: disable=unused-argument
-    base,
-    control_wires,
-    control_values,
-    work_wires,
-    work_wire_type,
-):
-    resources = defaultdict(int)
-    resources[base.compute_op] += 1
-    resources[
-        ctrl(
-            base.target_op,
-            control=control_wires,
-            control_values=Bool[len(control_wires)],
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
-    ] += 1
-    resources[base.uncompute_op] += 1
-    return resources
-
-
-@register_resources(_controlled_change_op_basis_standard_resources, name="control_target")
-def _controlled_change_op_basis_standard(
-    base,
-    control_wires,
-    control_values,
-    work_wires,
-    work_wire_type,
-):
-    apply(base.compute_op)
-    ctrl(
-        base.target_op,
-        control=control_wires,
-        control_values=control_values,
-        work_wires=work_wires,
-        work_wire_type=work_wire_type,
-    )
-    apply(base.uncompute_op)
-
-
-def _change_op_basis_standard_resources(compute_op, target_op, uncompute_op):
-    resources = Counter()
-
-    resources[compute_op] += 1
-    resources[target_op] += 1
-    resources[uncompute_op] += 1
-
-    return resources
-
-
-@register_resources(_change_op_basis_standard_resources, name="expand_basis_change")
-def _change_op_basis_standard(compute_op, target_op, uncompute_op):
-    apply(compute_op)
-    apply(target_op)
-    apply(uncompute_op)
-
-
-add_decomps(ChangeOpBasis2, _change_op_basis_standard)
-add_decomps(
-    "C(ChangeOpBasis2)",
-    flip_zero_control(_controlled_change_op_basis_standard, name="control_target"),
-)
-
-
-def _inverse(op):
-    """Invert an operand, unwrapping an existing adjoint instead of nesting another one."""
-    if isinstance(op, (Adjoint, Adjoint2)):
-        return op.base
-    return adjoint(op)
-
-
-def _adjoint_change_op_basis_standard_resources(base):
-    return {
-        _change_op_basis_abstract(
-            _inverse(base.uncompute_op), adjoint(base.target_op), _inverse(base.compute_op)
-        ): 1
-    }
-
-
-@register_resources(_adjoint_change_op_basis_standard_resources, name="adjoint_target")
-def _adjoint_change_op_basis_standard(base):
-    ChangeOpBasis2(_inverse(base.uncompute_op), adjoint(base.target_op), _inverse(base.compute_op))
-
-
-add_decomps("Adjoint(ChangeOpBasis2)", _adjoint_change_op_basis_standard)

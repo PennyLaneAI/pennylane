@@ -27,10 +27,12 @@ import pytest
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import DecompositionGraph
-from pennylane.templates.subroutines import qrom_load as qrom_load_module
-from pennylane.templates.subroutines.select_swap import (
-    _adjoint_select_swap_measurement,
-    _select_swap,
+from pennylane.decomposition_rules import (
+    adjoint_select_swap_measurement,
+    select_swap,
+)
+from pennylane.decomposition_rules.templates.subroutines import qrom_load as qrom_load_module
+from pennylane.decomposition_rules.templates.subroutines.select_swap import (
     _select_swap_sizes,
 )
 from pennylane.testing import assert_decomposable
@@ -62,7 +64,7 @@ def test_assert_valid_select_swap(work_wires, mocker):
     """Run standard validity tests."""
     # Under capture, assert_valid cannot convert the classical processing of measurement outcomes
     # into a tape. The rule is tested in TestAdjointSelectSwapMeasurement instead.
-    mocker.patch.object(_adjoint_select_swap_measurement, "is_applicable", return_value=False)
+    mocker.patch.object(adjoint_select_swap_measurement, "is_applicable", return_value=False)
     op = qp.SelectSwap(BITSTRINGS, [0, 1, 2], [3, 4, 5], work_wires)
     qp.testing.assert_valid(op, skip_differentiation=True)
 
@@ -208,16 +210,16 @@ class TestAdjointSelectSwapMeasurement:
 
     def test_registered(self):
         """Test that the rule is registered for ``Adjoint(SelectSwap)``."""
-        assert _adjoint_select_swap_measurement in qp.list_decomps("Adjoint(SelectSwap)")
+        assert adjoint_select_swap_measurement in qp.list_decomps("Adjoint(SelectSwap)")
 
     def test_condition(self):
         """Test that the rule requires program capture and at least one control wire."""
         op = qp.SelectSwap(Bool[4, 2], Wire[2], Wire[2], Wire[2])
-        assert not _adjoint_select_swap_measurement.is_applicable(base=op)
+        assert not adjoint_select_swap_measurement.is_applicable(base=op)
         with qp.capture.toggle_ctx(True):
-            assert _adjoint_select_swap_measurement.is_applicable(base=op)
+            assert adjoint_select_swap_measurement.is_applicable(base=op)
             op = qp.SelectSwap(Bool[1, 2], Wire[0], Wire[2], Wire[1])
-            assert not _adjoint_select_swap_measurement.is_applicable(base=op)
+            assert not adjoint_select_swap_measurement.is_applicable(base=op)
 
     @pytest.mark.parametrize("case", ADJOINT_SELECT_SWAP_CASES)
     def test_resources(self, case):
@@ -231,13 +233,13 @@ class TestAdjointSelectSwapMeasurement:
 
         with mock.patch.object(qrom_load_module, "pauli_measure", measure):
             with qp.queuing.AnnotatedQueue() as q:
-                _adjoint_select_swap_measurement(base=op)
+                adjoint_select_swap_measurement(base=op)
 
         tape = qp.tape.QuantumScript.from_queue(q)
         actual = Counter(
             abstractify(o.base if isinstance(o, qp.ops.Conditional) else o) for o in tape.operations
         )
-        expected = _adjoint_select_swap_measurement.compute_resources(base=op).gate_counts
+        expected = adjoint_select_swap_measurement.compute_resources(base=op).gate_counts
         _assert_counts_match({k: v for k, v in expected.items() if v > 0}, actual)
 
     @pytest.mark.parametrize(
@@ -254,7 +256,7 @@ class TestAdjointSelectSwapMeasurement:
         decomposition, whose ``Adjoint(QROMLoad)`` also uncomputes with measurements, by their
         T counts."""
         op = qp.adjoint(_adjoint_select_swap_setup(*case)[0])
-        measurement_rule = _adjoint_select_swap_measurement
+        measurement_rule = adjoint_select_swap_measurement
         inverse_rule = qp.list_decomps(op)["adjoint(select_swap)"]
         gate_set = {"T": 100, "Adjoint(T)": 100, "H": 1, "S": 1, "Adjoint(S)": 1, "CNOT": 1, "X": 1}
         gate_set |= {"Z": 1, "CZ": 1, "GlobalPhase": 1, "MidMeasure": 1, "PauliMeasure": 1}
@@ -293,8 +295,8 @@ class TestAdjointSelectSwapMeasurement:
         @qp.qnode(qp.device("default.qubit"), mcm_method="deferred")
         def circuit():
             qp.StatePrep(state, wires=control_wires)
-            _select_swap(**op.dynamic_args, **op.wire_args)
-            _adjoint_select_swap_measurement(base=op)
+            select_swap(**op.dynamic_args, **op.wire_args)
+            adjoint_select_swap_measurement(base=op)
             qp.adjoint(qp.StatePrep(state, wires=control_wires))
             return qp.probs(wires=op.wires)
 
@@ -324,7 +326,7 @@ class TestAdjointSelectSwapMeasurement:
         """Test that the decomposition can be captured, with an X-basis measurement and a Z-basis
         reset measurement per wire that holds a loaded bitstring."""
         op, _ = _adjoint_select_swap_setup(*case)
-        jaxpr = jax.make_jaxpr(partial(_adjoint_select_swap_measurement, base=op))()
+        jaxpr = jax.make_jaxpr(partial(adjoint_select_swap_measurement, base=op))()
         measurements = [eqn for eqn in jaxpr.eqns if eqn.primitive.name == "pauli_measure"]
         assert [eqn.params["pauli_word"] for eqn in measurements] == ["X", "Z"] * _num_data_wires(
             op
@@ -339,19 +341,19 @@ class TestAdjointSelectSwapMeasurement:
         op, _ = _adjoint_select_swap_setup(*case)
         control_wires = list(op.control_wires)
         shots = 20
-        spy = mocker.spy(_adjoint_select_swap_measurement, "_impl")
+        spy = mocker.spy(adjoint_select_swap_measurement, "_impl")
 
         @qp.qjit(capture=True)
         @qp.decompose(
             gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ | {"PauliMeasure"},
-            fixed_decomps={"Adjoint(SelectSwap)": _adjoint_select_swap_measurement},
+            fixed_decomps={"Adjoint(SelectSwap)": adjoint_select_swap_measurement},
         )
         @qp.set_shots(shots)
         @qp.qnode(qp.device("lightning.qubit", wires=len(op.wires)))
         def circuit():
             for wire in control_wires:
                 qp.H(wire)
-            _select_swap(**op.dynamic_args, **op.wire_args)
+            select_swap(**op.dynamic_args, **op.wire_args)
             qp.adjoint(qp.SelectSwap(**op.dynamic_args, **op.wire_args))
             for wire in control_wires:
                 qp.H(wire)

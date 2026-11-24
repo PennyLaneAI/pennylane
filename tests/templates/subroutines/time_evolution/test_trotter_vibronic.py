@@ -24,6 +24,14 @@ import pytest
 
 import pennylane as qp
 from pennylane.allocation import Allocate, Deallocate
+from pennylane.decomposition_rules import (
+    _diagonalize_probs,
+    _diagonalize_vibronic_circuit,
+    _half_signed_out_multiplier,
+    _num_applied_terms,
+    _validate_registers,
+    make_rz_to_phase_gradient_decomp,
+)
 from pennylane.templates.subroutines import AQFT, QROM, SemiAdder
 from pennylane.templates.subroutines.arithmetic import (
     OutMultiplier,
@@ -32,16 +40,10 @@ from pennylane.templates.subroutines.arithmetic import (
 )
 from pennylane.templates.subroutines.time_evolution.trotter_vibronic import (
     _diagonalization_matrix,
-    _diagonalize_probs,
-    _diagonalize_vibronic_circuit,
-    _half_signed_out_multiplier,
     _momentum_coefficients,
-    _num_applied_terms,
     _position_coefficients,
-    _validate_registers,
     _wires_are_concrete,
 )
-from pennylane.transforms.decompositions import make_rz_to_phase_gradient_decomp
 from pennylane.typing import AbstractWires
 
 # ---------------------------------------------------------------------------
