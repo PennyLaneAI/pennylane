@@ -23,7 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import Operation
-from pennylane.decomposition.decomposition_rule import null_decomp
+from pennylane.decomposition_rules import null_decomp
 from pennylane.decomposition.gate_set import GateSet
 from pennylane.exceptions import DecompositionWarning
 from pennylane.ops.mid_measure import MidMeasure

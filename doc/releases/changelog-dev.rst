@@ -2070,6 +2070,10 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* Created ``pennylane.decomposition_rules`` and moved built-in qubit, identity, meta,
+  and shared decomposition rules into it. Rule imports now use the new package.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * Added pinned local ``ty`` tooling and a diagnostic baseline for the package. Performs fixes
   to improve ty compatibility.
   `(#10537) <https://github.com/PennyLaneAI/pennylane/pull/10537>`__

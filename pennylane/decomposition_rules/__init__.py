@@ -26,11 +26,14 @@ Unambiguous rules, helpers, and factories can also be imported from this package
 .. autosummary::
 
     qubit
+    common
+    null_decomp
     identity
     meta
     templates
 """
 
+from .common import null_decomp
 from .identity import controlled_g_phase_standard
 from . import meta
 from .qubit import arithmetic_ops
@@ -85,4 +88,5 @@ __all__ = [
     "controlled_z_standard",
     "controlled_z_to_ccz",
     "ctrl_x_to_mcx",
+    "null_decomp",
 ]

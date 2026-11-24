@@ -41,7 +41,6 @@ Defining Decomposition Rules
     ~DecompositionRule
     ~Resources
     ~CompressedResourceOp
-    ~null_decomp
 
 A decomposition rule must be defined as a quantum function that
 accepts ``(*op.parameters, op.wires, **op.hyperparameters)`` as arguments, where ``op`` is an
@@ -221,7 +220,6 @@ from .decomposition_rule import (
     register_resources,
     register_condition,
     DecompositionRule,
-    null_decomp,
     add_decomps,
     list_decomps,
     exclude_decomps,

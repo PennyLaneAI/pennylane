@@ -21,7 +21,7 @@ import pytest
 import pennylane as qp
 
 
-@pytest.mark.parametrize("name", ['Hadamard', 'RX', 'QubitUnitary'])
+@pytest.mark.parametrize("name", ['Hadamard', 'RX', 'QubitUnitary', 'Identity', 'Barrier'])
 def test_migrated_rule_owner(name):
     rules = list(qp.list_decomps(name))
     assert rules

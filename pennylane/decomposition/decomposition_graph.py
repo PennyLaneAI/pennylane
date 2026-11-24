@@ -47,7 +47,6 @@ from .decomposition_rule import (
     add_decomps,
     list_decomps,
     local_decomps,
-    null_decomp,
 )
 from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
@@ -658,6 +657,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     @staticmethod
     def _get_pow_decompositions(op: CompressedResourceOp) -> list[DecompositionRule]:
         """Gets the decomposition rules for the power of an operator."""
+
+        # pylint: disable-next=import-outside-toplevel
+        from pennylane.decomposition_rules import null_decomp
 
         # Special case: power of zero
         if op.params["z"] == 0:
