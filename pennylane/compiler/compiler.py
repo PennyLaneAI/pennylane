@@ -24,7 +24,7 @@ from pennylane.exceptions import CompileError
 PL_CATALYST_MIN_VERSION = Version("0.15.0")
 
 
-class AvailableCompilers:
+class AvailableCompilers:  # pylint: disable=too-few-public-methods
     """Entry-point loaders exported by the installed Catalyst distribution."""
 
     entrypoints_interface = ("context", "qjit", "ops")
