@@ -97,7 +97,7 @@ class RZLayer(Operator2):
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`ka` | 2
                 :class:`~.CNOT` | :math:`2k(5n - 4\ell(n) - \operatorname{popcount}(n))` | 20
                 :class:`~.PhaseShift` | :math:`k\ell(m)` | 4
-                :class:`~.GlobalPhase` | :math:`k` | 2
+                :class:`~.GlobalPhase` | :math:`1` | 1
 
             .. decomposition-rule:: adjoint_rotation
                 :image: /_static/decomposition_thumbnails/rz_layer_adjoint.svg
@@ -188,7 +188,7 @@ def _rzlayer_hwp_synthesis_resources(angles, wires, **_):
     target_op = _HWPPhaseShifts(
         Float, Wire[num_hw_wires.bit_length()], Wire[block_size - num_hw_wires]
     )
-    return {ChangeOpBasis2(compute_op, target_op): len(angles), GlobalPhase: len(angles)}
+    return {ChangeOpBasis2(compute_op, target_op): len(angles), GlobalPhase: 1}
 
 
 def _rzlayer_hwp_synthesis_work_wires(angles, wires, work_wires):
@@ -202,7 +202,7 @@ def _rzlayer_hwp_synthesis_work_wires(angles, wires, work_wires):
 def _rzlayer_hwp_synthesis(angles, wires, work_wires):
     """Hamming-weight phasing (HWP) decomposition: :math:`m` rotations ``RZ(theta)`` equal
     ``PhaseShift(2**j * theta)`` on bit :math:`j` of the Hamming weight of their wires and
-    a ``GlobalPhase(m * theta / 2)``."""
+    a ``GlobalPhase(m * theta / 2)``, which we merge across blocks."""
     block_size = len(wires) // len(angles)
     num_hw_wires = _hwp_num_hw_wires(block_size)
     num_work = num_hw_wires - num_hw_wires.bit_count()
@@ -222,9 +222,10 @@ def _rzlayer_hwp_synthesis(angles, wires, work_wires):
             out_wires = [hw_wires[-1], *work_wires[: num_hw_wires.bit_length() - 1]]
             phase_shifts = _HWPPhaseShifts(angles[i], out_wires, block_wires[num_hw_wires:])
             change_op_basis(_HammingWeight(hw_wires, work_wires), phase_shifts)
-            GlobalPhase(block_size * angles[i] / 2)
 
         for_loop(len(angles))(_block)()
+
+    GlobalPhase(block_size * math.sum(angles) / 2)
 
 
 add_decomps(RZLayer, _rzlayer_individual, _rzlayer_hwp_synthesis)

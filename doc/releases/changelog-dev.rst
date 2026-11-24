@@ -9,16 +9,14 @@ New features since last release
   with an even number of wires, or for each batch of ``batch_size`` distinct angles.
   `(#10577) <https://github.com/PennyLaneAI/pennylane/pull/10577>`__
 
-* A new decomposition rule for :class:`~.RZLayer`, ``_rzlayer_hwp_synthesis``, uses Hamming-weight
-  phasing to apply :math:`\lfloor \log_2 m \rfloor + 1` rotations instead of :math:`m` to each
-  block of :math:`m \geq 3` wires.
-  `(#10519) <https://github.com/PennyLaneAI/pennylane/pull/10519>`__
-
 * The new :class:`~.RZLayer` applies a :class:`~.RZ` rotation gate to each of its target wires, with
   equal angles used for blocks of ``len(wires) // len(angles)`` wires. This includes the case of
   ``len(wires)=len(angles)`` (one angle per wire) and ``len(angles)=1`` (same angle on all wires). This
-  allows for more efficient decomposition rules.
+  allows for more efficient decomposition rules, such as Hamming-weight phasing, which applies
+  :math:`\lfloor \log_2 m \rfloor + 1` rotations instead of :math:`m` to each block of
+  :math:`m \geq 3` wires.
   `(#10508) <https://github.com/PennyLaneAI/pennylane/pull/10508>`__
+  `(#10519) <https://github.com/PennyLaneAI/pennylane/pull/10519>`__
 
 * A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
   `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
