@@ -17,7 +17,9 @@
 
 from collections import Counter
 from functools import partial
+
 import numpy as np
+
 from pennylane import capture, math, ops
 from pennylane.wires import WireError, Wires
 

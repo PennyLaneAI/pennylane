@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests initialization and registration of the built-in rule package."""
 
-import importlib
 import inspect
 import subprocess
 import sys
@@ -22,7 +21,6 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition.decomposition_rule import DecompositionRule, _decompositions_var
-from pennylane.decomposition_rules import _BUILTIN_MODULES, _load_builtin_rules
 
 
 def test_builtin_rule_implementations_have_moved():
@@ -48,8 +46,9 @@ def test_builtin_rule_implementations_have_moved():
 
 def test_module_level_rule_names_are_public():
     """Rule implementations are public while internal support functions may stay private."""
-    for module_name in _BUILTIN_MODULES:
-        module = importlib.import_module(module_name)
+    for module_name, module in sys.modules.copy().items():
+        if not module_name.startswith("pennylane.decomposition_rules."):
+            continue
         private_rules = [
             name
             for name, value in vars(module).items()
@@ -72,24 +71,23 @@ def test_loading_preserves_custom_registrations_and_exclusions():
     qp.exclude_decomps(qp.RX, before[0].name)
     expected = before[1:] + [custom_rx]
 
-    _load_builtin_rules()
-    _load_builtin_rules()
+    from pennylane import decomposition_rules
+    from pennylane.decomposition_rules import phase_gradient
 
+    assert decomposition_rules.phase_gradient is phase_gradient
     assert list(qp.list_decomps(qp.RX)) == expected
 
 
 def test_loading_preserves_drawer_rule_exclusions():
-    """The drawer initializer preserves its registered rule when it is excluded."""
-    from pennylane.drawer.label import register_label_decomposition
-
+    """Repeated drawer imports preserve exclusions."""
     before = list(_decompositions_var.get()["LabelledOp"])
     qp.exclude_decomps("LabelledOp", "unwrap_base")
 
-    register_label_decomposition()
-    register_label_decomposition()
-    _load_builtin_rules()
+    from pennylane import decomposition_rules
+    from pennylane.drawer.label import LabelledOp
 
-    assert not qp.list_decomps("LabelledOp")
+    assert decomposition_rules is qp.decomposition_rules
+    assert not qp.list_decomps(LabelledOp)
     assert list(_decompositions_var.get()["LabelledOp"]) == before
 
 
@@ -98,15 +96,16 @@ def test_loading_preserves_drawer_rule_exclusions():
     ["_CRZPhaseGradientCompute", "_SelectPauliRotPhaseGradientCompute"],
 )
 def test_loading_preserves_phase_gradient_subcircuits(name):
-    """Repeated loading preserves helper classes without restoring excluded rules."""
+    """Repeated imports preserve helper classes without restoring excluded rules."""
     operator = getattr(qp.decomposition_rules, name)
     rules = list(qp.list_decomps(operator))
     qp.exclude_decomps(operator, rules[0].name)
 
-    _load_builtin_rules()
-    _load_builtin_rules()
+    from pennylane import decomposition_rules
+    from pennylane.decomposition_rules import phase_gradient
 
-    assert getattr(qp.decomposition_rules, name) is operator
+    assert getattr(phase_gradient, name) is operator
+    assert getattr(decomposition_rules, name) is operator
     assert not qp.list_decomps(operator)
 
 
@@ -128,6 +127,12 @@ def test_package_exports_preserve_rule_identity():
     assert null_decomp is defined_null_decomp
     assert mottonen_decomp is defined_mottonen_decomp
     assert make_rz_to_phase_gradient_decomp is defined_rz_factory
+    assert all(hasattr(qp.decomposition_rules, name) for name in qp.decomposition_rules.__all__)
+    phase_gradient = qp.decomposition_rules.phase_gradient
+    assert all(
+        getattr(phase_gradient, name) is getattr(qp.decomposition_rules, name)
+        for name in phase_gradient.__all__
+    )
 
 
 @pytest.mark.parametrize(
@@ -184,8 +189,7 @@ def test_phase_gradient_rules_use_phase_gradient_package(name, module):
 def test_fresh_import_registers_builtin_rules(entrypoint):
     """Each import entry point initializes operators, templates, and symbolic rules."""
     source = f"""
-import importlib
-importlib.import_module({entrypoint!r})
+import {entrypoint}
 import pennylane as qp
 from pennylane.decomposition.decomposition_graph import DecompositionGraph, DecompGraphSolution
 from pennylane.decomposition_rules import null_decomp, make_rz_to_phase_gradient_decomp

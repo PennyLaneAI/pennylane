@@ -46,9 +46,6 @@ from pennylane.decomposition.decomposition_rule import (
     local_decomps,
 )
 from pennylane.decomposition.gate_set import GateSet
-from pennylane.decomposition_rules import op_math as op_math_rules
-from pennylane.decomposition_rules.common import null_decomp
-from pennylane.decomposition_rules.op_math.symbolicop import operator1_to_base, self_adjoint_legacy
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 
 from .resources import AbstractOperatorLike, CompressedResourceOp, Resources, resource_rep
@@ -591,6 +588,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _get_decompositions(self, op: AbstractOperatorLike) -> Iterable[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
 
+        op_math_rules = qp.decomposition_rules.op_math
+
         decomps = list_decomps(op)
 
         # Symbolic decomposition rules of Operator2 are handled differently, i.e., they
@@ -604,7 +603,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         if (
             issubclass(op.op_type, qp.ops.Adjoint)
-            and self_adjoint_legacy not in decomps
+            and op_math_rules.symbolicop.self_adjoint_legacy not in decomps
             and op_math_rules.adjoint.adjoint_negate_angle not in decomps
         ):
             # In general, we decompose the adjoint of an operator by applying adjoint to the
@@ -628,6 +627,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _get_adjoint_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Gets the decomposition rules for the adjoint of an operator."""
 
+        op_math_rules = qp.decomposition_rules.op_math
+
         base_class, base_params = (op.params["base_class"], op.params["base_params"])
 
         # Special case: adjoint of an adjoint cancels out
@@ -647,12 +648,14 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _get_pow_decompositions(op: CompressedResourceOp) -> list[DecompositionRule]:
         """Gets the decomposition rules for the power of an operator."""
 
+        op_math_rules = qp.decomposition_rules.op_math
+
         # Special case: power of zero
         if op.params["z"] == 0:
-            return [null_decomp]
+            return [qp.decomposition_rules.null_decomp]
 
         if op.params["z"] == 1:
-            return [operator1_to_base]
+            return [op_math_rules.symbolicop.operator1_to_base]
 
         # Special case: power of a power
         if issubclass(op.params["base_class"], qp.ops.Pow):
@@ -667,6 +670,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
     def _get_controlled_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Adds a controlled decomposition node to the graph."""
+
+        op_math_rules = qp.decomposition_rules.op_math
 
         base_class, base_params = op.params["base_class"], op.params["base_params"]
 

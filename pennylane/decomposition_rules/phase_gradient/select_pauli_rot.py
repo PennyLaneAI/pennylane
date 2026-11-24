@@ -16,6 +16,7 @@
 """Phase-gradient decomposition rules and circuit helpers for SelectPauliRot."""
 
 import numpy as np
+
 from pennylane import math, ops, templates
 from pennylane.core.operator import Operator
 from pennylane.decomposition import (
@@ -46,6 +47,18 @@ def _select_phase_gradient_compute_resources(
     }
 
 
+@subcircuit(
+    dynamic_argnames=("bitstrings",),
+    wire_argnames=("wires", "angle_wires", "phase_grad_wires", "work_wires"),
+    arg_specs={
+        "bitstrings": Bool[-1, -1],
+        "wires": Wire[-1],
+        "angle_wires": Wire[-1],
+        "phase_grad_wires": Wire[-1],
+        "work_wires": Wire[-1],
+    },
+    grad_method=None,
+)
 @register_resources(_select_phase_gradient_compute_resources)
 def _SelectPauliRotPhaseGradientCompute(
     bitstrings, wires, angle_wires, phase_grad_wires, work_wires
@@ -357,21 +370,3 @@ def make_selectpaulirot_to_phase_gradient_decomp(
         )
 
     return _select_pauli_rot_phase_gradient_standard
-
-
-def register_phase_gradient_compute():
-    """Register the helper operator at its original point in built-in initialization."""
-    if isinstance(_SelectPauliRotPhaseGradientCompute, type):
-        return
-    globals()["_SelectPauliRotPhaseGradientCompute"] = subcircuit(
-        dynamic_argnames=("bitstrings",),
-        wire_argnames=("wires", "angle_wires", "phase_grad_wires", "work_wires"),
-        arg_specs={
-            "bitstrings": Bool[-1, -1],
-            "wires": Wire[-1],
-            "angle_wires": Wire[-1],
-            "phase_grad_wires": Wire[-1],
-            "work_wires": Wire[-1],
-        },
-        grad_method=None,
-    )(_SelectPauliRotPhaseGradientCompute)

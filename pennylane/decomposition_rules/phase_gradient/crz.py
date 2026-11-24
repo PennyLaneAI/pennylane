@@ -16,6 +16,7 @@
 """Phase-gradient decomposition rules and circuit helpers for CRZ."""
 
 import numpy as np
+
 from pennylane import math, ops, templates
 from pennylane.decomposition import register_resources
 from pennylane.decomposition_rules.phase_gradient.common import (
@@ -37,6 +38,17 @@ def _crz_phase_gradient_compute_resources(bitstrings, wires, angle_wires, phase_
     return resources
 
 
+@subcircuit(
+    dynamic_argnames=("bitstrings",),
+    wire_argnames=("wires", "angle_wires", "phase_grad_wires"),
+    arg_specs={
+        "bitstrings": Bool[-1],
+        "wires": Wire[2],
+        "angle_wires": Wire[-1],
+        "phase_grad_wires": Wire[-1],
+    },
+    grad_method=None,
+)
 @register_resources(_crz_phase_gradient_compute_resources)
 def _CRZPhaseGradientCompute(bitstrings, wires, angle_wires, phase_grad_wires) -> None:
     """Load a controlled angle and flip phase-gradient wires when the target is zero."""
@@ -239,20 +251,3 @@ def make_crz_to_phase_gradient_decomp(
         )
 
     return _crz_phase_gradient_standard
-
-
-def register_phase_gradient_compute():
-    """Register the helper operator at its original point in built-in initialization."""
-    if isinstance(_CRZPhaseGradientCompute, type):
-        return
-    globals()["_CRZPhaseGradientCompute"] = subcircuit(
-        dynamic_argnames=("bitstrings",),
-        wire_argnames=("wires", "angle_wires", "phase_grad_wires"),
-        arg_specs={
-            "bitstrings": Bool[-1],
-            "wires": Wire[2],
-            "angle_wires": Wire[-1],
-            "phase_grad_wires": Wire[-1],
-        },
-        grad_method=None,
-    )(_CRZPhaseGradientCompute)

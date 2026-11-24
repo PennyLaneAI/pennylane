@@ -26,21 +26,18 @@ initialization and can be imported from this package.
     state_preparation
 """
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from .common import phase_gradient_precision_stats, validate_phase_gradient_wires
-    from .crz import _CRZPhaseGradientCompute, make_crz_to_phase_gradient_decomp
-    from .rz import make_rz_to_phase_gradient_decomp
-    from .select_pauli_rot import (
-        _SelectPauliRotPhaseGradientCompute,
-        make_selectpaulirot_to_phase_gradient_decomp,
-    )
-    from .state_preparation import (
-        make_phase_gradient_distillation_decomp,
-        phase_gradient_state_prep_to_clifford_t,
-        phase_gradient_state_prep_to_ppr,
-    )
+from .common import phase_gradient_precision_stats, validate_phase_gradient_wires
+from .rz import make_rz_to_phase_gradient_decomp
+from .select_pauli_rot import (
+    _SelectPauliRotPhaseGradientCompute,
+    make_selectpaulirot_to_phase_gradient_decomp,
+)
+from .crz import _CRZPhaseGradientCompute, make_crz_to_phase_gradient_decomp
+from .state_preparation import (
+    make_phase_gradient_distillation_decomp,
+    phase_gradient_state_prep_to_clifford_t,
+    phase_gradient_state_prep_to_ppr,
+)
 
 __all__ = [
     "_CRZPhaseGradientCompute",

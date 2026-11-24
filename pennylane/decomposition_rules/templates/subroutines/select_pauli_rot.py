@@ -15,7 +15,6 @@
 
 """Built-in decomposition rules for templates.subroutines.select_pauli_rot."""
 
-
 from pennylane import capture, math
 from pennylane.decomposition import (
     add_decomps,

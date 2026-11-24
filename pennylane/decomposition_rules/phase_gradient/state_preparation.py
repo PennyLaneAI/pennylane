@@ -27,7 +27,6 @@ from pennylane.decomposition import (
     register_condition,
     register_resources,
 )
-from pennylane.templates.state_preparations.phase_gradient import PhaseGradientStatePrep
 from pennylane.decomposition_rules.phase_gradient.state_preparation_data import (
     CLIFFORD_T_GLOBAL_PHASES,
     CLIFFORD_T_SEQUENCES,
@@ -35,6 +34,7 @@ from pennylane.decomposition_rules.phase_gradient.state_preparation_data import 
     INITIAL_PPRS,
     PI_OVER_8_PPRS,
 )
+from pennylane.templates.state_preparations.phase_gradient import PhaseGradientStatePrep
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import WireError, Wires, WiresLike, validate_no_wire_overlaps
 

@@ -20,9 +20,8 @@ PennyLane can be directly imported.
 
 
 import warnings
-from importlib import import_module as _import_module
 
-from pennylane import decomposition_rules, exceptions
+from pennylane import exceptions
 from pennylane.boolean_fn import BooleanFn
 from pennylane import numpy
 from pennylane import queuing
@@ -127,11 +126,11 @@ from pennylane.templates.tensornetworks import *
 from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
+from pennylane import decomposition_rules
 from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
 from pennylane.resource import analyze, estimate, specs, track
 from pennylane import resource
-from pennylane import transforms as _transforms
 
 from pennylane.transforms import (
     transform,
@@ -232,7 +231,6 @@ from pennylane import estimator
 
 from pennylane import testing
 from ._entry_points_utils import _setup_entry_points
-from pennylane.decomposition_rules import _load_builtin_rules
 
 from importlib.metadata import version as _metadata_version
 
@@ -252,16 +250,6 @@ if _find_spec("numpy") is not None:
             exceptions.PennyLaneDeprecationWarning,
         )
 
-
-_load_builtin_rules()
-
-# Drawing-specific rules are owned and registered by the drawer module.
-_import_module("pennylane.drawer.label").register_label_decomposition()
-
-# This transform imports its circuit helper from the initialized built-in rules.
-_transforms.rz_phase_gradient = _import_module(
-    "pennylane.transforms.rz_phase_gradient"
-).rz_phase_gradient
 
 # add to _entry_point_groups as new groups are added and desired to be accessed top-level
 _entry_point_groups = ["pennylane.drawer"]

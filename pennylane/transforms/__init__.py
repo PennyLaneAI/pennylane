@@ -472,6 +472,7 @@ from .optimization import (
 )
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
+from .rz_phase_gradient import rz_phase_gradient
 from .commutation_dag import (
     commutation_dag,
     CommutationDAG,

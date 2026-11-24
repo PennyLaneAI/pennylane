@@ -18,7 +18,6 @@ A transform for decomposing RZ rotations using a phase gradient catalyst state.
 import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
-from pennylane.decomposition_rules.phase_gradient.rz import _rz_phase_gradient
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
@@ -179,7 +178,7 @@ def rz_phase_gradient(
 
             with QueuingManager.stop_recording():
                 operations.append(
-                    _rz_phase_gradient(
+                    qp.decomposition_rules.phase_gradient.rz._rz_phase_gradient(
                         phi,
                         wire,
                         angle_wires=angle_wires,
