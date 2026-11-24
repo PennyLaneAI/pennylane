@@ -33,6 +33,7 @@ jobs:
 
     - name: Install APT packages
       run: |
+        sudo apt-get update
         sudo apt install -y ${{ env.APT_PACKAGES_TO_INSTALL }}
 
     - name: Setup Python Environment
