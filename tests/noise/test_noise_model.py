@@ -35,7 +35,7 @@ class TestNoiseModels:
                 wires_in(qp.CNOT([0, 1])) | ~op_in(["RY", "RZ"]),
                 lambda op, **kwargs: qp.RX(0.2, op.wires),
             ),
-            (wires_in(["a", "b"]) & op_eq("RY"), lambda op, **kwargs: qp.RX(0.2, op.wires)),
+            (wires_in([2, 3]) & op_eq("RY"), lambda op, **kwargs: qp.RX(0.2, op.wires)),
         ],
     )
     def test_building_noise_model(self, fcond, noise):

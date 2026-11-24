@@ -214,17 +214,17 @@ equal_hamiltonians = [
         False,
     ),
     (
-        qp.Hamiltonian([1, 1], [qp.PauliX("a"), qp.PauliZ("b")]),
-        qp.Hamiltonian([1, 1], [qp.PauliX("a"), qp.PauliZ("b")]),
+        qp.Hamiltonian([1, 1], [qp.PauliX(11), qp.PauliZ(12)]),
+        qp.Hamiltonian([1, 1], [qp.PauliX(11), qp.PauliZ(12)]),
         True,
     ),
     (
-        qp.Hamiltonian([1, 2], [qp.PauliX("a"), qp.PauliZ("b")]),
-        qp.Hamiltonian([1, 1], [qp.PauliX("b"), qp.PauliZ("a")]),
+        qp.Hamiltonian([1, 2], [qp.PauliX(11), qp.PauliZ(12)]),
+        qp.Hamiltonian([1, 1], [qp.PauliX(12), qp.PauliZ(11)]),
         False,
     ),
     (
-        qp.Hamiltonian([1, 1], [qp.PauliZ(3) @ qp.Identity(1.2), qp.PauliZ(3)]),
+        qp.Hamiltonian([1, 1], [qp.PauliZ(3) @ qp.Identity(20), qp.PauliZ(3)]),
         qp.Hamiltonian([2], [qp.PauliZ(3)]),
         True,
     ),
@@ -232,14 +232,14 @@ equal_hamiltonians = [
 
 equal_pauli_operators = [
     (qp.PauliX(0), qp.PauliX(0), True),
-    (qp.PauliY("a"), qp.PauliY("a"), True),
-    (qp.PauliY(0.3), qp.PauliY(0.3), True),
+    (qp.PauliY(11), qp.PauliY(11), True),
+    (qp.PauliY(16), qp.PauliY(16), True),
     (qp.PauliX(0), qp.PauliX(1), False),
-    (qp.PauliY("a"), qp.PauliY("b"), False),
-    (qp.PauliY(0.3), qp.PauliY(0.7), False),
+    (qp.PauliY(11), qp.PauliY(12), False),
+    (qp.PauliY(16), qp.PauliY(17), False),
     (qp.PauliY(0), qp.PauliX(0), False),
-    (qp.PauliY("a"), qp.PauliX("a"), False),
-    (qp.PauliZ(0.3), qp.PauliY(0.3), False),
+    (qp.PauliY(11), qp.PauliX(11), False),
+    (qp.PauliZ(16), qp.PauliY(16), False),
     (qp.PauliZ(0), qp.RX(1.23, 0), False),
 ]
 
@@ -275,7 +275,7 @@ class TestEqual:  # pylint: disable=too-many-public-methods
         I1 = qp.Identity()
         I2 = qp.Identity(wires=[-1])
         I3 = qp.Identity(wires=[0, 1, 2, 3])
-        I4 = qp.Identity(wires=["a", "b"])
+        I4 = qp.Identity(wires=[11, 12])
 
         assert qp.equal(I1, I2) is True
         assert qp.equal(I1, I3) is True
@@ -1506,8 +1506,8 @@ equal_pauli_sentences = [
     ),
     (qp.X(0) - qp.Y(2), -1.0 * (qp.Y(2) - qp.X(0)), True, None),
     (qp.X(0) @ qp.Y(2), qp.Y(2) + qp.X(0), False, "Different Pauli words in PauliSentences"),
-    (qp.SISWAP([0, "a"]) @ qp.Z("b"), qp.Z("b") @ qp.SISWAP((0, "a")), True, None),
-    (qp.SWAP([0, "a"]) @ qp.S("b"), qp.S("b") @ qp.SWAP(("a", 0)), True, None),
+    (qp.SISWAP([0, 11]) @ qp.Z(12), qp.Z(12) @ qp.SISWAP((0, 11)), True, None),
+    (qp.SWAP([0, 11]) @ qp.S(12), qp.S(12) @ qp.SWAP((11, 0)), True, None),
 ]
 
 
@@ -2516,11 +2516,11 @@ class TestProdComparisons:
             (qp.PauliX(0) @ qp.Identity(1) @ qp.PauliZ(2), qp.PauliX(0) @ qp.PauliZ(2), True),
             (qp.PauliX(0) @ qp.Identity(2) @ qp.PauliZ(1), qp.PauliX(0) @ qp.PauliZ(2), False),
             (qp.PauliX(0) @ qp.PauliZ(1), qp.PauliX(0) @ qp.PauliZ(2), False),
-            (qp.PauliX("a") @ qp.PauliZ("b"), qp.PauliX("a") @ qp.PauliZ("b"), True),
-            (qp.PauliX("a") @ qp.PauliZ("b"), qp.PauliX("c") @ qp.PauliZ("d"), False),
-            (qp.PauliX("a") @ qp.PauliZ("b"), qp.PauliX("b") @ qp.PauliZ("a"), False),
-            (qp.PauliX(1.1) @ qp.PauliZ(1.2), qp.PauliX(1.1) @ qp.PauliZ(1.2), True),
-            (qp.PauliX(1.1) @ qp.PauliZ(1.2), qp.PauliX(1.2) @ qp.PauliZ(0.9), False),
+            (qp.PauliX(11) @ qp.PauliZ(12), qp.PauliX(11) @ qp.PauliZ(12), True),
+            (qp.PauliX(11) @ qp.PauliZ(12), qp.PauliX(13) @ qp.PauliZ(14), False),
+            (qp.PauliX(11) @ qp.PauliZ(12), qp.PauliX(12) @ qp.PauliZ(11), False),
+            (qp.PauliX(19) @ qp.PauliZ(20), qp.PauliX(19) @ qp.PauliZ(20), True),
+            (qp.PauliX(19) @ qp.PauliZ(20), qp.PauliX(20) @ qp.PauliZ(18), False),
         ],
     )
     def test_prods_equal(self, T1, T2, res):

@@ -234,20 +234,20 @@ class TestExpval:  # pylint: disable=too-many-public-methods
 
     def test_permuted_wires(self):
         """Test that the expectation value of an operator with permuted wires is the same."""
-        obs = qp.prod(qp.PauliZ(8), qp.s_prod(2, qp.PauliZ(10)), qp.s_prod(3, qp.PauliZ("h")))
-        obs_2 = qp.prod(qp.s_prod(3, qp.PauliZ("h")), qp.PauliZ(8), qp.s_prod(2, qp.PauliZ(10)))
+        obs = qp.prod(qp.PauliZ(8), qp.s_prod(2, qp.PauliZ(10)), qp.s_prod(3, qp.PauliZ(7)))
+        obs_2 = qp.prod(qp.s_prod(3, qp.PauliZ(7)), qp.PauliZ(8), qp.s_prod(2, qp.PauliZ(10)))
 
-        dev = qp.device("default.qubit", wires=["h", 8, 10])
+        dev = qp.device("default.qubit", wires=[7, 8, 10])
 
         @qp.qnode(dev)
         def circuit():
-            qp.RX(1.23, wires=["h"])
+            qp.RX(1.23, wires=[7])
             qp.RY(2.34, wires=[8])
             return qp.expval(obs)
 
         @qp.qnode(dev)
         def circuit2():
-            qp.RX(1.23, wires=["h"])
+            qp.RX(1.23, wires=[7])
             qp.RY(2.34, wires=[8])
             return qp.expval(obs_2)
 
@@ -276,7 +276,7 @@ class TestExpval:  # pylint: disable=too-many-public-methods
         assert hash(qp.expval(o2)) == hash(qp.expval(o2))
         assert hash(qp.expval(o1)) != hash(qp.expval(o2))
 
-        o3 = qp.sum(qp.PauliX("a"), qp.PauliY("b"))
+        o3 = qp.sum(qp.PauliX(5), qp.PauliY(6))
         assert hash(qp.expval(o1)) != hash(qp.expval(o3))
 
     def test_eigvals(self):

@@ -323,7 +323,6 @@ class BasisRotation(Operator2):
     # a BasisRotation operator with a real-valued matrix to decompose differently than a
     # complex-valued one.
     arg_specs = {"wires": Wire[-1]}
-    wire_sizes = (None,)
 
     grad_method = None
 

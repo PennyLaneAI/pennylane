@@ -63,8 +63,8 @@ class TestMeasurementTransformations:
             [RY(-np.pi / 2, wires=[2]), RX(np.pi / 2, wires=[0])],
         ),
         (
-            [PauliZ("a"), PauliX("b"), PauliY(0)],
-            [RY(-np.pi / 2, wires=["b"]), RX(np.pi / 2, wires=[0])],
+            [PauliZ(4), PauliX(5), PauliY(0)],
+            [RY(-np.pi / 2, wires=[5]), RX(np.pi / 2, wires=[0])],
         ),
     ]
 
@@ -83,7 +83,7 @@ class TestMeasurementTransformations:
     invalid_qwc_rotation_inputs = [
         [PauliX(0), PauliY(1), Hadamard(2)],
         [PauliX(0) @ PauliY(1), PauliZ(1), Identity(2)],
-        [RX(1, wires="a"), PauliX("b")],
+        [RX(1, wires=4), PauliX(5)],
     ]
 
     @pytest.mark.parametrize("bad_input", invalid_qwc_rotation_inputs)
@@ -94,10 +94,10 @@ class TestMeasurementTransformations:
         assert pytest.raises(TypeError, qwc_rotation, bad_input)
 
     diagonalized_paulis = [
-        (Identity("a"), Identity("a")),
-        (PauliX(1) @ Identity(2) @ PauliZ("b"), PauliZ(1) @ PauliZ("b")),
+        (Identity(4), Identity(4)),
+        (PauliX(1) @ Identity(2) @ PauliZ(5), PauliZ(1) @ PauliZ(5)),
         (PauliZ(1) @ PauliZ(2), PauliZ(1) @ PauliZ(2)),
-        (PauliX("a") @ PauliY("b") @ PauliY("c"), PauliZ("a") @ PauliZ("b") @ PauliZ("c")),
+        (PauliX(4) @ PauliY(5) @ PauliY(6), PauliZ(4) @ PauliZ(5) @ PauliZ(6)),
     ]
 
     @pytest.mark.parametrize("pauli_word, diag_pauli_word", diagonalized_paulis)
@@ -109,9 +109,9 @@ class TestMeasurementTransformations:
 
     non_pauli_words = [
         PauliX(0) @ Hadamard(1) @ Identity(2),
-        Hadamard("a"),
-        U3(0.1, 1, 1, wires="a"),
-        Hermitian(np.array([[3.2, 1.1 + 0.6j], [1.1 - 0.6j, 3.2]]), wires="a") @ PauliX("b"),
+        Hadamard(4),
+        U3(0.1, 1, 1, wires=4),
+        Hermitian(np.array([[3.2, 1.1 + 0.6j], [1.1 - 0.6j, 3.2]]), wires=4) @ PauliX(5),
     ]
 
     @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
@@ -139,16 +139,16 @@ class TestMeasurementTransformations:
             ),
         ),
         (
-            [PauliZ("a") @ PauliY("b") @ PauliZ("c"), PauliY("b") @ PauliZ("d")],
+            [PauliZ(4) @ PauliY(5) @ PauliZ(6), PauliY(5) @ PauliZ(7)],
             (
-                [RX(np.pi / 2, wires=["b"])],
+                [RX(np.pi / 2, wires=[5])],
                 [
-                    PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"]),
-                    PauliZ(wires=["b"]) @ PauliZ(wires=["d"]),
+                    PauliZ(wires=[4]) @ PauliZ(wires=[5]) @ PauliZ(wires=[6]),
+                    PauliZ(wires=[5]) @ PauliZ(wires=[7]),
                 ],
             ),
         ),
-        ([PauliX("a")], ([RY(-np.pi / 2, wires=["a"])], [PauliZ(wires=["a"])])),
+        ([PauliX(4)], ([RY(-np.pi / 2, wires=[4])], [PauliZ(wires=[4])])),
         (
             [PauliX(0), PauliX(1) @ PauliX(0)],
             (
@@ -172,10 +172,10 @@ class TestMeasurementTransformations:
             assert are_identical_pauli_words(a, b)
 
     not_qwc_groupings = [
-        [PauliX("a"), PauliY("a")],
+        [PauliX(4), PauliY(4)],
         [PauliZ(0) @ Identity(1), PauliZ(0) @ PauliZ(1), PauliX(0) @ Identity(1)],
-        [PauliX("a") @ PauliX(0), PauliZ(0) @ PauliZ("a")],
-        [PauliZ("a") @ PauliY(1), PauliZ(1) @ PauliY("a")],
+        [PauliX(4) @ PauliX(0), PauliZ(0) @ PauliZ(4)],
+        [PauliZ(4) @ PauliY(1), PauliZ(1) @ PauliY(4)],
     ]
 
     @pytest.mark.parametrize("not_qwc_grouping", not_qwc_groupings)

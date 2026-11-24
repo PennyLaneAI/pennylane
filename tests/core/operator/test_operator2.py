@@ -294,9 +294,9 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         assert Op in flatten_registrations
         assert Op in unflatten_registrations
 
-    def test_wire_sizes_defaults_to_none_per_wire_arg(self):
-        """Test that when ``wire_sizes`` is not declared, it defaults to a tuple
-        of ``None`` matching the length of ``wire_argnames``."""
+    def test_arg_specs_defaults_to_unconstrained_wires(self):
+        """Test that when ``arg_specs`` is not declared, wire arguments are
+        unconstrained and accept arbitrary lengths."""
 
         class Op(Operator2):
             wire_argnames = ("wires", "ctrl_wires")
@@ -304,60 +304,30 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
             def __init__(self, wires, ctrl_wires):
                 super().__init__(wires=wires, ctrl_wires=ctrl_wires)
 
-        assert Op.wire_sizes == (None, None)
+        assert not Op.arg_specs
 
-    def test_wire_sizes_scalar_converted_to_tuple(self):
-        """Test that a non-sequence ``wire_sizes`` is converted to a 1-tuple."""
+        op1 = Op(wires=[0], ctrl_wires=[1, 2])
+        op2 = Op(wires=[0, 1, 2, 3], ctrl_wires=[4])
+
+        assert op1.wires == Wires([0, 1, 2])
+        assert op2.wires == Wires([0, 1, 2, 3, 4])
+
+    def test_arg_specs_with_wire_argnames_enforces_matching_wire_count(self):
+        """Test that declaring both wire arguments and a fixed wire spec in
+        ``arg_specs`` enforces matching wire counts."""
 
         class Op(Operator2):
-            wire_sizes = 2
+            wire_argnames = ("wires", "ctrl_wires")
+            arg_specs = {"wires": AbstractWires(2)}
 
-            def __init__(self, wires):
-                super().__init__(wires=wires)
+            def __init__(self, wires, ctrl_wires):
+                super().__init__(wires=wires, ctrl_wires=ctrl_wires)
 
-        assert Op.wire_sizes == (2,)
+        op = Op(wires=[0, 1], ctrl_wires=[2, 3])
+        assert op.wires == Wires([0, 1, 2, 3])
 
-    def test_wire_sizes_length_mismatch_error(self):
-        """Test that ``wire_sizes`` must have the same length as ``wire_argnames``."""
-
-        with pytest.raises(
-            TypeError, match="'wire_sizes' must have the same length as 'wire_argnames'"
-        ):
-
-            class Op(Operator2):  # pylint: disable=unused-variable
-                wire_argnames = ("wires", "ctrl_wires")
-                wire_sizes = (1, 1, 1)
-
-                def __init__(self, wires, ctrl_wires):
-                    super().__init__(wires=wires, ctrl_wires=ctrl_wires)
-
-    def test_hybrid_wire_size_must_be_none(self):
-        """Test that a hybrid wire argument cannot declare a fixed wire size."""
-
-        with pytest.raises(
-            TypeError,
-            match="Expected wire_size == None for 'pytree_wires' as it is a hybrid wire argument",
-        ):
-
-            class Op(Operator2):  # pylint: disable=unused-variable
-                wire_argnames = ("pytree_wires",)
-                hybrid_argnames = ("pytree_wires",)
-                wire_sizes = (2,)
-
-                def __init__(self, pytree_wires):
-                    super().__init__([Wires(w) for w in pytree_wires])
-
-    @pytest.mark.parametrize("invalid_size", [0, -1, 1.5, "two"])
-    def test_wire_sizes_invalid_value_error(self, invalid_size):
-        """Test that ``wire_sizes`` entries must be positive integers or ``None``."""
-
-        with pytest.raises(TypeError, match="'wire_sizes' must be a sequence of"):
-
-            class Op(Operator2):  # pylint: disable=unused-variable
-                wire_sizes = (invalid_size,)
-
-                def __init__(self, wires):
-                    super().__init__(wires=wires)
+        with pytest.raises(ValueError, match="Incorrect number of wires"):
+            Op(wires=[0], ctrl_wires=[2])
 
     @pytest.mark.parametrize("attr", ["hybrid_argnames", "static_argnames", "compilable_argnames"])
     def test_arg_specs_incompatible_with_other_arg_groups(self, attr):
@@ -380,42 +350,6 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
             match=r"Op\.arg_specs can only contain dynamic and wire arguments",
         ):
             type("Op", (Operator2,), attrs)
-
-    def test_wire_sizes_derived_from_arg_specs(self):
-        """Test that ``wire_sizes`` is inferred from ``arg_specs`` when not declared."""
-
-        class Op(Operator2):
-            dynamic_argnames = ("phi",)
-            wire_argnames = ("wires", "ctrl_wires")
-            arg_specs = {
-                "phi": AbstractArray((), float),
-                "wires": AbstractWires(2),
-                "ctrl_wires": AbstractWires(1),
-            }
-
-            def __init__(self, phi, wires, ctrl_wires):
-                super().__init__(phi, wires=wires, ctrl_wires=ctrl_wires)
-
-        assert Op.wire_sizes == (2, 1)
-
-    def test_arg_specs_wire_sizes_mismatch_error(self):
-        """Test that ``arg_specs`` and ``wire_sizes`` must agree on wire counts."""
-
-        with pytest.raises(
-            TypeError,
-            match="Number of wires specified for 'wires' does not match",
-        ):
-
-            class Op(Operator2):  # pylint: disable=unused-variable
-                dynamic_argnames = ("phi",)
-                wire_sizes = (3,)
-                arg_specs = {
-                    "phi": AbstractArray((), float),
-                    "wires": AbstractWires(2),
-                }
-
-                def __init__(self, phi, wires):
-                    super().__init__(phi, wires=wires)
 
     def test_arg_specs_builtin_num_types_canonicalized(self):
         """Test that builtin Python number types are canonicalized to ``AbstractArrays``."""
@@ -733,10 +667,10 @@ class TestOperatorInit:
             _ = Op(wires=[0, [1, 2]])
 
     def test_wire_size_match(self):
-        """Test that a wire argument matching the declared ``wire_sizes`` is accepted."""
+        """Test that a wire argument matching the declared ``arg_specs`` is accepted."""
 
         class Op(Operator2):
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, wires):
                 super().__init__(wires=wires)
@@ -745,10 +679,10 @@ class TestOperatorInit:
         assert op.arguments["wires"] == Wires([0, 1])
 
     def test_wire_size_mismatch_error(self):
-        """Test that supplying a different number of wires than ``wire_sizes`` raises an error."""
+        """Test that supplying a different number of wires than ``arg_specs`` raises an error."""
 
         class Op(Operator2):
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, wires):
                 super().__init__(wires=wires)
@@ -760,7 +694,7 @@ class TestOperatorInit:
 
     @pytest.mark.parametrize("num_wires", (1, 3, 7))
     def test_wire_size_none_accepts_any_count(self, num_wires):
-        """Test that ``wire_sizes`` of ``None`` (default) accepts any number of wires."""
+        """Test that ``arg_specs`` of ``None`` (default) accepts any number of wires."""
 
         class Op(Operator2):
             def __init__(self, wires):
@@ -773,7 +707,7 @@ class TestOperatorInit:
 
         class Op(Operator2):
             wire_argnames = ("wires", "ctrl_wires")
-            wire_sizes = (2, None)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, wires, ctrl_wires):
                 super().__init__(wires=wires, ctrl_wires=ctrl_wires)
@@ -1480,8 +1414,8 @@ class TestDunderMethods:
         op = Op(wires=0)
         assert repr(op) == "Op(0)"
 
-        op = Op(wires="a")
-        assert repr(op) == "Op('a')"
+        op = Op(wires=9)
+        assert repr(op) == "Op(9)"
 
     @pytest.mark.parametrize("num_wires", [1, 2])
     def test_repr_without_dynamic_args_abstract_wires(self, num_wires):
@@ -1827,26 +1761,26 @@ class TestGeneralMethods:
         """Test that ``map_wires`` maps the wires of the operator according
         to the wire map."""
         op = DynOp(0.5, wires=0)
-        new_op = op.map_wires({0: "a"})
+        new_op = op.map_wires({0: 9})
 
         # Check that the original op is unchanged
         assert op.wires == Wires([0])
         assert op.arguments["wires"] == Wires([0])
         # Check new op
-        assert new_op == DynOp(0.5, wires="a")
-        assert new_op.wires == Wires(["a"])
-        assert new_op.arguments["wires"] == Wires(["a"])
+        assert new_op == DynOp(0.5, wires=9)
+        assert new_op.wires == Wires([9])
+        assert new_op.arguments["wires"] == Wires([9])
 
     def test_map_wires_unmapped_labels_preserved(self):
         """Test that wire labels missing from the wire map are kept as-is."""
         op = DynOp(0.5, wires=[0, 1, 2])
-        new_op = op.map_wires({0: "a", 2: "c"})
+        new_op = op.map_wires({0: 9, 2: 11})
 
         assert op.wires == Wires([0, 1, 2])
         assert op.arguments["wires"] == Wires([0, 1, 2])
-        assert new_op == DynOp(0.5, wires=["a", 1, "c"])
-        assert new_op.wires == Wires(["a", 1, "c"])
-        assert new_op.arguments["wires"] == Wires(["a", 1, "c"])
+        assert new_op == DynOp(0.5, wires=[9, 1, 11])
+        assert new_op.wires == Wires([9, 1, 11])
+        assert new_op.arguments["wires"] == Wires([9, 1, 11])
 
     def test_map_wires_multiple_wire_args(self):
         """Test that ``map_wires`` maps wires across multiple wire arguments."""
@@ -1858,11 +1792,11 @@ class TestGeneralMethods:
                 super().__init__(Wires(wires), Wires(ctrl_wires))
 
         op = TwoWireOp(wires=[0, 1], ctrl_wires=[2])
-        new_op = op.map_wires({0: "a", 1: "b", 2: "c"})
+        new_op = op.map_wires({0: 9, 1: 10, 2: 11})
 
         assert op.wires == Wires([0, 1, 2])
-        assert new_op == TwoWireOp(wires=["a", "b"], ctrl_wires=["c"])
-        assert new_op.wires == Wires(["a", "b", "c"])
+        assert new_op == TwoWireOp(wires=[9, 10], ctrl_wires=[11])
+        assert new_op.wires == Wires([9, 10, 11])
 
     def test_map_wires_pytree_hybrid_wires(self):
         """Test that ``map_wires`` correctly maps pytree-structured wires inside a hybrid arg."""
@@ -1876,22 +1810,22 @@ class TestGeneralMethods:
                 super().__init__(wires=wires)
 
         op = PytreeWiresOp(wires=[[0], [1, 2]])
-        new_op = op.map_wires({0: "a", 1: "b"})
+        new_op = op.map_wires({0: 9, 1: 10})
 
         assert op.wires == Wires([0, 1, 2])
-        assert new_op == PytreeWiresOp(wires=[["a"], ["b", 2]])
-        assert new_op.wires == Wires(["a", "b", 2])
+        assert new_op == PytreeWiresOp(wires=[[9], [10, 2]])
+        assert new_op.wires == Wires([9, 10, 2])
 
     def test_map_wires_op_argument(self):
         """Test that ``map_wires`` correctly maps hybrid arguments with operator leaves."""
         op = FullOp(0.5, static="static", hybrid=[DynOp(1.5, wires=[2, 3, 4])], wires=[0, 1])
-        new_op = op.map_wires({0: "a", 2: "b", 3: "c"})
+        new_op = op.map_wires({0: 9, 2: 10, 3: 11})
 
         assert op.wires == Wires([0, 1, 2, 3, 4])
         assert new_op == FullOp(
-            0.5, static="static", hybrid=[DynOp(1.5, wires=["b", "c", 4])], wires=["a", 1]
+            0.5, static="static", hybrid=[DynOp(1.5, wires=[10, 11, 4])], wires=[9, 1]
         )
-        assert new_op.wires == Wires(["a", 1, "b", "c", 4])
+        assert new_op.wires == Wires([9, 1, 10, 11, 4])
 
     def test_map_wires_pauli_rep(self):
         """Test that ``Operator2.map_wires`` maps the ``pauli_rep`` correctly
@@ -1907,8 +1841,8 @@ class TestGeneralMethods:
                 )
 
         op = PauliRepOp(wires=[0, 1])
-        new_op = op.map_wires({0: "a", 1: "b"})
-        assert new_op.pauli_rep == PauliSentence({PauliWord({"a": "X", "b": "Y"}): 1.0})
+        new_op = op.map_wires({0: 9, 1: 10})
+        assert new_op.pauli_rep == PauliSentence({PauliWord({9: "X", 10: "Y"}): 1.0})
 
     def test_simplify_default(self):
         """Test that ``simplify`` returns the operator itself by default."""
@@ -2723,7 +2657,6 @@ class TestLegacyCompatibilityViews:
         class AuxWiresOp(Operator2):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "aux_wires")
-            wire_sizes = (1, None)
 
             def __init__(self, phi, wires, aux_wires):
                 super().__init__(phi, wires=wires, aux_wires=aux_wires)

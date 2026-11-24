@@ -234,7 +234,7 @@ class TestQubitUnitary:
             [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
         )
 
-        op = qp.QubitUnitary(U, wires="a")
+        op = qp.QubitUnitary(U, wires=10)
         [pow_op] = op.pow(0.123)
         expected = fractional_matrix_power(U, 0.123)
 
@@ -263,7 +263,7 @@ class TestQubitUnitary:
             ]
         )
 
-        op = qp.QubitUnitary(U, wires="a")
+        op = qp.QubitUnitary(U, wires=10)
 
         with pytest.raises(qp.operation.PowUndefinedError):
             op.pow(0.123)
@@ -276,7 +276,7 @@ class TestQubitUnitary:
             [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
         )
 
-        op = qp.QubitUnitary(U, wires="a")
+        op = qp.QubitUnitary(U, wires=10)
         new_ops = op.pow(n)
 
         assert len(new_ops) == 1
@@ -298,7 +298,7 @@ class TestQubitUnitary:
             ]
         )
 
-        op = qp.QubitUnitary(U, wires="a")
+        op = qp.QubitUnitary(U, wires=10)
         new_ops = op.pow(n)
 
         assert len(new_ops) == 1
@@ -1054,7 +1054,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("diag", ([1.0, -1.0], np.array([1.0, -1.0])))
     def test_pow(self, n, diag):
         """Test pow method returns expected results."""
-        op = qp.DiagonalQubitUnitary(diag, wires="b")
+        op = qp.DiagonalQubitUnitary(diag, wires=11)
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
 
@@ -1068,7 +1068,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_pow_broadcasted(self, n, diag):
         """Test pow method returns expected results for broadcasted diagonals."""
-        op = qp.DiagonalQubitUnitary(diag, wires="b")
+        op = qp.DiagonalQubitUnitary(diag, wires=11)
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
 
@@ -1249,7 +1249,7 @@ class TestBlockEncode:
             (pnp.array([[1]]), 1, {"norm": 1, "subspace": (1, 1, 2)}),
             ([[1, 0], [0, 1]], [0, 1], {"norm": 1.0, "subspace": (2, 2, 4)}),
             (pnp.array([[1, 0], [0, 1]]), range(2), {"norm": 1.0, "subspace": (2, 2, 4)}),
-            (pnp.identity(3), ["a", "b", "c"], {"norm": 1.0, "subspace": (3, 3, 8)}),
+            (pnp.identity(3), [10, 11, 13], {"norm": 1.0, "subspace": (3, 3, 8)}),
         ],
     )
     def test_accepts_various_types(self, input_matrix, wires, expected_hyperparameters):
@@ -1262,7 +1262,7 @@ class TestBlockEncode:
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),
-        [(1, 1), (1, 2), (1, [1]), (1, range(2)), (np.identity(2), ["a", "b"])],
+        [(1, 1), (1, 2), (1, [1]), (1, range(2)), (np.identity(2), [10, 11])],
     )
     def test_varied_wires(self, input_matrix, wires):
         """Test that BlockEncode wires are stored correctly for various wire input types."""

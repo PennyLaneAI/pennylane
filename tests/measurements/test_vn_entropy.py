@@ -378,11 +378,11 @@ class TestIntegration:
     def test_qnode_entropy_custom_wires(self):
         """Test that entropy can be returned with custom wires."""
 
-        dev = qp.device("default.qubit", wires=["a", 1])
+        dev = qp.device("default.qubit", wires=[5, 1])
 
         @qp.qnode(dev)
         def circuit_entropy(x):
-            qp.IsingXX(x, wires=["a", 1])
-            return qp.vn_entropy(wires=["a"])
+            qp.IsingXX(x, wires=[5, 1])
+            return qp.vn_entropy(wires=[5])
 
         assert np.isclose(circuit_entropy(0.1), expected_entropy_ising_xx(0.1))

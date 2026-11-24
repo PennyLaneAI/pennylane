@@ -357,12 +357,12 @@ class TestPurityIntegration:
     def test_qnode_entropy_custom_wires(self, device, param):
         """Test that purity can be returned with custom wires."""
 
-        dev = qp.device(device, wires=["a", 1])
+        dev = qp.device(device, wires=[5, 1])
 
         @qp.qnode(dev)
         def circuit(x):
-            qp.IsingXX(x, wires=["a", 1])
-            return qp.purity(wires=["a"])
+            qp.IsingXX(x, wires=[5, 1])
+            return qp.purity(wires=[5])
 
         purity = circuit(param)
         expected_purity = expected_purity_ising_xx(param)

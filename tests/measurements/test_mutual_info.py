@@ -75,9 +75,7 @@ class TestMutualInfoUnitTests:
         assert mapped1.raw_wires == [Wires([1]), Wires([0])]
         qp.assert_equal(mapped1, MutualInfoMP(wires=[Wires([1]), Wires([0])]))
 
-        mapped2 = MutualInfoMP(wires=[Wires(["a", "b"]), Wires(["c"])]).map_wires(
-            {"a": 0, "b": 1, "c": 2}
-        )
+        mapped2 = MutualInfoMP(wires=[Wires([5, 6]), Wires([7])]).map_wires({5: 0, 6: 1, 7: 2})
         assert mapped2.raw_wires == [Wires([0, 1]), Wires([2])]
         qp.assert_equal(mapped2, MutualInfoMP(wires=[Wires([0, 1]), Wires([2])]))
 
@@ -459,23 +457,23 @@ class TestIntegration:
     def test_custom_wire_labels_works(self, interface, params):
         """Tests that no error is raised when mutual information is measured
         with custom wire labels"""
-        dev = qp.device("default.qubit", wires=["a", "b"])
+        dev = qp.device("default.qubit", wires=[5, 6])
 
         params = qp.math.asarray(params, like=interface)
 
         @qp.qnode(dev, interface=interface)
         def circuit(params):
-            qp.RY(params[0], wires="a")
-            qp.RY(params[1], wires="b")
-            qp.CNOT(wires=["a", "b"])
-            return qp.mutual_info(wires0=["a"], wires1=["b"])
+            qp.RY(params[0], wires=5)
+            qp.RY(params[1], wires=6)
+            qp.CNOT(wires=[5, 6])
+            return qp.mutual_info(wires0=[5], wires1=[6])
 
         @qp.qnode(dev, interface=interface)
         def circuit_expected(params):
-            qp.RY(params[0], wires="a")
-            qp.RY(params[1], wires="b")
-            qp.CNOT(wires=["a", "b"])
-            return qp.density_matrix(wires=["a", "b"])
+            qp.RY(params[0], wires=5)
+            qp.RY(params[1], wires=6)
+            qp.CNOT(wires=[5, 6])
+            return qp.density_matrix(wires=[5, 6])
 
         actual = circuit(params)
 

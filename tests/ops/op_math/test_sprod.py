@@ -97,11 +97,11 @@ class TestInitialization:
     """Test initialization of the SProd Class."""
 
     def test_init_sprod_op(self):
-        sprod_op = s_prod(3.14, qp.RX(0.23, wires="a"))
+        sprod_op = s_prod(3.14, qp.RX(0.23, wires=6))
 
         # no need to test if op.base == RX since this is covered in SymbolicOp tests
         assert sprod_op.scalar == 3.14
-        assert sprod_op.wires == Wires(("a",))
+        assert sprod_op.wires == Wires((6,))
         assert sprod_op.num_wires == 1
         assert sprod_op.name == "SProd"
 
@@ -177,8 +177,8 @@ class TestMscMethods:
 
     def test_string_with_single_pauli(self):
         """Test the string representation with single pauli"""
-        res = qp.s_prod(0.5, qp.PauliX("a"))
-        true_res = "0.5 * X('a')"
+        res = qp.s_prod(0.5, qp.PauliX(6))
+        true_res = "0.5 * X(6)"
         assert repr(res) == true_res
 
         res = qp.s_prod(0.5, qp.PauliX(0))
@@ -187,16 +187,16 @@ class TestMscMethods:
 
     def test_string_with_sum_of_pauli(self):
         """Test the string representation with single pauli"""
-        res = qp.s_prod(0.5, qp.sum(qp.PauliX("a"), qp.PauliX("b")))
-        true_res = "0.5 * (X('a') + X('b'))"
+        res = qp.s_prod(0.5, qp.sum(qp.PauliX(6), qp.PauliX(7)))
+        true_res = "0.5 * (X(6) + X(7))"
         assert repr(res) == true_res
 
         res = qp.s_prod(0.5, qp.sum(qp.PauliX(0), qp.PauliX(1)))
         true_res = "0.5 * (X(0) + X(1))"
         assert repr(res) == true_res
 
-        res = qp.s_prod(0.5, qp.sum(qp.PauliX("a"), qp.PauliX(1)))
-        true_res = "0.5 * (X('a') + X(1))"
+        res = qp.s_prod(0.5, qp.sum(qp.PauliX(6), qp.PauliX(1)))
+        true_res = "0.5 * (X(6) + X(1))"
         assert repr(res) == true_res
 
     @pytest.mark.parametrize("op_scalar_tup, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
@@ -243,7 +243,7 @@ class TestMscMethods:
         """Test that a scalar product with an operator that has `has_matrix=True`
         has `has_matrix=True` as well."""
 
-        sprod_op = SProd(0.7, qp.RZ(0.23, wires="a"))
+        sprod_op = SProd(0.7, qp.RZ(0.23, wires=6))
         assert sprod_op.has_matrix is True
 
     def test_has_matrix_true_via_factor_has_no_matrix_but_is_hamiltonian(self):
@@ -263,7 +263,7 @@ class TestMscMethods:
 
             has_matrix = False
 
-        sprod_op = SProd(0.4, MyOp(0.23, wires="a"))
+        sprod_op = SProd(0.4, MyOp(0.23, wires=6))
         assert sprod_op.has_matrix is False
 
     @pytest.mark.parametrize("value", (True, False))
@@ -730,8 +730,8 @@ class TestProperties:
             qp.pauli.PauliSentence({qp.pauli.PauliWord({1: "X"}): -1j}),
         ),
         (
-            qp.s_prod(1.23 - 4j, qp.PauliY(wires="a")),
-            qp.pauli.PauliSentence({qp.pauli.PauliWord({"a": "Y"}): 1.23 - 4j}),
+            qp.s_prod(1.23 - 4j, qp.PauliY(wires=6)),
+            qp.pauli.PauliSentence({qp.pauli.PauliWord({6: "Y"}): 1.23 - 4j}),
         ),
     )
 
