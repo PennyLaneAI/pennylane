@@ -355,12 +355,8 @@ def measure(
 
     """
     if capture_enabled():
-        wires = Wires(wires)
-        if len(wires) != 1:
-            raise QuantumFunctionError(
-                "Only a single qubit can be measured in the middle of the circuit"
-            )
-        return measure_prim.bind(wires[0], reset=reset, postselect=postselect)
+        Wires(wires)
+        return measure_prim.bind(wires, reset=reset, postselect=postselect)
 
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints

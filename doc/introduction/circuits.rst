@@ -115,7 +115,7 @@ that you can address by consecutive integer labels ``0, 1, 2, ...``.
     dev = qp.device('default.qubit', wires=3)
 
 Alternatively, pass an iterable of unique integer labels for the subsystems.
-The labels may be negative or nonconsecutive:
+Devices such as ``default.qubit`` support negative or nonconsecutive labels:
 
 .. code-block:: python
 
@@ -134,6 +134,12 @@ In the quantum function you can now use your own labels to address wires:
 Wire labels must be integers. Strings, floats, booleans, and arbitrary objects are not supported.
 Integer scalar arrays, such as ``np.array(0)`` and ``jnp.array(0)``, are normalized to
 Python integers and identify the same wires as their integer values.
+
+.. note::
+
+    Catalyst compilation with :func:`~.qjit` requires device wire labels to be
+    consecutive integers starting at zero: ``0, 1, ..., n - 1``.
+    Negative or nonconsecutive device labels cannot be used with Catalyst.
 
 .. note::
 

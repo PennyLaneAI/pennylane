@@ -96,6 +96,11 @@ class Wires(Sequence):
 
     Indexing an instance of this class will return a wire label.
 
+    .. note::
+
+        Catalyst compilation requires device wire labels to be consecutive integers
+        starting at zero, even though ``Wires`` supports other integer labels.
+
     Args:
          wires (int or Iterable[int]): the wire label(s)
     """

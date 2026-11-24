@@ -119,6 +119,11 @@ def device(name, *args, **kwargs):
             qp.CNOT(wires=[12, -1])
             ...
 
+    .. note::
+
+        Catalyst compilation with :func:`~.qjit` requires device wire labels to be
+        consecutive integers starting at zero: ``0, 1, ..., n - 1``.
+
     On some newer devices, such as ``default.qubit``, the ``wires`` argument can be omitted altogether,
     and instead the wires will be computed when executing a circuit depending on its contents.
 
