@@ -34,23 +34,22 @@ from .rz_phase_gradient import make_rz_to_phase_gradient_decomp, validate_phase_
 def _anf_bits(table, num_bits):
     r"""Bits of the coefficients of the algebraic normal form (ANF) of a lookup table.
 
-    A table :math:`T` over the Boolean variables :math:`v_0, \dots, v_{r-1}` is the XOR of
-    :math:`c_S \prod_{j\in S} v_j` over all subsets :math:`S`, with coefficients :math:`c_S`
-    given by the Möbius transform of the table over :math:`\mathbb{Z}_2`, bit by bit. Subsets
-    are encoded as masks, ``S = sum(2**j for j in S)``, and inputs as integers,
-    ``v = sum(v_j * 2**j)``. That is, ``table[v]`` is the entry for the input ``v``, and the
-    monomial of the mask ``S`` is ``1`` at the input ``v`` if ``S & v == S``.
+    The ANF writes the table as an XOR of coefficients times products of its input bits, see the
+    details on lookup tables in :func:`~.make_rzlayer_to_phase_gradient_decomp`. This lets
+    :func:`~._signed_add` load the table with one controlled ``MultiX`` per product.
 
     The transform uses XORs and static loops only, so that ``table`` may be a traced jax array.
 
     Args:
-        table (TensorLike): integer array of length ``2**r``, whose entries are taken modulo
+        table (TensorLike): integer array of length ``2**r``, whose entry ``v`` is the value at
+            the input bits ``v_j`` with ``v = sum(v_j * 2**j)``. The entries are taken modulo
             ``2**num_bits``, so that negative entries are mapped to their two's complement
         num_bits (int): number of bits of the entries
 
     Returns:
-        TensorLike: array of shape ``(2**r, num_bits)``, whose row ``S`` holds the bits of
-        :math:`c_S`, most significant bit first as in :func:`~.math.int_to_binary`
+        TensorLike: array of shape ``(2**r, num_bits)``, whose row ``sum(2**j for j in S)``
+        holds the bits of the coefficient of the product of the input bits ``v_j`` with ``j`` in
+        ``S``, most significant bit first as in :func:`~.math.int_to_binary`
 
     **Example**
 
@@ -62,7 +61,7 @@ def _anf_bits(table, num_bits):
            [1, 1, 1]])
 
     The coefficients are ``1, 2, 3, 7``. For example, ``table[3] = 1 ^ 2 ^ 3 ^ 7 = 7`` is the XOR
-    of all coefficients, because all monomials are ``1`` at the input ``v = 3``.
+    of all coefficients, because all products are ``1`` at the input ``v = 3``.
     """
     rows = list(qp.math.int_to_binary(table, num_bits))
     for j in range(len(rows).bit_length() - 1):
@@ -186,20 +185,15 @@ def _signed_add_rep(num_vars, num_bits, num_work_wires, num_sign_wires=1):
 
 def _angle_ints(angles, num_bits, unit):
     """Integers whose ``num_bits`` bits are the binary decimals of ``angles`` in units of
-    ``unit``. They are computed with a dot product, so that ``angles`` may be traced."""
+    ``unit``."""
     powers_of_two = 2 ** qp.math.arange(num_bits - 1, -1, -1)
     return qp.math.binary_decimals(angles, num_bits, unit=unit) @ powers_of_two
 
 
-def _num_hw_wires(block_size):
-    """Number of wires of a block of equal angles whose Hamming weight the rule computes: all but
-    the sign wire for an even block size, and all of them for an odd one."""
-    return block_size - 1 + block_size % 2
-
-
 def _equal_angle_block(theta, wires, work_wires, registers):
     r"""Apply :math:`R_Z(\theta)` to each of the :math:`m > 1` ``wires`` with a single
-    :func:`~._signed_add`, up to a ``GlobalPhase(m * theta / 2)`` for odd :math:`m`.
+    :func:`~._signed_add`. For odd :math:`m`, this omits the ``GlobalPhase(m * theta / 2)``, which
+    the rule applies once for all blocks.
 
     For odd :math:`m`, the rotations apply the phase :math:`\exp(-i\theta (m/2 - h))`, where
     :math:`h` is the Hamming weight of the wires. We compute :math:`h` in place, see
@@ -216,7 +210,8 @@ def _equal_angle_block(theta, wires, work_wires, registers):
     ``work_wires``.
     """
     m = len(wires)
-    n = _num_hw_wires(m)
+    # For even m, we compute the Hamming weight of all but the sign wire
+    n = m - 1 + m % 2
     hw_wires, sign_wires = wires[:n], wires[n:]
     num_hw_work_wires = n - n.bit_count()
     var_wires = [hw_wires[-1], *work_wires[: n.bit_length() - 1]]
@@ -237,7 +232,7 @@ def _equal_angle_block(theta, wires, work_wires, registers):
 def _equal_angle_block_rep(block_size, num_bits, num_work_wires):
     """Resource representation of :func:`~._equal_angle_block` on ``block_size`` wires, with
     ``num_bits`` angle wires and ``num_work_wires`` adder work wires."""
-    n = _num_hw_wires(block_size)
+    n = block_size - 1 + block_size % 2
     num_sign_wires = 1 - block_size % 2
     hamming_weight = _HammingWeight(Wire[n], Wire[n - n.bit_count()])
     signed_add = _signed_add_rep(n.bit_length(), num_bits, num_work_wires, num_sign_wires)
@@ -284,7 +279,7 @@ def _num_and_work_wires(num_angles, block_size, batch_size):
     """Number of work wires that the TemporaryAND gates of the phase gradient rule use on top of
     the adder."""
     if block_size > 1:
-        n = _num_hw_wires(block_size)
+        n = block_size - 1 + block_size % 2
         return n - n.bit_count() + _num_monomials(n.bit_length())
     if batch_size is not None:
         return _num_monomials(min(batch_size, num_angles) - 1)
@@ -305,13 +300,13 @@ def make_rzlayer_to_phase_gradient_decomp(
     :class:`~.RZLayer` with :math:`k` angles on :math:`km` wires depending on the block size
     :math:`m` of wires per angle:
 
-    * **m > 1.** The :math:`m` rotations by an equal angle use one addition. Up to a global
-      phase, they apply a multiple of the angle that only depends on the Hamming weight of the
-      wires. The rule computes the Hamming weight in place, loads the multiple from a lookup
-      table into the angle wires, and adds it. For odd :math:`m`, the rule applies a single
-      :class:`~.GlobalPhase` for all blocks. For even :math:`m`, it avoids the global phase by
-      using the Hamming weight of the parities of the first :math:`m-1` wires with the last one,
-      and by adding or subtracting the multiple depending on the last wire. On top of the adder,
+    * **m > 1.** The :math:`m` rotations by an equal angle use one addition. For odd :math:`m`,
+      they apply a multiple of the angle that depends on the Hamming weight of the wires, and a
+      global phase, which the rule applies with a single :class:`~.GlobalPhase` for all blocks.
+      For even :math:`m`, the multiple depends on the Hamming weight of the parities of the
+      first :math:`m-1` wires with the last one, and is added or subtracted depending on the last
+      wire, without a global phase. The rule computes the Hamming weight in place, loads the
+      multiple from a lookup table into the angle wires, and adds it. On top of the adder,
       this uses :math:`n - \operatorname{popcount}(n) + 2^r - r - 1` :class:`~.TemporaryAND`
       gates, with :math:`n=m` for odd and :math:`n=m-1` for even :math:`m`, and :math:`r` the
       number of bits of :math:`n`, i.e., 0, 2, 2, 7 and 7 for :math:`m = 2, \dots, 6`.
@@ -375,65 +370,41 @@ def make_rzlayer_to_phase_gradient_decomp(
     >>> qp.resource.resources_from_tape(tape).counts
     {'C(MultiX)': 10, 'CNOT': 10, 'TemporaryAND': 2, 'MultiX': 2, 'SemiAdder': 1,
      'Adjoint(TemporaryAND)': 2}
-    >>> print(qp.draw(circuit, max_length=88)(0.5))
-     0: ─╭MultiX(M0)─╭X────╭●───────╭●─────────────────────────────────────── ···
-     1: ─├MultiX(M0)─╰●─╭●─│──╭●─╭●─│──────────────────────────────────────── ···
-     2: ─├MultiX(M0)────╰X─├●─│──╰X─╰X─╭●─╭●───────────────────────────────── ···
-     3: ─╰●────────────────│──│────────│──│────────────────────────────────── ···
-     4: ───────────────────╰⊕─╰X───────├●─│───────────╭●───────────────────── ···
-     5: ───────────────────────────────╰⊕─│───────────│───────────╭●───────── ···
-     6: ─╭MultiX(M1)──────────────────────├MultiX(M2)─├MultiX(M1)─├MultiX(M3) ···
-     7: ─├MultiX(M1)──────────────────────├MultiX(M2)─├MultiX(M1)─├MultiX(M3) ···
-     8: ─╰MultiX(M1)──────────────────────╰MultiX(M2)─╰MultiX(M1)─╰MultiX(M3) ···
-     9: ───────────────────────────────────────────────────────────────────── ···
-    10: ───────────────────────────────────────────────────────────────────── ···
-    11: ───────────────────────────────────────────────────────────────────── ···
-    12: ───────────────────────────────────────────────────────────────────── ···
-    13: ───────────────────────────────────────────────────────────────────── ···
+    >>> print(qp.draw(circuit, max_length=112, show_matrices=False)(0.5))
+     0: ─╭MultiX(M0)─╭X────╭●───────╭●────────────────────────────────────────────────────────────────────────── ···
+     1: ─├MultiX(M0)─╰●─╭●─│──╭●─╭●─│─────────────────────────────────────────────────────────────────────────── ···
+     2: ─├MultiX(M0)────╰X─├●─│──╰X─╰X─╭●─╭●──────────────────────────────────────────────────────────────────── ···
+     3: ─╰●────────────────│──│────────│──│───────────────────────────────────╭●──────────────────────────────── ···
+     4: ───────────────────╰⊕─╰X───────├●─│───────────╭●──────────────────────│───────────────────────────────── ···
+     5: ───────────────────────────────╰⊕─│───────────│───────────╭●──────────│───────────────────────────────── ···
+     6: ─╭MultiX(M1)──────────────────────├MultiX(M2)─├MultiX(M1)─├MultiX(M3)─│───────────╭SemiAdder─╭MultiX(M1) ···
+     7: ─├MultiX(M1)──────────────────────├MultiX(M2)─├MultiX(M1)─├MultiX(M3)─│───────────├SemiAdder─├MultiX(M1) ···
+     8: ─╰MultiX(M1)──────────────────────╰MultiX(M2)─╰MultiX(M1)─╰MultiX(M3)─│───────────├SemiAdder─╰MultiX(M1) ···
+     9: ──────────────────────────────────────────────────────────────────────├MultiX(M0)─├SemiAdder──────────── ···
+    10: ──────────────────────────────────────────────────────────────────────├MultiX(M0)─├SemiAdder──────────── ···
+    11: ──────────────────────────────────────────────────────────────────────╰MultiX(M0)─├SemiAdder──────────── ···
+    12: ──────────────────────────────────────────────────────────────────────────────────├SemiAdder──────────── ···
+    13: ──────────────────────────────────────────────────────────────────────────────────╰SemiAdder──────────── ···
     <BLANKLINE>
-     0: ··· ─────────────────────────────────────────────────────────────────────── ···
-     1: ··· ─────────────────────────────────────────────────────────────────────── ···
-     2: ··· ────────────────────────────────────╭●───────────────────────────────── ···
-     3: ··· ─╭●─────────────────────────────────│────────────────────────────────── ···
-     4: ··· ─│──────────────────────────────────│───────────╭●───────────────────── ···
-     5: ··· ─│──────────────────────────────────│───────────│───────────╭●───────── ···
-     6: ··· ─│───────────╭SemiAdder─╭MultiX(M1)─├MultiX(M2)─├MultiX(M1)─├MultiX(M3) ···
-     7: ··· ─│───────────├SemiAdder─├MultiX(M1)─├MultiX(M2)─├MultiX(M1)─├MultiX(M3) ···
-     8: ··· ─│───────────├SemiAdder─╰MultiX(M1)─╰MultiX(M2)─╰MultiX(M1)─╰MultiX(M3) ···
-     9: ··· ─├MultiX(M0)─├SemiAdder──────────────────────────────────────────────── ···
-    10: ··· ─├MultiX(M0)─├SemiAdder──────────────────────────────────────────────── ···
-    11: ··· ─╰MultiX(M0)─├SemiAdder──────────────────────────────────────────────── ···
-    12: ··· ─────────────├SemiAdder──────────────────────────────────────────────── ···
-    13: ··· ─────────────╰SemiAdder──────────────────────────────────────────────── ···
-    <BLANKLINE>
-     0: ··· ─────────────────╭●────────●╮────╭X─╭MultiX(M0)─┤ ╭State
-     1: ··· ─────────────────│──╭●─╭●───│─╭●─╰●─├MultiX(M0)─┤ ├State
-     2: ··· ──────────────●╮─╰X─╰X─│───●┤─╰X────├MultiX(M0)─┤ ├State
-     3: ··· ─╭●────────────│───────│────│───────╰●──────────┤ ├State
-     4: ··· ─│────────────●┤───────╰X──⊕╯───────────────────┤ ├State
-     5: ··· ─│────────────⊕╯────────────────────────────────┤ ├State
-     6: ··· ─│──────────────────────────────────────────────┤ ├State
-     7: ··· ─│──────────────────────────────────────────────┤ ├State
-     8: ··· ─│──────────────────────────────────────────────┤ ├State
-     9: ··· ─├MultiX(M0)────────────────────────────────────┤ ├State
-    10: ··· ─├MultiX(M0)────────────────────────────────────┤ ├State
-    11: ··· ─╰MultiX(M0)────────────────────────────────────┤ ├State
-    12: ··· ────────────────────────────────────────────────┤ ├State
-    13: ··· ────────────────────────────────────────────────┤ ╰State
-    <BLANKLINE>
-    M0 =
-    [ True  True  True]
-    M1 =
-    [ True  True False]
-    M2 =
-    [False False  True]
-    M3 =
-    [False False False]
+     0: ··· ─────────────────────────────────────────────────────╭●────────●╮────╭X─╭MultiX(M0)─┤ ╭State
+     1: ··· ─────────────────────────────────────────────────────│──╭●─╭●───│─╭●─╰●─├MultiX(M0)─┤ ├State
+     2: ··· ─╭●───────────────────────────────────────────────●╮─╰X─╰X─│───●┤─╰X────├MultiX(M0)─┤ ├State
+     3: ··· ─│───────────────────────────────────╭●────────────│───────│────│───────╰●──────────┤ ├State
+     4: ··· ─│───────────╭●──────────────────────│────────────●┤───────╰X──⊕╯───────────────────┤ ├State
+     5: ··· ─│───────────│───────────╭●──────────│────────────⊕╯────────────────────────────────┤ ├State
+     6: ··· ─├MultiX(M2)─├MultiX(M1)─├MultiX(M3)─│──────────────────────────────────────────────┤ ├State
+     7: ··· ─├MultiX(M2)─├MultiX(M1)─├MultiX(M3)─│──────────────────────────────────────────────┤ ├State
+     8: ··· ─╰MultiX(M2)─╰MultiX(M1)─╰MultiX(M3)─│──────────────────────────────────────────────┤ ├State
+     9: ··· ─────────────────────────────────────├MultiX(M0)────────────────────────────────────┤ ├State
+    10: ··· ─────────────────────────────────────├MultiX(M0)────────────────────────────────────┤ ├State
+    11: ··· ─────────────────────────────────────╰MultiX(M0)────────────────────────────────────┤ ├State
+    12: ··· ────────────────────────────────────────────────────────────────────────────────────┤ ├State
+    13: ··· ────────────────────────────────────────────────────────────────────────────────────┤ ╰State
 
     The wire ``3`` is XORed into the wires ``0, 1, 2``, and wire ``2`` and the work wire ``4``
     end up holding the Hamming weight of the parities. A :class:`~.TemporaryAND` computes their
     product into the work wire ``5``. The lookup table is loaded into the angle wires
-    ``6, 7, 8``, with its constant ``M1`` loaded unconditionally and its other coefficients
+    ``6, 7, 8``, with its constant loaded unconditionally and its other coefficients
     controlled on the wires ``2``, ``4`` and ``5``, see the details on lookup tables below. The
     phase gradient wires ``9, 10, 11`` are flipped if wire ``3`` is in the state
     :math:`|1\rangle`, so that the :class:`~.SemiAdder` subtracts instead of adding. Afterwards,
@@ -463,16 +434,14 @@ def make_rzlayer_to_phase_gradient_decomp(
         :func:`~.make_rz_to_phase_gradient_decomp` with the same registers: its angle is rounded
         to :math:`b` = ``len(angle_wires)`` binary decimals in units of :math:`2\pi`.
 
-        With ``batch_size``, ``angle_wires`` and ``phase_grad_wires`` hold :math:`b+1` wires. The
-        batches of distinct angles use all of them and round the angles to :math:`b+1` binary
-        decimals in units of :math:`4\pi`, i.e., with the same precision, which costs one more
-        :class:`~.TemporaryAND` in each adder. All other rotations only use the leading :math:`b`
-        wires of the registers, as above.
-
-        In both cases, the blocks of an even number of equal angles and the batches apply the
-        product of :class:`~.RZ` rotations by the rounded angles exactly, without a global phase.
-        The other rotations do so up to a global phase, as in
-        :func:`~.make_rz_to_phase_gradient_decomp`.
+        With ``batch_size``, ``angle_wires`` and ``phase_grad_wires`` hold :math:`b+1` wires. A
+        batch adds half of a signed sum of its angles, :math:`\pm\theta_s/2 \pm \theta_1/2
+        \pm \dots`, which is a half-integer multiple of :math:`2\pi/2^b` if the angles have
+        :math:`b` binary decimals in units of :math:`2\pi`. The batches therefore round the
+        angles to :math:`b+1` binary decimals in units of :math:`4\pi`, i.e., with the same
+        precision, and use all :math:`b+1` wires, which costs one more :class:`~.TemporaryAND`
+        in each adder. All other rotations only use the leading :math:`b` wires of the
+        registers, as above.
     """
     angle_wires, phase_grad_wires, rule_work_wires = validate_phase_gradient_wires(
         angle_wires, phase_grad_wires, work_wires
