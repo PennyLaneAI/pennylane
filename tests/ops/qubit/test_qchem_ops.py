@@ -32,12 +32,9 @@ from scipy.linalg import expm, fractional_matrix_power
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.decomposition_rules import _SingleExcitationBasis, _SingleExcitationRotations
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.qubit.qchem_ops import (
-    _SingleExcitationBasis,
-    _SingleExcitationRotations,
-)
 from pennylane.typing import Float, Wire
 
 PARAMETRIZED_QCHEM_OPERATIONS = [
@@ -319,6 +316,27 @@ class TestSingleExcitation:
 
 class TestSingleExcitationDecompositions:
     """Tests the decomposition rules registered for SingleExcitation with the graph system."""
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        ("subcircuit_name", "arguments"),
+        [
+            ("_SingleExcitationBasis", {"wires": [0, 1], "reverse": False}),
+            ("_SingleExcitationRotations", {"phi": 0.5, "wires": [0, 1]}),
+            ("_SingleExcitationRZRotations", {"phi": 0.5, "wires": [0, 1]}),
+            ("_SingleExcitationCRZBasis", {"wires": [0, 1]}),
+        ],
+    )
+    def test_subcircuit_resources_accept_positionals(self, subcircuit_name, arguments):
+        """Subcircuit resources accept positional arguments as well as keyword arguments."""
+        from pennylane.decomposition_rules.qubit import qchem_ops
+
+        op = getattr(qchem_ops, subcircuit_name)(**arguments)
+        rule = qp.list_decomps(op)[0]
+
+        assert rule.compute_resources(*op.arguments.values()) == rule.compute_resources(
+            **op.arguments
+        )
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(

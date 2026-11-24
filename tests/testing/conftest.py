@@ -41,15 +41,15 @@ from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.ops.op_math.pow import PowOperation
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
-from pennylane.ops.qubit.non_parametric_ops import _PPRBasis
-from pennylane.ops.qubit.parametric_ops_multi_qubit import (
+from pennylane.decomposition_rules.qubit.non_parametric_ops import _PPRBasis
+from pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit import (
     _IsingXYBasis,
     _IsingXYRotations,
     _MultiRZLadder,
     _PauliRotBasis,
 )
-from pennylane.ops.qubit.parametric_ops_single_qubit import _YToZBasis, _ZToYBasis
-from pennylane.ops.qubit.qchem_ops import (
+from pennylane.decomposition_rules.qubit.parametric_ops_single_qubit import _YToZBasis, _ZToYBasis
+from pennylane.decomposition_rules.qubit.qchem_ops import (
     _SingleExcitationBasis,
     _SingleExcitationCRZBasis,
     _SingleExcitationRotations,

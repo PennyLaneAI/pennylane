@@ -25,7 +25,6 @@ from pennylane.core import queuing
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import register_condition, register_resources
-from pennylane.ops.op_math.decompositions.unitary_decompositions import _qubit_unitary_two_qubit
 from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires, concatenate_wires
 
@@ -373,6 +372,11 @@ def _controlled_unitary_multi_control_zyz(
 def _controlled_unitary_two_qubit_resources(
     U, wires, control_values, work_wires, work_wire_type, **_  # pylint: disable=unused-argument
 ):
+    # pylint: disable-next=import-outside-toplevel
+    from pennylane.decomposition_rules.qubit.matrix_ops import (
+        qubit_unitary_two_qubit as _qubit_unitary_two_qubit,
+    )
+
     num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
     num_control_wires = len(wires) - num_target_wires
     num_work_wires = len(work_wires)
@@ -400,6 +404,11 @@ def _controlled_unitary_two_qubit_resources(
 @register_resources(_controlled_unitary_two_qubit_resources, exact=False, name="two_qubit")
 def _controlled_unitary_two_qubit(U, wires, control_values, work_wires, work_wire_type, **_):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
+
+    # pylint: disable-next=import-outside-toplevel
+    from pennylane.decomposition_rules.qubit.matrix_ops import (
+        qubit_unitary_two_qubit as _qubit_unitary_two_qubit,
+    )
 
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
