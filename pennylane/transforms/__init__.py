@@ -64,7 +64,7 @@ These compilation passes decompose or manipulate quantum circuits in the
 
     ~clifford_t_decomposition
     ~gridsynth
-    ~pennylane.decomposition_rules.templates.state_preparations.phase_gradient.make_phase_gradient_distillation_decomp
+    ~pennylane.decomposition_rules.phase_gradient.make_phase_gradient_distillation_decomp
     ~transforms.ppm_compilation
     ~transforms.to_ppr
     ~transforms.commute_ppr
@@ -80,10 +80,10 @@ using the following decomposition rule factories with the graph-based decomposit
 .. autosummary::
     :toctree: api
 
-    ~pennylane.decomposition_rules.qubit.parametric_ops_single_qubit.make_rz_to_phase_gradient_decomp
-    ~pennylane.decomposition_rules.op_math.controlled_ops.make_crz_to_phase_gradient_decomp
-    ~pennylane.decomposition_rules.templates.subroutines.select_pauli_rot.make_selectpaulirot_to_phase_gradient_decomp
-    ~pennylane.decomposition_rules.qubit.parametric_ops_single_qubit.phase_gradient_precision_stats
+    ~pennylane.decomposition_rules.phase_gradient.make_rz_to_phase_gradient_decomp
+    ~pennylane.decomposition_rules.phase_gradient.make_crz_to_phase_gradient_decomp
+    ~pennylane.decomposition_rules.phase_gradient.make_selectpaulirot_to_phase_gradient_decomp
+    ~pennylane.decomposition_rules.phase_gradient.phase_gradient_precision_stats
 
 Compilation passes using ZX calculus
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

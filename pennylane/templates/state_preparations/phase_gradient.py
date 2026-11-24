@@ -46,7 +46,7 @@ class PhaseGradientStatePrep(StatePrepBase2):
 
         Preparation of this state with Clifford gates, adders, and mid-circuit measurements via
         `Jones distillation <https://arxiv.org/abs/1303.3066>`__ with
-        :func:`~.transforms.decompositions.make_phase_gradient_distillation_decomp`.
+        :func:`~.decomposition_rules.phase_gradient.make_phase_gradient_distillation_decomp`.
 
     .. note::
 

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-"""Built-in decomposition rules for templates.state_preparations.phase_gradient."""
+"""Phase-gradient state preparation and distillation rules."""
 
 import math
 from collections import Counter, defaultdict
@@ -28,7 +28,7 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.templates.state_preparations.phase_gradient import PhaseGradientStatePrep
-from pennylane.templates.state_preparations.phase_gradient_decomp_data import (
+from pennylane.decomposition_rules.phase_gradient.state_preparation_data import (
     CLIFFORD_T_GLOBAL_PHASES,
     CLIFFORD_T_SEQUENCES,
     GLOBAL_PHASES,

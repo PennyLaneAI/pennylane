@@ -24,7 +24,7 @@ from pennylane.decomposition_rules import (
     phase_gradient_state_prep_to_ppr,
 )
 from pennylane.exceptions import WireError
-from pennylane.templates.state_preparations.phase_gradient_decomp_data import PI_OVER_8_PPRS
+from pennylane.decomposition_rules.phase_gradient.state_preparation_data import PI_OVER_8_PPRS
 
 
 def _expected_state(num_wires):

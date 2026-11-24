@@ -118,7 +118,7 @@ def test_package_exports_preserve_rule_identity():
         null_decomp,
     )
     from pennylane.decomposition_rules.common import null_decomp as defined_null_decomp
-    from pennylane.decomposition_rules.qubit.parametric_ops_single_qubit import (
+    from pennylane.decomposition_rules.phase_gradient.rz import (
         make_rz_to_phase_gradient_decomp as defined_rz_factory,
     )
     from pennylane.decomposition_rules.templates.state_preparations.mottonen import (
@@ -133,24 +133,25 @@ def test_package_exports_preserve_rule_identity():
 @pytest.mark.parametrize(
     "name, module",
     [
-        ("make_rz_to_phase_gradient_decomp", "qubit.parametric_ops_single_qubit"),
-        ("make_crz_to_phase_gradient_decomp", "op_math.controlled_ops"),
+        ("make_rz_to_phase_gradient_decomp", "phase_gradient.rz"),
+        ("make_crz_to_phase_gradient_decomp", "phase_gradient.crz"),
         (
             "make_selectpaulirot_to_phase_gradient_decomp",
-            "templates.subroutines.select_pauli_rot",
+            "phase_gradient.select_pauli_rot",
         ),
         (
             "make_phase_gradient_distillation_decomp",
-            "templates.state_preparations.phase_gradient",
+            "phase_gradient.state_preparation",
         ),
-        ("_CRZPhaseGradientCompute", "op_math.controlled_ops"),
-        ("_SelectPauliRotPhaseGradientCompute", "templates.subroutines.select_pauli_rot"),
+        ("_CRZPhaseGradientCompute", "phase_gradient.crz"),
+        ("_SelectPauliRotPhaseGradientCompute", "phase_gradient.select_pauli_rot"),
     ],
 )
-def test_phase_gradient_rules_follow_operator_modules(name, module):
-    """Phase-gradient factories and helpers live beside the corresponding operator rules."""
+def test_phase_gradient_rules_use_phase_gradient_package(name, module):
+    """Phase-gradient factories and helpers use the dedicated package."""
     value = getattr(qp.decomposition_rules, name)
     assert value.__module__ == f"pennylane.decomposition_rules.{module}"
+    assert getattr(qp.decomposition_rules.phase_gradient, name) is value
 
 
 @pytest.mark.parametrize(
@@ -167,7 +168,12 @@ def test_phase_gradient_rules_follow_operator_modules(name, module):
         "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
         "pennylane.decomposition_rules.op_math.controlled_ops",
         "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
-        "pennylane.decomposition_rules.templates.state_preparations.phase_gradient",
+        "pennylane.decomposition_rules.phase_gradient",
+        "pennylane.decomposition_rules.phase_gradient.common",
+        "pennylane.decomposition_rules.phase_gradient.rz",
+        "pennylane.decomposition_rules.phase_gradient.crz",
+        "pennylane.decomposition_rules.phase_gradient.select_pauli_rot",
+        "pennylane.decomposition_rules.phase_gradient.state_preparation",
         "pennylane.transforms",
         "pennylane.transforms.rz_phase_gradient",
         "pennylane.drawer.label",

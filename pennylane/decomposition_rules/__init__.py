@@ -16,6 +16,7 @@ r"""Built-in decomposition rules, organized like their operator and template mod
 
 The modules directly beneath this package mirror :mod:`pennylane.ops`, and the
 ``templates`` branch mirrors :mod:`pennylane.templates`.
+Phase-gradient rules and shared helpers are grouped in :mod:`pennylane.decomposition_rules.phase_gradient`.
 The drawing-specific ``LabelledOp`` rule remains in :mod:`pennylane.drawer.label`.
 Rules are loaded automatically when PennyLane is imported.
 Use :func:`pennylane.list_decomps` to retrieve the registered rules for an operator.
@@ -32,6 +33,7 @@ Symbolic implementations with the same name remain in their respective modules.
     meta
     common
     templates
+    phase_gradient
 """
 
 from importlib import import_module
@@ -86,7 +88,7 @@ if TYPE_CHECKING:
         _partial_unary_state_prep_core,
         _partial_unary_state_prep_standard_resources,
     )
-    from .templates.state_preparations.phase_gradient import (
+    from pennylane.decomposition_rules.phase_gradient.state_preparation import (
         phase_gradient_state_prep_to_clifford_t,
         phase_gradient_state_prep_to_ppr,
     )
@@ -208,20 +210,25 @@ if TYPE_CHECKING:
         _num_applied_terms,
         _validate_registers,
     )
-    from .op_math.controlled_ops import _CRZPhaseGradientCompute, make_crz_to_phase_gradient_decomp
-    from .templates.state_preparations.phase_gradient import (
+    from pennylane.decomposition_rules.phase_gradient.crz import (
+        _CRZPhaseGradientCompute,
+        make_crz_to_phase_gradient_decomp,
+    )
+    from pennylane.decomposition_rules.phase_gradient.state_preparation import (
         _jones_num_rounds,
         _jones_register_sizes,
         _jones_seed,
         _jones_success_probabilities,
         make_phase_gradient_distillation_decomp,
     )
-    from .qubit.parametric_ops_single_qubit import (
+    from pennylane.decomposition_rules.phase_gradient.rz import (
         make_rz_to_phase_gradient_decomp,
+    )
+    from pennylane.decomposition_rules.phase_gradient.common import (
         phase_gradient_precision_stats,
         validate_phase_gradient_wires,
     )
-    from .templates.subroutines.select_pauli_rot import (
+    from pennylane.decomposition_rules.phase_gradient.select_pauli_rot import (
         _SelectPauliRotPhaseGradientCompute,
         _select_pauli_rot_phase_gradient,
         make_selectpaulirot_to_phase_gradient_decomp,
@@ -369,6 +376,8 @@ _BUILTIN_MODULES = (
     "pennylane.decomposition_rules.qubit.matrix_ops",
     "pennylane.decomposition_rules.qubit.non_parametric_ops",
     "pennylane.decomposition_rules.qubit.parametric_ops_single_qubit",
+    "pennylane.decomposition_rules.phase_gradient.common",
+    "pennylane.decomposition_rules.phase_gradient.rz",
     "pennylane.decomposition_rules.qubit.parametric_ops_multi_qubit",
     "pennylane.decomposition_rules.qubit.qchem_ops",
     "pennylane.decomposition_rules.qubit.special_unitary",
@@ -380,9 +389,10 @@ _BUILTIN_MODULES = (
     "pennylane.decomposition_rules.templates.state_preparations.multiplexer_state_prep",
     "pennylane.decomposition_rules.templates.state_preparations.sum_of_slaters",
     "pennylane.decomposition_rules.templates.state_preparations.partial_unary",
-    "pennylane.decomposition_rules.templates.state_preparations.phase_gradient",
+    "pennylane.decomposition_rules.phase_gradient.state_preparation",
     "pennylane.decomposition_rules.qubit.state_preparation",
     "pennylane.decomposition_rules.op_math.controlled_ops",
+    "pennylane.decomposition_rules.phase_gradient.crz",
     "pennylane.decomposition_rules.op_math.exp",
     "pennylane.decomposition_rules.op_math.evolution",
     "pennylane.decomposition_rules.op_math.prod2",
@@ -451,6 +461,7 @@ _BUILTIN_MODULES = (
     "pennylane.decomposition_rules.templates.subroutines.qubitization_thc",
     "pennylane.decomposition_rules.templates.subroutines.gqsp",
     "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
+    "pennylane.decomposition_rules.phase_gradient.select_pauli_rot",
     "pennylane.decomposition_rules.templates.subroutines.qsvt",
     "pennylane.decomposition_rules.templates.layers.basic_entangler",
     "pennylane.decomposition_rules.templates.layers.gate_fabric",
@@ -477,8 +488,8 @@ def _load_builtin_rules():
         if module_name == "pennylane.decomposition_rules.op_math.adjoint2":
             # Phase-gradient helpers were historically registered after the template rules.
             for helper_module in (
-                "pennylane.decomposition_rules.templates.subroutines.select_pauli_rot",
-                "pennylane.decomposition_rules.op_math.controlled_ops",
+                "pennylane.decomposition_rules.phase_gradient.select_pauli_rot",
+                "pennylane.decomposition_rules.phase_gradient.crz",
             ):
                 import_module(helper_module).register_phase_gradient_compute()
         modules.append(import_module(module_name))
@@ -488,3 +499,9 @@ def _load_builtin_rules():
             value = vars(module).get(name)
             if getattr(value, "__module__", None) == module_name:
                 globals()[name] = value
+        if module_name.startswith("pennylane.decomposition_rules.phase_gradient."):
+            phase_gradient = import_module("pennylane.decomposition_rules.phase_gradient")
+            for name in phase_gradient.__all__:
+                value = vars(module).get(name)
+                if getattr(value, "__module__", None) == module_name:
+                    setattr(phase_gradient, name, value)
