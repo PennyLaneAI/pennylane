@@ -38,11 +38,11 @@ from pennylane.decomposition import (
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.identity import I
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
-from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
-from pennylane.ops.op_math.prod import prod
+from pennylane.ops.op_math.pow2 import _pow_scale_angle as pow_rotation2
+from pennylane.ops.subcircuit import subcircuit
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike, concatenate_wires
 
@@ -85,43 +85,43 @@ class RX(Operator2):
 
         .. decomposition-table:: qp.RX
 
-            .. decomposition-rule:: _rx_to_rot
+            .. decomposition-rule:: to_rot
                 :image: /_static/decomposition_thumbnails/rx_to_rot.svg
 
                 :class:`~.Rot` | :math:`1`
 
-            .. decomposition-rule:: _rx_to_rz_ry
+            .. decomposition-rule:: to_rz_ry
                 :image: /_static/decomposition_thumbnails/rx_to_rz_ry.svg
 
                 :class:`~.RZ` | :math:`2`
                 :class:`~.RY` | :math:`1`
 
-            .. decomposition-rule:: _rx_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/rx_to_ppr.svg
 
                 :class:`PauliRot("X") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: _rx_to_ry_cliff
+            .. decomposition-rule:: to_ry_cliff
                 :image: /_static/decomposition_thumbnails/rx_to_ry_cliff.svg
 
                 :class:`~.S` | :math:`1`
                 :class:`Adjoint(S) <.S>` | :math:`1`
                 :class:`~.RY` | :math:`1`
 
-            .. decomposition-rule:: _rx_to_rz_cliff
+            .. decomposition-rule:: to_rz_cliff
                 :image: /_static/decomposition_thumbnails/rx_to_rz_cliff.svg
 
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.RZ` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/rx_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rx_decomp)
+            .. decomposition-rule:: to_rz_mcx
                 :image: /_static/decomposition_thumbnails/rx_controlled.svg
                 :region: controlled
                 :where: :math:`c` is the number of control wires, each control wire with
@@ -133,7 +133,7 @@ class RX(Operator2):
                 :class:`~.RZ` | :math:`2` if :math:`c \geq 2`
                 :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/rx_pow.svg
                 :region: pow
                 :where: the angle of rotation is multiplied by the power :math:`z`
@@ -234,7 +234,7 @@ def _rx_to_rot_resources(*_, **__):
     return {qp.Rot: 1}
 
 
-@register_resources(_rx_to_rot_resources)
+@register_resources(_rx_to_rot_resources, name="to_rot")
 def _rx_to_rot(phi, wires: WiresLike):
     qp.Rot(np.pi / 2, phi, 3.5 * np.pi, wires=wires)
 
@@ -243,7 +243,7 @@ def _rx_to_rz_ry_resources(*_, **__):
     return {qp.RZ: 2, qp.RY: 1}
 
 
-@register_resources(_rx_to_rz_ry_resources)
+@register_resources(_rx_to_rz_ry_resources, name="to_rz_ry")
 def _rx_to_rz_ry(phi, wires: WiresLike):
     qp.RZ(np.pi / 2, wires=wires)
     qp.RY(phi, wires=wires)
@@ -255,7 +255,7 @@ def _rx_to_ry_cliff_resources(*_, **__):
     return resources
 
 
-@register_resources(_rx_to_ry_cliff_resources)
+@register_resources(_rx_to_ry_cliff_resources, name="to_ry_cliff")
 def _rx_to_ry_cliff(phi, wires: WiresLike):
     qp.change_op_basis(qp.S(wires), qp.RY(phi, wires))
 
@@ -265,7 +265,7 @@ def _rx_to_rz_cliff_resources(*_, **__):
     return resources
 
 
-@register_resources(_rx_to_rz_cliff_resources)
+@register_resources(_rx_to_rz_cliff_resources, name="to_rz_cliff")
 def _rx_to_rz_cliff(phi, wires: WiresLike):
     qp.change_op_basis(qp.Hadamard(wires), qp.RZ(phi, wires), qp.Hadamard(wires))
 
@@ -274,7 +274,7 @@ def _rx_to_ppr_resources(*_, **__):
     return {qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1}
 
 
-@register_resources(_rx_to_ppr_resources)
+@register_resources(_rx_to_ppr_resources, name="to_paulirot")
 def _rx_to_ppr(phi, wires):
     qp.PauliRot(phi, "X", wires=wires)
 
@@ -284,8 +284,13 @@ add_decomps("Adjoint(RX)", adjoint_rotation2)
 add_decomps("Pow(RX)", pow_rotation2)
 
 
-# pylint: disable-next=unused-argument
-def _controlled_rx_resource(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_rx_standard_resources(
+    base,  # pylint: disable=unused-argument
+    control_wires,
+    control_values,  # pylint: disable=unused-argument
+    work_wires,
+    work_wire_type,
+):
     if len(control_wires) == 1:
         return {qp.CRX: 1}
     return {
@@ -299,9 +304,9 @@ def _controlled_rx_resource(base, control_wires, control_values, work_wires, wor
     }
 
 
-@register_resources(_controlled_rx_resource)
+@register_resources(_controlled_rx_standard_resources, name="to_rz_mcx")
 # pylint: disable-next=unused-argument
-def _controlled_rx_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_rx_standard(base, control_wires, control_values, work_wires, work_wire_type):
     wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
         qp.CRX(base.phi, wires=wires)
@@ -315,7 +320,7 @@ def _controlled_rx_decomp(base, control_wires, control_values, work_wires, work_
     qp.H(wires=wires[-1])
 
 
-add_decomps("C(RX)", flip_zero_control2(_controlled_rx_decomp))
+add_decomps("C(RX)", flip_zero_control2(_controlled_rx_standard, name="to_rz_mcx"))
 
 
 class RY(Operator2):
@@ -344,30 +349,30 @@ class RY(Operator2):
 
         .. decomposition-table:: qp.RY
 
-            .. decomposition-rule:: _ry_to_rot
+            .. decomposition-rule:: to_rot
                 :image: /_static/decomposition_thumbnails/ry_to_rot.svg
 
                 :class:`~.Rot` | :math:`1`
 
-            .. decomposition-rule:: _ry_to_rz_rx
+            .. decomposition-rule:: to_rz_rx
                 :image: /_static/decomposition_thumbnails/ry_to_rz_rx.svg
 
                 :class:`~.RZ` | :math:`2`
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: _ry_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/ry_to_ppr.svg
 
                 :class:`PauliRot("Y") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: _ry_to_rx_cliff
+            .. decomposition-rule:: to_rx_cliff
                 :image: /_static/decomposition_thumbnails/ry_to_rx_cliff.svg
 
                 :class:`~.S` | :math:`1`
                 :class:`Adjoint(S) <.S>` | :math:`1`
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: _ry_to_rz_cliff
+            .. decomposition-rule:: to_rz_cliff
                 :image: /_static/decomposition_thumbnails/ry_to_rz_cliff.svg
 
                 :class:`~.Hadamard` | :math:`2`
@@ -375,14 +380,14 @@ class RY(Operator2):
                 :class:`Adjoint(S) <.S>` | :math:`1`
                 :class:`~.RZ` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/ry_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.RY` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_ry_decomp)
+            .. decomposition-rule:: to_ry_mcx
                 :image: /_static/decomposition_thumbnails/ry_controlled.svg
                 :region: controlled
                 :where: :math:`c` is the number of control wires, each control wire with
@@ -393,7 +398,7 @@ class RY(Operator2):
                 :class:`~.RY` | :math:`2` if :math:`c \geq 2`
                 :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/ry_pow.svg
                 :region: pow
                 :where: the angle of rotation is multiplied by the power :math:`z`
@@ -495,7 +500,7 @@ def _ry_to_rot_resources(*_, **__):
     return {qp.Rot: 1}
 
 
-@register_resources(_ry_to_rot_resources)
+@register_resources(_ry_to_rot_resources, name="to_rot")
 def _ry_to_rot(phi, wires: WiresLike):
     qp.Rot(0, phi, 0, wires=wires)
 
@@ -504,7 +509,7 @@ def _ry_to_rz_rx_resources(*_, **__):
     return {qp.RZ: 2, qp.RX: 1}
 
 
-@register_resources(_ry_to_rz_rx_resources)
+@register_resources(_ry_to_rz_rx_resources, name="to_rz_rx")
 def _ry_to_rz_rx(phi, wires: WiresLike):
     qp.RZ(-np.pi / 2, wires=wires)
     qp.RX(phi, wires=wires)
@@ -516,41 +521,50 @@ def _ry_to_rx_cliff_resources(*_, **__):
     return resources
 
 
-@register_resources(_ry_to_rx_cliff_resources)
+@register_resources(_ry_to_rx_cliff_resources, name="to_rx_cliff")
 def _ry_to_rx_cliff(phi, wires: WiresLike):
     qp.change_op_basis(qp.adjoint(qp.S(wires)), qp.RX(phi, wires), qp.S(wires))
+
+
+@subcircuit
+@register_resources(lambda **_: {qp.Hadamard: 1, _adjoint_abstract(qp.S): 1})
+def _YToZBasis(wires: WiresLike):
+    qp.adjoint(qp.S(wires))
+    qp.Hadamard(wires)
+
+
+@subcircuit
+@register_resources(lambda **_: {qp.Hadamard: 1, qp.S: 1})
+def _ZToYBasis(wires: WiresLike):
+    qp.Hadamard(wires)
+    qp.S(wires)
 
 
 def _ry_to_rz_cliff_resources(*_, **__):
     resources = {
         _change_op_basis_abstract(
-            prod(qp.H(Wire[1]), qp.adjoint(qp.S(Wire[1]))),
+            _YToZBasis(Wire[1]),
             qp.RZ,
-            prod(qp.S(Wire[1]), qp.H(Wire[1])),
+            _ZToYBasis(Wire[1]),
         ): 1
     }
     return resources
 
 
-@register_resources(_ry_to_rz_cliff_resources)
+@register_resources(_ry_to_rz_cliff_resources, name="to_rz_cliff")
 def _ry_to_rz_cliff(phi, wires: WiresLike, **__):
-
-    def _compute():
-        qp.adjoint(qp.S(wires))
-        qp.Hadamard(wires)
-
-    def _uncompute():
-        qp.Hadamard(wires)
-        qp.S(wires)
-
-    qp.change_op_basis(_compute, qp.RZ(phi, wires), _uncompute)
+    qp.change_op_basis(
+        _YToZBasis(wires),
+        qp.RZ(phi, wires),
+        _ZToYBasis(wires),
+    )
 
 
 def _ry_to_ppr_resources(*_, **__):
     return {qp.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1}
 
 
-@register_resources(_ry_to_ppr_resources)
+@register_resources(_ry_to_ppr_resources, name="to_paulirot")
 def _ry_to_ppr(phi, wires):
     qp.PauliRot(phi, "Y", wires=wires)
 
@@ -560,8 +574,13 @@ add_decomps("Adjoint(RY)", adjoint_rotation2)
 add_decomps("Pow(RY)", pow_rotation2)
 
 
-# pylint: disable-next=unused-argument
-def _controlled_ry_resource(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_ry_standard_resources(
+    base,  # pylint: disable=unused-argument
+    control_wires,
+    control_values,  # pylint: disable=unused-argument
+    work_wires,
+    work_wire_type,
+):
     if len(control_wires) == 1:
         return {qp.CRY: 1}
     return {
@@ -574,9 +593,9 @@ def _controlled_ry_resource(base, control_wires, control_values, work_wires, wor
     }
 
 
-@register_resources(_controlled_ry_resource)
+@register_resources(_controlled_ry_standard_resources, name="to_ry_mcx")
 # pylint: disable-next=unused-argument
-def _controlled_ry_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_ry_standard(base, control_wires, control_values, work_wires, work_wire_type):
     wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
         qp.CRY(base.phi, wires=wires)
@@ -588,7 +607,7 @@ def _controlled_ry_decomp(base, control_wires, control_values, work_wires, work_
     qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
-add_decomps("C(RY)", flip_zero_control2(_controlled_ry_decomp))
+add_decomps("C(RY)", flip_zero_control2(_controlled_ry_standard, name="to_ry_mcx"))
 
 
 class RZ(Operator2):
@@ -617,35 +636,35 @@ class RZ(Operator2):
 
         .. decomposition-table:: qp.RZ
 
-            .. decomposition-rule:: _rz_to_ps
+            .. decomposition-rule:: to_ps
                 :image: /_static/decomposition_thumbnails/rz_to_phaseshift.svg
 
                 :class:`~.PhaseShift` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: _rz_to_rot
+            .. decomposition-rule:: to_rot
                 :image: /_static/decomposition_thumbnails/rz_to_rot.svg
 
                 :class:`~.Rot` | :math:`1`
 
-            .. decomposition-rule:: _rz_to_ry_rx
+            .. decomposition-rule:: to_ry_rx
                 :image: /_static/decomposition_thumbnails/rz_to_ry_rx.svg
 
                 :class:`~.RY` | :math:`2`
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: _rz_to_ppr
+            .. decomposition-rule:: to_paulirot
                 :image: /_static/decomposition_thumbnails/rz_to_ppr.svg
 
                 :class:`PauliRot("Z") <.PauliRot>` | :math:`1`
 
-            .. decomposition-rule:: _rz_to_rx_cliff
+            .. decomposition-rule:: to_rx_cliff
                 :image: /_static/decomposition_thumbnails/rz_to_rx_cliff.svg
 
                 :class:`~.Hadamard` | :math:`2`
                 :class:`~.RX` | :math:`1`
 
-            .. decomposition-rule:: _rz_to_ry_cliff
+            .. decomposition-rule:: to_ry_cliff
                 :image: /_static/decomposition_thumbnails/rz_to_ry_cliff.svg
 
                 :class:`~.Hadamard` | :math:`2`
@@ -653,14 +672,14 @@ class RZ(Operator2):
                 :class:`Adjoint(S) <.S>` | :math:`1`
                 :class:`~.RY` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/rz_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.RZ` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rz_decomp)
+            .. decomposition-rule:: to_rz_mcx
                 :image: /_static/decomposition_thumbnails/rz_controlled.svg
                 :region: controlled
                 :where: :math:`c` is the number of control wires, each control wire with
@@ -671,7 +690,7 @@ class RZ(Operator2):
                 :class:`~.RZ` | :math:`2` if :math:`c \geq 2`
                 :class:`~.MultiControlledX` | :math:`2` if :math:`c \geq 2`
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/rz_pow.svg
                 :region: pow
                 :where: the angle of rotation is multiplied by the power :math:`z`
@@ -796,7 +815,7 @@ def _rz_to_ps_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.PhaseShift: 1, qp.GlobalPhase: 1}
 
 
-@register_resources(_rz_to_ps_resources)
+@register_resources(_rz_to_ps_resources, name="to_ps")
 def _rz_to_ps(phi, wires: WiresLike):
     qp.PhaseShift(phi, wires)
     qp.GlobalPhase(phi / 2)
@@ -806,7 +825,7 @@ def _rz_to_rot_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.Rot: 1}
 
 
-@register_resources(_rz_to_rot_resources)
+@register_resources(_rz_to_rot_resources, name="to_rot")
 def _rz_to_rot(phi, wires: WiresLike):
     qp.Rot(0, 0, phi, wires=wires)
 
@@ -815,7 +834,7 @@ def _rz_to_ry_rx_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.RY: 2, qp.RX: 1}
 
 
-@register_resources(_rz_to_ry_rx_resources)
+@register_resources(_rz_to_ry_rx_resources, name="to_ry_rx")
 def _rz_to_ry_rx(phi, wires: WiresLike):
     qp.RY(np.pi / 2, wires=wires)
     qp.RX(phi, wires=wires)
@@ -827,7 +846,7 @@ def _rz_to_rx_cliff_resources(phi, wires):  # pylint: disable=unused-argument
     return resources
 
 
-@register_resources(_rz_to_rx_cliff_resources)
+@register_resources(_rz_to_rx_cliff_resources, name="to_rx_cliff")
 def _rz_to_rx_cliff(phi, wires: WiresLike):
     qp.change_op_basis(qp.Hadamard(wires), qp.RX(phi, wires), qp.Hadamard(wires))
 
@@ -835,33 +854,28 @@ def _rz_to_rx_cliff(phi, wires: WiresLike):
 def _rz_to_ry_cliff_resources(phi, wires):  # pylint: disable=unused-argument
     resources = {
         _change_op_basis_abstract(
-            prod(qp.S(Wire[1]), qp.H(Wire[1])),
+            _ZToYBasis(Wire[1]),
             qp.RY,
-            prod(qp.H(Wire[1]), qp.adjoint(qp.S(Wire[1]))),
+            _YToZBasis(Wire[1]),
         ): 1
     }
     return resources
 
 
-@register_resources(_rz_to_ry_cliff_resources)
+@register_resources(_rz_to_ry_cliff_resources, name="to_ry_cliff")
 def _rz_to_ry_cliff(phi, wires: WiresLike):
-
-    def _compute():
-        qp.H(wires)
-        qp.S(wires)
-
-    def _uncompute():
-        qp.adjoint(qp.S(wires))
-        qp.H(wires)
-
-    qp.change_op_basis(_compute, qp.RY(phi, wires), _uncompute)
+    qp.change_op_basis(
+        _ZToYBasis(wires),
+        qp.RY(phi, wires),
+        _YToZBasis(wires),
+    )
 
 
 def _rz_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1}
 
 
-@register_resources(_rz_to_ppr_resources)
+@register_resources(_rz_to_ppr_resources, name="to_paulirot")
 def _rz_to_ppr(phi, wires, **_):
     qp.PauliRot(phi, "Z", wires=wires)
 
@@ -871,8 +885,13 @@ add_decomps("Adjoint(RZ)", adjoint_rotation2)
 add_decomps("Pow(RZ)", pow_rotation2)
 
 
-# pylint: disable-next=unused-argument
-def _controlled_rz_resource(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_rz_standard_resources(
+    base,  # pylint: disable=unused-argument
+    control_wires,
+    control_values,  # pylint: disable=unused-argument
+    work_wires,
+    work_wire_type,
+):
     if len(control_wires) == 1:
         return {qp.CRZ: 1}
     return {
@@ -885,9 +904,9 @@ def _controlled_rz_resource(base, control_wires, control_values, work_wires, wor
     }
 
 
-@register_resources(_controlled_rz_resource)
+@register_resources(_controlled_rz_standard_resources, name="to_rz_mcx")
 # pylint: disable-next=unused-argument
-def _controlled_rz_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_rz_standard(base, control_wires, control_values, work_wires, work_wire_type):
 
     if len(control_wires) == 1:
         qp.CRZ(base.phi, wires=concatenate_wires(control_wires, base.wires))
@@ -907,7 +926,7 @@ def _controlled_rz_decomp(base, control_wires, control_values, work_wires, work_
     )
 
 
-add_decomps("C(RZ)", flip_zero_control2(_controlled_rz_decomp))
+add_decomps("C(RZ)", flip_zero_control2(_controlled_rz_standard, name="to_rz_mcx"))
 
 
 class PhaseShift(Operator2):
@@ -938,20 +957,20 @@ class PhaseShift(Operator2):
             :symbols: :math:`c` control wires, :math:`z` controls on :math:`0`
             :example: :math:`c=2`, :math:`z=0`
 
-            .. decomposition-rule:: _phaseshift_to_rz_gp
+            .. decomposition-rule:: to_rz_gp
                 :image: /_static/decomposition_thumbnails/phaseshift_to_rz_gp.svg
 
                 :class:`~.RZ` | :math:`1`
                 :class:`~.GlobalPhase` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/phaseshift_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
 
                 :class:`~.PhaseShift` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_phase_shift_decomp)
+            .. decomposition-rule:: to_pauli_rot
                 :image: /_static/decomposition_thumbnails/phaseshift_controlled.svg
                 :region: controlled
                 :where: :math:`c` is the number of control wires, :math:`\binom{c+1}{k}` of
@@ -964,7 +983,7 @@ class PhaseShift(Operator2):
                 :class:`~.GlobalPhase` | :math:`1` if :math:`c \geq 2`
                 :class:`~.PauliX` | :math:`2z` | 0
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_phase_shift_single_phase)
+            .. decomposition-rule:: single_phase
                 :image: /_static/decomposition_thumbnails/controlled_phase_shift_single_phase.svg
                 :region: controlled
                 :requires: :math:`c` zeroed work wires
@@ -979,7 +998,7 @@ class PhaseShift(Operator2):
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`c` | 2
                 :class:`~.PauliX` | :math:`2z` | 0
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/phaseshift_pow.svg
                 :region: pow
                 :where: the angle is multiplied by the power :math:`z`
@@ -1107,14 +1126,14 @@ def _phaseshift_to_rz_gp_resources(phi, wires):  # pylint: disable=unused-argume
     return {qp.RZ: 1, qp.GlobalPhase: 1}
 
 
-@register_resources(_phaseshift_to_rz_gp_resources)
+@register_resources(_phaseshift_to_rz_gp_resources, name="to_rz_gp")
 def _phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
     RZ(phi, wires=wires)
     qp.GlobalPhase(-phi / 2)
 
 
 # pylint: disable-next=unused-argument
-def _controlled_phase_shift_resource(base, control_wires, *_, **__):
+def _controlled_phase_shift_standard_resources(base, control_wires, *_, **__):
     # A single control wire specializes to ``ControlledPhaseShift``, matching the legacy
     # behaviour (and its cheaper ``RZ``/``CNOT`` decomposition) rather than the general
     # phase-polynomial (``PauliRot``) expansion, which is only used for multiple control wires.
@@ -1131,8 +1150,8 @@ def _controlled_phase_shift_resource(base, control_wires, *_, **__):
     return resources
 
 
-@register_resources(_controlled_phase_shift_resource)
-def _controlled_phase_shift_decomp(base, control_wires, *_, **__):
+@register_resources(_controlled_phase_shift_standard_resources, name="to_pauli_rot")
+def _controlled_phase_shift_standard(base, control_wires, *_, **__):
     wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
         qp.ControlledPhaseShift(base.phi, wires=wires)
@@ -1161,7 +1180,7 @@ def _controlled_phase_shift_single_phase_resources(base, control_wires, *_, **__
     and len(control_wires) > 0
     and len(work_wires) >= len(control_wires)
 )
-@register_resources(_controlled_phase_shift_single_phase_resources)
+@register_resources(_controlled_phase_shift_single_phase_resources, name="single_phase")
 def _controlled_phase_shift_single_phase(base, control_wires, work_wires, **_):
     """Computes ``AND(*control_wires, base.wires[0])`` into ``len(control_wires)`` zeroed work
     wires with a ``TemporaryAND`` ladder, applies a single ``PhaseShift`` to the last work wire
@@ -1182,8 +1201,8 @@ add_decomps("Adjoint(PhaseShift)", adjoint_rotation2)
 add_decomps("Pow(PhaseShift)", pow_rotation2)
 add_decomps(
     "C(PhaseShift)",
-    flip_zero_control2(_controlled_phase_shift_decomp),
-    flip_zero_control2(_controlled_phase_shift_single_phase),
+    flip_zero_control2(_controlled_phase_shift_standard, name="to_pauli_rot"),
+    flip_zero_control2(_controlled_phase_shift_single_phase, name="single_phase"),
 )
 
 
@@ -1223,19 +1242,19 @@ class Rot(Operator2):
 
         .. decomposition-table:: qp.Rot
 
-            .. decomposition-rule:: _rot_to_rz_ry_rz
+            .. decomposition-rule:: to_rz_ry_rz
                 :image: /_static/decomposition_thumbnails/rot_to_rz_ry_rz.svg
 
                 :class:`~.RZ` | :math:`2`
                 :class:`~.RY` | :math:`1`
 
-            .. decomposition-rule:: _adjoint_rot
+            .. decomposition-rule:: reverse_angles
                 :image: /_static/decomposition_thumbnails/rot_adjoint.svg
                 :region: adjoint
 
                 :class:`~.Rot` | :math:`1`
 
-            .. decomposition-rule:: flip_zero_ctrl_values(_controlled_rot_decomp)
+            .. decomposition-rule:: to_rz_ry_mcx
                 :image: /_static/decomposition_thumbnails/rot_controlled.svg
                 :region: controlled
                 :where: :math:`c` is the number of control wires, each control wire with
@@ -1344,7 +1363,7 @@ def _rot_to_rz_ry_rz_resources(phi, theta, omega, wires):  # pylint: disable=unu
     return {qp.RZ: 2, qp.RY: 1}
 
 
-@register_resources(_rot_to_rz_ry_rz_resources)
+@register_resources(_rot_to_rz_ry_rz_resources, name="to_rz_ry_rz")
 def _rot_to_rz_ry_rz(phi, theta, omega, wires: WiresLike):
     RZ(phi, wires=wires)
     RY(theta, wires=wires)
@@ -1354,16 +1373,21 @@ def _rot_to_rz_ry_rz(phi, theta, omega, wires: WiresLike):
 add_decomps(Rot, _rot_to_rz_ry_rz)
 
 
-@register_resources({Rot: 1})
-def _adjoint_rot(base):
+@register_resources({Rot: 1}, name="reverse_angles")
+def _adjoint_rot_standard(base):
     Rot(-base.omega, -base.theta, -base.phi, wires=base.wires)
 
 
-add_decomps("Adjoint(Rot)", _adjoint_rot)
+add_decomps("Adjoint(Rot)", _adjoint_rot_standard)
 
 
-# pylint: disable-next=unused-argument
-def _controlled_rot_resource(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_rot_standard_resources(
+    base,  # pylint: disable=unused-argument
+    control_wires,
+    control_values,  # pylint: disable=unused-argument
+    work_wires,
+    work_wire_type,
+):
     if len(control_wires) == 1:
         return {qp.CRot: 1}
     return {
@@ -1377,9 +1401,9 @@ def _controlled_rot_resource(base, control_wires, control_values, work_wires, wo
     }
 
 
-@register_resources(_controlled_rot_resource)
+@register_resources(_controlled_rot_standard_resources, name="to_rz_ry_mcx")
 # pylint: disable-next=unused-argument
-def _controlled_rot_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_rot_standard(base, control_wires, control_values, work_wires, work_wire_type):
 
     phi, theta, omega = base.phi, base.theta, base.omega
     wires = concatenate_wires(control_wires, base.wires)
@@ -1397,7 +1421,7 @@ def _controlled_rot_decomp(base, control_wires, control_values, work_wires, work
     qp.RZ(omega, wires=wires[-1])
 
 
-add_decomps("C(Rot)", flip_zero_control2(_controlled_rot_decomp))
+add_decomps("C(Rot)", flip_zero_control2(_controlled_rot_standard, name="to_rz_ry_mcx"))
 
 
 class U1(Operator2):
@@ -1430,19 +1454,19 @@ class U1(Operator2):
 
         .. decomposition-table:: qp.U1
 
-            .. decomposition-rule:: _u1_phaseshift
+            .. decomposition-rule:: to_phaseshift
                 :image: /_static/decomposition_thumbnails/u1_to_phaseshift.svg
 
                 :class:`~.PhaseShift` | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/u1_adjoint.svg
                 :region: adjoint
 
                 :class:`~.U1` | :math:`1`
                 :where: ``phi`` changes sign
 
-            .. decomposition-rule:: pow_rotation
+            .. decomposition-rule:: scale_angle
                 :image: /_static/decomposition_thumbnails/u1_pow.svg
                 :region: pow
                 :where: the angle is multiplied by the power :math:`z`
@@ -1514,16 +1538,16 @@ class U1(Operator2):
         return U1(phi, wires=self.wires)
 
 
-def _u1_phaseshift_resources(*_, **__):
+def _u1_to_phaseshift_resources(*_, **__):
     return {PhaseShift: 1}
 
 
-@register_resources(_u1_phaseshift_resources)
-def _u1_phaseshift(phi, wires):
+@register_resources(_u1_to_phaseshift_resources, name="to_phaseshift")
+def _u1_to_phaseshift(phi, wires):
     PhaseShift(phi, wires=wires)
 
 
-add_decomps(U1, _u1_phaseshift)
+add_decomps(U1, _u1_to_phaseshift)
 add_decomps("Adjoint(U1)", adjoint_rotation2)
 add_decomps("Pow(U1)", pow_rotation2)
 
@@ -1568,13 +1592,13 @@ class U2(Operator2):
 
         .. decomposition-table:: qp.U2
 
-            .. decomposition-rule:: _u2_phaseshift_rot
+            .. decomposition-rule:: to_phaseshift_rot
                 :image: /_static/decomposition_thumbnails/u2_to_rot_phaseshift.svg
 
                 :class:`~.Rot` | :math:`1`
                 :class:`~.PhaseShift` | :math:`2`
 
-            .. decomposition-rule:: _adjoint_u2
+            .. decomposition-rule:: invert_angles
                 :image: /_static/decomposition_thumbnails/u2_adjoint.svg
                 :region: adjoint
                 :where: the angles change to :math:`\delta \rightarrow \pi - \delta` and  :math:`\phi \rightarrow \pi - \phi` (both :math:`\text{mod} 2 \pi`)
@@ -1648,29 +1672,29 @@ class U2(Operator2):
         return U2(phi, delta, wires=wires)
 
 
-def _u2_phaseshift_rot_resources(phi, delta, wires):  # pylint: disable=unused-argument
+def _u2_to_phaseshift_rot_resources(phi, delta, wires):  # pylint: disable=unused-argument
     return {PhaseShift: 2, Rot: 1}
 
 
-@register_resources(_u2_phaseshift_rot_resources)
-def _u2_phaseshift_rot(phi, delta, wires):
+@register_resources(_u2_to_phaseshift_rot_resources, name="to_phaseshift_rot")
+def _u2_to_phaseshift_rot(phi, delta, wires):
     pi_half = qp.math.ones_like(delta) * (np.pi / 2)
     Rot(delta, pi_half, -delta, wires=wires)
     PhaseShift(delta, wires=wires)
     PhaseShift(phi, wires=wires)
 
 
-add_decomps(U2, _u2_phaseshift_rot)
+add_decomps(U2, _u2_to_phaseshift_rot)
 
 
-@register_resources(lambda base: {abstractify(U2): 1})
-def _adjoint_u2(base):
+@register_resources(lambda base: {abstractify(U2): 1}, name="invert_angles")
+def _adjoint_u2_standard(base):
     new_delta = qp.math.mod((np.pi - base.phi), (2 * np.pi))
     new_phi = qp.math.mod((np.pi - base.delta), (2 * np.pi))
     U2(new_phi, new_delta, wires=base.wires)
 
 
-add_decomps("Adjoint(U2)", _adjoint_u2)
+add_decomps("Adjoint(U2)", _adjoint_u2_standard)
 
 
 class U3(Operator2):
@@ -1714,13 +1738,13 @@ class U3(Operator2):
 
         .. decomposition-table:: qp.U3
 
-            .. decomposition-rule:: _u3_phaseshift_rot
+            .. decomposition-rule:: to_phaseshift_rot
                 :image: /_static/decomposition_thumbnails/u3_to_rot_phaseshift.svg
 
                 :class:`~.Rot` | :math:`1`
                 :class:`~.PhaseShift` | :math:`2`
 
-            .. decomposition-rule:: _adjoint_u3
+            .. decomposition-rule:: invert_angles
                 :image: /_static/decomposition_thumbnails/u3_adjoint.svg
                 :region: adjoint
                 :where: :math:`\theta` stays the same, but :math:`\delta \rightarrow \pi - \delta` and  :math:`\phi \rightarrow \pi - \phi` (both :math:`\text{mod} 2 \pi`)
@@ -1825,25 +1849,25 @@ class U3(Operator2):
         return U3(theta, phi, delta, wires=wires)
 
 
-def _u3_phaseshift_rot_resources(theta, phi, delta, wires):  # pylint: disable=unused-argument
+def _u3_to_phaseshift_rot_resources(theta, phi, delta, wires):  # pylint: disable=unused-argument
     return {PhaseShift: 2, Rot: 1}
 
 
-@register_resources(_u3_phaseshift_rot_resources)
-def _u3_phaseshift_rot(theta, phi, delta, wires):
+@register_resources(_u3_to_phaseshift_rot_resources, name="to_phaseshift_rot")
+def _u3_to_phaseshift_rot(theta, phi, delta, wires):
     Rot(delta, theta, -delta, wires=wires)
     PhaseShift(delta, wires=wires)
     PhaseShift(phi, wires=wires)
 
 
-add_decomps(U3, _u3_phaseshift_rot)
+add_decomps(U3, _u3_to_phaseshift_rot)
 
 
-@register_resources(lambda base: {abstractify(U3): 1})
-def _adjoint_u3(base):
+@register_resources(lambda base: {abstractify(U3): 1}, name="invert_angles")
+def _adjoint_u3_standard(base):
     new_delta = qp.math.mod((np.pi - base.phi), (2 * np.pi))
     new_phi = qp.math.mod((np.pi - base.delta), (2 * np.pi))
     U3(base.theta, new_phi, new_delta, wires=base.wires)
 
 
-add_decomps("Adjoint(U3)", _adjoint_u3)
+add_decomps("Adjoint(U3)", _adjoint_u3_standard)

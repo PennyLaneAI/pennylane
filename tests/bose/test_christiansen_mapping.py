@@ -109,12 +109,12 @@ WIRE_MAP_FOR_BOSE_WORDS = [
         ],
     ),
     (
-        {0: "b", 1: "a"},
+        {0: 6, 1: 5},
         [
-            qp.s_prod(-0.25j, qp.prod(Y("b"), X("a"))),
-            qp.s_prod(-0.25 + 0j, qp.prod(Y("b"), Y("a"))),
-            qp.s_prod(0.25 + 0j, qp.prod(X("b"), X("a"))),
-            qp.s_prod(-0.25j, qp.prod(X("b"), Y("a"))),
+            qp.s_prod(-0.25j, qp.prod(Y(6), X(5))),
+            qp.s_prod(-0.25 + 0j, qp.prod(Y(6), Y(5))),
+            qp.s_prod(0.25 + 0j, qp.prod(X(6), X(5))),
+            qp.s_prod(-0.25j, qp.prod(X(6), Y(5))),
         ],
     ),
 ]
@@ -271,14 +271,14 @@ WIRE_MAP_FOR_BOSE_SENTENCE = [
         ],
     ),
     (
-        {0: "b", 1: "a"},
+        {0: 6, 1: 5},
         [
-            qp.s_prod(-0.25j, qp.prod(Y("b"), X("a"))),
-            qp.s_prod((0.25 + 0j), qp.prod(Y("b"), Y("a"))),
-            qp.s_prod((0.25 + 0j), qp.prod(X("b"), X("a"))),
-            qp.s_prod(0.25j, qp.prod(X("b"), Y("a"))),
-            qp.s_prod((0.5 + 0j), I("b")),
-            qp.s_prod((-0.5 + 0j), Z("b")),
+            qp.s_prod(-0.25j, qp.prod(Y(6), X(5))),
+            qp.s_prod((0.25 + 0j), qp.prod(Y(6), Y(5))),
+            qp.s_prod((0.25 + 0j), qp.prod(X(6), X(5))),
+            qp.s_prod(0.25j, qp.prod(X(6), Y(5))),
+            qp.s_prod((0.5 + 0j), I(6)),
+            qp.s_prod((-0.5 + 0j), Z(6)),
         ],
     ),
 ]

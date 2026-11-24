@@ -609,8 +609,8 @@ def test_differentiable_hamiltonian_molecule_class(symbols, geometry, mapping, h
 @pytest.mark.parametrize(
     ("wiremap"),
     [
-        ["a", "b", "c", "d"],
-        [0, "z", 3, "auxiliary"],
+        [6, 8, 9, 10],
+        [0, 11, 3, 7],
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
@@ -635,8 +635,8 @@ def test_custom_wiremap_hamiltonian_pyscf(wiremap, tmpdir):
 @pytest.mark.parametrize(
     ("wiremap"),
     [
-        ["a", "b", "c", "d"],
-        [0, "z", 3, "auxiliary"],
+        [6, 8, 9, 10],
+        [0, 11, 3, 7],
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
@@ -661,11 +661,11 @@ def test_custom_wiremap_hamiltonian_pyscf_molecule_class(wiremap, tmpdir):
     ("wiremap", "args"),
     [
         (
-            [0, "z", 3, "auxiliary"],
+            [0, 11, 3, 7],
             None,
         ),
         (
-            [0, "z", 3, "auxiliary"],
+            [0, 11, 3, 7],
             [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
         ),
     ],
@@ -701,11 +701,11 @@ def test_custom_wiremap_hamiltonian_dhf(wiremap, args, tmpdir):
     ("wiremap", "args"),
     [
         (
-            [0, "z", 3, "auxiliary"],
+            [0, 11, 3, 7],
             None,
         ),
         (
-            [0, "z", 3, "auxiliary"],
+            [0, 11, 3, 7],
             [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
         ),
     ],

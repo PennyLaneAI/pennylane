@@ -78,6 +78,28 @@ class TestPrivateHelpers:
     def decomposer(op):
         return op.decomposition()
 
+    def test_custom_decomposer_removes_global_phase(self, mocker):
+        """A custom device decomposer can remove an unsupported global phase."""
+        phase = qp.GlobalPhase(0.3)
+        # An empty decomposition removes the phase.
+        decomposer = mocker.Mock(return_value=[])
+
+        with warnings.catch_warnings():
+            # The fallback must run before the GlobalPhase warning.
+            warnings.simplefilter("error")
+            operations = list(
+                _operator_decomposition_gen(
+                    phase,
+                    # Reject the phase to force decomposition.
+                    acceptance_function=lambda op: False,
+                    custom_decomposer=decomposer,
+                    strict=True,
+                )
+            )
+
+        decomposer.assert_called_once_with(phase)
+        assert operations == []
+
     @pytest.mark.parametrize("op", (qp.PauliX(0), qp.RX(1.2, wires=0), qp.QFT(wires=range(3))))
     def test_operator_decomposition_gen_accepted_operator(self, op):
         """Test the _operator_decomposition_gen function on an operator that is accepted."""
@@ -380,7 +402,7 @@ class TestValidateMeasurements:
             validate_measurements(tape, lambda obj: True)
 
 
-@qp.register_resources({qp.H: 6, qp.RX: 1})
+@qp.register_resources({qp.H: 6, qp.RX: 1}, name="dummy_rz_decomp_0")
 def dummy_rz_decomp_0(phi, wires):
     qp.H(wires)
     qp.H(wires)
@@ -391,17 +413,16 @@ def dummy_rz_decomp_0(phi, wires):
     qp.H(wires)
 
 
-@qp.register_resources({qp.RX: 1})
+@qp.register_resources({qp.RX: 1}, name="dummy_rz_decomp_1")
 def dummy_rz_decomp_1(phi, wires):
     qp.RX(phi, wires)
 
 
-@qp.register_resources({qp.H: 1}, work_wires={"zeroed": 1})
+@qp.register_resources({qp.H: 1}, work_wires={"zeroed": 1}, name="dummy_rz_decomp_2")
 def dummy_rz_decomp_2(phi, wires):  # pylint: disable=unused-argument
     qp.H(wires)
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestDecomposeTransformations:
     """Tests for the behavior of the `decompose` helper."""
 
@@ -598,11 +619,9 @@ class TestDecomposeTransformations:
     ):
         """Test that decompose works correctly when passing through ``fixed_decomps``
         and/or ``alt_decomps`` with the graph-based decomposer."""
-        if not qp.decomposition.enabled_graph():
-            pytest.skip("This test only is expected to work with the graph-based system.")
 
-        # Mock a simple target gate set
-        target_gates = {"Hadamard": 1, "RX": 5, "RY": 5, "PhaseShift": 5, "GlobalPhase": 0}
+        # Keep the fake RX rule strictly cheaper than the standard PhaseShift decomposition.
+        target_gates = {"Hadamard": 1, "RX": 4, "RY": 5, "PhaseShift": 5, "GlobalPhase": 0}
 
         # Create a tape with an operation that needs decomposition
         tape = qp.tape.QuantumScript([qp.RZ(0.2, 0)])
@@ -686,7 +705,6 @@ class TestDecomposeTransformations:
             ), f"Expected num_work_wires={expected_work_wires} not found in calls"
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestGraphModeExclusiveFeatures:
     """Tests that only work when graph mode is enabled."""
 
@@ -701,13 +719,13 @@ class TestGraphModeExclusiveFeatures:
             num_wires = 1
 
         # Fallback decomposition (no work wires needed)
-        @qp.register_resources({qp.H: 2})
+        @qp.register_resources({qp.H: 2}, name="decomp_fallback")
         def decomp_fallback(wires):
             qp.H(wires)
             qp.H(wires)
 
         # Work wire decomposition (needs 5 burnable wires)
-        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 5})
+        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 5}, name="decomp_with_work_wire")
         def decomp_with_work_wire(wires):
             qp.X(wires)
 

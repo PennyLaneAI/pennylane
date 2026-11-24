@@ -721,7 +721,6 @@ class TestSumOfTermsDifferentiability:
         assert x.grad == 0
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize("config", [None, ExecutionConfig(gradient_method="device")])
 class TestDeviceDifferentiation:
     """Tests device differentiation integration with NullQubit."""
@@ -1235,7 +1234,6 @@ def test_measurement_shape_matches_default_qubit(mp, x, shots):
     assert qp.math.shape(res) == qp.math.shape(target)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestNullQubitGraphModeExclusive:
     """Tests for NullQubit features that require graph mode enabled.
     The legacy decomposition mode should not be able to run these tests.
@@ -1249,12 +1247,12 @@ class TestNullQubitGraphModeExclusive:
         class MyNullQubitOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
-        @qp.register_resources({qp.H: 2})
+        @qp.register_resources({qp.H: 2}, name="decomp_fallback")
         def decomp_fallback(wires):
             qp.H(wires)
             qp.H(wires)
 
-        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 5})
+        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 5}, name="decomp_with_work_wire")
         def decomp_with_work_wire(wires):
             qp.X(wires)
 
