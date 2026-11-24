@@ -121,8 +121,8 @@ def test_package_exports_preserve_rule_identity():
     from pennylane.decomposition_rules.common import null_decomp as defined_null_decomp
     from pennylane.decomposition_rules.op_math.controlled_ops import (
         ctrl_decomp_bisect as defined_bisect,
-        ctrl_decomp_zyz as defined_zyz,
     )
+    from pennylane.decomposition_rules.op_math.controlled_ops import ctrl_decomp_zyz as defined_zyz
     from pennylane.decomposition_rules.phase_gradient.rz import (
         make_rz_to_phase_gradient_decomp as defined_rz_factory,
     )

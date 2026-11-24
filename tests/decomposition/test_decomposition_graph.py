@@ -27,8 +27,7 @@ from pennylane.core.operator import Operation, Operator1, abstractify
 from pennylane.decomposition import DecompositionGraph, resource_rep
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_decomp
-from pennylane.decomposition_rules.op_math import self_adjoint
-from pennylane.decomposition_rules.op_math import controlled_flip_adjoint
+from pennylane.decomposition_rules.op_math import controlled_flip_adjoint, self_adjoint
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract

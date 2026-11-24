@@ -34,9 +34,12 @@ from pennylane.decomposition.decomposition_rule import (
     get_fixed_decomp,
 )
 from pennylane.decomposition.resources import resolve_work_wire_type
-from pennylane.decomposition_rules.op_math import adjoint_negate_angle
-from pennylane.decomposition_rules.op_math import pow_involutory, pow_scale_angle
-from pennylane.decomposition_rules.op_math import self_adjoint
+from pennylane.decomposition_rules.op_math import (
+    adjoint_negate_angle,
+    pow_involutory,
+    pow_scale_angle,
+    self_adjoint,
+)
 from pennylane.decomposition_rules.qubit.matrix_ops import qubit_unitary_two_qubit
 from pennylane.ops.mid_measure.pauli_measure import pauli_measure
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -1244,7 +1247,9 @@ def _mcx_one_worker_no_flips(wires, work_wires, work_wire_type, _skip_toggle_det
     ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
     ops.adjoint(_build_linear_depth_ladder)(wires[:-1])
 
-    adj_toffoli_type = ops.adjoint(templates.TemporaryAND) if work_wire_type == "zeroed" else ops.Toffoli
+    adj_toffoli_type = (
+        ops.adjoint(templates.TemporaryAND) if work_wire_type == "zeroed" else ops.Toffoli
+    )
     adj_toffoli_type([wires[0], wires[1], work_wires[0]])
 
     if not _skip_toggle_detection:
@@ -1997,7 +2002,9 @@ def _mcx_two_work_wires_impl(wires, control_values, work_wires, work_wire_type="
     # Uncompute the first ladder
     ops.adjoint(_build_log_n_depth_ccx_ladder)(wires[:-1])
 
-    right_elbow = ops.Toffoli if work_wire_type == "borrowed" else ops.adjoint(templates.TemporaryAND)
+    right_elbow = (
+        ops.Toffoli if work_wire_type == "borrowed" else ops.adjoint(templates.TemporaryAND)
+    )
     right_elbow([wires[0], wires[1], work0])
 
     if work_wire_type == "borrowed":

@@ -31,12 +31,10 @@ from pennylane.decomposition_rules import (
     controlled_z_to_ccz,
     ctrl_x_to_mcx,
 )
-from pennylane.decomposition_rules.op_math import self_adjoint
 from pennylane.decomposition_rules.op_math import adjoint_negate_angle as adjoint_negate_angle2
+from pennylane.decomposition_rules.op_math import flip_zero_control, pow_involutory, self_adjoint
 from pennylane.decomposition_rules.op_math.adjoint import adjoint_negate_angle
-from pennylane.decomposition_rules.op_math import flip_zero_control
 from pennylane.decomposition_rules.op_math.pow import pow_scale_angle
-from pennylane.decomposition_rules.op_math import pow_involutory
 
 _decompositions = defaultdict(DecompCollection)
 decompositions = ContextVar("_test_decompositions", default=_decompositions)

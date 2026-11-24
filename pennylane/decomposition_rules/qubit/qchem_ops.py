@@ -19,10 +19,10 @@ import numpy as np
 
 from pennylane import ops
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition_rules.op_math.adjoint import adjoint_negate_angle
 from pennylane.decomposition_rules.op_math import adjoint_negate_angle as adjoint_rotation2
-from pennylane.decomposition_rules.op_math.pow import pow_scale_angle
 from pennylane.decomposition_rules.op_math import pow_scale_angle as pow_rotation2
+from pennylane.decomposition_rules.op_math.adjoint import adjoint_negate_angle
+from pennylane.decomposition_rules.op_math.pow import pow_scale_angle
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.qubit.qchem_ops import (
     DoubleExcitation,

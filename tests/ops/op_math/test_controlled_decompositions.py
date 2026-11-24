@@ -23,12 +23,13 @@ import pennylane as qp
 from pennylane import math
 from pennylane.decomposition.decomposition_rule import _fix_decomp
 from pennylane.decomposition_rules import (
+    ctrl_decomp_bisect,
+    ctrl_decomp_zyz,
     mcx_many_work_wires,
     mcx_no_work_wires,
     mcx_one_work_wire,
     mcx_two_work_wires,
 )
-from pennylane.decomposition_rules import ctrl_decomp_bisect, ctrl_decomp_zyz
 from pennylane.decomposition_rules.op_math.controlled_ops import (
     _bisect_compute_a,
     _bisect_compute_b,

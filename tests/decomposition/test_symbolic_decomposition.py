@@ -35,12 +35,26 @@ from pennylane.decomposition.resources import (
     pow_resource_rep,
     resource_rep,
 )
-from pennylane.decomposition_rules.op_math.adjoint import make_adjoint_decomp
-from pennylane.decomposition_rules.op_math.controlled import make_controlled_decomp
-from pennylane.decomposition_rules.op_math import self_adjoint
-from pennylane.decomposition_rules.op_math.symbolicop import self_adjoint_legacy
-from pennylane.decomposition_rules.op_math.adjoint import adjoint_cancel, adjoint_negate_angle
 from pennylane.decomposition_rules.op_math import adjoint_cancel as cancel_adjoint2
+from pennylane.decomposition_rules.op_math import controlled_flip_adjoint as flip_control_adjoint2
+from pennylane.decomposition_rules.op_math import (
+    controlled_to_unitary,
+)
+from pennylane.decomposition_rules.op_math import ctrl_single_work_wire as ctrl_single_work_wire2
+from pennylane.decomposition_rules.op_math import flip_zero_control as flip_zero_control2
+from pennylane.decomposition_rules.op_math import make_controlled_decomp as make_controlled_decomp2
+from pennylane.decomposition_rules.op_math import pow_flip_adjoint as flip_pow_adjoint2
+from pennylane.decomposition_rules.op_math import pow_involutory as pow_involutory2
+from pennylane.decomposition_rules.op_math import pow_merge_powers as merge_powers2
+from pennylane.decomposition_rules.op_math import pow_repeat_base as repeat_pow_base2
+from pennylane.decomposition_rules.op_math import (
+    self_adjoint,
+)
+from pennylane.decomposition_rules.op_math.adjoint import (
+    adjoint_cancel,
+    adjoint_negate_angle,
+    make_adjoint_decomp,
+)
 from pennylane.decomposition_rules.op_math.controlled import (
     controlled_flip_adjoint,
 )
@@ -50,21 +64,7 @@ from pennylane.decomposition_rules.op_math.controlled import (
 from pennylane.decomposition_rules.op_math.controlled import (
     ctrl_single_work_wire,
     flip_zero_control,
-)
-from pennylane.decomposition_rules.op_math import (
-    controlled_flip_adjoint as flip_control_adjoint2,
-)
-from pennylane.decomposition_rules.op_math import (
-    controlled_to_unitary,
-)
-from pennylane.decomposition_rules.op_math import (
-    ctrl_single_work_wire as ctrl_single_work_wire2,
-)
-from pennylane.decomposition_rules.op_math import (
-    flip_zero_control as flip_zero_control2,
-)
-from pennylane.decomposition_rules.op_math import (
-    make_controlled_decomp as make_controlled_decomp2,
+    make_controlled_decomp,
 )
 from pennylane.decomposition_rules.op_math.pow import (
     pow_flip_adjoint,
@@ -73,10 +73,7 @@ from pennylane.decomposition_rules.op_math.pow import (
     pow_repeat_base,
     pow_scale_angle,
 )
-from pennylane.decomposition_rules.op_math import pow_flip_adjoint as flip_pow_adjoint2
-from pennylane.decomposition_rules.op_math import pow_involutory as pow_involutory2
-from pennylane.decomposition_rules.op_math import pow_merge_powers as merge_powers2
-from pennylane.decomposition_rules.op_math import pow_repeat_base as repeat_pow_base2
+from pennylane.decomposition_rules.op_math.symbolicop import self_adjoint_legacy
 from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow import pow

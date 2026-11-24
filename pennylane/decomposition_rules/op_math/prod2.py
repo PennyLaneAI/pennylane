@@ -21,8 +21,8 @@ from pennylane import ops, templates
 from pennylane.core.apply import apply
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.decomposition_rules.op_math.controlled2 import _multi_temporary_and_all_ones
 from pennylane.decomposition_rules.op_math import flip_zero_control
+from pennylane.decomposition_rules.op_math.controlled2 import _multi_temporary_and_all_ones
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Wire
 

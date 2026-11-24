@@ -22,10 +22,9 @@ import numpy as np
 from pennylane import capture, compiler, control_flow, math, ops
 from pennylane.capture.autograph import disable_autograph
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition_rules.op_math.adjoint import adjoint_negate_angle
 from pennylane.decomposition_rules.op_math import adjoint_negate_angle as adjoint_rotation2
-from pennylane.decomposition_rules.op_math import flip_zero_control
-from pennylane.decomposition_rules.op_math import pow_scale_angle
+from pennylane.decomposition_rules.op_math import flip_zero_control, pow_scale_angle
+from pennylane.decomposition_rules.op_math.adjoint import adjoint_negate_angle
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.qubit.non_parametric_ops import Hadamard, PauliX
