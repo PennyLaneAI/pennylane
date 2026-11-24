@@ -588,6 +588,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _get_decompositions(self, op: AbstractOperatorLike) -> Iterable[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
 
+        # pylint: disable=import-outside-toplevel
         from pennylane.decomposition_rules import self_adjoint_legacy
         from pennylane.decomposition_rules.op_math.adjoint import adjoint_negate_angle
 
@@ -628,6 +629,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _get_adjoint_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Gets the decomposition rules for the adjoint of an operator."""
 
+        # pylint: disable=import-outside-toplevel
         from pennylane.decomposition_rules.op_math.adjoint import adjoint_cancel, make_adjoint_decomp
 
         base_class, base_params = (op.params["base_class"], op.params["base_params"])
@@ -649,6 +651,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _get_pow_decompositions(op: CompressedResourceOp) -> list[DecompositionRule]:
         """Gets the decomposition rules for the power of an operator."""
 
+        # pylint: disable=import-outside-toplevel
         from pennylane.decomposition_rules import null_decomp
         from pennylane.decomposition_rules.op_math.pow import (
             pow_flip_adjoint,
@@ -678,6 +681,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _get_controlled_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Adds a controlled decomposition node to the graph."""
 
+        # pylint: disable=import-outside-toplevel
         from pennylane.decomposition_rules.op_math.controlled import (
             controlled_flip_adjoint,
             controlled_to_unitary,
