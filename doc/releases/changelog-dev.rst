@@ -2068,7 +2068,7 @@ Internal changes ⚙️
 
 * :func:`~.testing.assert_decomposable` now checks that applicable decomposition rules accept
   positional arguments for compatibility with Catalyst.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10589) <https://github.com/PennyLaneAI/pennylane/pull/10589>`__
 
 * Added pinned local ``ty`` tooling and a diagnostic baseline for the package. Performs fixes
   to improve ty compatibility.
