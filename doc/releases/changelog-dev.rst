@@ -2077,7 +2077,7 @@ Internal changes ⚙️
 
 * Operator consumers now use ``Operator2.has_tracer`` when program capture is enabled to check
   whether an operator's  ``tracer`` is valid.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10590) <https://github.com/PennyLaneAI/pennylane/pull/10590>`__
 
 * Added pinned local ``ty`` tooling and a diagnostic baseline for the package. Performs fixes
   to improve ty compatibility.
