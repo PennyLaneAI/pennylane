@@ -1257,6 +1257,10 @@ Improvements 🛠
 * Added decompositions of ``CNOT``, ``CZ``, ``CY``, and ``Hadamard`` directly to PPMs.
   `(#9865) <https://github.com/PennyLaneAI/pennylane/pull/9865>`__
 
+* Added decompositions of :class:`~.SemiAdder` and its controlled versions using Pauli
+  product rotations and measurements, available with capture or an active compiler.
+  `(#10099) <https://github.com/PennyLaneAI/pennylane/pull/10099>`__
+
 * Sorts the gate counts in the display of resources produced from decompositions.
   `(#9916) <https://github.com/PennyLaneAI/pennylane/pull/9916>`__
 
@@ -2075,6 +2079,10 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* :func:`~.testing.assert_valid_decomp_rule` now checks that decomposition rules accept
+  positional arguments for compatibility with Catalyst.
+  `(#10589) <https://github.com/PennyLaneAI/pennylane/pull/10589>`__
+
 * Added pinned local ``ty`` tooling and a diagnostic baseline for the package. Performs fixes
   to improve ty compatibility.
   `(#10537) <https://github.com/PennyLaneAI/pennylane/pull/10537>`__
@@ -2271,6 +2279,7 @@ Internal changes ⚙️
     `(#10495) <https://github.com/PennyLaneAI/pennylane/pull/10495>`__
     `(#10459) <https://github.com/PennyLaneAI/pennylane/pull/10459>`__
     `(#10240) <https://github.com/PennyLaneAI/pennylane/pull/10240>`__
+    `(#10587) <https://github.com/PennyLaneAI/pennylane/pull/10587>`__
 
   - Quantum chemistry operators are ported:
 
