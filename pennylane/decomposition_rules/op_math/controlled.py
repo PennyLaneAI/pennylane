@@ -19,7 +19,8 @@ from __future__ import annotations
 
 from textwrap import dedent
 
-from pennylane import allocation, ops
+from pennylane import allocation, math, ops
+from pennylane.core import QueuingManager
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import (
     DecompositionRule,
@@ -27,7 +28,13 @@ from pennylane.decomposition.decomposition_rule import (
     register_resources,
 )
 from pennylane.decomposition.resources import adjoint_resource_rep, controlled_resource_rep
+from pennylane.ops.op_math.controlled import (
+    Controlled,
+    _decompose_custom_ops,
+    _is_single_qubit_special_unitary,
+)
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.decomposition_rules.op_math.controlled_ops import ctrl_decomp_bisect, ctrl_decomp_zyz
 from pennylane.typing import Bool, Complex, Wire
 
 
@@ -234,3 +241,33 @@ def controlled_to_unitary(*_, wires, control_values, work_wires, work_wire_type,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
+
+
+def _decompose_no_control_values(op: Controlled) -> list[Operator] | None:
+    """Decompose without considering control values. Returns None if no decomposition."""
+
+    decomp = _decompose_custom_ops(op)
+    if decomp is not None:
+        return decomp
+
+    is_su2 = _is_single_qubit_special_unitary(op.base)
+    if not math.is_tracer(is_su2) and is_su2:
+        if len(op.control_wires) >= 2 and math.get_interface(*op.data) == "numpy":
+            return ctrl_decomp_bisect(op.base, op.control_wires)
+        return ctrl_decomp_zyz(
+            op.base,
+            control_wires=op.control_wires,
+            work_wires=op.work_wires,
+            work_wire_type=op.work_wire_type,
+        )
+
+    if not op.base.has_decomposition:
+        return None
+
+    with QueuingManager.stop_recording():
+        base_decomp = op.base.decomposition()
+
+    return [
+        ops.ctrl(newop, op.control_wires, work_wires=op.work_wires, work_wire_type=op.work_wire_type)
+        for newop in base_decomp
+    ]

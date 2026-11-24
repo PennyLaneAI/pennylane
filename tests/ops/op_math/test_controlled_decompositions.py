@@ -28,8 +28,8 @@ from pennylane.decomposition_rules import (
     mcx_one_work_wire,
     mcx_two_work_wires,
 )
-from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
-from pennylane.ops.op_math.decompositions.controlled_decompositions import (
+from pennylane.decomposition_rules import ctrl_decomp_bisect, ctrl_decomp_zyz
+from pennylane.decomposition_rules.op_math.controlled_ops import (
     _bisect_compute_a,
     _bisect_compute_b,
     _ctrl_decomp_bisect_md,
@@ -90,7 +90,7 @@ def assert_equal_list(lhs, rhs):
 
 
 class TestControlledDecompositionZYZ:
-    """tests for qp.ops.ctrl_decomp_zyz"""
+    """Tests the controlled ZYZ decomposition algorithm."""
 
     @pytest.mark.unit
     def test_invalid_op_error(self):
@@ -564,7 +564,7 @@ class TestControlledDecompBisect:
         """Tests that the correct shortcut is chosen if possible."""
 
         op, best_rule = op
-        spy = mocker.spy(qp.ops.op_math.decompositions.controlled_decompositions, best_rule)
+        spy = mocker.spy(qp.decomposition_rules.op_math.controlled_ops, best_rule)
         ctrl_decomp_bisect(op, control_wires)
         spy.assert_called_once()
 

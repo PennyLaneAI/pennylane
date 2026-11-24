@@ -112,11 +112,17 @@ def test_loading_preserves_phase_gradient_subcircuits(name):
 def test_package_exports_preserve_rule_identity():
     """Package imports expose the registered objects and their original implementations."""
     from pennylane.decomposition_rules import (
+        ctrl_decomp_bisect,
+        ctrl_decomp_zyz,
         make_rz_to_phase_gradient_decomp,
         mottonen_decomp,
         null_decomp,
     )
     from pennylane.decomposition_rules.common import null_decomp as defined_null_decomp
+    from pennylane.decomposition_rules.op_math.controlled_ops import (
+        ctrl_decomp_bisect as defined_bisect,
+        ctrl_decomp_zyz as defined_zyz,
+    )
     from pennylane.decomposition_rules.phase_gradient.rz import (
         make_rz_to_phase_gradient_decomp as defined_rz_factory,
     )
@@ -125,6 +131,8 @@ def test_package_exports_preserve_rule_identity():
     )
 
     assert null_decomp is defined_null_decomp
+    assert ctrl_decomp_bisect is defined_bisect
+    assert ctrl_decomp_zyz is defined_zyz
     assert mottonen_decomp is defined_mottonen_decomp
     assert make_rz_to_phase_gradient_decomp is defined_rz_factory
     assert all(hasattr(qp.decomposition_rules, name) for name in qp.decomposition_rules.__all__)
@@ -260,6 +268,8 @@ def test_phase_gradient_rules_use_phase_gradient_package(name, module):
         "pennylane.transforms.rz_phase_gradient",
         "pennylane.drawer.label",
         "pennylane.ops.op_math.controlled2",
+        "pennylane.ops.op_math.controlled",
+        "pennylane.ops.op_math.controlled_ops",
         "pennylane.templates.subroutines.qrom",
     ],
 )

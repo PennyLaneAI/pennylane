@@ -34,21 +34,6 @@ from pennylane.ops.op_math.controlled2 import (
     _setup_control_values,
     _validate_work_wire_type,
 )
-from pennylane.ops.op_math.decompositions.controlled_decompositions import (
-    _mcx_many_work_wires_impl as _mcx_many_work_wires,
-)
-from pennylane.ops.op_math.decompositions.controlled_decompositions import (
-    _mcx_no_work_wires_impl as _mcx_no_work_wires,
-)
-from pennylane.ops.op_math.decompositions.controlled_decompositions import (
-    _mcx_one_work_wire_impl as _mcx_one_work_wire,
-)
-from pennylane.ops.op_math.decompositions.controlled_decompositions import (
-    _mcx_to_cnot_or_toffoli_impl as _mcx_to_cnot_or_toffoli,
-)
-from pennylane.ops.op_math.decompositions.controlled_decompositions import (
-    _mcx_two_work_wires_impl as _mcx_two_work_wires,
-)
 from pennylane.typing import AbstractArray, Bool, Complex, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
@@ -1502,23 +1487,32 @@ class MultiControlledX(Controlled2):
     ):
         """Chooses the best decomposition rule for MCX."""
 
+        # pylint: disable=import-outside-toplevel
+        from pennylane.decomposition_rules.op_math.controlled_ops import (
+            _mcx_many_work_wires_impl,
+            _mcx_no_work_wires_impl,
+            _mcx_one_work_wire_impl,
+            _mcx_to_cnot_or_toffoli_impl,
+            _mcx_two_work_wires_impl,
+        )
+
         arguments = _setup_inputs_mcx(wires, control_values, work_wires, work_wire_type)
 
         if len(arguments["wires"]) <= 3:
-            return _to_op_list(_mcx_to_cnot_or_toffoli)(**arguments)
+            return _to_op_list(_mcx_to_cnot_or_toffoli_impl)(**arguments)
 
         n_ctrl_wires = len(arguments["wires"]) - 1
 
         if len(arguments["work_wires"]) >= n_ctrl_wires - 2:
-            return _to_op_list(_mcx_many_work_wires)(**arguments)
+            return _to_op_list(_mcx_many_work_wires_impl)(**arguments)
 
         if len(arguments["work_wires"]) >= 2:
-            return _to_op_list(_mcx_two_work_wires)(**arguments)
+            return _to_op_list(_mcx_two_work_wires_impl)(**arguments)
 
         if len(arguments["work_wires"]) == 1:
-            return _to_op_list(_mcx_one_work_wire)(**arguments)
+            return _to_op_list(_mcx_one_work_wire_impl)(**arguments)
 
-        return _to_op_list(_mcx_no_work_wires)(**arguments)
+        return _to_op_list(_mcx_no_work_wires_impl)(**arguments)
 
 
 def _setup_inputs_mcx(

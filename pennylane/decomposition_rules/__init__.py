@@ -88,6 +88,8 @@ from .templates.state_preparations.partial_unary import (
 )
 from .qubit import state_preparation
 from .op_math.controlled_ops import (
+    ctrl_decomp_bisect,
+    ctrl_decomp_zyz,
     toffoli_elbow,
     mcx_many_work_wires,
     mcx_no_work_wires,
@@ -336,6 +338,8 @@ __all__ = [
     "controlled_z_to_ccz",
     "_count_tempAND_in_measurement_qrom",
     "_cswap_pair",
+    "ctrl_decomp_bisect",
+    "ctrl_decomp_zyz",
     "ctrl_x_to_mcx",
     "_decompose_mcxs",
     "_diagonalize_probs",
