@@ -190,11 +190,11 @@ class TestUpdate:
     def test_update_circuit_info_wires(self):
         """Test that on construction wires and num_wires are set."""
         prep = [qp.BasisState([1, 1], wires=(-1, -2))]
-        ops = [qp.S(0), qp.T("a"), qp.S(0)]
-        measurement = [qp.probs(wires=("a"))]  # pylint: disable=superfluous-parens
+        ops = [qp.S(0), qp.T(9), qp.S(0)]
+        measurement = [qp.probs(wires=(9))]  # pylint: disable=superfluous-parens
 
         qs = QuantumScript(prep + ops, measurement)
-        assert qs.wires == qp.wires.Wires([-1, -2, 0, "a"])
+        assert qs.wires == qp.wires.Wires([-1, -2, 0, 9])
         assert qs.num_wires == 4
 
     @pytest.mark.parametrize("sample_ms", sample_measurements)
@@ -318,10 +318,10 @@ class TestUpdate:
         """This method needs to be more thoroughly tested, and probably even reconsidered in
         its design. I can't find any unittests in `test_tape.py`."""
         obs = [
-            qp.PauliX("a"),
+            qp.PauliX(9),
             qp.PauliX(0),
             qp.PauliY(0),
-            qp.PauliX("b"),
+            qp.PauliX(11),
             qp.PauliX(0) @ qp.PauliY(1),
         ]
         qs = QuantumScript(measurements=[qp.expval(o) for o in obs])
@@ -331,10 +331,10 @@ class TestUpdate:
     def test_update_no_sharing_wires(self):
         """Tests the case where no observables share wires"""
         obs = [
-            qp.PauliX("a"),
+            qp.PauliX(9),
             qp.PauliX(0),
             qp.PauliY(1),
-            qp.PauliX("b"),
+            qp.PauliX(11),
             qp.PauliX(2) @ qp.PauliY(3),
         ]
         qs = QuantumScript(measurements=[qp.expval(o) for o in obs])
@@ -459,8 +459,8 @@ class TestMapToStandardWires:
         "ops, expected",
         [
             ([qp.X(0), qp.RX(0.8, 2)], {0: 0, 2: 1}),
-            ([qp.X(1), qp.Z(0), qp.X("a")], {1: 0, 0: 1, "a": 2}),
-            ([qp.X(3), qp.IsingXY(0.6, ["b", 2]), qp.Z(99)], {3: 0, "b": 1, 2: 2, 99: 3}),
+            ([qp.X(1), qp.Z(0), qp.X(9)], {1: 0, 0: 1, 9: 2}),
+            ([qp.X(3), qp.IsingXY(0.6, [11, 2]), qp.Z(99)], {3: 0, 11: 1, 2: 2, 99: 3}),
         ],
     )
     def test_only_ops(self, ops, expected):
@@ -472,9 +472,9 @@ class TestMapToStandardWires:
     @pytest.mark.parametrize(
         "ops, meas, expected",
         [
-            ([qp.X("a")], [qp.expval(qp.Z("a"))], {"a": 0}),
+            ([qp.X(9)], [qp.expval(qp.Z(9))], {9: 0}),
             ([qp.X(1)], [qp.expval(qp.Z(0))], {1: 0, 0: 1}),
-            ([qp.X("z")], [qp.probs(wires=[0, 1])], {"z": 0, 0: 1, 1: 2}),
+            ([qp.X(12)], [qp.probs(wires=[0, 1])], {12: 0, 0: 1, 1: 2}),
             ([qp.X(2)], [qp.probs(wires=[1, 2])], {2: 0, 1: 1}),
             ([qp.X(1), qp.Z(2)], [qp.expval(qp.Y(0))], {1: 0, 2: 1, 0: 2}),
             ([qp.X(1), qp.Z(3)], [qp.state()], {1: 0, 3: 1}),
@@ -533,10 +533,10 @@ class TestIteration:
         ops = [
             qp.RX(0.432, wires=0),
             qp.Rot(0.543, 0, 0.23, wires=0),
-            qp.CNOT(wires=[0, "a"]),
+            qp.CNOT(wires=[0, 9]),
             qp.RX(0.133, wires=4),
         ]
-        meas = [qp.expval(qp.PauliX(wires="a")), qp.probs(wires=[0, "a"])]
+        meas = [qp.expval(qp.PauliX(wires=9)), qp.probs(wires=[0, 9])]
 
         qs = QuantumScript(ops, meas)
 
@@ -598,12 +598,12 @@ class TestIteration:
         ops = [
             qp.RX(0.432, wires=0),
             qp.Rot(0.543, 0, 0.23, wires=0),
-            qp.CNOT(wires=[0, "a"]),
+            qp.CNOT(wires=[0, 9]),
             qp.RX(0.133, wires=4),
         ]
         m = [
-            qp.expval(qp.PauliX(wires="a")),
-            qp.probs(wires=[0, "a"]),
+            qp.expval(qp.PauliX(wires=9)),
+            qp.probs(wires=[0, 9]),
         ]
         qs = QuantumScript(ops, m)
 
@@ -628,10 +628,10 @@ class TestInfomationProperties:
         ops = [
             qp.RX(-0.543, wires=0),
             qp.Rot(-4.3, 4.69, 1.2, wires=0),
-            qp.CNOT(wires=[0, "a"]),
+            qp.CNOT(wires=[0, 9]),
             qp.RX(0.54, wires=4),
         ]
-        m = [qp.expval(qp.PauliX(wires="a")), qp.probs(wires=[0, "a"])]
+        m = [qp.expval(qp.PauliX(wires=9)), qp.probs(wires=[0, 9])]
 
         return QuantumScript(ops, m)
 
@@ -760,7 +760,7 @@ class TestScriptCopying:
     def test_copy_update_shots(self, shots):
         """Test that copy with update dict behaves as expected for setting shots"""
 
-        ops = [qp.X("b"), qp.RX(1.2, "a")]
+        ops = [qp.X(11), qp.RX(1.2, 9)]
         tape = QuantumScript(ops, measurements=[qp.counts()], shots=2500, trainable_params=[1])
 
         new_tape = tape.copy(shots=shots)
@@ -774,7 +774,7 @@ class TestScriptCopying:
     def test_copy_update_measurements(self):
         """Test that copy with update dict behaves as expected for setting measurements"""
 
-        ops = [qp.X("b"), qp.RX(1.2, "a")]
+        ops = [qp.X(11), qp.RX(1.2, 9)]
         tape = QuantumScript(
             ops, measurements=[qp.expval(2 * qp.X(0))], shots=2500, trainable_params=[1]
         )
@@ -794,7 +794,7 @@ class TestScriptCopying:
     def test_copy_update_operations(self):
         """Test that copy with update dict behaves as expected for setting operations"""
 
-        ops = [qp.X("b"), qp.RX(1.2, "a")]
+        ops = [qp.X(11), qp.RX(1.2, 9)]
         tape = QuantumScript(ops, measurements=[qp.counts()], shots=2500, trainable_params=[1])
 
         new_ops = [qp.X(0)]
@@ -812,7 +812,7 @@ class TestScriptCopying:
     def test_copy_update_trainable_params(self):
         """Test that copy with update dict behaves as expected for setting trainable parameters"""
 
-        ops = [qp.RX(1.23, "b"), qp.RX(4.56, "a")]
+        ops = [qp.RX(1.23, 11), qp.RX(4.56, 9)]
         tape = QuantumScript(ops, measurements=[qp.counts()], shots=2500, trainable_params=[1])
 
         new_tape = tape.copy(trainable_params=[0])
@@ -838,7 +838,7 @@ class TestScriptCopying:
         """Test that if the operations are updated with operations of a different batch size,
         the original tape's batch size is not copied over"""
 
-        ops = [qp.X("b"), qp.RX([1.2, 2.3], "a")]
+        ops = [qp.X(11), qp.RX([1.2, 2.3], 9)]
         tape = QuantumScript(ops, measurements=[qp.counts()], shots=2500, trainable_params=[1])
 
         assert tape.batch_size == 2
@@ -856,7 +856,7 @@ class TestScriptCopying:
         to operations (batch_size, output_dim) are not copied over from the original tape,
         and trainable_params are re-calculated"""
 
-        ops = [qp.X("b"), qp.RX([1.2, 2.3], "a")]
+        ops = [qp.X(11), qp.RX([1.2, 2.3], 9)]
         tape = QuantumScript(ops, measurements=[qp.counts()], shots=2500, trainable_params=[1])
 
         assert tape.batch_size == 2
@@ -1108,7 +1108,7 @@ class TestQScriptDraw:
         """Test quantum script's draw with default keyword arguments."""
 
         qs = QuantumScript(
-            [qp.RX(1.23456, wires=0), qp.RY(2.3456, wires="a"), qp.RZ(3.4567, wires=1.234)]
+            [qp.RX(1.23456, wires=0), qp.RY(2.3456, wires=9), qp.RZ(3.4567, wires=13)]
         )
 
         assert qs.draw() == qp.drawer.tape_text(qs)

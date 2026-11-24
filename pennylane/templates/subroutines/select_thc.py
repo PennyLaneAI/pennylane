@@ -361,9 +361,9 @@ def select_thc_wires(M, N, beth, num_batches=1):
     .. note::
 
         Only ``work_wires`` is a minimum; the other four are exact and must be matched.
-        Extra work wires are forwarded to the internal :class:`~.QROMLoad` and
-        :class:`~.QROM`, which load the Givens angles with unary iteration, so extra wires do
-        not lower the gate count.
+        Extra work wires are forwarded to the internal :class:`~.QROMLoad` and :class:`~.QROM`
+        that load the Givens angles. The :class:`~.QROM` only uses as many as its unary
+        iteration needs, while the :class:`~.QROMLoad` may use them for Select-SWAP.
 
     .. note::
 

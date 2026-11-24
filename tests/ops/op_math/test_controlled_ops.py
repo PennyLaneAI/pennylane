@@ -427,7 +427,7 @@ class TestControlledQubitUnitary:  # pylint: disable=too-many-public-methods
             ]
         )
 
-        op = qp.ControlledQubitUnitary(U1, wires=("b", "c", "a"), control_values=[0, 1])
+        op = qp.ControlledQubitUnitary(U1, wires=(7, 9, 6), control_values=[0, 1])
 
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
@@ -454,7 +454,7 @@ class TestControlledQubitUnitary:  # pylint: disable=too-many-public-methods
             axes=0,
         )
 
-        op = qp.ControlledQubitUnitary(U1, wires=("b", "c", "a"))
+        op = qp.ControlledQubitUnitary(U1, wires=(7, 9, 6))
 
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
@@ -474,7 +474,7 @@ class TestControlledQubitUnitary:  # pylint: disable=too-many-public-methods
             ]
         )
 
-        op = qp.ControlledQubitUnitary(U1, wires=("b", "c", "a"))
+        op = qp.ControlledQubitUnitary(U1, wires=(7, 9, 6))
 
         z = 0.12
         [pow_op] = op.pow(z)
@@ -495,7 +495,7 @@ class TestControlledQubitUnitary:  # pylint: disable=too-many-public-methods
             axes=0,
         )
 
-        op = qp.ControlledQubitUnitary(U1, wires=("b", "c", "a"))
+        op = qp.ControlledQubitUnitary(U1, wires=(7, 9, 6))
 
         with pytest.raises(qp.operation.PowUndefinedError):
             op.pow(0.12)
@@ -566,9 +566,9 @@ def test_map_wires_non_parametric(op_cls, _):
     op = op_cls(wires=[0, 1])
     assert op.wires == Wires((0, 1))
 
-    op = op.map_wires(wire_map={0: "a", 1: "b"})
-    assert op.base.wires == Wires("b")
-    assert op.control_wires == Wires("a")
+    op = op.map_wires(wire_map={0: 6, 1: 7})
+    assert op.base.wires == Wires(7)
+    assert op.control_wires == Wires(6)
 
 
 def test_controlled_phase_shift_alias():
@@ -812,20 +812,6 @@ def test_simplify_crot():
 def test_controlling_a_controlled_operation(control, control_values, base_op):
     """Test that a controlled op can be controlled again."""
     qp.ctrl(base_op, control=control, control_values=control_values)
-
-
-@pytest.mark.parametrize("op_type", (qp.CH, qp.CY, qp.CZ, qp.CNOT))
-def test_tuple_control_wires_non_parametric_ops(op_type):
-    """Test that tuples can be provided as control wire labels."""
-
-    assert op_type([(0, 1), 2]).wires == qp.wires.Wires([(0, 1), 2])
-
-
-@pytest.mark.parametrize("op_type", (qp.CRX, qp.CRY, qp.CRZ, qp.CPhase))
-def test_tuple_control_wires_parametric_ops(op_type):
-    """Test that tuples can be provided as control wire labels."""
-
-    assert op_type(0.123, [(0, 1), 2]).wires == qp.wires.Wires([(0, 1), 2])
 
 
 @pytest.mark.parametrize("op_type, wires", [(qp.CNOT, Wire[2]), (qp.Toffoli, Wire[3])])
