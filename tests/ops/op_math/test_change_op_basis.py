@@ -309,9 +309,9 @@ class TestInitialization:
 
     def test_init_change_op_basis_op(self):
         """Test the initialization of a ChangeOpBasis operator."""
-        change_op_basis_op = ChangeOpBasis(qp.PauliX(wires=0), qp.RZ(0.23, wires="a"))
+        change_op_basis_op = ChangeOpBasis(qp.PauliX(wires=0), qp.RZ(0.23, wires=6))
 
-        assert change_op_basis_op.wires == Wires((0, "a"))
+        assert change_op_basis_op.wires == Wires((0, 6))
         assert change_op_basis_op.num_wires == 2
         assert change_op_basis_op.name == "ChangeOpBasis"
 
@@ -322,8 +322,8 @@ class TestInitialization:
     def test_hash(self):
         """Testing some situations for the hash property."""
         # test not the same hash if different order
-        op1 = ChangeOpBasis(qp.PauliX("a"), qp.PauliY("a"), qp.PauliX(1))
-        op2 = ChangeOpBasis(qp.PauliY("a"), qp.PauliX("a"), qp.PauliX(1))
+        op1 = ChangeOpBasis(qp.PauliX(6), qp.PauliY(6), qp.PauliX(1))
+        op2 = ChangeOpBasis(qp.PauliY(6), qp.PauliX(6), qp.PauliX(1))
         assert hash(op1) != hash(op2)
 
     def test_batch_size(self):
@@ -341,7 +341,7 @@ class TestInitialization:
         "factors",
         (
             [qp.PauliX(wires=0), qp.PauliZ(wires=0)],
-            [qp.PauliX(wires=0), qp.RZ(0.612, "r")],
+            [qp.PauliX(wires=0), qp.RZ(0.612, 7)],
             [qp.PauliZ(wires=0), qp.PauliX(wires=0)],
             [MyOp(3.1, 0), qp.CNOT([0, 2])],
         ),
@@ -357,7 +357,7 @@ class TestInitialization:
         "factors",
         (
             [qp.PauliX(wires=0), qp.PauliZ(wires=0)],
-            [qp.PauliX(wires=0), qp.RZ(0.612, "r")],
+            [qp.PauliX(wires=0), qp.RZ(0.612, 7)],
             [qp.PauliZ(wires=0), qp.PauliX(wires=0)],
             [MyOp(3.1, 0), qp.CNOT([0, 2])],
         ),
