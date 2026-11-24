@@ -196,38 +196,33 @@ class TestRule:
 
 
 @pytest.mark.catalyst
-@pytest.mark.parametrize(
-    "case, num_ands",
-    [
-        ((2, 4, 2), 4 + 2),
-        ((2, 3, 2), 4 + 2),
-        ((3, 1, 0), 3),
-    ],
-    ids=["even_blocks", "odd_blocks", "per_wire"],
-)
-def test_qjit(case, num_ands, seed):
-    """Test that, compiled with qjit, the rule realizes the rotations. The RZLayer provides all
-    work wires the rule needs, as Catalyst does not support the dynamic allocation of missing
-    ones. On ``|+>``, ``RZ(a)`` gives ``<X> = cos(a)`` and ``<Y> = sin(a)``. On the device, the
-    ``num_ands`` ANDs, including those of the adders, and their adjoints become Toffoli gates."""
+def test_qjit(seed):
+    """Test that, compiled with qjit, the rule realizes the rotations of an even block, of an odd
+    block and of single rotations. The RZLayers get all work wires the rule needs, as Catalyst does
+    not support the dynamic allocation of missing ones. On ``|+>``, ``RZ(a)`` gives
+    ``<X> = cos(a)`` and ``<Y> = sin(a)``. On the device, the ANDs, including those of the adders,
+    and their adjoints become Toffoli gates: three ANDs per block and one per single rotation."""
     pytest.importorskip("catalyst")
-    rule, op, registers = _rule_and_op(*case, seed)
-    wires, phase_grad_wires = op.arguments["wires"], registers[1]
-    block_size = len(wires) // len(op.angles)
+    bits = np.random.default_rng(seed).integers(0, 2, size=(4, NUM_BITS + 1))
+    angles = bits_to_angles(bits, 4 * np.pi)
+    work_wires, registers = [9, 10], [[11, 12], [13, 14], [15]]
+    rule = make_rzlayer_to_phase_gradient_decomp(*registers)
     qp.add_decomps(qp.RZLayer, rule)
 
     @qp.qjit(capture=True)
     @qp.decompose(gate_set=GATE_SET | {"Hadamard", "PhaseShift"}, fixed_decomps={qp.RZLayer: rule})
-    @qp.qnode(qp.device("lightning.qubit", wires=registers[2][-1] + 1))
+    @qp.qnode(qp.device("lightning.qubit", wires=16))
     def circuit(angles):
-        for wire in wires:
+        for wire in range(9):
             qp.H(wire)
-        qp.PhaseGradientStatePrep(phase_grad_wires)
-        qp.RZLayer(angles, wires, work_wires=op.work_wires)
-        qp.adjoint(qp.PhaseGradientStatePrep(phase_grad_wires))
-        return [qp.expval(qp.X(w)) for w in wires] + [qp.expval(qp.Y(w)) for w in wires]
+        qp.PhaseGradientStatePrep(registers[1])
+        qp.RZLayer(angles[:1], [0, 1, 2, 3], work_wires=work_wires)
+        qp.RZLayer(angles[1:2], [4, 5, 6], work_wires=work_wires)
+        qp.RZLayer(angles[2:], [7, 8], work_wires=work_wires)
+        qp.adjoint(qp.PhaseGradientStatePrep(registers[1]))
+        return [qp.expval(qp.X(w)) for w in range(9)] + [qp.expval(qp.Y(w)) for w in range(9)]
 
-    expected = np.repeat(op.angles, block_size)
-    assert np.allclose(circuit(op.angles), np.concatenate([np.cos(expected), np.sin(expected)]))
-    counts = qp.analyze(circuit, level="device")(op.angles).resources.counts
-    assert counts["Toffoli"] == 2 * num_ands
+    expected = np.repeat(angles, [4, 3, 1, 1])
+    assert np.allclose(circuit(angles), np.concatenate([np.cos(expected), np.sin(expected)]))
+    counts = qp.analyze(circuit, level="device")(angles).resources.counts
+    assert counts["Toffoli"] == 2 * (3 + 3 + 2)
