@@ -62,7 +62,7 @@ trainable parameters can be tensors of any supported autodifferentiation framewo
 These four defining properties are accessible for all :class:`~.Operator` instances:
 
 >>> from jax import numpy as jnp
->>> op = qp.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
+>>> op = qp.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=[0])
 
 >>> op.name
 Rot
@@ -81,13 +81,13 @@ details in the documentation on :doc:`adding operations </development/adding_ope
 
 * Representation as a product of operators
 
-  >>> op = qp.Rot(0.1, 0.2, 0.3, wires=["a"])
+  >>> op = qp.Rot(0.1, 0.2, 0.3, wires=[0])
   >>> op.decomposition()
-  [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
+  [RZ(0.1, wires=[0]), RY(0.2, wires=[0]), RZ(0.3, wires=[0])]
 
 * Representation as a matrix
 
-  >>> op = qp.PauliRot(0.2, "X", wires=["b"])
+  >>> op = qp.PauliRot(0.2, "X", wires=[1])
   >>> op.matrix()
   [[9.95004177e-01-2.25761781e-18j 2.72169462e-17-9.98334214e-02j]
    [2.72169462e-17-9.98334214e-02j 9.95004177e-01-2.25761781e-18j]]
@@ -125,10 +125,10 @@ The user defines the circuit by constructing a quantum function, such as:
 .. code-block:: python
 
     def qfunc(params):
-        qp.RX(params[0], wires='b')
-        qp.CNOT(wires=['a', 'b'])
-        qp.RY(params[1], wires='a')
-        return qp.expval(qp.PauliZ(wires='b'))
+        qp.RX(params[0], wires=1)
+        qp.CNOT(wires=[0, 1])
+        qp.RY(params[1], wires=0)
+        return qp.expval(qp.PauliZ(wires=1))
 
 Internally, a quantum function is translated to a quantum tape, which is
 the central representation of a quantum circuit. The tape is a context manager that stores lists
@@ -143,12 +143,12 @@ to the tape's ``measurement`` property.
 ...     qfunc(params)
 
 >>> tape.operations
-[RX(Array(0.5, dtype=float32), wires=['b']),
- CNOT(wires=['a', 'b']),
- RY(Array(0.2, dtype=float32), wires=['a'])]
+[RX(Array(0.5, dtype=float32), wires=[1]),
+ CNOT(wires=[0, 1]),
+ RY(Array(0.2, dtype=float32), wires=[0])]
 
 >>> tape.measurements
-[expval(PauliZ(wires=['b']))]
+[expval(PauliZ(wires=[1]))]
 
 These two "queues" are used by devices to get information on the circuit they
 have to run.

@@ -133,9 +133,9 @@ class PauliWord(dict):
 
     Initializing a Pauli word:
 
-    >>> w = PauliWord({"a": 'X', 2: 'Y', 3: 'Z'})
+    >>> w = PauliWord({0: 'X', 2: 'Y', 3: 'Z'})
     >>> w
-    X(a) @ Y(2) @ Z(3)
+    X(0) @ Y(2) @ Z(3)
 
     When multiplying Pauli words together, we obtain a :class:`~PauliSentence` with the resulting ``PauliWord`` as a key and the corresponding coefficient as its value.
 
@@ -169,7 +169,10 @@ class PauliWord(dict):
         if _skip_filter:
             super().__init__(mapping)
         else:
-            super().__init__(filter(lambda item: item[1] != "I", mapping.items()))
+            wires = Wires(mapping)
+            super().__init__(
+                (wire, op) for wire, op in zip(wires, mapping.values(), strict=True) if op != "I"
+            )
         self._hashval = None
 
     @property

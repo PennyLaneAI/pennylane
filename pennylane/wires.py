@@ -17,8 +17,9 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 
 import functools
 import uuid
-from collections.abc import Hashable, Iterable, Sequence
+from collections.abc import Iterable, Sequence
 from itertools import combinations
+from numbers import Integral
 
 import jax
 import numpy as np
@@ -38,63 +39,46 @@ def _process(wires):
     If `wires` can be iterated over, its elements are interpreted as wire labels
     and turned into a tuple. Otherwise, `wires` is interpreted as a single wire label.
 
-    The only exception to this are strings, which are always interpreted as a single
-    wire label, so users can address wires with labels such as `"auxiliary"`.
-
-    Any type can be a wire label, as long as it is hashable. We need this to establish
-    the uniqueness of two labels. For example, `0` and `0.` are interpreted as
-    the same wire label because `hash(0.) == hash(0)` evaluates to true.
-
-    Note that opposed to numpy arrays, `pennylane.numpy` 0-dim array are hashable.
+    Concrete labels must be integers. Integer scalar arrays are normalized to Python integers.
+    Symbolic wires used by capture and allocation are preserved.
     """
 
     if isinstance(wires, str):
-        # Interpret string as a non-iterable object.
-        # This is the only exception to the logic
-        # of considering the elements of iterables as wire labels.
-        wires = [wires]
+        raise WireError(f"Wire labels must be integers; got {wires!r}.")
 
     if math.get_interface(wires) == "jax" and not math.is_tracer(wires):
         wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
 
-    if math.get_interface(wires) == "numpy" and hasattr(wires, "tolist") and wires.ndim == 0:
+    if (
+        math.get_interface(wires) in ("numpy", "autograd")
+        and hasattr(wires, "tolist")
+        and wires.ndim == 0
+    ):
         wires = wires.tolist()
 
     try:
-        # Use tuple conversion as a check for whether `wires` can be iterated over.
-        # Note, this is not the same as `isinstance(wires, Iterable)` which would
-        # pass for 0-dim numpy arrays that cannot be iterated over.
         tuple_of_wires = tuple(wires)
-
     except TypeError:
-        # if not iterable, interpret as single wire label
-        try:
-            hash(wires)
-        except TypeError as e:  # pragma: no cover
-            # if object is not hashable, cannot identify unique wires
-            # Check for unhashable type error - format changed in Python 3.14
-            # since this branch corresponds to a non-iterable and non-hashable object,
-            # and the only thing in Python that fits that description is an numpy array
-            # of a scalar, which we do have special handling for. This branch cannot be
-            # reasonably tested without making a convoluted example, which is probably
-            # not worth it, adding a pragma: no cover here
-            # pragma: no cover
-            if "unhashable" in str(e):
-                raise WireError(f"Wires must be hashable; got object of type {type(wires)}.") from e
-        return (wires,)
+        tuple_of_wires = (wires,)
 
-    try:
-        # We need the set for the uniqueness check,
-        # so we can use it for hashability check of iterables.
-        set_of_wires = set(wires)
-    except TypeError as e:
-        # Check for unhashable type error - format changed in Python 3.14
-        # Python 3.13: "unhashable type: 'list'"
-        # Python 3.14: "cannot use 'list' as a set element (unhashable type: 'list')"
-        if "unhashable" in str(e):
-            raise WireError(f"Wires must be hashable; got {wires}.") from e
+    labels = []
+    for wire in tuple_of_wires:
+        if not math.is_tracer(wire) and getattr(wire, "ndim", None) == 0 and hasattr(wire, "item"):
+            wire = wire.item()
+        integer_label = isinstance(wire, Integral) and not isinstance(wire, bool)
+        symbolic_wire = isinstance(wire, DynamicWire) or (
+            math.is_tracer(wire)
+            and (
+                is_abstract_qubit(wire)
+                or (getattr(wire, "ndim", None) == 0 and np.issubdtype(wire.dtype, np.integer))
+            )
+        )
+        if not (integer_label or symbolic_wire):
+            raise WireError(f"Wire labels must be integers; got {wire!r}.")
+        labels.append(wire)
 
-    if len(set_of_wires) != len(tuple_of_wires):
+    tuple_of_wires = tuple(labels)
+    if len(set(tuple_of_wires)) != len(tuple_of_wires):
         raise WireError(f"Wires must be unique; got {wires}.")
 
     return tuple_of_wires
@@ -102,25 +86,18 @@ def _process(wires):
 
 class Wires(Sequence):
     r"""
-    A bookkeeping class for wires, which are ordered collections of unique objects.
+    A bookkeeping class for ordered collections of unique integer wire labels.
 
     If the input ``wires`` can be iterated over, it is interpreted as a sequence of wire labels that have to be
-    unique and hashable. Else it is interpreted as a single wire label that has to be hashable. The
-    only exception are strings which are interpreted as wire labels.
-
-    The hash function of a wire label is considered the source of truth when deciding whether
-    two wire labels are the same or not.
+    unique integers. Otherwise, it is interpreted as a single integer wire label.
+    Integer scalar arrays are normalized to Python integers. Strings, floats, booleans,
+    and arbitrary objects are not supported as wire labels.
+    Symbolic wires produced by capture and allocation remain supported.
 
     Indexing an instance of this class will return a wire label.
 
-    .. warning::
-
-        In order to support wire labels of any hashable type, integers and 0-d arrays are considered different.
-        For example, running ``qp.RX(1.1, qp.numpy.array(0))`` on a device initialized with ``wires=[0]``
-        will fail because ``qp.numpy.array(0)`` does not exist in the device's wire map.
-
     Args:
-         wires (Any): the wire label(s)
+         wires (int or Iterable[int]): the wire label(s)
     """
 
     def __new__(cls, wires=None, _override=False):
@@ -150,7 +127,7 @@ class Wires(Sequence):
             (w.item() if isinstance(w, jax.Array) and not math.is_tracer(w) and w.ndim == 0 else w)
             for w in data
         )
-        return cls(data, _override=True)
+        return cls(data)
 
     def __init__(self, wires, _override=False):
         if wires is self:
@@ -343,8 +320,8 @@ class Wires(Sequence):
                              new labels as their values
         **Example**
 
-        >>> wires = Wires(['a', 'b', 'c'])
-        >>> wire_map = {'a': 4, 'b':2, 'c': 3}
+        >>> wires = Wires([0, 1, 2])
+        >>> wire_map = {0: 4, 1: 2, 2: 3}
         >>> wires.map(wire_map)
         Wires([4, 2, 3])
         """
@@ -783,8 +760,6 @@ class Wires(Sequence):
         )
 
 
-WiresLike = Wires | Iterable[Hashable] | Hashable
-
 # Register Wires as a PyTree-serializable class
 register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access
 
@@ -832,7 +807,11 @@ class AbstractQubit(jax.core.AbstractValue):
 
 def is_abstract_qubit(v):
     """Returns ``True`` if the provided value is a DynamicJaxprTracer of type AbstractQubit"""
-    return math.is_tracer(v) and isinstance(v.val.aval, AbstractQubit)
+    return math.is_tracer(v) and isinstance(getattr(v, "aval", None), AbstractQubit)
+
+
+_WireLabel = int | np.integer | DynamicWire | jax.core.Tracer
+WiresLike = Wires | Iterable[_WireLabel] | _WireLabel
 
 
 def _filter_abstract_and_traced_wires(v):

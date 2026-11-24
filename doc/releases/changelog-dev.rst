@@ -1652,6 +1652,12 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* Wire labels must now be integers. Strings, floats, booleans, and arbitrary hashable objects
+  are no longer supported in devices, operators, measurements, Pauli words, or wire maps.
+  Integer scalar arrays are normalized to Python integers; symbolic wires used by capture
+  and allocation remain supported.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * Removed the ``pennylane.queuing`` shim. Import directly from
   ``pennylane.core.queuing``; ``qp.queuing`` now refers to that module.
   Use ``qp.apply`` instead of ``qp.queuing.apply``.

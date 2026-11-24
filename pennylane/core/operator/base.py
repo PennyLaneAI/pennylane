@@ -161,11 +161,8 @@ def create_operator_primitive(
         n_wires = kwargs.pop("n_wires")
 
         split = None if n_wires == 0 else -n_wires
-        # need to convert array values into integers
-        # for plxpr, all wires must be integers
-        # could be abstract when using tracing evaluation in interpreter
         wire_args = args[split:] if split else ()
-        wires = tuple(w if is_tracer(w) else int(w) for w in wire_args)
+        wires = Wires(wire_args)
         return type.__call__(operator_type, *args[:split], wires=wires, **kwargs)
 
     @primitive.def_abstract_eval
@@ -375,12 +372,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         from pennylane import numpy as np
 
-        dev = qp.device("default.qubit", wires=["q1", "q2", "q3"])
+        dev = qp.device("default.qubit", wires=[0, 1, 2])
 
         @qp.qnode(dev)
         def circuit(angle):
-            FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
-            return qp.expval(qp.Z("q1"))
+            FlipAndRotate(angle, wire_rot=0, wire_flip=0)
+            return qp.expval(qp.Z(0))
 
     >>> a = np.array(3.14)
     >>> circuit(a)
@@ -626,6 +623,9 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         else:
             kwargs["n_wires"] = 1
 
+        n_wires = kwargs["n_wires"]
+        if n_wires:
+            args = args[:-n_wires] + tuple(Wires(args[-n_wires:]))
         return cls._primitive.bind(*args, **kwargs)
 
     def __copy__(self) -> "Operator":

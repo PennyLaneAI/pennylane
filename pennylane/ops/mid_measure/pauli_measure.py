@@ -19,7 +19,6 @@ import uuid
 from typing import override
 
 import jax
-import numpy as np
 
 import pennylane as qp
 from pennylane import math
@@ -96,7 +95,7 @@ pauli_measure_prim = QpPrimitive("pauli_measure")
 
 @pauli_measure_prim.def_impl
 def _pauli_measure_primitive_impl(*wires, pauli_word="", postselect=None):
-    wires = [w if math.is_tracer(w) else int(w) for w in wires]
+    wires = Wires(wires)
     return _pauli_measure_impl(wires, pauli_word=pauli_word, postselect=postselect)
 
 
@@ -106,18 +105,8 @@ def _pauli_measure_primitive_abstract_eval(*_, **__):
     return jax.core.ShapedArray((), dtype)
 
 
-_ARRAY_TYPES = (jax.numpy.ndarray, np.ndarray)
-_NON_ARRAY_ITERABLES = (list, tuple, Wires, range, qp.capture.autograph.ag_primitives.PRange, set)
-
-
 def _setup_wires(wires):
-    if isinstance(wires, _ARRAY_TYPES):
-        if wires.shape == ():
-            return (wires,)
-        return wires
-    if isinstance(wires, _NON_ARRAY_ITERABLES):
-        return tuple(wires)
-    return (wires,)
+    return tuple(Wires(wires))
 
 
 def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = None):

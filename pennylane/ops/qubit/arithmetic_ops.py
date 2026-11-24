@@ -552,7 +552,7 @@ class IntegerComparator(Operation):
             for control_values in control_values_list:
                 control_values = [int(n) for n in control_values]
                 mat = mat @ qp.MultiControlledX.compute_matrix(
-                    control_wires + Wires(["target"]), control_values=control_values
+                    range(len(control_wires) + 1), control_values=control_values
                 )
 
         return mat

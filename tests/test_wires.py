@@ -57,6 +57,85 @@ class TestWires:  # pylint: disable=too-many-public-methods
         assert wires.labels == (0, 1, 2)
 
     @pytest.mark.parametrize(
+        "wire",
+        [
+            "",
+            "aux",
+            "1",
+            1.0,
+            -1.4,
+            1 + 0j,
+            True,
+            np.bool_(False),
+            object(),
+            np.array(1.0),
+            qp.numpy.array(1.0, requires_grad=False),
+        ],
+    )
+    def test_non_integer_labels_rejected(self, wire):
+        """Test rejection of non-integer scalar labels and labels in a register."""
+        with pytest.raises(WireError, match="Wire labels must be integers"):
+            Wires(wire)
+        with pytest.raises(WireError, match="Wire labels must be integers"):
+            Wires([0, wire])
+
+    def test_none_label_rejected(self):
+        """Test that None cannot appear inside a wire register."""
+        with pytest.raises(WireError, match="Wire labels must be integers"):
+            Wires([None])
+
+    def test_integer_scalar_arrays_normalized(self):
+        """Integer scalar arrays use the same labels as Python integers."""
+        wires = Wires([np.array(0), qp.numpy.array(1, requires_grad=False)])
+        assert wires.labels == (0, 1)
+        assert all(isinstance(wire, int) for wire in wires)
+        assert hash(wires) == hash(Wires([0, 1]))
+
+    def test_generator_labels(self):
+        """Test normalization and duplicate detection for one-use iterables."""
+        assert Wires(w for w in [0, 1, 2]).labels == (0, 1, 2)
+        with pytest.raises(WireError, match="Wires must be unique"):
+            Wires(w for w in [0, 0])
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("wire", ["aux", 1.0, True])
+    @pytest.mark.parametrize(
+        "factory",
+        [
+            lambda wire: qp.RX(0.1, wires=wire),
+            lambda wire: qp.X(wires=wire),
+            lambda wire: qp.sample(wires=[wire]),
+            lambda wire: qp.measure(wire),
+            lambda wire: qp.pauli_measure("Z", [wire]),
+            lambda wire: qp.pauli.PauliWord({wire: "X"}),
+        ],
+        ids=[
+            "legacy_operator",
+            "operator2",
+            "measurement",
+            "mid_measure",
+            "pauli_measure",
+            "pauli_word",
+        ],
+    )
+    def test_public_constructors_reject_non_integer_labels(self, factory, wire):
+        """Operators and measurements reject non-integer wires in both execution modes."""
+        with pytest.raises(WireError, match="Wire labels must be integers"):
+            factory(wire)
+
+    @pytest.mark.parametrize("wire", ["aux", 1.0, True])
+    def test_device_rejects_non_integer_labels(self, wire):
+        """Device wire registers require integer labels."""
+        with pytest.raises(WireError, match="Wire labels must be integers"):
+            qp.device("default.qubit", wires=[wire])
+
+    @pytest.mark.parametrize("wire", ["aux", 1.0, True])
+    def test_wire_mapping_rejects_non_integer_labels(self, wire):
+        """Wire maps cannot introduce non-integer labels."""
+        with pytest.raises(WireError, match="Failed to implement wire map"):
+            Wires([0]).map({0: wire})
+
+    @pytest.mark.parametrize(
         "iterable",
         [
             [qp.RX, qp.RY],
@@ -66,10 +145,9 @@ class TestWires:  # pylint: disable=too-many-public-methods
         ],
     )
     def test_creation_from_iterables_of_exotic_elements(self, iterable):
-        """Tests that a Wires object can be created from standard iterable inputs."""
-
-        wires = Wires(iterable)
-        assert wires.labels == tuple(iterable)
+        """Test that arbitrary objects cannot be used as wire labels."""
+        with pytest.raises(WireError, match="Wire labels must be integers"):
+            Wires(iterable)
 
     def test_creation_from_wires_object(self):
         """Tests that a Wires object can be created from another Wires object."""
@@ -90,13 +168,12 @@ class TestWires:  # pylint: disable=too-many-public-methods
         _ = hash(wires)
 
     def test_creation_from_wires_lists(self):
-        """Tests that a Wires object can be created from a list of Wires."""
-
-        wires = Wires([Wires([0]), Wires([1]), Wires([2])])
-        assert wires.labels == (Wires([0]), Wires([1]), Wires([2]))
+        """Test that nested Wires objects cannot be used as labels."""
+        with pytest.raises(WireError, match="Wire labels must be integers"):
+            Wires([Wires([0]), Wires([1]), Wires([2])])
 
     @pytest.mark.parametrize(
-        "iterable", [[1, 0, 4], ["a", "b", "c"], [0, 1, None], ["a", 1, "auxiliary"]]
+        "iterable", [[1, 0, 4], [np.int32(1), np.int64(0), np.uint64(4)]]
     )
     def test_creation_from_different_wire_types(self, iterable):
         """Tests that a Wires object can be created from iterables of different
@@ -105,7 +182,9 @@ class TestWires:  # pylint: disable=too-many-public-methods
         wires = Wires(iterable)
         assert wires.labels == tuple(iterable)
 
-    @pytest.mark.parametrize("wire", [1, -2, "a", "q1", -1.4])
+    @pytest.mark.parametrize(
+        "wire", [1, -2, np.int32(1), np.array(1), qp.numpy.array(1, requires_grad=False)]
+    )
     def test_creation_from_single_object(self, wire):
         """Tests that a Wires object can be created from a non-iterable object
         representing a single wire index."""
@@ -119,11 +198,11 @@ class TestWires:  # pylint: disable=too-many-public-methods
     def test_error_for_incorrect_wire_types(self, input):
         """Tests that a Wires object cannot be created from unhashable objects such as np arrays or lists."""
 
-        with pytest.raises(WireError, match="Wires must be hashable"):
+        with pytest.raises(WireError, match="Wire labels must be integers"):
             Wires(input)
 
     @pytest.mark.parametrize(
-        "iterable", [np.array([4, 1, 1, 3]), [4, 1, 1, 3], (4, 1, 1, 3), ["a", "a", "b"]]
+        "iterable", [np.array([4, 1, 1, 3]), [4, 1, 1, 3], (4, 1, 1, 3)]
     )
     def test_error_for_repeated_wires(self, iterable):
         """Tests that a Wires object cannot be created from iterables with repeated indices."""
@@ -131,7 +210,7 @@ class TestWires:  # pylint: disable=too-many-public-methods
         with pytest.raises(WireError, match="Wires must be unique"):
             Wires(iterable)
 
-    @pytest.mark.parametrize("iterable", [[4, 1, 0, 3], ["a", "b", "c"]])
+    @pytest.mark.parametrize("iterable", [[4, 1, 0, 3], [-3, -2, -1]])
     def test_indexing_and_slicing(self, iterable):
         """Tests the indexing and slicing of Wires objects."""
 
@@ -152,7 +231,7 @@ class TestWires:  # pylint: disable=too-many-public-methods
         assert wires1 != wires2
         assert wires1 == wires3
 
-    @pytest.mark.parametrize("iterable", [[4, 1, 0, 3], ["a", "b", "c"]])
+    @pytest.mark.parametrize("iterable", [[4, 1, 0, 3], [-3, -2, -1]])
     def test_length(self, iterable):
         """Tests that a Wires object returns the correct length."""
 
@@ -164,11 +243,11 @@ class TestWires:  # pylint: disable=too-many-public-methods
     ):
         """Tests the __contains__() method."""
 
-        wires = Wires([0, 1, 2, 3, Wires([4, 5]), None])
+        wires = Wires([0, 1, 2, 3])
 
         assert 0 in wires
-        assert Wires([4, 5]) in wires
-        assert None in wires
+        assert Wires([4, 5]) not in wires
+        assert None not in wires
         assert Wires([1]) not in wires
         assert Wires([0, 3]) not in wires
         assert Wires([0, 4]) not in wires
@@ -181,11 +260,10 @@ class TestWires:  # pylint: disable=too-many-public-methods
     ):
         """Tests the dedicated contains_wires() method."""
 
-        wires = Wires([0, 1, 2, 3, Wires([4, 5]), None])
+        wires = Wires([0, 1, 2, 3])
 
         assert wires.contains_wires(Wires([0, 3]))
-        assert wires.contains_wires(Wires([1, 2, None]))
-        assert wires.contains_wires(Wires([Wires([4, 5])]))  # Wires([4, 5]) is just a label!
+        assert wires.contains_wires(Wires([1, 2]))
 
         assert not wires.contains_wires(0)  # wrong type
         assert not wires.contains_wires([0, 1])  # wrong type
@@ -252,11 +330,11 @@ class TestWires:  # pylint: disable=too-many-public-methods
     def test_label_property(self):
         """Tests the get_label() method."""
 
-        labels = [0, "q1", 16]
+        labels = [0, 5, 16]
         wires = Wires(labels)
 
         assert wires.labels == tuple(labels)
-        assert wires.labels[1] == "q1"
+        assert wires.labels[1] == 5
         assert wires.labels[2] == 16
 
     def test_convert_to_numpy_array(self):
@@ -277,7 +355,7 @@ class TestWires:  # pylint: disable=too-many-public-methods
         assert isinstance(list_, list)
         assert list_ == [4, 0, 1]
 
-    @pytest.mark.parametrize("iterable", [[4, 1, 0, 3], ["a", "b", "c"]])
+    @pytest.mark.parametrize("iterable", [[4, 1, 0, 3], [-3, -2, -1]])
     def test_index_method(self, iterable):
         """Tests the ``index()`` method."""
 
@@ -291,8 +369,8 @@ class TestWires:  # pylint: disable=too-many-public-methods
         with pytest.raises(WireError, match="Can only retrieve index"):
             wires.index(Wires([1, 2]))
         # check that error raised when wire does not exist
-        with pytest.raises(WireError, match="Wire with label d not found"):
-            wires.index(Wires(["d"]))
+        with pytest.raises(WireError, match="Wire with label 99 not found"):
+            wires.index(Wires([99]))
 
     def test_indices_method(self):
         """Tests the ``indices()`` method."""
@@ -308,8 +386,8 @@ class TestWires:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize(
         "wires, wire_map, expected",
         [
-            (Wires(["a", "b"]), {"a": 0, "b": 1}, Wires([0, 1])),
-            (Wires([-1, 1]), {1: "c", -1: 1, "d": "e"}, Wires([1, "c"])),
+            (Wires([4, 5]), {4: 0, 5: 1}, Wires([0, 1])),
+            (Wires([-1, 1]), {1: 3, -1: 1, 4: 5}, Wires([1, 3])),
         ],
     )
     def test_map_method(self, wires, wire_map, expected):
@@ -324,7 +402,7 @@ class TestWires:  # pylint: disable=too-many-public-methods
         # error for non-unique wire labels
         with pytest.raises(WireError, match="Failed to implement wire map"):
             wires = Wires([0, 1])
-            wires.map({0: "a", 1: "a"})
+            wires.map({0: 3, 1: 3})
 
     def test_select_random_method(self):
         """Tests the ``select_random()`` method."""
@@ -418,7 +496,7 @@ class TestWires:  # pylint: disable=too-many-public-methods
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
-        "source", [1, -2, "a", "q1", -1.4, np.array([0, 1, 2]), [0, 1, 2], (0, 1, 2), range(3)]
+        "source", [1, -2, np.array([0, 1, 2]), [0, 1, 2], (0, 1, 2), range(3)]
     )
     def test_wires_pytree(self, source):
         """Test that Wires class supports the PyTree flattening interface"""
@@ -492,7 +570,7 @@ class TestWires:  # pylint: disable=too-many-public-methods
             (Wires([0, 1, 2]), Wires([2, 3, 4]), Wires([2])),
             (Wires([1, 2, 3]), Wires([]), Wires([])),
             (Wires([1, 2, 3]), [], Wires([])),
-            (Wires([1, 2, 3]), "2", Wires([])),
+            (Wires([1, 2, 3]), 4, Wires([])),
             (Wires([1, 2, 3]), {3}, Wires([3])),
             (Wires([1, 2, 3]), Wires([1, 2, 3, 4]), Wires([1, 2, 3])),
         ],
@@ -601,6 +679,23 @@ class TestWiresJax:
         wires = Wires(iterable)
         assert wires.labels == expected
 
+    @pytest.mark.parametrize("wire", [1.0, True])
+    def test_non_integer_jax_labels(self, wire):
+        """Reject floating-point and boolean JAX arrays instead of casting them."""
+        with pytest.raises(WireError, match="Wire labels must be integers"):
+            Wires(jax.numpy.array(wire))
+
+    def test_integer_tracer(self):
+        """Integer scalar tracers remain valid wire labels."""
+        jaxpr = jax.make_jaxpr(lambda wire: Wires(wire)[0])(jax.numpy.array(1))
+        assert jaxpr.jaxpr.outvars == jaxpr.jaxpr.invars
+
+    @pytest.mark.parametrize("wire", [1.0, True])
+    def test_non_integer_tracer(self, wire):
+        """Reject non-integer scalar tracers while their dtype is still known."""
+        with pytest.raises(WireError, match="Wire labels must be integers"):
+            jax.make_jaxpr(lambda wire: Wires(wire)[0])(jax.numpy.array(wire))
+
     @pytest.mark.parametrize(
         "input",
         (
@@ -617,7 +712,7 @@ class TestWiresJax:
     )
     def test_error_for_incorrect_jax_arrays(self, input):
         """Tests that a Wires object cannot be created from incorrect JAX arrays."""
-        with pytest.raises(WireError, match="Wires must be hashable"):
+        with pytest.raises(WireError, match="Wire labels must be integers"):
             Wires(input)
 
     @pytest.mark.parametrize(

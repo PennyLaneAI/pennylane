@@ -2159,7 +2159,7 @@ def _is_abstract_array(arg):
 
 
 def _to_int_wires(wires):
-    """Cast all wires to integers."""
+    """Normalize integer wires while preserving abstract wire arguments."""
     if not wires:
         return Wires(wires)
 
@@ -2173,7 +2173,7 @@ def _to_int_wires(wires):
             " AbstractWires, AbstractQubits"
         )
 
-    return Wires(tuple(w if math.is_tracer(w) else int(w) for w in wires))
+    return Wires(wires)
 
 
 class _ArgType(Enum):

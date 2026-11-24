@@ -114,36 +114,32 @@ that you can address by consecutive integer labels ``0, 1, 2, ...``.
 
     dev = qp.device('default.qubit', wires=3)
 
-Alternatively, you can use custom labels by passing an iterable that contains unique labels for the subsystems:
+Alternatively, pass an iterable of unique integer labels for the subsystems.
+The labels may be negative or nonconsecutive:
 
 .. code-block:: python
 
-    dev_unique_wires = qp.device('default.qubit', wires=['aux', 'q1', 'q2'])
+    dev_unique_wires = qp.device('default.qubit', wires=[-1, 10, 20])
 
 In the quantum function you can now use your own labels to address wires:
 
 .. code-block:: python
 
     def my_quantum_function(x, y):
-        qp.RZ(x, wires='q1')
-        qp.CNOT(wires=['aux' ,'q1'])
-        qp.RY(y, wires='q2')
-        return qp.expval(qp.PauliZ('q2'))
+        qp.RZ(x, wires=10)
+        qp.CNOT(wires=[-1, 10])
+        qp.RY(y, wires=20)
+        return qp.expval(qp.PauliZ(20))
 
-Allowed wire labels can be of any type that is hashable, which allows two wires to be uniquely distinguished.
+Wire labels must be integers. Strings, floats, booleans, and arbitrary objects are not supported.
+Integer scalar arrays, such as ``np.array(0)`` and ``jnp.array(0)``, are normalized to
+Python integers and identify the same wires as their integer values.
 
 .. note::
 
     Some devices, such as hardware chips, may have a fixed number of wires.
     The iterable of labels passed to the device's ``wires``
     argument must match this expected number of wires.
-
-.. warning::
-
-    In order to support wire labels of any hashable type, integers and 0-d arrays are considered different.
-    For example, running ``qp.RX(1.1, qp.numpy.array(0))`` on a device initialized with ``wires=[0]``
-    will fail because ``qp.numpy.array(0)`` does not exist in the device's wire map.
-
 
 .. _intro_vcirc_qnode:
 

@@ -195,6 +195,13 @@ def _process_circuit_lst(
             of 'ResourceOperator', 'Operator', 'MeasurementProcess' and 'MarkQubits'.
         ValueError: if attempts to mark qubits that don't otherwise exist in the circuit wires
     """
+    circuit_as_lst = tuple(circuit_as_lst)
+    used_wires = {
+        wire
+        for op in circuit_as_lst
+        for wire in (() if getattr(op, "wires", None) is None else op.wires)
+    }
+    next_generated_wire = 0
     circuit_wires = Wires([])
     num_generated_wires = 0
     generated_wire_labels = []
@@ -222,8 +229,11 @@ def _process_circuit_lst(
                 diff = num_wires - num_generated_wires
 
                 if diff > 0:  # generate additional wire labels
-                    for i in range(diff):
-                        generated_wire_labels.append(f"__generated_wire{num_generated_wires + i}__")
+                    for _ in range(diff):
+                        while next_generated_wire in used_wires:
+                            next_generated_wire += 1
+                        generated_wire_labels.append(next_generated_wire)
+                        next_generated_wire += 1
                     num_generated_wires += diff
 
                 op_wires = Wires(generated_wire_labels[:num_wires])

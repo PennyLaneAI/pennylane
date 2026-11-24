@@ -16,7 +16,6 @@ This module contains the qp.measure measurement.
 """
 
 import uuid
-from collections.abc import Hashable
 from typing import override
 
 import jax
@@ -33,7 +32,7 @@ from pennylane.wires import Wires, WiresLike
 from .measurement_value import MeasurementValue
 
 
-def _measure_impl(wires: Hashable | Wires, reset: bool = False, postselect: int | None = None):
+def _measure_impl(wires: WiresLike, reset: bool = False, postselect: int | None = None):
     """Concrete implementation of qp.measure"""
     wires = Wires(wires)
     if len(wires) > 1:
@@ -166,7 +165,7 @@ def _abstractify_mid_measure(op: MidMeasure):
 
 
 def measure(
-    wires: Hashable | Wires, reset: bool = False, postselect: int | None = None
+    wires: WiresLike, reset: bool = False, postselect: int | None = None
 ) -> MeasurementValue:
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
@@ -356,7 +355,12 @@ def measure(
 
     """
     if capture_enabled():
-        return measure_prim.bind(wires, reset=reset, postselect=postselect)
+        wires = Wires(wires)
+        if len(wires) != 1:
+            raise QuantumFunctionError(
+                "Only a single qubit can be measured in the middle of the circuit"
+            )
+        return measure_prim.bind(wires[0], reset=reset, postselect=postselect)
 
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints

@@ -27,7 +27,7 @@ serves as the main abstraction of such objects, and all operators (such as gates
 inherit from it.
 
 >>> from jax import numpy as jnp
->>> op = qp.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
+>>> op = qp.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=[0])
 >>> isinstance(op, qp.operation.Operator)
 True
 
@@ -42,7 +42,7 @@ The basic components of operators are the following:
 #. **The subsystems that the operator addresses** (:attr:`.Operator.wires`), which mathematically speaking defines the subspace that it acts on.
 
    >>> op.wires
-   Wires(['a'])
+   Wires([0])
 
 #. **Trainable parameters** (:attr:`.Operator.parameters`) that the map depends on, such as a rotation angle,
    which can be fed to the operator as tensor-like objects. For example, since we used jax arrays to
@@ -64,9 +64,9 @@ The basic components of operators are the following:
 
    * Representation as a **product of operators** (:meth:`.Operator.decomposition`):
 
-     >>> op = qp.Rot(0.1, 0.2, 0.3, wires=["a"])
+     >>> op = qp.Rot(0.1, 0.2, 0.3, wires=[0])
      >>> op.decomposition()
-     [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
+     [RZ(0.1, wires=[0]), RY(0.2, wires=[0]), RZ(0.3, wires=[0])]
 
    * Representation as a **linear combination of operators** (:meth:`.Operator.terms`):
 
@@ -86,8 +86,8 @@ The basic components of operators are the following:
    * Representation as a **matrix** (:meth:`.Operator.matrix`), as specified by a global wire order that tells us where the
      wires are found on a register:
 
-     >>> op = qp.PauliRot(0.2, "X", wires=["b"])
-     >>> op.matrix(wire_order=["a", "b"])
+     >>> op = qp.PauliRot(0.2, "X", wires=[1])
+     >>> op.matrix(wire_order=[0, 1])
      [[9.95e-01-2.26e-18j 2.72e-17-9.98e-02j, 0+0j, 0+0j]
       [2.72e-17-9.98e-02j 9.95e-01-2.26e-18j, 0+0j, 0+0j]
       [0+0j, 0+0j, 9.95e-01-2.26e-18j 2.72e-17-9.98e-02j]
@@ -100,8 +100,8 @@ The basic components of operators are the following:
      >>> col = np.array([1, 0])
      >>> data = np.array([1, -1])
      >>> mat = coo_matrix((data, (row, col)), shape=(4, 4))
-     >>> op = qp.SparseHamiltonian(mat, wires=["a"])
-     >>> op.sparse_matrix(wire_order=["a"])
+     >>> op = qp.SparseHamiltonian(mat, wires=[0])
+     >>> op.sparse_matrix(wire_order=[0])
      (0, 1)   1
      (1, 0) - 1
 
@@ -207,13 +207,13 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
 
 The new gate can now be created as follows:
 
->>> op = FlipAndRotate(0.1, wire_rot="q3", wire_flip="q1", do_flip=True)
+>>> op = FlipAndRotate(0.1, wire_rot=2, wire_flip=0, do_flip=True)
 >>> op
-FlipAndRotate(0.1, wires=['q3', 'q1'])
+FlipAndRotate(0.1, wires=[2, 0])
 >>> op.decomposition()
-[PauliX(wires=['q1']), RX(0.1, wires=['q3'])]
+[PauliX(wires=[0]), RX(0.1, wires=[2])]
 >>> op.adjoint()
-FlipAndRotate(-0.1, wires=['q3', 'q1'])
+FlipAndRotate(-0.1, wires=[2, 0])
 
 Once the class has been created, you can run a suite of validation checks using :func:`~.testing.assert_valid`.
 This function will warn you of some common errors in custom operators.
@@ -231,7 +231,7 @@ If the above operator omitted the ``_unflatten`` custom definition, it would rai
     The above exception was the direct cause of the following exception:
 
     AssertionError: FlipAndRotate._unflatten must be able to reproduce the original operation
-    from (0.1,) and (Wires(['q3', 'q1']), (('do_flip', True),)). You may need to override
+    from (0.1,) and (Wires([2, 0]), (('do_flip', True),)). You may need to override
     either the _unflatten or _flatten method. 
     For local testing, try type(op)._unflatten(*op._flatten())
 
@@ -252,12 +252,12 @@ The new gate can be used with PennyLane devices.
 
     from pennylane import numpy as np
 
-    dev = qp.device("default.qubit", wires=["q1", "q2", "q3"])
+    dev = qp.device("default.qubit", wires=[0, 1, 2])
 
     @qp.qnode(dev)
     def circuit(angle):
-        FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
-        return qp.expval(qp.PauliZ("q1"))
+        FlipAndRotate(angle, wire_rot=0, wire_flip=0)
+        return qp.expval(qp.PauliZ(0))
 
 >>> a = np.array(3.14)
 >>> circuit(a)
