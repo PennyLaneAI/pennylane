@@ -17,10 +17,6 @@
 
 from pennylane import capture, math
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.ops import SWAP, ctrl
-from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires
-from pennylane.templates.subroutines.qrom_load import QROMLoad
 from pennylane.decomposition_rules.templates.subroutines.qrom_load import (
     _calculate_select_swap_sizes,
     _measure_and_reset,
@@ -30,7 +26,11 @@ from pennylane.decomposition_rules.templates.subroutines.qrom_load import (
     _select_ops,
     _swap_ops,
 )
+from pennylane.ops import SWAP, ctrl
+from pennylane.templates.subroutines.qrom_load import QROMLoad
 from pennylane.templates.subroutines.select_swap import SelectSwap
+from pennylane.typing import Bool, Wire
+from pennylane.wires import Wires
 
 
 def _select_swap_sizes(bitstrings, control_wires, target_wires, work_wires):

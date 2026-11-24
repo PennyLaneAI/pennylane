@@ -27,11 +27,11 @@ import pytest
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import DecompositionGraph
-from pennylane.decomposition_rules.templates.subroutines import qrom_load as qrom_load_module
 from pennylane.decomposition_rules import (
     adjoint_select_swap_measurement,
     select_swap,
 )
+from pennylane.decomposition_rules.templates.subroutines import qrom_load as qrom_load_module
 from pennylane.decomposition_rules.templates.subroutines.select_swap import (
     _select_swap_sizes,
 )

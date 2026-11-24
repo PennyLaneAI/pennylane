@@ -30,16 +30,14 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import DecompositionGraph
-from pennylane.decomposition_rules.templates.subroutines import qrom_load
 from pennylane.decomposition_rules import (
+    adjoint_qrom_load_measurement,
+    qrom_load_select_swap,
+    qrom_load_to_qrom,
     qrom_measurement,
     qrom_unary_iteration,
 )
-from pennylane.decomposition_rules import (
-    adjoint_qrom_load_measurement,
-    qrom_load_to_qrom,
-    qrom_load_select_swap,
-)
+from pennylane.decomposition_rules.templates.subroutines import qrom_load
 from pennylane.decomposition_rules.templates.subroutines.qrom_load import (
     _adjoint_qrom_load_one_hot_size,
     _calculate_select_swap_sizes,

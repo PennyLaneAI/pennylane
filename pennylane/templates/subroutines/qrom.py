@@ -16,6 +16,7 @@ This submodule contains the template QROM.
 """
 
 from collections.abc import Sequence
+
 from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.math import ceil_log2

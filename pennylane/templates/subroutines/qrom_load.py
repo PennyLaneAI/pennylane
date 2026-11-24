@@ -16,9 +16,11 @@ This submodule contains the template QROMLoad.
 """
 
 from collections.abc import Sequence
+
 from pennylane.core.operator import Operator2
 from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import WiresLike
+
 from .qrom import (
     preprocess_qrom_inputs,
 )

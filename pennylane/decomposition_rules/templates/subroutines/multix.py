@@ -15,6 +15,9 @@
 
 """Built-in decomposition rules for templates.subroutines.multix."""
 
+from functools import partial
+from math import pi
+
 from pennylane import capture, compiler, math
 from pennylane.allocation import allocate
 from pennylane.control_flow import for_loop
@@ -22,10 +25,12 @@ from pennylane.decomposition import add_decomps, register_condition, register_re
 from pennylane.decomposition_rules.op_math.controlled2 import (
     _multi_temporary_and_all_ones,
     flip_zero_control,
+    make_controlled_decomp,
 )
 from pennylane.decomposition_rules.op_math.pow2 import pow_involutory
 from pennylane.decomposition_rules.op_math.symbolicop2 import self_adjoint
-from pennylane.ops import CNOT, PauliX, adjoint, cond
+from pennylane.ops import CNOT, GlobalPhase, PauliX, PauliZ, adjoint, cond
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
 from pennylane.templates.subroutines.multix import MultiX
 from pennylane.typing import TensorLike, Wire
@@ -111,7 +116,8 @@ def _multix_ladder_fanout(base, control_wires, work_wires):
         for i, wire in enumerate(wires):
             cond(bitstring[i], _apply_cnot)(wire)
     else:
-        wires = math.array(wires, like="jax")
+        if compiler.active() or capture.enabled():
+            wires = math.array(wires, like="jax")
 
         @for_loop(0, len(wires), 1)
         def _locally_apply_cnot(i):
@@ -152,6 +158,74 @@ def controlled_multix_ladder_standard(base, control_wires, work_wires, work_wire
         _multix_ladder_fanout(base, control_wires, work_wires=available + list(allocated))
 
 
+# Keep the existing unitary fallback ahead of the PPM alternative.
+controlled_multix = make_controlled_decomp(multix_standard)
+controlled_multix.name = "controlled_x"
 add_decomps(
-    "C(MultiX)", flip_zero_control(controlled_multix_ladder_standard, name="ancilla_fanout")
+    "C(MultiX)",
+    flip_zero_control(controlled_multix_ladder_standard, name="ancilla_fanout"),
+    controlled_multix,
+)
+
+
+def _measure_z_multix(work_wire, bitstring, wires):
+    """Measure Z on a work wire jointly with X on the targets selected by the bitstring."""
+    if not math.is_tracer(bitstring):
+        targets = [wire for wire, bit in zip(wires, bitstring) if bit]
+        return pauli_measure("Z" + "X" * len(targets), [work_wire, *targets])
+
+    # Each branch has a fixed measurement width, with selected targets grouped first.
+    selected = math.array(wires, like="jax")[math.argsort(math.logical_not(bitstring))]
+    weight = math.sum(bitstring)
+    num_targets = len(bitstring)
+
+    def measure_width(width):
+        return pauli_measure("Z" + "X" * width, [work_wire, *selected[:width]])
+
+    return cond(
+        weight == 0,
+        partial(measure_width, 0),
+        partial(measure_width, num_targets),
+        elifs=tuple(
+            (weight == width, partial(measure_width, width)) for width in range(1, num_targets)
+        ),
+    )()
+
+
+def _controlled_multix_lattice_surgery_ppm_resources(base, *_, **__):
+    resources = {
+        PauliMeasure("Z" + "X" * width, wires=Wire[width + 1]): 1
+        for width in range(len(base.wires) + 1)
+    }
+    resources[PauliMeasure("ZX", wires=Wire[2])] += 1
+    resources[PauliMeasure("X", wires=Wire[1])] = 1
+    resources[PauliZ] = 2
+    resources[base] = 1
+    resources[GlobalPhase] = 1
+    return resources
+
+
+@register_condition(lambda control_wires, **_: len(control_wires) == 1)
+@register_resources(
+    _controlled_multix_lattice_surgery_ppm_resources,
+    work_wires={"burnable": 1},
+    exact=False,
+    name="lattice_surgery_ppm",
+)
+def controlled_multix_lattice_surgery_ppm(base, control_wires, **_):
+    """Implement a single-control MultiX with three PPMs and one consumed auxiliary qubit."""
+    control = control_wires[0]
+    with allocate(1, state="zero", restored=False) as auxiliary:
+        m0 = pauli_measure("ZX", [control, auxiliary[0]])
+        m1 = _measure_z_multix(auxiliary[0], base.bitstring, base.wires)
+        m2 = pauli_measure("X", auxiliary)
+        cond(m1, PauliZ)(control)
+        cond(m0 != m2, MultiX)(base.bitstring, wires=base.wires)
+        cond(m1 & (m0 != m2), GlobalPhase)(pi)
+        cond(m2, PauliZ)(auxiliary[0])  # Leave the auxiliary qubit in |+>.
+
+
+add_decomps(
+    "C(MultiX)",
+    flip_zero_control(controlled_multix_lattice_surgery_ppm, name="lattice_surgery_ppm"),
 )

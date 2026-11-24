@@ -77,6 +77,25 @@ class MultiX(Operator2):
                 :image: /_static/decomposition_thumbnails/multix_conditional_x.svg
 
                 :class:`~.X` | :math:`\sum_i b_i \leq n` (one per :math:`b_i=1`) | 2
+
+            .. decomposition-rule:: lattice_surgery_ppm
+                :image: /_static/decomposition_thumbnails/multix_lattice_surgery_ppm.svg
+                :region: controlled
+                :requires: 1 work wire (not restored)
+                :where: One control wire. Both control values are supported; the circuit
+                    shows control value 1. Tracing requires numeric control and target
+                    wire labels.
+
+                :func:`Pauli product measurement <.pauli_measure>` | :math:`3` | 3
+                :class:`~.PauliZ` (conditional) | :math:`2` | 2
+                :class:`~.MultiX` (conditional) | :math:`1` | 1
+                :class:`~.GlobalPhase` (conditional) | :math:`1` | 1
+                :class:`~.PauliX` (control-value flips) | :math:`\leq 2` | 0
+
+        For :math:`c > 1` controls, supplying at least :math:`c - 1` zeroed work wires to
+        :func:`~.ctrl` through ``work_wires`` and ``work_wire_type="zeroed"`` allows the
+        generic controlled-operator decomposition to reduce to this single-control PPM rule.
+        The PPM rule requires one additional work wire that is not restored.
     """
 
     dynamic_argnames = ("bitstring",)

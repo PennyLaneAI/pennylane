@@ -17,6 +17,7 @@
 
 import math as builtin_math
 from functools import partial
+
 from pennylane import capture, compiler, math
 from pennylane import ops as qp_ops
 from pennylane.capture import hint
@@ -29,10 +30,10 @@ from pennylane.decomposition import (
 from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, MultiControlledX, X, Z, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.typing import Bool, Wire
 from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.templates.subroutines.multix import MultiX
 from pennylane.templates.subroutines.qrom import QROM
+from pennylane.typing import Bool, Wire
 
 
 def _measure_masked_x(work_wire, targets, bit_mask):

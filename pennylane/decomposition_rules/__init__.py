@@ -147,6 +147,7 @@ if TYPE_CHECKING:
     from .templates.subroutines.ffft import _permute_and_apply_parallel
     from .templates.subroutines.multix import (
         controlled_multix_ladder_standard,
+        controlled_multix_lattice_surgery_ppm,
         _controlled_multix_ladder_standard_work_wires,
         _multix_ladder_fanout,
         multix_standard,
@@ -272,6 +273,7 @@ __all__ = [
     "controlled_g_phase_standard",
     "controlled_hadamard_standard",
     "controlled_multix_ladder_standard",
+    "controlled_multix_lattice_surgery_ppm",
     "_controlled_multix_ladder_standard_work_wires",
     "controlled_phase_shift_standard",
     "controlled_rot_standard",

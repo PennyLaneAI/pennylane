@@ -17,6 +17,7 @@
 
 from collections import defaultdict
 from functools import partial
+
 from pennylane import capture, compiler, math
 from pennylane import ops as qp_ops
 from pennylane.capture import hint
@@ -27,17 +28,17 @@ from pennylane.decomposition import (
     register_condition,
     register_resources,
 )
-from pennylane.ops import CNOT, SWAP, H, X, cond, ctrl, pauli_measure
-from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires
-from pennylane.templates.subroutines.arithmetic import TemporaryAND
-from pennylane.templates.subroutines.qrom import QROM
 from pennylane.decomposition_rules.templates.subroutines.qrom import (
     _qrom_unary_iteration_resources,
     _unary_iteration_num_elbows,
 )
+from pennylane.ops import CNOT, SWAP, H, X, cond, ctrl, pauli_measure
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.templates.subroutines.arithmetic import TemporaryAND
+from pennylane.templates.subroutines.qrom import QROM
 from pennylane.templates.subroutines.qrom_load import QROMLoad
+from pennylane.typing import Bool, Wire
+from pennylane.wires import Wires
 
 
 def _select_ops(

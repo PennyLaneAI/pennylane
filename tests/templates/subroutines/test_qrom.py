@@ -27,8 +27,6 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.capture.primitives import for_loop_prim
 from pennylane.core.operator import abstractify
-from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.decomposition_rules import (
     qrom_measurement,
     qrom_unary_iteration,
@@ -39,6 +37,8 @@ from pennylane.decomposition_rules.templates.subroutines.qrom import (
     _qrom_measurement_condition,
     _qrom_measurement_resources,
 )
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.testing import assert_decomposable, extract_all_primitives
 from pennylane.typing import Bool, Wire
 
@@ -965,15 +965,7 @@ class TestMeasurementQROM:
     @pytest.mark.parametrize(
         ("L", "n_extra"),
         [
-            pytest.param(
-                1,
-                1,
-                marks=pytest.mark.xfail(
-                    reason="Controlled MultiX needs work wire support for control regions in Catalyst "
-                    "(Catalyst #3376).",
-                    strict=True,
-                ),
-            ),
+            (1, 1),
             (1, 2),
             (4, 1),
             (4, 2),
@@ -1015,16 +1007,22 @@ class TestMeasurementQROM:
                 qp.math.int_to_binary(j, len(wires["control_wires"])), wires=wires["control_wires"]
             )
             qrom_measurement(bitstrings=bitstrings, **wires)
-            return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
+            if n_work:
+                return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
+            return qp.sample(wires=wires["target_wires"])
 
         for j in range(2**n_input):
-            target_samples, work_samples = circuit(j)
+            if n_work:
+                target_samples, work_samples = circuit(j)
+            else:
+                target_samples = circuit(j)
 
             # Real data is loaded only when all extra (top) wires are zero, i.e. j < L.
             expected = bitstrings[j] if j < L else np.zeros(n_target, dtype=int)
             assert np.all(
                 target_samples == expected
             ), f"L={L}, n_extra={n_extra}, j={j}: got {target_samples}, expected {expected}"
-            assert np.allclose(
-                work_samples, 0
-            ), f"L={L}, n_extra={n_extra}, j={j}: work wires not clean, got {work_samples}"
+            if n_work:
+                assert np.allclose(
+                    work_samples, 0
+                ), f"L={L}, n_extra={n_extra}, j={j}: work wires not clean, got {work_samples}"
