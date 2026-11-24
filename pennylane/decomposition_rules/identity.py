@@ -33,10 +33,10 @@ add_decomps("C(Identity)", null_decomp)
 add_decomps("Pow(Identity)", null_decomp)
 
 
-def _controlled_g_phase_standard_resources(
-    base,  # pylint: disable=unused-argument
+def _controlled_g_phase_standard_resources(  # pylint: disable=unused-argument
+    base,
     control_wires,
-    control_values,  # pylint: disable=unused-argument
+    control_values,
     work_wires,
     work_wire_type,
 ):

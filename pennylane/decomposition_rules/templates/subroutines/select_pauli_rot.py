@@ -356,8 +356,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(
     precision = len(angle_wires)
     precisions, dispatch = _precision_dispatcher(precision_stats, precision, "SelectPauliRot")
 
-    def _select_pauli_rot_phase_gradient_standard_resources(
-        angles, control_wires, target_wire, rot_axis  # pylint: disable=unused-argument
+    def _select_pauli_rot_phase_gradient_standard_resources(  # pylint: disable=unused-argument
+        angles, control_wires, target_wire, rot_axis
     ):
         # decomposition costs, using information about angle_wires etc from the outer scope.
         # Each non-zero precision that may be applied is counted once.

@@ -98,10 +98,10 @@ add_decomps("Adjoint(RX)", adjoint_negate_angle)
 add_decomps("Pow(RX)", pow_scale_angle)
 
 
-def _controlled_rx_standard_resources(
-    base,  # pylint: disable=unused-argument
+def _controlled_rx_standard_resources(  # pylint: disable=unused-argument
+    base,
     control_wires,
-    control_values,  # pylint: disable=unused-argument
+    control_values,
     work_wires,
     work_wire_type,
 ):
@@ -213,10 +213,10 @@ add_decomps("Adjoint(RY)", adjoint_negate_angle)
 add_decomps("Pow(RY)", pow_scale_angle)
 
 
-def _controlled_ry_standard_resources(
-    base,  # pylint: disable=unused-argument
+def _controlled_ry_standard_resources(  # pylint: disable=unused-argument
+    base,
     control_wires,
-    control_values,  # pylint: disable=unused-argument
+    control_values,
     work_wires,
     work_wire_type,
 ):
@@ -322,10 +322,10 @@ add_decomps("Adjoint(RZ)", adjoint_negate_angle)
 add_decomps("Pow(RZ)", pow_scale_angle)
 
 
-def _controlled_rz_standard_resources(
-    base,  # pylint: disable=unused-argument
+def _controlled_rz_standard_resources(  # pylint: disable=unused-argument
+    base,
     control_wires,
-    control_values,  # pylint: disable=unused-argument
+    control_values,
     work_wires,
     work_wire_type,
 ):
@@ -479,10 +479,10 @@ def adjoint_rot_standard(base):
 add_decomps("Adjoint(Rot)", adjoint_rot_standard)
 
 
-def _controlled_rot_standard_resources(
-    base,  # pylint: disable=unused-argument
+def _controlled_rot_standard_resources(  # pylint: disable=unused-argument
+    base,
     control_wires,
-    control_values,  # pylint: disable=unused-argument
+    control_values,
     work_wires,
     work_wire_type,
 ):

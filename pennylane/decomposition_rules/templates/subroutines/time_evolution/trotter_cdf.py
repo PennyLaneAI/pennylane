@@ -372,12 +372,12 @@ def _controlled_trotter_cdf_standard_resources(  # pylint: disable=unused-argume
     exact=False,
     name="controlled_double_factorized_steps",
 )
-def controlled_trotter_cdf_standard(
+def controlled_trotter_cdf_standard(  # pylint: disable=unused-argument
     base,
     control_wires,
-    control_values,  # pylint: disable=unused-argument
-    work_wires,  # pylint: disable=unused-argument
-    work_wire_type,  # pylint: disable=unused-argument
+    control_values,
+    work_wires,
+    work_wire_type,
 ):
     """Decompose ``C(TrotterCDF)`` using the ``controlled_double_factorized_steps`` strategy."""
     evolution_time = base.arguments["evolution_time"]

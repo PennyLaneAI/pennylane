@@ -31,8 +31,8 @@ def _get_specific_bit(value, i):
     return (value >> i) & 1
 
 
-def _left_classical_comparator_standard_resources(
-    x_wires, value, target_wire, work_wires, comparator, **_  # pylint: disable=unused-argument
+def _left_classical_comparator_standard_resources(  # pylint: disable=unused-argument
+    x_wires, value, target_wire, work_wires, comparator, **_
 ):
     """Return conservative worst-case gate counts without knowing the runtime threshold."""
     n = len(x_wires)

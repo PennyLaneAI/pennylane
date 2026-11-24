@@ -24,8 +24,8 @@ from pennylane.templates.subroutines.arithmetic.temporary_and import Elbow
 from pennylane.wires import Wires
 
 
-def _left_quantum_comparator_standard_resources(
-    x_wires, y_wires, target_wire, work_wires, comparator  # pylint: disable=unused-argument
+def _left_quantum_comparator_standard_resources(  # pylint: disable=unused-argument
+    x_wires, y_wires, target_wire, work_wires, comparator
 ):
     num_y_wires = len(y_wires)
     resources = {Elbow: num_y_wires, CNOT: 2 + 5 * (num_y_wires - 1)}

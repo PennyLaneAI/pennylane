@@ -214,12 +214,12 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
     return dict(resources)
 
 
-def _trotter_cgf_standard_resources(
-    evolution_time,  # pylint: disable=unused-argument
+def _trotter_cgf_standard_resources(  # pylint: disable=unused-argument
+    evolution_time,
     num_trotter_steps,
     hamiltonian,
-    wires,  # pylint: disable=unused-argument
-    double_phase,  # pylint: disable=unused-argument
+    wires,
+    double_phase,
 ):
     return _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control=False)
 
@@ -269,12 +269,12 @@ def _controlled_trotter_cgf_standard_resources(  # pylint: disable=unused-argume
     exact=False,
     name="controlled_compressed_factorized_steps",
 )
-def controlled_trotter_cgf_standard(
+def controlled_trotter_cgf_standard(  # pylint: disable=unused-argument
     base,
     control_wires,
-    control_values,  # pylint: disable=unused-argument
-    work_wires,  # pylint: disable=unused-argument
-    work_wire_type,  # pylint: disable=unused-argument
+    control_values,
+    work_wires,
+    work_wire_type,
 ):
     """Decompose ``C(TrotterCGF)`` using the ``controlled_compressed_factorized_steps`` strategy."""
     evolution_time = base.arguments["evolution_time"]

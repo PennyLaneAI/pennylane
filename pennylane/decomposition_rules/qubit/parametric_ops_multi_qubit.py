@@ -442,10 +442,10 @@ def isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
     PauliRot(phi, "ZZ", wires=wires)
 
 
-def _controlled_ising_zz_standard_resources(
-    base,  # pylint: disable=unused-argument
+def _controlled_ising_zz_standard_resources(  # pylint: disable=unused-argument
+    base,
     control_wires,
-    control_values,  # pylint: disable=unused-argument
+    control_values,
     work_wires,
     work_wire_type,
 ):

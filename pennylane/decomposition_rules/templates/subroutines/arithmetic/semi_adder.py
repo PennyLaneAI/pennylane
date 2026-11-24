@@ -240,10 +240,10 @@ def semi_adder_standard(x_wires, y_wires, work_wires=None, carry_flip=None, skip
 add_decomps(SemiAdder, semi_adder_standard)
 
 
-def _controlled_semi_adder_standard_resources(
+def _controlled_semi_adder_standard_resources(  # pylint: disable=unused-argument
     base,
     control_wires,
-    control_values,  # pylint: disable=unused-argument
+    control_values,
     work_wires,
     work_wire_type,
 ):

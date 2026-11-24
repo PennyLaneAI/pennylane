@@ -205,10 +205,10 @@ def pow_qubit_unitary_standard(base, z):
 add_decomps("Pow(QubitUnitary)", pow_qubit_unitary_standard)
 
 
-def _controlled_qubit_unitary_standard_resources(
+def _controlled_qubit_unitary_standard_resources(  # pylint: disable=unused-argument
     base,
     control_wires,
-    control_values,  # pylint: disable=unused-argument
+    control_values,
     work_wires,
     work_wire_type,
 ):

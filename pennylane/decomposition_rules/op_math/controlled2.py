@@ -116,6 +116,7 @@ def make_controlled_decomp(base_rule: DecompositionRule):
         name=f"controlled({base_rule.name})",
     )
     def _impl(base, control_wires, control_values, work_wires, work_wire_type):
+        # pylint: disable=no-value-for-parameter
 
         _cvals = control_values
         _cwires = control_wires
@@ -127,7 +128,7 @@ def make_controlled_decomp(base_rule: DecompositionRule):
         def _x_flips(i):
             ops.cond(math.logical_not(_cvals[i]), ops.X)(_cwires[i])
 
-        _x_flips()  # pylint: disable=no-value-for-parameter
+        _x_flips()
         non_traced_args, traced_args = get_traced_and_non_traced_args(base)
         impl = partial(base_rule._impl, **non_traced_args)  # pylint: disable=protected-access
         ops.ctrl(
@@ -136,7 +137,7 @@ def make_controlled_decomp(base_rule: DecompositionRule):
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )(**traced_args)
-        _x_flips()  # pylint: disable=no-value-for-parameter
+        _x_flips()
 
     _impl._source = (
         dedent(_impl._source).strip()
@@ -177,10 +178,10 @@ def controlled_flip_adjoint(base, control_wires, control_values, work_wires, wor
     )
 
 
-def _controlled_to_unitary_resources(
-    base,  # pylint: disable=unused-argument
+def _controlled_to_unitary_resources(  # pylint: disable=unused-argument
+    base,
     control_wires,
-    control_values,  # pylint: disable=unused-argument
+    control_values,
     work_wires,
     work_wire_type,
 ):
@@ -236,6 +237,7 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         name=name or f"flip_zero_ctrl_values({rule.name})",
     )
     def _impl(base, control_wires, control_values, work_wires, work_wire_type):
+        # pylint: disable=no-value-for-parameter
 
         _cwires = control_wires
         _cvals = control_values
@@ -251,7 +253,7 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         def _x_flips(i):
             ops.cond(math.logical_not(_cvals[i]), ops.X)(_cwires[i])
 
-        _x_flips()  # pylint: disable=no-value-for-parameter
+        _x_flips()
         rule(
             base,
             control_wires,
@@ -259,7 +261,7 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
-        _x_flips()  # pylint: disable=no-value-for-parameter
+        _x_flips()
 
     base_source = rule._source
     _impl._source = (

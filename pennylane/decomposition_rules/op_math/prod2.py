@@ -40,8 +40,8 @@ def prod2_standard(operands, _init_pauli_rep=None):
         apply(op)
 
 
-def _controlled_prod2_with_work_wires_resources(
-    base, control_wires, work_wires, work_wire_type, **_  # pylint: disable=unused-argument
+def _controlled_prod2_with_work_wires_resources(  # pylint: disable=unused-argument
+    base, control_wires, work_wires, work_wire_type, **_
 ):
 
     num_control_wires = len(control_wires)
