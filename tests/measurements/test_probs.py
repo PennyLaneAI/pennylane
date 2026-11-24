@@ -60,7 +60,7 @@ class TestProbs:  # pylint: disable=too-many-public-methods
         res = qp.probs(wires=0)
         assert res.numeric_type is float
 
-    @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
+    @pytest.mark.parametrize("wires", [[0], [2, 1], [6, 7, 3]])
     @pytest.mark.parametrize("shots", [None, 10])
     def test_shape(self, wires, shots):
         """Test that the shape is correct."""
