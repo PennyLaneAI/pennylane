@@ -28,7 +28,7 @@ from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic.left_classical_comparator import LeftClassicalComparator
 from .arithmetic.left_quantum_comparator import LeftQuantumComparator
-from .qrom import QROM
+from .qrom_load import QROMLoad
 
 
 def _apply_hadamards(wires):
@@ -290,9 +290,9 @@ def alias_sampling_wires(n_states, mu):
 
         The reported ``work_wires`` is the minimum required by :class:`~.AliasSampling`.
         More work_wires can be added to be forwarded to the internal
-        ``QROM``, which uses them for a ``SelectSwap`` decomposition that lowers
+        ``QROMLoad``, which uses them for a ``SelectSwap`` decomposition that lowers
         the T-gate count at the cost of the additional qubits. At exactly the
-        minimum, ``QROM`` uses its unary decomposition (more T-gates, fewer qubits).
+        minimum, ``QROMLoad`` uses unary iteration (more T-gates, fewer qubits).
         ``target_wires`` and ``temp_wires`` are exact and must be matched exactly.
     """
     if isinstance(mu, bool) or not isinstance(mu, int) or mu < 1:
@@ -352,7 +352,7 @@ class AliasSampling(Operator2):
     satisfying  :math:`|\widetilde{\rho}_\ell - w_\ell / \lambda| \le 2^{-\mu}`.
 
     The gate sequence is: ``UNIFORM_L`` on ``target_wires``, ``H^mu`` on the sigma part of
-    ``temp_wires``, a ``QROM`` load of ``alt_l``/``keep_l``, the inequality test
+    ``temp_wires``, a ``QROMLoad`` of ``alt_l``/``keep_l``, the inequality test
     ``keep_l <= sigma``, and a flag-controlled SWAP of ``target_wires`` with ``alt_l``.
 
     Use :func:`~.alias_sampling_wires` for the required register sizes.
@@ -410,7 +410,7 @@ class AliasSampling(Operator2):
 
                 :class:`~.UniformPrep` | :math:`1` | 1
                 :class:`~.Hadamard` | :math:`\mu` | 2
-                :class:`~.QROM` | :math:`1` | 1
+                :class:`~.QROMLoad` | :math:`1` | 1
                 :class:`~.LeftQuantumComparator` | :math:`1` | 1
                 :class:`~.CSWAP` | :math:`\ell` | 2
     """
@@ -492,12 +492,11 @@ def _alias_sampling_standard_resources(probs, mu, target_wires, temp_wires, work
     n_target = len(target_wires)
     n_work = len(work_wires)
     data = _qrom_data(probs, mu, logL)
-    qrom = QROM(
+    qrom = QROMLoad(
         data,
         control_wires=Wire[n_target],
         target_wires=Wire[logL + mu],
         work_wires=Wire[max(n_work - 1, 0)],
-        clean=True,
     )
     lqc = LeftQuantumComparator(Wire[mu], Wire[mu], Wire[1], Wire[max(mu - 1, 0)], comparator="<=")
     return {
@@ -518,12 +517,11 @@ def _alias_sampling_standard(probs, mu, target_wires, temp_wires, work_wires, **
 
     UniformPrep(L, target_wires, work_wires)
     _apply_hadamards(sigma_wires)
-    QROM(
+    QROMLoad(
         data,
         control_wires=list(target_wires),
         target_wires=list(alt_wires) + list(keep_wires),
         work_wires=work_wires[1:],
-        clean=True,
     )
     LeftQuantumComparator(keep_wires, sigma_wires, flag, cmp_work, comparator="<=")
 

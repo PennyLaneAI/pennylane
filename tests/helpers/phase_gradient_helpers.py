@@ -33,9 +33,9 @@ def bits_to_angles(bits, unit):
 
 
 def leaf_ops(ops):
-    """Recursively unpack composites and the phase-gradient subcircuits."""
+    """Recursively unpack composites and the phase-gradient subcircuits and their adjoints."""
     for op in ops:
-        if isinstance(op, CompositeOp2) or type(op) in (
+        if isinstance(op, CompositeOp2) or type(getattr(op, "base", op)) in (
             _CRZPhaseGradientCompute,
             _SelectPauliRotPhaseGradientCompute,
             _SelectPauliRotYBasis,
