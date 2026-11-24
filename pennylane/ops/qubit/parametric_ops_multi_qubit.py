@@ -298,7 +298,7 @@ class PauliRot(Operator2):
     Args:
         theta (float): rotation angle :math:`\theta`
         pauli_word (string): the Pauli word defining the rotation
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int] or int): the wires the operation acts on
 
     **Example**
 
@@ -656,7 +656,7 @@ class PCPhase(Operator2):
     Args:
         phi (float): rotation angle :math:`\phi`
         dim (int): the dimension of the subspace
-        wires (Iterable[int, str], Wires): the wires the operation acts on
+        wires (Iterable[int] or Wires): the wires the operation acts on
 
     **Example:**
 
@@ -2475,7 +2475,7 @@ class CPhaseShift10(Operator2):
 
     Args:
         phi (float): rotation angle :math:`\phi`
-        wires (Any, Wires): the wire the operation acts on
+        wires (int, Wires): the wire the operation acts on
     """
 
     dynamic_argnames = ("phi",)
