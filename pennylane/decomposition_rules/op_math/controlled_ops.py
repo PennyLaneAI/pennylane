@@ -15,9 +15,6 @@
 
 """Built-in decomposition rules for op_math.controlled_ops."""
 
-# pylint: disable=unused-argument
-
-
 from collections import defaultdict
 from functools import partial
 
@@ -43,7 +40,6 @@ from pennylane.decomposition_rules.qubit.parametric_ops_single_qubit import (
     validate_phase_gradient_wires,
 )
 from pennylane.ops.mid_measure.pauli_measure import pauli_measure
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled import _resolve_ctrl_values
 from pennylane.ops.op_math.decompositions.controlled_decompositions import (
@@ -109,7 +105,7 @@ def _single_ctrl_decomp_zyz_condition(U, wires, *_, **__):
 
 
 # pylint: disable-next=unused-argument
-def _controlled_unitary_single_control_zyz_resources(U, wires, **_):
+def _cu_single_control_zyz_resources(U, wires, **_):
     return {
         ops.RZ: 3,
         ops.RY: 2,
@@ -121,9 +117,7 @@ def _controlled_unitary_single_control_zyz_resources(U, wires, **_):
 
 # Resources are not exact because rotations might be skipped for zero angles
 @register_condition(_single_ctrl_decomp_zyz_condition)
-@register_resources(
-    _controlled_unitary_single_control_zyz_resources, exact=False, name="single_control_zyz"
-)
+@register_resources(_cu_single_control_zyz_resources, exact=False, name="single_control_zyz")
 # pylint: disable-next=unused-argument
 def controlled_unitary_single_control_zyz(U, wires, control_values, work_wires, **_):
     """The decomposition rule for ControlledQubitUnitary from Lemma 5.1 of
@@ -151,9 +145,8 @@ def _multi_ctrl_decomp_zyz_condition(U, wires, *_, **__):
     return num_target_wires == 1 and num_control_wires > 1
 
 
-def _controlled_unitary_multi_control_zyz_resources(  # pylint: disable=unused-argument
-    U, wires, control_values, work_wires, work_wire_type, **_
-):
+# pylint: disable-next=unused-argument
+def _cu_multi_control_zyz_resources(U, wires, control_values, work_wires, work_wire_type, **_):
     num_ctrl_wires = len(wires) - 1
     num_work_wires = len(work_wires)
     return {
@@ -171,9 +164,7 @@ def _controlled_unitary_multi_control_zyz_resources(  # pylint: disable=unused-a
 
 @register_condition(_multi_ctrl_decomp_zyz_condition)
 # Resources are not exact because rotations might be skipped for zero angle(s)
-@register_resources(
-    _controlled_unitary_multi_control_zyz_resources, exact=False, name="multi_control_zyz"
-)
+@register_resources(_cu_multi_control_zyz_resources, exact=False, name="multi_control_zyz")
 def controlled_unitary_multi_control_zyz(U, wires, control_values, work_wires, work_wire_type, **_):
     """The decomposition rule for ControlledQubitUnitary from Lemma 7.9 of
     https://arxiv.org/pdf/quant-ph/9503016"""
@@ -202,9 +193,8 @@ def controlled_unitary_multi_control_zyz(U, wires, control_values, work_wires, w
     _x_flips()  # pylint: disable=no-value-for-parameter
 
 
-def _controlled_unitary_two_qubit_resources(  # pylint: disable=unused-argument
-    U, wires, control_values, work_wires, work_wire_type, **_
-):
+# pylint: disable-next=unused-argument
+def _cu_two_qubit_resources(U, wires, control_values, work_wires, work_wire_type, **_):
     num_target_wires = int(math.log2(math.shape(U)[-1]))
     num_control_wires = len(wires) - num_target_wires
     num_work_wires = len(work_wires)
@@ -229,7 +219,7 @@ def _controlled_unitary_two_qubit_resources(  # pylint: disable=unused-argument
 
 # Resources are not exact because rotations might be skipped for zero angle(s)
 @register_condition(lambda U, *_, **__: math.ceil_log2(math.shape(U)[0]) == 2)
-@register_resources(_controlled_unitary_two_qubit_resources, exact=False, name="two_qubit")
+@register_resources(_cu_two_qubit_resources, exact=False, name="two_qubit")
 def controlled_unitary_two_qubit(U, wires, control_values, work_wires, work_wire_type, **_):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
 
@@ -372,7 +362,11 @@ def _mcx_many_work_wires_resources(wires, control_values, work_wires, work_wire_
     )
 
     if work_wire_type == "borrowed":
-        return {ops.Toffoli: 4 * num_used_work_wires - 1, middle_toffoli: 1, ops.X: num_control_wires}
+        return {
+            ops.Toffoli: 4 * num_used_work_wires - 1,
+            middle_toffoli: 1,
+            ops.X: num_control_wires,
+        }
 
     return {
         templates.TemporaryAND: num_used_work_wires,
@@ -537,6 +531,7 @@ def mcx_no_work_wires(wires, control_values, *_, **__):
     return _mcx_no_work_wires_impl(wires, control_values, *_, **__)
 
 
+# pylint: disable-next=unused-argument
 def _to_general_c_qu_standard_resources(U, wires, control_values, work_wires, work_wire_type, **_):
     num_target_wires = int(math.log2(math.shape(U)[-1]))
     num_control_wires = len(wires) - num_target_wires
@@ -607,9 +602,7 @@ def ch_to_ry_cz_ry(wires: WiresLike, **__):
 
 
 add_decomps(ops.CH, ch_to_ry_cz_ry)
-
 add_decomps("Adjoint(CH)", self_adjoint)
-
 add_decomps("Pow(CH)", pow_involutory)
 
 
@@ -620,6 +613,7 @@ def cy_to_ry_cnot(wires: WiresLike, **__):
     ops.S(wires=wires[0])
 
 
+# pylint: disable-next=unused-argument
 def _pauli_ctrl_pauli_ppr_resources(wires: AbstractWires, pauli0, pauli1):
     """Resources for _pauli_ctrl_pauli_ppr."""
     resources = defaultdict(int)
@@ -640,7 +634,10 @@ def _pauli_ctrl_pauli_ppr(wires: AbstractWires, pauli0, pauli1):
     ops.GlobalPhase(np.pi / 4)
 
 
-@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, pauli0=ops.Z, pauli1=ops.Y), name="to_ppr")
+_cy_to_ppr_resources = partial(_pauli_ctrl_pauli_ppr_resources, pauli0=ops.Z, pauli1=ops.Y)
+
+
+@register_resources(_cy_to_ppr_resources, name="to_ppr")
 def cy_to_ppr(wires: AbstractWires):
     """Decompose ``CY`` using the ``to_ppr`` strategy."""
     _pauli_ctrl_pauli_ppr(wires, ops.Z, ops.Y)
@@ -676,9 +673,7 @@ def cy_lattice_surgery_ppm(wires: AbstractWires):
 
 
 add_decomps(ops.CY, cy_to_ry_cnot, cy_to_ppr, cy_lattice_surgery_ppm)
-
 add_decomps("Adjoint(CY)", self_adjoint)
-
 add_decomps("Pow(CY)", pow_involutory)
 
 
@@ -696,7 +691,10 @@ def cz_to_cnot(wires: WiresLike):
     ops.H(wires=wires[1])
 
 
-@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, pauli0=ops.Z, pauli1=ops.Z), name="to_ppr")
+_cz_to_ppr_resources = partial(_pauli_ctrl_pauli_ppr_resources, pauli0=ops.Z, pauli1=ops.Z)
+
+
+@register_resources(_cz_to_ppr_resources, name="to_ppr")
 def cz_to_ppr(wires: AbstractWires):
     """Decompose ``CZ`` using the ``to_ppr`` strategy."""
     _pauli_ctrl_pauli_ppr(wires, ops.Z, ops.Z)
@@ -719,9 +717,7 @@ def cz_lattice_surgery_ppm(wires: WiresLike):
 
 
 add_decomps(ops.CZ, cz_to_cps, cz_to_cnot, cz_to_ppr, cz_lattice_surgery_ppm)
-
 add_decomps("Adjoint(CZ)", self_adjoint)
-
 add_decomps("Pow(CZ)", pow_involutory)
 
 
@@ -759,14 +755,12 @@ def cswap_to_ppr(wires: WiresLike, **_):
 
 
 add_decomps(ops.CSWAP, cswap_to_cnot_toffoli, cswap_to_ppr)
-
 add_decomps("Adjoint(CSWAP)", self_adjoint)
-
 add_decomps("Pow(CSWAP)", pow_involutory)
 
 
 @register_resources(
-    {ops.CNOT: 6, _adjoint_abstract(ops.T): 3, ops.T: 4, ops.Hadamard: 2},
+    {ops.CNOT: 6, ops.adjoint(ops.T(Wire[1])): 3, ops.T: 4, ops.Hadamard: 2},
     name="to_clifford_t",
 )
 def ccz_to_clifford_t(wires: WiresLike, **__):
@@ -797,9 +791,7 @@ def ccz_to_toffoli(wires: WiresLike, **__):
 
 
 add_decomps(ops.CCZ, ccz_to_clifford_t, ccz_to_toffoli)
-
 add_decomps("Adjoint(CCZ)", self_adjoint)
-
 add_decomps("Pow(CCZ)", pow_involutory)
 
 
@@ -811,7 +803,10 @@ def cnot_to_cz_h(wires: WiresLike):
     ops.H(wires[1])
 
 
-@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, pauli0=ops.Z, pauli1=ops.X), name="to_ppr")
+_cnot_to_ppr_resources = partial(_pauli_ctrl_pauli_ppr_resources, pauli0=ops.Z, pauli1=ops.X)
+
+
+@register_resources(_cnot_to_ppr_resources, name="to_ppr")
 def cnot_to_ppr(wires: AbstractWires):
     """Decompose ``CNOT`` using the ``to_ppr`` strategy."""
     _pauli_ctrl_pauli_ppr(wires, ops.Z, ops.X)
@@ -834,12 +829,11 @@ def cnot_lattice_surgery_ppm(wires: WiresLike):
 
 
 add_decomps(ops.CNOT, cnot_to_cz_h, cnot_to_ppr, cnot_lattice_surgery_ppm)
-
 add_decomps("Adjoint(CNOT)", self_adjoint)
-
 add_decomps("Pow(CNOT)", pow_involutory)
 
 
+# pylint: disable-next=unused-argument
 def _ctrl_cnot_to_mcx_resources(base, control_wires, control_values, work_wires, work_wire_type):
     ctrl_values = _resolve_ctrl_values(control_values, [True], len(control_wires))
     return {
@@ -868,7 +862,7 @@ add_decomps("C(CNOT)", ctrl_cnot_to_mcx)
 
 
 @register_resources(
-    {ops.Hadamard: 2, ops.CNOT: 6, ops.T: 4, _adjoint_abstract(ops.T): 3},
+    {ops.Hadamard: 2, ops.CNOT: 6, ops.T: 4, ops.adjoint(ops.T(Wire[1])): 3},
     name="to_clifford_t",
 )
 def toffoli_to_clifford_t(wires: WiresLike):
@@ -914,7 +908,13 @@ def toffoli_to_ppr(wires: WiresLike):
 
 
 @register_resources(
-    {_change_op_basis_abstract(templates.Elbow, ops.CNOT, ops.adjoint(templates.Elbow(Wire[3]))): 1},
+    {
+        _change_op_basis_abstract(
+            templates.Elbow,
+            ops.CNOT,
+            ops.adjoint(templates.Elbow(Wire[3])),
+        ): 1
+    },
     work_wires={"zeroed": 1},
     name="elbow",
 )
@@ -928,12 +928,11 @@ def toffoli_elbow(wires: WiresLike):
 
 
 add_decomps(ops.Toffoli, toffoli_to_clifford_t, toffoli_to_ppr, toffoli_elbow)
-
 add_decomps("Adjoint(Toffoli)", self_adjoint)
-
 add_decomps("Pow(Toffoli)", pow_involutory)
 
 
+# pylint: disable-next=unused-argument
 def _ctrl_toffoli_to_mcx_resources(base, control_wires, control_values, work_wires, work_wire_type):
     ctrl_values = _resolve_ctrl_values(control_values, [True, True], len(control_wires))
     return {
@@ -1031,9 +1030,7 @@ add_decomps(
     # TODO: include the allocation-wrapped versions of _mcx_many_work_wires
     # after we support tracer indexing into allocated wires. [sc-129521]
 )
-
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
-
 add_decomps("Pow(MultiControlledX)", pow_involutory)
 
 
@@ -1117,9 +1114,7 @@ def crx_to_ppr(phi: TensorLike, wires: WiresLike):
 
 
 add_decomps(ops.CRX, crx_to_rx_cz, crx_to_rz_ry, crx_to_h_crz, crx_to_ppr)
-
 add_decomps("Adjoint(CRX)", adjoint_negate_angle)
-
 add_decomps("Pow(CRX)", pow_scale_angle)
 
 
@@ -1146,9 +1141,7 @@ def cry_to_ppr(phi: TensorLike, wires: WiresLike):
 
 
 add_decomps(ops.CRY, cry_to_ry_cnot, cry_to_ppr)
-
 add_decomps("Adjoint(CRY)", adjoint_negate_angle)
-
 add_decomps("Pow(CRY)", pow_scale_angle)
 
 
@@ -1175,9 +1168,7 @@ def crz_to_ppr(phi: TensorLike, wires: WiresLike):
 
 
 add_decomps(ops.CRZ, crz_to_rz_cnot, crz_to_ppr)
-
 add_decomps("Adjoint(CRZ)", adjoint_negate_angle)
-
 add_decomps("Pow(CRZ)", pow_scale_angle)
 
 
@@ -1251,9 +1242,7 @@ def cphase_to_single_phase(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(ops.ControlledPhaseShift, cphase_to_rz_cnot, cphase_to_ppr, cphase_to_single_phase)
-
 add_decomps("Adjoint(ControlledPhaseShift)", adjoint_negate_angle)
-
 add_decomps("Pow(ControlledPhaseShift)", pow_scale_angle)
 
 
