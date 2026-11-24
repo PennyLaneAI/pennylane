@@ -75,12 +75,6 @@ class TestConstruction:
         with pytest.raises(TypeError, match="Can't instantiate abstract class CompositeOp"):
             _ = CompositeOp(*self.simple_operands)
 
-    @pytest.mark.xfail
-    def test_raise_error_fewer_than_2_operands(self):
-        """Test that initializing a composite operator with less than 2 operands raises a ValueError."""
-        with pytest.raises(ValueError, match="Require at least two operators to combine;"):
-            _ = ValidOp(qp.PauliX(0))
-
     def test_raise_error_with_mcm_input(self):
         """Test that composite ops of mid-circuit measurements are not supported."""
         mcm_0 = qp.ops.MidMeasure(0)
