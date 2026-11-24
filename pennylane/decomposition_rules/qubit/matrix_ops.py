@@ -99,19 +99,19 @@ xzx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xzx_decomp, _su2_xzx
 zxz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zxz_decomp, _su2_zxz_resource, "zxz")
 
 
-def _qubit_unitary_two_qubit_resources(*_, **__):
-    """A worst-case over-estimate for the resources of two-qubit unitary decomposition."""
-    return {
+# Worst-case resource estimate for the two-qubit unitary decomposition.
+@register_condition(lambda U, wires, **_: len(wires) == 2)
+@register_resources(
+    {
         ops.QubitUnitary(Complex[2, 2], wires=Wire[1]): 4,
         ops.CNOT: 3,
         ops.RZ: 1,
         ops.RY: 2,
         ops.GlobalPhase: 1,
-    }
-
-
-@register_condition(lambda U, wires, **_: len(wires) == 2)
-@register_resources(_qubit_unitary_two_qubit_resources, exact=False, name="two_qubit")
+    },
+    exact=False,
+    name="two_qubit",
+)
 def qubit_unitary_two_qubit(U, wires, **_):
     """The decomposition rule for a two-qubit unitary."""
 

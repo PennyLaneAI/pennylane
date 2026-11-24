@@ -37,11 +37,7 @@ from pennylane.typing import Wire
 from pennylane.wires import WiresLike
 
 
-def _qubitcarry_to_cnot_toffolis_resources():
-    return {ops.CNOT: 1, ops.Toffoli: 2}
-
-
-@register_resources(_qubitcarry_to_cnot_toffolis_resources, name="to_cnot_toffolis")
+@register_resources({ops.CNOT: 1, ops.Toffoli: 2}, name="to_cnot_toffolis")
 def qubitcarry_to_cnot_toffolis(wires: WiresLike, **__):
     """Decompose ``QubitCarry`` using the ``to_cnot_toffolis`` strategy."""
     ops.Toffoli(wires=wires[1:])
@@ -52,11 +48,7 @@ def qubitcarry_to_cnot_toffolis(wires: WiresLike, **__):
 add_decomps(QubitCarry, qubitcarry_to_cnot_toffolis)
 
 
-def _qubitsum_to_cnots_resources():
-    return {ops.CNOT: 2}
-
-
-@register_resources(_qubitsum_to_cnots_resources, name="to_cnots")
+@register_resources({ops.CNOT: 2}, name="to_cnots")
 def qubitsum_to_cnots(wires: WiresLike, **__):
     """Decompose ``QubitSum`` using the ``to_cnots`` strategy."""
     ops.CNOT(wires=[wires[1], wires[2]])

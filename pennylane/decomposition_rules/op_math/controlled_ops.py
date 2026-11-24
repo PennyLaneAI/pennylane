@@ -618,11 +618,7 @@ def adjoint_controlled_qubit_unitary_standard(base):
 add_decomps("Adjoint(ControlledQubitUnitary)", adjoint_controlled_qubit_unitary_standard)
 
 
-def _ch_to_ry_cz_ry_resources(wires: WiresLike = None):
-    return {ops.RY: 2, CZ: 1}
-
-
-@register_resources(_ch_to_ry_cz_ry_resources, name="to_ry_cz_ry")
+@register_resources({ops.RY: 2, CZ: 1}, name="to_ry_cz_ry")
 def ch_to_ry_cz_ry(wires: WiresLike, **__):
     """Decompose ``CH`` using the ``to_ry_cz_ry`` strategy."""
     ops.RY(-np.pi / 4, wires=wires[1])
@@ -637,11 +633,7 @@ add_decomps("Adjoint(CH)", self_adjoint)
 add_decomps("Pow(CH)", pow_involutory)
 
 
-def _cy_to_ry_cnot_resources(wires: AbstractWires):
-    return {CRY: 1, ops.S: 1}
-
-
-@register_resources(_cy_to_ry_cnot_resources, name="to_ry_cnot")
+@register_resources({CRY: 1, ops.S: 1}, name="to_ry_cnot")
 def cy_to_ry_cnot(wires: WiresLike, **__):
     """Decompose ``CY`` using the ``to_ry_cnot`` strategy."""
     CRY(np.pi, wires=wires)
@@ -710,21 +702,13 @@ add_decomps("Adjoint(CY)", self_adjoint)
 add_decomps("Pow(CY)", pow_involutory)
 
 
-def _cz_to_cps_resources(wires: AbstractWires):
-    return {ControlledPhaseShift: 1}
-
-
-@register_resources(_cz_to_cps_resources, name="to_cps")
+@register_resources({ControlledPhaseShift: 1}, name="to_cps")
 def cz_to_cps(wires: WiresLike):
     """Decompose ``CZ`` using the ``to_cps`` strategy."""
     ControlledPhaseShift(np.pi, wires=wires)
 
 
-def _cz_to_cnot_resources(wires: AbstractWires):
-    return {ops.H: 2, CNOT: 1}
-
-
-@register_resources(_cz_to_cnot_resources, name="to_cnot")
+@register_resources({ops.H: 2, CNOT: 1}, name="to_cnot")
 def cz_to_cnot(wires: WiresLike):
     """Decompose ``CZ`` using the ``to_cnot`` strategy."""
     ops.H(wires=wires[1])
@@ -738,18 +722,16 @@ def cz_to_ppr(wires: AbstractWires):
     _pauli_ctrl_pauli_ppr(wires, Z, Z)
 
 
-def _cz_lattice_surgery_ppm_resources(wires: AbstractWires):
-    return {
+@register_resources(
+    {
         PauliMeasure("ZX", wires=Wire[2]): 1,
         PauliMeasure("ZZ", wires=Wire[2]): 1,
         PauliMeasure("X", wires=Wire[1]): 1,
         Z: 3,
         GlobalPhase: 1,
-    }
-
-
-@register_resources(
-    _cz_lattice_surgery_ppm_resources, work_wires={"burnable": 1}, name="lattice_surgery_ppm"
+    },
+    work_wires={"burnable": 1},
+    name="lattice_surgery_ppm",
 )
 def cz_lattice_surgery_ppm(wires: WiresLike):
     """Decompose ``CZ`` using the ``lattice_surgery_ppm`` strategy."""
@@ -763,11 +745,7 @@ add_decomps("Adjoint(CZ)", self_adjoint)
 add_decomps("Pow(CZ)", pow_involutory)
 
 
-def _cswap_to_cnot_toffoli_resources(wires: WiresLike = None):
-    return {CNOT: 2, Toffoli: 1}
-
-
-@register_resources(_cswap_to_cnot_toffoli_resources, name="to_cnot_toffoli")
+@register_resources({CNOT: 2, Toffoli: 1}, name="to_cnot_toffoli")
 def cswap_to_cnot_toffoli(wires: WiresLike, **__):
     """Decompose ``CSWAP`` using the ``to_cnot_toffoli`` strategy."""
     CNOT([wires[2], wires[1]])
@@ -775,8 +753,8 @@ def cswap_to_cnot_toffoli(wires: WiresLike, **__):
     CNOT([wires[2], wires[1]])
 
 
-def _cswap_to_ppr_resources(wires: WiresLike = None):
-    return {
+@register_resources(
+    {
         ops.PPR_8(-1, pauli_word="ZZZ", wires=Wire[3]): 1,
         ops.PPR_8(-1, pauli_word="ZYY", wires=Wire[3]): 1,
         ops.PPR_8(-1, pauli_word="ZXX", wires=Wire[3]): 1,
@@ -785,10 +763,9 @@ def _cswap_to_ppr_resources(wires: WiresLike = None):
         ops.PPR_8(1, pauli_word="XX", wires=Wire[2]): 1,
         ops.PPR_8(1, pauli_word="Z", wires=Wire[1]): 1,
         GlobalPhase: 1,
-    }
-
-
-@register_resources(_cswap_to_ppr_resources, name="to_ppr")
+    },
+    name="to_ppr",
+)
 def cswap_to_ppr(wires: WiresLike, **_):
     """Decompose ``CSWAP`` using the ``to_ppr`` strategy."""
     ops.PPR_8(-1, "ZZZ", wires=wires)
@@ -808,11 +785,10 @@ add_decomps("Adjoint(CSWAP)", self_adjoint)
 add_decomps("Pow(CSWAP)", pow_involutory)
 
 
-def _ccz_to_clifford_t_resources(wires: AbstractWires):
-    return {CNOT: 6, _adjoint_abstract(ops.T): 3, ops.T: 4, ops.Hadamard: 2}
-
-
-@register_resources(_ccz_to_clifford_t_resources, name="to_clifford_t")
+@register_resources(
+    {CNOT: 6, _adjoint_abstract(ops.T): 3, ops.T: 4, ops.Hadamard: 2},
+    name="to_clifford_t",
+)
 def ccz_to_clifford_t(wires: WiresLike, **__):
     """Decompose ``CCZ`` using the ``to_clifford_t`` strategy."""
     CNOT(wires=[wires[1], wires[2]])
@@ -832,11 +808,7 @@ def ccz_to_clifford_t(wires: WiresLike, **__):
     ops.Hadamard(wires=wires[2])
 
 
-def _ccz_to_toffoli_resources(wires: AbstractWires):
-    return {ops.Hadamard: 2, Toffoli: 1}
-
-
-@register_resources(_ccz_to_toffoli_resources, name="to_toffoli")
+@register_resources({ops.Hadamard: 2, Toffoli: 1}, name="to_toffoli")
 def ccz_to_toffoli(wires: WiresLike, **__):
     """Decompose ``CCZ`` using the ``to_toffoli`` strategy."""
     ops.Hadamard(wires[2])
@@ -851,11 +823,7 @@ add_decomps("Adjoint(CCZ)", self_adjoint)
 add_decomps("Pow(CCZ)", pow_involutory)
 
 
-def _cnot_to_cz_h_resources(wires: WiresLike):
-    return {ops.H: 2, CZ: 1}
-
-
-@register_resources(_cnot_to_cz_h_resources, name="to_cz_h")
+@register_resources({ops.H: 2, CZ: 1}, name="to_cz_h")
 def cnot_to_cz_h(wires: WiresLike):
     """Decompose ``CNOT`` using the ``to_cz_h`` strategy."""
     ops.H(wires[1])
@@ -869,18 +837,16 @@ def cnot_to_ppr(wires: AbstractWires):
     _pauli_ctrl_pauli_ppr(wires, Z, X)
 
 
-def _cnot_lattice_surgery_ppm_resources(wires: WiresLike):
-    return {
+@register_resources(
+    {
         PauliMeasure("ZX", wires=Wire[2]): 2,
         PauliMeasure("X", wires=Wire[1]): 1,
         Z: 2,
         X: 1,
         GlobalPhase: 1,
-    }
-
-
-@register_resources(
-    _cnot_lattice_surgery_ppm_resources, work_wires={"burnable": 1}, name="lattice_surgery_ppm"
+    },
+    work_wires={"burnable": 1},
+    name="lattice_surgery_ppm",
 )
 def cnot_lattice_surgery_ppm(wires: WiresLike):
     """Decompose ``CNOT`` using the ``lattice_surgery_ppm`` strategy."""
@@ -921,11 +887,10 @@ def ctrl_cnot_to_mcx(base, control_wires, control_values, work_wires, work_wire_
 add_decomps("C(CNOT)", ctrl_cnot_to_mcx)
 
 
-def _toffoli_to_clifford_t_resources(wires: WiresLike):
-    return {ops.Hadamard: 2, CNOT: 6, ops.T: 4, _adjoint_abstract(ops.T): 3}
-
-
-@register_resources(_toffoli_to_clifford_t_resources, name="to_clifford_t")
+@register_resources(
+    {ops.Hadamard: 2, CNOT: 6, ops.T: 4, _adjoint_abstract(ops.T): 3},
+    name="to_clifford_t",
+)
 def toffoli_to_clifford_t(wires: WiresLike):
     """Decompose ``Toffoli`` using the ``to_clifford_t`` strategy."""
     ops.Hadamard(wires=wires[2])
@@ -945,18 +910,17 @@ def toffoli_to_clifford_t(wires: WiresLike):
     CNOT(wires=[wires[0], wires[1]])
 
 
-def _toffoli_to_ppr_resources(wires: WiresLike):
-    return {
+@register_resources(
+    {
         ops.PPR_8(-1, pauli_word="ZZ", wires=Wire[2]): 1,
         ops.PPR_8(-1, pauli_word="ZX", wires=Wire[2]): 2,
         ops.PPR_8(1, pauli_word="ZZX", wires=Wire[3]): 1,
         ops.PPR_8(1, pauli_word="X", wires=Wire[1]): 1,
         ops.PPR_8(1, pauli_word="Z", wires=Wire[1]): 2,
         GlobalPhase: 1,
-    }
-
-
-@register_resources(_toffoli_to_ppr_resources, name="to_ppr")
+    },
+    name="to_ppr",
+)
 def toffoli_to_ppr(wires: WiresLike):
     """Decompose ``Toffoli`` using the ``to_ppr`` strategy."""
     ops.PPR_8(-1, "ZZ", wires=wires[:2])
@@ -969,13 +933,11 @@ def toffoli_to_ppr(wires: WiresLike):
     GlobalPhase(-np.pi / 8)
 
 
-def _toffoli_elbow_resources(*_, **__):
-    return {
-        _change_op_basis_abstract(templates.Elbow, CNOT, ops.adjoint(templates.Elbow(Wire[3]))): 1
-    }
-
-
-@register_resources(_toffoli_elbow_resources, work_wires={"zeroed": 1}, name="elbow")
+@register_resources(
+    {_change_op_basis_abstract(templates.Elbow, CNOT, ops.adjoint(templates.Elbow(Wire[3]))): 1},
+    work_wires={"zeroed": 1},
+    name="elbow",
+)
 def toffoli_elbow(wires: WiresLike):
     """Decompose ``Toffoli`` using the ``elbow`` strategy."""
     with allocate(1, allocation.AllocateState.ZERO, restored=True) as work_wires:
@@ -1133,11 +1095,7 @@ def ctrl_mcx_to_mcx(base, control_wires, control_values, work_wires, work_wire_t
 add_decomps("C(MultiControlledX)", ctrl_mcx_to_mcx)
 
 
-def _crx_to_rz_ry_resources(phi, wires):
-    return {ops.RZ: 2, ops.RY: 2, CNOT: 2}
-
-
-@register_resources(_crx_to_rz_ry_resources, name="to_rz_ry")
+@register_resources({ops.RZ: 2, ops.RY: 2, CNOT: 2}, name="to_rz_ry")
 def crx_to_rz_ry(phi: TensorLike, wires: WiresLike):
     """Decompose ``CRX`` using the ``to_rz_ry`` strategy."""
     ops.RZ(np.pi / 2, wires=wires[1])
@@ -1148,11 +1106,7 @@ def crx_to_rz_ry(phi: TensorLike, wires: WiresLike):
     ops.RZ(-np.pi / 2, wires=wires[1])
 
 
-def _crx_to_rx_cz_resources(phi, wires):
-    return {ops.RX: 2, CZ: 2}
-
-
-@register_resources(_crx_to_rx_cz_resources, name="to_rx_cz")
+@register_resources({ops.RX: 2, CZ: 2}, name="to_rx_cz")
 def crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
     """Decompose ``CRX`` using the ``to_rx_cz`` strategy."""
     ops.RX(phi / 2, wires=wires[1])
@@ -1161,11 +1115,7 @@ def crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
     CZ(wires=wires)
 
 
-def _crx_to_h_crz_resources(phi, wires):
-    return {ops.Hadamard: 2, CRZ: 1}
-
-
-@register_resources(_crx_to_h_crz_resources, name="to_h_crz")
+@register_resources({ops.Hadamard: 2, CRZ: 1}, name="to_h_crz")
 def crx_to_h_crz(phi: TensorLike, wires: WiresLike):
     """Decompose ``CRX`` using the ``to_h_crz`` strategy."""
     ops.Hadamard(wires=wires[1])
@@ -1173,14 +1123,13 @@ def crx_to_h_crz(phi: TensorLike, wires: WiresLike):
     ops.Hadamard(wires=wires[1])
 
 
-def _crx_to_ppr_resources(phi, wires):
-    return {
+@register_resources(
+    {
         ops.PauliRot(Float, pauli_word="ZX", wires=Wire[2]): 1,
         ops.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1,
-    }
-
-
-@register_resources(_crx_to_ppr_resources, name="to_paulirot")
+    },
+    name="to_paulirot",
+)
 def crx_to_ppr(phi: TensorLike, wires: WiresLike):
     """Decompose ``CRX`` using the ``to_paulirot`` strategy."""
     ops.PauliRot(phi / 2, "X", wires=wires[1])
@@ -1194,11 +1143,7 @@ add_decomps("Adjoint(CRX)", adjoint_negate_angle)
 add_decomps("Pow(CRX)", pow_scale_angle)
 
 
-def _cry_to_ry_cnot_resources(phi, wires):
-    return {ops.RY: 2, CNOT: 2}
-
-
-@register_resources(_cry_to_ry_cnot_resources, name="to_ry_cnot")
+@register_resources({ops.RY: 2, CNOT: 2}, name="to_ry_cnot")
 def cry_to_ry_cnot(phi: TensorLike, wires: WiresLike):
     """Decompose ``CRY`` using the ``to_ry_cnot`` strategy."""
     ops.RY(phi / 2, wires=wires[1])
@@ -1207,14 +1152,13 @@ def cry_to_ry_cnot(phi: TensorLike, wires: WiresLike):
     CNOT(wires=wires)
 
 
-def _cry_to_ppr_resources(phi, wires):
-    return {
+@register_resources(
+    {
         ops.PauliRot(Float, pauli_word="ZY", wires=Wire[2]): 1,
         ops.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1,
-    }
-
-
-@register_resources(_cry_to_ppr_resources, name="to_paulirot")
+    },
+    name="to_paulirot",
+)
 def cry_to_ppr(phi: TensorLike, wires: WiresLike):
     """Decompose ``CRY`` using the ``to_paulirot`` strategy."""
     ops.PauliRot(phi / 2, "Y", wires=wires[1])
@@ -1228,11 +1172,7 @@ add_decomps("Adjoint(CRY)", adjoint_negate_angle)
 add_decomps("Pow(CRY)", pow_scale_angle)
 
 
-def _crz_to_rz_cnot_resources(phi, wires):
-    return {ops.RZ: 2, CNOT: 2}
-
-
-@register_resources(_crz_to_rz_cnot_resources, name="to_rz_cnot")
+@register_resources({ops.RZ: 2, CNOT: 2}, name="to_rz_cnot")
 def crz_to_rz_cnot(phi: TensorLike, wires: WiresLike):
     """Decompose ``CRZ`` using the ``to_rz_cnot`` strategy."""
     ops.RZ(phi / 2, wires=wires[1])
@@ -1241,14 +1181,13 @@ def crz_to_rz_cnot(phi: TensorLike, wires: WiresLike):
     CNOT(wires=wires)
 
 
-def _crz_to_ppr_resources(phi, wires):
-    return {
+@register_resources(
+    {
         ops.PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
         ops.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1,
-    }
-
-
-@register_resources(_crz_to_ppr_resources, name="to_paulirot")
+    },
+    name="to_paulirot",
+)
 def crz_to_ppr(phi: TensorLike, wires: WiresLike):
     """Decompose ``CRZ`` using the ``to_paulirot`` strategy."""
     ops.PauliRot(phi / 2, "Z", wires=wires[1])
@@ -1262,11 +1201,7 @@ add_decomps("Adjoint(CRZ)", adjoint_negate_angle)
 add_decomps("Pow(CRZ)", pow_scale_angle)
 
 
-def _crot_to_rot_cnot_resources(*_, **__):
-    return {ops.RZ: 3, CNOT: 2, ops.RY: 2}
-
-
-@register_resources(_crot_to_rot_cnot_resources, name="to_rot_cnot")
+@register_resources({ops.RZ: 3, CNOT: 2, ops.RY: 2}, name="to_rot_cnot")
 def crot_to_rot_cnot(phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike):
     """Decompose ``CRot`` using the ``to_rot_cnot`` strategy."""
     ops.RZ((phi - omega) / 2, wires=wires[1])
@@ -1290,11 +1225,7 @@ def adjoint_crot_standard(base):
 add_decomps("Adjoint(CRot)", adjoint_crot_standard)
 
 
-def _cphase_to_rz_cnot_resources(phi, wires):
-    return {ops.RZ: 3, CNOT: 2, GlobalPhase: 1}
-
-
-@register_resources(_cphase_to_rz_cnot_resources, name="to_rz_cnot")
+@register_resources({ops.RZ: 3, CNOT: 2, GlobalPhase: 1}, name="to_rz_cnot")
 def cphase_to_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     """Decompose ``ControlledPhaseShift`` using the ``to_rz_cnot`` strategy."""
     ops.RZ(phi / 2, wires=wires[0])
@@ -1305,15 +1236,14 @@ def cphase_to_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     GlobalPhase(-phi / 4)
 
 
-def _cphase_to_ppr_resources(phi, wires):
-    return {
+@register_resources(
+    {
         GlobalPhase: 1,
         ops.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 2,
         ops.PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
-    }
-
-
-@register_resources(_cphase_to_ppr_resources, name="to_paulirot")
+    },
+    name="to_paulirot",
+)
 def cphase_to_ppr(phi: TensorLike, wires: WiresLike, **__):
     """Decompose ``ControlledPhaseShift`` using the ``to_paulirot`` strategy."""
     ops.PauliRot(-phi / 2, pauli_word="ZZ", wires=wires)
@@ -1322,13 +1252,16 @@ def cphase_to_ppr(phi: TensorLike, wires: WiresLike, **__):
     GlobalPhase(-phi / 4)
 
 
-def _cphase_to_single_phase_resources(phi, wires):
-    elbow = templates.TemporaryAND(wires=Wire[3])
-    return {_change_op_basis_abstract(elbow, ops.PhaseShift, ops.adjoint(elbow)): 1}
-
-
 @register_resources(
-    _cphase_to_single_phase_resources, work_wires={"zeroed": 1}, name="to_single_phase"
+    {
+        _change_op_basis_abstract(
+            templates.TemporaryAND(wires=Wire[3]),
+            ops.PhaseShift,
+            ops.adjoint(templates.TemporaryAND(wires=Wire[3])),
+        ): 1,
+    },
+    work_wires={"zeroed": 1},
+    name="to_single_phase",
 )
 def cphase_to_single_phase(phi: TensorLike, wires: WiresLike, **__):
     """Decompose ``ControlledPhaseShift`` using the ``to_single_phase`` strategy."""

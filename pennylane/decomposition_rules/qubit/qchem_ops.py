@@ -38,7 +38,7 @@ from pennylane.wires import WiresLike
 
 
 @subcircuit(static_argnames=("reverse",))
-@register_resources(lambda *_, **__: {ops.Hadamard: 1, ops.CNOT: 1})
+@register_resources({ops.Hadamard: 1, ops.CNOT: 1})
 def _SingleExcitationBasis(wires: WiresLike, reverse: bool):
     if not reverse:
         ops.Hadamard(wires[0])
@@ -48,24 +48,22 @@ def _SingleExcitationBasis(wires: WiresLike, reverse: bool):
 
 
 @subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": Float, "wires": Wire[2]})
-@register_resources(lambda *_, **__: {ops.RY: 2})
+@register_resources({ops.RY: 2})
 def _SingleExcitationRotations(phi: TensorLike, wires: WiresLike):
     ops.RY(-phi / 2, wires[0])
     ops.RY(-phi / 2, wires[1])
 
 
-# needs to be wrapped in function due to circular dependencies
-def _single_excitation_standard_resources(phi, wires):  # pylint: disable=unused-argument
-    return {
+@register_resources(
+    {
         _change_op_basis_abstract(
             _SingleExcitationBasis(wires=Wire[2], reverse=False),
             _SingleExcitationRotations(Float, wires=Wire[2]),
             _SingleExcitationBasis(wires=Wire[2], reverse=True),
-        ): 1
-    }
-
-
-@register_resources(_single_excitation_standard_resources, name="basis_change_ry")
+        ): 1,
+    },
+    name="basis_change_ry",
+)
 def single_excitation_standard(phi: TensorLike, wires: WiresLike):
     """Decompose ``SingleExcitation`` using the ``basis_change_ry`` strategy."""
     ops.change_op_basis(
@@ -76,37 +74,35 @@ def single_excitation_standard(phi: TensorLike, wires: WiresLike):
 
 
 @subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": Float, "wires": Wire[2]})
-@register_resources(lambda *_, **__: {ops.RZ: 2})
+@register_resources({ops.RZ: 2})
 def _SingleExcitationRZRotations(phi: TensorLike, wires: WiresLike):
     ops.RZ(phi / 2, wires[0])
     ops.RZ(-phi / 2, wires[1])
 
 
-def _single_excitation_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
-    return {
+@register_resources(
+    {
         ops.PauliRot(Float, pauli_word="XY", wires=Wire[2]): 1,
         ops.PauliRot(Float, pauli_word="YX", wires=Wire[2]): 1,
-    }
-
-
-@register_resources(_single_excitation_to_ppr_resources, name="to_paulirot")
+    },
+    name="to_paulirot",
+)
 def single_excitation_to_ppr(phi: TensorLike, wires: WiresLike):
     """Decompose ``SingleExcitation`` using the ``to_paulirot`` strategy."""
     ops.PauliRot(phi / 2, "YX", wires=wires)
     ops.PauliRot(-phi / 2, "XY", wires=wires)
 
 
-def _single_excitation_to_ppr_rz_resources(phi, wires):  # pylint: disable=unused-argument
-    return {
+@register_resources(
+    {
         _change_op_basis_abstract(
             ops.PPR_4(1, "XX", wires=Wire[2]),
             _SingleExcitationRZRotations(Float, wires=Wire[2]),
             ops.PPR_4(-1, "XX", wires=Wire[2]),
-        ): 1
-    }
-
-
-@register_resources(_single_excitation_to_ppr_rz_resources, name="to_ppr_rz")
+        ): 1,
+    },
+    name="to_ppr_rz",
+)
 def single_excitation_to_ppr_rz(phi: TensorLike, wires: WiresLike):
     """Decompose ``SingleExcitation`` using the ``to_ppr_rz`` strategy."""
     ops.change_op_basis(
@@ -117,24 +113,22 @@ def single_excitation_to_ppr_rz(phi: TensorLike, wires: WiresLike):
 
 
 @subcircuit
-@register_resources(lambda *_, **__: {ops.PPR_4(1, "XX", wires=Wire[2]): 1, ops.CNOT: 1})
+@register_resources({ops.PPR_4(1, "XX", wires=Wire[2]): 1, ops.CNOT: 1})
 def _SingleExcitationCRZBasis(wires: WiresLike):
     ops.PPR_4(1, "XX", wires=wires)
     ops.CNOT(wires)
 
 
-def _single_excitation_to_ppr_crz_resources(phi, wires):  # pylint: disable=unused-argument
-    compute = _SingleExcitationCRZBasis(wires=Wire[2])
-    return {
+@register_resources(
+    {
         _change_op_basis_abstract(
-            compute,
+            _SingleExcitationCRZBasis(wires=Wire[2]),
             ops.CRZ(Float, wires=Wire[2]),
-            ops.adjoint(compute),
-        ): 1
-    }
-
-
-@register_resources(_single_excitation_to_ppr_crz_resources, name="to_ppr_crz")
+            ops.adjoint(_SingleExcitationCRZBasis(wires=Wire[2])),
+        ): 1,
+    },
+    name="to_ppr_crz",
+)
 def single_excitation_to_ppr_crz(phi: TensorLike, wires: WiresLike):
     r"""A single arbitrary-angle rotation per Givens rotation.
 
@@ -164,19 +158,10 @@ add_decomps("Adjoint(SingleExcitation)", adjoint_rotation2)
 add_decomps("Pow(SingleExcitation)", pow_rotation2)
 
 
-def _single_excitation_minus_standard_resources():
-    return {
-        ops.Hadamard: 2,
-        ops.CY: 1,
-        ops.CNOT: 2,
-        ops.RY: 2,
-        ops.S: 1,
-        ops.RZ: 1,
-        ops.GlobalPhase: 1,
-    }
-
-
-@register_resources(_single_excitation_minus_standard_resources, name="to_single_qubit_cnot_cy")
+@register_resources(
+    {ops.Hadamard: 2, ops.CY: 1, ops.CNOT: 2, ops.RY: 2, ops.S: 1, ops.RZ: 1, ops.GlobalPhase: 1},
+    name="to_single_qubit_cnot_cy",
+)
 def single_excitation_minus_standard(phi, wires: WiresLike, **__):
     """Decompose ``SingleExcitationMinus`` using the ``to_single_qubit_cnot_cy`` strategy."""
     ops.Hadamard(wires[1])
@@ -198,19 +183,10 @@ add_decomps("Adjoint(SingleExcitationMinus)", adjoint_negate_angle)
 add_decomps("Pow(SingleExcitationMinus)", pow_scale_angle)
 
 
-def _single_excitation_plus_standard_resources():
-    return {
-        ops.Hadamard: 2,
-        ops.CY: 1,
-        ops.CNOT: 2,
-        ops.RY: 2,
-        ops.S: 1,
-        ops.RZ: 1,
-        ops.GlobalPhase: 1,
-    }
-
-
-@register_resources(_single_excitation_plus_standard_resources, name="to_single_qubit_cnot_cy")
+@register_resources(
+    {ops.Hadamard: 2, ops.CY: 1, ops.CNOT: 2, ops.RY: 2, ops.S: 1, ops.RZ: 1, ops.GlobalPhase: 1},
+    name="to_single_qubit_cnot_cy",
+)
 def single_excitation_plus_standard(phi, wires: WiresLike, **__):
     """Decompose ``SingleExcitationPlus`` using the ``to_single_qubit_cnot_cy`` strategy."""
     ops.Hadamard(wires[1])
@@ -232,11 +208,7 @@ add_decomps("Adjoint(SingleExcitationPlus)", adjoint_negate_angle)
 add_decomps("Pow(SingleExcitationPlus)", pow_scale_angle)
 
 
-def _double_excitation_to_gates_resources(phi, wires):  # pylint: disable=unused-argument
-    return {ops.CNOT: 14, ops.Hadamard: 6, ops.RY: 8}
-
-
-@register_resources(_double_excitation_to_gates_resources, name="to_gates")
+@register_resources({ops.CNOT: 14, ops.Hadamard: 6, ops.RY: 8}, name="to_gates")
 def double_excitation_to_gates(phi: TensorLike, wires: WiresLike):
     """Decompose ``DoubleExcitation`` using the ``to_gates`` strategy."""
     ops.CNOT(wires=[wires[2], wires[3]])
@@ -269,8 +241,8 @@ def double_excitation_to_gates(phi: TensorLike, wires: WiresLike):
     ops.CNOT(wires=[wires[2], wires[3]])
 
 
-def _double_excitation_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
-    return {
+@register_resources(
+    {
         ops.PauliRot(Float, pauli_word="YYYX", wires=Wire[4]): 1,
         ops.PauliRot(Float, pauli_word="YYXY", wires=Wire[4]): 1,
         ops.PauliRot(Float, pauli_word="YXYY", wires=Wire[4]): 1,
@@ -279,10 +251,9 @@ def _double_excitation_to_ppr_resources(phi, wires):  # pylint: disable=unused-a
         ops.PauliRot(Float, pauli_word="XYXX", wires=Wire[4]): 1,
         ops.PauliRot(Float, pauli_word="XXYX", wires=Wire[4]): 1,
         ops.PauliRot(Float, pauli_word="XXXY", wires=Wire[4]): 1,
-    }
-
-
-@register_resources(_double_excitation_to_ppr_resources, name="to_paulirot")
+    },
+    name="to_paulirot",
+)
 def double_excitation_to_ppr(phi: TensorLike, wires: WiresLike):
     """Decompose ``DoubleExcitation`` using the ``to_paulirot`` strategy."""
     ops.PauliRot(phi / 8, pauli_word="YYYX", wires=wires)
@@ -312,13 +283,9 @@ add_decomps("Adjoint(DoubleExcitationMinus)", adjoint_negate_angle)
 add_decomps("Pow(DoubleExcitationMinus)", pow_scale_angle)
 
 
-# pylint: disable-next=unused-argument
-def _orbital_rotation_standard_resources(phi: TensorLike, wires: WiresLike):
-    return {FermionicSWAP: 2, SingleExcitation: 2}
-
-
 @register_resources(
-    _orbital_rotation_standard_resources, name="to_fermionic_swap_single_excitation"
+    {FermionicSWAP: 2, SingleExcitation: 2},
+    name="to_fermionic_swap_single_excitation",
 )
 def orbital_rotation_standard(phi: TensorLike, wires: WiresLike):
     """Decompose ``OrbitalRotation`` using the ``to_fermionic_swap_single_excitation`` strategy."""
@@ -335,18 +302,10 @@ add_decomps("Adjoint(OrbitalRotation)", adjoint_rotation2)
 add_decomps("Pow(OrbitalRotation)", pow_rotation2)
 
 
-# pylint: disable-next=unused-argument
-def _fermionic_swap_standard_resources(phi: TensorLike = None, wires: WiresLike = None):
-    return {
-        ops.Hadamard: 4,
-        ops.MultiRZ(Float, Wire[2]): 2,
-        ops.RX: 4,
-        ops.RZ: 2,
-        ops.GlobalPhase: 1,
-    }
-
-
-@register_resources(_fermionic_swap_standard_resources, name="to_multirz_single_qubit")
+@register_resources(
+    {ops.Hadamard: 4, ops.MultiRZ(Float, Wire[2]): 2, ops.RX: 4, ops.RZ: 2, ops.GlobalPhase: 1},
+    name="to_multirz_single_qubit",
+)
 def fermionic_swap_standard(phi, wires: WiresLike, **__):
     """Decompose ``FermionicSWAP`` using the ``to_multirz_single_qubit`` strategy."""
     ops.Hadamard(wires=wires[0])

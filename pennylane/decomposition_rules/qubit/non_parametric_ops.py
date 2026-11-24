@@ -53,11 +53,7 @@ from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import WiresLike, concatenate_wires
 
 
-def _hadamard_to_rz_rx_resources(wires: WiresLike):
-    return {ops.RZ: 2, ops.RX: 1, ops.GlobalPhase: 1}
-
-
-@register_resources(_hadamard_to_rz_rx_resources, name="to_rz_rx")
+@register_resources({ops.RZ: 2, ops.RX: 1, ops.GlobalPhase: 1}, name="to_rz_rx")
 def hadamard_to_rz_rx(wires: WiresLike, **__):
     """Decompose ``Hadamard`` using the ``to_rz_rx`` strategy."""
     ops.RZ(np.pi / 2, wires=wires)
@@ -66,11 +62,7 @@ def hadamard_to_rz_rx(wires: WiresLike, **__):
     ops.GlobalPhase(-np.pi / 2)
 
 
-def _hadamard_to_rz_ry_resources(wires: WiresLike):
-    return {ops.RZ: 1, ops.RY: 1, ops.GlobalPhase: 1}
-
-
-@register_resources(_hadamard_to_rz_ry_resources, name="to_rz_ry")
+@register_resources({ops.RZ: 1, ops.RY: 1, ops.GlobalPhase: 1}, name="to_rz_ry")
 def hadamard_to_rz_ry(wires: WiresLike, **__):
     """Decompose ``Hadamard`` using the ``to_rz_ry`` strategy."""
     ops.RZ(np.pi, wires=wires)
@@ -78,17 +70,17 @@ def hadamard_to_rz_ry(wires: WiresLike, **__):
     ops.GlobalPhase(-np.pi / 2)
 
 
-def _hadamard_to_ppm_resources(wires: WiresLike):
-    return {
+@register_resources(
+    {
         PauliMeasure("YY", wires=Wire[2]): 1,
         PauliMeasure("X", wires=Wire[1]): 1,
         PauliY: 1,
         PauliZ: 2,
         ops.GlobalPhase: 1,
-    }
-
-
-@register_resources(_hadamard_to_ppm_resources, work_wires={"burnable": 1}, name="to_ppm")
+    },
+    work_wires={"burnable": 1},
+    name="to_ppm",
+)
 def hadamard_to_ppm(wires, **__):
     """Decompose ``Hadamard`` using the ``to_ppm`` strategy."""
     with allocation.allocate(1, state="zero", restored=False) as work_wires:
@@ -100,11 +92,10 @@ def hadamard_to_ppm(wires, **__):
         ops.cond(m1, PauliZ)(work_wires[0])  # Reset work wire to |+>
 
 
-def _hadamard_to_ppr_resources(wires: WiresLike):
-    return {PPR_2(1, "Z", Wire[1]): 1, PPR_4(1, "Y", Wire[1]): 1, ops.GlobalPhase: 1}
-
-
-@register_resources(_hadamard_to_ppr_resources, name="to_ppr")
+@register_resources(
+    {PPR_2(1, "Z", Wire[1]): 1, PPR_4(1, "Y", Wire[1]): 1, ops.GlobalPhase: 1},
+    name="to_ppr",
+)
 def hadamard_to_ppr(wires: WiresLike, **__):
     """Decompose ``Hadamard`` using the ``to_ppr`` strategy."""
     PPR_2(1, "Z", wires=wires)
@@ -153,11 +144,7 @@ def controlled_hadamard_standard(base, control_wires, control_values, work_wires
 add_decomps("C(Hadamard)", flip_zero_control(controlled_hadamard_standard, name="to_mcx"))
 
 
-def _paulix_to_rx_resources(wires: AbstractWires):
-    return {ops.GlobalPhase: 1, ops.RX: 1}
-
-
-@register_resources(_paulix_to_rx_resources, name="to_rx")
+@register_resources({ops.GlobalPhase: 1, ops.RX: 1}, name="to_rx")
 def paulix_to_rx(wires: WiresLike):
     """Decompose ``PauliX`` using the ``to_rx`` strategy."""
     ops.RX(np.pi, wires=wires)
@@ -165,13 +152,13 @@ def paulix_to_rx(wires: WiresLike):
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.5))
-@register_resources(lambda *_, **__: {SX: 1}, name="to_sx")
+@register_resources({SX: 1}, name="to_sx")
 def pow_x_to_sx(base, z):
     """Decompose ``Pow(PauliX)`` using the ``to_sx`` strategy."""
     SX(wires=base.wires)
 
 
-@register_resources(lambda *_, **__: {ops.RX: 1, ops.GlobalPhase: 1}, name="to_rx")
+@register_resources({ops.RX: 1, ops.GlobalPhase: 1}, name="to_rx")
 def pow_x_to_rx(base, z):
     """Decompose ``Pow(PauliX)`` using the ``to_rx`` strategy."""
     z_mod2 = math.array(z) % 2
@@ -179,11 +166,7 @@ def pow_x_to_rx(base, z):
     ops.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
-def _paulix_to_ppr_resources(wires: AbstractWires):
-    return {PPR_2(1, "X", Wire[1]): 1, ops.GlobalPhase: 1}
-
-
-@register_resources(_paulix_to_ppr_resources, name="to_ppr")
+@register_resources({PPR_2(1, "X", Wire[1]): 1, ops.GlobalPhase: 1}, name="to_ppr")
 def paulix_to_ppr(wires: WiresLike):
     """Decompose ``PauliX`` using the ``to_ppr`` strategy."""
     PPR_2(1, "X", wires=wires)
@@ -222,18 +205,14 @@ def ctrl_x_to_mcx(base, control_wires, control_values, work_wires, work_wire_typ
 add_decomps("C(PauliX)", ctrl_x_to_mcx)
 
 
-def _pauliy_to_ry_gp_resources(wires: AbstractWires):
-    return {ops.GlobalPhase: 1, ops.RY: 1}
-
-
-@register_resources(_pauliy_to_ry_gp_resources, name="to_ry_gp")
+@register_resources({ops.GlobalPhase: 1, ops.RY: 1}, name="to_ry_gp")
 def pauliy_to_ry_gp(wires: WiresLike):
     """Decompose ``PauliY`` using the ``to_ry_gp`` strategy."""
     ops.RY(np.pi, wires=wires)
     ops.GlobalPhase(-np.pi / 2)
 
 
-@register_resources(lambda *_, **__: {ops.RY: 1, ops.GlobalPhase: 1}, name="to_ry")
+@register_resources({ops.RY: 1, ops.GlobalPhase: 1}, name="to_ry")
 def pow_y_standard(base, z):
     """Decompose ``Pow(PauliY)`` using the ``to_ry`` strategy."""
     z_mod2 = math.array(z) % 2
@@ -241,11 +220,7 @@ def pow_y_standard(base, z):
     ops.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
-def _pauliy_to_ppr_resources(wires: AbstractWires):
-    return {PPR_2(1, "Y", Wire[1]): 1, ops.GlobalPhase: 1}
-
-
-@register_resources(_pauliy_to_ppr_resources, name="to_ppr")
+@register_resources({PPR_2(1, "Y", Wire[1]): 1, ops.GlobalPhase: 1}, name="to_ppr")
 def pauliy_to_ppr(wires: WiresLike):
     """Decompose ``PauliY`` using the ``to_ppr`` strategy."""
     PPR_2(1, "Y", wires=wires)
@@ -292,42 +267,34 @@ def controlled_y_standard(base, control_wires, control_values, work_wires, work_
 add_decomps("C(PauliY)", flip_zero_control(controlled_y_standard, name="to_mcx"))
 
 
-def _pauliz_to_ps_resources(wires: AbstractWires):
-    return {ops.PhaseShift: 1}
-
-
-@register_resources(_pauliz_to_ps_resources, name="to_ps")
+@register_resources({ops.PhaseShift: 1}, name="to_ps")
 def pauliz_to_ps(wires: WiresLike):
     """Decompose ``PauliZ`` using the ``to_ps`` strategy."""
     ops.PhaseShift(np.pi, wires=wires)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.5))
-@register_resources(lambda *_, **__: {S: 1}, name="to_s")
+@register_resources({S: 1}, name="to_s")
 def pow_z_to_s(base, z):
     """Decompose ``Pow(PauliZ)`` using the ``to_s`` strategy."""
     S(wires=base.wires)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.25))
-@register_resources(lambda *_, **__: {T: 1}, name="to_t")
+@register_resources({T: 1}, name="to_t")
 def pow_z_to_t(base, z):
     """Decompose ``Pow(PauliZ)`` using the ``to_t`` strategy."""
     T(wires=base.wires)
 
 
-@register_resources(lambda *_, **__: {ops.PhaseShift: 1}, name="to_phaseshift")
+@register_resources({ops.PhaseShift: 1}, name="to_phaseshift")
 def pow_z_standard(base, z):
     """Decompose ``Pow(PauliZ)`` using the ``to_phaseshift`` strategy."""
     z_mod2 = math.array(z) % 2
     ops.PhaseShift(np.pi * z_mod2, wires=base.wires)
 
 
-def _pauliz_to_ppr_resources(wires: AbstractWires):
-    return {PPR_2(1, "Z", Wire[1]): 1, ops.GlobalPhase: 1}
-
-
-@register_resources(_pauliz_to_ppr_resources, name="to_ppr")
+@register_resources({PPR_2(1, "Z", Wire[1]): 1, ops.GlobalPhase: 1}, name="to_ppr")
 def pauliz_to_ppr(wires: WiresLike):
     """Decompose ``PauliZ`` using the ``to_ppr`` strategy."""
     PPR_2(1, "Z", wires=wires)
@@ -371,7 +338,7 @@ def controlled_z_standard(base, control_wires, control_values, work_wires, work_
 
 
 @register_condition(lambda control_wires, **_: len(control_wires) == 2)
-@register_resources(lambda *_, **__: {ops.CCZ: 1}, name="to_ccz")
+@register_resources({ops.CCZ: 1}, name="to_ccz")
 def controlled_z_to_ccz(base, control_wires, **_):
     """Decompose ``C(PauliZ)`` using the ``to_ccz`` strategy."""
     ops.CCZ(wires=concatenate_wires(control_wires, base.wires))
@@ -384,21 +351,13 @@ add_decomps(
 )
 
 
-def _s_to_phaseshift_resources(wires: WiresLike = None):
-    return {ops.PhaseShift: 1}
-
-
-@register_resources(_s_to_phaseshift_resources, name="to_phaseshift")
+@register_resources({ops.PhaseShift: 1}, name="to_phaseshift")
 def s_to_phaseshift(wires: WiresLike | None = None):
     """Decompose ``S`` using the ``to_phaseshift`` strategy."""
     ops.PhaseShift(np.pi / 2, wires=wires)
 
 
-def _s_to_ppr_resources(wires: AbstractWires):
-    return {PPR_4(1, "Z", Wire[1]): 1, ops.GlobalPhase: 1}
-
-
-@register_resources(_s_to_ppr_resources, name="to_ppr")
+@register_resources({PPR_4(1, "Z", Wire[1]): 1, ops.GlobalPhase: 1}, name="to_ppr")
 def s_to_ppr(wires: WiresLike):
     """Decompose ``S`` using the ``to_ppr`` strategy."""
     PPR_4(1, "Z", wires=wires)
@@ -409,20 +368,20 @@ add_decomps(S, s_to_phaseshift, s_to_ppr)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 0.5))
-@register_resources(lambda *_, **__: {T: 1}, name="to_t")
+@register_resources({T: 1}, name="to_t")
 def pow_s_to_t(base, z):
     """Decompose ``Pow(S)`` using the ``to_t`` strategy."""
     T(wires=base.wires)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 2))
-@register_resources(lambda *_, **__: {PauliZ: 1}, name="to_z")
+@register_resources({PauliZ: 1}, name="to_z")
 def pow_s_to_z(base, z):
     """Decompose ``Pow(S)`` using the ``to_z`` strategy."""
     PauliZ(wires=base.wires)
 
 
-@register_resources(lambda *_, **__: {ops.PhaseShift: 1}, name="to_phaseshift")
+@register_resources({ops.PhaseShift: 1}, name="to_phaseshift")
 def pow_s_standard(base, z):
     """Decompose ``Pow(S)`` using the ``to_phaseshift`` strategy."""
     z_mod4 = math.array(z) % 4
@@ -432,28 +391,20 @@ def pow_s_standard(base, z):
 add_decomps("Pow(S)", make_pow_decomp_with_period(4), pow_s_standard, pow_s_to_t, pow_s_to_z)
 
 
-def _t_to_phaseshift_resources(wires=None):
-    return {ops.PhaseShift: 1}
-
-
-@register_resources(_t_to_phaseshift_resources, name="to_phaseshift")
+@register_resources({ops.PhaseShift: 1}, name="to_phaseshift")
 def t_to_phaseshift(wires=None):
     """Decompose ``T`` using the ``to_phaseshift`` strategy."""
     ops.PhaseShift(np.pi / 4, wires=wires)
 
 
-def _t_to_ppr_resources(wires: AbstractWires):
-    return {PPR_8(1, "Z", Wire[1]): 1, ops.GlobalPhase: 1}
-
-
-@register_resources(_t_to_ppr_resources, name="to_ppr")
+@register_resources({PPR_8(1, "Z", Wire[1]): 1, ops.GlobalPhase: 1}, name="to_ppr")
 def t_to_ppr(wires: WiresLike):
     """Decompose ``T`` using the ``to_ppr`` strategy."""
     PPR_8(1, "Z", wires=wires)
     ops.GlobalPhase(-np.pi / 8)
 
 
-@register_resources(lambda *_, **__: {ops.PhaseShift: 1}, name="to_phaseshift")
+@register_resources({ops.PhaseShift: 1}, name="to_phaseshift")
 def pow_t_standard(base, z):
     """Decompose ``Pow(T)`` using the ``to_phaseshift`` strategy."""
     z_mod8 = math.array(z) % 8
@@ -465,11 +416,7 @@ add_decomps(T, t_to_phaseshift, t_to_ppr)
 add_decomps("Pow(T)", make_pow_decomp_with_period(8), pow_t_standard)
 
 
-def _sx_to_rx_resources(wires: WiresLike = None):
-    return {ops.RX: 1, ops.GlobalPhase: 1}
-
-
-@register_resources(_sx_to_rx_resources, name="to_rx")
+@register_resources({ops.RX: 1, ops.GlobalPhase: 1}, name="to_rx")
 def sx_to_rx(wires: WiresLike | None = None):
     """Decompose ``SX`` using the ``to_rx`` strategy."""
     ops.RX(np.pi / 2, wires=wires)
@@ -480,13 +427,13 @@ add_decomps(SX, sx_to_rx)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and z % 4 == 2)
-@register_resources(lambda *_, **__: {PauliX: 1}, name="to_x")
+@register_resources({PauliX: 1}, name="to_x")
 def pow_sx_to_x(base, z):
     """Decompose ``Pow(SX)`` using the ``to_x`` strategy."""
     PauliX(base.wires)
 
 
-@register_resources(lambda *_, **__: {ops.RX: 1, ops.GlobalPhase: 1}, name="to_rx")
+@register_resources({ops.RX: 1, ops.GlobalPhase: 1}, name="to_rx")
 def pow_sx_standard(base, z):
     """Decompose ``Pow(SX)`` using the ``to_rx`` strategy."""
     z_mod4 = math.array(z) % 4
@@ -497,11 +444,7 @@ def pow_sx_standard(base, z):
 add_decomps("Pow(SX)", make_pow_decomp_with_period(4), pow_sx_to_x, pow_sx_standard)
 
 
-def _swap_to_cnot_resources(wires: WiresLike):
-    return {ops.CNOT: 3}
-
-
-@register_resources(_swap_to_cnot_resources, name="to_cnot")
+@register_resources({ops.CNOT: 3}, name="to_cnot")
 def swap_to_cnot(wires, **_):
     """Decompose ``SWAP`` using the ``to_cnot`` strategy."""
     ops.CNOT(wires=[wires[0], wires[1]])
@@ -509,16 +452,15 @@ def swap_to_cnot(wires, **_):
     ops.CNOT(wires=[wires[0], wires[1]])
 
 
-def _swap_to_ppr_resources(wires: WiresLike):
-    return {
+@register_resources(
+    {
         PPR_4(1, pauli_word="XX", wires=Wire[2]): 1,
         PPR_4(1, pauli_word="YY", wires=Wire[2]): 1,
         PPR_4(1, pauli_word="ZZ", wires=Wire[2]): 1,
         ops.GlobalPhase: 1,
-    }
-
-
-@register_resources(_swap_to_ppr_resources, name="to_ppr")
+    },
+    name="to_ppr",
+)
 def swap_to_ppr(wires, **_):
     """Decompose ``SWAP`` using the ``to_ppr`` strategy."""
     PPR_4(1, "YY", wires=wires)
@@ -561,7 +503,7 @@ def controlled_swap_standard(base, control_wires, control_values, work_wires, wo
 
 
 @register_condition(lambda control_wires, **_: len(control_wires) == 1)
-@register_resources(lambda *_, **__: {ops.CSWAP: 1}, name="to_cswap")
+@register_resources({ops.CSWAP: 1}, name="to_cswap")
 def controlled_swap_to_cswap(base, control_wires, **_):
     """Decompose ``C(SWAP)`` using the ``to_cswap`` strategy."""
     ops.CSWAP(wires=concatenate_wires(control_wires, base.wires))
@@ -574,11 +516,7 @@ add_decomps(
 )
 
 
-def _ecr_standard_resources(wires: WiresLike):
-    return {Z: 1, ops.CNOT: 1, SX: 1, ops.RX: 2, ops.RY: 1}
-
-
-@register_resources(_ecr_standard_resources, name="to_cnot_single_qubit")
+@register_resources({Z: 1, ops.CNOT: 1, SX: 1, ops.RX: 2, ops.RY: 1}, name="to_cnot_single_qubit")
 def ecr_standard(wires, **_):
     """Decompose ``ECR`` using the ``to_cnot_single_qubit`` strategy."""
     Z(wires=[wires[0]])
@@ -596,11 +534,7 @@ add_decomps("Adjoint(ECR)", self_adjoint)
 add_decomps("Pow(ECR)", pow_involutory)
 
 
-def _iswap_standard_resources(wires: WiresLike):
-    return {S: 2, Hadamard: 2, ops.CNOT: 2}
-
-
-@register_resources(_iswap_standard_resources, name="to_s_h_cnot")
+@register_resources({S: 2, Hadamard: 2, ops.CNOT: 2}, name="to_s_h_cnot")
 def iswap_standard(wires):
     """Decompose ``ISWAP`` using the ``to_s_h_cnot`` strategy."""
     S(wires=wires[0])
@@ -611,14 +545,10 @@ def iswap_standard(wires):
     Hadamard(wires=wires[1])
 
 
-def _iswap_to_ppr_resources(wires: WiresLike):
-    return {
-        PPR_4(-1, pauli_word="XX", wires=Wire[2]): 1,
-        PPR_4(-1, pauli_word="YY", wires=Wire[2]): 1,
-    }
-
-
-@register_resources(_iswap_to_ppr_resources, name="to_ppr")
+@register_resources(
+    {PPR_4(-1, pauli_word="XX", wires=Wire[2]): 1, PPR_4(-1, pauli_word="YY", wires=Wire[2]): 1},
+    name="to_ppr",
+)
 def iswap_to_ppr(wires):
     """Decompose ``ISWAP`` using the ``to_ppr`` strategy."""
     PPR_4(-1, "YY", wires=wires)
@@ -629,14 +559,14 @@ add_decomps(ISWAP, iswap_standard, iswap_to_ppr)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 0.5))
-@register_resources(lambda *_, **__: {SISWAP: 1}, name="to_siswap")
+@register_resources({SISWAP: 1}, name="to_siswap")
 def pow_iswap_to_siswap(base, z):
     """Decompose ``Pow(ISWAP)`` using the ``to_siswap`` strategy."""
     SISWAP(wires=base.wires)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 2))
-@register_resources(lambda *_, **__: {PauliZ: 2}, name="to_zz")
+@register_resources({PauliZ: 2}, name="to_zz")
 def pow_iswap_to_zz(base, z):
     """Decompose ``Pow(ISWAP)`` using the ``to_zz`` strategy."""
     PauliZ(wires=base.wires[0])
@@ -646,11 +576,7 @@ def pow_iswap_to_zz(base, z):
 add_decomps("Pow(ISWAP)", make_pow_decomp_with_period(4), pow_iswap_to_zz, pow_iswap_to_siswap)
 
 
-def _siswap_standard_resources(wires: WiresLike):
-    return {SX: 6, ops.RZ: 4, ops.CNOT: 2}
-
-
-@register_resources(_siswap_standard_resources, name="to_sx_rz_cnot")
+@register_resources({SX: 6, ops.RZ: 4, ops.CNOT: 2}, name="to_sx_rz_cnot")
 def siswap_standard(wires):
     """Decompose ``SISWAP`` using the ``to_sx_rz_cnot`` strategy."""
     SX(wires=wires[0])
@@ -667,14 +593,10 @@ def siswap_standard(wires):
     SX(wires=wires[1])
 
 
-def _siswap_to_ppr_resources(wires: WiresLike):
-    return {
-        PPR_8(-1, pauli_word="XX", wires=Wire[2]): 1,
-        PPR_8(-1, pauli_word="YY", wires=Wire[2]): 1,
-    }
-
-
-@register_resources(_siswap_to_ppr_resources, name="to_ppr")
+@register_resources(
+    {PPR_8(-1, pauli_word="XX", wires=Wire[2]): 1, PPR_8(-1, pauli_word="YY", wires=Wire[2]): 1},
+    name="to_ppr",
+)
 def siswap_to_ppr(wires, **_):
     """Decompose ``SISWAP`` using the ``to_ppr`` strategy."""
     PPR_8(-1, "YY", wires=wires)
@@ -685,14 +607,14 @@ add_decomps(SISWAP, siswap_standard, siswap_to_ppr)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 8, 2))
-@register_resources(lambda *_, **__: {ISWAP: 1}, name="to_iswap")
+@register_resources({ISWAP: 1}, name="to_iswap")
 def pow_siswap_to_iswap(base, z):
     """Decompose ``Pow(SISWAP)`` using the ``to_iswap`` strategy."""
     ISWAP(base.wires)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 8, 4))
-@register_resources(lambda *_, **__: {PauliZ: 2}, name="to_zz")
+@register_resources({PauliZ: 2}, name="to_zz")
 def pow_siswap_to_zz(base, z):
     """Decompose ``Pow(SISWAP)`` using the ``to_zz`` strategy."""
     PauliZ(wires=base.wires[0])

@@ -30,12 +30,8 @@ from pennylane.wires import WiresLike
 _number_xs = 2
 
 
-def _temporary_and_basis_resources(**_):
-    return {ops.Hadamard: 1, ops.T: 1, ops.CNOT: 1, ops.adjoint(ops.T(Wire[1])): 1}
-
-
 @subcircuit(arg_specs={"wires": Wire[2]})
-@register_resources(_temporary_and_basis_resources)
+@register_resources({ops.Hadamard: 1, ops.T: 1, ops.CNOT: 1, ops.adjoint(ops.T(Wire[1])): 1})
 def _TemporaryANDBasis(wires: WiresLike):
     """Change basis for the Clifford+T implementation of TemporaryAND."""
     ops.H(wires[1])
@@ -44,17 +40,19 @@ def _TemporaryANDBasis(wires: WiresLike):
     ops.adjoint(ops.T(wires[1]))
 
 
-def _temporary_and_to_clifford_t_resources(*_, **__):
-    compute_rep = _TemporaryANDBasis(Wire[2])
-    resources = {
+@register_resources(
+    {
         ops.X: _number_xs,
-        _change_op_basis_abstract(compute_rep, ops.CNOT, ops.adjoint(compute_rep)): 1,
+        _change_op_basis_abstract(
+            _TemporaryANDBasis(Wire[2]),
+            ops.CNOT,
+            ops.adjoint(_TemporaryANDBasis(Wire[2])),
+        ): 1,
         ops.adjoint(ops.S(Wire[1])): 1,
-    }
-    return resources
-
-
-@register_resources(_temporary_and_to_clifford_t_resources, exact=False, name="to_clifford_t")
+    },
+    exact=False,
+    name="to_clifford_t",
+)
 def temporary_and_to_clifford_t(wires: WiresLike, control_values: Sequence[bool]):
     """Decompose ``TemporaryAND`` using the ``to_clifford_t`` strategy."""
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
@@ -84,16 +82,16 @@ def temporary_and_to_toffoli(wires: WiresLike, control_values: Sequence[bool]):
     _toffoli_with_cvals(wires, control_values)
 
 
-def _temporary_and_to_ppr_resources(*_, **__):
-    return {
+@register_resources(
+    {
         ops.X: _number_xs,
         ops.PPR_8(1, "ZZY", Wire[3]): 1,
         ops.PPR_8(-1, "ZY", Wire[2]): 2,
         ops.PPR_8(1, "Y", Wire[1]): 1,
-    }
-
-
-@register_resources(_temporary_and_to_ppr_resources, exact=False, name="to_ppr")
+    },
+    exact=False,
+    name="to_ppr",
+)
 def temporary_and_to_ppr(wires: WiresLike, control_values: Sequence[bool]):
     """Decompose ``TemporaryAND`` using the ``to_ppr`` strategy."""
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
@@ -111,11 +109,11 @@ add_decomps(
 )
 
 
-def _adjoint_temporary_and_measurement_resources(*_, **__):
-    return {ops.Hadamard: 1, ops.MidMeasure(Wire[1], reset=True): 1, ops.CZ: 1, ops.X: _number_xs}
-
-
-@register_resources(_adjoint_temporary_and_measurement_resources, exact=False, name="measurement")
+@register_resources(
+    {ops.Hadamard: 1, ops.MidMeasure(Wire[1], reset=True): 1, ops.CZ: 1, ops.X: _number_xs},
+    exact=False,
+    name="measurement",
+)
 def adjoint_temporary_and_measurement(base):
     r"""The implementation of adjoint TemporaryAND by mid-circuit measurements
     as found in https://arxiv.org/abs/1805.03662."""

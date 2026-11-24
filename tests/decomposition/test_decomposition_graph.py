@@ -49,7 +49,7 @@ def test_fixed_decomposition_by_public_name(op_key):
     rule = qp.list_decomps(qp.SWAP)["to_cnot"]
     assert rule.name == "to_cnot"
     assert rule.__name__ == "swap_to_cnot"
-    assert rule._compute_resources.__name__ == "_swap_to_cnot_resources"
+    assert rule.compute_resources(wires=Wire[2]) == to_resources({qp.CNOT: 3})
     op = qp.SWAP(wires=[0, 1])
     named = DecompositionGraph([op], gate_set={qp.CNOT}, fixed_decomps={op_key: "to_cnot"})
     explicit = DecompositionGraph([op], gate_set={qp.CNOT}, fixed_decomps={qp.SWAP: rule})

@@ -37,21 +37,13 @@ from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import WireError, Wires, WiresLike, concatenate_wires
 
 
-def _rx_to_rot_resources(*_, **__):
-    return {Rot: 1}
-
-
-@register_resources(_rx_to_rot_resources, name="to_rot")
+@register_resources({Rot: 1}, name="to_rot")
 def rx_to_rot(phi, wires: WiresLike):
     """Decompose ``RX`` using the ``to_rot`` strategy."""
     Rot(np.pi / 2, phi, 3.5 * np.pi, wires=wires)
 
 
-def _rx_to_rz_ry_resources(*_, **__):
-    return {RZ: 2, RY: 1}
-
-
-@register_resources(_rx_to_rz_ry_resources, name="to_rz_ry")
+@register_resources({RZ: 2, RY: 1}, name="to_rz_ry")
 def rx_to_rz_ry(phi, wires: WiresLike):
     """Decompose ``RX`` using the ``to_rz_ry`` strategy."""
     RZ(np.pi / 2, wires=wires)
@@ -59,33 +51,25 @@ def rx_to_rz_ry(phi, wires: WiresLike):
     RZ(-np.pi / 2, wires=wires)
 
 
-def _rx_to_ry_cliff_resources(*_, **__):
-    resources = {_change_op_basis_abstract(ops.S, RY, ops.adjoint(ops.S(Wire[1]))): 1}
-    return resources
-
-
-@register_resources(_rx_to_ry_cliff_resources, name="to_ry_cliff")
+@register_resources(
+    {_change_op_basis_abstract(ops.S, RY, ops.adjoint(ops.S(Wire[1]))): 1},
+    name="to_ry_cliff",
+)
 def rx_to_ry_cliff(phi, wires: WiresLike):
     """Decompose ``RX`` using the ``to_ry_cliff`` strategy."""
     change_op_basis(ops.S(wires), RY(phi, wires))
 
 
-def _rx_to_rz_cliff_resources(*_, **__):
-    resources = {_change_op_basis_abstract(ops.Hadamard, RZ, ops.Hadamard): 1}
-    return resources
-
-
-@register_resources(_rx_to_rz_cliff_resources, name="to_rz_cliff")
+@register_resources(
+    {_change_op_basis_abstract(ops.Hadamard, RZ, ops.Hadamard): 1},
+    name="to_rz_cliff",
+)
 def rx_to_rz_cliff(phi, wires: WiresLike):
     """Decompose ``RX`` using the ``to_rz_cliff`` strategy."""
     change_op_basis(ops.Hadamard(wires), RZ(phi, wires), ops.Hadamard(wires))
 
 
-def _rx_to_ppr_resources(*_, **__):
-    return {ops.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1}
-
-
-@register_resources(_rx_to_ppr_resources, name="to_paulirot")
+@register_resources({ops.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1}, name="to_paulirot")
 def rx_to_ppr(phi, wires):
     """Decompose ``RX`` using the ``to_paulirot`` strategy."""
     ops.PauliRot(phi, "X", wires=wires)
@@ -138,21 +122,13 @@ def controlled_rx_standard(base, control_wires, control_values, work_wires, work
 add_decomps("C(RX)", flip_zero_control(controlled_rx_standard, name="to_rz_mcx"))
 
 
-def _ry_to_rot_resources(*_, **__):
-    return {Rot: 1}
-
-
-@register_resources(_ry_to_rot_resources, name="to_rot")
+@register_resources({Rot: 1}, name="to_rot")
 def ry_to_rot(phi, wires: WiresLike):
     """Decompose ``RY`` using the ``to_rot`` strategy."""
     Rot(0, phi, 0, wires=wires)
 
 
-def _ry_to_rz_rx_resources(*_, **__):
-    return {RZ: 2, RX: 1}
-
-
-@register_resources(_ry_to_rz_rx_resources, name="to_rz_rx")
+@register_resources({RZ: 2, RX: 1}, name="to_rz_rx")
 def ry_to_rz_rx(phi, wires: WiresLike):
     """Decompose ``RY`` using the ``to_rz_rx`` strategy."""
     RZ(-np.pi / 2, wires=wires)
@@ -160,47 +136,39 @@ def ry_to_rz_rx(phi, wires: WiresLike):
     RZ(np.pi / 2, wires=wires)
 
 
-def _ry_to_rx_cliff_resources(*_, **__):
-    resources = {_change_op_basis_abstract(_adjoint_abstract(ops.S), RX, ops.S): 1}
-    return resources
-
-
-@register_resources(_ry_to_rx_cliff_resources, name="to_rx_cliff")
+@register_resources(
+    {_change_op_basis_abstract(_adjoint_abstract(ops.S), RX, ops.S): 1},
+    name="to_rx_cliff",
+)
 def ry_to_rx_cliff(phi, wires: WiresLike):
     """Decompose ``RY`` using the ``to_rx_cliff`` strategy."""
     change_op_basis(ops.adjoint(ops.S(wires)), RX(phi, wires), ops.S(wires))
 
 
 @subcircuit
-@register_resources(lambda **_: {ops.Hadamard: 1, _adjoint_abstract(ops.S): 1})
+@register_resources({ops.Hadamard: 1, _adjoint_abstract(ops.S): 1})
 def _YToZBasis(wires: WiresLike):
     ops.adjoint(ops.S(wires))
     ops.Hadamard(wires)
 
 
 @subcircuit
-@register_resources(lambda **_: {ops.Hadamard: 1, ops.S: 1})
+@register_resources({ops.Hadamard: 1, ops.S: 1})
 def _ZToYBasis(wires: WiresLike):
     ops.Hadamard(wires)
     ops.S(wires)
 
 
-def _ry_to_rz_cliff_resources(*_, **__):
-    resources = {_change_op_basis_abstract(_YToZBasis(Wire[1]), RZ, _ZToYBasis(Wire[1])): 1}
-    return resources
-
-
-@register_resources(_ry_to_rz_cliff_resources, name="to_rz_cliff")
+@register_resources(
+    {_change_op_basis_abstract(_YToZBasis(Wire[1]), RZ, _ZToYBasis(Wire[1])): 1},
+    name="to_rz_cliff",
+)
 def ry_to_rz_cliff(phi, wires: WiresLike, **__):
     """Decompose ``RY`` using the ``to_rz_cliff`` strategy."""
     change_op_basis(_YToZBasis(wires), RZ(phi, wires), _ZToYBasis(wires))
 
 
-def _ry_to_ppr_resources(*_, **__):
-    return {ops.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1}
-
-
-@register_resources(_ry_to_ppr_resources, name="to_paulirot")
+@register_resources({ops.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1}, name="to_paulirot")
 def ry_to_ppr(phi, wires):
     """Decompose ``RY`` using the ``to_paulirot`` strategy."""
     ops.PauliRot(phi, "Y", wires=wires)
@@ -250,32 +218,20 @@ def controlled_ry_standard(base, control_wires, control_values, work_wires, work
 add_decomps("C(RY)", flip_zero_control(controlled_ry_standard, name="to_ry_mcx"))
 
 
-def _rz_to_ps_resources(phi, wires):  # pylint: disable=unused-argument
-    return {PhaseShift: 1, ops.GlobalPhase: 1}
-
-
-@register_resources(_rz_to_ps_resources, name="to_ps")
+@register_resources({PhaseShift: 1, ops.GlobalPhase: 1}, name="to_ps")
 def rz_to_ps(phi, wires: WiresLike):
     """Decompose ``RZ`` using the ``to_ps`` strategy."""
     PhaseShift(phi, wires)
     ops.GlobalPhase(phi / 2)
 
 
-def _rz_to_rot_resources(phi, wires):  # pylint: disable=unused-argument
-    return {Rot: 1}
-
-
-@register_resources(_rz_to_rot_resources, name="to_rot")
+@register_resources({Rot: 1}, name="to_rot")
 def rz_to_rot(phi, wires: WiresLike):
     """Decompose ``RZ`` using the ``to_rot`` strategy."""
     Rot(0, 0, phi, wires=wires)
 
 
-def _rz_to_ry_rx_resources(phi, wires):  # pylint: disable=unused-argument
-    return {RY: 2, RX: 1}
-
-
-@register_resources(_rz_to_ry_rx_resources, name="to_ry_rx")
+@register_resources({RY: 2, RX: 1}, name="to_ry_rx")
 def rz_to_ry_rx(phi, wires: WiresLike):
     """Decompose ``RZ`` using the ``to_ry_rx`` strategy."""
     RY(np.pi / 2, wires=wires)
@@ -283,33 +239,25 @@ def rz_to_ry_rx(phi, wires: WiresLike):
     RY(-np.pi / 2, wires=wires)
 
 
-def _rz_to_rx_cliff_resources(phi, wires):  # pylint: disable=unused-argument
-    resources = {_change_op_basis_abstract(ops.Hadamard, RX, ops.Hadamard): 1}
-    return resources
-
-
-@register_resources(_rz_to_rx_cliff_resources, name="to_rx_cliff")
+@register_resources(
+    {_change_op_basis_abstract(ops.Hadamard, RX, ops.Hadamard): 1},
+    name="to_rx_cliff",
+)
 def rz_to_rx_cliff(phi, wires: WiresLike):
     """Decompose ``RZ`` using the ``to_rx_cliff`` strategy."""
     change_op_basis(ops.Hadamard(wires), RX(phi, wires), ops.Hadamard(wires))
 
 
-def _rz_to_ry_cliff_resources(phi, wires):  # pylint: disable=unused-argument
-    resources = {_change_op_basis_abstract(_ZToYBasis(Wire[1]), RY, _YToZBasis(Wire[1])): 1}
-    return resources
-
-
-@register_resources(_rz_to_ry_cliff_resources, name="to_ry_cliff")
+@register_resources(
+    {_change_op_basis_abstract(_ZToYBasis(Wire[1]), RY, _YToZBasis(Wire[1])): 1},
+    name="to_ry_cliff",
+)
 def rz_to_ry_cliff(phi, wires: WiresLike):
     """Decompose ``RZ`` using the ``to_ry_cliff`` strategy."""
     change_op_basis(_ZToYBasis(wires), RY(phi, wires), _YToZBasis(wires))
 
 
-def _rz_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
-    return {ops.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1}
-
-
-@register_resources(_rz_to_ppr_resources, name="to_paulirot")
+@register_resources({ops.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1}, name="to_paulirot")
 def rz_to_ppr(phi, wires, **_):
     """Decompose ``RZ`` using the ``to_paulirot`` strategy."""
     ops.PauliRot(phi, "Z", wires=wires)
@@ -366,11 +314,7 @@ def controlled_rz_standard(base, control_wires, control_values, work_wires, work
 add_decomps("C(RZ)", flip_zero_control(controlled_rz_standard, name="to_rz_mcx"))
 
 
-def _phaseshift_to_rz_gp_resources(phi, wires):  # pylint: disable=unused-argument
-    return {RZ: 1, ops.GlobalPhase: 1}
-
-
-@register_resources(_phaseshift_to_rz_gp_resources, name="to_rz_gp")
+@register_resources({RZ: 1, ops.GlobalPhase: 1}, name="to_rz_gp")
 def phaseshift_to_rz_gp(phi, wires: WiresLike, **__):
     """Decompose ``PhaseShift`` using the ``to_rz_gp`` strategy."""
     RZ(phi, wires=wires)
@@ -455,11 +399,7 @@ add_decomps(
 )
 
 
-def _rot_to_rz_ry_rz_resources(phi, theta, omega, wires):  # pylint: disable=unused-argument
-    return {RZ: 2, RY: 1}
-
-
-@register_resources(_rot_to_rz_ry_rz_resources, name="to_rz_ry_rz")
+@register_resources({RZ: 2, RY: 1}, name="to_rz_ry_rz")
 def rot_to_rz_ry_rz(phi, theta, omega, wires: WiresLike):
     """Decompose ``Rot`` using the ``to_rz_ry_rz`` strategy."""
     RZ(phi, wires=wires)
@@ -522,11 +462,7 @@ def controlled_rot_standard(base, control_wires, control_values, work_wires, wor
 add_decomps("C(Rot)", flip_zero_control(controlled_rot_standard, name="to_rz_ry_mcx"))
 
 
-def _u1_to_phaseshift_resources(*_, **__):
-    return {PhaseShift: 1}
-
-
-@register_resources(_u1_to_phaseshift_resources, name="to_phaseshift")
+@register_resources({PhaseShift: 1}, name="to_phaseshift")
 def u1_to_phaseshift(phi, wires):
     """Decompose ``U1`` using the ``to_phaseshift`` strategy."""
     PhaseShift(phi, wires=wires)
@@ -539,11 +475,7 @@ add_decomps("Adjoint(U1)", adjoint_negate_angle)
 add_decomps("Pow(U1)", pow_scale_angle)
 
 
-def _u2_to_phaseshift_rot_resources(phi, delta, wires):  # pylint: disable=unused-argument
-    return {PhaseShift: 2, Rot: 1}
-
-
-@register_resources(_u2_to_phaseshift_rot_resources, name="to_phaseshift_rot")
+@register_resources({PhaseShift: 2, Rot: 1}, name="to_phaseshift_rot")
 def u2_to_phaseshift_rot(phi, delta, wires):
     """Decompose ``U2`` using the ``to_phaseshift_rot`` strategy."""
     pi_half = math.ones_like(delta) * (np.pi / 2)
@@ -555,7 +487,7 @@ def u2_to_phaseshift_rot(phi, delta, wires):
 add_decomps(U2, u2_to_phaseshift_rot)
 
 
-@register_resources(lambda base: {abstractify(U2): 1}, name="invert_angles")
+@register_resources({abstractify(U2): 1}, name="invert_angles")
 def adjoint_u2_standard(base):
     """Decompose ``Adjoint(U2)`` using the ``invert_angles`` strategy."""
     new_delta = math.mod((np.pi - base.phi), (2 * np.pi))
@@ -566,11 +498,7 @@ def adjoint_u2_standard(base):
 add_decomps("Adjoint(U2)", adjoint_u2_standard)
 
 
-def _u3_to_phaseshift_rot_resources(theta, phi, delta, wires):  # pylint: disable=unused-argument
-    return {PhaseShift: 2, Rot: 1}
-
-
-@register_resources(_u3_to_phaseshift_rot_resources, name="to_phaseshift_rot")
+@register_resources({PhaseShift: 2, Rot: 1}, name="to_phaseshift_rot")
 def u3_to_phaseshift_rot(theta, phi, delta, wires):
     """Decompose ``U3`` using the ``to_phaseshift_rot`` strategy."""
     Rot(delta, theta, -delta, wires=wires)
@@ -581,7 +509,7 @@ def u3_to_phaseshift_rot(theta, phi, delta, wires):
 add_decomps(U3, u3_to_phaseshift_rot)
 
 
-@register_resources(lambda base: {abstractify(U3): 1}, name="invert_angles")
+@register_resources({abstractify(U3): 1}, name="invert_angles")
 def adjoint_u3_standard(base):
     """Decompose ``Adjoint(U3)`` using the ``invert_angles`` strategy."""
     new_delta = math.mod((np.pi - base.phi), (2 * np.pi))
