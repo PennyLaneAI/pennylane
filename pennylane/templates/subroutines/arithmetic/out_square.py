@@ -140,7 +140,7 @@ class OutSquare(_SquareArithmeticOp):
 
         dev = qp.device("lightning.qubit", wires=n + 2 * m)
 
-        @qp.qjit(capture=True, static_argnums=0)
+        @qp.qjit(static_argnums=0)
         @qp.qnode(dev)
         def circuit(output_wires):
             # Create a uniform superposition between integers 3 and 7
@@ -210,12 +210,8 @@ class OutSquare(_SquareArithmeticOp):
                 qp.BasisState, qp.CNOT, qp.MultiX, qp.MultiControlledX, qp.TemporaryAND,
                 "Adjoint(TemporaryAND)", qp.SemiAdder, "C(MultiX)",
             }
-            circuit_false = qp.qjit(
-                qp.transforms.decompose(make_circuit(False), gate_set=gate_set), capture=True
-            )
-            circuit_true = qp.qjit(
-                qp.transforms.decompose(make_circuit(True), gate_set=gate_set), capture=True
-            )
+            circuit_false = qp.qjit(qp.transforms.decompose(make_circuit(False), gate_set=gate_set))
+            circuit_true = qp.qjit(qp.transforms.decompose(make_circuit(True), gate_set=gate_set))
 
         We can compute the required resources with ``zeroed=False``, i.e., when not passing
         the information to the template:

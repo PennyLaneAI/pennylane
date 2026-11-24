@@ -141,7 +141,7 @@ class TrotterVibronic(Operator2):
             qp.OutMultiplier, "C(MultiX)",
         }
 
-        @qp.qjit(capture=True, target="mlir")
+        @qp.qjit(target="mlir")
         @qp.transforms.decompose(gate_set=gate_set)
         @qp.qnode(qp.device("null.qubit", wires=all_wires))
         def circuit():

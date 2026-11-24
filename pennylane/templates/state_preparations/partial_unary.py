@@ -712,7 +712,7 @@ class PartialUnaryStatePreparation(Operator2):
 
         dev = qp.device("lightning.qubit", wires=9)
 
-        @qp.qjit(capture=True)
+        @qp.qjit
         @qp.qnode(dev)
         def circuit():
             qp.PartialUnaryStatePreparation(coefficients, wires, indices, work_wires)
@@ -784,7 +784,7 @@ class PartialUnaryStatePreparation(Operator2):
                 "C(MultiX)", qp.MultiControlledX, qp.SWAP,
             }
 
-            @qp.qjit(capture=True, target="mlir")
+            @qp.qjit(target="mlir")
             @qp.transforms.decompose(gate_set=gate_set)
             @qp.qnode(qp.device("null.qubit", wires=15 + num_work_wires))
             def resource_circuit():
