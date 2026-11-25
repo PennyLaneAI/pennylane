@@ -2647,6 +2647,10 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Resource analysis of qjit-compiled circuits now reports :func:`~.pauli_measure` operations
+  as ``PPM-w<n>`` when Catalyst captures them as generic measurements.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * Fixed the extra-control-wire test for :class:`~.QROM` to omit work-register sampling
   when no work wires are present, and removed its outdated expected-failure marker.
   `(#10586) <https://github.com/PennyLaneAI/pennylane/pull/10586>`__
