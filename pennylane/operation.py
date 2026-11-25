@@ -63,7 +63,6 @@ def operation_derivative(operation: Operation) -> TensorLike:
     return 1j * generator @ operation.matrix()
 
 
-@qp.BooleanFn
 def is_trainable(obj):
     """Returns ``True`` if any of the parameters of an operator is trainable
     according to ``qp.math.requires_grad``.

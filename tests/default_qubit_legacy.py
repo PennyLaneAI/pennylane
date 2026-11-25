@@ -252,7 +252,7 @@ class DefaultQubitLegacy(QubitDevice):
                 return not (obj.__class__.__name__[:3] == "Pow" and qp.operation.is_trainable(obj))
             return obj.name in self.observables.union(self.operations)
 
-        return qp.BooleanFn(accepts_obj)
+        return accepts_obj
 
     @functools.lru_cache
     def map_wires(self, wires):
