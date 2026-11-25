@@ -1280,7 +1280,9 @@ Improvements 🛠
   fewer, at the cost of two :class:`~.CNOT` gates, if the first addend register ``x_wires``
   is at least as large as the second addend register ``y_wires``. The same improvement is
   applied to the decomposition of :class:`~.OutSquare`.
-  `(#10599) <https://github.com/PennyLaneAI/pennylane/pull/10599>`__
+* Updated the decomposition of a controlled :class:`~.SemiAdder` to use one controlled :class:`~.CNOT`
+  fewer if the first addend register ``x_wires`` is at least as large as the second addend register 
+  ``y_wires``. The same improvement is applied to the decomposition of :class:`~.OutSquare`.
 
 * Type aliases ``Int``, ``Float``, ``Complex``, ``Bool``, and ``Wire`` have been introduced to allow for intuitive
   abstract type notation.

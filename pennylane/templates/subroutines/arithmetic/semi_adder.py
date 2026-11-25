@@ -145,7 +145,8 @@ def _ctrl_right_block(wires, **ctrl_kwargs):
 
 def _ctrl_middle_cnots(carry, x_msb, target, **ctrl_kwargs):
     """Controlled addition of the carry and, if given, of ``x_msb`` onto ``target``. Instead of
-    two ctrl-CNOTs, the parity of both is computed onto ``carry`` and added with one ctrl-CNOT."""
+    two ctrl-CNOTs, the parity of both is computed onto ``carry`` with a CNOT, added with
+    one ctrl-CNOT, and uncomputed with another CNOT."""
     if x_msb is not None:
         CNOT([x_msb, carry])
     ctrl(CNOT([carry, target]), **ctrl_kwargs)
