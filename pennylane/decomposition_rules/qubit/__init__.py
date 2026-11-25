@@ -12,9 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-r"""Decomposition rules for qubit operators.
-
-.. autosummary::
-
-    matrix_ops
-"""
+"""Decomposition rules for qubit operators."""

@@ -92,6 +92,9 @@ Decompositions
 .. autosummary::
     :toctree: api
 
+    ~one_qubit_decomposition
+    ~two_qubit_decomposition
+    ~multi_qubit_decomposition
     ~sk_decomposition
     ~rs_decomposition
 
@@ -133,8 +136,11 @@ from .controlled_ops import (
     Toffoli,
 )
 from .decompositions import (
+    one_qubit_decomposition,
     sk_decomposition,
     rs_decomposition,
+    two_qubit_decomposition,
+    multi_qubit_decomposition,
     ctrl_decomp_bisect,
     ctrl_decomp_zyz,
 )

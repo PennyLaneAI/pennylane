@@ -23,11 +23,10 @@ from gate_data import CNOT, SWAP, H, I, S, T, X, Y, Z
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.decomposition_rules.qubit.matrix_ops import (
+from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
+from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     _compute_num_cnots,
     multi_qubit_decomposition,
-    one_qubit_decomposition,
-    two_qubit_decomposition,
 )
 from pennylane.wires import Wires
 
@@ -1236,7 +1235,7 @@ class TestTwoQubitDecompositionWarnings:
 
         def my_qfunc(params):
             U = qp.numpy.array(np.eye(4, dtype=np.complex128), requires_grad=True) * params
-            ops = two_qubit_decomposition(U, wires=[0, 1])
+            ops = qp.ops.two_qubit_decomposition(U, wires=[0, 1])
             for op in ops:
                 qp.apply(op)
             return qp.expval(qp.PauliZ(0))
@@ -1261,7 +1260,7 @@ class TestTwoQubitDecompositionWarnings:
         def my_qfunc(params):
             U = torch.eye(4, dtype=torch.complex128) * params
             U.requires_grad_(True)
-            ops = two_qubit_decomposition(U, wires=[0, 1])
+            ops = qp.ops.two_qubit_decomposition(U, wires=[0, 1])
             for op in ops:
                 qp.apply(op)
             return qp.expval(qp.PauliZ(0))
@@ -1286,7 +1285,7 @@ class TestTwoQubitDecompositionWarnings:
 
         def my_qfunc(params):
             U = jnp.array(np.eye(4, dtype=np.complex128)) * params
-            ops = two_qubit_decomposition(U, wires=[0, 1])
+            ops = qp.ops.two_qubit_decomposition(U, wires=[0, 1])
             for op in ops:
                 qp.apply(op)
             return qp.expval(qp.PauliZ(0))
@@ -1309,7 +1308,7 @@ class TestTwoQubitDecompositionWarnings:
 
         def my_qfunc(params):
             U = qp.numpy.array(np.eye(4, dtype=np.complex128), requires_grad=True) * params
-            ops = two_qubit_decomposition(U, wires=[0, 1])
+            ops = qp.ops.two_qubit_decomposition(U, wires=[0, 1])
             for op in ops:
                 qp.apply(op)
             return qp.expval(qp.PauliZ(0))

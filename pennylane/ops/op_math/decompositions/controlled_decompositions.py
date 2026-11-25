@@ -25,6 +25,7 @@ from pennylane.core import queuing
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import register_condition, register_resources
+from pennylane.decomposition.decomposition_rule import _get_registered_decomps
 from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires, concatenate_wires
 
@@ -372,15 +373,12 @@ def _controlled_unitary_multi_control_zyz(
 def _controlled_unitary_two_qubit_resources(
     U, wires, control_values, work_wires, work_wire_type, **_  # pylint: disable=unused-argument
 ):
-    # pylint: disable-next=import-outside-toplevel
-    from pennylane.decomposition_rules.qubit.matrix_ops import (
-        qubit_unitary_two_qubit as _qubit_unitary_two_qubit,
-    )
+    base_rule = _get_registered_decomps("QubitUnitary")["two_qubit"]
 
     num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
     num_control_wires = len(wires) - num_target_wires
     num_work_wires = len(work_wires)
-    base_resources = _qubit_unitary_two_qubit.compute_resources(num_wires=num_target_wires)
+    base_resources = base_rule.compute_resources(num_wires=num_target_wires)
     gate_counts = {
         qp.ctrl(
             base_op_rep,
@@ -405,10 +403,7 @@ def _controlled_unitary_two_qubit_resources(
 def _controlled_unitary_two_qubit(U, wires, control_values, work_wires, work_wire_type, **_):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
 
-    # pylint: disable-next=import-outside-toplevel
-    from pennylane.decomposition_rules.qubit.matrix_ops import (
-        qubit_unitary_two_qubit as _qubit_unitary_two_qubit,
-    )
+    base_rule = _get_registered_decomps("QubitUnitary")["two_qubit"]
 
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
@@ -420,7 +415,7 @@ def _controlled_unitary_two_qubit(U, wires, control_values, work_wires, work_wir
 
     _x_flips()  # pylint: disable=no-value-for-parameter
     ops.ctrl(
-        _qubit_unitary_two_qubit._impl,  # pylint: disable=protected-access
+        base_rule._impl,  # pylint: disable=protected-access
         control=wires[:-2],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
