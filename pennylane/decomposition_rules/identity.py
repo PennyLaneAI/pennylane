@@ -19,9 +19,9 @@ from pennylane import capture, compiler, control_flow, math, ops
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition_rules.common import null_decomp
+from pennylane.ops.identity import GlobalPhase, Identity
 from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle
 from pennylane.ops.op_math.pow2 import _pow_scale_angle
-from pennylane.ops.identity import GlobalPhase, Identity
 from pennylane.typing import Wire
 
 add_decomps(Identity, null_decomp)

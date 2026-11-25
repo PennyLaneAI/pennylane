@@ -39,8 +39,8 @@ from pennylane.decomposition.decomposition_rule import (
     get_fixed_decomp,
 )
 from pennylane.decomposition.resources import resolve_work_wire_type
-from pennylane.decomposition.utils import _to_op_list
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
+from pennylane.decomposition.utils import _to_op_list
 from pennylane.ops.identity import GlobalPhase
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract

@@ -27,9 +27,6 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint,
 )
 from pennylane.decomposition_rules.identity import controlled_g_phase_standard
-from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
-from pennylane.ops.op_math.controlled2 import flip_zero_control
-from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.decomposition_rules.qubit.non_parametric_ops import (
     controlled_hadamard_standard,
     controlled_z_standard,
@@ -41,6 +38,9 @@ from pennylane.decomposition_rules.qubit.parametric_ops_single_qubit import (
     controlled_rot_standard,
     controlled_rx_standard,
 )
+from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
+from pennylane.ops.op_math.controlled2 import flip_zero_control
+from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 
 _decompositions = defaultdict(DecompCollection)
 decompositions = ContextVar("_test_decompositions", default=_decompositions)

@@ -176,7 +176,7 @@ def pow_qubit_unitary_standard(base, z):
 add_decomps("Pow(QubitUnitary)", pow_qubit_unitary_standard)
 
 
-def _controlled_qubit_unitary_standard_resources(  # pylint: disable=unused-argument
+def _cqu_standard_resources(  # pylint: disable=unused-argument
     base,
     control_wires,
     control_values,
@@ -196,9 +196,7 @@ def _controlled_qubit_unitary_standard_resources(  # pylint: disable=unused-argu
     }
 
 
-@register_resources(
-    _controlled_qubit_unitary_standard_resources, name="to_controlled_qubit_unitary"
-)
+@register_resources(_cqu_standard_resources, name="to_controlled_qubit_unitary")
 def controlled_qubit_unitary_standard(
     base, control_wires, control_values, work_wires, work_wire_type
 ):
@@ -245,7 +243,7 @@ def diagonal_qubit_unitary_recursive(D, wires):
         templates.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
 
 
-def _diagonal_qubit_unitary_auxiliary_resources(D, wires):  # pylint: disable=unused-argument
+def _diagonal_qu_auxiliary_resources(D, wires):  # pylint: disable=unused-argument
     num_wires = len(wires)
     return {
         templates.SelectPauliRot(
@@ -257,9 +255,7 @@ def _diagonal_qubit_unitary_auxiliary_resources(D, wires):  # pylint: disable=un
     }
 
 
-@register_resources(
-    _diagonal_qubit_unitary_auxiliary_resources, work_wires={"zeroed": 1}, name="auxiliary"
-)
+@register_resources(_diagonal_qu_auxiliary_resources, work_wires={"zeroed": 1}, name="auxiliary")
 def diagonal_qubit_unitary_auxiliary(D, wires, **_):
     """Decompose ``DiagonalQubitUnitary`` using the ``auxiliary`` strategy."""
     angles = -2 * math.angle(D)

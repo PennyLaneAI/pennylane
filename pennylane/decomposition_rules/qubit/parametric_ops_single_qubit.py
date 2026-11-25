@@ -23,13 +23,12 @@ import numpy as np
 from pennylane import math, ops, templates
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle
+from pennylane.ops.op_math import change_op_basis
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract, _adjoint_negate_angle
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control
 from pennylane.ops.op_math.pow2 import _pow_scale_angle
-from pennylane.ops.op_math import change_op_basis
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.qubit.parametric_ops_single_qubit import PhaseShift, RX, RY, RZ, Rot, U1, U2, U3
+from pennylane.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ, U1, U2, U3, PhaseShift, Rot
 from pennylane.ops.subcircuit import subcircuit
 from pennylane.typing import Float, Wire
 from pennylane.wires import WiresLike, concatenate_wires

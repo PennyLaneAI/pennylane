@@ -24,8 +24,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.symbolic_decomposition import pow_involutory
-from pennylane.decomposition.symbolic_decomposition import self_adjoint_legacy
+from pennylane.decomposition.symbolic_decomposition import pow_involutory, self_adjoint_legacy
 from pennylane.ops.qubit.arithmetic_ops import (
     IntegerComparator,
     QubitCarry,

@@ -317,7 +317,6 @@ def to_zx(tape, expand_measurements=False):
 
     # pylint: disable=import-outside-toplevel
     import pyzx
-    from pennylane.decomposition_rules import null_decomp
 
     ######################################################################
     # pyzx >= 0.10.0: TargetMapper.labels() reads from an explicit set
@@ -326,6 +325,8 @@ def to_zx(tape, expand_measurements=False):
     from packaging.version import Version
     from pyzx.circuit.gates import TargetMapper
     from pyzx.graph import Graph
+
+    from pennylane.decomposition_rules import null_decomp
 
     _pyzx_010 = Version(pyzx.__version__) >= Version("0.10")
 

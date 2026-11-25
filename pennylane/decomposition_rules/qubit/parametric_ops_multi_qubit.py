@@ -21,14 +21,14 @@ import numpy as np
 
 from pennylane import capture, compiler, control_flow, math, ops
 from pennylane.capture.autograph import disable_autograph
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_resources, symbolic_decomposition
+from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control
 from pennylane.ops.op_math.pow2 import _pow_scale_angle
-from pennylane.decomposition import symbolic_decomposition
-from pennylane.math.decomposition import decomp_int_to_powers_of_two
-from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.qubit.parametric_ops_multi_qubit import (
+    PSWAP,
     CPhaseShift00,
     CPhaseShift01,
     CPhaseShift10,
@@ -37,9 +37,8 @@ from pennylane.ops.qubit.parametric_ops_multi_qubit import (
     IsingYY,
     IsingZZ,
     MultiRZ,
-    PCPhase,
-    PSWAP,
     PauliRot,
+    PCPhase,
 )
 from pennylane.ops.subcircuit import subcircuit
 from pennylane.typing import Bool, Float, TensorLike, Wire
@@ -499,7 +498,9 @@ add_decomps("Adjoint(IsingXY)", _adjoint_negate_angle)
 add_decomps("Pow(IsingXY)", _pow_scale_angle)
 
 
-@register_resources({ops.SWAP: 1, ops.CNOT: 2, ops.PhaseShift: 1}, name="to_swap_cnot_phaseshift_cnot")
+@register_resources(
+    {ops.SWAP: 1, ops.CNOT: 2, ops.PhaseShift: 1}, name="to_swap_cnot_phaseshift_cnot"
+)
 def pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__):
     """Decompose ``PSWAP`` using the ``to_swap_cnot_phaseshift_cnot`` strategy."""
     ops.SWAP(wires=wires)

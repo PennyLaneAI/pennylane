@@ -25,26 +25,26 @@ import numpy as np
 
 from pennylane import allocation, math, ops
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.ops.op_math.controlled2 import flip_zero_control
-from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period, pow_involutory
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.ops.mid_measure.pauli_measure import pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.op_math.controlled2 import flip_zero_control
+from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period, pow_involutory
 from pennylane.ops.qubit.non_parametric_ops import (
     ECR,
-    Hadamard,
     ISWAP,
     PPR_2,
     PPR_4,
     PPR_8,
+    SISWAP,
+    SWAP,
+    SX,
+    Hadamard,
     PauliX,
     PauliY,
     PauliZ,
     S,
-    SISWAP,
-    SWAP,
-    SX,
     T,
 )
 from pennylane.ops.subcircuit import subcircuit
@@ -92,7 +92,11 @@ def hadamard_to_ppm(wires, **__):
 
 
 @register_resources(
-    {PPR_2(1, "Z", Wire[1]): 1, PPR_4(1, "Y", Wire[1]): 1, ops.GlobalPhase: 1},
+    {
+        PPR_2(1, "Z", Wire[1]): 1,
+        PPR_4(1, "Y", Wire[1]): 1,
+        ops.GlobalPhase: 1,
+    },
     name="to_ppr",
 )
 def hadamard_to_ppr(wires: WiresLike, **__):
@@ -107,9 +111,7 @@ add_decomps("Adjoint(Hadamard)", self_adjoint)
 add_decomps("Pow(Hadamard)", pow_involutory)
 
 
-def _controlled_hadamard_standard_resources(
-    base, control_wires, control_values, work_wires, work_wire_type
-):
+def _ch_standard_resources(base, control_wires, control_values, work_wires, work_wire_type):
     if len(control_wires) == 1:
         return {ops.CH: 1}
     return {
@@ -123,9 +125,10 @@ def _controlled_hadamard_standard_resources(
     }
 
 
-@register_resources(_controlled_hadamard_standard_resources, name="to_mcx")
+@register_resources(_ch_standard_resources, name="to_mcx")
 def controlled_hadamard_standard(base, control_wires, control_values, work_wires, work_wire_type):
     """Decompose ``C(Hadamard)`` using the ``to_mcx`` strategy."""
+
     wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
         ops.CH(wires)
@@ -234,7 +237,7 @@ def _controlled_y_standard_resources(
         return {ops.CY: 1}
     return {
         S: 1,
-        _adjoint_abstract(S): 1,
+        ops.adjoint(S(Wire[1])): 1,
         ops.MultiControlledX(
             Wire[len(control_wires) + 1],
             work_wires=Wire[len(work_wires)],
@@ -299,9 +302,7 @@ add_decomps("Adjoint(PauliZ)", self_adjoint)
 add_decomps("Pow(PauliZ)", pow_involutory, pow_z_standard, pow_z_to_s, pow_z_to_t)
 
 
-def _controlled_z_standard_resources(
-    base, control_wires, control_values, work_wires, work_wire_type
-):
+def _cz_standard_resources(base, control_wires, control_values, work_wires, work_wire_type):
     if len(control_wires) == 1:
         return {ops.CZ: 1}
     return {
@@ -314,7 +315,7 @@ def _controlled_z_standard_resources(
     }
 
 
-@register_resources(_controlled_z_standard_resources, name="to_mcx")
+@register_resources(_cz_standard_resources, name="to_mcx")
 def controlled_z_standard(base, control_wires, control_values, work_wires, work_wire_type):
     """Decompose ``C(PauliZ)`` using the ``to_mcx`` strategy."""
     wires = concatenate_wires(control_wires, base.wires)
@@ -504,7 +505,16 @@ add_decomps(
 )
 
 
-@register_resources({PauliZ: 1, ops.CNOT: 1, SX: 1, ops.RX: 2, ops.RY: 1}, name="to_cnot_single_qubit")
+@register_resources(
+    {
+        PauliZ: 1,
+        ops.CNOT: 1,
+        SX: 1,
+        ops.RX: 2,
+        ops.RY: 1,
+    },
+    name="to_cnot_single_qubit",
+)
 def ecr_standard(wires, **_):
     """Decompose ``ECR`` using the ``to_cnot_single_qubit`` strategy."""
     PauliZ(wires=[wires[0]])
@@ -532,7 +542,10 @@ def iswap_standard(wires):
 
 
 @register_resources(
-    {PPR_4(-1, pauli_word="XX", wires=Wire[2]): 1, PPR_4(-1, pauli_word="YY", wires=Wire[2]): 1},
+    {
+        PPR_4(-1, pauli_word="XX", wires=Wire[2]): 1,
+        PPR_4(-1, pauli_word="YY", wires=Wire[2]): 1,
+    },
     name="to_ppr",
 )
 def iswap_to_ppr(wires):
@@ -580,7 +593,10 @@ def siswap_standard(wires):
 
 
 @register_resources(
-    {PPR_8(-1, pauli_word="XX", wires=Wire[2]): 1, PPR_8(-1, pauli_word="YY", wires=Wire[2]): 1},
+    {
+        PPR_8(-1, pauli_word="XX", wires=Wire[2]): 1,
+        PPR_8(-1, pauli_word="YY", wires=Wire[2]): 1,
+    },
     name="to_ppr",
 )
 def siswap_to_ppr(wires, **_):
