@@ -837,6 +837,7 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         If ``True``, the operator has been captured as an instruction in the
         active tracing context. If ``False``, the operator has not been captured
         or the tracing context is no longer active."""
+        # pylint: disable=protected-access
         return self.tracer is not None and self.tracer._trace.is_valid()
 
     @classproperty
