@@ -26,35 +26,32 @@ from pennylane.transforms import _tape_decompose
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
-# (angles, wires, work_wires)
+# (angle, wires, work_wires)
 SMALL_CASES = [
-    ([0.4], [0], []),
-    ([0.4], [0, 1, 2], []),
-    ([0.3, -1.2, 2.5], [0, 1, 2], []),
-    ([0.3, -1.2], [0, 1, 2, 3], []),
-    ([0.7], [0, 1], [2]),
-    ([0.3, -1.2], [3, 1, 0, 5], [4, 2]),
+    (0.4, [0], []),
+    (-1.2, [0, 1, 2], []),
+    (0.7, [0, 1], [2]),
+    (2.5, [3, 1, 0, 5], [4, 2]),
 ]
 
-# Gate counts per block of the Hamming-weight phasing rule, by block size. It computes the Hamming
-# weight of all wires of a block, except for blocks of four wires, where it computes the Hamming
-# weight of three wires and rotates the fourth one separately. Each AND uses one work wire, and the
-# uncomputation repeats the CNOTs.
+# Gate counts of the Hamming-weight phasing rule, by number of wires. It computes the Hamming weight
+# of all wires, except for four wires, where it computes the Hamming weight of three wires and
+# rotates the fourth one separately. Each AND uses one work wire, and the uncomputation repeats the
+# CNOTs.
 HWP_COUNTS = {
-    m: {"TemporaryAND": a, "Adjoint(TemporaryAND)": a, "CNOT": c, "PhaseShift": r, "GlobalPhase": 1}
+    m: {"TemporaryAND": a, "Adjoint(TemporaryAND)": a, "CNOT": c, "PhaseShift": r}
     for m, a, c, r in [(3, 1, 10, 2), (4, 1, 10, 3), (5, 3, 22, 3), (6, 4, 32, 3), (7, 4, 40, 3)]
 }
 
 
-def _random_angles(num_angles, seed):
-    return np.random.default_rng(seed).uniform(-2 * np.pi, 2 * np.pi, num_angles)
+def _random_angle(seed):
+    return np.random.default_rng(seed).uniform(-2 * np.pi, 2 * np.pi)
 
 
-def _random_rz_layer(num_angles, block_size, num_work_wires, seed):
-    """An RZLayer with random angles on the wires ``0, 1, ...``, followed by its work wires."""
-    num_wires = num_angles * block_size
+def _random_rz_layer(num_wires, num_work_wires, seed):
+    """An RZLayer with a random angle on the wires ``0, 1, ...``, followed by its work wires."""
     return qp.RZLayer(
-        _random_angles(num_angles, seed),
+        _random_angle(seed),
         wires=range(num_wires),
         work_wires=range(num_wires, num_wires + num_work_wires),
     )
@@ -64,59 +61,40 @@ class TestInitialization:
     """Tests for the arguments of RZLayer."""
 
     @pytest.mark.parametrize(
-        "angles, wires, work_wires",
-        SMALL_CASES + [([0.3, -1.2], ["a", "b", "c", "d"], ["w0", "w1"])],
+        "angle, wires, work_wires", SMALL_CASES + [(0.3, ["a", "b", "c"], ["w0", "w1"])]
     )
-    def test_arguments(self, angles, wires, work_wires):
-        """Test that the angles are stored as an array and that the work wires are part of
-        ``op.wires``."""
-        op = qp.RZLayer(angles, wires, work_wires)
+    def test_arguments(self, angle, wires, work_wires):
+        """Test that the work wires are part of ``op.wires``."""
+        op = qp.RZLayer(angle, wires, work_wires)
 
-        assert isinstance(op.angles, np.ndarray)
-        assert np.allclose(op.angles, angles)
+        assert op.angle == angle
         assert op.arguments["wires"] == Wires(wires)
         assert op.work_wires == Wires(work_wires)
         assert op.wires == Wires(wires + work_wires)
 
-    @pytest.mark.parametrize(
-        "angles, wires, work_wires, match",
-        [
-            ([[0.1, 0.2]], [0, 1], [], "one-dimensional"),
-            (Float[1, 2], Wire[2], Wire[0], "one-dimensional"),
-            ([], [0, 1], [], "at least one angle"),
-            (Float[0], Wire[2], Wire[0], "at least one angle"),
-            ([0.1, 0.2], [0, 1, 2], [], "multiple of the number of angles"),
-            (Float[2], Wire[3], Wire[0], "multiple of the number of angles"),
-            ([0.1], [0, 1], [1], "must not overlap"),
-        ],
-    )
-    def test_invalid_arguments(self, angles, wires, work_wires, match):
-        """Test that invalid shapes and overlapping wires raise an error."""
-        with pytest.raises(ValueError, match=match):
-            qp.RZLayer(angles, wires, work_wires)
+    def test_overlapping_wires(self):
+        """Test that overlapping wires and work wires raise an error."""
+        with pytest.raises(ValueError, match="must not overlap"):
+            qp.RZLayer(0.1, [0, 1], [1])
 
-    @pytest.mark.parametrize(
-        "num_angles, block_size, num_work_wires", [(1, 1, 0), (3, 2, 2), (2, 4, 1)]
-    )
-    def test_abstract_resource_rep(self, num_angles, block_size, num_work_wires, seed):
-        """Test that the resource representation is keyed by the numbers of angles, wires and
-        work wires only, and can be built from abstract inputs."""
-        num_wires = num_angles * block_size
+    @pytest.mark.parametrize("num_wires, num_work_wires", [(1, 0), (6, 2), (8, 1)])
+    def test_abstract_resource_rep(self, num_wires, num_work_wires, seed):
+        """Test that the resource representation is keyed by the numbers of wires and work wires
+        only, and can be built from abstract inputs."""
         op = qp.RZLayer(
-            _random_angles(num_angles, seed),
+            _random_angle(seed),
             wires=range(num_wires),
             work_wires=range(num_wires, num_wires + num_work_wires),
         )
-        abstract_op = qp.RZLayer(Float[num_angles], Wire[num_wires], Wire[num_work_wires])
+        abstract_op = qp.RZLayer(Float, Wire[num_wires], Wire[num_work_wires])
 
         assert abstract_op.wires == Wire[num_wires + num_work_wires]
         assert abstractify(op) == abstract_op
         assert hash(abstractify(op)) == hash(abstract_op)
 
     @pytest.mark.catalyst
-    def test_traced_angles_in_list(self):
-        """Test that angles given as a list of traced scalars are compiled into one RZLayer."""
-        pytest.importorskip("catalyst")
+    def test_traced_angle(self):
+        """Test that a traced angle is compiled into one RZLayer."""
 
         @qp.qjit(capture=True)
         @qp.decompose(gate_set={"Hadamard", "RZ"})
@@ -124,7 +102,7 @@ class TestInitialization:
         def circuit(phi):
             qp.H(0)
             qp.H(1)
-            qp.RZLayer([phi / 2], wires=[0, 1])
+            qp.RZLayer(phi / 2, wires=[0, 1])
             return qp.expval(qp.X(0) @ qp.X(1))
 
         assert qp.analyze(circuit, level=0)(0.3).resources.counts == {"Hadamard": 2, "RZLayer": 1}
@@ -132,184 +110,164 @@ class TestInitialization:
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
-@pytest.mark.parametrize("angles, wires, work_wires", SMALL_CASES)
-def test_assert_valid(angles, wires, work_wires):
+@pytest.mark.parametrize("angle, wires, work_wires", SMALL_CASES)
+def test_assert_valid(angle, wires, work_wires):
     """Run the standard Operator2 validity checks, which include those of the decomposition rules
     of RZLayer and its adjoint."""
-    qp.testing.assert_valid(qp.RZLayer(angles, wires, work_wires))
+    qp.testing.assert_valid(qp.RZLayer(angle, wires, work_wires))
 
 
 class TestDecomposition:
     """Tests for the decomposition rules of RZLayer."""
 
-    @pytest.mark.parametrize(
-        "num_angles, block_size, num_work_wires", [(1, 1, 0), (3, 2, 2), (2, 7, 1)]
-    )
-    def test_individual_rule_resources_from_shapes(self, num_angles, block_size, num_work_wires):
+    @pytest.mark.parametrize("num_wires, num_work_wires", [(1, 0), (6, 2), (7, 1)])
+    def test_individual_rule_resources_from_shapes(self, num_wires, num_work_wires):
         """Test that the individual rule's resources and work wire spec are computed from the
-        abstract shapes ``Float[k]``, ``Wire[k*m]`` and ``Wire[w]``."""
+        abstract shapes ``Float``, ``Wire[m]`` and ``Wire[w]``."""
         abstract_args = {
-            "angles": Float[num_angles],
-            "wires": Wire[num_angles * block_size],
+            "angle": Float,
+            "wires": Wire[num_wires],
             "work_wires": Wire[num_work_wires],
         }
 
         resources = _rzlayer_individual.compute_resources(**abstract_args)
 
-        assert resources.gate_counts == {abstractify(qp.RZ): num_angles * block_size}
+        assert resources.gate_counts == {abstractify(qp.RZ): num_wires}
         assert _rzlayer_individual.get_work_wire_spec(**abstract_args).total == 0
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize("num_angles, block_size", [(1, 1), (1, 5), (3, 2)])
-    def test_qjit_graph_decomposition(self, num_angles, block_size, seed):
+    @pytest.mark.parametrize("num_wires", [1, 5])
+    def test_qjit_graph_decomposition(self, num_wires, seed):
         """Test that, compiled with the graph, an RZLayer and its adjoint apply one RZ per wire,
-        with ``angles[i]`` and ``-angles[i]`` on block ``i``. On ``|+>``, ``RZ(a)`` gives
-        ``<X> = cos(a)`` and ``<Y> = sin(a)``."""
-        pytest.importorskip("catalyst")
-        angles = _random_angles(num_angles, seed)
-        num_wires = num_angles * block_size
+        with ``angle`` and ``-angle``. On ``|+>``, ``RZ(a)`` gives ``<X> = cos(a)`` and
+        ``<Y> = sin(a)``."""
+        angle = _random_angle(seed)
 
         @qp.qjit(capture=True)
         @qp.decompose(gate_set={"Hadamard", "RZ"})
         @qp.qnode(qp.device("lightning.qubit", wires=2 * num_wires + 1))
-        def circuit(angles):
+        def circuit(angle):
             for wire in range(2 * num_wires):
                 qp.H(wire)
-            qp.RZLayer(angles, wires=range(num_wires), work_wires=[2 * num_wires])
-            qp.adjoint(qp.RZLayer(angles, wires=range(num_wires, 2 * num_wires)))
+            qp.RZLayer(angle, wires=range(num_wires), work_wires=[2 * num_wires])
+            qp.adjoint(qp.RZLayer(angle, wires=range(num_wires, 2 * num_wires)))
             return [qp.expval(qp.X(w)) for w in range(2 * num_wires)] + [
                 qp.expval(qp.Y(w)) for w in range(2 * num_wires)
             ]
 
-        expected = np.concatenate([np.repeat(angles, block_size), -np.repeat(angles, block_size)])
-        assert np.allclose(circuit(angles), np.concatenate([np.cos(expected), np.sin(expected)]))
-        counts = qp.analyze(circuit, level="device")(angles).resources.counts
+        expected = np.repeat([angle, -angle], num_wires)
+        assert np.allclose(circuit(angle), np.concatenate([np.cos(expected), np.sin(expected)]))
+        counts = qp.analyze(circuit, level="device")(angle).resources.counts
         assert counts == {"Hadamard": 2 * num_wires, "RZ": 2 * num_wires}
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
-        "num_angles, block_size, num_work_wires",
-        [(1, 3, 1), (3, 3, 0), (2, 4, 1), (1, 5, 2), (2, 6, 4), (1, 7, 0)],
+        "num_wires, num_work_wires", [(3, 1), (3, 0), (4, 1), (5, 2), (6, 4), (7, 0)]
     )
-    def test_hwp_synthesis_rule_valid(self, num_angles, block_size, num_work_wires, seed):
+    def test_hwp_synthesis_rule_valid(self, num_wires, num_work_wires, seed):
         """Test that the Hamming-weight phasing rule is valid, with enough work wires and with
         too few, in which case it allocates the missing ones."""
-        op = _random_rz_layer(num_angles, block_size, num_work_wires, seed)
+        op = _random_rz_layer(num_wires, num_work_wires, seed)
         assert_valid_decomp_rule(op, _rzlayer_hwp_synthesis, check_matrix=False)
 
     @pytest.mark.parametrize(
-        "num_angles, block_size, num_work_wires",
-        [(1, 3, 1), (1, 4, 1), (1, 5, 3), (1, 6, 4), (1, 7, 4), (3, 3, 1), (2, 4, 1)],
+        "num_wires, num_work_wires", [(3, 1), (4, 1), (5, 3), (5, 4), (6, 4), (7, 4)]
     )
-    def test_hwp_synthesis_state(self, num_angles, block_size, num_work_wires, seed):
+    def test_hwp_synthesis_state(self, num_wires, num_work_wires, seed):
         """Test that the Hamming-weight phasing rule realizes the rotations including their global
         phase on a random state if its work wires start in zero, and that it returns them to
         zero."""
-        op = _random_rz_layer(num_angles, block_size, num_work_wires, seed)
+        op = _random_rz_layer(num_wires, num_work_wires, seed)
         wires = op.arguments["wires"]
-        state = np.array([1, 1j]) @ np.random.default_rng(seed).normal(size=(2, 2 ** len(wires)))
+        state = np.array([1, 1j]) @ np.random.default_rng(seed).normal(size=(2, 2**num_wires))
         state /= np.linalg.norm(state)
 
         @qp.qnode(qp.device("default.qubit", wires=op.wires))
         def circuit():
             qp.StatePrep(state, wires=wires)
-            _rzlayer_hwp_synthesis(op.angles, wires, op.work_wires)
+            _rzlayer_hwp_synthesis(op.angle, wires, op.work_wires)
             return qp.state()
 
         expected = np.kron(
-            qp.matrix(qp.RZLayer(op.angles, wires)) @ state, np.eye(2**num_work_wires)[0]
+            qp.matrix(qp.RZLayer(op.angle, wires)) @ state, np.eye(2**num_work_wires)[0]
         )
         assert np.allclose(circuit(), expected)
 
-    @pytest.mark.parametrize(
-        "num_angles, block_size, num_work_wires", [(1, 3, 0), (2, 5, 1), (1, 6, 2)]
-    )
-    def test_hwp_synthesis_allocates_missing_work_wires(
-        self, num_angles, block_size, num_work_wires, seed
-    ):
+    @pytest.mark.parametrize("num_wires, num_work_wires", [(3, 0), (5, 1), (6, 2)])
+    def test_hwp_synthesis_allocates_missing_work_wires(self, num_wires, num_work_wires, seed):
         """Test that the Hamming-weight phasing rule realizes the rotations if it allocates the
         missing work wires. On ``|+>``, ``RZ(a)`` gives ``<X> = cos(a)`` and ``<Y> = sin(a)``."""
-        op = _random_rz_layer(num_angles, block_size, num_work_wires, seed)
+        op = _random_rz_layer(num_wires, num_work_wires, seed)
         wires = op.arguments["wires"]
 
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             for wire in wires:
                 qp.H(wire)
-            _rzlayer_hwp_synthesis(op.angles, wires, op.work_wires)
+            _rzlayer_hwp_synthesis(op.angle, wires, op.work_wires)
             return [qp.expval(qp.X(w)) for w in wires] + [qp.expval(qp.Y(w)) for w in wires]
 
-        expected = np.repeat(op.angles, block_size)
-        assert np.allclose(circuit(), np.concatenate([np.cos(expected), np.sin(expected)]))
+        expected = np.repeat([np.cos(op.angle), np.sin(op.angle)], num_wires)
+        assert np.allclose(circuit(), expected)
 
-    @pytest.mark.parametrize("num_angles", [1, 3])
-    @pytest.mark.parametrize("block_size", HWP_COUNTS)
-    def test_hwp_synthesis_counts(self, num_angles, block_size, seed):
+    @pytest.mark.parametrize("num_wires", HWP_COUNTS)
+    def test_hwp_synthesis_counts(self, num_wires, seed):
         """Test the gate counts of the Hamming-weight phasing rule, which only uses the wires of
         the operator if it has enough work wires."""
-        block_counts = HWP_COUNTS[block_size]
-        op = _random_rz_layer(num_angles, block_size, block_counts["TemporaryAND"], seed)
+        counts = HWP_COUNTS[num_wires]
+        op = _random_rz_layer(num_wires, counts["TemporaryAND"], seed)
 
         [tape], _ = _tape_decompose(
             qp.tape.QuantumScript([op]),
-            gate_set=set(block_counts),
+            gate_set=set(counts) | {"GlobalPhase"},
             fixed_decomps={qp.RZLayer: _rzlayer_hwp_synthesis},
         )
 
-        counts = Counter(gate.name for gate in tape.operations)
-        assert counts == {name: num_angles * count for name, count in block_counts.items()}
+        assert Counter(gate.name for gate in tape.operations) == counts | {"GlobalPhase": 1}
         assert set(tape.wires) == set(op.wires)
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "num_angles, block_size, num_work_wires", [(1, 3, 1), (2, 4, 1), (1, 6, 4)]
-    )
-    def test_hwp_synthesis_qjit(self, num_angles, block_size, num_work_wires, seed):
+    @pytest.mark.parametrize("num_wires, num_work_wires", [(3, 1), (4, 1), (6, 4)])
+    def test_hwp_synthesis_qjit(self, num_wires, num_work_wires, seed):
         """Test that, compiled with qjit, the Hamming-weight phasing rule realizes the rotations.
         The RZLayer provides all work wires the rule needs, as Catalyst does not support the
         dynamic allocation of missing ones."""
-        pytest.importorskip("catalyst")
-        op = _random_rz_layer(num_angles, block_size, num_work_wires, seed)
+        op = _random_rz_layer(num_wires, num_work_wires, seed)
         wires = op.arguments["wires"]
-        gate_set = {"H", *HWP_COUNTS[block_size]}
+        gate_set = {"H", "GlobalPhase", *HWP_COUNTS[num_wires]}
 
         @qp.qjit(capture=True)
         @qp.decompose(gate_set=gate_set, fixed_decomps={qp.RZLayer: _rzlayer_hwp_synthesis})
         @qp.qnode(qp.device("lightning.qubit", wires=len(op.wires)))
-        def circuit(angles):
+        def circuit(angle):
             for wire in wires:
                 qp.H(wire)
-            qp.RZLayer(angles, wires, work_wires=op.work_wires)
+            qp.RZLayer(angle, wires, work_wires=op.work_wires)
             return [qp.expval(qp.X(w)) for w in wires] + [qp.expval(qp.Y(w)) for w in wires]
 
-        expected = np.repeat(op.angles, block_size)
-        assert np.allclose(circuit(op.angles), np.concatenate([np.cos(expected), np.sin(expected)]))
-        counts = qp.analyze(circuit, level="device")(op.angles).resources.counts
-        assert counts["PhaseShift"] == num_angles * HWP_COUNTS[block_size]["PhaseShift"]
+        expected = np.repeat([np.cos(op.angle), np.sin(op.angle)], num_wires)
+        assert np.allclose(circuit(op.angle), expected)
+        counts = qp.analyze(circuit, level="device")(op.angle).resources.counts
+        assert counts["PhaseShift"] == HWP_COUNTS[num_wires]["PhaseShift"]
 
-    @pytest.mark.parametrize("num_angles", [1, 3])
-    @pytest.mark.parametrize("block_size", HWP_COUNTS)
-    def test_hwp_synthesis_work_wire_spec(self, num_angles, block_size, seed):
+    @pytest.mark.parametrize("num_wires", HWP_COUNTS)
+    def test_hwp_synthesis_work_wire_spec(self, num_wires, seed):
         """Test that the Hamming-weight phasing rule only requests the missing work wires, so that
         Catalyst does not exclude it if the operator has enough work wires."""
-        num_ands = HWP_COUNTS[block_size]["TemporaryAND"]
+        num_ands = HWP_COUNTS[num_wires]["TemporaryAND"]
         for num_work_wires in range(num_ands + 2):
-            op = _random_rz_layer(num_angles, block_size, num_work_wires, seed)
+            op = _random_rz_layer(num_wires, num_work_wires, seed)
             spec = _rzlayer_hwp_synthesis.get_work_wire_spec(**op.arguments)
             assert spec.total == max(num_ands - num_work_wires, 0)
 
-    @pytest.mark.parametrize(
-        "num_angles, block_size, num_work_wires", [(1, 3, 0), (3, 4, 1), (2, 7, 4)]
-    )
-    def test_hwp_synthesis_resources_from_shapes(
-        self, num_angles, block_size, num_work_wires, seed
-    ):
+    @pytest.mark.parametrize("num_wires, num_work_wires", [(3, 0), (4, 1), (7, 4)])
+    def test_hwp_synthesis_resources_from_shapes(self, num_wires, num_work_wires, seed):
         """Test that the Hamming-weight phasing rule computes its resources and work wire spec
-        from the abstract shapes ``Float[k]``, ``Wire[k*m]`` and ``Wire[w]``."""
-        op = _random_rz_layer(num_angles, block_size, num_work_wires, seed)
+        from the abstract shapes ``Float``, ``Wire[m]`` and ``Wire[w]``."""
+        op = _random_rz_layer(num_wires, num_work_wires, seed)
         abstract_args = {
-            "angles": Float[num_angles],
-            "wires": Wire[num_angles * block_size],
+            "angle": Float,
+            "wires": Wire[num_wires],
             "work_wires": Wire[num_work_wires],
         }
         rule = _rzlayer_hwp_synthesis
@@ -319,24 +277,26 @@ class TestDecomposition:
         assert resources.gate_counts == rule.compute_resources(**op.arguments).gate_counts
         assert rule.get_work_wire_spec(**abstract_args) == rule.get_work_wire_spec(**op.arguments)
 
-    @pytest.mark.parametrize("num_angles, block_size", [(1, 1), (3, 1), (1, 2), (2, 2)])
-    def test_hwp_synthesis_needs_three_wires_per_block(self, num_angles, block_size):
-        """Test that the Hamming-weight phasing rule does not apply to blocks of fewer than three
-        wires, which it would not make cheaper."""
-        abstract_args = {
-            "angles": Float[num_angles],
-            "wires": Wire[num_angles * block_size],
-            "work_wires": Wire[2],
-        }
+    @pytest.mark.parametrize("num_wires", [1, 2])
+    def test_hwp_synthesis_needs_three_wires(self, num_wires):
+        """Test that the Hamming-weight phasing rule does not apply to fewer than three wires,
+        which it would not make cheaper."""
+        abstract_args = {"angle": Float, "wires": Wire[num_wires], "work_wires": Wire[2]}
         assert not _rzlayer_hwp_synthesis.is_applicable(**abstract_args)
 
 
-def test_adjoint_negates_angles():
-    """Test that the adjoint negates the angles and keeps the wires and work wires."""
-    op = qp.RZLayer([0.3, -1.2], wires=[0, 1, 2, 3], work_wires=[4])
+def test_rule_names():
+    """Test the names of the decomposition rules, which select them in ``fixed_decomps``."""
+    assert {"to_rz", "hamming_weight_phasing"} <= {
+        rule.name for rule in qp.list_decomps(qp.RZLayer)
+    }
+    assert "negate_angle" in [rule.name for rule in qp.list_decomps("Adjoint(RZLayer)")]
+
+
+def test_adjoint_negates_angle():
+    """Test that the adjoint negates the angle and keeps the wires and work wires."""
+    op = qp.RZLayer(0.3, wires=[0, 1, 2], work_wires=[3])
 
     assert op.has_adjoint
-    qp.assert_equal(
-        op.adjoint(), qp.RZLayer(np.array([-0.3, 1.2]), wires=[0, 1, 2, 3], work_wires=[4])
-    )
+    qp.assert_equal(op.adjoint(), qp.RZLayer(-0.3, wires=[0, 1, 2], work_wires=[3]))
     assert np.allclose(qp.matrix(op.adjoint()), qp.matrix(op).conj().T)

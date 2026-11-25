@@ -140,7 +140,7 @@ class TestDecomposition:
         [cob] = qp.testing.decomp_rule_to_tape(op, _givens_pair_rzlayer).operations
 
         qp.assert_equal(cob.compute_op, _GivensPairFrame(wires))
-        qp.assert_equal(cob.target_op, qp.RZLayer(np.array([0.2]), wires, work_wires))
+        qp.assert_equal(cob.target_op, qp.RZLayer(0.2, wires, work_wires))
         qp.assert_equal(cob.uncompute_op, qp.adjoint(_GivensPairFrame(wires)))
 
     def test_rzlayer_rule_gates_and_matrix(self):
@@ -168,7 +168,7 @@ class TestDecomposition:
         assert resources.gate_counts == {abstractify(qp.SingleExcitation): 2}
 
         frame = _GivensPairFrame(Wire[4])
-        target = qp.RZLayer(Float[1], Wire[4], Wire[num_work_wires])
+        target = qp.RZLayer(Float, Wire[4], Wire[num_work_wires])
         resources = _givens_pair_rzlayer.compute_resources(**abstract_args)
         assert resources.gate_counts == {qp.ops.ChangeOpBasis2(frame, target, qp.adjoint(frame)): 1}
 
@@ -189,7 +189,6 @@ class TestDecomposition:
     )
     def test_qjit(self, rule, gate_set, expected_counts):
         """Test that each rule, compiled with qjit, gives the expected value and gates."""
-        pytest.importorskip("catalyst")
 
         @qp.qjit(capture=True)
         @qp.decompose(gate_set=gate_set, fixed_decomps={qp.GivensPair: rule})
@@ -246,6 +245,13 @@ class TestInterfaces:
         value, grad = jax.jit(jax.value_and_grad(circuit))(jax.numpy.array(0.4))
         assert np.isclose(value, np.cos(0.4) ** 2)
         assert np.isclose(grad, -np.sin(0.8))
+
+
+def test_rule_names():
+    """Test the names of the decomposition rules, which select them in ``fixed_decomps``."""
+    names = {rule.name for rule in qp.list_decomps(qp.GivensPair)}
+    assert {"to_single_excitations", "to_rz_layer"} <= names
+    assert "negate_angle" in [rule.name for rule in qp.list_decomps("Adjoint(GivensPair)")]
 
 
 def test_adjoint_negates_angle():

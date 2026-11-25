@@ -9,21 +9,97 @@ New features since last release
   one :class:`~.RZLayer`.
   `(#10578) <https://github.com/PennyLaneAI/pennylane/pull/10578>`__
 
-* :func:`~.transforms.decompositions.make_rzlayer_to_phase_gradient_decomp` creates a phase
-  gradient decomposition rule for :class:`~.RZLayer`, which needs a single adder for each block
-  with an even number of wires, or for each batch of ``batch_size`` distinct angles.
+* The new :class:`~.RZLayer` applies :class:`~.RZ` rotations by the same angle to each of its
+  wires. The shared angle allows for more efficient decomposition rules than individual rotations,
+  such as Hamming-weight phasing, which applies :math:`\lfloor \log_2 m \rfloor + 1` rotations
+  instead of :math:`m` to :math:`m \geq 3` wires. Phase gradient rules created with
+  :func:`~.transforms.decompositions.make_rzlayer_to_phase_gradient_decomp` need a single adder
+  for :math:`m \geq 2` wires.
+  `(#10508) <https://github.com/PennyLaneAI/pennylane/pull/10508>`__
+  `(#10519) <https://github.com/PennyLaneAI/pennylane/pull/10519>`__
   `(#10577) <https://github.com/PennyLaneAI/pennylane/pull/10577>`__
 
-* A new decomposition rule for :class:`~.RZLayer`, ``_rzlayer_hwp_synthesis``, uses Hamming-weight
-  phasing to apply :math:`\lfloor \log_2 m \rfloor + 1` rotations instead of :math:`m` to each
-  block of :math:`m \geq 3` wires.
-  `(#10519) <https://github.com/PennyLaneAI/pennylane/pull/10519>`__
+* :class:`~.QROM` has been divided by splitting off two new operators, :class:`~.QROMLoad` and
+  :class:`~.SelectSwap`, for the specific scenario of zeroed target wires, i.e., for data
+  loading rather than XORing. The latter is now done by :class:`~.QROM`. 
+  Use the three operators as follows:
 
-* The new :class:`~.RZLayer` applies a :class:`~.RZ` rotation gate to each of its target wires, with
-  equal angles used for blocks of ``len(wires) // len(angles)`` wires. This includes the case of
-  ``len(wires)=len(angles)`` (one angle per wire) and ``len(angles)=1`` (same angle on all wires). This
-  allows for more efficient decomposition rules.
-  `(#10508) <https://github.com/PennyLaneAI/pennylane/pull/10508>`__
+  .. list-table::
+      :header-rows: 1
+      :stub-columns: 1
+
+      * -
+        - Work wires reset
+        - Work wires not reset
+      * - Target wires zeroed
+        - :class:`~.QROMLoad`
+        - :class:`~.SelectSwap`
+      * - Target wires not zeroed
+        - :class:`~.QROM`
+        - currently not supported
+
+  Note that :class:`~.QROMLoad` also has a decomposition using Select-SWAP, but is not allowed to
+  leave the work wires in a garbage state. When using :class:`~.SelectSwap` for data loading, it
+  can only be unloaded with ``adjoint(SelectSwap)`` and the work wires are dirty between loading
+  and unloading.
+  The promise of zeroed target wires and the permission to leave a garbage state behind lead to 
+  reduced quantum resources, so that ``SelectSwap`` is cheaper than ``QROMLoad``, which is cheaper
+  than ``QROM``.
+  `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
+
+  For example, we may use ``QROMLoad`` on a zeroed target register, but need ``QROM`` to XOR more
+  data onto it afterwards:
+
+  .. code-block:: python
+
+      bitstrings = ["010", "111", "110", "000"]
+      xor_updates = ["001", "011", "101", "111"]
+
+      @qp.qjit
+      @qp.set_shots(1)
+      @qp.qnode(qp.device("lightning.qubit", wires=8))
+      def circuit():
+          qp.BasisState([1, 0], wires=[0, 1])
+          # target wires 2, 3, 4 start in |000>
+          qp.QROMLoad(bitstrings, [0, 1], [2, 3, 4], work_wires=[5, 6, 7])
+          # target wires now hold |110>
+          qp.QROM(xor_updates, [0, 1], [2, 3, 4], work_wires=[5])
+          return qp.sample(wires=[2, 3, 4])
+
+  .. code-block:: pycon
+
+      >>> print(circuit())
+      [[0 1 1]]
+
+  If we want to load with ``SelectSwap``, we need to use it for unloading as well, and can only
+  use the work wires as dirty, or borrowed, wires inbetween.
+
+  .. code-block:: python
+
+      @qp.qjit
+      @qp.set_shots(1)
+      @qp.qnode(qp.device("lightning.qubit", wires=9))
+      def circuit():
+          qp.BasisState([1, 0], wires=[0, 1])
+          # target wires 2, 3, 4 start in |000>
+          qp.SelectSwap(bitstrings, [0, 1], [2, 3, 4], work_wires=[5, 6, 7])
+          # target wires now hold |110>, let's control a bit flip on that state
+          work_wire_specs = {"work_wires": [5, 6, 7], "work_wire_type": "borrowed"}
+          qp.ctrl(qp.X(8), control=[2, 3, 4], control_values=[1, 1, 0], **work_wire_specs)
+          # Unload the target wires, cleaning up the work wires as well
+          qp.adjoint(qp.SelectSwap(bitstrings, [0, 1], [2, 3, 4], work_wires=[5, 6, 7]))
+          return qp.sample(wires=[2, 3, 4]), qp.sample(wires=[5, 6, 7]), qp.sample(wires=[8])
+
+  .. code-block:: pycon
+
+      >>> output = circuit()
+      >>> print(f"Target:  {output[0]}\nWork:    {output[1]}\nFlipped: {output[2]}")
+      Target:  [[0 0 0]]
+      Work:    [[0 0 0]]
+      Flipped: [[1]]
+
+  The bitstring has been unloaded from the target wires, and the work wires have been cleaned. The
+  wire ``8`` has been flipped in the meantime.
 
 * A new decomposition for ``C(IsingZZ)`` in terms of ``CNOT``, ``C(RZ)``, and ``X`` gates has been added.
   `(#10425) <https://github.com/PennyLaneAI/pennylane/pull/10425>`__
@@ -267,7 +343,7 @@ New features since last release
   .. code-block:: python
 
       @qp.subcircuit(dynamic_argnames=("phi",), wire_argnames=("wires",))
-      @qp.register_resources({qp.H: 1, qp.RZ: 1})
+      @qp.register_resources({qp.H: 1, qp.RZ: 1}, name="MyOp")
       def MyOp(phi, wires):
           """My custom operator created using qp.subcircuit."""
           qp.H(wires)
@@ -993,7 +1069,7 @@ Improvements 🛠
   The original decomposition is used when fewer work wires are supplied.
   `(#10380) <https://github.com/PennyLaneAI/pennylane/pull/10380>`__
   
-* Added a new decomposition rule, ``_single_excitation_ppr_crz``, to :class:`~.SingleExcitation`, that
+* Added a new decomposition rule, ``_single_excitation_to_ppr_crz``, to :class:`~.SingleExcitation`, that
   realizes the Givens rotation with a single arbitrary-angle ``CRZ`` gate and four Clifford operations.
   `(#10358) <https://github.com/PennyLaneAI/pennylane/pull/10358>`__
 
@@ -1042,7 +1118,7 @@ Improvements 🛠
   installed Catalyst is older.
   `(#10369) <https://github.com/PennyLaneAI/pennylane/pull/10369>`__
 
-* The ``decompose_mcx_with_no_worker`` decomposition rule for :class:`~.MultiControlledX` now only
+* The ``_mcx_no_work_wires`` decomposition rule for :class:`~.MultiControlledX` now only
   applies when no work wires are provided, matching ``MultiControlledX.compute_decomposition``.
   This removes controlled ``GlobalPhase`` and ``PhaseShift`` rules from the decomposition graph and
   greatly reduces ``qp.qjit(capture=True)`` compile time for multi-controlled X gates with work wires.
@@ -1060,10 +1136,15 @@ Improvements 🛠
   unhinted conditionals by the exact average counts when compiling them with Catalyst.
   `(#10311) <https://github.com/PennyLaneAI/pennylane/pull/10311>`__
 
-* The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
-  but instead expresses the Select block as another ``QROM`` with fewer controls and more target
-  qubits. This allows for scalable compilation of this decomposition rule.
+* The Select-SWAP decomposition previously attributed to :class:`~.QROM`
+  (``qp.list_decomps(qp.QROM)["_qrom_decomposition"]``) is now attributed to :class:`~.QROMLoad`
+  (``qp.list_decomps(qp.QROMLoad)["select_swap"]``), and its ``clean=False`` variant has been
+  split off into the operator :class:`~.SelectSwap`. 
+  Additionally, this decomposition rule no longer uses :class:`~.Select`, but
+  a :class:`~.QROM` with fewer controls and more target qubits instead. This allows for 
+  scalable compilation of this decomposition rule.
   `(#10207) <https://github.com/PennyLaneAI/pennylane/pull/10207>`__
+  `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
 
 * A :class:`~.Controller` now takes the size of its messages in each direction, with the
   ``in_bytes`` and ``out_bytes`` keyword arguments. Left unset, they take the sizes its
@@ -1573,6 +1654,19 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* :class:`~.QROM` no longer takes a ``clean`` argument and no longer has a Select-SWAP
+  decomposition, which is available for :class:`~.QROMLoad` and :class:`~.SelectSwap` instead.
+  See the corresponding entry under "New features" for when to use which of the three operators.
+  `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
+
+* Decomposition rules can be named using the optional ``name`` argument of
+  :func:`~pennylane.register_resources`. Names cannot start with an underscore.
+  Built-in decomposition rules use short strategy names, such as
+  ``"to_cnot"`` for ``SWAP``, available through
+  ``qp.list_decomps(qp.SWAP)["to_cnot"]`` and ``fixed_decomps={qp.SWAP: "to_cnot"}``.
+  `(#10492) <https://github.com/PennyLaneAI/pennylane/pull/10492>`__
+  `(#10566) <https://github.com/PennyLaneAI/pennylane/pull/10566>`__
+
 * Removes :class:`pennylane.tape.OperationRecorder`. Use :class:`~.AnnotatedQueue` instead.
   [(#10574)](https://github.com/PennyLaneAI/pennylane/pull/10574)
 
@@ -2039,7 +2133,7 @@ Internal changes ⚙️
 * Update ``tach`` to ``0.35.1``.
   `(#10147 ) <https://github.com/PennyLaneAI/pennylane/pull/10147>`__
 
-* The ``_prepselprep_decomp`` decomposition rule of :class:`~.PrepSelPrep` now applies the linear-combination
+* The ``_prepselprep_standard`` decomposition rule of :class:`~.PrepSelPrep` now applies the linear-combination
   unitaries and their global phases as two separate :class:`~.Select` operators instead of a single ``Select``
   of products.
   `(#10020) <https://github.com/PennyLaneAI/pennylane/pull/10020>`__
@@ -2535,6 +2629,9 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed resource callbacks in :class:`~.SingleExcitation` decompositions to accept positional arguments.
+  `(#10575) <https://github.com/PennyLaneAI/pennylane/pull/10575>`__
+
 * Fixed the adjoint of a :func:`~.change_op_basis` operator with an explicit ``uncompute_op`` that
   is not the adjoint of ``compute_op``. The adjoint now inverts and swaps the compute and uncompute
   operators instead of keeping them unchanged.
@@ -2821,7 +2918,7 @@ Bug fixes 🐛
   decomposition path from being traced with abstract arrays only checked
   ``capture.enabled()``, missing the ``qjit`` context where
   ``compiler.active()`` is ``True``. Both ``two_qubit_decomposition`` and
-  ``two_qubit_decomp_rule`` are fixed.
+  ``_qubit_unitary_two_qubit`` are fixed.
   `(#9520) <https://github.com/PennyLaneAI/pennylane/pull/9520>`__
 
 * Fixed a bug in the :mod:`~.pennylane.qchem.vibrational` submodule to properly account for the number of modes.

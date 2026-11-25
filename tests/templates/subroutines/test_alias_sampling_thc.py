@@ -372,7 +372,7 @@ class TestAliasSamplingTHC:
         zeta, t_ell = _static_coeffs(np.ones((M, M)), np.ones(N // 2))
 
         op = qp.AliasSamplingTHC(M, N, zeta, t_ell, mu_wires, nu_wires, 2 * n, work_wires, aleph)
-        qroms = [g for g in op.decomposition() if isinstance(g, qp.QROM)]
+        qroms = [g for g in op.decomposition() if isinstance(g, qp.QROMLoad)]
         assert len(qroms) == 1
 
         d = N // 2 + M * (M + 1) // 2
