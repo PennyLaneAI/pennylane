@@ -297,7 +297,7 @@ Completed deprecation cycles
   - Removed in v0.45
 
 * Access to the following functions and classes from the `~pennylane.resources` module have
-  been removed. Instead, these functions must be imported from the `~pennylane.estimator` module.
+  been removed. Instead, these functions must be imported from the ``estimator`` module.
 
     - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
     - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``

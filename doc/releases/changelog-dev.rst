@@ -1559,9 +1559,9 @@ Labs: a place for unified and rapid prototyping of research software 🧪
   `in the compilation hub <https://pennylane.ai/compilation/phase-gradient/c-control-rotations>`__.
   `(#9750) <https://github.com/PennyLaneAI/pennylane/pull/9750>`__
 
-* Added resource templates for arithmetic operators which include :class:`~.labs.estimator_beta.templates.LabsAdder`, :class:`~.labs.estimator_beta.templates.LabsPhaseAdder`,
-  :class:`~.labs.estimator_beta.templates.LabsOutAdder`, :class:`~.labs.estimator_beta.templates.ClassicalMultiplier`, :class:`~.labs.estimator_beta.templates.LabsMultiplier`,
-  :class:`~.labs.estimator_beta.templates.LabsModExp`.
+* Added resource templates for arithmetic operators which include ``LabsAdder``, ``LabsPhaseAdder``,
+  ``LabsOutAdder``, ``ClassicalMultiplier``, ``LabsMultiplier``,
+  ``LabsModExp``.
   `(#9390) <https://github.com/PennyLaneAI/pennylane/pull/9390>`__
 
 * Updated the ``make_selectpaulirot_to_phase_gradient_decomp`` decomposition rule factory to have
@@ -1593,15 +1593,15 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
   .. code-block:: pycon
 
-      >>> import pennylane.labs.estimator_beta as qre
+      >>> import pennylane.labs.estimator_beta as qre  # doctest: +SKIP
       >>>
-      >>> qrom_op = qre.SelectCopyQROM(
+      >>> qrom_op = qre.SelectCopyQROM(  # doctest: +SKIP
       ...     num_bitstrings = 10**8,
       ...     size_bitstring = 8,
       ...     available_dirty_aux = 300,
       ... )
       >>>
-      >>> print(qre.estimate(qrom_op))
+      >>> print(qre.estimate(qrom_op))  # doctest: +SKIP
       --- Resources: ---
       Total wires: 308
         algorithmic wires: 35
@@ -1614,17 +1614,17 @@ Labs: a place for unified and rapid prototyping of research software 🧪
         'X': 7.036E+6,
         'Hadamard': 1.055E+7
 
-* Added the :mod:`pennylane.labs.profiler` which allows users to profile the quantum resources required for
+* Added the ``pennylane.labs.profiler`` which allows users to profile the quantum resources required for
   their quantum workflows. This contains core functions and classes such as
-  :class:`~.pennylane.labs.profiler.ProfileNode`, :func:`~.pennylane.labs.profiler.profile`, and
-  :func:`~.pennylane.labs.profiler.export_flame_graph_data`.
+  ``ProfileNode``, ``profile``, and
+  ``export_flame_graph_data``.
   `(#9546) <https://github.com/PennyLaneAI/pennylane/pull/9546>`__
 
   .. code-block:: pycon
 
-      >>> import pennylane.labs.estimator_beta as qre
-      >>> from pennylane.labs.profiler import profile, export_flame_graph_data
-      >>> def circuit():
+      >>> import pennylane.labs.estimator_beta as qre  # doctest: +SKIP
+      >>> from pennylane.labs.profiler import profile, export_flame_graph_data  # doctest: +SKIP
+      >>> def circuit():  # doctest: +SKIP
       ...     for w in range(5):
       ...         qre.Hadamard()
       ...         qre.RZ(1e-9)
@@ -1632,9 +1632,9 @@ Labs: a place for unified and rapid prototyping of research software 🧪
       ...     qre.QPE(qre.RX(precision=1e-3), 4)
       ...     qre.QFT(4)
       >>>
-      >>> gate_set = {"T", "Hadamard", "CNOT"}
-      >>> res_profile, resources = profile(circuit, gate_set)()
-      >>> print(resources)
+      >>> gate_set = {"T", "Hadamard", "CNOT"}  # doctest: +SKIP
+      >>> res_profile, resources = profile(circuit, gate_set)()  # doctest: +SKIP
+      >>> print(resources)  # doctest: +SKIP
       --- Resources: ---
        Total wires: 5
          algorithmic wires: 5
@@ -1645,9 +1645,9 @@ Labs: a place for unified and rapid prototyping of research software 🧪
          'T': 1.972E+3,
          'CNOT': 44,
          'Hadamard': 25
-      >>> extracted_info = export_flame_graph_data(res_profile)
-      >>> ids, names, values, parents = extracted_info
-      >>> print(names[:5])  # just the first 5 entries
+      >>> extracted_info = export_flame_graph_data(res_profile)  # doctest: +SKIP
+      >>> ids, names, values, parents = extracted_info  # doctest: +SKIP
+      >>> print(names[:5])  # just the first 5 entries  # doctest: +SKIP
       ['circuit', 'Hadamard [x5]', 'RZ [x5]', 'T [x220]', 'QPE(RX, 4, adj_qft=None)']
 
 * Performance of the Trotter error module is improved by introducing a novel algorithm for
@@ -1661,8 +1661,8 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 * Added a new fragmentation scheme for the vibronic Hamiltonian Trotter error workflow.
   `(#9813) <https://github.com/PennyLaneAI/pennylane/pull/9813>`__
 
-* Added a class :class:`~.pennylane.labs.estimator_beta.ResourceQfunc` and a function
-  :func:`~.pennylane.labs.estimator_beta.mark_subroutine` which allow users to easily define their own
+* Added a class ``ResourceQfunc`` and a function
+  ``mark_subroutine`` which allow users to easily define their own
   resource operators from their quantum functions.
   `(#9764) <https://github.com/PennyLaneAI/pennylane/pull/9764>`__
 
@@ -1680,6 +1680,10 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
+
+* Removed ``pennylane.estimator`` and the dependent experimental modules
+  ``pennylane.labs.estimator_beta`` and ``pennylane.labs.profiler``.
+  `(#10603) <https://github.com/PennyLaneAI/pennylane/pull/10603>`__
 
 * The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
   ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
