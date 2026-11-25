@@ -273,7 +273,7 @@ def make_rzlayer_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wi
       multiple from a lookup table into the angle wires, and adds it. On top of the adder,
       this uses :math:`2n - \|n\|_H - r` :class:`~.TemporaryAND` gates, with :math:`n=m` for odd
       and :math:`n=m-1` for even :math:`m`, :math:`\|n\|_H` the Hamming weight of :math:`n`, and
-      :math:`r` the number of bits of :math:`n`, i.e., 0, 2, 2, 5 and 5 for :math:`m = 2, \dots, 6`.
+      :math:`r` the number of bits of :math:`n`.
     * **m = 1.** The rotation uses the circuit of :func:`~.make_rz_to_phase_gradient_decomp`,
       including its :class:`~.GlobalPhase`.
 
@@ -303,8 +303,8 @@ def make_rzlayer_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wi
 
     **Example**
 
-    We decompose four rotations by an equal angle, with two work wires. They use one
-    :class:`~.SemiAdder` and two :class:`~.TemporaryAND` gates:
+    We decompose four rotations by an equal angle, with two work wires. We register the rule
+    and make rotations expensive in the gate set, so that the decomposition favours the rule:
 
     .. code-block:: python
 
@@ -314,23 +314,26 @@ def make_rzlayer_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wi
         custom_decomp = make_rzlayer_to_phase_gradient_decomp(
             angle_wires=[6, 7, 8], phase_grad_wires=[9, 10, 11], work_wires=[12, 13]
         )
+        qp.add_decomps(qp.RZLayer, custom_decomp)
         gate_set = {
-            "CNOT", "MultiX", "C(MultiX)", "TemporaryAND", "Adjoint(TemporaryAND)", "SemiAdder"
+            "RZ": 100, "PhaseShift": 100, "GlobalPhase": 1, "CNOT": 1, "MultiX": 1,
+            "C(MultiX)": 1, "TemporaryAND": 1, "Adjoint(TemporaryAND)": 1, "SemiAdder": 1,
         }
 
-        @qp.transforms._tape_decompose(
-            gate_set=gate_set, fixed_decomps={qp.RZLayer: custom_decomp}
-        )
-        @qp.qnode(qp.device("null.qubit"))
-        def circuit(theta):
+        def rotations(theta):
             qp.RZLayer(theta, wires=[0, 1, 2, 3], work_wires=[4, 5])
             return qp.state()
 
-    >>> tape = qp.workflow.construct_tape(circuit)(2.4)
-    >>> qp.resource.resources_from_tape(tape).counts
-    {'C(MultiX)': 10, 'CNOT': 10, 'TemporaryAND': 2, 'MultiX': 2, 'SemiAdder': 1,
-     'Adjoint(TemporaryAND)': 2}
-    >>> print(qp.draw(circuit, max_length=112, show_matrices=False)(2.4))
+        circuit = qp.qnode(qp.device("lightning.qubit", wires=14))(rotations)
+        compiled = qp.qjit(qp.decompose(circuit, gate_set=gate_set), capture=True)
+
+    The rotations use one :class:`~.SemiAdder` and two :class:`~.TemporaryAND` gates:
+
+    >>> dict(sorted(qp.analyze(compiled)(2.4).resources.quantum_operations.items()))
+    {'1C(MultiX)': 10, 'Adjoint(TemporaryAND)': 2, 'CNOT': 10, 'MultiX': 2, 'SemiAdder': 1,
+     'TemporaryAND': 2}
+    >>> drawn = qp.transforms._tape_decompose(circuit, gate_set=gate_set)
+    >>> print(qp.draw(drawn, max_length=112, show_matrices=False)(2.4))
      0: ─╭MultiX(M0)─╭X────╭●───────╭●────────────────────────────────────────────────────────────────────────── ···
      1: ─├MultiX(M0)─╰●─╭●─│──╭●─╭●─│─────────────────────────────────────────────────────────────────────────── ···
      2: ─├MultiX(M0)────╰X─├●─│──╰X─╰X─╭●─╭●──────────────────────────────────────────────────────────────────── ···
