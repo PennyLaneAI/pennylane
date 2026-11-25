@@ -69,7 +69,6 @@ def test_computes_and_uncomputes_hamming_weight(n):
 @pytest.mark.catalyst
 def test_qjit():
     """Test that the Hamming-weight circuit compiles and computes the Hamming weight with qjit."""
-    pytest.importorskip("catalyst")
     n = 5
     num_wires = int(np.log2(len(_expected_probs(n))))
     dev = qp.device("lightning.qubit", wires=num_wires)

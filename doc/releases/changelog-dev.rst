@@ -4,14 +4,12 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* The new :class:`~.RZLayer` applies a :class:`~.RZ` rotation gate to each of its target wires, with
-  equal angles used for blocks of ``len(wires) // len(angles)`` wires. This includes the case of
-  ``len(wires)=len(angles)`` (one angle per wire) and ``len(angles)=1`` (same angle on all wires). This
-  allows for more efficient decomposition rules, such as Hamming-weight phasing, which applies
-  :math:`\lfloor \log_2 m \rfloor + 1` rotations instead of :math:`m` to each block of
-  :math:`m \geq 3` wires. Phase gradient rules created with
+* The new :class:`~.RZLayer` applies :class:`~.RZ` rotations by the same angle to each of its
+  wires. The shared angle allows for more efficient decomposition rules than individual rotations,
+  such as Hamming-weight phasing, which applies :math:`\lfloor \log_2 m \rfloor + 1` rotations
+  instead of :math:`m` to :math:`m \geq 3` wires. Phase gradient rules created with
   :func:`~.transforms.decompositions.make_rzlayer_to_phase_gradient_decomp` need a single adder
-  for each block of :math:`m \geq 2` wires.
+  for :math:`m \geq 2` wires.
   `(#10508) <https://github.com/PennyLaneAI/pennylane/pull/10508>`__
   `(#10519) <https://github.com/PennyLaneAI/pennylane/pull/10519>`__
   `(#10577) <https://github.com/PennyLaneAI/pennylane/pull/10577>`__

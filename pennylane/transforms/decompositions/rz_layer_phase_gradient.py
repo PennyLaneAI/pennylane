@@ -194,7 +194,7 @@ def _angle_ints(angles, num_bits):
 def _equal_angle_block(theta, wires, work_wires, registers):
     r"""Apply :math:`R_Z(\theta)` to each of the :math:`m > 1` ``wires`` with a single
     :func:`~._signed_add`. For odd :math:`m`, this omits the ``GlobalPhase(m * theta / 2)``, which
-    the rule applies once for all blocks.
+    the rule applies separately.
 
     For odd :math:`m`, the rotations apply the phase :math:`\exp(-i\theta (m/2 - h))`, where
     :math:`h` is the Hamming weight of the wires. We compute :math:`h` in place, see
@@ -231,25 +231,25 @@ def _equal_angle_block(theta, wires, work_wires, registers):
     qp.change_op_basis(parities, qp.change_op_basis(hamming_weight, signed_add), parities)
 
 
-def _equal_angle_block_rep(block_size, num_bits, num_work_wires):
-    """Resource representation of :func:`~._equal_angle_block` on ``block_size`` wires, with
+def _equal_angle_block_rep(num_wires, num_bits, num_work_wires):
+    """Resource representation of :func:`~._equal_angle_block` on ``num_wires`` wires, with
     ``num_bits`` angle wires and ``num_work_wires`` adder work wires."""
-    n = block_size - 1 + block_size % 2
-    num_sign_wires = 1 - block_size % 2
+    n = num_wires - 1 + num_wires % 2
+    num_sign_wires = 1 - num_wires % 2
     hamming_weight = _HammingWeight(Wire[n], Wire[n - n.bit_count()])
     signed_add = _signed_add_rep(n, num_bits, num_work_wires, num_sign_wires)
-    if block_size % 2:
+    if num_wires % 2:
         return ChangeOpBasis2(hamming_weight, signed_add)
     parities = qp.ctrl(qp.MultiX(Bool[n], Wire[n]), control=Wire[1])
     return ChangeOpBasis2(parities, ChangeOpBasis2(hamming_weight, signed_add), parities)
 
 
-def _num_and_work_wires(block_size):
+def _num_and_work_wires(num_wires):
     """Number of work wires that the TemporaryAND gates of the phase gradient rule use on top of
     the adder."""
-    if block_size == 1:
+    if num_wires == 1:
         return 0
-    n = block_size - 1 + block_size % 2
+    n = num_wires - 1 + num_wires % 2
     return 2 * n - n.bit_count() - n.bit_length()
 
 
@@ -262,12 +262,11 @@ def make_rzlayer_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wi
     As for :func:`~.make_rz_to_phase_gradient_decomp`, the auxiliary wires of the phase gradient
     decomposition are taken as inputs and bound into the created decomposition rule, which can
     then be registered with :func:`~pennylane.decomposition.add_decomps`. The rule decomposes an
-    :class:`~.RZLayer` with :math:`k` angles on :math:`km` wires depending on the block size
-    :math:`m` of wires per angle:
+    :class:`~.RZLayer` on :math:`m` wires as follows:
 
     * **m > 1.** The :math:`m` rotations by an equal angle use one addition. For odd :math:`m`,
       they apply a multiple of the angle that depends on the Hamming weight of the wires, and a
-      global phase, which the rule applies with a single :class:`~.GlobalPhase` for all blocks.
+      global phase, which the rule applies with a :class:`~.GlobalPhase`.
       For even :math:`m`, the multiple depends on the Hamming weight of the parities of the
       first :math:`m-1` wires with the last one, and is added or subtracted depending on the last
       wire, without a global phase. The rule computes the Hamming weight in place, loads the
@@ -275,21 +274,21 @@ def make_rzlayer_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wi
       this uses :math:`2n - \operatorname{popcount}(n) - r` :class:`~.TemporaryAND` gates, with
       :math:`n=m` for odd and :math:`n=m-1` for even :math:`m`, and :math:`r` the number of bits
       of :math:`n`, i.e., 0, 2, 2, 5 and 5 for :math:`m = 2, \dots, 6`.
-    * **m = 1.** Each rotation uses the circuit of :func:`~.make_rz_to_phase_gradient_decomp`,
+    * **m = 1.** The rotation uses the circuit of :func:`~.make_rz_to_phase_gradient_decomp`,
       including its :class:`~.GlobalPhase`.
 
-    Each of these :class:`~.TemporaryAND` gates targets a work wire, which is reused for every
-    block. The rule takes these work wires from the ``work_wires`` that the adder does
-    not need, together with the ``work_wires`` of the :class:`~.RZLayer`. If there are too few,
+    Each of these :class:`~.TemporaryAND` gates targets a work wire. The rule takes these work
+    wires from the ``work_wires`` that the adder does not need, together with the ``work_wires``
+    of the :class:`~.RZLayer`. If there are too few,
     it allocates the missing ones dynamically, which excludes it from compilation with Catalyst.
     The ``work_wires`` of the rule and those of the :class:`~.RZLayer` must not overlap.
 
-    Every rotation has the precision of :func:`~.make_rz_to_phase_gradient_decomp` with the same
-    registers: its angle is rounded to :math:`b` = ``len(angle_wires)`` binary decimals in units
+    The rotations have the precision of :func:`~.make_rz_to_phase_gradient_decomp` with the same
+    registers: their angle is rounded to :math:`b` = ``len(angle_wires)`` binary decimals in units
     of :math:`2\pi`.
 
     Parameters:
-        angle_wires (Wires): wires that encode the binary representation of the rotation angles
+        angle_wires (Wires): wires that encode the binary representation of the rotation angle
         phase_grad_wires (Wires): wires that carry a phase gradient state. Should have the same
             length as ``angle_wires``.
         work_wires (Wires): work wires for the :class:`~.SemiAdder` decomposition, of which at
@@ -324,7 +323,7 @@ def make_rzlayer_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wi
         )
         @qp.qnode(qp.device("null.qubit"))
         def circuit(theta):
-            qp.RZLayer([theta], wires=[0, 1, 2, 3], work_wires=[4, 5])
+            qp.RZLayer(theta, wires=[0, 1, 2, 3], work_wires=[4, 5])
             return qp.state()
 
     >>> tape = qp.workflow.construct_tape(circuit)(2.4)
@@ -399,49 +398,31 @@ def make_rzlayer_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wi
     spare_work_wires = rule_work_wires[len(angle_wires) - 1 :]
     rz_rule = make_rz_to_phase_gradient_decomp(*registers)
 
-    def _resource_fn(angles, wires, **_):
+    def _resource_fn(wires, **_):
         """Resources of the rule."""
-        num_angles = len(angles)
-        block_size = len(wires) // num_angles
-        if block_size == 1:
-            rz_resources = rz_rule.compute_resources(Float, Wire[1]).gate_counts
-            return {op: count * num_angles for op, count in rz_resources.items()}
-        block = _equal_angle_block_rep(block_size, len(angle_wires), len(registers[2]))
-        if block_size % 2:
-            return {block: num_angles, qp.GlobalPhase: 1}
-        return {block: num_angles}
+        if len(wires) == 1:
+            return rz_rule.compute_resources(Float, Wire[1]).gate_counts
+        block = _equal_angle_block_rep(len(wires), len(angle_wires), len(registers[2]))
+        if len(wires) % 2:
+            return {block: 1, qp.GlobalPhase: 1}
+        return {block: 1}
 
-    def _work_wires_fn(angles, wires, work_wires):
+    def _work_wires_fn(wires, work_wires, **_):
         """Work wires that the rule needs on top of the spare ones and those of the RZLayer."""
-        needed = _num_and_work_wires(len(wires) // len(angles))
+        needed = _num_and_work_wires(len(wires))
         return {"zeroed": max(needed - len(spare_work_wires) - len(work_wires), 0)}
 
-    def _equal_angle_blocks(angles, wires, work_wires):
-        """Apply the blocks of rotations by an equal angle."""
-        block_size = len(wires) // len(angles)
-
-        def _block(i):
-            block = [wires[i * block_size + j] for j in range(block_size)]
-            _equal_angle_block(angles[i], block, work_wires, registers)
-
-        qp.for_loop(len(angles))(_block)()
-        if block_size % 2:
-            qp.GlobalPhase(block_size * qp.math.sum(angles) / 2)
-
     @qp.register_resources(_resource_fn, work_wires=_work_wires_fn, name="phase_gradient")
-    def _rzlayer_phase_gradient_decomp(angles, wires, work_wires):
+    def _rzlayer_phase_gradient_decomp(angle, wires, work_wires):
         """Phase gradient decomposition of an :class:`~.RZLayer`."""
-        block_size = len(wires) // len(angles)
-        if qp.capture.enabled() or qp.compiler.active():
-            angles = qp.math.array(angles, like="jax")
-            wires = qp.math.array(wires, like="jax")
-
-        if block_size == 1:
-            qp.for_loop(len(wires))(lambda i: rz_rule(angles[i], wires[i]))()
+        if len(wires) == 1:
+            rz_rule(angle, wires[0])
             return
         work_wires = [*work_wires, *spare_work_wires]
-        needed = _num_and_work_wires(block_size)
+        needed = _num_and_work_wires(len(wires))
         with qp.allocate(max(needed - len(work_wires), 0), restored=True) as extra_work_wires:
-            _equal_angle_blocks(angles, wires, [*work_wires, *extra_work_wires])
+            _equal_angle_block(angle, wires, [*work_wires, *extra_work_wires], registers)
+        if len(wires) % 2:
+            qp.GlobalPhase(len(wires) * angle / 2)
 
     return _rzlayer_phase_gradient_decomp
