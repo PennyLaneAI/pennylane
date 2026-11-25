@@ -4,6 +4,10 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* The new :class:`~.RZLayer` applies :class:`~.RZ` rotations by the same angle to each of its
+  wires. The shared angle allows for more efficient decomposition rules than individual rotations.
+  `(#10508) <https://github.com/PennyLaneAI/pennylane/pull/10508>`__
+
 * Added a lattice-surgery decomposition for :class:`~.MultiX` with one control wire,
   using three Pauli product measurements and one auxiliary qubit.
   `(#10558) <https://github.com/PennyLaneAI/pennylane/pull/10558>`__
