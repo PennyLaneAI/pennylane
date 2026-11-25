@@ -481,7 +481,6 @@ jobs:
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}external-libraries-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
         --group external-libraries
-        mitiq>=0.45.1
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
         ${{ inputs.additional_python_packages }}

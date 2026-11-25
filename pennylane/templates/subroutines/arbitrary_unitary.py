@@ -129,7 +129,7 @@ class ArbitraryUnitary(Operation):
         Args:
             weights (tensor_like): The angles of the Pauli word rotations, needs to have length :math:`4^n - 1`
                     where :math:`n` is the number of wires the template acts upon.
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
 
 
         Returns:
