@@ -271,9 +271,9 @@ def make_rzlayer_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wi
       first :math:`m-1` wires with the last one, and is added or subtracted depending on the last
       wire, without a global phase. The rule computes the Hamming weight in place, loads the
       multiple from a lookup table into the angle wires, and adds it. On top of the adder,
-      this uses :math:`2n - \operatorname{popcount}(n) - r` :class:`~.TemporaryAND` gates, with
-      :math:`n=m` for odd and :math:`n=m-1` for even :math:`m`, and :math:`r` the number of bits
-      of :math:`n`, i.e., 0, 2, 2, 5 and 5 for :math:`m = 2, \dots, 6`.
+      this uses :math:`2n - \|n\|_H - r` :class:`~.TemporaryAND` gates, with :math:`n=m` for odd
+      and :math:`n=m-1` for even :math:`m`, :math:`\|n\|_H` the Hamming weight of :math:`n`, and
+      :math:`r` the number of bits of :math:`n`, i.e., 0, 2, 2, 5 and 5 for :math:`m = 2, \dots, 6`.
     * **m = 1.** The rotation uses the circuit of :func:`~.make_rz_to_phase_gradient_decomp`,
       including its :class:`~.GlobalPhase`.
 
