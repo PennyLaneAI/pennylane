@@ -164,6 +164,13 @@ class TestMethods:
         op = qp.ControlledSequence(base, control=control)
         qp.testing.assert_decomposable(op)
 
+    @pytest.mark.parametrize("control", [[], 0, [0, 1], [0, 1, 2]])
+    def test_decomposition_legacy_base(self, control):
+        """Test resources and matrices when the base has compressed resource parameters."""
+        base = qp.Multiplier(3, x_wires=[3, 4], mod=4, work_wires=[5, 6])
+        op = qp.ControlledSequence(base, control=control)
+        qp.testing.assert_decomposable(op)
+
     @pytest.mark.capture
     @pytest.mark.parametrize("control", [[0], [0, 1, 2]])
     def test_power_capture(self, control):

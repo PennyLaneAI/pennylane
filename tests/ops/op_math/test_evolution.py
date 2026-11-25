@@ -36,7 +36,7 @@ class TestEvolution:  # pylint: disable=too-many-public-methods
 
     def test_initialization(self):
         """Test initialization with a provided coefficient and a Tensor base."""
-        base = qp.PauliZ("b") @ qp.PauliZ("c")
+        base = qp.PauliZ(5) @ qp.PauliZ(6)
         param = 1.23
 
         op = Evolution(base, param)
@@ -50,7 +50,7 @@ class TestEvolution:  # pylint: disable=too-many-public-methods
         assert op.parameters == [param]
         assert op.data == (param,)
 
-        assert op.wires == qp.wires.Wires(("b", "c"))
+        assert op.wires == qp.wires.Wires((5, 6))
 
     def test_evolution_matches_corresponding_exp(self):
         base_op = 2 * qp.PauliX(0)
@@ -315,7 +315,6 @@ class TestEvolution:  # pylint: disable=too-many-public-methods
 
 
 @pytest.mark.integration
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize(
     "coeff, hamiltonian",
     [

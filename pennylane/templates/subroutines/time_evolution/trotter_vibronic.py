@@ -122,7 +122,7 @@ class TrotterVibronic(Operator2):
             ),
         )
 
-    With this, we can setup a simple circuit that includes ``TrotterVibronic``.
+    We can analyze a compiled circuit that includes ``TrotterVibronic``.
 
     .. code-block:: python
 
@@ -132,9 +132,17 @@ class TrotterVibronic(Operator2):
         })
         all_wires = qp.wires.Wires.all_wires(list(wires.values()))
 
-        # decompose by one step to see the top-level sub-templates
-        @qp.transforms._tape_decompose(max_expansion=1, gate_set=qp.gate_sets.ALL_OPS | {qp.PhaseGradientStatePrep})
-        @qp.qnode(qp.device("default.qubit", wires=all_wires))
+        # Retain the arithmetic subtemplates in the resource counts.
+        gate_set = qp.gate_sets.ALL_OPS | {
+            qp.PhaseGradientStatePrep, qp.QROM, qp.SemiAdder, qp.MultiX,
+            qp.MultiControlledX, qp.TemporaryAND, "Adjoint(TemporaryAND)",
+            qp.AQFT, "Adjoint(AQFT)", qp.SignedOutSquare, "Adjoint(SignedOutSquare)",
+            qp.OutMultiplier, "C(MultiX)",
+        }
+
+        @qp.qjit(target="mlir")
+        @qp.decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("null.qubit", wires=all_wires))
         def circuit():
             qp.PhaseGradientStatePrep(wires["phase_gradient"])
             qp.TrotterVibronic(
@@ -146,8 +154,8 @@ class TrotterVibronic(Operator2):
             )
             return qp.probs(wires=wires["electronic"])
 
-    >>> qp.specs(circuit)().resources.quantum_operations  # doctest: +SKIP
-    {'PhaseGradientStatePrep': 1, 'QROM': 6, 'SemiAdder': 4, 'PauliX': 28, 'C(MultiX)': 8, 'MultiControlledX': 16, 'TemporaryAND': 10, 'CNOT': 48, 'Adjoint(TemporaryAND)': 10, 'AQFT': 1, 'MultiX': 2, 'SignedOutSquare': 1, 'OutMultiplier': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(AQFT)': 1}
+    >>> qp.analyze(circuit)().resources.quantum_operations
+    {'1C(MultiX)': 8, 'AQFT': 1, 'Adjoint(AQFT)': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(TemporaryAND)': 10, 'CNOT': 48, 'MultiControlledX': 16, 'MultiX': 2, 'OutMultiplier': 1, 'PauliX': 28, 'PhaseGradientStatePrep': 1, 'QROM': 6, 'SemiAdder': 4, 'SignedOutSquare': 1, 'TemporaryAND': 10}
 
     .. note::
 
@@ -176,7 +184,7 @@ class TrotterVibronic(Operator2):
             :example: :math:`F=1`, :math:`M=1`, :math:`k=1`, :math:`n=1`,
                 :math:`b=1`, :math:`r=1`
 
-            .. decomposition-rule:: _trotter_vibronic_decomposition
+            .. decomposition-rule:: vibronic_trotter_steps
                 :image: /_static/decomposition_thumbnails/trotter_vibronic_phase_gradient.svg
                 :where: :math:`P = 2Fr` position-fragment visits and :math:`K = M(M-1)/2` mode
                     pairs, and :math:`[b > 1]` is 1 if :math:`b > 1` and 0 otherwise.
@@ -497,7 +505,7 @@ class TrotterVibronic(Operator2):
         )
 
 
-def _trotter_vibronic_resources(  # pylint: disable=too-many-arguments,unused-argument
+def _trotter_vibronic_standard_resources(  # pylint: disable=too-many-arguments,unused-argument
     evolution_time,
     num_trotter_steps,
     hamiltonian,
@@ -668,7 +676,7 @@ def _required_work_wire_sizes(hamiltonian, vib_wires, b):
     return 2 * k, _required_work_size(n, k, b)
 
 
-def _trotter_vibronic_work_wires(  # pylint: disable=too-many-arguments
+def _trotter_vibronic_standard_work_wires(  # pylint: disable=too-many-arguments
     hamiltonian, vib_wires, coefficient_wires, phase_gradient_wires, cache_wires, work_wires, **_
 ):
     """Number of zeroed work wires allocated when ``coefficient_wires``/``cache_wires``/
@@ -686,9 +694,12 @@ def _trotter_vibronic_work_wires(  # pylint: disable=too-many-arguments
 
 
 @register_resources(
-    _trotter_vibronic_resources, exact=False, work_wires=_trotter_vibronic_work_wires
+    _trotter_vibronic_standard_resources,
+    exact=False,
+    work_wires=_trotter_vibronic_standard_work_wires,
+    name="vibronic_trotter_steps",
 )
-def _trotter_vibronic_decomposition(  # pylint: disable=too-many-arguments
+def _trotter_vibronic_standard(  # pylint: disable=too-many-arguments
     evolution_time,
     num_trotter_steps,
     hamiltonian,
@@ -763,7 +774,7 @@ def _trotter_vibronic_decomposition(  # pylint: disable=too-many-arguments
         _run(coefficients, cache, work)
 
 
-add_decomps(TrotterVibronic, _trotter_vibronic_decomposition)
+add_decomps(TrotterVibronic, _trotter_vibronic_standard)
 
 
 # ---------------------------------------------------------------------------

@@ -45,7 +45,7 @@ class WiresIn(BooleanFn):
     """A conditional for evaluating if the wires of an operation exist in a specified set of wires.
 
     Args:
-        wires (Union[Iterable[int, str], Wires]): Sequence of wires for building the wire set.
+        wires (Iterable[int] or Wires): Sequence of non-negative integer wires for the wire set.
 
     .. seealso:: Users are advised to use :func:`~.wires_in` for a functional construction.
     """
@@ -62,7 +62,7 @@ class WiresEq(BooleanFn):
     """A conditional for evaluating if a given wire is equal to a specified set of wires.
 
     Args:
-        wires (Union[Iterable[int, str], Wires]): Sequence of wires for building the wire set.
+        wires (Iterable[int] or Wires): Sequence of non-negative integer wires for the wire set.
 
     .. seealso:: Users are advised to use :func:`~.wires_eq` for a functional construction.
     """
@@ -77,14 +77,14 @@ class WiresEq(BooleanFn):
 
 
 def _get_wires(val):
-    """Extract wires as a set from an integer, string, Iterable, Wires or Operation instance.
+    """Extract non-negative integer wires as a set from a label, iterable, Wires or Operation.
 
     Args:
-        val (Union[int, str, Iterable, ~.wires.Wires, ~.operation.Operation]): object to be used
+        val (Union[int, Iterable[int], ~.wires.Wires, ~.operation.Operation]): object to be used
             for building the wire set.
 
     Returns:
-        set[Union[int, str]]: computed wire set
+        set[int]: computed wire set
 
     Raises:
         ValueError: if the wire set cannot be computed for ``val``.
@@ -102,12 +102,12 @@ def wires_in(wires):
     if the wires of an input operation are within the specified set of wires.
 
     Args:
-        wires (Union(Iterable[int, str], Wires, Operation, MeasurementProcess, int, str)):
+        wires (Iterable[int] or Wires or Operation or MeasurementProcess or int):
             Object to be used for building the wire set.
 
     Returns:
         :class:`WiresIn <pennylane.noise.conditionals.WiresIn>`: A callable object with
-        signature ``Union(Iterable[int, str], Wires, Operation, MeasurementProcess, int, str)``.
+        signature ``Union(Iterable[int], Wires, Operation, MeasurementProcess, int)``.
         It evaluates to ``True`` if the wire set constructed from the input to the callable is
         a subset of the one built from the specified ``wires`` set.
 
@@ -128,11 +128,11 @@ def wires_in(wires):
     Additionally, if an :class:`Operation <pennylane.operation.Operation>` is provided,
     its ``wires`` are extracted and used to build the wire set:
 
-    >>> cond_func = qp.noise.wires_in(qp.CNOT(["alice", "bob"]))
-    >>> cond_func("alice")
+    >>> cond_func = qp.noise.wires_in(qp.CNOT([2, 4]))
+    >>> cond_func(2)
     True
 
-    >>> cond_func("eve")
+    >>> cond_func(5)
     False
     """
     return WiresIn(_get_wires(wires))
@@ -143,12 +143,12 @@ def wires_eq(wires):
     if a given wire is equal to specified set of wires.
 
     Args:
-        wires (Union(Iterable[int, str], Wires, Operation, MeasurementProcess, int, str)):
+        wires (Iterable[int] or Wires or Operation or MeasurementProcess or int):
             Object to be used for building the wire set.
 
     Returns:
         :class:`WiresEq <pennylane.noise.conditionals.WiresEq>`: A callable object with
-        signature ``Union(Iterable[int, str], Wires, Operation, MeasurementProcess, int, str)``.
+        signature ``Union(Iterable[int], Wires, Operation, MeasurementProcess, int)``.
         It evaluates to ``True`` if the wire set constructed from the input to the callable
         is equal to the one built from the specified ``wires`` set.
 
@@ -169,11 +169,11 @@ def wires_eq(wires):
     Additionally, if an :class:`Operation <pennylane.operation.Operation>` is provided,
     its ``wires`` are extracted and used to build the wire set:
 
-    >>> cond_func = qp.noise.wires_eq(qp.RX(1.0, "dino"))
-    >>> cond_func(qp.RZ(1.23, wires="dino"))
+    >>> cond_func = qp.noise.wires_eq(qp.RX(1.0, 1))
+    >>> cond_func(qp.RZ(1.23, wires=1))
     True
 
-    >>> cond_func("eve")
+    >>> cond_func(2)
     False
     """
     return WiresEq(_get_wires(wires))
@@ -418,11 +418,11 @@ def op_in(ops):
     Additionally, an instance of :class:`Operation <pennylane.operation.Operation>`
     can also be provided:
 
-    >>> cond_func = qp.noise.op_in([qp.RX(1.0, "dino"), qp.RY(2.0, "rhino")])
-    >>> cond_func(qp.RX(1.23, wires=["eve"]))
+    >>> cond_func = qp.noise.op_in([qp.RX(1.0, 4), qp.RY(2.0, 5)])
+    >>> cond_func(qp.RX(1.23, wires=[6]))
     True
 
-    >>> cond_func(qp.RY(1.23, wires=["dino"]))
+    >>> cond_func(qp.RY(1.23, wires=[4]))
     True
 
     >>> cond_func([qp.RX(1.23, wires=[1]), qp.RZ(4.56, wires=[2])])
@@ -465,11 +465,11 @@ def op_eq(ops):
     Additionally, an instance of :class:`Operation <pennylane.operation.Operation>`
     can also be provided:
 
-    >>> cond_func = qp.noise.op_eq(qp.RX(1.0, "dino"))
-    >>> cond_func(qp.RX(1.23, wires=["eve"]))
+    >>> cond_func = qp.noise.op_eq(qp.RX(1.0, 1))
+    >>> cond_func(qp.RX(1.23, wires=[2]))
     True
 
-    >>> cond_func(qp.RY(1.23, wires=["dino"]))
+    >>> cond_func(qp.RY(1.23, wires=[1]))
     False
     """
     return OpEq(ops)
@@ -667,8 +667,8 @@ def partial_wires(operation, *args, **kwargs):
     >>> func = qp.noise.partial_wires(qp.RX(1.2, [12]))
     >>> func(2)
     RX(1.2, wires=[2])
-    >>> func(qp.RY(1.0, ["wires"]))
-    RX(1.2, wires=['wires'])
+    >>> func(qp.RY(1.0, [1]))
+    RX(1.2, wires=[1])
 
     Additionally, an :class:`Operation <pennylane.operation.Operation>` class can
     also be provided, while providing required positional arguments via ``args``:
@@ -683,8 +683,8 @@ def partial_wires(operation, *args, **kwargs):
     >>> func(qp.RY(1.0, [2]))
     RX(1.2, wires=[2])
     >>> rfunc = qp.noise.partial_wires(qp.RX(1.2, [12]), phi=2.3)
-    >>> rfunc(qp.RY(1.0, ["light"]))
-    RX(2.3, wires=['light'])
+    >>> rfunc(qp.RY(1.0, [3]))
+    RX(2.3, wires=[3])
 
     Finally, one may also use this with an instance of
     :class:`MeasurementProcess <pennylane.measurement.MeasurementProcess>`

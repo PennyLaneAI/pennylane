@@ -184,7 +184,7 @@ class CommutingEvolution(Operation):
         Args:
             *time_and_coeffs (list[tensor_like or float]): list of coefficients of the Hamiltonian, prepended by the time
                 variable
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
             hamiltonian (.Hamiltonian): The commuting Hamiltonian defining the time-evolution operator.
             frequencies (tuple[int or float]): The unique positive differences between eigenvalues in
                 the spectrum of the Hamiltonian.
@@ -208,12 +208,12 @@ class CommutingEvolution(Operation):
         return CommutingEvolution(hamiltonian, -time, frequencies, shifts)
 
 
-def _commuting_evolution_resources(words: tuple[PauliWord]):
+def _commuting_evolution_standard_resources(words: tuple[PauliWord]):
     return {resource_rep(ApproxTimeEvolution, words=words, n=1): 1}
 
 
-@register_resources(_commuting_evolution_resources)
-def _commuting_evolution_decomposition(  # pylint: disable=unused-argument
+@register_resources(_commuting_evolution_standard_resources, name="to_approx_time_evolution")
+def _commuting_evolution_standard(  # pylint: disable=unused-argument
     time: list,
     *_,
     wires: WiresLike,
@@ -227,11 +227,14 @@ def _commuting_evolution_decomposition(  # pylint: disable=unused-argument
     ApproxTimeEvolution(hamiltonian, time, 1)
 
 
-add_decomps(CommutingEvolution, _commuting_evolution_decomposition)
+add_decomps(CommutingEvolution, _commuting_evolution_standard)
 
 
-@register_resources(lambda base_params, **_: {resource_rep(CommutingEvolution, **base_params): 1})
-def _adjoint_commuting_evolution(time, *params, base, **__):
+@register_resources(
+    lambda base_params, **_: {resource_rep(CommutingEvolution, **base_params): 1},
+    name="negate_time",
+)
+def _adjoint_commuting_evolution_standard(time, *params, base, **__):
     hamiltonian = ops.functions.bind_new_parameters(base.hyperparameters["hamiltonian"], params)
     CommutingEvolution(
         hamiltonian,
@@ -241,4 +244,4 @@ def _adjoint_commuting_evolution(time, *params, base, **__):
     )
 
 
-add_decomps("Adjoint(CommutingEvolution)", _adjoint_commuting_evolution)
+add_decomps("Adjoint(CommutingEvolution)", _adjoint_commuting_evolution_standard)

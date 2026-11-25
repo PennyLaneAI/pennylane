@@ -182,9 +182,8 @@ class DefaultMixed(Device):  # pylint: disable=abstract-method
     r"""A PennyLane Python-based device for mixed-state qubit simulation.
 
     Args:
-        wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
-            contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
-            (``['auxiliary', 'q1', 'q2']``).
+        wires (int, Iterable[int]): Number of wires present on the device, or iterable that
+            contains unique non-negative integer wire labels (e.g., ``[0, 2, 5]``).
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A

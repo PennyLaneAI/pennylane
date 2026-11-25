@@ -25,6 +25,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
+from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 from pennylane.ops import CNOT, Adjoint, PauliX
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.templates import Subroutine, SubroutineOp, subroutine_resource_rep
@@ -310,7 +311,6 @@ class TestSubroutineOp:
             qp.assert_equal(d[0], qp.PauliRot(0.5, "XY", (0, 6)))
             qp.assert_equal(d[1], qp.PauliRot(0.6, "YZ", (6, 1)))
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_decompose_integration(self):
         """Test that SubroutineOp can be used with the decompose transform in a basic use case."""
 
@@ -613,7 +613,6 @@ class TestTapePLIntegration:
         assert out2 == "0: ─╭Tester─┤  <Z>\n1: ─╰Tester─┤  <Z>"
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestGraphDecomposition:
 
     def test_resource_keys(self):
@@ -955,7 +954,8 @@ class TestGraphDecomposition:
 
         op = qp.adjoint(RXLayer.operator(np.array([1, 2, 3]), (1, 2, 3)))
         tape = qp.tape.QuantumScript([op])
-        new_tape = qp.transforms._tape_decompose(tape)[0][0]  # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
+        new_tape = qp.transforms._tape_decompose(tape, gate_set={qp.RX})[0][0]
         qp.assert_equal(new_tape[0], qp.RX(-3, 3))
         qp.assert_equal(new_tape[1], qp.RX(-2, 2))
         qp.assert_equal(new_tape[2], qp.RX(-1, 1))
@@ -974,7 +974,9 @@ class TestGraphDecomposition:
         op = qp.ctrl(RXLayer.operator(np.array([1, 2, 3]), (1, 2, 3)), (4, 5))
         tape = qp.tape.QuantumScript([op])
         # pylint: disable-next=protected-access
-        new_tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][0]
+        new_tape = qp.transforms._tape_decompose(
+            tape, gate_set=ROTATIONS_PLUS_CNOT, max_expansion=1
+        )[0][0]
         qp.assert_equal(new_tape[0], qp.ctrl(qp.RX(1, 1), (4, 5)))
         qp.assert_equal(new_tape[1], qp.ctrl(qp.RX(2, 2), (4, 5)))
         qp.assert_equal(new_tape[2], qp.ctrl(qp.RX(3, 3), (4, 5)))
@@ -1019,11 +1021,11 @@ class TestGraphDecomposition:
             RYLayer, AbstractArray((3,), float), AbstractArray((3,), dtype=int)
         )
 
-        @qp.decomposition.register_resources({rx_rr: 1})
+        @qp.decomposition.register_resources({rx_rr: 1}, name="rx_decomp")
         def rx_decomp(wires):
             RXLayer(np.array([0.0, 1.0, 2.0]), wires)
 
-        @qp.decomposition.register_resources({ry_rr: 1})
+        @qp.decomposition.register_resources({ry_rr: 1}, name="ry_decomp")
         def ry_decomp(wires):
             RYLayer(np.array([0.0, 1.0, 2.0]), wires)
 

@@ -120,10 +120,10 @@ class TestMapWiresTapes:
         t1 = qp.tape.QuantumScript([qp.X(0)], [qp.expval(qp.Z(0))])
         t2 = qp.tape.QuantumScript([qp.Y(1)], [qp.probs(wires=1)])
 
-        batch, _ = qp.map_wires((t1, t2), {0: "a", 1: "b"})
+        batch, _ = qp.map_wires((t1, t2), {0: 6, 1: 7})
 
-        expected1 = qp.tape.QuantumScript([qp.X("a")], [qp.expval(qp.Z("a"))])
-        expected2 = qp.tape.QuantumScript([qp.Y("b")], [qp.probs(wires="b")])
+        expected1 = qp.tape.QuantumScript([qp.X(6)], [qp.expval(qp.Z(6))])
+        expected2 = qp.tape.QuantumScript([qp.Y(7)], [qp.probs(wires=7)])
         qp.assert_equal(batch[0], expected1)
         qp.assert_equal(batch[1], expected2)
 

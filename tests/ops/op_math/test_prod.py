@@ -139,9 +139,9 @@ class TestInitialization:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("id", ("foo", "bar"))
     def test_init_prod_op(self, id):
         """Test the initialization of a Prod operator."""
-        prod_op = prod(qp.PauliX(wires=0), qp.RZ(0.23, wires="a"))
+        prod_op = prod(qp.PauliX(wires=0), qp.RZ(0.23, wires=10))
 
-        assert prod_op.wires == Wires((0, "a"))
+        assert prod_op.wires == Wires((0, 10))
         assert prod_op.num_wires == 2
         assert prod_op.name == "Prod"
 
@@ -152,13 +152,13 @@ class TestInitialization:  # pylint: disable=too-many-public-methods
     def test_hash(self):
         """Testing some situations for the hash property."""
         # same hash if different order but can be permuted to right order
-        op1 = qp.prod(qp.PauliX(0), qp.PauliY("a"))
-        op2 = qp.prod(qp.PauliY("a"), qp.PauliX(0))
+        op1 = qp.prod(qp.PauliX(0), qp.PauliY(10))
+        op2 = qp.prod(qp.PauliY(10), qp.PauliX(0))
         assert hash(op1) == hash(op2)
 
         # test not the same hash if different order and cant be exchanged to correct order
-        op3 = qp.prod(qp.PauliX("a"), qp.PauliY("a"), qp.PauliX(1))
-        op4 = qp.prod(qp.PauliY("a"), qp.PauliX("a"), qp.PauliX(1))
+        op3 = qp.prod(qp.PauliX(10), qp.PauliY(10), qp.PauliX(1))
+        op4 = qp.prod(qp.PauliY(10), qp.PauliX(10), qp.PauliX(1))
         assert hash(op3) != hash(op4)
 
     PROD_TERMS_OP_PAIRS_MIXED = (  # not all operands have pauli representation
@@ -318,7 +318,7 @@ class TestInitialization:  # pylint: disable=too-many-public-methods
         """Test that a product of operators that have `has_matrix=True`
         has `has_matrix=True` as well."""
 
-        prod_op = prod(qp.PauliX(wires=0), qp.RZ(0.23, wires="a"))
+        prod_op = prod(qp.PauliX(wires=0), qp.RZ(0.23, wires=10))
         assert prod_op.has_matrix is True
 
     def test_has_matrix_true_via_factor_has_no_matrix_but_is_hamiltonian(self):
@@ -336,14 +336,14 @@ class TestInitialization:  # pylint: disable=too-many-public-methods
         """Test that a product of operators of which one does not have `has_matrix=True`
         has `has_matrix=False`."""
 
-        prod_op = prod(first_factor, MyOp(0.23, wires="a"))
+        prod_op = prod(first_factor, MyOp(0.23, wires=10))
         assert prod_op.has_matrix is False
 
     @pytest.mark.parametrize(
         "factors",
         (
             [qp.PauliX(wires=0), qp.Hamiltonian([0.5], [qp.PauliX(wires=1)])],
-            [qp.PauliX(wires=0), qp.RZ(0.612, "r")],
+            [qp.PauliX(wires=0), qp.RZ(0.612, 11)],
             [
                 qp.Hamiltonian([-0.3], [qp.PauliZ(wires=1)]),
                 qp.Hamiltonian([0.5], [qp.PauliX(wires=1)]),
@@ -362,7 +362,7 @@ class TestInitialization:  # pylint: disable=too-many-public-methods
         "factors",
         (
             [qp.PauliX(wires=0), qp.Hamiltonian([0.5], [qp.PauliX(wires=1)])],
-            [qp.PauliX(wires=0), qp.RZ(0.612, "r")],
+            [qp.PauliX(wires=0), qp.RZ(0.612, 11)],
             [
                 qp.Hamiltonian([-0.3], [qp.PauliZ(wires=1)]),
                 qp.Hamiltonian([0.5], [qp.PauliX(wires=1)]),
@@ -381,7 +381,7 @@ class TestInitialization:  # pylint: disable=too-many-public-methods
         "factors",
         (
             [qp.PauliX(wires=0), qp.PauliY(wires=0)],
-            [qp.PauliX(wires=0), qp.PauliZ(wires="r"), qp.PauliY(0)],
+            [qp.PauliX(wires=0), qp.PauliZ(wires=11), qp.PauliY(0)],
             [qp.Hamiltonian([0.523], [qp.PauliX(3)]), qp.PauliZ(3)],
             [
                 qp.Hamiltonian([0.523], [qp.PauliX(0) @ qp.PauliZ(2)]),
@@ -400,7 +400,7 @@ class TestInitialization:  # pylint: disable=too-many-public-methods
         "factors",
         (
             [qp.PauliX(wires=0), qp.PauliX(wires=1)],
-            [qp.PauliX(wires=0), qp.PauliZ(wires="r"), qp.PauliY("s")],
+            [qp.PauliX(wires=0), qp.PauliZ(wires=11), qp.PauliY(12)],
             [qp.Hermitian(np.eye(4), wires=[0, 2]), qp.PauliX(wires=1)],
         ),
     )
@@ -986,8 +986,8 @@ class TestProperties:
 
     op_pauli_reps = (
         (
-            qp.prod(qp.PauliX(wires=0), qp.PauliY(wires=1), qp.PauliZ(wires="a")),
-            qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "X", 1: "Y", "a": "Z"}): 1}),
+            qp.prod(qp.PauliX(wires=0), qp.PauliY(wires=1), qp.PauliZ(wires=10)),
+            qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "X", 1: "Y", 10: "Z"}): 1}),
         ),
         (
             qp.prod(qp.PauliX(wires=0), qp.PauliX(wires=0)),
@@ -997,8 +997,8 @@ class TestProperties:
             qp.prod(
                 qp.PauliX(wires=0),
                 qp.PauliY(wires=0),
-                qp.PauliZ(wires="a"),
-                qp.PauliZ(wires="a"),
+                qp.PauliZ(wires=10),
+                qp.PauliZ(wires=10),
             ),
             qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "Z"}): 1j}),
         ),
@@ -1206,9 +1206,9 @@ class TestSimplify:
         """Test that equal Pauli operators, creating global phase contributions, are simplified
         correctly on two wires."""
         prod_op = qp.prod(
-            qp.X(0) @ qp.Z("a") @ qp.Y(0) @ qp.Z(0) @ qp.X("a") @ qp.Y("a") @ qp.H(0) @ qp.H("a")
+            qp.X(0) @ qp.Z(10) @ qp.Y(0) @ qp.Z(0) @ qp.X(10) @ qp.Y(10) @ qp.H(0) @ qp.H(10)
         )
-        final_op = qp.simplify(-1 * qp.H(0) @ qp.H("a"))
+        final_op = qp.simplify(-1 * qp.H(0) @ qp.H(10))
         simplified_op = prod_op.simplify()
         assert np.allclose(qp.matrix(prod_op), qp.matrix(final_op))
         qp.assert_equal(simplified_op, final_op)
@@ -1548,26 +1548,26 @@ class TestSortWires:
     def test_sorting_operators_with_wire_map(self):
         """Test that the sorting alforithm works using a wire map."""
         op_list = [
-            qp.PauliX("three"),
+            qp.PauliX(14),
             qp.PauliX(5),
-            qp.Toffoli([2, "three", 4]),
+            qp.Toffoli([2, 14, 4]),
             qp.CNOT([2, 5]),
             qp.RX(1, 5),
             qp.PauliY(0),
             qp.CRX(1, [0, 2]),
-            qp.PauliZ("three"),
-            qp.CRY(1, ["test", 2]),
+            qp.PauliZ(14),
+            qp.CRY(1, [13, 2]),
         ]
-        sorted_list = Prod._sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
+        sorted_list = Prod._sort(op_list, wire_map={0: 0, 13: 1, 2: 2, 14: 3, 4: 4, 5: 5})
         final_list = [
             qp.PauliY(0),
-            qp.PauliX("three"),
-            qp.Toffoli([2, "three", 4]),
+            qp.PauliX(14),
+            qp.Toffoli([2, 14, 4]),
             qp.PauliX(5),
             qp.CNOT([2, 5]),
             qp.CRX(1, [0, 2]),
-            qp.CRY(1, ["test", 2]),
-            qp.PauliZ("three"),
+            qp.CRY(1, [13, 2]),
+            qp.PauliZ(14),
             qp.RX(1, 5),
         ]
 
@@ -1656,7 +1656,6 @@ class TestDecomposition:
 
         assert q.queue == _ops[::-1]
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_integration(self):
         """Test that prod's can be integrated into the decomposition."""
 
@@ -1699,7 +1698,6 @@ class TestDecomposition:
         )
         assert_decomposable(op)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "num_control_wires, num_work_wires",

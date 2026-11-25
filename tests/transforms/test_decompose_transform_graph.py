@@ -37,8 +37,6 @@ from pennylane.transforms.decompose import (
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
-pytestmark = pytest.mark.usefixtures("enable_graph_decomposition")
-
 
 @pytest.mark.unit
 def test_pass_name():
@@ -72,7 +70,21 @@ def test_decompose_setup_inputs():
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("excluded", [None, {}, {qp.CRX: ["_crx_to_ppr"]}])
+def test_decompose_requires_gate_set():
+    """The public transform rejects an explicit None gate set."""
+    with pytest.raises(TypeError, match="The gate_set argument is required\\."):
+        qp.decompose(gate_set=None)
+
+
+@pytest.mark.unit
+def test_resolve_gate_set_requires_gate_set_with_stopping_condition():
+    """A stopping condition cannot replace the target gate set."""
+    with pytest.raises(TypeError, match="The gate_set argument is required\\."):
+        _resolve_gate_set(gate_set=None, stopping_condition=lambda op: op.name == "RX")
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("excluded", [None, {}, {qp.CRX: ["to_paulirot"]}])
 def test_decompose_exclusions(excluded):
     """The public transform preserves provided exclusions and omits unset options."""
     bound_transform = qp.decompose(gate_set={"RX", "CZ"}, exclude_decomps=excluded)
@@ -93,12 +105,11 @@ def test_decompose_rejects_alt_decomps(transform):
 @pytest.mark.catalyst
 @pytest.mark.capture
 @pytest.mark.parametrize("use_name", [False, True])
-@pytest.mark.parametrize("graph_enabled", [False, True])
-def test_compiled_decompose_exclusions(use_name, graph_enabled):
-    """Compiled exclusions are local to a pass and independent of the legacy graph toggle."""
+def test_compiled_decompose_exclusions(use_name):
+    """Compiled exclusions are local to a pass."""
     pytest.importorskip("catalyst")
     registered_rules = list(qp.list_decomps(qp.CRX))
-    rule = qp.list_decomps(qp.CRX)["_crx_to_h_crz"]
+    rule = qp.list_decomps(qp.CRX)["to_h_crz"]
     gate_set = {qp.RX, qp.CZ, qp.H, qp.CRZ}
 
     @qp.qnode(qp.device("null.qubit", wires=2))
@@ -106,28 +117,27 @@ def test_compiled_decompose_exclusions(use_name, graph_enabled):
         qp.CRX(0.5, wires=[0, 1])
         return qp.probs()
 
-    with qp.decomposition.toggle_graph_ctx(graph_enabled):
-        excluded_circuit = qp.qjit(
-            qp.decompose(
-                circuit,
-                gate_set=gate_set,
-                exclude_decomps={qp.CRX: [rule.name if use_name else rule]},
-            ),
-            capture=True,
-            target="mlir",
-        )
-        assert qp.analyze(excluded_circuit, level="user")().resources.quantum_operations == {
-            "RX": 2,
-            "CZ": 2,
-        }
+    excluded_circuit = qp.qjit(
+        qp.decompose(
+            circuit,
+            gate_set=gate_set,
+            exclude_decomps={qp.CRX: [rule.name if use_name else rule]},
+        ),
+        capture=True,
+        target="mlir",
+    )
+    assert qp.analyze(excluded_circuit, level="user")().resources.quantum_operations == {
+        "RX": 2,
+        "CZ": 2,
+    }
 
-        unrestricted_circuit = qp.qjit(
-            qp.decompose(circuit, gate_set=gate_set), capture=True, target="mlir"
-        )
-        assert qp.analyze(unrestricted_circuit, level="user")().resources.quantum_operations == {
-            "Hadamard": 2,
-            "CRZ": 1,
-        }
+    unrestricted_circuit = qp.qjit(
+        qp.decompose(circuit, gate_set=gate_set), capture=True, target="mlir"
+    )
+    assert qp.analyze(unrestricted_circuit, level="user")().resources.quantum_operations == {
+        "Hadamard": 2,
+        "CRZ": 1,
+    }
 
     assert list(qp.list_decomps(qp.CRX)) == registered_rules
 
@@ -195,7 +205,9 @@ class CustomOpDynamicWireDecomp(Operation):
         return {}
 
 
-@qp.register_resources({qp.Toffoli: 2, qp.CRot: 1}, work_wires={"burnable": 2})
+@qp.register_resources(
+    {qp.Toffoli: 2, qp.CRot: 1}, work_wires={"burnable": 2}, name="decomp_with_work_wire"
+)
 def _decomp_with_work_wire(wires, **__):
     with qp.allocation.allocate(2, state="zero", restored=False) as work_wires:
         qp.Toffoli(wires=[wires[0], wires[1], work_wires[0]])
@@ -203,7 +215,7 @@ def _decomp_with_work_wire(wires, **__):
         qp.CRot(0.1, 0.2, 0.3, wires=[work_wires[1], wires[2]])
 
 
-@qp.register_resources({qp.Toffoli: 4, qp.CRot: 3})
+@qp.register_resources({qp.Toffoli: 4, qp.CRot: 3}, name="decomp_without_work_wire")
 def _decomp_without_work_wire(wires, **__):
     qp.Toffoli(wires=wires)
     qp.CRot(0.1, 0, 0, wires=[wires[0], wires[1]])
@@ -224,7 +236,11 @@ class LargeOpDynamicWireDecomp(Operation):
         return {}
 
 
-@qp.register_resources({qp.Toffoli: 2, CustomOpDynamicWireDecomp: 2}, work_wires={"zeroed": 1})
+@qp.register_resources(
+    {qp.Toffoli: 2, CustomOpDynamicWireDecomp: 2},
+    work_wires={"zeroed": 1},
+    name="decomp2_with_work_wire",
+)
 def _decomp2_with_work_wire(wires, **__):
     with qp.allocation.allocate(1, state="zero", restored=True) as work_wires:
         qp.Toffoli(wires=[wires[0], wires[1], work_wires[0]])
@@ -233,7 +249,9 @@ def _decomp2_with_work_wire(wires, **__):
         CustomOpDynamicWireDecomp(wires=[wires[1], wires[2], wires[3]])
 
 
-@qp.register_resources({qp.Toffoli: 4, CustomOpDynamicWireDecomp: 2})
+@qp.register_resources(
+    {qp.Toffoli: 4, CustomOpDynamicWireDecomp: 2}, name="decomp2_without_work_wire"
+)
 def _decomp2_without_work_wire(wires, **__):
     qp.Toffoli(wires=[wires[0], wires[1], wires[2]])
     CustomOpDynamicWireDecomp(wires=[wires[1], wires[2], wires[3]])
@@ -244,15 +262,15 @@ def _decomp2_without_work_wire(wires, **__):
 
 
 class TestDecomposeGraphEnabled:
-    """Tests the decompose transform with graph enabled."""
+    """Tests the graph-based decompose transform."""
 
     @pytest.mark.unit
     def test_none_gate_set_error(self):
-        """Tests that an error is raised when gate_set is not provided."""
+        """Tests that an error is raised when gate_set is None."""
 
         tape = qp.tape.QuantumScript([])
         with pytest.raises(TypeError, match="The gate_set argument is required."):
-            _tape_decompose(tape, stopping_condition=lambda op: True)
+            _tape_decompose(tape, gate_set=None, stopping_condition=lambda op: True)
 
     @pytest.mark.integration
     def test_mixed_gate_set_specification(self):
@@ -339,7 +357,7 @@ class TestDecomposeGraphEnabled:
     def test_fixed_decomp(self):
         """Tests that a fixed decomposition rule is used instead of the stock ones."""
 
-        @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2})
+        @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2}, name="my_cnot")
         def my_cnot(wires, **__):
             qp.RY(np.pi / 2, wires[1])
             qp.Z(wires[1])
@@ -367,7 +385,7 @@ class TestDecomposeGraphEnabled:
     def test_alt_decomp_not_used(self):
         """Tests that alt_decomp isn't necessarily used if it's not efficient."""
 
-        @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2})
+        @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2}, name="my_cnot")
         def my_cnot(wires, **__):
             qp.RY(np.pi / 2, wires[1])
             qp.Z(wires[1])
@@ -391,7 +409,7 @@ class TestDecomposeGraphEnabled:
     def test_alt_decomp(self):
         """Tests that alternative decomposition rules are used when applicable."""
 
-        @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2})
+        @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2}, name="my_cnot")
         def my_cnot(wires, **__):
             qp.RY(np.pi / 2, wires[1])
             qp.Z(wires[1])
@@ -429,7 +447,7 @@ class TestDecomposeGraphEnabled:
             def decomposition(self):
                 return [qp.H(self.wires[1]), qp.CNOT(self.wires), qp.H(self.wires[1])]
 
-        @qp.register_resources({qp.CRZ: 1})
+        @qp.register_resources({qp.CRZ: 1}, name="my_decomp")
         def my_decomp(wires, **__):
             qp.CRZ(np.pi, wires=wires)
 
@@ -450,7 +468,7 @@ class TestDecomposeGraphEnabled:
     def test_strict_false(self, recwarn):
         """Test that a decomposition is found if strict=False."""
 
-        @qp.register_resources({AnotherOp: 1})
+        @qp.register_resources({AnotherOp: 1}, name="decomp")
         def _decomp(wires):
             AnotherOp(wires)
 
@@ -467,11 +485,11 @@ class TestDecomposeGraphEnabled:
         """Tests that when strict=False, ops without decompositions are not chosen
         if there is an alternative pathway available."""
 
-        @qp.register_resources({AnotherOp: 1})
+        @qp.register_resources({AnotherOp: 1}, name="decomp")
         def _decomp(wires):
             AnotherOp(wires)
 
-        @qp.register_resources({qp.H: 2, qp.CNOT: 1})
+        @qp.register_resources({qp.H: 2, qp.CNOT: 1}, name="decomp2")
         def _decomp2(wires):
             qp.H(wires[1])
             qp.CNOT(wires)
@@ -568,7 +586,7 @@ class TestDecomposeGraphEnabled:
     def test_adjoint_decomp(self):
         """Tests decomposing an adjoint operation."""
 
-        @qp.register_resources({qp.RX: 1, qp.RY: 1, qp.RZ: 1})
+        @qp.register_resources({qp.RX: 1, qp.RY: 1, qp.RZ: 1}, name="custom_decomp")
         def custom_decomp(theta, phi, omega, wires):
             qp.RX(theta, wires[0])
             qp.RY(phi, wires[0])
@@ -608,7 +626,7 @@ class TestDecomposeGraphEnabled:
             MidMeasure(wires=Wire[1]) if m_type == "mcm" else PauliMeasure("XY", wires=Wire[2])
         )
 
-        @qp.register_resources({qp.H: 2, measure_resource: 1})
+        @qp.register_resources({qp.H: 2, measure_resource: 1}, name="custom_decomp")
         def _custom_decomp(wires, **_):
             qp.H(wires[0])
             m0 = (
@@ -618,7 +636,7 @@ class TestDecomposeGraphEnabled:
             )
             qp.cond(m0, qp.H)(wires[1])
 
-        @qp.register_resources({qp.H: 3, qp.X: 2, qp.CNOT: 1})
+        @qp.register_resources({qp.H: 3, qp.X: 2, qp.CNOT: 1}, name="expensive_decomp")
         def _expensive_decomp(wires, **_):
             raise NotImplementedError
 
@@ -745,8 +763,7 @@ class TestDecomposeGraphEnabled:
         """Tests that the number of allocations can be minimized."""
 
         @qp.register_resources(
-            {qp.CNOT: 2, LargeOpDynamicWireDecomp: 2},
-            work_wires={"zeroed": 1},
+            {qp.CNOT: 2, LargeOpDynamicWireDecomp: 2}, work_wires={"zeroed": 1}, name="some_decomp"
         )
         def _some_decomp(wires):
             with qp.allocation.allocate(1, state="zero", restored=True) as work_wires:
@@ -800,7 +817,9 @@ class TestDecomposeGraphEnabled:
     def test_operator2_integration(self):
         """Tests that circuits containing Operator2 instances can be decomposed."""
 
-        @qp.register_resources({qp.H: 2, qp.CNOT: 1, DynOp(Float, Wire[2]): 2})
+        @qp.register_resources(
+            {qp.H: 2, qp.CNOT: 1, DynOp(Float, Wire[2]): 2}, name="custom_decomp"
+        )
         def _custom_decomp(theta, wires):
             qp.H(wires[0])
             qp.H(wires[1])
@@ -808,7 +827,7 @@ class TestDecomposeGraphEnabled:
             qp.CNOT(wires[:2])
             DynOp(theta / 2, wires[:2])
 
-        @qp.register_resources({qp.CNOT: 1, OneWireDynOp: 2})
+        @qp.register_resources({qp.CNOT: 1, OneWireDynOp: 2}, name="dynop_decomp")
         def _dynop_decomp(phi, wires):
             OneWireDynOp(phi / 2, wires[0])
             qp.CNOT(wires)
@@ -845,7 +864,7 @@ class TestDecomposeGraphEnabled:
 
 @pytest.mark.unit
 def test_stopping_condition_graph_enabled():
-    """Tests that the stopping condition is resolved correctly when the graph is disabled."""
+    """Tests that the stopping condition is resolved correctly."""
 
     def _stopping_condition(op):
         return op.num_params > 0 and all(qp.math.allclose(p, 0) for p in op.parameters)

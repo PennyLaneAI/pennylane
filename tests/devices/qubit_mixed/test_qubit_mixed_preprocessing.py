@@ -85,7 +85,7 @@ class NoMatNoDecompOp(qp.operation.Operation):  # pylint: disable=too-few-public
 def custom_decomps():
     """Locally register decomposition rules."""
 
-    @qp.register_resources({qp.X: 1, qp.Y: 1})
+    @qp.register_resources({qp.X: 1, qp.Y: 1}, name="custom_rule_no_mat_op")
     def custom_rule_no_mat_op(wires):
         qp.X(wires)
         qp.Y(wires)
@@ -324,12 +324,8 @@ class TestPreprocessing:
         ]
 
         program, _ = DefaultMixed(wires=2).preprocess()
-        if qp.decomposition.enabled_graph():
-            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
-                with pytest.warns(DecompositionWarning):
-                    program(tapes)
-        else:
-            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+            with pytest.warns(DecompositionWarning):
                 program(tapes)
 
     @pytest.mark.parametrize(

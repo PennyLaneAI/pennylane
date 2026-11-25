@@ -18,6 +18,7 @@ a vector and a list of operators.
 
 from collections import defaultdict
 from collections.abc import Sequence
+from typing import TypeGuard
 
 import pennylane as qp
 from pennylane.core.operator import Operator
@@ -143,7 +144,8 @@ def dot(
 
     # User-specified Pauli route
     if pauli:
-        if all(isinstance(pauli, (PauliWord, PauliSentence)) for pauli in ops):
+        # _all_paulis helper allows us to use TypeGuard
+        if _all_paulis(ops):
             # Use pauli arithmetic when ops are just PauliWord and PauliSentence instances
             return _dot_pure_paulis(coeffs, ops)
 
@@ -164,7 +166,16 @@ def dot(
     )
 
 
-def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
+def _all_paulis(
+    ops: Sequence[Operator | PauliWord | PauliSentence],
+) -> TypeGuard[Sequence[PauliWord | PauliSentence]]:
+    """Check whether all operators are Pauli words or sentences."""
+    return all(isinstance(pauli, (PauliWord, PauliSentence)) for pauli in ops)
+
+
+def _dot_with_ops_and_paulis(
+    coeffs: Sequence[float], ops: Sequence[Operator | PauliWord | PauliSentence]
+):
     """Compute dot when operators are a mix of pennylane operators, PauliWord and PauliSentence by turning them all into a PauliSentence instance.
     Returns a PauliSentence instance"""
     pauli_words = defaultdict(int)
