@@ -1588,15 +1588,15 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
   .. code-block:: pycon
 
-      >>> import pennylane.labs.estimator_beta as qre
+      >>> import pennylane.labs.estimator_beta as qre  # doctest: +SKIP
       >>>
-      >>> qrom_op = qre.SelectCopyQROM(
+      >>> qrom_op = qre.SelectCopyQROM(  # doctest: +SKIP
       ...     num_bitstrings = 10**8,
       ...     size_bitstring = 8,
       ...     available_dirty_aux = 300,
       ... )
       >>>
-      >>> print(qre.estimate(qrom_op))
+      >>> print(qre.estimate(qrom_op))  # doctest: +SKIP
       --- Resources: ---
       Total wires: 308
         algorithmic wires: 35
@@ -1617,9 +1617,9 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
   .. code-block:: pycon
 
-      >>> import pennylane.labs.estimator_beta as qre
-      >>> from pennylane.labs.profiler import profile, export_flame_graph_data
-      >>> def circuit():
+      >>> import pennylane.labs.estimator_beta as qre  # doctest: +SKIP
+      >>> from pennylane.labs.profiler import profile, export_flame_graph_data  # doctest: +SKIP
+      >>> def circuit():  # doctest: +SKIP
       ...     for w in range(5):
       ...         qre.Hadamard()
       ...         qre.RZ(1e-9)
@@ -1627,9 +1627,9 @@ Labs: a place for unified and rapid prototyping of research software 🧪
       ...     qre.QPE(qre.RX(precision=1e-3), 4)
       ...     qre.QFT(4)
       >>>
-      >>> gate_set = {"T", "Hadamard", "CNOT"}
-      >>> res_profile, resources = profile(circuit, gate_set)()
-      >>> print(resources)
+      >>> gate_set = {"T", "Hadamard", "CNOT"}  # doctest: +SKIP
+      >>> res_profile, resources = profile(circuit, gate_set)()  # doctest: +SKIP
+      >>> print(resources)  # doctest: +SKIP
       --- Resources: ---
        Total wires: 5
          algorithmic wires: 5
@@ -1640,9 +1640,9 @@ Labs: a place for unified and rapid prototyping of research software 🧪
          'T': 1.972E+3,
          'CNOT': 44,
          'Hadamard': 25
-      >>> extracted_info = export_flame_graph_data(res_profile)
-      >>> ids, names, values, parents = extracted_info
-      >>> print(names[:5])  # just the first 5 entries
+      >>> extracted_info = export_flame_graph_data(res_profile)  # doctest: +SKIP
+      >>> ids, names, values, parents = extracted_info  # doctest: +SKIP
+      >>> print(names[:5])  # just the first 5 entries  # doctest: +SKIP
       ['circuit', 'Hadamard [x5]', 'RZ [x5]', 'T [x220]', 'QPE(RX, 4, adj_qft=None)']
 
 * Performance of the Trotter error module is improved by introducing a novel algorithm for
