@@ -2076,8 +2076,8 @@ Breaking changes 💔
   simplification and separate compilation into blocks.
   `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
 
-* ``qp.BooleanFn`` and the ``pennylane.boolean_fn`` module have been removed.
-  ``qp.operation.is_trainable`` and legacy device stopping conditions are now ordinary callables.
+* ``qp.BooleanFn``, the ``pennylane.boolean_fn`` module, and ``qp.operation.is_trainable``
+  have been removed. Legacy device stopping conditions are now ordinary callables.
   `(#10601) <https://github.com/PennyLaneAI/pennylane/pull/10601>`__
 
 Deprecations 👋

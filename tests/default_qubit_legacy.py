@@ -249,7 +249,10 @@ class DefaultQubitLegacy(QubitDevice):
             if getattr(obj, "has_matrix", False):
                 # pow operations dont work with backprop or adjoint without decomposition
                 # use class name string so we don't need to use isinstance check
-                return not (obj.__class__.__name__[:3] == "Pow" and qp.operation.is_trainable(obj))
+                return not (
+                    obj.__class__.__name__[:3] == "Pow"
+                    and any(qp.math.requires_grad(p) for p in obj.parameters)
+                )
             return obj.name in self.observables.union(self.operations)
 
         return accepts_obj

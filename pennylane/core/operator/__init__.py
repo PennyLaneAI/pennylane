@@ -101,19 +101,6 @@ Utility Functions
 
     ~abstractify
 
-Boolean Functions
-~~~~~~~~~~~~~~~~~
-
-Boolean functions take a single object and return ``True`` or ``False``.
-The ``operation`` module provides the following:
-
-.. currentmodule:: pennylane.operation
-
-.. autosummary::
-    :toctree: api
-
-    ~is_trainable
-
 Other
 ~~~~~
 
