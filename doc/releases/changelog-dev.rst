@@ -1646,7 +1646,7 @@ Breaking changes 💔
 
 * :func:`~.sign_expand` now requires `controls` wires instead of defaulting to ``("Hadamard", "Target")``
   as string wires will no longer be supported.
-  [(#10592)](https://github.com/PennyLaneAI/pennylane/pull/10592)
+  `(#10592) <https://github.com/PennyLaneAI/pennylane/pull/10592>`__
 
 * :class:`~.QROM` no longer takes a ``clean`` argument and no longer has a Select-SWAP
   decomposition, which is available for :class:`~.QROMLoad` and :class:`~.SelectSwap` instead.
