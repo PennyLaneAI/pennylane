@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import re
 import warnings
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from functools import partial
 
 from pennylane import capture
@@ -29,6 +29,7 @@ from pennylane.workflow._levels import (
     is_int_level,
     is_single_level,
     level_to_number,
+    levels_to_numbers,
     pipeline_at_slice,
     validate_level,
 )
@@ -40,7 +41,7 @@ from ._utils import (
     check_no_tape_transforms,
     unwrap_partial,
 )
-from .mlir_specs import resources_from_analysis_pass
+from .mlir_specs import resources_from_analysis_pass, resources_from_estimate_stage
 from .resource import CircuitSpecs
 
 _DECOMPOSE_PASS = "graph-decomposition"
@@ -85,7 +86,7 @@ def _device_gate_set(qnode) -> dict[str, float]:
 def _target_level(target, pipeline: CompilePipeline) -> int | None:
     """Return the level number of ``target`` in ``pipeline``, or ``None`` if ``target`` is a gate
     set."""
-    if target is None or isinstance(target, bool):
+    if isinstance(target, bool):
         raise ValueError(
             f"Invalid target={target!r}, expected a gate set or a level of the compile pipeline."
         )
@@ -225,9 +226,46 @@ def _is_level_name(name, pipeline: CompilePipeline) -> bool:
     )
 
 
+def _uses_capture(func) -> bool:
+    """Return whether a qjit'd QNode is compiled with program capture."""
+    uses_capture = func.compile_options.capture
+    return capture.enabled() if uses_capture == "global" else bool(uses_capture)
+
+
+def _estimate_after_transforms(func, original_qnode, level, *args, **kwargs) -> CircuitSpecs:
+    """Estimate the resources of a qjit'd QNode at levels after its transforms, from the resource
+    effects of their passes, and return its specs."""
+    compile_pipeline = original_qnode.compile_pipeline
+    level_numbers = levels_to_numbers(level, compile_pipeline)
+    if device_level(compile_pipeline) in level_numbers:
+        raise NotImplementedError(
+            f"qp.estimate does not support the device level yet, instead got: level={level!r}."
+        )
+    # As in qp.analyze, since a pipeline with tape transforms cannot be compiled
+    check_no_tape_transforms(compile_pipeline[: max(level_numbers)])
+
+    markers_by_level = compile_pipeline._level_to_markers()  # pylint: disable=protected-access
+    level_to_name: dict[int, str] = {}
+    resources = resources_from_estimate_stage(
+        func, original_qnode, level_numbers, markers_by_level, level_to_name, *args, **kwargs
+    )
+
+    # As in qp.analyze, the displayed level describes the circuit after its transform
+    level_to_name = {
+        lvl: name if lvl == 0 or lvl in markers_by_level else f"After {name}"
+        for lvl, name in level_to_name.items()
+    }
+    if is_single_level(level):
+        return build_circuit_specs(
+            original_qnode, next(iter(resources.values())), next(iter(level_to_name.values()))
+        )
+    return build_circuit_specs(original_qnode, resources, level_to_name)
+
+
 def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
     """Project the resources of a qjit'd QNode at ``level`` onto ``target``, a gate set or a
-    level of its compile pipeline, and return its specs."""
+    level of its compile pipeline, or estimate them at levels after its transforms, and return
+    its specs."""
     original_qnode = unwrap_qjit_qnode(func, fn_name="qp.estimate")
     from catalyst.utils.exceptions import CompileError  # pylint: disable=import-outside-toplevel
 
@@ -240,21 +278,28 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
     if isinstance(level, slice):
         # A slice that selects no transforms is the same as level 0
         is_top = not pipeline_at_slice(compile_pipeline, level)
+        if not is_top:
+            raise NotImplementedError(
+                f"qp.estimate does not support slices that select transforms, instead got: "
+                f"level={level!r}."
+            )
     else:
         is_top = is_single_level(level) and level_to_number(level, compile_pipeline) == 0
-    if not is_top:
-        raise NotImplementedError(
-            f"qp.estimate only supports level='top' or level=0, instead got: {level!r}."
-        )
 
-    uses_capture = func.compile_options.capture
-    if uses_capture == "global":
-        uses_capture = capture.enabled()
-    if not uses_capture:
+    if not _uses_capture(func):
         raise ValueError(
             "qp.estimate requires program capture. Compile the QNode with qp.qjit(capture=True)."
         )
 
+    if not is_top:
+        if target is not None:
+            raise ValueError(
+                f"target is only used at level='top', instead got: level={level!r}. After the "
+                "transforms, the resources are estimated from the passes of the compile pipeline."
+            )
+        return _estimate_after_transforms(func, original_qnode, level, *args, **kwargs)
+
+    target = "user" if target is None else target
     decompositions, decompose_kwargs, skipped = _estimate_passes(original_qnode, target)
     # The compile pipeline is replaced by the decompositions to apply before the estimate
     estimate_qnode = original_qnode.update_pipelines(
@@ -300,9 +345,9 @@ def _estimate_qjit(func, level, target, *args, **kwargs) -> CircuitSpecs:
 
 def estimate(
     qnode,
-    level: str | int | slice = "top",
+    level: str | int | slice | Sequence[str | int] = "top",
     *,
-    target: str | int | Iterable[type | str] | dict[type | str, float] = "user",
+    target: str | int | Iterable[type | str] | dict[type | str, float] | None = None,
 ) -> Callable[..., CircuitSpecs]:
     r"""Provides a resource estimate of a quantum circuit with respect to the provided compilation target,
     via rapid analysis of decomposition pathways.
@@ -315,20 +360,22 @@ def estimate(
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the qjit'd QNode for which to estimate resources.
-        level (str | int | slice): The portion of the
-            :class:`~.CompilePipeline` to apply before projecting the resources onto the
-            ``target``. See :func:`~.workflow.get_compile_pipeline` for accepted values.
-            Currently, only ``"top"``, ``0``, or the label of a marker placed before all
-            transforms are supported. Defaults to ``"top"``.
-        target (str | int | Iterable[type | str] | dict[type | str, float]): The target onto
-            which the resources are projected: either a gate set or a single level of the
-            :class:`~.CompilePipeline`. See :func:`~.decompose` and
+        level (str | int | slice | Sequence[str | int]): The level or levels of the
+            :class:`~.CompilePipeline` at which to estimate the resources. At ``"top"``, the
+            resources are projected onto the ``target``. At the levels after the transforms, as
+            accepted by :func:`~.analyze` except the device level and slices, the transforms are
+            estimated from the resource effects of their passes instead of applied. See the
+            "Levels after the transforms" section below. Defaults to ``"top"``.
+        target (str | int | Iterable[type | str] | dict[type | str, float] | None): The target
+            onto which the resources are projected at ``level="top"``: either a gate set or a
+            single level of the :class:`~.CompilePipeline`. See :func:`~.decompose` and
             :func:`~.workflow.get_compile_pipeline` for the accepted gate sets and levels,
-            respectively. Defaults to ``"user"``.
+            respectively. Defaults to ``"user"`` at ``level="top"``, and is not used at the
+            other levels.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
-        :class:`~.resource.CircuitSpecs` object containing the projected resources, including
+        :class:`~.resource.CircuitSpecs` object containing the estimated resources, including
         gate and measurement data, wire allocations, device information, shots, and more.
 
     .. seealso:: :func:`~.analyze`, :func:`~.track`
