@@ -19,6 +19,7 @@ import warnings
 from pennylane import math
 from pennylane.core.qscript import QuantumScript
 from pennylane.measurements import MutualInfoMP, ProbabilityMP, StateMP, VarianceMP, VnEntropyMP
+from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
 from pennylane.ops.op_math import Conditional
 from pennylane.pytrees import flatten, unflatten
 
@@ -171,7 +172,8 @@ def _influencing_indices(tape):
     for index in reversed(range(len(tape.operations))):
         op = tape.operations[index]
         wires = op.wires or tape.wires
-        if op in live_mcms or not live_wires.isdisjoint(wires):
+        is_live_mcm = isinstance(op, (MidMeasure, PauliMeasure)) and op in live_mcms
+        if is_live_mcm or not live_wires.isdisjoint(wires):
             influencing.add(index)
             live_wires.update(wires)
             if isinstance(op, Conditional):

@@ -164,6 +164,22 @@ class TestInitialization:
         """Test the num_preps property."""
         assert QuantumScript(ops).num_preps == num_preps
 
+    @pytest.mark.parametrize(
+        "shots, total_shots, shot_vector",
+        [
+            (None, None, ()),
+            (1, 1, ((1, 1),)),
+            (10, 10, ((10, 1),)),
+            ([1, 1, 2, 3, 1], 8, ((1, 2), (2, 1), (3, 1), (1, 1))),
+            (Shots([1, 1, 2]), 4, ((1, 2), (2, 1))),
+        ],
+    )
+    def test_set_shots(self, shots, total_shots, shot_vector):
+        qs = QuantumScript([], [], shots=shots)
+        assert isinstance(qs.shots, Shots)
+        assert qs.shots.total_shots == total_shots
+        assert qs.shots.shot_vector == shot_vector
+
 
 sample_measurements = [
     qp.sample(),
@@ -608,26 +624,6 @@ class TestIteration:
 
         # Check that the underlying circuit is still as expected
         assert qs.circuit == circuit
-
-
-class TestInfomationProperties:
-    """Tests the graph and specs properties."""
-
-    @pytest.mark.parametrize(
-        "shots, total_shots, shot_vector",
-        [
-            (None, None, ()),
-            (1, 1, ((1, 1),)),
-            (10, 10, ((10, 1),)),
-            ([1, 1, 2, 3, 1], 8, ((1, 2), (2, 1), (3, 1), (1, 1))),
-            (Shots([1, 1, 2]), 4, ((1, 2), (2, 1))),
-        ],
-    )
-    def test_set_shots(self, shots, total_shots, shot_vector):
-        qs = QuantumScript([], [], shots=shots)
-        assert isinstance(qs.shots, Shots)
-        assert qs.shots.total_shots == total_shots
-        assert qs.shots.shot_vector == shot_vector
 
 
 class TestScriptCopying:
