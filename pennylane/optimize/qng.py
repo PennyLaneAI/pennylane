@@ -124,7 +124,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     For VQE/VQE-like problems, the objective function for the optimizer can be
     realized as a :class:`~.QNode` that returns the expectation value of a Hamiltonian.
 
-    >>> dev = qp.device("default.qubit", wires=(0, 1, "aux"))
+    >>> dev = qp.device("default.qubit", wires=(0, 1, 2))
     >>> @qp.qnode(dev)
     ... def circuit(params):
     ...     qp.RX(params[0], wires=0)

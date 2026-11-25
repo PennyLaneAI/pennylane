@@ -29,7 +29,7 @@ class Channel(Operation, abc.ABC):
 
     Args:
         params (tuple[tensor_like]): trainable parameters
-        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
+        wires (Iterable[int] or int): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
     """
 

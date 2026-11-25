@@ -84,10 +84,11 @@ def from_qiskit(quantum_circuit, measurements=None):
 
         dev = qp.device("default.qubit")
 
+
         @qp.qnode(dev)
         def circuit():
-            my_qfunc(wires=["a", "b"])
-            return qp.expval(qp.Z("a")), qp.var(qp.Z("b"))
+            my_qfunc(wires=[2, 3])
+            return qp.expval(qp.Z(2)), qp.var(qp.Z(3))
 
     >>> circuit()
     (tensor(0.70738827, requires_grad=True),

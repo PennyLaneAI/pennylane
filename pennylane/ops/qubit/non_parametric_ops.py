@@ -67,7 +67,7 @@ class Hadamard(Operator2):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (int): the wire the operation acts on
 
     .. details::
         :title: Available decompositions
@@ -229,7 +229,7 @@ class Hadamard(Operator2):
         .. seealso:: :meth:`~.Hadamard.diagonalizing_gates`.
 
         Args:
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
         Returns:
             list[.Operator]: list of diagonalizing gates
 
@@ -263,7 +263,7 @@ The Hadamard operator
 * Number of parameters: 0
 
 Args:
-    wires (Sequence[int] or int): the wire the operation acts on
+    wires (int): the wire the operation acts on
 """
 
 
@@ -378,7 +378,7 @@ class PauliX(Operator2):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (int): the wire the operation acts on
 
     .. details::
         :title: Available decompositions
@@ -551,7 +551,7 @@ class PauliX(Operator2):
         .. seealso:: :meth:`~.X.diagonalizing_gates`.
 
         Args:
-           wires (Iterable[Any], Wires): wires that the operator acts on
+           wires (Iterable[int], Wires): wires that the operator acts on
         Returns:
            list[.Operator]: list of diagonalizing gates
 
@@ -587,7 +587,7 @@ r"""The Pauli X operator
 * Number of parameters: 0
 
 Args:
-    wires (Sequence[int] or int): the wire the operation acts on
+    wires (int): the wire the operation acts on
 """
 
 
@@ -667,7 +667,7 @@ class PauliY(Operator2):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (int): the wire the operation acts on
 
     .. details::
         :title: Available decompositions
@@ -831,7 +831,7 @@ class PauliY(Operator2):
         .. seealso:: :meth:`~.Y.diagonalizing_gates`.
 
         Args:
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
         Returns:
             list[.Operator]: list of diagonalizing gates
 
@@ -866,7 +866,7 @@ r"""The Pauli Y operator
 * Number of parameters: 0
 
 Args:
-    wires (Sequence[int] or int): the wire the operation acts on
+    wires (int): the wire the operation acts on
 """
 
 
@@ -948,7 +948,7 @@ class PauliZ(Operator2):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (int): the wire the operation acts on
 
     .. details::
         :title: Available decompositions
@@ -1123,7 +1123,7 @@ class PauliZ(Operator2):
         .. seealso:: :meth:`~.Z.diagonalizing_gates`.
 
         Args:
-            wires (Iterable[Any] or Wires): wires that the operator acts on
+            wires (Iterable[int] or Wires): wires that the operator acts on
 
         Returns:
             list[.Operator]: list of diagonalizing gates
@@ -1166,7 +1166,7 @@ r"""The Pauli Z operator
 * Number of parameters: 0
 
 Args:
-    wires (Sequence[int] or int): the wire the operation acts on
+    wires (int): the wire the operation acts on
 """
 
 
@@ -1268,7 +1268,7 @@ class S(Operator2):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (int): the wire the operation acts on
 
     .. details::
         :title: Available decompositions
@@ -1633,7 +1633,7 @@ class SX(Operator2):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (int): the wire the operation acts on
 
     .. details::
         :title: Available decompositions
@@ -2697,7 +2697,7 @@ class PPR_2(_FixedAnglePPR):
         sign (int): the sign :math:`s` of the rotation angle. Must be ``1`` or ``-1``.
         pauli_word (str): the Pauli word defining the rotation, consisting of the characters
             ``"X"``, ``"Y"``, ``"Z"``, and ``"I"``. Its length must match the length of ``wires``.
-        wires (Sequence[int] or int): the wires the operation acts on. The length must match
+        wires (int): the wires the operation acts on. The length must match
             length of ``pauli_word``.
 
     Raises:
@@ -2776,7 +2776,7 @@ class PPR_4(_FixedAnglePPR):
         sign (int): the sign :math:`s` of the rotation angle. Must be ``1`` or ``-1``.
         pauli_word (str): the Pauli word defining the rotation, consisting of the characters
             ``"X"``, ``"Y"``, ``"Z"``, and ``"I"``. Its length must match the length of ``wires``.
-        wires (Sequence[int] or int): the wires the operation acts on. The length must match
+        wires (int): the wires the operation acts on. The length must match
             length of ``pauli_word``.
 
     Raises:
@@ -2858,7 +2858,7 @@ class PPR_8(_FixedAnglePPR):
         sign (int): the sign :math:`s` of the rotation angle. Must be ``1`` or ``-1``.
         pauli_word (str): the Pauli word defining the rotation, consisting of the characters
             ``"X"``, ``"Y"``, ``"Z"``, and ``"I"``. Its length must match the length of ``wires``.
-        wires (Sequence[int] or int): the wires the operation acts on. The length must match
+        wires (int): the wires the operation acts on. The length must match
             length of ``pauli_word``.
 
     Raises:
