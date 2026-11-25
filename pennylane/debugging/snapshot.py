@@ -248,7 +248,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
         measurements = [qp.expval(qp.PauliX(0))]
 
-        tape = qp.tape.QuantumScript(ops, measurements)
+        tape = qp.core.QuantumScript(ops, measurements)
 
         tapes, collect_results_into_dict = qp.snapshots(tape)
 

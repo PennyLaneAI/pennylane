@@ -378,7 +378,7 @@ def tape_mpl(  # pylint: disable=too-many-arguments
         tape (QuantumScript): the operations and measurements to draw
 
     Keyword Args:
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+        wire_order (Sequence[int]): the order (from top to bottom) to print the wires of the circuit
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
@@ -419,7 +419,7 @@ def tape_mpl(  # pylint: disable=too-many-arguments
             qp.CRZ(1.2345, wires=(3,0))
         ]
         measurements = [qp.expval(qp.Z(0))]
-        tape = qp.tape.QuantumScript(ops, measurements)
+        tape = qp.core.QuantumScript(ops, measurements)
 
         fig, ax = qp.drawer.tape_mpl(tape)
         fig.show()
@@ -441,7 +441,7 @@ def tape_mpl(  # pylint: disable=too-many-arguments
 
         ops = [qp.RX(1.23456, wires=0), qp.Rot(1.2345,2.3456, 3.456, wires=0)]
         measurements = [qp.expval(qp.Z(0))]
-        tape2 = qp.tape.QuantumScript(ops, measurements)
+        tape2 = qp.core.QuantumScript(ops, measurements)
 
         fig, ax = qp.drawer.tape_mpl(tape2, decimals=2)
 
@@ -468,7 +468,7 @@ def tape_mpl(  # pylint: disable=too-many-arguments
 
     .. code-block:: python
 
-        fig, ax = qp.drawer.tape_mpl(tape, wire_order=["aux"], show_all_wires=True)
+        fig, ax = qp.drawer.tape_mpl(tape, wire_order=[4], show_all_wires=True)
 
     .. figure:: ../../_static/tape_mpl/show_all_wires.png
             :align: center

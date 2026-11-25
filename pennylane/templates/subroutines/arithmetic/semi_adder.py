@@ -13,16 +13,20 @@
 # limitations under the License.
 """Contains the SemiAdder template for performing the semi-out-place addition."""
 
+from math import pi
+
+from pennylane import capture, compiler
 from pennylane.allocation import allocate
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.resources import resolve_work_wire_type
-from pennylane.ops import CNOT, adjoint, ctrl
+from pennylane.ops import CNOT, PPR_8, GlobalPhase, X, Z, adjoint, cond, ctrl, pauli_measure
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
-from pennylane.typing import Wire
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
-from .temporary_and import TemporaryAND
+from .temporary_and import TemporaryAND, _temporary_and_to_ppr
 
 
 def _left_block(wires: list):
@@ -175,8 +179,10 @@ class SemiAdder(Operator2):
 
     .. math::
 
-        \text{SemiAdder} |x \rangle | y \rangle = |x \rangle | x + y  \rangle,
+        \text{SemiAdder} |x \rangle | y \rangle = |x \rangle | (x + y) \bmod 2^n \rangle,
 
+    where ``n = len(y_wires)``. Both registers are ordered from the most significant
+    bit to the least significant bit, and ``x_wires`` is left unchanged.
     This operation is also referred to as semi-out-place addition or quantum-quantum in-place addition in the literature.
 
     The implementation is based on `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
@@ -187,9 +193,10 @@ class SemiAdder(Operator2):
         y_wires (Sequence[int]): The wires that store the integer :math:`y`. The number of wires must be sufficient to
             represent :math:`y` in binary. These wires are also used
             to encode the integer :math:`x+y` which is computed modulo :math:`2^{\text{len(y_wires)}}` in the computational basis.
-        work_wires (Optional(Sequence[int])): The auxiliary wires to use for the addition. The
-            addition uses ``len(y_wires) - 1`` work wires; any of them that are not provided are
-            dynamically allocated by the decomposition.
+        work_wires (Optional(Sequence[int])): Auxiliary wires initialized and returned to
+            :math:`|0\rangle`. The standard decomposition uses ``len(y_wires) - 1``;
+            the Pauli product measurement (PPM) decomposition uses ``len(y_wires) + 1``,
+            plus one per control.
 
     **Example**
 
@@ -247,6 +254,9 @@ class SemiAdder(Operator2):
 
     The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4` where :math:`4 \mod 2^2 = 0`.
 
+    The PPM decompositions require capture or an active compiler and ``len(y_wires) + 1``
+    zeroed work wires, plus one per control.
+
     .. details::
         :title: Available decompositions
 
@@ -263,6 +273,45 @@ class SemiAdder(Operator2):
                 :class:`~.TemporaryAND` | :math:`n - 1` | 2
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`n - 1` | 2
                 :class:`~.CNOT` | :math:`n + 5\ell - 5 + [m \geq n]` | 9
+
+        The PPM circuits below use one-bit registers. The uncontrolled example reduces to
+        addition modulo two and needs no :class:`~.PPR_8` rotations.
+        Read the controlled circuit panels from top to bottom; wires absent from a panel
+        are unchanged. Both measurement-dependent branches are shown, with dashed boxes
+        around conditional measurements. Measurement and correction counts are upper
+        bounds for a single execution; counts for
+        :class:`~.PPR_8` and :func:`~.pauli_measure` are summed over Pauli words.
+
+        .. decomposition-table:: qp.SemiAdder
+            :stacked:
+            :symbols: :math:`m` ``x_wires`` and :math:`n \geq 1` ``y_wires``
+            :example: :math:`m=n=1`
+
+            .. decomposition-rule:: semi_adder_ppm
+                :image: /_static/decomposition_thumbnails/semi_adder_ppm.svg
+                :lightbox:
+                :requires: capture or an active compiler, and :math:`n + 1` zeroed work wires
+
+                :class:`~.PPR_8` | :math:`4n - 4` | 0
+                :func:`PauliMeasure <.pauli_measure>` | :math:`\leq 10n - 6` | :math:`\leq 4`
+                :class:`~.X` | :math:`\leq 4n - 2` | :math:`\leq 2`
+                :class:`~.Z` | :math:`\leq 9n - 6` | :math:`\leq 3`
+                :class:`~.GlobalPhase` | :math:`\leq 3n - 2` | :math:`\leq 1`
+
+            .. decomposition-rule:: flip_zero_ctrl_values(controlled_semi_adder_ppm)
+                :image: /_static/decomposition_thumbnails/semi_adder_controlled_ppm.svg
+                :lightbox:
+                :region: controlled
+                :requires: capture or an active compiler, and :math:`n + c + 1` zeroed work wires
+                :where: :math:`c \geq 1` is the number of control wires; the circuit shows
+                    :math:`c = 1`. Each control value :math:`0` adds two :class:`~.X` gates
+                    beyond the counts shown.
+
+                :class:`~.PPR_8` | :math:`8n + 4c - 8` | 4
+                :func:`PauliMeasure <.pauli_measure>` | :math:`\leq 14n + 4c - 10` | :math:`\leq 8`
+                :class:`~.X` | :math:`\leq 5n + c - 3` | :math:`\leq 3`
+                :class:`~.Z` | :math:`\leq 13n + 3c - 10` | :math:`\leq 6`
+                :class:`~.GlobalPhase` | :math:`\leq 4n + c - 3` | :math:`\leq 2`
     """
 
     grad_method = None
@@ -283,7 +332,7 @@ class SemiAdder(Operator2):
 
     @property
     def wires(self):
-        """All wires involved in the operation."""
+        """Input, output and work wires, in register order."""
         return self.x_wires + self.y_wires + self.work_wires
 
 
@@ -387,7 +436,177 @@ def _semi_adder_standard(x_wires, y_wires, work_wires=None, carry_flip=None, ski
         )
 
 
-add_decomps(SemiAdder, _semi_adder_standard)
+#######################################################################################
+# Measurement-based (Pauli-product) decomposition
+#######################################################################################
+
+
+def _ppm_z_controlled_pauli(control_wires, target_wires, aux, target_basis="Z", zeroed=True):
+    """Apply a Z-parity-controlled Pauli, toggling the auxiliary between zero and plus.
+
+    The control is the product of Z on ``control_wires``; the target is the product of
+    ``target_basis`` on ``target_wires``. Overlapping control and target wires are
+    supported when ``target_basis="Z"``.
+    """
+
+    def flip_control():
+        for wire in control_wires:
+            Z(wire)
+
+    def flip_target():
+        for wire in target_wires:
+            (X if target_basis == "X" else Z)(wire)
+
+    first_basis, second_basis = ("X", "Z") if zeroed else ("Z", "X")
+    m1 = pauli_measure("Z" * len(control_wires) + first_basis, [*control_wires, aux])
+    m2 = pauli_measure(second_basis + target_basis * len(target_wires), [aux, *target_wires])
+    m3 = pauli_measure(first_basis, [aux])
+    cond(m3 == 1, Z if zeroed else X)(aux)
+    cond(m2 == 1, flip_control)()
+    cond(m1 != m3, flip_target)()
+    cond((m2 == 1) & (m1 != m3), GlobalPhase)(pi)
+
+
+def _ppm_left_block(wires):
+    """Wires are input carry, input bit, target bit, output carry, shared auxiliary qubit."""
+    ck, ik, tk, out, aux = wires
+
+    PPR_8(1, "Y", wires=[out])
+    PPR_8(-1, "ZZY", wires=[ck, tk, out])
+    PPR_8(-1, "ZZY", wires=[ck, ik, out])
+    PPR_8(1, "ZZY", wires=[ik, tk, out])
+
+    # Lambda(Z_ck | X_tk X_out), auxiliary qubit |0> -> |+>
+    m1 = pauli_measure("ZX", wires=[ck, aux])
+    m2 = pauli_measure("ZXX", wires=[aux, tk, out])
+    m3 = pauli_measure("X", wires=[aux])
+    cond(m3 == 1, Z)(aux)
+    cond(m2 == 1, Z)(ck)
+    cond(m1 != m3, X)(out)
+    cond((m2 == 1) & (m1 != m3), GlobalPhase)(pi)
+
+    # Lambda(Z_ik | X_tk), auxiliary qubit |+> -> |0>
+    m4 = pauli_measure("ZZ", wires=[ik, aux])
+    m5 = pauli_measure("XX", wires=[aux, tk])
+    m6 = pauli_measure("Z", wires=[aux])
+    cond(m6 == 1, X)(aux)
+    cond(m5 == 1, Z)(ik)
+    # X_tk of the first gadget commutes with all three measurements of the second one, so
+    # it is deferred and grouped with the X_tk correction of the second gadget.
+    cond((m1 != m3) != (m4 != m6), X)(tk)
+    cond((m5 == 1) & (m4 != m6), GlobalPhase)(pi)
+
+
+def _ppm_last_block(wires):
+    """Update the last sum bit with a single parity-controlled X, then reset the auxiliary."""
+    ck, ik, tk, aux = wires
+
+    # Lambda(Z_ck Z_ik | X_tk), auxiliary qubit |0> -> |+>
+    _ppm_z_controlled_pauli([ck, ik], [tk], aux, target_basis="X")
+
+    # Only one gadget ran, so the auxiliary qubit is left in |+>: reset it to |0>.
+    outcome = pauli_measure("Z", wires=[aux])
+    cond(outcome == 1, X)(aux)
+
+
+def _ppm_right_block(wires):
+    """Wires are input carry, input bit, target bit, output carry."""
+    ck, ik, tk, out = wires
+
+    def correct():
+        Z(out)  # |-> -> |+>
+        Z(ck)
+
+        # Lambda(Z_ck Z_ik | Z_ik Z_tk), with the freed carry as the |+> auxiliary qubit
+        _ppm_z_controlled_pauli([ck, ik], [ik, tk], out, zeroed=False)
+
+    def clean():
+        outcome = pauli_measure("Z", wires=[out])
+        cond(outcome == 1, X)(out)
+
+    readout = pauli_measure("X", wires=[out])
+    cond(readout == 1, correct, clean)()
+
+
+def _ppm_ladder(x_wires, y_wires, work_wires):
+    """The left/last/right block sequence of the PPM decomposition of ``SemiAdder``."""
+    num_y_wires = len(y_wires)
+
+    aux = work_wires[num_y_wires - 1]
+    # TODO: Specialize the first carry and missing-input blocks in both PPM ladders
+    # to remove the dedicated zero wire.
+    zero = work_wires[num_y_wires]
+
+    # Turn wires from big endian to little endian.
+    # Truncate x_wires, as values larger than 2**num_y_wires-1 can anyways not be stored.
+    x_wires = list(x_wires[::-1][:num_y_wires])
+    x_wires += [zero] * (num_y_wires - len(x_wires))
+    y_wires = list(y_wires[::-1])
+    carries = [zero] + list(work_wires[: num_y_wires - 1])
+
+    for i in range(num_y_wires - 1):
+        _ppm_left_block([carries[i], x_wires[i], y_wires[i], carries[i + 1], aux])
+
+    _ppm_last_block([carries[-1], x_wires[-1], y_wires[-1], aux])
+
+    for i in reversed(range(num_y_wires - 1)):
+        _ppm_right_block([carries[i], x_wires[i], y_wires[i], carries[i + 1]])
+
+
+def _semi_adder_ppm_work_wires(y_wires=None, work_wires=(), **_):
+    """The carries, the shared auxiliary qubit and one wire held at |0>."""
+    return {"zeroed": max(len(y_wires) + 1 - len(work_wires), 0)}
+
+
+def _semi_adder_ppm_condition(*_, **__):
+    """Measurements inside conditional branches require capture or an active compiler."""
+    return capture.enabled() or compiler.active()
+
+
+def _semi_adder_ppm_resources(y_wires=None, **_):
+    """Upper bounds with every right block taking its correction branch."""
+    num_blocks = len(y_wires) - 1
+    return {
+        PPR_8(1, "Y", Wire[1]): num_blocks,
+        PPR_8(-1, "ZZY", Wire[3]): 2 * num_blocks,
+        PPR_8(1, "ZZY", Wire[3]): num_blocks,
+        # left blocks + last block + right block readouts
+        PauliMeasure("X", wires=Wire[1]): 2 * num_blocks + 1,
+        # left blocks + auxiliary reset of the last block + right block corrections
+        PauliMeasure("Z", wires=Wire[1]): 2 * num_blocks + 1,
+        PauliMeasure("ZX", wires=Wire[2]): num_blocks + 1,
+        PauliMeasure("ZZ", wires=Wire[2]): num_blocks,
+        PauliMeasure("XX", wires=Wire[2]): num_blocks,
+        PauliMeasure("ZXX", wires=Wire[3]): num_blocks,
+        PauliMeasure("ZZX", wires=Wire[3]): 1,
+        PauliMeasure("ZZZ", wires=Wire[3]): num_blocks,
+        PauliMeasure("XZZ", wires=Wire[3]): num_blocks,
+        X: 4 * num_blocks + 2,
+        Z: 9 * num_blocks + 3,
+        GlobalPhase(Float): 3 * num_blocks + 1,
+    }
+
+
+@register_condition(_semi_adder_ppm_condition)
+@register_resources(_semi_adder_ppm_resources, work_wires=_semi_adder_ppm_work_wires, exact=False)
+def _semi_adder_ppm(x_wires, y_wires, work_wires=None):
+    """Gidney's Fig. 2 in PPRs and PPMs, using ``len(y_wires) + 1`` zeroed work wires.
+
+    For three output bits, with bit 0 least significant, the block order is::
+
+        left(0) --> left(1) --> last(2) --> right(1) --> right(0)
+
+    Each left block writes a sum bit and the next carry; each right block erases
+    that carry. Left/last blocks share one auxiliary, while right blocks reuse
+    their outgoing carry. The work wires also include one wire held at zero.
+    """
+    work_wires = [] if work_wires is None else list(work_wires)
+    num_missing = max(len(y_wires) + 1 - len(work_wires), 0)
+    with allocate(num_missing, restored=True) as new_wires:
+        _ppm_ladder(x_wires, y_wires, work_wires + list(new_wires))
+
+
+add_decomps(SemiAdder, _semi_adder_standard, _semi_adder_ppm)
 
 
 def _controlled_semi_adder_standard_resources(
@@ -411,14 +630,8 @@ def _controlled_semi_adder_standard_resources(
     num_y_wires = len(y_wires)
 
     num_control_wires = len(control_wires)
-    # Note: don't re-wrap `work_wires` in `Wires(...)` here -- it may already be an
-    # `AbstractWires` instance (when this resource function runs on abstractified
-    # arguments), and `Wires(some_abstract_wires)` would wrap it as a single opaque
-    # element instead of preserving its length. `len()` alone works on both.
     num_extra_work_wires = 0 if work_wires is None else len(work_wires)
-    # The base's own work_wires beyond the (num_y_wires - 1) consumed by the ladders
-    # are available, in addition to any extra work_wires passed to `ctrl`, to the ctrl-CNOTs.
-    # Clamped at 0: if the base has too few, the ladders allocate and none are left over here.
+    # The ctrl-CNOTs can use base work wires left over from the carry ladder.
     num_extra_work_wires_from_base = max(len(base_work_wires) - (num_y_wires - 1), 0)
     num_work_wires = num_extra_work_wires + num_extra_work_wires_from_base
     work_wire_type = resolve_work_wire_type(
@@ -522,9 +735,177 @@ def _controlled_semi_adder_standard(  # pylint: disable=too-many-arguments
         _controlled_right_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip, **ctrl_kwargs)
 
 
+def _ppm_controlled_left_block(wires, zeroed=True):
+    """Compute the carry while leaving the input and target bits unchanged."""
+    ck, ik, tk, out, aux = wires
+    PPR_8(1, "Y", [out])
+    PPR_8(-1, "ZZY", [ck, tk, out])
+    PPR_8(-1, "ZZY", [ck, ik, out])
+    PPR_8(1, "ZZY", [ik, tk, out])
+    _ppm_z_controlled_pauli([ck], [out], aux, target_basis="X", zeroed=zeroed)
+
+
+def _ppm_controlled_erase_carry(wires):
+    """Erase the output carry, preserving the input carry, input bit and target bit."""
+    ck, ik, tk, out = wires
+
+    def correct():
+        Z(out)
+        Z(ck)
+        _ppm_z_controlled_pauli([ck, ik], [ck, tk], out, zeroed=False)
+
+    def clean():
+        outcome = pauli_measure("Z", [out])
+        cond(outcome == 1, X)(out)
+
+    readout = pauli_measure("X", [out])
+    cond(readout == 1, correct, clean)()
+
+
+def _ppm_erase_and(control, target_wires, out):
+    """Erase a temporary AND of a control and a Z parity, restoring its target to zero."""
+
+    def correct():
+        Z(out)
+        _ppm_z_controlled_pauli([control], target_wires, out, zeroed=False)
+
+    def clean():
+        outcome = pauli_measure("Z", [out])
+        cond(outcome == 1, X)(out)
+
+    readout = pauli_measure("X", [out])
+    cond(readout == 1, correct, clean)()
+
+
+def _ppm_controlled_sum(control, wires, zeroed=True):
+    """Add ``control & (carry ^ input)`` using a temporary AND of the two parities."""
+    ck, ik, tk, out, aux = wires
+    PPR_8(1, "Y", [out])
+    PPR_8(-1, "ZY", [control, out])
+    PPR_8(-1, "ZZY", [ck, ik, out])
+    PPR_8(1, "ZZZY", [control, ck, ik, out])
+    _ppm_z_controlled_pauli([out], [tk], aux, target_basis="X", zeroed=zeroed)
+    _ppm_erase_and(control, [ck, ik], out)
+
+
+def _ppm_controlled_ladder(base, control, work_wires):
+    """Compute carries, update the top bit and erase carries before each lower update."""
+    num_bits = len(base.y_wires)
+    aux, zero, top = work_wires[num_bits - 1 : num_bits + 2]
+    x_wires = list(base.x_wires[::-1][:num_bits])
+    x_wires += [zero] * (num_bits - len(x_wires))
+    y_wires = list(base.y_wires[::-1])
+    carries = [zero] + list(work_wires[: num_bits - 1])
+
+    for i in range(num_bits - 1):
+        _ppm_controlled_left_block(
+            [carries[i], x_wires[i], y_wires[i], carries[i + 1], aux], zeroed=i % 2 == 0
+        )
+    _ppm_controlled_sum(
+        control,
+        [carries[-1], x_wires[-1], y_wires[-1], top, aux],
+        zeroed=(num_bits - 1) % 2 == 0,
+    )
+    for i in reversed(range(num_bits - 1)):
+        wires = [carries[i], x_wires[i], y_wires[i], carries[i + 1]]
+        _ppm_controlled_erase_carry(wires)
+        _ppm_controlled_sum(control, [*wires, aux], zeroed=i % 2 == 0)
+    outcome = pauli_measure("Z", [aux])
+    cond(outcome == 1, X)(aux)
+
+
+def _controlled_semi_adder_ppm_condition(base, control_wires, **_):
+    """The PPM rule requires capture or an active compiler and at least one control."""
+    return len(control_wires) > 0 and _semi_adder_ppm_condition(base.x_wires, base.y_wires)
+
+
+def _controlled_semi_adder_ppm_work_wires(
+    base, control_wires, *_, work_wires=None, work_wire_type="borrowed", **__
+):
+    """Count the carry and control flags, gadget qubit, zero padding and top-bit AND."""
+    num_available = len(base.work_wires)
+    if work_wire_type == "zeroed" and work_wires is not None:
+        num_available += len(work_wires)
+    return {"zeroed": max(len(base.y_wires) + len(control_wires) + 1 - num_available, 0)}
+
+
+def _controlled_semi_adder_ppm_resources(base, control_wires, *_, **__):
+    """Upper bounds with every measurement-based uncomputation taking its correction."""
+    num_bits = len(base.y_wires)
+    num_carries = num_bits - 1
+    num_control_flags = len(control_wires) - 1
+    return {
+        PPR_8(1, "Y", Wire[1]): num_carries + num_bits + num_control_flags,
+        PPR_8(-1, "ZY", Wire[2]): num_bits + 2 * num_control_flags,
+        PPR_8(-1, "ZZY", Wire[3]): 2 * num_carries + num_bits,
+        PPR_8(1, "ZZY", Wire[3]): num_carries + num_control_flags,
+        PPR_8(1, "ZZZY", Wire[4]): num_bits,
+        PauliMeasure("X", wires=Wire[1]): 3 * num_bits - 1 + num_control_flags,
+        PauliMeasure("Z", wires=Wire[1]): 3 * num_bits - 1 + num_control_flags,
+        PauliMeasure("ZX", wires=Wire[2]): 2 * num_bits,
+        PauliMeasure("ZZ", wires=Wire[2]): num_carries + num_bits + num_control_flags,
+        PauliMeasure("XZ", wires=Wire[2]): num_control_flags,
+        PauliMeasure("XX", wires=Wire[2]): num_carries,
+        PauliMeasure("ZZZ", wires=Wire[3]): num_carries,
+        PauliMeasure("XZZ", wires=Wire[3]): num_carries + num_bits,
+        X: 5 * num_bits - 2 + num_control_flags,
+        Z: 13 * num_bits - 7 + 3 * num_control_flags,
+        GlobalPhase(Float): 2 * (num_carries + num_bits) + num_control_flags,
+    }
+
+
+@register_condition(_controlled_semi_adder_ppm_condition)
+@register_resources(
+    _controlled_semi_adder_ppm_resources,
+    work_wires=_controlled_semi_adder_ppm_work_wires,
+    exact=False,
+)
+def _controlled_semi_adder_ppm(
+    base, control_wires, work_wires=None, work_wire_type="borrowed", **_
+):
+    """Gidney's Fig. 4 in PPRs and PPMs, with a TemporaryAND ladder for multiple controls.
+
+    For three output bits, with bit 0 least significant, the block order is::
+
+        carry(0) --> carry(1) --> sum(2) --> erase(1) --> sum(1) --> erase(0) --> sum(0)
+
+    Carry blocks leave both input registers unchanged. Each lower sum reuses the
+    outgoing carry erased immediately before it for its temporary AND; the top
+    sum has a separate work wire. Control flags are computed before this sequence
+    and erased afterwards. The shared auxiliary is reset after the final sum.
+
+    Uses ``len(base.y_wires) + len(control_wires) + 1`` zeroed work wires and restores them.
+    """
+    zeroed_wires = list(base.work_wires)
+    if work_wire_type == "zeroed" and work_wires is not None:
+        zeroed_wires += list(work_wires)
+    num_ladder_wires = len(base.y_wires) + 2
+    num_controls = len(control_wires)
+    num_missing = max(num_ladder_wires + num_controls - 1 - len(zeroed_wires), 0)
+    with allocate(num_missing, restored=True) as new_wires:
+        zeroed_wires += list(new_wires)
+        control_chain = [control_wires[0]] + zeroed_wires[
+            num_ladder_wires : num_ladder_wires + num_controls - 1
+        ]
+        for i in range(num_controls - 1):
+            # TODO: Use TemporaryAND once Catalyst can lower rules spanning multiple qregs.
+            # A control flag from new_wires and an input control belong to different qregs;
+            # TemporaryAND then fails with "register-mode decomposition rule cannot span
+            # multiple qregs yet". Calling its PPR rule directly also supports this case.
+            _temporary_and_to_ppr(
+                [control_chain[i], control_wires[i + 1], control_chain[i + 1]], [True, True]
+            )
+
+        _ppm_controlled_ladder(base, control_chain[-1], zeroed_wires)
+
+        for i in reversed(range(num_controls - 1)):
+            _ppm_erase_and(control_chain[i], [control_wires[i + 1]], control_chain[i + 1])
+
+
 add_decomps(
     "C(SemiAdder)",
     flip_zero_control2(_controlled_semi_adder_standard, name="controlled_carry_ladder"),
+    flip_zero_control2(_controlled_semi_adder_ppm),
 )
 
 

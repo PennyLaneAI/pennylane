@@ -194,7 +194,7 @@ def convert_wire_order(tape, wire_order=None, show_all_wires=False):
 
     Args:
         tape (~.core.QuantumScript): the Quantum Tape containing operations and measurements
-        wire_order Sequence[Any]: the order (from top to bottom) to print the wires
+        wire_order Sequence[int]: the order (from top to bottom) to print the wires
 
     Keyword Args:
         show_all_wires=False (bool): whether to display all wires in ``wire_order``

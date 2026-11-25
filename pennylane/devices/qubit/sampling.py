@@ -147,7 +147,7 @@ def get_num_shots_and_executions(tape: qp.core.qscript.QuantumScript) -> tuple[i
     """Get the total number of qpu executions and shots.
 
     Args:
-        tape (qp.tape.QuantumScript): the tape we want to get the number of executions and shots for
+        tape (qp.core.QuantumScript): the tape we want to get the number of executions and shots for
 
     Returns:
         int, int: the total number of QPU executions and the total number of shots

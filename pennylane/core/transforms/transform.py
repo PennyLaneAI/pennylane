@@ -273,7 +273,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
             H = qp.PauliY(2) @ qp.PauliZ(1) + 0.5 * qp.PauliZ(2) + qp.PauliZ(1)
             measurement = [qp.expval(H)]
             operations = [qp.Hadamard(0), qp.RX(0.2, 0), qp.RX(0.6, 0), qp.CNOT((0, 1))]
-            tape = qp.tape.QuantumScript(operations, measurement)
+            tape = qp.core.QuantumScript(operations, measurement)
 
             batch1, function1 = qp.transforms.split_non_commuting(tape)
             batch2, function2 = qp.transforms.merge_rotations(batch1)

@@ -23,7 +23,7 @@ def state_transposition(results, mps, new_wire_order, original_wire_order):
 
     Keyword Args:
         mps (List[MeasurementProcess]): A list of measurements processes. At least one is a ``StateMP``
-        new_wire_order (Sequence[Any]): the wire order after transpile has been called
+        new_wire_order (Sequence[int]): the wire order after transpile has been called
         original_wire_order (.Wires): the devices wire order
 
     Returns:

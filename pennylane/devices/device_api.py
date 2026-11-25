@@ -108,7 +108,7 @@ class Device(abc.ABC):
         validation or provide clearer error messages.
 
         >>> import pennylane as qp
-        >>> op = qp.Permute(["c", 3,"a",2,0], wires=[3,2,"a",0,"c"])
+        >>> op = qp.Permute([4, 3, 1, 2, 0], wires=[3, 2, 1, 0, 4])
         >>> circuit = qp.tape.QuantumScript([op], [qp.state()])
         >>> from pennylane.devices import DefaultQubit
         >>> dev = DefaultQubit()
@@ -617,7 +617,7 @@ class Device(abc.ABC):
 
             If the script has multiple measurements, then the device should return a tuple of measurements.
 
-            >>> tape = qp.tape.QuantumScript(measurements=[qp.expval(qp.Z(0)), qp.probs(wires=(0,1))])
+            >>> tape = qp.core.QuantumScript(measurements=[qp.expval(qp.Z(0)), qp.probs(wires=(0,1))])
             >>> dev.execute(tape)
             (np.float64(1.0), array([1., 0., 0., 0.]))
 

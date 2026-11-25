@@ -100,7 +100,7 @@ def classical_fisher(qnode, argnums=0):
     for :math:`N` qubits.
 
     Args:
-        tape (:class:`.QNode` or qp.QuantumScript): A :class:`.QNode` or quantum tape that may have arbitrary return types.
+        tape (:class:`.QNode` or qp.core.QuantumScript): A :class:`.QNode` or quantum tape that may have arbitrary return types.
         argnums (Optional[int or List[int]]): Arguments to be differentiated in case interface ``jax`` is used.
 
     Returns:

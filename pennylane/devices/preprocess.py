@@ -785,11 +785,11 @@ def device_resolve_dynamic_wires(
     ...     with qp.allocation.allocate(1) as wires:
     ...         qp.X(wires)
 
-    >>> transformed = device_resolve_dynamic_wires(f, wires=(0, "a", "b"))
+    >>> transformed = device_resolve_dynamic_wires(f, wires=(0, 1, 2))
     >>> print(qp.draw(transformed)())
     0: ──H─┤
-    a: ──X─┤
-    b: ──X─┤
+    1: ──X─┤
+    2: ──X─┤
 
     If the device has no wires, then wires are allocated starting at the smallest
     integer that is larger than all integer wires present in the ``tape``.

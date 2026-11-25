@@ -71,10 +71,11 @@ def select_pauli_rot_phase_gradient(
         import numpy as np
 
         precision = 4
-        wire = "targ"
-        angle_wires = [f"ang_{i}" for i in range(precision)]
-        phase_grad_wires = [f"phg_{i}" for i in range(precision)]
-        work_wires = [f"work_{i}" for i in range(precision - 1)]
+        wire = 2
+        angle_wires = list(range(3, 3 + precision))
+        phase_grad_wires = list(range(3 + precision, 3 + 2 * precision))
+        work_wires = list(range(3 + 2 * precision, 3 + 3 * precision - 1))
+
 
         @partial(
             select_pauli_rot_phase_gradient,
@@ -92,6 +93,7 @@ def select_pauli_rot_phase_gradient(
             qp.SelectPauliRot(phis, control_wires, target_wire, rot_axis="X")
 
             return qp.probs(target_wire)
+
 
         phis = [
             (1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi,

@@ -293,7 +293,7 @@ class UCCSD(Operation):
             weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` or ``(n_repeats, len(s_wires) + len(d_wires),)``,
                 depending on ``n_repeats``, tensor containing the parameters
                 entering the Z rotation in :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
             s_wires (Sequence[Sequence]): Sequence of lists containing the wires ``[r,...,p]``
                 resulting from the single excitation.
             d_wires (Sequence[Sequence[Sequence]]): Sequence of lists, each containing two lists that

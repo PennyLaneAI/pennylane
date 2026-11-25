@@ -109,7 +109,7 @@ def equal(
     >>> qp.equal(prod1, prod2), qp.equal(prod1, prod3)
     (True, False)
 
-    >>> H1 = qp.Hamiltonian([0.5, 0.5], [qp.Z(0) @ qp.Y(1), qp.Y(1) @ qp.Z(0) @ qp.Identity("a")])
+    >>> H1 = qp.Hamiltonian([0.5, 0.5], [qp.Z(0) @ qp.Y(1), qp.Y(1) @ qp.Z(0) @ qp.Identity(3)])
     >>> H2 = qp.Hamiltonian([1], [qp.Z(0) @ qp.Y(1)])
     >>> H3 = qp.Hamiltonian([2], [qp.Z(0) @ qp.Y(1)])
     >>> qp.equal(H1, H2), qp.equal(H1, H3)
