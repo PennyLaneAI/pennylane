@@ -134,3 +134,13 @@ def register_resource_extension(
 
 # Register the PBC depth extension
 register_resource_extension("pbc_depth", aggregate=weighted_sum, display_name="PBC Depths")
+
+
+def _keep_caller(total: ExtensionData, incoming: ExtensionData, call_count: Count) -> ExtensionData:
+    """The peak of a function already accounts for its callees."""
+    del incoming, call_count
+    return total
+
+
+# The peak number of live qubits, as opposed to the total number of allocations
+register_resource_extension("qubit_liveness", aggregate=_keep_caller, display_name="Qubit Liveness")

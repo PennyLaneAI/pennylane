@@ -347,6 +347,83 @@ class TestAnalysisPassConversion:
         assert res[0].extra["unknown_field"]["foo"] == 15
 
 
+def _function_data(static_calls, num_qubits, qnode=False) -> dict:
+    """Return the resource data of a function with a Hadamard gate, its static calls and its
+    qubit counts."""
+    return {
+        "extended_fields": {},
+        "function_calls": {"dynamic": {}, "static": static_calls},
+        "measurement_processes": {},
+        "metadata": {"auto_qubit_management": False, "has_branches": False, "qnode": qnode},
+        "num_qubits": num_qubits,
+        "quantum_operations": {"1": {"Hadamard": 1}},
+    }
+
+
+class TestPeakWires:
+    """Unit tests for the peak number of live qubits in parse_resources_json."""
+
+    @pytest.fixture
+    def data_with_liveness(self) -> dict[str, dict]:
+        """Resource data of a circuit with 2 qubits live at the calls to a rule allocating an
+        ancilla, and 1 qubit live at the call to a loop body allocating 2 qubits."""
+        return {
+            "circuit": _function_data(
+                {"rule": 2, "loop": 1},
+                {
+                    "alloc": 3,
+                    "arg": 0,
+                    "total": 3,
+                    "peak": 3,
+                    "live_at_call": {"rule": 2, "loop": 1},
+                },
+                qnode=True,
+            ),
+            "rule": _function_data(
+                {}, {"alloc": 1, "arg": 1, "total": 2, "peak": 1, "live_at_call": {}}
+            ),
+            "loop": _function_data(
+                {"rule": 1},
+                {"alloc": 2, "arg": 0, "total": 2, "peak": 2, "live_at_call": {"rule": 2}},
+            ),
+        }
+
+    def test_peak_wires(self, data_with_liveness):
+        """Test that the peak includes the qubits live at each call and the peak of the callee,
+        while the number of wires is the total number of allocations."""
+        (res,) = parse_resources_json(data_with_liveness, peak_wires=True)
+
+        # The loop body peaks at 2 + 1 qubits in the rule, with 1 qubit live at the loop
+        assert res.extra == {"qubit_liveness": {"peak_wires": 4}}
+        assert res.num_wires == 3 + 2 * 2 + (2 + 2)
+        assert res.counts == {"Hadamard": 5}
+
+    def test_peak_wires_with_recursion(self, data_with_liveness):
+        """Test that a recursive call does not add to the peak."""
+        data_with_liveness["rule"]["function_calls"]["static"] = {"rule": 1}
+        data_with_liveness["rule"]["num_qubits"]["live_at_call"] = {"rule": 1}
+
+        with pytest.warns(UserWarning, match="recursion"):
+            (res,) = parse_resources_json(data_with_liveness, peak_wires=True)
+
+        assert res.extra == {"qubit_liveness": {"peak_wires": 4}}
+
+    def test_without_peak_wires(self, data_with_liveness):
+        """Test that the peak is only added if requested."""
+        (res,) = parse_resources_json(data_with_liveness)
+
+        assert not res.extra
+
+    def test_data_without_liveness(self, data_with_liveness):
+        """Test that resource data without the liveness of the qubits is parsed without a peak."""
+        for data in data_with_liveness.values():
+            del data["num_qubits"]["peak"], data["num_qubits"]["live_at_call"]
+
+        (res,) = parse_resources_json(data_with_liveness, peak_wires=True)
+
+        assert not res.extra
+
+
 class TestConvertToSubclass:
     """Unit tests for the _convert_to_subclass function."""
 
