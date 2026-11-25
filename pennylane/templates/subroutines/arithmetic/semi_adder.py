@@ -143,6 +143,17 @@ def _ctrl_right_block(wires, **ctrl_kwargs):
     CNOT([ck, ik])
 
 
+def _ctrl_middle_cnots(carry, x_msb, target, **ctrl_kwargs):
+    """Controlled addition of the carry and, if given, of ``x_msb`` onto ``target``. Instead of
+    two ctrl-CNOTs, the parity of both is computed onto ``carry`` with a CNOT, added with
+    one ctrl-CNOT, and uncomputed with another CNOT."""
+    if x_msb is not None:
+        CNOT([x_msb, carry])
+    ctrl(CNOT([carry, target]), **ctrl_kwargs)
+    if x_msb is not None:
+        CNOT([x_msb, carry])
+
+
 def _controlled_right_ladder(x_wires, y_wires, non_ctrl_work_wires, carry_flip=None, **ctrl_kwargs):
     """Implement a ladder formed from the right block in figure 4, https://arxiv.org/pdf/1709.06648.
 
@@ -654,9 +665,10 @@ def _controlled_semi_adder_standard_resources(
     # and 3 * (crossover - 1) CNOTs
     # _controlled_right_ladder uses (num_y_wires - 1) TemporaryANDs, (num_y_wires - 1) controlled
     # CNOTs, and 3 * (crossover - 1) CNOTs.
-    # There are 1 + int(num_x_wires>=num_y_wires) additional ctrl-CNOTs in the main function
-    num_cnots = 6 * (crossover - 1)
-    num_ctrl_cnots = num_y_wires + int(num_x_wires >= num_y_wires)
+    # There is 1 additional ctrl-CNOT in the main function, and 2 * int(num_x_wires>=num_y_wires)
+    # additional CNOTs computing the parity of the last carry and the MSB of x.
+    num_cnots = 6 * (crossover - 1) + 2 * int(num_x_wires >= num_y_wires)
+    num_ctrl_cnots = num_y_wires
     return {
         TemporaryAND: num_y_wires - 1,
         adjoint(TemporaryAND(Wire[3])): num_y_wires - 1,
@@ -728,9 +740,8 @@ def _controlled_semi_adder_standard(  # pylint: disable=too-many-arguments
             x_wires, y_wires, work_wires, carry_flip=carry_flip, skip_input_pos=skip_input_pos
         )
 
-        ctrl(CNOT([work_wires[-1], y_wires[-1]]), **ctrl_kwargs)
-        if num_x_wires >= num_y_wires:
-            ctrl(CNOT([x_wires[-1], y_wires[-1]]), **ctrl_kwargs)
+        x_msb = x_wires[-1] if num_x_wires >= num_y_wires else None
+        _ctrl_middle_cnots(work_wires[-1], x_msb, y_wires[-1], **ctrl_kwargs)
 
         _controlled_right_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip, **ctrl_kwargs)
 
@@ -924,7 +935,7 @@ def _self_ctrl_one_sparse_add_resources(
     # each _left_block uses 3 CNOTs, each _left_block_zeroed none
     # each _ctrl_right_block uses 3 CNOTs, each _right_block_zeroed none
     # each _ctrl_right_block or _ctrl_right_block_zeroed uses 1 ctrl(CNOT)
-    # the remaining construction uses 1 CNOT and 1 + second_middle_cnot ctrl(CNOT)s
+    # the remaining construction uses 1 + 2 * second_middle_cnot CNOTs and 1 ctrl(CNOT)
     ccnot_rep = ctrl(
         CNOT(Wire[2]),
         Wire[1],
@@ -934,8 +945,11 @@ def _self_ctrl_one_sparse_add_resources(
     return {
         TemporaryAND: num_elbows,
         adjoint(TemporaryAND(Wire[3])): num_elbows,
-        CNOT: 6 * (num_blocks - num_zeroed_blocks) + 1 + 2 * int(first_and_is_output_copy),
-        ccnot_rep: num_blocks + (1 + second_middle_cnot),
+        CNOT: 6 * (num_blocks - num_zeroed_blocks)
+        + 1
+        + 2 * second_middle_cnot
+        + 2 * int(first_and_is_output_copy),
+        ccnot_rep: num_blocks + 1,
     }
 
 
@@ -976,9 +990,8 @@ def _self_ctrl_one_sparse_add(x_wires, y_wires, work_wires, first_and_is_output_
             _left_block([work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]])
             x_pos += 1
 
-    ctrl(CNOT([work_wires[-1], y_wires[-1]]), **ctrl_kwargs)
-    if num_y_wires - 1 not in skip_input_pos:
-        ctrl(CNOT([x_wires[x_pos], y_wires[-1]]), **ctrl_kwargs)
+    x_msb = x_wires[x_pos] if num_y_wires - 1 not in skip_input_pos else None
+    _ctrl_middle_cnots(work_wires[-1], x_msb, y_wires[-1], **ctrl_kwargs)
 
     x_pos -= 1
     for i in range(num_y_wires - 2, 0, -1):

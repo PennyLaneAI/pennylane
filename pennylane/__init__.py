@@ -22,7 +22,6 @@ PennyLane can be directly imported.
 import warnings
 
 from pennylane import exceptions
-from pennylane.boolean_fn import BooleanFn
 from pennylane import numpy
 from pennylane.core import queuing
 from pennylane.core.apply import apply
@@ -150,15 +149,6 @@ from pennylane.transforms import (
     gridsynth,
     CompilePipeline,
 )
-from pennylane.noise import (
-    add_noise,
-    insert,
-    mitigate_with_zne,
-    fold_global,
-    poly_extrapolate,
-    richardson_extrapolate,
-    exponential_extrapolate,
-)
 from pennylane.ops.functions import (
     dot,
     eigvals,
@@ -177,10 +167,6 @@ from pennylane.ops.functions import (
     comm,
     single_qubit_zyz_angles,
 )
-
-# Rule creation needs operators, templates and transforms to finish initializing.
-from pennylane import decomposition_rules  # pylint: disable=ungrouped-imports
-
 from pennylane.ops.identity import I
 from pennylane.optimize import *
 from pennylane.debugging import (
@@ -195,12 +181,12 @@ from pennylane.shadows import ClassicalShadow
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 from pennylane import gradients
 from pennylane.drawer import draw, draw_mpl
+from pennylane import decomposition_rules
 
 from pennylane.io import (
     from_qasm,
     to_openqasm,
     from_qiskit,
-    from_qiskit_noise,
     from_qiskit_op,
     from_qasm3,
 )
@@ -208,9 +194,6 @@ from pennylane.io import (
 from pennylane import logging
 
 from pennylane import data
-
-from pennylane import noise
-from pennylane.noise import NoiseModel
 
 from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
