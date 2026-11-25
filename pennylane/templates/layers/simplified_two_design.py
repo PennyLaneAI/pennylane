@@ -154,7 +154,7 @@ class SimplifiedTwoDesign(Operation):
         Args:
             initial_layer_weights (tensor_like): weight tensor for the initial rotation block
             weights (tensor_like): tensor of rotation angles for the layers
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
 
         Returns:
             list[.Operator]: decomposition of the operator
@@ -168,24 +168,24 @@ class SimplifiedTwoDesign(Operation):
         >>> weights_layer2 = [[pi, 0.],
         ...                   [pi, 0.]]
         >>> weights = np.array([weights_layer1, weights_layer2])
-        >>> ops = qp.SimplifiedTwoDesign.compute_decomposition(init_weights, weights, wires=["a", "b", "c"])
+        >>> ops = qp.SimplifiedTwoDesign.compute_decomposition(init_weights, weights, wires=[0, 1, 2])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [RY(3.141592653589793, wires=['a']),
-         RY(3.141592653589793, wires=['b']),
-         RY(3.141592653589793, wires=['c']),
-         CZ(wires=['a', 'b']),
-         RY(0.0, wires=['a']),
-         RY(3.141592653589793, wires=['b']),
-         CZ(wires=['b', 'c']),
-         RY(0.0, wires=['b']),
-         RY(3.141592653589793, wires=['c']),
-         CZ(wires=['a', 'b']),
-         RY(3.141592653589793, wires=['a']),
-         RY(0.0, wires=['b']),
-         CZ(wires=['b', 'c']),
-         RY(3.141592653589793, wires=['b']),
-         RY(0.0, wires=['c'])]
+        [RY(3.141592653589793, wires=[0]),
+         RY(3.141592653589793, wires=[1]),
+         RY(3.141592653589793, wires=[2]),
+         CZ(wires=[0, 1]),
+         RY(0.0, wires=[0]),
+         RY(3.141592653589793, wires=[1]),
+         CZ(wires=[1, 2]),
+         RY(0.0, wires=[1]),
+         RY(3.141592653589793, wires=[2]),
+         CZ(wires=[0, 1]),
+         RY(3.141592653589793, wires=[0]),
+         RY(0.0, wires=[1]),
+         CZ(wires=[1, 2]),
+         RY(3.141592653589793, wires=[1]),
+         RY(0.0, wires=[2])]
 
         """
 

@@ -42,7 +42,7 @@ from pennylane.typing import Bool, Complex, Float, Wire
 from pennylane.wires import concatenate_wires
 
 
-def make_one_qubit_unitary_decomposition(su2_rule, su2_resources, name=""):
+def make_one_qubit_unitary_rule(su2_rule, su2_resources, name=""):
     """Wrapper around a naive one-qubit decomposition rule that adds a global phase."""
 
     name = name or su2_rule.name
@@ -63,21 +63,11 @@ def make_one_qubit_unitary_decomposition(su2_rule, su2_resources, name=""):
 
 
 # RZ is produced in a special case, which has to be accounted for.
-rot_decomp_rule = make_one_qubit_unitary_decomposition(
-    _su2_rot_decomp, {ops.Rot: 1, ops.RZ: 1}, "rot"
-)
-zyz_decomp_rule = make_one_qubit_unitary_decomposition(
-    _su2_zyz_decomp, {ops.RZ: 2, ops.RY: 1}, "zyz"
-)
-xyx_decomp_rule = make_one_qubit_unitary_decomposition(
-    _su2_xyx_decomp, {ops.RX: 2, ops.RY: 1}, "xyx"
-)
-xzx_decomp_rule = make_one_qubit_unitary_decomposition(
-    _su2_xzx_decomp, {ops.RX: 2, ops.RZ: 1}, "xzx"
-)
-zxz_decomp_rule = make_one_qubit_unitary_decomposition(
-    _su2_zxz_decomp, {ops.RZ: 2, ops.RX: 1}, "zxz"
-)
+rot_decomp_rule = make_one_qubit_unitary_rule(_su2_rot_decomp, {ops.Rot: 1, ops.RZ: 1}, "rot")
+zyz_decomp_rule = make_one_qubit_unitary_rule(_su2_zyz_decomp, {ops.RZ: 2, ops.RY: 1}, "zyz")
+xyx_decomp_rule = make_one_qubit_unitary_rule(_su2_xyx_decomp, {ops.RX: 2, ops.RY: 1}, "xyx")
+xzx_decomp_rule = make_one_qubit_unitary_rule(_su2_xzx_decomp, {ops.RX: 2, ops.RZ: 1}, "xzx")
+zxz_decomp_rule = make_one_qubit_unitary_rule(_su2_zxz_decomp, {ops.RZ: 2, ops.RX: 1}, "zxz")
 
 
 # Worst-case resource estimate for the two-qubit unitary decomposition.
@@ -278,7 +268,9 @@ def diagonal_qubit_unitary_auxiliary(D, wires, **_):
 
 
 add_decomps(
-    DiagonalQubitUnitary, diagonal_qubit_unitary_recursive, diagonal_qubit_unitary_auxiliary
+    DiagonalQubitUnitary,
+    diagonal_qubit_unitary_recursive,
+    diagonal_qubit_unitary_auxiliary,
 )
 
 

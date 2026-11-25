@@ -96,14 +96,15 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
             U = scipy.stats.unitary_group.rvs(4, random_state=12345)
 
+
             @qp.transforms.unitary_to_rot
             @qp.qnode(qp.device("default.qubit"))
             def circuit(angles):
-                qp.QubitUnitary(U, wires=["a", "b"])
-                qp.RX(angles[0], wires="a")
-                qp.RY(angles[1], wires="b")
-                qp.CNOT(wires=["b", "a"])
-                return qp.expval(qp.Z("a"))
+                qp.QubitUnitary(U, wires=[1, 2])
+                qp.RX(angles[0], wires=1)
+                qp.RY(angles[1], wires=2)
+                qp.CNOT(wires=[2, 1])
+                return qp.expval(qp.Z(1))
 
         >>> g = qp.grad(circuit)
         >>> params = pnp.array([0.2, 0.3], requires_grad=True)
@@ -128,13 +129,13 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
                 U = pnp.kron(Z_mat, X_mat)
 
-                qp.Hadamard(wires="a")
+                qp.Hadamard(wires=1)
 
                 # U depends on the input parameters
-                qp.QubitUnitary(U, wires=["a", "b"])
+                qp.QubitUnitary(U, wires=[1, 2])
 
-                qp.CNOT(wires=["b", "a"])
-                return qp.expval(qp.X("a"))
+                qp.CNOT(wires=[2, 1])
+                return qp.expval(qp.X(1))
 
         >>> g = qp.grad(circuit)
         >>> params = pnp.array([0.2, 0.3], requires_grad=True)
