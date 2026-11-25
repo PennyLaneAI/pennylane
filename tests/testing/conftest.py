@@ -138,7 +138,7 @@ def _subcircuit_instances():
             _RZLayerPhaseGradientCompute(
                 jax.numpy.array([[False, True], [True, True]]), [0], [1], [2, 3], [4, 5]
             ),
-            {"skip_differentiation": True, "skip_bind_new_parameters": True},
+            {"skip_differentiation": True},
         ),
     ]
 
