@@ -705,7 +705,6 @@ class RZ(Operator2):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    wire_sizes = (1,)
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Float, "wires": Wire[1]}
 
@@ -1014,7 +1013,6 @@ class PhaseShift(Operator2):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    wire_sizes = (1,)
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Float, "wires": Wire[1]}
 
@@ -1237,7 +1235,7 @@ class Rot(Operator2):
         phi (float): rotation angle :math:`\phi`
         theta (float): rotation angle :math:`\theta`
         omega (float): rotation angle :math:`\omega`
-        wires (Any, Wires): the wire the operation acts on
+        wires (int, Wires): the wire the operation acts on
 
     .. details::
         :title: Available decompositions
@@ -1483,7 +1481,6 @@ class U1(Operator2):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    wire_sizes = (1,)
     dynamic_argnames = ("phi",)
     arg_specs = {"phi": Float, "wires": Wire[1]}
 
@@ -1616,7 +1613,6 @@ class U2(Operator2):
     ndim_params = (0, 0)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    wire_sizes = (1,)
     dynamic_argnames = ("phi", "delta")
     arg_specs = {"phi": Float, "delta": Float, "wires": Wire[1]}
 
@@ -1763,7 +1759,6 @@ class U3(Operator2):
     ndim_params = (0, 0, 0)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    wire_sizes = (1,)
     dynamic_argnames = ("theta", "phi", "delta")
     arg_specs = {"theta": Float, "phi": Float, "delta": Float, "wires": Wire[1]}
 

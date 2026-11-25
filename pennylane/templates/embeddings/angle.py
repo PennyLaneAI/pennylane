@@ -46,7 +46,7 @@ class AngleEmbedding(Operation):
     Args:
         features (tensor_like): input tensor of shape ``(N,)``, where N is the number of input features to embed,
             with :math:`N\leq n`
-        wires (Any or Iterable[Any]): wires that the template acts on
+        wires (int or Iterable[int]): wires that the template acts on
         rotation (str): type of rotations used
 
     Example:
@@ -127,7 +127,7 @@ class AngleEmbedding(Operation):
 
         Args:
             features (tensor_like): input tensor of dimension ``(len(wires),)``
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
             rotation (.Operator): rotation gate class
 
         Returns:
@@ -136,8 +136,8 @@ class AngleEmbedding(Operation):
         **Example**
 
         >>> features = torch.tensor([1., 2.])
-        >>> qp.AngleEmbedding.compute_decomposition(features, wires=["a", "b"], rotation=qp.RX)
-        [RX(1.0, wires=['a']), RX(2.0, wires=['b'])]
+        >>> qp.AngleEmbedding.compute_decomposition(features, wires=[0, 1], rotation=qp.RX)
+        [RX(1.0, wires=[0]), RX(2.0, wires=[1])]
         """
         batched = math.ndim(features) > 1
         # We will iterate over the first axis of `features` together with iterating over the wires.

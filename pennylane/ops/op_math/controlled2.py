@@ -107,7 +107,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, phi, theta, omega, wires):
                 super().__init__(qp.Rot(phi, theta, omega, wires=wires[1]), control_wires=wires[0])
@@ -492,7 +492,7 @@ class ControlledOp2(Controlled2):
     Keyword Args:
         control_values (Iterable[Bool]): The values to control on for each control wire.
             Defaults to ``True`` for all control wires.
-        work_wires (Any): Any auxiliary wires that can be used in the decomposition
+        work_wires (Sequence[int] or int): Any auxiliary wires that can be used in the decomposition
         work_wire_type: The type of work wire(s), can be ``"zeroed"`` or ``"borrowed"``.
             ``"zeroed"`` indicates that the work wires are in the :math:`|0\rangle` state,
             whereas ``"borrowed"`` work wires can be in any arbitrary state. In both cases,

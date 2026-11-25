@@ -111,7 +111,8 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
             which is typically included in the electronic Hamiltonian of molecules.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can
             be ``'jordan_wigner'``, ``'parity'``, or ``'bravyi_kitaev'``.
-        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
+        wires (Wires or Sequence[int] or dict[int, int]): Custom wire mapping used to convert the
+            qubit operator
             to an observable measurable in a PennyLane ansatz.
             For types Wires/list/tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
@@ -560,7 +561,8 @@ def dipole_of(
             :math:`\langle \alpha \vert \hat{{\bf r}} \vert \beta \rangle`. The matrix elements
             with absolute value less than ``cutoff`` are neglected.
         outpath (str): path to the directory containing output files
-        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
+        wires (Wires or Sequence[int] or dict[int, int]): Custom wire mapping used to convert the
+            qubit operator
             to an observable measurable in a PennyLane ansatz.
             For types Wires/list/tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
