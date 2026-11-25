@@ -74,7 +74,7 @@ zxz_decomp_rule = make_one_qubit_unitary_rule(_su2_zxz_decomp, {ops.RZ: 2, ops.R
 @register_condition(lambda U, wires, **_: len(wires) == 2)
 @register_resources(
     {
-        ops.QubitUnitary(Complex[2, 2], wires=Wire[1]): 4,
+        QubitUnitary(Complex[2, 2], wires=Wire[1]): 4,
         ops.CNOT: 3,
         ops.RZ: 1,
         ops.RY: 2,
@@ -110,7 +110,7 @@ def qubit_unitary_two_qubit(U, wires, **_):
 def _qubit_unitary_multi_qubit_resources(U, wires, **_):  # pylint: disable=unused-argument
     num_wires = len(wires)
     return {
-        ops.QubitUnitary(
+        QubitUnitary(
             Complex[2 ** (num_wires - 1), 2 ** (num_wires - 1)], wires=Wire[num_wires - 1]
         ): 4,
         templates.SelectPauliRot(

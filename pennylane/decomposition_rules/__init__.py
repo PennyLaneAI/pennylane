@@ -19,7 +19,7 @@ The modules directly beneath this package mirror :mod:`pennylane.ops`, and the
 The drawing-specific ``LabelledOp`` rule remains in :mod:`pennylane.drawer.label`.
 Rules are loaded automatically when PennyLane is imported.
 Use :func:`pennylane.list_decomps` to retrieve the registered rules for an operator.
-Unambiguous rules, helpers, and factories can also be imported from this package.
+Import operator-specific rules and helpers from their corresponding rule modules.
 
 .. currentmodule:: pennylane.decomposition_rules
 
@@ -34,59 +34,6 @@ Unambiguous rules, helpers, and factories can also be imported from this package
 """
 
 from .common import null_decomp
-from .identity import controlled_g_phase_standard
-from . import meta
-from .qubit import arithmetic_ops
-from .qubit import matrix_ops
-from .qubit.non_parametric_ops import (
-    _PPRBasis,
-    controlled_hadamard_standard,
-    controlled_z_standard,
-    controlled_z_to_ccz,
-    ctrl_x_to_mcx,
-)
-from .qubit.parametric_ops_single_qubit import (
-    _YToZBasis,
-    _ZToYBasis,
-    controlled_phase_shift_standard,
-    controlled_rot_standard,
-    controlled_rx_standard,
-)
-from .qubit.parametric_ops_multi_qubit import (
-    _IsingXYBasis,
-    _IsingXYRotations,
-    _MultiRZLadder,
-    _PauliRotBasis,
-)
-from .qubit.qchem_ops import (
-    _SingleExcitationBasis,
-    _SingleExcitationCRZBasis,
-    _SingleExcitationRZRotations,
-    _SingleExcitationRotations,
-)
-from .qubit import special_unitary
-from .qubit import state_preparation
-from .templates.embeddings import amplitude
+from . import identity, meta, qubit, templates
 
-__all__ = [
-    "_IsingXYBasis",
-    "_IsingXYRotations",
-    "_MultiRZLadder",
-    "_PPRBasis",
-    "_PauliRotBasis",
-    "_SingleExcitationBasis",
-    "_SingleExcitationCRZBasis",
-    "_SingleExcitationRZRotations",
-    "_SingleExcitationRotations",
-    "_YToZBasis",
-    "_ZToYBasis",
-    "controlled_g_phase_standard",
-    "controlled_hadamard_standard",
-    "controlled_phase_shift_standard",
-    "controlled_rot_standard",
-    "controlled_rx_standard",
-    "controlled_z_standard",
-    "controlled_z_to_ccz",
-    "ctrl_x_to_mcx",
-    "null_decomp",
-]
+__all__ = ["common", "identity", "meta", "null_decomp", "qubit", "templates"]

@@ -13,3 +13,5 @@
 # limitations under the License.
 
 """Decomposition rules for templates."""
+
+from . import embeddings

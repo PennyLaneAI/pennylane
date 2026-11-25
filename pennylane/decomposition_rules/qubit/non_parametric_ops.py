@@ -31,6 +31,22 @@ from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.ops.mid_measure.pauli_measure import pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.qubit.non_parametric_ops import (
+    ECR,
+    Hadamard,
+    ISWAP,
+    PPR_2,
+    PPR_4,
+    PPR_8,
+    PauliX,
+    PauliY,
+    PauliZ,
+    S,
+    SISWAP,
+    SWAP,
+    SX,
+    T,
+)
 from pennylane.ops.subcircuit import subcircuit
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import WiresLike, concatenate_wires
@@ -57,8 +73,8 @@ def hadamard_to_rz_ry(wires: WiresLike, **__):
     {
         ops.PauliMeasure("YY", wires=Wire[2]): 1,
         ops.PauliMeasure("X", wires=Wire[1]): 1,
-        ops.PauliY: 1,
-        ops.PauliZ: 2,
+        PauliY: 1,
+        PauliZ: 2,
         ops.GlobalPhase: 1,
     },
     work_wires={"burnable": 1},
@@ -67,26 +83,26 @@ def hadamard_to_rz_ry(wires: WiresLike, **__):
 def hadamard_to_ppm(wires, **__):
     """Decompose ``Hadamard`` using the ``to_ppm`` strategy."""
     with allocation.allocate(1, state="zero", restored=False) as work_wires:
-        ops.PauliZ(wires)
+        PauliZ(wires)
         m0 = pauli_measure("YY", [wires[0], work_wires[0]])
         m1 = pauli_measure("X", work_wires)
-        ops.cond(m0 == m1, ops.PauliY)(wires)
+        ops.cond(m0 == m1, PauliY)(wires)
         ops.cond(m0 == m1, ops.GlobalPhase)(np.pi / 2)
-        ops.cond(m1, ops.PauliZ)(work_wires[0])  # Reset work wire to |+>
+        ops.cond(m1, PauliZ)(work_wires[0])  # Reset work wire to |+>
 
 
 @register_resources(
-    {ops.PPR_2(1, "Z", Wire[1]): 1, ops.PPR_4(1, "Y", Wire[1]): 1, ops.GlobalPhase: 1},
+    {PPR_2(1, "Z", Wire[1]): 1, PPR_4(1, "Y", Wire[1]): 1, ops.GlobalPhase: 1},
     name="to_ppr",
 )
 def hadamard_to_ppr(wires: WiresLike, **__):
     """Decompose ``Hadamard`` using the ``to_ppr`` strategy."""
-    ops.PPR_2(1, "Z", wires=wires)
-    ops.PPR_4(1, "Y", wires=wires)
+    PPR_2(1, "Z", wires=wires)
+    PPR_4(1, "Y", wires=wires)
     ops.GlobalPhase(-np.pi / 2)
 
 
-add_decomps(ops.Hadamard, hadamard_to_rz_rx, hadamard_to_rz_ry, hadamard_to_ppm, hadamard_to_ppr)
+add_decomps(Hadamard, hadamard_to_rz_rx, hadamard_to_rz_ry, hadamard_to_ppm, hadamard_to_ppr)
 add_decomps("Adjoint(Hadamard)", self_adjoint)
 add_decomps("Pow(Hadamard)", pow_involutory)
 
@@ -97,7 +113,7 @@ def _controlled_hadamard_standard_resources(
     if len(control_wires) == 1:
         return {ops.CH: 1}
     return {
-        ops.Hadamard: 2,
+        Hadamard: 2,
         ops.RY: 2,
         ops.MultiControlledX(
             Wire[len(control_wires) + 1],
@@ -116,9 +132,9 @@ def controlled_hadamard_standard(base, control_wires, control_values, work_wires
         return
 
     ops.RY(-np.pi / 4, wires=wires[-1])
-    ops.Hadamard(wires=wires[-1])
+    Hadamard(wires=wires[-1])
     ops.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
-    ops.Hadamard(wires=wires[-1])
+    Hadamard(wires=wires[-1])
     ops.RY(np.pi / 4, wires=wires[-1])
 
 
@@ -133,10 +149,10 @@ def paulix_to_rx(wires: WiresLike):
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.5))
-@register_resources({ops.SX: 1}, name="to_sx")
+@register_resources({SX: 1}, name="to_sx")
 def pow_x_to_sx(base, z):
     """Decompose ``Pow(PauliX)`` using the ``to_sx`` strategy."""
-    ops.SX(wires=base.wires)
+    SX(wires=base.wires)
 
 
 @register_resources({ops.RX: 1, ops.GlobalPhase: 1}, name="to_rx")
@@ -147,14 +163,14 @@ def pow_x_to_rx(base, z):
     ops.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
-@register_resources({ops.PPR_2(1, "X", Wire[1]): 1, ops.GlobalPhase: 1}, name="to_ppr")
+@register_resources({PPR_2(1, "X", Wire[1]): 1, ops.GlobalPhase: 1}, name="to_ppr")
 def paulix_to_ppr(wires: WiresLike):
     """Decompose ``PauliX`` using the ``to_ppr`` strategy."""
-    ops.PPR_2(1, "X", wires=wires)
+    PPR_2(1, "X", wires=wires)
     ops.GlobalPhase(-np.pi / 2)
 
 
-add_decomps(ops.PauliX, paulix_to_rx, paulix_to_ppr)
+add_decomps(PauliX, paulix_to_rx, paulix_to_ppr)
 add_decomps("Adjoint(PauliX)", self_adjoint)
 add_decomps("Pow(PauliX)", pow_involutory, pow_x_to_rx, pow_x_to_sx)
 
@@ -199,14 +215,14 @@ def pow_y_standard(base, z):
     ops.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
-@register_resources({ops.PPR_2(1, "Y", Wire[1]): 1, ops.GlobalPhase: 1}, name="to_ppr")
+@register_resources({PPR_2(1, "Y", Wire[1]): 1, ops.GlobalPhase: 1}, name="to_ppr")
 def pauliy_to_ppr(wires: WiresLike):
     """Decompose ``PauliY`` using the ``to_ppr`` strategy."""
-    ops.PPR_2(1, "Y", wires=wires)
+    PPR_2(1, "Y", wires=wires)
     ops.GlobalPhase(-np.pi / 2)
 
 
-add_decomps(ops.PauliY, pauliy_to_ry_gp, pauliy_to_ppr)
+add_decomps(PauliY, pauliy_to_ry_gp, pauliy_to_ppr)
 add_decomps("Adjoint(PauliY)", self_adjoint)
 add_decomps("Pow(PauliY)", pow_involutory, pow_y_standard)
 
@@ -217,8 +233,8 @@ def _controlled_y_standard_resources(
     if len(control_wires) == 1:
         return {ops.CY: 1}
     return {
-        ops.S: 1,
-        _adjoint_abstract(ops.S): 1,
+        S: 1,
+        _adjoint_abstract(S): 1,
         ops.MultiControlledX(
             Wire[len(control_wires) + 1],
             work_wires=Wire[len(work_wires)],
@@ -236,9 +252,9 @@ def controlled_y_standard(base, control_wires, control_values, work_wires, work_
         ops.CY(wires=wires)
         return
 
-    ops.adjoint(ops.S(wires[-1]))
+    ops.adjoint(S(wires[-1]))
     ops.MultiControlledX(wires, work_wires=work_wires, work_wire_type=work_wire_type)
-    ops.S(wires=wires[-1])
+    S(wires=wires[-1])
 
 
 add_decomps("C(PauliY)", flip_zero_control(controlled_y_standard, name="to_mcx"))
@@ -251,17 +267,17 @@ def pauliz_to_ps(wires: WiresLike):
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.5))
-@register_resources({ops.S: 1}, name="to_s")
+@register_resources({S: 1}, name="to_s")
 def pow_z_to_s(base, z):
     """Decompose ``Pow(PauliZ)`` using the ``to_s`` strategy."""
-    ops.S(wires=base.wires)
+    S(wires=base.wires)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.25))
-@register_resources({ops.T: 1}, name="to_t")
+@register_resources({T: 1}, name="to_t")
 def pow_z_to_t(base, z):
     """Decompose ``Pow(PauliZ)`` using the ``to_t`` strategy."""
-    ops.T(wires=base.wires)
+    T(wires=base.wires)
 
 
 @register_resources({ops.PhaseShift: 1}, name="to_phaseshift")
@@ -271,14 +287,14 @@ def pow_z_standard(base, z):
     ops.PhaseShift(np.pi * z_mod2, wires=base.wires)
 
 
-@register_resources({ops.PPR_2(1, "Z", Wire[1]): 1, ops.GlobalPhase: 1}, name="to_ppr")
+@register_resources({PPR_2(1, "Z", Wire[1]): 1, ops.GlobalPhase: 1}, name="to_ppr")
 def pauliz_to_ppr(wires: WiresLike):
     """Decompose ``PauliZ`` using the ``to_ppr`` strategy."""
-    ops.PPR_2(1, "Z", wires=wires)
+    PPR_2(1, "Z", wires=wires)
     ops.GlobalPhase(-np.pi / 2)
 
 
-add_decomps(ops.PauliZ, pauliz_to_ps, pauliz_to_ppr)
+add_decomps(PauliZ, pauliz_to_ps, pauliz_to_ppr)
 add_decomps("Adjoint(PauliZ)", self_adjoint)
 add_decomps("Pow(PauliZ)", pow_involutory, pow_z_standard, pow_z_to_s, pow_z_to_t)
 
@@ -289,7 +305,7 @@ def _controlled_z_standard_resources(
     if len(control_wires) == 1:
         return {ops.CZ: 1}
     return {
-        ops.Hadamard: 2,
+        Hadamard: 2,
         ops.MultiControlledX(
             Wire[len(control_wires) + 1],
             work_wires=Wire[len(work_wires)],
@@ -307,9 +323,9 @@ def controlled_z_standard(base, control_wires, control_values, work_wires, work_
         ops.CZ(wires=wires)
         return
 
-    ops.Hadamard(wires=wires[-1])
+    Hadamard(wires=wires[-1])
     ops.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
-    ops.Hadamard(wires=wires[-1])
+    Hadamard(wires=wires[-1])
 
 
 @register_condition(lambda control_wires, **_: len(control_wires) == 2)
@@ -332,28 +348,28 @@ def s_to_phaseshift(wires: WiresLike | None = None):
     ops.PhaseShift(np.pi / 2, wires=wires)
 
 
-@register_resources({ops.PPR_4(1, "Z", Wire[1]): 1, ops.GlobalPhase: 1}, name="to_ppr")
+@register_resources({PPR_4(1, "Z", Wire[1]): 1, ops.GlobalPhase: 1}, name="to_ppr")
 def s_to_ppr(wires: WiresLike):
     """Decompose ``S`` using the ``to_ppr`` strategy."""
-    ops.PPR_4(1, "Z", wires=wires)
+    PPR_4(1, "Z", wires=wires)
     ops.GlobalPhase(-np.pi / 4)
 
 
-add_decomps(ops.S, s_to_phaseshift, s_to_ppr)
+add_decomps(S, s_to_phaseshift, s_to_ppr)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 0.5))
-@register_resources({ops.T: 1}, name="to_t")
+@register_resources({T: 1}, name="to_t")
 def pow_s_to_t(base, z):
     """Decompose ``Pow(S)`` using the ``to_t`` strategy."""
-    ops.T(wires=base.wires)
+    T(wires=base.wires)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 2))
-@register_resources({ops.PauliZ: 1}, name="to_z")
+@register_resources({PauliZ: 1}, name="to_z")
 def pow_s_to_z(base, z):
     """Decompose ``Pow(S)`` using the ``to_z`` strategy."""
-    ops.PauliZ(wires=base.wires)
+    PauliZ(wires=base.wires)
 
 
 @register_resources({ops.PhaseShift: 1}, name="to_phaseshift")
@@ -372,10 +388,10 @@ def t_to_phaseshift(wires=None):
     ops.PhaseShift(np.pi / 4, wires=wires)
 
 
-@register_resources({ops.PPR_8(1, "Z", Wire[1]): 1, ops.GlobalPhase: 1}, name="to_ppr")
+@register_resources({PPR_8(1, "Z", Wire[1]): 1, ops.GlobalPhase: 1}, name="to_ppr")
 def t_to_ppr(wires: WiresLike):
     """Decompose ``T`` using the ``to_ppr`` strategy."""
-    ops.PPR_8(1, "Z", wires=wires)
+    PPR_8(1, "Z", wires=wires)
     ops.GlobalPhase(-np.pi / 8)
 
 
@@ -386,7 +402,7 @@ def pow_t_standard(base, z):
     ops.PhaseShift(np.pi * z_mod8 / 4, wires=base.wires)
 
 
-add_decomps(ops.T, t_to_phaseshift, t_to_ppr)
+add_decomps(T, t_to_phaseshift, t_to_ppr)
 add_decomps("Pow(T)", make_pow_decomp_with_period(8), pow_t_standard)
 
 
@@ -397,14 +413,14 @@ def sx_to_rx(wires: WiresLike | None = None):
     ops.GlobalPhase(-np.pi / 4)
 
 
-add_decomps(ops.SX, sx_to_rx)
+add_decomps(SX, sx_to_rx)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and z % 4 == 2)
-@register_resources({ops.PauliX: 1}, name="to_x")
+@register_resources({PauliX: 1}, name="to_x")
 def pow_sx_to_x(base, z):
     """Decompose ``Pow(SX)`` using the ``to_x`` strategy."""
-    ops.PauliX(base.wires)
+    PauliX(base.wires)
 
 
 @register_resources({ops.RX: 1, ops.GlobalPhase: 1}, name="to_rx")
@@ -428,22 +444,22 @@ def swap_to_cnot(wires, **_):
 
 @register_resources(
     {
-        ops.PPR_4(1, pauli_word="XX", wires=Wire[2]): 1,
-        ops.PPR_4(1, pauli_word="YY", wires=Wire[2]): 1,
-        ops.PPR_4(1, pauli_word="ZZ", wires=Wire[2]): 1,
+        PPR_4(1, pauli_word="XX", wires=Wire[2]): 1,
+        PPR_4(1, pauli_word="YY", wires=Wire[2]): 1,
+        PPR_4(1, pauli_word="ZZ", wires=Wire[2]): 1,
         ops.GlobalPhase: 1,
     },
     name="to_ppr",
 )
 def swap_to_ppr(wires, **_):
     """Decompose ``SWAP`` using the ``to_ppr`` strategy."""
-    ops.PPR_4(1, "YY", wires=wires)
-    ops.PPR_4(1, "XX", wires=wires)
-    ops.PPR_4(1, "ZZ", wires=wires)
+    PPR_4(1, "YY", wires=wires)
+    PPR_4(1, "XX", wires=wires)
+    PPR_4(1, "ZZ", wires=wires)
     ops.GlobalPhase(-np.pi / 4)
 
 
-add_decomps(ops.SWAP, swap_to_cnot, swap_to_ppr)
+add_decomps(SWAP, swap_to_cnot, swap_to_ppr)
 add_decomps("Adjoint(SWAP)", self_adjoint)
 add_decomps("Pow(SWAP)", pow_involutory)
 
@@ -488,113 +504,113 @@ add_decomps(
 )
 
 
-@register_resources({ops.Z: 1, ops.CNOT: 1, ops.SX: 1, ops.RX: 2, ops.RY: 1}, name="to_cnot_single_qubit")
+@register_resources({PauliZ: 1, ops.CNOT: 1, SX: 1, ops.RX: 2, ops.RY: 1}, name="to_cnot_single_qubit")
 def ecr_standard(wires, **_):
     """Decompose ``ECR`` using the ``to_cnot_single_qubit`` strategy."""
-    ops.Z(wires=[wires[0]])
+    PauliZ(wires=[wires[0]])
     ops.CNOT(wires=[wires[0], wires[1]])
-    ops.SX(wires=[wires[1]])
+    SX(wires=[wires[1]])
     ops.RX(np.pi / 2, wires=[wires[0]])
     ops.RY(np.pi / 2, wires=[wires[0]])
     ops.RX(np.pi / 2, wires=[wires[0]])
 
 
-add_decomps(ops.ECR, ecr_standard)
+add_decomps(ECR, ecr_standard)
 add_decomps("Adjoint(ECR)", self_adjoint)
 add_decomps("Pow(ECR)", pow_involutory)
 
 
-@register_resources({ops.S: 2, ops.Hadamard: 2, ops.CNOT: 2}, name="to_s_h_cnot")
+@register_resources({S: 2, Hadamard: 2, ops.CNOT: 2}, name="to_s_h_cnot")
 def iswap_standard(wires):
     """Decompose ``ISWAP`` using the ``to_s_h_cnot`` strategy."""
-    ops.S(wires=wires[0])
-    ops.S(wires=wires[1])
-    ops.Hadamard(wires=wires[0])
+    S(wires=wires[0])
+    S(wires=wires[1])
+    Hadamard(wires=wires[0])
     ops.CNOT(wires=[wires[0], wires[1]])
     ops.CNOT(wires=[wires[1], wires[0]])
-    ops.Hadamard(wires=wires[1])
+    Hadamard(wires=wires[1])
 
 
 @register_resources(
-    {ops.PPR_4(-1, pauli_word="XX", wires=Wire[2]): 1, ops.PPR_4(-1, pauli_word="YY", wires=Wire[2]): 1},
+    {PPR_4(-1, pauli_word="XX", wires=Wire[2]): 1, PPR_4(-1, pauli_word="YY", wires=Wire[2]): 1},
     name="to_ppr",
 )
 def iswap_to_ppr(wires):
     """Decompose ``ISWAP`` using the ``to_ppr`` strategy."""
-    ops.PPR_4(-1, "YY", wires=wires)
-    ops.PPR_4(-1, "XX", wires=wires)
+    PPR_4(-1, "YY", wires=wires)
+    PPR_4(-1, "XX", wires=wires)
 
 
-add_decomps(ops.ISWAP, iswap_standard, iswap_to_ppr)
+add_decomps(ISWAP, iswap_standard, iswap_to_ppr)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 0.5))
-@register_resources({ops.SISWAP: 1}, name="to_siswap")
+@register_resources({SISWAP: 1}, name="to_siswap")
 def pow_iswap_to_siswap(base, z):
     """Decompose ``Pow(ISWAP)`` using the ``to_siswap`` strategy."""
-    ops.SISWAP(wires=base.wires)
+    SISWAP(wires=base.wires)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 2))
-@register_resources({ops.PauliZ: 2}, name="to_zz")
+@register_resources({PauliZ: 2}, name="to_zz")
 def pow_iswap_to_zz(base, z):
     """Decompose ``Pow(ISWAP)`` using the ``to_zz`` strategy."""
-    ops.PauliZ(wires=base.wires[0])
-    ops.PauliZ(wires=base.wires[1])
+    PauliZ(wires=base.wires[0])
+    PauliZ(wires=base.wires[1])
 
 
 add_decomps("Pow(ISWAP)", make_pow_decomp_with_period(4), pow_iswap_to_zz, pow_iswap_to_siswap)
 
 
-@register_resources({ops.SX: 6, ops.RZ: 4, ops.CNOT: 2}, name="to_sx_rz_cnot")
+@register_resources({SX: 6, ops.RZ: 4, ops.CNOT: 2}, name="to_sx_rz_cnot")
 def siswap_standard(wires):
     """Decompose ``SISWAP`` using the ``to_sx_rz_cnot`` strategy."""
-    ops.SX(wires=wires[0])
+    SX(wires=wires[0])
     ops.RZ(np.pi / 2, wires=wires[0])
     ops.CNOT(wires=[wires[0], wires[1]])
-    ops.SX(wires=wires[0])
+    SX(wires=wires[0])
     ops.RZ(7 * np.pi / 4, wires=wires[0])
-    ops.SX(wires=wires[0])
+    SX(wires=wires[0])
     ops.RZ(np.pi / 2, wires=wires[0])
-    ops.SX(wires=wires[1])
+    SX(wires=wires[1])
     ops.RZ(7 * np.pi / 4, wires=wires[1])
     ops.CNOT(wires=[wires[0], wires[1]])
-    ops.SX(wires=wires[0])
-    ops.SX(wires=wires[1])
+    SX(wires=wires[0])
+    SX(wires=wires[1])
 
 
 @register_resources(
-    {ops.PPR_8(-1, pauli_word="XX", wires=Wire[2]): 1, ops.PPR_8(-1, pauli_word="YY", wires=Wire[2]): 1},
+    {PPR_8(-1, pauli_word="XX", wires=Wire[2]): 1, PPR_8(-1, pauli_word="YY", wires=Wire[2]): 1},
     name="to_ppr",
 )
 def siswap_to_ppr(wires, **_):
     """Decompose ``SISWAP`` using the ``to_ppr`` strategy."""
-    ops.PPR_8(-1, "YY", wires=wires)
-    ops.PPR_8(-1, "XX", wires=wires)
+    PPR_8(-1, "YY", wires=wires)
+    PPR_8(-1, "XX", wires=wires)
 
 
-add_decomps(ops.SISWAP, siswap_standard, siswap_to_ppr)
+add_decomps(SISWAP, siswap_standard, siswap_to_ppr)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 8, 2))
-@register_resources({ops.ISWAP: 1}, name="to_iswap")
+@register_resources({ISWAP: 1}, name="to_iswap")
 def pow_siswap_to_iswap(base, z):
     """Decompose ``Pow(SISWAP)`` using the ``to_iswap`` strategy."""
-    ops.ISWAP(base.wires)
+    ISWAP(base.wires)
 
 
 @register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 8, 4))
-@register_resources({ops.PauliZ: 2}, name="to_zz")
+@register_resources({PauliZ: 2}, name="to_zz")
 def pow_siswap_to_zz(base, z):
     """Decompose ``Pow(SISWAP)`` using the ``to_zz`` strategy."""
-    ops.PauliZ(wires=base.wires[0])
-    ops.PauliZ(wires=base.wires[1])
+    PauliZ(wires=base.wires[0])
+    PauliZ(wires=base.wires[1])
 
 
 add_decomps("Pow(SISWAP)", make_pow_decomp_with_period(8), pow_siswap_to_zz, pow_siswap_to_iswap)
 
 
-_PAULI_OPS = {"X": ops.PauliX, "Y": ops.PauliY, "Z": ops.PauliZ}
+_PAULI_OPS = {"X": PauliX, "Y": PauliY, "Z": PauliZ}
 
 
 def _ppr2_to_paulis_resources(pauli_word, **_):
@@ -621,9 +637,9 @@ def _ppr_basis_resources(pauli_word, reverse, **_):
         resources[ops.CNOT] = len(pauli_word) - 1
     num_hadamards = pauli_word.count("X") + pauli_word.count("Y")
     if num_hadamards:
-        resources[ops.Hadamard] = num_hadamards
+        resources[Hadamard] = num_hadamards
     if pauli_word.count("Y"):
-        resources[ops.S if reverse else _adjoint_abstract(ops.S)] = pauli_word.count("Y")
+        resources[S if reverse else _adjoint_abstract(S)] = pauli_word.count("Y")
     return resources
 
 
@@ -635,13 +651,13 @@ def _PPRBasis(pauli_word: str, wires: WiresLike, reverse: bool):
             ops.CNOT(wires=(wires[index], wires[index - 1]))
     for wire, pauli in zip(wires, pauli_word, strict=True):
         if pauli == "X":
-            ops.Hadamard(wire)
+            Hadamard(wire)
         elif pauli == "Y":
             if not reverse:
-                ops.adjoint(ops.S(wire))
-            ops.Hadamard(wire)
+                ops.adjoint(S(wire))
+            Hadamard(wire)
             if reverse:
-                ops.S(wire)
+                S(wire)
     if not reverse:
         for index in range(len(wires) - 1, 0, -1):
             ops.CNOT(wires=(wires[index], wires[index - 1]))
@@ -705,23 +721,23 @@ def _ppr_via_z_gate(sign, pauli_word, wires, gate):
     )
 
 
-@register_resources(partial(_ppr_via_z_gate_resources, gate=ops.S), name="to_cliffords")
+@register_resources(partial(_ppr_via_z_gate_resources, gate=S), name="to_cliffords")
 def ppr4_to_cliffords(sign, pauli_word, wires):
     """Decompose ``PPR_4`` using the ``to_cliffords`` strategy."""
     ops.GlobalPhase(sign * np.pi / 4)
-    _ppr_via_z_gate(sign, pauli_word, wires, ops.S)
+    _ppr_via_z_gate(sign, pauli_word, wires, S)
 
 
-@register_resources(partial(_ppr_via_z_gate_resources, gate=ops.T), name="to_clifford_t")
+@register_resources(partial(_ppr_via_z_gate_resources, gate=T), name="to_clifford_t")
 def ppr8_to_clifford_t(sign, pauli_word, wires):
     """Decompose ``PPR_8`` using the ``to_clifford_t`` strategy."""
     ops.GlobalPhase(sign * np.pi / 8)
-    _ppr_via_z_gate(sign, pauli_word, wires, ops.T)
+    _ppr_via_z_gate(sign, pauli_word, wires, T)
 
 
-add_decomps(ops.PPR_2, ppr2_to_paulis)
-add_decomps(ops.PPR_4, ppr4_to_cliffords)
-add_decomps(ops.PPR_8, ppr8_to_clifford_t)
+add_decomps(PPR_2, ppr2_to_paulis)
+add_decomps(PPR_4, ppr4_to_cliffords)
+add_decomps(PPR_8, ppr8_to_clifford_t)
 
 
 def _adjoint_ppr_flip_sign_standard_resources(base):

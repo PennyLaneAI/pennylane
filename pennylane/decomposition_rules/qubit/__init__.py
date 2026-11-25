@@ -13,3 +13,14 @@
 # limitations under the License.
 
 """Decomposition rules for qubit operators."""
+
+from . import (
+    arithmetic_ops,
+    matrix_ops,
+    non_parametric_ops,
+    parametric_ops_single_qubit,
+    parametric_ops_multi_qubit,
+    qchem_ops,
+    special_unitary,
+    state_preparation,
+)

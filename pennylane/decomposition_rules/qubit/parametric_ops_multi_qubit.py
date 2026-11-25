@@ -22,17 +22,13 @@ import numpy as np
 from pennylane import capture, compiler, control_flow, math, ops
 from pennylane.capture.autograph import disable_autograph
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
+from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle
 from pennylane.ops.op_math.controlled2 import flip_zero_control
-from pennylane.ops.op_math.pow2 import _pow_scale_angle as pow_scale_angle
-from pennylane.decomposition.symbolic_decomposition import (
-    _adjoint_negate_angle as adjoint_negate_angle,
-)
+from pennylane.ops.op_math.pow2 import _pow_scale_angle
+from pennylane.decomposition import symbolic_decomposition
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.qubit.non_parametric_ops import Hadamard, PauliX
 from pennylane.ops.qubit.parametric_ops_multi_qubit import (
-    PSWAP,
     CPhaseShift00,
     CPhaseShift01,
     CPhaseShift10,
@@ -41,10 +37,10 @@ from pennylane.ops.qubit.parametric_ops_multi_qubit import (
     IsingYY,
     IsingZZ,
     MultiRZ,
-    PauliRot,
     PCPhase,
+    PSWAP,
+    PauliRot,
 )
-from pennylane.ops.qubit.parametric_ops_single_qubit import RX, RY, RZ, PhaseShift
 from pennylane.ops.subcircuit import subcircuit
 from pennylane.typing import Bool, Float, TensorLike, Wire
 from pennylane.wires import WiresLike
@@ -68,22 +64,22 @@ def _MultiRZLadder(wires: WiresLike, reverse: bool):
 def _multi_rz_standard_resources(theta: TensorLike, wires: WiresLike):
     num_wires = len(wires)
     if num_wires == 1:
-        return {RZ: 1}
+        return {ops.RZ: 1}
     ladder = _MultiRZLadder(wires=Wire[num_wires], reverse=False)
     unladder = _MultiRZLadder(wires=Wire[num_wires], reverse=True)
-    return {_change_op_basis_abstract(ladder, RZ(Float, wires=Wire[1]), unladder): 1}
+    return {_change_op_basis_abstract(ladder, ops.RZ(Float, wires=Wire[1]), unladder): 1}
 
 
 @register_resources(_multi_rz_standard_resources, name="cnot_ladder")
 def multi_rz_standard(theta: TensorLike, wires: WiresLike):
     """CNOT ladder around an ``RZ``, so a control applies only to the rotation."""
     if len(wires) == 1:
-        RZ(theta, wires=wires[0])
+        ops.RZ(theta, wires=wires[0])
         return
 
     ops.change_op_basis(
         _MultiRZLadder(wires=wires, reverse=False),
-        RZ(theta, wires=wires[0]),
+        ops.RZ(theta, wires=wires[0]),
         _MultiRZLadder(wires=wires, reverse=True),
     )
 
@@ -101,14 +97,14 @@ def multi_rz_to_ppr(theta: TensorLike, wires: WiresLike):
 
 
 add_decomps(MultiRZ, multi_rz_standard, multi_rz_to_ppr)
-add_decomps("Adjoint(MultiRZ)", adjoint_rotation2)
-add_decomps("Pow(MultiRZ)", pow_scale_angle)
+add_decomps("Adjoint(MultiRZ)", _adjoint_negate_angle)
+add_decomps("Pow(MultiRZ)", _pow_scale_angle)
 
 
 def _pauli_rot_basis_resources(sign, pauli_word, **_):
     resources = {}
     if pauli_word.count("X"):
-        resources[Hadamard] = pauli_word.count("X")
+        resources[ops.Hadamard] = pauli_word.count("X")
     if pauli_word.count("Y"):
         resources[ops.PPR_4(sign, "X", wires=Wire[1])] = pauli_word.count("Y")
     return resources
@@ -121,7 +117,7 @@ def _PauliRotBasis(sign: int, pauli_word: str, wires: WiresLike):
     for wire, gate in zip(wires, pauli_word, strict=True):
         if gate == "X":
             # A Y-axis PPR_4 would decompose back into PauliRot and create a cycle.
-            Hadamard(wires=[wire])
+            ops.Hadamard(wires=[wire])
         elif gate == "Y":
             ops.PPR_4(sign, "X", wires=[wire])
 
@@ -169,21 +165,21 @@ def pauli_rot_standard(theta: TensorLike, pauli_word: str, wires: WiresLike):
 
 
 add_decomps(PauliRot, pauli_rot_standard)
-add_decomps("Adjoint(PauliRot)", adjoint_rotation2)
-add_decomps("Pow(PauliRot)", pow_scale_angle)
+add_decomps("Adjoint(PauliRot)", _adjoint_negate_angle)
+add_decomps("Pow(PauliRot)", _pow_scale_angle)
 
 
 def _ctrl_phase_shift_resource(subspace, n_control_wires, n_work_wires):
     if n_control_wires == 0:
-        return {PhaseShift: 1}
+        return {ops.PhaseShift: 1}
     return {
         ops.ctrl(
-            PhaseShift(Float, Wire[1]),
+            ops.PhaseShift(Float, Wire[1]),
             control=Wire[n_control_wires],
             work_wires=Wire[n_work_wires],
             control_values=Bool[n_control_wires],
         ): 1,
-        PauliX: 2 * (1 - subspace),
+        ops.PauliX: 2 * (1 - subspace),
     }
 
 
@@ -233,7 +229,7 @@ def _ctrl_phase_shift(phi, target_wire, subspace, control_wires, control_values,
         # the decomposition, which should be adding projectors. So subspace should have been 0.
         assert len(control_wires) > 0
         ops.ctrl(
-            PhaseShift(phi, wires=target_wire),
+            ops.PhaseShift(phi, wires=target_wire),
             control=control_wires,
             control_values=control_values,
             work_wires=work_wires,
@@ -242,17 +238,17 @@ def _ctrl_phase_shift(phi, target_wire, subspace, control_wires, control_values,
 
     if len(control_wires) == 0:
         # Flip angle for phase_shift(subspace=0) = phase_shift(subspace=1)*global_phase
-        PhaseShift(-phi, wires=target_wire)
+        ops.PhaseShift(-phi, wires=target_wire)
         return -phi
 
-    PauliX(target_wire)
+    ops.PauliX(target_wire)
     ops.ctrl(
-        PhaseShift(phi, wires=target_wire),
+        ops.PhaseShift(phi, wires=target_wire),
         control=control_wires,
         control_values=control_values,
         work_wires=work_wires,
     )
-    PauliX(target_wire)
+    ops.PauliX(target_wire)
     return 0.0
 
 
@@ -337,14 +333,14 @@ def decompose_pcphase_standard(phi: TensorLike, dim: int, wires: WiresLike):
 
 
 add_decomps(PCPhase, decompose_pcphase_standard)
-add_decomps("Adjoint(PCPhase)", adjoint_rotation2)
+add_decomps("Adjoint(PCPhase)", _adjoint_negate_angle)
 
 
 @register_resources(
     {
         _change_op_basis_abstract(
             ops.CNOT(wires=Wire[2]),
-            RX(Float, wires=Wire[1]),
+            ops.RX(Float, wires=Wire[1]),
             ops.CNOT(wires=Wire[2]),
         ): 1,
     },
@@ -352,7 +348,7 @@ add_decomps("Adjoint(PCPhase)", adjoint_rotation2)
 )
 def isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
     """Decompose ``IsingXX`` using the ``to_cnot_rx_cnot`` strategy."""
-    ops.change_op_basis(ops.CNOT(wires=wires), RX(phi, wires=[wires[0]]), ops.CNOT(wires=wires))
+    ops.change_op_basis(ops.CNOT(wires=wires), ops.RX(phi, wires=[wires[0]]), ops.CNOT(wires=wires))
 
 
 @register_resources({PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1}, name="to_paulirot")
@@ -362,15 +358,15 @@ def isingxx_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(IsingXX, isingxx_to_cnot_rx_cnot, isingxx_to_ppr)
-add_decomps("Adjoint(IsingXX)", adjoint_rotation2)
-add_decomps("Pow(IsingXX)", pow_scale_angle)
+add_decomps("Adjoint(IsingXX)", _adjoint_negate_angle)
+add_decomps("Pow(IsingXX)", _pow_scale_angle)
 
 
 @register_resources(
     {
         _change_op_basis_abstract(
             ops.CY(wires=Wire[2]),
-            RY(Float, wires=Wire[1]),
+            ops.RY(Float, wires=Wire[1]),
             ops.CY(wires=Wire[2]),
         ): 1,
     },
@@ -378,7 +374,7 @@ add_decomps("Pow(IsingXX)", pow_scale_angle)
 )
 def isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
     """Decompose ``IsingYY`` using the ``to_cy_ry_cy`` strategy."""
-    ops.change_op_basis(ops.CY(wires=wires), RY(phi, wires=[wires[0]]), ops.CY(wires=wires))
+    ops.change_op_basis(ops.CY(wires=wires), ops.RY(phi, wires=[wires[0]]), ops.CY(wires=wires))
 
 
 @register_resources({PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1}, name="to_paulirot")
@@ -388,15 +384,15 @@ def isingyy_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(IsingYY, isingyy_to_cy_ry_cy, isingyy_to_ppr)
-add_decomps("Adjoint(IsingYY)", adjoint_rotation2)
-add_decomps("Pow(IsingYY)", pow_scale_angle)
+add_decomps("Adjoint(IsingYY)", _adjoint_negate_angle)
+add_decomps("Pow(IsingYY)", _pow_scale_angle)
 
 
 @register_resources(
     {
         _change_op_basis_abstract(
             ops.CNOT(wires=Wire[2]),
-            RZ(Float, wires=Wire[1]),
+            ops.RZ(Float, wires=Wire[1]),
             ops.CNOT(wires=Wire[2]),
         ): 1,
     },
@@ -405,7 +401,7 @@ add_decomps("Pow(IsingYY)", pow_scale_angle)
 def isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
     r"""Expressing ``IsingZZ``  via :func:`~.change_op_basis` (instead of three bare gates) lets
     PennyLane's generic ``C(ChangeOpBasis)`` rule automatically control it in an efficient way."""
-    ops.change_op_basis(ops.CNOT(wires=wires), RZ(phi, wires=[wires[1]]), ops.CNOT(wires=wires))
+    ops.change_op_basis(ops.CNOT(wires=wires), ops.RZ(phi, wires=[wires[1]]), ops.CNOT(wires=wires))
 
 
 @register_resources({PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1}, name="to_paulirot")
@@ -424,7 +420,7 @@ def _controlled_ising_zz_standard_resources(  # pylint: disable=unused-argument
     return {
         ops.CNOT: 2,
         ops.ctrl(
-            RZ(Float, wires=Wire[1]),
+            ops.RZ(Float, wires=Wire[1]),
             control=Wire[len(control_wires)],
             work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
@@ -445,7 +441,7 @@ def controlled_ising_zz_standard(base, control_wires, control_values, work_wires
     a, b = base.wires
     ops.CNOT(wires=[a, b])
     ops.ctrl(
-        RZ(base.data[0], wires=b),
+        ops.RZ(base.data[0], wires=b),
         control=control_wires,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
@@ -457,26 +453,26 @@ controlled_ising_zz = flip_zero_control(controlled_ising_zz_standard, name="pari
 
 
 add_decomps(IsingZZ, isingzz_to_cnot_rz_cnot, isingzz_to_ppr)
-add_decomps("Adjoint(IsingZZ)", adjoint_rotation2)
-add_decomps("Pow(IsingZZ)", pow_scale_angle)
+add_decomps("Adjoint(IsingZZ)", _adjoint_negate_angle)
+add_decomps("Pow(IsingZZ)", _pow_scale_angle)
 add_decomps("C(IsingZZ)", controlled_ising_zz)
 
 
 @subcircuit(static_argnames=("reverse",))
-@register_resources({Hadamard: 1, ops.CY: 1})
+@register_resources({ops.Hadamard: 1, ops.CY: 1})
 def _IsingXYBasis(wires: WiresLike, reverse: bool):
     if not reverse:
-        Hadamard(wires[0])
+        ops.Hadamard(wires[0])
     ops.CY(wires)
     if reverse:
-        Hadamard(wires[0])
+        ops.Hadamard(wires[0])
 
 
 @subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": Float, "wires": Wire[2]})
-@register_resources({RX: 1, RY: 1})
+@register_resources({ops.RX: 1, ops.RY: 1})
 def _IsingXYRotations(phi: TensorLike, wires: WiresLike):
-    RY(phi / 2, wires[0])
-    RX(-phi / 2, wires[1])
+    ops.RY(phi / 2, wires[0])
+    ops.RX(-phi / 2, wires[1])
 
 
 @register_resources(
@@ -499,16 +495,16 @@ def isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(IsingXY, isingxy_to_h_cy)
-add_decomps("Adjoint(IsingXY)", adjoint_rotation2)
-add_decomps("Pow(IsingXY)", pow_scale_angle)
+add_decomps("Adjoint(IsingXY)", _adjoint_negate_angle)
+add_decomps("Pow(IsingXY)", _pow_scale_angle)
 
 
-@register_resources({ops.SWAP: 1, ops.CNOT: 2, PhaseShift: 1}, name="to_swap_cnot_phaseshift_cnot")
+@register_resources({ops.SWAP: 1, ops.CNOT: 2, ops.PhaseShift: 1}, name="to_swap_cnot_phaseshift_cnot")
 def pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__):
     """Decompose ``PSWAP`` using the ``to_swap_cnot_phaseshift_cnot`` strategy."""
     ops.SWAP(wires=wires)
     ops.CNOT(wires=wires)
-    PhaseShift(phi, wires=[wires[1]])
+    ops.PhaseShift(phi, wires=[wires[1]])
     ops.CNOT(wires=wires)
 
 
@@ -530,57 +526,57 @@ def pswap_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(PSWAP, pswap_to_swap_cnot_phaseshift_cnot, pswap_to_ppr)
-add_decomps("Adjoint(PSWAP)", adjoint_negate_angle)
+add_decomps("Adjoint(PSWAP)", symbolic_decomposition._adjoint_negate_angle)
 
 
-@register_resources({PauliX: 4, PhaseShift: 3, ops.CNOT: 2}, name="to_x_phaseshift_cnot")
+@register_resources({ops.PauliX: 4, ops.PhaseShift: 3, ops.CNOT: 2}, name="to_x_phaseshift_cnot")
 def cphaseshift00_to_x_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__):
     """Decompose ``CPhaseShift00`` using the ``to_x_phaseshift_cnot`` strategy."""
-    PauliX(wires[0])
-    PauliX(wires[1])
-    PhaseShift(phi / 2, wires=[wires[0]])
-    PhaseShift(phi / 2, wires=[wires[1]])
+    ops.PauliX(wires[0])
+    ops.PauliX(wires[1])
+    ops.PhaseShift(phi / 2, wires=[wires[0]])
+    ops.PhaseShift(phi / 2, wires=[wires[1]])
     ops.CNOT(wires=wires)
-    PhaseShift(-phi / 2, wires=[wires[1]])
+    ops.PhaseShift(-phi / 2, wires=[wires[1]])
     ops.CNOT(wires=wires)
-    PauliX(wires[1])
-    PauliX(wires[0])
+    ops.PauliX(wires[1])
+    ops.PauliX(wires[0])
 
 
 add_decomps(CPhaseShift00, cphaseshift00_to_x_phaseshift_cnot)
-add_decomps("Adjoint(CPhaseShift00)", adjoint_rotation2)
-add_decomps("Pow(CPhaseShift00)", pow_scale_angle)
+add_decomps("Adjoint(CPhaseShift00)", _adjoint_negate_angle)
+add_decomps("Pow(CPhaseShift00)", _pow_scale_angle)
 
 
-@register_resources({PauliX: 2, PhaseShift: 3, ops.CNOT: 2}, name="to_x_phaseshift_cnot")
+@register_resources({ops.PauliX: 2, ops.PhaseShift: 3, ops.CNOT: 2}, name="to_x_phaseshift_cnot")
 def cphaseshift01_to_x_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__):
     """Decompose ``CPhaseShift01`` using the ``to_x_phaseshift_cnot`` strategy."""
-    PauliX(wires[0])
-    PhaseShift(phi / 2, wires=[wires[0]])
-    PhaseShift(phi / 2, wires=[wires[1]])
+    ops.PauliX(wires[0])
+    ops.PhaseShift(phi / 2, wires=[wires[0]])
+    ops.PhaseShift(phi / 2, wires=[wires[1]])
     ops.CNOT(wires=wires)
-    PhaseShift(-phi / 2, wires=[wires[1]])
+    ops.PhaseShift(-phi / 2, wires=[wires[1]])
     ops.CNOT(wires=wires)
-    PauliX(wires[0])
+    ops.PauliX(wires[0])
 
 
 add_decomps(CPhaseShift01, cphaseshift01_to_x_phaseshift_cnot)
-add_decomps("Adjoint(CPhaseShift01)", adjoint_rotation2)
-add_decomps("Pow(CPhaseShift01)", pow_scale_angle)
+add_decomps("Adjoint(CPhaseShift01)", _adjoint_negate_angle)
+add_decomps("Pow(CPhaseShift01)", _pow_scale_angle)
 
 
-@register_resources({PauliX: 2, PhaseShift: 3, ops.CNOT: 2}, name="to_x_phaseshift_cnot")
+@register_resources({ops.PauliX: 2, ops.PhaseShift: 3, ops.CNOT: 2}, name="to_x_phaseshift_cnot")
 def cphaseshift10_to_x_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__):
     """Decompose ``CPhaseShift10`` using the ``to_x_phaseshift_cnot`` strategy."""
-    PauliX(wires[1])
-    PhaseShift(phi / 2, wires=[wires[0]])
-    PhaseShift(phi / 2, wires=[wires[1]])
+    ops.PauliX(wires[1])
+    ops.PhaseShift(phi / 2, wires=[wires[0]])
+    ops.PhaseShift(phi / 2, wires=[wires[1]])
     ops.CNOT(wires=wires)
-    PhaseShift(-phi / 2, wires=[wires[1]])
+    ops.PhaseShift(-phi / 2, wires=[wires[1]])
     ops.CNOT(wires=wires)
-    PauliX(wires[1])
+    ops.PauliX(wires[1])
 
 
 add_decomps(CPhaseShift10, cphaseshift10_to_x_phaseshift_cnot)
-add_decomps("Adjoint(CPhaseShift10)", adjoint_rotation2)
-add_decomps("Pow(CPhaseShift10)", pow_scale_angle)
+add_decomps("Adjoint(CPhaseShift10)", _adjoint_negate_angle)
+add_decomps("Pow(CPhaseShift10)", _pow_scale_angle)

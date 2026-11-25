@@ -13,3 +13,5 @@
 # limitations under the License.
 
 """Decomposition rules for embeddings."""
+
+from . import amplitude

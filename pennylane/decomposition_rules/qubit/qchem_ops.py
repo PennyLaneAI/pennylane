@@ -19,12 +19,9 @@ import numpy as np
 
 from pennylane import ops
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
-from pennylane.ops.op_math.pow2 import _pow_scale_angle as pow_rotation2
-from pennylane.decomposition.symbolic_decomposition import (
-    _adjoint_negate_angle as adjoint_negate_angle,
-)
-from pennylane.decomposition.symbolic_decomposition import _pow_scale_angle as pow_scale_angle
+from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle
+from pennylane.ops.op_math.pow2 import _pow_scale_angle
+from pennylane.decomposition import symbolic_decomposition
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.qubit.qchem_ops import (
     DoubleExcitation,
@@ -154,8 +151,8 @@ add_decomps(
     single_excitation_to_ppr_rz,
     single_excitation_to_ppr_crz,
 )
-add_decomps("Adjoint(SingleExcitation)", adjoint_rotation2)
-add_decomps("Pow(SingleExcitation)", pow_rotation2)
+add_decomps("Adjoint(SingleExcitation)", _adjoint_negate_angle)
+add_decomps("Pow(SingleExcitation)", _pow_scale_angle)
 
 
 @register_resources(
@@ -177,8 +174,8 @@ def single_excitation_minus_standard(phi, wires: WiresLike, **__):
 
 
 add_decomps(SingleExcitationMinus, single_excitation_minus_standard)
-add_decomps("Adjoint(SingleExcitationMinus)", adjoint_negate_angle)
-add_decomps("Pow(SingleExcitationMinus)", pow_scale_angle)
+add_decomps("Adjoint(SingleExcitationMinus)", symbolic_decomposition._adjoint_negate_angle)
+add_decomps("Pow(SingleExcitationMinus)", symbolic_decomposition._pow_scale_angle)
 
 
 @register_resources(
@@ -200,8 +197,8 @@ def single_excitation_plus_standard(phi, wires: WiresLike, **__):
 
 
 add_decomps(SingleExcitationPlus, single_excitation_plus_standard)
-add_decomps("Adjoint(SingleExcitationPlus)", adjoint_negate_angle)
-add_decomps("Pow(SingleExcitationPlus)", pow_scale_angle)
+add_decomps("Adjoint(SingleExcitationPlus)", symbolic_decomposition._adjoint_negate_angle)
+add_decomps("Pow(SingleExcitationPlus)", symbolic_decomposition._pow_scale_angle)
 
 
 @register_resources({ops.CNOT: 14, ops.Hadamard: 6, ops.RY: 8}, name="to_gates")
@@ -263,12 +260,12 @@ def double_excitation_to_ppr(phi: TensorLike, wires: WiresLike):
 
 
 add_decomps(DoubleExcitation, double_excitation_to_gates, double_excitation_to_ppr)
-add_decomps("Adjoint(DoubleExcitation)", adjoint_rotation2)
-add_decomps("Pow(DoubleExcitation)", pow_rotation2)
-add_decomps("Adjoint(DoubleExcitationPlus)", adjoint_negate_angle)
-add_decomps("Pow(DoubleExcitationPlus)", pow_scale_angle)
-add_decomps("Adjoint(DoubleExcitationMinus)", adjoint_negate_angle)
-add_decomps("Pow(DoubleExcitationMinus)", pow_scale_angle)
+add_decomps("Adjoint(DoubleExcitation)", _adjoint_negate_angle)
+add_decomps("Pow(DoubleExcitation)", _pow_scale_angle)
+add_decomps("Adjoint(DoubleExcitationPlus)", symbolic_decomposition._adjoint_negate_angle)
+add_decomps("Pow(DoubleExcitationPlus)", symbolic_decomposition._pow_scale_angle)
+add_decomps("Adjoint(DoubleExcitationMinus)", symbolic_decomposition._adjoint_negate_angle)
+add_decomps("Pow(DoubleExcitationMinus)", symbolic_decomposition._pow_scale_angle)
 
 
 @register_resources(
@@ -284,8 +281,8 @@ def orbital_rotation_standard(phi: TensorLike, wires: WiresLike):
 
 
 add_decomps(OrbitalRotation, orbital_rotation_standard)
-add_decomps("Adjoint(OrbitalRotation)", adjoint_rotation2)
-add_decomps("Pow(OrbitalRotation)", pow_rotation2)
+add_decomps("Adjoint(OrbitalRotation)", _adjoint_negate_angle)
+add_decomps("Pow(OrbitalRotation)", _pow_scale_angle)
 
 
 @register_resources(
@@ -311,5 +308,5 @@ def fermionic_swap_standard(phi, wires: WiresLike, **__):
 
 
 add_decomps(FermionicSWAP, fermionic_swap_standard)
-add_decomps("Adjoint(FermionicSWAP)", adjoint_rotation2)
-add_decomps("Pow(FermionicSWAP)", pow_rotation2)
+add_decomps("Adjoint(FermionicSWAP)", _adjoint_negate_angle)
+add_decomps("Pow(FermionicSWAP)", _pow_scale_angle)

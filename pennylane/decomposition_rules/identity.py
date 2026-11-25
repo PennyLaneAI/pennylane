@@ -19,9 +19,9 @@ from pennylane import capture, compiler, control_flow, math, ops
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition_rules.common import null_decomp
-from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_negate_angle
-from pennylane.ops.op_math.pow2 import _pow_scale_angle as pow_scale_angle
-from pennylane.ops.identity import Identity
+from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle
+from pennylane.ops.op_math.pow2 import _pow_scale_angle
+from pennylane.ops.identity import GlobalPhase, Identity
 from pennylane.typing import Wire
 
 add_decomps(Identity, null_decomp)
@@ -44,7 +44,7 @@ def _controlled_g_phase_standard_resources(  # pylint: disable=unused-argument
 
     if num_control_wires == 1:  # Worst-case we need a GlobalPhase if control on zero
         resources[ops.PhaseShift] = 1
-        resources[ops.GlobalPhase] = 1
+        resources[GlobalPhase] = 1
         return resources
 
     # NOTE: Take average case scenario for number of X required for zero control values
@@ -79,7 +79,7 @@ def controlled_g_phase_standard(base, control_wires, control_values, work_wires,
 
         def _false():
             ops.PhaseShift(base.phi, wires=control_wires[-1])
-            ops.GlobalPhase(base.phi)
+            GlobalPhase(base.phi)
 
         ops.cond(control_values[0], _true, _false)()
         return
@@ -98,6 +98,6 @@ def controlled_g_phase_standard(base, control_wires, control_values, work_wires,
     _x_flips()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps("Adjoint(GlobalPhase)", adjoint_negate_angle)
-add_decomps("Pow(GlobalPhase)", pow_scale_angle)
+add_decomps("Adjoint(GlobalPhase)", _adjoint_negate_angle)
+add_decomps("Pow(GlobalPhase)", _pow_scale_angle)
 add_decomps("C(GlobalPhase)", controlled_g_phase_standard)
