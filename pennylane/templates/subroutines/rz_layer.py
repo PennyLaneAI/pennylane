@@ -67,13 +67,14 @@ class RZLayer(Operator2):
                 :lightbox:
                 :requires: :math:`m \geq 3` and :math:`a` work wires
                 :where: :math:`n = m - 1` if :math:`m` is a power of two and :math:`n = m`
-                    otherwise, :math:`a = n - \operatorname{popcount}(n)`, and
+                    otherwise, :math:`a = n - \|n\|_H` with the Hamming weight :math:`\|n\|_H` of
+                    :math:`n`, and
                     :math:`\ell(x) = \lfloor \log_2 x \rfloor + 1` is the number of bits of
                     :math:`x`
 
                 :class:`~.TemporaryAND` | :math:`a` | 1
                 :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`a` | 1
-                :class:`~.CNOT` | :math:`2(5n - 4\ell(n) - \operatorname{popcount}(n))` | 10
+                :class:`~.CNOT` | :math:`2(5n - 4\ell(n) - \|n\|_H)` | 10
                 :class:`~.PhaseShift` | :math:`\ell(m)` | 2
                 :class:`~.GlobalPhase` | :math:`1` | 1
 
@@ -172,6 +173,7 @@ def _rzlayer_hwp_synthesis(angle, wires, work_wires):
     num_hw_wires = _hwp_num_hw_wires(len(wires))
     num_work = num_hw_wires - num_hw_wires.bit_count()
     work_wires = work_wires[:num_work]
+    # extra_wires is empty or the single wire that _hwp_num_hw_wires leaves out
     hw_wires, extra_wires = wires[:num_hw_wires], wires[num_hw_wires:]
 
     with allocate(num_work - len(work_wires), restored=True) as extra_work_wires:

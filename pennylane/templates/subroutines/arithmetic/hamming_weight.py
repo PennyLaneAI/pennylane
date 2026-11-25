@@ -25,8 +25,8 @@ from .temporary_and import TemporaryAND
 
 def _hamming_weight_resources(wires, **_):
     # Level j adds floor(n / 2^j) bits, with a half adder if this number is even, i.e., if bit j
-    # of n is zero. Summing over all levels gives n - popcount(n) adders, ell(n) - popcount(n) of
-    # which are half adders, with ell(n) the number of bits of n.
+    # of n is zero. Summing over all levels gives n - ||n||_H adders, ell(n) - ||n||_H of
+    # which are half adders, with ell(n) the number of bits of n and ||n||_H its Hamming weight.
     n = len(wires)
     num_full_adders = n - n.bit_length()
     num_half_adders = n.bit_length() - n.bit_count()
@@ -45,8 +45,9 @@ def _HammingWeight(wires, work_wires):
     :math:`1`. Each full adder adds two bits of weight :math:`2^j` onto the last one and writes
     their carry, of weight :math:`2^{j+1}`, onto a zeroed work wire. For an even number of bits
     of weight :math:`2^j`, a half adder adds the remaining one. Each adder uses one
-    :class:`~.TemporaryAND`, for a total of ``n - popcount(n)`` work wires and ANDs, where
-    ``n = len(wires)``. For example, for 6 wires we get:
+    :class:`~.TemporaryAND`, for a total of :math:`n - \|n\|_H` work wires and ANDs, where
+    :math:`n` is the number of ``wires`` and :math:`\|n\|_H` its Hamming weight. For example, for
+    6 wires we get:
 
     .. code-block:: text
 
@@ -89,7 +90,7 @@ def _HammingWeight(wires, work_wires):
 
     Args:
         wires (Sequence): the ``n`` input wires
-        work_wires (Sequence): at least ``n - popcount(n)`` work wires in the zero state
+        work_wires (Sequence): at least :math:`n - \|n\|_H` work wires in the zero state
     """
     # Each bit of the Hamming weight above bit 0 needs one level of adders. The last carry of
     # level j goes onto out_wires[j], which ends up holding bit j + 1, and all other carries go
