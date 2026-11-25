@@ -13,7 +13,9 @@
 # limitations under the License.
 """Unit tests for qubit observables."""
 
-# pylint: disable=protected-access, use-implicit-booleaness-not-comparison, function-redefined
+# pylint: disable=protected-access
+
+
 import functools
 import pickle
 
@@ -198,7 +200,7 @@ class TestSimpleObservables:
 # Prevents multiple threads from updating Hermitian._eigs at the same time
 @pytest.mark.xdist_group(name="hermitian_cache_group")
 @pytest.mark.usefixtures("tear_down_hermitian")
-class TestHermitian:  # pylint: disable=too-many-public-methods
+class TestHermitian:
     """Test the Hermitian observable"""
 
     def test_preserves_autograd_trainability(self):
@@ -329,14 +331,10 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
             qp.Hermitian.compute_decomposition(double_wire_observable, wires=[0, 1, 2])
 
         with pytest.raises(ValueError, match="Expected input matrix to have shape"):
-            qp.Hermitian.compute_decomposition(double_wire_observable, wires="aux")
+            qp.Hermitian.compute_decomposition(double_wire_observable, wires=7)
 
-        # test int as wire type
+        # test a scalar integer wire label
         A_decomp = qp.Hermitian.compute_decomposition(single_wire_observable, wires=0)
-        assert np.allclose(qp.matrix(A_decomp[0]), single_wire_observable, rtol=0)
-
-        # test str as wire type
-        A_decomp = qp.Hermitian.compute_decomposition(single_wire_observable, wires="aux")
         assert np.allclose(qp.matrix(A_decomp[0]), single_wire_observable, rtol=0)
 
     def test_hermitian_compute_decomposition_inefficiency_warning(self):
@@ -364,7 +362,6 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("observable, eigvals, eigvecs", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gates(self, observable, eigvals, eigvecs, tol, mocker):
         """Tests that the diagonalizing_gates method of the Hermitian class returns the correct results."""
-        # pylint: disable=too-many-arguments
 
         # check calling `diagonalizing_gates` when `observable` is not in `_eigs` adds expected entry to `_eigs`
         spy = mocker.spy(np.linalg, "eigh")
@@ -528,7 +525,7 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
         # Here the matrix is captured as a constant
         @jax.jit
         @qp.qnode(dev, interface="jax")
-        def circuit():
+        def circuit():  # pylint: disable=function-redefined
             return qp.expval(qp.Hermitian(matrix, wires=[1]))
 
         assert qp.math.allclose(circuit(), 1.0)

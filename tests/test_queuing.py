@@ -25,7 +25,6 @@ from pennylane.core.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 from pennylane.exceptions import QueuingError
 
 
-# pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-dunder-call
 class TestStopRecording:
     """Test the stop_recording method of QueuingManager."""
 
@@ -305,7 +304,7 @@ class TestWrappedObj:
     def test_wrapped_obj_hash(self, obj):
         """Test that ``WrappedObj.__hash__`` is the object id."""
         wo = WrappedObj(obj)
-        assert wo.__hash__() == id(obj)
+        assert wo.__hash__() == id(obj)  # pylint: disable=unnecessary-dunder-call
 
     def test_wrapped_obj_repr(self):
         """Test that the ``WrappedObj` representation is equivalent to the repr of the
@@ -319,18 +318,20 @@ class TestWrappedObj:
 
         obj = Dummy()
         wo = WrappedObj(obj)
-        assert wo.__repr__() == "Wrapped(test_repr)"
+        assert wo.__repr__() == "Wrapped(test_repr)"  # pylint: disable=unnecessary-dunder-call
 
 
-def test_error_on_process_queue():
-    """Test that an informative error is raised indicating that process_queue has moved."""
+def test_public_import():
+    """Test that the public queuing module is the core module."""
+    from pennylane.core import queuing
 
-    with pytest.raises(AttributeError, match="has been moved to qp.tape.qscript.from_queue"):
-        _ = qp.queuing.process_queue
+    assert qp.queuing is queuing
 
 
 def test_error_on_nonexistent_item():
     """Test an AttributeError is raised if an object does not exist."""
 
-    with pytest.raises(AttributeError, match="module 'pennylane.queuing' has no attribute 'thing'"):
+    with pytest.raises(
+        AttributeError, match="module 'pennylane.core.queuing' has no attribute 'thing'"
+    ):
         _ = qp.queuing.thing

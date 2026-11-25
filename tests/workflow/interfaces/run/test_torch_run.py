@@ -19,10 +19,8 @@ from dataclasses import replace
 import pytest
 
 import pennylane as qp
-
-# pylint: disable=no-name-in-module
-from conftest import atol_for_shots, get_device, test_matrix
 from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
+from tests.workflow.interfaces.run.conftest import atol_for_shots, get_device, test_matrix
 
 torch = pytest.importorskip("torch")
 
@@ -47,8 +45,8 @@ class TestTorchRun:
             ops1 = [qp.RY(a, wires=0), qp.RX(b, wires=0)]
             tape1 = qp.tape.QuantumScript(ops1, [qp.expval(qp.PauliZ(0))], shots=shots)
 
-            ops2 = [qp.RY(a, wires="a"), qp.RX(b, wires="a")]
-            tape2 = qp.tape.QuantumScript(ops2, [qp.expval(qp.PauliZ("a"))], shots=shots)
+            ops2 = [qp.RY(a, wires=3), qp.RX(b, wires=3)]
+            tape2 = qp.tape.QuantumScript(ops2, [qp.expval(qp.PauliZ(3))], shots=shots)
 
             resolved_config = _resolve_execution_config(config, device, [tape1, tape2])
             inner_tp = _setup_transform_program(device, resolved_config)[1]
@@ -96,7 +94,7 @@ class TestTorchRun:
 
         res = torch.autograd.functional.jacobian(cost, a)
         if not shots.has_partitioned_shots:
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qp.math.sin(a)
 

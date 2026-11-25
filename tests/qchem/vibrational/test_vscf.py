@@ -24,8 +24,6 @@ import pennylane as qp
 from pennylane.qchem import vibrational
 from pennylane.qchem.vibrational import vscf
 
-# pylint: disable=protected-access
-
 h5py = pytest.importorskip("h5py")
 
 cform_file = Path(__file__).resolve().parent / "test_ref_files" / "H2S_cform_ham.hdf5"
@@ -129,6 +127,7 @@ def test_modal_error(h_data):
 def test_vscf_calculation(h_data, h2s_result):
     r"""Test that vscf calculation produces correct energy and rotation matrices"""
 
+    # pylint: disable-next=protected-access
     vib_energy, rot_matrix = vscf._vscf(h_data, modals=[3, 3, 3], cutoff=1e-8)
     assert np.isclose(vib_energy, h2s_result["energy"])
     assert np.allclose(rot_matrix, h2s_result["u_mat"])

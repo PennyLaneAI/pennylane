@@ -35,8 +35,7 @@ def run_before_and_after_tests():
     torch.set_default_dtype(torch.float32)
 
 
-# pylint: disable=too-few-public-methods
-class TestCaching:
+class TestCaching:  # pylint: disable=too-few-public-methods
     """Tests for caching behaviour"""
 
     @pytest.mark.skip("caching is not implemented for torch")
@@ -198,8 +197,8 @@ class TestTorchExecuteIntegration:
             ops1 = [qp.RY(a, wires=0), qp.RX(b, wires=0)]
             tape1 = qp.tape.QuantumScript(ops1, [qp.expval(qp.PauliZ(0))], shots=shots)
 
-            ops2 = [qp.RY(a, wires="a"), qp.RX(b, wires="a")]
-            tape2 = qp.tape.QuantumScript(ops2, [qp.expval(qp.PauliZ("a"))], shots=shots)
+            ops2 = [qp.RY(a, wires=5), qp.RX(b, wires=5)]
+            tape2 = qp.tape.QuantumScript(ops2, [qp.expval(qp.PauliZ(5))], shots=shots)
 
             return execute([tape1, tape2], device, **execute_kwargs)
 
@@ -239,7 +238,7 @@ class TestTorchExecuteIntegration:
 
         res = torch.autograd.functional.jacobian(cost, a)
         if not shots.has_partitioned_shots:
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qp.math.sin(a)
 
@@ -396,7 +395,7 @@ class TestTorchExecuteIntegration:
 
         jac = torch.autograd.functional.jacobian(cost, params)
         assert isinstance(jac, torch.Tensor)
-        assert jac.shape == (4, 2)  # pylint: disable=no-member
+        assert jac.shape == (4, 2)
 
         assert torch.allclose(jac[1:3], torch.tensor(0.0), atol=atol_for_shots(shots))
 
@@ -526,7 +525,7 @@ class TestTorchExecuteIntegration:
 
         device = get_device(device_name, seed)
 
-        class MyU3(qp.U3):
+        class MyU3(qp.U3):  # pylint: disable=too-few-public-methods
             """Dummy operator."""
 
             name = "MyU3"
@@ -558,7 +557,7 @@ class TestTorchExecuteIntegration:
             program = device.preprocess_transforms(execution_config=config)
             return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
-        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1}, name="decomp")
         def _decomp(theta, phi, delta, wires):
             qp.Rot(delta, theta, -delta, wires)
             qp.PhaseShift(phi + delta, wires)
@@ -781,7 +780,6 @@ class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.fixture
     def cost_fn(self, execute_kwargs, shots, device_name, seed, constructor):
         """Cost function for gradient tests"""

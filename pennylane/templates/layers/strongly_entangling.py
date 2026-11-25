@@ -15,7 +15,6 @@ r"""
 Contains the StronglyEntanglingLayers template.
 """
 
-# pylint: disable=too-many-arguments
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
@@ -188,9 +187,8 @@ class StronglyEntanglingLayers(Operation):
         return 1
 
     @staticmethod
-    def compute_decomposition(
-        weights, wires, ranges, imprimitive=CNOT
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(weights, wires, ranges, imprimitive=CNOT):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -201,7 +199,7 @@ class StronglyEntanglingLayers(Operation):
 
         Args:
             weights (tensor_like): weight tensor
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
             ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer
             imprimitive (pennylane.ops.Operation): two-qubit gate to use
 
@@ -212,13 +210,15 @@ class StronglyEntanglingLayers(Operation):
 
         >>> weights = torch.tensor([[[-0.2, 0.1, -0.4], [1.2, -2., -0.4]]])
         >>> ranges = (1,)
-        >>> ops = qp.StronglyEntanglingLayers.compute_decomposition(weights, wires=["a", "b"], ranges=ranges, imprimitive=qp.CNOT)
+        >>> ops = qp.StronglyEntanglingLayers.compute_decomposition(
+        ...     weights, wires=[0, 1], ranges=ranges, imprimitive=qp.CNOT
+        ... )
         >>> from pprint import pprint
         >>> pprint(ops)
-        [Rot(-0.200..., 0.100..., -0.400..., wires=['a']),
-         Rot(1.200..., -2.0, -0.400..., wires=['b']),
-         CNOT(wires=['a', 'b']),
-         CNOT(wires=['b', 'a'])]
+        [Rot(-0.200..., 0.100..., -0.400..., wires=[0]),
+         Rot(1.200..., -2.0, -0.400..., wires=[1]),
+         CNOT(wires=[0, 1]),
+         CNOT(wires=[1, 0])]
 
         """
         n_layers = math.shape(weights)[-3]
@@ -258,7 +258,7 @@ class StronglyEntanglingLayers(Operation):
         return n_layers, n_wires, 3
 
 
-def _strongly_entangling_resources(imprimitive, n_wires, n_layers):
+def _strongly_entangling_standard_resources(imprimitive, n_wires, n_layers):
     resources = {}
 
     resources[Rot] = n_wires * n_layers
@@ -268,8 +268,8 @@ def _strongly_entangling_resources(imprimitive, n_wires, n_layers):
     return resources
 
 
-@register_resources(_strongly_entangling_resources)
-def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
+@register_resources(_strongly_entangling_standard_resources, name="rotations_entangler_layers")
+def _strongly_entangling_standard(weights, wires, ranges, imprimitive):
 
     if capture.enabled():
         wires = math.array(wires, like="jax")
@@ -310,4 +310,4 @@ def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
     layers()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(StronglyEntanglingLayers, _strongly_entangling_decomposition)
+add_decomps(StronglyEntanglingLayers, _strongly_entangling_standard)

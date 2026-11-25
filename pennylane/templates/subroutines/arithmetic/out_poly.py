@@ -276,7 +276,7 @@ class OutPoly(Operation):
         mod=None,
         work_wires: WiresLike = (),
         **kwargs,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):
         r"""Initialize the OutPoly class"""
 
         registers_wires = [*input_registers, output_wires]
@@ -382,14 +382,14 @@ class OutPoly(Operation):
         return self.compute_decomposition(**self.hyperparameters)
 
     @staticmethod
-    def compute_decomposition(
+    def compute_decomposition(  # pylint: disable=arguments-differ
         polynomial_function,
         input_registers,
         output_wires: WiresLike,
         mod=None,
         work_wires: WiresLike = (),
         **kwargs,
-    ):  # pylint: disable=unused-argument, arguments-differ
+    ):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -468,7 +468,7 @@ class OutPoly(Operation):
         return list_ops
 
 
-def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coeffs_list) -> dict:
+def _out_poly_standard_resources(num_output_wires, num_work_wires, mod, coeffs_list) -> dict:
     num_output_adder_mod = num_output_wires + 1 if num_work_wires else num_output_wires
 
     resources = Counter({QFT(Wire[num_output_adder_mod]): 1})
@@ -498,15 +498,15 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
     return dict(resources)
 
 
-@register_resources(_out_poly_decomposition_resources)
-def _out_poly_decomposition(
+@register_resources(_out_poly_standard_resources, name="fourier_polynomial_phases")
+def _out_poly_standard(  # pylint: disable=unused-argument
     polynomial_function,
     input_registers,
     output_wires: WiresLike,
     mod=None,
     work_wires: WiresLike = (),
     **kwargs,
-):  # pylint: disable=unused-argument
+):
     registers_wires = [*input_registers, output_wires]
 
     if len(work_wires) == 0:
@@ -543,4 +543,4 @@ def _out_poly_decomposition(
     adjoint(QFT(wires=output_adder_mod))
 
 
-add_decomps(OutPoly, _out_poly_decomposition)
+add_decomps(OutPoly, _out_poly_standard)

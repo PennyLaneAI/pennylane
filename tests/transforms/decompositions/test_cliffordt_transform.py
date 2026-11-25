@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit tests for the Clifford+T transform."""
 
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-few-public-methods
 
 import math
 from functools import reduce
@@ -41,7 +41,6 @@ INVSQ2 = 1 / math.sqrt(2)
 PI = math.pi
 
 
-# pylint: disable=too-few-public-methods
 class CustomOneQubitOperation(qp.operation.Operation):
     num_wires = 1
 
@@ -50,7 +49,6 @@ class CustomOneQubitOperation(qp.operation.Operation):
         return qp.math.conj(qp.math.transpose(qp.S.compute_matrix()))
 
 
-# pylint: disable=too-few-public-methods
 class CustomTwoQubitOperation(qp.operation.Operation):
     num_wires = 2
 
@@ -155,9 +153,9 @@ class TestCliffordCompile:
             (qp.PauliX(wires=[1]), True),
             (qp.RX(3 * PI, wires=[1]), True),
             (qp.adjoint(qp.RX(3 * PI, wires=[1])), True),
-            (qp.PhaseShift(2 * PI, wires=["a"]), True),
-            (qp.ECR(wires=["e", "f"]), True),
-            (qp.CH(wires=["a", "b"]), False),
+            (qp.PhaseShift(2 * PI, wires=[6]), True),
+            (qp.ECR(wires=[9, 11]), True),
+            (qp.CH(wires=[6, 7]), False),
         ],
     )
     def test_clifford_checker(self, op, res):
@@ -368,7 +366,7 @@ class TestCliffordCompile:
         qp.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
     @pytest.mark.parametrize(
-        "op", [qp.RX(1.0, wires="a"), qp.U3(1, 2, 3, wires=[1]), qp.PhaseShift(1.0, wires=[2])]
+        "op", [qp.RX(1.0, wires=6), qp.U3(1, 2, 3, wires=[1]), qp.PhaseShift(1.0, wires=[2])]
     )
     def test_one_qubit_decomposition(self, op):
         """Test decomposition for the Clifford transform."""
@@ -401,7 +399,7 @@ class TestCliffordCompile:
     @pytest.mark.parametrize(
         "op",
         [
-            qp.PSWAP(1.0, wires=["a", "b"]),
+            qp.PSWAP(1.0, wires=[6, 7]),
             qp.SingleExcitation(1, wires=[1, 2]),
             qp.IsingXX(1.0, wires=[2, 3]),
         ],
@@ -436,7 +434,7 @@ class TestCliffordCompile:
     @pytest.mark.parametrize(
         "op",
         [
-            qp.adjoint(qp.RX(1.0, wires=["b"])),
+            qp.adjoint(qp.RX(1.0, wires=[7])),
             qp.Rot(1, 2, 3, wires=[2]),
             qp.PhaseShift(1.0, wires=[0]),
             qp.PhaseShift(3 * PI, wires=[0]),
@@ -505,7 +503,7 @@ class TestCliffordCompile:
     def test_raise_with_cliffordt_decomposition(self):
         """Test that exception is correctly raise when decomposing gates without any decomposition"""
 
-        class SomethingOp(qp.operation.Operation):  # pylint: disable=too-few-public-methods
+        class SomethingOp(qp.operation.Operation):
             pass
 
         tape = qp.tape.QuantumScript([SomethingOp(wires=[0, 1, 2])])
@@ -513,7 +511,7 @@ class TestCliffordCompile:
         with pytest.raises(ValueError, match="Cannot unroll"):
             clifford_t_decomposition(tape)
 
-    @pytest.mark.parametrize("op", [qp.U1(1.0, wires=["b"])])
+    @pytest.mark.parametrize("op", [qp.U1(1.0, wires=[7])])
     def test_raise_with_rot_decomposition(self, op):
         """Test that exception is correctly raise when decomposing parametrized gates for which we already don't have a recipe"""
 
@@ -548,7 +546,6 @@ class TestCliffordCompile:
         ):
             decomposed_qfunc()
 
-    # pylint: disable= import-outside-toplevel
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("method, kwargs", [("sk", {"max_depth": 3}), ("gridsynth", {})])
     def test_clifford_decompose_interfaces(self, method, kwargs):
@@ -633,9 +630,9 @@ class TestCliffordCompile:
 class TestCliffordCached:
     """Unit tests for clifford caching function."""
 
-    # pylint: disable=protected-access, import-outside-toplevel, reimported
     def test_clifford_cached(self):
         """Test that the cached version of the circuit is equivalent to the original one."""
+        # pylint: disable=protected-access
 
         import pennylane.transforms.decompositions.clifford_t_transform as clt2
 
@@ -687,14 +684,13 @@ class TestCliffordCached:
         assert _map_wires.cache_info().hits == 5
         assert _map_wires.cache_info().misses == 10
 
-    # pylint: disable=protected-access, import-outside-toplevel, reimported
     def test_cached_with_rtol(self):
         """Test that caches are correctly identified as compatible or
         incompatible with a relative threshold for epsilon."""
 
         import pennylane.transforms.decompositions.clifford_t_transform as clt2
 
-        clt2._CLIFFORD_T_CACHE = None
+        clt2._CLIFFORD_T_CACHE = None  # pylint: disable=protected-access
 
         cache1 = _CachedCallable(method="gridsynth", epsilon=1e-5, cache_size=100)
 
@@ -714,7 +710,6 @@ class TestCliffordCached:
 class TestCatalyst:
     """Unit tests for catalyst integration."""
 
-    # pylint: disable=import-outside-toplevel
     @pytest.mark.catalyst
     def test_catalyst_integration(self):
         """Test that the catalyst integration is working correctly."""

@@ -121,7 +121,7 @@ class ArbitraryStatePreparation(Operation):
         Args:
             weights (tensor_like): Angles of the Pauli word rotations. Needs to have length :math:`2^{n+1} - 2`
                 where :math:`n` is the number of wires the template acts upon.
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
 
         Returns:
             list[.Operator]: decomposition of the operator
@@ -129,15 +129,15 @@ class ArbitraryStatePreparation(Operation):
         **Example**
 
         >>> weights = torch.tensor([1., 2., 3., 4., 5., 6.])
-        >>> ops = qp.ArbitraryStatePreparation.compute_decomposition(weights, wires=["a", "b"])
+        >>> ops = qp.ArbitraryStatePreparation.compute_decomposition(weights, wires=[0, 1])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [PauliRot(theta=1.0, pauli_word=XI, wires=['a', 'b']),
-         PauliRot(theta=2.0, pauli_word=YI, wires=['a', 'b']),
-         PauliRot(theta=3.0, pauli_word=IX, wires=['a', 'b']),
-         PauliRot(theta=4.0, pauli_word=IY, wires=['a', 'b']),
-         PauliRot(theta=5.0, pauli_word=XX, wires=['a', 'b']),
-         PauliRot(theta=6.0, pauli_word=XY, wires=['a', 'b'])]
+        [PauliRot(theta=1.0, pauli_word=XI, wires=[0, 1]),
+         PauliRot(theta=2.0, pauli_word=YI, wires=[0, 1]),
+         PauliRot(theta=3.0, pauli_word=IX, wires=[0, 1]),
+         PauliRot(theta=4.0, pauli_word=IY, wires=[0, 1]),
+         PauliRot(theta=5.0, pauli_word=XX, wires=[0, 1]),
+         PauliRot(theta=6.0, pauli_word=XY, wires=[0, 1])]
 
         """
         op_list = []
@@ -159,7 +159,7 @@ class ArbitraryStatePreparation(Operation):
         return (2 ** (n_wires + 1) - 2,)
 
 
-def _arbitrary_state_preparation_resources(num_wires):
+def _arbitrary_state_preparation_standard_resources(num_wires):
     return dict(
         Counter(
             qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)])
@@ -168,8 +168,8 @@ def _arbitrary_state_preparation_resources(num_wires):
     )
 
 
-@register_resources(_arbitrary_state_preparation_resources)
-def _arbitrary_state_preparation_decomposition(weights, wires, **_):
+@register_resources(_arbitrary_state_preparation_standard_resources, name="pauli_rotations")
+def _arbitrary_state_preparation_standard(weights, wires, **_):
     pauli_words = _state_preparation_pauli_words(len(wires))
 
     @for_loop(len(pauli_words))
@@ -180,4 +180,4 @@ def _arbitrary_state_preparation_decomposition(weights, wires, **_):
     pauli_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(ArbitraryStatePreparation, _arbitrary_state_preparation_decomposition)
+add_decomps(ArbitraryStatePreparation, _arbitrary_state_preparation_standard)

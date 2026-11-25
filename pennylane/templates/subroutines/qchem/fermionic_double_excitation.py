@@ -15,7 +15,9 @@ r"""
 Contains the FermionicDoubleExcitation template.
 """
 
-# pylint: disable=too-many-arguments,protected-access
+# pylint: disable=too-many-arguments
+
+
 import copy
 
 import numpy as np
@@ -555,6 +557,7 @@ class FermionicDoubleExcitation(Operation):
         }
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         for key in ["wires1", "wires2"]:
@@ -579,7 +582,7 @@ class FermionicDoubleExcitation(Operation):
 
         Args:
             weight (float or tensor_like): angle :math:`\theta` entering the Z rotation
-            wires (Any or Iterable[Any]): full set of wires that the operator acts on
+            wires (int or Iterable[int]): full set of wires that the operator acts on
             wires1 (Iterable): Wires of the qubits representing the subset of occupied orbitals
                 in the interval ``[s, r]``.
             wires2 (Iterable): Wires of the qubits representing the subset of unoccupied
@@ -613,7 +616,7 @@ class FermionicDoubleExcitation(Operation):
         return op_list
 
 
-def _fermionic_double_excitation_resources(num_wires_1, num_wires_2):
+def _fermionic_double_excitation_standard_resources(num_wires_1, num_wires_2):
     num_set_cnot_wires = num_wires_1 + num_wires_2 - 1
 
     return {Hadamard: 32, RX: 32, CNOT: 16 * num_set_cnot_wires, RZ: 8}
@@ -1051,10 +1054,9 @@ def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
     RX(np.pi / 2, wires=p)
 
 
-@register_resources(_fermionic_double_excitation_resources)
-def _fermionic_double_excitation_decomopsition(
-    weight, wires, wires1, wires2
-):  # pylint: disable=unused-argument
+@register_resources(_fermionic_double_excitation_standard_resources, name="jordan_wigner_rotations")
+# pylint: disable-next=unused-argument
+def _fermionic_double_excitation_standard(weight, wires, wires1, wires2):
     s = wires1[0]
     r = wires1[-1]
     q = wires2[0]
@@ -1076,4 +1078,4 @@ def _fermionic_double_excitation_decomopsition(
     _layer_qfunc8(weight, s, r, q, p, set_cnot_wires)
 
 
-add_decomps(FermionicDoubleExcitation, _fermionic_double_excitation_decomopsition)
+add_decomps(FermionicDoubleExcitation, _fermionic_double_excitation_standard)

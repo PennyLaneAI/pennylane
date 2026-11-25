@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for default qubit preprocessing."""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 import scipy as sp
@@ -29,7 +31,6 @@ from pennylane.exceptions import DecompositionWarning, DeviceError
 class NoMatOp(qp.operation.Operation):
     """Dummy operation for expanding circuit."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
@@ -41,7 +42,6 @@ class NoMatOp(qp.operation.Operation):
 class MatOp(qp.operation.Operation):
     """Dummy operation for expanding circuit."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return True
@@ -50,13 +50,11 @@ class MatOp(qp.operation.Operation):
         return [qp.PauliX(self.wires), qp.PauliY(self.wires)]
 
 
-# pylint: disable=too-few-public-methods
 class MyTemplate(qp.operation.Operation):
     """Temp operator."""
 
     num_wires = 2
 
-    # pylint: disable=missing-function-docstring
     def decomposition(self):
         return [
             qp.RX(self.data[0], self.wires[0]),
@@ -65,13 +63,11 @@ class MyTemplate(qp.operation.Operation):
         ]
 
 
-# pylint: disable=too-few-public-methods
 class CustomIsingXX(qp.operation.Operation):
     """Temp operator."""
 
     num_wires = 2
 
-    # pylint: disable=missing-function-docstring
     def decomposition(self):
         return [qp.IsingXX(self.data[0], self.wires)]
 
@@ -80,23 +76,23 @@ class CustomIsingXX(qp.operation.Operation):
 def custom_decomps():
     """Locally register decomposition rules."""
 
-    @qp.register_resources({qp.X: 1, qp.Y: 1})
+    @qp.register_resources({qp.X: 1, qp.Y: 1}, name="custom_rule_no_mat_op")
     def custom_rule_no_mat_op(wires):
         qp.X(wires)
         qp.Y(wires)
 
-    @qp.register_resources({qp.X: 1, qp.Y: 1})
+    @qp.register_resources({qp.X: 1, qp.Y: 1}, name="custom_rule_mat_op")
     def custom_rule_mat_op(data, wires):  # pylint: disable=unused-argument
         qp.X(wires)
         qp.Y(wires)
 
-    @qp.register_resources({qp.RX: 1, qp.RY: 1, qp.CNOT: 1})
+    @qp.register_resources({qp.RX: 1, qp.RY: 1, qp.CNOT: 1}, name="custom_rule_template")
     def custom_rule_template(data0, data1, wires):
         qp.RX(data0, wires[0])
         qp.RY(data1, wires[1])
         qp.CNOT(wires)
 
-    @qp.register_resources({qp.IsingXX: 1})
+    @qp.register_resources({qp.IsingXX: 1}, name="custom_rule_isingxx")
     def custom_rule_isingxx(data, wires):
         qp.IsingXX(data, wires)
 
@@ -106,39 +102,33 @@ def custom_decomps():
     qp.add_decomps(CustomIsingXX, custom_rule_isingxx)
 
 
-# pylint: disable=too-few-public-methods
 class NoMatNoDecompOp(qp.operation.Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
 
 
-# pylint: disable=too-few-public-methods
 class HasDiagonalizingGatesOp(qp.operation.Operator):
     """Dummy observable that has diagonalizing gates."""
 
-    # pylint: disable=arguments-renamed,invalid-overridden-method,no-self-argument
     @classproperty
-    def has_diagonalizing_gates(cls):
+    def has_diagonalizing_gates(cls):  # pylint: disable=no-self-argument
         return True
 
 
-# pylint: disable=too-few-public-methods
 class CustomizedSparseOp(qp.operation.Operator):
     def __init__(self, wires):
         U = sp.sparse.eye(2 ** len(wires))
         super().__init__(U, wires)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self) -> bool:
         return False
 
-    def compute_sparse_matrix(self, U):  # pylint:disable=unused-argument, arguments-differ
+    def compute_sparse_matrix(self, U):  # pylint: disable=unused-argument
         return sp.sparse.eye(2 ** len(self.wires))
 
 
@@ -303,7 +293,6 @@ class TestConfigSetup:
             dev.setup_execution_config(config)
 
 
-# pylint: disable=too-few-public-methods
 class TestPreprocessing:
     """Unit tests for the preprocessing method."""
 
@@ -430,7 +419,6 @@ class TestPreprocessing:
         res = stopping_condition(op)
         assert res == expected
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_adjoint_only_one_wire(self):
         """Tests adjoint accepts operators with no parameters or a single parameter and a generator."""
 
@@ -456,12 +444,11 @@ class TestPreprocessing:
             def generator(self):
                 return qp.PauliX(0)
 
-            # pylint: disable=arguments-renamed, invalid-overridden-method
             @property
             def has_matrix(self):
                 return True
 
-        @qp.register_resources({qp.RX: 1})
+        @qp.register_resources({qp.RX: 1}, name="custom_decomp")
         def custom_decomp(data, wires):
             qp.RX(data, wires)
 
@@ -524,7 +511,6 @@ class TestPreprocessing:
             program([tape])
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestPreprocessingIntegration:
     """Test preprocess produces output that can be executed by the device."""
 
@@ -739,7 +725,6 @@ class TestPreprocessingIntegration:
         expected = (np.array([1, 2, 3]), np.array([4, 5, 6]))
         assert np.array_equal(batch_fn(val), expected)
 
-    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_preprocess_check_validity_fail(self):
         """Test that preprocess throws an error if the split and expanded tapes have
         unsupported operators."""
@@ -752,12 +737,8 @@ class TestPreprocessingIntegration:
 
         program = qp.device("default.qubit").preprocess_transforms()
 
-        if qp.decomposition.enabled_graph():
-            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
-                with pytest.warns(DecompositionWarning):
-                    program(tapes)
-        else:
-            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+            with pytest.warns(DecompositionWarning):
                 program(tapes)
 
     @pytest.mark.parametrize(
@@ -819,8 +800,8 @@ class TestPreprocessingIntegration:
         x = 0.928
         y = -0.792
         qscript = qp.tape.QuantumScript(
-            [MyTemplate(x, y, ("a", "b"))],
-            [qp.expval(qp.PauliY("a")), qp.expval(qp.PauliZ("a")), qp.expval(qp.PauliX("b"))],
+            [MyTemplate(x, y, (9, 11))],
+            [qp.expval(qp.PauliY(9)), qp.expval(qp.PauliZ(9)), qp.expval(qp.PauliX(11))],
         )
 
         dev = DefaultQubit(max_workers=max_workers)
@@ -830,12 +811,12 @@ class TestPreprocessingIntegration:
 
         assert len(tapes) == 1
         execute_circuit = tapes[0]
-        qp.assert_equal(execute_circuit[0], qp.RX(x, "a"))
-        qp.assert_equal(execute_circuit[1], qp.RY(y, "b"))
-        qp.assert_equal(execute_circuit[2], qp.CNOT(("a", "b")))
-        qp.assert_equal(execute_circuit[3], qp.expval(qp.PauliY("a")))
-        qp.assert_equal(execute_circuit[4], qp.expval(qp.PauliZ("a")))
-        qp.assert_equal(execute_circuit[5], qp.expval(qp.PauliX("b")))
+        qp.assert_equal(execute_circuit[0], qp.RX(x, 9))
+        qp.assert_equal(execute_circuit[1], qp.RY(y, 11))
+        qp.assert_equal(execute_circuit[2], qp.CNOT((9, 11)))
+        qp.assert_equal(execute_circuit[3], qp.expval(qp.PauliY(9)))
+        qp.assert_equal(execute_circuit[4], qp.expval(qp.PauliZ(9)))
+        qp.assert_equal(execute_circuit[5], qp.expval(qp.PauliX(11)))
 
         results = dev.execute(tapes, config)
         assert len(results) == 1
@@ -854,8 +835,8 @@ class TestPreprocessingIntegration:
 
         x = 0.692
 
-        measurements1 = [qp.density_matrix("a"), qp.vn_entropy("a")]
-        qs1 = qp.tape.QuantumScript([CustomIsingXX(x, ("a", "b"))], measurements1)
+        measurements1 = [qp.density_matrix(9), qp.vn_entropy(9)]
+        qs1 = qp.tape.QuantumScript([CustomIsingXX(x, (9, 11))], measurements1)
 
         y = -0.923
 
@@ -925,16 +906,11 @@ class TestPreprocessingIntegration:
 
         prog = DefaultQubit().preprocess_transforms(config)
 
-        if qp.decomposition.enabled_graph():
-            with pytest.raises(DeviceError, match="not supported with default.qubit"):
-                with pytest.warns(DecompositionWarning):
-                    prog((tape,))
-        else:
-            with pytest.raises(DeviceError, match="not supported with default.qubit"):
+        with pytest.raises(DeviceError, match="not supported with default.qubit"):
+            with pytest.warns(DecompositionWarning):
                 prog((tape,))
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestAdjointDiffTapeValidation:
     """Unit tests for validate_and_expand_adjoint"""
 
@@ -968,7 +944,6 @@ class TestAdjointDiffTapeValidation:
         ):
             program((qs,))
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_unsupported_op_decomposed(self):
         """Test that an operation supported on the forward pass but
         not adjoint is decomposed when adjoint is requested."""
@@ -1146,7 +1121,6 @@ class TestAdjointDiffTapeValidation:
         assert qp.jacobian(circuit)(x) == 0
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestDefaultQubitGraphModeExclusive:
     """Tests for DefaultQubit features that require graph mode enabled.
     The legacy decomposition mode should not be able to run these tests.
@@ -1161,12 +1135,12 @@ class TestDefaultQubitGraphModeExclusive:
         class MyDefaultQubitOp(qp.operation.Operator):
             num_wires = 1
 
-        @qp.register_resources({qp.H: 2})
+        @qp.register_resources({qp.H: 2}, name="decomp_fallback")
         def decomp_fallback(wires):
             qp.H(wires)
             qp.H(wires)
 
-        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 5})
+        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 5}, name="decomp_with_work_wire")
         def decomp_with_work_wire(wires):
             qp.X(wires)
 

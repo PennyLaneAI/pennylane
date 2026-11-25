@@ -65,9 +65,9 @@ single_qubit_decompositions = [
 
 # A simple quantum function for testing
 def qfunc(U):
-    qp.Hadamard(wires="a")
-    qp.QubitUnitary(U, wires="a")
-    qp.CNOT(wires=["b", "a"])
+    qp.Hadamard(wires=9)
+    qp.QubitUnitary(U, wires=9)
+    qp.CNOT(wires=[10, 9])
 
 
 class TestRecursiveDecomposition:
@@ -155,17 +155,17 @@ class TestDecomposeSingleQubitUnitaryTransform:
         assert len(ops) == 5
 
         assert isinstance(ops[0], qp.Hadamard)
-        assert ops[0].wires == Wires("a")
+        assert ops[0].wires == Wires(9)
 
         for i in range(3):
             assert isinstance(ops[1 + i], expected_gates[i])
-            assert ops[1 + i].wires == Wires("a")
+            assert ops[1 + i].wires == Wires(9)
             assert qp.math.allclose(
                 qp.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7
             )
 
         assert isinstance(ops[4], qp.CNOT)
-        assert ops[4].wires == Wires(["b", "a"])
+        assert ops[4].wires == Wires([10, 9])
 
     def test_unitary_to_rot_too_big_unitary(self):
         """Test that the transform ignores QubitUnitary instances that are too big
@@ -174,8 +174,8 @@ class TestDecomposeSingleQubitUnitaryTransform:
         tof = qp.Toffoli(wires=[0, 1, 2]).matrix()
 
         def qfunc_with_large_qubit_unitary():
-            qp.QubitUnitary(H, wires="a")
-            qp.QubitUnitary(tof, wires=["a", "b", "c"])
+            qp.QubitUnitary(H, wires=9)
+            qp.QubitUnitary(tof, wires=[9, 10, 11])
 
         transformed_qfunc = unitary_to_rot(qfunc_with_large_qubit_unitary)
 
@@ -184,16 +184,16 @@ class TestDecomposeSingleQubitUnitaryTransform:
         assert len(ops) == 4
 
         assert ops[0].name == "RZ"
-        assert ops[0].wires == Wires("a")
+        assert ops[0].wires == Wires(9)
 
         assert ops[1].name == "RY"
-        assert ops[1].wires == Wires("a")
+        assert ops[1].wires == Wires(9)
 
         assert ops[2].name == "RZ"
-        assert ops[2].wires == Wires("a")
+        assert ops[2].wires == Wires(9)
 
         assert ops[3].name == "QubitUnitary"
-        assert ops[3].wires == Wires(["a", "b", "c"])
+        assert ops[3].wires == Wires([9, 10, 11])
 
     @pytest.mark.torch
     @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decompositions)
@@ -210,17 +210,17 @@ class TestDecomposeSingleQubitUnitaryTransform:
         assert len(ops) == 5
 
         assert isinstance(ops[0], qp.Hadamard)
-        assert ops[0].wires == Wires("a")
+        assert ops[0].wires == Wires(9)
 
         for i in range(3):
             assert isinstance(ops[1 + i], expected_gates[i])
-            assert ops[1 + i].wires == Wires("a")
+            assert ops[1 + i].wires == Wires(9)
             assert qp.math.allclose(
                 qp.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7
             )
 
         assert isinstance(ops[4], qp.CNOT)
-        assert ops[4].wires == Wires(["b", "a"])
+        assert ops[4].wires == Wires([10, 9])
 
     @pytest.mark.jax
     @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decompositions)
@@ -237,32 +237,32 @@ class TestDecomposeSingleQubitUnitaryTransform:
         assert len(ops) == 5
 
         assert isinstance(ops[0], qp.Hadamard)
-        assert ops[0].wires == Wires("a")
+        assert ops[0].wires == Wires(9)
 
         for i in range(3):
             assert isinstance(ops[1 + i], expected_gates[i])
-            assert ops[1 + i].wires == Wires("a")
+            assert ops[1 + i].wires == Wires(9)
             assert qp.math.allclose(
                 qp.math.unwrap(ops[1 + i].parameters), expected_params[i], atol=1e-7
             )
 
         assert isinstance(ops[4], qp.CNOT)
-        assert ops[4].wires == Wires(["b", "a"])
+        assert ops[4].wires == Wires([10, 9])
 
     @pytest.mark.jax
     @pytest.mark.parametrize("U,expected_gates,expected_params", single_qubit_decompositions)
+    # pylint: disable-next=unused-argument
     def test_unitary_to_rot_jax_jit(self, U, expected_gates, expected_params):
         """Test that the transform works in the JAX interface with JIT."""
-        # pylint: disable=unused-argument
         import jax
 
         U = jax.numpy.array(U, dtype=jax.numpy.complex128)
 
-        dev = qp.device("default.qubit", wires=["a", "b"])
+        dev = qp.device("default.qubit", wires=[9, 10])
 
         def test_qfunc(U):
             qfunc(U)
-            return qp.expval(qp.PauliX("a") @ qp.PauliZ("b"))
+            return qp.expval(qp.PauliX(9) @ qp.PauliZ(10))
 
         original_qnode = qp.QNode(test_qfunc, dev)
         transformed_qnode = qp.QNode(unitary_to_rot(test_qfunc), dev)
@@ -278,11 +278,11 @@ class TestDecomposeSingleQubitUnitaryTransform:
 # A simple circuit; we will test QubitUnitary on matrices constructed using trainable
 # parameters, and RZ/RX are easy to write the matrices for.
 def original_qfunc_for_grad(angles):
-    qp.Hadamard(wires="a")
-    qp.RZ(angles[0], wires="a")
-    qp.RX(angles[1], wires="b")
-    qp.CNOT(wires=["b", "a"])
-    return qp.expval(qp.PauliX(wires="a"))
+    qp.Hadamard(wires=9)
+    qp.RZ(angles[0], wires=9)
+    qp.RX(angles[1], wires=10)
+    qp.CNOT(wires=[10, 9])
+    return qp.expval(qp.PauliX(wires=9))
 
 
 angle_pairs = [[0.3, 0.3], [np.pi, -0.65], [0.0, np.pi / 2], [np.pi / 3, 0.0]]
@@ -309,13 +309,13 @@ class TestQubitUnitaryDifferentiability:
             s = np.sin(x / 2) * 1j
             X_mat = np.array([[c, -s], [-s, c]])
 
-            qp.Hadamard(wires="a")
-            qp.QubitUnitary(Z_mat, wires="a")
-            qp.QubitUnitary(X_mat, wires="b")
-            qp.CNOT(wires=["b", "a"])
-            return qp.expval(qp.PauliX(wires="a"))
+            qp.Hadamard(wires=9)
+            qp.QubitUnitary(Z_mat, wires=9)
+            qp.QubitUnitary(X_mat, wires=10)
+            qp.CNOT(wires=[10, 9])
+            return qp.expval(qp.PauliX(wires=9))
 
-        dev = qp.device("default.qubit", wires=["a", "b"])
+        dev = qp.device("default.qubit", wires=[9, 10])
 
         original_qnode = qp.QNode(original_qfunc_for_grad, dev, diff_method=diff_method)
 
@@ -356,13 +356,13 @@ class TestQubitUnitaryDifferentiability:
 
             X_mat = torch.stack([c, -s, -s, c]).reshape(2, 2)
 
-            qp.Hadamard(wires="a")
-            qp.QubitUnitary(Z_mat, wires="a")
-            qp.QubitUnitary(X_mat, wires="b")
-            qp.CNOT(wires=["b", "a"])
-            return qp.expval(qp.PauliX(wires="a"))
+            qp.Hadamard(wires=9)
+            qp.QubitUnitary(Z_mat, wires=9)
+            qp.QubitUnitary(X_mat, wires=10)
+            qp.CNOT(wires=[10, 9])
+            return qp.expval(qp.PauliX(wires=9))
 
-        dev = qp.device("default.qubit", wires=["a", "b"])
+        dev = qp.device("default.qubit", wires=[9, 10])
 
         original_qnode = qp.QNode(original_qfunc_for_grad, dev, diff_method=diff_method)
         original_input = torch.tensor(rot_angles, dtype=torch.float64, requires_grad=True)
@@ -397,16 +397,16 @@ class TestQubitUnitaryDifferentiability:
             s = jnp.sin(x / 2) * 1j
             X_mat = jnp.array([[c, -s], [-s, c]])
 
-            qp.Hadamard(wires="a")
-            qp.QubitUnitary(Z_mat, wires="a")
-            qp.QubitUnitary(X_mat, wires="b")
-            qp.CNOT(wires=["b", "a"])
-            return qp.expval(qp.PauliX(wires="a"))
+            qp.Hadamard(wires=9)
+            qp.QubitUnitary(Z_mat, wires=9)
+            qp.QubitUnitary(X_mat, wires=10)
+            qp.CNOT(wires=[10, 9])
+            return qp.expval(qp.PauliX(wires=9))
 
         # Setting the dtype to complex64 causes the gradients to be complex...
         angles = jnp.array(rot_angles, dtype=jnp.float64)
 
-        dev = qp.device("default.qubit", wires=["a", "b"])
+        dev = qp.device("default.qubit", wires=[9, 10])
 
         original_qnode = qp.QNode(original_qfunc_for_grad, dev, diff_method=diff_method)
         original_result = original_qnode(angles)

@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 from pennylane.templates.subroutines import SelectTHC, select_thc_wires
 from pennylane.templates.subroutines.select_thc import (
     _angle_batches,
@@ -24,6 +25,8 @@ from pennylane.templates.subroutines.select_thc import (
     _build_qrom_givens_data,
     _cascade_angles,
     _select_half,
+    _SelectTHCBasis,
+    _THCIndexSwaps,
 )
 from pennylane.testing import assert_valid
 from pennylane.typing import AbstractWires
@@ -160,7 +163,7 @@ class TestQROMTable:
         assert _build_qrom_givens_data(np.ones((3, 1)), np.eye(1), 4, True, []) == []
 
     def test_qrom_is_an_xor_load(self):
-        """Test that ``qp.QROM(clean=True)`` maps
+        """Test that ``qp.QROM`` maps
         ``|i>|d>`` to ``|i>|d XOR b_i>`` for *any* target state, not just ``|0>``."""
         table = [[0, 1, 1], [1, 1, 0], [1, 0, 1], [0, 0, 1]]
         ctrl, targ, work = [0, 1], [2, 3, 4], [5, 6, 7]
@@ -169,7 +172,7 @@ class TestQROMTable:
         def circuit(index, data):
             qp.BasisState(index, wires=ctrl)
             qp.BasisState(data, wires=targ)
-            qp.QROM(table, control_wires=ctrl, target_wires=targ, work_wires=work, clean=True)
+            qp.QROM(table, control_wires=ctrl, target_wires=targ, work_wires=work)
             return qp.probs(wires=ctrl + targ + work)
 
         for i, d in ((0, 0), (1, 5), (3, 7)):
@@ -346,6 +349,56 @@ class TestSelectTHCOperator:
 
         assert_valid(op, skip_differentiation=True)
         assert op.wires == qp.wires.Wires(system + index + flags + gradient + work)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("n_half, num_batches", [(1, 1), (2, 1), (4, 2)])
+    def test_basis_and_swap_resources(self, n_half, num_batches):
+        """Test that each captured sandwich preserves its basis, target and declared resources."""
+        sizes = select_thc_wires(3, 2 * n_half, 2, num_batches)
+        wires = qp.registers(sizes)
+        op = qp.SelectTHC(
+            _static_matrix(np.ones((3, n_half))),
+            _static_matrix(np.eye(n_half)),
+            2,
+            **wires,
+            num_batches=num_batches,
+        )
+        rule = qp.list_decomps(qp.SelectTHC)[0]
+        qp.testing.assert_valid_decomp_rule(op, rule, check_matrix=False)
+        tape = qp.testing.decomp_rule_to_tape(op, rule)
+
+        assert len(tape.operations) == 4
+        assert tape.operations[0].compute_op.__class__ is _SelectTHCBasis
+        assert tape.operations[1].compute_op.__class__ is _SelectTHCBasis
+        assert tape.operations[2].target_op.__class__ is _THCIndexSwaps
+        for sandwich in tape.operations[:3]:
+            assert isinstance(sandwich, qp.ops.ChangeOpBasis2)
+            for operand in (sandwich.compute_op, sandwich.target_op):
+                qp.testing.assert_decomposable(operand, check_matrix=False)
+                if type(operand) in (_SelectTHCBasis, _THCIndexSwaps):
+                    assert_valid(operand, skip_differentiation=True)
+                if isinstance(operand, _SelectTHCBasis):
+                    n_angle = len(operand.rotation_data[1][0]) * op.beth if n_half > 1 else 0
+                    assert operand.angle_wires == wires["work_wires"][:n_angle]
+                    assert operand.work_wires == wires["work_wires"][n_angle:]
+                    assert set(operand.angle_wires).issubset(operand.wires)
+                    assert set(operand.work_wires).isdisjoint(operand.wires)
+                    assert set(operand.angle_wires).issubset(sandwich.wires)
+
+    def test_basis_loaded_angle_is_an_operator_wire(self):
+        """Test that the basis keeps its loaded angle as state until the enclosing uncomputation."""
+        basis = _SelectTHCBasis((1, ((0,),), (((1,),),)), [0, 1, 2, 3], [4], [5, 6], [7], [8])
+        assert 7 in basis.wires
+        assert 8 not in basis.wires
+
+        @qp.qnode(qp.device("default.qubit", wires=9))
+        def circuit():
+            qp.apply(basis)
+            return qp.probs(wires=[7]), qp.probs(wires=[8])
+
+        angle_probs, scratch_probs = circuit()
+        assert qp.math.allclose(angle_probs, [0, 1])
+        assert qp.math.allclose(scratch_probs, [1, 0])
 
     def test_abstract_wires_keep_static_data(self):
         """Test that abstract construction stores compilable data as given."""
@@ -664,7 +717,7 @@ class TestSelectTHCInvariants:
         assert np.isclose(np.asarray(circuit())[0], 1.0, atol=1e-8)
 
     def test_extra_work_wires_do_not_change_the_unitary(self):
-        """Test that extra work wires switch QROM to a SelectSwap decomposition."""
+        """Test that extra work wires do not change the unitary."""
         extra = 1
         M, N, beth = 2, 4, 2
         chi = np.random.default_rng(6).standard_normal((M, N // 2))
@@ -773,18 +826,18 @@ class TestControlledSelectTHC:
             qp.ctrl(SelectTHC, control=control)(*args)
         tape = qp.tape.QuantumScript.from_queue(q)
 
-        with qp.decomposition.toggle_graph_ctx(True):
-            # one ChangeOpBasis per V sandwich plus one for the index swaps, and the control
-            # lands on the outside of each of them
-            # pylint: disable-next=protected-access
-            tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][0]
-            names = [op.name for op in tape.operations]
-            assert sum(name.startswith("C(ChangeOpBasis") for name in names) == 3
+        # one ChangeOpBasis per V sandwich plus one for the index swaps, and the control
+        # lands on the outside of each of them
+        gate_set = ROTATIONS_PLUS_CNOT | {qp.QROM, qp.SemiAdder}
+        # pylint: disable-next=protected-access
+        tape = qp.transforms._tape_decompose(tape, gate_set=gate_set, max_expansion=1)[0][0]
+        names = [op.name for op in tape.operations]
+        assert sum(name.startswith("C(ChangeOpBasis") for name in names) == 3
 
-            # pylint: disable-next=protected-access
-            tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][0]
-            # pylint: disable-next=protected-access
-            tape = qp.transforms._tape_decompose(tape, max_expansion=1)[0][0]
+        # pylint: disable-next=protected-access
+        tape = qp.transforms._tape_decompose(tape, gate_set=gate_set, max_expansion=1)[0][0]
+        # pylint: disable-next=protected-access
+        tape = qp.transforms._tape_decompose(tape, gate_set=gate_set, max_expansion=1)[0][0]
 
         loads = [op for op in tape.operations if "QROM" in op.name or "SemiAdder" in op.name]
         assert len(loads) == 12

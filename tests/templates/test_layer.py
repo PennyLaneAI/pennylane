@@ -16,7 +16,6 @@ Unit tests for the :func:`pennylane.template.layer` function.
 Integration tests should be placed into ``test_templates.py``.
 """
 
-# pylint: disable=protected-access,cell-var-from-loop,too-many-arguments
 import pytest
 
 import pennylane as qp
@@ -151,10 +150,10 @@ class TestLayer:
         """Tests that the layering function is yielding the correct sequence of gates"""
 
         with pytest.warns(PennyLaneDeprecationWarning, match="layer is deprecated"):
-            with qp.tape.OperationRecorder() as rec:
+            with qp.queuing.AnnotatedQueue() as queue:
                 layer(unitary, depth, *arguments, **keywords)
 
-        for i, gate in enumerate(rec.operations):
+        for i, gate in enumerate(queue.queue):
             prep = [gate.name, gate.parameters, gate.wires]
             target = [gates[i].name, gates[i].parameters, gates[i].wires]
 

@@ -27,6 +27,7 @@ from collections import defaultdict
 from typing import Any
 
 from .expression import Expression
+from .extension import _RESOURCE_EXTENSIONS
 from .resource import PBCSpecsResources, SpecsResources, num_to_letters
 
 # Tolerance (in number of decimal digits) for floating point precision issues
@@ -128,7 +129,10 @@ def _mlir_resources_to_specs_resources(
     quantum_operations = defaultdict(int)
     for gate_size, ops in resources["quantum_operations"].items():
         for gate_name, count in ops.items():
-            if gate_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
+            if gate_name == "PauliMeasure":
+                # Catalyst reports PauliMeasure captured as a generic measurement by its op name
+                gate_name = f"PPM-w{gate_size}"
+            elif gate_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
                 # Separate out PPMs and PPRs by weight
                 gate_name += f"-w{gate_size}"
 
@@ -206,25 +210,14 @@ def _handle_extended_fields(
     unknown_fields = []
 
     for field_name in called_fn_resources.extra:
-        match field_name:
-            case "pbc_depth":
-                pbc_depth = extended_fields.get("pbc_depth", None)
-                if pbc_depth is None:
-                    extended_fields["pbc_depth"] = {
-                        "any_commuting_depth": call_count
-                        * called_fn_resources.extra["pbc_depth"]["any_commuting_depth"],
-                        "qubit_disjoint_depth": call_count
-                        * called_fn_resources.extra["pbc_depth"]["qubit_disjoint_depth"],
-                    }
-                else:
-                    pbc_depth["any_commuting_depth"] += (
-                        call_count * called_fn_resources.extra["pbc_depth"]["any_commuting_depth"]
-                    )
-                    pbc_depth["qubit_disjoint_depth"] += (
-                        call_count * called_fn_resources.extra["pbc_depth"]["qubit_disjoint_depth"]
-                    )
-            case _:
-                unknown_fields.append(field_name)
+        if handler := _RESOURCE_EXTENSIONS.get(field_name):
+            extended_fields[field_name] = handler.aggregate(
+                extended_fields.get(field_name, {}),
+                called_fn_resources.extra[field_name],
+                call_count,
+            )
+        else:
+            unknown_fields.append(field_name)
 
     if unknown_fields:
         warnings.warn(
@@ -264,11 +257,7 @@ def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
         kwargs["any_commuting_depth"] = _safe_ceil(pbc_depth.pop("any_commuting_depth"))
         kwargs["qubit_disjoint_depth"] = _safe_ceil(pbc_depth.pop("qubit_disjoint_depth"))
         # Pylint gets confused by the dynamic updates to kwargs here
-        # pylint: disable=missing-kwoa
-        return PBCSpecsResources(
-            **kwargs,
-            extra=extra,
-        )
+        return PBCSpecsResources(**kwargs, extra=extra)
     return SpecsResources(**kwargs, extra=extra)
 
 

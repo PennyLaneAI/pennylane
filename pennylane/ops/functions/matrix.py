@@ -21,13 +21,11 @@ from functools import partial
 import pennylane as qp
 from pennylane import transform
 from pennylane.core.operator import Operator
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import MatrixUndefinedError, TransformError
-from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.typing import PostprocessingFn, TensorLike
-
-# pylint: disable=too-many-branches
 
 
 def catalyst_qjit(qnode):
@@ -35,7 +33,7 @@ def catalyst_qjit(qnode):
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
-def matrix(
+def matrix(  # pylint: disable=too-many-branches
     op: Operator | PauliWord | PauliSentence | Sequence[Operator], wire_order=None
 ) -> TensorLike:
     r"""The dense matrix representation of an operation or quantum circuit.
@@ -45,7 +43,7 @@ def matrix(
 
     Args:
         op (Operator or QNode or QuantumTape or Callable or PauliWord or PauliSentence): A quantum operator or quantum circuit.
-        wire_order (Sequence[Any], optional): Order of the wires in the quantum circuit.
+        wire_order (Sequence[int], optional): Order of the wires in the quantum circuit.
             The default wire order depends on the type of ``op``:
 
             - If ``op`` is a :class:`~.QNode`, then the wire order is determined by the
@@ -127,7 +125,7 @@ def matrix(
              0.        +0.j        , -0.92387953+0.j        ]])
 
         You can also get the unitary matrix for operations on a subspace of a larger Hilbert space. For
-        example, with the same function ``circuit`` and ``wire_order=["a", 0, "b", 1]`` you obtain the
+        example, with the same function ``circuit`` and ``wire_order=[2, 0, 3, 1]`` you obtain the
         :math:`16\times 16` matrix for the operation :math:`I\otimes Z\otimes I\otimes  R_X(\theta)`.
 
         This unitary matrix can also be used in differentiable calculations. For example, consider the

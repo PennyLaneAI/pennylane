@@ -22,7 +22,11 @@ from pennylane import math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_resources,
+)
 from pennylane.numeric_hamiltonians import CDFHamiltonian
 from pennylane.ops import CNOT, CRZ, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math import adjoint, ctrl
@@ -34,8 +38,6 @@ from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
-
-# pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
 
 
 class TrotterCDF(Operator2):
@@ -103,10 +105,10 @@ class TrotterCDF(Operator2):
             nuc_constant = 0.5,
         )
 
-        gate_set = {"BasisRotation", "RZ", "IsingZZ", "GlobalPhase", "ForLoop"}
+        gate_set = {"BasisRotation", "RZ", "IsingZZ", "GlobalPhase"}
 
         @qp.qjit
-        @qp.transforms._tape_decompose(gate_set=gate_set)
+        @qp.decompose(gate_set=gate_set)
         @qp.qnode(qp.device("lightning.qubit", wires=2 * N))
         def trotter_circuit():
             qp.TrotterCDF(
@@ -134,7 +136,7 @@ class TrotterCDF(Operator2):
                 ``num_trotter_steps``
             :example: the Hamiltonian above, :math:`N=2`, :math:`L=1`, :math:`n=1`. Note that all expressions below assume :math:`n \gt 0`
 
-            .. decomposition-rule:: _trotter_cdf_decomposition
+            .. decomposition-rule:: double_factorized_steps
                 :image: /_static/decomposition_thumbnails/trotter_cdf_second_order.svg
                 :where: :math:`B = (2L-1)n + 1` two-body blocks and :math:`w` work wires. The
                     counts are upper bounds, as basis rotations that are the identity are
@@ -398,7 +400,7 @@ class TrotterCDF(Operator2):
         "double_phase",
     )
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         evolution_time: int | AbstractArray,
         num_trotter_steps: float | AbstractArray,
@@ -483,7 +485,7 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
                 IsingZZ(_angle(wire_idx0, wire_idx1), [wires[wire_idx0], wires[wire_idx1]])
 
             CNOT([control_wires[0], wires[wire_idx0]])
-            _zz_rotations()
+            _zz_rotations()  # pylint: disable=no-value-for-parameter
             CNOT([control_wires[0], wires[wire_idx0]])
         else:
 
@@ -496,7 +498,7 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
                 else:
                     ctrl(IsingZZ(angle, zz_wires), control=control_wires)
 
-            _zz_rotations()
+            _zz_rotations()  # pylint: disable=no-value-for-parameter
 
     for wire_idx0 in range(2 * num_cas - 1):
         zz_rotations(wire_idx0)
@@ -518,10 +520,10 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
         angle = -2.0 * Z_one_body[wire_idx // 2, wire_idx // 2] * first_order_time_step
         _emit_one_body_rz(angle, wires[wire_idx], control_wires, double_phase)
 
-    z_rotations()
+    z_rotations()  # pylint: disable=no-value-for-parameter
 
 
-def _apply_two_body_diagonal_with_work_wires(
+def _apply_two_body_diagonal_with_work_wires(  # pylint: disable=too-many-arguments
     Z, wires, first_order_time_step, control_wires, double_phase, work_wires
 ):
     """Combine each orbital pair's four ZZ rotations using clean work wires.
@@ -532,6 +534,7 @@ def _apply_two_body_diagonal_with_work_wires(
     across the inner loop. The work wires and original system basis are restored
     at the end of the layer.
     """
+    # pylint: disable=no-value-for-parameter
     assert len(control_wires) <= 1, "The work-wire decomposition supports at most one control wire."
     num_orbitals = Z.shape[0]
     standard_control = len(control_wires) > 0 and not double_phase
@@ -702,17 +705,27 @@ def _cdf_resource_counts(
     return {op: count for op, count in resources.items() if count}
 
 
-def _trotter_cdf_resources(
-    evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, work_wires=()
+def _trotter_cdf_standard_resources(  # pylint: disable=too-many-arguments,unused-argument
+    evolution_time,
+    num_trotter_steps,
+    hamiltonian,
+    wires,
+    double_phase,
+    work_wires=(),
 ):
     return _cdf_resource_counts(
         num_trotter_steps, hamiltonian, has_control=False, num_work_wires=len(work_wires)
     )
 
 
-@register_resources(_trotter_cdf_resources, exact=False)
-def _trotter_cdf_decomposition(
-    evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, work_wires=()
+@register_resources(_trotter_cdf_standard_resources, exact=False, name="double_factorized_steps")
+def _trotter_cdf_standard(  # pylint: disable=too-many-arguments,unused-argument
+    evolution_time,
+    num_trotter_steps,
+    hamiltonian,
+    wires,
+    double_phase,
+    work_wires=(),
 ):
     # ``double_phase`` only affects the controlled decomposition; the base operator is
     # always the plain (uncontrolled) e^{-iHt} circuit.
@@ -729,11 +742,15 @@ def _trotter_cdf_decomposition(
         GlobalPhase(phi)
 
 
-add_decomps(TrotterCDF, _trotter_cdf_decomposition)
+add_decomps(TrotterCDF, _trotter_cdf_standard)
 
 
-def _controlled_trotter_cdf_resource(
-    base, control_wires, control_values, work_wires, work_wire_type
+def _controlled_trotter_cdf_standard_resources(  # pylint: disable=unused-argument
+    base,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,
 ):
     return _cdf_resource_counts(
         base.arguments["num_trotter_steps"],
@@ -745,8 +762,18 @@ def _controlled_trotter_cdf_resource(
 
 
 @register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
-@register_resources(_controlled_trotter_cdf_resource, exact=False)
-def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+@register_resources(
+    _controlled_trotter_cdf_standard_resources,
+    exact=False,
+    name="controlled_double_factorized_steps",
+)
+def _controlled_trotter_cdf_standard(
+    base,
+    control_wires,
+    control_values,  # pylint: disable=unused-argument
+    work_wires,  # pylint: disable=unused-argument
+    work_wire_type,  # pylint: disable=unused-argument
+):
     evolution_time = base.arguments["evolution_time"]
     num_trotter_steps = base.arguments["num_trotter_steps"]
     hamiltonian = base.arguments["hamiltonian"]
@@ -805,10 +832,9 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
         *args, **kwargs
     ).gate_counts,
     exact=False,
+    name="multi_control",
 )
-def _multi_controlled_trotter_cdf_decomp(
-    base, control_wires, control_values, work_wires, work_wire_type
-):
+def _trotter_cdf_multi_control(base, control_wires, control_values, work_wires, work_wire_type):
     """Reuse the single-control CDF decomposition after combining multiple controls."""
     validate_no_wire_overlaps(
         {
@@ -822,6 +848,6 @@ def _multi_controlled_trotter_cdf_decomp(
 
 add_decomps(
     "C(TrotterCDF)",
-    flip_zero_control2(_controlled_trotter_cdf_decomp),
-    _multi_controlled_trotter_cdf_decomp,
+    flip_zero_control2(_controlled_trotter_cdf_standard, name="controlled_double_factorized_steps"),
+    _trotter_cdf_multi_control,
 )

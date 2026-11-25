@@ -701,7 +701,6 @@ class TestIntegrationMultipleReturns:
         (qp.PauliZ(1), None, qp.PauliZ(0), None),
     ]
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, device):
@@ -730,10 +729,10 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[1], (np.ndarray, np.float64))
         assert res[1].shape == (2 ** len(wires2),)
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
+    # pylint: disable-next=too-many-arguments
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
         dev = qp.device(device, wires=2)
@@ -850,7 +849,6 @@ class TestIntegrationMultipleReturns:
 
         def circuit(x):
             qubit_ansatz(x)
-            # pylint:disable=unexpected-keyword-arg
             return [qp.expval(qp.PauliZ(wires=i)) for i in range(0, wires)]
 
         qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shot_vector)
@@ -969,7 +967,6 @@ class TestIntegrationMultipleReturnsTorch:
         (qp.PauliZ(1), None, qp.PauliZ(0), None),
     ]
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, device):
@@ -1001,10 +998,10 @@ class TestIntegrationMultipleReturnsTorch:
         assert isinstance(res[1], torch.Tensor)
         assert res[1].shape == (2 ** len(wires2),)
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
+    # pylint: disable-next=too-many-arguments
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
         import torch
@@ -1225,7 +1222,6 @@ class TestIntegrationMultipleReturnJax:
         (qp.PauliZ(1), None, qp.PauliZ(0), None),
     ]
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, device):
@@ -1257,10 +1253,10 @@ class TestIntegrationMultipleReturnJax:
         assert isinstance(res[1], jax.numpy.ndarray)
         assert res[1].shape == (2 ** len(wires2),)
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
+    # pylint: disable-next=too-many-arguments
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
         import jax
@@ -1463,9 +1459,8 @@ class TestIntegrationShotVectors:
         assert len(res) == all_shots
         assert all(r.shape == () for r in res)
 
-    # pylint: disable=unused-argument
     @pytest.mark.parametrize("op,wires", probs_data)
-    def test_probs(self, shot_vector, op, wires, device):
+    def test_probs(self, shot_vector, op, wires, device):  # pylint: disable=unused-argument
         """Test a single probability measurement."""
         dev = qp.device("default.qubit", wires=2)
         shot_vector = qp.measurements.Shots(shot_vector)
@@ -1565,9 +1560,9 @@ class TestIntegrationSameMeasurementShotVector:
         (qp.Hermitian(herm, wires=[3, 2]), None),
     ]
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("op1,wires1", probs_data)
     @pytest.mark.parametrize("op2,wires2", list(reversed(probs_data2)))
+    # pylint: disable-next=too-many-arguments
     def test_probs(self, shot_vector, op1, wires1, op2, wires2, device):
         """Test multiple probability measurements."""
         dev = qp.device(device, wires=4)

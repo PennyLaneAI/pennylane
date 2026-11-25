@@ -15,7 +15,6 @@
 Unit tests for the qubit matrix-based operations.
 """
 
-# pylint: disable=import-outside-toplevel
 from functools import reduce
 
 import numpy as np
@@ -235,7 +234,7 @@ class TestQubitUnitary:
             [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
         )
 
-        op = qp.QubitUnitary(U, wires="a")
+        op = qp.QubitUnitary(U, wires=10)
         [pow_op] = op.pow(0.123)
         expected = fractional_matrix_power(U, 0.123)
 
@@ -264,7 +263,7 @@ class TestQubitUnitary:
             ]
         )
 
-        op = qp.QubitUnitary(U, wires="a")
+        op = qp.QubitUnitary(U, wires=10)
 
         with pytest.raises(qp.operation.PowUndefinedError):
             op.pow(0.123)
@@ -277,7 +276,7 @@ class TestQubitUnitary:
             [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
         )
 
-        op = qp.QubitUnitary(U, wires="a")
+        op = qp.QubitUnitary(U, wires=10)
         new_ops = op.pow(n)
 
         assert len(new_ops) == 1
@@ -299,7 +298,7 @@ class TestQubitUnitary:
             ]
         )
 
-        op = qp.QubitUnitary(U, wires="a")
+        op = qp.QubitUnitary(U, wires=10)
         new_ops = op.pow(n)
 
         assert len(new_ops) == 1
@@ -655,12 +654,12 @@ class TestQubitUnitaryDecompositions:
             assert not rule.is_applicable(Complex[4, 4], Wire[2])
             assert not rule.is_applicable(Complex[8, 8], Wire[3])
 
-        rule = rules["two_qubit_decomp_rule"]
+        rule = rules["two_qubit"]
         assert not rule.is_applicable(Complex[2, 2], Wire[1])
         assert rule.is_applicable(Complex[4, 4], Wire[2])
         assert not rule.is_applicable(Complex[8, 8], Wire[3])
 
-        rule = rules["multi_qubit_decomp_rule"]
+        rule = rules["multi_qubit"]
         assert not rule.is_applicable(Complex[2, 2], Wire[1])
         assert not rule.is_applicable(Complex[4, 4], Wire[2])
         assert rule.is_applicable(Complex[8, 8], Wire[3])
@@ -1055,7 +1054,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("diag", ([1.0, -1.0], np.array([1.0, -1.0])))
     def test_pow(self, n, diag):
         """Test pow method returns expected results."""
-        op = qp.DiagonalQubitUnitary(diag, wires="b")
+        op = qp.DiagonalQubitUnitary(diag, wires=11)
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
 
@@ -1069,7 +1068,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_pow_broadcasted(self, n, diag):
         """Test pow method returns expected results for broadcasted diagonals."""
-        op = qp.DiagonalQubitUnitary(diag, wires="b")
+        op = qp.DiagonalQubitUnitary(diag, wires=11)
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
 
@@ -1193,7 +1192,7 @@ class TestUnitaryLabels:
         assert len(cache["matrices"]) == 3
 
 
-class TestBlockEncode:  # pylint: disable=too-many-public-methods
+class TestBlockEncode:
     """Test the BlockEncode operation."""
 
     @pytest.mark.parametrize(
@@ -1250,20 +1249,20 @@ class TestBlockEncode:  # pylint: disable=too-many-public-methods
             (pnp.array([[1]]), 1, {"norm": 1, "subspace": (1, 1, 2)}),
             ([[1, 0], [0, 1]], [0, 1], {"norm": 1.0, "subspace": (2, 2, 4)}),
             (pnp.array([[1, 0], [0, 1]]), range(2), {"norm": 1.0, "subspace": (2, 2, 4)}),
-            (pnp.identity(3), ["a", "b", "c"], {"norm": 1.0, "subspace": (3, 3, 8)}),
+            (pnp.identity(3), [10, 11, 13], {"norm": 1.0, "subspace": (3, 3, 8)}),
         ],
     )
     def test_accepts_various_types(self, input_matrix, wires, expected_hyperparameters):
         """Test that BlockEncode outputs expected attributes for various input matrix types."""
         op = qp.BlockEncode(input_matrix, wires)
         assert np.allclose(op.parameters, input_matrix)
-        # pylint: disable=protected-access
-        assert op._norm == expected_hyperparameters["norm"]
+        assert op._norm == expected_hyperparameters["norm"]  # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         assert op._subspace == expected_hyperparameters["subspace"]
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),
-        [(1, 1), (1, 2), (1, [1]), (1, range(2)), (np.identity(2), ["a", "b"])],
+        [(1, 1), (1, 2), (1, [1]), (1, range(2)), (np.identity(2), [10, 11])],
     )
     def test_varied_wires(self, input_matrix, wires):
         """Test that BlockEncode wires are stored correctly for various wire input types."""
@@ -1606,8 +1605,7 @@ class TestBlockEncode:  # pylint: disable=too-many-public-methods
         op = qp.BlockEncode(A, wires)
         assert isinstance(op.A, AbstractArray)
         assert op.A.shape == expected_shape
-        # pylint: disable=protected-access
-        assert op._subspace == expected_subspace
+        assert op._subspace == expected_subspace  # pylint: disable=protected-access
         assert not op.has_sparse_matrix
 
     def test_abstractify(self):
@@ -1615,10 +1613,9 @@ class TestBlockEncode:  # pylint: disable=too-many-public-methods
         op = qp.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1])
         abstract_op = abstractify(op)
         assert isinstance(abstract_op.A, AbstractArray)
-        # pylint: disable=protected-access
         assert abstract_op.A.shape == (2, 2)
         assert abstract_op.wires == AbstractWires(2)
-        assert abstract_op._subspace == (2, 2, 4)
+        assert abstract_op._subspace == (2, 2, 4)  # pylint: disable=protected-access
 
     @pytest.mark.parametrize("dtype", [float, complex])
     def test_abstract_array_adjoint(self, dtype):
@@ -1626,9 +1623,8 @@ class TestBlockEncode:  # pylint: disable=too-many-public-methods
         op = qp.BlockEncode(AbstractArray((2, 3), dtype), wires=range(3))
         adj = op.adjoint()
         assert isinstance(adj.A, AbstractArray)
-        # pylint: disable=protected-access
         assert adj.A.shape == (3, 2)
-        assert adj._subspace == (3, 2, 8)
+        assert adj._subspace == (3, 2, 8)  # pylint: disable=protected-access
 
     def test_abstract_array_invalid_hilbert_space(self):
         """Test that a known abstract shape still validates the Hilbert space size."""

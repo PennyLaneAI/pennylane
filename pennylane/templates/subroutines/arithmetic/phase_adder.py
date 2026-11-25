@@ -24,6 +24,7 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.subcircuit import subcircuit
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import AbstractArray, Float, Int, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -136,7 +137,6 @@ class PhaseAdder(Operator2):
     wire_argnames = ("x_wires", "work_wire")
     arg_specs = {"k": Int, "x_wires": Wire[-1], "work_wire": Wire[-1]}
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = ()):
 
         work_wire = Wires(() if work_wire is None else work_wire)
@@ -164,23 +164,37 @@ class PhaseAdder(Operator2):
             self.arguments["k"] = self.k % mod
 
 
+def _phase_adder_basis_resources(wires, reverse, **_):
+    qft = QFT(Wire[len(wires)])
+    return {ops.PhaseShift: len(wires), ops.X: 1, qft if reverse else ops.adjoint(qft): 1}
+
+
+@subcircuit(
+    dynamic_argnames=("k",),
+    static_argnames=("reverse",),
+    arg_specs={"k": Int, "wires": Wire[-1]},
+)
+@register_resources(_phase_adder_basis_resources)
+def _PhaseAdderBasis(k: int, wires: WiresLike, reverse: bool):
+    if reverse:
+        ops.X(wires[0])
+        QFT(wires=wires)
+        _add_k_fourier(k, wires)
+    else:
+        _add_k_fourier(-k, wires)
+        ops.adjoint(QFT(wires=wires))
+        ops.X(wires[0])
+
+
 # pylint: disable-next=unused-argument
-def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
+def _phase_adder_standard_resources(k, x_wires, mod, work_wire) -> dict:
     num_x_wires = len(x_wires)
 
     if mod == 2**num_x_wires:
         return {ops.PhaseShift: num_x_wires}
 
-    basis_op1 = ops.prod(
-        ops.X(Wire[1]),
-        ops.adjoint(QFT(Wire[num_x_wires])),
-        *(ops.PhaseShift(Float, Wire[1]) for _ in range(num_x_wires)),
-    )
-    basis_op2 = ops.prod(
-        *(ops.PhaseShift(Float, Wire[1]) for _ in range(num_x_wires)),
-        QFT(Wire[num_x_wires]),
-        ops.X(Wire[1]),
-    )
+    basis_op1 = _PhaseAdderBasis(Int, wires=Wire[num_x_wires], reverse=False)
+    basis_op2 = _PhaseAdderBasis(Int, wires=Wire[num_x_wires], reverse=True)
 
     resources = {
         ops.PhaseShift: 2 * num_x_wires,
@@ -199,9 +213,8 @@ def _phase_adder_decomposition_resources(k, x_wires, mod, work_wire) -> dict:
     return resources
 
 
-# pylint: disable=no-value-for-parameter
-@register_resources(_phase_adder_decomposition_resources)
-def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire):
+@register_resources(_phase_adder_standard_resources, name="fourier_phase_shifts")
+def _phase_adder_standard(k, x_wires: WiresLike, mod, work_wire):
 
     n_wires = len(x_wires)
 
@@ -219,17 +232,11 @@ def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire):
     for op in _add_k_fourier(mod, x_wires):
         ops.ctrl(op, control=work_wire)
 
-    def compute():
-        _add_k_fourier(-k, x_wires)
-        ops.adjoint(QFT(wires=x_wires))
-        ops.X(aux_k)
-
-    def uncompute():
-        ops.X(aux_k)
-        QFT(wires=x_wires)
-        _add_k_fourier(k, x_wires)
-
-    ops.change_op_basis(compute, ops.CNOT(wires=[aux_k, work_wire[0]]), uncompute)
+    ops.change_op_basis(
+        _PhaseAdderBasis(k, wires=x_wires, reverse=False),
+        ops.CNOT(wires=[aux_k, work_wire[0]]),
+        _PhaseAdderBasis(k, wires=x_wires, reverse=True),
+    )
 
 
-add_decomps(PhaseAdder, _phase_adder_decomposition)
+add_decomps(PhaseAdder, _phase_adder_standard)

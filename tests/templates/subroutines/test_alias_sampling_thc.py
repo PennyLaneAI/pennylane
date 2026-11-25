@@ -62,7 +62,7 @@ def _static_coeffs(zeta, t_ell):
     )
 
 
-def _reconstruct_distribution(M, N, zeta, t_ell, aleph):  # pylint: disable=too-many-arguments
+def _reconstruct_distribution(M, N, zeta, t_ell, aleph):
     """Exact distribution over |mu>|nu> prepared by ``AliasSamplingTHC``.
 
     This is the THC analogue of ``_reconstruct_amplitudes`` in
@@ -339,7 +339,6 @@ class TestAliasSamplingTHC:
         expected = _reconstruct_distribution(M, N, zeta, t_ell, aleph)
         assert np.allclose(probs, expected)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(("M", "N", "aleph"), _INSTANCES)
     def test_marginal_matches_reconstruction(self, M, N, aleph, seed):
         """Test that the prepared distribution matches the classical alias reconstruction."""
@@ -373,8 +372,7 @@ class TestAliasSamplingTHC:
         zeta, t_ell = _static_coeffs(np.ones((M, M)), np.ones(N // 2))
 
         op = qp.AliasSamplingTHC(M, N, zeta, t_ell, mu_wires, nu_wires, 2 * n, work_wires, aleph)
-        with qp.decomposition.toggle_graph_ctx(True):
-            qroms = [g for g in op.decomposition() if isinstance(g, qp.QROM)]
+        qroms = [g for g in op.decomposition() if isinstance(g, qp.QROMLoad)]
         assert len(qroms) == 1
 
         d = N // 2 + M * (M + 1) // 2

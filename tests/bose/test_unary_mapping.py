@@ -228,7 +228,7 @@ class TestBoseWordMapping:
         qubit_op = unary_mapping(bosonic_op, n_states=n_states, ps=False)
 
         expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
-        expected_op = expected_op.operation(wires)
+        expected_op = qp.pauli.to_operator(expected_op, wires)
 
         qp.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
@@ -479,18 +479,18 @@ def test_return_unary_mapping_ps(bose_op):
         ),
         (
             BoseSentence({BoseWord({(0, 0): "-"}): 1.0, BoseWord({(0, 1): "+"}): 1.0}),
-            {0: "a", 1: "b", 2: "c", 3: "d"},
+            {0: 8, 1: 9, 2: 10, 3: 11},
             (
                 [0.25, 0.25j, -0.25j, (0.25 + 0j), 0.25, -0.25j, 0.25j, (0.25 + 0j)],
                 [
-                    X("a") @ X("b"),
-                    X("a") @ Y("b"),
-                    Y("a") @ X("b"),
-                    Y("a") @ Y("b"),
-                    X("c") @ X("d"),
-                    X("c") @ Y("d"),
-                    Y("c") @ X("d"),
-                    Y("c") @ Y("d"),
+                    X(8) @ X(9),
+                    X(8) @ Y(9),
+                    Y(8) @ X(9),
+                    Y(8) @ Y(9),
+                    X(10) @ X(11),
+                    X(10) @ Y(11),
+                    Y(10) @ X(11),
+                    Y(10) @ Y(11),
                 ],
             ),
         ),

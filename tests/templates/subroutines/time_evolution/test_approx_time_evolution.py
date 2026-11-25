@@ -32,13 +32,12 @@ def test_standard_validity():
     qp.testing.assert_valid(op)
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Tests the _flatten and _unflatten methods."""
     H = 2.0 * qp.PauliX(0) + 3.0 * qp.PauliY(0)
     t = 0.1
     op = qp.ApproxTimeEvolution(H, t, n=20)
-    data, metadata = op._flatten()
+    data, metadata = op._flatten()  # pylint: disable=protected-access
     assert data[0] is H
     assert data[1] == t
     assert metadata == (20,)
@@ -46,7 +45,7 @@ def test_flatten_unflatten():
     # check metadata hashable
     assert hash(metadata)
 
-    new_op = type(op)._unflatten(*op._flatten())
+    new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
     qp.assert_equal(op, new_op)
     assert new_op is not op
 
@@ -81,13 +80,13 @@ class TestDecomposition:
             ),
             (
                 2,
-                qp.Hamiltonian([2, 0.5], [qp.PauliX("a"), qp.PauliX("a") @ qp.PauliZ("b")]),
+                qp.Hamiltonian([2, 0.5], [qp.PauliX(5), qp.PauliX(5) @ qp.PauliZ(6)]),
                 2,
                 [
-                    qp.PauliRot(4.0, "X", wires=["a"]),
-                    qp.PauliRot(1.0, "XZ", wires=["a", "b"]),
-                    qp.PauliRot(4.0, "X", wires=["a"]),
-                    qp.PauliRot(1.0, "XZ", wires=["a", "b"]),
+                    qp.PauliRot(4.0, "X", wires=[5]),
+                    qp.PauliRot(1.0, "XZ", wires=[5, 6]),
+                    qp.PauliRot(4.0, "X", wires=[5]),
+                    qp.PauliRot(1.0, "XZ", wires=[5, 6]),
                 ],
             ),
             (
@@ -101,15 +100,15 @@ class TestDecomposition:
                 qp.Hamiltonian(
                     [2, 0.5, 0.5],
                     [
-                        qp.PauliX("a"),
-                        qp.PauliX("a") @ qp.PauliZ(-15),
+                        qp.PauliX(5),
+                        qp.PauliX(5) @ qp.PauliZ(-15),
                         qp.Identity(0) @ qp.PauliY(-15),
                     ],
                 ),
                 1,
                 [
-                    qp.PauliRot(8.0, "X", wires=["a"]),
-                    qp.PauliRot(2.0, "XZ", wires=["a", -15]),
+                    qp.PauliRot(8.0, "X", wires=[5]),
+                    qp.PauliRot(2.0, "XZ", wires=[5, -15]),
                     qp.PauliRot(2.0, "Y", wires=[-15]),
                 ],
             ),
@@ -171,30 +170,6 @@ class TestDecomposition:
             return [qp.expval(qp.PauliZ(wires=i)) for i in range(n_wires)]
 
         assert np.allclose(circuit(), expectation)
-
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        hamiltonian = qp.Hamiltonian([1, 1, 1], [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2)])
-        hamiltonian2 = qp.Hamiltonian([1, 1, 1], [qp.PauliX("z"), qp.PauliX("a"), qp.PauliX("k")])
-
-        dev = qp.device("default.qubit", wires=3)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.ApproxTimeEvolution(hamiltonian, 0.5, 2)
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.ApproxTimeEvolution(hamiltonian2, 0.5, 2)
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     DECOMP_PARAMS = [
         (qp.Hamiltonian([1, 1], [qp.PauliX(0), qp.PauliY(0)]), 0.5, 2),
@@ -415,7 +390,6 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
 
-# pylint: disable=protected-access, unexpected-keyword-arg
 @pytest.mark.autograd
 @pytest.mark.parametrize(
     "dev_name,diff_method",

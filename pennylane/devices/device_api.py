@@ -53,7 +53,6 @@ from .preprocess import (
 from .tracker import Tracker
 
 
-# pylint: disable=unused-argument, no-self-use
 class Device(abc.ABC):
     """A device driver that can control one or more backends. A backend can be either a physical
     Quantum Processing Unit or a virtual one such as a simulator.
@@ -109,7 +108,7 @@ class Device(abc.ABC):
         validation or provide clearer error messages.
 
         >>> import pennylane as qp
-        >>> op = qp.Permute(["c", 3,"a",2,0], wires=[3,2,"a",0,"c"])
+        >>> op = qp.Permute([4, 3, 1, 2, 0], wires=[3, 2, 1, 0, 4])
         >>> circuit = qp.tape.QuantumScript([op], [qp.state()])
         >>> from pennylane.devices import DefaultQubit
         >>> dev = DefaultQubit()
@@ -625,7 +624,7 @@ class Device(abc.ABC):
         """
         raise NotImplementedError
 
-    def supports_derivatives(
+    def supports_derivatives(  # pylint: disable=unused-argument
         self,
         execution_config: ExecutionConfig | None = None,
         circuit: QuantumScript | None = None,
@@ -837,7 +836,7 @@ class Device(abc.ABC):
             circuits, tangents, execution_config
         )
 
-    def supports_jvp(
+    def supports_jvp(  # pylint: disable=unused-argument
         self,
         execution_config: ExecutionConfig | None = None,
         circuit: QuantumScript | None = None,
@@ -919,7 +918,7 @@ class Device(abc.ABC):
             circuits, cotangents, execution_config
         )
 
-    def supports_vjp(
+    def supports_vjp(  # pylint: disable=unused-argument
         self,
         execution_config: ExecutionConfig | None = None,
         circuit: QuantumScript | None = None,

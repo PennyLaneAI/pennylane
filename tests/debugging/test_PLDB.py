@@ -24,7 +24,6 @@ import pennylane as qp
 from pennylane.debugging import PLDB, pldb_device_manager
 
 
-# pylint: disable=protected-access
 class TestPLDB:
     """Test the interactive debugging integration"""
 
@@ -173,7 +172,7 @@ class TestPLDB:
     def test_execute(self, dev, tape, expected_result):
         """Test that the _execute method works as expected."""
         PLDB.add_device(dev)
-        executed_results = PLDB._execute((tape,))
+        executed_results = PLDB._execute((tape,))  # pylint: disable=protected-access
         assert np.allclose(expected_result, executed_results)
         PLDB.reset_active_dev()
 
@@ -203,7 +202,7 @@ def test_measure(mock_method, measurement_process):
     with qp.queuing.AnnotatedQueue() as queue:
         ops = [qp.X(0), qp.Y(1), qp.Z(0)] + [qp.Hadamard(i) for i in range(3)]
         measurements = [qp.expval(qp.X(2)), qp.state(), qp.probs(), qp.var(qp.Z(3))]
-        qp.debugging.debugger._measure(measurement_process)
+        qp.debugging.debugger._measure(measurement_process)  # pylint: disable=protected-access
 
     executed_tape = qp.tape.QuantumScript.from_queue(queue)
     expected_tape = qp.tape.QuantumScript(ops, measurements)

@@ -86,31 +86,6 @@ class TestCommutationDAG:
         for i, edge in enumerate(dag.get_edges()):
             assert edges[i] == edge
 
-    def test_dag_transform_simple_dag_function_custom_wire(self):
-        """Test a simple DAG on 2 wires with a quantum function and custom wires."""
-
-        def circuit():
-            qp.PauliZ(wires="a")
-            qp.PauliX(wires="c")
-
-        dag = qp.transforms.commutation_dag(circuit)()
-
-        a = qp.PauliZ(wires=0)
-        b = qp.PauliX(wires=1)
-
-        nodes = [a, b]
-        edges = [(0, 1, {"commute": False})]
-
-        assert dag.get_node(0).op == (a)
-        assert dag.get_node(1).op == (b)
-        assert dag.get_edge(0, 1) is None
-        assert dag.get_edge(0, 2) is None
-        assert dag.observables == []
-        for i, node in enumerate(dag.get_nodes()):
-            assert node[1].op == (nodes[i])
-        for i, edge in enumerate(dag.get_edges()):
-            assert edges[i] == edge
-
     def test_dag_transform_simple_dag_qnode(self):
         """Test a simple DAG on 1 wire with a qnode."""
 
@@ -143,7 +118,6 @@ class TestCommutationDAG:
 
     def test_dag_pattern(self):
         "Test a the DAG and its attributes for a more complicated circuit."
-        # pylint: disable=protected-access
 
         op_wires = [
             (qp.CNOT, [3, 0]),

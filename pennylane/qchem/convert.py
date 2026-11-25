@@ -20,7 +20,6 @@ from itertools import product
 
 import numpy as np
 
-# pylint: disable=import-outside-toplevel
 import pennylane as qp
 from pennylane.wires import Wires
 
@@ -40,11 +39,10 @@ def _process_wires(wires, n_wires=None):
     dict for partial or unordered mapping.
 
     Args:
-        wires (Wires, list, tuple, dict): User wire labels.
+        wires (Wires or Sequence[int] or dict[int, int]): User wire labels.
             For types Wires, list, or tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
-            For type dict, only int-keyed dict (for qubit-to-wire conversion) or
-            consecutive-int-valued dict (for wire-to-qubit conversion) is accepted.
+            For type dict, keys are qubit indices and values are non-negative integer wire labels.
             If None, will be set to consecutive int based on ``n_wires``.
         n_wires (int): Number of wires used if known. If None, will be inferred from ``wires``; if
             ``wires`` is not available, will be set to 1.
@@ -59,21 +57,21 @@ def _process_wires(wires, n_wires=None):
     >>> _process_wires(None, 3)
     Wires([0, 1, 2])
 
-    >>> # List as mapping, qubit indices with wire label values: 0<->w0, 1<->w1, 2<->w2
-    >>> _process_wires(['w0','w1','w2'])
-    Wires(['w0', 'w1', 'w2'])
+    >>> # List mapping qubit indices to wire labels: 0<->3, 1<->4, 2<->5
+    >>> _process_wires([3, 4, 5])
+    Wires([3, 4, 5])
 
-    >>> # Wires as mapping, qubit indices with wire label values: 0<->w0, 1<->w1, 2<->w2
-    >>> _process_wires(Wires(['w0', 'w1', 'w2']))
-    Wires(['w0', 'w1', 'w2'])
+    >>> # Wires mapping qubit indices to wire labels: 0<->3, 1<->4, 2<->5
+    >>> _process_wires(Wires([3, 4, 5]))
+    Wires([3, 4, 5])
 
-    >>> # Dict as partial mapping, int qubits keys to wire label values: 0->w0, 1 unchanged, 2->w2
-    >>> _process_wires({0:'w0',2:'w2'})
-    Wires(['w0', 1, 'w2'])
+    >>> # Partial mapping from qubit indices to wire labels: 0->3, 1 unchanged, 2->5
+    >>> _process_wires({0: 3, 2: 5})
+    Wires([3, 1, 5])
 
-    >>> # Dict as mapping, wires label keys to consec int qubit values: w2->2, w0->0, w1->1
-    >>> _process_wires({'w2':2, 'w0':0, 'w1':1})
-    Wires(['w0', 'w1', 'w2'])
+    >>> # Unordered mapping from qubit indices to wire labels
+    >>> _process_wires({2: 5, 0: 3, 1: 4})
+    Wires([3, 4, 5])
     """
 
     # infer from wires, or assume 1 if wires is not of accepted types.
@@ -124,7 +122,8 @@ def _openfermion_to_pennylane(qubit_operator, wires=None, tol=1.0e-16):
     Args:
         qubit_operator (QubitOperator): fermionic-to-qubit transformed operator in terms of
             Pauli matrices
-        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
+        wires (Wires or Sequence[int] or dict[int, int]): Custom wire mapping used to convert the
+            qubit operator
             to an observable terms measurable in a PennyLane ansatz.
             For types Wires/list/tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
@@ -143,8 +142,8 @@ def _openfermion_to_pennylane(qubit_operator, wires=None, tol=1.0e-16):
     >>> q_op
     0.1 [X0] +
     0.2 [Y0 Z2]
-    >>> _openfermion_to_pennylane(q_op, wires=['w0','w1','w2','extra_wire'])
-    (tensor([0.1, 0.2], requires_grad=False), [X('w0'), Y('w0') @ Z('w2')])
+    >>> _openfermion_to_pennylane(q_op, wires=[0, 1, 2, 3])
+    (tensor([0.1, 0.2], requires_grad=False), [X(0), Y(0) @ Z(2)])
     """
     n_wires = (
         1 + max(max(i for i, _ in t) if t else 1 for t in qubit_operator.terms)
@@ -207,7 +206,8 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
             coefficients for each observable, same length as ops
         ops (Iterable[pennylane.operation.Operations]): list of PennyLane operations that
             have a valid PauliSentence representation.
-        wires (Wires, list, tuple, dict): Custom wire mapping used to convert to qubit operator
+        wires (Wires or Sequence[int] or dict[int, int]): Custom wire mapping used to convert to
+            qubit operator
             from an observable terms measurable in a PennyLane ansatz.
             For types Wires/list/tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
@@ -223,19 +223,19 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
 
     >>> coeffs = np.array([0.1, 0.2, 0.3, 0.4])
     >>> ops = [
-    ...     qp.prod(qp.X('w0')),
-    ...     qp.prod(qp.Y('w0'), qp.Z('w2')),
-    ...     qp.sum(qp.Z('w0'), qp.s_prod(-0.5, qp.X('w0'))),
-    ...     qp.prod(qp.X('w0'), qp.Z('w1')),
+    ...     qp.prod(qp.X(0)),
+    ...     qp.prod(qp.Y(0), qp.Z(1)),
+    ...     qp.sum(qp.Z(0), qp.s_prod(-0.5, qp.X(0))),
+    ...     qp.prod(qp.X(0), qp.Z(2)),
     ... ]
-    >>> _pennylane_to_openfermion(coeffs, ops, wires=Wires(['w0', 'w1', 'w2']))
+    >>> _pennylane_to_openfermion(coeffs, ops, wires=Wires([0, 2, 1]))
     (-0.05+0j) [X0] +
     (0.4+0j) [X0 Z1] +
     (0.2+0j) [Y0 Z2] +
     (0.3+0j) [Z0]
     """
     try:
-        import openfermion
+        import openfermion  # pylint: disable=import-outside-toplevel
     except ImportError as Error:
         raise ImportError(
             "This feature requires openfermion. "
@@ -287,7 +287,8 @@ def _openfermion_pennylane_equivalent(
             a Pauli summation
         pennylane_qubit_operator (pennylane.Hamiltonian): PennyLane
             Hamiltonian object
-        wires (Wires, list, tuple, dict): Custom wire mapping used to convert to qubit operator
+        wires (Wires or Sequence[int] or dict[int, int]): Custom wire mapping used to convert to
+            qubit operator
             from an observable terms measurable in a PennyLane ansatz.
             For types Wires/list/tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
@@ -312,7 +313,8 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e01
     Args:
         qubit_observable: external qubit operator that will be converted
         format (str): the format of the operator object to convert from
-        wires (.Wires, list, tuple, dict): Custom wire mapping used to convert the external qubit
+        wires (Wires or Sequence[int] or dict[int, int]): Custom wire mapping used to convert the
+            external qubit
             operator to a PennyLane operator.
             For types ``Wires``/list/tuple, each item in the iterable represents a wire label
             for the corresponding qubit index.

@@ -18,6 +18,7 @@ Defines `is_commuting`, an function for determining if two functions commute.
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.pauli import PauliSentence
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.op_math import Controlled, Prod, SProd, Sum
 from pennylane.wires import Wires
@@ -72,13 +73,13 @@ def _pword_is_commuting(pauli_word_1, pauli_word_2):
 
     **Example**
 
-    >>> pauli_word_1 = qp.prod(qp.X("a"), qp.Y("b"))
-    >>> pauli_word_2 = qp.prod(qp.Z("a"), qp.Z("c"))
+    >>> pauli_word_1 = qp.prod(qp.X(0), qp.Y(1))
+    >>> pauli_word_2 = qp.prod(qp.Z(0), qp.Z(2))
     >>> _pword_is_commuting(pauli_word_1, pauli_word_2)
     False
 
-    >>> pauli_word_1 = qp.sum(qp.X('a') , qp.Y('b'))
-    >>> pauli_word_2 = qp.sum(qp.Z('c') , qp.X('a'))
+    >>> pauli_word_1 = qp.sum(qp.X(0), qp.Y(1))
+    >>> pauli_word_2 = qp.sum(qp.Z(2), qp.X(0))
     >>> _pword_is_commuting(pauli_word_1, pauli_word_2)
     True
     """
@@ -88,7 +89,7 @@ def _pword_is_commuting(pauli_word_1, pauli_word_2):
 
     comm = pr1.commutator(pr2)
     comm.prune()
-    return comm == qp.pauli.pauli_arithmetic.PauliSentence({})
+    return comm == PauliSentence({})
 
 
 def _get_target_name(op):
@@ -260,7 +261,7 @@ unsupported_operations = [
 ]
 
 
-def is_commuting(operation1, operation2):
+def is_commuting(operation1, operation2):  # pylint: disable=too-many-return-statements
     r"""Check if two operations are commuting using a lookup table.
 
     A lookup table is used to check the commutation between the
@@ -286,7 +287,6 @@ def is_commuting(operation1, operation2):
     >>> qp.is_commuting(qp.X(0), qp.Z(0))
     False
     """
-    # pylint: disable=too-many-return-statements
 
     # operations are disjoints
     if not intersection(operation1.wires, operation2.wires):

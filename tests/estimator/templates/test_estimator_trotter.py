@@ -24,8 +24,6 @@ from pennylane.estimator import GateCount, resource_rep
 from pennylane.estimator.resource_operator import CompressedResourceOp
 from pennylane.wires import Wires
 
-# pylint: disable=no-self-use, too-many-arguments, too-many-positional-arguments
-
 
 class TestResourceTrotterProduct:
     """Test the ResourceTrotterProduct class"""
@@ -115,7 +113,7 @@ class TestResourceTrotterProduct:
     def test_user_defined_wires(self):
         """Test that user-defined wires take precedence over operator wires."""
         ops = [qre.X(wires=0), qre.Y(wires=1)]
-        user_wires = ["a", "b", "c"]
+        user_wires = [7, 9, 14]
         trotter = qre.TrotterProduct(ops, num_steps=1, order=1, wires=user_wires)
 
         assert trotter.wires == Wires(user_wires)
@@ -222,7 +220,7 @@ class TestTrotterCDF:
         cdf_ham = qre.CDFHamiltonian(num_orbitals=8, num_fragments=4)
 
         with pytest.raises(ValueError, match="Expected 16 wires, got 4"):
-            qre.TrotterCDF(cdf_ham, 10, 4, wires=["w1", "w2", "w3", "w4"])
+            qre.TrotterCDF(cdf_ham, 10, 4, wires=[17, 18, 19, 21])
 
     @pytest.mark.parametrize(
         "num_orbitals, num_fragments, num_steps, order, num_ctrl_wires, num_zero_ctrl, gates_expected",
@@ -257,7 +255,7 @@ class TestTrotterCDF:
             ),
         ),
     )
-    def test_controlled_resource_decomp(
+    def test_controlled_resource_decomp(  # pylint: disable=too-many-arguments
         self,
         num_orbitals,
         num_fragments,
@@ -390,7 +388,7 @@ class TestTrotterTHC:
             ),
         ),
     )
-    def test_controlled_resource_decomp(
+    def test_controlled_resource_decomp(  # pylint: disable=too-many-arguments
         self,
         num_orbitals,
         tensor_rank,
@@ -422,7 +420,7 @@ class TestTrotterTHC:
         thc_ham = qre.THCHamiltonian(num_orbitals=8, tensor_rank=20)
 
         with pytest.raises(ValueError, match="Expected 40 wires, got 4"):
-            qre.TrotterTHC(thc_ham, 10, 4, wires=["w1", "w2", "w3", "w4"])
+            qre.TrotterTHC(thc_ham, 10, 4, wires=[17, 18, 19, 21])
 
 
 class TestTrotterVibrational:
@@ -538,7 +536,7 @@ class TestTrotterVibrational:
     @pytest.mark.parametrize(
         "num_modes, grid_size, taylor_degree, num_steps, order, expected_res", hamiltonian_data
     )
-    def test_resource_trotter_vibrational(
+    def test_resource_trotter_vibrational(  # pylint: disable=too-many-arguments
         self, num_modes, grid_size, taylor_degree, num_steps, order, expected_res
     ):
         """Test the Resource TrotterVibrational class for correct resources"""
@@ -560,7 +558,7 @@ class TestTrotterVibrational:
         """Test that the init raises an error for incorrect wires"""
         vibrational_ham = qre.VibrationalHamiltonian(num_modes=8, grid_size=4, taylor_degree=3)
         with pytest.raises(ValueError, match="Expected 32 wires, got 4"):
-            qre.TrotterVibrational(vibrational_ham, 10, 4, wires=["w1", "w2", "w3", "w4"])
+            qre.TrotterVibrational(vibrational_ham, 10, 4, wires=[17, 18, 19, 21])
 
 
 class TestTrotterVibronic:
@@ -686,7 +684,7 @@ class TestTrotterVibronic:
         "num_modes, num_states, grid_size, taylor_degree, num_steps, order, expected_res",
         hamiltonian_data,
     )
-    def test_resource_trotter_vibronic(
+    def test_resource_trotter_vibronic(  # pylint: disable=too-many-arguments
         self, num_modes, num_states, grid_size, taylor_degree, num_steps, order, expected_res
     ):
         """Test the Resource TrotterVibronic class for correct resources"""
@@ -716,7 +714,7 @@ class TestTrotterVibronic:
             taylor_degree=3,
         )
         with pytest.raises(ValueError, match="Expected 33 wires, got 4"):
-            qre.TrotterVibronic(vibronic_ham, 10, 4, wires=["w1", "w2", "w3", "w4"])
+            qre.TrotterVibronic(vibronic_ham, 10, 4, wires=[17, 18, 19, 21])
 
 
 class TestTrotterPauli:
@@ -742,7 +740,7 @@ class TestTrotterPauli:
                 ),
                 10,
                 2,
-                ["w1", "w2", "w3", "w4"],
+                [17, 18, 19, 21],
                 4,
             ),
             (
@@ -792,7 +790,7 @@ class TestTrotterPauli:
             ),
         )
         with pytest.raises(ValueError, match="Expected 5 wires, got 4"):
-            qre.TrotterPauli(pauli_ham, 10, 4, wires=["w1", "w2", "w3", "w4"])
+            qre.TrotterPauli(pauli_ham, 10, 4, wires=[17, 18, 19, 21])
 
     @pytest.mark.parametrize(
         "pauli_ham, num_steps, order, wires, expected_resource_rep",
@@ -825,7 +823,7 @@ class TestTrotterPauli:
                 ),
                 10,
                 2,
-                ["w1", "w2", "w3", "w4"],
+                [17, 18, 19, 21],
                 CompressedResourceOp(
                     op_type=qre.TrotterPauli,
                     num_wires=4,
@@ -1047,10 +1045,8 @@ class TestTrotterPauli:
             GateCount(qre.PauliRot.resource_rep("ZZZ"), 10),
         ]
 
-        assert (
-            qre.TrotterPauli._cost_pauli_group(pauli_terms)  # pylint: disable=protected-access
-            == expected_cost
-        )
+        # pylint: disable-next=protected-access
+        assert qre.TrotterPauli._cost_pauli_group(pauli_terms) == expected_cost
 
 
 CLASSES_AND_HAMS = [
@@ -1102,7 +1098,7 @@ class TestInvalidTrotterInputs:
             ),
         ],
     )
-    def test_trotter_common_incompatible_inputs(
+    def test_trotter_common_incompatible_inputs(  # pylint: disable=too-many-arguments
         self, op_class, valid_ham, bad_steps, bad_order, error_type, msg
     ):
         """Test that all Trotter classes raise errors for invalid steps/orders."""

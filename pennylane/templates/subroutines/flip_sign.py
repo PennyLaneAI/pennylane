@@ -68,6 +68,22 @@ class FlipSign(Operator2):
     >>> circuit()
     array([ 0.5+0.j,  0.5+0.j, -0.5+0.j,  0.5+0.j])
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.FlipSign
+            :stacked:
+            :symbols: :math:`n` wires and basis state :math:`b=(b_0, \dots, b_{n-1})` (``state``)
+            :example: :math:`n=3`, :math:`b=(1, 0, 0)`
+
+            .. decomposition-rule:: to_controlled_z
+                :image: /_static/decomposition_thumbnails/flip_sign_controlled_z.svg
+                :where: the controls are on :math:`|b_0 \cdots b_{n-2}\rangle`, and
+                    :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
+
+                :class:`~.Z` with :math:`n-1` controls | :math:`1` | 1
+                :class:`~.X` | :math:`2[b_{n-1} = 0]` | 2
+
     """
 
     compilable_argnames = ("state",)
@@ -111,7 +127,7 @@ class FlipSign(Operator2):
         super().__init__(state, wires, work_wires)
 
 
-def _flip_sign_resources(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
+def _flip_sign_standard_resources(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
     num_wires = len(wires)
     num_ctrl_wires = num_wires - 1
     if num_ctrl_wires == 0:
@@ -134,8 +150,8 @@ def _flip_sign_resources(state: tuple[int], wires: WiresLike, work_wires: WiresL
     return res
 
 
-@register_resources(_flip_sign_resources)
-def _flip_sign_decomposition(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
+@register_resources(_flip_sign_standard_resources, name="to_controlled_z")
+def _flip_sign_standard(state: tuple[int], wires: WiresLike, work_wires: WiresLike):
     if state[-1] == 0:
         X(wires[-1])
 
@@ -156,4 +172,4 @@ def _flip_sign_decomposition(state: tuple[int], wires: WiresLike, work_wires: Wi
         X(wires[-1])
 
 
-add_decomps(FlipSign, _flip_sign_decomposition)
+add_decomps(FlipSign, _flip_sign_standard)

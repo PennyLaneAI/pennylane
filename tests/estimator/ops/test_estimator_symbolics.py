@@ -26,8 +26,6 @@ from pennylane.estimator.resource_operator import GateCount, resource_rep
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.wires import Wires
 
-# pylint: disable=no-self-use, too-few-public-methods
-
 
 class DummyOp(qre.ResourceOperator):
     resource_keys = {"num_wires"}
@@ -154,7 +152,7 @@ class TestAdjoint:
         (
             qre.S(),
             qre.RZ(precision=1e-3),
-            qre.CNOT(wires=["ctrl", "trgt"]),
+            qre.CNOT(wires=[7, 9]),
         ),
     )
     def test_adj_resource_decomp(self, base_op):
@@ -382,7 +380,7 @@ class TestControlled:
         (
             qre.S(),
             qre.RZ(precision=1e-3),
-            qre.CNOT(wires=["ctrl", "trgt"]),
+            qre.CNOT(wires=[7, 9]),
         ),
     )
     def test_ctrl_resource_decomp(self, ctrl_wires, ctrl_values, base_op):
@@ -471,7 +469,7 @@ class TestPow:
         (
             qre.S(),
             qre.RZ(precision=1e-3),
-            qre.CNOT(wires=["ctrl", "trgt"]),
+            qre.CNOT(wires=[7, 9]),
         ),
     )
     def test_pow_resource_decomp(self, base_op, z):
@@ -628,7 +626,6 @@ class TestChangeOpBasis:
         cb_op = qre.ChangeOpBasis(qre.X(), qre.Y(), qre.Z())
         assert cb_op.wires is None
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "compute_op, target_op, uncompute_op, expected_res",
         (
@@ -779,7 +776,7 @@ class TestChangeOpBasis:
             ),
         ),
     )
-    def test_controlled_resource_decomp(
+    def test_controlled_resource_decomp(  # pylint: disable=too-many-arguments
         self, compute_op, target_op, uncompute_op, num_ctrl_wires, num_zero_ctrl, expected_res
     ):
         """Test that the controlled resource decomposition is correct."""

@@ -34,11 +34,11 @@ from pennylane.ops.op_math.condition import Conditional
 terminal_meas = [
     qp.probs(wires=[1, 0]),
     qp.expval(qp.PauliZ(0)),
-    qp.expval(qp.PauliZ("a") @ qp.PauliZ(3) @ qp.PauliZ(-1)),
-    qp.var(qp.PauliX("b")),
+    qp.expval(qp.PauliZ(6) @ qp.PauliZ(3) @ qp.PauliZ(-1)),
+    qp.var(qp.PauliX(7)),
     qp.state(),
     qp.density_matrix(wires=[2, 3]),
-    qp.density_matrix(wires=["b", -231]),
+    qp.density_matrix(wires=[7, -231]),
 ]
 
 
@@ -120,8 +120,7 @@ class TestCond:
             qp.RY(x, wires=1)
             qp.PauliZ(1)
 
-        def g(x):
-            # pylint: disable=unused-argument
+        def g(x):  # pylint: disable=unused-argument
             qp.PauliY(1)
 
         tape = getattr(self, tape)(f, g, r, terminal_measurement)
@@ -246,9 +245,9 @@ class TestAdditionalCond:
             qp.cond(m_0, qp.PauliX)(1)
 
         meas, cond_op = q.queue
-        mapped_cond = cond_op.map_wires({0: "a", 1: "b"})
-        assert mapped_cond.meas_val.measurements == [meas.map_wires({0: "a"})]
-        assert mapped_cond.base == qp.PauliX("b")
+        mapped_cond = cond_op.map_wires({0: 6, 1: 7})
+        assert mapped_cond.meas_val.measurements == [meas.map_wires({0: 6})]
+        assert mapped_cond.base == qp.PauliX(7)
 
     @pytest.mark.parametrize(
         "op", [qp.RX(0.123, 0), qp.RX([0.123, 4.56], 0), qp.Rot(1.23, 4.56, 7.89, 0)]
@@ -425,8 +424,8 @@ class TestProperties:
     def test_data_is_read_only(self):
         """Test that Conditional data is read-only."""
         x = np.array(1.234)
-        m = qp.measure("a")
-        base = qp.RX(x, wires="a")
+        m = qp.measure(6)
+        base = qp.RX(x, wires=6)
         cond_op = Conditional(m, base)
 
         assert cond_op.data == (x,)
@@ -440,8 +439,7 @@ class TestProperties:
     def test_has_matrix(self, value):
         """Test that Conditional defers has_matrix to base operator."""
 
-        # pylint:disable=too-few-public-methods
-        class DummyOp(Operator):
+        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             has_matrix = value
 
@@ -454,8 +452,7 @@ class TestProperties:
     def test_has_adjoint(self, value):
         """Test that Conditional defers has_adjoint to base operator."""
 
-        # pylint:disable=too-few-public-methods
-        class DummyOp(Operator):
+        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             has_adjoint = value
 
@@ -468,8 +465,7 @@ class TestProperties:
     def test_has_diagonalizing_gates(self, value):
         """Test that Conditional defers has_adjoint to base operator."""
 
-        # pylint:disable=too-few-public-methods
-        class DummyOp(Operator):
+        class DummyOp(Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             has_diagonalizing_gates = value
 
@@ -622,7 +618,7 @@ class TestPythonFallback:
                 return y**2
 
             @conditional.otherwise
-            def conditional_false_fn(y):  # pylint: disable=unused-variable
+            def conditional_false_fn(y):
                 return -y
 
             return conditional(x + 1)
@@ -639,11 +635,11 @@ class TestPythonFallback:
                 return y**2
 
             @conditional.else_if(x < -2)
-            def conditional_elif(y):  # pylint: disable=unused-variable
+            def conditional_elif(y):
                 return y
 
             @conditional.otherwise
-            def conditional_false_fn(y):  # pylint: disable=unused-variable
+            def conditional_false_fn(y):
                 return -y
 
             return conditional(x + 1)

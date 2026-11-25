@@ -29,13 +29,12 @@ stim = pytest.importorskip("stim")
 pytestmark = pytest.mark.external
 
 
-# pylint: disable=protected-access
 def test_applied_modifiers():
     """Test that default qubit has the `single_tape_support` and `simulator_tracking`
     modifiers applied.
     """
     dev = qp.device("default.clifford")
-    assert dev._applied_modifiers == [
+    assert dev._applied_modifiers == [  # pylint: disable=protected-access
         qp.devices.modifiers.single_tape_support,
         qp.devices.modifiers.simulator_tracking,
     ]
@@ -416,7 +415,7 @@ def test_prep_snap_clifford(circuit):
     "pl_op,stim_op",
     [
         (qp.PauliX(0), ("X", [0])),
-        (qp.CNOT(["a", "b"]), ("CNOT", ["a", "b"])),
+        (qp.CNOT([5, 7]), ("CNOT", [5, 7])),
         (qp.GlobalPhase(1.0), (None, [])),
         (qp.Snapshot(), (None, [])),
         (qp.DepolarizingChannel(0.2, [2]), ("DEPOLARIZE1(0.2)", [2])),
@@ -425,7 +424,7 @@ def test_prep_snap_clifford(circuit):
 )
 def test_pl_to_stim(pl_op, stim_op):
     """Test that the PennyLane operation get converted to Stim operation"""
-    op, wires = _pl_op_to_stim(pl_op)  # pylint:disable=protected-access
+    op, wires = _pl_op_to_stim(pl_op)
     assert op == stim_op[0]
     assert wires == " ".join(map(str, stim_op[1]))
 
@@ -670,7 +669,7 @@ def test_clifford_error(check):
         DeviceError,
         match=r"Operator LegacyRX\(1.0, wires=\[0\]\) not supported with default.clifford and does not provide a decomposition",
     ):
-        if qp.decomposition.enabled_graph() and check:
+        if check:
             with pytest.warns(DecompositionWarning):
                 circuit()
         else:

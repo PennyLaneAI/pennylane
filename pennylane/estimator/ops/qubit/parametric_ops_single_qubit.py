@@ -24,8 +24,6 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.wires import Wires, WiresLike
 
-# pylint: disable=arguments-differ, signature-differs
-
 
 def _rotation_resources(precision=1e-9):
     r"""Estimates the number of T gates needed to implement a Pauli rotation to a given precision.
@@ -58,7 +56,7 @@ class PhaseShift(ResourceOperator):
         precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires | None): The wires the operation acts on.
+        wires (int or Wires | None): The wires the operation acts on.
 
     Resources:
         The phase shift gate is equivalent to a Z-rotation up to some global phase,
@@ -99,6 +97,7 @@ class PhaseShift(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
@@ -113,6 +112,7 @@ class PhaseShift(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -139,6 +139,7 @@ class PhaseShift(ResourceOperator):
         return [GateCount(rz), GateCount(global_phase)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
@@ -159,7 +160,7 @@ class PhaseShift(ResourceOperator):
         return [GateCount(cls.resource_rep(precision=precision))]
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
@@ -197,6 +198,7 @@ class PhaseShift(ResourceOperator):
         return [qre.Allocate(1), GateCount(c_ps), GateCount(mcx, 2), qre.Deallocate(1)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
@@ -225,7 +227,7 @@ class RX(ResourceOperator):
         precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires | None): The wires the operation acts on.
+        wires (int or Wires | None): The wires the operation acts on.
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -265,6 +267,7 @@ class RX(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
@@ -279,6 +282,7 @@ class RX(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -302,6 +306,7 @@ class RX(ResourceOperator):
         return _rotation_resources(precision=precision)
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
@@ -322,7 +327,7 @@ class RX(ResourceOperator):
         return [GateCount(cls.resource_rep(precision))]
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
@@ -360,6 +365,7 @@ class RX(ResourceOperator):
         return [GateCount(h, 2), GateCount(rz, 2), GateCount(mcx, 2)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
@@ -388,7 +394,7 @@ class RY(ResourceOperator):
         precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires | None): The wires the operation acts on.
+        wires (int or Wires | None): The wires the operation acts on.
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -428,6 +434,7 @@ class RY(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
@@ -441,6 +448,7 @@ class RY(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -464,6 +472,7 @@ class RY(ResourceOperator):
         return _rotation_resources(precision=precision)
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
@@ -484,7 +493,7 @@ class RY(ResourceOperator):
         return [GateCount(cls.resource_rep(precision))]
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
@@ -519,6 +528,7 @@ class RY(ResourceOperator):
         return [GateCount(ry, 2), GateCount(mcx, 2)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
@@ -547,7 +557,7 @@ class RZ(ResourceOperator):
         precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires | None): The wires the operation acts on.
+        wires (int or Wires | None): The wires the operation acts on.
 
     Resources:
         A single qubit rotation gate can be approximately synthesised from Clifford and T gates. The
@@ -587,6 +597,7 @@ class RZ(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
@@ -600,6 +611,7 @@ class RZ(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -623,6 +635,7 @@ class RZ(ResourceOperator):
         return _rotation_resources(precision=precision)
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
@@ -643,7 +656,7 @@ class RZ(ResourceOperator):
         return [GateCount(cls.resource_rep(precision))]
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls,
         num_ctrl_wires: int,
         num_zero_ctrl: int,
@@ -680,6 +693,7 @@ class RZ(ResourceOperator):
         return [GateCount(rz, 2), GateCount(mcx, 2)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 
@@ -708,7 +722,7 @@ class Rot(ResourceOperator):
         precision (float | None): The error threshold for the Clifford + T decomposition
             of this operation. The default value is ``None`` which corresponds to using the
             ``precision`` stated in the ``ResourceConfig``.
-        wires (Any or Wires | None): The wires the operation acts on.
+        wires (int or Wires | None): The wires the operation acts on.
 
     Resources:
         The resources are obtained according to the definition of the ``Rot`` gate:
@@ -745,6 +759,7 @@ class Rot(ResourceOperator):
         return {"precision": self.precision}
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources.
@@ -758,6 +773,7 @@ class Rot(ResourceOperator):
         return CompressedResourceOp(cls, cls.num_wires, {"precision": precision})
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def resource_decomp(cls, precision: float | None = None) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -774,6 +790,7 @@ class Rot(ResourceOperator):
         return [GateCount(ry), GateCount(rz, 2)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def adjoint_resource_decomp(cls, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for the adjoint of the operator.
 
@@ -790,7 +807,7 @@ class Rot(ResourceOperator):
         return [GateCount(cls.resource_rep(precision))]
 
     @classmethod
-    def controlled_resource_decomp(
+    def controlled_resource_decomp(  # pylint: disable=signature-differs
         cls, num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for a controlled version of the operator.
@@ -825,6 +842,7 @@ class Rot(ResourceOperator):
         return [GateCount(mcx, 2), GateCount(rz, 3), GateCount(ry, 2)]
 
     @classmethod
+    # pylint: disable-next=signature-differs
     def pow_resource_decomp(cls, pow_z: int, target_resource_params: dict) -> list[GateCount]:
         r"""Returns a list representing the resources for an operator raised to a power.
 

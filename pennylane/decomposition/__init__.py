@@ -15,35 +15,11 @@
 r"""
 .. currentmodule:: pennylane
 
-This module implements the infrastructure for PennyLane's new graph-based decomposition system.
+This module implements the infrastructure for PennyLane's graph-based decomposition system.
 
 .. warning::
 
     This module is experimental and is subject to change in the future.
-
-To activate and deactivate the new experimental graph-based decomposition system, use the switches
-:func:`~pennylane.decomposition.enable_graph` and :func:`~pennylane.decomposition.disable_graph`. Whether the graph-based
-decomposition system is currently being used can be queried with :func:`~pennylane.decomposition.enabled_graph`.
-By default, this system is disabled.
-
-.. currentmodule:: pennylane.decomposition
-
-.. autosummary::
-    :toctree: api
-
-    ~enable_graph
-    ~disable_graph
-    ~enabled_graph
-    ~toggle_graph_ctx
-
->>> qp.decomposition.enabled_graph()
-False
->>> qp.decomposition.enable_graph()
->>> qp.decomposition.enabled_graph()
-True
->>> qp.decomposition.disable_graph()
->>> qp.decomposition.enabled_graph()
-False
 
 .. _decomps_rules:
 
@@ -67,14 +43,14 @@ Defining Decomposition Rules
     ~CompressedResourceOp
     ~null_decomp
 
-In the new decomposition system, a decomposition rule must be defined as a quantum function that
+A decomposition rule must be defined as a quantum function that
 accepts ``(*op.parameters, op.wires, **op.hyperparameters)`` as arguments, where ``op`` is an
 instance of the operator type that the decomposition is for. Additionally, a decomposition rule
 must declare its resource requirements using the ``register_resources`` decorator:
 
 .. code-block:: python
 
-    @qp.register_resources({qp.H: 2, qp.CZ: 1})
+    @qp.register_resources({qp.H: 2, qp.CZ: 1}, name="my_cnot")
     def my_cnot(wires):
         qp.H(wires=wires[1])
         qp.CZ(wires=wires)
@@ -101,22 +77,19 @@ Inspecting and Managing Decomposition Rules
 
 PennyLane maintains a global dictionary of decomposition rules. New decomposition rules can be
 registered under an operator using ``add_decomps``, and ``list_decomps`` can be called to inspect
-a list of known decomposition rules for a given operator. In the new system, an operator can be
+a list of known decomposition rules for a given operator. An operator can be
 associated with multiple decomposition rules, and the one that leads to the most resource-efficient
 decomposition towards a target gate set is chosen.
 
 Integration with the Decompose Transform
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :func:`~pennylane.transforms.decompose` transform takes advantage of this new graph-based
-decomposition algorithm when :func:`~pennylane.decomposition.enable_graph` is present, and allows for more
-flexible decompositions towards any target gate set.
+The :func:`~pennylane.transforms._tape_decompose` transform uses the graph-based
+decomposition algorithm to find resource-efficient decompositions towards a target gate set.
 
 .. code-block:: python
 
     from pprint import pprint
-
-    qp.decomposition.enable_graph()
 
     with qp.queuing.AnnotatedQueue() as q:
         qp.CRX(0.5, wires=[0, 1])
@@ -129,10 +102,10 @@ flexible decompositions towards any target gate set.
 
 **Customizing Decompositions**
 
-The new system also enables specifying custom decomposition rules. When :func:`~pennylane.decomposition.enable_graph`
-is present, the :func:`~pennylane.transforms.decompose` transform accepts two additional keyword
-arguments: ``fixed_decomps`` and ``alt_decomps``. The user can define custom decomposition rules
-as explained in the :ref:`Defining Decomposition Rules <decomps_rules>` section, and provide them
+The :func:`~pennylane.transforms._tape_decompose` transform accepts custom decomposition rules
+through the keyword arguments ``fixed_decomps`` and ``alt_decomps``.
+The user can define custom decomposition rules as explained in the
+:ref:`Defining Decomposition Rules <decomps_rules>` section, and provide them
 to the transform via these arguments.
 
 ``fixed_decomps`` forces the transform to use the specified decomposition rules for
@@ -145,21 +118,19 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
 
 .. code-block:: python
 
-    qp.decomposition.enable_graph()
-
-    @qp.register_resources({qp.CNOT: 2, qp.RX: 1})
+    @qp.register_resources({qp.CNOT: 2, qp.RX: 1}, name="isingxx_decomp")
     def isingxx_decomp(phi, wires, **__):
         qp.CNOT(wires=wires)
         qp.RX(phi, wires=[wires[0]])
         qp.CNOT(wires=wires)
 
-    @qp.register_resources({qp.H: 2, qp.CZ: 1})
+    @qp.register_resources({qp.H: 2, qp.CZ: 1}, name="my_cnot1")
     def my_cnot1(wires, **__):
         qp.H(wires=wires[1])
         qp.CZ(wires=wires)
         qp.H(wires=wires[1])
 
-    @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2})
+    @qp.register_resources({qp.RY: 2, qp.CZ: 1, qp.Z: 2}, name="my_cnot2")
     def my_cnot2(wires, **__):
         qp.RY(np.pi/2, wires[1])
         qp.Z(wires[1])
@@ -172,13 +143,13 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
         alt_decomps={qp.CNOT: [my_cnot1, my_cnot2]},
         fixed_decomps={qp.IsingXX: isingxx_decomp},
     )
-    @qp.qnode(qp.device("lightning.qubit"))
+    @qp.qnode(qp.device("lightning.qubit", wires=2))
     def circuit():
         qp.CNOT(wires=[0, 1])
         qp.IsingXX(0.5, wires=[0, 1])
         return qp.state()
 
->>> qp.specs(qp.qjit(circuit))()["resources"].quantum_operations
+>>> qp.specs(qp.qjit(circuit, capture=False))()["resources"].quantum_operations
 {'GlobalPhase': 6, 'CZ': 3, 'RX': 7, 'RZ': 12}
 
 To register alternative decomposition rules under an operator to be used globally, use
@@ -233,12 +204,8 @@ Utility Classes
 from pennylane.exceptions import DecompositionError
 from .gate_set import GateSet
 from .utils import (
-    enable_graph,
-    disable_graph,
-    enabled_graph,
     register_signature,
     signature_registry,
-    toggle_graph_ctx,
 )
 from .decomposition_graph import DecompositionGraph, DecompGraphSolution
 from .resources import (

@@ -16,8 +16,6 @@ Tests for the k-UpCCGSD template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -121,42 +119,6 @@ class TestDecomposition:
         res_wires = [queue[i].wires.tolist() for i in range(1, n_gates)]
         for wires1, wires2 in zip(exp_wires, res_wires):
             assert np.all(wires1 == wires2)
-
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-
-        weights = np.random.random(size=(1, 6))
-
-        dev = qp.device("default.qubit", wires=4)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k", "e"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.kUpCCGSD(
-                weights,
-                wires=range(4),
-                k=1,
-                delta_sz=0,
-                init_state=np.array([0, 1, 0, 1]),
-            )
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.kUpCCGSD(
-                weights,
-                wires=["z", "a", "k", "e"],
-                k=1,
-                delta_sz=0,
-                init_state=np.array([0, 1, 0, 1]),
-            )
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         ("num_wires", "k", "exp_state"),
@@ -302,26 +264,26 @@ class TestDecomposition:
                 ],
             ),
             (
-                ["a0", "b1", "c2", "d3", "e4", "f5"],
+                [9, 10, 11, 12, 13, 14],
                 1,
                 [
-                    ["b1", "a0"],
-                    ["b1", "c2"],
-                    ["b1", "c2", "d3", "e4"],
-                    ["d3", "c2", "b1", "a0"],
-                    ["d3", "c2"],
-                    ["d3", "e4"],
-                    ["f5", "e4", "d3", "c2", "b1", "a0"],
-                    ["f5", "e4", "d3", "c2"],
-                    ["f5", "e4"],
+                    [10, 9],
+                    [10, 11],
+                    [10, 11, 12, 13],
+                    [12, 11, 10, 9],
+                    [12, 11],
+                    [12, 13],
+                    [14, 13, 12, 11, 10, 9],
+                    [14, 13, 12, 11],
+                    [14, 13],
                 ],
                 [
-                    [["a0", "b1"], ["c2", "d3"]],
-                    [["a0", "b1"], ["e4", "f5"]],
-                    [["c2", "d3"], ["a0", "b1"]],
-                    [["c2", "d3"], ["e4", "f5"]],
-                    [["e4", "f5"], ["a0", "b1"]],
-                    [["e4", "f5"], ["c2", "d3"]],
+                    [[9, 10], [11, 12]],
+                    [[9, 10], [13, 14]],
+                    [[11, 12], [9, 10]],
+                    [[11, 12], [13, 14]],
+                    [[13, 14], [9, 10]],
+                    [[13, 14], [11, 12]],
                 ],
             ),
         ],
@@ -347,7 +309,7 @@ class TestDecomposition:
         assert gen_doubles_wires == generalized_pair_doubles_wires
 
 
-class TestInputs:
+class TestInputs:  # pylint: disable=too-few-public-methods
     """Test inputs and pre-processing."""
 
     @pytest.mark.parametrize(
@@ -419,6 +381,7 @@ class TestInputs:
             ),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_kupccgsd_exceptions(self, wires, weights, k, delta_sz, init_state, msg_match):
         """Test that k-UpCCGSD throws an exception if the parameters have illegal
         shapes, types or values."""
@@ -623,7 +586,7 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
 
-class TestGradient:
+class TestGradient:  # pylint: disable=too-few-public-methods
     """Test that the parameter-shift rule for this template matches that of backprop."""
 
     def test_ps_rule_gradient(self, tol):

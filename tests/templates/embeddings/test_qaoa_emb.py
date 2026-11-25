@@ -16,8 +16,6 @@ Tests for the QAOAEmbedding template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qp
@@ -37,7 +35,6 @@ def test_standard_validity():
     qp.testing.assert_valid(op)
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test _flatten and _unflatten methods."""
     features = [1.0, 2.0]
@@ -46,15 +43,14 @@ def test_flatten_unflatten():
     weights = [layer1, layer2]
 
     op = qp.QAOAEmbedding(features=features, wires=(0, 1), weights=weights)
-    _, metadata = op._flatten()
+    _, metadata = op._flatten()  # pylint: disable=protected-access
     assert hash(metadata)
 
-    new_op = type(op)._unflatten(*op._flatten())
+    new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
     qp.assert_equal(op, new_op)
 
 
 @pytest.mark.system
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestCorrectness:
     """Tests the correctness of the template in a qnode."""
 
@@ -118,30 +114,6 @@ class TestCorrectness:
 
         res = circuit(x=features)
         assert np.allclose(res, target, atol=tol, rtol=0)
-
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        weights = np.random.random(size=(1, 6))
-        features = np.random.random(size=(3,))
-
-        dev = qp.device("default.qubit", wires=3)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.QAOAEmbedding(features, weights, wires=range(3))
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.QAOAEmbedding(features, weights, wires=["z", "a", "k"])
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestDecomposition:

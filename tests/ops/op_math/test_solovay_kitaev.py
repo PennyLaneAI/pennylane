@@ -117,7 +117,7 @@ def test_approximate_sets():
     [
         qp.U3(0.0, 0.0, 0.0, wires=[0]),
         qp.U3(1.0, 2.0, 3.0, wires=[1]),
-        qp.U3(-1.0, 2.0, 3.0, wires=["b"]),
+        qp.U3(-1.0, 2.0, 3.0, wires=[9]),
         qp.U3(1.0, 2.0, -3.0, wires=[0]),
     ],
 )
@@ -141,13 +141,13 @@ def test_group_commutator_decompose(op):
     ("op", "max_depth"),
     [
         (qp.RX(math.pi / 42, wires=[1]), 5),
-        (qp.RY(math.pi / 7, wires=["a"]), 5),
-        (qp.prod(*[qp.RX(1.0, "a"), qp.T("a")]), 5),
+        (qp.RY(math.pi / 7, wires=[6]), 5),
+        (qp.prod(*[qp.RX(1.0, 6), qp.T(6)]), 5),
         (qp.prod(*[qp.T(0), qp.Hadamard(0)] * 5), 5),
         (qp.RZ(-math.pi / 2, wires=[1]), 1),
-        (qp.adjoint(qp.S(wires=["a"])), 1),
+        (qp.adjoint(qp.S(wires=[6])), 1),
         (qp.PhaseShift(5 * math.pi / 2, wires=[0]), 1),
-        (qp.PhaseShift(-3 * math.pi / 4, wires=["b"]), 1),
+        (qp.PhaseShift(-3 * math.pi / 4, wires=[9]), 1),
     ],
 )
 def test_solovay_kitaev(op, max_depth):
@@ -241,7 +241,6 @@ def test_exception_with_qjit():
     """Test operation wire exception in Solovay-Kitaev"""
     pytest.importorskip("catalyst")
     pytest.importorskip("jax")
-    # pylint: disable=import-outside-toplevel
     import jax.numpy as jnp
     from catalyst import qjit
 
@@ -254,7 +253,6 @@ def test_exception_with_qjit():
 def test_exception_with_jit():
     """Test operation wire exception in Solovay-Kitaev"""
     pytest.importorskip("jax")
-    # pylint: disable=import-outside-toplevel
     import jax.numpy as jnp
     from jax import jit
 

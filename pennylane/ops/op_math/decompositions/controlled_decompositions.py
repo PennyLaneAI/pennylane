@@ -25,7 +25,7 @@ from pennylane.core import queuing
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import register_condition, register_resources
-from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
+from pennylane.ops.op_math.decompositions.unitary_decompositions import _qubit_unitary_two_qubit
 from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires, concatenate_wires
 
@@ -96,7 +96,7 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
         )
 
     with queuing.AnnotatedQueue() as q:
-        ctrl_decomp_bisect_rule(
+        _controlled_unitary_bisect(
             target_operation.matrix(),
             control_wires + target_operation.wires,
             control_values=[True] * len(control_wires),
@@ -204,7 +204,7 @@ def ctrl_decomp_zyz(
 ##############################################
 
 
-def _ctrl_decomp_bisect_condition(U, wires, *_, **__):  # pylint: disable=unused-argument
+def _ctrl_decomp_bisect_condition(U, wires, *_, **__):
     num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
     num_control_wires = len(wires) - num_target_wires
     # This decomposition rule is only applicable when the target is a single-qubit unitary.
@@ -213,7 +213,7 @@ def _ctrl_decomp_bisect_condition(U, wires, *_, **__):  # pylint: disable=unused
 
 
 # pylint: disable-next=unused-argument
-def _ctrl_decomp_bisect_resources(U, wires, control_values, *_, **__):
+def _controlled_unitary_bisect_resources(U, wires, control_values, *_, **__):
 
     num_ctrl_wires = len(wires) - 1
     len_k1 = (num_ctrl_wires + 1) // 2
@@ -236,8 +236,8 @@ def _ctrl_decomp_bisect_resources(U, wires, control_values, *_, **__):
 
 # Resources are not exact because rotations might be skipped for zero angles
 @register_condition(_ctrl_decomp_bisect_condition)
-@register_resources(_ctrl_decomp_bisect_resources, exact=False)
-def ctrl_decomp_bisect_rule(U, wires, control_values, *_, **__):
+@register_resources(_controlled_unitary_bisect_resources, exact=False, name="bisect")
+def _controlled_unitary_bisect(U, wires, control_values, *_, **__):
     """The decomposition rule for ControlledQubitUnitary from
     `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_."""
 
@@ -274,8 +274,8 @@ def _single_ctrl_decomp_zyz_condition(U, wires, *_, **__):
     return num_target_wires == 1 and num_control_wires == 1
 
 
-# pylint:disable-next=unused-argument
-def _single_ctrl_decomp_zyz_resources(U, wires, **_):
+# pylint: disable-next=unused-argument
+def _controlled_unitary_single_control_zyz_resources(U, wires, **_):
     return {
         ops.RZ: 3,
         ops.RY: 2,
@@ -287,9 +287,11 @@ def _single_ctrl_decomp_zyz_resources(U, wires, **_):
 
 # Resources are not exact because rotations might be skipped for zero angles
 @register_condition(_single_ctrl_decomp_zyz_condition)
-@register_resources(_single_ctrl_decomp_zyz_resources, exact=False)
+@register_resources(
+    _controlled_unitary_single_control_zyz_resources, exact=False, name="single_control_zyz"
+)
 # pylint: disable-next=unused-argument
-def single_ctrl_decomp_zyz_rule(U, wires, control_values, work_wires, **_):
+def _controlled_unitary_single_control_zyz(U, wires, control_values, work_wires, **_):
     """The decomposition rule for ControlledQubitUnitary from Lemma 5.1 of
     https://arxiv.org/pdf/quant-ph/9503016"""
 
@@ -315,8 +317,9 @@ def _multi_ctrl_decomp_zyz_condition(U, wires, *_, **__):
     return num_target_wires == 1 and num_control_wires > 1
 
 
-# pylint: disable-next=unused-argument
-def _multi_ctrl_decomp_zyz_resources(U, wires, control_values, work_wires, work_wire_type, **_):
+def _controlled_unitary_multi_control_zyz_resources(
+    U, wires, control_values, work_wires, work_wire_type, **_  # pylint: disable=unused-argument
+):
     num_ctrl_wires = len(wires) - 1
     num_work_wires = len(work_wires)
     return {
@@ -334,9 +337,12 @@ def _multi_ctrl_decomp_zyz_resources(U, wires, control_values, work_wires, work_
 
 @register_condition(_multi_ctrl_decomp_zyz_condition)
 # Resources are not exact because rotations might be skipped for zero angle(s)
-@register_resources(_multi_ctrl_decomp_zyz_resources, exact=False)
-# pylint: disable-next=unused-argument
-def multi_control_decomp_zyz_rule(U, wires, control_values, work_wires, work_wire_type, **_):
+@register_resources(
+    _controlled_unitary_multi_control_zyz_resources, exact=False, name="multi_control_zyz"
+)
+def _controlled_unitary_multi_control_zyz(
+    U, wires, control_values, work_wires, work_wire_type, **_
+):
     """The decomposition rule for ControlledQubitUnitary from Lemma 7.9 of
     https://arxiv.org/pdf/quant-ph/9503016"""
 
@@ -364,12 +370,13 @@ def multi_control_decomp_zyz_rule(U, wires, control_values, work_wires, work_wir
     _x_flips()  # pylint: disable=no-value-for-parameter
 
 
-# pylint: disable-next=unused-argument
-def _ctrl_two_qubit_unitary_resource(U, wires, control_values, work_wires, work_wire_type, **_):
+def _controlled_unitary_two_qubit_resources(
+    U, wires, control_values, work_wires, work_wire_type, **_  # pylint: disable=unused-argument
+):
     num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
     num_control_wires = len(wires) - num_target_wires
     num_work_wires = len(work_wires)
-    base_resources = two_qubit_decomp_rule.compute_resources(num_wires=num_target_wires)
+    base_resources = _qubit_unitary_two_qubit.compute_resources(num_wires=num_target_wires)
     gate_counts = {
         qp.ctrl(
             base_op_rep,
@@ -390,8 +397,8 @@ def _ctrl_two_qubit_unitary_resource(U, wires, control_values, work_wires, work_
 
 # Resources are not exact because rotations might be skipped for zero angle(s)
 @register_condition(lambda U, *_, **__: qp.math.ceil_log2(qp.math.shape(U)[0]) == 2)
-@register_resources(_ctrl_two_qubit_unitary_resource, exact=False)
-def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work_wire_type, **_):
+@register_resources(_controlled_unitary_two_qubit_resources, exact=False, name="two_qubit")
+def _controlled_unitary_two_qubit(U, wires, control_values, work_wires, work_wire_type, **_):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
 
     if compiler.active() or capture.enabled():
@@ -404,7 +411,7 @@ def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work
 
     _x_flips()  # pylint: disable=no-value-for-parameter
     ops.ctrl(
-        two_qubit_decomp_rule._impl,  # pylint: disable=protected-access
+        _qubit_unitary_two_qubit._impl,  # pylint: disable=protected-access
         control=wires[:-2],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
@@ -422,15 +429,13 @@ def _wrap_mcx_rule_w_alloc(base_rule, num_work_wires, work_wire_type, name=""):
     decomposition rule that uses dynamic work wire allocation instead."""
 
     def _resource_fn(wires, control_values, *_, **__):
-        # pylint: disable-next=protected-access
-        return base_rule._compute_resources(
+        return base_rule._compute_resources(  # pylint: disable=protected-access
             wires,
             control_values,
             Wire[num_work_wires],
             work_wire_type=work_wire_type,
         )
 
-    # pylint: disable-next=unused-argument
     def _condition_fn(wires, control_values, work_wires, work_wire_type):
         # The allocation-based rules are only considered if the operator does not
         # come with explicitly specified work wires. We've made the decision last
@@ -459,7 +464,7 @@ def _wrap_mcx_rule_w_alloc(base_rule, num_work_wires, work_wire_type, name=""):
     return _impl
 
 
-def _mcx_to_cnot_or_toffoli_resource(wires, *_, **__):
+def _mcx_to_cnot_or_toffoli_resources(wires, *_, **__):
     # The PauliX may be required to flip any non-zero controlled bits
     # Each non-zero control value requires 2 PauliX gates to flip, but we count
     # only one for each control wire as an average case estimate.
@@ -469,8 +474,8 @@ def _mcx_to_cnot_or_toffoli_resource(wires, *_, **__):
 
 
 @register_condition(lambda wires, *_, **__: len(wires) <= 3)
-@register_resources(_mcx_to_cnot_or_toffoli_resource, exact=False)
-def mcx_to_cnot_or_toffoli(wires, control_values, *_, **__):
+@register_resources(_mcx_to_cnot_or_toffoli_resources, exact=False, name="to_cnot_or_toffoli")
+def _mcx_to_cnot_or_toffoli(wires, control_values, *_, **__):
     """A decomposition rule that decomposes an MCX to a CNOT or Toffoli"""
 
     if compiler.active() or capture.enabled():
@@ -492,7 +497,7 @@ def mcx_to_cnot_or_toffoli(wires, control_values, *_, **__):
     _x_flips()  # pylint: disable=no-value-for-parameter
 
 
-def _2cx_elbow_explicit_resources(wires, *_, **__):
+def _mcx_two_controls_elbows_resources(wires, *_, **__):
     num_ctrl_wires = len(wires) - 1
     return {qp.Elbow: 1, qp.CNOT: 1, qp.adjoint(qp.Elbow(Wire[3])): 1, qp.X: num_ctrl_wires}
 
@@ -504,8 +509,8 @@ def _2cx_elbow_explicit_condition(wires, control_values, work_wires, work_wire_t
 
 
 @register_condition(_2cx_elbow_explicit_condition)
-@register_resources(_2cx_elbow_explicit_resources, exact=False)
-def decompose_mcx_two_controls_elbows(wires, control_values, work_wires, **_):
+@register_resources(_mcx_two_controls_elbows_resources, exact=False, name="two_controls_elbows")
+def _mcx_two_controls_elbows(wires, control_values, work_wires, **_):
     """A decomposition rule for MCX that uses controlled Elbow."""
 
     if compiler.active() or capture.enabled():
@@ -533,7 +538,7 @@ def _mcx_many_workers_condition(wires, control_values, work_wires, **_):
 
 
 # pylint: disable-next=unused-argument
-def _mcx_many_workers_resource(wires, control_values, work_wires, work_wire_type="borrowed"):
+def _mcx_many_work_wires_resources(wires, control_values, work_wires, work_wire_type="borrowed"):
 
     num_control_wires = len(wires) - 1
     num_used_work_wires = num_control_wires - 2
@@ -562,12 +567,12 @@ def _mcx_many_workers_resource(wires, control_values, work_wires, work_wire_type
 
 
 @register_condition(_mcx_many_workers_condition)
-@register_resources(_mcx_many_workers_resource, exact=False)
-# pylint: disable-next=unused-argument
-def decompose_mcx_many_workers(wires, control_values, work_wires, work_wire_type="borrowed"):
+@register_resources(_mcx_many_work_wires_resources, exact=False, name="many_work_wires")
+def _mcx_many_work_wires(wires, control_values, work_wires, work_wire_type="borrowed"):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
+    # pylint: disable=no-value-for-parameter
 
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
@@ -597,14 +602,14 @@ def decompose_mcx_many_workers(wires, control_values, work_wires, work_wire_type
     def loop_down(i):
         down_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
-    _x_flips()  # pylint: disable=no-value-for-parameter
+    _x_flips()
 
     if work_wire_type == "borrowed":
         ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
-        loop_up()  # pylint: disable=no-value-for-parameter
+        loop_up()
 
     down_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
-    loop_down()  # pylint: disable=no-value-for-parameter
+    loop_down()
 
     _wires = [control_wires[0], work_wires[0], target_wire]
     ops.MultiControlledX(
@@ -613,13 +618,13 @@ def decompose_mcx_many_workers(wires, control_values, work_wires, work_wire_type
         work_wire_type=work_wire_type,
     )
 
-    loop_up()  # pylint: disable=no-value-for-parameter
+    loop_up()
     up_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
 
     if work_wire_type == "borrowed":
-        loop_down()  # pylint: disable=no-value-for-parameter
+        loop_down()
 
-    _x_flips()  # pylint: disable=no-value-for-parameter
+    _x_flips()
 
 
 # pylint: disable-next=unused-argument
@@ -630,7 +635,7 @@ def _mcx_two_workers_condition(wires, control_values, work_wires, **_):
 
 
 # pylint: disable-next=unused-argument
-def _mcx_two_workers_resource(wires, control_values, work_wires, work_wire_type="borrowed"):
+def _mcx_two_work_wires_resources(wires, control_values, work_wires, work_wire_type="borrowed"):
 
     num_control_wires = len(wires) - 1
     is_small_mcx = num_control_wires < 6
@@ -663,9 +668,8 @@ def _mcx_two_workers_resource(wires, control_values, work_wires, work_wire_type=
 
 
 @register_condition(_mcx_two_workers_condition)
-@register_resources(_mcx_two_workers_resource, exact=False)
-# pylint: disable-next=unused-argument
-def decompose_mcx_two_workers(wires, control_values, work_wires, work_wire_type="borrowed"):
+@register_resources(_mcx_two_work_wires_resources, exact=False, name="two_work_wires")
+def _mcx_two_work_wires(wires, control_values, work_wires, work_wire_type="borrowed"):
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` auxiliary qubits.
     It produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(\log(k))` if using
@@ -743,7 +747,7 @@ def _mcx_one_worker_condition(wires, control_values, work_wires, **_):
 
 
 # pylint: disable-next=unused-argument
-def _mcx_one_worker_resource(wires, control_values, work_wires, work_wire_type="borrowed"):
+def _mcx_one_work_wire_resources(wires, control_values, work_wires, work_wire_type="borrowed"):
     num_control_wires = len(wires) - 1
     n_adjoint_ladder = num_control_wires - 3
     adjoint_toffoli = qp.adjoint(ops.Toffoli(Wire[3]))
@@ -792,9 +796,8 @@ def _mcx_one_worker_no_flips(wires, work_wires, work_wire_type, _skip_toggle_det
 
 
 @register_condition(_mcx_one_worker_condition)
-@register_resources(_mcx_one_worker_resource, exact=False)
-# pylint: disable-next=unused-argument
-def decompose_mcx_one_worker(wires, control_values, work_wires, work_wire_type="zeroed"):
+@register_resources(_mcx_one_work_wire_resources, exact=False, name="one_work_wire")
+def _mcx_one_work_wire(wires, control_values, work_wires, work_wire_type="zeroed"):
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` auxiliary qubit. It
     produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(k)` if the auxiliary is zeroed
@@ -805,7 +808,7 @@ def decompose_mcx_one_worker(wires, control_values, work_wires, work_wire_type="
 
         The keyword argument ``_skip_toggle_detection`` is only supposed to be used when utilizing
         ``_mcx_one_worker`` as a subroutine within a decomposition rule, but not when using
-        it as a decomposition rule itself. This is because ``_mcx_one_worker_resource`` does not
+        it as a decomposition rule itself. This is because ``_mcx_one_work_wire_resources`` does not
         support/take into account this keyword argument.
 
     References:
@@ -827,7 +830,7 @@ def decompose_mcx_one_worker(wires, control_values, work_wires, work_wire_type="
     _x_flips()  # pylint: disable=no-value-for-parameter
 
 
-def _decompose_mcx_no_worker_resource(wires, *_, **__):
+def _mcx_no_work_wires_resources(wires, *_, **__):
     num_control_wires = len(wires) - 1
     len_k1 = (num_control_wires + 1) // 2
     len_k2 = num_control_wires - len_k1
@@ -853,8 +856,8 @@ def _mcx_no_worker_condition(wires, control_values, work_wires, **_):
 
 
 @register_condition(_mcx_no_worker_condition)
-@register_resources(_decompose_mcx_no_worker_resource, exact=False)
-def decompose_mcx_with_no_worker(wires, control_values, *_, **__):
+@register_resources(_mcx_no_work_wires_resources, exact=False, name="no_work_wires")
+def _mcx_no_work_wires(wires, control_values, *_, **__):
     """Use ctrl_decomp_bisect_md to decompose a multi-controlled X gate with no work wires."""
 
     U = ops.RX.compute_matrix(np.pi)
@@ -1155,7 +1158,6 @@ def _ctrl_global_phase(
     )
 
 
-# pylint: disable=no-value-for-parameter
 def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
     r"""
     Construct a quantum circuit for creating n-condionally zeroed auxiliary qubits using 3n qubits. This
@@ -1176,7 +1178,7 @@ def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
         ops.X(target_wires[i])
         ops.Toffoli([control_wires_x[i], control_wires_y[i], target_wires[i]])
 
-    loop()
+    loop()  # pylint: disable=no-value-for-parameter
 
 
 def _build_linear_depth_ladder(wires) -> int:

@@ -15,7 +15,9 @@
 Unit tests for molecular Hamiltonians.
 """
 
-# pylint: disable=too-many-arguments, protected-access
+# pylint: disable=too-many-arguments
+
+
 import pytest
 
 import pennylane as qp
@@ -607,8 +609,8 @@ def test_differentiable_hamiltonian_molecule_class(symbols, geometry, mapping, h
 @pytest.mark.parametrize(
     ("wiremap"),
     [
-        ["a", "b", "c", "d"],
-        [0, "z", 3, "auxiliary"],
+        [6, 8, 9, 10],
+        [0, 11, 3, 7],
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
@@ -633,8 +635,8 @@ def test_custom_wiremap_hamiltonian_pyscf(wiremap, tmpdir):
 @pytest.mark.parametrize(
     ("wiremap"),
     [
-        ["a", "b", "c", "d"],
-        [0, "z", 3, "auxiliary"],
+        [6, 8, 9, 10],
+        [0, 11, 3, 7],
     ],
 )
 @pytest.mark.usefixtures("skip_if_no_openfermion_support")
@@ -659,11 +661,11 @@ def test_custom_wiremap_hamiltonian_pyscf_molecule_class(wiremap, tmpdir):
     ("wiremap", "args"),
     [
         (
-            [0, "z", 3, "auxiliary"],
+            [0, 11, 3, 7],
             None,
         ),
         (
-            [0, "z", 3, "auxiliary"],
+            [0, 11, 3, 7],
             [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
         ),
     ],
@@ -699,11 +701,11 @@ def test_custom_wiremap_hamiltonian_dhf(wiremap, args, tmpdir):
     ("wiremap", "args"),
     [
         (
-            [0, "z", 3, "auxiliary"],
+            [0, 11, 3, 7],
             None,
         ),
         (
-            [0, "z", 3, "auxiliary"],
+            [0, 11, 3, 7],
             [np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])],
         ),
     ],
@@ -916,6 +918,7 @@ def test_real_hamiltonian_molecule_class(method, args, tmpdir):
 def test_pyscf_integrals(symbols, geometry, core_ref, one_ref, two_ref):
     r"""Test that _pyscf_integrals returns correct integrals."""
 
+    # pylint: disable-next=protected-access
     core, one, two = qchem.openfermion_pyscf._pyscf_integrals(symbols, geometry)
 
     assert np.allclose(core, core_ref)

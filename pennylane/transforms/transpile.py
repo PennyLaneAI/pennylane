@@ -23,7 +23,7 @@ def state_transposition(results, mps, new_wire_order, original_wire_order):
 
     Keyword Args:
         mps (List[MeasurementProcess]): A list of measurements processes. At least one is a ``StateMP``
-        new_wire_order (Sequence[Any]): the wire order after transpile has been called
+        new_wire_order (Sequence[int]): the wire order after transpile has been called
         original_wire_order (.Wires): the devices wire order
 
     Returns:
@@ -154,7 +154,7 @@ def transpile(
                 return True
             if not obj.has_decomposition:
                 return True
-            return (obj.name in all_ops) and (not getattr(obj, "only_visual", False))
+            return obj.name in all_ops
 
         [expanded_tape], _ = qp.devices.preprocess.decompose(
             tape,
@@ -218,7 +218,7 @@ def transpile(
     new_tape = tape.copy(operations=gates, measurements=measurements)
 
     # note: no need for transposition with density matrix, so type must be `StateMP` but not `DensityMatrixMP`
-    # pylint: disable=unidiomatic-typecheck
+    # pylint: disable-next=unidiomatic-typecheck
     any_state_mp = any(type(m) is qp.measurements.StateMP for m in measurements)
     if not any_state_mp or device_wires is None:
 

@@ -15,7 +15,6 @@ r"""
 Contains the ApproxTimeEvolution template.
 """
 
-# pylint: disable=protected-access
 import copy
 from collections import defaultdict
 
@@ -163,6 +162,7 @@ class ApproxTimeEvolution(Operation):
         super().__init__(*hamiltonian.data, time, wires=wires)
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["hamiltonian"] = new_op._hyperparameters["hamiltonian"].map_wires(
@@ -176,9 +176,8 @@ class ApproxTimeEvolution(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(
-        *coeffs_and_time, wires, hamiltonian, n
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(*coeffs_and_time, wires, hamiltonian, n):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -189,7 +188,7 @@ class ApproxTimeEvolution(Operation):
 
         Args:
             *coeffs_and_time (TensorLike): coefficients of the Hamiltonian, appended by the time.
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
             hamiltonian (.Hamiltonian): The Hamiltonian defining the
                time-evolution operator. The Hamiltonian must be explicitly written
                in terms of products of Pauli gates (:class:`~.PauliX`, :class:`~.PauliY`,
@@ -240,7 +239,7 @@ class ApproxTimeEvolution(Operation):
         return full_decomp
 
 
-def _approx_time_evolution_resources(words: tuple[PauliWord], n: int):
+def _approx_time_evolution_standard_resources(words: tuple[PauliWord], n: int):
     resources = defaultdict(int)
 
     for _ in range(n):
@@ -252,10 +251,13 @@ def _approx_time_evolution_resources(words: tuple[PauliWord], n: int):
     return resources
 
 
-@register_resources(_approx_time_evolution_resources)
-def _approx_time_evolution_decomposition(
-    *coeffs_and_time: list, wires: WiresLike, hamiltonian: Hamiltonian, n: int
-):  # pylint: disable=unused-argument
+@register_resources(_approx_time_evolution_standard_resources, name="pauli_rotations")
+def _approx_time_evolution_standard(  # pylint: disable=unused-argument
+    *coeffs_and_time: list,
+    wires: WiresLike,
+    hamiltonian: Hamiltonian,
+    n: int,
+):
     time = coeffs_and_time[-1]
 
     @for_loop(n)
@@ -275,4 +277,4 @@ def _approx_time_evolution_decomposition(
     rounds_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(ApproxTimeEvolution, _approx_time_evolution_decomposition)
+add_decomps(ApproxTimeEvolution, _approx_time_evolution_standard)

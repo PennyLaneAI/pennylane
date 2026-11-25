@@ -41,7 +41,7 @@ class Qubitization(Operation):
 
     Args:
         hamiltonian (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The Hamiltonian written as a linear combination of unitaries.
-        control (Iterable[Any], Wires): The control qubits for the Qubitization operator.
+        control (Iterable[int], Wires): The control qubits for the Qubitization operator.
 
     **Example**
 
@@ -144,7 +144,7 @@ class Qubitization(Operation):
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
             **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
@@ -179,7 +179,7 @@ class Qubitization(Operation):
         return self
 
 
-def _qubitization_resources(num_control_wires, hamiltonian):
+def _qubitization_standard_resources(num_control_wires, hamiltonian):
     return {
         resource_rep(
             Reflection,
@@ -195,8 +195,8 @@ def _qubitization_resources(num_control_wires, hamiltonian):
     }
 
 
-@register_resources(_qubitization_resources)
-def _qubitization_decomposition(*_, **kwargs):
+@register_resources(_qubitization_standard_resources, name="prep_select_reflection")
+def _qubitization_standard(*_, **kwargs):
     hamiltonian = kwargs["hamiltonian"]
     control = kwargs["control"]
 
@@ -204,4 +204,4 @@ def _qubitization_decomposition(*_, **kwargs):
     PrepSelPrep(hamiltonian, control=control)
 
 
-add_decomps(Qubitization, _qubitization_decomposition)
+add_decomps(Qubitization, _qubitization_standard)

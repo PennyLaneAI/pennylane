@@ -122,7 +122,7 @@ class ModExp(Operation):
 
     def __init__(
         self, x_wires: WiresLike, output_wires, base, mod=None, work_wires: WiresLike = ()
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):
 
         output_wires = Wires(output_wires)
         work_wires = Wires(() if work_wires is None else work_wires)
@@ -216,9 +216,8 @@ class ModExp(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     @staticmethod
-    def compute_decomposition(
-        x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike):
         r"""Representation of the operator as a product of other operators.
 
         Args:
@@ -246,7 +245,7 @@ class ModExp(Operation):
         return op_list
 
 
-def _mod_exp_decomposition_resources(num_x_wires, num_output_wires, mod, num_work_wires) -> dict:
+def _mod_exp_standard_resources(num_x_wires, num_output_wires, mod, num_work_wires) -> dict:
     return {
         ControlledSequence(
             base=resource_rep(
@@ -257,11 +256,9 @@ def _mod_exp_decomposition_resources(num_x_wires, num_output_wires, mod, num_wor
     }
 
 
-@register_resources(_mod_exp_decomposition_resources)
-def _mod_exp_decomposition(
-    x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike, **__
-):
+@register_resources(_mod_exp_standard_resources, name="controlled_multipliers")
+def _mod_exp_standard(x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike, **__):
     ControlledSequence(Multiplier(base, output_wires, mod, work_wires), control=x_wires)
 
 
-add_decomps(ModExp, _mod_exp_decomposition)
+add_decomps(ModExp, _mod_exp_standard)

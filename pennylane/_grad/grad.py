@@ -18,7 +18,7 @@ This submodule contains the autograd wrappers :class:`grad` and :func:`jacobian`
 import inspect
 import numbers
 import warnings
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from functools import wraps
 
 import jax
@@ -31,17 +31,18 @@ from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten, treedef_tup
 
 from pennylane import capture
 from pennylane.compiler import compiler
+from pennylane.math.interface_utils import get_interface
 
 make_vjp = unary_to_nary(_make_vjp)
 
 
-# pylint: disable=unused-argument, too-many-arguments
 jacobian_prim = capture.QpPrimitive("jacobian")
 jacobian_prim.multiple_results = True
 jacobian_prim.prim_type = "higher_order"
 
 
 @jacobian_prim.def_impl
+# pylint: disable-next=too-many-arguments,unused-argument
 def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
     if method != "auto":  # pragma: no cover
         raise ValueError(f"Invalid value '{method=}' without QJIT.")
@@ -59,8 +60,8 @@ def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
     return jax.tree_util.tree_leaves(res)
 
 
-# pylint: disable=unused-argument
 @jacobian_prim.def_abstract_eval
+# pylint: disable-next=too-many-arguments,unused-argument
 def _grad_abstract(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
     if scalar_out and not (len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()):
         raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
@@ -94,6 +95,14 @@ def _setup_argnums(argnums: int | Sequence[int] | None) -> tuple[tuple[int, ...]
     if not all(isinstance(a, int) for a in argnums):
         raise ValueError(f"argnums should be an integer or a Sequence of integers, got {argnums}")
     return argnums, argnums_is_int
+
+
+def _use_jax(args: tuple, kwargs: dict) -> bool:
+    """Detect JAX inputs and reject mixed Autograd/JAX inputs."""
+    interfaces = {get_interface(leaf) for leaf in tree_leaves((args, kwargs))}
+    if {"autograd", "jax"} <= interfaces:
+        raise ValueError("Autograd and JAX inputs cannot be mixed. Use a single interface.")
+    return "jax" in interfaces
 
 
 def _args_and_argnums(args, argnums):
@@ -210,68 +219,113 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
     return new_func
 
 
-# pylint: disable=too-many-instance-attributes
-class grad:
-    """Returns the gradient as a callable function of hybrid quantum-classical functions.
-    :func:`~.qjit` and Autograd compatible.
-
-    By default, gradients are computed for arguments which contain
-    the property ``requires_grad=True``. Alternatively, the ``argnums`` keyword argument
-    can be specified to compute gradients for function arguments without this property,
-    such as scalars, lists, tuples, dicts, or vanilla NumPy arrays. Setting
-    ``argnums`` to the index of an argument with ``requires_grad=False`` will raise
-    a ``NonDifferentiableError``.
-
-    When the output gradient function is executed, both the forward pass
-    *and* the backward pass will be performed in order to compute the gradient.
-    The value of the forward pass is available via the :attr:`~.forward` property.
-
-    .. warning::
-        ``grad`` is intended to be used with the Autograd and Catalyst.
-
-    .. note::
-
-        When used with :func:`~.qjit`, this function currently only supports the
-        Catalyst compiler. See :func:`catalyst.grad` for more details.
-
-        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
-        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
-        page for an overview of the differences between Catalyst and PennyLane.
+class grad:  # pylint: disable=too-many-instance-attributes
+    """Returns a callable that computes the gradient of a function with a real scalar output.
 
     Args:
-        func (function): a plain QNode, or a Python function that contains
-            a combination of quantum and classical nodes
-
-        argnums (int, list(int), None): Which argument(s) to take the gradient
-            with respect to. By default, the arguments themselves are used
-            to determine differentiability, by examining the ``requires_grad``
-            property.
-
-        method (str): Specifies the gradient method when used with the :func:`~.qjit`
-            decorator. Outside of :func:`~.qjit`, this keyword argument
-            has no effect and should not be set. In just-in-time (JIT) mode,
-            this can be any of ``["auto", "fd"]``, where:
-
-            - ``"auto"`` represents deferring the quantum differentiation to the method
-              specified by the QNode, while the classical computation is differentiated
-              using traditional auto-diff. Catalyst supports ``"parameter-shift"`` and
-              ``"adjoint"`` on internal QNodes. QNodes with ``diff_method="finite-diff"``
-              are not supported with ``"auto"``.
-
-            - ``"fd"`` represents first-order finite-differences for the entire hybrid
-              function.
-
-        h (float): The step-size value for the finite-difference (``"fd"``) method within
-            :func:`~.qjit` decorated functions. This value has
-            no effect in non-compiled functions.
+        func (function): A Python function or QNode that returns a real scalar and may
+            combine quantum and classical computations.
+        argnums (int, Sequence[int], None): Indices of the positional arguments to differentiate.
+            If ``None``, argument selection depends on the input interface.
+        method (str): Gradient method for :func:`~.qjit`: ``"auto"`` or ``"fd"``.
+            Leave unset for non-compiled functions.
+        h (float): Step size for finite differences within :func:`~.qjit`.
+            Leave unset for non-compiled functions.
 
     Returns:
         function: The function that returns the gradient of the input
         function with respect to the differentiable arguments, or, if specified,
         the arguments in ``argnums``.
+
+    **Examples**
+
+    Differentiate a classical function of JAX inputs. By default, only the first
+    positional argument is differentiated:
+
+    .. code-block:: python
+
+        import jax.numpy as jnp
+
+        def cost(first, second):
+            return first**2 + first * second
+
+        first, second = jnp.array(2.0), jnp.array(3.0)
+
+    >>> qp.grad(cost)(first, second)
+    Array(7., dtype=float32, weak_type=True)
+
+    Select another argument by its index:
+
+    >>> qp.grad(cost, argnums=1)(first, second)
+    Array(2., dtype=float32, weak_type=True)
+
+    A sequence of indices returns a tuple of gradients:
+
+    >>> qp.grad(cost, argnums=(0, 1))(first, second)
+    (Array(7., dtype=float32, weak_type=True), Array(2., dtype=float32, weak_type=True))
+
+    Differentiate a QNode with a scalar expectation value:
+
+    .. code-block:: python
+
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
+        def circuit(angle):
+            qp.RY(angle, wires=0)
+            return qp.expval(qp.Z(0))
+
+    >>> qp.grad(circuit)(jnp.array(0.5))
+    Array(-0.47942555, dtype=float32)
+
+    .. details::
+        :title: Usage Details
+
+        Supports JAX, Autograd, and :func:`~.qjit`. For vector-valued outputs, use
+        :func:`pennylane.jacobian`.
+
+        With JAX inputs, as within :func:`~.qjit`, the first positional argument is
+        differentiated by default, following JAX. Use ``argnums`` to select positional
+        arguments explicitly.
+
+        For eager differentiation, JAX and Autograd inputs cannot be mixed in the same call.
+        Ordinary NumPy arrays and Python constants can accompany either interface.
+
+        With Autograd, gradients are computed for arguments which contain
+        the property ``requires_grad=True``. Alternatively, the ``argnums`` keyword argument
+        can be specified to compute gradients for function arguments without this property,
+        such as scalars, lists, tuples, dicts, or vanilla NumPy arrays. Setting
+        ``argnums`` to the index of an argument with ``requires_grad=False`` will raise
+        a ``NonDifferentiableError``.
+
+        Using the ``cost`` function above, both trainable Autograd arguments are
+        differentiated by default:
+
+        >>> first = qp.numpy.array(2.0, requires_grad=True)
+        >>> second = qp.numpy.array(3.0, requires_grad=True)
+        >>> qp.grad(cost)(first, second)
+        (tensor(7., requires_grad=True), tensor(2., requires_grad=True))
+
+        With Autograd, the most recent forward value is available via the
+        :attr:`~.forward` property.
+
+        With :func:`~.qjit`, ``method`` selects the differentiation method:
+
+        - ``"auto"`` defers quantum differentiation to the method specified by the QNode,
+          while the classical computation is differentiated using traditional auto-diff.
+          Catalyst supports ``"parameter-shift"`` and ``"adjoint"`` on internal QNodes.
+          QNodes with ``diff_method="finite-diff"`` are not supported with ``"auto"``.
+        - ``"fd"`` uses first-order finite differences for the entire hybrid function.
+
+        .. note::
+
+            When used with :func:`~.qjit`, this function currently only supports the
+            Catalyst compiler.
+
+            Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
+            as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
+            page for an overview of the differences between Catalyst and PennyLane.
+
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(self, func, argnums=None, h=None, method=None):
         self._forward = None
         self._grad_fn = None
@@ -288,7 +342,7 @@ class grad:
             # If the differentiable argnum is provided, we can construct
             # the gradient function at once during initialization.
             # Known pylint issue with function signatures and decorators:
-            # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
+            # pylint: disable-next=unexpected-keyword-arg,no-value-for-parameter
             self._grad_fn = self._grad_with_forward(func, argnum=self._argnums)
 
         # need to preserve input siganture for use in catalyst AOT compilation, but
@@ -328,7 +382,7 @@ class grad:
             argnums = argnums[0]
 
         # Known pylint issue with function signatures and decorators:
-        # pylint:disable=unexpected-keyword-arg,no-value-for-parameter
+        # pylint: disable-next=unexpected-keyword-arg,no-value-for-parameter
         return self._grad_with_forward(self._func, argnum=argnums), argnums
 
     def __call__(self, *args, **kwargs):
@@ -348,6 +402,10 @@ class grad:
             raise ValueError(f"method = '{self._method}' unsupported without QJIT. Must be `None`.")
         if self._h:
             raise ValueError(f"h = {self._h} unsupported without QJIT. Must be ``None``.")
+
+        if _use_jax(args, kwargs):
+            argnums, unpack = _setup_argnums(self._argnums)
+            return jax.grad(self._func, argnums=argnums[0] if unpack else argnums)(*args, **kwargs)
 
         return self._autograd_call(*args, **kwargs)
 
@@ -372,9 +430,10 @@ class grad:
 
     @property
     def forward(self):
-        """float: The result of the forward pass calculated while performing
-        backpropagation. Will return ``None`` if the backpropagation has not yet
-        been performed."""
+        """The last forward value computed by Autograd, or ``None`` before such a call.
+
+        JAX differentiation and compiled executions do not update this value.
+        """
         return self._forward
 
     @staticmethod
@@ -383,7 +442,7 @@ class grad:
         """This function is a replica of ``autograd.grad``, with the only
         difference being that it returns both the gradient *and* the forward pass
         value."""
-        vjp, ans = _make_vjp(fun, x)  # pylint: disable=redefined-outer-name
+        vjp, ans = _make_vjp(fun, x)
 
         if vspace(ans).size != 1:
             raise TypeError(
@@ -425,15 +484,18 @@ def _get_argnum(args):
     return argnum
 
 
-# pylint: disable=too-few-public-methods
-class jacobian:
+class jacobian:  # pylint: disable=too-few-public-methods
     """Returns the Jacobian as a callable function of vector-valued (functions of) QNodes.
-    This function is compatible with Autograd and :func:`~.qjit`.
+    This function dispatches to JAX when passed JAX arrays.
+    With JAX inputs, as within :func:`~.qjit`, the first positional argument is
+    differentiated by default, following JAX. Autograd uses the ``requires_grad``
+    attribute of ``pennylane.numpy`` arrays. Use ``argnums`` to select
+    positional arguments explicitly. This function also supports :func:`~.qjit`.
 
     .. note::
 
         When used with :func:`~.qjit`, this function currently only supports the
-        Catalyst compiler. See :func:`catalyst.jacobian` for more details.
+        Catalyst compiler.
 
         Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
         as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
@@ -446,9 +508,12 @@ class jacobian:
             must consist of a single NumPy array (if classical) or a tuple of
             expectation values (if a quantum node)
 
-        argnums (int or Sequence[int]): Which argument to take the gradient
+        argnums (int, Sequence[int], None): Which argument(s) to take the Jacobian
             with respect to. If a sequence is given, the Jacobian corresponding
-            to all marked inputs and all output elements is returned.
+            to all marked inputs and all output elements is returned. If ``None``,
+            JAX inputs and :func:`~.qjit` programs differentiate the first positional
+            argument, following JAX, while ``pennylane.numpy`` arrays are differentiated
+            if their ``requires_grad`` attribute is ``True``.
 
         method (str): Specifies the gradient method when used with the :func:`~.qjit`
             decorator. Outside of :func:`~.qjit`, this keyword argument
@@ -474,16 +539,26 @@ class jacobian:
 
     .. note::
 
-        Due to a limitation in Autograd, this function can only differentiate built-in scalar
+        With Autograd, this function can only differentiate built-in scalar
         or NumPy array arguments.
 
-    For ``argnums=None``, the trainable arguments are inferred dynamically from the arguments
-    passed to the function. The returned function takes the same arguments as the original
-    function and outputs a ``tuple``. The ``i``-th entry of the ``tuple`` has shape
-    ``(*output shape, *shape of args[argnums[i]])``.
+    For ``argnums=None``, JAX inputs and :func:`~.qjit` programs differentiate only the
+    first positional argument, as ``jax.jacobian`` does. For ``pennylane.numpy`` arrays,
+    the trainable arguments are instead inferred from their ``requires_grad`` attribute.
+    To differentiate several arguments in every case, pass their indices as ``argnums``.
 
-    If a single trainable argument is inferred, or if a single integer
-    is provided as ``argnums``, the tuple is unpacked and its only entry is returned instead.
+    The returned function takes the same arguments as the original function.
+    With JAX, its result preserves the output pytree, with a derivative for each
+    selected argument at every output leaf. For scalar arguments ``x`` and ``y``,
+    outputs ``(x**2, x*y)`` with ``argnums=(0, 1)`` produce ``((2*x, 0), (y, x))``.
+    The tuple nesting reflects the output and argument structure. Each array leaf
+    has shape ``(*output leaf shape, *input leaf shape)``, which is ``()`` in this
+    scalar example. A single integer ``argnums``, or ``None``, omits the argument
+    tuple at each output leaf.
+
+    With Autograd, the result is a tuple with one entry per differentiated argument,
+    each with shape ``(*output shape, *argument shape)``. The tuple is unpacked
+    when ``argnums`` is an integer or a single trainable argument is inferred.
 
     **Example**
 
@@ -492,7 +567,7 @@ class jacobian:
     .. code-block:: python
 
         import pennylane as qp
-        from pennylane import numpy as np
+        import jax.numpy as jnp
 
         dev = qp.device("default.qubit", wires=2)
 
@@ -503,7 +578,7 @@ class jacobian:
             qp.RZ(weights[1, 0, 2], wires=0)
             return qp.probs()
 
-        weights = np.array([[[0.2, 0.9, -1.4]], [[0.5, 0.2, 0.1]]], requires_grad=True)
+        weights = jnp.array([[[0.2, 0.9, -1.4]], [[0.5, 0.2, 0.1]]])
 
     It has a single array-valued QNode argument with shape ``(2, 1, 3)`` and outputs
     the probability of each 2-wire basis state, of which there are ``2**num_wires`` = 4.
@@ -524,17 +599,23 @@ class jacobian:
             qp.RZ(z, wires=0)
             return qp.probs()
 
-        x = np.array(0.2, requires_grad=True)
-        y = np.array(0.9, requires_grad=True)
-        z = np.array(-1.4, requires_grad=True)
+        x = jnp.array(0.2)
+        y = jnp.array(0.9)
+        z = jnp.array(-1.4)
 
     It has three scalar QNode arguments and outputs the probability for each of
-    the 4 basis states. Consequently, its Jacobian will be a three-tuple of
-    arrays with the shape ``(4,)``:
+    the 4 basis states. By default, only the Jacobian with respect to the first
+    argument ``x`` is computed, as within :func:`~.qjit`:
 
-    >>> jac = qp.jacobian(circuit)(x, y, z)
-    >>> type(jac)
-    <class 'tuple'>
+    >>> qp.jacobian(circuit)(x, y, z).shape
+    (4,)
+
+    To differentiate with respect to all three arguments, provide their indices.
+    The Jacobian is then a three-tuple of arrays with the shape ``(4,)``:
+
+    >>> jac = qp.jacobian(circuit, argnums=(0, 1, 2))(x, y, z)
+    >>> len(jac)
+    3
     >>> for sub_jac in jac:
     ...     print(sub_jac.shape)
     (4,)
@@ -554,15 +635,14 @@ class jacobian:
             qp.RX(x[1], wires=2)
             return qp.probs()
 
-        x = np.array([0.1, 0.5], requires_grad=True)
-        y = np.array([[-0.3, 1.2, 0.1, 0.9], [-0.2, -3.1, 0.5, -0.7]], requires_grad=True)
+        x = jnp.array([0.1, 0.5])
+        y = jnp.array([[-0.3, 1.2, 0.1, 0.9], [-0.2, -3.1, 0.5, -0.7]])
 
-    If we do not provide ``argnums``, ``qp.jacobian`` will correctly identify both,
-    ``x`` and ``y``, as trainable function arguments:
+    To differentiate both ``x`` and ``y``, specify their argument indices:
 
-    >>> jac = qp.jacobian(circuit)(x, y)
-    >>> print(type(jac), len(jac))
-    <class 'tuple'> 2
+    >>> jac = qp.jacobian(circuit, argnums=(0, 1))(x, y)
+    >>> len(jac)
+    2
     >>> qp.math.shape(jac[0])
     (8, 2)
     >>> qp.math.shape(jac[1])
@@ -577,8 +657,8 @@ class jacobian:
     entries by providing an iterable as ``argnums``:
 
     >>> jac = qp.jacobian(circuit, argnums=[1])(x, y)
-    >>> print(type(jac), len(jac))
-    <class 'tuple'> 1
+    >>> len(jac)
+    1
     >>> qp.math.shape(jac)
     (1, 8, 2, 4)
 
@@ -589,8 +669,8 @@ class jacobian:
     with a single entry. This is done by providing a single integer as ``argnums``
 
     >>> jac = qp.jacobian(circuit, argnums=1)(x, y)
-    >>> print(type(jac), len(jac))
-    <class 'numpy.ndarray'> 8
+    >>> len(jac)
+    8
     >>> qp.math.shape(jac)
     (8, 2, 4)
 
@@ -607,19 +687,18 @@ class jacobian:
         def workflow(x):
             @qp.qnode(dev)
             def circuit(x):
-                qp.RX(np.pi * x[0], wires=0)
+                qp.RX(jnp.pi * x[0], wires=0)
                 qp.RY(x[1], wires=0)
                 return qp.probs()
 
             g = qp.jacobian(circuit)
             return g(x)
 
-    >>> workflow(np.array([2.0, 1.0]))
+    >>> workflow(jnp.array([2.0, 1.0]))
     Array([[ 3.48786850e-16, -4.20735492e-01],
            [-8.71967125e-17,  4.20735492e-01]], dtype=float64)
 
-    You can further compute the Jacobian transformation using other supported differentiation
-    methods by :func:`catalyst.jacobian`.
+    To compute the Jacobian with finite differences, set ``method="fd"``:
 
     .. code-block:: python
 
@@ -627,23 +706,22 @@ class jacobian:
         def workflow(x):
             @qp.qnode(dev)
             def circuit(x):
-                qp.RX(np.pi * x[0], wires=0)
+                qp.RX(jnp.pi * x[0], wires=0)
                 qp.RY(x[1], wires=0)
                 return qp.probs()
 
             g = qp.jacobian(circuit, method="fd", h=0.3)
             return g(x)
 
-    >>> workflow(np.array([2.0, 1.0]))
+    >>> workflow(jnp.array([2.0, 1.0]))
     Array([[-0.37120096, -0.45467246],
            [ 0.37120096,  0.45467246]], dtype=float64)
 
     """
 
-    # pylint: disable=too-many-arguments
     def __init__(self, func, argnums=None, method=None, h=None):
         self._func = func
-        self._argnums = argnums
+        self._argnums = tuple(argnums) if isinstance(argnums, Iterable) else argnums
         self._method = method
         self._h = h
 
@@ -673,6 +751,12 @@ class jacobian:
             raise ValueError(f"method = '{self._method}' unsupported without QJIT. Must be `None`.")
         if self._h:
             raise ValueError(f"h = {self._h} unsupported without QJIT. Must be ``None``.")
+
+        if _use_jax(args, kwargs):
+            argnums, unpack = _setup_argnums(self._argnums)
+            return jax.jacobian(self._func, argnums=argnums[0] if unpack else argnums)(
+                *args, **kwargs
+            )
 
         return self._autograd_call(*args, **kwargs)
 

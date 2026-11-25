@@ -16,6 +16,8 @@ Unit tests for the eigvals transform
 """
 
 # pylint: disable=too-few-public-methods
+
+
 from functools import reduce
 
 import pytest
@@ -214,9 +216,9 @@ class TestMultipleOperations:
         assuming no overlap of wires"""
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.PauliX(wires="a")
-            qp.S(wires="b")
-            qp.Hadamard(wires="c")
+            qp.PauliX(wires=17)
+            qp.S(wires=18)
+            qp.Hadamard(wires=19)
 
         tape = qp.tape.QuantumScript.from_queue(q)
         res = qp.eigvals(tape)
@@ -229,10 +231,10 @@ class TestMultipleOperations:
         """Check the eigenvalues for a tape containing multiple gates"""
 
         with qp.queuing.AnnotatedQueue() as q:
-            qp.PauliX(wires="a")
-            qp.S(wires="b")
-            qp.Hadamard(wires="c")
-            qp.CNOT(wires=["b", "c"])
+            qp.PauliX(wires=17)
+            qp.S(wires=18)
+            qp.Hadamard(wires=19)
+            qp.CNOT(wires=[18, 19])
 
         tape = qp.tape.QuantumScript.from_queue(q)
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
@@ -245,10 +247,10 @@ class TestMultipleOperations:
         """Check the eigenvalues for a qfunc containing multiple gates"""
 
         def testcircuit():
-            qp.PauliX(wires="a")
-            qp.S(wires="b")
-            qp.Hadamard(wires="c")
-            qp.CNOT(wires=["b", "c"])
+            qp.PauliX(wires=17)
+            qp.S(wires=18)
+            qp.Hadamard(wires=19)
+            qp.CNOT(wires=[18, 19])
 
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             res = qp.eigvals(testcircuit)()
@@ -258,15 +260,15 @@ class TestMultipleOperations:
 
     def test_multiple_operations_qnode(self):
         """Check the eigenvalues for a QNode containing multiple gates"""
-        dev = qp.device("default.qubit", wires=["a", "b", "c"])
+        dev = qp.device("default.qubit", wires=[17, 18, 19])
 
         @qp.qnode(dev)
         def testcircuit():
-            qp.PauliX(wires="a")
-            qp.adjoint(qp.S)(wires="b")
-            qp.Hadamard(wires="c")
-            qp.CNOT(wires=["b", "c"])
-            return qp.expval(qp.PauliZ("a"))
+            qp.PauliX(wires=17)
+            qp.adjoint(qp.S)(wires=18)
+            qp.Hadamard(wires=19)
+            qp.CNOT(wires=[18, 19])
+            return qp.expval(qp.PauliZ(17))
 
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             res = qp.eigvals(testcircuit)()

@@ -38,11 +38,9 @@ def tol():
     scope="module",
     params=[
         None,
-        qp.wires.Wires(
-            list("ab") + [-3, 42] + ["xyz", "23", "wireX"] + [f"w{i}" for i in range(20)]
-        ),
+        qp.wires.Wires([10, 11, -3, 42, 20, 23, 30] + list(range(100, 120))),
         list(range(100, 120)),
-        {13 - i: "abcdefghijklmn"[i] for i in range(14)},
+        {13 - i: 30 + i for i in range(14)},
     ],
 )
 def custom_wires(request):
@@ -53,10 +51,9 @@ def custom_wires(request):
 @pytest.fixture(scope="session", name="openfermion_support")
 def fixture_openfermion_support():
     """Fixture to determine whether openfermion and openfermionpyscf are installed."""
-    # pylint: disable=unused-import
     try:
-        import openfermion
-        import openfermionpyscf
+        import openfermion  # pylint: disable=unused-import
+        import openfermionpyscf  # pylint: disable=unused-import
 
         openfermion_support = True
     except ModuleNotFoundError:

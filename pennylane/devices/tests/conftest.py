@@ -63,20 +63,6 @@ def init_state():
     return _init_state
 
 
-@pytest.fixture(params=[False, True], ids=["graph_disabled", "graph_enabled"])
-def enable_and_disable_graph_decomp(request):
-    """
-    A fixture that parametrizes a test to run twice: once with graph
-    decomposition disabled and once with it enabled.
-
-    It automatically handles the setup (enabling/disabling) before the
-    test runs and the teardown (always disabling) after the test completes.
-    """
-    use_graph_decomp = request.param
-    with qp.decomposition.toggle_graph_ctx(use_graph_decomp):
-        yield
-
-
 def get_legacy_capabilities(dev):
     """Gets the capabilities dictionary of a device."""
 
@@ -133,7 +119,7 @@ def fixture_device(device_kwargs):
     """Fixture to create a device."""
 
     # internally used by pytest
-    __tracebackhide__ = True  # pylint:disable=unused-variable
+    __tracebackhide__ = True  # pylint: disable=unused-variable
 
     def _device(wires):
         device_kwargs["wires"] = wires

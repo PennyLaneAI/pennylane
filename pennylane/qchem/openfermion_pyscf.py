@@ -13,8 +13,9 @@
 # limitations under the License.
 """This module contains functions to construct many-body observables with ``OpenFermion-PySCF``."""
 
-# pylint: disable=too-many-arguments,unused-variable
-# pylint: disable=consider-using-generator
+# pylint: disable=too-many-arguments
+
+
 import os
 
 import numpy as np
@@ -46,8 +47,7 @@ def _import_of():
 def _import_pyscf():
     """Import pyscf."""
     try:
-        # pylint: disable=import-outside-toplevel
-        import pyscf
+        import pyscf  # pylint: disable=import-outside-toplevel
     except ImportError as Error:
         raise ImportError(
             "This feature requires pyscf. It can be installed with: pip install pyscf."
@@ -111,7 +111,8 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
             which is typically included in the electronic Hamiltonian of molecules.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can
             be ``'jordan_wigner'``, ``'parity'``, or ``'bravyi_kitaev'``.
-        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
+        wires (Wires or Sequence[int] or dict[int, int]): Custom wire mapping used to convert the
+            qubit operator
             to an observable measurable in a PennyLane ansatz.
             For types Wires/list/tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
@@ -405,7 +406,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
             )
 
         # Compute the contribution of core orbitals
-        v_core = sum(
+        v_core = sum(  # pylint: disable=consider-using-generator
             [
                 2 * matrix_elements[alpha, beta, beta, alpha]
                 - matrix_elements[alpha, beta, alpha, beta]
@@ -560,7 +561,8 @@ def dipole_of(
             :math:`\langle \alpha \vert \hat{{\bf r}} \vert \beta \rangle`. The matrix elements
             with absolute value less than ``cutoff`` are neglected.
         outpath (str): path to the directory containing output files
-        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
+        wires (Wires or Sequence[int] or dict[int, int]): Custom wire mapping used to convert the
+            qubit operator
             to an observable measurable in a PennyLane ansatz.
             For types Wires/list/tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
@@ -619,8 +621,7 @@ def dipole_of(
     hf = openfermion.MolecularData(filename=hf_file.strip())
 
     # Load dipole matrix elements in the atomic basis
-    # pylint: disable=import-outside-toplevel
-    from pyscf import gto
+    from pyscf import gto  # pylint: disable=import-outside-toplevel
 
     mol = gto.M(
         atom=hf.geometry, basis=hf.basis, charge=hf.charge, spin=0.5 * (hf.multiplicity - 1)
@@ -663,7 +664,7 @@ def meanfield(
     basis="sto-3g",
     package="pyscf",
     outpath=".",
-):  # pylint: disable=too-many-arguments
+):
     r"""Generates a file from which the mean field electronic structure
     of the molecule can be retrieved.
 
@@ -710,7 +711,7 @@ def meanfield(
     >>> meanfield(symbols, coordinates, name="h2")
     ./h2_pyscf_sto-3g
     """
-    openfermion, openfermionpyscf = _import_of()
+    openfermion, openfermionpyscf = _import_of()  # pylint: disable=unused-variable
 
     if coordinates.size != 3 * len(symbols):
         raise ValueError(
@@ -738,8 +739,7 @@ def meanfield(
     molecule = openfermion.MolecularData(geometry, basis, mult, charge, filename=path_to_file)
 
     if package == "pyscf":
-        # pylint: disable=import-outside-toplevel
-        from openfermionpyscf import run_pyscf
+        from openfermionpyscf import run_pyscf  # pylint: disable=import-outside-toplevel
 
         run_pyscf(molecule, run_scf=1, verbose=0)
 
@@ -898,6 +898,7 @@ def _openfermion_hamiltonian(
         molecule.n_electrons, molecule.n_orbitals, mult, active_electrons, active_orbitals
     )
 
+    # pylint: disable-next=unused-variable
     h_of, qubits = (decompose(hf_file, mapping, core, active), 2 * len(active))
 
     h_pl = qp.qchem.convert.import_operator(h_of, wires=wires, tol=convert_tol)

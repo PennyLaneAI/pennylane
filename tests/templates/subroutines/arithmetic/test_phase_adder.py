@@ -36,6 +36,20 @@ def test_standard_validity_Phase_Adder():
     qp.testing.assert_valid(op)
 
 
+@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("dtype", ["int32", "int64"])
+def test_modular_resources_match_integer_dtype(dtype):
+    """Test that basis subcircuits retain the parent operator's canonical integer signature."""
+    op = qp.PhaseAdder(
+        qp.math.asarray(1, like="jax", dtype=dtype),
+        x_wires=[0, 1, 2],
+        mod=7,
+        work_wire=[3],
+    )
+    assert_decomposable(op)
+
+
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_falsy_zero_as_work_wire():
     """Test that work wire is not treated as a falsy zero."""
@@ -73,9 +87,9 @@ class TestPhaseAdder:
             ),
             (
                 6,
-                ["a", "b", "c"],
+                [13, 14, 15],
                 7,
-                ["d"],
+                [16],
                 3,
             ),
             (
@@ -129,9 +143,7 @@ class TestPhaseAdder:
             ),
         ],
     )
-    def test_operation_result(
-        self, k, x_wires, mod, work_wire, x
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_result(self, k, x_wires, mod, work_wire, x):
         """Test the correctness of the PhaseAdder template output."""
         dev = qp.device("default.qubit")
 
@@ -148,7 +160,6 @@ class TestPhaseAdder:
         if mod is None:
             mod = 2 ** len(x_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)[0, :]))), (x + k) % mod
         )
@@ -179,9 +190,7 @@ class TestPhaseAdder:
             ),
         ],
     )
-    def test_operation_and_wires_error(
-        self, k, x_wires, mod, work_wire, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_and_wires_error(self, k, x_wires, mod, work_wire, msg_match):
         """Test errors are raised"""
         with pytest.raises(ValueError, match=msg_match):
             qp.PhaseAdder(k, x_wires, mod, work_wire)
@@ -225,9 +234,7 @@ class TestPhaseAdder:
             ),
         ],
     )
-    def test_types_error(
-        self, k, x_wires, mod, work_wire, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_types_error(self, k, x_wires, mod, work_wire, msg_match):
         """Test errors are raised"""
         with pytest.raises(ValueError, match=msg_match):
             qp.PhaseAdder(k, x_wires, mod, work_wire)
@@ -243,7 +250,12 @@ class TestPhaseAdder:
         phase_adder_decomp = qp.PhaseAdder(k, x_wires, mod, work_wire).decomposition()
         cob_index = len(_add_k_fourier(k, x_wires)) + len(_add_k_fourier(mod, x_wires))
         cob_decomp1 = phase_adder_decomp[cob_index].decomposition()
-        cob_decomp2 = phase_adder_decomp[-1].decomposition()
+        basis_change = phase_adder_decomp[-1]
+        cob_decomp2 = [
+            *basis_change.compute_op.decomposition(),
+            basis_change.target_op,
+            *basis_change.uncompute_op.decomposition(),
+        ]
 
         phase_adder_decomposition = [
             *phase_adder_decomp[:cob_index],
@@ -269,10 +281,11 @@ class TestPhaseAdder:
             op_list.append(qp.CNOT([aux_k, work_wire[0]]))
             op_list.append(qp.QFT(wires=x_wires))
             op_list.extend(qp.ctrl(op, control=work_wire) for op in _add_k_fourier(mod, x_wires))
-            op_list.append(qp.prod(qp.X(aux_k), *base_list_ops1))
+            op_list.extend([*reversed(base_list_ops1), qp.X(aux_k)])
             op_list.append(qp.CNOT(wires=[aux_k, work_wire[0]]))
-            op_list.append(qp.prod(*base_list_ops2, qp.X(aux_k)))
+            op_list.extend([qp.X(aux_k), *reversed(base_list_ops2)])
 
+        assert len(phase_adder_decomposition) == len(op_list)
         for op1, op2 in zip(phase_adder_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
@@ -329,7 +342,6 @@ class TestPhaseAdder:
             qp.adjoint(qp.QFT)(wires=x_wires)
             return qp.sample(wires=x_wires)
 
-        # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))), (x + k) % mod
         )

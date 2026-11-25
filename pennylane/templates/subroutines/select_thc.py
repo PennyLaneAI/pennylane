@@ -14,7 +14,6 @@
 """Contains the template for the tensor hypercontraction ``SELECT`` oracle."""
 
 from collections import Counter
-from functools import partial
 from math import pi
 
 import numpy as np
@@ -33,6 +32,7 @@ from pennylane.ops import (
     change_op_basis,
     ctrl,
 )
+from pennylane.ops.subcircuit import subcircuit
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
@@ -136,7 +136,7 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
 
     Each row holds the ``beth``-bit angles that rotate one leaf onto
     :math:`\lvert e_0 \rangle`, one field per pair in the batch; addresses not backed by a
-    leaf are all-zero and load the identity. Since ``QROM(clean=True)`` writes with an
+    leaf are all-zero and load the identity. Since ``QROM`` writes with an
     XOR, table :math:`b` is stored as its difference with table :math:`b - 1`, which carries
     the angle register from one batch to the next instead of erasing and reloading it. The
     first table is absolute, so re-loading it clears the register.
@@ -199,9 +199,8 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
     ]
 
 
-def _apply_loaded_rotation(
-    psi_down, angle_wires, beth, pairs, gradient_wires, work_wires
-):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments
+def _apply_loaded_rotation(psi_down, angle_wires, beth, pairs, gradient_wires, work_wires):
     r"""Apply the rotations of one batch, whose angles are held in ``angle_wires``.
 
     This is the phase-gradient compilation of Section III.C of `Lee et al. (2021)
@@ -227,21 +226,21 @@ def _apply_loaded_rotation(
         gradient_wires (Sequence[int]): the ``beth + 1`` wires of the phase gradient register
         work_wires (Sequence[int]): at least ``beth`` zeroed wires. The first ``beth`` are the
             scratch of :class:`~.SemiAdder`.
+
     """
     adder_work = work_wires[:beth]
 
     for slot, p in enumerate(pairs):
         bits = angle_wires[slot * beth : (slot + 1) * beth]
 
-        add = adjoint(SemiAdder)
         lower, upper = psi_down[p], psi_down[p + 1]
         Hadamard(lower)
         CNOT(wires=[lower, upper])
         for wire in (lower, upper):
-            adjoint(S)(wire)
+            adjoint(S(wire))
             Hadamard(wire)
             ctrl(MultiX([1] * len(bits), wires=bits), control=wire)
-            add(bits, gradient_wires, adder_work)
+            adjoint(SemiAdder(bits, gradient_wires, adder_work))
             ctrl(MultiX([1] * len(bits), wires=bits), control=wire)
             Z(wire)
             Hadamard(wire)
@@ -288,10 +287,8 @@ def select_thc_wires(M, N, beth, num_batches=1):
     .. note::
 
         Only ``work_wires`` is a minimum; the other four are exact and must be matched.
-        Extra work wires are forwarded to the internal :class:`~.QROM`, which splits them
-        between the unary iteration of its ``Select`` and the ``SelectSwap`` space-time
-        trade-off. Which split it picks depends on ``M``, ``N`` and ``beth``, so extra
-        wires do not necessarily lower the gate count.
+        Extra work wires are forwarded to the internal :class:`~.QROM`, which only uses as
+        many as its unary iteration needs, so extra wires do not lower the gate count.
 
     .. note::
 
@@ -341,7 +338,88 @@ def select_thc_wires(M, N, beth, num_batches=1):
     }
 
 
-def _select_half(
+def _select_basis_resources(  # pylint: disable=too-many-arguments
+    rotation_data, system_wires, control_wires, gradient_wires, angle_wires, work_wires
+):
+    """Return the routing, QROM and loaded-rotation resources of one basis change."""
+    beth, batches, tables = rotation_data
+    swap = ctrl(
+        SWAP(Wire[2]),
+        control=Wire[1],
+        work_wires=Wire[len(angle_wires) + len(work_wires)],
+        work_wire_type="zeroed",
+    )
+    resources = Counter({swap: len(system_wires) // 2})
+    for table in tables:
+        resources[
+            QROM(
+                table,
+                control_wires=Wire[len(control_wires) - 1],
+                target_wires=angle_wires,
+                work_wires=work_wires,
+            )
+        ] += 1
+    num_pairs = sum(len(batch) for batch in batches)
+    if num_pairs:
+        resources.update(
+            {
+                Hadamard: 6 * num_pairs,
+                CNOT: 2 * num_pairs,
+                adjoint(S(Wire[1])): 2 * num_pairs,
+                S: 2 * num_pairs,
+                Z: 2 * num_pairs,
+                ctrl(MultiX([1] * beth, Wire[beth]), control=Wire[1]): 4 * num_pairs,
+                adjoint(SemiAdder(Wire[beth], gradient_wires, Wire[beth])): 2 * num_pairs,
+            }
+        )
+    return resources
+
+
+@subcircuit(
+    compilable_argnames=("rotation_data",),
+    wire_argnames=("system_wires", "control_wires", "gradient_wires", "angle_wires", "work_wires"),
+)
+@register_resources(_select_basis_resources)
+def _SelectTHCBasis(  # pylint: disable=too-many-arguments
+    rotation_data: tuple,
+    system_wires: WiresLike,
+    control_wires: WiresLike,
+    gradient_wires: WiresLike,
+    angle_wires: WiresLike,
+    work_wires: WiresLike = (),
+):
+    """Route the spin sector and load each batch of Givens rotations.
+
+    Args:
+        rotation_data (tuple): the precision, Givens-pair batches and QROM tables
+        system_wires (Sequence[int]): the spin-down and spin-up orbitals
+        control_wires (Sequence[int]): the spin flag followed by the QROM address
+        gradient_wires (Sequence[int]): the prepared phase-gradient register
+        angle_wires (Sequence[int]): the angle register, left loaded until uncomputation
+        work_wires (Sequence[int]): zeroed QROM and adder scratch, restored before returning
+    """
+    beth, batches, tables = rotation_data
+    n_half = len(system_wires) // 2
+    for down, up in zip(system_wires[:n_half], system_wires[n_half:], strict=True):
+        ctrl(
+            SWAP(wires=[down, up]),
+            control=control_wires[0],
+            work_wires=Wires(angle_wires) + Wires(work_wires),
+            work_wire_type="zeroed",
+        )
+    for table, batch in zip(tables, batches, strict=True):
+        QROM(
+            table,
+            control_wires=control_wires[1:],
+            target_wires=angle_wires,
+            work_wires=work_wires,
+        )
+        _apply_loaded_rotation(
+            system_wires[:n_half], angle_wires, beth, batch, gradient_wires, work_wires
+        )
+
+
+def _select_half(  # pylint: disable=too-many-arguments
     chi,
     t_eigenvectors,
     beth,
@@ -353,7 +431,7 @@ def _select_half(
     num_batches=1,
     one_body_table=False,
     skip_one_body=False,
-):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+):
     r"""Apply one :math:`V = U^\dagger Z_1 U` sandwich of the THC ``SELECT`` oracle.
 
     This is the kernel of Fig. 5 of `Lee et al. (2021)
@@ -418,62 +496,71 @@ def _select_half(
             f"got {math.shape(t_eigenvectors)}."
         )
 
-    psi_down, psi_up = list(system_wires[:n_half]), list(system_wires[n_half:])
     succ, edge, spin = flag_wires
-    angle_wires = list(work_wires[:n_angle])
     # The QROM restores its work wires before the adder runs, so the two share the pool.
     # ``angle_wires`` holds the loaded angles while the sandwich is open, so ``qrom_work`` is
     # the only part of the pool that is zeroed for the ops between the two QROM calls.
     qrom_work = list(work_wires[n_angle:])
-    swap_work = list(work_wires)
-    gradient_wires = list(gradient_wires)
-
     tables = _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches)
     # The index register is sized by PREPARE, which needs the ``nu = M`` sentinel, but this
     # QROM only addresses ``mu < M`` or ``ell < N/2``, so its top wire is always in |0>.
     n_mu = math.ceil_log2(max(M, n_half))
-    qrom = {
-        "control_wires": ([edge] if one_body_table else []) + list(index_wires)[n - n_mu :],
-        "target_wires": angle_wires,
-        "work_wires": qrom_work,
-        "clean": True,
-    }
-
+    control_wires = [spin] + ([edge] if one_body_table else []) + list(index_wires)[n - n_mu :]
+    rotation_data = (
+        beth,
+        tuple(tuple(batch) for batch in batches),
+        tuple(tuple(tuple(row) for row in table) for table in tables),
+    )
     z_control, z_values = ([succ, edge], [1, 0]) if skip_one_body else ([succ], [1])
-
-    def _basis():
-        # Route V onto the spin-up block when the spin flag is set, then apply U,
-        # one batch of angles at a time.
-        for down, up in zip(psi_down, psi_up):
-            ctrl(
-                SWAP(wires=[down, up]),
-                control=spin,
-                work_wires=swap_work,
-                work_wire_type="zeroed",
-            )
-        for b, batch in enumerate(batches):
-            QROM(tables[b], **qrom)
-            _apply_loaded_rotation(psi_down, angle_wires, beth, batch, gradient_wires, qrom_work)
-
-    def _reflect():
-        # Reflect on the first orbital, switched off on the one-body block.
+    return change_op_basis(
+        _SelectTHCBasis(
+            rotation_data,
+            system_wires,
+            control_wires,
+            gradient_wires,
+            work_wires[:n_angle],
+            qrom_work,
+        ),
         ctrl(
-            Z(psi_down[0]),
+            Z(system_wires[0]),
             control=z_control,
             control_values=z_values,
             work_wires=qrom_work,
             work_wire_type="zeroed",
+        ),
+    )
+
+
+def _index_swap_resources(mu_wires, work_wires, **_):
+    """Return the controlled register and spin swaps."""
+    swap = ctrl(SWAP(Wire[2]), control=Wire[1], work_wires=work_wires, work_wire_type="zeroed")
+    return {swap: len(mu_wires) + 1}
+
+
+@subcircuit(wire_argnames=("mu_wires", "nu_wires", "flag_wires", "work_wires"))
+@register_resources(_index_swap_resources)
+def _THCIndexSwaps(
+    mu_wires: WiresLike, nu_wires: WiresLike, flag_wires: WiresLike, work_wires: WiresLike
+):
+    """Swap both index registers and the spin flags under the sentinel control."""
+    edge, spin1, spin2 = flag_wires
+    for first, second in zip(mu_wires, nu_wires, strict=True):
+        ctrl(
+            SWAP(wires=[first, second]),
+            control=edge,
+            work_wires=work_wires,
+            work_wire_type="zeroed",
         )
+    ctrl(
+        SWAP(wires=[spin1, spin2]),
+        control=edge,
+        work_wires=work_wires,
+        work_wire_type="zeroed",
+    )
 
-    def _unbasis():
-        adjoint(_basis)()
 
-    return change_op_basis(_basis, _reflect, _unbasis)
-
-
-def _index_swaps(
-    mu_wires, nu_wires, edge, spin1, spin2, work_wires
-):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+# pylint: disable-next=too-many-arguments
+def _index_swaps(mu_wires, nu_wires, edge, spin1, spin2, work_wires):
     r"""Exchange the two index registers and the two spin flags off the one-body block.
 
     The swaps are conditioned on :math:`\nu \neq M`, so they are emitted as a
@@ -489,22 +576,9 @@ def _index_swaps(
         work_wires (Sequence[int]): zeroed scratch for the controlled swaps
     """
 
-    def _swaps():
-        for a, b in zip(mu_wires, nu_wires, strict=True):
-            ctrl(
-                SWAP(wires=[a, b]),
-                control=edge,
-                work_wires=work_wires,
-                work_wire_type="zeroed",
-            )
-        ctrl(
-            SWAP(wires=[spin1, spin2]),
-            control=edge,
-            work_wires=work_wires,
-            work_wire_type="zeroed",
-        )
-
-    return change_op_basis(partial(X, wires=edge), _swaps)
+    return change_op_basis(
+        X(edge), _THCIndexSwaps(mu_wires, nu_wires, [edge, spin1, spin2], work_wires)
+    )
 
 
 class SelectTHC(Operator2):
@@ -610,7 +684,7 @@ class SelectTHC(Operator2):
                 :math:`P = 0`), and :math:`n = \lceil \log_2(M+1) \rceil` wires per index
             :example: :math:`M=1`, :math:`N=4` (:math:`h=2`, :math:`P=1`, :math:`B=1`, :math:`n=1`)
 
-            .. decomposition-rule:: _select_thc_decomp
+            .. decomposition-rule:: selected_basis_rotations
                 :image: /_static/decomposition_thumbnails/select_thc_double_factorized.svg
                 :lightbox:
 
@@ -647,7 +721,7 @@ class SelectTHC(Operator2):
         "work_wires": Wire[-1],
     }
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         chi,
         t_eigenvectors,
@@ -658,7 +732,7 @@ class SelectTHC(Operator2):
         gradient_wires: WiresLike,
         work_wires: WiresLike,
         num_batches=1,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    ):
         M, n_half = _validate_select_data(chi, t_eigenvectors)
 
         requirements = select_thc_wires(M, 2 * n_half, beth, num_batches)
@@ -701,7 +775,7 @@ class SelectTHC(Operator2):
         )
 
 
-def _select_thc_resources(
+def _select_thc_standard_resources(  # pylint: disable=too-many-arguments
     chi,
     t_eigenvectors,
     beth,
@@ -711,7 +785,7 @@ def _select_thc_resources(
     gradient_wires,
     work_wires,
     num_batches=1,
-):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+):
     """Return the top-level resources of the SelectTHC decomposition."""
     sizes = [
         len(system_wires),
@@ -730,10 +804,7 @@ def _select_thc_resources(
     nu_wires = list(index[n:])
     succ, edge, _, spin1, spin2 = flags
 
-    # `_select_half` returns change_op_basis. Under capture that unrolls eagerly
-    # (binds inner gates into the jaxpr and returns None), so pause while we
-    # build the resource keys. compute_resources already stops queuing but does
-    # not pause capture. See #10162.
+    # Resource keys use placeholder wires and must not emit executable capture equations.
     with capture.pause():
         first_half = _select_half(
             chi,
@@ -766,8 +837,8 @@ def _select_thc_resources(
     return resources
 
 
-@register_resources(_select_thc_resources)
-def _select_thc_decomp(
+@register_resources(_select_thc_standard_resources, name="selected_basis_rotations")
+def _select_thc_standard(  # pylint: disable=too-many-arguments
     chi,
     t_eigenvectors,
     beth,
@@ -778,7 +849,7 @@ def _select_thc_decomp(
     work_wires,
     num_batches=1,
     **_,
-):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+):
     M = len(chi)
     n = math.ceil_log2(M + 1)
     mu_wires = index_wires[:n]
@@ -821,4 +892,4 @@ def _select_thc_decomp(
     X(swap)
 
 
-add_decomps(SelectTHC, _select_thc_decomp)
+add_decomps(SelectTHC, _select_thc_standard)

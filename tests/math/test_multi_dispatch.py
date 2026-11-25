@@ -13,7 +13,9 @@
 # limitations under the License.
 """Assertion test for multi_dispatch function/decorator"""
 
-# pylint: disable=unused-argument,no-value-for-parameter,too-few-public-methods,wrong-import-order
+# pylint: disable=unused-argument,wrong-import-order
+
+
 import autoray
 import numpy as onp
 import pytest
@@ -230,7 +232,7 @@ def test_kron():
     assert fn.allclose(res, expected)
 
 
-class TestMatmul:
+class TestMatmul:  # pylint: disable=too-few-public-methods
     @pytest.mark.torch
     def test_matmul_torch(self):
         m1 = torch.tensor([[1, 0], [0, 1]])

@@ -21,11 +21,12 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
-from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
+from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
+from pennylane.ops.op_math.pow2 import _pow_scale_angle as pow_rotation2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -37,7 +38,7 @@ def _identity_matrix(n_wires):
 
 
 @lru_cache
-def _identity_sparse_matrix(n_wires, format):  # pylint: disable=redefined-builtin
+def _identity_sparse_matrix(n_wires, format):
     """Cached sparse identity matrix, keyed on the number of wires rather than the wire labels."""
     return sparse.eye(int(2**n_wires), format=format)
 
@@ -54,7 +55,7 @@ class Identity(Operator2):
     .. seealso:: The equivalent short-form alias :class:`~I`
 
     Args:
-        wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
+        wires (Iterable[int] or int): Wire label(s) that the identity acts on.
 
     Corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
@@ -76,7 +77,7 @@ class Identity(Operator2):
 
     def __init__(self, wires: WiresLike = ()):
         super().__init__(wires=wires)
-        self._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({}): 1.0})
+        self._pauli_rep = PauliSentence({PauliWord({}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
@@ -159,7 +160,7 @@ class Identity(Operator2):
         .. seealso:: :meth:`~.Identity.diagonalizing_gates`.
 
         Args:
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
 
         Returns:
             list[.Operator]: list of diagonalizing gates
@@ -193,7 +194,7 @@ The expectation of this observable
 .. seealso:: The equivalent long-form alias :class:`~Identity`
 
 Args:
-    wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
+    wires (Iterable[int] or int): Wire label(s) that the identity acts on.
 
 Corresponds to the trace of the quantum state, which in exact
 simulators should always be equal to 1.
@@ -264,7 +265,7 @@ class GlobalPhase(Operator2):
     wire_argnames = ()
     arg_specs = {"phi": Float}
 
-    def __init__(self, phi):  # pylint: disable=unused-argument
+    def __init__(self, phi):
         super().__init__(phi)
 
     @staticmethod
@@ -335,9 +336,8 @@ class GlobalPhase(Operator2):
         return qp.math.exp(-1j * phi) * sparse.eye(2**n_wires, format=format)
 
     @staticmethod
-    def compute_diagonalizing_gates(
-        phi, wires=()
-    ):  # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_diagonalizing_gates(phi, wires=()):
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -350,7 +350,7 @@ class GlobalPhase(Operator2):
         .. seealso:: :meth:`~.GlobalPhase.diagonalizing_gates`.
 
         Args:
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
 
         Returns:
             list[.Operator]: list of diagonalizing gates
@@ -383,9 +383,13 @@ class GlobalPhase(Operator2):
         return qp.s_prod(-1, qp.I())
 
 
-def _controlled_g_phase_resource(
-    base, control_wires, control_values, work_wires, work_wire_type
-):  # pylint: disable=unused-argument
+def _controlled_g_phase_standard_resources(
+    base,  # pylint: disable=unused-argument
+    control_wires,
+    control_values,  # pylint: disable=unused-argument
+    work_wires,
+    work_wire_type,
+):
     num_control_wires = len(control_wires)
     num_work_wires = len(work_wires)
 
@@ -411,8 +415,10 @@ def _controlled_g_phase_resource(
     return resources
 
 
-@register_resources(_controlled_g_phase_resource, exact=False)
-def _controlled_g_phase_decomp(
+@register_resources(
+    _controlled_g_phase_standard_resources, exact=False, name="to_controlled_phaseshift"
+)
+def _controlled_g_phase_standard(
     base,
     control_wires,
     control_values,
@@ -453,4 +459,4 @@ def _controlled_g_phase_decomp(
 
 add_decomps("Adjoint(GlobalPhase)", adjoint_rotation2)
 add_decomps("Pow(GlobalPhase)", pow_rotation2)
-add_decomps("C(GlobalPhase)", _controlled_g_phase_decomp)
+add_decomps("C(GlobalPhase)", _controlled_g_phase_standard)

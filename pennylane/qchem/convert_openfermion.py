@@ -27,8 +27,7 @@ from pennylane.qchem.convert import _openfermion_to_pennylane, _pennylane_to_ope
 def _import_of():
     """Import openfermion."""
     try:
-        # pylint: disable=import-outside-toplevel
-        import openfermion
+        import openfermion  # pylint: disable=import-outside-toplevel
     except ImportError as Error:
         raise ImportError(
             "This feature requires openfermion. "
@@ -158,12 +157,12 @@ def _(pl_op: Sum, wires=None, tol=1.0e-16):
 
 @_to_openfermion_dispatch.register
 def _(ops: FermiWord, wires=None, tol=1.0e-16):
-    # pylint: disable=protected-access
     openfermion = _import_of()
 
     if wires:
         raise ValueError("Custom wire mapping is not supported for fermionic operators.")
 
+    # pylint: disable-next=protected-access
     return openfermion.ops.FermionOperator(qp.fermi.fermionic._to_string(ops, of=True))
 
 

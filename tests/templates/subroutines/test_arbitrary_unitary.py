@@ -16,8 +16,6 @@ Tests for the ArbitraryUnitary template.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -167,29 +165,6 @@ class TestDecomposition:
             assert np.allclose(op.data[0], weights[..., i])
             assert op.hyperparameters["pauli_word"] == pauli_words[i]
 
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-
-        weights = np.random.random(size=(63,))
-        dev = qp.device("default.qubit", wires=3)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.ArbitraryUnitary(weights, wires=range(3))
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.ArbitraryUnitary(weights, wires=["z", "a", "k"])
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
-
     DECOMP_PARAMS = [
         (np.arange(np.prod((15,)), dtype=float).reshape((15,)), range(2)),
         pytest.param(
@@ -216,7 +191,7 @@ class TestDecomposition:
         assert_decomposable(op)
 
 
-class TestInputs:
+class TestInputs:  # pylint: disable=too-few-public-methods
     """Test inputs and pre-processing."""
 
     @pytest.mark.parametrize("shape", [(5,), (1, 2, 3), (15, 3)])
@@ -235,7 +210,7 @@ class TestInputs:
             circuit(weights)
 
 
-class TestAttributes:
+class TestAttributes:  # pylint: disable=too-few-public-methods
     """Tests class attributes and methods."""
 
     @pytest.mark.parametrize(

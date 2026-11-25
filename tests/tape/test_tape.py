@@ -14,6 +14,8 @@
 """Unit tests for the QuantumTape"""
 
 # pylint: disable=protected-access,too-few-public-methods
+
+
 import copy
 
 import numpy as np
@@ -27,38 +29,13 @@ from pennylane.decomposition import gate_sets
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import ExpectationMP, ProbabilityMP
 from pennylane.tape import QuantumTape
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 
 
 def test_adjoint_deprecated():
     qt = QuantumTape([qp.X(0), qp.Y(1), qp.Z(0)], [qp.expval(qp.Z(0))])
     with pytest.warns(PennyLaneDeprecationWarning, match="adjoint is deprecated"):
         qt.adjoint()
-
-
-def TestOperationMonkeypatching():
-    """Test that operations are monkeypatched only within the quantum tape"""
-    with QuantumTape() as tape:
-        op_ = qp.RX(0.432, wires=0)
-        obs = qp.PauliX(wires="a")
-        qp.expval(qp.PauliX(wires="a"))
-
-    assert tape.operations == [op_]
-    assert tape.observables == [obs]
-
-    # now create an old QNode
-    dev = qp.device("default.qubit", wires=[0, "a"])
-
-    @qp.qnode(dev)
-    def func(x):
-        nonlocal op_
-        op_ = qp.RX(x, wires=0)
-        return qp.expval(qp.PauliX(wires="a"))
-
-    # this should evaluate without error
-    func(0.432)
-
-    assert func.circuit.operations == [op_]
 
 
 class TestConstruction:
@@ -72,11 +49,11 @@ class TestConstruction:
         with QuantumTape() as tape:
             ops += [qp.RX(0.432, wires=0)]
             ops += [qp.Rot(0.543, 0, 0.23, wires=0)]
-            ops += [qp.CNOT(wires=[0, "a"])]
+            ops += [qp.CNOT(wires=[0, 8])]
             ops += [qp.RX(0.133, wires=4)]
-            obs += [qp.PauliX(wires="a")]
+            obs += [qp.PauliX(wires=8)]
             qp.expval(obs[0])
-            obs += [qp.probs(wires=[0, "a"])]
+            obs += [qp.probs(wires=[0, 8])]
 
         return tape, ops, obs
 
@@ -89,7 +66,7 @@ class TestConstruction:
         assert tape.observables == obs
         assert tape.batch_size is None
 
-        assert tape.wires == qp.wires.Wires([0, "a", 4])
+        assert tape.wires == qp.wires.Wires([0, 8, 4])
 
     def test_observable_processing(self, make_tape):
         """Test that observables are processed correctly"""
@@ -196,13 +173,13 @@ class TestConstruction:
             ops += [qp.RX(0.432, wires=0)]
 
         a = qp.Rot(0.543, 0, 0.23, wires=1)
-        b = qp.CNOT(wires=[2, "a"])
+        b = qp.CNOT(wires=[2, 8])
 
         with tape:
             ops += [qp.RX(0.133, wires=0)]
-            obs += [qp.PauliX(wires="a")]
+            obs += [qp.PauliX(wires=8)]
             qp.expval(obs[0])
-            obs += [qp.probs(wires=[0, "a"])]
+            obs += [qp.probs(wires=[0, 8])]
 
         assert len(tape.queue) == 4
         assert tape.operations == ops
@@ -210,7 +187,7 @@ class TestConstruction:
         assert tape.batch_size is None
 
         assert not any(qp.equal(a, op) or qp.equal(b, op) for op in tape.operations)
-        assert tape.wires == qp.wires.Wires([0, "a"])
+        assert tape.wires == qp.wires.Wires([0, 8])
 
     def test_state_preparation(self):
         """Test that state preparations are correctly processed"""
@@ -369,10 +346,10 @@ class TestIteration:
         with QuantumTape() as tape:
             ops += [qp.RX(0.432, wires=0)]
             ops += [qp.Rot(0.543, 0, 0.23, wires=0)]
-            ops += [qp.CNOT(wires=[0, "a"])]
+            ops += [qp.CNOT(wires=[0, 8])]
             ops += [qp.RX(0.133, wires=4)]
-            meas += [qp.expval(qp.PauliX(wires="a"))]
-            meas += [qp.probs(wires=[0, "a"])]
+            meas += [qp.expval(qp.PauliX(wires=8))]
+            meas += [qp.probs(wires=[0, 8])]
 
         return tape, ops, meas
 
@@ -433,10 +410,10 @@ class TestIteration:
         circuit = [
             qp.RX(0.432, wires=0),
             qp.Rot(0.543, 0, 0.23, wires=0),
-            qp.CNOT(wires=[0, "a"]),
+            qp.CNOT(wires=[0, 8]),
             qp.RX(0.133, wires=4),
-            qp.expval(qp.PauliX(wires="a")),
-            qp.probs(wires=[0, "a"]),
+            qp.expval(qp.PauliX(wires=8)),
+            qp.probs(wires=[0, 8]),
         ]
 
         with QuantumTape() as tape:
@@ -500,10 +477,10 @@ class TestResourceEstimation:
         with QuantumTape() as tape:
             qp.RX(params[0], wires=0)
             qp.Rot(*params[1:4], wires=0)
-            qp.CNOT(wires=[0, "a"])
+            qp.CNOT(wires=[0, 8])
             qp.RX(params[4], wires=4)
-            qp.expval(qp.PauliX(wires="a"))
-            qp.probs(wires=[0, "a"])
+            qp.expval(qp.PauliX(wires=8))
+            qp.probs(wires=[0, 8])
 
         return tape
 
@@ -514,7 +491,7 @@ class TestResourceEstimation:
         with QuantumTape() as tape:
             qp.RX(params[0], wires=0)
             qp.Rot(*params[1:4], wires=0)
-            qp.CNOT(wires=[0, "a"])
+            qp.CNOT(wires=[0, 8])
             qp.RX(params[4], wires=4)
 
         return tape
@@ -559,8 +536,8 @@ class TestResourceEstimation:
         with tape as tape:
             qp.CNOT(wires=[0, 1])
             qp.RZ(0.1, wires=3)
-            qp.expval(qp.PauliX(wires="a"))
-            qp.probs(wires=[0, "a"])
+            qp.expval(qp.PauliX(wires=8))
+            qp.probs(wires=[0, 8])
 
         expected_resources = qp.resource.SpecsResources(
             num_wires=5,
@@ -581,10 +558,10 @@ class TestParameters:
         with QuantumTape() as tape:
             qp.RX(params[0], wires=0)
             qp.Rot(*params[1:4], wires=0)
-            qp.CNOT(wires=[0, "a"])
+            qp.CNOT(wires=[0, 8])
             qp.RX(params[4], wires=4)
-            qp.expval(qp.PauliX(wires="a"))
-            qp.probs(wires=[0, "a"])
+            qp.expval(qp.PauliX(wires=8))
+            qp.probs(wires=[0, 8])
 
         return tape, params
 
@@ -596,9 +573,9 @@ class TestParameters:
         with QuantumTape() as tape:
             qp.RX(params[0], wires=0)
             qp.Rot(*params[1:4], wires=0)
-            qp.CNOT(wires=[0, "a"])
+            qp.CNOT(wires=[0, 8])
             qp.RX(params[4], wires=4)
-            qp.expval(qp.Hermitian(hermitian, wires="a"))
+            qp.expval(qp.Hermitian(hermitian, wires=8))
 
         return tape, params, hermitian
 
@@ -806,12 +783,12 @@ class TestInverseAdjoint:
         p = [0.1, 0.2, 0.3, 0.4]
 
         with QuantumTape() as tape:
-            qp.BasisState(init_state, wires=[0, "a"])
+            qp.BasisState(init_state, wires=[0, 8])
             qp.RX(p[0], wires=0)
             qp.adjoint(qp.Rot(*p[1:], wires=0))
-            qp.CNOT(wires=[0, "a"])
+            qp.CNOT(wires=[0, 8])
             qp.probs(wires=0)
-            qp.probs(wires="a")
+            qp.probs(wires=8)
 
         with pytest.warns(PennyLaneDeprecationWarning, match="adjoint is deprecated"):
             with QuantumTape() as tape2:
@@ -1351,8 +1328,8 @@ class TestTapeDraw:
 
         with QuantumTape() as tape:
             qp.RX(1.23456, wires=0)
-            qp.RY(2.3456, wires="a")
-            qp.RZ(3.4567, wires=1.234)
+            qp.RY(2.3456, wires=8)
+            qp.RZ(3.4567, wires=9)
 
         assert tape.draw() == qp.drawer.tape_text(tape)
         assert tape.draw(decimals=2) == qp.drawer.tape_text(tape, decimals=2)

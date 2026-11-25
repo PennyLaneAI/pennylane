@@ -15,7 +15,9 @@
 Tests for the TrotterProduct template and helper functions.
 """
 
-# pylint: disable=private-access, protected-access, too-many-arguments
+# pylint: disable=too-many-arguments
+
+
 import copy
 from functools import partial, reduce
 
@@ -529,9 +531,8 @@ class TestDecomposition:
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("order", (1, 2, 4))
     @pytest.mark.parametrize("hamiltonian_index, hamiltonian", list(enumerate(test_hamiltonians)))
-    def test_decomposition_new(
-        self, hamiltonian, hamiltonian_index, order
-    ):  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
+    def test_decomposition_new(self, hamiltonian, hamiltonian_index, order):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.TrotterProduct(hamiltonian, 4.2, order=order)
         assert_decomposable(op)
@@ -566,7 +567,6 @@ class TestDecomposition:
             qp.assert_equal(op1, op2)
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestIntegration:
     """Test that the TrotterProduct can be executed and differentiated
     through all interfaces."""
@@ -913,11 +913,11 @@ class TestTrotterizedQfuncInitialization:
         """Test that if the wires are not passes as kwargs then the last arg is
         assumed to be the wires."""
         time = 0.1
-        args = (2.34, -5.6, ["a", "b"])
+        args = (2.34, -5.6, [7, 12])
         kwargs = {"kwarg1": True, "kwarg2": 78.9}
 
         op = TrotterizedQfunc(time, *args, qfunc=self.my_qfunc, **kwargs)
-        assert op.wires == qp.wires.Wires(["a", "b"])
+        assert op.wires == qp.wires.Wires([7, 12])
 
     @pytest.mark.parametrize("order", [0, -1, 3])
     def test_error_order(self, order):
@@ -931,8 +931,8 @@ class TestTrotterizedQfuncInitialization:
 
     wire_data = (
         [0, 1],
-        ["a", "b"],
-        (0, "a"),
+        [7, 12],
+        (0, 7),
     )
     args_kwargs_data = (
         ((1.0, 2), {"kwarg1": True, "kwarg2": 34.5}),
@@ -1004,7 +1004,7 @@ class TestTrotterizedQfuncInitialization:
         """Test that an error is raised if the named kwargs for the qfunc match the
         names of the kwargs of the TrotterizedQfunc class."""
 
-        def my_dummy_qfunc(time, wires, **kwargs):  # pylint:disable=unused-argument
+        def my_dummy_qfunc(time, wires, **kwargs):  # pylint: disable=unused-argument
             qp.RZ(time, wires[0])
 
         for special_key in ["n", "order", "qfunc", "reverse"]:
@@ -1039,258 +1039,258 @@ class TestTrotterizedQfuncIntegration:
     """Test the TrotterizedQfunc decomposes correctly."""
 
     expected_decomps_order_reverse = (  # computed by hand assuming t = 0.1
-        (False, 1, [qp.RX(0.1 * 1.23, "a"), qp.RY(0.1 * 1.23, "a"), qp.CNOT(["a", "b"])]),
+        (False, 1, [qp.RX(0.1 * 1.23, 7), qp.RY(0.1 * 1.23, 7), qp.CNOT([7, 12])]),
         (
             False,
             2,
             [
-                qp.RX((0.1 / 2) * 1.23, "a"),
-                qp.RY((0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((0.1 / 2) * 1.23, "a"),
-                qp.RX((0.1 / 2) * 1.23, "a"),
+                qp.RX((0.1 / 2) * 1.23, 7),
+                qp.RY((0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((0.1 / 2) * 1.23, 7),
+                qp.RX((0.1 / 2) * 1.23, 7),
             ],
         ),
         (
             False,
             4,
             [
-                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RY((p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RX((p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, 7),
             ],
         ),
         (
             False,
             6,
             [
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p6_comp * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p6_comp * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p6_comp * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p6_comp * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, "a"),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p6_comp * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RY((p6_comp * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p6_comp * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RX((p6_comp * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p6_comp * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p6_comp * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_6 * p_4 * 0.1 / 2) * 1.23, 7),
             ],
         ),
-        (True, 1, [qp.CNOT(["a", "b"]), qp.RY(0.1 * 1.23, "a"), qp.RX(0.1 * 1.23, "a")]),
+        (True, 1, [qp.CNOT([7, 12]), qp.RY(0.1 * 1.23, 7), qp.RX(0.1 * 1.23, 7)]),
         (
             True,
             2,
             [
-                qp.CNOT(["a", "b"]),
-                qp.RY((0.1 / 2) * 1.23, "a"),
-                qp.RX((0.1 / 2) * 1.23, "a"),
-                qp.RX((0.1 / 2) * 1.23, "a"),
-                qp.RY((0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
+                qp.CNOT([7, 12]),
+                qp.RY((0.1 / 2) * 1.23, 7),
+                qp.RX((0.1 / 2) * 1.23, 7),
+                qp.RX((0.1 / 2) * 1.23, 7),
+                qp.RY((0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
             ],
         ),
         (
             True,
             4,
             [
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p4_comp * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RX((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.RY((p_4 * 0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RX((p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RX((p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.RY((p4_comp * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RX((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.RY((p_4 * 0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
             ],
         ),
     )
@@ -1312,7 +1312,7 @@ class TestTrotterizedQfuncIntegration:
             qfunc=first_order_expansion,
             reverse=reverse,
             order=order,
-            wires=["a", "b"],
+            wires=[7, 12],
             flip=True,
         )
 
@@ -1330,7 +1330,7 @@ class TestTrotterizedQfuncIntegration:
                 qp.CNOT(wires)
 
         theta = 1.23
-        wires = ["a", "b"]
+        wires = [7, 12]
 
         decomp = _recursive_qfunc(
             0.1, order, first_order_expansion, wires, reverse, theta, flip=True
@@ -1341,34 +1341,34 @@ class TestTrotterizedQfuncIntegration:
         (
             1,
             [
-                qp.RX((0.1 / 2) * 1.23, "a"),
-                qp.RY((0.1 / 2) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((0.1 / 2) * 1.23, "a"),
-                qp.RX((0.1 / 2) * 1.23, "a"),
+                qp.RX((0.1 / 2) * 1.23, 7),
+                qp.RY((0.1 / 2) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((0.1 / 2) * 1.23, 7),
+                qp.RX((0.1 / 2) * 1.23, 7),
             ],
         ),
         (
             2,
             [
-                qp.RX((0.1 / 4) * 1.23, "a"),
-                qp.RY((0.1 / 4) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((0.1 / 4) * 1.23, "a"),
-                qp.RX((0.1 / 4) * 1.23, "a"),
+                qp.RX((0.1 / 4) * 1.23, 7),
+                qp.RY((0.1 / 4) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((0.1 / 4) * 1.23, 7),
+                qp.RX((0.1 / 4) * 1.23, 7),
             ],
         ),
         (
             10,
             [
-                qp.RX((0.1 / 20) * 1.23, "a"),
-                qp.RY((0.1 / 20) * 1.23, "a"),
-                qp.CNOT(["a", "b"]),
-                qp.CNOT(["a", "b"]),
-                qp.RY((0.1 / 20) * 1.23, "a"),
-                qp.RX((0.1 / 20) * 1.23, "a"),
+                qp.RX((0.1 / 20) * 1.23, 7),
+                qp.RY((0.1 / 20) * 1.23, 7),
+                qp.CNOT([7, 12]),
+                qp.CNOT([7, 12]),
+                qp.RY((0.1 / 20) * 1.23, 7),
+                qp.RX((0.1 / 20) * 1.23, 7),
             ],
         ),
     )
@@ -1390,7 +1390,7 @@ class TestTrotterizedQfuncIntegration:
             qfunc=first_order_expansion,
             n=n,
             order=2,
-            wires=["a", "b"],
+            wires=[7, 12],
             flip=True,
         )
 
@@ -1475,7 +1475,7 @@ class TestTrotterizedQfuncIntegration:
     def test_execute_circuit(self, n, order, reverse):
         """Test that the gate executes correctly in a circuit."""
         time = 0.1
-        wires = ["aux1", "aux2", 0, 1, "target"]
+        wires = [9, 11, 0, 1, 13]
         arg1 = 2.34
         arg2 = -6.78
         args = (arg1, arg2)
@@ -1539,7 +1539,7 @@ class TestTrotterizedQfuncIntegration:
         from jax import numpy as jnp
 
         time = jnp.array(0.1)
-        wires = ["aux1", "aux2", 0, 1, "target"]
+        wires = [9, 11, 0, 1, 13]
         arg1 = jnp.array(2.34)
         arg2 = jnp.array(-6.78)
         args = (arg1, arg2)
@@ -1607,7 +1607,7 @@ class TestTrotterizedQfuncIntegration:
         from jax import numpy as jnp
 
         time = jnp.array(0.1)
-        wires = ("aux1", "aux2", 0, 1, "target")
+        wires = (9, 11, 0, 1, 13)
         arg1 = jnp.array(2.34)
         arg2 = jnp.array(-6.78)
         args = (arg1, arg2)
@@ -1673,7 +1673,7 @@ class TestTrotterizedQfuncIntegration:
     def test_gradient(self, n, order, reverse, method):
         """Test that the gradient is computed correctly"""
         time = qnp.array(0.1)
-        wires = ["aux1", "aux2", 0, 1, "target"]
+        wires = [9, 11, 0, 1, 13]
         arg1 = qnp.array(2.34)
         arg2 = qnp.array(-6.78)
         kwargs = {"kwarg1": True, "kwarg2": 1}
@@ -1741,7 +1741,7 @@ class TestTrotterizedQfuncIntegration:
         from jax import numpy as jnp
 
         time = jnp.array(0.1)
-        wires = ["aux1", "aux2", 0, 1, "target"]
+        wires = [9, 11, 0, 1, 13]
         arg1 = jnp.array(2.34)
         arg2 = jnp.array(-6.78)
         args = (arg1, arg2)

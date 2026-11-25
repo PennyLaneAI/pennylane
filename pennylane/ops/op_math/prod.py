@@ -31,6 +31,7 @@ from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, remove_from_program
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
+from pennylane.ops._pauli_conversion import to_operator
 from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires
 
@@ -294,7 +295,6 @@ class Prod(CompositeOp):
                 return False
         return all(op.is_verified_hermitian for op in self)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
         return True
@@ -371,12 +371,11 @@ class Prod(CompositeOp):
 
     @property
     @handle_recursion_error
-    def has_sparse_matrix(self):
+    def has_sparse_matrix(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_adjoint(self):
+    def has_adjoint(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         return True
 
     def adjoint(self):
@@ -413,7 +412,7 @@ class Prod(CompositeOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
-            return pr.operation(wire_order=self.wires)
+            return to_operator(pr, identity_wires=self.wires)
 
         global_phase, factors = self._simplify_factors(factors=self.operands)
 
@@ -480,7 +479,7 @@ class Prod(CompositeOp):
         # try using pauli_rep:
         if pr := self.pauli_rep:
             with qp.QueuingManager.stop_recording():
-                ops = [pauli.operation() for pauli in pr.keys()]
+                ops = [to_operator(pauli) for pauli in pr.keys()]
             return list(pr.values()), ops
 
         with qp.QueuingManager.stop_recording():
@@ -504,21 +503,20 @@ class Prod(CompositeOp):
         return coeffs, ops
 
 
-def _prod_resources(resources):
+def _prod_standard_resources(resources):
     return resources
 
 
-# pylint: disable=unused-argument
-@qp.register_resources(_prod_resources)
-def _prod_decomp(*_, wires=None, operands, **__):
+@qp.register_resources(_prod_standard_resources, name="expand_factors")
+def _prod_standard(*_, wires=None, operands, **__):  # pylint: disable=unused-argument
     for op in reversed(operands):
         qp.apply(op)
 
 
-qp.add_decomps(Prod, _prod_decomp)
+qp.add_decomps(Prod, _prod_standard)
 
 
-def _ctrl_prod_resources(
+def _controlled_product_with_work_wires_resources(
     num_control_wires,
     base_params,
     **_,
@@ -541,7 +539,7 @@ def _ctrl_prod_resources(
     and num_work_wires >= num_control_wires - 1
     and work_wire_type == "zeroed"
 )
-@qp.register_resources(_ctrl_prod_resources)
+@qp.register_resources(_controlled_product_with_work_wires_resources, name="with_work_wires")
 def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **__):
     """Decomposition of ``C(Prod)`` with at least ``num_control_wires - 1`` work wires.
 
@@ -554,7 +552,7 @@ def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **_
     qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
 
 
-def _ctrl_prod_resources_with_one_work_wire(
+def _controlled_product_with_one_work_wire_resources(
     num_control_wires,
     base_params,
     **_,
@@ -577,7 +575,7 @@ def _ctrl_prod_resources_with_one_work_wire(
     and num_work_wires >= 1
     and work_wire_type == "zeroed"
 )
-@qp.register_resources(_ctrl_prod_resources_with_one_work_wire)
+@qp.register_resources(_controlled_product_with_one_work_wire_resources, name="with_one_work_wire")
 def _controlled_product_with_one_work_wire(*_, control_wires, work_wires, base, **__):
     """Decomposition of ``C(Prod)`` with a single zeroed work wire.
 
@@ -592,6 +590,6 @@ def _controlled_product_with_one_work_wire(*_, control_wires, work_wires, base, 
 
 qp.add_decomps(
     "C(Prod)",
-    flip_zero_control(_controlled_product_with_work_wires),
-    flip_zero_control(_controlled_product_with_one_work_wire),
+    flip_zero_control(_controlled_product_with_work_wires, name="with_work_wires"),
+    flip_zero_control(_controlled_product_with_one_work_wire, name="with_one_work_wire"),
 )

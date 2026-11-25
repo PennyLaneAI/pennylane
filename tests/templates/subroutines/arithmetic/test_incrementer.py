@@ -29,7 +29,7 @@ from pennylane.templates.subroutines.arithmetic.incrementer import (
     _decompose_mcxs,
 )
 from pennylane.testing import assert_decomposable, assert_valid, plxpr_to_tape
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -133,7 +133,6 @@ def test_adjoint_decomposition_correct(wires, init_state, forward_output, work_w
     assert np.allclose(result, 0)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize(
     "init_state, expected, work_wires, control_wires, control_values",
     [
@@ -191,7 +190,6 @@ def test_controlled_enough_work_wires(
     dev = device("default.qubit", wires=wires + work_wires + control_wires)
     gate_set = {TemporaryAND: 1, CNOT: 1, "Adjoint(TemporaryAND)": 1, PauliX: 1}
 
-    # pylint: disable=too-many-arguments
     @decompose(gate_set=gate_set, num_work_wires=0)
     @qnode(dev)
     def controlled_increment(wires, init_state, work_wires, control_wires, control_values):
@@ -215,7 +213,6 @@ def test_controlled_enough_work_wires(
     assert np.allclose(result, 0)
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 @pytest.mark.parametrize(
     "init_state, expected, work_wires, control_wires, control_values",
     [
@@ -232,7 +229,6 @@ def test_controlled_allocates_work_wires(
     num_alloc_wires = len(wires) + len(control_wires) - 1 - len(work_wires)
     gate_set = {TemporaryAND: 1, CNOT: 1, "Adjoint(TemporaryAND)": 1, PauliX: 1}
 
-    # pylint: disable=too-many-arguments
     @decompose(gate_set=gate_set, num_work_wires=num_alloc_wires)
     @qnode(device("default.qubit", wires=len(wires + work_wires + control_wires) + num_alloc_wires))
     def controlled_increment(wires, init_state, work_wires, control_wires, control_values):

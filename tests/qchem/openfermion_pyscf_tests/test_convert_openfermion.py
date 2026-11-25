@@ -16,7 +16,6 @@ Unit tests for functions needed for converting objects obtained from external li
 PennyLane object.
 """
 
-# pylint: disable=too-many-arguments,protected-access
 import sys
 
 import pytest
@@ -30,13 +29,12 @@ openfermion = pytest.importorskip("openfermion")
 
 def test_import_of(monkeypatch):
     """Test if an ImportError is raised by _import_of function."""
-    # pylint: disable=protected-access
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "openfermion", None)
 
         with pytest.raises(ImportError, match="This feature requires openfermion"):
-            qp.qchem.convert_openfermion._import_of()
+            qp.qchem.convert_openfermion._import_of()  # pylint: disable=protected-access
 
 
 class TestFromOpenFermion:
@@ -78,8 +76,8 @@ class TestFromOpenFermion:
     OPS_WIRES = (
         (
             (openfermion.QubitOperator("X0", 1.2) + openfermion.QubitOperator("Z1", 2.4)),
-            ({0: "a", 1: 2}),
-            qp.ops.LinearCombination([1.2, 2.4], [qp.X("a"), qp.Z(2)]),
+            ({0: 7, 1: 2}),
+            qp.ops.LinearCombination([1.2, 2.4], [qp.X(7), qp.Z(2)]),
         ),
     )
 
@@ -90,10 +88,10 @@ class TestFromOpenFermion:
         qp.assert_equal(converted_pl_op, pl_op)
 
     OPS_FERMI = (
-        ((openfermion.FermionOperator("0^ 1")), ({0: "a", 1: 2})),
+        ((openfermion.FermionOperator("0^ 1")), ({0: 7, 1: 2})),
         (
             (openfermion.FermionOperator("0^ 1") + openfermion.FermionOperator("3^ 4^")),
-            ({0: "a", 3: 2}),
+            ({0: 7, 3: 2}),
         ),
     )
 
@@ -298,15 +296,15 @@ class TestToOpenFermion:
 
     MAPPED_OPS = (
         (
-            (1.2 * qp.X("a") + 2.4 * qp.Z(2)),
+            (1.2 * qp.X(7) + 2.4 * qp.Z(2)),
             (openfermion.QubitOperator("X0", 1.2) + openfermion.QubitOperator("Z1", 2.4)),
-            ({"a": 0, 2: 1}),
+            ({0: 7, 1: 2}),
         ),
     )
 
     @pytest.mark.parametrize("pl_op, of_op, wires", MAPPED_OPS)
     def test_mapping_wires(self, pl_op, of_op, wires):
-        r"Test the mapping of the wires."
+        r"Test mapping integer PennyLane wires to OpenFermion qubit indices."
         q_op = qp.to_openfermion(pl_op, wires=wires)
         assert q_op == of_op
 
@@ -337,10 +335,10 @@ class TestToOpenFermion:
             )
 
     OPS_FERMI_WIRE = (
-        ((qp.FermiWord({(0, 0): "+", (1, 1): "-"})), ({0: "a", 1: 2})),
+        ((qp.FermiWord({(0, 0): "+", (1, 1): "-"})), ({0: 7, 1: 2})),
         (
             (qp.FermiSentence({qp.FermiWord({(0, 0): "+", (1, 1): "-"}): 1.2})),
-            ({0: "a", 1: 2}),
+            ({0: 7, 1: 2}),
         ),
     )
 

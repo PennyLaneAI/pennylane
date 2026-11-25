@@ -22,8 +22,8 @@ from pennylane.ops.identity import GlobalPhase, Identity
 from pennylane.testing import assert_valid
 from pennylane.typing import Float, Wire
 
-op_wires = [[], [0], ["a"], [0, 1], ["a", "b", "c"], [100, "xasd", 12]]
-op_repr = ["I()", "I(0)", "I('a')", "I([0, 1])", "I(['a', 'b', 'c'])", "I([100, 'xasd', 12])"]
+op_wires = [[], [0], [7], [0, 1], [7, 8, 9], [100, 10, 12]]
+op_repr = ["I()", "I(0)", "I(7)", "I([0, 1])", "I([7, 8, 9])", "I([100, 10, 12])"]
 op_params = tuple(zip(op_wires, op_repr))
 
 
@@ -112,15 +112,14 @@ def test_is_verified_hermitian():
 
 @pytest.mark.parametrize("wires", op_wires)
 class TestIdentity:
-    # pylint: disable=protected-access
     def test_flatten_unflatten(self, wires):
         """Test the flatten and unflatten methods of identity."""
         op = Identity(wires)
-        data, metadata = op._flatten()
+        data, metadata = op._flatten()  # pylint: disable=protected-access
         assert data == ([], [qp.wires.Wires(wires)], [])
         assert hash(metadata)
 
-        new_op = Identity._unflatten(*op._flatten())
+        new_op = Identity._unflatten(*op._flatten())  # pylint: disable=protected-access
         qp.assert_equal(op, new_op)
 
     def test_class_name(self, wires):

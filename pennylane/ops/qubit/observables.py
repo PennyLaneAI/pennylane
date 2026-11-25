@@ -140,9 +140,8 @@ class Hermitian(Operator):
         Hermitian._validate_input(A)
         return A
 
-    # pylint: disable=arguments-differ
     @staticmethod
-    def compute_sparse_matrix(A, format="csr") -> csr_matrix:
+    def compute_sparse_matrix(A, format="csr") -> csr_matrix:  # pylint: disable=arguments-differ
         return csr_matrix(Hermitian.compute_matrix(A)).asformat(format)
 
     @property
@@ -183,7 +182,7 @@ class Hermitian(Operator):
 
         Args:
             A (array or Sequence): hermitian matrix
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
         Returns:
             list[.Operator]: decomposition of the hermitian matrix
 
@@ -191,11 +190,11 @@ class Hermitian(Operator):
 
         >>> op = qp.X(0) + qp.Y(1) + 2 * qp.X(0) @ qp.Z(3)
         >>> op_matrix = qp.matrix(op)
-        >>> qp.Hermitian.compute_decomposition(op_matrix, wires=['a', 'b', 'aux'])
+        >>> qp.Hermitian.compute_decomposition(op_matrix, wires=[2, 4, 5])
         [(
-              1.0 * (I('a') @ Y('b') @ I('aux'))
-            + 1.0 * (X('a') @ I('b') @ I('aux'))
-            + 2.0 * (X('a') @ I('b') @ Z('aux'))
+              1.0 * (I(2) @ Y(4) @ I(5))
+            + 1.0 * (X(2) @ I(4) @ I(5))
+            + 2.0 * (X(2) @ I(4) @ Z(5))
         )]
         >>> op = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
         >>> qp.Hermitian.compute_decomposition(op, wires=0)
@@ -244,7 +243,7 @@ class Hermitian(Operator):
 
         Args:
             eigenvectors (array): eigenvectors of the operator, as extracted from op.eigendecomposition["eigvec"].
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
         Returns:
             list[.Operator]: list of diagonalizing gates
 
@@ -375,8 +374,8 @@ class SparseHamiltonian(Operator):
         """
         return H.toarray()
 
-    # pylint: disable=arguments-differ
     @staticmethod
+    # pylint: disable-next=arguments-differ
     def compute_sparse_matrix(H: spmatrix, format="csr") -> spmatrix:
         r"""Representation of the operator as a sparse canonical matrix in the computational basis (static method).
 
@@ -651,7 +650,7 @@ class BasisStateProjector(Projector, Operation):
 
         Args:
             basis_state (Iterable): basis state that the operator projects on
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
         Returns:
             list[.Operator]: list of diagonalizing gates
 
@@ -663,9 +662,8 @@ class BasisStateProjector(Projector, Operation):
         return []
 
     @staticmethod
-    def compute_sparse_matrix(  # pylint: disable=arguments-differ
-        basis_state: TensorLike, format="csr"
-    ) -> spmatrix:
+    # pylint: disable-next=arguments-differ
+    def compute_sparse_matrix(basis_state: TensorLike, format="csr") -> spmatrix:
         """
         Computes the sparse CSR matrix representation of the projector onto the basis state.
 
@@ -756,9 +754,7 @@ class StateVectorProjector(Projector):
         return f"P(M{mat_num})"
 
     @staticmethod
-    def compute_matrix(  # pylint: disable=arguments-differ
-        state_vector: TensorLike,
-    ) -> np.ndarray:
+    def compute_matrix(state_vector: TensorLike) -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -785,9 +781,7 @@ class StateVectorProjector(Projector):
         return qp.math.outer(state_vector, qp.math.conj(state_vector))
 
     @staticmethod
-    def compute_eigvals(  # pylint: disable=arguments-differ
-        state_vector: TensorLike,
-    ) -> np.ndarray:
+    def compute_eigvals(state_vector: TensorLike) -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -835,7 +829,7 @@ class StateVectorProjector(Projector):
 
         Args:
             state_vector (Iterable): state vector that the operator projects on.
-            wires (Iterable[Any], Wires): wires that the operator acts on.
+            wires (Iterable[int], Wires): wires that the operator acts on.
         Returns:
             list[.Operator]: list of diagonalizing gates.
 

@@ -248,7 +248,7 @@ def use_style(style: str):
             :target: javascript:void(0);
 
     """
-    global __current_style_fn  # pylint:disable=global-statement
+    global __current_style_fn  # pylint: disable=global-statement
     if style in _styles_map:
         __current_style_fn = _styles_map[style]
     else:
@@ -258,7 +258,7 @@ def use_style(style: str):
         )
 
 
-def _set_style(style: str = None):
+def _set_style(style: str | None = None):
     """
     Execute a style function to change the current rcParams.
 

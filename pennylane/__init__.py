@@ -16,12 +16,15 @@ This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
 
+# pylint: disable=wrong-import-order
+
+
 import warnings
 
 from pennylane import exceptions
 from pennylane.boolean_fn import BooleanFn
 from pennylane import numpy
-from pennylane import queuing
+from pennylane.core import queuing
 from pennylane.core.apply import apply
 from pennylane.core.queuing import QueuingManager
 
@@ -101,7 +104,19 @@ from pennylane.measurements import (
     shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, cond, change_op_basis, exp, sum, pow, prod, s_prod, measure
+from pennylane.ops import (
+    adjoint,
+    ctrl,
+    cond,
+    change_op_basis,
+    exp,
+    sum,
+    pow,
+    prod,
+    s_prod,
+    measure,
+    subcircuit,
+)
 from pennylane.ops import LinearCombination as Hamiltonian
 from pennylane.decomposition import gate_sets
 from pennylane.templates import layer
@@ -135,15 +150,6 @@ from pennylane.transforms import (
     gridsynth,
     CompilePipeline,
 )
-from pennylane.noise import (
-    add_noise,
-    insert,
-    mitigate_with_zne,
-    fold_global,
-    poly_extrapolate,
-    richardson_extrapolate,
-    exponential_extrapolate,
-)
 from pennylane.ops.functions import (
     dot,
     eigvals,
@@ -161,7 +167,6 @@ from pennylane.ops.functions import (
     commutator,
     comm,
     single_qubit_zyz_angles,
-    subcircuit,
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *
@@ -175,31 +180,20 @@ from pennylane.debugging import (
 )
 from pennylane.shadows import ClassicalShadow
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
-from pennylane import gradients  # pylint:disable=wrong-import-order
+from pennylane import gradients
 from pennylane.drawer import draw, draw_mpl
 
 from pennylane.io import (
-    from_pyquil,
     from_qasm,
     to_openqasm,
     from_qiskit,
-    from_qiskit_noise,
     from_qiskit_op,
-    from_quil,
-    from_quil_file,
-    FromBloq,
-    bloq_registers,
     from_qasm3,
-    to_bloq,
 )
 
-# pylint:disable=wrong-import-order
-from pennylane import logging  # pylint:disable=wrong-import-order
+from pennylane import logging
 
 from pennylane import data
-
-from pennylane import noise
-from pennylane.noise import NoiseModel
 
 from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
@@ -223,7 +217,6 @@ from pennylane import estimator
 
 from pennylane import testing
 
-# pylint:disable=wrong-import-order
 from importlib.metadata import version as _metadata_version
 
 from importlib.util import find_spec as _find_spec
@@ -242,7 +235,7 @@ if _find_spec("numpy") is not None:
             exceptions.PennyLaneDeprecationWarning,
         )
 
-from ._entry_points_utils import _setup_entry_points  # pylint:disable=wrong-import-position
+from ._entry_points_utils import _setup_entry_points
 
 # add to _entry_point_groups as new groups are added and desired to be accessed top-level
 _entry_point_groups = ["pennylane.drawer"]

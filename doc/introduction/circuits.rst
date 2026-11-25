@@ -343,8 +343,7 @@ PennyLane supports creating customized PennyLane templates imported from other
 frameworks. By loading your existing quantum code as a PennyLane template, you
 add the ability to perform analytic differentiation, and interface with machine
 learning libraries such as PyTorch or JAX. Currently, ``QuantumCircuit``
-objects from Qiskit, OpenQASM files, pyQuil ``programs``, and Quil files can
-be loaded by using the following functions:
+objects from Qiskit and OpenQASM files can be loaded by using the following functions:
 
 :html:`<div class="summary-table">`
 
@@ -353,16 +352,13 @@ be loaded by using the following functions:
 
     ~pennylane.from_qiskit
     ~pennylane.from_qasm
-    ~pennylane.from_pyquil
-    ~pennylane.from_quil
-    ~pennylane.from_quil_file
 
 :html:`</div>`
 
 .. note::
 
     To use these conversion functions, the latest version of the PennyLane-Qiskit
-    and PennyLane-Rigetti plugins need to be installed.
+    plugin needs to be installed.
 
 Objects for quantum circuits can be loaded outside or directly inside of a
 :class:`~.pennylane.QNode`. Circuits that contain unbound parameters are also

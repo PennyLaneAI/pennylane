@@ -15,8 +15,6 @@
 Contains the 'label' function for customizing operator labels.
 """
 
-# pylint: disable=unused-argument
-
 from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, abstractify
 from pennylane.decomposition import add_decomps, register_resources
@@ -106,16 +104,16 @@ class LabelledOp(SymbolicOp):
         return self.base.matrix(wire_order=wire_order)
 
 
-def _resources(base):
+def _custom_label_standard_resources(base):
     return {base: 1}
 
 
-@register_resources(_resources)
-def _custom_label_decomp(*params, wires, base, **_):
+@register_resources(_custom_label_standard_resources, name="unwrap_base")
+def _custom_label_standard(*params, wires, base, **_):  # pylint: disable=unused-argument
     apply(base)
 
 
-add_decomps(LabelledOp, _custom_label_decomp)
+add_decomps(LabelledOp, _custom_label_standard)
 
 
 @_equal_dispatch.register

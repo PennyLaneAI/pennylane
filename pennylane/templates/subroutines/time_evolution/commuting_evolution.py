@@ -15,7 +15,6 @@ r"""
 Contains the CommutingEvolution template.
 """
 
-# pylint: disable-msg=too-many-arguments
 import copy
 
 from pennylane import capture, math, ops
@@ -138,7 +137,7 @@ class CommutingEvolution(Operation):
         }
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None):
-        # pylint: disable=import-outside-toplevel,too-many-positional-arguments
+        # pylint: disable-next=import-outside-toplevel
         from pennylane.gradients.general_shift_rules import generate_shift_rule
 
         if getattr(hamiltonian, "pauli_rep", None) is None:
@@ -176,9 +175,8 @@ class CommutingEvolution(Operation):
         return self
 
     @staticmethod
-    def compute_decomposition(
-        time, *_, wires, hamiltonian, **__
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(time, *_, wires, hamiltonian, **__):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -186,7 +184,7 @@ class CommutingEvolution(Operation):
         Args:
             *time_and_coeffs (list[tensor_like or float]): list of coefficients of the Hamiltonian, prepended by the time
                 variable
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
             hamiltonian (.Hamiltonian): The commuting Hamiltonian defining the time-evolution operator.
             frequencies (tuple[int or float]): The unique positive differences between eigenvalues in
                 the spectrum of the Hamiltonian.
@@ -210,14 +208,18 @@ class CommutingEvolution(Operation):
         return CommutingEvolution(hamiltonian, -time, frequencies, shifts)
 
 
-def _commuting_evolution_resources(words: tuple[PauliWord]):
+def _commuting_evolution_standard_resources(words: tuple[PauliWord]):
     return {resource_rep(ApproxTimeEvolution, words=words, n=1): 1}
 
 
-@register_resources(_commuting_evolution_resources)
-def _commuting_evolution_decomposition(
-    time: list, *_, wires: WiresLike, hamiltonian: Hamiltonian, **__
-):  # pylint: disable=unused-argument
+@register_resources(_commuting_evolution_standard_resources, name="to_approx_time_evolution")
+def _commuting_evolution_standard(  # pylint: disable=unused-argument
+    time: list,
+    *_,
+    wires: WiresLike,
+    hamiltonian: Hamiltonian,
+    **__,
+):
     if capture.enabled() and isinstance(hamiltonian, Operator1):
         # Reconstruct the closed-over Hamiltonian as a captured value. It is consumed by
         # ``ApproxTimeEvolution`` below, so it is not collected as a separate circuit operation.
@@ -225,11 +227,14 @@ def _commuting_evolution_decomposition(
     ApproxTimeEvolution(hamiltonian, time, 1)
 
 
-add_decomps(CommutingEvolution, _commuting_evolution_decomposition)
+add_decomps(CommutingEvolution, _commuting_evolution_standard)
 
 
-@register_resources(lambda base_params, **_: {resource_rep(CommutingEvolution, **base_params): 1})
-def _adjoint_commuting_evolution(time, *params, base, **__):
+@register_resources(
+    lambda base_params, **_: {resource_rep(CommutingEvolution, **base_params): 1},
+    name="negate_time",
+)
+def _adjoint_commuting_evolution_standard(time, *params, base, **__):
     hamiltonian = ops.functions.bind_new_parameters(base.hyperparameters["hamiltonian"], params)
     CommutingEvolution(
         hamiltonian,
@@ -239,4 +244,4 @@ def _adjoint_commuting_evolution(time, *params, base, **__):
     )
 
 
-add_decomps("Adjoint(CommutingEvolution)", _adjoint_commuting_evolution)
+add_decomps("Adjoint(CommutingEvolution)", _adjoint_commuting_evolution_standard)

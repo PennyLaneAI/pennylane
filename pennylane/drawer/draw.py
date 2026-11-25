@@ -62,8 +62,7 @@ def catalyst_qjit(qnode):
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
-# pylint: disable=too-many-arguments
-def draw(
+def draw(  # pylint: disable=too-many-arguments
     qnode,
     wire_order=None,
     show_all_wires=False,
@@ -79,7 +78,8 @@ def draw(
     Args:
         qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn.
             ``functools.partial`` wrappers around supported callables are also accepted.
-        wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
+        wire_order (Sequence[int]): The order (from top to bottom) to print the wires of the
+            circuit.
             Defaults to the device wires. If device wires are not available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int | None): How many decimal points to include when formatting operation parameters. Defaults to ``2`` decimal points.
@@ -88,7 +88,7 @@ def draw(
         show_matrices (bool): Show matrix valued parameters below all circuit diagrams. Defaults to ``False``.
         show_wire_labels (bool): Whether or not to show the wire labels. Defaults to ``True``.
         level (str, int, slice): An indication of what transforms to apply before drawing. Defaults to ``"gradient"``.
-            Check :func:`~.workflow.get_compile_pipeline` for more information on the allowed values and usage details of
+            Check :func:`~.workflow.construct_batch` for more information on the allowed values and usage details of
             this argument.
 
     Returns:
@@ -347,8 +347,7 @@ def draw(
     return _apply_partial_args(wrapper, partial_args, partial_kwargs)
 
 
-# pylint: disable=too-many-arguments
-def _draw_qnode(
+def _draw_qnode(  # pylint: disable=too-many-arguments
     qnode,
     wire_order: Sequence | None = None,
     show_all_wires: bool = False,
@@ -401,8 +400,7 @@ def _draw_qnode(
     return wrapper
 
 
-# pylint: disable=too-many-arguments
-def draw_mpl(
+def draw_mpl(  # pylint: disable=too-many-arguments
     qnode: QNode | Callable,
     wire_order: Sequence | None = None,
     show_all_wires: bool = False,
@@ -419,7 +417,8 @@ def draw_mpl(
     Args:
         qnode (.QNode or Callable): the input QNode/quantum function that is to be drawn.
             ``functools.partial`` wrappers around supported callables are also accepted.
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit.
+        wire_order (Sequence[int]): the order (from top to bottom) to print the wires of the
+            circuit.
            If not provided, the wire order defaults to the device wires. If device wires are not
            available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
@@ -446,7 +445,7 @@ def draw_mpl(
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
         level (str, int, slice): An indication of what transforms to apply before drawing.
-            Check :func:`~.workflow.get_compile_pipeline` for more information on the allowed values and usage details of
+            Check :func:`~.workflow.construct_batch` for more information on the allowed values and usage details of
             this argument.
 
     Returns:
@@ -532,7 +531,7 @@ def draw_mpl(
 
         .. code-block:: python
 
-            fig, ax = qp.draw_mpl(circuit, wire_order=["aux"], show_all_wires=True)(1.2345,1.2345)
+            fig, ax = qp.draw_mpl(circuit, wire_order=[4], show_all_wires=True)(1.2345, 1.2345)
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/show_all_wires.png
@@ -720,7 +719,7 @@ def draw_mpl(
             fig, ax = qp.draw_mpl(circ, level="device")()
             fig.show()
 
-        .. figure:: ../../_static/draw_mpl/level_none.png
+        .. figure:: ../../_static/draw_mpl/level_device.png
             :align: center
             :width: 60%
             :target: javascript:void(0);
@@ -836,8 +835,7 @@ def draw_mpl(
     return _apply_partial_args(wrapper, partial_args, partial_kwargs)
 
 
-# pylint: disable=too-many-arguments
-def _draw_mpl_qnode(
+def _draw_mpl_qnode(  # pylint: disable=too-many-arguments
     qnode,
     wire_order=None,
     show_all_wires=False,

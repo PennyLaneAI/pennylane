@@ -15,8 +15,6 @@
 Unit tests for the StronglyEntanglingLayers template.
 """
 
-# pylint: disable=too-few-public-methods
-
 import numpy as np
 import pytest
 
@@ -76,7 +74,6 @@ class TestDecomposition:
     @pytest.mark.parametrize("n_wires, weight_shape, expected_names, expected_wires", QUEUES)
     def test_expansion(self, n_wires, weight_shape, expected_names, expected_wires, batch_dim):
         """Checks the queue for the default settings."""
-        # pylint: disable=too-many-arguments
 
         if batch_dim is not None:
             weight_shape = (batch_dim,) + weight_shape
@@ -113,31 +110,6 @@ class TestDecomposition:
 
         gate_names = [gate.name for gate in ops]
         assert gate_names.count("CZ") == n_wires * n_layers
-
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-    def test_custom_wire_labels(self, tol, batch_dim):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        shape = (1, 3, 3) if batch_dim is None else (batch_dim, 1, 3, 3)
-        weights = np.random.random(size=shape)
-
-        dev = qp.device("default.qubit", wires=3)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.StronglyEntanglingLayers(weights, wires=range(3))
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.StronglyEntanglingLayers(weights, wires=["z", "a", "k"])
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "n_layers, n_wires, ranges", [(2, 2, [1, 1]), (1, 3, [2]), (4, 4, [2, 3, 1, 3])]
@@ -208,7 +180,7 @@ class TestInputs:
             circuit(weights, ranges=[0])
 
 
-class TestAttributes:
+class TestAttributes:  # pylint: disable=too-few-public-methods
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(

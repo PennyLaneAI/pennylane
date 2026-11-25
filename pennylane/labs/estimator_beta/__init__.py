@@ -205,7 +205,21 @@ def _(op: qp.QROM):
     return LabsQROM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
-        borrow_qubits=not (op.hyperparameters["clean"]),
+        select_swap_depth=1,
+        wires=op_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qp.QROMLoad):
+    bitstrings = op.data[0]
+    num_bitstrings = bitstrings.shape[0]
+    size_bitstring = bitstrings.shape[1] if num_bitstrings > 0 else 0
+    op_wires = op.control_wires + op.target_wires
+    return LabsQROM(
+        num_bitstrings=num_bitstrings,
+        size_bitstring=size_bitstring,
+        borrow_qubits=False,
         wires=op_wires,
     )
 
@@ -277,9 +291,8 @@ def _(op: qp.MottonenStatePreparation):
 
 @_map_to_resource_op.register
 def _(op: qp.SumOfSlatersPrep):
-    from pennylane.templates.state_preparations.sum_of_slaters import (  # pylint: disable=import-outside-toplevel
-        select_sos_rows,
-    )
+    # pylint: disable-next=import-outside-toplevel
+    from pennylane.templates.state_preparations.sum_of_slaters import select_sos_rows
 
     indices = op.hyperparameters["indices"]
     n = len(op.wires)

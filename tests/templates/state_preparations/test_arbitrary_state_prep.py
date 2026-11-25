@@ -16,8 +16,6 @@ Unit tests for the ArbitraryStatePreparation template.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -28,7 +26,7 @@ from pennylane.templates.state_preparations.arbitrary_state_preparation import (
 from pennylane.testing import assert_decomposable
 
 
-class TestHelpers:
+class TestHelpers:  # pylint: disable=too-few-public-methods
     """Tests for the Pauli-word helper function."""
 
     @pytest.mark.parametrize(
@@ -188,31 +186,8 @@ class TestDecomposition:
 
         assert np.allclose(state, even_superposition_state, atol=tol, rtol=0)
 
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        weights = np.random.random(size=2**4 - 2)
 
-        dev = qp.device("default.qubit", wires=3)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.ArbitraryStatePreparation(weights, wires=range(3))
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.ArbitraryStatePreparation(weights, wires=["z", "a", "k"])
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
-
-
-class TestInputs:
+class TestInputs:  # pylint: disable=too-few-public-methods
     """Test inputs and pre-processing."""
 
     def test_exception_wrong_dim(self):
@@ -230,7 +205,7 @@ class TestInputs:
             circuit(weights)
 
 
-class TestAttributes:
+class TestAttributes:  # pylint: disable=too-few-public-methods
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(

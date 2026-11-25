@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.templates.subroutines.arithmetic.adder import _adder_arithmetic_decomposition
+from pennylane.templates.subroutines.arithmetic.adder import _adder_arithmetic
 from pennylane.testing import assert_valid_decomp_rule
 
 
@@ -42,9 +42,9 @@ class TestAdder:
             (6, [0, 1, 2], 8, [4, 5], 1),
             (
                 6,
-                ["a", "b", "c"],
+                [13, 14, 15],
                 8,
-                ["d", "e"],
+                [17, 18],
                 2,
             ),
             (
@@ -112,9 +112,7 @@ class TestAdder:
             ),
         ],
     )
-    def test_operation_result(
-        self, k, x_wires, mod, work_wires, x
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_result(self, k, x_wires, mod, work_wires, x):
         """Test the correctness of the PhaseAdder template output."""
         dev = qp.device("default.qubit")
 
@@ -129,7 +127,6 @@ class TestAdder:
         if mod is None:
             mod = 2 ** len(x_wires)
 
-        # pylint: disable=bad-reversed-sequence
         out = list(circuit(x)[0, :])
         result = sum(bit * (2**i) for i, bit in enumerate(reversed(out)))
         assert np.allclose(result, (x + k) % mod)
@@ -153,9 +150,7 @@ class TestAdder:
             ),
         ],
     )
-    def test_operation_and_test_wires_error(
-        self, k, x_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_operation_and_test_wires_error(self, k, x_wires, mod, work_wires, msg_match):
         """Test that proper errors are raised"""
 
         with pytest.raises(ValueError, match=msg_match):
@@ -191,9 +186,7 @@ class TestAdder:
             ),
         ],
     )
-    def test_types_error(
-        self, k, x_wires, mod, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_types_error(self, k, x_wires, mod, work_wires, msg_match):
         """Test errors are raised"""
         with pytest.raises(ValueError, match=msg_match):
             qp.Adder(k, x_wires, mod, work_wires)
@@ -275,7 +268,7 @@ class TestAdder:
         all_wires = x_wires + work_wires
         mat_op = qp.matrix(op, wire_order=all_wires)
 
-        mat_arith = qp.matrix(_adder_arithmetic_decomposition, wire_order=all_wires)(**op.arguments)
+        mat_arith = qp.matrix(_adder_arithmetic, wire_order=all_wires)(**op.arguments)
 
         assert qp.math.allclose(mat_op, mat_arith)
 
@@ -307,6 +300,5 @@ class TestAdder:
             qp.Adder(k, x_wires, mod, work_wires)
             return qp.sample(wires=x_wires)
 
-        # pylint: disable=bad-reversed-sequence
         result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :])))
         assert jax.numpy.allclose(result, (x + k) % mod)

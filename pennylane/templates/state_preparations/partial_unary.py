@@ -140,8 +140,7 @@ def _find_affine_subspace_isometry(basis_states, n_qubits, n_subspace):
     return circuit, bijection
 
 
-# pylint: disable-next=too-many-instance-attributes
-class PUIsometryFinder:
+class PUIsometryFinder:  # pylint: disable=too-many-instance-attributes
     r"""Classical algorithm that finds the isometry circuit and bijection for
     :class:`~.PartialUnaryStatePreparation`. The goal is to compute an isometry that maps
     given computational basis states :math:`\{|\ell\rangle\}_{\ell \in L}` to unique states in
@@ -700,13 +699,11 @@ class PartialUnaryStatePreparation(Operator2):
 
         import pennylane as qp
         import numpy as np
-        qp.decomposition.enable_graph()
 
         coefficients = np.array([0.25, 0.25j, -0.25, 0.5, 0.5, 0.25, -0.25j, 0.25, -0.25, 0.25])
         indices = (0, 1, 4, 13, 14, 17, 19, 22, 23, 25)
 
     Let's prepare this state on a six-qubit register, using three auxiliary qubits:
-
 
     .. code-block:: python
 
@@ -739,7 +736,7 @@ class PartialUnaryStatePreparation(Operator2):
 
     The preparation circuit looks like this:
 
-    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=1), max_length=200, show_matrices=False)())
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1), max_length=200, show_matrices=False)())
     0: ─╭MultiplexerStatePreparation(M0)─╭MultiX(M1)─╭◑────────╭MultiX(M1)─╭MultiX(M3)─╭MultiX(M4)─╭MultiX(M5)─╭◑────────╭MultiX(M5)─╭MultiX(M6)─╭MultiX(M7)─╭MultiX(M8)─╭◑────────╭MultiX(M8) ···
     1: ─├MultiplexerStatePreparation(M0)─├MultiX(M1)─├◑────────├MultiX(M1)─├MultiX(M3)─├MultiX(M4)─├MultiX(M5)─├◑────────├MultiX(M5)─├MultiX(M6)─├MultiX(M7)─├MultiX(M8)─├◑────────├MultiX(M8) ···
     2: ─├MultiplexerStatePreparation(M0)─├MultiX(M1)─├◑────────├MultiX(M1)─├MultiX(M3)─├MultiX(M4)─├MultiX(M5)─├◑────────├MultiX(M5)─├MultiX(M6)─├MultiX(M7)─├MultiX(M8)─├◑────────├MultiX(M8) ···
@@ -780,33 +777,50 @@ class PartialUnaryStatePreparation(Operator2):
         num_work_wires = qp.math.ceil_log2(num_entries) - 1
         work_wires = list(range(15, 15 + num_work_wires))
 
-    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
+        gate_set = {
+            qp.MultiplexerStatePreparation,
+            qp.MultiX,
+            "C(MultiX)",
+            qp.QROM,
+            qp.MultiControlledX,
+            qp.SWAP,
+        }
+        dev = qp.device("null.qubit", wires=15 + 3 * num_work_wires)
+
+        @qp.qjit
+        @qp.decompose(gate_set=gate_set)
+        @qp.qnode(dev)
+        def circuit(work_wires):
+            qp.PartialUnaryStatePreparation(coefficients, wires, indices, work_wires)
+            return qp.state()
+
+    >>> print(qp.analyze(circuit)(work_wires).resources)
     Quantum operations:
     - Total: 6,046
-      - MultiplexerStatePreparation: 1
-      - MultiX: 2,420
-      - QROM: 1,207
-      - C(MultiX): 2,414
+      - 1C(MultiX): 2,414
       - MultiControlledX: 3
+      - MultiX: 2,420
+      - MultiplexerStatePreparation: 1
+      - QROM: 1,207
       - SWAP: 1
     Measurement processes:
     - state(all wires): 1
-    Total wires: 26
+    Total wires: 48
     Circuit Depth: Not computed
 
     Note that passing more work wires than the needed :math:`\max(\lceil \log_2(|L|)\rceil-1, 1)`
     makes the isometry circuit of the state preparation cheaper:
 
     >>> new_num_work_wires = 3*num_work_wires
-    >>> work_wires = list(range(15, 15 + new_num_work_wires))
-    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
+    >>> extra_work_wires = list(range(15, 15 + new_num_work_wires))
+    >>> print(qp.analyze(circuit)(extra_work_wires).resources)
     Quantum operations:
     - Total: 3,068
-      - MultiplexerStatePreparation: 1
-      - MultiX: 332
-      - QROM: 160
-      - C(MultiX): 2,553
+      - 1C(MultiX): 2,553
       - MultiControlledX: 6
+      - MultiX: 332
+      - MultiplexerStatePreparation: 1
+      - QROM: 160
       - SWAP: 16
     Measurement processes:
     - state(all wires): 1
@@ -825,7 +839,7 @@ class PartialUnaryStatePreparation(Operator2):
                 :math:`m = \lceil \log_2 D \rceil` wires
             :example: the ``coefficients`` and ``indices`` used above with :math:`D=10`
 
-            .. decomposition-rule:: _partial_unary_state_prep
+            .. decomposition-rule:: partial_unary_isometry
                 :image: /_static/decomposition_thumbnails/partial_unary_state_prep.svg
                 :lightbox:
                 :where: :math:`N_P`, :math:`N_F`, :math:`N_S` and :math:`N_T` are the numbers of
@@ -887,11 +901,10 @@ class PartialUnaryStatePreparation(Operator2):
         super().__init__(coefficients, wires, indices, work_wires)
 
 
-def _partial_unary_state_prep_resources(coefficients, wires, indices, work_wires):
+def _partial_unary_state_prep_standard_resources(coefficients, wires, indices, work_wires):
     """Compute the resources for the partial unary iteration state preparation technique.
     These resource counts are numerically obtained heuristics, extended to guarantee all
     resource reps that may appear are included at least once."""
-    # pylint: disable=unused-argument
     num_entries = len(indices)
     num_wires = 1 if isinstance(wires, int) else len(wires)
     if num_entries == 1:
@@ -926,7 +939,6 @@ def _partial_unary_state_prep_resources(coefficients, wires, indices, work_wires
             control_wires=Wire[n_subspace],
             target_wires=Wire[p],
             work_wires=Wire[n_subspace - 1],
-            clean=True,
         )
         for p in range(1, main_pui_batch_size + 1)
     }
@@ -1081,7 +1093,6 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
         Each branch of the conditional then reads out only the entries it needs, and discards
         the padded zeros. The data type of the array depends on the number of qubits :math:`n`.
         """
-        # pylint: disable=cell-var-from-loop
 
         _type, *data = circuit[i]
 
@@ -1159,8 +1170,8 @@ def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
     main_loop()  # pylint: disable=no-value-for-parameter
 
 
-def _partial_unary_state_prep_work_wires(coefficients, wires, indices, work_wires):
-    # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _partial_unary_state_prep_standard_work_wires(coefficients, wires, indices, work_wires):
     work_wires = [] if work_wires is None else list(work_wires)
     num_entries = len(indices)
     is_affine = _is_affine_subspace(indices, max(math.ceil_log2(num_entries), 1))
@@ -1172,18 +1183,19 @@ def _partial_unary_state_prep_work_wires(coefficients, wires, indices, work_wire
 
 
 @qp.register_resources(
-    _partial_unary_state_prep_resources,
-    work_wires=_partial_unary_state_prep_work_wires,
+    _partial_unary_state_prep_standard_resources,
+    work_wires=_partial_unary_state_prep_standard_work_wires,
     exact=False,
+    name="partial_unary_isometry",
 )
-def _partial_unary_state_prep(coefficients, wires, indices, work_wires):
+def _partial_unary_state_prep_standard(coefficients, wires, indices, work_wires):
     """Compute the decomposition of the partial unary iteration state preparation technique.
 
     Dynamically allocates any work wires still missing after the ones passed to
     ``PartialUnaryStatePreparation``. Allocating zero wires records no operators.
     """
     work_wires = [] if work_wires is None else list(work_wires)
-    need_to_allocate = _partial_unary_state_prep_work_wires(
+    need_to_allocate = _partial_unary_state_prep_standard_work_wires(
         coefficients, wires, indices, work_wires
     )["zeroed"]
     with allocate(need_to_allocate, state="zero", restored=True) as extra_work_wires:
@@ -1191,4 +1203,4 @@ def _partial_unary_state_prep(coefficients, wires, indices, work_wires):
         _partial_unary_state_prep_core(coefficients, wires, indices, work_wires)
 
 
-qp.add_decomps(PartialUnaryStatePreparation, _partial_unary_state_prep)
+qp.add_decomps(PartialUnaryStatePreparation, _partial_unary_state_prep_standard)
