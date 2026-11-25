@@ -116,8 +116,8 @@ PauliZ(wires=['a'])
 
 For more information, check out the documentation on :doc:`measurements </introduction/measurements>`
 
-QuantumScript
-*************
+QuantumTape
+***********
 
 Quantum operators and measurement processes can be used to build a quantum circuit.
 The user defines the circuit by constructing a quantum function, such as:
@@ -130,16 +130,17 @@ The user defines the circuit by constructing a quantum function, such as:
         qp.RY(params[1], wires='a')
         return qp.expval(qp.PauliZ(wires='b'))
 
-Internally, a quantum function is translated to a :class:`~.core.QuantumScript`, which stores
-the operations and measurements that represent a quantum circuit.
+Internally, a quantum function is translated to a quantum tape, which is
+the central representation of a quantum circuit. The tape is a context manager that stores lists
+of :class:`~.Operator` and :class:`~.MeasurementProcesses` instances.
 
-Call the quantum function in an :class:`~.AnnotatedQueue` context, then construct a script
-from the queue. Gates are stored in the script's ``operations`` property, and measurement
-processes are stored in its ``measurements`` property.
+If we call the quantum function in a tape context, the
+gates are stored in the tape's ``operation`` property, while the
+measurement functions such as :func:`~pennylane.expval` are responsible for adding measurement processes
+to the tape's ``measurement`` property.
 
->>> with qp.core.queuing.AnnotatedQueue() as queue:
+>>> with qp.tape.QuantumTape() as tape:
 ...     qfunc(params)
->>> tape = qp.core.QuantumScript.from_queue(queue)
 
 >>> tape.operations
 [RX(Array(0.5, dtype=float32), wires=['b']),
@@ -149,12 +150,13 @@ processes are stored in its ``measurements`` property.
 >>> tape.measurements
 [expval(PauliZ(wires=['b']))]
 
-Devices use these two lists to get information on the circuit they have to run.
+These two "queues" are used by devices to get information on the circuit they
+have to run.
 
 .. note::
 
-    Quantum scripts can represent parts of quantum circuits and do not necessarily need to
-    define a measurement.
+    Tapes can represent parts of quantum circuits and do not necessarily need to define a measurement.
+    They can also be nested.
 
 Devices
 *******

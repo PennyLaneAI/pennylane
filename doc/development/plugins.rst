@@ -549,7 +549,7 @@ the top user level, we aim to allow dynamic configuration of the device.
 
 >>> dev = qp.device('default.qubit')
 >>> config = qp.devices.ExecutionConfig(device_options={"rng": 42})
->>> tape = qp.core.QuantumScript([qp.Hadamard(0)], [qp.sample(wires=0)], shots=10)
+>>> tape = qp.tape.QuantumTape([qp.Hadamard(0)], [qp.sample(wires=0)], shots=10)
 >>> dev.execute(tape, config)
 array([[1],
        [1],
@@ -662,7 +662,7 @@ to handle a single circuit. See the documentation for each modifier for more det
             return tuple(0.0 for _ in circuits)
 
 >>> dev = MyDevice()
->>> tape = qp.core.QuantumScript([qp.S(0)], [qp.expval(qp.X(0))])
+>>> tape = qp.tape.QuantumTape([qp.S(0)], [qp.expval(qp.X(0))])
 >>> with dev.tracker:
 ...     out = dev.execute(tape)
 >>> out
