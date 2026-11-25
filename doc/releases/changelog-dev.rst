@@ -1678,7 +1678,7 @@ Breaking changes 💔
 
 * Removed ``pennylane.estimator`` and the dependent experimental modules
   ``pennylane.labs.estimator_beta`` and ``pennylane.labs.profiler``.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10603) <https://github.com/PennyLaneAI/pennylane/pull/10603>`__
 
 * The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
   ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
