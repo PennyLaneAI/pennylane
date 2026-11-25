@@ -988,6 +988,14 @@ New features since last release
 Improvements 🛠
 ~~~~~~~~~~~~~~
 
+* :func:`~.grad` and :func:`~.jacobian` now use JAX to differentiate functions of JAX arrays
+  outside of :func:`~.qjit`. For example, ``qp.grad(lambda x: x**2)(jax.numpy.array(2.0))``
+  returns a JAX gradient. As within :func:`~.qjit`, JAX inputs follow JAX's ``argnums``
+  convention: by default, only the first positional argument is differentiated.
+  :class:`~.GradientDescentOptimizer` and its subclasses raise an error for JAX parameters
+  and point to native JAX optimizers such as Optax.
+  `(#10560) <https://github.com/PennyLaneAI/pennylane/pull/10560>`__
+
 * :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
   powers that can simplify eagerly for faster execution, while the other uses nested
   loops to keep the captured intermediate representation compact. Both variants include
@@ -1256,6 +1264,10 @@ Improvements 🛠
 
 * Added decompositions of ``CNOT``, ``CZ``, ``CY``, and ``Hadamard`` directly to PPMs.
   `(#9865) <https://github.com/PennyLaneAI/pennylane/pull/9865>`__
+
+* Added decompositions of :class:`~.SemiAdder` and its controlled versions using Pauli
+  product rotations and measurements, available with capture or an active compiler.
+  `(#10099) <https://github.com/PennyLaneAI/pennylane/pull/10099>`__
 
 * Sorts the gate counts in the display of resources produced from decompositions.
   `(#9916) <https://github.com/PennyLaneAI/pennylane/pull/9916>`__
@@ -2279,6 +2291,7 @@ Internal changes ⚙️
     `(#10495) <https://github.com/PennyLaneAI/pennylane/pull/10495>`__
     `(#10459) <https://github.com/PennyLaneAI/pennylane/pull/10459>`__
     `(#10240) <https://github.com/PennyLaneAI/pennylane/pull/10240>`__
+    `(#10587) <https://github.com/PennyLaneAI/pennylane/pull/10587>`__
 
   - Quantum chemistry operators are ported:
 
