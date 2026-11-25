@@ -2468,9 +2468,6 @@ Internal changes ⚙️
   - Integration with :func:`pennylane.apply`.
     `(#9738) <https://github.com/PennyLaneAI/pennylane/pull/9738>`__
 
-  - Integration with :func:`pennylane.insert`.
-    `(#9685) <https://github.com/PennyLaneAI/pennylane/pull/9685>`__
-
   - Integration with the graph-based decomposition system.
     `(#9723) <https://github.com/PennyLaneAI/pennylane/pull/9723>`__
     `(#9727) <https://github.com/PennyLaneAI/pennylane/pull/9727>`__
