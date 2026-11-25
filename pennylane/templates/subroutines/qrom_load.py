@@ -229,6 +229,8 @@ class QROMLoad(Operator2):
                 :class:`~.QROM` | :math:`1` | 1
 
             .. decomposition-rule:: select_swap_measure_garbage
+                :image: /_static/decomposition_thumbnails/qrom_load_select_swap_measure_garbage.svg
+                :lightbox:
                 :requires: program capture, as with :func:`qjit(capture=True) <.qjit>`,
                     and :math:`k > 1`
                 :where: :math:`k` is the number of bitstrings that :class:`~.SelectSwap` loads in
