@@ -19,6 +19,7 @@ import warnings
 from pennylane import math
 from pennylane.core.qscript import QuantumScript
 from pennylane.measurements import MutualInfoMP, ProbabilityMP, StateMP, VarianceMP, VnEntropyMP
+from pennylane.ops.op_math import Conditional
 from pennylane.pytrees import flatten, unflatten
 
 SUPPORTED_GRADIENT_KWARGS = {
@@ -155,42 +156,41 @@ def choose_trainable_param_indices(tape, argnum=None):
     return argnum
 
 
-def _try_zero_grad_from_graph_or_get_grad_method(tape, param_index, use_graph=True):
-    """Gets the gradient method of a parameter. If use_graph=True, analyze the
-    circuit graph to find if the parameter has zero gradient.
+def _influencing_indices(tape):
+    """Indices of the tape operations and measurements that can affect a measurement result.
 
-    Args:
-        tape (`~.QuantumScript`): the tape to analyze
-        param_index (int): the index of the parameter to analyze
-        use_graph (bool): whether to use the circuit graph to find if
-            a parameter has zero gradient
-
+    Sweeps backwards, tracking the wires and mid-circuit measurements that still feed into a
+    measurement. Objects without wires act on all circuit wires.
     """
+    live_wires = set()
+    live_mcms = set()
+    for mp in tape.measurements:
+        live_wires.update(mp.wires or tape.wires)
+    influencing = set(range(len(tape.operations), len(tape)))
 
-    par_info = tape.par_info[param_index]
-
-    if use_graph:
-        op_or_mp_idx = par_info["op_idx"]
-        n_ops = len(tape.operations)
-        if not any(
-            tape.graph.has_path_idx(op_or_mp_idx, n_ops + i)
-            for i, _ in enumerate(tape.measurements)
-        ):
-            # there is no influence of this operation on any of the observables
-            return "0"
-
-    return getattr(par_info["op"], "grad_method", None)
+    for index in reversed(range(len(tape.operations))):
+        op = tape.operations[index]
+        wires = op.wires or tape.wires
+        if op in live_mcms or not live_wires.isdisjoint(wires):
+            influencing.add(index)
+            live_wires.update(wires)
+            if isinstance(op, Conditional):
+                live_mcms.update(op.meas_val.measurements)
+    return influencing
 
 
 def _find_gradient_methods(tape, trainable_param_indices, use_graph=True):
     """Returns a dictionary with gradient information of each trainable parameter."""
+    influencing_indices = _influencing_indices(tape) if use_graph else None
 
-    return {
-        idx: _try_zero_grad_from_graph_or_get_grad_method(
-            tape, tape.trainable_params[idx], use_graph
-        )
-        for idx in trainable_param_indices
-    }
+    diff_methods = {}
+    for idx in trainable_param_indices:
+        par_info = tape.par_info[tape.trainable_params[idx]]
+        if influencing_indices is not None and par_info["op_idx"] not in influencing_indices:
+            diff_methods[idx] = "0"
+        else:
+            diff_methods[idx] = getattr(par_info["op"], "grad_method", None)
+    return diff_methods
 
 
 def _validate_gradient_methods(tape, method, diff_methods):

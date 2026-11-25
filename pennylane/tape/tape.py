@@ -211,11 +211,6 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     >>> len(tape)
     5
 
-    The :class:`~.CircuitGraph` can also be accessed:
-
-    >>> tape.graph
-    <pennylane.circuit_graph.CircuitGraph object at 0x...>
-
     Once constructed, the quantum tape can be executed directly on a supported
     device via the :func:`~.pennylane.execute` function:
 

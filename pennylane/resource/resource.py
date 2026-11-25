@@ -28,7 +28,8 @@ from typing import Any
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
-from pennylane.ops.op_math import Controlled, ControlledOp
+from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
+from pennylane.ops.op_math import Conditional, Controlled, ControlledOp
 from pennylane.pytrees import flatten, unflatten
 
 from .expression import Expression
@@ -1365,6 +1366,26 @@ def _mp_to_str(mp: MeasurementProcess, num_wires: int) -> str:
     return meas_name
 
 
+def _circuit_depth(tape: QuantumScript) -> int:
+    """Length of the longest chain of operations that depend on each other through shared wires
+    or mid-circuit measurement results. Operations without wires act on all circuit wires."""
+    wire_depths = {}
+    mcm_depths = {}
+    depth = 0
+    for op in tape.operations:
+        wires = op.wires or tape.wires
+        op_depth = max((wire_depths.get(wire, 0) for wire in wires), default=0)
+        if isinstance(op, Conditional):
+            op_depth = max(op_depth, *(mcm_depths[m] for m in op.meas_val.measurements))
+        op_depth += 1
+        for wire in wires:
+            wire_depths[wire] = op_depth
+        if isinstance(op, (MidMeasure, PauliMeasure)):
+            mcm_depths[op] = op_depth
+        depth = max(depth, op_depth)
+    return depth
+
+
 def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsResources:
     """Given a quantum tape, this function counts the resources used by standard PennyLane operations.
 
@@ -1378,7 +1399,7 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
     """
 
     num_wires = len(tape.wires)
-    depth = tape.graph.get_depth() if compute_depth else None
+    depth = _circuit_depth(tape) if compute_depth else None
 
     quantum_operations = defaultdict(int)
     measurement_processes = defaultdict(int)

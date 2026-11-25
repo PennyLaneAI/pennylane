@@ -516,7 +516,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         Keyword args:
             rotations (list[~.Operation]): operations that rotate the circuit
                 pre-measurement into the eigenbasis of the observables.
-            hash (int): the hash value of the circuit constructed by `CircuitGraph.hash`
+            hash (int): the hash value of the quantum script
         """
 
     @staticmethod

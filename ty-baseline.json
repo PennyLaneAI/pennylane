@@ -483,14 +483,6 @@
         "lineCount": 1
       }
     ],
-    "pennylane/circuit_graph.py": [
-      {
-        "rule": "invalid-argument-type",
-        "startColumn": 35,
-        "endColumn": 48,
-        "lineCount": 1
-      }
-    ],
     "pennylane/concurrency/executors/base.py": [
       {
         "rule": "invalid-argument-type",

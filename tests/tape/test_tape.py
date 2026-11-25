@@ -22,7 +22,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import CircuitGraph
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition import gate_sets
@@ -428,36 +427,6 @@ class TestIteration:
 
         # Check that the underlying circuit is still as expected
         assert tape.circuit == circuit
-
-
-class TestGraph:
-    """Tests involving graph creation"""
-
-    def test_graph_creation(self, mocker):
-        """Test that the circuit graph is correctly created"""
-        spy = mocker.spy(CircuitGraph, "__init__")
-
-        with QuantumTape() as tape:
-            op_ = qp.RX(1.0, wires=0)
-            obs = qp.PauliZ(1)
-            qp.expval(obs)
-
-        # graph has not yet been created
-        assert tape._graph is None
-        spy.assert_not_called()
-
-        # requesting the graph creates it
-        g = tape.graph
-        assert g.operations == [op_]
-        assert g.observables == tape.measurements
-        assert tape._graph is not None
-        spy.assert_called_once()
-
-        # calling the graph property again does
-        # not reconstruct the graph
-        g2 = tape.graph
-        assert g2 is g
-        spy.assert_called_once()
 
 
 class TestResourceEstimation:

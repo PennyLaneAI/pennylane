@@ -82,7 +82,7 @@ def process_queue(
     return ops, measurements
 
 
-class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
+class QuantumScript:  # pylint: disable=too-many-public-methods
     r"""The operations and measurements that represent instructions for
     execution on a quantum device.
 
@@ -182,7 +182,6 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
         self._shots = Shots(shots)
 
         self._trainable_params = trainable_params
-        self._graph = None
         self._batch_size = _UNSET_BATCH_SIZE
 
         self._obs_sharing_wires = None
@@ -411,7 +410,6 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
 
     def _update(self):
         """Update all internal metadata regarding processed operations and observables"""
-        self._graph = None
         self._trainable_params = None
 
         try:
@@ -613,7 +611,7 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
             for the provided trainable parameter.
         """
         # get the index of the parameter in the script
-        t_idx = self.trainable_params[idx]  # pylint: disable=unsubscriptable-object
+        t_idx = self.trainable_params[idx]
 
         # get the info for the parameter
         info = self.par_info[t_idx]
@@ -856,7 +854,6 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
         )
 
         # copy cached properties when relevant
-        new_qscript._graph = None if copy_operations or update else self._graph
         if not update.get("operations"):
             # batch size may change if operations were updated
             new_qscript._batch_size = self._batch_size
@@ -902,36 +899,6 @@ class QuantumScript:  # pylint: disable=too-many-instance-attributes,too-many-pu
     # ========================================================
     # Transforms: QuantumScript to Information
     # ========================================================
-
-    @property
-    def graph(self) -> "pennylane.CircuitGraph":
-        """Returns a directed acyclic graph representation of the recorded
-        quantum circuit:
-
-        >>> ops = [qp.StatePrep([0, 1], 0), qp.RX(0.432, 0)]
-        >>> qscript = QuantumScript(ops, [qp.expval(qp.Z(0))])
-        >>> qscript.graph
-        <pennylane.circuit_graph.CircuitGraph object at 0x...>
-
-        Note that the circuit graph is only constructed once, on first call to this property,
-        and cached for future use.
-
-        Returns:
-            .CircuitGraph: the circuit graph object
-        """
-        # pylint: disable-next=import-outside-toplevel
-        from pennylane.circuit_graph import CircuitGraph  # tach-ignore
-
-        if self._graph is None:
-            self._graph = CircuitGraph(
-                self.operations,
-                self.measurements,
-                self.wires,
-                self.par_info,
-                self.trainable_params,
-            )
-
-        return self._graph
 
     def draw(
         self,

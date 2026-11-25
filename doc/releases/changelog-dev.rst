@@ -1672,6 +1672,11 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* Removed ``qp.CircuitGraph``, the ``pennylane.circuit_graph`` module, and
+  ``QuantumScript.graph`` (including ``QuantumTape.graph``). Tape-based metric tensors,
+  gradient transforms, and resource depth calculations remain available.
+  `(#10602) <https://github.com/PennyLaneAI/pennylane/pull/10602>`__
+
 * The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
   ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
   ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,

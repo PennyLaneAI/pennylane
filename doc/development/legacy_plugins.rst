@@ -282,15 +282,15 @@ your plugin which, by default, performs the following process:
 
 Here,
 
-* ``circuit`` is a :class:`~.CircuitGraph` object
+* ``circuit`` is a :class:`~.QuantumScript` object
 
-* :attr:`circuit.operations <pennylane.CircuitGraph.operations>` are the user-provided
+* :attr:`circuit.operations <pennylane.tape.QuantumScript.operations>` are the user-provided
   operations to be executed
 
-* :attr:`circuit.observables <pennylane.CircuitGraph.observables>` are the user-provided
+* :attr:`circuit.observables <pennylane.tape.QuantumScript.observables>` are the user-provided
   observables to be measured
 
-* :attr:`circuit.diagonalizing_gates <pennylane.CircuitGraph.diagonalizing_gates>` are the
+* :attr:`circuit.diagonalizing_gates <pennylane.tape.QuantumScript.diagonalizing_gates>` are the
   gates that rotate the circuit prior to measurement so that computational basis
   measurements are performed in the eigenbasis of the requested observables
 

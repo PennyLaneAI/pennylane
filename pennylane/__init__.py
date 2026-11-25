@@ -87,7 +87,6 @@ from pennylane.numeric_hamiltonians import (
 from pennylane._grad import grad, jacobian, vjp, jvp, value_and_grad
 from pennylane._version import __version__
 from pennylane.about import about
-from pennylane.circuit_graph import CircuitGraph
 from pennylane.registers import registers
 from pennylane.measurements import (
     counts,

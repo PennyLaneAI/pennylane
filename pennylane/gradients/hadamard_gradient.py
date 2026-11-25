@@ -36,8 +36,8 @@ from pennylane.typing import PostprocessingFn, ResultBatch
 from pennylane.wires import Wires
 
 from .gradient_transform import (
+    _find_gradient_methods,
     _no_trainable_grad,
-    _try_zero_grad_from_graph_or_get_grad_method,
     assert_no_probability,
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
@@ -452,14 +452,12 @@ def hadamard_grad(
     g_tapes = []
     coeffs = []
     generators_per_parameter = []
+    diff_methods = _find_gradient_methods(tape, trainable_param_indices)
 
     for trainable_param_idx, _ in enumerate(tape.trainable_params):
         if (
             trainable_param_idx not in trainable_param_indices
-            or _try_zero_grad_from_graph_or_get_grad_method(
-                tape, tape.trainable_params[trainable_param_idx], True
-            )
-            == "0"
+            or diff_methods[trainable_param_idx] == "0"
         ):
             generators_per_parameter.append(0)
         else:

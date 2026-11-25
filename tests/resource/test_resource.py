@@ -60,6 +60,29 @@ def test_specs_compute_depth(compute_depth):
     assert resources.depth == (3 if compute_depth else None)
 
 
+def test_tape_depth_classical_dependency():
+    """Cross-wire classical control contributes to the circuit's longest path."""
+    with qp.queuing.AnnotatedQueue() as queue:
+        qp.Hadamard(0)
+        qp.X(0)
+        measurement = qp.measure(0)
+        qp.cond(measurement, qp.X)(1)
+        qp.expval(qp.Z(1))
+    tape = QuantumScript.from_queue(queue)
+
+    assert resources_from_tape(tape).depth == 4
+
+
+def test_tape_depth_wireless_operation():
+    """A wireless operation connects the preceding and succeeding wire chains."""
+    tape = QuantumScript(
+        [qp.X(0), qp.X(0), qp.GlobalPhase(0.2), qp.X(1)],
+        [qp.expval(qp.Z(1))],
+    )
+
+    assert resources_from_tape(tape).depth == 4
+
+
 class TestBaseResources:
     """Test the methods and attributes of the base Resources class"""
 
