@@ -4,6 +4,10 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* The new :class:`~.RZLayer` applies :class:`~.RZ` rotations by the same angle to each of its
+  wires. The shared angle allows for more efficient decomposition rules than individual rotations.
+  `(#10508) <https://github.com/PennyLaneAI/pennylane/pull/10508>`__
+
 * Added a lattice-surgery decomposition for :class:`~.MultiX` with one control wire,
   using three Pauli product measurements and one auxiliary qubit.
   `(#10558) <https://github.com/PennyLaneAI/pennylane/pull/10558>`__
@@ -1008,11 +1012,8 @@ Improvements 🛠
   and point to native JAX optimizers such as Optax.
   `(#10560) <https://github.com/PennyLaneAI/pennylane/pull/10560>`__
 
-* :func:`~.qchem.molecular_integrals` computes the core constant and the one- and
-  two-electron integrals of a :class:`~.qchem.Molecule` with PySCF, for use with
-  :func:`~.qchem.fermionic_observable` and :func:`~.qchem.basis_rotation`. Convert the
-  two-electron tensor to chemists' notation with ``np.swapaxes(two, 1, 3)`` before using
-  :func:`~.qchem.factorize`.
+* The new :func:`~.qchem.molecular_integrals` computes molecular integrals with PySCF
+  for Hamiltonian construction and factorization.
   `(#10581) <https://github.com/PennyLaneAI/pennylane/pull/10581>`__
 
 * :class:`~.ControlledSequence` now has two registered decomposition variants: one uses
@@ -2083,44 +2084,16 @@ Breaking changes 💔
   simplification and separate compilation into blocks.
   `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
 
-* The differentiable Hartree-Fock solver and ``method="dhf"`` have been removed from the
-  ``qp.qchem`` module. The removed functions are ``hf_energy``, ``scf``, ``nuclear_energy``,
-  ``electron_integrals``, ``fermionic_hamiltonian``, ``diff_hamiltonian``, ``dipole_integrals``,
-  ``fermionic_dipole``, ``dipole_moment``, ``load_basisset``, ``BasisFunction``,
-  ``atom_basis_data``, ``mol_basis_data``, and the Gaussian integral and matrix functions, such as
-  ``overlap_integral``, ``overlap_matrix``, and ``repulsion_tensor``.
+* ``qp.BooleanFn``, the ``pennylane.boolean_fn`` module, and ``qp.operation.is_trainable``
+  have been removed. Legacy device stopping conditions are now ordinary callables.
+  `(#10601) <https://github.com/PennyLaneAI/pennylane/pull/10601>`__
+
+* The differentiable Hartree-Fock solver and ``method="dhf"`` have been removed.
   :func:`~.qchem.molecular_hamiltonian` now defaults to ``method="pyscf"`` (requires ``pyscf``),
-  and :func:`~.qchem.molecular_dipole` defaults to ``method="openfermion"`` (requires
-  ``openfermionpyscf``). These backends do not support automatic differentiation of
-  molecular parameters. Use :func:`~.qchem.molecular_integrals` to compute the one- and
-  two-electron integrals.
-  :class:`~.qchem.Molecule` now stores only molecular metadata. Its ``load_data``, ``l``,
-  ``alpha``, ``coeff``, and ``normalize`` arguments have been removed, along with the
-  ``n_orbitals``, ``n_basis``, ``basis_data``, ``basis_set``, and ``mo_coefficients``
-  attributes and the ``atomic_orbital`` and ``molecular_orbital`` methods.
-  Obtain the active spatial-orbital count from ``qubits // 2`` or
-  ``len(hamiltonian.wires) // 2`` after constructing the Hamiltonian. This is the total
-  spatial-orbital count when no active-space restriction is applied.
-
-  PySCF uses spherical basis functions, whereas the removed solver used Cartesian basis
-  functions. Basis sets containing d orbitals can therefore give different qubit counts:
-  with ``cc-pVDZ``, LiH changes from 40 to 38, H₂O from 50 to 48, and N₂ from 60 to 56
-  qubits when all orbitals are active.
-
-  Newly written :class:`~.data.DatasetMolecule` attributes omit the removed ``l``, ``alpha``,
-  and ``coeff`` fields. Older PennyLane readers that require those fields cannot read this
-  new format. Existing datasets containing the fields remain readable.
+  and :func:`~.qchem.molecular_dipole` to ``method="openfermion"`` (requires ``openfermionpyscf``).
+  :class:`~.qchem.Molecule` stores only metadata. Use :func:`~.qchem.molecular_integrals`
+  for molecular integrals; automatic differentiation of molecular parameters is unsupported.
   `(#10581) <https://github.com/PennyLaneAI/pennylane/pull/10581>`__
-
-  .. code-block:: python
-
-      import numpy as np
-      import pennylane as qp
-
-      molecule = qp.qchem.Molecule(["H", "H"], np.array([[0., 0., 0.], [0., 0., 1.4]]))
-      hamiltonian, qubits = qp.qchem.molecular_hamiltonian(molecule)
-      n_orbitals = qubits // 2
-      core, one, two = qp.qchem.molecular_integrals(molecule)
 
 Deprecations 👋
 ~~~~~~~~~~~~~~~
@@ -2722,8 +2695,7 @@ Bug fixes 🐛
   when no work wires are present, and removed its outdated expected-failure marker.
   `(#10586) <https://github.com/PennyLaneAI/pennylane/pull/10586>`__
 
-* :func:`~.qchem.molecular_hamiltonian` with ``method="pyscf"`` now applies ``active_orbitals``
-  when no core orbitals are frozen. Previously, the virtual orbitals were not truncated in this case.
+* Fixed PySCF active-space truncation when no core orbitals are frozen.
   `(#10581) <https://github.com/PennyLaneAI/pennylane/pull/10581>`__
 
 * Fixed resource callbacks in :class:`~.SingleExcitation` decompositions to accept positional arguments.
