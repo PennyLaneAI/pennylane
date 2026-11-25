@@ -516,6 +516,73 @@ def estimate(
         ``level="user"`` includes the gates of :func:`~.transforms.gridsynth`.
 
     .. details::
+        :title: Levels after the transforms
+
+        At the levels after the transforms, ``estimate`` estimates the resources that
+        :func:`~.analyze` gives at those levels, without applying the transforms. A
+        :func:`~.decompose` transform placed first is estimated as with ``level="top"``, from the
+        resources that its decomposition rules declare, and each following transform is estimated
+        from the resource effect that Catalyst declares for its pass. The levels are those
+        accepted by :func:`~.analyze`, including several levels, except the device level and
+        slices. ``target`` is not used at these levels.
+
+        For example, the following circuit is decomposed into Clifford+T gates, which are then
+        converted into Pauli product rotations and measurements:
+
+        .. code-block:: python
+
+            @qp.qjit(capture=True)
+            @qp.transforms.ppr_to_ppm
+            @qp.transforms.to_ppr
+            @qp.decompose(gate_set={"Hadamard", "T", "CNOT", "GlobalPhase"})
+            @qp.qnode(qp.device("null.qubit", wires=2))
+            def circuit():
+                qp.CZ([0, 1])
+                qp.T(1)
+                return qp.expval(qp.Z(0))
+
+        The levels are named as in :func:`~.analyze`:
+
+        >>> specs = qp.estimate(circuit, level="all-user")()
+        >>> specs.resources["Before MLIR Passes"].quantum_operations
+        {'CZ': 1, 'T': 1}
+        >>> specs.resources["to-ppr"].quantum_operations
+        {'GlobalPhase': 4, 'PPR-pi/4-w1': 8, 'PPR-pi/4-w2': 1, 'PPR-pi/8-w1': 1}
+
+        Each Pauli product rotation of :func:`~.transforms.ppr_to_ppm` uses an auxiliary qubit,
+        which is released before the next rotation. The total number of wires counts every
+        allocation, while the peak number of qubits that are live at the same time is reported
+        under ``Qubit Liveness``:
+
+        >>> print(qp.estimate(circuit, level="user")().resources)
+        Quantum operations:
+        - Total: 35
+          - GlobalPhase: 4
+          - PPM-w1: 10
+          - PPM-w2: 9
+          - PPM-w3: 1
+          - PPR-pi/2-w1: 9
+          - PPR-pi/2-w2: 1
+          - pbc.fabricate: 1
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 12
+        Circuit Depth: Not computed
+        Qubit Liveness:
+        - peak_wires: 3
+
+        A transform whose pass declares no resource effect, or that is configured with options its
+        effect does not support, raises an error, as does a :func:`~.decompose` transform that is
+        not the first transform. The resource effects are declared for
+        :func:`~.transforms.to_ppr`, :func:`~.transforms.ppr_to_ppm`,
+        :func:`~.transforms.combine_global_phases` and :func:`~.transforms.gridsynth`. The effect
+        of :func:`~.transforms.gridsynth` gives the expected number of gates of its
+        decompositions, as :func:`~.analyze` does.
+
+        Unlike ``level="top"`` on its own, level ``0`` among several levels has the resources
+        before the transforms, as in :func:`~.analyze`.
+
+    .. details::
         :title: Custom decomposition rules
 
         If ``target`` is a level of the compile pipeline, ``estimate`` also uses the
