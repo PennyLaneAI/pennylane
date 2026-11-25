@@ -262,8 +262,8 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
     Only Clifford+T gates and (Pauli) mid-circuit measurements remain:
 
     >>> sorted(qp.analyze(circuit)().resources.quantum_operations)
-    ['Adjoint(S)', 'Adjoint(T)', 'CNOT', 'Hadamard', 'MidCircuitMeasure', 'PPM-w1', 'PauliX',
-     'PauliZ', 'T']
+    ['Adjoint(S)', 'Adjoint(T)', 'CNOT', 'Hadamard', 'MidCircuitMeasure', 'PauliMeasure',
+     'PauliX', 'PauliZ', 'T']
     """
 
     # ``mode="repeat-until-success"`` implements local retries with nested

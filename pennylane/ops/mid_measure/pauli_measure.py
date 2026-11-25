@@ -182,15 +182,13 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     >>> print(qp.specs(qp.qjit(circuit), level="top")()['resources'])
     Quantum operations:
     - Total: 4
-    - Hadamard: 2
-    - PPM-w2: 1
-    - PauliX: 1
+      - Hadamard: 2
+      - PauliMeasure: 1
+      - PauliX: 1
     Measurement processes:
     - expval(PauliZ): 1
     Total wires: 3
-    PBC Depths:
-    - Any commuting depth: 1
-    - Qubit disjoint depth: 1
+    Circuit Depth: Not computed
     """
 
     if capture_enabled():
