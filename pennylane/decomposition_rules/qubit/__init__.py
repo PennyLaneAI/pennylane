@@ -16,5 +16,5 @@ r"""Decomposition rules for qubit operators.
 
 .. autosummary::
 
-    unitary_decompositions
+    matrix_ops
 """

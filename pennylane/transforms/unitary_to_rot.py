@@ -31,7 +31,7 @@ def unitary_to_rot(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     Single-qubit gates will be converted to a sequence of Y and Z rotations in the form
     :math:`RZ(\omega) RY(\theta) RZ(\phi)` that implements the original operation up
     to a global phase. Two-qubit gates will be decomposed according to the
-    :mod:`pennylane.decomposition_rules.qubit.unitary_decompositions` function.
+    :func:`~pennylane.decomposition_rules.qubit.matrix_ops.two_qubit_decomposition` function.
 
     .. warning::
 
@@ -171,7 +171,7 @@ def _recursively_decompose_qubit_unitary(op: QubitUnitary) -> list[Operator]:
 
     """
     # pylint: disable-next=import-outside-toplevel
-    from pennylane.decomposition_rules.qubit.unitary_decompositions import (
+    from pennylane.decomposition_rules.qubit.matrix_ops import (
         one_qubit_decomposition,
         two_qubit_decomposition,
     )

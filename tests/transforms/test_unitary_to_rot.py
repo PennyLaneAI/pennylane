@@ -24,7 +24,7 @@ from test_optimization.utils import check_matrix_equivalence
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.decomposition_rules.qubit.unitary_decompositions import (
+from pennylane.decomposition_rules.qubit.matrix_ops import (
     one_qubit_decomposition,
     two_qubit_decomposition,
 )

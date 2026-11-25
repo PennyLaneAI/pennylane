@@ -27,7 +27,7 @@ import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.operator import abstractify
 from pennylane.exceptions import DecompositionUndefinedError
-from pennylane.decomposition_rules.qubit.unitary_decompositions import _compute_udv
+from pennylane.decomposition_rules.qubit.matrix_ops import _compute_udv
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
 from pennylane.testing import assert_decomposable
 from pennylane.typing import AbstractArray, AbstractWires, Complex, Wire

@@ -23,7 +23,7 @@ from gate_data import CNOT, SWAP, H, I, S, T, X, Y, Z
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.decomposition_rules.qubit.unitary_decompositions import (
+from pennylane.decomposition_rules.qubit.matrix_ops import (
     _compute_num_cnots,
     multi_qubit_decomposition,
     one_qubit_decomposition,

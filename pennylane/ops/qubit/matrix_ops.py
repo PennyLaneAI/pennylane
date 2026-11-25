@@ -337,7 +337,7 @@ class QubitUnitary(Operator2):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        See :mod:`pennylane.decomposition_rules.qubit.unitary_decompositions`
+        See :mod:`pennylane.decomposition_rules.qubit.matrix_ops`
         for the numerical decomposition algorithms.
 
         .. seealso:: :meth:`~.QubitUnitary.decomposition`.
@@ -364,7 +364,7 @@ class QubitUnitary(Operator2):
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
         # or a single RZ for diagonal matrices.
         # pylint: disable-next=import-outside-toplevel
-        from pennylane.decomposition_rules.qubit.unitary_decompositions import (
+        from pennylane.decomposition_rules.qubit.matrix_ops import (
             multi_qubit_decomposition,
             one_qubit_decomposition,
             two_qubit_decomposition,

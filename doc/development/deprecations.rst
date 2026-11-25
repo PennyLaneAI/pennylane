@@ -892,8 +892,7 @@ Completed deprecation cycles
   - Removed in v0.36
 
 * ``qml.transforms.one_qubit_decomposition`` and ``qml.transforms.two_qubit_decomposition`` are removed. Instead,
-  you should use the algorithms in
-  :mod:`pennylane.decomposition_rules.qubit.unitary_decompositions`.
+  you should use ``qml.ops.one_qubit_decomposition`` and ``qml.ops.two_qubit_decomposition``.
 
   - Deprecated in v0.34
   - Removed in v0.35

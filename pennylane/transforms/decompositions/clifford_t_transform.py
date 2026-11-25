@@ -276,7 +276,7 @@ def _one_qubit_decompose(op):
     :class:`~.Hadamard`."""
 
     # pylint: disable-next=import-outside-toplevel
-    from pennylane.decomposition_rules.qubit.unitary_decompositions import one_qubit_decomposition
+    from pennylane.decomposition_rules.qubit.matrix_ops import one_qubit_decomposition
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
@@ -299,7 +299,7 @@ def _two_qubit_decompose(op):
     :class:`~.Hadamard`, and :class:`~.CNOT`."""
 
     # pylint: disable-next=import-outside-toplevel
-    from pennylane.decomposition_rules.qubit.unitary_decompositions import two_qubit_decomposition
+    from pennylane.decomposition_rules.qubit.matrix_ops import two_qubit_decomposition
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
