@@ -58,7 +58,6 @@ class Identity(Operator2):
     """
 
     # NOTE: Previous default for legacy operator
-    # pylint: disable=arguments-differ
     num_wires = None
     """Any number of wires."""
 
@@ -95,7 +94,7 @@ class Identity(Operator2):
         return "Identity"
 
     @staticmethod
-    def compute_eigvals(wires=()):
+    def compute_eigvals(wires=()):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -120,7 +119,7 @@ class Identity(Operator2):
         return qp.math.ones(2 ** len(wires))
 
     @staticmethod
-    def compute_matrix(wires=()):
+    def compute_matrix(wires=()):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -140,11 +139,11 @@ class Identity(Operator2):
         return _identity_matrix(len(wires))
 
     @staticmethod
-    def compute_sparse_matrix(wires=(), format="csr"):
+    def compute_sparse_matrix(wires=(), format="csr"):  # pylint: disable=arguments-differ
         return _identity_sparse_matrix(len(wires), format)
 
     @staticmethod
-    def compute_diagonalizing_gates(wires=()):  # pylint: disable=unused-argument
+    def compute_diagonalizing_gates(wires=()):  # pylint: disable=arguments-differ,unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -244,7 +243,6 @@ class GlobalPhase(Operator2):
 
     """
 
-    # pylint: disable=arguments-differ
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -262,7 +260,7 @@ class GlobalPhase(Operator2):
         super().__init__(phi)
 
     @staticmethod
-    def compute_eigvals(phi, wires=()):
+    def compute_eigvals(phi, wires=()):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -294,7 +292,7 @@ class GlobalPhase(Operator2):
         return qp.math.tensordot(exp, ones, axes=0)
 
     @staticmethod
-    def compute_matrix(phi, wires=()):
+    def compute_matrix(phi, wires=()):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
@@ -322,14 +320,14 @@ class GlobalPhase(Operator2):
         return qp.math.tensordot(exp, eye, axes=0)
 
     @staticmethod
-    def compute_sparse_matrix(phi, wires=(), format="csr"):
+    def compute_sparse_matrix(phi, wires=(), format="csr"):  # pylint: disable=arguments-differ
         n_wires = len(wires)
         if qp.math.ndim(phi) > 0:
             raise SparseMatrixUndefinedError("Sparse matrices do not support broadcasting")
         return qp.math.exp(-1j * phi) * sparse.eye(2**n_wires, format=format)
 
     @staticmethod
-    # pylint: disable-next=unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
     def compute_diagonalizing_gates(phi, wires=()):
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 

@@ -1043,7 +1043,6 @@ class _DecompInfo:  # pylint: disable=too-few-public-methods
 class _DecompInfoCollection:
     """A collection of _DecompInfo."""
 
-    # pylint: disable=protected-access
     def __init__(
         self,
         rule_infos: Sequence[_DecompInfo],
@@ -1053,13 +1052,15 @@ class _DecompInfoCollection:
         indexed_rule_infos = enumerate(rule_infos)
         self._show_not_applicable = show_not_applicable
         if not show_not_applicable:
+            # pylint: disable-next=protected-access
             indexed_rule_infos = filter(lambda p: p[1]._is_applicable, indexed_rule_infos)
         self._rules = list(indexed_rule_infos)
 
     def _title(self, index, rule) -> str:
-        return f"Decomposition {index} (name: {rule._name})"
+        return f"Decomposition {index} (name: {rule._name})"  # pylint: disable=protected-access
 
     def _title_md(self, index, rule) -> str:
+        # pylint: disable-next=protected-access
         return f"#### Decomposition {index} (name: {rule._name})"
 
     def __str__(self) -> str:
@@ -1074,6 +1075,7 @@ class _DecompInfoCollection:
             return "No available decomposition rules."
         if not self._rules:
             return "No applicable decomposition rules (non-applicable rules are excluded)."
+        # pylint: disable-next=protected-access
         lines = (f"{self._title_md(i, d)}\n\n{d._repr_markdown_()}" for i, d in self._rules)
         return "\n\n---\n\n".join(lines).rstrip("\n")
 

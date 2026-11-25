@@ -177,6 +177,10 @@ from pennylane.ops.functions import (
     comm,
     single_qubit_zyz_angles,
 )
+
+# Rule creation needs operators, templates and transforms to finish initializing.
+from pennylane import decomposition_rules  # pylint: disable=ungrouped-imports
+
 from pennylane.ops.identity import I
 from pennylane.optimize import *
 from pennylane.debugging import (
@@ -247,10 +251,6 @@ if _find_spec("numpy") is not None:
             "`python -m pip install numpy --upgrade`. ",
             exceptions.PennyLaneDeprecationWarning,
         )
-
-
-# Rule creation needs operators, templates and transforms to finish initializing.
-from pennylane import decomposition_rules  # pylint: disable=ungrouped-imports
 
 from ._entry_points_utils import _setup_entry_points
 

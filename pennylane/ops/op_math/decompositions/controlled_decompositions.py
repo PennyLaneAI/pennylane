@@ -241,7 +241,6 @@ def _controlled_unitary_bisect(U, wires, control_values, *_, **__):
     """The decomposition rule for ControlledQubitUnitary from
     `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_."""
 
-    # pylint: disable=no-value-for-parameter
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
         control_values = math.array(control_values, like="jax")
@@ -253,7 +252,7 @@ def _controlled_unitary_bisect(U, wires, control_values, *_, **__):
     su2_U, phase = math.convert_to_su2(U)
     imag_U = math.imag(su2_U)
 
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
     real_main_diagonal = math.allclose(imag_U[0, 0], 0) & math.allclose(imag_U[1, 1], 0)
     ops.cond(
         math.allclose(imag_U[1, 0], 0) & math.allclose(imag_U[0, 1], 0),
@@ -266,7 +265,7 @@ def _controlled_unitary_bisect(U, wires, control_values, *_, **__):
     )(su2_U, wires)
     fn = partial(_ctrl_global_phase, work_wire_type="borrowed")
     ops.cond(_not_zero(phase), fn)(phase, wires[:-1], wires[-1])
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
 
 
 def _single_ctrl_decomp_zyz_condition(U, wires, *_, **__):
@@ -296,7 +295,6 @@ def _controlled_unitary_single_control_zyz(U, wires, control_values, work_wires,
     """The decomposition rule for ControlledQubitUnitary from Lemma 5.1 of
     https://arxiv.org/pdf/quant-ph/9503016"""
 
-    # pylint: disable=no-value-for-parameter
     if capture.enabled() or compiler.active():
         wires = qp.math.array(wires, like="jax")
         control_values = math.array(control_values, like="jax")
@@ -307,10 +305,10 @@ def _controlled_unitary_single_control_zyz(U, wires, control_values, work_wires,
 
     phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U)
 
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
     _single_control_zyz(phi, theta, omega, wires=wires)
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1])
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
 
 
 def _multi_ctrl_decomp_zyz_condition(U, wires, *_, **__):
@@ -348,7 +346,6 @@ def _controlled_unitary_multi_control_zyz(
     """The decomposition rule for ControlledQubitUnitary from Lemma 7.9 of
     https://arxiv.org/pdf/quant-ph/9503016"""
 
-    # pylint: disable=no-value-for-parameter
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
         control_values = math.array(control_values, like="jax")
@@ -359,7 +356,7 @@ def _controlled_unitary_multi_control_zyz(
 
     phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U)
 
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
     _multi_control_zyz(
         phi,
         theta,
@@ -370,7 +367,7 @@ def _controlled_unitary_multi_control_zyz(
     )
     fn = partial(_ctrl_global_phase, work_wire_type="borrowed")
     ops.cond(_not_zero(phase), fn)(phase, wires[:-1], wires[-1])
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
 
 
 def _controlled_unitary_two_qubit_resources(  # pylint: disable=unused-argument
@@ -406,7 +403,6 @@ def _controlled_unitary_two_qubit_resources(  # pylint: disable=unused-argument
 def _controlled_unitary_two_qubit(U, wires, control_values, work_wires, work_wire_type, **_):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
 
-    # pylint: disable=no-value-for-parameter
     # Fetch the built-in rule even when QubitUnitary has exclusions or a fixed rule.
     # This preserves the direct dependency without importing the rule library from ops.
     base_rule = _get_registered_decomps("QubitUnitary")["two_qubit"]
@@ -419,14 +415,14 @@ def _controlled_unitary_two_qubit(U, wires, control_values, work_wires, work_wir
     def _x_flips(i):
         qp.cond(qp.math.logical_not(control_values[i]), qp.X)(wires[i])
 
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
     ops.ctrl(
         base_rule._impl,  # pylint: disable=protected-access
         control=wires[:-2],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )(U, wires=wires[-2:])
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
 
 
 ########################################
@@ -488,7 +484,6 @@ def _mcx_to_cnot_or_toffoli_resources(wires, *_, **__):
 def _mcx_to_cnot_or_toffoli(wires, control_values, *_, **__):
     """A decomposition rule that decomposes an MCX to a CNOT or Toffoli"""
 
-    # pylint: disable=no-value-for-parameter
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
         control_values = math.array(control_values, like="jax")
@@ -503,9 +498,9 @@ def _mcx_to_cnot_or_toffoli(wires, control_values, *_, **__):
     def _x_flips(i):
         qp.cond(math.logical_not(control_values[i]), qp.X)(wires[i])
 
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
     qp.Toffoli(wires=wires)
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
 
 
 def _mcx_two_controls_elbows_resources(wires, *_, **__):
@@ -524,7 +519,6 @@ def _2cx_elbow_explicit_condition(wires, control_values, work_wires, work_wire_t
 def _mcx_two_controls_elbows(wires, control_values, work_wires, **_):
     """A decomposition rule for MCX that uses controlled Elbow."""
 
-    # pylint: disable=no-value-for-parameter
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
         control_values = math.array(control_values, like="jax")
@@ -535,11 +529,11 @@ def _mcx_two_controls_elbows(wires, control_values, work_wires, **_):
 
     elbow_wires = [wires[0], wires[1], work_wires[0]]
 
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
     qp.Elbow(elbow_wires)
     qp.CNOT([work_wires[0], wires[2]])
     qp.adjoint(qp.Elbow)(elbow_wires)
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
 
 
 # pylint: disable-next=unused-argument
@@ -584,7 +578,6 @@ def _mcx_many_work_wires(wires, control_values, work_wires, work_wire_type="borr
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
-    # pylint: disable=no-value-for-parameter
 
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
@@ -614,14 +607,14 @@ def _mcx_many_work_wires(wires, control_values, work_wires, work_wire_type="borr
     def loop_down(i):
         down_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
 
     if work_wire_type == "borrowed":
         ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
-        loop_up()
+        loop_up()  # pylint: disable=no-value-for-parameter
 
     down_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
-    loop_down()
+    loop_down()  # pylint: disable=no-value-for-parameter
 
     _wires = [control_wires[0], work_wires[0], target_wire]
     ops.MultiControlledX(
@@ -630,13 +623,13 @@ def _mcx_many_work_wires(wires, control_values, work_wires, work_wire_type="borr
         work_wire_type=work_wire_type,
     )
 
-    loop_up()
+    loop_up()  # pylint: disable=no-value-for-parameter
     up_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
 
     if work_wire_type == "borrowed":
-        loop_down()
+        loop_down()  # pylint: disable=no-value-for-parameter
 
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
 
 
 # pylint: disable-next=unused-argument
@@ -694,7 +687,6 @@ def _mcx_two_work_wires(wires, control_values, work_wires, work_wire_type="borro
 
     """
 
-    # pylint: disable=no-value-for-parameter
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
         control_values = math.array(control_values, like="jax")
@@ -703,7 +695,7 @@ def _mcx_two_work_wires(wires, control_values, work_wires, work_wire_type="borro
     def _x_flips(i):
         qp.cond(qp.math.logical_not(control_values[i]), qp.X)(wires[i])
 
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
 
     # Unpack work wires for readability. There might just be one of them if it
     # is a "small" MCX (less than 6 controls)
@@ -749,7 +741,7 @@ def _mcx_two_work_wires(wires, control_values, work_wires, work_wire_type="borro
 
         ops.adjoint(_build_log_n_depth_ccx_ladder)(wires[:-1])
 
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
 
 
 # pylint: disable-next=unused-argument
@@ -830,7 +822,6 @@ def _mcx_one_work_wire(wires, control_values, work_wires, work_wire_type="zeroed
 
     """
 
-    # pylint: disable=no-value-for-parameter
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
         control_values = math.array(control_values, like="jax")
@@ -839,9 +830,9 @@ def _mcx_one_work_wire(wires, control_values, work_wires, work_wire_type="zeroed
     def _x_flips(i):
         qp.cond(qp.math.logical_not(control_values[i]), qp.X)(wires[i])
 
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
     _mcx_one_worker_no_flips(wires, work_wires, work_wire_type)
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
 
 
 def _mcx_no_work_wires_resources(wires, *_, **__):
@@ -874,7 +865,6 @@ def _mcx_no_worker_condition(wires, control_values, work_wires, **_):
 def _mcx_no_work_wires(wires, control_values, *_, **__):
     """Use ctrl_decomp_bisect_md to decompose a multi-controlled X gate with no work wires."""
 
-    # pylint: disable=no-value-for-parameter
     U = ops.RX.compute_matrix(np.pi)
 
     if compiler.active() or capture.enabled():
@@ -885,10 +875,10 @@ def _mcx_no_work_wires(wires, control_values, *_, **__):
     def _x_flips(i):
         qp.cond(qp.math.logical_not(control_values[i]), qp.X)(wires[i])
 
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
     _ctrl_decomp_bisect_md(U, wires)
     ops.ctrl(ops.GlobalPhase(-np.pi / 2), control=wires[:-1])
-    _x_flips()
+    _x_flips()  # pylint: disable=no-value-for-parameter
 
 
 ####################
