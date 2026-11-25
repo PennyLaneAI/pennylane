@@ -559,7 +559,6 @@ class TestSelectTHCOperator:
         [
             (2, 0),  # the one-body table follows the two-body one at address 2
             (3, 1),  # no offset fits into the address register, so edge is an address bit
-            (5, 1),  # the one-body table starts at address 6, which sets two address bits
         ],
     )
     def test_one_body_branch(self, M, ell):

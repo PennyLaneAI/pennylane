@@ -27,12 +27,13 @@ from pennylane.wires import Wires, WiresLike
 from .qrom import preprocess_qrom_inputs
 from .qrom_load import (
     QROMLoad,
-    _calculate_select_swap_sizes,
     _measure_and_reset,
     _measure_and_reset_resources,
     _phase_fixup,
     _phase_fixup_resources,
     _select_ops,
+    _select_swap_fixups,
+    _select_swap_sizes,
     _swap_ops,
 )
 
@@ -190,12 +191,6 @@ class SelectSwap(Operator2):
         return self.control_wires + self.target_wires + self.work_wires
 
 
-def _select_swap_sizes(bitstrings, control_wires, target_wires, work_wires):
-    return _calculate_select_swap_sizes(
-        len(bitstrings), len(control_wires), len(target_wires), len(work_wires), clean=False
-    )
-
-
 def _select_swap_resources(bitstrings, control_wires, target_wires, work_wires):
     num_control_wires_select, num_work_wires_select, _, num_work_wires_cswap, depth = (
         _select_swap_sizes(bitstrings, control_wires, target_wires, work_wires)
@@ -245,18 +240,6 @@ def _select_swap(bitstrings, control_wires, target_wires, work_wires):
         zeroed_targets=True,
     )
     _swap_ops(control_wires[num_control_wires_select:], swap_wires, target_wires, cswap_work_wires)
-
-
-def _swap_permutations(depth):
-    """For each value ``l`` of the SWAP control wires, the permutation ``perms[l]`` of a column of
-    ``depth`` bitstrings applied by the SWAP network of ``_swap_ops``, which moves bitstring
-    ``perms[l, p]`` of the column into position ``p``. The SWAP layer controlled on bit ``i`` of
-    ``l`` exchanges the first two blocks of ``2**i`` positions."""
-    perms = math.tile(math.arange(depth), (depth, 1))
-    for i in reversed(range(depth.bit_length() - 1)):
-        swapped = (math.arange(depth) >> i) & 1 == 1
-        perms[swapped, : 2 ** (i + 1)] = math.roll(perms[swapped, : 2 ** (i + 1)], 2**i, axis=1)
-    return perms
 
 
 def _adjoint_select_swap_measurement_resources(base):
@@ -309,85 +292,5 @@ def _adjoint_select_swap_measurement(base):
     )
 
 
-def _select_swap_fixups(bitstrings, outcomes, depth):
-    r"""Return the fixup bit of each address after measuring the :math:`k` columns of wires
-    holding the bitstrings that ``SelectSwap`` loaded in parallel, with :math:`k` = ``depth``.
-
-    Args:
-        bitstrings (TensorLike): the :math:`L` loaded bitstrings as integers
-        outcomes (TensorLike): the :math:`X`-basis outcomes of shape ``(depth, n)``, where row
-            ``p`` belongs to column ``p`` and column ``0`` is the target register
-
-    Returns:
-        TensorLike: the parity :math:`\sum_p m_p\cdot b_{\pi_i(p)}` for each of the
-        ``depth * ceil(L / depth)`` addresses :math:`i`
-    """
-    num_bitstrings = len(bitstrings)
-    num_columns = -(-num_bitstrings // depth)
-    # parities[h, q, p] is the parity of bitstring q of column h when it is moved into position p
-    parities = math.dot(bitstrings, math.transpose(outcomes))
-    padding = math.zeros((num_columns * depth - num_bitstrings, depth), dtype=int, like=parities)
-    parities = math.reshape(math.concatenate([parities, padding]), (num_columns, depth, depth))
-    perms = _swap_permutations(depth)
-    fixups = math.sum(parities[:, perms, math.arange(depth)], axis=-1) % 2
-    return math.reshape(fixups, (-1,))
-
-
-def _select_swap_measure_garbage_condition(bitstrings, control_wires, target_wires, work_wires):
-    if not capture.enabled() or len(control_wires) == 0:
-        return False
-    *_, depth = _select_swap_sizes(bitstrings, control_wires, target_wires, work_wires)
-    return depth > 1
-
-
-def _select_swap_measure_garbage_resources(bitstrings, control_wires, target_wires, work_wires):
-    _, _, num_work_wires_swap, _, depth = _select_swap_sizes(
-        bitstrings, control_wires, target_wires, work_wires
-    )
-    num_entries = depth * -(-len(bitstrings) // depth)
-    select_swap = SelectSwap(
-        Bool[*bitstrings.shape],
-        Wire[len(control_wires)],
-        Wire[len(target_wires)],
-        Wire[len(work_wires)],
-    )
-    resources = _phase_fixup_resources(num_entries, len(control_wires), len(work_wires))
-    resources[select_swap] += 1
-    for op, count in _measure_and_reset_resources(num_work_wires_swap).items():
-        resources[op] += count
-    return resources
-
-
-@register_condition(_select_swap_measure_garbage_condition)
-@register_resources(
-    _select_swap_measure_garbage_resources, exact=False, name="select_swap_measure_garbage"
-)
-def _select_swap_measure_garbage(bitstrings, control_wires, target_wires, work_wires):
-    r"""Load with ``SelectSwap`` and clean up its garbage with measurements and a phase fixup,
-    following Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__.
-
-    This is the measurement-based uncomputation of ``Adjoint(SelectSwap)``, restricted to the
-    work wires holding the bitstrings that were loaded in parallel but not swapped into the
-    target register. Their phase fixup is applied right away, so that the work wires are
-    restored as promised by ``QROMLoad``. Compared to the ``select_swap`` rule, this replaces
-    the second round of Select and SWAPs by a single phase fixup.
-    """
-    bitstrings = math.cast(bitstrings, int)
-    num_targets = len(target_wires)
-    _, _, num_work_wires_swap, _, depth = _select_swap_sizes(
-        bitstrings, control_wires, target_wires, work_wires
-    )
-
-    SelectSwap(bitstrings, control_wires, target_wires, work_wires)
-
-    outcomes = _measure_and_reset(work_wires[:num_work_wires_swap])
-    outcomes = math.reshape(math.cast(math.stack(outcomes), int), (depth - 1, num_targets))
-    # The target register is not measured, which is equivalent to an outcome of 0 on it.
-    outcomes = math.concatenate([math.zeros((1, num_targets), dtype=int, like=outcomes), outcomes])
-
-    _phase_fixup(_select_swap_fixups(bitstrings, outcomes, depth), control_wires, work_wires)
-
-
 add_decomps(SelectSwap, _select_swap)
 add_decomps("Adjoint(SelectSwap)", _adjoint_select_swap_measurement)
-add_decomps(QROMLoad, _select_swap_measure_garbage)
