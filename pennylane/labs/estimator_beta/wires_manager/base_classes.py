@@ -22,7 +22,7 @@ from pennylane.wires import Wires
 
 class Allocate:
     r"""A class used to represent the allocation of auxiliary wires to be used in the resource
-    decomposition of a :class:`~.pennylane.estimator.resource_operator.ResourceOperator`.
+    decomposition of a :class:`~pennylane.labs.estimator_beta.ResourceOperator`.
 
     Args:
         num_wires (int): the number of wires to be allocated
@@ -112,7 +112,7 @@ class Allocate:
 
 class Deallocate:
     r"""A class used to represent the deallocation of auxiliary wires that were used in the resource
-    decomposition of a :class:`~.pennylane.estimator.resource_operator.ResourceOperator`.
+    decomposition of a :class:`~pennylane.labs.estimator_beta.ResourceOperator`.
 
     Args:
         num_wires (int | None): the number of wires to be deallocated

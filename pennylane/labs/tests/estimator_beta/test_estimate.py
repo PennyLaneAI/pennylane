@@ -20,17 +20,17 @@ from collections import defaultdict
 import pytest
 
 import pennylane as qp
-import pennylane.estimator as qre
-from pennylane.estimator.ops.op_math.symbolic import Controlled, Pow
-from pennylane.estimator.resource_config import ResourceConfig
-from pennylane.estimator.resource_operator import (
+import pennylane.labs._estimator as qre
+from pennylane.exceptions import ResourcesUndefinedError
+from pennylane.labs._estimator.ops.op_math.symbolic import Controlled, Pow
+from pennylane.labs._estimator.resource_config import ResourceConfig
+from pennylane.labs._estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
     resource_rep,
 )
-from pennylane.estimator.resources_base import Resources
-from pennylane.exceptions import ResourcesUndefinedError
+from pennylane.labs._estimator.resources_base import Resources
 from pennylane.labs.estimator_beta import Allocate, Deallocate, estimate
 
 

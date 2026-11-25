@@ -16,9 +16,9 @@ r"""Tests for the base classes used when tracking qubits for resource estimation
 import pytest
 
 import pennylane as qp
-import pennylane.estimator as qre
+import pennylane.labs._estimator as qre
 from pennylane.allocation import AllocateState
-from pennylane.estimator import GateCount, Resources
+from pennylane.labs._estimator import GateCount, Resources
 from pennylane.labs.estimator_beta.wires_manager.base_classes import (
     Allocate,
     Deallocate,
@@ -1056,7 +1056,7 @@ class TestEstimateAuxiliaryWires:
 
     def test_estimator_allocation_and_deallocation(self):
         """Test that we can accurately track instaces of Allocate and Deallocate
-        defined in the ``pennylane.estimator`` module."""
+        defined in the ``pennylane.labs._estimator`` module."""
 
         list_actions = [  # Allocation and deallocation with scaling
             qre.Allocate(3),

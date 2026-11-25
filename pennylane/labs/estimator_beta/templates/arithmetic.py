@@ -14,7 +14,7 @@
 r"""Resource operators for PennyLane arithmetic subroutines."""
 
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator.resource_operator import (
+from pennylane.labs._estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
@@ -107,7 +107,7 @@ class LabsPhaseAdder(ResourceOperator):
                 its maximum value, :math:`2^{\text{num_x_wires}}`.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
         """
         mod = 2**num_x_wires if mod is None else mod
         params = {"num_x_wires": num_x_wires, "mod": mod}
@@ -130,7 +130,7 @@ class LabsPhaseAdder(ResourceOperator):
             operator within the Quantum Fourier Adder.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -196,7 +196,7 @@ class LabsPhaseAdder(ResourceOperator):
             expressed as a single phase addition. The resources are one total ``PhaseAdder``.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -281,7 +281,7 @@ class LabsAdder(ResourceOperator):
                 its maximum value, :math:`2^{\text{num_x_wires}}`.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
         """
         mod = 2**num_x_wires if mod is None else mod
         params = {"num_x_wires": num_x_wires, "mod": mod}
@@ -304,7 +304,7 @@ class LabsAdder(ResourceOperator):
             circuit diagram.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -397,7 +397,7 @@ class LabsAdder(ResourceOperator):
             a single addition. The resources are one total ``Adder``.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -506,7 +506,7 @@ class LabsOutAdder(ResourceOperator):
                 its maximum value, :math:`2^{\text{num_output_wires}}`.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
         """
         mod = 2**num_output_wires if mod is None else mod
         params = {
@@ -537,7 +537,7 @@ class LabsOutAdder(ResourceOperator):
             circuit diagram.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -663,7 +663,7 @@ class ClassicalOutMultiplier(ResourceOperator):
                 its maximum value, :math:`2^{\text{num_output_wires}}`.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
         """
         mod = 2**num_output_wires if mod is None else mod
         params = {"mod": mod, "num_x_wires": num_x_wires, "num_output_wires": num_output_wires}
@@ -688,7 +688,7 @@ class ClassicalOutMultiplier(ResourceOperator):
             circuit diagram.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -716,7 +716,7 @@ class ClassicalOutMultiplier(ResourceOperator):
             a single multiplication. The resources are one total ``ClassicalOutMultiplier``.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -802,7 +802,7 @@ class LabsMultiplier(ResourceOperator):
                 its maximum value, :math:`2^{\text{num_x_wires}}`.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
         """
         mod = 2**num_x_wires if mod is None else mod
         params = {"mod": mod, "num_x_wires": num_x_wires}
@@ -825,7 +825,7 @@ class LabsMultiplier(ResourceOperator):
             circuit diagram.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -866,7 +866,7 @@ class LabsMultiplier(ResourceOperator):
             a single multiplication. The resources are one total ``Multiplier``.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -971,7 +971,7 @@ class LabsModExp(ResourceOperator):
                 its maximum value, :math:`2^{\text{num_output_wires}}`.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
         """
         mod = 2**num_output_wires if mod is None else mod
         params = {"num_x_wires": num_x_wires, "num_output_wires": num_output_wires, "mod": mod}
@@ -996,7 +996,7 @@ class LabsModExp(ResourceOperator):
             circuit diagram.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """

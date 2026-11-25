@@ -14,12 +14,12 @@
 """Resource operators for controlled operations"""
 
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator import GateCount, resource_rep
+from pennylane.labs._estimator import GateCount, resource_rep
 from pennylane.labs.estimator_beta.wires_manager.base_classes import Allocate, Deallocate
 
 
 def ch_resource_decomp() -> list[GateCount | Allocate | Deallocate]:
-    r"""Returns a list of :class:`~.pennylane.estimator.resource_operator.GateCount` objects representing the resources of the :class:`~.pennylane.estimator.ops.op_math.controlled_ops.CH` operator.
+    r"""Returns a list of :class:`~pennylane.labs.estimator_beta.GateCount` objects representing the resources of the :class:`~pennylane.labs.estimator_beta.CH` operator.
 
     Resources:
         The resources are derived from the following identities:
@@ -116,16 +116,16 @@ def mcx_many_clean_aux_resource_decomp(
         `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_. Specifically, the
         resources are defined as the following rules:
 
-        * If there are no control qubits, treat the operation as a :class:`~.pennylane.estimator.ops.X` gate.
+        * If there are no control qubits, treat the operation as a :class:`~pennylane.labs.estimator_beta.X` gate.
 
-        * If there is only one control qubit, treat the resources as a :class:`~.pennylane.estimator.ops.CNOT` gate.
+        * If there is only one control qubit, treat the resources as a :class:`~pennylane.labs.estimator_beta.CNOT` gate.
 
-        * If there are two control qubits, treat the resources as a :class:`~.pennylane.estimator.ops.Toffoli` gate.
+        * If there are two control qubits, treat the resources as a :class:`~pennylane.labs.estimator_beta.Toffoli` gate.
 
         * If there are three or more control qubits (:math:`n`), the resources are obtained based on the unary
           iteration technique described in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
           Specifically, it requires :math:`n - 2` clean qubits, and produces :math:`n - 2` pairs of elbow gates and
-          a single :class:`~.pennylane.estimator.ops.Toffoli`.
+          a single :class:`~pennylane.labs.estimator_beta.Toffoli`.
 
     Returns:
         list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
@@ -183,13 +183,13 @@ def mcx_one_clean_aux_resource_decomp(
         `Khattar and Gidney, (2024) <https://arxiv.org/abs/2407.17966>`_. Specifically, the
         resources are defined as the following rules:
 
-        * If there are no control qubits, treat the operation as a :class:`~.pennylane.estimator.ops.X` gate.
+        * If there are no control qubits, treat the operation as a :class:`~pennylane.labs.estimator_beta.X` gate.
 
-        * If there is only one control qubit, treat the resources as a :class:`~.pennylane.estimator.ops.CNOT` gate.
+        * If there is only one control qubit, treat the resources as a :class:`~pennylane.labs.estimator_beta.CNOT` gate.
 
-        * If there are two control qubits, treat the resources as a :class:`~.pennylane.estimator.ops.Toffoli` gate.
+        * If there are two control qubits, treat the resources as a :class:`~pennylane.labs.estimator_beta.Toffoli` gate.
 
-        * If there are three or more control qubits (:math:`n`), the resources are obtained based on the conditionally clean technique described in `Khattar and Gidney, (2024) <https://arxiv.org/abs/2407.17966>`_. Specifically, it requires :math:`1` clean qubit, and produces :math:`2n - 3` :class:`~.pennylane.estimator.ops.Toffoli` gates.
+        * If there are three or more control qubits (:math:`n`), the resources are obtained based on the conditionally clean technique described in `Khattar and Gidney, (2024) <https://arxiv.org/abs/2407.17966>`_. Specifically, it requires :math:`1` clean qubit, and produces :math:`2n - 3` :class:`~pennylane.labs.estimator_beta.Toffoli` gates.
 
     Returns:
         list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
@@ -242,13 +242,13 @@ def mcx_one_dirty_aux_resource_decomp(
         `Khattar and Gidney, (2024) <https://arxiv.org/abs/2407.17966>`_. Specifically, the
         resources are defined as the following rules:
 
-        * If there are no control qubits, treat the operation as a :class:`~.pennylane.estimator.ops.X` gate.
+        * If there are no control qubits, treat the operation as a :class:`~pennylane.labs.estimator_beta.X` gate.
 
-        * If there is only one control qubit, treat the resources as a :class:`~.pennylane.estimator.ops.CNOT` gate.
+        * If there is only one control qubit, treat the resources as a :class:`~pennylane.labs.estimator_beta.CNOT` gate.
 
-        * If there are two control qubits, treat the resources as a :class:`~.pennylane.estimator.ops.Toffoli` gate.
+        * If there are two control qubits, treat the resources as a :class:`~pennylane.labs.estimator_beta.Toffoli` gate.
 
-        * If there are three or more control qubits (:math:`n`), the resources are obtained based on the conditionally clean technique described in `Khattar and Gidney, (2024) <https://arxiv.org/abs/2407.17966>`_. Specifically, it requires :math:`1` dirty qubit, and produces :math:`4n - 8` :class:`~.pennylane.estimator.ops.Toffoli` gates.
+        * If there are three or more control qubits (:math:`n`), the resources are obtained based on the conditionally clean technique described in `Khattar and Gidney, (2024) <https://arxiv.org/abs/2407.17966>`_. Specifically, it requires :math:`1` dirty qubit, and produces :math:`4n - 8` :class:`~pennylane.labs.estimator_beta.Toffoli` gates.
 
     Returns:
         list[:class:`~.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,

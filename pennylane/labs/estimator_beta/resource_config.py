@@ -14,7 +14,7 @@
 r"""This module contains the LabsResourceConfig class, which tracks the configuration for resource estimation"""
 
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator.resource_config import ResourceConfig
+from pennylane.labs._estimator.resource_config import ResourceConfig
 
 from .ops import (
     ch_resource_decomp,
@@ -33,19 +33,19 @@ from .templates import (
 
 class LabsResourceConfig(ResourceConfig):
     """Sets the values of precisions and custom decompositions when estimating resources for a
-    quantum workflow (see also :class:`~.pennylane.estimator.resource_config.ResourceConfig`).
+    quantum workflow (see also :class:`~pennylane.labs.estimator_beta.ResourceConfig`).
 
     .. note::
 
-        The ``LabsResourceConfig`` class inherits from :class:`~.pennylane.estimator.resource_config.ResourceConfig`
+        The ``LabsResourceConfig`` class inherits from :class:`~pennylane.labs.estimator_beta.ResourceConfig`
         and comes preloaded with many optimized custom resource decompositions and custom symbolic resource
         decompositions. The preloaded decompositions can be accessed via the following attributes:
         ``config.custom_decomps``, ``config.pow_custom_decomps``, ``config.adj_custom_decomps``, and
         ``config.ctrl_custom_decomps``.
 
     The precisions and custom decompositions of resource operators can be
-    modified using the :meth:`~.pennylane.labs.estimator_beta.resource_config.LabsResourceConfig.set_precision`
-    and :meth:`~.pennylane.labs.estimator_beta.resource_config.LabsResourceConfig.set_decomp` functions of the
+    modified using the :meth:`~pennylane.labs.estimator_beta.resource_config.LabsResourceConfig.set_precision`
+    and :meth:`~pennylane.labs.estimator_beta.resource_config.LabsResourceConfig.set_decomp` functions of the
     :code:`LabsResourceConfig` class.
 
     **Example**

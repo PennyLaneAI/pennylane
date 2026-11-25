@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qp
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator.resources_base import Resources
+from pennylane.labs._estimator.resources_base import Resources
 from pennylane.labs.profiler import ProfileNode, export_flame_graph_data, profile
 
 

@@ -15,7 +15,7 @@
 r"""Resource operators for non parametric single qubit operations."""
 
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator.resource_operator import GateCount, resource_rep
+from pennylane.labs._estimator.resource_operator import GateCount, resource_rep
 
 
 def hadamard_controlled_resource_decomp(  # pylint: disable=unused-argument
@@ -23,7 +23,7 @@ def hadamard_controlled_resource_decomp(  # pylint: disable=unused-argument
     num_zero_ctrl: int,
     target_resource_params: dict | None = None,
 ) -> list[GateCount | qre.Allocate | qre.Deallocate]:
-    r"""Returns a list representing the resources for a controlled version of the :class:`~.pennylane.estimator.ops.qubit.non_parametric_ops.Hadamard` operator.
+    r"""Returns a list representing the resources for a controlled version of the :class:`~pennylane.labs.estimator_beta.Hadamard` operator.
 
     Args:
         num_ctrl_wires (int): the number of qubits the
@@ -104,7 +104,7 @@ def hadamard_toffoli_based_controlled_decomp(  # pylint: disable=unused-argument
     num_zero_ctrl: int,
     target_resource_params: dict | None = None,
 ) -> list[GateCount | qre.Allocate | qre.Deallocate]:
-    r"""Returns a list representing the resources for a controlled version of the :class:`~.pennylane.estimator.ops.qubit.non_parametric_ops.Hadamard` operator.
+    r"""Returns a list representing the resources for a controlled version of the :class:`~pennylane.labs.estimator_beta.Hadamard` operator.
 
     .. note::
 

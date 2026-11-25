@@ -19,7 +19,7 @@ from collections import defaultdict
 import pytest
 
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator.resource_operator import resource_rep
+from pennylane.labs._estimator.resource_operator import resource_rep
 
 
 class TestPauliRot:

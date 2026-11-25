@@ -99,6 +99,13 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
+* ``pennylane.estimator`` and the ``qp.estimator`` namespace have been removed.
+  Logical resource estimation is available through the experimental
+  :mod:`pennylane.labs.estimator_beta` module. :func:`pennylane.estimate` remains
+  available for circuit resource estimation.
+
+  - Removed in releases after v0.45
+
 * PyQuil and Qualtran interoperability has been removed from ``qp.io`` and the top-level
   PennyLane namespace. The removed APIs are ``from_pyquil``, ``from_quil``, ``from_quil_file``,
   ``FromBloq``, ``ToBloq``, ``to_bloq``, and ``bloq_registers``.
@@ -296,13 +303,10 @@ Completed deprecation cycles
   - Deprecated in v0.44
   - Removed in v0.45
 
-* Access to the following functions and classes from the `~pennylane.resources` module have
-  been removed. Instead, these functions must be imported from the `~pennylane.estimator` module.
-
-    - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
-    - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
-    - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
-    - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
+* Access to ``estimate_shots``, ``estimate_error``, ``FirstQuantization`` and
+  ``DoubleFactorization`` from ``pennylane.resource`` was removed in v0.45 and
+  relocated to ``pennylane.estimator``. These functions and classes are now
+  available from :mod:`pennylane.labs.estimator_beta`.
 
   - Deprecated in v0.44
   - Removed in v0.45

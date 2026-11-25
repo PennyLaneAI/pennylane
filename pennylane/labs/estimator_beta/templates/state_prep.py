@@ -16,7 +16,7 @@ r"""This module contains resource operators for state preparation templates."""
 import numpy as np
 
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator.resource_operator import (
+from pennylane.labs._estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
@@ -35,8 +35,8 @@ class LabsMottonenStatePreparation(ResourceOperator):
 
     Resources:
         Resources are described in `Mottonen et al. (2008) <https://arxiv.org/pdf/quant-ph/0407010>`_.
-        The resources are defined as :math:`2^{n+2} - 5` :class:`~.pennylane.estimator.ops.qubit.RZ` gates and
-        :math:`2^{n+2} - 4n - 4` :class:`~.pennylane.estimator.ops.op_math.CNOT` gates.
+        The resources are defined as :math:`2^{n+2} - 5` :class:`~pennylane.labs.estimator_beta.RZ` gates and
+        :math:`2^{n+2} - 4n - 4` :class:`~pennylane.labs.estimator_beta.CNOT` gates.
 
     **Example**
 
@@ -81,7 +81,7 @@ class LabsMottonenStatePreparation(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
         """
         return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
 
@@ -95,11 +95,11 @@ class LabsMottonenStatePreparation(ResourceOperator):
 
         Resources:
             Resources are described in `Mottonen et al. (2008) <https://arxiv.org/pdf/quant-ph/0407010>`_.
-            The resources are defined as :math:`2^{n+2} - 5` :class:`~.pennylane.estimator.ops.qubit.RZ` gates and
-            :math:`2^{n+2} - 4n - 4` :class:`~.pennylane.estimator.ops.op_math.CNOT` gates.
+            The resources are defined as :math:`2^{n+2} - 5` :class:`~pennylane.labs.estimator_beta.RZ` gates and
+            :math:`2^{n+2} - 4n - 4` :class:`~pennylane.labs.estimator_beta.CNOT` gates.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -182,7 +182,7 @@ class LabsCosineWindow(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
         """
         return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
 
@@ -198,7 +198,7 @@ class LabsCosineWindow(ResourceOperator):
             The resources were obtained from Figure 6 in `arXiv:2110.09590 <https://arxiv.org/pdf/2110.09590>`_.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -235,8 +235,8 @@ class LabsSumOfSlatersPrep(ResourceOperator):
             target state, as defined in Sec. III A of `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
         stateprep_op (ResourceOperator | None): An optional argument to set the subroutine used to perform the condensed state preparation. If :code:`None`
             is provided, the resources will be computed assuming the condensed state preparation is performed using
-            :class:`~.pennylane.labs.estimator_beta.templates.state_prep.LabsMottonenStatePreparation`.
-        select_swap_depth (int | None): A parameter of :class:`~.pennylane.labs.estimator_beta.templates.subroutines.LabsQROM` used to trade-off extra qubits for reduced circuit depth.
+            :class:`~pennylane.labs.estimator_beta.templates.state_prep.LabsMottonenStatePreparation`.
+        select_swap_depth (int | None): A parameter of :class:`~pennylane.labs.estimator_beta.templates.subroutines.LabsQROM` used to trade-off extra qubits for reduced circuit depth.
         wires (WiresLike | None): the wires the operation acts on
 
     Resources:
@@ -313,10 +313,10 @@ class LabsSumOfSlatersPrep(ResourceOperator):
                 * num_bits (int | None): number of bits that is sufficient to uniquely identify
                   every Slater determinant in the target state, as defined in Sec. III A of
                   `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
-                * stateprep_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional argument to
+                * stateprep_cmpr_op (:class:`~pennylane.labs.estimator_beta.CompressedResourceOp` | None): An optional argument to
                   set the subroutine used to perform the condensed state preparation. If :code:`None` is provided, the resources will be computed
-                  assuming the condensed state preparation is performed using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.LabsMottonenStatePreparation`.
-                * select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM` used to trade-off extra qubits for reduced circuit depth.
+                  assuming the condensed state preparation is performed using :class:`~pennylane.labs.estimator_beta.templates.state_prep.LabsMottonenStatePreparation`.
+                * select_swap_depth (int | None): A parameter of :class:`~pennylane.labs.estimator_beta.QROM` used to trade-off extra qubits for reduced circuit depth.
 
         """
         return {
@@ -340,7 +340,7 @@ class LabsSumOfSlatersPrep(ResourceOperator):
         the Operator that are needed to compute the resources.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
         """
         if num_coeffs > 2**num_wires:
             raise ValueError(
@@ -380,18 +380,18 @@ class LabsSumOfSlatersPrep(ResourceOperator):
             num_bits (int | None): number of bits that is sufficient to uniquely identify every
                 Slater determinant in the target state, as defined in Sec. III A of
                 `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
-            stateprep_cmpr_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp` | None): An optional argument to set the subroutine used to
+            stateprep_cmpr_op (:class:`~pennylane.labs.estimator_beta.CompressedResourceOp` | None): An optional argument to set the subroutine used to
                 perform the condensed state preparation. If :code:`None`
                 is provided, the resources will be computed assuming the condensed state preparation is performed
-                using :class:`~.pennylane.labs.estimator_beta.templates.state_prep.LabsMottonenStatePreparation`.
-            select_swap_depth (int | None): A parameter of :class:`~.pennylane.labs.estimator_beta.templates.subroutines.LabsQROM` used to trade-off extra qubits for reduced circuit depth.
+                using :class:`~pennylane.labs.estimator_beta.templates.state_prep.LabsMottonenStatePreparation`.
+            select_swap_depth (int | None): A parameter of :class:`~pennylane.labs.estimator_beta.templates.subroutines.LabsQROM` used to trade-off extra qubits for reduced circuit depth.
 
         Resources:
             The resources were obtained from Sec. III A of
             `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """

@@ -19,10 +19,14 @@ from functools import singledispatch, wraps
 
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import AnnotatedQueue
-from pennylane.estimator.estimate import _get_resource_decomposition, _ops_to_compressed_reps
-from pennylane.estimator.resource_mapping import _map_to_resource_op
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
-from pennylane.estimator.resources_base import DefaultGateSet, Resources
+from pennylane.labs._estimator.estimate import _get_resource_decomposition, _ops_to_compressed_reps
+from pennylane.labs._estimator.resource_mapping import _map_to_resource_op
+from pennylane.labs._estimator.resource_operator import (
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+)
+from pennylane.labs._estimator.resources_base import DefaultGateSet, Resources
 from pennylane.workflow.qnode import QNode
 
 from .resource_config import LabsResourceConfig
@@ -39,11 +43,11 @@ def _update_counts_from_compressed_res_op(
     """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operator provided.
 
     Args:
-        comp_res_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): operator in compressed representation to extract resources from
+        comp_res_op (:class:`~pennylane.labs.estimator_beta.CompressedResourceOp`): operator in compressed representation to extract resources from
         gate_counts_dict (dict): base dictionary to modify with the resource counts
         gate_set (set[str]): the set of operators to track resources with respect to
         scalar (int | None): optional scalar to multiply the counts. Defaults to 1.
-        config (dict | None): additional parameters to estimate the resources from an operator. Defaults to :class:`~.pennylane.labs.estimator_beta.resource_config.LabsResourceConfig`.
+        config (dict | None): additional parameters to estimate the resources from an operator. Defaults to :class:`~pennylane.labs.estimator_beta.resource_config.LabsResourceConfig`.
     """
     if gate_set is None:
         gate_set = DefaultGateSet
@@ -79,16 +83,12 @@ def estimate(  # pylint: disable=too-many-arguments
 ) -> Resources | Callable[..., Resources]:
     r"""Estimate the quantum resources required to implement a circuit or operator in terms of a given gateset.
 
-    This function improves upon the :func:`~.pennylane.estimator.estimate()` function in two main ways:
-
-    - Firstly, it uses a new system for wire tracking that more accurately estimates the number of auxiliary
-      wires required for any quantum workflow.
-    - Secondly, this function uses the :class:`~.pennylane.labs.estimator_beta.resource_config.LabsResourceConfig`
-      by default. As a result it comes preloaded with experimental and state of the art resource decompositions
-      that lead to more optimal resource estimates.
+    Auxiliary wire tracking estimates the clean and dirty wires required by a workflow.
+    The default :class:`~pennylane.labs.estimator_beta.LabsResourceConfig` provides
+    optimized resource decompositions for many operators.
 
     Args:
-        workflow (Callable | :class:`~.pennylane.estimator.resource_operator.ResourceOperator` | :class:`~.pennylane.estimator.resources_base.Resources` | :class:`~.Operator` | QNode):
+        workflow (Callable | :class:`~pennylane.labs.estimator_beta.ResourceOperator` | :class:`~pennylane.labs.estimator_beta.Resources` | :class:`~.Operator` | QNode):
             The quantum circuit or operator for which to estimate resources.
         gate_set (set[str] | None): A set of names (strings) of the fundamental operators to count
             throughout the quantum workflow. If not provided, the default gate set will be used,
@@ -96,10 +96,10 @@ def estimate(  # pylint: disable=too-many-arguments
         zeroed_wires (int): Number of work wires pre-allocated in the zeroed state. Default is ``0``.
         any_state_wires (int): Number of work wires pre-allocated in an unknown state. Default is ``0``.
         tight_wires_budget (bool): If True, extra work wires may not be allocated in addition to the pre-allocated ones. The default is ``False``.
-        config (:class:`~.pennylane.labs.estimator_beta.resource_config.LabsResourceConfig` | None): Configurations for the resource estimation pipeline.
+        config (:class:`~pennylane.labs.estimator_beta.resource_config.LabsResourceConfig` | None): Configurations for the resource estimation pipeline.
 
     Returns:
-        :class:`~.pennylane.estimator.resources_base.Resources` | Callable[..., :class:`~.pennylane.estimator.resources_base.Resources`]:
+        :class:`~pennylane.labs.estimator_beta.Resources` | Callable[..., :class:`~pennylane.labs.estimator_beta.Resources`]:
             The estimated quantum resources required to execute the circuit.
 
     Raises:
@@ -150,7 +150,7 @@ def estimate(  # pylint: disable=too-many-arguments
     .. details::
         :title: Usage Details
 
-        Most PennyLane operators have a corresponding resource operator defined in the ``pennylane.estimator``
+        Most PennyLane operators have a corresponding resource operator defined in the ``pennylane.labs.estimator_beta``
         module. The resource operator is a lightweight representation of an operator that contains the
         minimum information required to perform resource estimation. For most basic operators, it is simply
         the type of the operator. For more complex operators and templates, you may be required to provide
@@ -178,7 +178,7 @@ def estimate(  # pylint: disable=too-many-arguments
            'T': 88,
            'CNOT': 10
 
-        The ``estimate`` function returns a :class:`~pennylane.estimator.resources_base.Resources`
+        The ``estimate`` function returns a :class:`~pennylane.labs.estimator_beta.Resources`
         object, which contains an estimate of the total number of gates (after decomposing to the
         fundamental gate set) and the total number of wires that the gates in this circuit act on
         (i.e., the "algorithmic wires"). When explicit wire labels are not provided, the operators

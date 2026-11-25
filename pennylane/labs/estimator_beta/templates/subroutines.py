@@ -16,7 +16,12 @@ r"""Resource operators for PennyLane subroutine templates."""
 import math
 
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator import CompressedResourceOp, GateCount, ResourceOperator, resource_rep
+from pennylane.labs._estimator import (
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+    resource_rep,
+)
 from pennylane.labs.estimator_beta.wires_manager.base_classes import Allocate, Deallocate
 from pennylane.math import ceil_log2, floor_log2
 from pennylane.wires import WiresLike
@@ -25,7 +30,7 @@ from pennylane.wires import WiresLike
 def selectpaulirot_controlled_resource_decomp(
     num_ctrl_wires: int, num_zero_ctrl: int, target_resource_params: dict
 ) -> list[GateCount]:
-    r"""Returns a list representing the resources of the controlled version of the :class:`~pennylane.estimator.templates.SelectPauliRot` operator.
+    r"""Returns a list representing the resources of the controlled version of the :class:`~pennylane.labs.estimator_beta.SelectPauliRot` operator.
     Each object in the list
     represents a gate and the number of times it occurs in the circuit.
 
@@ -43,7 +48,7 @@ def selectpaulirot_controlled_resource_decomp(
         :code:`RY` or :code:`RZ`) depending on the :code:`rot_axis`.
 
     Returns:
-        list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+        list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of GateCount objects, where each object
         represents a specific quantum gate and the number of times it appears
         in the decomposition.
     """
@@ -83,7 +88,7 @@ def qft_phase_grad_resource_decomp(num_wires) -> list[GateCount]:
 
         This decomposition assumes an appropriately sized phase gradient state is available.
         Users should ensure the cost of constructing such a state has been accounted for.
-        See also :class:`~.pennylane.estimator.templates.PhaseGradient`.
+        See also :class:`~pennylane.labs.estimator_beta.PhaseGradient`.
 
     Args:
         num_wires (int): the number of qubits the operation acts upon
@@ -94,7 +99,7 @@ def qft_phase_grad_resource_decomp(num_wires) -> list[GateCount]:
         Specifically, following the figure titled "8 qubit Quantum Fourier Transform with gradient shifts"
 
     Returns:
-        list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+        list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of GateCount objects, where each object
         represents a specific quantum gate and the number of times it appears
         in the decomposition.
     """
@@ -139,7 +144,7 @@ def aqft_resource_decomp(order, num_wires) -> list[GateCount]:
         classical measure-and-reset (Fig. 2) are accounted for as :code:`TemporaryAND` operations.
 
     Returns:
-        list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of GateCount objects, where each object
+        list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of GateCount objects, where each object
         represents a specific quantum gate and the number of times it appears
         in the decomposition.
     """
@@ -222,17 +227,17 @@ def select_thc_resource_decomp(
 
         This decomposition assumes that an appropriately sized phase gradient state is available.
         Users should ensure that the cost of constructing this state has been accounted for.
-        See also :class:`~.pennylane.estimator.templates.subroutines.PhaseGradient`.
+        See also :class:`~pennylane.labs.estimator_beta.PhaseGradient`.
 
     Args:
-        thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
+        thc_ham (:class:`~pennylane.labs.estimator_beta.THCHamiltonian`): A tensor hypercontracted
             Hamiltonian on which this ``Select`` operator is being applied.
         num_batches (int): The number of batches for loading Givens rotation angles
             into temporary quantum registers. Must be less than the number of orbitals in ``thc_ham``.
             The default value of ``1`` loads all angles in one batch.
         rotation_precision (int): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. The default value is set to ``15`` bits.
-        select_swap_depth (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
+        select_swap_depth (int | None): A parameter of :class:`~pennylane.labs.estimator_beta.QROM`
             used to trade off extra wires for reduced circuit depth. Defaults to :code:`None`, in which
             case, the ``select_swap_depth`` is set to the optimal depth that minimizes the total
             ``T``-gate count.
@@ -242,7 +247,7 @@ def select_thc_resource_decomp(
         Figure 4 in `arXiv:2501.06165 <https://arxiv.org/abs/2501.06165>`_.
 
     Returns:
-        list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+        list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects, where each object
         represents a specific quantum gate and the number of times it appears
         in the decomposition.
     """
@@ -353,7 +358,7 @@ def select_thc_controlled_resource_decomp(
 
         This decomposition assumes that an appropriately sized phase gradient state is available.
         Users should ensure that the cost of constructing this state has been accounted for.
-        See also :class:`~.pennylane.estimator.templates.subroutines.PhaseGradient`.
+        See also :class:`~pennylane.labs.estimator_beta.PhaseGradient`.
 
     Args:
         num_ctrl_wires (int): the number of wires the operation is controlled on
@@ -364,7 +369,7 @@ def select_thc_controlled_resource_decomp(
         The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_.
 
     Returns:
-        list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+        list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects, where each object
         represents a specific quantum gate and the number of times it appears
         in the decomposition.
     """
@@ -516,12 +521,12 @@ def qrom_state_preparation_resource_decomp(
     Resources:
         The resources for QROMStatePreparation are according to the decomposition as described
         in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
-        :class:`~.pennylane.labs.estimator_beta.templates.subroutines.LabsQROM` to dynamically
+        :class:`~pennylane.labs.estimator_beta.templates.subroutines.LabsQROM` to dynamically
         load the rotation angles. Controlled-RY (and phase shifts) gates are used to apply all of
         the rotations coherently.
 
     Returns:
-        list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+        list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of
         ``GateCount`` objects, where each object represents a specific quantum gate and the
         number of times it appears in the decomposition.
     """
@@ -597,7 +602,7 @@ def qrom_state_preparation_phase_grad_resource_decomp(
 
         This decomposition assumes an appropriately sized phase gradient state is available.
         Users should ensure the cost of constructing such a state has been accounted for.
-        See also :class:`~.pennylane.estimator.PhaseGradient`.
+        See also :class:`~pennylane.labs.estimator_beta.PhaseGradient`.
 
     Args:
         num_state_qubits (int): number of qubits required to represent the state-vector
@@ -611,13 +616,13 @@ def qrom_state_preparation_phase_grad_resource_decomp(
     Resources:
         The resources for QROMStatePreparation are according to the decomposition as described
         in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
-        :class:`~.pennylane.labs.estimator_beta.templates.subroutines.LabsQROM` to dynamically
+        :class:`~pennylane.labs.estimator_beta.templates.subroutines.LabsQROM` to dynamically
         load the rotation angles. These rotations gates are implemented using an inplace
         controlled-adder operation (see Figure 4. of `arXiv:2409.07332 <https://arxiv.org/abs/2409.07332>`_)
         to phase gradient.
 
     Returns:
-        list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of
+        list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of
         ``GateCount`` objects, where each object represents a specific quantum gate and the
         number of times it appears in the decomposition.
     """
@@ -720,7 +725,7 @@ class LabsQROM(ResourceOperator):
 
     .. seealso::
         The associated PennyLane operation :class:`~.pennylane.QROM` and the resource operator
-        :class:`~.pennylane.estimator.templates.subroutines.QROM`.
+        :class:`~pennylane.labs.estimator_beta.QROM`.
 
     **Example**
 
@@ -789,7 +794,7 @@ class LabsQROM(ResourceOperator):
         if "restored" in kwargs:
             raise ValueError(
                 "'restored' is no longer a supported argument for 'labs.estimator_beta.LabsQROM'."
-                "Use 'borrow_qubits = True' instead. Alternatively import 'QROM' from 'pennylane.estimator'."
+                "Use 'borrow_qubits = True' instead. Alternatively import 'QROM' from 'pennylane.labs._estimator'."
             )
 
         self.borrow_qubits = borrow_qubits
@@ -873,7 +878,7 @@ class LabsQROM(ResourceOperator):
                 depth that minimizes T-gate count.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
         """
         if num_bit_flips is None:
             num_bit_flips = num_bitstrings * size_bitstring // 2
@@ -940,7 +945,7 @@ class LabsQROM(ResourceOperator):
             the number of batches of unitaries to select.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1028,7 +1033,7 @@ class LabsQROM(ResourceOperator):
                 depth that minimizes T-gate count.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1126,7 +1131,7 @@ class LabsQROM(ResourceOperator):
             unitaries to select.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1379,7 +1384,7 @@ class LabsQROM(ResourceOperator):
             based on Figure 7 in Appendix C of `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears in the decomposition.
         """
         d = target_resource_params["num_bitstrings"]
@@ -1440,7 +1445,7 @@ class LabsQROM(ResourceOperator):
             based on Figure 7 in Appendix C of `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears in the decomposition.
         """
         d = target_resource_params["num_bitstrings"]
@@ -1499,7 +1504,7 @@ class LabsQROM(ResourceOperator):
             based on Figure 7 in Appendix C of `Berry et al. (2019) <https://arxiv.org/abs/1902.02134>`_.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears in the decomposition.
         """
         return cls.qrom_clean_auxiliary_adjoint_resource_decomp(target_resource_params)
@@ -1765,7 +1770,7 @@ class SelectCopyQROM(ResourceOperator):
                 the number of bits to load per QROM iteration. Default value of ``size_bitstring`` is
                 used if ``available_dirty_aux`` is not provided and ``bits_per_iter`` is None.
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
         """
 
         batch_size, bits_per_iter = SelectCopyQROM._resolve_params(
@@ -1815,7 +1820,7 @@ class SelectCopyQROM(ResourceOperator):
             The resources are derived from `Motlagh, Pocrnic (2026) <https://arxiv.org/abs/2605.20334>`_.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1921,7 +1926,7 @@ class SelectCopyQROM(ResourceOperator):
                 the number of bits to load per QROM iteration. Default value is ``size_bitstring``.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -2019,7 +2024,7 @@ class SelectCopyQROM(ResourceOperator):
             we only need to control the ``Select`` subroutines.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects, where each object
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -2071,13 +2076,13 @@ class SelectCopyQROM(ResourceOperator):
 
         Args:
             num_data_blocks (int): The number of data points to select in the unary iteration.
-            load_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The
+            load_op (:class:`~pennylane.labs.estimator_beta.CompressedResourceOp`): The
                 resource operator to apply controlled on the unary iteration register.
             load_op_amount (int): The number of times the resource operator is applied, in total,
                 over the whole unary iteration.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -2164,13 +2169,13 @@ class SelectCopyQROM(ResourceOperator):
 
         Args:
             num_data_blocks (int): The number of data points to select in the unary iteration.
-            load_op (:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`): The
+            load_op (:class:`~pennylane.labs.estimator_beta.CompressedResourceOp`): The
                 resource operator to apply controlled on the unary iteration register.
             load_op_amount (int): The number of times the resource operator is applied, in total,
                 over the whole unary iteration.
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -2225,7 +2230,7 @@ class SelectCopyQROM(ResourceOperator):
             size_bitstring (int): the length of each bitstring to load
 
         Returns:
-            list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """

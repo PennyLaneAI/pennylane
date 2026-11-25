@@ -24,7 +24,7 @@ import pytest
 
 import pennylane as qp
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator import GateCount, resource_rep
+from pennylane.labs._estimator import GateCount, resource_rep
 from pennylane.labs.estimator_beta import Allocate, Deallocate
 from pennylane.labs.estimator_beta.templates import LabsQROM
 from pennylane.labs.tests.estimator_beta.utils import decomp_equal
@@ -108,7 +108,7 @@ class TestLabsSelectPauliRot:
         """Test that the controlled resources are correct."""
         if precision is None:
             config = qre.LabsResourceConfig()
-            kwargs = config.resource_op_precisions[qp.estimator.SelectPauliRot]
+            kwargs = config.resource_op_precisions[qp.labs._estimator.SelectPauliRot]
             assert (
                 qre.selectpaulirot_controlled_resource_decomp(
                     num_ctrl_wires=num_ctrl_wires,

@@ -14,7 +14,7 @@
 r"""Resource operators for PennyLane comparison templates."""
 
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator.resource_operator import (
+from pennylane.labs._estimator.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
@@ -128,7 +128,7 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
                 ``False``, the comparison made will be :math:`n \lt L`.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
         """
 
         params = {"value": value, "register_size": register_size, "geq": geq}
@@ -328,7 +328,7 @@ class RegisterEquality(ResourceOperator):
             register_size (int): Number of qubits n in each register.
 
         Returns:
-            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
         """
 
         num_wires = 2 * register_size + 1

@@ -38,12 +38,12 @@ class ProfileNode:
     to be traversed as a hierarchical call graph (for example, to render a flame graph).
 
     Args:
-        cmpr_op (pennylane.estimator.resource_operator.CompressedResourceOp | None): the compressed resource operator represented
+        cmpr_op (pennylane.labs.estimator_beta.CompressedResourceOp | None): the compressed resource operator represented
             by this node. The root node of a profile has no associated operator and uses the
             default value of ``None``.
         scalar (int): the number of times ``cmpr_op`` appears at this level of the
             decomposition (the *local* multiplicity). Defaults to ``1``.
-        gate_data (dict | None): A mapping from :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`
+        gate_data (dict | None): A mapping from :class:`~pennylane.labs.estimator_beta.CompressedResourceOp`
             to the integer number of times each gate-set operator occurs in the subtree
             rooted at this node. If ``None``, an empty ``defaultdict(int)`` is used.
         children (list[ProfileNode] | None): The child nodes obtained by decomposing
@@ -307,7 +307,7 @@ class ProfileNode:
 
         **Example**
 
-        >>> import pennylane.estimator as qre
+        >>> import pennylane.labs.estimator_beta as qre
         >>> from pennylane.labs.profiler.resource_profile import ProfileNode
         >>> gate_data = {
         ...     qre.X.resource_rep(): 1,
@@ -337,7 +337,7 @@ class ProfileNode:
 
         **Example**
 
-        >>> import pennylane.estimator as qre
+        >>> import pennylane.labs.estimator_beta as qre
         >>> from pennylane.labs.profiler.resource_profile import ProfileNode
         >>> gate_data = {
         ...     qre.X.resource_rep(): 1,

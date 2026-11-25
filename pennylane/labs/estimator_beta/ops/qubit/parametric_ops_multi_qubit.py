@@ -14,7 +14,7 @@
 r"""Resource operators for parametric multi qubit operations."""
 
 import pennylane.labs.estimator_beta as qre
-from pennylane.estimator.resource_operator import GateCount, resource_rep
+from pennylane.labs._estimator.resource_operator import GateCount, resource_rep
 
 PAULI_ROT_SPECIAL_CASES = {
     "X": lambda eps: [GateCount(qre.resource_rep(qre.RX, {"precision": eps}))],
@@ -36,7 +36,7 @@ def paulirot_controlled_resource_decomp(
     num_zero_ctrl: int,
     target_resource_params: dict,
 ) -> list[GateCount]:
-    r"""Returns a list representing the resources for a controlled version of the :class:`~pennylane.estimator.ops.qubit.PauliRot` operator.
+    r"""Returns a list representing the resources for a controlled version of the :class:`~pennylane.labs.estimator_beta.PauliRot` operator.
 
     Args:
         num_ctrl_wires (int): the number of qubits the operation is controlled on
@@ -69,7 +69,7 @@ def paulirot_controlled_resource_decomp(
         (:code:`RX`, :code:`RY`, :code:`RZ` respectively) and 2 :code:`CNOT` gates.
 
     Returns:
-        list[:class:`~.pennylane.estimator.resource_operator.GateCount`]: A list of ``GateCount`` objects,
+        list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects,
         where each object represents a specific quantum gate and the number of times it appears
         in the decomposition.
 

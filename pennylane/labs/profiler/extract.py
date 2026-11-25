@@ -20,9 +20,13 @@ from functools import singledispatch, wraps
 
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import AnnotatedQueue
-from pennylane.estimator.estimate import _get_resource_decomposition, _ops_to_compressed_reps
-from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
-from pennylane.estimator.resources_base import DefaultGateSet, Resources
+from pennylane.labs._estimator.estimate import _get_resource_decomposition, _ops_to_compressed_reps
+from pennylane.labs._estimator.resource_operator import (
+    CompressedResourceOp,
+    GateCount,
+    ResourceOperator,
+)
+from pennylane.labs._estimator.resources_base import DefaultGateSet, Resources
 from pennylane.labs.estimator_beta import _map_to_resource_op
 from pennylane.labs.estimator_beta.resource_config import LabsResourceConfig
 from pennylane.labs.estimator_beta.wires_manager.wire_counting import (
@@ -44,16 +48,16 @@ def profile(  # pylint: disable=too-many-arguments
 ) -> tuple[ProfileNode, Resources] | Callable:
     r"""Profile the quantum resources required to implement a circuit or operator in terms of a given gate set.
 
-    In addition to the aggregated :class:`~.pennylane.estimator.resources_base.Resources`, this function returns the
+    In addition to the aggregated :class:`~pennylane.labs.estimator_beta.Resources`, this function returns the
     root :class:`~.ProfileNode` of a call graph that records how each high-level operator
     decomposes into the target gate set. The :class:`~.ProfileNode` tree can be exported with
     :func:`~.export_flame_graph_data` to visualize where the cost of a circuit comes from.
 
     Args:
-        workflow (Callable | ResourceOperator | pennylane.estimator.resources_base.Resources | QNode): the workflow to profile.
+        workflow (Callable | ResourceOperator | pennylane.labs.estimator_beta.Resources | QNode): the workflow to profile.
             This may be a quantum function (or :class:`~pennylane.QNode`) that queues
-            operators, a single :class:`~pennylane.estimator.resource_operator.ResourceOperator`, or a precomputed
-            :class:`~.pennylane.estimator.resources_base.Resources` object.
+            operators, a single :class:`~pennylane.labs.estimator_beta.ResourceOperator`, or a precomputed
+            :class:`~pennylane.labs.estimator_beta.Resources` object.
         gate_set (set[str] | None): the set of operator names that the workflow should be
             decomposed into. If ``None``, the estimator's default gate set is used.
         zeroed_wires (int): the number of available auxiliary wires that are guaranteed to be
@@ -68,9 +72,9 @@ def profile(  # pylint: disable=too-many-arguments
             :class:`~.estimator_beta.LabsResourceConfig` is used.
 
     Returns:
-        tuple[ProfileNode, pennylane.estimator.resources_base.Resources] | Callable: when ``workflow`` is a
-        :class:`~.pennylane.estimator.resource_operator.ResourceOperator` or :class:`~.pennylane.estimator.resources_base.Resources`, a tuple of
-        the root :class:`~.ProfileNode` and the aggregated :class:`~.pennylane.estimator.resources_base.Resources` is
+        tuple[ProfileNode, pennylane.labs.estimator_beta.Resources] | Callable: when ``workflow`` is a
+        :class:`~pennylane.labs.estimator_beta.ResourceOperator` or :class:`~pennylane.labs.estimator_beta.Resources`, a tuple of
+        the root :class:`~.ProfileNode` and the aggregated :class:`~pennylane.labs.estimator_beta.Resources` is
         returned. When ``workflow`` is a quantum function or :class:`~pennylane.QNode`, a
         wrapped callable is returned which produces that tuple when called with the workflow's
         arguments.
@@ -82,7 +86,7 @@ def profile(  # pylint: disable=too-many-arguments
 
     **Example**
 
-    The ``profile()`` function can be used in just the same way as :func:`~.pennylane.labs.estimator_beta.estimate`:
+    The ``profile()`` function can be used in just the same way as :func:`~pennylane.labs.estimator_beta.estimate`:
 
     >>> import pennylane.labs.estimator_beta as qre
     >>> from pennylane.labs.profiler import profile

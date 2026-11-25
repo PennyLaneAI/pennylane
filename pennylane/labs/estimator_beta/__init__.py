@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-This module contains experimental features for
-resource estimation.
+This module contains experimental tools for logical resource estimation.
 
 .. warning::
 
@@ -33,6 +32,11 @@ Resource Estimation
     ~LabsResourceConfig
     ~mark_subroutine
     ~ResourceQfunc
+    ~ResourceOperator
+    ~CompressedResourceOp
+    ~GateCount
+    ~Resources
+    ~resource_rep
 
 Qubit Tracking Functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,15 +108,23 @@ Templates
     ~LabsQROM
     ~SelectCopyQROM
 
+**Example**
+
+.. code-block:: python
+
+    from pennylane.labs import estimator_beta as qre
+
+    resources = qre.estimate(qre.QFT(num_wires=3))
+
 """
 
 import numpy as np
 
 import pennylane as qp
-from pennylane.estimator import *
+from pennylane.labs._estimator import *
 
-from pennylane.estimator.ops.op_math.symbolic import apply_adj, apply_controlled
-from pennylane.estimator.resource_mapping import _map_to_resource_op
+from pennylane.labs._estimator.ops.op_math.symbolic import apply_adj, apply_controlled
+from pennylane.labs._estimator.resource_mapping import _map_to_resource_op
 
 from .estimate import estimate
 from .wires_manager.base_classes import (

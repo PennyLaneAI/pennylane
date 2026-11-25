@@ -2076,6 +2076,18 @@ Breaking changes 💔
   simplification and separate compilation into blocks.
   `(#10413) <https://github.com/PennyLaneAI/pennylane/pull/10413>`__
 
+* ``pennylane.estimator`` and the ``qp.estimator`` namespace have been removed.
+  Logical resource estimation remains available through the experimental
+  :mod:`pennylane.labs.estimator_beta` module. :func:`pennylane.estimate` remains
+  available for circuit resource estimation.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
+  .. code-block:: python
+
+      from pennylane.labs import estimator_beta as qre
+
+      resources = qre.estimate(qre.QFT(num_wires=3))
+
 Deprecations 👋
 ~~~~~~~~~~~~~~~
 

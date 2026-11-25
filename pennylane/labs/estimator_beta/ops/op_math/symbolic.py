@@ -196,10 +196,10 @@ class ResourceQfunc(ResourceOperator):
         The resources are defined trivially as each operation called within the quantum function.
 
     Raises:
-        TypeError: if the quantum function calls a :class:`~.pennylane.labs.estimator_beta.MarkQubits`
+        TypeError: if the quantum function calls a :class:`~pennylane.labs.estimator_beta.MarkQubits`
             instance, which is not currently supported inside a ``ResourceQfunc``.
 
-    .. seealso:: The decorator :func:`~.pennylane.labs.estimator_beta.mark_subroutine`.
+    .. seealso:: The decorator :func:`~pennylane.labs.estimator_beta.mark_subroutine`.
 
     **Example**
 
@@ -305,7 +305,7 @@ class ResourceQfunc(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * name (str): the name used to track the counts of the subroutine
                 * num_wires (int): the number of wires the subroutine acts upon
-                * cmpr_ops (tuple[:class:`~.pennylane.labs.estimator_beta.CompressedResourceOp`]): A
+                * cmpr_ops (tuple[:class:`~pennylane.labs.estimator_beta.CompressedResourceOp`]): A
                   tuple containing the operations queued by the subroutine, in the compressed
                   representation.
 
@@ -324,12 +324,12 @@ class ResourceQfunc(ResourceOperator):
         Args:
             name (str): the name used to track the counts of the subroutine
             num_wires (int): the number of wires the subroutine acts upon
-            cmpr_ops (tuple[:class:`~.pennylane.labs.estimator_beta.CompressedResourceOp`]): A
+            cmpr_ops (tuple[:class:`~pennylane.labs.estimator_beta.CompressedResourceOp`]): A
                 tuple containing the operations queued by the subroutine, in the compressed
                 representation, corresponding to the factors of the product.
 
         Returns:
-            :class:`~.pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
+            :class:`~pennylane.labs.estimator_beta.CompressedResourceOp`: the operator in a compressed representation
         """
         params = {
             "name": name,
@@ -347,7 +347,7 @@ class ResourceQfunc(ResourceOperator):
         Args:
             name (str): the name used to track the counts of the subroutine
             num_wires (int): the number of wires the subroutine acts upon
-            cmpr_ops (tuple[:class:`~.pennylane.labs.estimator_beta.CompressedResourceOp`]): A
+            cmpr_ops (tuple[:class:`~pennylane.labs.estimator_beta.CompressedResourceOp`]): A
                 tuple containing the operations queued by the subroutine, in the compressed
                 representation, corresponding to the factors of the product.
 
@@ -355,7 +355,7 @@ class ResourceQfunc(ResourceOperator):
             The resources are defined trivially as each operation called within the quantum function.
 
         Returns:
-            list[:class:`~.pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects,
+            list[:class:`~pennylane.labs.estimator_beta.GateCount`]: A list of ``GateCount`` objects,
             where each object represents a specific quantum gate and the number of times it appears
             in the decomposition.
 

@@ -18,12 +18,12 @@ from collections.abc import Iterable
 from pennylane.allocation import AllocateState
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
-from pennylane.estimator.estimate import _get_resource_decomposition
-from pennylane.estimator.resource_mapping import _map_to_resource_op
-from pennylane.estimator.resource_operator import GateCount, ResourceOperator
-from pennylane.estimator.resources_base import DefaultGateSet, Resources
-from pennylane.estimator.wires_manager import Allocate as estimator_Allocate
-from pennylane.estimator.wires_manager import Deallocate as estimator_Deallocate
+from pennylane.labs._estimator.estimate import _get_resource_decomposition
+from pennylane.labs._estimator.resource_mapping import _map_to_resource_op
+from pennylane.labs._estimator.resource_operator import GateCount, ResourceOperator
+from pennylane.labs._estimator.resources_base import DefaultGateSet, Resources
+from pennylane.labs._estimator.wires_manager import Allocate as estimator_Allocate
+from pennylane.labs._estimator.wires_manager import Deallocate as estimator_Deallocate
 from pennylane.labs.estimator_beta.resource_config import LabsResourceConfig
 from pennylane.labs.estimator_beta.wires_manager.base_classes import (
     Allocate,
@@ -339,10 +339,10 @@ def estimate_wires_from_resources(
     any_state: int = 0,
 ):
     r"""Determine the number of auxiliary qubits needed to decompose the operators
-    in a :class:`~.pennylane.estimator.resources_base.Resources` object into a specific ``gate_set`` with a given ``config``.
+    in a :class:`~pennylane.labs.estimator_beta.Resources` object into a specific ``gate_set`` with a given ``config``.
 
     Args:
-        workflow (:class:`~.pennylane.estimator.resources_base.Resources`): the collection of gates and counts to be further decomposed
+        workflow (:class:`~pennylane.labs.estimator_beta.Resources`): the collection of gates and counts to be further decomposed
         gate_set (set[str] | None): A set of names (strings) of the fundamental operators to count
             throughout the quantum workflow. If not provided, the default gate set will be used,
             i.e., ``{'Toffoli', 'T', 'CNOT', 'X', 'Y', 'Z', 'S', 'Hadamard'}``.

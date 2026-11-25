@@ -18,7 +18,7 @@ Test the mapping functionality overrides operators as exected.
 import pytest
 
 import pennylane as qp
-import pennylane.estimator as pl_qre
+import pennylane.labs._estimator as pl_qre
 import pennylane.labs.estimator_beta as qre
 from pennylane.templates.subroutines.qrom import QROM
 from pennylane.templates.subroutines.qrom_load import QROMLoad

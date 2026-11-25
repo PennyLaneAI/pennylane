@@ -213,8 +213,6 @@ from pennylane import spin
 from pennylane import liealg
 from pennylane.liealg import lie_closure, structure_constants, center
 
-from pennylane import estimator
-
 from pennylane import testing
 
 from importlib.metadata import version as _metadata_version
