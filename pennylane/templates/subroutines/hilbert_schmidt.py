@@ -120,9 +120,9 @@ class HilbertSchmidt(Operation):
 
         def _get_tracer(op):
             if isinstance(op, Operator2):
-                if op.tracer is None:
+                if not op.has_tracer:
                     op._bind_primitive()  # pylint: disable=protected-access
-                return op.tracer if op.tracer is not None else op
+                return op.tracer if op.has_tracer else op
             return op
 
         V = tuple(_get_tracer(op) for op in V)

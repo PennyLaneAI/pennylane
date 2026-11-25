@@ -32,6 +32,35 @@ from pennylane.testing import assert_eqn_matches_op
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
+@pytest.mark.parametrize(
+    "consume",
+    [
+        qp.expval,
+        qp.shadow_expval,
+        lambda op: qp.ctrl(op, control=1),
+        lambda op: qp.ops.SProd(2.0, op),
+        lambda op: qp.ops.Sum(op, qp.Y(1)),
+        lambda op: qp.ops.LinearCombination([2.0], [op]),
+        lambda op: qp.ops.ChangeOpBasis(op, qp.Y(0), qp.Z(0)),
+        lambda op: qp.HilbertSchmidt(qp.Y(1), op),
+        lambda op: qp.Reflection(op, alpha=0.5, reflection_wires=[0]),
+    ],
+)
+def test_consumer_rebinds_invalid_operator_tracer(consume):
+    """Test that operators whose attached tracer has been invalidated can be captured."""
+    op = qp.X(0)
+    jax.make_jaxpr(op._bind_primitive)()
+    jax.core.Trace.invalidate(op.tracer._trace)
+
+    def circuit():
+        consume(op)
+
+    jaxpr = jax.make_jaxpr(circuit)()
+    assert not jaxpr.consts
+    assert any(eqn.params.get("op_cls") is qp.X for eqn in jaxpr.eqns)
+    assert qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts) == []
+
+
 class TestBarrierPrimitive:
     """Capture and reconstruct barriers using their dedicated primitive."""
 

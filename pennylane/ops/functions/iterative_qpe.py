@@ -126,7 +126,7 @@ def iterative_qpe(base, aux_wire, iters):
         return _iterative_qpe(base, aux_wire, iters)
 
     # NOTE: Guard so that operator1 instances still work here
-    if getattr(base, "tracer", None) is not None:
+    if getattr(base, "has_tracer", False):
         pop_op_eqns((base,))
 
     return _iterative_qpe_subroutine(base, aux_wire, iters)

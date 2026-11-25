@@ -91,6 +91,18 @@ class TestCaptureBasics:
         jaxpr = jax.make_jaxpr(fn)(1.5)
         assert len(jaxpr.eqns) == 0
 
+    def test_has_tracer_tracks_validity(self):
+        """Test that an invalidated trace is unavailable even when its tracer remains attached."""
+        op = DynOp(0.5, wires=0)
+        assert not op.has_tracer
+
+        jax.make_jaxpr(op._bind_primitive)()
+        assert op.has_tracer
+
+        jax.core.Trace.invalidate(op.tracer._trace)
+        assert op.tracer is not None
+        assert not op.has_tracer
+
     def test_queued_during_capture(self):
         """Test that constructing an operator during capture still queues it."""
         with qp.queuing.AnnotatedQueue() as q:
@@ -128,7 +140,7 @@ class TestCaptureBasics:
         def f(x):
             op = DynOp(x, wires=0)
             assert isinstance(op, DynOp)
-            assert op.tracer is not None
+            assert op.has_tracer
             assert isinstance(op.tracer.aval, AbstractOperator)
 
         _ = jax.make_jaxpr(f)(0.5)

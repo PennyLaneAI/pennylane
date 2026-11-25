@@ -10,7 +10,7 @@ New features since last release
 
 * :class:`~.QROM` has been divided by splitting off two new operators, :class:`~.QROMLoad` and
   :class:`~.SelectSwap`, for the specific scenario of zeroed target wires, i.e., for data
-  loading rather than XORing. The latter is now done by :class:`~.QROM`. 
+  loading rather than XORing. The latter is now done by :class:`~.QROM`.
   Use the three operators as follows:
 
   .. list-table::
@@ -31,12 +31,12 @@ New features since last release
   leave the work wires in a garbage state. When using :class:`~.SelectSwap` for data loading, it
   can only be unloaded with ``Adjoint(SelectSwap)`` and the work wires are dirty between loading
   and unloading.
-  The promise of zeroed target wires and the permission to leave a garbage state behind lead to 
+  The promise of zeroed target wires and the permission to leave a garbage state behind lead to
   reduced quantum resources, so that ``SelectSwap`` is cheaper than ``QROMLoad``, which is cheaper
   than ``QROM``.
-  In addition, ``Adjoint(QROMLoad)`` and ``Adjoint(SelectSwap)`` have new decompositions based on 
+  In addition, ``Adjoint(QROMLoad)`` and ``Adjoint(SelectSwap)`` have new decompositions based on
   measurement-based uncomputation from
-  Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, which reduces their Toffoli 
+  Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, which reduces their Toffoli
   cost to roughly :math:`2\sqrt{L}` for :math:`L` bitstrings, given enough work wires.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
   `(#10363) <https://github.com/PennyLaneAI/pennylane/pull/10363>`__
@@ -1021,7 +1021,7 @@ Improvements 🛠
   traced work wires.
   `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
   `(#10491) <https://github.com/PennyLaneAI/pennylane/pull/10491>`__
-  
+
 * Efficient decomposition rules for :class:`~.ControlledPhaseShift`, :class:`~.OutMultiplier`, and :class:`Adjoint(Incrementer) <~.Incrementer>` have been added.
   `(#10409) <https://github.com/PennyLaneAI/pennylane/pull/10409>`__
 
@@ -1034,7 +1034,7 @@ Improvements 🛠
   :class:`~.MultiX` gates, realizing the identity :math:`x-1 = \overline{(\overline{x}+1)}`.
 
 * :class:`~.TrotterVibronic` has a new ``branch_probs`` argument, a dictionary with the
-  probabilities for the Hamiltonian terms to be applied rather than skipped for vanishing 
+  probabilities for the Hamiltonian terms to be applied rather than skipped for vanishing
   coefficients. The decomposition uses them as resource hints.
   If ``branch_probs`` is not provided, it is computed from the ``hamiltonian``
   data and the ``evolution_time`` at construction, as long as both are concrete.
@@ -1070,7 +1070,7 @@ Improvements 🛠
   The reduction in rotations comes at the cost of additional ``TemporaryAND`` and CNOT gates.
   The original decomposition is used when fewer work wires are supplied.
   `(#10380) <https://github.com/PennyLaneAI/pennylane/pull/10380>`__
-  
+
 * Added a new decomposition rule, ``_single_excitation_to_ppr_crz``, to :class:`~.SingleExcitation`, that
   realizes the Givens rotation with a single arbitrary-angle ``CRZ`` gate and four Clifford operations.
   `(#10358) <https://github.com/PennyLaneAI/pennylane/pull/10358>`__
@@ -1141,9 +1141,9 @@ Improvements 🛠
 * The Select-SWAP decomposition previously attributed to :class:`~.QROM`
   (``qp.list_decomps(qp.QROM)["_qrom_decomposition"]``) is now attributed to :class:`~.QROMLoad`
   (``qp.list_decomps(qp.QROMLoad)["select_swap"]``), and its ``clean=False`` variant has been
-  split off into the operator :class:`~.SelectSwap`. 
+  split off into the operator :class:`~.SelectSwap`.
   Additionally, this decomposition rule no longer uses :class:`~.Select`, but
-  a :class:`~.QROM` with fewer controls and more target qubits instead. This allows for 
+  a :class:`~.QROM` with fewer controls and more target qubits instead. This allows for
   scalable compilation of this decomposition rule.
   `(#10207) <https://github.com/PennyLaneAI/pennylane/pull/10207>`__
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
@@ -2087,6 +2087,10 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* Operator consumers now use ``Operator2.has_tracer`` when program capture is enabled to check
+  whether an operator's  ``tracer`` is valid.
+  `(#10590) <https://github.com/PennyLaneAI/pennylane/pull/10590>`__
+
 * :func:`~.testing.assert_valid_decomp_rule` now checks that decomposition rules accept
   positional arguments for compatibility with Catalyst.
   `(#10589) <https://github.com/PennyLaneAI/pennylane/pull/10589>`__
@@ -2630,7 +2634,7 @@ Documentation 📝
   operator's decomposition rules, with a circuit diagram and the resources the rule uses.
   This change only applies to operators that are subclasses of ``Operator2``.
   The tables are rendered by a new ``decomposition-table`` Sphinx directive, and their diagrams are
-  drawn with :func:`~pennylane.draw_mpl`. Symbolic decomposition rules for operators (i.e., 
+  drawn with :func:`~pennylane.draw_mpl`. Symbolic decomposition rules for operators (i.e.,
   ``"Adjoint(Operator)"``, ``"Controlled(Operator)"``, and ``"Pow(Operator)"``) are also displayed
   and marked by the region type with `:region: adjoint/controlled/pow`.
   `(#10381) <https://github.com/PennyLaneAI/pennylane/pull/10381>`__
@@ -2698,7 +2702,7 @@ Bug fixes 🐛
   their existing behaviour.
   `(#10418) <https://github.com/PennyLaneAI/pennylane/pull/10418>`__
   `(#10491) <https://github.com/PennyLaneAI/pennylane/pull/10491>`__
-  
+
 * Fixed a bug where AutoGraph raised an error for empty ``for`` loops.
   `(#10448) <https://github.com/PennyLaneAI/pennylane/pull/10448>`__
 

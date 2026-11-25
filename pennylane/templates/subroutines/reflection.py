@@ -122,9 +122,9 @@ class Reflection(Operation):
     def _primitive_bind_call(cls, U, alpha, reflection_wires, **kwargs):
         def _get_tracer(op):
             if isinstance(op, Operator2):
-                if op.tracer is None:
+                if not op.has_tracer:
                     op._bind_primitive()  # pragma: no cover  # pylint: disable=protected-access
-                return op.tracer if op.tracer is not None else op
+                return op.tracer if op.has_tracer else op
             return op  # pragma: no cover
 
         U = _get_tracer(U)

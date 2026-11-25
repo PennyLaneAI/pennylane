@@ -69,9 +69,9 @@ class CompositeOp(Operator):  # pylint: disable=too-many-instance-attributes
         new_leaves = []
         for leaf in leaves:
             if isinstance(leaf, Operator2):
-                if leaf.tracer is None:
+                if not leaf.has_tracer:
                     leaf._bind_primitive()  # pylint: disable=protected-access
-                new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
+                new_leaves.append(leaf.tracer if leaf.has_tracer else leaf)
             else:
                 new_leaves.append(leaf)
 

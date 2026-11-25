@@ -171,7 +171,7 @@ class Adjoint2(SymbolicOp2):
 
         if len(eqns) == 0:
             self.base._bind_primitive()  # pylint: disable=protected-access
-            if self.base.tracer is None:
+            if not self.base.has_tracer:
                 # If the base's tracer is `None` after explicitly re-binding the primitive,
                 # it means we're not in a tracing context, so we don't need to (and cannot)
                 # do anything.
