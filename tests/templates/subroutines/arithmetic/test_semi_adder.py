@@ -360,6 +360,15 @@ class TestSemiAdder:
         assert ctrl_ops
         assert all(o.work_wire_type == "zeroed" for o in ctrl_ops)
 
+    @pytest.mark.parametrize(
+        ("x_wires", "y_wires"),
+        [([0, 1], [3, 4, 5]), ([0, 1, 2], [3, 4, 5]), ([0, 1, 2, 9], [3, 4, 5]), ([0, 1], [3])],
+    )
+    def test_controlled_decomposition_resources(self, x_wires, y_wires):
+        """Test that the resources of the C(SemiAdder) decomposition match the decomposition."""
+        base = qp.SemiAdder(x_wires, y_wires, [6, 7])
+        qp.testing.assert_decomposable(qp.ctrl(base, control=[8]))
+
     @pytest.mark.capture
     @pytest.mark.parametrize(
         "wire_lens",
@@ -811,6 +820,7 @@ class TestControlledSemiAdderPPM:
             [op],
             gate_set={
                 "PPR_8": 2,
+                "PPR_4": 1,
                 "PauliMeasure": 1,
                 "PauliX": 0,
                 "PauliZ": 0,
