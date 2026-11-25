@@ -23,7 +23,6 @@ from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import (
     CNOT,
-    CZ,
     SWAP,
     Hadamard,
     S,
@@ -37,8 +36,7 @@ from pennylane.ops.subcircuit import subcircuit
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
-from .arithmetic.semi_adder import _left_ladder, _right_ladder
-from .arithmetic.temporary_and import TemporaryAND
+from .arithmetic.semi_adder import SemiAdder
 from .multix import MultiX
 from .qrom import QROM
 from .qrom_load import QROMLoad
@@ -225,53 +223,6 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
     ]
 
 
-def _phase_gradient_adder_resources(x_wires, gradient_wires, work_wires):
-    """Return the resources of the phase gradient addition."""
-    # pylint: disable=unused-argument
-    num_bits = len(x_wires)
-    if num_bits == 1:
-        return {CZ: 1, CNOT: 1}
-    return {
-        TemporaryAND: num_bits - 1,
-        adjoint(TemporaryAND(Wire[3])): num_bits - 1,
-        CNOT: 6 * num_bits - 9,
-        CZ: 3,
-    }
-
-
-@subcircuit(wire_argnames=("x_wires", "gradient_wires", "work_wires"))
-@register_resources(_phase_gradient_adder_resources)
-def _PhaseGradientAdder(x_wires: WiresLike, gradient_wires: WiresLike, work_wires: WiresLike):
-    r"""Add the ``b``-bit integer :math:`x` into the ``b + 1``-wire phase gradient register.
-
-    Acts as ``SemiAdder(x_wires, gradient_wires)`` whenever ``gradient_wires`` holds the
-    phase gradient state, with one ``TemporaryAND`` fewer. The most significant gradient
-    wire is a :math:`\lvert - \rangle` factor of that state, so adding the final carry
-    :math:`c = \mathrm{MAJ}(x_{b-1}, y_{b-1}, c_{b-1})` into it is the phase
-    :math:`(-1)^{c} = \mathrm{CZ}(x_{b-1}, y_{b-1})\, \mathrm{CZ}(y_{b-1}, c_{b-1})\,
-    \mathrm{CZ}(x_{b-1}, c_{b-1})` and that wire is never touched.
-
-    Args:
-        x_wires (Sequence[int]): the ``b`` wires of :math:`x`, most significant first
-        gradient_wires (Sequence[int]): the ``b + 1`` wires of the phase gradient state
-        work_wires (Sequence[int]): at least ``b - 1`` zeroed wires, restored on exit
-    """
-    x = list(x_wires)[::-1]
-    y = list(gradient_wires)[1:][::-1]
-    if len(x) == 1:
-        CZ([x[0], y[0]])
-        CNOT([x[0], y[0]])
-        return
-    work = list(work_wires)[: len(x) - 1][::-1]
-    _left_ladder(x, y, work, skip_input_pos=set())
-    CZ([x[-1], y[-1]])
-    CZ([y[-1], work[-1]])
-    CZ([x[-1], work[-1]])
-    CNOT([work[-1], y[-1]])
-    CNOT([x[-1], y[-1]])
-    _right_ladder(x, y, work, skip_input_pos=set())
-
-
 # pylint: disable-next=too-many-arguments
 def _apply_loaded_rotation(psi_down, angle_wires, beth, pairs, gradient_wires, work_wires):
     r"""Apply the rotations of one batch, whose angles are held in ``angle_wires``.
@@ -289,8 +240,7 @@ def _apply_loaded_rotation(psi_down, angle_wires, beth, pairs, gradient_wires, w
     both :math:`R_y` carry the same angle, so each becomes one addition of the
     same loaded value under a fixed Clifford: two additions per Givens pair, and no
     arbitrary-angle rotation anywhere. The control is moved onto the loaded bits by a ``CNOT`` layer,
-    so no controlled adder is needed. Each addition skips the carry into the most significant
-    gradient wire, which is a phase, so it costs ``beth - 1`` ``TemporaryAND`` gates.
+    so no controlled adder is needed.
 
     Args:
         psi_down (Sequence[int]): the ``N/2`` spatial orbitals :math:`U` acts on
@@ -298,11 +248,11 @@ def _apply_loaded_rotation(psi_down, angle_wires, beth, pairs, gradient_wires, w
         beth (int): bits of precision per Givens angle
         pairs (Sequence[int]): the Givens pairs of this batch, in application order
         gradient_wires (Sequence[int]): the ``beth + 1`` wires of the phase gradient register
-        work_wires (Sequence[int]): at least ``beth - 1`` zeroed wires. The first ``beth - 1``
-            are the scratch of the phase gradient addition.
+        work_wires (Sequence[int]): at least ``beth`` zeroed wires. The first ``beth`` are the
+            scratch of :class:`~.SemiAdder`.
 
     """
-    adder_work = work_wires[: beth - 1]
+    adder_work = work_wires[:beth]
 
     for slot, p in enumerate(pairs):
         bits = angle_wires[slot * beth : (slot + 1) * beth]
@@ -314,7 +264,7 @@ def _apply_loaded_rotation(psi_down, angle_wires, beth, pairs, gradient_wires, w
             adjoint(S(wire))
             Hadamard(wire)
             ctrl(MultiX([1] * len(bits), wires=bits), control=wire)
-            adjoint(_PhaseGradientAdder(bits, gradient_wires, adder_work))
+            adjoint(SemiAdder(bits, gradient_wires, adder_work))
             ctrl(MultiX([1] * len(bits), wires=bits), control=wire)
             Z(wire)
             Hadamard(wire)
@@ -451,8 +401,7 @@ def _select_basis_resources(  # pylint: disable=too-many-arguments
                 S: 2 * num_pairs,
                 Z: 2 * num_pairs,
                 ctrl(MultiX([1] * beth, Wire[beth]), control=Wire[1]): 4 * num_pairs,
-                adjoint(_PhaseGradientAdder(Wire[beth], gradient_wires, Wire[max(beth - 1, 0)])): 2
-                * num_pairs,
+                adjoint(SemiAdder(Wire[beth], gradient_wires, Wire[beth])): 2 * num_pairs,
             }
         )
     return resources
@@ -797,12 +746,11 @@ class SelectTHC(Operator2):
             :stacked:
             :symbols: :math:`N` spin orbitals, :math:`M` is the THC rank, :math:`h = N/2` spatial orbitals, :math:`P = h - 1` Givens pairs loaded in
                 :math:`B` batches (:math:`B \leq` ``num_batches``, and :math:`B = 0` if
-                :math:`P = 0`), :math:`n = \lceil \log_2(M+1) \rceil` wires per index,
-                :math:`\beth \geq 2` = ``beth`` bits per angle, and :math:`o` the number of set
-                bits of the one-body row offset (:math:`o = 0` if the one-body flag extends the
-                address instead)
-            :example: :math:`M=1`, :math:`N=4`, :math:`\beth=2` (:math:`h=2`, :math:`P=1`,
-                :math:`B=1`, :math:`n=1`, :math:`o=0`)
+                :math:`P = 0`), :math:`n = \lceil \log_2(M+1) \rceil` wires per index, and
+                :math:`o` the number of set bits of the one-body row offset (:math:`o = 0` if
+                the one-body flag extends the address instead)
+            :example: :math:`M=1`, :math:`N=4` (:math:`h=2`, :math:`P=1`, :math:`B=1`,
+                :math:`n=1`, :math:`o=0`)
 
             .. decomposition-rule:: selected_basis_rotations
                 :image: /_static/decomposition_thumbnails/select_thc_double_factorized.svg
@@ -814,14 +762,13 @@ class SelectTHC(Operator2):
                 :class:`Adjoint(QROM) <.QROM>` | :math:`2(B - 1)` | 0
                 :class:`~.CSWAP` | :math:`4h + n + 1` | 10
                 :class:`~.Hadamard` | :math:`24P` | 24
-                :class:`~.CNOT` | :math:`8P(6\beth - 8) + 4o` | 32
+                :class:`~.CNOT` | :math:`8P + 4o` | 8
                 :class:`~.S` | :math:`8P` | 8
                 :class:`Adjoint(S) <.S>` | :math:`8P` | 8
                 :class:`~.Z` | :math:`8P` | 8
                 :class:`~.MultiX` with 1 control | :math:`16P` | 16
-                :class:`~.TemporaryAND` | :math:`8P(\beth - 1)` | 8
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`8P(\beth - 1)` | 8
-                :class:`~.CZ` | :math:`24P` | 24
+                :class:`~.SemiAdder` | :math:`4P` | 4
+                :class:`Adjoint(SemiAdder) <.SemiAdder>` | :math:`4P` | 4
                 :class:`~.CZ` with 1 control | :math:`1` | 1
                 :class:`~.CZ` with 2 controls | :math:`1` | 1
                 :class:`~.X` | :math:`3` | 3

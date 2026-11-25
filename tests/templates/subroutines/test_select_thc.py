@@ -24,7 +24,6 @@ from pennylane.templates.subroutines.select_thc import (
     _apply_loaded_rotation,
     _build_qrom_givens_data,
     _cascade_angles,
-    _PhaseGradientAdder,
     _select_half,
     _SelectTHCBasis,
     _THCIndexSwaps,
@@ -837,7 +836,7 @@ class TestControlledSelectTHC:
 
         # one ChangeOpBasis per V sandwich plus one for the index swaps, and the control
         # lands on the outside of each of them
-        gate_set = ROTATIONS_PLUS_CNOT | {qp.QROM, qp.QROMLoad, _PhaseGradientAdder}
+        gate_set = ROTATIONS_PLUS_CNOT | {qp.QROM, qp.QROMLoad, qp.SemiAdder}
         # pylint: disable-next=protected-access
         tape = qp.transforms._tape_decompose(tape, gate_set=gate_set, max_expansion=1)[0][0]
         names = [op.name for op in tape.operations]
@@ -848,9 +847,7 @@ class TestControlledSelectTHC:
         # pylint: disable-next=protected-access
         tape = qp.transforms._tape_decompose(tape, gate_set=gate_set, max_expansion=1)[0][0]
 
-        loads = [
-            op for op in tape.operations if "QROM" in op.name or "PhaseGradientAdder" in op.name
-        ]
+        loads = [op for op in tape.operations if "QROM" in op.name or "SemiAdder" in op.name]
         assert len(loads) == 12
         assert all(control not in op.wires for op in loads)
 
