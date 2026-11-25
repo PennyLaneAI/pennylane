@@ -379,7 +379,7 @@ class MottonenStatePreparation(Operation):
 
         Args:
             state_vector (tensor_like): Normalized state vector of shape ``(2^len(wires),)``
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
 
         Returns:
             list[.Operator]: decomposition of the operator
@@ -387,13 +387,13 @@ class MottonenStatePreparation(Operation):
         **Example**
 
         >>> state_vector = torch.tensor([0.5, 0.5, 0.5, 0.5])
-        >>> ops = qp.MottonenStatePreparation.compute_decomposition(state_vector, wires=["a", "b"])
+        >>> ops = qp.MottonenStatePreparation.compute_decomposition(state_vector, wires=[0, 1])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [RY(1.5707..., wires=['a']),
-         RY(1.5707..., wires=['b']),
-         CNOT(wires=['a', 'b']),
-         CNOT(wires=['a', 'b'])]
+        [RY(1.5707..., wires=[0]),
+         RY(1.5707..., wires=[1]),
+         CNOT(wires=[0, 1]),
+         CNOT(wires=[0, 1])]
 
         """
         omega = qp.math.angle(state_vector)

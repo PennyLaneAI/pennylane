@@ -2650,6 +2650,10 @@ Bug fixes 🐛
 * Fixed :func:`~.ctrl` to return the original operator or callable when the control wires are empty.
   `(#10595) <https://github.com/PennyLaneAI/pennylane/pull/10595>`__
 
+* Resource analysis of qjit-compiled circuits now reports :func:`~.pauli_measure` operations
+  as ``PPM-w<n>`` when Catalyst captures them as generic measurements.
+  `(#10598) <https://github.com/PennyLaneAI/pennylane/pull/10598>`__
+
 * Fixed the extra-control-wire test for :class:`~.QROM` to omit work-register sampling
   when no work wires are present, and removed its outdated expected-failure marker.
   `(#10586) <https://github.com/PennyLaneAI/pennylane/pull/10586>`__
