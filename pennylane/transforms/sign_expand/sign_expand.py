@@ -275,7 +275,7 @@ def sign_expand(
     >>> res
     (np.float64(0.017...), np.float64(0.006...), np.float64(-0.0009...), np.float64(0.0023...), np.float64(-0.977...))
     >>> fn(res)
-    np.float64(-0.249...)
+    np.float64(-0.476...)
 
 
     Lastly, as the paper is about minimizing variance, one can also calculate the variance of the estimator by
