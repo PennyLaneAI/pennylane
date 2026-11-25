@@ -23,7 +23,7 @@ from pennylane import allocation, capture, compiler, math, ops, templates
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import is_integer
-from pennylane.ops.op_math.decompositions.unitary_decompositions import (
+from pennylane.decomposition_rules.qubit.unitary_decompositions import (
     _compute_num_cnots,
     _decompose_0_cnots,
     _decompose_1_cnot,

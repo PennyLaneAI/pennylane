@@ -12,4 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Decomposition rules for qubit."""
+r"""Decomposition rules for qubit operators.
+
+.. autosummary::
+
+    unitary_decompositions
+"""

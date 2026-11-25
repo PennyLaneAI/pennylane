@@ -12,7 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module defines decomposition functions for unitary matrices."""
+r"""Numerical algorithms used to decompose qubit unitaries.
+
+.. currentmodule:: pennylane.decomposition_rules.qubit.unitary_decompositions
+
+.. autosummary::
+    :toctree: api
+
+    one_qubit_decomposition
+    two_qubit_decomposition
+    multi_qubit_decomposition
+"""
 
 import warnings
 from itertools import product
@@ -132,15 +142,18 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
 
     **Example**
 
+    >>> from pennylane.decomposition_rules.qubit.unitary_decompositions import (
+    ...     one_qubit_decomposition,
+    ... )
     >>> from pprint import pprint
     >>> U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)  # Hadamard
-    >>> decomp = qp.ops.one_qubit_decomposition(U, 0, rotations='ZYZ', return_global_phase=True)
+    >>> decomp = one_qubit_decomposition(U, 0, rotations='ZYZ', return_global_phase=True)
     >>> pprint(decomp)
     [RZ(3.14159..., wires=[0]),
      RY(1.57079..., wires=[0]),
      RZ(0.0, wires=[0]),
      GlobalPhase(-1.57079...)]
-    >>> decomp = qp.ops.one_qubit_decomposition(U, 0, rotations='XZX', return_global_phase=True)
+    >>> decomp = one_qubit_decomposition(U, 0, rotations='XZX', return_global_phase=True)
     >>> pprint(decomp)
     [RX(1.57079..., wires=[0]),
      RZ(1.57079..., wires=[0]),
@@ -237,13 +250,16 @@ def two_qubit_decomposition(U, wires):
     Suppose we create a random element of :math:`U(4)`, and would like to decompose it
     into elementary gates in our circuit.
 
+    >>> from pennylane.decomposition_rules.qubit.unitary_decompositions import (
+    ...     two_qubit_decomposition,
+    ... )
     >>> from scipy.stats import unitary_group
     >>> U = unitary_group.rvs(4, random_state=42)
 
     We can compute its decompositon like so:
 
     >>> from pprint import pprint
-    >>> decomp = qp.ops.two_qubit_decomposition(np.array(U), wires=[0, 1])
+    >>> decomp = two_qubit_decomposition(np.array(U), wires=[0, 1])
     >>> pprint(decomp) # doctest: +SKIP
     [QubitUnitary(array([[ 0.35935497-0.35945703j, -0.81150079+0.28830732j],
            [ 0.81150079+0.28830732j,  0.35935497+0.35945703j]]), wires=[0]),
@@ -336,7 +352,10 @@ def multi_qubit_decomposition(U, wires):
     .. code-block:: pycon
 
         >>> matrix_target = qp.matrix(qp.QFT([0,1,2]))
-        >>> ops = qp.ops.multi_qubit_decomposition(matrix_target, [0,1,2])
+        >>> from pennylane.decomposition_rules.qubit.unitary_decompositions import (
+        ...     multi_qubit_decomposition,
+        ... )
+        >>> ops = multi_qubit_decomposition(matrix_target, [0,1,2])
         >>> matrix_decomposition = qp.matrix(qp.prod(*ops[::-1]), wire_order = [0,1,2])
         >>> print([op.name for op in ops])
         ['QubitUnitary', 'SelectPauliRot', 'QubitUnitary', 'SelectPauliRot', 'QubitUnitary', 'SelectPauliRot', 'QubitUnitary']

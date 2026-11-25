@@ -408,6 +408,26 @@ class TestIntegerComparator:
         with pytest.raises(ValueError, match=expected_error_message):
             qp.IntegerComparator.compute_decomposition(value, wires=wires, geq=geq)
 
+    @pytest.mark.parametrize("geq,expected_op", [(True, qp.X), (False, qp.Z)])
+    def test_compute_decomposition_selects_named_rule(self, geq, expected_op, mocker):
+        """The static API selects its named strategy and queues its operations once."""
+
+        @qp.register_resources({qp.Z: 1}, name="less_than")
+        def less_than(wires, **_):
+            qp.Z(wires[-1])
+
+        @qp.register_resources({qp.X: 1}, name="greater_equal")
+        def greater_equal(wires, **_):
+            qp.X(wires[-1])
+
+        collection = qp.decomposition.DecompCollection([less_than, greater_equal])
+        mocker.patch("pennylane.list_decomps", return_value=collection)
+        with qp.queuing.AnnotatedQueue() as queue:
+            decomposition = qp.IntegerComparator.compute_decomposition(2, [0, 1, 2], geq=geq)
+
+        assert decomposition == [expected_op(2)]
+        assert queue.queue == decomposition
+
     @pytest.mark.parametrize("geq", [True, False])
     @pytest.mark.parametrize("value", list(range(9)))
     @pytest.mark.parametrize("initial_state", list(itertools.product([0, 1], repeat=3)))

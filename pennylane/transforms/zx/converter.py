@@ -317,6 +317,7 @@ def to_zx(tape, expand_measurements=False):
 
     # pylint: disable=import-outside-toplevel
     import pyzx
+    from pennylane.decomposition_rules import null_decomp
 
     ######################################################################
     # pyzx >= 0.10.0: TargetMapper.labels() reads from an explicit set
@@ -393,7 +394,7 @@ def to_zx(tape, expand_measurements=False):
 
         # Expand the tape to be compatible with PyZX and add rotations first for measurements
         kwargs = {"gate_set": gate_sets.PYZX}
-        kwargs["fixed_decomps"] = {qp.GlobalPhase: qp.decomposition_rules.null_decomp}
+        kwargs["fixed_decomps"] = {qp.GlobalPhase: null_decomp}
         # pylint: disable-next=protected-access
         [mapped_tape], _ = qp.transforms._tape_decompose(mapped_tape, **kwargs)
 

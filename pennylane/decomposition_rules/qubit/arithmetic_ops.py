@@ -30,8 +30,6 @@ from pennylane.ops.qubit.arithmetic_ops import (
     IntegerComparator,
     QubitCarry,
     QubitSum,
-    _integer_comparator_greater_equal_impl,
-    _integer_comparator_less_than_impl,
 )
 from pennylane.typing import Wire
 from pennylane.wires import WiresLike
@@ -139,7 +137,51 @@ def integer_comparator_less_than(wires, value, work_wires, **_):
         6: ────╰X────╰X────╰X────┤
 
     """
-    return _integer_comparator_less_than_impl(wires, value, work_wires, **_)
+    if value == 0:
+        return
+
+    num_controls = len(wires) - 1
+
+    # If the value is larger than the maximum value that can be represented by
+    # the number of control bits, the flipping condition is always satisfied, in
+    # which case we apply an X gate to the target wire and terminate.
+    if value > 2**num_controls - 1:
+        ops.X(wires[-1])
+        return
+
+    # Track which control bits have been flipped back
+    control_value_tracker = [0] * num_controls
+
+    # First apply X to all wires until the last significant bit to flip control values to 1.
+    binary_str = format(value, f"0{num_controls}b")
+    last_significant = binary_str.rfind("1")
+    for i in range(last_significant + 1):
+        ops.X(wires[i])
+
+    # The flipping condition is satisfied if all bits from the first bit to the
+    # first non-zero bit of the value are zeroes.
+    first_significant = binary_str.find("1")
+    ops.MultiControlledX(
+        wires=wires[: first_significant + 1] + wires[-1:],
+        work_wires=wires[first_significant + 1 : -1] + work_wires,
+    )
+    control_value_tracker[first_significant] = 1
+    ops.X(wires[first_significant])
+
+    # If the wire corresponding to the first significant bit of the value is 1, then we
+    # iteratively look for the next significant bit, and apply a flip conditioned on all
+    # bits from the last significant bit to this next significant bit being zeroes.
+    while (first_significant := binary_str.find("1", first_significant + 1)) != -1:
+        ops.MultiControlledX(
+            wires=wires[: first_significant + 1] + wires[-1:],
+            work_wires=wires[first_significant + 1 : -1] + work_wires,
+        )
+        control_value_tracker[first_significant] = 1
+        ops.X(wires[first_significant])
+
+    for i in range(last_significant + 1):
+        if control_value_tracker[i] == 0:
+            ops.X(wires[i])
 
 
 def _integer_comparator_greater_equal_resources(num_wires, value, num_work_wires, **_):
@@ -189,7 +231,49 @@ def integer_comparator_greater_equal(wires, value, work_wires, **_):
     This decomposition rule mirrors the implementation for the ``n < value`` case.
 
     """
-    return _integer_comparator_greater_equal_impl(wires, value, work_wires, **_)
+    if value == 0:
+        ops.X(wires[-1])
+        return
+
+    num_controls = len(wires) - 1
+
+    # If the value is larger than the maximum value that can be represented by
+    # the number of control bits, the flipping condition is never satisfied,
+    if value > 2**num_controls - 1:
+        return
+
+    # Track which control bits have been flipped
+    control_value_tracker = [0] * num_controls
+
+    binary_str = format(value, f"0{num_controls}b")
+    first_zero = binary_str.find("0")
+
+    if first_zero == -1:
+        # If the value happens to be the all-one state, then we apply a single MCX
+        ops.MultiControlledX(wires=wires, work_wires=work_wires)
+        return
+
+    ops.MultiControlledX(
+        wires=wires[: first_zero + 1] + wires[-1:],
+        work_wires=wires[first_zero + 1 : -1] + work_wires,
+    )
+    control_value_tracker[first_zero] = 1
+    ops.X(wires[first_zero])
+
+    while (first_zero := binary_str.find("0", first_zero + 1)) != -1:
+        ops.MultiControlledX(
+            wires=wires[: first_zero + 1] + wires[-1:],
+            work_wires=wires[first_zero + 1 : -1] + work_wires,
+        )
+        control_value_tracker[first_zero] = 1
+        ops.X(wires[first_zero])
+
+    # The last MCX corresponds to the equal case.
+    ops.MultiControlledX(wires=wires, work_wires=work_wires)
+
+    for i in range(num_controls):
+        if control_value_tracker[i]:
+            ops.X(wires[i])
 
 
 def _integer_comparator_flip_greater_equal_resources(num_wires, value, num_work_wires, geq, **_):
