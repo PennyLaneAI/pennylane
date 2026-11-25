@@ -1682,14 +1682,16 @@ Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
 * :class:`~.QuantumTape` has now been removed. :class:`pennylane.core.QuantumScript` use is now fully
-required.
+  required.
 
-.. code-block:: python
+  .. code-block:: pycon
 
-    # before
-    with qp.tape.QuantumTape() as tape:
-        qp.X(0)
-        qp.probs()
+      # before
+      >>> with qp.tape.QuantumTape() as tape:  # doctest: +SKIP
+      ...     qp.X(0)
+      ...     qp.probs()
+
+  .. code-block:: python
 
       # after
       qp.core.QuantumScript([qp.X(0)], [qp.probs()])
