@@ -2650,7 +2650,7 @@ Bug fixes 🐛
 * Fixed ``mcm_method="tree-traversal"`` without shots so that a single terminal measurement such as
   ``qp.probs`` is no longer truncated to its first entry, or fails for scalar results, when the
   circuit also measures a mid-circuit measurement value.
-  `(#OSS_PR_NUMBER) <https://github.com/PennyLaneAI/pennylane/pull/OSS_PR_NUMBER>`__
+  `(#10597) <https://github.com/PennyLaneAI/pennylane/pull/10597>`__
 
 * Fixed the extra-control-wire test for :class:`~.QROM` to omit work-register sampling
   when no work wires are present, and removed its outdated expected-failure marker.
