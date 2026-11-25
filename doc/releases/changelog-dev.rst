@@ -705,7 +705,7 @@ New features since last release
   :func:`~.transforms.to_ppr`, :func:`~.transforms.ppr_to_ppm`,
   :func:`~.transforms.combine_global_phases` and :func:`~.transforms.gridsynth`. The peak number
   of live qubits is reported along with the total number of allocations.
-  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+  `(#10604) <https://github.com/PennyLaneAI/pennylane/pull/10604>`__
 
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
