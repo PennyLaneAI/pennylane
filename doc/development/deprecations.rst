@@ -296,13 +296,13 @@ Completed deprecation cycles
   - Deprecated in v0.44
   - Removed in v0.45
 
-* Access to the following functions and classes from the ``pennylane.resources`` module was
-  removed in v0.45. They were relocated to ``pennylane.estimator``, which was removed in v0.46.
+* Access to the following functions and classes from the `~pennylane.resources` module have
+  been removed. Instead, these functions must be imported from the ``estimator`` module.
 
-    - ``estimate_shots``
-    - ``estimate_error``
-    - ``FirstQuantization``
-    - ``DoubleFactorization``
+    - ``qml.estimator.estimate_shots`` in favor of ``qml.resources.estimate_shots``
+    - ``qml.estimator.estimate_error`` in favor of ``qml.resources.estimate_error``
+    - ``qml.estimator.FirstQuantization`` in favor of ``qml.resources.FirstQuantization``
+    - ``qml.estimator.DoubleFactorization`` in favor of ``qml.resources.DoubleFactorization``
 
   - Deprecated in v0.44
   - Removed in v0.45

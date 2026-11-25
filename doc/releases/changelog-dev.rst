@@ -1554,6 +1554,11 @@ Labs: a place for unified and rapid prototyping of research software 🧪
   `in the compilation hub <https://pennylane.ai/compilation/phase-gradient/c-control-rotations>`__.
   `(#9750) <https://github.com/PennyLaneAI/pennylane/pull/9750>`__
 
+* Added resource templates for arithmetic operators which include ``LabsAdder``, ``LabsPhaseAdder``,
+  ``LabsOutAdder``, ``ClassicalMultiplier``, ``LabsMultiplier``,
+  ``LabsModExp``.
+  `(#9390) <https://github.com/PennyLaneAI/pennylane/pull/9390>`__
+
 * Updated the ``make_selectpaulirot_to_phase_gradient_decomp`` decomposition rule factory to have
   the decomposition rule validate the number of available work wires against the needed work wires
   to use unary iteration in the decomposition of the used ``QROM`` operation for the specified
@@ -1576,6 +1581,70 @@ Labs: a place for unified and rapid prototyping of research software 🧪
   led to compilation errors when using the old Catalyst frontend ``catalyst.device.decomposition.catalyst_decompose``.
   `(#9493) <https://github.com/PennyLaneAI/pennylane/pull/9493>`__
 
+* Created a new ``labs.estimator_beta.SelectCopyQROM`` resource operator which uses an optimal
+  decomposition to estimate the cost for QROM.
+  `(#9500) <https://github.com/PennyLaneAI/pennylane/pull/9500>`__
+  `(#9516) <https://github.com/PennyLaneAI/pennylane/pull/9516>`__
+
+  .. code-block:: pycon
+
+      >>> import pennylane.labs.estimator_beta as qre
+      >>>
+      >>> qrom_op = qre.SelectCopyQROM(
+      ...     num_bitstrings = 10**8,
+      ...     size_bitstring = 8,
+      ...     available_dirty_aux = 300,
+      ... )
+      >>>
+      >>> print(qre.estimate(qrom_op))
+      --- Resources: ---
+      Total wires: 308
+        algorithmic wires: 35
+        allocated wires: 273
+          zero state: 273
+          any state: 0
+      Total gates : 4.781E+8
+        'Toffoli': 3.520E+6,
+        'CNOT': 4.570E+8,
+        'X': 7.036E+6,
+        'Hadamard': 1.055E+7
+
+* Added the ``pennylane.labs.profiler`` which allows users to profile the quantum resources required for
+  their quantum workflows. This contains core functions and classes such as
+  ``ProfileNode``, ``profile``, and
+  ``export_flame_graph_data``.
+  `(#9546) <https://github.com/PennyLaneAI/pennylane/pull/9546>`__
+
+  .. code-block:: pycon
+
+      >>> import pennylane.labs.estimator_beta as qre
+      >>> from pennylane.labs.profiler import profile, export_flame_graph_data
+      >>> def circuit():
+      ...     for w in range(5):
+      ...         qre.Hadamard()
+      ...         qre.RZ(1e-9)
+      ...
+      ...     qre.QPE(qre.RX(precision=1e-3), 4)
+      ...     qre.QFT(4)
+      >>>
+      >>> gate_set = {"T", "Hadamard", "CNOT"}
+      >>> res_profile, resources = profile(circuit, gate_set)()
+      >>> print(resources)
+      --- Resources: ---
+       Total wires: 5
+         algorithmic wires: 5
+         allocated wires: 0
+           zero state: 0
+           any state: 0
+       Total gates : 2.041E+3
+         'T': 1.972E+3,
+         'CNOT': 44,
+         'Hadamard': 25
+      >>> extracted_info = export_flame_graph_data(res_profile)
+      >>> ids, names, values, parents = extracted_info
+      >>> print(names[:5])  # just the first 5 entries
+      ['circuit', 'Hadamard [x5]', 'RZ [x5]', 'T [x220]', 'QPE(RX, 4, adj_qft=None)']
+
 * Performance of the Trotter error module is improved by introducing a novel algorithm for
   computing the Baker-Campbell-Hausdorff formula.
   `(#9608) <https://github.com/PennyLaneAI/pennylane/pull/9608>`__
@@ -1586,6 +1655,11 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 
 * Added a new fragmentation scheme for the vibronic Hamiltonian Trotter error workflow.
   `(#9813) <https://github.com/PennyLaneAI/pennylane/pull/9813>`__
+
+* Added a class ``ResourceQfunc`` and a function
+  ``mark_subroutine`` which allow users to easily define their own
+  resource operators from their quantum functions.
+  `(#9764) <https://github.com/PennyLaneAI/pennylane/pull/9764>`__
 
 * Performance gains for qubit workflows in the TCDQ module. The new
   ``CircuitConfig.max_memory_gb`` option bounds the temporary memory (in GB) used by the

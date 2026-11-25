@@ -444,7 +444,7 @@ understand how PennyLane decomposed a circuit, why specific rules where chosen o
 <h4>Resource Estimation Templates 📏</h4>
 
 * New lightweight representations of the :class:`~.HybridQRAM`, :class:`~.SelectOnlyQRAM`, :class:`~.BasisEmbedding`, and :class:`~.BasisState` templates have
-  been added for fast and efficient resource estimation. These are available in the :mod:`~.estimator` module as:
+  been added for fast and efficient resource estimation. These are available in the ``estimator`` module as:
   ``qp.estimator.HybridQRAM``, ``qp.estimator.SelectOnlyQRAM``, ``qp.estimator.BasisEmbedding``, and  ``qp.estimator.BasisState``.
   [(#8828)](https://github.com/PennyLaneAI/pennylane/pull/8828)
   [(#8826)](https://github.com/PennyLaneAI/pennylane/pull/8826)
@@ -954,43 +954,43 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
   [(#8996)](https://github.com/PennyLaneAI/pennylane/pull/8996)
   [(#8868)](https://github.com/PennyLaneAI/pennylane/pull/8868)
 
-  - :class:`~.labs.estimator_beta.Allocate`, allows users to allocate qubits in a resource decomposition.
-  - :class:`~.labs.estimator_beta.Deallocate`, allows users to deallocate qubits in a resource decomposition.
-  - :class:`~.labs.estimator_beta.MarkClean`, allows users to mark the state of qubits as the zero state in a circuit.
-  - :class:`~.labs.estimator_beta.MarkQubits`, allows users to mark the state of qubits in a circuit.
-  - :class:`~.labs.estimator_beta.estimate_wires_from_circuit`, estimates the number of additional qubits required
+  - ``Allocate``, allows users to allocate qubits in a resource decomposition.
+  - ``Deallocate``, allows users to deallocate qubits in a resource decomposition.
+  - ``MarkClean``, allows users to mark the state of qubits as the zero state in a circuit.
+  - ``MarkQubits``, allows users to mark the state of qubits in a circuit.
+  - ``estimate_wires_from_circuit``, estimates the number of additional qubits required
     from a circuit.
-  - :class:`~.labs.estimator_beta.estimate_wires_from_resources`, estimates the number of additional qubits required
-    from a :class:`~.estimator.Resources` object.
+  - ``estimate_wires_from_resources``, estimates the number of additional qubits required
+    from a ``Resources`` object.
 
 * A new ``labs.estimator_beta.estimate()`` function has been created, which extends the functionality of
   ``qp.estimator.estimate()`` to utilize the advanced qubit management features for resource estimation.
   [(#9139)](https://github.com/PennyLaneAI/pennylane/pull/9139)
 
-* Created a new :class:`~.labs.estimator_beta.LabsQROM` resource operator in labs and added multiple alternate
+* Created a new ``LabsQROM`` resource operator in labs and added multiple alternate
   decompositions in labs for ``MultiControlledX`` that utilize the new qubit management features.
   [(#9258)](https://github.com/PennyLaneAI/pennylane/pull/9258)
 
-  - :func:`~.labs.estimator_beta.mcx_many_clean_aux_resource_decomp`, uses multiple clean qubits to decompose.
-  - :func:`~.labs.estimator_beta.mcx_one_clean_aux_resource_decomp`, uses only one clean qubit to decompose.
-  - :func:`~.labs.estimator_beta.mcx_one_dirty_aux_resource_decomp`, uses only one dirty qubit to decompose.
+  - ``mcx_many_clean_aux_resource_decomp``, uses multiple clean qubits to decompose.
+  - ``mcx_one_clean_aux_resource_decomp``, uses only one clean qubit to decompose.
+  - ``mcx_one_dirty_aux_resource_decomp``, uses only one dirty qubit to decompose.
 
-* Added alternate decompositions for :class:`~.pennylane.labs.estimator_beta.ops.op_math.controlled_ops.CH` and :class:`~.pennylane.labs.estimator_beta.ops.qubit.non_parametric_ops.Hadamard`
+* Added alternate decompositions for ``CH`` and ``Hadamard``
   operations in ``labs.estimator_beta`` to get optimal numbers.
   [(#9178)](https://github.com/PennyLaneAI/pennylane/pull/9178)
 
-* Added comparator decompositions for :class:`~.pennylane.labs.estimator_beta.templates.RegisterEquality`
-  and :class:`~.pennylane.labs.estimator_beta.templates.OutOfPlaceIntegerComparator` in ``labs.estimator_beta``
+* Added comparator decompositions for ``RegisterEquality``
+  and ``OutOfPlaceIntegerComparator`` in ``labs.estimator_beta``
   [(#9220)](https://github.com/PennyLaneAI/pennylane/pull/9220)
 
-* Added alternate controlled decompositions for :class:`~.labs.estimator_beta.ops.qubit.parametric_ops_multi_qubit.PauliRot`
-  and :class:`~.pennylane.labs.estimator_beta.templates.subroutines.SelectPauliRot`
+* Added alternate controlled decompositions for ``PauliRot``
+  and ``SelectPauliRot``
   operations in ``labs.estimator_beta`` to get optimal numbers.
   [(#9186)](https://github.com/PennyLaneAI/pennylane/pull/9186)
 
 * Added resource templates for state preparation operators,
-  which include :class:`~.labs.estimator_beta.templates.LabsMottonenStatePreparation`, :class:`~.labs.estimator_beta.templates.LabsCosineWindow`,
-  and :class:`~.labs.estimator_beta.templates.LabsSumOfSlatersPrep`.
+  which include ``LabsMottonenStatePreparation``, ``LabsCosineWindow``,
+  and ``LabsSumOfSlatersPrep``.
   [(#9202)](https://github.com/PennyLaneAI/pennylane/pull/9202)
 
 * Added various alternate resource decomposition functions for operators which make use of the phase
@@ -1187,13 +1187,13 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
   [(#8919)](https://github.com/PennyLaneAI/pennylane/pull/8919)
 
 * Access to the following functions and classes from the :mod:`pennylane.resources` module has been
-  removed. Instead, these functions must be imported from the :mod:`pennylane.estimator` module.
+  removed. Instead, these functions must be imported from the ``pennylane.estimator`` module.
   [(#8919)](https://github.com/PennyLaneAI/pennylane/pull/8919)
 
-  - `qp.estimator.estimate_shots` in favor of `qp.resources.estimate_shots`
-  - `qp.estimator.estimate_error` in favor of `qp.resources.estimate_error`
-  - `qp.estimator.FirstQuantization` in favor of `qp.resources.FirstQuantization`
-  - `qp.estimator.DoubleFactorization` in favor of `qp.resources.DoubleFactorization`
+  - ``qp.estimator.estimate_shots`` in favor of `qp.resources.estimate_shots`
+  - ``qp.estimator.estimate_error`` in favor of `qp.resources.estimate_error`
+  - ``qp.estimator.FirstQuantization`` in favor of `qp.resources.FirstQuantization`
+  - ``qp.estimator.DoubleFactorization`` in favor of `qp.resources.DoubleFactorization`
 
 <h3>Deprecations 👋</h3>
 
@@ -1535,7 +1535,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
 * A typo in the docstring for ``ControlledOp`` was fixed and the ``Controlled`` docstring recommends using ``ctrl`` instead.
   [(#7154)](https://github.com/PennyLaneAI/pennylane/pull/7154)
 
-* A note has been added to the documentation of :func:`~.estimator.estimate.estimate` to clarify
+* A note has been added to the documentation of ``estimate`` to clarify
   that an error will be raised if a ``ResourceOperator`` is encountered that does not have
   a resource decomposition defined and it is not in the provided ``gate_set``.
   [(#9230)](https://github.com/PennyLaneAI/pennylane/pull/9230)
@@ -1596,8 +1596,8 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
   [(#9423)](https://github.com/PennyLaneAI/pennylane/pull/9423)
 
 * Fixed a bug where the Pytree structure of the following operators were inconsistent with the
-  structure of their data: `Pow`, `QPE`, `GQSP`, `estimator.qpe_resources.FirstQuantization`,
-  and `estimator.qpe_resources.DoubleFactorization`.
+  structure of their data: `Pow`, `QPE`, `GQSP`, ``estimator.qpe_resources.FirstQuantization``,
+  and ``estimator.qpe_resources.DoubleFactorization``.
   [(#9378)](https://github.com/PennyLaneAI/pennylane/pull/9378)
 
 * Fixed a bug where `Reflection` did not queue all operators of its decomposition.
@@ -1642,7 +1642,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
   rather than providing incorrect results.
   [(#9248)](https://github.com/PennyLaneAI/pennylane/pull/9248)
 
-* Fixed a bug in :mod:`~.estimator` where the ``ResourcesUndefinedError``
+* Fixed a bug in ``estimator`` where the ``ResourcesUndefinedError``
   was being returned as a class type rather than an instance,
   preventing the intended diagnostic message from being displayed.
   [(#9229)](https://github.com/PennyLaneAI/pennylane/pull/9229)
@@ -1703,7 +1703,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
   is a `Sequence`, but not a `Sequence` of tapes.
   [(#8920)](https://github.com/PennyLaneAI/pennylane/pull/8920)
 
-* Fixed a bug with `qp.estimator.templates.QSVT` which allows users to instantiate the class without
+* Fixed a bug with ``qp.estimator.templates.QSVT`` which allows users to instantiate the class without
   providing wires. This is now consistent with the standard in the estimator module.
   [(#8949)](https://github.com/PennyLaneAI/pennylane/pull/8949)
 
@@ -1743,7 +1743,7 @@ wires elsewhere in PennyLane, and that was not taken into account in the resourc
 * Fixed a bug where the decomposition graph was unable to find trivial decompositions of `qp.X(0) ** 1` and `qp.X(0) ** 0`.
   [(#9152)](https://github.com/PennyLaneAI/pennylane/pull/9152)
 
-* Fixed various small bugs within :mod:`pennylane.estimator`, including:
+* Fixed various small bugs within ``pennylane.estimator``, including:
   [(#9194)](https://github.com/PennyLaneAI/pennylane/pull/9194)
 
     - The resource decompositions for ``estimator.QubitUnitary`` and ``estimator.OutMultiplier`` so

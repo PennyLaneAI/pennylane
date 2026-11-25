@@ -84,7 +84,7 @@
   ``qml.estimator.BBQRAM`` for fast resource estimation can be done in two ways: 
 
   * Using ``qml.estimator.BBQRAM`` directly inside of a function and then calling 
-    :func:`estimate <pennylane.estimator.estimate.estimate>`:
+    ``estimate``:
 
     ```python
     import pennylane.estimator as qre
@@ -199,8 +199,8 @@
 <h4>Instantaneous Quantum Polynomial Circuits 💨</h4>
 
 * A new template for defining an Instantaneous Quantum Polynomial (:class:`~.IQP`) circuit has been 
-  added, as well as an associated :class:`~.estimator.resource_operator.ResourceOperator` for 
-  resource estimation in the :mod:`~.estimator` module. These new features facilitate the simulation 
+  added, as well as an associated ``ResourceOperator`` for
+  resource estimation in the ``estimator`` module. These new features facilitate the simulation
   and resource estimation of large-scale generative quantum machine learning tasks.
   [(#8748)](https://github.com/PennyLaneAI/pennylane/pull/8748)
   [(#8807)](https://github.com/PennyLaneAI/pennylane/pull/8807)
@@ -213,7 +213,7 @@
   still be optimized efficiently.
 
   Here is a simple example showing how to define an :class:`~.IQP` circuit and how to estimate the 
-  required quantum resources using the :func:`~.estimator.estimate.estimate` function:
+  required quantum resources using the ``estimate`` function:
 
   ```python
   import pennylane as qml
@@ -617,9 +617,9 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
 
 
 * The new ``resource_key`` keyword argument of the
-  :meth:`ResourceConfig.set_precision <pennylane.estimator.resource_config.ResourceConfig.set_precision>`
+  ``ResourceConfig.set_precision``
   method makes it possible to set precisions for a larger variety of `ResourceOperator`s in the 
-  :mod:`estimator <pennylane.estimator>` module, including ``phase_grad_precision`` and 
+  ``estimator`` module, including ``phase_grad_precision`` and
   ``coeff_precision`` for ``TrotterVibronic`` and ``TrotterVibrational``, ``rotation_precision`` for 
   ``GQSP`` and ``QSP`` and ``poly_approx_precision`` for ``GQSPTimeEvolution``. 
   [(#8561)](https://github.com/PennyLaneAI/pennylane/pull/8561)
@@ -799,15 +799,15 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   {Hadamard(): 5, CNOT(): 26, TGate(is_adjoint=False): 1320}
   ```
 
-* The :class:`~pennylane.estimator.compact_hamiltonian.CDFHamiltonian`, 
-  :class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`,  
-  :class:`~pennylane.estimator.compact_hamiltonian.VibrationalHamiltonian`, and 
-  :class:`~pennylane.estimator.compact_hamiltonian.VibronicHamiltonian` classes have been modified 
+* The ``CDFHamiltonian``,
+  ``THCHamiltonian``,
+  ``VibrationalHamiltonian``, and
+  ``VibronicHamiltonian`` classes have been modified
   to take the 1-norm of the Hamiltonian as an optional argument.
   [(#8697)](https://github.com/PennyLaneAI/pennylane/pull/8697)
 
 * Input validation has been added to various operators and functions in the 
-  :mod:`estimator <pennylane.estimator>` module to raise more informative errors.
+  ``estimator`` module to raise more informative errors.
   [(#8835)](https://github.com/PennyLaneAI/pennylane/pull/8835)
 
 * The ``ResourcesUndefinedError`` has been removed from the ``adjoint``, ``ctrl``, and ``pow`` 
@@ -1063,7 +1063,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   new graph-based decomposition system is disabled.
   [(#8532)](https://github.com/PennyLaneAI/pennylane/pull/8532)
 
-* The :class:`~.pennylane.estimator.templates.SelectTHC` resource operation is upgraded to allow for 
+* The ``SelectTHC`` resource operation is upgraded to allow for
   a trade-off between the number of qubits and T-gates. This provides more flexibility in optimizing 
   algorithms.
   [(#8682)](https://github.com/PennyLaneAI/pennylane/pull/8682)
@@ -1360,7 +1360,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   ```
 
 * Access to the following functions and classes from the :mod:`~.resources` module are deprecated.
-  Instead, these functions must be imported from the :mod:`~.estimator` module.
+  Instead, these functions must be imported from the ``estimator`` module.
   [(#8484)](https://github.com/PennyLaneAI/pennylane/pull/8484)
 
   - ``qml.estimator.estimate_shots`` rather than ``qml.resources.estimate_shots``
@@ -1541,7 +1541,7 @@ inspect workflows written in terms of Pauli product rotations (PPRs) and Pauli p
   to be compatible with the new documentation testing approach.
   [(#8635)](https://github.com/PennyLaneAI/pennylane/pull/8635)
   
-* The :mod:`estimator <pennylane.estimator>` module documentation has been revised for clarity.
+* The ``estimator`` module documentation has been revised for clarity.
   [(#8827)](https://github.com/PennyLaneAI/pennylane/pull/8827)
   [(#8829)](https://github.com/PennyLaneAI/pennylane/pull/8829)
   [(#8830)](https://github.com/PennyLaneAI/pennylane/pull/8830)
