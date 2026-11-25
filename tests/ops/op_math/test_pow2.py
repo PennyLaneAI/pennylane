@@ -34,7 +34,7 @@ from pennylane.exceptions import (
 from pennylane.ops import ISWAP, Identity, PhaseShift, S, T, Z
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow import pow
-from pennylane.ops.op_math.pow2 import Pow2, pow_rotation
+from pennylane.ops.op_math.pow2 import Pow2, _pow_scale_angle
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 from tests.ops.op_math.test_adjoint2 import RX2, SX2
@@ -328,15 +328,15 @@ def test_label(exp, sup):
 
 
 def test_pow_rotation2():
-    """Tests the pow_rotation decomposition with an ``Operator2`` base."""
+    """Tests the _pow_scale_angle decomposition with an ``Operator2`` base."""
 
     op = pow(OneWireDynOp(0.3, wires=[0]), 2.5)
     assert isinstance(op, Pow2)
 
-    tape = qp.testing.decomp_rule_to_tape(op, pow_rotation)
+    tape = qp.testing.decomp_rule_to_tape(op, _pow_scale_angle)
 
     assert tape.operations == [OneWireDynOp(0.3 * 2.5, wires=[0])]
-    assert pow_rotation.compute_resources(**op.arguments) == Resources(
+    assert _pow_scale_angle.compute_resources(**op.arguments) == Resources(
         {OneWireDynOp(Float, wires=Wire[1]): 1}
     )
 

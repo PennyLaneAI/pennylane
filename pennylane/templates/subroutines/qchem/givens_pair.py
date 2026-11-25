@@ -17,7 +17,7 @@ from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import PPR_4, PauliX, SingleExcitation, adjoint, change_op_basis
-from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.subcircuit import subcircuit
 from pennylane.typing import Float, TensorLike, Wire
@@ -63,12 +63,12 @@ class GivensPair(Operator2):
 
         .. decomposition-table:: qp.GivensPair
 
-            .. decomposition-rule:: _givens_pair_two_single_excitations
+            .. decomposition-rule:: to_single_excitations
                 :image: /_static/decomposition_thumbnails/givens_pair_single_excitations.svg
 
                 :class:`~.SingleExcitation` | :math:`2`
 
-            .. decomposition-rule:: _givens_pair_rzlayer
+            .. decomposition-rule:: to_rz_layer
                 :image: /_static/decomposition_thumbnails/givens_pair_rz_layer.svg
                 :where: the :class:`~.RZLayer` applies :math:`\phi/2` to all four wires and
                     receives the ``work_wires``
@@ -76,9 +76,9 @@ class GivensPair(Operator2):
                 :class:`PPR_4(1, "XX") <.PPR_4>` | :math:`2`
                 :class:`PPR_4(-1, "XX") <.PPR_4>` | :math:`2`
                 :class:`~.X` | :math:`4`
-                :class:`~.RZLayer` with one angle on four wires | :math:`1`
+                :class:`~.RZLayer` on four wires | :math:`1`
 
-            .. decomposition-rule:: adjoint_rotation
+            .. decomposition-rule:: negate_angle
                 :image: /_static/decomposition_thumbnails/givens_pair_adjoint.svg
                 :region: adjoint
                 :where: ``phi`` changes sign
@@ -115,7 +115,7 @@ class GivensPair(Operator2):
         return GivensPair(-self.phi, **self.wire_args)
 
 
-@register_resources({SingleExcitation: 2})
+@register_resources({SingleExcitation: 2}, name="to_single_excitations")
 def _givens_pair_two_single_excitations(phi, wires, **_):
     SingleExcitation(phi, wires=wires[:2])
     SingleExcitation(phi, wires=wires[2:])
@@ -131,16 +131,16 @@ def _GivensPairFrame(wires: WiresLike):
 
 def _givens_pair_rzlayer_resources(work_wires, **_):
     frame = _GivensPairFrame(Wire[4])
-    rotations = RZLayer(Float[1], Wire[4], Wire[len(work_wires)])
+    rotations = RZLayer(Float, Wire[4], Wire[len(work_wires)])
     return {_change_op_basis_abstract(frame, rotations, adjoint(frame)): 1}
 
 
-@register_resources(_givens_pair_rzlayer_resources)
+@register_resources(_givens_pair_rzlayer_resources, name="to_rz_layer")
 def _givens_pair_rzlayer(phi, wires, work_wires):
     r"""In the frame of ``_single_excitation_ppr_rz``, a SingleExcitation on ``(p, q)`` is
     :math:`RZ(\phi/2)_p RZ(-\phi/2)_q`. Conjugating ``q`` with ``PauliX`` flips the second angle,
     so that both pairs become four rotations by the same angle :math:`\phi/2`."""
-    change_op_basis(_GivensPairFrame(wires), RZLayer([phi / 2], wires, work_wires))
+    change_op_basis(_GivensPairFrame(wires), RZLayer(phi / 2, wires, work_wires))
 
 
 add_decomps(GivensPair, _givens_pair_two_single_excitations, _givens_pair_rzlayer)

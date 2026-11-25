@@ -314,16 +314,42 @@ z
     <path d="M 138.6 52.2 
 L 163.8 52.2 
 Q 178.2 52.2 178.2 66.6 
-L 178.2 451.8 
-Q 178.2 466.2 163.8 466.2 
-L 138.6 466.2 
-Q 124.2 466.2 124.2 451.8 
+L 178.2 163.8 
+Q 178.2 178.2 163.8 178.2 
+L 138.6 178.2 
+Q 124.2 178.2 124.2 163.8 
 L 124.2 66.6 
 Q 124.2 52.2 138.6 52.2 
 z
 " clip-path="url(#p5cdaa6b8a5)" style="fill: #d5f0fd; stroke: #151515; stroke-width: 2; stroke-linejoin: miter"/>
    </g>
    <g id="patch_3">
+    <path d="M 138.6 196.2 
+L 163.8 196.2 
+Q 178.2 196.2 178.2 210.6 
+L 178.2 307.8 
+Q 178.2 322.2 163.8 322.2 
+L 138.6 322.2 
+Q 124.2 322.2 124.2 307.8 
+L 124.2 210.6 
+Q 124.2 196.2 138.6 196.2 
+z
+" clip-path="url(#p5cdaa6b8a5)" style="fill: #d5f0fd; stroke: #151515; stroke-width: 2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 138.6 340.2 
+L 163.8 340.2 
+Q 178.2 340.2 178.2 354.6 
+L 178.2 451.8 
+Q 178.2 466.2 163.8 466.2 
+L 138.6 466.2 
+Q 124.2 466.2 124.2 451.8 
+L 124.2 354.6 
+Q 124.2 340.2 138.6 340.2 
+z
+" clip-path="url(#p5cdaa6b8a5)" style="fill: #d5f0fd; stroke: #151515; stroke-width: 2; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
     <path d="M 210.6 52.2 
 L 235.8 52.2 
 Q 250.2 52.2 250.2 66.6 
@@ -336,7 +362,7 @@ Q 196.2 52.2 210.6 52.2
 z
 " clip-path="url(#p5cdaa6b8a5)" style="fill: #d5f0fd; stroke: #151515; stroke-width: 2; stroke-linejoin: miter"/>
    </g>
-   <g id="patch_4">
+   <g id="patch_6">
     <path d="M 282.6 52.2 
 L 307.8 52.2 
 Q 322.2 52.2 322.2 66.6 
@@ -349,7 +375,7 @@ Q 268.2 52.2 282.6 52.2
 z
 " clip-path="url(#p5cdaa6b8a5)" style="fill: #d5f0fd; stroke: #151515; stroke-width: 2; stroke-linejoin: miter"/>
    </g>
-   <g id="patch_5">
+   <g id="patch_7">
     <path d="M 354.6 52.2 
 L 379.8 52.2 
 Q 394.2 52.2 394.2 66.6 
@@ -362,7 +388,7 @@ Q 340.2 52.2 354.6 52.2
 z
 " clip-path="url(#p5cdaa6b8a5)" style="fill: #d5f0fd; stroke: #151515; stroke-width: 2; stroke-linejoin: miter"/>
    </g>
-   <g id="patch_6">
+   <g id="patch_8">
     <path d="M 426.6 52.2 
 L 451.8 52.2 
 Q 466.2 52.2 466.2 66.6 
@@ -375,7 +401,7 @@ Q 412.2 52.2 426.6 52.2
 z
 " clip-path="url(#p5cdaa6b8a5)" style="fill: #d5f0fd; stroke: #151515; stroke-width: 2; stroke-linejoin: miter"/>
    </g>
-   <g id="patch_7">
+   <g id="patch_9">
     <path d="M 426.6 196.2 
 L 451.8 196.2 
 Q 466.2 196.2 466.2 210.6 
@@ -388,7 +414,7 @@ Q 412.2 196.2 426.6 196.2
 z
 " clip-path="url(#p5cdaa6b8a5)" style="fill: #d5f0fd; stroke: #151515; stroke-width: 2; stroke-linejoin: miter"/>
    </g>
-   <g id="patch_8">
+   <g id="patch_10">
     <path d="M 498.6 52.2 
 L 523.8 52.2 
 Q 538.2 52.2 538.2 66.6 
@@ -401,7 +427,7 @@ Q 484.2 52.2 498.6 52.2
 z
 " clip-path="url(#p5cdaa6b8a5)" style="fill: #d5f0fd; stroke: #151515; stroke-width: 2; stroke-linejoin: miter"/>
    </g>
-   <g id="patch_9">
+   <g id="patch_11">
     <path d="M 570.6 196.2 
 L 595.8 196.2 
 Q 610.2 196.2 610.2 210.6 
@@ -414,7 +440,7 @@ Q 556.2 196.2 570.6 196.2
 z
 " clip-path="url(#p5cdaa6b8a5)" style="fill: #d5f0fd; stroke: #151515; stroke-width: 2; stroke-linejoin: miter"/>
    </g>
-   <g id="patch_10">
+   <g id="patch_12">
     <path d="M 642.6 52.2 
 L 667.8 52.2 
 Q 682.2 52.2 682.2 66.6 
@@ -427,7 +453,7 @@ Q 628.2 52.2 642.6 52.2
 z
 " clip-path="url(#p5cdaa6b8a5)" style="fill: #d5f0fd; stroke: #151515; stroke-width: 2; stroke-linejoin: miter"/>
    </g>
-   <g id="patch_11">
+   <g id="patch_13">
     <path d="M 714.6 52.2 
 L 739.8 52.2 
 Q 754.2 52.2 754.2 66.6 
@@ -440,7 +466,7 @@ Q 700.2 52.2 714.6 52.2
 z
 " clip-path="url(#p5cdaa6b8a5)" style="fill: #d5f0fd; stroke: #151515; stroke-width: 2; stroke-linejoin: miter"/>
    </g>
-   <g id="patch_12">
+   <g id="patch_14">
     <path d="M 786.6 52.2 
 L 811.8 52.2 
 Q 826.2 52.2 826.2 66.6 
@@ -455,7 +481,7 @@ z
    </g>
    <g id="text_7">
     <!-- RZLayer -->
-    <g transform="translate(154.836719 291.397812) rotate(-90) scale(0.14 -0.14)">
+    <g transform="translate(154.836719 147.397812) rotate(-90) scale(0.14 -0.14)">
      <defs>
       <path id="DejaVuSans-Bold-35" d="M 2297 2597 
 Q 2675 2597 2839 2737 
@@ -610,6 +636,30 @@ z
     </g>
    </g>
    <g id="text_8">
+    <!-- RZLayer -->
+    <g transform="translate(154.836719 291.397812) rotate(-90) scale(0.14 -0.14)">
+     <use xlink:href="#DejaVuSans-Bold-35"/>
+     <use xlink:href="#DejaVuSans-Bold-3d" transform="translate(77 0)"/>
+     <use xlink:href="#DejaVuSans-Bold-2f" transform="translate(149.515625 0)"/>
+     <use xlink:href="#DejaVuSans-Bold-44" transform="translate(213.234375 0)"/>
+     <use xlink:href="#DejaVuSans-Bold-5c" transform="translate(277.640625 0)"/>
+     <use xlink:href="#DejaVuSans-Bold-48" transform="translate(342.828125 0)"/>
+     <use xlink:href="#DejaVuSans-Bold-55" transform="translate(410.65625 0)"/>
+    </g>
+   </g>
+   <g id="text_9">
+    <!-- RZLayer -->
+    <g transform="translate(154.836719 435.397812) rotate(-90) scale(0.14 -0.14)">
+     <use xlink:href="#DejaVuSans-Bold-35"/>
+     <use xlink:href="#DejaVuSans-Bold-3d" transform="translate(77 0)"/>
+     <use xlink:href="#DejaVuSans-Bold-2f" transform="translate(149.515625 0)"/>
+     <use xlink:href="#DejaVuSans-Bold-44" transform="translate(213.234375 0)"/>
+     <use xlink:href="#DejaVuSans-Bold-5c" transform="translate(277.640625 0)"/>
+     <use xlink:href="#DejaVuSans-Bold-48" transform="translate(342.828125 0)"/>
+     <use xlink:href="#DejaVuSans-Bold-55" transform="translate(410.65625 0)"/>
+    </g>
+   </g>
+   <g id="text_10">
     <!-- GlobalPhase -->
     <g transform="translate(226.837266 308.040313) rotate(-90) scale(0.14 -0.14)">
      <defs>
@@ -780,7 +830,7 @@ z
      <use xlink:href="#DejaVuSans-Bold-48" transform="translate(629.890625 0)"/>
     </g>
    </g>
-   <g id="text_9">
+   <g id="text_11">
     <!-- GivensPair -->
     <g transform="translate(298.837266 229.323594) rotate(-90) scale(0.14 -0.14)">
      <defs>
@@ -842,7 +892,7 @@ z
      <use xlink:href="#DejaVuSans-Bold-55" transform="translate(552.453125 0)"/>
     </g>
    </g>
-   <g id="text_10">
+   <g id="text_12">
     <!-- GlobalPhase -->
     <g transform="translate(370.837266 308.040313) rotate(-90) scale(0.14 -0.14)">
      <use xlink:href="#DejaVuSans-Bold-2a"/>
@@ -858,7 +908,7 @@ z
      <use xlink:href="#DejaVuSans-Bold-48" transform="translate(629.890625 0)"/>
     </g>
    </g>
-   <g id="text_11">
+   <g id="text_13">
     <!-- RZLayer -->
     <g transform="translate(442.836719 147.397812) rotate(-90) scale(0.14 -0.14)">
      <use xlink:href="#DejaVuSans-Bold-35"/>
@@ -870,7 +920,7 @@ z
      <use xlink:href="#DejaVuSans-Bold-55" transform="translate(410.65625 0)"/>
     </g>
    </g>
-   <g id="text_12">
+   <g id="text_14">
     <!-- GivensPair -->
     <g transform="translate(442.837266 373.323594) rotate(-90) scale(0.14 -0.14)">
      <use xlink:href="#DejaVuSans-Bold-2a"/>
@@ -885,7 +935,7 @@ z
      <use xlink:href="#DejaVuSans-Bold-55" transform="translate(552.453125 0)"/>
     </g>
    </g>
-   <g id="text_13">
+   <g id="text_15">
     <!-- GlobalPhase -->
     <g transform="translate(514.837266 308.040313) rotate(-90) scale(0.14 -0.14)">
      <use xlink:href="#DejaVuSans-Bold-2a"/>
@@ -901,7 +951,7 @@ z
      <use xlink:href="#DejaVuSans-Bold-48" transform="translate(629.890625 0)"/>
     </g>
    </g>
-   <g id="text_14">
+   <g id="text_16">
     <!-- RZLayer -->
     <g transform="translate(586.836719 291.397812) rotate(-90) scale(0.14 -0.14)">
      <use xlink:href="#DejaVuSans-Bold-35"/>
@@ -913,7 +963,7 @@ z
      <use xlink:href="#DejaVuSans-Bold-55" transform="translate(410.65625 0)"/>
     </g>
    </g>
-   <g id="text_15">
+   <g id="text_17">
     <!-- GivensPair -->
     <g transform="translate(658.837266 229.323594) rotate(-90) scale(0.14 -0.14)">
      <use xlink:href="#DejaVuSans-Bold-2a"/>
@@ -928,7 +978,7 @@ z
      <use xlink:href="#DejaVuSans-Bold-55" transform="translate(552.453125 0)"/>
     </g>
    </g>
-   <g id="text_16">
+   <g id="text_18">
     <!-- GlobalPhase -->
     <g transform="translate(730.837266 308.040313) rotate(-90) scale(0.14 -0.14)">
      <use xlink:href="#DejaVuSans-Bold-2a"/>
@@ -944,7 +994,7 @@ z
      <use xlink:href="#DejaVuSans-Bold-48" transform="translate(629.890625 0)"/>
     </g>
    </g>
-   <g id="text_17">
+   <g id="text_19">
     <!-- RZLayer -->
     <g transform="translate(802.836719 147.397812) rotate(-90) scale(0.14 -0.14)">
      <use xlink:href="#DejaVuSans-Bold-35"/>

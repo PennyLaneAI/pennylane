@@ -74,7 +74,7 @@ class BasisRotationPair(Operator2):
     For a real-valued matrix, an alternative decomposition rule applies each Givens rotation to
     both spins as one :class:`~.GivensPair`:
 
-    >>> rule = qp.list_decomps(qp.BasisRotationPair)["_real_basis_rotation_pair_givens_pairs"]
+    >>> rule = qp.list_decomps(qp.BasisRotationPair)["real"]
     >>> [(o.name, o.wires) for o in qp.tape.make_qscript(rule)(**op.arguments).operations]
     [('GivensPair', Wires([0, 2, 1, 3]))]
 
@@ -87,12 +87,12 @@ class BasisRotationPair(Operator2):
                 spin-up and :math:`N` spin-down wires
             :example: :math:`N=3`, with :math:`\det u = -1` for the real-valued rule
 
-            .. decomposition-rule:: _basis_rotation_pair_two_basis_rotations
+            .. decomposition-rule:: to_basis_rotations
                 :image: /_static/decomposition_thumbnails/basis_rotation_pair_basis_rotations.svg
 
                 :class:`~.BasisRotation` on :math:`N` wires | :math:`2` | 2
 
-            .. decomposition-rule:: _real_basis_rotation_pair_givens_pairs
+            .. decomposition-rule:: real
                 :image: /_static/decomposition_thumbnails/basis_rotation_pair_real_givens.svg
                 :requires: real-valued :math:`u`
                 :where: :math:`[\cdot]` is 1 if the condition holds and 0 otherwise, and the
@@ -101,14 +101,13 @@ class BasisRotationPair(Operator2):
                 :class:`~.PauliZ` | :math:`2\,[\det u = -1]` | 2
                 :class:`~.GivensPair` | :math:`N(N-1)/2` | 3
 
-            .. decomposition-rule:: _complex_basis_rotation_pair_givens_pairs
+            .. decomposition-rule:: complex
                 :image: /_static/decomposition_thumbnails/basis_rotation_pair_complex_givens.svg
                 :requires: complex-valued :math:`u`
                 :where: the :class:`~.GivensPair` and :class:`~.RZLayer` gates receive the
                     ``work_wires``
 
-                :class:`~.RZLayer` with :math:`N` angles on :math:`2N` wires | :math:`1` | 1
-                :class:`~.RZLayer` with one angle on two wires | :math:`\leq N(N-1)/2` | 3
+                :class:`~.RZLayer` on two wires | :math:`\leq N(N+1)/2` | 6
                 :class:`~.GivensPair` | :math:`N(N-1)/2` | 3
                 :class:`~.GlobalPhase` | :math:`\leq N(N-1)/2 + 1` | 4
     """
@@ -172,7 +171,7 @@ def _basis_rotation_pair_two_basis_rotations_resources(unitary_matrix, wires_up,
     return {BasisRotation(unitary_matrix, wires=Wire[len(wires_up)]): 2}
 
 
-@register_resources(_basis_rotation_pair_two_basis_rotations_resources)
+@register_resources(_basis_rotation_pair_two_basis_rotations_resources, name="to_basis_rotations")
 def _basis_rotation_pair_two_basis_rotations(unitary_matrix, wires_up, wires_down, **_):
     BasisRotation(unitary_matrix, wires=wires_up)
     BasisRotation(unitary_matrix, wires=wires_down)
@@ -194,7 +193,7 @@ def _real_basis_rotation_pair_givens_pairs_resources(unitary_matrix, wires_up, w
 
 
 @register_condition(lambda unitary_matrix, **_: not math.is_complex_dtype(unitary_matrix))
-@register_resources(_real_basis_rotation_pair_givens_pairs_resources, exact=False)
+@register_resources(_real_basis_rotation_pair_givens_pairs_resources, exact=False, name="real")
 def _real_basis_rotation_pair_givens_pairs(unitary_matrix, wires_up, wires_down, work_wires, **_):
     unitary, wires_up = _prepare_args(unitary_matrix, wires_up)
     _, wires_down = _prepare_args(unitary_matrix, wires_down)
@@ -234,10 +233,10 @@ def _complex_basis_rotation_pair_givens_pairs_resources(wires_up, work_wires, **
     """Upper bound on the gates emitted by '_complex_basis_rotation_pair_givens_pairs'.
 
     - GivensPair: Exact count of N(N-1)/2 for the Givens rotations.
-    - RZLayer with N angles on N pairs of wires, and one GlobalPhase: Exact count of one each for
-      the N diagonal phases.
-    - RZLayer with one angle on a pair of wires, and GlobalPhase: *At most* N(N-1)/2 each for the
-      phases of the Givens rotations; skipped if the phase is zero.
+    - RZLayer on a pair of wires: Exact count of N for the diagonal phases, and *at most*
+      N(N-1)/2 for the phases of the Givens rotations; skipped if the phase is zero.
+    - GlobalPhase: Exact count of one for the diagonal phases, and *at most* N(N-1)/2 for the
+      phases of the Givens rotations.
 
     """
     num_wires = len(wires_up)
@@ -245,15 +244,16 @@ def _complex_basis_rotation_pair_givens_pairs_resources(wires_up, work_wires, **
     num_work_wires = len(work_wires)
 
     return {
-        RZLayer(Float[num_wires], Wire[2 * num_wires], Wire[num_work_wires]): 1,
+        RZLayer(Float, Wire[2], Wire[num_work_wires]): num_wires + num_givens,
         GlobalPhase: 1 + num_givens,
         GivensPair(Float, Wire[4], Wire[num_work_wires]): num_givens,
-        RZLayer(Float[1], Wire[2], Wire[num_work_wires]): num_givens,
     }
 
 
 @register_condition(lambda unitary_matrix, **_: math.is_complex_dtype(unitary_matrix))
-@register_resources(_complex_basis_rotation_pair_givens_pairs_resources, exact=False)
+@register_resources(
+    _complex_basis_rotation_pair_givens_pairs_resources, exact=False, name="complex"
+)
 def _complex_basis_rotation_pair_givens_pairs(
     unitary_matrix, wires_up, wires_down, work_wires, **_
 ):
@@ -266,18 +266,19 @@ def _complex_basis_rotation_pair_givens_pairs(
     if _qjit_or_capture():
         givens_ids = math.array(givens_ids, like="jax")
         givens_matrices = math.array(givens_matrices, like="jax")
-        orbital_wires = math.reshape(math.stack([wires_up, wires_down], axis=1), (-1,))
-    else:
-        orbital_wires = [w for pair in zip(wires_up, wires_down, strict=True) for w in pair]
 
     # PhaseShift(a) on both spins equals GlobalPhase(-a) times RZ(a) on both spins.
     phases = math.angle(phase_list)
-    RZLayer(phases, orbital_wires, work_wires)
+
+    def _diagonal_phase(i):
+        RZLayer(phases[i], [wires_up[i], wires_down[i]], work_wires)
+
+    for_loop(len(wires_up))(_diagonal_phase)()
     GlobalPhase(-math.sum(phases))
 
     def _phase_pair(phi, i):
         GlobalPhase(-phi)
-        RZLayer([phi], [wires_up[i], wires_down[i]], work_wires)
+        RZLayer(phi, [wires_up[i], wires_down[i]], work_wires)
 
     def _givens_pair(idx):
         grot_mat = givens_matrices[idx]
