@@ -637,10 +637,11 @@ New features since last release
       {'CNOT': 1, 'RX': 1}
 
 * A new function called :func:`~pennylane.estimate` is available, which provides a quick projection of the
-  resources of a ``qjit``-compiled QNode onto a target gate set, without executing the circuit.
-  Before any specified compilation passes, the original circuit's operations and their possible
-  decomposition pathways to the ``target`` gate set are analyzed and the resulting operations are
-  counted. Note that :func:`~pennylane.estimate` is only supported with ``qp.qjit(capture=True)``.
+  resources of a ``qjit``-compiled QNode onto a ``target``, without executing the circuit. The
+  ``target`` is a gate set, or a level of the compile pipeline, which defaults to ``"user"``. The
+  original circuit's operations and their possible decomposition pathways to the gates of the
+  ``target`` are analyzed and the resulting operations are counted. Note that
+  :func:`~pennylane.estimate` is only supported with ``qp.qjit(capture=True)``.
   `(#10296) <https://github.com/PennyLaneAI/pennylane/pull/10296>`__
   `(#10572) <https://github.com/PennyLaneAI/pennylane/pull/10572>`__
 
@@ -684,6 +685,17 @@ New features since last release
       - probs(all wires): 1
       Total wires: 2
       Circuit Depth: Not computed
+
+  The ``target`` can also be a level of the compile pipeline, such as ``"user"`` (the default),
+  ``"device"``, a marker label, or an ``int``. The resources are then projected onto the gates
+  that the circuit can contain at that level, such as the gate set of the last
+  :func:`~.transforms.decompose` transform before it, or the gates supported by the QNode's device.
+  The :func:`~.transforms.decompose` transforms before that level are applied, with their
+  ``fixed_decomps`` and ``exclude_decomps``, while the other transforms are still skipped, as with
+  ``level="top"``. If ``target`` is a gate set, the rules of the compile pipeline are ignored,
+  with a warning. The decomposition rules are counted with the resources that they
+  declare, so the resources can also differ from those of :func:`~.analyze`.
+  `(#10541) <https://github.com/PennyLaneAI/pennylane/pull/10541>`__
 
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
@@ -1664,6 +1676,13 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
+  ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
+  ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
+  ``exponential_extrapolate``), and ``from_qiskit_noise``. Noise channels such as
+  :class:`~.AmplitudeDamping` are unaffected.
+  `(#10593) <https://github.com/PennyLaneAI/pennylane/pull/10593>`__
+
 * Removed the ``pennylane.queuing`` shim. Import directly from
   ``pennylane.core.queuing``; ``qp.queuing`` now refers to that module.
   Use ``qp.apply`` instead of ``qp.queuing.apply``.
@@ -2091,6 +2110,11 @@ Deprecations 👋
 Internal changes ⚙️
 ~~~~~~~~~~~~~~~~~~~
 
+* The helper that inserts the resource analysis passes for :func:`~.analyze` and
+  :func:`~pennylane.estimate` now inserts the requested analysis pass at every level, instead of
+  ``resource-analysis`` at every level other than 0.
+  `(#10541) <https://github.com/PennyLaneAI/pennylane/pull/10541>`__
+
 * :func:`~.testing.assert_valid_decomp_rule` now checks that decomposition rules accept
   positional arguments for compatibility with Catalyst.
   `(#10589) <https://github.com/PennyLaneAI/pennylane/pull/10589>`__
@@ -2465,9 +2489,6 @@ Internal changes ⚙️
   - Integration with :func:`pennylane.apply`.
     `(#9738) <https://github.com/PennyLaneAI/pennylane/pull/9738>`__
 
-  - Integration with :func:`pennylane.insert`.
-    `(#9685) <https://github.com/PennyLaneAI/pennylane/pull/9685>`__
-
   - Integration with the graph-based decomposition system.
     `(#9723) <https://github.com/PennyLaneAI/pennylane/pull/9723>`__
     `(#9727) <https://github.com/PennyLaneAI/pennylane/pull/9727>`__
@@ -2572,7 +2593,7 @@ Documentation 📝
   `(#10530) <https://github.com/PennyLaneAI/pennylane/pull/10530>`__
 
 * The ``level`` argument of :func:`~.drawer.draw`, :func:`~.drawer.draw_mpl`,
-  :func:`~.workflow.construct_tape` and :func:`~.noise.add_noise` is now documented in
+  :func:`~.workflow.construct_tape` and ``add_noise`` is now documented in
   :func:`~.workflow.construct_batch`.
   `(#10452) <https://github.com/PennyLaneAI/pennylane/pull/10452>`__
 
@@ -2650,6 +2671,10 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Resource analysis of qjit-compiled circuits now reports :func:`~.pauli_measure` operations
+  as ``PPM-w<n>`` when Catalyst captures them as generic measurements.
+  `(#10598) <https://github.com/PennyLaneAI/pennylane/pull/10598>`__
 
 * Fixed the extra-control-wire test for :class:`~.QROM` to omit work-register sampling
   when no work wires are present, and removed its outdated expected-failure marker.

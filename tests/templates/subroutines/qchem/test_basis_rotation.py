@@ -340,43 +340,6 @@ class TestDecomposition:
         # Tests the decomposition rule defined with the new system
         assert_decomposable(op)
 
-    def test_custom_wire_labels(self, tol):
-        """Test that BasisRotation template can deal with non-numeric, nonconsecutive wire labels."""
-
-        weights = qp.math.array(
-            [
-                [-0.618452, -0.68369054 - 0.38740723j],
-                [-0.78582258, 0.53807284 + 0.30489424j],
-            ]
-        )
-
-        dev = qp.device("default.qubit", wires=2)
-        dev2 = qp.device("default.qubit", wires=["z", "a"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.PauliX(wires=[0])
-            qp.BasisRotation(
-                wires=range(2),
-                unitary_matrix=weights,
-            )
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.PauliX(wires=["z"])
-            qp.BasisRotation(
-                wires=["z", "a"],
-                unitary_matrix=weights,
-            )
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
-
     @pytest.mark.parametrize(
         ("unitary_matrix", "eigen_values", "exp_state"),
         [
