@@ -36,7 +36,7 @@ from pennylane.templates.subroutines.arithmetic.semi_adder import (
     _semi_adder_standard_resources,
 )
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
-from pennylane.testing import assert_decomposable
+from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
 from pennylane.typing import Wire
 from pennylane.wires import Wires
 
@@ -89,10 +89,10 @@ class TestSemiAdder:
             ([0, 1], [2, 3, 4], None, 3, 2),
             ([0, 1, 2], [3, 4, 5], None, 5, 6),
             ([0, 1, 2, 3, 4], [5, 6], None, 11, 2),
-            (["a", "b", "d"], ["e", "h", "p"], None, 4, 2),
-            (["a", "b", "d"], ["e", "h", "p"], ["f", "z"], 4, 2),
-            (["a", "b", "d"], ["e", "h", "p"], ["f", "z", "u", "q"], 4, 2),
-            (["a", "b", "d"], ["e", "h", "p"], ["f", "z", "u", "q", "v"], 4, 2),
+            ([14, 15, 16], [17, 19, 20], None, 4, 2),
+            ([14, 15, 16], [17, 19, 20], [18, 25], 4, 2),
+            ([14, 15, 16], [17, 19, 20], [18, 25, 23, 22], 4, 2),
+            ([14, 15, 16], [17, 19, 20], [18, 25, 23, 22, 24], 4, 2),
         ],
     )
     def test_operation_result(self, case):
@@ -359,6 +359,16 @@ class TestSemiAdder:
         ctrl_ops = [o for o in ops if isinstance(o, qp.ops.ControlledOp2)]
         assert ctrl_ops
         assert all(o.work_wire_type == "zeroed" for o in ctrl_ops)
+
+    @pytest.mark.parametrize(
+        ("x_wires", "y_wires"),
+        [([0, 1], [3, 4, 5]), ([0, 1, 2], [3, 4, 5]), ([0, 1, 2, 9], [3, 4, 5]), ([0, 1], [3])],
+    )
+    def test_controlled_decomposition_resources(self, x_wires, y_wires):
+        """Test that the resources of the controlled carry ladder match its decomposition exactly.
+        The registered rule wraps it in ``flip_zero_control``, whose resources are only a bound."""
+        op = qp.ctrl(qp.SemiAdder(x_wires, y_wires, [6, 7]), control=[8])
+        assert_valid_decomp_rule(op, _controlled_semi_adder_standard)
 
     @pytest.mark.capture
     @pytest.mark.parametrize(
@@ -811,6 +821,7 @@ class TestControlledSemiAdderPPM:
             [op],
             gate_set={
                 "PPR_8": 2,
+                "PPR_4": 1,
                 "PauliMeasure": 1,
                 "PauliX": 0,
                 "PauliZ": 0,
