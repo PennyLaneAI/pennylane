@@ -22,7 +22,6 @@ PennyLane can be directly imported.
 import warnings
 
 from pennylane import exceptions
-from pennylane.boolean_fn import BooleanFn
 from pennylane import numpy
 from pennylane.core import queuing
 from pennylane.core.apply import apply
