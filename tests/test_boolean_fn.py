@@ -60,6 +60,32 @@ class TestBooleanFn:
         assert not crit(6)
         assert crit(10)
 
+    def test_xor(self):
+        """Test that logical exclusive or works."""
+        crit_0 = qp.BooleanFn(lambda x: x < 6)
+        crit_1 = qp.BooleanFn(lambda x: x > 4)
+        crit = crit_0 ^ crit_1
+        assert crit(2)
+        assert not crit(5)
+        assert crit(8)
+
+    def test_str(self):
+        """Test the string representations of composed functions."""
+
+        def small(x):
+            return x < 4
+
+        def large(x):
+            return x > 9
+
+        crit_0, crit_1 = qp.BooleanFn(small), qp.BooleanFn(large)
+
+        assert str(crit_0 & crit_1) == "small & large"
+        assert str(crit_0 | crit_1) == "small | large"
+        assert str(crit_0 ^ crit_1) == "small ^ large"
+        assert str(~crit_0) == "~small"
+        assert repr(crit_0 ^ crit_1) == "Xor(small, large)"
+
     def test_repr(self):
         """Test the repr is right."""
 

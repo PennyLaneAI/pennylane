@@ -565,6 +565,41 @@ class TestPreprocessTransforms:
                     assert transform_container._kwargs["supported_base_obs"] == {qp.Z, qp.X, qp.Y}
 
 
+class TestApplyTransformToDevice:
+    """Tests applying a transform to a device."""
+
+    def test_device_implements_preprocess(self):
+        """Test that a transform is appended to the pipeline of a device that overrides
+        ``preprocess``."""
+
+        class CustomDevice(Device):
+
+            def preprocess(self, execution_config=None):
+                program = CompilePipeline()
+                program.add_transform(qp.defer_measurements)
+                return program, execution_config
+
+            def execute(self, circuits, execution_config=None):  # pylint: disable=unused-argument
+                return tuple(0.0 for _ in circuits)
+
+        dev = CustomDevice()
+        new_dev = qp.transforms.merge_rotations(dev)
+
+        assert new_dev.original_device is dev
+        assert repr(new_dev).startswith("Transformed Device")
+
+        program, _ = new_dev.preprocess()
+        assert len(program) == 2
+        assert program[-1].tape_transform is qp.transforms.merge_rotations.tape_transform
+
+        @qp.qnode(new_dev)
+        def circuit():
+            qp.RX(0.1, 0)
+            return qp.expval(qp.Z(0))
+
+        assert circuit() == 0.0
+
+
 class TestMinimalDevice:
     """Tests for a device with only a minimal execute provided."""
 
