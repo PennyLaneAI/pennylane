@@ -24,7 +24,7 @@ from pennylane import math, ops, templates
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops.op_math import change_op_basis
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract, _adjoint_negate_angle
+from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control
 from pennylane.ops.op_math.pow2 import _pow_scale_angle
@@ -132,7 +132,7 @@ def ry_to_rz_rx(phi, wires: WiresLike):
 
 
 @register_resources(
-    {_change_op_basis_abstract(_adjoint_abstract(ops.S), RX, ops.S): 1},
+    {_change_op_basis_abstract(ops.adjoint(ops.S(wires=Wire[1])), RX, ops.S): 1},
     name="to_rx_cliff",
 )
 def ry_to_rx_cliff(phi, wires: WiresLike):
@@ -141,7 +141,7 @@ def ry_to_rx_cliff(phi, wires: WiresLike):
 
 
 @subcircuit
-@register_resources({ops.Hadamard: 1, _adjoint_abstract(ops.S): 1})
+@register_resources({ops.Hadamard: 1, ops.adjoint(ops.S(wires=Wire[1])): 1})
 def _YToZBasis(wires: WiresLike):
     ops.adjoint(ops.S(wires))
     ops.Hadamard(wires)

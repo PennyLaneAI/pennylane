@@ -27,7 +27,6 @@ from pennylane import allocation, math, ops
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.ops.mid_measure.pauli_measure import pauli_measure
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control
 from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period, pow_involutory
@@ -655,7 +654,7 @@ def _ppr_basis_resources(pauli_word, reverse, **_):
     if num_hadamards:
         resources[Hadamard] = num_hadamards
     if pauli_word.count("Y"):
-        resources[S if reverse else _adjoint_abstract(S)] = pauli_word.count("Y")
+        resources[S if reverse else ops.adjoint(S(wires=Wire[1]))] = pauli_word.count("Y")
     return resources
 
 
