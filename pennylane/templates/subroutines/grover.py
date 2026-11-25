@@ -157,8 +157,8 @@ class GroverOperator(Operation):
         .. seealso:: :meth:`~.GroverOperator.decomposition`.
 
         Args:
-            wires (Any or Iterable[Any]): wires that the operator acts on
-            work_wires (Any or Iterable[Any]): optional auxiliary wires to assist
+            wires (int or Iterable[int]): wires that the operator acts on
+            work_wires (int or Iterable[int]): optional auxiliary wires to assist
                 in the decomposition of :class:`~.MultiControlledX`.
 
         Returns:
@@ -201,7 +201,7 @@ class GroverOperator(Operation):
 
         Args:
             n_wires (int): Number of wires the ``GroverOperator`` acts on
-            work_wires (Any or Iterable[Any]): optional auxiliary wires to assist decompositions.
+            work_wires (int or Iterable[int]): optional auxiliary wires to assist decompositions.
                 *Unused argument*.
 
         Returns:

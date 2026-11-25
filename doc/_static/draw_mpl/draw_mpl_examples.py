@@ -55,7 +55,7 @@ def wire_order(circuit):
 
 
 def show_all_wires(circuit):
-    fig, ax = draw_mpl(circuit, wire_order=["aux"], show_all_wires=True)(1.2345, 1.2345)
+    fig, ax = draw_mpl(circuit, wire_order=[4], show_all_wires=True)(1.2345, 1.2345)
 
     plt.savefig(folder / "show_all_wires.png")
     plt.close()
@@ -128,6 +128,7 @@ def mid_measure():
     plt.savefig(folder / "mid_measure.png")
     plt.close()
 
+
 def max_length():
     def circuit():
         for _ in range(10):
@@ -137,6 +138,7 @@ def max_length():
     figs_and_axes = draw_mpl(circuit, max_length=5)()
     figs_and_axes[0][0].savefig(folder / "max_length1.png")
     figs_and_axes[1][0].savefig(folder / "max_length2.png")
+
 
 @qp.transforms.merge_rotations
 @qp.transforms.cancel_inverses
@@ -152,7 +154,7 @@ def _levels_circ():
 
 
 def levels():
-    for level in ("top", "user", None, slice(1, 2)):
+    for level in ("top", "user", "device", slice(1, 2)):
         draw_mpl(_levels_circ, level=level)()
         plt.savefig(folder / f"level_{str(level).split('(')[0].lower()}.png")
         plt.close
@@ -160,21 +162,20 @@ def levels():
 
 if __name__ == "__main__":
 
-    dev = qp.device('lightning.qubit', wires=(0,1,2,3))
+    dev = qp.device("lightning.qubit", wires=(0, 1, 2, 3))
 
     @qp.qnode(dev)
     def circuit(x, z):
-        qp.QFT(wires=(0,1,2,3))
-        qp.IsingXX(1.234, wires=(0,2))
-        qp.Toffoli(wires=(0,1,2))
+        qp.QFT(wires=(0, 1, 2, 3))
+        qp.IsingXX(1.234, wires=(0, 2))
+        qp.Toffoli(wires=(0, 1, 2))
         mcm = qp.measure(1)
         mcm_out = qp.measure(2)
-        qp.CSWAP(wires=(0,2,3))
+        qp.CSWAP(wires=(0, 2, 3))
         qp.RX(x, wires=0)
         qp.cond(mcm, qp.RY)(np.pi / 4, wires=3)
-        qp.CRZ(z, wires=(3,0))
+        qp.CRZ(z, wires=(3, 0))
         return qp.expval(qp.Z(0)), qp.probs(op=mcm_out)
-
 
     main_example(circuit)
     decimals(dev)

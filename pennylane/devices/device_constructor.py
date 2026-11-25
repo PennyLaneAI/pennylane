@@ -106,17 +106,18 @@ def device(name, *args, **kwargs):
             qp.CNOT(wires=[3, 4])
             ...
 
-    The ``wires`` argument can also be a sequence of unique numbers or strings, specifying custom wire labels
+    The ``wires`` argument can also be a sequence of unique non-negative integers, specifying labels
     that the user employs to address the wires:
 
     .. code-block:: python
 
-        dev = qp.device('default.qubit', wires=['auxiliary', 'q11', 'q12', -1, 1])
+        dev = qp.device("default.qubit", wires=[2, 6, 7, 8, 1])
+
 
         def circuit():
-            qp.Hadamard(wires='q11')
-            qp.Hadamard(wires=['auxiliary'])
-            qp.CNOT(wires=['q12', -1])
+            qp.Hadamard(wires=6)
+            qp.Hadamard(wires=[2])
+            qp.CNOT(wires=[7, 8])
             ...
 
     On some newer devices, such as ``default.qubit``, the ``wires`` argument can be omitted altogether,
