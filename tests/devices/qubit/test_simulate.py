@@ -1379,6 +1379,27 @@ class TestMidMeasurements:
         res = simulate_tree_mcm(tape)
         assert qp.math.allclose(res, 0)
 
+    @pytest.mark.parametrize(
+        "terminal_mp, expected",
+        [
+            (qp.probs(wires=[1, 2]), [0.5, 0.0, 0.5, 0.0]),
+            (qp.expval(qp.Z(1)), 0.0),
+        ],
+    )
+    def test_tree_traversal_analytic_single_terminal_measurement_with_mcm(
+        self, terminal_mp, expected
+    ):
+        """Test that a single non-MCM terminal measurement is not truncated when combined
+        with a measurement of a mid-circuit measurement value in analytic mode."""
+        ops = [qp.RY(np.pi / 2, 0), qp.Hadamard(1), (m0 := qp.measure(0)).measurements[0]]
+        tape = qp.tape.QuantumScript(ops, [terminal_mp, qp.expval(m0)])
+
+        res = simulate_tree_mcm(tape)
+
+        assert len(res) == 2
+        assert qp.math.allclose(res[0], expected)
+        assert qp.math.allclose(res[1], 0.5)
+
     def test_tree_traversal_sample_dtype(self):
         """Test that tree-traversal returns samples of the correct dtype (int)."""
 

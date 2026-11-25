@@ -683,6 +683,9 @@ def insert_mcms(circuit, results, mid_measurements):
     """Inserts terminal measurements of MCMs if the circuit is evaluated in analytic mode."""
     if circuit.shots or all(m.mv is None for m in circuit.measurements):
         return results
+    # A single terminal measurement is returned without a wrapping tuple
+    if sum(m.mv is None for m in circuit.measurements) == 1:
+        results = [results]
     results = list(results)
     new_results = []
     mid_measurements = {k: math.array([[v]]) for k, v in mid_measurements.items()}
