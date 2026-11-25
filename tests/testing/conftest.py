@@ -55,11 +55,14 @@ from pennylane.ops.qubit.qchem_ops import (
     _SingleExcitationRotations,
     _SingleExcitationRZRotations,
 )
+from pennylane.templates.subroutines.arithmetic.hamming_weight import _HammingWeight
 from pennylane.templates.subroutines.arithmetic.out_adder import _OutAdderTarget
 from pennylane.templates.subroutines.arithmetic.out_multiplier import _OutMultiplierHadamards
 from pennylane.templates.subroutines.arithmetic.phase_adder import _PhaseAdderBasis
 from pennylane.templates.subroutines.arithmetic.temporary_and import _TemporaryANDBasis
+from pennylane.templates.subroutines.qchem.givens_pair import _GivensPairFrame
 from pennylane.templates.subroutines.qubitization_thc import _THCPrepare
+from pennylane.templates.subroutines.rz_layer import _HWPPhaseShifts
 from pennylane.templates.subroutines.select_pauli_rot import (
     _SelectPauliRotYBasis,
     _UniformRZ,
@@ -67,6 +70,10 @@ from pennylane.templates.subroutines.select_pauli_rot import (
 from pennylane.templates.subroutines.select_thc import _SelectTHCBasis, _THCIndexSwaps
 from pennylane.templates.subroutines.time_evolution.trotter import TrotterizedQfunc
 from pennylane.transforms.decompositions.crz_phase_gradient import _CRZPhaseGradientCompute
+from pennylane.transforms.decompositions.rz_layer_phase_gradient import (
+    _Monomials,
+    _RZLayerPhaseGradientCompute,
+)
 from pennylane.transforms.decompositions.select_pauli_rot_phase_gradient import (
     _SelectPauliRotPhaseGradientCompute,
 )
@@ -125,6 +132,16 @@ def _subcircuit_instances():
         ),
         (_SelectTHCBasis((1, (), ()), [0, 1], [2, 3], [4, 5], []), {}),
         (_THCIndexSwaps([0], [1], [2, 3, 4], []), {}),
+        (_HammingWeight([0, 1, 2], [3]), {}),
+        (_HWPPhaseShifts(0.37, [0, 1], [2]), {}),
+        (_Monomials([0, 1, 2], [3, 4, 5, 6]), {}),
+        (_GivensPairFrame([0, 1, 2, 3]), {}),
+        (
+            _RZLayerPhaseGradientCompute(
+                jax.numpy.array([[False, True], [True, True]]), [0], [1], [2, 3], [4, 5]
+            ),
+            {"skip_differentiation": True, "skip_bind_new_parameters": True},
+        ),
     ]
 
 

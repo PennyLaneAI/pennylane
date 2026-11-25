@@ -171,6 +171,12 @@ def test_assert_valid(kind, num_wires, num_work_wires, seed):
     qp.testing.assert_valid(op)
 
 
+def test_rule_names():
+    """Test the names of the decomposition rules, which select them in ``fixed_decomps``."""
+    names = {rule.name for rule in qp.list_decomps(qp.BasisRotationPair)}
+    assert {"to_basis_rotations", "real", "complex"} <= names
+
+
 @pytest.mark.parametrize("kind", REAL_KINDS + COMPLEX_KINDS)
 def test_rule_conditions(kind, seed):
     """Test that the real Givens rule applies to real matrices and the complex Givens rule to
@@ -232,7 +238,7 @@ class TestDecomposition:
     )
     def test_givens_rules_emit_givens_pairs(self, rule, kind, seed):
         """Test that the Givens rules emit one GivensPair on ``[up[i], up[j], down[i], down[j]]``
-        per Givens rotation ``(i, j)`` of the matrix, that every RZLayer acts on blocks
+        per Givens rotation ``(i, j)`` of the matrix, that every RZLayer acts on a pair
         ``[up[i], down[i]]``, and that all of them get the work wires."""
         unitary_matrix = _random_matrix(3, kind, seed)
         wires_up, wires_down, work_wires = [6, 1, 4], [0, 3, 2], [9, 8]
@@ -249,10 +255,7 @@ class TestDecomposition:
         assert [o.arguments["wires"] for o in givens_pairs] == expected_wires
 
         orbitals = {Wires([up, down]) for up, down in zip(wires_up, wires_down, strict=True)}
-        for layer in (o for o in ops if isinstance(o, qp.RZLayer)):
-            layer_wires = layer.arguments["wires"]
-            assert len(layer_wires) == 2 * len(layer.angles)
-            assert all(layer_wires[k : k + 2] in orbitals for k in range(0, len(layer_wires), 2))
+        assert all(o.arguments["wires"] in orbitals for o in ops if isinstance(o, qp.RZLayer))
 
         assert all(
             o.work_wires == Wires(work_wires)
@@ -298,10 +301,9 @@ class TestDecomposition:
             unitary_matrix=Complex[n, n], **wire_args
         )
         assert resources.gate_counts == {
-            qp.RZLayer(Float[n], Wire[2 * n], Wire[num_work_wires]): 1,
+            qp.RZLayer(Float, Wire[2], Wire[num_work_wires]): n + num_givens,
             abstractify(qp.GlobalPhase): 1 + num_givens,
             givens_pair: num_givens,
-            qp.RZLayer(Float[1], Wire[2], Wire[num_work_wires]): num_givens,
         }
 
         for rule in RULES:
@@ -414,8 +416,6 @@ class TestInterfaces:
     def test_qjit(self, rule, kind, seed):
         """Test that the Givens rules, compiled with qjit, map a random state like BasisRotation
         on both spins, including the global phase."""
-        pytest.importorskip("catalyst")
-
         unitary_matrix = _random_matrix(3, kind, seed)
         in_state = _random_state(7, seed)
 

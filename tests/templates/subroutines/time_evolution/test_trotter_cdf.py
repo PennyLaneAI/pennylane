@@ -48,13 +48,13 @@ from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
     _apply_system_basis_rotation,
     _apply_two_body_diagonal_with_work_wires,
     _cdf_resource_counts,
-    _controlled_trotter_cdf_decomp,
     _controlled_trotter_cdf_parallel_decomp,
+    _controlled_trotter_cdf_standard,
     _energy_shift,
     _merge_leaves,
-    _multi_controlled_trotter_cdf_decomp,
-    _trotter_cdf_decomposition,
+    _trotter_cdf_multi_control,
     _trotter_cdf_parallel_decomposition,
+    _trotter_cdf_standard,
 )
 from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
 from pennylane.typing import Float, Wire
@@ -438,7 +438,7 @@ class TestResourceRule:
         )
         controlled = qp.ctrl(op, control=[99])
         assert controlled.decomposition() == []
-        assert _controlled_trotter_cdf_decomp.compute_resources(
+        assert _controlled_trotter_cdf_standard.compute_resources(
             **controlled.arguments
         ) == Resources({})
 
@@ -474,7 +474,7 @@ class TestResourceRule:
             system_wires = list(wires[:num_system_wires])
             work_wires = list(wires[num_system_wires + int(has_control) :])
             if not has_control:
-                _trotter_cdf_decomposition(t, num_steps, ham, system_wires, False, work_wires)
+                _trotter_cdf_standard(t, num_steps, ham, system_wires, False, work_wires)
                 return
             with qp.capture.pause():
                 base = qp.TrotterCDF(
@@ -485,7 +485,7 @@ class TestResourceRule:
                     double_phase=double_phase,
                     work_wires=work_wires,
                 )
-            _controlled_trotter_cdf_decomp(base, [wires[num_system_wires]], [1], [], "borrowed")
+            _controlled_trotter_cdf_standard(base, [wires[num_system_wires]], [1], [], "borrowed")
 
         args = (jax.numpy.array(0.4), *trace_wires)
         with warnings.catch_warnings():
@@ -585,7 +585,7 @@ class TestDecomposition:
         ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.0)
         wires = list(range(2 * num_orbitals))
 
-        tape = qp.tape.make_qscript(_trotter_cdf_decomposition)(
+        tape = qp.tape.make_qscript(_trotter_cdf_standard)(
             evolution_time, num_steps, ham, wires, False
         )
         angles = np.array([op.data[0] for op in tape.operations if isinstance(op, qp.IsingZZ)])
@@ -856,7 +856,7 @@ class TestControlledDecomposition:
         [inner] = [op for op in operations if op.name == "C(TrotterCDF)"]
         qp.assert_equal(inner, qp.ctrl(base, control=control_work_wires[-1]))
         inner_operations = inner.decomposition()
-        specialized = qp.testing.decomp_rule_to_tape(inner, _controlled_trotter_cdf_decomp)
+        specialized = qp.testing.decomp_rule_to_tape(inner, _controlled_trotter_cdf_standard)
         for actual, expected_op in zip(inner_operations, specialized.operations, strict=True):
             qp.assert_equal(actual, expected_op)
         if num_cdf_work_wires:
@@ -889,7 +889,7 @@ class TestControlledDecomposition:
             work_wires=list(range(7, 6 + num_controls)),
             work_wire_type="zeroed",
         )
-        assert _controlled_trotter_cdf_decomp.is_applicable(**op.arguments) == (num_controls == 1)
+        assert _controlled_trotter_cdf_standard.is_applicable(**op.arguments) == (num_controls == 1)
 
     @pytest.mark.parametrize(
         ("num_controls", "double_phase", "num_work_wires", "work_wire_type", "applicable"),
@@ -920,7 +920,7 @@ class TestControlledDecomposition:
             work_wires=list(range(7, 7 + num_work_wires)),
             work_wire_type=work_wire_type,
         )
-        assert _multi_controlled_trotter_cdf_decomp.is_applicable(**op.arguments) == applicable
+        assert _trotter_cdf_multi_control.is_applicable(**op.arguments) == applicable
 
     @pytest.mark.capture
     def test_multiple_control_rule_capture_resources(self, toy_hamiltonian_cdf_concrete):
@@ -934,7 +934,7 @@ class TestControlledDecomposition:
             work_wires=[7, 8],
             work_wire_type="zeroed",
         )
-        qp.testing.assert_valid_decomp_rule(op, _multi_controlled_trotter_cdf_decomp)
+        qp.testing.assert_valid_decomp_rule(op, _trotter_cdf_multi_control)
 
     def test_control_auxiliaries_cannot_overlap_cdf_work_wires(self, toy_hamiltonian_cdf_concrete):
         """Intermediate control auxiliaries must remain distinct from the CDF work register."""
@@ -1020,11 +1020,9 @@ class TestDoublePhaseControlledDecomposition:
         assert np.isclose(measured, ref_expm, atol=1e-9)
 
 
-CONTROLLED_RULE = qp.list_decomps("C(TrotterCDF)")[
-    "flip_zero_ctrl_values(_controlled_trotter_cdf_decomp)"
-]
+CONTROLLED_RULE = qp.list_decomps("C(TrotterCDF)")["controlled_double_factorized_steps"]
 CONTROLLED_PARALLEL_RULE = qp.list_decomps("C(TrotterCDF)")[
-    "flip_zero_ctrl_values(_controlled_trotter_cdf_parallel_decomp)"
+    "controlled_parallel_double_factorized_steps"
 ]
 
 # Both sides of the equivalence tests are lowered to these gates, so that neither side relies on
@@ -1104,8 +1102,8 @@ def _final_state(ops, in_state, wire_order):
 
 class TestParallelDecomposition:
     """Tests of the parallel-rotation rules, which apply each pair of basis rotations as one
-    BasisRotationPair and, without genuine control, the one-body and same-orbital rotations as
-    RZLayers, all of which get the CDF work wires."""
+    BasisRotationPair and, without genuine control, the one-body rotations of each orbital as one
+    RZLayer, all of which get the CDF work wires."""
 
     @pytest.mark.parametrize(
         ("num_orbitals", "num_fragments", "complex_leaves", "pin_givens_pairs"),
@@ -1142,7 +1140,7 @@ class TestParallelDecomposition:
         existing_rule, new_rule = (
             (CONTROLLED_RULE, CONTROLLED_PARALLEL_RULE)
             if has_control
-            else (_trotter_cdf_decomposition, _trotter_cdf_parallel_decomposition)
+            else (_trotter_cdf_standard, _trotter_cdf_parallel_decomposition)
         )
         gate_set, fixed_decomps = ELEMENTARY_GATES, None
         if pin_givens_pairs:
@@ -1258,7 +1256,7 @@ class TestParallelDecomposition:
         """Without the graph, TrotterCDF and its controlled version decompose with the existing
         rules."""
         op = _cdf_op(_random_cdf_hamiltonian(2, 1, seed), has_control, double_phase, num_work_wires)
-        existing_rule = CONTROLLED_RULE if has_control else _trotter_cdf_decomposition
+        existing_rule = CONTROLLED_RULE if has_control else _trotter_cdf_standard
         expected = qp.testing.decomp_rule_to_tape(op, existing_rule).operations
 
         for actual, expected_op in zip(op.decomposition(), expected, strict=True):
@@ -1330,16 +1328,14 @@ class TestParallelDecomposition:
         """RZLayer has no controlled decomposition, so the controlled rule only emits uncontrolled
         RZLayers: under double phase, between CNOTs from the control; under genuine control, none,
         as the diagonal rotations are controlled individually."""
-        ham, _ = toy_hamiltonian_cdf_concrete
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
         num_steps = 3
         op = _cdf_op(ham, True, double_phase, num_work_wires, num_steps)
 
         operations = qp.testing.decomp_rule_to_tape(op, CONTROLLED_PARALLEL_RULE).operations
         rz_layers = [gate for gate in operations if "RZLayer" in gate.name]
         assert all(isinstance(gate, qp.RZLayer) for gate in rz_layers)
-        # One one-body layer per step and (2L - 1) * steps + 1 same-orbital layers, with L = 1
-        num_layers = num_steps + num_steps + 1
-        assert len(rz_layers) == (num_layers if double_phase else 0)
+        assert len(rz_layers) == (num_steps * num_orbitals if double_phase else 0)
 
     @pytest.mark.parametrize(
         ("has_control", "double_phase", "num_work_wires"),
@@ -1347,9 +1343,8 @@ class TestParallelDecomposition:
     )
     def test_work_wires_and_blocks(self, seed, has_control, double_phase, num_work_wires):
         """Every BasisRotationPair acts on the spin-up wires ``wires[::2]`` and the spin-down
-        wires ``wires[1::2]``, every RZLayer applies one angle to both wires of each orbital
-        (one-body) or to the beta wire of each orbital (same-orbital), and all of them get the
-        CDF work wires."""
+        wires ``wires[1::2]``, every RZLayer acts on the two wires of one orbital, and all of them
+        get the CDF work wires."""
         num_orbitals, num_fragments, num_steps = 3, 2, 2
         wires, work_wires = Wires([7, 3, 5, 0, 2, 8]), Wires([1, 6][:num_work_wires])
         ham = _random_cdf_hamiltonian(num_orbitals, num_fragments, seed)
@@ -1373,12 +1368,8 @@ class TestParallelDecomposition:
         if has_control and not double_phase:
             assert not rz_layers
             return
-        num_same_orbital_layers = (2 * num_fragments - 1) * num_steps + 1
-        assert all(len(gate.angles) == num_orbitals for gate in rz_layers)
-        layer_wires = [gate.arguments["wires"] for gate in rz_layers]
-        assert layer_wires.count(wires) == num_steps
-        assert layer_wires.count(wires[1::2]) == num_same_orbital_layers
-        assert len(layer_wires) == num_steps + num_same_orbital_layers
+        orbitals = [wires[2 * p : 2 * p + 2] for p in range(num_orbitals)]
+        assert [gate.arguments["wires"] for gate in rz_layers] == orbitals * num_steps
 
 
 class TestIntegration:
@@ -1460,7 +1451,7 @@ class TestIntegration:
             return circuit(t, ())
 
         op_name, existing_rule, parallel_rule = (
-            ("TrotterCDF", _trotter_cdf_decomposition, _trotter_cdf_parallel_decomposition)
+            ("TrotterCDF", _trotter_cdf_standard, _trotter_cdf_parallel_decomposition)
             if mode == "uncontrolled"
             else ("C(TrotterCDF)", CONTROLLED_RULE, CONTROLLED_PARALLEL_RULE)
         )
