@@ -115,9 +115,9 @@ def _reference_block(M, N, zeta, t_ell, chi, t_eigenvectors, aleph):
 
 
 # pylint: disable-next=too-many-arguments
-def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, num_walks=1):
-    """Apply the walk ``num_walks`` times to ``psi`` and return the system amplitudes with
-    every auxiliary wire on |0>."""
+def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi):
+    """Apply the walk to ``psi`` and return the system amplitudes with every auxiliary wire
+    on |0>."""
     M, n_half = np.shape(chi)
     sizes = qp.qubitization_thc_wires(M, 2 * n_half, aleph, beth)
     total = sum(sizes.values())
@@ -133,20 +133,19 @@ def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, num_walks=1):
     def circuit():
         qp.StatePrep(psi, wires=system)
         qp.PhaseGradientStatePrep(wires["gradient_wires"])
-        for _ in range(num_walks):
-            qp.QubitizationTHC(
-                tuple(map(tuple, zeta)),
-                tuple(t_ell),
-                tuple(map(tuple, chi)),
-                tuple(map(tuple, t_eigenvectors)),
-                aleph,
-                beth,
-                system,
-                wires["index_wires"],
-                wires["prep_garbage_wires"],
-                wires["gradient_wires"],
-                wires["work_wires"],
-            )
+        qp.QubitizationTHC(
+            tuple(map(tuple, zeta)),
+            tuple(t_ell),
+            tuple(map(tuple, chi)),
+            tuple(map(tuple, t_eigenvectors)),
+            aleph,
+            beth,
+            system,
+            wires["index_wires"],
+            wires["prep_garbage_wires"],
+            wires["gradient_wires"],
+            wires["work_wires"],
+        )
         qp.adjoint(qp.PhaseGradientStatePrep(wires["gradient_wires"]))
         return qp.state()
 
@@ -241,26 +240,31 @@ class TestQubitizationTHC:
         expected = _reference_block(M, N, zeta, t_ell, chi, tev, aleph) @ psi
         assert np.allclose(got, expected, atol=1e-8)
 
-    def test_second_chebyshev_moment(self, seed):
-        """Test that two walks give T_2(H / lambda) = 2 (H / lambda)^2 - I.
+    def test_reflection_scope(self):
+        """Test that the reflection acts on exactly the ``2 n + aleph + 4`` wires that
+        ``PREPARE`` puts in superposition: the index, the amplitude amplification wire of
+        ``SuperpositionTHC``, the ``aleph + 1`` wires ``AliasSamplingTHC`` applies a
+        ``Hadamard`` to (its sampling register and symmetrization flag), and the two spin
+        flags."""
+        M, N, aleph, beth = 6, 2, 2, 2
+        zeta, t_ell, chi = _random_input(M, N, 0)
+        *_, t_eigenvectors = _dummy_input(M, N)
+        wires = qp.registers(qp.qubitization_thc_wires(M, N, aleph, beth))
+        op = qp.QubitizationTHC(zeta, t_ell, chi, t_eigenvectors, aleph, beth, **wires)
 
-        The single-walk test above cannot detect a reflection of the wrong scope, because
-        ``<0| R = <0|`` for any reflection whose fixed subspace contains ``|0>``. This one
-        can: it is the first moment that sees the reflection, and it fails by O(1) if the
-        garbage is left out of the reflected register.
-        """
-        M, N, aleph, beth = 1, 2, 1, 1
-        zeta, t_ell = np.array([[2.0]]), np.array([-1.0])
-        *_, chi, tev = _dummy_input(M, N)
+        tape = qp.testing.decomp_rule_to_tape(op, qp.list_decomps(qp.QubitizationTHC)[0])
+        sandwich, reflection = tape.operations[:2]
+        assert isinstance(reflection, qp.FlipSign)
+        assert reflection.hyperparameters["state"] == (0,) * len(reflection.wires)
 
-        psi = np.random.default_rng(seed).standard_normal(2**N) + 0j
-        psi /= np.linalg.norm(psi)
-
-        block = _reference_block(M, N, zeta, t_ell, chi, tev, aleph)
-        chebyshev_2 = 2 * block @ block - np.eye(2**N)
-
-        got = _run(zeta, t_ell, chi, tev, aleph, beth, psi, num_walks=2)
-        assert np.allclose(got, chebyshev_2 @ psi, atol=1e-8)
+        prepare_ops = sandwich.compute_op.decomposition()
+        alias = next(o for o in prepare_ops if isinstance(o, qp.AliasSamplingTHC))
+        alias_hadamards = [o.wires[0] for o in alias.decomposition() if isinstance(o, qp.Hadamard)]
+        assert len(alias_hadamards) == aleph + 1
+        garbage = wires["prep_garbage_wires"]
+        expected = list(wires["index_wires"]) + [garbage[0]] + alias_hadamards + list(garbage[-2:])
+        assert len(reflection.wires) == len(expected) == len(wires["index_wires"]) + aleph + 4
+        assert set(reflection.wires) == set(expected)
 
     def test_identity_shift_form(self):
         """Test the closed form quoted in the docstring: the block is H / lambda up to a
