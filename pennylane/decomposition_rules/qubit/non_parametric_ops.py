@@ -47,7 +47,7 @@ from pennylane.ops.qubit.non_parametric_ops import (
     T,
 )
 from pennylane.ops.subcircuit import subcircuit
-from pennylane.typing import AbstractWires, Wire
+from pennylane.typing import Wire
 from pennylane.wires import WiresLike, concatenate_wires
 
 

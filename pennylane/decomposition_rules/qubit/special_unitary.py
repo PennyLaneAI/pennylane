@@ -32,11 +32,11 @@ add_decomps("Adjoint(SpecialUnitary)", adjoint_special_unitary_standard)
 
 
 # pylint: disable-next=unused-argument
-def _tmp_paulirot_standard_resources(theta, wires, pauli_word: str):
+def _tmp_paulirot_resources(theta, wires, pauli_word: str):
     return {ops.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
-@register_resources(_tmp_paulirot_standard_resources, name="to_pauli_rot")
+@register_resources(_tmp_paulirot_resources, name="to_pauli_rot")
 def tmp_paulirot_standard(theta: TensorLike, wires: WiresLike, pauli_word: str):
     """Decompose ``TmpPauliRot`` using the ``to_pauli_rot`` strategy."""
     ops.PauliRot(theta, pauli_word=pauli_word, wires=wires)
@@ -45,9 +45,7 @@ def tmp_paulirot_standard(theta: TensorLike, wires: WiresLike, pauli_word: str):
 add_decomps(TmpPauliRot, tmp_paulirot_standard)
 
 
-@register_resources(
-    lambda base: _tmp_paulirot_standard_resources(**base.arguments), name="negate_angle"
-)
+@register_resources(lambda base: _tmp_paulirot_resources(**base.arguments), name="negate_angle")
 def adjoint_tmp_paulirot_standard(base):
     """Decompose ``Adjoint(TmpPauliRot)`` using the ``negate_angle`` strategy."""
     ops.PauliRot(-base.theta, pauli_word=base.pauli_word, wires=base.wires)

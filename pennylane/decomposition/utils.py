@@ -188,12 +188,13 @@ def _init_signature_registration():
         specs = dict(op.arg_specs or {})
         specs.update(**kwargs)
 
-        if set(specs.keys()) != set(op._sig.parameters.keys()):  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        if set(specs.keys()) != set(op._sig.parameters.keys()):
             raise ValueError(
                 "Signatures being registered must cover all operator arguments. Expected "
-                # pylint: disable-next=protected-access
                 f"{tuple(op._sig.parameters.keys())} but got {tuple(specs.keys())}."
             )
+        # pylint: enable=protected-access
 
         # Static/compilable arguments carry concrete values; only dynamic and wire arguments must
         # be abstract so that the operator can be constructed into an abstract instance later.

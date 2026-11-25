@@ -346,8 +346,8 @@ def controlled_phase_shift_standard(base, control_wires, *_, **__):
     ops.GlobalPhase(-base.phi / 2**n)
 
 
+# pylint: disable-next=unused-argument
 def _controlled_phase_shift_single_phase_resources(base, control_wires, *_, **__):
-    #  pylint: disable=unused-argument
     num_control_wires = len(control_wires)
     return {
         templates.TemporaryAND: num_control_wires,

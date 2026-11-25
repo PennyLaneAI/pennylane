@@ -527,6 +527,7 @@ def pswap_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(PSWAP, pswap_to_swap_cnot_phaseshift_cnot, pswap_to_ppr)
+# pylint: disable-next=protected-access
 add_decomps("Adjoint(PSWAP)", symbolic_decomposition._adjoint_negate_angle)
 
 

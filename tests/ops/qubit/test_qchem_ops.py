@@ -32,6 +32,7 @@ from scipy.linalg import expm, fractional_matrix_power
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.decomposition_rules.qubit import qchem_ops
 from pennylane.decomposition_rules.qubit.qchem_ops import (
     _SingleExcitationBasis,
     _SingleExcitationRotations,
@@ -332,8 +333,6 @@ class TestSingleExcitationDecompositions:
     )
     def test_subcircuit_resources_accept_positionals(self, subcircuit_name, arguments):
         """Subcircuit resources accept positional arguments as well as keyword arguments."""
-        from pennylane.decomposition_rules.qubit import qchem_ops
-
         op = getattr(qchem_ops, subcircuit_name)(**arguments)
         rule = qp.list_decomps(op)[0]
 

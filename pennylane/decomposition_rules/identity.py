@@ -30,7 +30,7 @@ add_decomps("C(Identity)", null_decomp)
 add_decomps("Pow(Identity)", null_decomp)
 
 
-def _controlled_g_phase_standard_resources(  # pylint: disable=unused-argument
+def _controlled_g_phase_resources(  # pylint: disable=unused-argument
     base,
     control_wires,
     control_values,
@@ -62,12 +62,11 @@ def _controlled_g_phase_standard_resources(  # pylint: disable=unused-argument
     return resources
 
 
-@register_resources(
-    _controlled_g_phase_standard_resources, exact=False, name="to_controlled_phaseshift"
-)
+@register_resources(_controlled_g_phase_resources, exact=False, name="to_controlled_phaseshift")
 def controlled_g_phase_standard(base, control_wires, control_values, work_wires, work_wire_type):
     """The decomposition rule for a controlled global phase."""
 
+    # pylint: disable=no-value-for-parameter
     if compiler.active() or capture.enabled():
         control_wires = math.array(control_wires, like="jax")
         control_values = math.array(control_values, like="jax")
@@ -88,14 +87,14 @@ def controlled_g_phase_standard(base, control_wires, control_values, work_wires,
     def _x_flips(i):
         ops.cond(math.logical_not(control_values[i]), ops.X)(control_wires[i])
 
-    _x_flips()  # pylint: disable=no-value-for-parameter
+    _x_flips()
     ops.ctrl(
         ops.PhaseShift(-base.phi, wires=control_wires[-1]),
         control=control_wires[:-1],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    _x_flips()  # pylint: disable=no-value-for-parameter
+    _x_flips()
 
 
 add_decomps("Adjoint(GlobalPhase)", _adjoint_negate_angle)

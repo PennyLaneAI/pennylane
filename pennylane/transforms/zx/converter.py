@@ -326,6 +326,7 @@ def to_zx(tape, expand_measurements=False):
     from pyzx.circuit.gates import TargetMapper
     from pyzx.graph import Graph
 
+    # The rule package is initialized after transforms during PennyLane import.
     from pennylane.decomposition_rules import null_decomp
 
     _pyzx_010 = Version(pyzx.__version__) >= Version("0.10")

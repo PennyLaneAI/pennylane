@@ -249,8 +249,10 @@ if _find_spec("numpy") is not None:
         )
 
 
+# Rule creation needs operators, templates and transforms to finish initializing.
+from pennylane import decomposition_rules  # pylint: disable=ungrouped-imports
+
 from ._entry_points_utils import _setup_entry_points
-from pennylane import decomposition_rules
 
 # add to _entry_point_groups as new groups are added and desired to be accessed top-level
 _entry_point_groups = ["pennylane.drawer"]
