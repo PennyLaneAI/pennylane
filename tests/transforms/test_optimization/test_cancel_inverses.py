@@ -156,19 +156,19 @@ class TestCancelInverses:
 
         def qfunc():
             # These two will cancel
-            qp.Toffoli(wires=["a", "b", "c"])
-            qp.Toffoli(wires=["b", "a", "c"])
+            qp.Toffoli(wires=[6, 7, 8])
+            qp.Toffoli(wires=[7, 6, 8])
             # These three will not cancel
-            qp.Toffoli(wires=["a", "b", "c"])
-            qp.Toffoli(wires=["a", "c", "b"])
-            qp.Toffoli(wires=["a", "c", "d"])
+            qp.Toffoli(wires=[6, 7, 8])
+            qp.Toffoli(wires=[6, 8, 7])
+            qp.Toffoli(wires=[6, 8, 9])
 
         transformed_qfunc = cancel_inverses(qfunc)
 
         ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Toffoli"] * 3
-        wires_expected = [Wires(["a", "b", "c"]), Wires(["a", "c", "b"]), Wires(["a", "c", "d"])]
+        wires_expected = [Wires([6, 7, 8]), Wires([6, 8, 7]), Wires([6, 8, 9])]
         compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_two_qubits_cnot_same_direction(self):

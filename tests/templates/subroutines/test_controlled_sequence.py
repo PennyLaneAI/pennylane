@@ -82,13 +82,13 @@ class TestProperties:
 
     def test_control(self):
         """Test that the control property returns control wires"""
-        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=["a", 1, "blue"])
-        assert op.control == Wires(["a", 1, "blue"])
+        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[8, 1, 10])
+        assert op.control == Wires([8, 1, 10])
 
     def test_wires(self):
         """Test that the wires property returns all wires, including both base and control"""
-        op = qp.ControlledSequence(qp.CNOT([17, "3"]), control=["b", 2])
-        assert op.wires == Wires(["b", 2, 17, "3"])
+        op = qp.ControlledSequence(qp.CNOT([17, 5]), control=[9, 2])
+        assert op.wires == Wires([9, 2, 17, 5])
 
     def test_has_matrix(self):
         """Test that a ControlledSequence returns False for has_matrix, even if the base returns True"""
@@ -114,7 +114,7 @@ class TestMethods:
         """Test mapping wires works as expected, including mapping wires on the base operator"""
 
         op = qp.ControlledSequence(qp.CNOT([0, 1]), control=[2, 3])
-        wire_map = {0: "a", 1: "b", 2: "c", 3: "d"}
+        wire_map = {0: 8, 1: 9, 2: 11, 3: 12}
 
         new_op = op.map_wires(wire_map)
 
@@ -122,9 +122,9 @@ class TestMethods:
         assert type(new_op.base) == type(op.base)
         assert new_op.data == op.data
 
-        assert new_op.wires == Wires(["c", "d", "a", "b"])
-        assert new_op.base.wires == Wires(["a", "b"])
-        assert new_op.control == Wires(["c", "d"])
+        assert new_op.wires == Wires([11, 12, 8, 9])
+        assert new_op.base.wires == Wires([8, 9])
+        assert new_op.control == Wires([11, 12])
 
         assert op.base.wires == Wires([0, 1])
         assert op.control == Wires([2, 3])
@@ -161,6 +161,13 @@ class TestMethods:
     )
     def test_decomposition_new(self, control, base):
         """Test decomposition resources and matrices for different power simplifications."""
+        op = qp.ControlledSequence(base, control=control)
+        qp.testing.assert_decomposable(op)
+
+    @pytest.mark.parametrize("control", [[], 0, [0, 1], [0, 1, 2]])
+    def test_decomposition_legacy_base(self, control):
+        """Test resources and matrices when the base has compressed resource parameters."""
+        base = qp.Multiplier(3, x_wires=[3, 4], mod=4, work_wires=[5, 6])
         op = qp.ControlledSequence(base, control=control)
         qp.testing.assert_decomposable(op)
 

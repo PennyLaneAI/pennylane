@@ -205,7 +205,7 @@ class ParticleConservingU2(Operation):
             weights (tensor_like): Weight tensor of shape ``(D, M)`` where ``D`` is the number of
                 layers and ``M`` = ``2N-1`` is the total number of rotation ``(N)`` and exchange
                 ``(N-1)`` gates per layer.
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
             init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
                 used to initialize the wires.
 
@@ -215,15 +215,15 @@ class ParticleConservingU2(Operation):
         **Example**
 
         >>> weights = torch.tensor([[0.3, 1., 0.2]])
-        >>> ops = qp.ParticleConservingU2.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
+        >>> ops = qp.ParticleConservingU2.compute_decomposition(weights, wires=[0, 1], init_state=[0, 1])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [BasisState([0 1], wires=['a', 'b']),
-        RZ(0.3000..., wires=['a']),
-        RZ(1.0, wires=['b']),
-        CNOT(wires=['a', 'b']),
-        CRX(0.4000000059604645, wires=['b', 'a']),
-        CNOT(wires=['a', 'b'])]
+        [BasisState([0 1], wires=[0, 1]),
+        RZ(0.3000..., wires=[0]),
+        RZ(1.0, wires=[1]),
+        CNOT(wires=[0, 1]),
+        CRX(0.4000000059604645, wires=[1, 0]),
+        CNOT(wires=[0, 1])]
         """
         nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
         nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
@@ -258,7 +258,7 @@ class ParticleConservingU2(Operation):
         return n_layers, 2 * n_wires - 1
 
 
-def _particle_conserving_u2_resources(num_wires: int, n_layers: int):
+def _particle_conserving_u2_standard_resources(num_wires: int, n_layers: int):
     num_nm_wires = num_wires - 1  # number of pairs of even-indexed of wires
     return {
         BasisState(Bool[num_wires], Wire[num_wires]): 1,
@@ -268,8 +268,8 @@ def _particle_conserving_u2_resources(num_wires: int, n_layers: int):
     }
 
 
-@register_resources(_particle_conserving_u2_resources)
-def _particle_conserving_u2_decomposition(weights: list, wires: WiresLike, init_state: tuple[int]):
+@register_resources(_particle_conserving_u2_standard_resources, name="to_rz_crx_cnot")
+def _particle_conserving_u2_standard(weights: list, wires: WiresLike, init_state: tuple[int]):
     nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
     nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
     n_layers = math.shape(weights)[0]
@@ -312,4 +312,4 @@ def _particle_conserving_u2_decomposition(weights: list, wires: WiresLike, init_
     layers_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(ParticleConservingU2, _particle_conserving_u2_decomposition)
+add_decomps(ParticleConservingU2, _particle_conserving_u2_standard)

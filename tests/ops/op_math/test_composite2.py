@@ -25,9 +25,9 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.pauli import PauliWord
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp2
-from pennylane.queuing import AnnotatedQueue
 from pennylane.testing import assert_valid
 from pennylane.typing import Float, Wire
 from pennylane.wires import WiresLike
@@ -159,12 +159,6 @@ class TestConstruction:
         """Test directly initializing a CompositeOp2 fails"""
         with pytest.raises(TypeError, match="Can't instantiate abstract class CompositeOp2"):
             _ = CompositeOp2(self.simple_operands)
-
-    @pytest.mark.xfail
-    def test_raise_error_fewer_than_2_operands(self):
-        """Test that initializing a composite operator with less than 2 operands raises a ValueError."""
-        with pytest.raises(ValueError, match="Require at least two operators to combine;"):
-            _ = ValidOp(qp.PauliX(0))
 
     def test_raise_error_with_mcm_input(self):
         """Test that composite ops of mid-circuit measurements are not supported."""

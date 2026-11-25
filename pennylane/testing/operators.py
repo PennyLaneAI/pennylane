@@ -451,8 +451,12 @@ def _check_capture(op):
         return op
 
     jaxpr = jax.make_jaxpr(test_fn)(*data)
-    new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
-    op_funcs.assert_equal(op, new_op)
+    results = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)
+    if isinstance(op, ops.Barrier):
+        assert jaxpr.eqns[-1].primitive is ops.meta.barrier_p
+        assert results == []
+    else:
+        op_funcs.assert_equal(op, results[0])
 
     leaves = jax.tree_util.tree_leaves(jaxpr.eqns[-1].params)
     error_msg = "capture params cannot contain tracers"
@@ -608,11 +612,13 @@ def _check_properties_operator2(op: Operator2) -> None:
             error_msg = f"shape of {name} is not equal to dimension in ndim_params"
             assert len(math.shape(val)) == dim, error_msg
 
-    if op.wire_sizes:
-        for (name, val), dim in zip(op.wire_args.items(), op.wire_sizes, strict=True):
-            # make sure wires have the right sizes
-            error_msg = f"Wires argument {name} has an invalid dimension."
-            assert dim is None or len(val) == dim, error_msg
+    if op.arg_specs:
+        for name, val in op.wire_args.items():
+            if name in op.arg_specs:
+                spec = op.arg_specs[name]
+                if getattr(spec, "shape_fixed", False):
+                    error_msg = f"Wires argument {name} has an invalid dimension."
+                    assert len(val) == len(spec), error_msg
 
 
 def assert_valid(  # pylint: disable=too-many-arguments

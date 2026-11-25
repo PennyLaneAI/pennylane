@@ -22,7 +22,11 @@ from jax import numpy as jnp
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_resources,
+)
 from pennylane.ops import CNOT, ctrl
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit, validate_no_wire_overlaps
@@ -95,23 +99,47 @@ class SignedOutMultiplier(Operator2):
     Then we can find the magnitude by flipping the bits and adding 1. This gives us :math:`[[0 0 1 0 0 1]]`.
     The sum of these bits is :math:`2^3 + 2^0 = 9` for :math:`k=6`.
 
-    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, max_expansion=1), max_length=170)())
-     0: ─╭|Ψ⟩─╭●────╭X───────╭Incrementer───────────────────────╭OutMultiplier───────────────────────────────────╭X───────╭Incrementer───────────────────────╭●────┤
-     1: ─├|Ψ⟩─│─────│──╭X────├Incrementer───────────────────────├OutMultiplier───────────────────────────────────│──╭X────├Incrementer───────────────────────│─────┤
-     2: ─╰|Ψ⟩─│─────│──│──╭X─├Incrementer───────────────────────├OutMultiplier───────────────────────────────────│──│──╭X─├Incrementer───────────────────────│─────┤
-     3: ─╭|Ψ⟩─│──╭●─│──│──│──│────────────╭X───────╭Incrementer─├OutMultiplier───────────────────────────────────│──│──│──│────────────╭X───────╭Incrementer─│──╭●─┤
-     4: ─├|Ψ⟩─│──│──│──│──│──│────────────│──╭X────├Incrementer─├OutMultiplier───────────────────────────────────│──│──│──│────────────│──╭X────├Incrementer─│──│──┤
-     5: ─╰|Ψ⟩─│──│──│──│──│──│────────────│──│──╭X─├Incrementer─├OutMultiplier───────────────────────────────────│──│──│──│────────────│──│──╭X─├Incrementer─│──│──┤
-     6: ──────│──│──│──│──│──│────────────│──│──│──│────────────│──────────────╭X─╭X─╭●─╭●─╭●─╭●─╭●─╭●───────────│──│──│──│────────────│──│──│──│────────────│──│──┤ ╭Sample
-     7: ──────│──│──│──│──│──│────────────│──│──│──│────────────├OutMultiplier─│──│──╰X─│──│──│──│──├Incrementer─│──│──│──│────────────│──│──│──│────────────│──│──┤ ├Sample
-     8: ──────│──│──│──│──│──│────────────│──│──│──│────────────├OutMultiplier─│──│─────╰X─│──│──│──├Incrementer─│──│──│──│────────────│──│──│──│────────────│──│──┤ ├Sample
-     9: ──────│──│──│──│──│──│────────────│──│──│──│────────────├OutMultiplier─│──│────────╰X─│──│──├Incrementer─│──│──│──│────────────│──│──│──│────────────│──│──┤ ├Sample
-    10: ──────│──│──│──│──│──│────────────│──│──│──│────────────├OutMultiplier─│──│───────────╰X─│──├Incrementer─│──│──│──│────────────│──│──│──│────────────│──│──┤ ├Sample
-    11: ──────│──│──│──│──│──│────────────│──│──│──│────────────├OutMultiplier─│──│──────────────╰X─├Incrementer─│──│──│──│────────────│──│──│──│────────────│──│──┤ ╰Sample
-    12: ──────╰X─│──╰●─╰●─╰●─├●───────────│──│──│──│────────────│──────────────╰●─│─────────────────│────────────╰●─╰●─╰●─├●───────────│──│──│──│────────────╰X─│──┤
-    13: ─────────╰X──────────│────────────╰●─╰●─╰●─├●───────────│─────────────────╰●────────────────│─────────────────────│────────────╰●─╰●─╰●─├●──────────────╰X─┤
-    14: ─────────────────────├Incrementer──────────├Incrementer─├OutMultiplier──────────────────────├Incrementer──────────├Incrementer──────────├Incrementer───────┤
-    15: ─────────────────────╰Incrementer──────────╰Incrementer─╰OutMultiplier──────────────────────╰Incrementer──────────╰Incrementer──────────╰Incrementer───────┤
+    >>> print(qp.draw(qp.transforms._tape_decompose(circuit, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1), max_length=170)())
+     0: ──X─╭●────╭X───────╭Incrementer───────────────────────╭OutMultiplier───────────────────────────────────╭X───────╭Incrementer───────────────────────╭●────┤
+     1: ────│─────│──╭X────├Incrementer───────────────────────├OutMultiplier───────────────────────────────────│──╭X────├Incrementer───────────────────────│─────┤
+     2: ──X─│─────│──│──╭X─├Incrementer───────────────────────├OutMultiplier───────────────────────────────────│──│──╭X─├Incrementer───────────────────────│─────┤
+     3: ────│──╭●─│──│──│──│────────────╭X───────╭Incrementer─├OutMultiplier───────────────────────────────────│──│──│──│────────────╭X───────╭Incrementer─│──╭●─┤
+     4: ──X─│──│──│──│──│──│────────────│──╭X────├Incrementer─├OutMultiplier───────────────────────────────────│──│──│──│────────────│──╭X────├Incrementer─│──│──┤
+     5: ──X─│──│──│──│──│──│────────────│──│──╭X─├Incrementer─├OutMultiplier───────────────────────────────────│──│──│──│────────────│──│──╭X─├Incrementer─│──│──┤
+     6: ────│──│──│──│──│──│────────────│──│──│──│────────────│──────────────╭X─╭X─╭●─╭●─╭●─╭●─╭●─╭●───────────│──│──│──│────────────│──│──│──│────────────│──│──┤ ╭Sample
+     7: ────│──│──│──│──│──│────────────│──│──│──│────────────├OutMultiplier─│──│──╰X─│──│──│──│──├Incrementer─│──│──│──│────────────│──│──│──│────────────│──│──┤ ├Sample
+     8: ────│──│──│──│──│──│────────────│──│──│──│────────────├OutMultiplier─│──│─────╰X─│──│──│──├Incrementer─│──│──│──│────────────│──│──│──│────────────│──│──┤ ├Sample
+     9: ────│──│──│──│──│──│────────────│──│──│──│────────────├OutMultiplier─│──│────────╰X─│──│──├Incrementer─│──│──│──│────────────│──│──│──│────────────│──│──┤ ├Sample
+    10: ────│──│──│──│──│──│────────────│──│──│──│────────────├OutMultiplier─│──│───────────╰X─│──├Incrementer─│──│──│──│────────────│──│──│──│────────────│──│──┤ ├Sample
+    11: ────│──│──│──│──│──│────────────│──│──│──│────────────├OutMultiplier─│──│──────────────╰X─├Incrementer─│──│──│──│────────────│──│──│──│────────────│──│──┤ ╰Sample
+    12: ────╰X─│──╰●─╰●─╰●─├●───────────│──│──│──│────────────│──────────────╰●─│─────────────────│────────────╰●─╰●─╰●─├●───────────│──│──│──│────────────╰X─│──┤
+    13: ───────╰X──────────│────────────╰●─╰●─╰●─├●───────────│─────────────────╰●────────────────│─────────────────────│────────────╰●─╰●─╰●─├●──────────────╰X─┤
+    14: ───────────────────├Incrementer──────────├Incrementer─├OutMultiplier──────────────────────├Incrementer──────────├Incrementer──────────├Incrementer───────┤
+    15: ───────────────────╰Incrementer──────────╰Incrementer─╰OutMultiplier──────────────────────╰Incrementer──────────╰Incrementer──────────╰Incrementer───────┤
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SignedOutMultiplier
+            :stacked:
+            :symbols: :math:`n` ``x_wires``, :math:`m` ``y_wires``, :math:`k` ``output_wires`` and
+                :math:`w` ``work_wires``
+            :example: :math:`n=m=1`, :math:`k=2`
+
+            .. decomposition-rule:: borrowed
+                :image: /_static/decomposition_thumbnails/signed_out_multiplier_not_zeroed.svg
+                :requires: ``output_wires_zeroed=False`` and :math:`w \geq 2k + 1` work wires
+
+                :class:`~.SignedOutMultiplier` with ``output_wires_zeroed=True`` | :math:`1` | 1
+                :class:`~.SemiAdder` | :math:`1` | 1
+
+            .. decomposition-rule:: zeroed
+                :image: /_static/decomposition_thumbnails/signed_out_multiplier_zeroed.svg
+                :requires: ``output_wires_zeroed=True`` and :math:`w \geq 2` work wires
+
+                :class:`~.CNOT` | :math:`2(n + m) + k + 5` | 11
+                :class:`~.Incrementer` with 1 control | :math:`5` | 5
+                :class:`~.OutMultiplier` | :math:`1` | 1
 
     .. details::
         :title: Theoretical background
@@ -342,7 +370,7 @@ class SignedOutMultiplier(Operator2):
         return self.x_wires + self.y_wires + self.output_wires + self.work_wires
 
 
-def _zeroed_signed_out_multiplier_resources(  # pylint: disable=unused-argument
+def _signed_out_multiplier_zeroed_resources(  # pylint: disable=unused-argument
     x_wires,
     y_wires,
     output_wires,
@@ -382,7 +410,7 @@ def _zeroed_signed_out_multiplier_resources(  # pylint: disable=unused-argument
     return dict(resources)
 
 
-def _not_zeroed_signed_out_multiplier_resources(  # pylint: disable=unused-argument
+def _signed_out_multiplier_borrowed_resources(  # pylint: disable=unused-argument
     x_wires,
     y_wires,
     output_wires,
@@ -481,8 +509,8 @@ def _not_zeroed_condition(x_wires, y_wires, output_wires, work_wires, output_wir
 
 @register_condition(_zeroed_condition)
 @register_condition(_zeroed_work_wire_condition)
-@register_resources(_zeroed_signed_out_multiplier_resources)
-def _signed_out_multiplier_decomposition_zeroed(  # pylint: disable=unused-argument
+@register_resources(_signed_out_multiplier_zeroed_resources, name="zeroed")
+def _signed_out_multiplier_zeroed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
@@ -538,8 +566,8 @@ def _signed_out_multiplier_decomposition_zeroed(  # pylint: disable=unused-argum
 
 @register_condition(_not_zeroed_condition)
 @register_condition(_not_zeroed_work_wire_condition)
-@register_resources(_not_zeroed_signed_out_multiplier_resources)
-def _signed_out_multiplier_decomposition_not_zeroed(  # pylint: disable=unused-argument
+@register_resources(_signed_out_multiplier_borrowed_resources, name="borrowed")
+def _signed_out_multiplier_borrowed(  # pylint: disable=unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
     output_wires: WiresLike,
@@ -579,5 +607,5 @@ def _signed_out_multiplier_decomposition_not_zeroed(  # pylint: disable=unused-a
     )
 
 
-add_decomps(SignedOutMultiplier, _signed_out_multiplier_decomposition_not_zeroed)
-add_decomps(SignedOutMultiplier, _signed_out_multiplier_decomposition_zeroed)
+add_decomps(SignedOutMultiplier, _signed_out_multiplier_borrowed)
+add_decomps(SignedOutMultiplier, _signed_out_multiplier_zeroed)

@@ -15,17 +15,16 @@ r"""
 Contains the SelectPauliRot template.
 """
 
-from functools import partial
-
 from pennylane import capture, math
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
-from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis, prod
+from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.subcircuit import subcircuit
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
@@ -93,6 +92,24 @@ class SelectPauliRot(Operator2):
     >>> print(circuit()) # doctest: +SKIP
     [0.8776+0.j 0.4794+0.j 0.    +0.j 0.    +0.j 0.    +0.j 0.    +0.j
      0.    +0.j 0.    +0.j]
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SelectPauliRot
+            :stacked:
+            :symbols: :math:`c \geq 1` control wires and rotation axis :math:`P` (``rot_axis``)
+            :example: :math:`c=1`, :math:`P=Y`
+
+            .. decomposition-rule:: gray_code
+                :image: /_static/decomposition_thumbnails/select_pauli_rot_cnot_ladder.svg
+                :where: :math:`[\cdot]` is 1 if the condition holds and 0 otherwise
+
+                :class:`~.RZ` | :math:`\leq 2^c` | 2
+                :class:`~.CNOT` | :math:`2^c` | 2
+                :class:`~.Hadamard` | :math:`2[P \neq Z]` | 2
+                :class:`~.S` | :math:`[P = Y]` | 1
+                :class:`Adjoint(S) <.S>` | :math:`[P = Y]` | 1
     """
 
     dynamic_argnames = ("angles",)
@@ -120,36 +137,61 @@ class SelectPauliRot(Operator2):
         )
 
 
-# pylint: disable-next=unused-argument
-def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
-
-    num_wires = len(control_wires) + 1
-    num_rotations = 2 ** (num_wires - 1)
-
-    rz_rep = abstractify(RZ)
-    cnot_rep = abstractify(CNOT)
-
-    prod_res = {
+def _uniform_rz_resources(control_wires, **_):
+    """Resources for a uniformly controlled Z rotation."""
+    num_rotations = 2 ** len(control_wires)
+    return {
         RZ: num_rotations,
-        CNOT: num_rotations if num_wires > 1 else 0,
+        CNOT: num_rotations if len(control_wires) else 0,
     }
-    if rot_axis == "Z":
-        return prod_res
 
-    target_rep = prod(*((cnot_rep, rz_rep) * num_rotations)) if num_wires > 1 else rz_rep
+
+@subcircuit(
+    dynamic_argnames=("angles",),
+    wire_argnames=("control_wires", "target_wire"),
+    arg_specs={"angles": Float[-1], "control_wires": Wire[-1], "target_wire": Wire[1]},
+    ndim_params=(1,),
+    grad_method=None,
+)
+@register_resources(_uniform_rz_resources, exact=False)
+def _UniformRZ(angles, control_wires, target_wire) -> None:
+    """Apply uniformly controlled Z rotations using the reversed control register."""
+    _apply_uniform_rotation_dagger(RZ, angles, control_wires[::-1], target_wire[0])
+
+
+@subcircuit(static_argnames=("reverse",), arg_specs={"wires": Wire[1]})
+@register_resources(lambda reverse, **_: {Hadamard: 1, S if reverse else _adjoint_abstract(S): 1})
+def _SelectPauliRotYBasis(wires, reverse: bool) -> None:
+    """Change between the Y and Z bases."""
+    if reverse:
+        Hadamard(wires)
+        S(wires)
+    else:
+        adjoint(S(wires))
+        Hadamard(wires)
+
+
+def _select_pauli_rot_standard_resources(angles, control_wires, target_wire, rot_axis):
+    if rot_axis == "Z":
+        return _uniform_rz_resources(control_wires)
+
+    target_rep = _UniformRZ(angles, control_wires, target_wire)
 
     if rot_axis == "X":
         return {_change_op_basis_abstract(Hadamard, target_rep, Hadamard): 1}
 
-    prod_rep1 = prod(abstractify(Hadamard), _adjoint_abstract(S))
-    prod_rep2 = prod(abstractify(S), abstractify(Hadamard))
-
-    return {_change_op_basis_abstract(prod_rep1, target_rep, prod_rep2): 1}
+    return {
+        _change_op_basis_abstract(
+            _SelectPauliRotYBasis(Wire[1], reverse=False),
+            target_rep,
+            _SelectPauliRotYBasis(Wire[1], reverse=True),
+        ): 1
+    }
 
 
 # Not exact resources because rotations might be skipped based on angles
-@register_resources(_select_pauli_rot_resource, exact=False)
-def decompose_select_pauli_rot(angles, control_wires, target_wire, rot_axis):
+@register_resources(_select_pauli_rot_standard_resources, exact=False, name="gray_code")
+def _select_pauli_rot_standard(angles, control_wires, target_wire, rot_axis):
     r"""Decomposes the SelectPauliRot"""
 
     wires = Wires(control_wires) + Wires(target_wire)
@@ -161,41 +203,20 @@ def decompose_select_pauli_rot(angles, control_wires, target_wire, rot_axis):
         case "X":
             change_op_basis(
                 Hadamard(wires[-1]),
-                partial(
-                    _apply_uniform_rotation_dagger,
-                    gate=RZ,
-                    alpha=angles,
-                    control_wires=wires[-2::-1],
-                    target_wire=wires[-1],
-                ),
+                _UniformRZ(angles, control_wires, target_wire),
                 Hadamard(wires[-1]),
             )
         case "Y":
-
-            def compute(wires):
-                adjoint(S(wires[-1]))
-                Hadamard(wires[-1])
-
-            def uncompute(wires):
-                Hadamard(wires[-1])
-                S(wires[-1])
-
             change_op_basis(
-                partial(compute, wires=wires),
-                partial(
-                    _apply_uniform_rotation_dagger,
-                    gate=RZ,
-                    alpha=angles,
-                    control_wires=wires[-2::-1],
-                    target_wire=wires[-1],
-                ),
-                partial(uncompute, wires=wires),
+                _SelectPauliRotYBasis(target_wire, reverse=False),
+                _UniformRZ(angles, control_wires, target_wire),
+                _SelectPauliRotYBasis(target_wire, reverse=True),
             )
         case "Z":
             _apply_uniform_rotation_dagger(RZ, angles, wires[-2::-1], wires[-1])
 
 
-add_decomps(SelectPauliRot, decompose_select_pauli_rot)
+add_decomps(SelectPauliRot, _select_pauli_rot_standard)
 
 
 MultiplexedRotation = SelectPauliRot

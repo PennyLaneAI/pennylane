@@ -169,7 +169,7 @@ class TestInitialization:
     def test_nonparametric_ops(self, power_method):
         """Test pow initialization for a non parameteric operation."""
 
-        base = qp.PauliX("a")
+        base = qp.PauliX(4)
         op: Pow = power_method(base=base, z=-4.2)
 
         assert op.base is base
@@ -182,14 +182,14 @@ class TestInitialization:
         assert op.parameters == []
         assert op.data == ()
 
-        assert op.wires == qp.wires.Wires("a")
+        assert op.wires == qp.wires.Wires(4)
         assert op.num_wires == 1
 
     def test_parametric_ops(self, power_method):
         """Test pow initialization for a standard parametric operation."""
 
         params = [1.2345, 2.3456, 3.4567]
-        base = qp.Rot(*params, wires="b")
+        base = qp.Rot(*params, wires=7)
 
         op: Pow = power_method(base=base, z=-0.766)
 
@@ -199,7 +199,7 @@ class TestInitialization:
         assert op.hyperparameters["z"] == -0.766
         assert op.name == "Pow(Rot)" if isinstance(op, Pow2) else "Rot**-0.766"
 
-        assert op.wires == qp.wires.Wires("b")
+        assert op.wires == qp.wires.Wires(7)
         assert op.num_wires == 1
 
     def test_template_base(self, power_method, seed):
@@ -233,7 +233,7 @@ class TestProperties:
         """Test base data can be get and stay read-only."""
         x = pnp.array(1.234)
 
-        base = qp.RX(x, wires="a")
+        base = qp.RX(x, wires=4)
         op: Pow = power_method(base=base, z=3.21)
 
         assert op.data == (x,)
@@ -339,7 +339,7 @@ class TestProperties:
             num_wires = 1
             has_diagonalizing_gates = value
 
-        op: Pow = power_method(base=DummyOp("a"), z=2.124)
+        op: Pow = power_method(base=DummyOp(4), z=2.124)
         assert op.has_diagonalizing_gates is value
 
     @pytest.mark.parametrize("value", (True, False))
@@ -390,7 +390,7 @@ class TestProperties:
     op_pauli_reps = (
         (qp.PauliZ(wires=0), 1, qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "Z"}): 1})),
         (qp.PauliX(wires=1), 2, qp.pauli.PauliSentence({qp.pauli.PauliWord({}): 1})),  # identity
-        (qp.PauliY(wires="a"), 5, qp.pauli.PauliSentence({qp.pauli.PauliWord({"a": "Y"}): 1})),
+        (qp.PauliY(wires=4), 5, qp.pauli.PauliSentence({qp.pauli.PauliWord({4: "Y"}): 1})),
     )
 
     @pytest.mark.parametrize("base, exp, rep", op_pauli_reps)
@@ -630,7 +630,7 @@ class TestQueueing:
         """Test queuing and metadata when both Pow and base defined inside a recording context."""
 
         with qp.queuing.AnnotatedQueue() as q:
-            base = qp.Rot(1.2345, 2.3456, 3.4567, wires="b")
+            base = qp.Rot(1.2345, 2.3456, 3.4567, wires=7)
             op = Pow(base, 1.2)
 
         assert q.queue[0] is op
@@ -639,7 +639,7 @@ class TestQueueing:
     def test_queueing_base_defined_outside(self):
         """Test that base is added to queue even if it's defined outside the recording context."""
 
-        base = qp.Rot(1.2345, 2.3456, 3.4567, wires="b")
+        base = qp.Rot(1.2345, 2.3456, 3.4567, wires=7)
         with qp.queuing.AnnotatedQueue() as q:
             op = Pow(base, 3.4)
 
@@ -925,7 +925,7 @@ class TestIntegration:
 
         @qp.qnode(qp.device("default.qubit", wires=1), diff_method=diff_method)
         def circuit(x, z):
-            Pow(base=qp.RX(x, wires=0), z=z)
+            Pow2(base=qp.RX(x, wires=0), z=z)
             return qp.expval(qp.PauliY(0))
 
         x = qp.numpy.array(1.234, requires_grad=True)
@@ -943,7 +943,7 @@ class TestIntegration:
 
         @qp.qnode(dev)
         def circuit(x):
-            Pow(qp.RX(x, wires=0), 2.5)
+            Pow2(qp.RX(x, wires=0), 2.5)
             return qp.expval(qp.PauliY(0))
 
         x = qp.numpy.array([1.234, 2.34, 3.456])

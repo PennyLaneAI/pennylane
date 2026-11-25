@@ -25,8 +25,8 @@ from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
-from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
+from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle as adjoint_rotation2
+from pennylane.ops.op_math.pow2 import _pow_scale_angle as pow_rotation2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -55,7 +55,7 @@ class Identity(Operator2):
     .. seealso:: The equivalent short-form alias :class:`~I`
 
     Args:
-        wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
+        wires (Iterable[int] or int): Wire label(s) that the identity acts on.
 
     Corresponds to the trace of the quantum state, which in exact
     simulators should always be equal to 1.
@@ -160,7 +160,7 @@ class Identity(Operator2):
         .. seealso:: :meth:`~.Identity.diagonalizing_gates`.
 
         Args:
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
 
         Returns:
             list[.Operator]: list of diagonalizing gates
@@ -194,7 +194,7 @@ The expectation of this observable
 .. seealso:: The equivalent long-form alias :class:`~Identity`
 
 Args:
-    wires (Iterable[Any] or Any): Wire label(s) that the identity acts on.
+    wires (Iterable[int] or int): Wire label(s) that the identity acts on.
 
 Corresponds to the trace of the quantum state, which in exact
 simulators should always be equal to 1.
@@ -350,7 +350,7 @@ class GlobalPhase(Operator2):
         .. seealso:: :meth:`~.GlobalPhase.diagonalizing_gates`.
 
         Args:
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
 
         Returns:
             list[.Operator]: list of diagonalizing gates
@@ -383,8 +383,13 @@ class GlobalPhase(Operator2):
         return qp.s_prod(-1, qp.I())
 
 
-# pylint: disable-next=unused-argument
-def _controlled_g_phase_resource(base, control_wires, control_values, work_wires, work_wire_type):
+def _controlled_g_phase_standard_resources(
+    base,  # pylint: disable=unused-argument
+    control_wires,
+    control_values,  # pylint: disable=unused-argument
+    work_wires,
+    work_wire_type,
+):
     num_control_wires = len(control_wires)
     num_work_wires = len(work_wires)
 
@@ -410,8 +415,10 @@ def _controlled_g_phase_resource(base, control_wires, control_values, work_wires
     return resources
 
 
-@register_resources(_controlled_g_phase_resource, exact=False)
-def _controlled_g_phase_decomp(
+@register_resources(
+    _controlled_g_phase_standard_resources, exact=False, name="to_controlled_phaseshift"
+)
+def _controlled_g_phase_standard(
     base,
     control_wires,
     control_values,
@@ -452,4 +459,4 @@ def _controlled_g_phase_decomp(
 
 add_decomps("Adjoint(GlobalPhase)", adjoint_rotation2)
 add_decomps("Pow(GlobalPhase)", pow_rotation2)
-add_decomps("C(GlobalPhase)", _controlled_g_phase_decomp)
+add_decomps("C(GlobalPhase)", _controlled_g_phase_standard)

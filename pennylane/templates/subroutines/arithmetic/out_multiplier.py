@@ -26,6 +26,7 @@ from pennylane.decomposition import (
 )
 from pennylane.ops import H, MultiControlledX, X, adjoint, change_op_basis, ctrl, prod
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.subcircuit import subcircuit
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.multix import MultiX
 from pennylane.templates.subroutines.qft import QFT
@@ -34,7 +35,7 @@ from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wir
 
 from .incrementer import Incrementer
 from .phase_adder import PhaseAdder
-from .semi_adder import SemiAdder, _semi_adder, _semi_adder_resources
+from .semi_adder import SemiAdder, _semi_adder_standard, _semi_adder_standard_resources
 from .temporary_and import TemporaryAND
 
 
@@ -124,7 +125,7 @@ class OutMultiplier(Operator2):
                 ``output_wires_zeroed=False``
             :example: :math:`n=m=1`, :math:`k=2`
 
-            .. decomposition-rule:: _out_multiplier_with_qft
+            .. decomposition-rule:: with_qft
                 :image: /_static/decomposition_thumbnails/out_multiplier_qft.svg
                 :requires: program capture to be disabled
 
@@ -132,13 +133,13 @@ class OutMultiplier(Operator2):
                 :class:`~.ControlledSequence` (nested, of :class:`~.PhaseAdder`) | :math:`1` | 1
                 :class:`Adjoint(QFT) <.QFT>` | :math:`1` | 1
 
-            .. decomposition-rule:: _out_multiplier_with_adder
+            .. decomposition-rule:: with_adder
                 :image: /_static/decomposition_thumbnails/out_multiplier_adder.svg
                 :requires: :math:`w \geq k` work wires
 
                 :class:`~.SemiAdder` with 1 control | :math:`n` | 1
 
-            .. decomposition-rule:: _out_multiplier_with_caddsub
+            .. decomposition-rule:: with_caddsub
                 :image: /_static/decomposition_thumbnails/out_multiplier_caddsub.svg
                 :requires: :math:`w \geq k + 1` work wires
                 :where: :math:`[m > 1]` equal to 1 if :math:`m > 1` and 0 otherwise
@@ -152,7 +153,7 @@ class OutMultiplier(Operator2):
                 :class:`~.SemiAdder` | :math:`2` | 2
                 :class:`~.Incrementer` | :math:`1` | 1
 
-            .. decomposition-rule:: _out_multiplier_with_cache
+            .. decomposition-rule:: with_cache
                 :image: /_static/decomposition_thumbnails/out_multiplier_cache.svg
                 :requires: :math:`w \geq 2k - 1` work wires
 
@@ -160,7 +161,7 @@ class OutMultiplier(Operator2):
                 :class:`~.SemiAdder` | :math:`1` | 1
                 :class:`Adjoint(OutMultiplier) <.OutMultiplier>` | :math:`1` | 1
 
-            .. decomposition-rule:: _out_multiplier_swapped
+            .. decomposition-rule:: swap_factors
                 :image: /_static/decomposition_thumbnails/out_multiplier_swapped.svg
                 :requires: :math:`n > m`
                 :where: the circuit shows :math:`n=2`, :math:`m=1` and :math:`k=3`
@@ -337,6 +338,14 @@ class OutMultiplier(Operator2):
         return self.x_wires + self.y_wires + self.output_wires + self.work_wires
 
 
+@subcircuit
+@register_resources(lambda wires: {H: len(wires)})
+def _OutMultiplierHadamards(wires: WiresLike):
+    """Prepare a zeroed output register in the Fourier basis."""
+    for wire in wires:
+        H(wire)
+
+
 def _out_multiplier_with_qft_resources(  # pylint: disable=too-many-arguments,unused-argument
     x_wires,
     y_wires,
@@ -351,8 +360,7 @@ def _out_multiplier_with_qft_resources(  # pylint: disable=too-many-arguments,un
     num_qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
 
     if output_wires_zeroed:
-        multi_h = [H(Wire[1])] * num_qft_wires
-        compute_rep = prod(*multi_h)
+        compute_rep = _OutMultiplierHadamards(Wire[num_qft_wires])
     else:
         compute_rep = QFT(Wire[num_qft_wires])
 
@@ -382,7 +390,7 @@ def _out_multiplier_with_qft_condition(  # pylint: disable=too-many-arguments,un
 
 
 @register_condition(_out_multiplier_with_qft_condition)
-@register_resources(_out_multiplier_with_qft_resources)
+@register_resources(_out_multiplier_with_qft_resources, name="with_qft")
 def _out_multiplier_with_qft(  # pylint: disable=too-many-arguments
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -410,7 +418,7 @@ def _out_multiplier_with_qft(  # pylint: disable=too-many-arguments
         work_wire = output_wires[:0]
 
     if output_wires_zeroed:
-        compute_op = prod(*[H(w) for w in qft_output_wires])
+        compute_op = _OutMultiplierHadamards(qft_output_wires)
     else:
         compute_op = QFT(qft_output_wires)
 
@@ -476,7 +484,7 @@ def _out_multiplier_with_adder_condition(  # pylint: disable=too-many-arguments,
 
 
 @register_condition(_out_multiplier_with_adder_condition)
-@register_resources(_out_multiplier_with_adder_resources)
+@register_resources(_out_multiplier_with_adder_resources, name="with_adder")
 def _out_multiplier_with_adder(  # pylint: disable=too-many-arguments,unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -522,18 +530,21 @@ def _out_multiplier_with_adder(  # pylint: disable=too-many-arguments,unused-arg
         ctrl(SemiAdder(y_wires, out_wires, work_wires=work_wires), control=x_wire)
 
 
-def _out_multiplier_with_caddsub_resources(  # pylint: disable=too-many-arguments,unused-argument
-    x_wires,
-    y_wires,
-    output_wires,
-    mod,
-    work_wires,
-    output_wires_zeroed=False,
-):
-    n = len(x_wires)
-    m = len(y_wires)
-    k = len(output_wires) + 1  # augmented output register
-    num_work_wires = len(work_wires)
+def _out_multiplier_with_caddsub_resources(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument,too-many-arguments
+    return _caddsub_multiplication_resources(
+        len(x_wires), len(y_wires), len(output_wires), len(work_wires), output_wires_zeroed
+    )
+
+
+def _caddsub_multiplication_resources(
+    num_x_wires, num_y_wires, num_output_wires, num_work_wires, output_wires_zeroed, x_signed=False
+):  # pylint: disable=too-many-arguments
+    """Resources for _caddsub_multiplication."""
+    n = num_x_wires
+    m = num_y_wires
+    k = num_output_wires + 1  # augmented output register
     num_passed_ww = num_work_wires - 1  # One work wire is used by the arithmetic logic itself.
 
     resources = defaultdict(int)
@@ -546,7 +557,7 @@ def _out_multiplier_with_caddsub_resources(  # pylint: disable=too-many-argument
 
     # Add 2^m(x+1)
     if k > m:
-        adder_resources = _semi_adder_resources(Wire[n], Wire[k - m])
+        adder_resources = _semi_adder_standard_resources(Wire[n], Wire[k - m])
         for key, value in adder_resources.items():
             resources[key] += value
         # bit flips corresponding to input carry activated. Accounts for the fact that
@@ -570,8 +581,12 @@ def _out_multiplier_with_caddsub_resources(  # pylint: disable=too-many-argument
     resources[X] += k
 
     # Add 2^n y
-    if k > n:
+    if k > n and not x_signed:
         resources[SemiAdder(Wire[m], Wire[k - n], Wire[num_passed_ww])] += 1
+
+    # Flip the sign bit of x before and after the multiplication
+    if x_signed:
+        resources[X] += 2
 
     return dict(resources)
 
@@ -604,7 +619,7 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
     or a tuple ``(c_wire, c_val)`` for a single control wire.
     """
     if len(work_wires) == 0:
-        _semi_adder(x_wires, y_wires, work_wires)
+        _semi_adder_standard(x_wires, y_wires, work_wires)
         return
 
     def carry_flip(wire):
@@ -614,7 +629,7 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
             c_wire, c_val = flip_control
             MultiControlledX(concatenate_wires(c_wire, [wire]), control_values=[c_val])
 
-    _semi_adder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
+    _semi_adder_standard(x_wires, y_wires, work_wires, carry_flip=carry_flip)
 
 
 def _add_plus_one(x_wires, y_wires, work_wires):
@@ -644,7 +659,7 @@ def _c_add_sub_resources(num_x_wires, num_y_wires):
     cnot_on_0_rep = MultiControlledX(Wire[2], control_values=Bool[1])
     resources[cnot_on_0_rep] += 2 * (1 + int(num_y_wires > 1))
 
-    for key, value in _semi_adder_resources(Wire[num_x_wires], Wire[num_y_wires]).items():
+    for key, value in _semi_adder_standard_resources(Wire[num_x_wires], Wire[num_y_wires]).items():
         resources[key] += value
 
     return dict(resources)
@@ -691,7 +706,7 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
 
 
 @register_condition(_out_multiplier_with_caddsub_condition)
-@register_resources(_out_multiplier_with_caddsub_resources)
+@register_resources(_out_multiplier_with_caddsub_resources, name="with_caddsub")
 def _out_multiplier_with_caddsub(  # pylint: disable=too-many-arguments,unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -700,6 +715,14 @@ def _out_multiplier_with_caddsub(  # pylint: disable=too-many-arguments,unused-a
     work_wires: WiresLike,
     output_wires_zeroed: bool,
 ):
+    """Implementation of improved Schoolbook multiplication via controlled add/subtract blocks,
+    see ``_caddsub_multiplication``."""
+    _caddsub_multiplication(x_wires, y_wires, output_wires, work_wires, output_wires_zeroed)
+
+
+def _caddsub_multiplication(
+    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed, x_signed=False
+):  # pylint: disable=too-many-arguments
     """Implementation of improved Schoolbook multiplication via controlled add/subtract blocks,
     combined with some correction steps. After appending a work wire to the output register,
     effectively multiplying it with two, we first have a bulk computation with n steps (where
@@ -723,7 +746,15 @@ def _out_multiplier_with_caddsub(  # pylint: disable=too-many-arguments,unused-a
     - Add 2^n⋅y
     We are left with 2⋅(z+x⋅y), an even number, which we can divide by two by splitting off the
     least significant bit (which is exactly the one we appended initially) from the output register.
+
+    If ``x_signed=True``, x is a two's-complement signed integer with sign bit ``x_wires[0]``.
+    Flipping the sign bit maps x to the unsigned integer x'=x+2^(n-1), so that the bulk computation
+    and the first two correction steps (applied to x') leave 2⋅(z+x'⋅y)-2^n⋅y = 2⋅(z+x⋅y). The last
+    correction step is thus skipped.
     """
+    if x_signed:
+        X(x_wires[0])
+
     # We extend our output by one wire because we need to store 2x*y intermediately, instead
     # of x*y. This also multiplies the value stored in output_wires with two.
     output_wires = list(output_wires) + [work_wires[0]]
@@ -760,8 +791,11 @@ def _out_multiplier_with_caddsub(  # pylint: disable=too-many-arguments,unused-a
     _ = [X(w) for w in output_wires]
 
     # Add (2^n·y) if 2^k > 2^n (otherwise it just vanishes in the modulus)
-    if k > n:
+    if k > n and not x_signed:
         SemiAdder(y_wires, output_wires[: k - n], work_wires)
+
+    if x_signed:
+        X(x_wires[0])
 
     # Note that dividing by two does not have to happen explicitly, because the registers are
     # not explicit return values.
@@ -809,7 +843,7 @@ def _out_multiplier_with_cache_resources(  # pylint: disable=too-many-arguments,
 
 
 @register_condition(_out_multiplier_with_cache_condition)
-@register_resources(_out_multiplier_with_cache_resources)
+@register_resources(_out_multiplier_with_cache_resources, name="with_cache")
 def _out_multiplier_with_cache(  # pylint: disable=too-many-arguments,unused-argument
     x_wires: WiresLike,
     y_wires: WiresLike,
@@ -838,7 +872,7 @@ def _out_multiplier_swapped_condition(x_wires, y_wires, **_):
     return len(x_wires) > len(y_wires)
 
 
-def _out_multiplier_swapped_resources(  # pylint: disable=too-many-arguments
+def _out_multiplier_swapped_standard_resources(  # pylint: disable=too-many-arguments
     x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
 ):
     swapped = OutMultiplier(
@@ -853,9 +887,11 @@ def _out_multiplier_swapped_resources(  # pylint: disable=too-many-arguments
 
 
 @register_condition(_out_multiplier_swapped_condition)
-@register_resources(_out_multiplier_swapped_resources)
+@register_resources(_out_multiplier_swapped_standard_resources, name="swap_factors")
 # pylint: disable-next=too-many-arguments
-def _out_multiplier_swapped(x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed):
+def _out_multiplier_swapped_standard(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
+):
     """Swap the factors of an ``OutMultiplier`` so that ``x_wires`` is the shorter register.
     The schoolbook ``OutMultiplier`` rules perform one controlled addition per bit of ``x_wires``,
     so multiplying a short register into a long one is cheaper than the other way around.
@@ -877,5 +913,5 @@ add_decomps(
     _out_multiplier_with_adder,
     _out_multiplier_with_caddsub,
     _out_multiplier_with_cache,
-    _out_multiplier_swapped,
+    _out_multiplier_swapped_standard,
 )

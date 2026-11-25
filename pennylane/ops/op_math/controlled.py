@@ -88,7 +88,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
         control (Wires): The control wire(s).
         control_values (bool or int or list[bool or int]): The value(s) the control wire(s)
             should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
-        work_wires (Any): Any auxiliary wires that can be used in the decomposition
+        work_wires (Sequence[int] or int): Any auxiliary wires that can be used in the decomposition
         work_wire_type: The type of work wire(s), can be ``"zeroed"`` or ``"borrowed"``. ``"zeroed"``
             indicates that the work wires are in the :math:`|0\rangle` state, whereas ``"borrowed"``
             work wires can be in any arbitrary state. Defaults to ``"borrowed"``.
@@ -459,13 +459,13 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
 
     Args:
         base (~.operation.Operator): the operator that is controlled
-        control_wires (Any): The wires to control on.
+        control_wires (Sequence[int] or int): The wires to control on.
 
     Keyword Args:
         control_values (Iterable[Bool]): The values to control on. Must be the same
             length as ``control_wires``. Defaults to ``True`` for all control wires.
             Provided values are converted to `Bool` internally.
-        work_wires (Any): Any auxiliary wires that can be used in the decomposition
+        work_wires (Sequence[int] or int): Any auxiliary wires that can be used in the decomposition
         work_wire_type: The type of work wire(s), can be ``"zeroed"`` or ``"borrowed"``. ``"zeroed"``
             indicates that the work wires are in the :math:`|0\rangle` state, whereas ``"borrowed"``
             work wires can be in any arbitrary state. Defaults to ``"borrowed"``.
@@ -509,7 +509,7 @@ class Controlled(SymbolicOp):  # pylint: disable=too-many-public-methods
     Provided control values are converted to booleans internally, so
     any "truthy" or "falsy" objects work.
 
-    >>> Controlled(base, ("a", "b", "c"), control_values=["", None, 5]).control_values
+    >>> Controlled(base, (4, 5, 6), control_values=["", None, 5]).control_values
     [False, False, True]
 
     Representations for an operator are available if the base class defines them.

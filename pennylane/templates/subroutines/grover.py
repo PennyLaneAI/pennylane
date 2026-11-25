@@ -157,8 +157,8 @@ class GroverOperator(Operation):
         .. seealso:: :meth:`~.GroverOperator.decomposition`.
 
         Args:
-            wires (Any or Iterable[Any]): wires that the operator acts on
-            work_wires (Any or Iterable[Any]): optional auxiliary wires to assist
+            wires (int or Iterable[int]): wires that the operator acts on
+            work_wires (int or Iterable[int]): optional auxiliary wires to assist
                 in the decomposition of :class:`~.MultiControlledX`.
 
         Returns:
@@ -201,7 +201,7 @@ class GroverOperator(Operation):
 
         Args:
             n_wires (int): Number of wires the ``GroverOperator`` acts on
-            work_wires (Any or Iterable[Any]): optional auxiliary wires to assist decompositions.
+            work_wires (int or Iterable[int]): optional auxiliary wires to assist decompositions.
                 *Unused argument*.
 
         Returns:
@@ -218,7 +218,7 @@ class GroverOperator(Operation):
         return 2 / dim - np.eye(dim)
 
 
-def _grover_operator_resources(num_wires, num_work_wires):
+def _grover_standard_resources(num_wires, num_work_wires):
     return {
         Hadamard: (num_wires - 1) * 2,
         PauliZ: 2,
@@ -227,8 +227,8 @@ def _grover_operator_resources(num_wires, num_work_wires):
     }
 
 
-@register_resources(_grover_operator_resources)
-def _grover_decomposition(wires, work_wires, n_wires):
+@register_resources(_grover_standard_resources, name="to_h_mcx")
+def _grover_standard(wires, work_wires, n_wires):
     ctrl_values = [0] * (n_wires - 1)
 
     if capture.enabled():
@@ -253,4 +253,4 @@ def _grover_decomposition(wires, work_wires, n_wires):
     GlobalPhase(np.pi)
 
 
-add_decomps(GroverOperator, _grover_decomposition)
+add_decomps(GroverOperator, _grover_standard)

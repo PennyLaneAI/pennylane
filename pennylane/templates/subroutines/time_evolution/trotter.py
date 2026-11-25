@@ -334,9 +334,9 @@ class TrotterProduct(Operation):
         Operators that have trainable components that differ from their ``Operator.data`` must implement their own
         ``_flatten`` methods.
 
-        >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires="a"), ("b", "c") )
+        >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires=4), (2, 3))
         >>> op._flatten()  # doctest: +SKIP
-        ((U2(3.4, 4.5, wires=['a']),), (Wires(['b', 'c']), (True, True), Wires([]), 'borrowed'))
+        ((U2(3.4, 4.5, wires=[4]),), (Wires([2, 3]), (True, True), Wires([]), 'borrowed'))
 
         """
         hamiltonian = self.hyperparameters["base"]
@@ -366,7 +366,7 @@ class TrotterProduct(Operation):
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
             **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
@@ -386,7 +386,7 @@ class TrotterProduct(Operation):
         return decomp
 
 
-def _trotter_product_decomposition_resources(n, order, ops):
+def _trotter_product_standard_resources(n, order, ops):
     reps = {}
 
     def _count(op, ops):
@@ -411,8 +411,8 @@ def _trotter_product_decomposition_resources(n, order, ops):
     return reps
 
 
-@register_resources(_trotter_product_decomposition_resources)
-def _trotter_product_decomposition(*args, **kwargs):
+@register_resources(_trotter_product_standard_resources, name="suzuki_trotter")
+def _trotter_product_standard(*args, **kwargs):
     time = args[-1]
     n = kwargs["n"]
     order = kwargs["order"]
@@ -442,7 +442,7 @@ def _trotter_product_decomposition(*args, **kwargs):
         _recursive(time / n, order, ops)
 
 
-add_decomps(TrotterProduct, _trotter_product_decomposition)
+add_decomps(TrotterProduct, _trotter_product_standard)
 
 
 class TrotterizedQfunc(Operation):
@@ -512,10 +512,11 @@ class TrotterizedQfunc(Operation):
 
         def first_order_expansion(time, theta, phi, wires=[0, 1, 2], flip=False):
             "This is the first order expansion (U_1)."
-            qp.RX(time*theta, wires[0])
-            qp.RY(time*phi, wires[1])
+            qp.RX(time * theta, wires[0])
+            qp.RY(time * phi, wires[1])
             if flip:
                 qp.CNOT(wires=wires[:2])
+
 
         @qp.qnode(qp.device("default.qubit"))
         def my_circuit(time, angles, num_trotter_steps):
@@ -525,7 +526,7 @@ class TrotterizedQfunc(Operation):
                 qfunc=first_order_expansion,
                 n=num_trotter_steps,
                 order=2,
-                wires=['a', 'b'],
+                wires=[0, 1],
                 flip=True,
             )
             return qp.state()
@@ -535,12 +536,12 @@ class TrotterizedQfunc(Operation):
     >>> time = 0.1
     >>> angles = (0.12, -3.45)
     >>> print(qp.draw(my_circuit, level="device")(time, angles, num_trotter_steps=1))
-    a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤ ╭State
-    b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤ ╰State
+    0: ──RX(0.01)──╭●─╭●──RX(0.01)──┤ ╭State
+    1: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤ ╰State
     >>>
     >>> print(qp.draw(my_circuit, level="device")(time, angles, num_trotter_steps=3))
-    a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤ ╭State
-    b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤ ╰State
+    0: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤ ╭State
+    1: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤ ╰State
 
     """
 
@@ -671,10 +672,11 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
 
         def first_order_expansion(time, theta, phi, wires, flip=False):
             "This is the first order expansion (U_1)."
-            qp.RX(time*theta, wires[0])
-            qp.RY(time*phi, wires[1])
+            qp.RX(time * theta, wires[0])
+            qp.RY(time * phi, wires[1])
             if flip:
                 qp.CNOT(wires=wires[:2])
+
 
         @qp.qnode(qp.device("default.qubit"))
         def my_circuit(time, theta, phi, num_trotter_steps):
@@ -682,7 +684,7 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
                 first_order_expansion,
                 n=num_trotter_steps,
                 order=2,
-            )(time, theta, phi, wires=['a', 'b'], flip=True)
+            )(time, theta, phi, wires=[0, 1], flip=True)
             return qp.state()
 
     We can visualize the circuit to see the Suzuki-Trotter product formula being applied:
@@ -691,12 +693,12 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
     >>> theta, phi = (0.12, -3.45)
     >>>
     >>> print(qp.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=1))
-    a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤ ╭State
-    b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤ ╰State
+    0: ──RX(0.01)──╭●─╭●──RX(0.01)──┤ ╭State
+    1: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤ ╰State
     >>>
     >>> print(qp.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=3))
-    a: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤ ╭State
-    b: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤ ╰State
+    0: ──RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)───RX(0.00)──╭●─╭●──RX(0.00)──┤ ╭State
+    1: ──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)──RY(-0.06)─╰X─╰X──RY(-0.06)─┤ ╰State
 
     """
 

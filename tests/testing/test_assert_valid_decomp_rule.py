@@ -29,7 +29,7 @@ from pennylane.typing import Wire
 from tests.core.operator.operator2_utils import OneWireDynOp
 
 
-@qp.register_resources({qp.H: 2, qp.CZ: 1})
+@qp.register_resources({qp.H: 2, qp.CZ: 1}, name="cnot_to_cz")
 def _cnot_to_cz(wires):
     qp.H(wires[1])
     qp.CZ(wires)
@@ -39,6 +39,26 @@ def _cnot_to_cz(wires):
 def _assert_ops_equal(ops, expected):
     for op, exp in zip(ops, expected, strict=True):
         qp.assert_equal(op, exp, check_interface=False)
+
+
+def _nested_capture_cnot_rule(resources, exact=True):
+    """Build a CNOT rule whose Hadamards are nested two subroutine levels deep."""
+
+    @qp.capture.subroutine
+    def hadamard(wire):
+        qp.H(wire)
+
+    @qp.capture.subroutine
+    def controlled_x(wires):
+        hadamard(wires[1])
+        qp.CZ(wires)
+        hadamard(wires[1])
+
+    @qp.register_resources(resources, exact=exact)
+    def rule(wires):
+        controlled_x(wires)
+
+    return rule
 
 
 class TestDecompRuleToTape:
@@ -59,7 +79,7 @@ class TestDecompRuleToTape:
     def test_operator2_dynamic_args(self, capture):
         """Test that the dynamic arguments of an Operator2 reach the rule."""
 
-        @qp.register_resources({OneWireDynOp: 2})
+        @qp.register_resources({OneWireDynOp: 2}, name="rule")
         def rule(phi, wires):
             OneWireDynOp(phi, wires=wires)
             OneWireDynOp(2 * phi, wires=wires)
@@ -79,7 +99,7 @@ class TestDecompRuleToTape:
                 super().__init__(phi, wires=wires)
                 self.hyperparameters["n"] = n
 
-        @qp.register_resources({qp.RX: 2})
+        @qp.register_resources({qp.RX: 2}, name="rule")
         def rule(phi, wires, n):
             for _ in range(n):
                 qp.RX(phi, wires)
@@ -90,6 +110,63 @@ class TestDecompRuleToTape:
 
 class TestAssertValidDecompositionRule:
     """Tests for assert_valid_decomp_rule."""
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_keyword_only_rule(self):
+        """Test that rules accepting only keyword arguments are rejected."""
+
+        def rule(**kwargs):
+            qp.X(kwargs["wires"])
+
+        rule = qp.register_resources({qp.X: 1}, name="keyword_only")(rule)
+        with pytest.raises(AssertionError, match="must accept positional arguments"):
+            assert_valid_decomp_rule(MyOneWireOp(0), rule)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_explicit_keyword_only_rule(self):
+        """Test that an explicit keyword-only parameter is rejected."""
+
+        @qp.register_resources({qp.X: 1}, name="explicit_keyword_only")
+        def rule(*, wires):
+            qp.X(wires)
+
+        with pytest.raises(AssertionError, match="must accept positional arguments"):
+            assert_valid_decomp_rule(MyOneWireOp(0), rule)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_positional_only_rule(self):
+        """Test that a positional-only parameter is accepted."""
+
+        @qp.register_resources({qp.RX: 1}, name="positional_only")
+        def rule(theta, /, *, wires):
+            qp.RX(theta, wires=wires)
+
+        assert_valid_decomp_rule(MyOneWireOp(0.5, wires=0), rule)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_variadic_rule(self):
+        """Test that rules accepting positional and keyword arguments pass."""
+
+        @qp.register_resources({qp.X: 1}, name="variadic")
+        def rule(*_, **__):
+            qp.X(__["wires"])
+
+        assert_valid_decomp_rule(MyOneWireOp(0), rule)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_inapplicable_keyword_only_rule(self):
+        """Test that signature validation precedes applicability evaluation."""
+
+        def condition():
+            pytest.fail("Applicability must not be evaluated before signature validation")
+
+        @qp.register_condition(condition)
+        @qp.register_resources({}, name="keyword_only")
+        def rule(**__):
+            pytest.fail("An invalid rule must not be executed")
+
+        with pytest.raises(AssertionError, match="must accept positional arguments"):
+            assert_valid_decomp_rule(qp.X(0), rule)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_valid_rule(self):
@@ -110,14 +187,14 @@ class TestAssertValidDecompositionRule:
             qp.Y(wires[0])
             qp.Y(wires[1])
 
-        rule_float_counts = qp.register_resources({qp.X: 2.0, qp.Y: 3.0})(rule)
+        rule_float_counts = qp.register_resources({qp.X: 2.0, qp.Y: 3.0}, name="rule")(rule)
         with pytest.raises(
             AssertionError,
             match="Resource count for 'PauliX' in 'MyOp' decomp rule 'rule' must be an integer",
         ):
             assert_valid_decomp_rule(op, rule_float_counts)
 
-        rule_float_counts = qp.register_resources({qp.X: 2, qp.Y: 3.0})(rule)
+        rule_float_counts = qp.register_resources({qp.X: 2, qp.Y: 3.0}, name="rule")(rule)
         with pytest.raises(
             AssertionError,
             match="Resource count for 'PauliY' in 'MyOp' decomp rule 'rule' must be an integer",
@@ -137,7 +214,7 @@ class TestAssertValidDecompositionRule:
             qp.X(wires[0])
             qp.X(wires[1])
 
-        rule = qp.register_resources({qp.X: numpy_int(2)})(rule)
+        rule = qp.register_resources({qp.X: numpy_int(2)}, name="rule")(rule)
 
         with pytest.raises(
             AssertionError,
@@ -159,15 +236,15 @@ class TestAssertValidDecompositionRule:
             qp.Y(wires[0])
             qp.Y(wires[1])
 
-        rule_wrong_numbers = qp.register_resources({qp.X: 2, qp.Y: 3})(rule)
+        rule_wrong_numbers = qp.register_resources({qp.X: 2, qp.Y: 3}, name="rule")(rule)
         with pytest.raises(AssertionError, match=r"PauliY :      2  !=  3$"):
             assert_valid_decomp_rule(op, rule_wrong_numbers)
 
-        rule_wrong_ops = qp.register_resources({qp.X: 2, qp.Z: 2})(rule)
+        rule_wrong_ops = qp.register_resources({qp.X: 2, qp.Z: 2}, name="rule")(rule)
         with pytest.raises(AssertionError, match=r"PauliY :\s+2  !=  0\n  PauliZ :\s+0  !=  2$"):
             assert_valid_decomp_rule(op, rule_wrong_ops)
 
-        rule_zero_count = qp.register_resources({qp.X: 2, qp.Y: 2, qp.Z: 0})(rule)
+        rule_zero_count = qp.register_resources({qp.X: 2, qp.Y: 2, qp.Z: 0}, name="rule")(rule)
         assert_valid_decomp_rule(op, rule_zero_count)
 
     def test_bad_new_decomposition_rule_inexact(self):
@@ -185,7 +262,7 @@ class TestAssertValidDecompositionRule:
             qp.Y(wires[0])
             qp.Y(wires[1])
 
-        rule_wrong_ops = qp.register_resources({qp.X: 2, qp.Z: 2}, exact=False)(rule)
+        rule_wrong_ops = qp.register_resources({qp.X: 2, qp.Z: 2}, exact=False, name="rule")(rule)
         op = MyOp([0, 1])
         with pytest.raises(
             AssertionError,
@@ -208,7 +285,9 @@ class TestAssertValidDecompositionRule:
         def mcm_rule(wires):
             qp.ops.measure(wires[0])
 
-        rule = qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1})(mcm_rule)
+        rule = qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1}, name="mcm_rule")(
+            mcm_rule
+        )
 
         spy = mocker.spy(qp.ops.functions, "matrix")
         assert_valid_decomp_rule(op, rule)
@@ -221,7 +300,7 @@ class TestAssertValidDecompositionRule:
         class MyOp(Operator):
             num_wires = 3
 
-        @qp.register_resources({qp.S: 3})
+        @qp.register_resources({qp.S: 3}, name="rule")
         def rule(wires):  # pylint: disable=unused-argument
             @qp.for_loop(3)
             def loop(i):
@@ -235,7 +314,7 @@ class TestAssertValidDecompositionRule:
     def test_new_decomposition_rule_capture_operator2(self):
         """Operator2 dynamic and wire arguments are forwarded as capture inputs."""
 
-        @qp.register_resources({OneWireDynOp: 3})
+        @qp.register_resources({OneWireDynOp: 3}, name="rule")
         def rule(phi, wires):  # pylint: disable=unused-argument
             @qp.for_loop(3)
             def loop(i):
@@ -245,6 +324,70 @@ class TestAssertValidDecompositionRule:
 
         assert_valid_decomp_rule(OneWireDynOp(0.5, wires=0), rule)
 
+    @pytest.mark.capture
+    def test_nested_capture_subroutine_resources(self):
+        """Nested captured subroutines contribute their contained gate counts."""
+        rule = _nested_capture_cnot_rule({qp.H: 2, qp.CZ: 1})
+        assert_valid_decomp_rule(qp.CNOT([0, 1]), rule)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        "resources, exact, message",
+        [
+            ({qp.H: 1, qp.CZ: 1}, True, r"Hadamard :\s+2  !=  1"),
+            (
+                {qp.H: 2},
+                False,
+                r"The resources is missing gates in the actual decomposition: \['CZ'\]",
+            ),
+        ],
+    )
+    def test_nested_capture_subroutine_invalid_resources(self, resources, exact, message):
+        """Counts and missing gate types inside subroutines remain validated."""
+        rule = _nested_capture_cnot_rule(resources, exact=exact)
+        with pytest.raises(AssertionError, match=message):
+            assert_valid_decomp_rule(qp.CNOT([0, 1]), rule)
+
+    @pytest.mark.capture
+    def test_nested_capture_subroutine_matrix_check(self):
+        """Matching counts do not hide a subroutine that implements the wrong unitary."""
+        rule = _nested_capture_cnot_rule({qp.H: 2, qp.CZ: 1})
+        with pytest.raises(
+            AssertionError, match="decomposition must produce the same matrix as the operator"
+        ):
+            assert_valid_decomp_rule(qp.CZ([0, 1]), rule)
+
+    @pytest.mark.capture
+    def test_capture_subroutine_mcm_skips_matrix_check(self, mocker):
+        """A measurement inside a captured subroutine is counted without a matrix check."""
+
+        @qp.capture.subroutine
+        def measure(wires):
+            qp.measure(wires[0])
+
+        @qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1})
+        def rule(wires):
+            measure(wires)
+
+        spy = mocker.spy(qp.ops.functions, "matrix")
+        assert_valid_decomp_rule(qp.H(0), rule)
+        spy.assert_not_called()
+
+    def test_subroutine_operator_resources_are_not_expanded(self):
+        """A tape-mode SubroutineOp remains a resource in its own right."""
+
+        @qp.templates.Subroutine
+        def hadamard(wires):
+            qp.H(wires)
+
+        resource = qp.templates.subroutine_resource_rep(hadamard, wires=Wire[1])
+
+        @qp.register_resources({resource: 1})
+        def rule(wires):
+            hadamard(wires)
+
+        assert_valid_decomp_rule(qp.H(0), rule)
+
 
 class MyOneWireOp(Operator):
     """A one-wire operator without any registered decomposition rules."""
@@ -253,17 +396,17 @@ class MyOneWireOp(Operator):
 
 
 @qp.register_condition(lambda: False)
-@qp.register_resources({qp.Y: 5})
+@qp.register_resources({qp.Y: 5}, name="never_applicable")
 def _never_applicable(wires):
     raise NotImplementedError
 
 
-@qp.register_resources({qp.X: 1})
+@qp.register_resources({qp.X: 1}, name="to_x")
 def _to_x(wires):
     qp.X(wires)
 
 
-@qp.register_resources({qp.X: 2})
+@qp.register_resources({qp.X: 2}, name="to_x_bad_resources")
 def _to_x_bad_resources(wires):
     qp.X(wires)
 
@@ -297,7 +440,7 @@ class TestAssertDecomposable:
         """Test that an error is raised if an applicable rule is invalid."""
         with qp.decomposition.local_decomps():
             qp.add_decomps(MyOneWireOp, _to_x, _to_x_bad_resources)
-            expected_message = "_to_x_bad_resources for MyOneWireOp fails"
+            expected_message = "to_x_bad_resources for MyOneWireOp fails"
             with pytest.raises(AssertionError, match=expected_message) as exc_info:
                 assert_decomposable(MyOneWireOp(0))
             assert "do not match the resource estimate" in str(exc_info.value.__cause__)

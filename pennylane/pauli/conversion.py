@@ -111,7 +111,7 @@ def _generalized_pauli_decompose(
             should be provided if the dimension of M is not :math:`2^n\times 2^n`.
         hide_identity (bool): does not include the Identity observable within
             the tensor products of the decomposition if ``True``.
-        wire_order (list[Union[int, str]]): the ordered list of wires with respect
+        wire_order (list[int]): the ordered list of wires with respect
             to which the operator is represented as a matrix.
         pauli (bool): return a PauliSentence instance if ``True``.
         padding (bool): makes the function compatible with rectangular matrices and square matrices
@@ -148,20 +148,20 @@ def _generalized_pauli_decompose(
 
     We can also set custom wires using the ``wire_order`` argument:
 
-    >>> coeffs, obs = qp.pauli.conversion._generalized_pauli_decompose(A, wire_order=['a', 'b'])
+    >>> coeffs, obs = qp.pauli.conversion._generalized_pauli_decompose(A, wire_order=[2, 3])
     >>> obs
-    [I('a') @ I('b'),
-    I('a') @ X('b'),
-    I('a') @ Y('b'),
-    I('a') @ Z('b'),
-    X('a') @ I('b'),
-    X('a') @ X('b'),
-    X('a') @ Z('b'),
-    Y('a') @ Y('b'),
-    Z('a') @ I('b'),
-    Z('a') @ X('b'),
-    Z('a') @ Y('b'),
-    Z('a') @ Z('b')]
+    [I(2) @ I(3),
+    I(2) @ X(3),
+    I(2) @ Y(3),
+    I(2) @ Z(3),
+    X(2) @ I(3),
+    X(2) @ X(3),
+    X(2) @ Z(3),
+    Y(2) @ Y(3),
+    Z(2) @ I(3),
+    Z(2) @ X(3),
+    Z(2) @ Y(3),
+    Z(2) @ Z(3)]
 
     .. details::
         :title: Advanced Usage Details
@@ -313,7 +313,7 @@ def _generalized_pauli_decompose_sparse(  # pylint: disable=too-many-branches,to
             :math:`2^n \times 2^n`, use ``padding=True`` to pad with zeros to the next power of two.
         hide_identity (bool): If ``True``, Identity factors are omitted within tensor products
             of the decomposition terms.
-        wire_order (list[Union[int, str]] | None): The ordered list of wires corresponding to
+        wire_order (list[int] | None): The ordered list of wires corresponding to
             the matrix qubit order. If ``None``, uses ``range(n)``.
         pauli (bool): If ``True``, returns a list of Pauli-word specifications as ``(char, wire)``
             pairs per term. If ``False``, returns PennyLane operator tensors for each term.
@@ -503,7 +503,7 @@ def pauli_decompose(
             enabling efficient decomposition of large sparse matrices.
         hide_identity (bool): does not include the Identity observable within
             the tensor products of the decomposition if ``True``.
-        wire_order (list[Union[int, str]]): the ordered list of wires with respect
+        wire_order (list[int]): the ordered list of wires with respect
             to which the operator is represented as a matrix.
         pauli (bool): return a :class:`~.PauliSentence` instance if ``True``.
         check_hermitian (bool): check if the provided matrix is Hermitian if ``True``.
@@ -556,18 +556,18 @@ def pauli_decompose(
     By default the wires are numbered [0, 1, ..., n], but we can also set custom wires using the
     ``wire_order`` argument:
 
-    >>> ps = qp.pauli_decompose(A, pauli=True, wire_order=['a', 'b'])
+    >>> ps = qp.pauli_decompose(A, pauli=True, wire_order=[2, 3])
     >>> print(ps)
     -1.0 * I
-    + -1.5 * X(b)
-    + -0.5 * Y(b)
-    + -1.0 * Z(b)
-    + -1.5 * X(a)
-    + -1.0 * X(a) @ X(b)
-    + -0.5 * X(a) @ Z(b)
-    + 1.0 * Y(a) @ Y(b)
-    + -0.5 * Z(a) @ X(b)
-    + -0.5 * Z(a) @ Y(b)
+    + -1.5 * X(3)
+    + -0.5 * Y(3)
+    + -1.0 * Z(3)
+    + -1.5 * X(2)
+    + -1.0 * X(2) @ X(3)
+    + -0.5 * X(2) @ Z(3)
+    + 1.0 * Y(2) @ Y(3)
+    + -0.5 * Z(2) @ X(3)
+    + -0.5 * Z(2) @ Y(3)
 
     .. details::
         :title: Theory

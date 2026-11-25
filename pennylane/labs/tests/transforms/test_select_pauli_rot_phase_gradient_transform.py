@@ -55,11 +55,13 @@ def test_units_select_pauli_rot_phase_gradient(p):
 
     assert op.name == "ChangeOpBasis2"
 
-    # It iterates the ops in reverse order
-    for g, exp_name in zip(op, ["Prod", "SemiAdder", "Prod"], strict=True):
-        assert g.name == exp_name
+    assert op.compute_op.name == "SelectPauliRotPhaseGradientCompute"
+    assert op.target_op.name == "SemiAdder"
+    qp.assert_equal(op.uncompute_op, qp.adjoint(op.compute_op))
 
-    for g, exp_name in zip(op.operands[-1], ["MultiControlledX"] * p + ["QROM"], strict=True):
+    for g, exp_name in zip(
+        op.compute_op.decomposition(), ["QROMLoad"] + ["MultiControlledX"] * p, strict=True
+    ):
         assert g.name == exp_name
 
 

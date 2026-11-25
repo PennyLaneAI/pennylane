@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.templates.subroutines.arithmetic.adder import _adder_arithmetic_decomposition
+from pennylane.templates.subroutines.arithmetic.adder import _adder_arithmetic
 from pennylane.testing import assert_valid_decomp_rule
 
 
@@ -42,9 +42,9 @@ class TestAdder:
             (6, [0, 1, 2], 8, [4, 5], 1),
             (
                 6,
-                ["a", "b", "c"],
+                [13, 14, 15],
                 8,
-                ["d", "e"],
+                [17, 18],
                 2,
             ),
             (
@@ -268,7 +268,7 @@ class TestAdder:
         all_wires = x_wires + work_wires
         mat_op = qp.matrix(op, wire_order=all_wires)
 
-        mat_arith = qp.matrix(_adder_arithmetic_decomposition, wire_order=all_wires)(**op.arguments)
+        mat_arith = qp.matrix(_adder_arithmetic, wire_order=all_wires)(**op.arguments)
 
         assert qp.math.allclose(mat_op, mat_arith)
 

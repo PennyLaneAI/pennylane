@@ -99,6 +99,12 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
+* PyQuil and Qualtran interoperability has been removed from ``qp.io`` and the top-level
+  PennyLane namespace. The removed APIs are ``from_pyquil``, ``from_quil``, ``from_quil_file``,
+  ``FromBloq``, ``ToBloq``, ``to_bloq``, and ``bloq_registers``.
+
+  - Removed in releases after v0.45
+
 * The ``pennylane.kernels`` module has been removed, including ``kernel_matrix``,
   ``square_kernel_matrix``, ``polarity``, ``target_alignment``, ``threshold_matrix``,
   ``displace_matrix``, ``flip_matrix``, ``closest_psd_matrix`` and
@@ -142,6 +148,12 @@ Completed deprecation cycles
 
 * The ``pennylane.qcut`` module, including ``pennylane.cut_circuit``,
   ``pennylane.cut_circuit_mc``, and the ``WireCut`` operator, has been removed.
+
+  - Removed in releases after v0.45
+
+* The ``pennylane.noise`` module has been removed, including ``NoiseModel``, ``add_noise``,
+  ``insert``, noise mitigation transforms, and ``from_qiskit_noise``. Noise channels such as
+  :class:`~.AmplitudeDamping` are unaffected.
 
   - Removed in releases after v0.45
 
@@ -232,8 +244,9 @@ Completed deprecation cycles
     qp.fourier.mark(qp.RX(0.5, wires=0), "x0")
 
 * The :func:`~pennylane.workflow.get_transform_program` function has been removed.
-  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
-  of a QNode.
+  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the compile pipeline
+  of a :func:`~pennylane.qjit`'d QNode. For a QNode that is not qjit'd, use ``qnode.compile_pipeline`` for the user
+  transforms, or :func:`~pennylane.workflow.construct_batch` to inspect the tapes at the gradient or device level.
 
   - Deprecated in v0.45
   - Removed in v0.46
@@ -376,7 +389,7 @@ Completed deprecation cycles
   - Removed in v0.44
 
 * Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module has been removed.
-  Instead, these functions should be imported from the ``pennylane.noise`` module.
+  At the time, these functions were moved to the ``pennylane.noise`` module, which has since been removed.
 
   - Deprecated in v0.43
   - Removed in v0.44

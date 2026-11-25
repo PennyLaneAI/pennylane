@@ -164,20 +164,20 @@ class TestVar:
 
     def test_permuted_wires(self):
         """Test that the variance of an operator with permuted wires is the same."""
-        obs = qp.prod(qp.PauliZ(8), qp.s_prod(2, qp.PauliZ(10)), qp.s_prod(3, qp.PauliZ("h")))
-        obs_2 = qp.prod(qp.s_prod(3, qp.PauliZ("h")), qp.PauliZ(8), qp.s_prod(2, qp.PauliZ(10)))
+        obs = qp.prod(qp.PauliZ(8), qp.s_prod(2, qp.PauliZ(10)), qp.s_prod(3, qp.PauliZ(5)))
+        obs_2 = qp.prod(qp.s_prod(3, qp.PauliZ(5)), qp.PauliZ(8), qp.s_prod(2, qp.PauliZ(10)))
 
-        dev = qp.device("default.qubit", wires=["h", 8, 10])
+        dev = qp.device("default.qubit", wires=[5, 8, 10])
 
         @qp.qnode(dev)
         def circuit():
-            qp.RX(1.23, wires=["h"])
+            qp.RX(1.23, wires=[5])
             qp.RY(2.34, wires=[8])
             return qp.var(obs)
 
         @qp.qnode(dev)
         def circuit2():
-            qp.RX(1.23, wires=["h"])
+            qp.RX(1.23, wires=[5])
             qp.RY(2.34, wires=[8])
             return qp.var(obs_2)
 

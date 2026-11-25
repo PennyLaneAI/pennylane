@@ -24,6 +24,7 @@ from pennylane.ops import adjoint
 from pennylane.templates.subroutines.arithmetic.out_multiplier import (
     OutMultiplier,
     _add_plus_one,
+    _caddsub_multiplication,
     _out_multiplier_with_cache_resources,
     _out_multiplier_with_caddsub,
     _out_multiplier_with_qft,
@@ -74,7 +75,6 @@ class TestBuildingBlocks:
                 else:
                     assert output == (x, (x + y + 1) % num_y)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("decompose_right_elbow", [False, True])
     def test_add_plus_one_phase(self, decompose_right_elbow, seed):
         """Test that the subroutine _add_plus_one does not incur any phases."""
@@ -120,6 +120,51 @@ class TestBuildingBlocks:
         probs = node(x_state, y_state, transformed_state)
         assert np.isclose(probs[0], 1.0)
         assert np.allclose(probs[1:], 0.0)
+
+    @pytest.mark.parametrize("output_wires_zeroed", [False, True])
+    @pytest.mark.parametrize(
+        "num_x_wires, num_y_wires, num_output_wires",
+        [(1, 2, 3), (2, 2, 4), (3, 2, 4), (4, 2, 3), (2, 3, 6)],
+    )
+    def test_caddsub_multiplication_signed_x(
+        self, num_x_wires, num_y_wires, num_output_wires, output_wires_zeroed
+    ):
+        """Test that ``_caddsub_multiplication`` with ``x_signed=True`` computes
+        ``(z + x * y) mod 2^k`` for a two's-complement signed ``x`` and an unsigned ``y``."""
+        x_wires = list(range(num_x_wires))
+        y_wires = list(range(num_x_wires, num_x_wires + num_y_wires))
+        output_wires = list(
+            range(len(x_wires + y_wires), len(x_wires + y_wires) + num_output_wires)
+        )
+        num_wires = len(x_wires + y_wires + output_wires)
+        work_wires = list(range(num_wires, num_wires + num_output_wires + 1))
+
+        @qp.set_shots(1)
+        @qp.qnode(qp.device("default.qubit"))
+        def node(x, y, z):
+            qp.BasisEmbedding(qp.math.int_to_binary(x % 2**num_x_wires, num_x_wires), x_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(y, num_y_wires), y_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(z, num_output_wires), output_wires)
+            _caddsub_multiplication(
+                x_wires, y_wires, output_wires, work_wires, output_wires_zeroed, x_signed=True
+            )
+            return qp.sample(wires=x_wires + y_wires + output_wires + work_wires)
+
+        def to_int(bits):
+            return int("".join(str(int(s)) for s in bits), 2)
+
+        mod = 2**num_output_wires
+        z_values = [0] if output_wires_zeroed else [0, mod - 3]
+        num_inputs = num_x_wires + num_y_wires
+        for x in range(-(2 ** (num_x_wires - 1)), 2 ** (num_x_wires - 1)):
+            for y in range(2**num_y_wires):
+                for z in z_values:
+                    sample = node(x, y, z)[0]
+                    assert to_int(sample[:num_x_wires]) == x % 2**num_x_wires
+                    assert to_int(sample[num_x_wires:num_inputs]) == y
+                    out = to_int(sample[num_inputs : num_inputs + num_output_wires])
+                    assert out == (z + x * y) % mod
+                    assert not any(sample[num_inputs + num_output_wires :])
 
 
 @pytest.mark.parametrize(
@@ -491,6 +536,29 @@ class TestOutMultiplier:
             qp.assert_equal(op1, op2)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("num_output_wires", [1, 2])
+    def test_qft_rule_zeroed_output_with_concrete_wires(self, num_output_wires):
+        """Test that capture with concrete wires preserves multiplication on the
+        zero-output subspace."""
+        output_wires = [8, 3][:num_output_wires]
+        modulus = 2**num_output_wires
+        with qp.queuing.AnnotatedQueue() as queue:
+            _out_multiplier_with_qft([5], [1], output_wires, modulus, [], True)
+
+        with qp.capture.pause():
+            tape = qp.tape.QuantumScript.from_queue(queue)
+            compute = tape.operations[0].operands[-1]
+            assert not isinstance(compute, qp.ops.Prod2)
+            qp.testing.assert_valid(compute)
+            matrix = qp.matrix(tape, wire_order=[5, 1, *output_wires])
+        for x in range(2):
+            for y in range(2):
+                column = (2 * x + y) * modulus
+                expected = np.zeros(4 * modulus)
+                expected[column + x * y] = 1
+                assert np.allclose(matrix[:, column], expected)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("mod", [4, 3])
     @pytest.mark.parametrize("output_wires_zeroed", [False, True])
     def test_decomposition_qft_rule(self, mod, output_wires_zeroed):
@@ -529,7 +597,7 @@ class TestOutMultiplier:
         for j, rule in enumerate(qp.list_decomps(qp.OutMultiplier)):
             applicable = rule.is_applicable(**op.arguments)
             # TODO: ControlledSequence doesn't take traced wires [sc-128372]
-            if rule.name != "_out_multiplier_with_qft":
+            if rule.name != "with_qft":
                 assert applicable is (j in applicable_rules)
             assert_valid_decomp_rule(op, rule)
 
@@ -557,7 +625,7 @@ class TestOutMultiplier:
         for j, rule in enumerate(qp.list_decomps(qp.OutMultiplier)):
             applicable = rule.is_applicable(**op.arguments)
             # TODO: ControlledSequence doesn't take traced wires [sc-128372]
-            if rule.name != "_out_multiplier_with_qft":
+            if rule.name != "with_qft":
                 assert applicable is (j in applicable_rules)
             assert_valid_decomp_rule(op, rule)
 
@@ -599,7 +667,6 @@ class TestOutMultiplier:
         assert wires == qp.wires.Wires([1, 2, 3, 4, 5, 6])
 
     @pytest.mark.catalyst
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("mod", [16, 12])
     def test_qjit_compatible(self, mod):
         """Test that the template is compatible with the QJIT compiler."""

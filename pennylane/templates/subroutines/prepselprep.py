@@ -207,7 +207,7 @@ class PrepSelPrep(Operation):
         return self
 
 
-def _prepselprep_resources(op_reps, num_control):
+def _prepselprep_standard_resources(op_reps, num_control):
     select_lcu = Select(list(op_reps), control=Wire[num_control], work_wires=Wire[0], partial=True)
     select_phases = Select(
         [abstractify(GlobalPhase)] * len(op_reps),
@@ -228,8 +228,8 @@ def _prepselprep_resources(op_reps, num_control):
     return resources
 
 
-@register_resources(_prepselprep_resources)
-def _prepselprep_decomp(*_, wires, lcu, control, target_wires):  # pylint: disable=unused-argument
+@register_resources(_prepselprep_standard_resources, name="state_prep_select")
+def _prepselprep_standard(*_, wires, lcu, control, target_wires):  # pylint: disable=unused-argument
     coeffs, ops, phases = _get_new_terms(lcu)
     sqrt_coeffs = math.sqrt(coeffs)
     change_op_basis(
@@ -238,7 +238,7 @@ def _prepselprep_decomp(*_, wires, lcu, control, target_wires):  # pylint: disab
     )
 
 
-add_decomps(PrepSelPrep, _prepselprep_decomp)
+add_decomps(PrepSelPrep, _prepselprep_standard)
 
 
 @PrepSelPrep._primitive.def_impl  # pylint: disable=protected-access

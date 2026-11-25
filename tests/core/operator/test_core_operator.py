@@ -641,7 +641,7 @@ class TestHasReprProperties:
         class SomeRandomName(qp.operation.Operator):
             pass
 
-        @qp.register_resources({qp.X: 1})
+        @qp.register_resources({qp.X: 1}, name="decomp")
         def decomp(x, wires):
             qp.RX(x, wires)
 
@@ -659,12 +659,12 @@ class TestHasReprProperties:
                 return {"num_wires": len(self.wires)}
 
         @qp.register_condition(lambda num_wires: num_wires == 1)
-        @qp.register_resources({qp.RX: 1})
+        @qp.register_resources({qp.RX: 1}, name="decomp1")
         def decomp1(x, wires):
             qp.RX(x, wires)
 
         @qp.register_condition(lambda num_wires: num_wires == 2)
-        @qp.register_resources({qp.CRX: 1})
+        @qp.register_resources({qp.CRX: 1}, name="decomp2")
         def decomp2(x, wires):
             qp.CRX(x, wires)
 
@@ -1043,24 +1043,24 @@ class TestObservableConstruction:
     def test_repr(self):
         """Test the string representation of an observable with and without a return type."""
 
-        m = qp.expval(qp.PauliZ(wires=["a"]) @ qp.PauliZ(wires=["b"]))
-        expected = "expval(Z('a') @ Z('b'))"
+        m = qp.expval(qp.PauliZ(wires=[6]) @ qp.PauliZ(wires=[7]))
+        expected = "expval(Z(6) @ Z(7))"
         assert str(m) == expected
 
-        m = qp.probs(wires=["a"])
-        expected = "probs(wires=['a'])"
+        m = qp.probs(wires=[6])
+        expected = "probs(wires=[6])"
         assert str(m) == expected
 
-        m = qp.probs(op=qp.PauliZ(wires=["a"]))
-        expected = "probs(Z('a'))"
+        m = qp.probs(op=qp.PauliZ(wires=[6]))
+        expected = "probs(Z(6))"
         assert str(m) == expected
 
-        m = qp.PauliZ(wires=["a"]) @ qp.PauliZ(wires=["b"])
-        expected = "Z('a') @ Z('b')"
+        m = qp.PauliZ(wires=[6]) @ qp.PauliZ(wires=[7])
+        expected = "Z(6) @ Z(7)"
         assert str(m) == expected
 
-        m = qp.PauliZ(wires=["a"])
-        expected = "Z('a')"
+        m = qp.PauliZ(wires=[6])
+        expected = "Z(6)"
         assert str(m) == expected
 
     def test_raises_if_no_wire_is_given(self):
@@ -1329,11 +1329,11 @@ class TestDefaultRepresentations:
         class OpWithACustomName98786(qp.operation.Operator):
             pass
 
-        @qp.register_resources({qp.RX: 1})
+        @qp.register_resources({qp.RX: 1}, name="decomp1")
         def decomp1(x, wires):
             qp.RX(x, wires)
 
-        @qp.register_resources({qp.RZ: 1})
+        @qp.register_resources({qp.RZ: 1}, name="decomp2")
         def decomp2(x, wires):
             qp.RZ(x, wires)
 
@@ -1362,12 +1362,12 @@ class TestDefaultRepresentations:
                 return {"num_wires": len(self.wires)}
 
         @qp.register_condition(lambda num_wires: num_wires == 1)
-        @qp.register_resources({qp.RX: 1})
+        @qp.register_resources({qp.RX: 1}, name="decomp1")
         def decomp1(x, wires):
             qp.RX(x, wires)
 
         @qp.register_condition(lambda num_wires: num_wires == 2)
-        @qp.register_resources({qp.CRX: 1})
+        @qp.register_resources({qp.CRX: 1}, name="decomp2")
         def decomp2(x, wires):
             qp.CRX(x, wires)
 
