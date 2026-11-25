@@ -16,8 +16,6 @@ r"""Resource operators for parametric multi qubit operations."""
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resource_operator import GateCount, resource_rep
 
-# pylint: disable = unused-argument
-
 PAULI_ROT_SPECIAL_CASES = {
     "X": lambda eps: [GateCount(qre.resource_rep(qre.RX, {"precision": eps}))],
     "Y": lambda eps: [GateCount(qre.resource_rep(qre.RY, {"precision": eps}))],

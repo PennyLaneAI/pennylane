@@ -16,8 +16,6 @@ Unit tests for the available qubit operations for quantum chemistry purposes.
 """
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods, unnecessary-lambda-assignment
 import pytest
 from gate_data import (
     DoubleExcitation,
@@ -29,13 +27,17 @@ from gate_data import (
     SingleExcitationMinus,
     SingleExcitationPlus,
 )
+from helpers.decomposition_helpers import assert_basis_change_decomposition
 from scipy.linalg import expm, fractional_matrix_power
 
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.op_math.prod2 import Prod2
+from pennylane.ops.qubit.qchem_ops import (
+    _SingleExcitationBasis,
+    _SingleExcitationRotations,
+)
 from pennylane.typing import Float, Wire
 
 PARAMETRIZED_QCHEM_OPERATIONS = [
@@ -50,7 +52,7 @@ PARAMETRIZED_QCHEM_OPERATIONS = [
 ]
 
 
-class TestParameterFrequencies:
+class TestParameterFrequencies:  # pylint: disable=too-few-public-methods
 
     @pytest.mark.parametrize("op", PARAMETRIZED_QCHEM_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
@@ -144,6 +146,23 @@ class TestSingleExcitation:
 
             decomposed_matrix = qp.matrix(tape, wire_order=[0, 1])
             assert np.allclose(decomposed_matrix, exp)
+
+    def test_single_excitation_ppr_crz_decomp(self):
+        """Tests that the Clifford operations belong to the basis change, leaving only CRZ as target."""
+        rule = qp.list_decomps(qp.SingleExcitation)["to_ppr_crz"]
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(0.2, [0, 1])
+
+        assert len(q.queue) == 1
+        cob = q.queue[0]
+        assert cob.name == "ChangeOpBasis2"
+        assert not isinstance(cob.compute_op, qp.ops.Prod2)
+        assert cob.compute_op.decomposition() == [
+            qp.PPR_4(1, "XX", wires=[0, 1]),
+            qp.CNOT([0, 1]),
+        ]
+        qp.assert_equal(cob.target_op, qp.CRZ(0.2, wires=[1, 0]))
+        qp.assert_equal(cob.uncompute_op, qp.adjoint(cob.compute_op))
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_generator(self, phi):
@@ -301,6 +320,40 @@ class TestSingleExcitation:
 class TestSingleExcitationDecompositions:
     """Tests the decomposition rules registered for SingleExcitation with the graph system."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        "rule_name",
+        ["basis_change_ry", "to_ppr_rz", "to_ppr_crz"],
+    )
+    def test_basis_change_resources_and_matrix(self, rule_name):
+        """Test that basis changes preserve the excitation matrix and resource identities."""
+        op = qp.SingleExcitation(0.37, wires=[3, 1])
+        rule = qp.list_decomps(op)[rule_name]
+        assert_basis_change_decomposition(op, rule)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        "rule_name",
+        ["basis_change_ry", "to_ppr_rz", "to_ppr_crz"],
+    )
+    def test_subcircuit_replays_dynamic_arguments(self, rule_name):
+        """Test that captured target subcircuits retain dynamic angles and wire assignments."""
+        import jax
+        import jax.numpy as jnp
+
+        rule = qp.list_decomps(qp.SingleExcitation)[rule_name]
+        jaxpr = jax.make_jaxpr(lambda phi, wires: rule(phi, wires=wires))(
+            jnp.array(0.1), jnp.array([0, 1])
+        )
+        for phi, wires in ((0.37, [3, 1]), (-0.81, [1, 4])):
+            tape = qp.testing.plxpr_to_tape(
+                jaxpr.jaxpr, jaxpr.consts, jnp.array(phi), jnp.array(wires)
+            )
+            with qp.capture.pause():
+                expected = qp.SingleExcitation(phi, wires=wires).matrix()
+                actual = qp.matrix(tape, wire_order=wires)
+            assert np.allclose(actual, expected)
+
     def test_decomp_queuing(self):
         """Test the operations queued by the Hadamard/CNOT/RY decomposition rule."""
         phi = 0.5
@@ -310,22 +363,20 @@ class TestSingleExcitationDecompositions:
 
         tape = qp.testing.decomp_rule_to_tape(op, rule)
 
-        # the rule queues a single ChangeOpBasis, which is what lets a control skip the
-        # Hadamard/CNOT basis change. Operands are in matrix order, i.e. reversed relative to
-        # the order they are applied in.
+        # A single ChangeOpBasis lets a control skip the Hadamard/CNOT basis change.
         (cob,) = tape.operations
         for actual, exp in zip(
-            cob.compute_op.operands, [qp.CNOT(wires), qp.Hadamard(wires[0])], strict=True
+            cob.compute_op.decomposition(), [qp.Hadamard(wires[0]), qp.CNOT(wires)], strict=True
         ):
             qp.assert_equal(actual, exp)
         for actual, exp in zip(
-            cob.target_op.operands,
-            [qp.RY(-phi / 2, wires[1]), qp.RY(-phi / 2, wires[0])],
+            cob.target_op.decomposition(),
+            [qp.RY(-phi / 2, wires[0]), qp.RY(-phi / 2, wires[1])],
             strict=True,
         ):
             qp.assert_equal(actual, exp)
         for actual, exp in zip(
-            cob.uncompute_op.operands, [qp.Hadamard(wires[0]), qp.CNOT(wires)], strict=True
+            cob.uncompute_op.decomposition(), [qp.CNOT(wires), qp.Hadamard(wires[0])], strict=True
         ):
             qp.assert_equal(actual, exp)
 
@@ -346,38 +397,33 @@ class TestSingleExcitationDecompositions:
         jaxpr = jax.make_jaxpr(circuit)(phi, *wires)
         ops = qp.testing.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
 
-        # the rule queues a ChangeOpBasis with an explicit inverse basis change
-        expected = [
-            qp.Hadamard(wires[0]),
-            qp.CNOT(wires),
-            qp.RY(-phi / 2, wires[0]),
-            qp.RY(-phi / 2, wires[1]),
-            qp.CNOT(wires),
-            qp.Hadamard(wires[0]),
-        ]
-        for actual, exp in zip(ops, expected, strict=True):
-            qp.assert_equal(actual, exp)
+        (actual,) = ops
+        expected = qp.change_op_basis(
+            _SingleExcitationBasis(wires, reverse=False),
+            _SingleExcitationRotations(phi, wires),
+            _SingleExcitationBasis(wires, reverse=True),
+        )
+        qp.assert_equal(actual, expected)
 
     def test_decomp_resources(self):
         """Test the resources of the Hadamard/CNOT/RY decomposition rule."""
         rule = qp.list_decomps(qp.SingleExcitation)[0]
         op = qp.SingleExcitation(0.5, wires=(0, 1))
 
-        # the rule reports a single ChangeOpBasis; operands are in matrix order
-        basis = Prod2((qp.CNOT(Wire[2]), qp.Hadamard(Wire[1])))
-        unbasis = Prod2((qp.Hadamard(Wire[1]), qp.CNOT(Wire[2])))
+        # The rule reports a single ChangeOpBasis with registered subcircuit operands.
+        basis = _SingleExcitationBasis(Wire[2], reverse=False)
+        unbasis = _SingleExcitationBasis(Wire[2], reverse=True)
         expected = qp.decomposition.Resources(
             {
                 _change_op_basis_abstract(
                     basis,
-                    Prod2((qp.RY(Float, Wire[1]), qp.RY(Float, Wire[1]))),
+                    _SingleExcitationRotations(Float, Wire[2]),
                     unbasis,
                 ): 1
             }
         )
         assert rule.compute_resources(**op.arguments) == expected
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_controlled_decomposition_graph(self):
         r"""Controlling ``SingleExcitation`` should control only the two inner ``RY``'s, leaving the
         conjugating Hadamard/CNOT basis change bare. This comes out of the generic
@@ -388,8 +434,7 @@ class TestSingleExcitationDecompositions:
         tape = qp.tape.QuantumScript([op], [])
         expected_matrix = qp.matrix(tape, wire_order=[0, 1, control])
 
-        # pylint: disable-next=protected-access
-        [decomp], _ = qp.transforms._tape_decompose(
+        [decomp], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
             tape, gate_set={qp.CNOT, qp.RY, qp.RZ, qp.Hadamard, qp.GlobalPhase, qp.PauliX}
         )
         gates = decomp.operations
@@ -549,6 +594,14 @@ class TestSingleExcitationDecompositions:
 
 
 class TestDoubleExcitation:
+    def test_assert_valid(self):
+        qp.testing.assert_valid(qp.DoubleExcitation(0.123, wires=[0, 1, 2, 3]))
+
+    def test_abstract_arguments(self):
+        op = qp.DoubleExcitation(Float, wires=Wire[4])
+        assert op.phi == Float
+        assert op.arg_specs == {"phi": Float, "wires": Wire[4]}
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_matrix(self, phi):
         """Tests that the DoubleExcitation operation calculates the correct matrix"""
@@ -781,6 +834,20 @@ class TestDoubleExcitation:
 class TestOrbitalRotation:
     """Test OrbitalRotation gate operation"""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_assert_valid(self):
+        """Test that OrbitalRotation satisfies the operator interface."""
+        qp.testing.assert_valid(qp.OrbitalRotation(0.123, wires=[0, 1, 2, 3]))
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
+    @pytest.mark.parametrize("wires", [[0, 1, 2, 3], [3, 1, 0, 2]])
+    def test_decomposition_rule(self, phi, wires):
+        """Test all registered decomposition matrices and resource counts."""
+        op = qp.OrbitalRotation(phi, wires=wires)
+        for rule in qp.list_decomps(qp.OrbitalRotation):
+            qp.testing.assert_valid_decomp_rule(op, rule)
+
     def grad_circuit_0(self, phi):
         qp.PauliX(1)
         qp.Hadamard(2)
@@ -851,7 +918,7 @@ class TestOrbitalRotation:
         phi = 1.234
         wires = (0, 1, 2, 3)
         op = qp.OrbitalRotation(phi, wires=wires)
-        adj_op = qp.adjoint(op, lazy=False)
+        adj_op = op.adjoint()
         qp.assert_equal(adj_op, qp.OrbitalRotation(-phi, wires=wires))
 
     def test_adjoint_integration(self):
@@ -1072,7 +1139,7 @@ class TestOrbitalRotation:
         circuit_1 = qp.QNode(self.grad_circuit_1, dev, interface="torch", diff_method=diff_method)
         total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
-        phi_t = torch.tensor(phi, dtype=torch.complex128, requires_grad=True)
+        phi_t = torch.tensor(phi, dtype=torch.float64, requires_grad=True)
         result = total(phi_t)
         result.backward()
 
@@ -1080,6 +1147,20 @@ class TestOrbitalRotation:
 
 
 class TestFermionicSWAP:
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_assert_valid(self):
+        """Test that FermionicSWAP satisfies the operator interface."""
+        qp.testing.assert_valid(qp.FermionicSWAP(0.123, wires=[0, 1]))
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
+    @pytest.mark.parametrize("wires", [[0, 1], [2, 0]])
+    def test_decomposition_rule(self, phi, wires):
+        """Test the registered decomposition matrix and resource counts."""
+        op = qp.FermionicSWAP(phi, wires=wires)
+        rule = qp.list_decomps(qp.FermionicSWAP)["to_multirz_single_qubit"]
+        qp.testing.assert_valid_decomp_rule(op, rule)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_fermionic_swap_matrix(self, phi):
         """Tests that the FermionicSWAP operation calculates the correct matrix"""
@@ -1145,7 +1226,7 @@ class TestFermionicSWAP:
         phi = 1.234
         wires = (0, 1)
         op = qp.FermionicSWAP(phi, wires=wires)
-        adj_op = qp.adjoint(op, lazy=False)
+        adj_op = op.adjoint()
         qp.assert_equal(adj_op, qp.FermionicSWAP(-phi, wires=wires))
 
     def test_adjoint_integration(self):

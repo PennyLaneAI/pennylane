@@ -34,7 +34,6 @@ def get_device(device_name, seed):
     return qp.device(device_name, seed=seed)
 
 
-# pylint: disable=too-few-public-methods
 class TestCaching:
     """Tests for caching behaviour"""
 
@@ -202,8 +201,8 @@ class TestAutogradExecuteIntegration:
             ops1 = [qp.RY(a, wires=0), qp.RX(b, wires=0)]
             tape1 = qp.tape.QuantumScript(ops1, [qp.expval(qp.PauliZ(0))], shots=shots)
 
-            ops2 = [qp.RY(a, wires="a"), qp.RX(b, wires="a")]
-            tape2 = qp.tape.QuantumScript(ops2, [qp.expval(qp.PauliZ("a"))], shots=shots)
+            ops2 = [qp.RY(a, wires=5), qp.RX(b, wires=5)]
+            tape2 = qp.tape.QuantumScript(ops2, [qp.expval(qp.PauliZ(5))], shots=shots)
 
             return execute([tape1, tape2], device, **execute_kwargs)
 
@@ -240,7 +239,7 @@ class TestAutogradExecuteIntegration:
             res = qp.jacobian(lambda x: qp.math.hstack(cost(x)))(a)
         else:
             res = qp.jacobian(cost)(a)
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qp.math.sin(a)
 
@@ -397,7 +396,7 @@ class TestAutogradExecuteIntegration:
         jac = qp.jacobian(cost)(params)
         assert isinstance(jac, np.ndarray)
         if not shots.has_partitioned_shots:
-            assert jac.shape == (4, 2)  # pylint: disable=no-member
+            assert jac.shape == (4, 2)
 
         d1 = -np.sin(x) * np.cos(y)
         d2 = -np.cos(x) * np.sin(y)
@@ -548,7 +547,7 @@ class TestAutogradExecuteIntegration:
 
         device = get_device(device_name, seed=seed)
 
-        class MyU3(qp.U3):
+        class MyU3(qp.U3):  # pylint: disable=too-few-public-methods
             """Dummy operator."""
 
             name = "MyU3"
@@ -581,7 +580,7 @@ class TestAutogradExecuteIntegration:
             program = device.preprocess_transforms(execution_config=config)
             return execute([tape], device, **execute_kwargs, transform_program=program)[0]
 
-        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1}, name="decomp")
         def _decomp(theta, phi, delta, wires):
             qp.Rot(delta, theta, -delta, wires)
             qp.PhaseShift(phi + delta, wires)
@@ -792,7 +791,6 @@ class TestHamiltonianWorkflows:
     """Test that tapes ending with expectations
     of Hamiltonians provide correct results and gradients"""
 
-    # pylint: disable=too-many-arguments, too-many-positional-arguments
     @pytest.fixture
     def cost_fn(self, execute_kwargs, shots, device_name, seed, constructor):
         """Cost function for gradient tests"""

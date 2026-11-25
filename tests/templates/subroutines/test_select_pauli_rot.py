@@ -16,15 +16,18 @@ Unit tests for the SelectPauliRot template.
 """
 
 import re
+from functools import partial
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.ops.op_math import Prod
+from pennylane.templates.subroutines.select_pauli_rot import (
+    _select_pauli_rot_standard,
+    _SelectPauliRotYBasis,
+    _UniformRZ,
+)
 from pennylane.testing import assert_decomposable
 from pennylane.typing import AbstractWires, Float
 
@@ -212,8 +215,16 @@ class TestSelectPauliRot:
             decomp_2 = decomposition_2[0].decomposition()
             decomposition, decomposition_2 = [], []
             for op1, op2 in zip(decomp_1, decomp_2):
-                decomposition.extend(op1.decomposition() if isinstance(op1, Prod) else [op1])
-                decomposition_2.extend(op2.decomposition() if isinstance(op2, Prod) else [op2])
+                decomposition.extend(
+                    op1.decomposition()
+                    if type(op1) in (_UniformRZ, _SelectPauliRotYBasis)
+                    else [op1]
+                )
+                decomposition_2.extend(
+                    op2.decomposition()
+                    if type(op2) in (_UniformRZ, _SelectPauliRotYBasis)
+                    else [op2]
+                )
 
         for dec in [decomposition, decomposition_2]:
             if axis == "Y":
@@ -233,7 +244,7 @@ class TestSelectPauliRot:
                 assert gate.name == "CNOT"
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("n", [1, 2, 3, 4])
+    @pytest.mark.parametrize("n", [0, 1, 2, 3, 4])
     @pytest.mark.parametrize("axis", "XYZ")
     def test_decomposition_new(self, n, axis):
         """Tests that the decomposition of SelectPauliRot is correct with the new system."""
@@ -241,6 +252,59 @@ class TestSelectPauliRot:
         angles = np.random.random((2**n,))
         op = qp.SelectPauliRot(angles, control_wires=range(n), target_wire=n, rot_axis=axis)
         assert_decomposable(op)
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("dtype", ["float32", "float64", "int32", "int64"])
+    @pytest.mark.parametrize("axis", "XYZ")
+    def test_decomposition_resources_match_angle_dtype(self, dtype, axis):
+        """Test that subcircuits retain the parent operator's canonical angle signature."""
+        angles = qp.math.asarray([1, 2], like="jax", dtype=dtype)
+        op = qp.SelectPauliRot(angles, control_wires=[0], target_wire=[1], rot_axis=axis)
+        assert_decomposable(op)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("axis", "XY")
+    def test_captured_decomposition_reuses_dynamic_angles_and_wires(self, axis):
+        """Test that reevaluation preserves current angles and the ordered control register."""
+        import jax.numpy as jnp
+
+        angles = jnp.array([0.1, 0.2, 0.3, 0.4])
+        controls, target = jnp.array([0, 2]), jnp.array([1])
+        rule = partial(_select_pauli_rot_standard, rot_axis=axis)
+        program = qp.capture.make_plxpr(rule)(angles, controls, target)
+
+        for scale, control_wires, target_wire in [(1.0, [3, 1], [2]), (2.0, [4, 0], [1])]:
+            runtime_angles = angles * scale
+            tape = qp.testing.plxpr_to_tape(
+                program.jaxpr,
+                program.consts,
+                runtime_angles,
+                jnp.array(control_wires),
+                jnp.array(target_wire),
+            )
+            assert len(tape.operations) == 1
+            assert isinstance(tape.operations[0], qp.ops.ChangeOpBasis2)
+            basis_change = tape.operations[0]
+            assert basis_change.target_op.name == "UniformRZ"
+            assert_decomposable(basis_change.target_op)
+            if axis == "Y":
+                assert basis_change.compute_op.name == "SelectPauliRotYBasis"
+                assert basis_change.uncompute_op.name == "SelectPauliRotYBasis"
+                assert basis_change.compute_op.arguments["reverse"] is False
+                assert basis_change.uncompute_op.arguments["reverse"] is True
+                assert_decomposable(basis_change.compute_op)
+                assert_decomposable(basis_change.uncompute_op)
+            with qp.capture.pause():
+                rotation = {"X": qp.RX, "Y": qp.RY}[axis]
+                expected = qp.Select(
+                    [rotation(angle, target_wire) for angle in runtime_angles],
+                    control=control_wires,
+                )
+                wires = control_wires + target_wire
+                assert np.allclose(
+                    qp.matrix(tape, wire_order=wires), qp.matrix(expected, wire_order=wires)
+                )
 
     @pytest.mark.jax
     def test_interface_jax(self):

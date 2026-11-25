@@ -231,7 +231,7 @@ class Exp(ScalarSymbolicOp, Operation):
         return (self.base, self.data[0]), ()
 
     @classmethod
-    def _unflatten(cls, data, metadata):  # pylint: disable=unused-argument
+    def _unflatten(cls, data, metadata):
         base, coeff = data
         return cls(base, coeff)
 
@@ -268,7 +268,6 @@ class Exp(ScalarSymbolicOp, Operation):
     def resource_params(self) -> dict:
         return {"base": self.base}
 
-    # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
     @queuing.QueuingManager.stop_recording()
     def has_decomposition(self):
@@ -278,7 +277,7 @@ class Exp(ScalarSymbolicOp, Operation):
             coeff *= base.scalar
             base = base.base
 
-        # pylint: disable=unidiomatic-typecheck
+        # pylint: disable-next=unidiomatic-typecheck
         if type(self) is Exp and not math.is_tracer(coeff) and math.real(coeff):
             # if type is Evolution, we assume that is is indeed time evolution
             return False
@@ -329,7 +328,7 @@ class Exp(ScalarSymbolicOp, Operation):
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
 
-        # pylint: disable=unidiomatic-typecheck
+        # pylint: disable-next=unidiomatic-typecheck
         if type(self) is Exp and not math.is_tracer(coeff) and math.real(coeff):
             error_msg = f"The decomposition of the {self} operator is not defined."
 
@@ -351,13 +350,13 @@ class Exp(ScalarSymbolicOp, Operation):
 
         if qp.pauli.is_pauli_word(base):
             # Check if the exponential can be decomposed into a PauliRot gate
-            return self._pauli_rot_decomposition(base, coeff)
+            return self._pauli_rot_standard(base, coeff)
 
         error_msg = f"The decomposition of the {self} operator is not defined."
         raise DecompositionUndefinedError(error_msg)
 
     @staticmethod
-    def _pauli_rot_decomposition(base: Operator, coeff: complex):
+    def _pauli_rot_standard(base: Operator, coeff: complex):
         """Decomposes the exponential of a Pauli word into a PauliRot.
 
         Args:
@@ -425,8 +424,8 @@ class Exp(ScalarSymbolicOp, Operation):
 
         return sparse_expm(self.coeff * self.base.sparse_matrix().tocsc()).asformat(format)
 
-    # pylint: disable=arguments-renamed,invalid-overridden-method
     @property
+    # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
         return self.base.has_diagonalizing_gates
 
@@ -471,9 +470,8 @@ class Exp(ScalarSymbolicOp, Operation):
             return Exp(new_base.base, self.coeff * new_base.scalar)
         return Exp(new_base, self.coeff)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_generator(self):
+    def has_generator(self):  # pylint: disable=arguments-renamed,invalid-overridden-method
         if math.is_tracer(self.coeff):
             return self.base.is_verified_hermitian
         return self.base.is_verified_hermitian and not np.real(self.coeff)
@@ -513,7 +511,7 @@ def _pauli_rot_decomp_condition(base):
     return qp.pauli.is_pauli_word(base)
 
 
-def _pauli_rot_decomp_resource(base):
+def _exp_to_pauli_rot_resources(base):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
 
@@ -522,8 +520,8 @@ def _pauli_rot_decomp_resource(base):
 
 
 @register_condition(_pauli_rot_decomp_condition)
-@register_resources(_pauli_rot_decomp_resource)
-def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argument
+@register_resources(_exp_to_pauli_rot_resources, name="to_pauli_rot")
+def _exp_to_pauli_rot(*params, wires, base, **_):  # pylint: disable=unused-argument
     """Decompose the operator into a single PauliRot operator."""
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
@@ -540,4 +538,4 @@ def pauli_rot_decomp(*params, wires, base, **_):  # pylint: disable=unused-argum
     qp.PauliRot(coeff, pauli_word, base.wires)
 
 
-add_decomps(Exp, pauli_rot_decomp)
+add_decomps(Exp, _exp_to_pauli_rot)

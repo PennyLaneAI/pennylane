@@ -75,6 +75,22 @@ class LeftQuantumComparator(Operator2):
 
     >>> print(circuit())
     [0. 1.]
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.LeftQuantumComparator
+            :stacked:
+            :symbols: :math:`n` ``x_wires``, :math:`n` ``y_wires`` and ``comparator`` :math:`c`
+            :example: :math:`n=2`, :math:`c={\leq}`
+
+            .. decomposition-rule:: elbow_ladder
+                :image: /_static/decomposition_thumbnails/left_quantum_comparator_elbow_ladder.svg
+                :where: :math:`[\cdot]` equal to 1 if the condition holds and 0 otherwise
+
+                :class:`~.TemporaryAND` | :math:`n` | 2
+                :class:`~.CNOT` | :math:`5n - 3` | 7
+                :class:`~.X` | :math:`[c \in \{\leq, \geq\}]` | 1
     """
 
     wire_argnames = ("x_wires", "y_wires", "target_wire", "work_wires")
@@ -93,7 +109,7 @@ class LeftQuantumComparator(Operator2):
         target_wire: WiresLike,
         work_wires: WiresLike,
         comparator: str,
-    ):  # pylint: disable=too-many-arguments
+    ):
 
         if comparator not in ["<", "<=", ">=", ">"]:
             raise ValueError("Allowed values for 'comparator' are: '<', '<=', '>=' and '>'.")
@@ -127,8 +143,9 @@ class LeftQuantumComparator(Operator2):
         super().__init__(x_wires, y_wires, target_wire, work_wires, comparator)
 
 
-def _left_quantum_comparator_resources(x_wires, y_wires, target_wire, work_wires, comparator):
-    # pylint: disable=unused-argument
+def _left_quantum_comparator_standard_resources(
+    x_wires, y_wires, target_wire, work_wires, comparator  # pylint: disable=unused-argument
+):
     num_y_wires = len(y_wires)
     resources = {
         Elbow: num_y_wires,
@@ -141,10 +158,8 @@ def _left_quantum_comparator_resources(x_wires, y_wires, target_wire, work_wires
     return resources
 
 
-@register_resources(_left_quantum_comparator_resources, exact=True)
-def _left_quantum_comparator(
-    x_wires, y_wires, target_wire, work_wires, comparator, **_
-):  # pylint: disable=too-many-arguments
+@register_resources(_left_quantum_comparator_standard_resources, exact=True, name="elbow_ladder")
+def _left_quantum_comparator_standard(x_wires, y_wires, target_wire, work_wires, comparator, **_):
 
     # revert to follow PL convention
     x_wires = x_wires[::-1]
@@ -164,7 +179,6 @@ def _left_quantum_comparator(
         y_wires = math.array(y_wires, like="jax")
         used_work_wires = math.array(used_work_wires, like="jax")
 
-    # pylint: disable=no-value-for-parameter
     @for_loop(1, len(x_wires))
     def _loop(i):
         CNOT(wires=[x_wires[i], y_wires[i]])
@@ -174,10 +188,10 @@ def _left_quantum_comparator(
         CNOT(wires=[used_work_wires[i - 1], used_work_wires[i]])
         CNOT(wires=[x_wires[i], y_wires[i]])
 
-    _loop()
+    _loop()  # pylint: disable=no-value-for-parameter
 
     if comparator in ("<=", ">="):
         X(target_wire)
 
 
-add_decomps(LeftQuantumComparator, _left_quantum_comparator)
+add_decomps(LeftQuantumComparator, _left_quantum_comparator_standard)

@@ -28,8 +28,8 @@ from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
 from pennylane.measurements import ProbabilityMP, expval
 from pennylane.ops import Sum
-from pennylane.pauli import PauliWord, pauli_decompose
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.pauli import PauliWord, pauli_decompose, to_operator
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.transforms import split_to_single_terms
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn, ResultBatch
@@ -64,8 +64,7 @@ def _inplace_set_trainable_params(tape):
     tape.trainable_params = math.get_trainable_indices(params)
 
 
-# pylint: disable=unused-argument
-def _expand_transform_hadamard(
+def _expand_transform_hadamard(  # pylint: disable=unused-argument
     tape: QuantumScript,
     argnum=None,
     aux_wire=None,
@@ -266,15 +265,15 @@ def hadamard_grad(
 
         If you use custom wires on your device, and you want to use the "standard" or "reversed" modes, you need to pass an auxiliary wire.
 
-        >>> dev_wires = ("a", "c")
+        >>> dev_wires = (3, 4)
         >>> dev = qp.device("default.qubit", wires=dev_wires)
-        >>> gradient_kwargs = {"aux_wire": "c"}
+        >>> gradient_kwargs = {"aux_wire": 4}
         >>> @qp.qnode(dev, interface="jax", diff_method="hadamard", gradient_kwargs=gradient_kwargs)
         >>> def circuit(params):
-        ...    qp.RX(params[0], wires="a")
-        ...    qp.RY(params[1], wires="a")
-        ...    qp.RX(params[2], wires="a")
-        ...    return qp.expval(qp.Z("a"))
+        ...     qp.RX(params[0], wires=3)
+        ...     qp.RY(params[1], wires=3)
+        ...     qp.RX(params[2], wires=3)
+        ...     return qp.expval(qp.Z(3))
         >>> params = jax.numpy.array([0.1, 0.2, 0.3])
         >>> jax.jacobian(circuit)(params)
         Array([-0.3875172 , -0.18884787, -0.38355705], dtype=float64)
@@ -499,6 +498,7 @@ def _hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
     return new_batch, sub_coeffs
 
 
+# pylint: disable-next=unused-argument
 def _direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
 
     trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
@@ -559,6 +559,7 @@ def _reversed_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, 
     return new_batch, coeffs
 
 
+# pylint: disable-next=unused-argument
 def _reversed_direct_hadamard_test(tape, trainable_param_idx, aux_wire) -> tuple[list, list]:
 
     trainable_op, idx, _ = tape.get_operation(trainable_param_idx)
@@ -681,9 +682,9 @@ def _get_pauli_terms(op):
 
     # qp.PauliZ has no defined terms() behavior
     return (
-        pauli_rep.operation().terms()
-        if isinstance(pauli_rep.operation(), ops.op_math.Sum)
-        else (1 * pauli_rep.operation()).terms()
+        to_operator(pauli_rep).terms()
+        if isinstance(to_operator(pauli_rep), ops.op_math.Sum)
+        else (1 * to_operator(pauli_rep)).terms()
     )
 
 

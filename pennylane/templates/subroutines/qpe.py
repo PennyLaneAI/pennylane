@@ -55,6 +55,21 @@ class QuantumPhaseEstimation(Operator2):
             element
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.QuantumPhaseEstimation
+            :stacked:
+            :symbols: :math:`U=` ``unitary`` and :math:`n` estimation wires
+            :example: :math:`n=3`
+
+            .. decomposition-rule:: controlled_powers_inverse_qft
+                :image: /_static/decomposition_thumbnails/quantum_phase_estimation_qft.svg
+
+                :class:`~.Hadamard` | :math:`n` | 3
+                :math:`U^{2^k}` with 1 control | :math:`n` (one per :math:`k < n`) | 3
+                :class:`Adjoint(QFT) <.QFT>` on :math:`n` wires | :math:`1` | 1
+
+    .. details::
         :title: Usage Details
 
         This circuit can be used to perform the standard quantum phase estimation algorithm, consisting
@@ -166,7 +181,7 @@ class QuantumPhaseEstimation(Operator2):
         return self.target_wires + self.estimation_wires
 
 
-def _qpe_decomp_resource(unitary, estimation_wires):
+def _qpe_standard_resources(unitary, estimation_wires):
     num_estimation_wires = len(estimation_wires)
     gate_count = {
         ops.Hadamard: num_estimation_wires,
@@ -184,8 +199,8 @@ def _qpe_decomp_resource(unitary, estimation_wires):
     return gate_count
 
 
-@register_resources(_qpe_decomp_resource)
-def _qpe_decomp(unitary, estimation_wires):
+@register_resources(_qpe_standard_resources, name="controlled_powers_inverse_qft")
+def _qpe_standard(unitary, estimation_wires):
     if compiler.active() or capture.enabled():
         estimation_wires = math.array(estimation_wires, like="jax")
 
@@ -195,8 +210,7 @@ def _qpe_decomp(unitary, estimation_wires):
     def _apply_h(i):
         ops.Hadamard(estimation_wires[i])
 
-    # pylint: disable=no-value-for-parameter
-    _apply_h()
+    _apply_h()  # pylint: disable=no-value-for-parameter
 
     # NOTE: Must be pythonic for loop as 'z' argument in 'pow'
     # is a static argument.
@@ -206,4 +220,4 @@ def _qpe_decomp(unitary, estimation_wires):
     ops.adjoint(QFT(wires=estimation_wires))
 
 
-add_decomps(QuantumPhaseEstimation, _qpe_decomp)
+add_decomps(QuantumPhaseEstimation, _qpe_standard)

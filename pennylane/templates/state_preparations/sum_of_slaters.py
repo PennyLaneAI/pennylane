@@ -21,7 +21,11 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.decomposition import (
+    add_decomps,
+    register_condition,
+    register_resources,
+)
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
 from pennylane.wires import WiresLike
@@ -757,8 +761,6 @@ class SumOfSlatersPrep(Operator2):
 
     .. code-block:: python
 
-        qp.decomposition.enable_graph()
-
         gate_set = {"QROM", "TemporaryAND", "Adjoint(TemporaryAND)", "MultiplexerStatePreparation", "CNOT", "X"}
 
         first_free_wire = max(wires)+1
@@ -832,6 +834,31 @@ class SumOfSlatersPrep(Operator2):
     wires ``7, 8, 9`` form the enumeration register, the next five wires (``10`` to ``14``)
     are the encoding register, and the pair of wires ``15, 16`` as well as the wires ``17``
     to ``20`` are work wires for the ``QROM`` and the enumeration uncomputation, respectively.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.SumOfSlatersPrep
+            :stacked:
+            :symbols: :math:`D \geq 2` entries in ``indices``, :math:`d = \lceil \log_2 D \rceil`
+                enumeration wires and :math:`m` encoding qubits (the number of rows of the
+                encoding computed by :func:`~.compute_sos_encoding`)
+            :example: ``indices=(0, 1, 2, 4)`` on three wires, :math:`D=4`, :math:`m=3`, :math:`u=0`
+
+            .. decomposition-rule:: sparse_state_isometry
+                :image: /_static/decomposition_thumbnails/sum_of_slaters_prep.svg
+                :lightbox:
+                :where: :math:`u` is the number of ones in the encoding matrix (:math:`u=0` for an
+                    identity encoding), :math:`\mathrm{wt}(k)` the number of ones in the binary
+                    representation of :math:`k`, and :math:`N_X` the number of bit flips between
+                    consecutive identification bit strings (data dependent)
+
+                :class:`~.MultiplexerStatePreparation` on :math:`d` wires | :math:`1` | 1
+                :class:`~.QROM` | :math:`1` | 1
+                :class:`~.CNOT` | :math:`2u + \sum_{k=1}^{D-1} \mathrm{wt}(k)` | 4
+                :class:`~.TemporaryAND` | :math:`(D-1)(m-1)` | 6
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`(D-1)(m-1)` | 6
+                :class:`~.X` | :math:`N_X \leq D m` | 8
 
     .. details::
         :title: Usage details
@@ -961,8 +988,7 @@ class SumOfSlatersPrep(Operator2):
     # coefficients lead to a cheaper MultiplexerStatePreparation than complex-valued ones.
     arg_specs = {"wires": Wire[-1]}
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         coefficients: TensorLike,
         wires: WiresLike,
@@ -979,7 +1005,6 @@ class SumOfSlatersPrep(Operator2):
             v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
             _, data = _preprocess(v_bits, wires)
 
-            # pylint: disable-next=protected-access
             sizes = self._required_register_sizes_from_nums(num_entries, data.r, n)
 
             if len(enumeration_wires) > 0 and len(enumeration_wires) != sizes["enumeration_wires"]:
@@ -1130,9 +1155,8 @@ class SumOfSlatersPrep(Operator2):
         }
 
 
-# pylint: disable-next=unused-argument
-def _sos_state_prep_resources(coefficients, wires, indices, **_):
-    """Compute the resources for _sos_state_prep. It is an upper bound due to
+def _sos_state_prep_standard_resources(coefficients, wires, indices, **_):
+    """Compute the resources for _sos_state_prep_standard. It is an upper bound due to
     conditionally applied CNOT and X gates."""
 
     n = 1 if isinstance(wires, int) else len(wires)
@@ -1163,7 +1187,6 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
             control_wires=Wire[d],
             target_wires=Wire[num_wires],
             work_wires=Wire[d - 1],
-            clean=True,
         )
     ] += 1
 
@@ -1191,8 +1214,7 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     return resources
 
 
-# pylint: disable=unused-argument,too-many-arguments
-def _sos_state_prep_work_wires(
+def _sos_state_prep_standard_work_wires(  # pylint: disable=too-many-arguments,unused-argument
     coefficients,
     wires,
     indices,
@@ -1206,7 +1228,6 @@ def _sos_state_prep_work_wires(
     if indices is None:
         # invalid rule, just return so we dont get an error
         return {}
-    # pylint: disable-next=protected-access
     n = 1 if isinstance(wires, int) else len(wires)
     v_bits = math.int_to_binary(np.array(indices), n).T
     selector_ids, _ = select_sos_rows(v_bits)
@@ -1258,7 +1279,7 @@ def _pad_and_cast_coeffs(coefficients, enumeration_wires):
     return qp.math.cast(coefficients, cast_dtype)
 
 
-def _sos_state_prep_with_wires(
+def _sos_state_prep_with_wires(  # pylint: disable=too-many-arguments
     data: tuple[np.ndarray, np.ndarray, SoSData],
     *,
     wires,
@@ -1268,7 +1289,7 @@ def _sos_state_prep_with_wires(
     mcx_cache_wires,
     selected_wires,
 ):
-    # pylint: disable=too-many-arguments, no-value-for-parameter
+    # pylint: disable=no-value-for-parameter
     coefficients, v_bits, data = data
     identity_encoding = data.r == data.m
     b_bits = data.b_bits
@@ -1387,9 +1408,13 @@ def _sos_state_prep_with_wires(
 @register_condition(
     lambda coefficients, wires, indices, *_, **__: indices is not None
 )  # indices must be known
-@register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
-# pylint: disable-next=too-many-arguments
-def _sos_state_prep(
+@register_resources(
+    _sos_state_prep_standard_resources,
+    exact=False,
+    work_wires=_sos_state_prep_standard_work_wires,
+    name="sparse_state_isometry",
+)
+def _sos_state_prep_standard(  # pylint: disable=too-many-arguments
     coefficients,
     wires,
     indices,
@@ -1442,7 +1467,7 @@ def _sos_state_prep(
         all_wires["wires"] = wires
         all_wires["selected_wires"] = selected_wires
         data = (coefficients, v_bits, data)
-        _sos_state_prep_with_wires(data, **all_wires)  # pylint: disable=missing-kwoa
+        _sos_state_prep_with_wires(data, **all_wires)
 
 
-add_decomps(SumOfSlatersPrep, _sos_state_prep)
+add_decomps(SumOfSlatersPrep, _sos_state_prep_standard)

@@ -16,6 +16,8 @@ This module contains the template for the Fast Approximate BLock Encoding (FABLE
 """
 
 # pylint: disable=no-value-for-parameter
+
+
 import warnings
 from collections import Counter
 
@@ -41,7 +43,7 @@ class FABLE(Operation):
     Args:
         input_matrix (tensor_like): a :math:`(2^n \times 2^n)` matrix to be encoded,
             where :math:`n` is an integer
-        wires (Iterable[int, str], Wires): the wires the operation acts on. The number of wires can
+        wires (Iterable[int] or Wires): the wires the operation acts on. The number of wires can
             be computed as :math:`(2 \times n + 1)`.
         tol (float): rotation gates that have an angle value smaller than this tolerance are removed
         id (str or None): string representing the operation (optional)
@@ -147,12 +149,12 @@ class FABLE(Operation):
         }
 
     @staticmethod
-    def compute_decomposition(input_matrix, wires, tol=0):  # pylint:disable=arguments-differ
+    def compute_decomposition(input_matrix, wires, tol=0):  # pylint: disable=arguments-differ
         r"""Sequence of gates that represents the efficient circuit produced by the FABLE technique
 
         Args:
             input_matrix (tensor_like): an :math:`(N \times N)` matrix to be encoded
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
             tol (float): rotation gates that have an angle value smaller than this tolerance are removed
 
         Returns:
@@ -204,7 +206,7 @@ class FABLE(Operation):
         return op_list
 
 
-def _fable_resources(wires, thetas, control_wires, tol):
+def _fable_standard_resources(wires, thetas, control_wires, tol):
 
     resources = Counter({Hadamard: len(wires) // 2 * 2})
 
@@ -235,8 +237,8 @@ def _fable_resources(wires, thetas, control_wires, tol):
     return dict(resources)
 
 
-@register_resources(_fable_resources)
-def _fable_decomposition(input_matrix, wires, tol=0):
+@register_resources(_fable_standard_resources, name="gray_code_rotations")
+def _fable_standard(input_matrix, wires, tol=0):
     alphas = math.arccos(input_matrix).flatten()
     thetas = compute_theta(alphas)
 
@@ -315,4 +317,4 @@ def _fable_decomposition(input_matrix, wires, tol=0):
     wires_i_hadamard_loop()
 
 
-add_decomps(FABLE, _fable_decomposition)
+add_decomps(FABLE, _fable_standard)

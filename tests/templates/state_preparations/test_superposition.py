@@ -16,8 +16,6 @@ Unit tests for the Superposition template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -127,7 +125,6 @@ def test_standard_validity():
 class TestSuperposition:
     """Test the Superposition template."""
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize("probs, bases", PROBS_BASES)
     def test_correct_output(self, probs, bases):
         """Test the correct output of the Superposition template."""
@@ -154,9 +151,9 @@ class TestSuperposition:
 
         expected = [
             qp.StatePrep(np.array([0.70710678, 0.70710678]), pad_with=0, wires=[1]),
-            qp.MultiControlledX(wires=[0, 1, 2], control_values=[0, 1]),
+            qp.MultiControlledX([0, 1, 2], control_values=[0, 1]),
             qp.CNOT(wires=[2, 0]),
-            qp.Toffoli(wires=[0, 1, 2]),
+            qp.MultiControlledX([0, 1, 2]),
         ]
 
         for op1, op2 in zip(decomposition, expected):

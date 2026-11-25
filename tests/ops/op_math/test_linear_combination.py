@@ -15,7 +15,6 @@
 Tests for the LinearCombination class.
 """
 
-# pylint: disable=too-many-public-methods, too-few-public-methods
 from collections.abc import Iterable
 from copy import copy
 
@@ -72,7 +71,7 @@ valid_LinearCombinations = [
     ((0.6,), (X(0) @ X(1),)),
     ((0.5, -1.6), (X(0), Y(1))),
     ((0.5, -1.6), (X(1), Y(1))),
-    ((0.5, -1.6), (X("a"), Y("b"))),
+    ((0.5, -1.6), (X(6), Y(8))),
     ((1.1, -0.4, 0.333), (X(0), qp.Hermitian(H_ONE_QUBIT, 2), Z(2))),
     ((-0.4, 0.15), (qp.Hermitian(H_TWO_QUBITS, [0, 2]), Z(1))),
     ([1.5, 2.0], [Z(0), Y(2)]),
@@ -115,14 +114,14 @@ simplify_LinearCombinations = [
         qp.ops.LinearCombination(
             [1, 1, 0.5],
             [
-                qp.Hermitian(np.array([[1, 0], [0, -1]]), "a"),
-                X("b") @ Y(1.3),
-                Y(1.3) @ qp.Identity(-0.9) @ X("b"),
+                qp.Hermitian(np.array([[1, 0], [0, -1]]), 6),
+                X(8) @ Y(16),
+                Y(16) @ qp.Identity(13) @ X(8),
             ],
         ),
         qp.ops.LinearCombination(
             [1, 1.5],
-            [qp.Hermitian(np.array([[1, 0], [0, -1]]), "a"), X("b") @ Y(1.3)],
+            [qp.Hermitian(np.array([[1, 0], [0, -1]]), 6), X(8) @ Y(16)],
         ),
     ),
     # Simplifies to zero LinearCombination
@@ -169,19 +168,19 @@ equal_LinearCombinations = [
         qp.ops.LinearCombination(
             [1, 1, 1],
             [
-                qp.Hermitian(np.array([[1, 0], [0, -1]]), "b") @ qp.Identity(7),
+                qp.Hermitian(np.array([[1, 0], [0, -1]]), 8) @ qp.Identity(7),
                 Z(3),
-                qp.Identity(1.2),
+                qp.Identity(14),
             ],
         ),
         qp.ops.LinearCombination(
             [1, 1, 1],
-            [qp.Hermitian(np.array([[1, 0], [0, -1]]), "b"), Z(3), qp.Identity(1.2)],
+            [qp.Hermitian(np.array([[1, 0], [0, -1]]), 8), Z(3), qp.Identity(14)],
         ),
         True,
     ),
     (
-        qp.ops.LinearCombination([1, 1], [Z(3) @ qp.Identity(1.2), Z(3)]),
+        qp.ops.LinearCombination([1, 1], [Z(3) @ qp.Identity(14), Z(3)]),
         qp.ops.LinearCombination([2], [Z(3)]),
         True,
     ),
@@ -217,9 +216,9 @@ add_LinearCombinations = [
         qp.ops.LinearCombination([1.3, 1.2, 0.7], [X(0) @ X(1), qp.Hadamard(1), X(2)]),
     ),
     (
-        qp.ops.LinearCombination([1, 1.2, 0.1], [X("b"), Z(3.1), X(1.6)]),
-        X("b") @ qp.Identity(5),
-        qp.ops.LinearCombination([2, 1.2, 0.1], [X("b"), Z(3.1), X(1.6)]),
+        qp.ops.LinearCombination([1, 1.2, 0.1], [X(8), Z(18), X(17)]),
+        X(8) @ qp.Identity(5),
+        qp.ops.LinearCombination([2, 1.2, 0.1], [X(8), Z(18), X(17)]),
     ),
     # Case where arguments coeffs and ops to the LinearCombination are iterables other than lists
     (
@@ -274,11 +273,9 @@ sub_LinearCombinations = [
         ),
     ),
     (
-        qp.ops.LinearCombination([1, 1.2, 0.1], [X("b"), Z(3.1), X(1.6)]),
-        X("b") @ qp.Identity(1),
-        qp.ops.LinearCombination(
-            [1, 1.2, 0.1, 1], [X("b"), Z(3.1), X(1.6), -1 * (qp.X("b") @ qp.I(1))]
-        ),
+        qp.ops.LinearCombination([1, 1.2, 0.1], [X(8), Z(18), X(17)]),
+        X(8) @ qp.Identity(1),
+        qp.ops.LinearCombination([1, 1.2, 0.1, 1], [X(8), Z(18), X(17), -1 * (qp.X(8) @ qp.I(1))]),
     ),
     # The result is the zero LinearCombination
     (
@@ -336,11 +333,11 @@ mul_LinearCombinations = [
         -1.3,
         qp.ops.LinearCombination(
             [1, -0.3],
-            [qp.Hermitian(np.array([[1, 0], [0, -1]]), "b"), Z(23) @ Z(0)],
+            [qp.Hermitian(np.array([[1, 0], [0, -1]]), 8), Z(23) @ Z(0)],
         ),
         qp.ops.LinearCombination(
             [-1.3, 0.39],
-            [qp.Hermitian(np.array([[1, 0], [0, -1]]), "b"), Z(23) @ Z(0)],
+            [qp.Hermitian(np.array([[1, 0], [0, -1]]), 8), Z(23) @ Z(0)],
         ),
     ),
     # The result is the zero LinearCombination
@@ -521,7 +518,7 @@ def circuit2(param):
 dev = qp.device("default.qubit", wires=2)
 
 
-class TestLinearCombination:
+class TestLinearCombination:  # pylint: disable=too-many-public-methods
     """Test the LinearCombination class"""
 
     def test_error_if_observables_operator(self):
@@ -599,11 +596,11 @@ class TestLinearCombination:
         res = H1 - H2
         qp.assert_equal(qp.simplify(res), true_res)
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("coeffs, ops", valid_LinearCombinations)
     @pytest.mark.parametrize("grouping_type", (None, "qwc"))
     def test_flatten_unflatten(self, coeffs, ops, grouping_type):
         """Test the flatten and unflatten methods for LinearCombinations"""
+        # pylint: disable=protected-access
 
         if any(not qp.pauli.is_pauli_word(t) for t in ops) and grouping_type:
             pytest.skip("grouping type must be none if a term is not a pauli word.")
@@ -1085,8 +1082,8 @@ class TestLinearCombinationSparseMatrix:
             ),
             (
                 [0.1],
-                [qp.prod(Z("b"), X("a"))],
-                ["a", "c", "b"],
+                [qp.prod(Z(8), X(6))],
+                [6, 9, 8],
                 np.array(
                     [
                         [
@@ -1654,7 +1651,6 @@ class TestLinearCombinationDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    # pylint: disable=superfluous-parens
     @pytest.mark.jax
     def test_nontrainable_coeffs_jax(self):
         """Test the jax interface if the coefficients are explicitly set non-trainable"""
@@ -1705,7 +1701,7 @@ class TestLinearCombinationDifferentiation:
             )
 
         res = circuit(coeffs, param)
-        res.backward()  # pylint:disable=no-member
+        res.backward()
         grad = (coeffs.grad, param.grad)
 
         # differentiating a cost that combines circuits with
@@ -1747,7 +1743,7 @@ class TestLinearCombinationDifferentiation:
             )
 
         res = circuit(coeffs, param)
-        res.backward()  # pylint:disable=no-member
+        res.backward()
 
         # differentiating a cost that combines circuits with
         # measurements expval(Pauli)
@@ -1791,7 +1787,6 @@ class TestLinearCombinationDifferentiation:
             grad_fn(coeffs, param)
 
 
-# pylint: disable=protected-access
 @pytest.mark.capture
 def test_create_instance_while_tracing():
     """Test that a LinearCombination instance can be created while tracing."""
@@ -1815,6 +1810,7 @@ def test_create_instance_while_tracing():
             hybrid_trees=(),
             forward_mask=(),
         )
+        # pylint: disable-next=protected-access
         op = qp.ops.LinearCombination._primitive.impl(a, b, op1, op2, n_obs=2)
         assert isinstance(op, qp.ops.LinearCombination)
 
@@ -1834,5 +1830,6 @@ def test_capture_with_legacy_observable():
 
     jaxpr = jax.make_jaxpr(f)(np.eye(2))
 
+    # pylint: disable-next=protected-access
     assert jaxpr.eqns[-1].primitive == qp.ops.LinearCombination._primitive
     assert jaxpr.eqns[-1].params["n_obs"] == 2

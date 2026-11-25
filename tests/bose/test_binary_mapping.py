@@ -278,7 +278,7 @@ class TestBoseWordMapping:
         qubit_op = binary_mapping(bosonic_op, n_states=n_states, ps=False)
 
         expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
-        expected_op = expected_op.operation(wires)
+        expected_op = qp.pauli.to_operator(expected_op, wires)
 
         qp.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
@@ -494,7 +494,7 @@ def test_return_binary_mapping_ps(bose_op):
         ),
         (
             BoseSentence({BoseWord({(0, 0): "-"}): 1.0, BoseWord({(0, 1): "-"}): -1.0}),
-            {0: "a", 1: "b", 2: "c", 3: "d"},
+            {0: 5, 1: 6, 2: 7, 3: 8},
             (
                 [
                     0.6830127018922193,
@@ -515,22 +515,22 @@ def test_return_binary_mapping_ps(bose_op):
                     (-0.3535533905932738 + 0j),
                 ],
                 [
-                    X("a"),
-                    X("a") @ Z("b"),
-                    Y("a"),
-                    Y("a") @ Z("b"),
-                    X("a") @ X("b"),
-                    X("a") @ Y("b"),
-                    Y("a") @ X("b"),
-                    Y("a") @ Y("b"),
-                    X("c"),
-                    X("c") @ Z("d"),
-                    Y("c"),
-                    Y("c") @ Z("d"),
-                    X("c") @ X("d"),
-                    X("c") @ Y("d"),
-                    Y("c") @ X("d"),
-                    Y("c") @ Y("d"),
+                    X(5),
+                    X(5) @ Z(6),
+                    Y(5),
+                    Y(5) @ Z(6),
+                    X(5) @ X(6),
+                    X(5) @ Y(6),
+                    Y(5) @ X(6),
+                    Y(5) @ Y(6),
+                    X(7),
+                    X(7) @ Z(8),
+                    Y(7),
+                    Y(7) @ Z(8),
+                    X(7) @ X(8),
+                    X(7) @ Y(8),
+                    Y(7) @ X(8),
+                    Y(7) @ Y(8),
                 ],
             ),
         ),

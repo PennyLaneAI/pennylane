@@ -15,7 +15,9 @@
 Contains the QuantumMonteCarlo template and utility functions.
 """
 
-# pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-arguments
+
+
 import copy
 
 import numpy as np
@@ -342,9 +344,8 @@ class QuantumMonteCarlo(Operation):
     resource_keys = {"num_target_wires", "num_estimation_wires", "q_shape"}
 
     @classmethod
-    def _primitive_bind_call(
-        cls, probs, func, target_wires, estimation_wires
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def _primitive_bind_call(cls, probs, func, target_wires, estimation_wires):
         # handle target wires and estimation wires
         return cls._primitive.bind(
             probs,
@@ -420,9 +421,8 @@ class QuantumMonteCarlo(Operation):
         return 3
 
     @staticmethod
-    def compute_decomposition(
-        A, R, Q, wires, estimation_wires, target_wires
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(A, R, Q, wires, estimation_wires, target_wires):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -436,9 +436,9 @@ class QuantumMonteCarlo(Operation):
             R (array): unitary that encodes the function applied to the auxiliary qubit register
             Q (array): matrix that encodes the expectation value according to the probability unitary
                 and the function-encoding unitary
-            wires (Any or Iterable[Any]): full set of wires that the operator acts on
-            target_wires (Iterable[Any]): the target wires
-            estimation_wires (Iterable[Any]): the estimation wires
+            wires (int or Iterable[int]): full set of wires that the operator acts on
+            target_wires (Iterable[int]): the target wires
+            estimation_wires (Iterable[int]): the estimation wires
 
         Returns:
             list[.Operator]: decomposition of the operator
@@ -454,17 +454,14 @@ class QuantumMonteCarlo(Operation):
         return op_list
 
 
-# pylint: disable=protected-access
-
-
-@QuantumMonteCarlo._primitive.def_impl
+@QuantumMonteCarlo._primitive.def_impl  # pylint: disable=protected-access
 def _quantum_monte_carlo_impl(probs, *wires, func, num_target_wires):
     target_wires = wires[:num_target_wires]
     estimation_wires = wires[num_target_wires:]
     return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires)
 
 
-def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_shape):
+def _quantum_monte_carlo_standard_resources(num_target_wires, num_estimation_wires, q_shape):
     return {
         QubitUnitary(
             Complex[2 ** (num_target_wires - 1), 2 ** (num_target_wires - 1)],
@@ -480,13 +477,12 @@ def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_sha
     }
 
 
-@register_resources(_quantum_monte_carlo_resources)
-def _quantum_monte_carlo_decomposition(
-    A, R, Q, wires, estimation_wires, target_wires
-):  # pylint: disable=unused-argument
+@register_resources(_quantum_monte_carlo_standard_resources, name="unitary_phase_estimation")
+# pylint: disable-next=unused-argument
+def _quantum_monte_carlo_standard(A, R, Q, wires, estimation_wires, target_wires):
     QubitUnitary(A, wires=target_wires[:-1])
     QubitUnitary(R, wires=target_wires)
     QuantumPhaseEstimation(QubitUnitary(Q, wires=target_wires), estimation_wires=estimation_wires)
 
 
-add_decomps(QuantumMonteCarlo, _quantum_monte_carlo_decomposition)
+add_decomps(QuantumMonteCarlo, _quantum_monte_carlo_standard)

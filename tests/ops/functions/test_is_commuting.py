@@ -15,7 +15,6 @@
 Unittests for is_commuting
 """
 
-# pylint: disable=too-many-public-methods
 import pytest
 
 import pennylane as qp
@@ -38,8 +37,7 @@ control_base_map_data = [
 ]
 
 
-# pylint: disable=too-few-public-methods
-class DummyOp(qp.operation.Operator):
+class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
     """An operator that hasn't been seen before."""
 
 
@@ -53,6 +51,11 @@ test_cases = [
     (qp.ctrl(qp.QubitUnitary(np.eye(2), 0), 1), qp.Z(1), True),
     (qp.ctrl(qp.QFT((0, 1, 2)), 3), qp.Z(3), True),
     (qp.ctrl(qp.I(0), (1, 2)), qp.RX(0.5, 0), True),
+    (qp.CRot(0.1, 0.2, 0.3, (0, 1)), qp.CRot(0.1, 0.2, 0.3, (0, 1)), True),
+    (qp.ctrl(qp.Rot(0.1, 0.2, 0.3, 1), 0), qp.CRot(0.1, 0.2, 0.3, (2, 1)), True),
+    (qp.CRot(0.1, 0.2, 0.3, (0, 1)), qp.Rot(0.1, 0.2, 0.3, 1), True),
+    (qp.ctrl(qp.Rot(0.1, 0.2, 0.3, 2), (0, 1)), qp.U2(0.4, 0.5, 2), False),
+    (qp.ctrl(qp.Rot(0.1, 0.2, 0.3, 2), (0, 1)), qp.CRot(0.3, 0.4, 0.5, (0, 2)), False),
     # adjoint versions of operators
     (qp.adjoint(qp.U1(0.5, 0)), qp.Z(0), True),
     (qp.adjoint(qp.MultiRZ(0.5, (0, 1, 2))), qp.T(0), True),
@@ -89,7 +92,7 @@ class TestGetTargetName:
     @pytest.mark.parametrize("op", (qp.PauliX(0), qp.RX(1.2, 0), qp.IsingXX(0, range(2))))
     def test_Controlled_op(self, op):
         """Test it gets the base's name for a controlled op."""
-        c_op = qp.ops.op_math.Controlled(op, control_wires=("a", "b"))
+        c_op = qp.ops.op_math.Controlled(op, control_wires=(5, 6))
         assert _get_target_name(c_op) == op.name
 
     @pytest.mark.parametrize("op", (qp.PauliX(0), qp.RX(1.2, 0), qp.IsingXX(0, range(2))))
@@ -153,7 +156,7 @@ class TestControlledOps:
         assert not qp.is_commuting(op2, op1)
 
 
-class TestCommutingFunction:
+class TestCommutingFunction:  # pylint: disable=too-many-public-methods
     """Commutation function tests."""
 
     @pytest.mark.parametrize(
@@ -818,30 +821,30 @@ class TestCommutingFunction:
             (qp.Identity(0), qp.PauliZ(0), True),
             (qp.PauliY(0), qp.PauliZ(0), False),
             (qp.PauliX(0), qp.PauliX(1), True),
-            (qp.PauliY("x"), qp.PauliX("y"), True),
+            (qp.PauliY(9), qp.PauliX(10), True),
             (
-                qp.prod(qp.PauliZ("a"), qp.PauliY("b"), qp.PauliZ("d")),
-                qp.prod(qp.PauliX("a"), qp.PauliZ("c"), qp.PauliY("d")),
+                qp.prod(qp.PauliZ(5), qp.PauliY(6), qp.PauliZ(8)),
+                qp.prod(qp.PauliX(5), qp.PauliZ(7), qp.PauliY(8)),
                 True,
             ),
             (
-                qp.prod(qp.PauliX("a"), qp.PauliY("b"), qp.PauliZ("d")),
-                qp.prod(qp.PauliX("a"), qp.PauliZ("c"), qp.PauliY("d")),
+                qp.prod(qp.PauliX(5), qp.PauliY(6), qp.PauliZ(8)),
+                qp.prod(qp.PauliX(5), qp.PauliZ(7), qp.PauliY(8)),
                 False,
             ),
             (
-                qp.sum(qp.PauliZ("a"), qp.PauliY("b"), qp.PauliZ("d")),
-                qp.sum(qp.PauliX("a"), qp.PauliZ("c"), qp.PauliY("d")),
+                qp.sum(qp.PauliZ(5), qp.PauliY(6), qp.PauliZ(8)),
+                qp.sum(qp.PauliX(5), qp.PauliZ(7), qp.PauliY(8)),
                 False,
             ),
             (
-                qp.sum(qp.PauliZ("a"), qp.PauliY("a"), qp.PauliZ("b")),
-                qp.sum(qp.PauliX("c"), qp.PauliZ("c"), qp.PauliY("d")),
+                qp.sum(qp.PauliZ(5), qp.PauliY(5), qp.PauliZ(6)),
+                qp.sum(qp.PauliX(7), qp.PauliZ(7), qp.PauliY(8)),
                 True,
             ),
             (
-                qp.sum(qp.PauliZ("a"), qp.PauliY("b"), qp.PauliZ("d")),
-                qp.sum(qp.PauliZ("a"), qp.PauliY("c"), qp.PauliZ("d")),
+                qp.sum(qp.PauliZ(5), qp.PauliY(6), qp.PauliZ(8)),
+                qp.sum(qp.PauliZ(5), qp.PauliY(7), qp.PauliZ(8)),
                 True,
             ),
         ],

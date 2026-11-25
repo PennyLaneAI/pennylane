@@ -118,15 +118,16 @@ def supports_operation(op: Operator) -> bool:
     return getattr(op, "name", None) in operations
 
 
+# Derivative entry points are optional for devices without native differentiation.
 @simulator_tracking  # update device.tracker with some relevant information
 @single_tape_support  # add support for device.execute(tape) in addition to device.execute((tape,))
-class ReferenceQubit(Device):
+class ReferenceQubit(Device):  # pylint: disable=abstract-method
     """A slimmed down numpy-based simulator for reference and testing purposes.
 
     Args:
-        wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
-            contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
-            (``['aux', 'q1', 'q2']``). Default ``None`` if not specified. While this device allows
+        wires (int, Iterable[int]): Number of wires present on the device, or iterable that
+            contains unique non-negative integer wire labels (e.g., ``[0, 2, 5]``). Default ``None``
+            if not specified. While this device allows
             for ``wires`` to be unspecified at construction time, other devices may make this argument
             mandatory. Devices can also implement additional restrictions on the possible wires.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots

@@ -16,6 +16,8 @@ Unit tests for the available qubit state preparation operations.
 """
 
 # pylint: disable=protected-access
+
+
 import numpy as np
 import pytest
 import scipy as sp
@@ -36,7 +38,7 @@ def test_subclasshook_state_prep_base():
         def __init__(self, wires):  # pylint: disable=useless-parent-delegation
             super().__init__(wires)
 
-        def state_vector(self, wire_order):  # pylint: disable=signature-differs, unused-argument
+        def state_vector(self, wire_order):  # pylint: disable=unused-argument
             return [0, 1]
 
     new_op = NewOp(wires=0)
@@ -132,7 +134,6 @@ class TestStandardValidityBasisState:
     @pytest.mark.parametrize("input_state", (np.array([0, 1]), [0, 1], (0, 1), (True, False)))
     def test_assert_valid(self, input_state):
         """Test standard validity."""
-        # pylint: disable=import-outside-toplevel
         wires = [0, 1]
         op = qp.BasisState(input_state, wires=wires)
         qp.testing.assert_valid(op, skip_differentiation=True)
@@ -394,17 +395,15 @@ class TestStatePrepIntegration:
 class TestStateVector:
     """Test the state_vector() method of various state-prep operations."""
 
-    # pylint: disable=too-many-public-methods
-
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",
         [
             (2, None, (1, 0)),
             (2, [1, 2], (1, 0)),
             (3, [0, 1, 2], (0, 1, 0)),
-            (3, ["a", 1, 2], (0, 1, 0)),
+            (3, [6, 1, 2], (0, 1, 0)),
             (3, [1, 2, 0], (1, 0, 0)),
-            (3, [1, 2, "a"], (1, 0, 0)),
+            (3, [1, 2, 6], (1, 0, 0)),
             (3, [2, 1, 0], (0, 1, 0)),
             (4, [3, 2, 0, 1], (0, 0, 0, 1)),
         ],
@@ -423,9 +422,9 @@ class TestStateVector:
             (2, None, [(0, 1, 0), (1, 0, 1)]),
             (2, [1, 2], [(0, 1, 0), (1, 0, 1)]),
             (3, [0, 1, 2], [(0, 0, 1, 0), (1, 0, 0, 1)]),
-            (3, ["a", 1, 2], [(0, 0, 1, 0), (1, 0, 0, 1)]),
+            (3, [6, 1, 2], [(0, 0, 1, 0), (1, 0, 0, 1)]),
             (3, [1, 2, 0], [(0, 1, 0, 0), (1, 0, 1, 0)]),
-            (3, [1, 2, "a"], [(0, 1, 0, 0), (1, 0, 1, 0)]),
+            (3, [1, 2, 6], [(0, 1, 0, 0), (1, 0, 1, 0)]),
             (3, [2, 1, 0], [(0, 0, 1, 0), (1, 1, 0, 0)]),
             (4, [3, 2, 0, 1], [(0, 0, 0, 0, 1), (1, 0, 1, 0, 0)]),
         ],
@@ -566,9 +565,9 @@ class TestStateVector:
             (2, [1, 2], (0, 1)),
             (2, [2, 1], (1, 0)),
             (3, [0, 1, 2], (0, 0, 1)),
-            (3, ["a", 1, 2], (0, 0, 1)),
+            (3, [6, 1, 2], (0, 0, 1)),
             (3, [1, 2, 0], (0, 1, 0)),
-            (3, [1, 2, "a"], (0, 1, 0)),
+            (3, [1, 2, 6], (0, 1, 0)),
         ],
     )
     def test_BasisState_state_vector(self, num_wires, wire_order, one_position):
@@ -655,9 +654,9 @@ class TestSparseStateVector:
             (2, None, (1, 0)),
             (2, [1, 2], (1, 0)),
             (3, [0, 1, 2], (0, 1, 0)),
-            (3, ["a", 1, 2], (0, 1, 0)),
+            (3, [6, 1, 2], (0, 1, 0)),
             (3, [1, 2, 0], (1, 0, 0)),
-            (3, [1, 2, "a"], (1, 0, 0)),
+            (3, [1, 2, 6], (1, 0, 0)),
             (3, [2, 1, 0], (0, 1, 0)),
             (4, [3, 2, 0, 1], (0, 0, 0, 1)),
         ],

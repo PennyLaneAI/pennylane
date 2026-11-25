@@ -23,8 +23,7 @@ from pennylane.devices.qubit_mixed import get_final_state, measure_final_state, 
 ml_interfaces = ["numpy", "autograd", "jax", "torch"]
 
 
-# pylint: disable=too-few-public-methods
-class TestResultInterface:
+class TestResultInterface:  # pylint: disable=too-few-public-methods
     """Test that the result interface is correct."""
 
     @pytest.mark.all_interfaces
@@ -40,7 +39,6 @@ class TestResultInterface:
         assert qp.math.get_interface(res) == interface
 
 
-# pylint: disable=too-few-public-methods
 class TestStatePrepBase:
     """Tests integration with various state prep methods."""
 
@@ -446,43 +444,6 @@ class TestSampleMeasurements:
             shots=shots,
         )
         result = simulate(qs, seed)
-
-        assert isinstance(result, tuple)
-        assert len(result) == len(list(shots))
-
-        for shot_res, s in zip(result, shots):
-            assert isinstance(shot_res, tuple)
-            assert len(shot_res) == 3
-
-            assert isinstance(shot_res[0], np.float64)
-            assert isinstance(shot_res[1], dict)
-            assert isinstance(shot_res[2], np.ndarray)
-
-            expected_keys, _ = self.probs_of_2_qubit_circ(x, y)
-            assert list(shot_res[1].keys()) == expected_keys
-
-            assert shot_res[2].shape == (s, 2)
-
-    @pytest.mark.parametrize("x", [0.732, 0.488])
-    @pytest.mark.parametrize("y", [0.732, 0.488])
-    @pytest.mark.parametrize("shots", shots_data)
-    def test_custom_wire_labels(self, shots, x, y, seed):
-        """Test that custom wire labels works as expected"""
-        shots = qp.measurements.Shots(shots)
-        qs = qp.tape.QuantumScript(
-            [
-                qp.RX(x, wires="b"),
-                qp.RY(y, wires="a"),
-                qp.CNOT(wires=["b", "a"]),
-            ],
-            [
-                qp.expval(qp.PauliZ("b")),
-                qp.counts(wires=["a", "b"]),
-                qp.sample(wires=["b", "a"]),
-            ],
-            shots=shots,
-        )
-        result = simulate(qs, rng=seed)
 
         assert isinstance(result, tuple)
         assert len(result) == len(list(shots))

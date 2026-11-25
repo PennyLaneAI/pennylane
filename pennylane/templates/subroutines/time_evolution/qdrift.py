@@ -196,7 +196,7 @@ class QDrift(Operation):
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))
 
-    def __init__(self, hamiltonian, time, n=1, seed=None):  # pylint: disable=too-many-arguments
+    def __init__(self, hamiltonian, time, n=1, seed=None):
         r"""Initialize the QDrift class"""
 
         _check_hamiltonian_type(hamiltonian)
@@ -244,7 +244,7 @@ class QDrift(Operation):
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
             **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:

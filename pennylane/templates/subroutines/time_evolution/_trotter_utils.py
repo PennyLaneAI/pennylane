@@ -16,10 +16,7 @@
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.ops import RZ, IsingZZ
-from pennylane.ops.op_math import ctrl
-
-# pylint: disable=too-many-arguments
+from pennylane.ops import CRZ, RZ, IsingZZ
 
 
 def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
@@ -30,7 +27,7 @@ def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
       ``CNOT; RZ; CNOT`` sandwich as Fig. 6 in https://arxiv.org/abs/2506.15784.
       This results in :math:`\text{diag}(U, U^\dagger)` overall, such that the relative phase
       between both branches is 2t (hence "double-phase").
-    * Controlled, ``double_phase=False``: ``ctrl(RZ(angle, target))`` for a genuine
+    * Controlled, ``double_phase=False``: ``CRZ(angle, [control, target])`` for a genuine
       controlled-:math:`e^{-iHt}` (``diag(1, U)`` on the control/target subspace).
     """
     if len(control_wires) == 0:
@@ -40,10 +37,10 @@ def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
     if double_phase:
         IsingZZ(angle, [control_wire, target_wire])
         return
-    ctrl(RZ(angle, target_wire), control=[control_wire])
+    CRZ(angle, wires=[control_wire, target_wire])
 
 
-def _run_trotter_steps(
+def _run_trotter_steps(  # pylint: disable=too-many-arguments
     evolution_time,
     num_trotter_steps,
     hamiltonian,

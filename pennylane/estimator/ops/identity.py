@@ -22,14 +22,12 @@ from pennylane.estimator.resource_operator import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=arguments-differ
-
 
 class Identity(ResourceOperator):
     r"""Resource class for the Identity gate.
 
     Args:
-        wires (Iterable[Any] | None): wire label(s) that the identity acts on
+        wires (Iterable[int] | None): wire label(s) that the identity acts on
 
     Resources:
         The Identity gate does not require any resources and thus it cannot be decomposed
@@ -65,13 +63,13 @@ class Identity(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
@@ -155,7 +153,7 @@ class GlobalPhase(ResourceOperator):
     r"""Resource class for the GlobalPhase gate.
 
     Args:
-        wires (Iterable[Any] | None): the wires the operator acts on
+        wires (Iterable[int] | None): the wires the operator acts on
 
     Resources:
         The GlobalPhase gate does not require any resources and thus it cannot be decomposed
@@ -192,13 +190,13 @@ class GlobalPhase(ResourceOperator):
         return {}
 
     @classmethod
-    def resource_rep(cls) -> CompressedResourceOp:
+    def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
         the operator that are needed to compute the resources."""
         return CompressedResourceOp(cls, cls.num_wires, {})
 
     @classmethod
-    def resource_decomp(cls) -> list[GateCount]:
+    def resource_decomp(cls) -> list[GateCount]:  # pylint: disable=arguments-differ
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 

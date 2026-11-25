@@ -16,8 +16,9 @@ operations and observables.
 TODO: [sc-120453] Fill docstring
 """
 
+import warnings
 from abc import abstractmethod
-from collections.abc import Hashable, Iterable, Sequence
+from collections.abc import Hashable, Iterable
 from copy import copy, deepcopy
 from enum import Enum, StrEnum, auto
 from functools import partial
@@ -31,9 +32,9 @@ from jax.core import ShapedArray
 from scipy.sparse import issparse, spmatrix
 
 import pennylane as qp
-from pennylane import math
+from pennylane import capture, math
 from pennylane._class_property import classproperty
-from pennylane.capture import enabled, pause, symbolic_array
+from pennylane.capture import pause, symbolic_array
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core.apply import apply
@@ -65,7 +66,7 @@ from .meta import OperatorMeta
 from .utils import abstractify
 
 if TYPE_CHECKING:
-    from pennylane.pauli import PauliSentence
+    from pennylane.core.pauli import PauliSentence
 
 ArgSpecType: TypeAlias = type[Number] | AbstractArray | AbstractWires
 
@@ -86,7 +87,33 @@ ARGNAME_CATEGORIES = (
 )
 
 
-class Operator2(metaclass=OperatorMeta):
+class OperatorRegistry:
+    """A Singleton class that keeps track of all the Operator2 operators (including user-defined operators) defined."""
+
+    _instance = None
+    registry = {}
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    def __getitem__(self, index):
+        try:
+            return self.registry[index]
+        except KeyError as e:
+            raise KeyError(f"No defined Operator2 with the name {index} found.") from e
+
+    def __setitem__(self, index, value):
+        if index not in self.registry:
+            self.registry[index] = value
+        elif self.registry[index] is not value:
+            warnings.warn(
+                f"More than one operator class by the same name ({index}) has been defined."
+            )
+
+
+class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-methods
     r"""Base class representing quantum operators that are designed for compatibility with
     :func:`~.qjit`.
 
@@ -206,7 +233,7 @@ class Operator2(metaclass=OperatorMeta):
                 resources[qp.Rot] = 1
                 return resources
 
-            @qp.register_resources(_my_op_resources)
+            @qp.register_resources(_my_op_resources, name="my_op_decomp")
             def _my_op_decomp(pauli_string, angle_array, wires, rot_wire):
                 wire_map = {wires[i]: i for i in range(len(wires))}
                 for wire, pauli in zip(wires, pauli_string):
@@ -228,10 +255,9 @@ class Operator2(metaclass=OperatorMeta):
                 MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,))
                 return qp.expval(qp.Z(0))
 
-        >>> qp.decomposition.enable_graph()
         >>> inspector = qp.decomp_inspector(f)()
         >>> inspector.inspect_decomps(MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,)))
-        CHOSEN: Decomposition 0 (name: _my_op_decomp)
+        CHOSEN: Decomposition 0 (name: my_op_decomp)
         0: ──X───────────────────┤
         1: ──Y───────────────────┤
         2: ──Y───────────────────┤
@@ -239,7 +265,6 @@ class Operator2(metaclass=OperatorMeta):
         First-Level Expansion Gates: {PauliX: 1, PauliY: 2, Rot: 1}
         Full Expansion Gates: {PauliX: 1, PauliY: 2, Rot: 1}
         Weighted Cost: 4.0
-        >>> qp.decomposition.disable_graph()
 
         **Downstream effects of static_argnames, compilable_argnames**
 
@@ -292,8 +317,6 @@ class Operator2(metaclass=OperatorMeta):
             downstream; the dynamic data stored within the Pytree is lowered correctly,
             and the static structure of the Pytree is reduced to a UID in MLIR.
     """
-
-    # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
     _operator_version = 2
 
@@ -378,21 +401,20 @@ class Operator2(metaclass=OperatorMeta):
         not be lowerable.
     """
 
-    wire_sizes: ClassVar[tuple[int | None, ...] | None] = None
-    """The expected number of wire labels for each wire argument. If any wire arguments
-    support an arbitrary size, ``None`` must be used. By default, all wire arguments are
-    assumed to support arbitrary sizes. For hybrid wire arguments, the wire size must
-    always be ``None``. Specifying wire sizes allows for additional automatic validation
-    to be implemented, but, specifying it is optional if such validation is not needed.
-    """
-
     arg_specs: ClassVar[dict[str, ArgSpecType] | None] = None
     """The expected types for the arguments of an operator. This attribute is optional—not
     setting it has no loss of functionality. If set, it can be used to perform automatic
-    validation of an operators inputs during construction. Additionally, when defining
+    validation of an operator's inputs during construction, including enforcing fixed wire
+    counts for wire arguments listed in ``arg_specs``. Additionally, when defining
     decomposition rules for an operator, operator types with ``arg_specs`` that spans
     all the arguments with static types can be placed in the rules' resources without needing
     to fully construct abstract operators.
+
+    For wire arguments, ``arg_specs`` also specifies expected wire counts: fixed-shape
+    specs enforce an exact wire count during operator construction, whereas dynamic/unfixed
+    specs (or omitting the wire argument from ``arg_specs``) allow arbitrary wire sizes.
+    Hybrid wire arguments (pytrees of wires) are not constrained to a single fixed wire count
+    via a flat wire size.
 
     .. note::
 
@@ -649,7 +671,7 @@ class Operator2(metaclass=OperatorMeta):
 
         Default is ``'F'``, or ``None`` if the Operation has zero parameters.
         """
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable-next=import-outside-toplevel
         from pennylane.gradients import parameter_frequencies
 
         if self.num_params == 0:
@@ -817,7 +839,7 @@ class Operator2(metaclass=OperatorMeta):
         """
         return cls.adjoint != Operator2.adjoint
 
-    def adjoint(self) -> "Operator2":  # pylint:disable=no-self-use
+    def adjoint(self) -> "Operator2":
         """Create an operation that is the adjoint of this one. Used to simplify
         :class:`~.Adjoint` operators constructed by :func:`~.adjoint`.
         TODO: [sc-120844] Fix docstring after Adjoint is added
@@ -886,7 +908,6 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
     # ----------------------- Operator representations -----------------------
     # ------------------------------------------------------------------------
-    # pylint: disable=unused-argument,comparison-with-callable,no-self-use
 
     @staticmethod
     def compute_matrix(*args, **kwargs) -> TensorLike:
@@ -1294,7 +1315,7 @@ class Operator2(metaclass=OperatorMeta):
         serialized_hybrid = []
         if self.hybrid_argnames:
             # Imported lazily to avoid a circular import
-            # pylint: disable=import-outside-toplevel
+            # pylint: disable-next=import-outside-toplevel
             from pennylane.decomposition.resources import CompressedResourceOp
 
             hashable_leaf_types = (AbstractWires, Operator, Wires, CompressedResourceOp)
@@ -1550,7 +1571,7 @@ class Operator2(metaclass=OperatorMeta):
         """Bind the operator plxpr primitive."""
 
         # Skip if program capture is disabled
-        if not enabled():
+        if not capture.enabled():
             return
 
         # Substitute AbstractArray and AbstractWires for symbolic arrays.
@@ -1607,6 +1628,9 @@ class Operator2(metaclass=OperatorMeta):
 
     def __init_subclass__(cls: type["Operator2"], is_baseclass=False) -> None:
         cls._sig = signature(cls)
+
+        OperatorRegistry()[cls.__name__] = cls
+
         if is_baseclass:
             return
 
@@ -1617,7 +1641,6 @@ class Operator2(metaclass=OperatorMeta):
 
         _init_subclass_validate_argnames(cls)
         _init_subclass_arg_specs_setup(cls)
-        _init_subclass_wire_sizes_setup(cls)
         _init_subclass_add_dynamic_properties(cls)
         register_pytree(cls, cls._flatten, cls._unflatten)
 
@@ -1628,6 +1651,40 @@ class Operator2(metaclass=OperatorMeta):
 
         if cls.has_fixed_sig:
             qp.decomposition.register_signature(cls)
+
+
+# ---------------------------------------------------------------------------------
+# ------------------------- Operator registry helper ------------------------------
+# ---------------------------------------------------------------------------------
+
+
+def get_op_class_by_name(name: str) -> type[Operator2]:
+    """
+    Helper to get an operator class by name using a function call.
+
+    Args:
+        name (str): the name of the class to retrieve.
+
+    Returns:
+        The class with the provided name.
+
+    **Example**
+
+    .. code-block:: python
+
+        from pennylane.core.operator import Operator2
+
+        class MyNamedOp(Operator2):
+            static_argnames = ("label",)
+
+            def __init__(self, label, wires):
+                super().__init__(label, wires=wires)
+
+    >>> from pennylane.core import get_op_class_by_name
+    >>> get_op_class_by_name("MyNamedOp")("my-label", [0, 1])
+    MyNamedOp(label=my-label, wires=[0, 1])
+    """
+    return OperatorRegistry()[name]
 
 
 # ---------------------------------------------------------------------------------
@@ -1645,16 +1702,21 @@ def _init_wires(op: Operator2):
     # pylint: disable=protected-access
     all_algorithmic_wires = []
 
-    for wname, wsize in zip(op.wire_argnames, op.wire_sizes, strict=True):
+    for wname in op.wire_argnames:
         if wname not in op.hybrid_argnames:
             warg = op._bound_args.arguments[wname]
             canonical_wires = warg if isinstance(warg, AbstractWires) else Wires(warg)
             op._bound_args.arguments[wname] = canonical_wires
-            if wsize is not None and len(canonical_wires) != wsize:
-                raise ValueError(
-                    f"Incorrect number of wires for '{op.name}.{wname}'. Expected {wsize} "
-                    f"wires but got {len(canonical_wires)}."
-                )
+
+            if op.arg_specs and wname in op.arg_specs:
+                exp_type = op.arg_specs[wname]
+                if getattr(exp_type, "shape_fixed", False) and len(canonical_wires) != len(
+                    exp_type
+                ):
+                    raise ValueError(
+                        f"Incorrect number of wires for '{op.name}.{wname}'. "
+                        f"Expected {len(exp_type)} wires but got {len(canonical_wires)}."
+                    )
 
             # Work wires are NOT included in the full wires list.
             if wname not in ("work_wires", "work_wire"):
@@ -1741,8 +1803,8 @@ def _init_arg_types(op: Operator2) -> None:
         # spec in 'arg_specs' in order to have a single source of truth.
         if isinstance(argval, AbstractArray):
             new_argval = AbstractArray(arg_shape, exp_type.dtype)
-            # pylint: disable=protected-access
             # FIX: Hacky way to set attribute of a frozen dataclass
+            # pylint: disable-next=protected-access
             object.__setattr__(new_argval, "_weak_type", exp_type._weak_type)
             op.arguments[name] = new_argval
 
@@ -1824,66 +1886,9 @@ def _init_subclass_arg_specs_setup(cls: type[Operator2]) -> None:
             cls.has_fixed_sig = False
 
 
-def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
-    """Set up ``wire_sizes`` for ``Operator2`` subclasses."""
-    arg_specs = cls.arg_specs or {}
-
-    if cls.wire_sizes is None:
-        cls.wire_sizes = tuple(
-            (
-                None
-                if name not in arg_specs or not arg_specs[name].shape_fixed
-                else len(arg_specs[name])
-            )
-            for name in cls.wire_argnames
-        )
-        return
-
-    if not isinstance(cls.wire_sizes, Sequence):
-        cls.wire_sizes = (cls.wire_sizes,)
-
-    if len(cls.wire_sizes) != len(cls.wire_argnames):
-        raise TypeError("'wire_sizes' must have the same length as 'wire_argnames'.")
-
-    for wname, wsize in zip(cls.wire_argnames, cls.wire_sizes, strict=True):
-        # Hybrid wire arguments' entry in wire_sizes must always be ``None``. Hybrid arguments
-        # can be arbitrary pytrees by design
-        if wname in cls.hybrid_argnames and wsize is not None:
-            raise TypeError(
-                f"Expected wire_size == None for '{wname}' as it is a hybrid wire argument."
-            )
-
-        if not ((isinstance(wsize, int) and wsize > 0) or wsize is None):
-            raise TypeError(
-                f"'{cls.__name__}.wire_sizes' is invalid. 'wire_sizes' must be a sequence "
-                f"of positive integers or 'None' values, but got {cls.wire_sizes}."
-            )
-
-        # If the wire argument is in arg_specs, the entries in arg_specs
-        # and wire_sizes must match. Arbitrary number of wires is denoted by ``None`` and
-        # ``-1`` in wire_sizes and arg_specs respectively.
-        if (expected_type := arg_specs.get(wname, None)) is not None:
-            if not expected_type.shape_fixed:
-                # Dynamic wire count, wire_sizes must specify arbitrary wires (None)
-                mismatch = wsize is not None
-            else:
-                # Fixed wire count: wire count must match size
-                mismatch = len(expected_type) != wsize
-
-            if mismatch:
-                cname = cls.__name__
-                declared_num = len(expected_type) if expected_type.shape_fixed else -1
-                raise TypeError(
-                    f"Number of wires specified for '{wname}' does not match the declared "
-                    f"type in {cname}.arg_specs and {cname}.wire_sizes. Got "
-                    f"{declared_num} and {wsize} respectively."
-                )
-
-
 def _init_subclass_add_dynamic_properties(cls: type[Operator2]) -> None:
     """Create dynamic properties for an operator using its signature."""
-    # pylint: disable=protected-access
-    for name in cls._sig.parameters:
+    for name in cls._sig.parameters:  # pylint: disable=protected-access
         if not hasattr(cls, name):
             dyn_property = partial(_init_subclass_dynamic_property, name=name)
             setattr(cls, name, property(dyn_property))
@@ -1905,14 +1910,12 @@ def _init_subclass_dynamic_property(self: Operator2, name: str) -> Any:
 # -------------------------------------------------------------------------------
 
 
-# pylint: disable=ungrouped-imports
 operator_p = QpPrimitive("operator")
 operator_p.prim_type = "operator"
 
 
-# pylint: disable=too-many-arguments,unused-argument
 @operator_p.def_impl
-def _op_impl(
+def _op_impl(  # pylint: disable=too-many-arguments,unused-argument
     *all_args,
     op_cls,
     wire_lens,
@@ -2192,8 +2195,7 @@ def _resolve_arg_kind(cls, name: str) -> _ArgType:
     return _ArgType.DYN
 
 
-# pylint: disable=too-many-return-statements
-def _canonicalize_abstract_type(val, kind: _ArgType):
+def _canonicalize_abstract_type(val, kind: _ArgType):  # pylint: disable=too-many-return-statements
     """Canonicalizes the input into its abstract equivalent.
 
     Args:
@@ -2290,7 +2292,6 @@ class StatePrepBase2(Operator2, is_baseclass=True):
             array: A state vector for all wires in a circuit
         """
 
-    # pylint: disable=unused-argument
     def label(
         self, decimals: int | None = None, base_label: str | None = None, cache: dict | None = None
     ) -> str:

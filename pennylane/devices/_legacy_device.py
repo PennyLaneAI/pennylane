@@ -15,7 +15,6 @@
 This module contains the :class:`Device` abstract base class.
 """
 
-# pylint: disable=use-maxsplit-arg,protected-access
 import abc
 import warnings
 from collections import OrderedDict
@@ -24,7 +23,6 @@ from functools import lru_cache
 
 import numpy as np
 
-from pennylane.boolean_fn import BooleanFn
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operation, Operator, StatePrepBase
 from pennylane.core.qscript import QuantumScript
@@ -40,7 +38,7 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.ops import LinearCombination, MidMeasure, Prod, Projector, SProd, Sum
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.transforms import broadcast_expand, split_non_commuting
 from pennylane.wires import Wires
 
@@ -67,18 +65,18 @@ class _LegacyMeta(abc.ABCMeta):
         return super().__instancecheck__(instance)
 
 
+# pylint: disable-next=too-many-instance-attributes,too-many-public-methods
 class Device(abc.ABC, metaclass=_LegacyMeta):
     """Abstract base class for PennyLane devices.
 
     Args:
-        wires (int or Iterable[Number, str]]): Number of subsystems represented by the device,
-            or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
+        wires (int or Iterable[int]): Number of subsystems represented by the device,
+            or an iterable of unique non-negative integer labels (e.g., ``[0, 2, 5]``). Default 1 if
+            not specified.
         shots (int): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. Defaults to 1000 if not specified.
     """
 
-    # pylint: disable=too-many-public-methods,too-many-instance-attributes
     _capabilities = {"model": None, "supports_broadcasting": False}
     """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
@@ -116,7 +114,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
     def __str__(self):
         """Verbose string representation."""
-        package = self.__module__.split(".")[0]
+        package = self.__module__.split(".")[0]  # pylint: disable=use-maxsplit-arg
         return (
             f"{self.name}\nShort name: {self.short_name}\n"
             f"Package: {package}\n"
@@ -292,9 +290,9 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         **Example**
 
-        >>> dev = device('my.device', wires=['b', 'a'])
+        >>> dev = device("my.device", wires=[2, 3])
         >>> dev.wire_map()
-        OrderedDict( [(Wires(['a']), Wires([0])), (Wires(['b']), Wires([1]))])
+        OrderedDict( [(Wires([3]), Wires([0])), (Wires([2]), Wires([1]))])
         """
         wire_map = {w: i for i, w in enumerate(wires)}
         return OrderedDict(wire_map)
@@ -363,7 +361,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         """
         return cls._capabilities
 
-    # pylint: disable=too-many-branches,unused-argument
+    # pylint: disable-next=too-many-branches,unused-argument
     def execute(self, queue, observables, parameters=None, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
@@ -555,12 +553,11 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
     @property
     def stopping_condition(self):
-        """.BooleanFn: Returns the stopping condition for the device. The returned
+        """Callable: Returns the stopping condition for the device. The returned
         function accepts a queuable object (including a PennyLane operation
         and observable) and returns ``True`` if supported by the device."""
-        return BooleanFn(
-            lambda obj: not isinstance(obj, QuantumScript)
-            and (isinstance(obj, MeasurementProcess) or self.supports_operation(obj.name))
+        return lambda obj: not isinstance(obj, QuantumScript) and (
+            isinstance(obj, MeasurementProcess) or self.supports_operation(obj.name)
         )
 
     def default_expand_fn(self, circuit, max_expansion=10):
@@ -831,7 +828,6 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         source of :meth:`execute` for more details).
         """
 
-        # pylint: disable=no-self-use
         class MockContext:
             """Mock class as a default for the with statement in execute()."""
 
@@ -886,7 +882,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             "The given observable must either be a pennylane.operation.Operator class or a string."
         )
 
-    def check_validity(self, queue, observables):
+    def check_validity(self, queue, observables):  # pylint: disable=too-many-branches
         """Checks whether the operations and observables in queue are all supported by the device.
 
         Args:

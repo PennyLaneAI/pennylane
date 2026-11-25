@@ -17,17 +17,27 @@ not depend on any parameters.
 """
 
 from collections.abc import Hashable, Sequence
-
-# pylint: disable=arguments-differ
 from copy import copy
 from typing import Literal
 
 import pennylane as qp
+from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.core.operator import Operation, Operator2
 from pennylane.decomposition.decomposition_rule import add_decomps, null_decomp
-from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
 from pennylane.typing import Wire
 from pennylane.wires import WiresLike
+
+barrier_p = QpPrimitive("barrier")
+
+
+@barrier_p.def_impl
+def _barrier_impl(*wires):
+    type.__call__(Barrier, wires=wires)
+    return []
+
+
+barrier_p.multiple_results = True
+barrier_p.def_abstract_eval(lambda *wires: [])
 
 
 class Barrier(Operator2):
@@ -40,7 +50,6 @@ class Barrier(Operator2):
     * Number of parameters: 0
 
     Args:
-        only_visual (bool): True if we do not want it to have an impact on the compilation process. Default is False.
         wires (Sequence[int] or int): the wires the operation acts on
     """
 
@@ -50,11 +59,14 @@ class Barrier(Operator2):
     num_wires = None
     """Any number of wires."""
 
-    compilable_argnames = ("only_visual",)
     arg_specs = {"wires": Wire[-1]}
 
-    def __init__(self, wires: WiresLike = (), only_visual: bool = False):
-        super().__init__(wires=wires, only_visual=only_visual)
+    def __init__(self, wires: WiresLike = ()):
+        super().__init__(wires=wires)
+
+    def _bind_primitive(self):
+        """Capture a barrier using the dedicated operator primitive."""
+        barrier_p.bind(*self.wires)
 
     def __repr__(self):
         return f"Barrier(wires={self.wires.tolist()})"
@@ -63,25 +75,13 @@ class Barrier(Operator2):
         return "||"
 
     def adjoint(self):
-        return Barrier(wires=self.wires, only_visual=self.only_visual)
+        return Barrier(wires=self.wires)
 
     def pow(self, z):
-        return [Barrier(wires=self.wires, only_visual=self.only_visual)]
+        return [Barrier(wires=self.wires)]
 
     def simplify(self):
-        if self.only_visual:
-            if len(self.wires) == 1:
-                return qp.Identity(self.wires[0])
-            return qp.prod(*(qp.Identity(w) for w in self.wires))
         return self
-
-
-@custom_ctrl_dispatch.register
-def _ctrl_barrier(base: Barrier, control, control_values, *_):  # pylint: disable=unused-argument
-    """Controlling a ``Barrier`` has no effect, so the ``Barrier`` itself is returned."""
-    if qp.QueuingManager.recording():
-        qp.QueuingManager.append(base)
-    return base
 
 
 add_decomps(Barrier, null_decomp)
@@ -151,6 +151,7 @@ class Snapshot(Operation):
     grad_method = None
 
     @classmethod
+    # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, tag=None, measurement=None, shots="workflow"):
         if measurement is None:
             return cls._primitive.bind(measurement=measurement, tag=tag, shots=shots)

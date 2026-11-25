@@ -15,7 +15,9 @@
 Unit tests for the :mod:`pauli` utility functions in ``pauli/utils.py``.
 """
 
-# pylint: disable=too-few-public-methods,too-many-public-methods
+# pylint: disable=too-few-public-methods
+
+
 import functools
 import itertools
 
@@ -57,9 +59,9 @@ from pennylane.pauli import (
 
 non_pauli_words = [
     PauliX(0) @ Hadamard(1) @ Identity(2),
-    Hadamard("a"),
-    U3(0.1, 1, 1, wires="a"),
-    Hermitian(np.array([[3.2, 1.1 + 0.6j], [1.1 - 0.6j, 3.2]]), wires="a") @ PauliX("b"),
+    Hadamard(7),
+    U3(0.1, 1, 1, wires=7),
+    Hermitian(np.array([[3.2, 1.1 + 0.6j], [1.1 - 0.6j, 3.2]]), wires=7) @ PauliX(12),
 ]
 
 
@@ -71,9 +73,9 @@ def _make_pauli_word_strings():
         (PauliX(1), {0: 0, 1: 1}, "IX"),
         (PauliX(1), None, "X"),
         (PauliX(1), {1: 0, 0: 1}, "XI"),
-        (PauliZ("a") @ PauliY("b") @ PauliZ("d"), {"a": 0, "b": 1, "c": 2, "d": 3}, "ZYIZ"),
-        (PauliZ("a") @ PauliY("b") @ PauliZ("d"), None, "ZYZ"),
-        (PauliX("a") @ PauliY("b") @ PauliZ("d"), {"d": 0, "c": 1, "b": 2, "a": 3}, "ZIYX"),
+        (PauliZ(7) @ PauliY(12) @ PauliZ(15), {7: 0, 12: 1, 19: 2, 15: 3}, "ZYIZ"),
+        (PauliZ(7) @ PauliY(12) @ PauliZ(15), None, "ZYZ"),
+        (PauliX(7) @ PauliY(12) @ PauliZ(15), {15: 0, 0: 1, 12: 2, 7: 3}, "ZIYX"),
         (4.5 * PauliX(0), {0: 0}, "X"),
         (qp.prod(PauliX(0), PauliY(1)), {0: 0, 1: 1}, "XY"),
         (PauliX(0) @ PauliZ(0), {0: 0}, "Y"),
@@ -83,7 +85,7 @@ def _make_pauli_word_strings():
     ]
 
 
-class TestGroupingUtils:
+class TestGroupingUtils:  # pylint: disable=too-many-public-methods
     """Basic usage and edge-case tests for the measurement optimization utility functions."""
 
     ops_to_vecs_explicit_wires = [
@@ -104,17 +106,17 @@ class TestGroupingUtils:
         assert (pauli_to_binary(op) == vec).all()
 
     ops_to_vecs_abstract_wires = [
-        (PauliX("a") @ PauliZ("b") @ Identity("c"), np.array([1, 0, 0, 0, 0, 1, 0, 0])),
-        (PauliY(6) @ PauliZ("a") @ PauliZ("b"), np.array([0, 0, 0, 1, 1, 1, 0, 1])),
-        (PauliX("b") @ PauliY("c"), np.array([0, 1, 1, 0, 0, 0, 1, 0])),
-        (Identity("a") @ Identity(6), np.zeros(8)),
+        (PauliX(7) @ PauliZ(12) @ Identity(14), np.array([1, 0, 0, 0, 0, 1, 0, 0])),
+        (PauliY(6) @ PauliZ(7) @ PauliZ(12), np.array([0, 0, 0, 1, 1, 1, 0, 1])),
+        (PauliX(12) @ PauliY(14), np.array([0, 1, 1, 0, 0, 0, 1, 0])),
+        (Identity(7) @ Identity(6), np.zeros(8)),
         (
-            qp.prod(qp.PauliX("a"), qp.PauliZ("b"), qp.PauliY(6)),
+            qp.prod(qp.PauliX(7), qp.PauliZ(12), qp.PauliY(6)),
             np.array([1, 0, 0, 1, 0, 1, 0, 1]),
         ),
         (qp.s_prod(1.5, qp.PauliZ(6)), np.array([0, 0, 0, 0, 0, 0, 0, 1])),
         (
-            qp.sum(qp.PauliX("b"), qp.PauliX("b"), qp.PauliX("b")),
+            qp.sum(qp.PauliX(12), qp.PauliX(12), qp.PauliX(12)),
             np.array([0, 1, 0, 0, 0, 0, 0, 0]),
         ),
     ]
@@ -124,7 +126,7 @@ class TestGroupingUtils:
         """Test conversion of Pauli word from operator to binary vector representation if a
         ``wire_map`` is specified."""
 
-        wire_map = {"a": 0, "b": 1, "c": 2, 6: 3}
+        wire_map = {7: 0, 12: 1, 14: 2, 6: 3}
 
         assert (pauli_to_binary(op, wire_map=wire_map) == vec).all()
 
@@ -146,8 +148,8 @@ class TestGroupingUtils:
         """Tests ValueError raise when n_qubits is not high enough to support the highest wire_map
         value."""
 
-        pauli_word = PauliX("a") @ PauliY("b") @ PauliZ("c")
-        wire_map = {"a": 0, "b": 1, "c": 3}
+        pauli_word = PauliX(7) @ PauliY(12) @ PauliZ(14)
+        wire_map = {7: 0, 12: 1, 14: 3}
         n_qubits = 3
         assert pytest.raises(ValueError, pauli_to_binary, pauli_word, n_qubits, wire_map)
 
@@ -166,10 +168,10 @@ class TestGroupingUtils:
         assert are_identical_pauli_words(binary_to_pauli(vec), op)
 
     vecs_to_ops_abstract_wires = [
-        (np.array([1, 0, 1, 0, 0, 1]), PauliX("alice") @ PauliY("auxiliary")),
-        (np.array([1, 1, 1, 1, 1, 1]), PauliY("alice") @ PauliY("bob") @ PauliY("auxiliary")),
-        (np.array([1, 0, 1, 0, 1, 0]), PauliX("alice") @ PauliZ("bob") @ PauliX("auxiliary")),
-        (np.zeros(6), Identity("alice")),
+        (np.array([1, 0, 1, 0, 0, 1]), PauliX(10) @ PauliY(11)),
+        (np.array([1, 1, 1, 1, 1, 1]), PauliY(10) @ PauliY(13) @ PauliY(11)),
+        (np.array([1, 0, 1, 0, 1, 0]), PauliX(10) @ PauliZ(13) @ PauliX(11)),
+        (np.zeros(6), Identity(10)),
     ]
 
     @pytest.mark.parametrize("vec,op", vecs_to_ops_abstract_wires)
@@ -177,15 +179,15 @@ class TestGroupingUtils:
         """Test conversion of Pauli in binary vector representation to operator form when
         ``wire_map`` is specified."""
 
-        wire_map = {"alice": 0, "bob": 1, "auxiliary": 2}
+        wire_map = {10: 0, 13: 1, 11: 2}
 
         assert are_identical_pauli_words(binary_to_pauli(vec, wire_map=wire_map), op)
 
     binary_vecs_with_invalid_wire_maps = [
-        ([1, 0], {"a": 1}),
-        ([1, 1, 1, 0], {"a": 0}),
-        ([1, 0, 1, 0, 1, 1], {"a": 0, "b": 2, "c": 3}),
-        ([1, 0, 1, 0], {"a": 0, "b": 2}),
+        ([1, 0], {7: 1}),
+        ([1, 1, 1, 0], {7: 0}),
+        ([1, 0, 1, 0, 1, 1], {7: 0, 12: 2, 14: 3}),
+        ([1, 0, 1, 0], {7: 0, 12: 2}),
     ]
 
     @pytest.mark.parametrize("binary_vec,wire_map", binary_vecs_with_invalid_wire_maps)
@@ -219,7 +221,7 @@ class TestGroupingUtils:
         """Tests if ValueError is raised when specified n_qubits is not large enough to support
         the number of distinct wire labels in input observables."""
 
-        observables = [Identity(1) @ PauliZ("a"), PauliX(1), PauliZ(0) @ PauliZ(2)]
+        observables = [Identity(1) @ PauliZ(7), PauliX(1), PauliZ(0) @ PauliZ(2)]
         n_qubits_invalid = 3
 
         assert pytest.raises(
@@ -229,11 +231,11 @@ class TestGroupingUtils:
     def test_is_qwc(self):
         """Determining if two Pauli words are qubit-wise commuting."""
 
-        wire_map = {0: 0, "a": 1, "b": 2}
-        p1_vec = pauli_to_binary(PauliX(0) @ PauliY("a"), wire_map=wire_map)
-        p2_vec = pauli_to_binary(PauliX(0) @ Identity("a") @ PauliX("b"), wire_map=wire_map)
-        p3_vec = pauli_to_binary(PauliX(0) @ PauliZ("a") @ Identity("b"), wire_map=wire_map)
-        identity = pauli_to_binary(Identity("a") @ Identity(0), wire_map=wire_map)
+        wire_map = {0: 0, 7: 1, 12: 2}
+        p1_vec = pauli_to_binary(PauliX(0) @ PauliY(7), wire_map=wire_map)
+        p2_vec = pauli_to_binary(PauliX(0) @ Identity(7) @ PauliX(12), wire_map=wire_map)
+        p3_vec = pauli_to_binary(PauliX(0) @ PauliZ(7) @ Identity(12), wire_map=wire_map)
+        identity = pauli_to_binary(Identity(7) @ Identity(0), wire_map=wire_map)
 
         assert is_qwc(p1_vec, p2_vec)
         assert not is_qwc(p1_vec, p3_vec)
@@ -384,8 +386,8 @@ class TestGroupingUtils:
 
     def test_identities_always_pauli_words(self):
         """Tests that identity terms are always identical."""
-        assert are_identical_pauli_words(qp.Identity(0), qp.Identity("a"))
-        assert are_identical_pauli_words(qp.Identity((-2, -3)), qp.Identity("wire"))
+        assert are_identical_pauli_words(qp.Identity(0), qp.Identity(7))
+        assert are_identical_pauli_words(qp.Identity((-2, -3)), qp.Identity(18))
 
     @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
     def test_are_identical_pauli_words_non_pauli_word_catch(self, non_pauli_word):
@@ -399,7 +401,7 @@ class TestGroupingUtils:
             are_identical_pauli_words(non_pauli_word, PauliZ(0) @ PauliZ(1))
 
         with pytest.raises(TypeError):
-            are_identical_pauli_words(PauliX("a") @ Identity("b"), non_pauli_word)
+            are_identical_pauli_words(PauliX(7) @ Identity(12), non_pauli_word)
 
         with pytest.raises(TypeError):
             are_identical_pauli_words(non_pauli_word, non_pauli_word)
@@ -459,13 +461,13 @@ class TestGroupingUtils:
     @pytest.mark.parametrize(
         "pauli_string,wire_map,expected_pauli",
         [
-            ("I", {"a": 0}, Identity("a")),
+            ("I", {7: 0}, Identity(7)),
             ("X", {0: 0}, PauliX(0)),
             ("XI", {1: 0, 0: 1}, PauliX(1)),
             ("II", {0: 0, 1: 1}, Identity(0)),
-            ("ZYIZ", {"a": 0, "b": 1, "c": 2, "d": 3}, PauliZ("a") @ PauliY("b") @ PauliZ("d")),
+            ("ZYIZ", {7: 0, 12: 1, 14: 2, 15: 3}, PauliZ(7) @ PauliY(12) @ PauliZ(15)),
             ("ZYZ", None, PauliZ(0) @ PauliY(1) @ PauliZ(2)),
-            ("ZIYX", {"d": 0, "c": 1, "b": 2, "a": 3}, PauliZ("d") @ PauliY("b") @ PauliX("a")),
+            ("ZIYX", {15: 0, 14: 1, 12: 2, 7: 3}, PauliZ(15) @ PauliY(12) @ PauliX(7)),
         ],
     )
     def test_string_to_pauli_word(self, pauli_string, wire_map, expected_pauli):
@@ -476,7 +478,7 @@ class TestGroupingUtils:
     @pytest.mark.parametrize(
         "non_pauli_string,wire_map,error_type,error_message",
         [
-            (Identity("a"), None, TypeError, "must be string"),
+            (Identity(7), None, TypeError, "must be string"),
             ("XAYZ", None, ValueError, "Invalid characters encountered"),
             ("XYYZ", {0: 0, 1: 1, 2: 2}, ValueError, "must have the same length"),
         ],
@@ -531,8 +533,8 @@ class TestGroupingUtils:
                 ),
             ),
             (
-                PauliZ("a") @ PauliX(2),
-                {"a": 0, 1: 1, 2: 2},
+                PauliZ(7) @ PauliX(2),
+                {7: 0, 1: 1, 2: 2},
                 np.array(
                     [
                         [0, 1, 0, 0, 0, 0, 0, 0],
@@ -547,8 +549,8 @@ class TestGroupingUtils:
                 ),
             ),
             (
-                PauliX(2) @ PauliZ("a"),
-                {"a": 0, 1: 1, 2: 2},
+                PauliX(2) @ PauliZ(7),
+                {7: 0, 1: 1, 2: 2},
                 np.array(
                     [
                         [0, 1, 0, 0, 0, 0, 0, 0],
@@ -610,42 +612,28 @@ class TestPauliGroup:
         pg_1 = list(pauli_group(1.0))
         assert all(expected == (obtained) for expected, obtained in zip(expected_pg_1, pg_1))
 
-    def test_one_qubit_pauli_group_string_wire_map(self):
-        """Test that the single-qubit Pauli group is constructed correctly with a wire
-        labeled by a string."""
-
-        wire_map = {"qubit": 0}
-        expected_pg_1_wires = [
-            Identity("qubit"),
-            PauliZ("qubit"),
-            PauliX("qubit"),
-            PauliY("qubit"),
-        ]
-        pg_1_wires = list(pauli_group(1, wire_map=wire_map))
-        assert all(exp == (ob) for exp, ob in zip(expected_pg_1_wires, pg_1_wires))
-
     def test_two_qubit_pauli_group(self):
         """Test that the two-qubit Pauli group is constructed correctly."""
-        # With no wire map; ordering is based on construction from binary representation
-        wire_map = {"a": 0, "b": 1}
+        # Ordering follows the binary representation, with wires relabeled by wire_map
+        wire_map = {7: 0, 12: 1}
 
         expected_pg_2 = [
-            Identity("a"),
-            PauliZ("b"),
-            PauliZ("a"),
-            PauliZ("a") @ PauliZ("b"),
-            PauliX("b"),
-            PauliY("b"),
-            PauliZ("a") @ PauliX("b"),
-            PauliZ("a") @ PauliY("b"),
-            PauliX("a"),
-            PauliX("a") @ PauliZ("b"),
-            PauliY("a"),
-            PauliY("a") @ PauliZ("b"),
-            PauliX("a") @ PauliX("b"),
-            PauliX("a") @ PauliY("b"),
-            PauliY("a") @ PauliX("b"),
-            PauliY("a") @ PauliY("b"),
+            Identity(7),
+            PauliZ(12),
+            PauliZ(7),
+            PauliZ(7) @ PauliZ(12),
+            PauliX(12),
+            PauliY(12),
+            PauliZ(7) @ PauliX(12),
+            PauliZ(7) @ PauliY(12),
+            PauliX(7),
+            PauliX(7) @ PauliZ(12),
+            PauliY(7),
+            PauliY(7) @ PauliZ(12),
+            PauliX(7) @ PauliX(12),
+            PauliX(7) @ PauliY(12),
+            PauliY(7) @ PauliX(12),
+            PauliY(7) @ PauliY(12),
         ]
 
         pg_2 = list(pauli_group(2, wire_map=wire_map))
@@ -658,12 +646,12 @@ class TestPauliGroup:
             (PauliX(0), Identity(0), PauliX(0)),
             (PauliZ(0), PauliY(0), PauliX(0)),
             (PauliZ(0), PauliZ(0), Identity(0)),
-            (Identity("a"), Identity("b"), Identity(["a", "b"])),
-            (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), Identity(["b", "a"])),
+            (Identity(7), Identity(12), Identity([7, 12])),
+            (PauliZ(12) @ PauliY(7), PauliZ(12) @ PauliY(7), Identity([12, 7])),
             (
-                PauliZ("b") @ PauliY("a"),
-                PauliZ("b") @ PauliY("a"),
-                Identity(["b", "a"]),
+                PauliZ(12) @ PauliY(7),
+                PauliZ(12) @ PauliY(7),
+                Identity([12, 7]),
             ),
             (
                 PauliZ(0) @ PauliY(1),
@@ -681,13 +669,13 @@ class TestPauliGroup:
                 PauliX(0) @ PauliZ(2),
                 PauliY(2),
             ),
-            (PauliZ("a"), PauliX("b"), PauliZ("a") @ PauliX("b")),
+            (PauliZ(7), PauliX(12), PauliZ(7) @ PauliX(12)),
             (
-                PauliZ("a"),
-                PauliX("e"),
-                PauliZ("a") @ PauliX("e"),
+                PauliZ(7),
+                PauliX(16),
+                PauliZ(7) @ PauliX(16),
             ),
-            (PauliZ("a"), PauliY("e"), PauliZ("a") @ PauliY("e")),
+            (PauliZ(7), PauliY(16), PauliZ(7) @ PauliY(16)),
             (
                 PauliZ(0) @ PauliZ(2) @ PauliZ(4),
                 PauliZ(0) @ PauliY(1) @ PauliX(3),
@@ -718,10 +706,10 @@ class TestPauliGroup:
             (PauliX(0), Identity(0), 1),
             (PauliZ(0), PauliY(0), -1j),
             (PauliZ(0), PauliZ(0), 1),
-            (Identity("a"), Identity("b"), 1),
-            (PauliZ("b") @ PauliY("a"), PauliZ("b") @ PauliY("a"), 1),
-            (PauliZ(0), PauliY("b"), 1),
-            (PauliZ("a") @ PauliY("b"), PauliX("a") @ PauliZ("b"), -1),
+            (Identity(7), Identity(12), 1),
+            (PauliZ(12) @ PauliY(7), PauliZ(12) @ PauliY(7), 1),
+            (PauliZ(0), PauliY(12), 1),
+            (PauliZ(7) @ PauliY(12), PauliX(7) @ PauliZ(12), -1),
             (PauliX(0) @ PauliX(2), PauliX(0) @ PauliZ(2), -1j),
             (PauliX(0) @ PauliY(1) @ PauliZ(2), PauliY(0) @ PauliY(1), 1j),
             (PauliZ(0) @ PauliY(1), PauliX(1) @ PauliY(0), -1),
@@ -838,8 +826,8 @@ class TestMeasurementTransformations:
             [RY(-np.pi / 2, wires=[2]), RX(np.pi / 2, wires=[0])],
         ),
         (
-            [PauliZ("a"), PauliX("b"), PauliY(0)],
-            [RY(-np.pi / 2, wires=["b"]), RX(np.pi / 2, wires=[0])],
+            [PauliZ(7), PauliX(12), PauliY(0)],
+            [RY(-np.pi / 2, wires=[12]), RX(np.pi / 2, wires=[0])],
         ),
     ]
 
@@ -858,7 +846,7 @@ class TestMeasurementTransformations:
     invalid_qwc_rotation_inputs = [
         [PauliX(0), PauliY(1), Hadamard(2)],
         [PauliX(0) @ PauliY(1), PauliZ(1), Identity(2)],
-        [RX(1, wires="a"), PauliX("b")],
+        [RX(1, wires=7), PauliX(12)],
     ]
 
     @pytest.mark.parametrize("bad_input", invalid_qwc_rotation_inputs)
@@ -869,10 +857,10 @@ class TestMeasurementTransformations:
         assert pytest.raises(TypeError, qwc_rotation, bad_input)
 
     diagonalized_paulis = [
-        (Identity("a"), Identity("a")),
-        (PauliX(1) @ Identity(2) @ PauliZ("b"), PauliZ(1) @ PauliZ("b")),
+        (Identity(7), Identity(7)),
+        (PauliX(1) @ Identity(2) @ PauliZ(12), PauliZ(1) @ PauliZ(12)),
         (PauliZ(1) @ PauliZ(2), PauliZ(1) @ PauliZ(2)),
-        (PauliX("a") @ PauliY("b") @ PauliY("c"), PauliZ("a") @ PauliZ("b") @ PauliZ("c")),
+        (PauliX(7) @ PauliY(12) @ PauliY(14), PauliZ(7) @ PauliZ(12) @ PauliZ(14)),
     ]
 
     @pytest.mark.parametrize("pauli_word, diag_pauli_word", diagonalized_paulis)
@@ -884,9 +872,9 @@ class TestMeasurementTransformations:
 
     non_pauli_words = [
         PauliX(0) @ Hadamard(1) @ Identity(2),
-        Hadamard("a"),
-        U3(0.1, 1, 1, wires="a"),
-        Hermitian(np.array([[3.2, 1.1 + 0.6j], [1.1 - 0.6j, 3.2]]), wires="a") @ PauliX("b"),
+        Hadamard(7),
+        U3(0.1, 1, 1, wires=7),
+        Hermitian(np.array([[3.2, 1.1 + 0.6j], [1.1 - 0.6j, 3.2]]), wires=7) @ PauliX(12),
     ]
 
     @pytest.mark.parametrize("non_pauli_word", non_pauli_words)
@@ -914,16 +902,16 @@ class TestMeasurementTransformations:
             ),
         ),
         (
-            [PauliZ("a") @ PauliY("b") @ PauliZ("c"), PauliY("b") @ PauliZ("d")],
+            [PauliZ(7) @ PauliY(12) @ PauliZ(14), PauliY(12) @ PauliZ(15)],
             (
-                [RX(np.pi / 2, wires=["b"])],
+                [RX(np.pi / 2, wires=[12])],
                 [
-                    PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"]),
-                    PauliZ(wires=["b"]) @ PauliZ(wires=["d"]),
+                    PauliZ(wires=[7]) @ PauliZ(wires=[12]) @ PauliZ(wires=[14]),
+                    PauliZ(wires=[12]) @ PauliZ(wires=[15]),
                 ],
             ),
         ),
-        ([PauliX("a")], ([RY(-np.pi / 2, wires=["a"])], [PauliZ(wires=["a"])])),
+        ([PauliX(7)], ([RY(-np.pi / 2, wires=[7])], [PauliZ(wires=[7])])),
         (
             [PauliX(0), PauliX(1) @ PauliX(0)],
             (
@@ -948,10 +936,10 @@ class TestMeasurementTransformations:
             qp.assert_equal(diag_op, expected)
 
     not_qwc_groupings = [
-        [PauliX("a"), PauliY("a")],
+        [PauliX(7), PauliY(7)],
         [PauliZ(0) @ Identity(1), PauliZ(0) @ PauliZ(1), PauliX(0) @ Identity(1)],
-        [PauliX("a") @ PauliX(0), PauliZ(0) @ PauliZ("a")],
-        [PauliZ("a") @ PauliY(1), PauliZ(1) @ PauliY("a")],
+        [PauliX(7) @ PauliX(0), PauliZ(0) @ PauliZ(7)],
+        [PauliZ(7) @ PauliY(1), PauliZ(1) @ PauliY(7)],
         [qp.prod(qp.PauliZ(0), qp.PauliX(1)), qp.prod(qp.PauliZ(1), qp.PauliX(0))],
     ]
 
@@ -1019,9 +1007,9 @@ class TestTapering:
         ),
         (
             [
-                qp.PauliZ(wires=["a"]) @ qp.PauliX(wires=["b"]),
-                qp.PauliZ(wires=["a"]) @ qp.PauliY(wires=["c"]),
-                qp.PauliX(wires=["a"]) @ qp.PauliY(wires=["d"]),
+                qp.PauliZ(wires=[7]) @ qp.PauliX(wires=[12]),
+                qp.PauliZ(wires=[7]) @ qp.PauliY(wires=[14]),
+                qp.PauliX(wires=[7]) @ qp.PauliY(wires=[15]),
             ],
             4,
             np.array(
@@ -1033,8 +1021,8 @@ class TestTapering:
     @pytest.mark.parametrize(("terms", "num_qubits", "result"), terms_bin_mat_data)
     def test_binary_matrix_from_pws(self, terms, num_qubits, result):
         r"""Test that _binary_matrix_from_pws returns the correct result."""
-        # pylint: disable=protected-access
         pws_lst = [list(qp.pauli.pauli_sentence(t))[0] for t in terms]
+        # pylint: disable-next=protected-access
         binary_matrix = qp.pauli.utils._binary_matrix_from_pws(pws_lst, num_qubits)
         assert (binary_matrix == result).all()
 
@@ -1074,5 +1062,5 @@ class TestPauliEigs:
         """Test that the right number of cachings have been executed after clearing the cache"""
         pauli_eigs.cache_clear()
         pauli_eigs(depth)
-        # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         assert functools._CacheInfo(depth - 1, depth, 128, depth) == pauli_eigs.cache_info()

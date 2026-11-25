@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for the ``Prod2`` operator."""
 
-# pylint: disable=import-outside-toplevel
-
 from functools import reduce
 
 import numpy as np
@@ -121,7 +119,7 @@ class TestInitialization:
 
     def test_mcm_operands_raises(self):
         """Test that a product of mid-circuit measurements raises an error."""
-        m = qp.measurements.MidMeasureMP(qp.wires.Wires([0]))
+        m = qp.ops.MidMeasure(qp.wires.Wires([0]))
         with pytest.raises(ValueError, match="mid-circuit measurements"):
             Prod2([qp.X(1), m])
 
@@ -318,22 +316,18 @@ class TestSorting:  # pylint: disable=too-few-public-methods
 
     def test_sorting_operators_with_wire_map(self):
         """Test that the sorting algorithm orders factors by their mapped wire labels."""
-        op_list = [qp.Z("b"), qp.X("a"), qp.RX(0.5, "c")]
+        op_list = [qp.Z(11), qp.X(10), qp.RX(0.5, 12)]
 
-        # "a" is mapped before "b", so the two commuting factors get swapped
+        # Wire 10 is mapped before wire 11, so the first two commuting factors get swapped
         # pylint: disable-next=protected-access
-        sorted_list = Prod2._sort(op_list, wire_map={"a": 0, "b": 1, "c": 2})
-        for expected, actual in zip(
-            [qp.X("a"), qp.Z("b"), qp.RX(0.5, "c")], sorted_list, strict=True
-        ):
+        sorted_list = Prod2._sort(op_list, wire_map={10: 0, 11: 1, 12: 2})
+        for expected, actual in zip([qp.X(10), qp.Z(11), qp.RX(0.5, 12)], sorted_list, strict=True):
             qp.assert_equal(expected, actual)
 
-        # the reversed map puts "b" first, so the construction order is preserved
+        # The reversed map orders the factors by wires 12, 11, then 10
         # pylint: disable-next=protected-access
-        sorted_list = Prod2._sort(op_list, wire_map={"a": 2, "b": 1, "c": 0})
-        for expected, actual in zip(
-            [qp.RX(0.5, "c"), qp.Z("b"), qp.X("a")], sorted_list, strict=True
-        ):
+        sorted_list = Prod2._sort(op_list, wire_map={10: 2, 11: 1, 12: 0})
+        for expected, actual in zip([qp.RX(0.5, 12), qp.Z(11), qp.X(10)], sorted_list, strict=True):
             qp.assert_equal(expected, actual)
 
 
@@ -400,7 +394,7 @@ class TestSimplify:
         qp.assert_equal(simplified, qp.RY(0.3, 1))
 
 
-class TestValidity:  # pylint: disable=too-few-public-methods
+class TestValidity:
     """Standard validity checks."""
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -479,7 +473,6 @@ class TestAbstractOperands:
 
 
 @pytest.mark.capture
-# pylint: disable-next=too-few-public-methods
 class TestCapture:
     """Test that Prod2 integrates with program capture."""
 

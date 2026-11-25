@@ -31,7 +31,7 @@ from pennylane.exceptions import TermsUndefinedError, WireError
 from pennylane.measurements import expval, probs
 from pennylane.ops.functions import generator, matrix
 from pennylane.ops.qubit.attributes import has_unitary_generator
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
+from pennylane.transforms import _tape_decompose as decompose
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
@@ -103,8 +103,7 @@ def _expand_nonunitary_gen_stop_at(obj):
     return len(obj.data) == 0 or (obj.has_generator and obj in has_unitary_generator)
 
 
-# pylint: disable=too-many-positional-arguments
-def _expand_metric_tensor(
+def _expand_metric_tensor(  # pylint: disable=too-many-arguments,unused-argument
     tape: QuantumScript,
     argnum=None,
     approx=None,
@@ -113,7 +112,6 @@ def _expand_metric_tensor(
     device_wires=None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Set the metric tensor based on whether non-unitary gates are allowed."""
-    # pylint: disable=unused-argument,too-many-arguments
 
     if not allow_nonunitary and approx is None:
         [new_tape], postprocessing = decompose(
@@ -137,7 +135,7 @@ def _expand_metric_tensor(
     classical_cotransform=_contract_metric_tensor_with_cjac,
     final_transform=True,
 )
-def metric_tensor(  # pylint:disable=too-many-arguments, too-many-positional-arguments
+def metric_tensor(  # pylint: disable=too-many-arguments
     tape: QuantumScript,
     argnum=None,
     approx=None,
@@ -188,7 +186,7 @@ def metric_tensor(  # pylint:disable=too-many-arguments, too-many-positional-arg
         allow_nonunitary (bool): Whether non-unitary operations are allowed in circuits
             created by the transform. Only relevant if ``approx`` is ``None``.
             Should be set to ``True`` if possible to reduce cost.
-        aux_wire (None or int or str or Sequence or pennylane.wires.Wires): Auxiliary wire to
+        aux_wire (None or int or Sequence or pennylane.wires.Wires): Auxiliary wire to
             be used for Hadamard tests. If ``None`` (the default), a suitable wire is inferred
             from the (number of) used wires in the original circuit and ``device_wires``,
             if the latter are given.
@@ -655,7 +653,7 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire, shots):
         layer_j (list): The second layer of parametrized ops
         allow_nonunitary (bool): Whether non-unitary operations are allowed
             in the circuit; passed to ``_get_gen_op``
-        aux_wire (object or pennylane.wires.Wires): Auxiliary wire on which to
+        aux_wire (int or pennylane.wires.Wires): Auxiliary wire on which to
             control the controlled-generator operations
 
     Returns:
@@ -698,9 +696,8 @@ def _get_first_term_tapes(layer_i, layer_j, allow_nonunitary, aux_wire, shots):
     return tapes, ids
 
 
-def _metric_tensor_hadamard(
-    tape, argnum, allow_nonunitary, aux_wire, device_wires
-):  # pylint: disable=too-many-statements
+# pylint: disable-next=too-many-statements
+def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wires):
     r"""Generate the quantum tapes that execute the Hadamard tests
     to compute the first term of off block-diagonal metric entries
     and combine them with the covariance matrix-based block-diagonal tapes.
@@ -859,10 +856,11 @@ def _get_aux_wire(aux_wire, tape, device_wires):
     r"""Determine an unused wire to be used as auxiliary wire for Hadamard tests.
 
     Args:
-        aux_wire (object): Input auxiliary wire. May be one of a variety of input formats:
+        aux_wire (int or Sequence[int] or Wires or None): Input auxiliary wire. May be one of a variety of
+            input formats:
             If ``None``, try to infer a reasonable choice based on the number of wires used
             in the ``tape``, and based on ``device_wires``, if they are not ``None``.
-            If an ``int``, a ``str`` or a ``Sequence``, convert the input to a ``Wires``
+            If an ``int`` or a ``Sequence[int]``, convert the input to a ``Wires``
             object and take the first entry of the result. This leads to consistent behaviour
             between ``_get_aux_wire`` and the ``Wires`` class.
             If a ``Wires`` instance already, the conversion to such an instance is performed

@@ -13,6 +13,8 @@
 
 """Tests for the Controlled2 class."""
 
+# pylint: disable=too-few-public-methods
+
 import copy
 import pickle
 from typing import override
@@ -24,14 +26,12 @@ import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.operation import abstractify
-from pennylane.ops.op_math.controlled import Controlled, ControlledOp, custom_ctrl_dispatch
+from pennylane.ops.op_math.controlled import Controlled, ControlledOp
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2, _make_controlled_decomp
 from pennylane.testing.operators import _check_eigendecomposition
 from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import CompilableOp, DynOp, NonParametricOp, OneWireDynOp
-
-# pylint: disable=unused-argument,too-few-public-methods,useless-parent-delegation
 
 
 class CustomBase(Operator2):
@@ -39,7 +39,7 @@ class CustomBase(Operator2):
 
     arg_specs = {"wires": Wire[1]}
 
-    def __init__(self, wires):
+    def __init__(self, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(wires)
 
     @override
@@ -58,13 +58,6 @@ class CustomControlled(Controlled2):
         super().__init__(CustomBase(wires[1]), wires[0])
 
 
-@custom_ctrl_dispatch.register
-def _(base: CustomBase, control, control_values, work_wires, work_wire_type):
-    if len(control) == 1:
-        return CustomControlled(control + base.wires)
-    return NotImplemented
-
-
 class TestControlled2:
     """Unit tests for the Controlled2 interface."""
 
@@ -76,7 +69,7 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, wires):
                 super().__init__(qp.H(wires[1]), wires[0])
@@ -106,7 +99,7 @@ class TestControlled2:
 
         op = CustomControlled([0, 1])
         assert op.pow(2) == []
-        assert op.pow(5) == [CustomControlled([0, 1])]
+        assert op.pow(5) == [ControlledOp2(CustomBase(1), control_wires=[0])]
 
     def test_queuing(self):
         """Tests that the base op is properly dequeued."""
@@ -120,7 +113,6 @@ class TestControlled2:
     def test_capture(self):
         """Tests that the base operator is removed from the jaxpr."""
 
-        # pylint: disable=import-outside-toplevel
         import jax
 
         from pennylane.testing import assert_eqn_matches_op
@@ -142,7 +134,7 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, phi, theta, omega, wires):
                 super().__init__(qp.Rot(phi, theta, omega, wires=wires[1]), control_wires=wires[0])
@@ -178,6 +170,7 @@ class TestControlled2:
 
             arg_specs = {"phi": Float, "theta": Float, "omega": Float, "wires": Wire[1]}
 
+            # pylint: disable-next=useless-parent-delegation
             def __init__(self, phi, theta, omega, wires):
                 super().__init__(phi, theta, omega, wires)
 
@@ -211,7 +204,7 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, phi, theta, omega, wires):
                 super().__init__(qp.Rot(phi, theta, omega, wires=wires[1]), control_wires=wires[0])
@@ -246,7 +239,7 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, theta, wires):
                 super().__init__(qp.RX(theta, wires[1]), control_wires=wires[0])
@@ -261,7 +254,7 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, wires):
                 super().__init__(qp.H(wires[1]), wires[0])
@@ -281,7 +274,7 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, theta, wires):
                 super().__init__(qp.RX(theta, wires[1]), control_wires=wires[0])
@@ -298,14 +291,14 @@ class TestControlled2:
     def test_custom_op_compute_methods_capture(self):
         """Tests the default compute methods custom controlled ops doesn't capture extra ops."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         class CH2(Controlled2):
             """A new CH."""
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, wires):
                 super().__init__(qp.H(wires[1]), wires[0])
@@ -328,7 +321,7 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, wires):
                 super().__init__(qp.H(wires[1]), wires[0])
@@ -339,7 +332,7 @@ class TestControlled2:
 
             @staticmethod
             @override
-            def compute_matrix(wires):
+            def compute_matrix(wires):  # pylint: disable=unused-argument
                 return np.array(
                     [
                         [1, 0, 0, 0],
@@ -578,12 +571,12 @@ class TestControlledOp2:
         base = qp.H(0)
         op = ControlledOp2(base, control_wires=[1])
 
-        assert op.adjoint() == qp.CH([1, 0])
+        assert op.adjoint() == ControlledOp2(qp.H(0), [1])
 
         base = qp.RX(0.5, wires=0)
         op = ControlledOp2(base, control_wires=[1])
 
-        assert op.adjoint() == qp.CRX(-0.5, wires=[1, 0])
+        assert op.adjoint() == ControlledOp2(qp.RX(-0.5, wires=0), [1])
         assert op.has_generator
 
         generator = qp.Projector([1], wires=1) @ qp.Hamiltonian([-0.5], [qp.PauliX(0)])
@@ -627,7 +620,7 @@ class TestControlledOp2:
     def test_control_values_traced(self):
         """Tests that control values can be traced."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         def circ(cvals):
             qp.ctrl(qp.H(0), control=[1, 2], control_values=cvals)
@@ -653,14 +646,14 @@ class TestControlledOp2:
     def test_old_decomp_integration(self):
         """Tests that ControlledOp2 is compatible with the old decomposition convention."""
 
-        @register_resources({qp.RX: 1})
+        @register_resources({qp.RX: 1}, name="custom_decomp")
         def _custom_decomp(wires):
             qp.RX(np.pi / 2, wires=wires)
 
         qp.add_decomps(NonParametricOp, _custom_decomp)
         op = qp.ctrl(NonParametricOp(0), control=1)
         assert op.has_decomposition
-        assert op.decomposition() == [qp.CRX(np.pi / 2, wires=[1, 0])]
+        assert op.decomposition() == [ControlledOp2(qp.RX(np.pi / 2, wires=0), [1])]
 
 
 @pytest.mark.catalyst
@@ -672,7 +665,7 @@ def test_make_controlled_decomp_closes_over_compilable_args():
     and break any decomposition that branches on it with a Python ``if`` (as
     :class:`~.OutMultiplier`'s ``mod``/``output_wires_zeroed`` do)."""
 
-    @register_resources(lambda n, wires: {qp.X: 1} if n else {qp.Y: 1})
+    @register_resources(lambda n, wires: {qp.X: 1} if n else {qp.Y: 1}, name="some_decomp")
     def _some_decomp(n, wires):
         if n:
             qp.X(wires[0])
@@ -682,7 +675,7 @@ def test_make_controlled_decomp_closes_over_compilable_args():
     op = CompilableOp(True, wires=[0])
     rule = _make_controlled_decomp(_some_decomp)
 
-    @qp.qjit
+    @qp.qjit(capture=False)
     @qp.qnode(qp.device("lightning.qubit", wires=2))
     def f():
         rule(

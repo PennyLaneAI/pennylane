@@ -332,7 +332,7 @@ class ZOmega:
         """
         return ZOmega(-self.a, self.b, -self.c, self.d)
 
-    def norm(self: ZOmega) -> float:
+    def norm(self: ZOmega) -> ZOmega:
         """Return the norm squared."""
         return self * self.conj()
 
@@ -393,7 +393,6 @@ class DyadicMatrix:
         k (int): Optional integer to scale the matrix by a factor of :math:`1 / \sqrt{2}^k`.
     """
 
-    # pylint:disable = too-many-positional-arguments, too-many-arguments
     def __init__(self, a: ZOmega, b: ZOmega, c: ZOmega, d: ZOmega, k: int = 0) -> None:
         self.a = a
         self.b = b

@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for preprocess in devices/qubit."""
 
+# pylint: disable=too-few-public-methods
+
 import warnings
 
 import numpy as np
@@ -39,13 +41,10 @@ from pennylane.devices.preprocess import (
 from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import CountsMP, SampleMP
 
-# pylint: disable=too-few-public-methods
-
 
 class NoMatOp(Operation):
     """Dummy operation for expanding circuit."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
@@ -58,7 +57,6 @@ class NoMatNoDecompOp(Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return False
@@ -80,6 +78,28 @@ class TestPrivateHelpers:
     def decomposer(op):
         return op.decomposition()
 
+    def test_custom_decomposer_removes_global_phase(self, mocker):
+        """A custom device decomposer can remove an unsupported global phase."""
+        phase = qp.GlobalPhase(0.3)
+        # An empty decomposition removes the phase.
+        decomposer = mocker.Mock(return_value=[])
+
+        with warnings.catch_warnings():
+            # The fallback must run before the GlobalPhase warning.
+            warnings.simplefilter("error")
+            operations = list(
+                _operator_decomposition_gen(
+                    phase,
+                    # Reject the phase to force decomposition.
+                    acceptance_function=lambda op: False,
+                    custom_decomposer=decomposer,
+                    strict=True,
+                )
+            )
+
+        decomposer.assert_called_once_with(phase)
+        assert operations == []
+
     @pytest.mark.parametrize("op", (qp.PauliX(0), qp.RX(1.2, wires=0), qp.QFT(wires=range(3))))
     def test_operator_decomposition_gen_accepted_operator(self, op):
         """Test the _operator_decomposition_gen function on an operator that is accepted."""
@@ -100,13 +120,13 @@ class TestPrivateHelpers:
         def stopping_condition(op):
             return op.has_matrix
 
-        op = NoMatOp("a")
+        op = NoMatOp(7)
         casted_to_list = list(
             _operator_decomposition_gen(op, stopping_condition, custom_decomposer=self.decomposer)
         )
         assert len(casted_to_list) == 2
-        qp.assert_equal(casted_to_list[0], qp.PauliX("a"))
-        qp.assert_equal(casted_to_list[1], qp.PauliY("a"))
+        qp.assert_equal(casted_to_list[0], qp.PauliX(7))
+        qp.assert_equal(casted_to_list[1], qp.PauliY(7))
 
     def test_operator_decomposition_gen_decomposed_operator_ragged_nesting(self):
         """Test that _operator_decomposition_gen handles a decomposition that requires different depths of decomposition."""
@@ -122,16 +142,16 @@ class TestPrivateHelpers:
             def decomposition(self):
                 return [NoMatOp(self.wires), qp.S(self.wires), qp.adjoint(NoMatOp(self.wires))]
 
-        op = RaggedDecompositionOp("a")
+        op = RaggedDecompositionOp(7)
         final_decomp = list(
             _operator_decomposition_gen(op, stopping_condition, custom_decomposer=self.decomposer)
         )
         assert len(final_decomp) == 5
-        qp.assert_equal(final_decomp[0], qp.PauliX("a"))
-        qp.assert_equal(final_decomp[1], qp.PauliY("a"))
-        qp.assert_equal(final_decomp[2], qp.S("a"))
-        qp.assert_equal(final_decomp[3], qp.adjoint(qp.PauliY("a")))
-        qp.assert_equal(final_decomp[4], qp.adjoint(qp.PauliX("a")))
+        qp.assert_equal(final_decomp[0], qp.PauliX(7))
+        qp.assert_equal(final_decomp[1], qp.PauliY(7))
+        qp.assert_equal(final_decomp[2], qp.S(7))
+        qp.assert_equal(final_decomp[3], qp.adjoint(qp.PauliY(7)))
+        qp.assert_equal(final_decomp[4], qp.adjoint(qp.PauliX(7)))
 
 
 def test_no_sampling():
@@ -184,22 +204,22 @@ class TestValidateDeviceWires:
     def test_error(self):
         """Tests for the error raised by validate_device_wires transform."""
 
-        tape1 = qp.tape.QuantumScript([qp.S("a")])
+        tape1 = qp.tape.QuantumScript([qp.S(7)])
         with pytest.raises(qp.wires.WireError, match="on abc as they contain wires"):
             validate_device_wires(tape1, wires=qp.wires.Wires((0,)), name="abc")
 
     def test_null_if_no_wires_provided(self):
         """Test that nothing happens if no wires are provided to the transform."""
 
-        tape1 = qp.tape.QuantumScript([qp.S("b")], [qp.expval(qp.PauliZ(0))])
+        tape1 = qp.tape.QuantumScript([qp.S(8)], [qp.expval(qp.PauliZ(0))])
         batch, _ = validate_device_wires(tape1)
         assert batch[0] is tape1
 
     def test_fill_in_wires(self):
         """Tests that if the wires are provided, measurements without wires gain them."""
-        tape1 = qp.tape.QuantumScript([qp.S("b")], [qp.state(), qp.probs()], shots=52)
+        tape1 = qp.tape.QuantumScript([qp.S(8)], [qp.state(), qp.probs()], shots=52)
 
-        wires = qp.wires.Wires(["a", "b", "c"])
+        wires = qp.wires.Wires([7, 8, 9])
         batch, _ = validate_device_wires(tape1, wires=wires)
         assert batch[0][1].wires == wires
         assert batch[0][2].wires == wires
@@ -382,7 +402,7 @@ class TestValidateMeasurements:
             validate_measurements(tape, lambda obj: True)
 
 
-@qp.register_resources({qp.H: 6, qp.RX: 1})
+@qp.register_resources({qp.H: 6, qp.RX: 1}, name="dummy_rz_decomp_0")
 def dummy_rz_decomp_0(phi, wires):
     qp.H(wires)
     qp.H(wires)
@@ -393,18 +413,16 @@ def dummy_rz_decomp_0(phi, wires):
     qp.H(wires)
 
 
-@qp.register_resources({qp.RX: 1})
+@qp.register_resources({qp.RX: 1}, name="dummy_rz_decomp_1")
 def dummy_rz_decomp_1(phi, wires):
     qp.RX(phi, wires)
 
 
-@qp.register_resources({qp.H: 1}, work_wires={"zeroed": 1})
-def dummy_rz_decomp_2(phi, wires):
-    # pylint: disable=unused-argument
+@qp.register_resources({qp.H: 1}, work_wires={"zeroed": 1}, name="dummy_rz_decomp_2")
+def dummy_rz_decomp_2(phi, wires):  # pylint: disable=unused-argument
     qp.H(wires)
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestDecomposeTransformations:
     """Tests for the behavior of the `decompose` helper."""
 
@@ -601,12 +619,9 @@ class TestDecomposeTransformations:
     ):
         """Test that decompose works correctly when passing through ``fixed_decomps``
         and/or ``alt_decomps`` with the graph-based decomposer."""
-        # pylint: disable=too-many-arguments
-        if not qp.decomposition.enabled_graph():
-            pytest.skip("This test only is expected to work with the graph-based system.")
 
-        # Mock a simple target gate set
-        target_gates = {"Hadamard": 1, "RX": 5, "RY": 5, "PhaseShift": 5, "GlobalPhase": 0}
+        # Keep the fake RX rule strictly cheaper than the standard PhaseShift decomposition.
+        target_gates = {"Hadamard": 1, "RX": 4, "RY": 5, "PhaseShift": 5, "GlobalPhase": 0}
 
         # Create a tape with an operation that needs decomposition
         tape = qp.tape.QuantumScript([qp.RZ(0.2, 0)])
@@ -690,7 +705,6 @@ class TestDecomposeTransformations:
             ), f"Expected num_work_wires={expected_work_wires} not found in calls"
 
 
-@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestGraphModeExclusiveFeatures:
     """Tests that only work when graph mode is enabled."""
 
@@ -705,13 +719,13 @@ class TestGraphModeExclusiveFeatures:
             num_wires = 1
 
         # Fallback decomposition (no work wires needed)
-        @qp.register_resources({qp.H: 2})
+        @qp.register_resources({qp.H: 2}, name="decomp_fallback")
         def decomp_fallback(wires):
             qp.H(wires)
             qp.H(wires)
 
         # Work wire decomposition (needs 5 burnable wires)
-        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 5})
+        @qp.register_resources({qp.X: 1}, work_wires={"burnable": 5}, name="decomp_with_work_wire")
         def decomp_with_work_wire(wires):
             qp.X(wires)
 
@@ -751,7 +765,6 @@ class TestMeasurementsFromCountsOrSamples:
         ):
             meas_transform(tape)
 
-    # pylint: disable=unnecessary-lambda, too-many-arguments
     @pytest.mark.parametrize(
         "meas_transform", (measurements_from_counts, measurements_from_samples)
     )
@@ -1052,16 +1065,6 @@ class TestDeviceResolveDynamicWires:
         assert fn(("a",)) == "a"
         for op, wire in zip(new_tape.operations, wires):
             qp.assert_equal(op, qp.X(wire))
-
-    def test_min_int_non_integer_algorithmic_wires(self):
-        """Test that a min int can be calculated when the tape contains non-integer wires."""
-
-        allocation = qp.allocation.Allocate.from_num_wires(1)
-        ops = [qp.Z("a"), qp.Z("b"), qp.Z("my_wire"), qp.X(allocation.wires)]
-        tape = qp.tape.QuantumScript([allocation] + ops)
-
-        [new_tape], _ = device_resolve_dynamic_wires(tape, wires=None)
-        qp.assert_equal(new_tape[-1], qp.X(0))
 
     def test_min_int_unsorted_wires(self):
         """Test that the min_int is the smallest integer larger than all integers in operation wires."""

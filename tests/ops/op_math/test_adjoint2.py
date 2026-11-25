@@ -23,22 +23,20 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.decomposition.resources import Resources
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
-from pennylane.ops.op_math.adjoint2 import Adjoint2, _make_adjoint_decomp, adjoint_rotation
+from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_negate_angle, _make_adjoint_decomp
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import CompilableOp, OneWireDynOp
-
-# pylint: disable=unused-argument,arguments-differ,useless-parent-delegation
 
 
 class SX2(Operator2):
     """A new SX gate."""
 
-    wire_sizes = (1,)
+    arg_specs = {"wires": Wire[1]}
 
     is_verified_hermitian = True
 
-    def __init__(self, wires):
+    def __init__(self, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(wires)
 
     @property
@@ -51,15 +49,15 @@ class SX2(Operator2):
         )
 
     @staticmethod
-    def compute_matrix(wires):
+    def compute_matrix(wires):  # pylint: disable=unused-argument
         return 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 
     @staticmethod
-    def compute_sparse_matrix(wires, format="csr"):
+    def compute_sparse_matrix(wires, format="csr"):  # pylint: disable=unused-argument
         return 0.5 * sparse.csr_matrix([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]]).asformat(format=format)
 
     @staticmethod
-    def compute_eigvals(wires):
+    def compute_eigvals(wires):  # pylint: disable=unused-argument
         return np.array([1, 1j])
 
     @staticmethod
@@ -72,15 +70,15 @@ class RX2(Operator2):
 
     dynamic_argnames = ("theta",)
 
-    wire_sizes = (1,)
+    arg_specs = {"wires": Wire[1]}
 
     is_verified_hermitian = True
 
-    def __init__(self, theta, wires):
+    def __init__(self, theta, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(theta, wires)
 
     @staticmethod
-    def compute_matrix(theta, wires):
+    def compute_matrix(theta, wires):  # pylint: disable=unused-argument
         return qp.math.array(
             [
                 [qp.math.cos(theta / 2), -1j * qp.math.sin(theta / 2)],
@@ -153,7 +151,7 @@ def test_attributes():
 def test_old_decomp_integartion():
     """Tests that adjoint2 is compatible with the old decomposition convention."""
 
-    @register_resources({qp.RX: 1})
+    @register_resources({qp.RX: 1}, name="sx_to_rx")
     def _sx_to_rx(wires):
         qp.RX(np.pi / 2, wires=wires)
 
@@ -244,15 +242,15 @@ def test_adjoint_equality():
 
 
 def test_adjoint_rotation_decomposition_rule():
-    """Tests the adjoint_rotation decomposition with an ``Operator2`` base."""
+    """Tests the _adjoint_negate_angle decomposition with an ``Operator2`` base."""
 
     op = qp.adjoint(OneWireDynOp(0.5, wires=[0]))
     assert isinstance(op, Adjoint2)
 
-    tape = qp.testing.decomp_rule_to_tape(op, adjoint_rotation)
+    tape = qp.testing.decomp_rule_to_tape(op, _adjoint_negate_angle)
 
     assert tape.operations == [OneWireDynOp(-0.5, wires=[0])]
-    assert adjoint_rotation.compute_resources(**op.arguments) == Resources(
+    assert _adjoint_negate_angle.compute_resources(**op.arguments) == Resources(
         {OneWireDynOp(Float, wires=Wire[1]): 1}
     )
 
@@ -266,7 +264,7 @@ def test_make_adjoint_decomp_closes_over_compilable_args():
     any decomposition that branches on it with a Python ``if`` (as :class:`~.OutMultiplier`'s
     ``mod``/``output_wires_zeroed`` do)."""
 
-    @register_resources(lambda n, wires: {qp.X: 1} if n else {qp.Y: 1})
+    @register_resources(lambda n, wires: {qp.X: 1} if n else {qp.Y: 1}, name="some_decomp")
     def _some_decomp(n, wires):
         if n:
             qp.X(wires[0])
@@ -276,7 +274,7 @@ def test_make_adjoint_decomp_closes_over_compilable_args():
     op = CompilableOp(True, wires=[0])
     rule = _make_adjoint_decomp(_some_decomp)
 
-    @qp.qjit
+    @qp.qjit(capture=False)
     @qp.qnode(qp.device("lightning.qubit", wires=1))
     def f():
         rule(base=op)

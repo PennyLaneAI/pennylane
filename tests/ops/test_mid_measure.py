@@ -23,8 +23,6 @@ from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.wires import Wires
 
-# pylint: disable=too-few-public-methods, too-many-public-methods
-
 
 @pytest.mark.catalyst
 def test_measure_catalyst_dispatch():
@@ -98,8 +96,8 @@ class TestMidMeasure:
     def test_repr(self):
         """Test the repr for MidMeasure"""
 
-        op = MidMeasure(wires="a", postselect=1, reset=True)
-        assert repr(op) == "MidMeasure(wires=['a'], postselect=1, reset=True)"
+        op = MidMeasure(wires=7, postselect=1, reset=True)
+        assert repr(op) == "MidMeasure(wires=[7], postselect=1, reset=True)"
 
     def test_abstract_str(self):
         """Test the string representation of an abstract MidMeasure."""
@@ -110,7 +108,8 @@ class TestMidMeasure:
     def test_properties(self):
         """Tests the properties of the MidMeasure class."""
 
-        op = MidMeasure(wires="a", postselect=1, reset=True, meas_uid="blah")
+        op = MidMeasure(wires=7, postselect=1, reset=True, meas_uid="blah")
+        assert op.name == "MidMeasure"
         assert op.postselect == 1
         assert op.reset is True
         assert op.meas_uid == "blah"
@@ -123,7 +122,7 @@ mp2 = MidMeasure(Wires(1), meas_uid="m1")
 mp3 = MidMeasure(Wires(2), meas_uid="m2")
 
 
-class TestMeasurementValueManipulation:
+class TestMeasurementValueManipulation:  # pylint: disable=too-many-public-methods
     """Test all the dunder methods associated with the MeasurementValue class"""
 
     def test_error_on_boolean_conversion(self):
@@ -460,9 +459,9 @@ class TestMeasurementValueManipulation:
     def test_map_wires(self):
         """Test that map_wires works as expected."""
         a = MeasurementValue([mp1], lambda v: v)
-        b = a.map_wires({0: "b"})
+        b = a.map_wires({0: 8})
         [new_meas] = b.measurements
-        assert new_meas.wires == Wires(["b"])
+        assert new_meas.wires == Wires([8])
         assert new_meas.meas_uid == mp1.meas_uid
 
     def test_mod(self):
@@ -554,7 +553,7 @@ class TestMeasurementCompositeValueManipulation:
     @pytest.mark.parametrize("boolean", [MeasurementValue([mp3], lambda v: v), True, False, None])
     def test_composition_measurement_values_and_boolean(
         self, mv_dunder_name, boolean_dunder_name, scalar, boolean
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Test the composition of dunder methods, applying one whose argument is scalar and one whose argument
         is a boolean."""
         m0 = MeasurementValue([mp1], lambda v: v)
@@ -589,8 +588,6 @@ class TestMeasurementCompositeValueManipulation:
 
 class TestMeasurementValueItems:
     """Test that a MeasurementValue returns its items correctly."""
-
-    # pylint: disable=protected-access
 
     funcs_and_expected_single = [
         ((lambda v: v), [0, 1]),

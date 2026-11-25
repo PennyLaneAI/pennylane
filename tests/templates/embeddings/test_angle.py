@@ -37,25 +37,23 @@ def test_repr():
     assert repr(op) == expected
 
 
-# pylint: disable=protected-access
 def test_flatten_unflatten():
     """Test the _flatten and _unflatten methods."""
     wires = qp.wires.Wires((0, 1, 2))
     op = qp.AngleEmbedding(features=[1, 2, 3], wires=wires, rotation="Z")
 
-    data, metadata = op._flatten()
+    data, metadata = op._flatten()  # pylint: disable=protected-access
     assert data == op.data
     assert len(metadata) == 2
     assert metadata[0] == wires
     assert metadata[1] == (("rotation", "Z"),)
 
-    new_op = type(op)._unflatten(*op._flatten())
+    new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
     qp.assert_equal(op, new_op)
     assert op is not new_op
 
 
 @pytest.mark.system
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestCorrectness:
     """Tests the correctness of the template."""
 
@@ -92,29 +90,6 @@ class TestCorrectness:
         res = circuit(x=features)
         target = [0, 0, 1, 0, 1]
         assert np.allclose(res, target)
-
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        features = np.random.random(size=(3,))
-
-        dev = qp.device("default.qubit", wires=3)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.AngleEmbedding(features, wires=range(3))
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.AngleEmbedding(features, wires=["z", "a", "k"])
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
 class TestDecomposition:

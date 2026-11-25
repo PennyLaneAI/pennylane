@@ -17,6 +17,7 @@ Integration tests for the capture of pennylane operations into jaxpr.
 
 # pylint: disable=protected-access,wrong-import-position
 
+
 import numpy as np
 import pytest
 
@@ -24,11 +25,67 @@ import pennylane as qp
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import AbstractOperator, operator_p
+from pennylane.capture.primitives import AbstractOperator, barrier_p, operator_p
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.testing import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
+
+
+class TestBarrierPrimitive:
+    """Capture and reconstruct barriers using their dedicated primitive."""
+
+    @pytest.mark.parametrize("wires", [(), (0,), (0, 2)])
+    def test_capture(self, wires):
+        """Capture wire operands without operator outputs or metadata."""
+
+        def circuit():
+            qp.Barrier(wires=wires)
+
+        closed = jax.make_jaxpr(circuit)()
+        assert len(closed.eqns) == 1
+        eqn = closed.eqns[0]
+        assert eqn.primitive is barrier_p
+        assert barrier_p.prim_type == "default"
+        assert barrier_p.multiple_results
+        assert eqn.outvars == []
+        assert eqn.params == {}
+        assert [var.val for var in eqn.invars] == list(wires)
+        assert barrier_p.impl(*wires) == []
+
+    def test_dynamic_wire(self, mocker):
+        """Resolve dynamic wire operands when evaluating the primitive."""
+
+        def circuit(wire):
+            qp.Barrier(wires=[0, wire])
+
+        closed = jax.make_jaxpr(circuit)(2)
+        eqn = closed.eqns[-1]
+        assert eqn.primitive is barrier_p
+        assert eqn.invars[1] is closed.jaxpr.invars[0]
+        constructor = mocker.spy(qp.Barrier, "__init__")
+        collector = CollectOpsandMeas()
+        collector.eval(closed.jaxpr, closed.consts, 3)
+        constructor.assert_called_once()
+        assert tuple(constructor.call_args.kwargs["wires"]) == (0, 3)
+        assert collector.state["ops"] == []
+
+    def test_interpreter_roundtrip(self):
+        """Reinterpreting a circuit retains its barrier and operation order."""
+
+        def circuit():
+            qp.X(0)
+            qp.Barrier(wires=[0, 1])
+            qp.Y(1)
+
+        closed = jax.make_jaxpr(qp.capture.PlxprInterpreter()(circuit))()
+        assert [eqn.primitive for eqn in closed.eqns] == [operator_p, barrier_p, operator_p]
+
+    def test_capture_disabled(self):
+        """Ordinary construction does not bind a primitive."""
+        with qp.capture.pause():
+            op = qp.Barrier(wires=[0, 1])
+        assert op.tracer is None
 
 
 def test_abstract_operator():
@@ -442,6 +499,17 @@ class TestOpmath:
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 0, 1)
         assert len(collector.state["ops"]) == 1
         qp.assert_equal(collector.state["ops"][0], op)
+
+    def test_ctrl_empty_controls(self):
+        """Empty controls capture the base operator once without adding controls."""
+
+        def circuit(angle):
+            qp.ctrl(qp.RX(angle, wires=0), control=[])
+
+        closed = jax.make_jaxpr(circuit)(0.123)
+        assert len(closed.eqns) == 1
+        assert_eqn_matches_op(closed.eqns[0], qp.RX)
+        assert closed.eqns[0].params["n_ctrls"] == 0
 
     def test_ctrl_op_constructed_outside_qfunc(self):
         """Test an op constructed outside the qfunc can be controlled."""

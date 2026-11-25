@@ -16,8 +16,6 @@ Unit tests for the MultiplexerStatePreparation template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -53,9 +51,9 @@ class TestMultiplexerStatePreparation:
     @pytest.mark.parametrize(
         ("state", "applicable_rule"),
         [
-            (_REAL_STATE, "_real_multiplexer_state_prep_decomposition"),
-            (_COMPLEX_STATE, "_complex_multiplexer_state_prep_decomposition"),
-            (_REAL_STATE.astype(complex), "_complex_multiplexer_state_prep_decomposition"),
+            (_REAL_STATE, "real"),
+            (_COMPLEX_STATE, "complex"),
+            (_REAL_STATE.astype(complex), "complex"),
         ],
     )
     def test_decomposition_rules(self, state, applicable_rule):

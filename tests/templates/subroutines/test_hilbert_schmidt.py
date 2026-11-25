@@ -23,12 +23,9 @@ import pytest
 import pennylane as qp
 from pennylane.decomposition import gate_sets
 from pennylane.testing import assert_decomposable
-from pennylane.transforms import _tape_decompose as decompose  # pylint: disable=protected-access
-
-# pylint: disable=expression-not-assigned
+from pennylane.transforms import _tape_decompose as decompose
 
 
-# pylint: disable=protected-access
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("op_type", (qp.HilbertSchmidt, qp.LocalHilbertSchmidt))
 def test_flatten_unflatten_standard_checks(op_type):
@@ -40,11 +37,11 @@ def test_flatten_unflatten_standard_checks(op_type):
     op = op_type(V, U)
     qp.testing.assert_valid(op, skip_wire_mapping=True, skip_differentiation=True)
 
-    data, metadata = op._flatten()
+    data, metadata = op._flatten()  # pylint: disable=protected-access
     assert data == (V, U)
     assert not metadata
 
-    new_op = type(op)._unflatten(*op._flatten())
+    new_op = type(op)._unflatten(*op._flatten())  # pylint: disable=protected-access
     assert qp.math.allclose(op.data, new_op.data)
 
     for op1, op2 in zip(op.hyperparameters["U"], new_op.hyperparameters["U"]):
@@ -76,7 +73,6 @@ class TestHilbertSchmidt:
             return qp.probs()
 
         def cost_hst(V, U):
-            # pylint:disable=unsubscriptable-object
             return 1 - hilbert_test(V, U)[0]
 
         res = cost_hst(V, U)
@@ -208,13 +204,13 @@ class TestHilbertSchmidt:
     def test_map_wires_errors_out(self, op_type):
         """Test that map_wires raises an error."""
 
-        U = [qp.Hadamard("a"), qp.Identity("b")]
+        U = [qp.Hadamard(9), qp.Identity(10)]
         V = [qp.RZ(0.1, wires=0), qp.RZ(0.1, wires=1)]
 
         op = op_type(V=V, U=U)
 
         with pytest.raises(NotImplementedError, match="Mapping the wires of HilbertSchmidt"):
-            op.map_wires({0: "a", 1: "b"})
+            op.map_wires({0: 9, 1: 10})
 
     def test_hs_decomposition_1_qubit(self):
         """Test if the HS operation is correctly decomposed for a 1 qubit unitary."""
@@ -275,8 +271,8 @@ class TestHilbertSchmidt:
     def test_hs_decomposition_2_qubits_custom_wires(self):
         """Test if the HS operation is correctly decomposed for 2 qubits with custom wires."""
 
-        U = qp.SWAP(wires=["a", "b"])
-        V = [qp.RZ(0.1, wires="c"), qp.CNOT(wires=["c", "d"])]
+        U = qp.SWAP(wires=[9, 10])
+        V = [qp.RZ(0.1, wires=11), qp.CNOT(wires=[11, 12])]
 
         op = qp.HilbertSchmidt(V, U)
 
@@ -288,17 +284,17 @@ class TestHilbertSchmidt:
 
         tape_dec = qp.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [
-            qp.Hadamard(wires=["a"]),
-            qp.Hadamard(wires=["b"]),
-            qp.CNOT(wires=["a", "c"]),
-            qp.CNOT(wires=["b", "d"]),
-            qp.SWAP(wires=["a", "b"]),
-            qp.QubitUnitary(qp.RZ(0.1, wires=["c"]).matrix().conjugate(), wires=["c"]),
-            qp.QubitUnitary(qp.CNOT(wires=["b", "d"]).matrix().conjugate(), wires=["c", "d"]),
-            qp.CNOT(wires=["b", "d"]),
-            qp.CNOT(wires=["a", "c"]),
-            qp.Hadamard(wires=["a"]),
-            qp.Hadamard(wires=["b"]),
+            qp.Hadamard(wires=[9]),
+            qp.Hadamard(wires=[10]),
+            qp.CNOT(wires=[9, 11]),
+            qp.CNOT(wires=[10, 12]),
+            qp.SWAP(wires=[9, 10]),
+            qp.QubitUnitary(qp.RZ(0.1, wires=[11]).matrix().conjugate(), wires=[11]),
+            qp.QubitUnitary(qp.CNOT(wires=[10, 12]).matrix().conjugate(), wires=[11, 12]),
+            qp.CNOT(wires=[10, 12]),
+            qp.CNOT(wires=[9, 11]),
+            qp.Hadamard(wires=[9]),
+            qp.Hadamard(wires=[10]),
         ]
 
         for op1, op2 in zip(tape_dec.operations, expected_operations):
@@ -338,7 +334,6 @@ class TestHilbertSchmidt:
         copy_V = copy_op.hyperparameters["V"]
         assert all(v1 is not v2 for v1, v2 in zip(orig_V, copy_V))
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("U", "V", "results"),
         [
@@ -471,7 +466,6 @@ class TestLocalHilbertSchmidt:
             return qp.probs()
 
         def cost_lhst(V, U):
-            # pylint:disable=unsubscriptable-object
             return 1 - local_hilbert_test(V, U)[0]
 
         v_params = [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2]
@@ -549,8 +543,8 @@ class TestLocalHilbertSchmidt:
     def test_lhs_decomposition_1_qubit_custom_wires(self):
         """Test if the LHS operation is correctly decomposed with custom wires."""
 
-        U = qp.Hadamard(wires="a")
-        V = qp.RZ(0.1, wires="b")
+        U = qp.Hadamard(wires=9)
+        V = qp.RZ(0.1, wires=10)
 
         op = qp.LocalHilbertSchmidt(V, U)
 
@@ -559,12 +553,12 @@ class TestLocalHilbertSchmidt:
 
         tape_dec = qp.tape.QuantumScript.from_queue(q_tape_dec)
         expected_operations = [
-            qp.Hadamard(wires=["a"]),
-            qp.CNOT(wires=["a", "b"]),
-            qp.Hadamard(wires=["a"]),
-            qp.QubitUnitary(qp.RZ(0.1, wires=["b"]).matrix().conjugate(), wires=["b"]),
-            qp.CNOT(wires=["a", "b"]),
-            qp.Hadamard(wires=["a"]),
+            qp.Hadamard(wires=[9]),
+            qp.CNOT(wires=[9, 10]),
+            qp.Hadamard(wires=[9]),
+            qp.QubitUnitary(qp.RZ(0.1, wires=[10]).matrix().conjugate(), wires=[10]),
+            qp.CNOT(wires=[9, 10]),
+            qp.Hadamard(wires=[9]),
         ]
 
         for i, j in zip(tape_dec.operations, expected_operations):
@@ -633,7 +627,6 @@ class TestLocalHilbertSchmidt:
             qp.LocalHilbertSchmidt(V, U)
             return qp.probs()
 
-        # pylint: disable=unsubscriptable-object
         def cost_lhst(V, U):
             return 1 - local_hilbert_test(V, U)[0]
 

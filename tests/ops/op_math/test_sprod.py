@@ -97,11 +97,11 @@ class TestInitialization:
     """Test initialization of the SProd Class."""
 
     def test_init_sprod_op(self):
-        sprod_op = s_prod(3.14, qp.RX(0.23, wires="a"))
+        sprod_op = s_prod(3.14, qp.RX(0.23, wires=6))
 
         # no need to test if op.base == RX since this is covered in SymbolicOp tests
         assert sprod_op.scalar == 3.14
-        assert sprod_op.wires == Wires(("a",))
+        assert sprod_op.wires == Wires((6,))
         assert sprod_op.num_wires == 1
         assert sprod_op.name == "SProd"
 
@@ -177,8 +177,8 @@ class TestMscMethods:
 
     def test_string_with_single_pauli(self):
         """Test the string representation with single pauli"""
-        res = qp.s_prod(0.5, qp.PauliX("a"))
-        true_res = "0.5 * X('a')"
+        res = qp.s_prod(0.5, qp.PauliX(6))
+        true_res = "0.5 * X(6)"
         assert repr(res) == true_res
 
         res = qp.s_prod(0.5, qp.PauliX(0))
@@ -187,16 +187,16 @@ class TestMscMethods:
 
     def test_string_with_sum_of_pauli(self):
         """Test the string representation with single pauli"""
-        res = qp.s_prod(0.5, qp.sum(qp.PauliX("a"), qp.PauliX("b")))
-        true_res = "0.5 * (X('a') + X('b'))"
+        res = qp.s_prod(0.5, qp.sum(qp.PauliX(6), qp.PauliX(7)))
+        true_res = "0.5 * (X(6) + X(7))"
         assert repr(res) == true_res
 
         res = qp.s_prod(0.5, qp.sum(qp.PauliX(0), qp.PauliX(1)))
         true_res = "0.5 * (X(0) + X(1))"
         assert repr(res) == true_res
 
-        res = qp.s_prod(0.5, qp.sum(qp.PauliX("a"), qp.PauliX(1)))
-        true_res = "0.5 * (X('a') + X(1))"
+        res = qp.s_prod(0.5, qp.sum(qp.PauliX(6), qp.PauliX(1)))
+        true_res = "0.5 * (X(6) + X(1))"
         assert repr(res) == true_res
 
     @pytest.mark.parametrize("op_scalar_tup, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
@@ -206,13 +206,12 @@ class TestMscMethods:
         sprod_op = SProd(scalar, op)
         assert op_rep == repr(sprod_op)
 
-    # pylint: disable=protected-access
     @pytest.mark.parametrize("op_scalar_tup", ops)
     def test_flatten_unflatten(self, op_scalar_tup):
         scalar, op = op_scalar_tup
         sprod_op = SProd(scalar, op)
 
-        data, metadata = sprod_op._flatten()
+        data, metadata = sprod_op._flatten()  # pylint: disable=protected-access
 
         assert len(data) == 2
         assert data[0] == scalar
@@ -220,7 +219,7 @@ class TestMscMethods:
 
         assert metadata == tuple()
 
-        new_op = type(sprod_op)._unflatten(*sprod_op._flatten())
+        new_op = type(sprod_op)._unflatten(*sprod_op._flatten())  # pylint: disable=protected-access
         qp.assert_equal(new_op, sprod_op)
         assert new_op is not sprod_op
 
@@ -244,7 +243,7 @@ class TestMscMethods:
         """Test that a scalar product with an operator that has `has_matrix=True`
         has `has_matrix=True` as well."""
 
-        sprod_op = SProd(0.7, qp.RZ(0.23, wires="a"))
+        sprod_op = SProd(0.7, qp.RZ(0.23, wires=6))
         assert sprod_op.has_matrix is True
 
     def test_has_matrix_true_via_factor_has_no_matrix_but_is_hamiltonian(self):
@@ -259,21 +258,19 @@ class TestMscMethods:
         """Test that a scalar product with an operator that has `has_matrix=False`
         has `has_matrix=True` as well."""
 
-        # pylint: disable=too-few-public-methods
-        class MyOp(qp.RX):
+        class MyOp(qp.RX):  # pylint: disable=too-few-public-methods
             """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
             has_matrix = False
 
-        sprod_op = SProd(0.4, MyOp(0.23, wires="a"))
+        sprod_op = SProd(0.4, MyOp(0.23, wires=6))
         assert sprod_op.has_matrix is False
 
     @pytest.mark.parametrize("value", (True, False))
     def test_has_diagonalizing_gates(self, value):
         """Test that SProd defers has_diagonalizing_gates to base operator."""
 
-        # pylint: disable=too-few-public-methods
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
             num_wires = 1
             has_diagonalizing_gates = value
 
@@ -662,7 +659,7 @@ class TestProperties:
     def test_is_verified_hermitian_abstract(self):
         """Test that is_verified_hermitian works with abstract coefficients."""
 
-        import jax  # pylint: disable=import-outside-toplevel
+        import jax
 
         def float_arg(x):
             op = x * qp.X(0)
@@ -733,8 +730,8 @@ class TestProperties:
             qp.pauli.PauliSentence({qp.pauli.PauliWord({1: "X"}): -1j}),
         ),
         (
-            qp.s_prod(1.23 - 4j, qp.PauliY(wires="a")),
-            qp.pauli.PauliSentence({qp.pauli.PauliWord({"a": "Y"}): 1.23 - 4j}),
+            qp.s_prod(1.23 - 4j, qp.PauliY(wires=6)),
+            qp.pauli.PauliSentence({qp.pauli.PauliWord({6: "Y"}): 1.23 - 4j}),
         ),
     )
 
@@ -790,7 +787,7 @@ class TestSimplify:
         sprod_op = SProd(
             2, SProd(2, qp.RZ(1.32, wires=0)) + qp.Identity(wires=0) + qp.RX(1.9, wires=1)
         )
-        final_op = qp.ops.Sum(  # pylint:disable=no-member
+        final_op = qp.ops.Sum(
             SProd(4, qp.RZ(1.32, wires=0)),
             SProd(2, qp.Identity(wires=0)),
             SProd(2, qp.RX(1.9, wires=1)),
@@ -959,8 +956,8 @@ class TestIntegration:
         results = my_circ()
 
         assert sum(results.values()) == 20
-        assert 1.23 in results  # pylint:disable=unsupported-membership-test
-        assert -1.23 not in results  # pylint:disable=unsupported-membership-test
+        assert 1.23 in results
+        assert -1.23 not in results
 
     def test_differentiable_scalar(self):
         """Test that the gradient can be computed of the scalar when a SProd op

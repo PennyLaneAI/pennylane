@@ -13,7 +13,8 @@
 # limitations under the License.
 """Tests for default qubit."""
 
-# pylint: disable=import-outside-toplevel, no-member, too-many-arguments
+# pylint: disable=too-many-arguments
+
 
 from unittest import mock
 
@@ -60,11 +61,10 @@ def test_wires():
 
 def test_debugger_attribute():
     """Test that DefaultQubit has a debugger attribute and that it is `None`"""
-    # pylint: disable=protected-access
     dev = DefaultQubit()
 
     assert hasattr(dev, "_debugger")
-    assert dev._debugger is None
+    assert dev._debugger is None  # pylint: disable=protected-access
 
 
 def test_snapshot_multiprocessing_qnode():
@@ -86,13 +86,12 @@ def test_snapshot_multiprocessing_qnode():
         qp.snapshots(circuit)()
 
 
-# pylint: disable=protected-access
 def test_applied_modifiers():
     """Test that default qubit has the `single_tape_support` and `simulator_tracking`
     modifiers applied.
     """
     dev = DefaultQubit()
-    assert dev._applied_modifiers == [
+    assert dev._applied_modifiers == [  # pylint: disable=protected-access
         qp.devices.modifiers.single_tape_support,
         qp.devices.modifiers.simulator_tracking,
     ]
@@ -203,9 +202,8 @@ class TestBasicCircuit:
         )
 
         dev = DefaultQubit(max_workers=max_workers)
-        config = ExecutionConfig(
-            device_options={"max_workers": dev._max_workers}  # pylint: disable=protected-access
-        )
+        # pylint: disable-next=protected-access
+        config = ExecutionConfig(device_options={"max_workers": dev._max_workers})
         result = dev.execute(qs, execution_config=config)
 
         assert isinstance(result, tuple)
@@ -300,8 +298,6 @@ class TestBasicCircuit:
         g = torch.autograd.functional.jacobian(f, phi + 0j)
         assert qp.math.allclose(g[0], -torch.cos(phi))
         assert qp.math.allclose(g[1], -torch.sin(phi))
-
-    # pylint: disable=invalid-unary-operand-type
 
     def test_basis_state_wire_order(self):
         """Test that the wire order is correct with a basis state if the tape wires have a non standard order."""
@@ -505,45 +501,6 @@ class TestSampleMeasurements:
             assert shot_res[2].shape == (s, 2)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
-    def test_custom_wire_labels(self, max_workers):
-        """Test that custom wire labels works as expected"""
-        x, y = np.array(0.732), np.array(0.488)
-        qs = qp.tape.QuantumScript(
-            [qp.RX(x, wires="b"), qp.CNOT(wires=["b", "a"]), qp.RY(y, wires="a")],
-            [
-                qp.expval(qp.PauliZ("b")),
-                qp.probs(wires=["a", "b"]),
-                qp.sample(wires=["b", "a"]),
-            ],
-            shots=10000,
-        )
-
-        dev = DefaultQubit(max_workers=max_workers)
-        result = dev.execute(qs)
-
-        assert isinstance(result, tuple)
-        assert len(result) == 3
-
-        assert all(isinstance(res, (float, np.ndarray)) for res in result)
-
-        assert result[0].shape == ()
-        assert np.allclose(result[0], np.cos(x), atol=0.1)
-
-        assert result[1].shape == (4,)
-        assert np.allclose(
-            result[1],
-            [
-                np.cos(x / 2) ** 2 * np.cos(y / 2) ** 2,
-                np.sin(x / 2) ** 2 * np.sin(y / 2) ** 2,
-                np.cos(x / 2) ** 2 * np.sin(y / 2) ** 2,
-                np.sin(x / 2) ** 2 * np.cos(y / 2) ** 2,
-            ],
-            atol=0.1,
-        )
-
-        assert result[2].shape == (10000, 2)
-
-    @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_batch_tapes(self, max_workers):
         """Test that a batch of tapes with sampling works as expected"""
         x = np.array(0.732)
@@ -604,16 +561,16 @@ class TestExecutingBatches:
     def f(dev, phi):
         """A function that executes a batch of scripts on DefaultQubit without preprocessing."""
         ops = [
-            qp.PauliX("a"),
-            qp.PauliX("b"),
-            qp.ctrl(qp.RX(phi, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
+            qp.PauliX(8),
+            qp.PauliX(9),
+            qp.ctrl(qp.RX(phi, 12), (8, 9, -3), control_values=[1, 1, 0]),
         ]
 
         qs1 = qp.tape.QuantumScript(
             ops,
             [
-                qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
+                qp.expval(qp.sum(qp.PauliY(12), qp.PauliZ(9))),
+                qp.expval(qp.s_prod(3, qp.PauliZ(12))),
             ],
         )
 
@@ -625,16 +582,16 @@ class TestExecutingBatches:
     def f_hashable(phi):
         """A function that executes a batch of scripts on DefaultQubit without preprocessing."""
         ops = [
-            qp.PauliX("a"),
-            qp.PauliX("b"),
-            qp.ctrl(qp.RX(phi, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
+            qp.PauliX(8),
+            qp.PauliX(9),
+            qp.ctrl(qp.RX(phi, 12), (8, 9, -3), control_values=[1, 1, 0]),
         ]
 
         qs1 = qp.tape.QuantumScript(
             ops,
             [
-                qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
+                qp.expval(qp.sum(qp.PauliY(12), qp.PauliZ(9))),
+                qp.expval(qp.s_prod(3, qp.PauliZ(12))),
             ],
         )
 
@@ -834,7 +791,7 @@ class TestSumOfTermsDifferentiability:
         expected_out = self.expected(x2, like="torch")
         assert qp.math.allclose(out, expected_out)
 
-        out.backward()  # pylint:disable=no-member
+        out.backward()
         expected_out.backward()
         assert qp.math.allclose(x.grad, x2.grad)
 
@@ -855,7 +812,7 @@ class TestAdjointDifferentiation:
         expected_grad = -qp.math.sin(x)
         actual_grad = dev.compute_derivatives(qs, config)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad.shape == ()
         assert np.isclose(actual_grad, expected_grad)
 
         expected_val = qp.math.cos(x)
@@ -932,7 +889,7 @@ class TestAdjointDifferentiation:
         expected_grad = -qp.math.sin(x) * tangent[0]
         actual_grad = dev.compute_jvp(qs, tangent, config)
         assert isinstance(actual_grad, np.ndarray)
-        assert actual_grad.shape == ()  # pylint: disable=no-member
+        assert actual_grad.shape == ()
         assert np.isclose(actual_grad, expected_grad)
 
         expected_val = qp.math.cos(x)
@@ -1217,19 +1174,20 @@ class TestRandomSeed:
 
     def test_global_seed_no_device_seed_by_default(self):
         """Test that the global numpy seed initializes the rng if device seed is none."""
+        # pylint: disable=protected-access
         np.random.seed(42)
         dev = DefaultQubit()
-        first_num = dev._rng.random()  # pylint: disable=protected-access
+        first_num = dev._rng.random()
 
         np.random.seed(42)
         dev2 = DefaultQubit()
-        second_num = dev2._rng.random()  # pylint: disable=protected-access
+        second_num = dev2._rng.random()
 
         assert qp.math.allclose(first_num, second_num)
 
         np.random.seed(42)
         dev2 = DefaultQubit(seed="global")
-        third_num = dev2._rng.random()  # pylint: disable=protected-access
+        third_num = dev2._rng.random()
 
         assert qp.math.allclose(third_num, first_num)
 
@@ -1867,7 +1825,7 @@ class TestPostselection:
         # module rather than the functions directly exposed by a local RNG. This makes
         # mocking easier.
         dev = qp.device("default.qubit")
-        dev._rng = None
+        dev._rng = None  # pylint: disable=protected-access
         param = qp.math.asarray(param, like=interface)
 
         with mock.patch("numpy.random.binomial", lambda *args, **kwargs: 5):
@@ -2072,7 +2030,6 @@ class TestPostselection:
                     reason="defer measurements + hw-like does not work with JAX jit yet. See sc-96593 or #7981."
                 )
 
-            # pylint: disable=import-outside-toplevel
             import jax
 
             # We do not raise an error if using jax.jit, because we cannot check whether or not

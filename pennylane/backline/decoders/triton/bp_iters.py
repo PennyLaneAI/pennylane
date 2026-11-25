@@ -24,7 +24,7 @@ except ImportError as exc:
 
 
 @triton.jit
-def _sum_product_posteriors(  # pylint: disable=too-many-branches,too-many-nested-blocks  # pragma: no cover
+def _sum_product_posteriors(  # pragma: no cover  # pylint: disable=too-many-branches
     syndrome,
     H: tl.constexpr,
     prob: tl.constexpr,
@@ -59,7 +59,7 @@ def _sum_product_posteriors(  # pylint: disable=too-many-branches,too-many-neste
 
     # Keep this loop dynamic because unrolling it with tl.static_range hurts performance.
     # BUG: Triton 3.5 requies all 3 args explicitly provided to range on Python 3.14.
-    for _ in range(0, num_iters, 1):
+    for _ in range(0, num_iters, 1):  # pylint: disable=too-many-nested-blocks
         var_to_check_msgs = ()
         for c in tl.static_range(num_checks):
             row = ()

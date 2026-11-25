@@ -43,8 +43,7 @@ ml_frameworks_list = [
 ]
 
 
-class TestCurrentlyUnsupportedCases:
-    # pylint: disable=too-few-public-methods
+class TestCurrentlyUnsupportedCases:  # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self):
         """Test sample-only measurements raise a notimplementedError."""
 
@@ -56,8 +55,7 @@ class TestCurrentlyUnsupportedCases:
 def test_custom_operation():
     """Test execution works with a manually defined operator if it has a matrix."""
 
-    # pylint: disable=too-few-public-methods
-    class MyOperator(qp.operation.Operator):
+    class MyOperator(qp.operation.Operator):  # pylint: disable=too-few-public-methods
         num_wires = 1
 
         @staticmethod
@@ -70,7 +68,6 @@ def test_custom_operation():
     assert qp.math.allclose(result, -1.0)
 
 
-# pylint: disable=too-few-public-methods
 class TestSparsePipeline:
     """System tests for the sparse pipelines."""
 
@@ -112,8 +109,7 @@ class TestSparsePipeline:
         assert qp.math.allclose(res, expected)
 
 
-# pylint: disable=too-few-public-methods
-class TestStatePrepBase:
+class TestStatePrepBase:  # pylint: disable=too-few-public-methods
     """Tests integration with various state prep methods."""
 
     def test_basis_state(self):
@@ -233,8 +229,6 @@ class TestBasicCircuit:
         g = torch.autograd.functional.jacobian(f, phi + 0j)
         assert qp.math.allclose(g[0], -torch.cos(phi))
         assert qp.math.allclose(g[1], -torch.sin(phi))
-
-    # pylint: disable=invalid-unary-operand-type
 
     @pytest.mark.jax
     @pytest.mark.parametrize("op", [qp.RX(np.pi, 0), qp.BasisState([1], 0)])
@@ -570,8 +564,6 @@ class TestDebugger:
             torch.tensor([torch.cos(phi / 2), -torch.sin(phi / 2) * 1j]),
         )
 
-    # pylint: disable=invalid-unary-operand-type
-
 
 class TestSampleMeasurements:
     """Tests circuits with sample-based measurements"""
@@ -767,164 +759,6 @@ class TestSampleMeasurements:
             )
 
             assert shot_res[2].shape == (s, 2)
-
-    def test_custom_wire_labels(self):
-        """Test that custom wire labels works as expected"""
-        x, y = np.array(0.732), np.array(0.488)
-        qs = qp.tape.QuantumScript(
-            [qp.RX(x, wires="b"), qp.CNOT(wires=["b", "a"]), qp.RY(y, wires="a")],
-            [
-                qp.expval(qp.PauliZ("b")),
-                qp.probs(wires=["a", "b"]),
-                qp.sample(wires=["b", "a"]),
-            ],
-            shots=10000,
-        )
-        result = simulate(qs)
-
-        assert isinstance(result, tuple)
-        assert len(result) == 3
-        assert isinstance(result[0], np.float64)
-        assert isinstance(result[1], np.ndarray)
-        assert isinstance(result[2], np.ndarray)
-
-        assert np.allclose(result[0], np.cos(x), atol=0.1)
-
-        assert result[1].shape == (4,)
-        assert np.allclose(
-            result[1],
-            [
-                np.cos(x / 2) ** 2 * np.cos(y / 2) ** 2,
-                np.sin(x / 2) ** 2 * np.sin(y / 2) ** 2,
-                np.cos(x / 2) ** 2 * np.sin(y / 2) ** 2,
-                np.sin(x / 2) ** 2 * np.cos(y / 2) ** 2,
-            ],
-            atol=0.1,
-        )
-
-        assert result[2].shape == (10000, 2)
-
-
-class TestOperatorArithmetic:
-    def test_numpy_op_arithmetic(self):
-        """Test an operator arithmetic circuit with non-integer wires with numpy."""
-        phi = 1.2
-        ops = [
-            qp.PauliX("a"),
-            qp.PauliX("b"),
-            qp.ctrl(qp.RX(phi, "target") ** 2, ("a", "b", -3), control_values=[1, 1, 0]),
-        ]
-
-        qs = qp.tape.QuantumScript(
-            ops,
-            [
-                qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
-            ],
-        )
-
-        results = simulate(qs)
-        assert qp.math.allclose(results[0], -np.sin(2 * phi) - 1)
-        assert qp.math.allclose(results[1], 3 * np.cos(2 * phi))
-
-    @pytest.mark.autograd
-    def test_autograd_op_arithmetic(self):
-        """Test operator arithmetic circuit with non-integer wires works with autograd."""
-
-        phi = qp.numpy.array(1.2)
-
-        def f(x):
-            ops = [
-                qp.PauliX("a"),
-                qp.PauliX("b"),
-                qp.ctrl(qp.RX(x, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
-            ]
-
-            qs = qp.tape.QuantumScript(
-                ops,
-                [
-                    qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                    qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
-                ],
-            )
-
-            return qp.numpy.array(simulate(qs))
-
-        results = f(phi)
-        assert qp.math.allclose(results[0], -np.sin(phi) - 1)
-        assert qp.math.allclose(results[1], 3 * np.cos(phi))
-
-        g = qp.jacobian(f)(phi)
-        assert qp.math.allclose(g[0], -np.cos(phi))
-        assert qp.math.allclose(g[1], -3 * np.sin(phi))
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize("use_jit", (True, False))
-    def test_jax_op_arithmetic(self, use_jit):
-        """Test operator arithmetic circuit with non-integer wires works with jax."""
-        import jax
-
-        phi = jax.numpy.array(1.2)
-
-        def f(x):
-            ops = [
-                qp.PauliX("a"),
-                qp.PauliX("b"),
-                qp.ctrl(qp.RX(x, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
-            ]
-
-            qs = qp.tape.QuantumScript(
-                ops,
-                [
-                    qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                    qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
-                ],
-            )
-
-            return simulate(qs)
-
-        if use_jit:
-            f = jax.jit(f)
-
-        results = f(phi)
-        assert qp.math.allclose(results[0], -np.sin(phi) - 1)
-        assert qp.math.allclose(results[1], 3 * np.cos(phi))
-
-        g = jax.jacobian(f)(phi)
-        assert qp.math.allclose(g[0], -np.cos(phi))
-        assert qp.math.allclose(g[1], -3 * np.sin(phi))
-
-    @pytest.mark.torch
-    def test_torch_op_arithmetic(self):
-        """Test operator arithmetic circuit with non-integer wires works with torch."""
-        import torch
-
-        phi = torch.tensor(-0.7290, requires_grad=True)
-
-        def f(x):
-            ops = [
-                qp.PauliX("a"),
-                qp.PauliX("b"),
-                qp.ctrl(qp.RX(x, "target"), ("a", "b", -3), control_values=[1, 1, 0]),
-            ]
-
-            qs = qp.tape.QuantumScript(
-                ops,
-                [
-                    qp.expval(qp.sum(qp.PauliY("target"), qp.PauliZ("b"))),
-                    qp.expval(qp.s_prod(3, qp.PauliZ("target"))),
-                ],
-            )
-
-            return simulate(qs)
-
-        results = f(phi)
-        assert qp.math.allclose(results[0], -torch.sin(phi) - 1)
-        assert qp.math.allclose(results[1], 3 * torch.cos(phi))
-
-        g = torch.autograd.functional.jacobian(f, phi)
-        assert qp.math.allclose(g[0], -torch.cos(phi))
-        assert qp.math.allclose(g[1], -3 * torch.sin(phi))
 
 
 class TestQInfoMeasurements:
@@ -1236,12 +1070,12 @@ class TestMidMeasurements:
         result = simulate_tree_mcm(qs)
         assert qp.math.allclose(result, qp.math.array([0.5, 0.5]))
 
-    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("shots", [None, 5500])
     @pytest.mark.parametrize("postselect", [None, 0])
     @pytest.mark.parametrize("reset", [False, True])
     @pytest.mark.parametrize("measure_f", [qp.counts, qp.expval, qp.probs, qp.sample, qp.var])
     @pytest.mark.parametrize("meas_obj", [qp.Y(0), [1], [1, 0], "mcm", "composite_mcm", "mcm_list"])
+    # pylint: disable-next=too-many-arguments
     def test_simple_dynamic_circuit(self, *, shots, measure_f, postselect, reset, meas_obj, seed):
         """Tests that `simulate` can handles a simple dynamic circuit with the following measurements:
 
@@ -1383,7 +1217,6 @@ class TestMidMeasurements:
     @pytest.mark.parametrize("postselect_mode", [None, "hw-like", "pad-invalid-samples"])
     def test_tree_traversal_interface_mcm(self, ml_framework, postselect_mode, seed):
         """Test that tree traversal works numerically with different interfaces"""
-        # pylint:disable = singleton-comparison, import-outside-toplevel
 
         qscript = qp.tape.QuantumScript(
             [
@@ -1399,6 +1232,7 @@ class TestMidMeasurements:
         res1, res2 = simulate_tree_mcm(qscript, interface=ml_framework, rng=rng)
 
         p1 = [qp.math.mean(res1 == -1), qp.math.mean(res1 == 1)]
+        # pylint: disable-next=singleton-comparison
         p2 = [qp.math.mean(res2 == True), qp.math.mean(res2 == False)]
         assert qp.math.allclose(qp.math.sum(sp.special.rel_entr(p1, p2)), 0.0, atol=0.05)
 

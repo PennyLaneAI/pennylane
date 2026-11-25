@@ -20,8 +20,6 @@ from pennylane.estimator.ops import SWAP, Hadamard, Identity, S, T, X, Y, Z
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, resource_rep
 from pennylane.exceptions import ResourcesUndefinedError
 
-# pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
-
 
 class TestHadamard:
     """Tests for Hadamard resource operator"""
@@ -57,14 +55,14 @@ class TestHadamard:
 
     ctrl_data = (
         (
-            ["c1"],
+            [9],
             [1],
             [
                 GateCount(qre.CH.resource_rep(), 1),
             ],
         ),
         (
-            ["c1"],
+            [9],
             [0],
             [
                 GateCount(qre.CH.resource_rep(), 1),
@@ -72,7 +70,7 @@ class TestHadamard:
             ],
         ),
         (
-            ["c1", "c2"],
+            [9, 10],
             [1, 1],
             [
                 GateCount(qre.Hadamard.resource_rep(), 2),
@@ -81,7 +79,7 @@ class TestHadamard:
             ],
         ),
         (
-            ["c1", "c2", "c3"],
+            [9, 10, 11],
             [1, 0, 0],
             [
                 GateCount(qre.Hadamard.resource_rep(), 2),
@@ -126,7 +124,7 @@ class TestSWAP:
     def test_wire_error(self):
         """Test that an error is raised when wrong number of wires is provided."""
         with pytest.raises(ValueError, match="Expected 2 wires, got 4"):
-            SWAP(wires=[0, 1, "a", "b"])
+            SWAP(wires=[0, 1, 5, 6])
 
     def test_resources(self):
         """Test that SWAP decomposes into three CNOTs"""
@@ -162,14 +160,14 @@ class TestSWAP:
 
     ctrl_data = (
         (
-            ["c1"],
+            [9],
             [1],
             [
                 GateCount(qre.CSWAP.resource_rep(), 1),
             ],
         ),
         (
-            ["c1"],
+            [9],
             [0],
             [
                 GateCount(qre.CSWAP.resource_rep(), 1),
@@ -177,7 +175,7 @@ class TestSWAP:
             ],
         ),
         (
-            ["c1", "c2"],
+            [9, 10],
             [1, 1],
             [
                 GateCount(qre.CNOT.resource_rep(), 2),
@@ -185,7 +183,7 @@ class TestSWAP:
             ],
         ),
         (
-            ["c1", "c2", "c3"],
+            [9, 10, 11],
             [1, 0, 0],
             [
                 GateCount(qre.CNOT.resource_rep(), 2),
@@ -264,7 +262,7 @@ class TestS:
 
     ctrl_data = (
         (
-            ["c1"],
+            [9],
             [1],
             [
                 GateCount(resource_rep(qre.CNOT), 2),
@@ -275,7 +273,7 @@ class TestS:
             ],
         ),
         (
-            ["c1"],
+            [9],
             [0],
             [
                 GateCount(resource_rep(qre.CNOT), 2),
@@ -287,7 +285,7 @@ class TestS:
             ],
         ),
         (
-            ["c1", "c2"],
+            [9, 10],
             [1, 1],
             [
                 GateCount(qre.MultiControlledX.resource_rep(2, 0), 2),
@@ -299,7 +297,7 @@ class TestS:
             ],
         ),
         (
-            ["c1", "c2", "c3"],
+            [9, 10, 11],
             [1, 0, 0],
             [
                 GateCount(qre.MultiControlledX.resource_rep(3, 2), 2),
@@ -402,14 +400,14 @@ class TestT:
 
     ctrl_data = (
         (
-            ["c1"],
+            [9],
             [1],
             [
                 GateCount(qre.ControlledPhaseShift.resource_rep(), 1),
             ],
         ),
         (
-            ["c1"],
+            [9],
             [0],
             [
                 GateCount(qre.ControlledPhaseShift.resource_rep(), 1),
@@ -417,7 +415,7 @@ class TestT:
             ],
         ),
         (
-            ["c1", "c2"],
+            [9, 10],
             [1, 1],
             [
                 GateCount(qre.ControlledPhaseShift.resource_rep(), 1),
@@ -425,7 +423,7 @@ class TestT:
             ],
         ),
         (
-            ["c1", "c2", "c3"],
+            [9, 10, 11],
             [1, 0, 0],
             [
                 GateCount(qre.ControlledPhaseShift.resource_rep(), 1),
@@ -526,14 +524,14 @@ class TestX:
 
     ctrl_data = (
         (
-            ["c1"],
+            [9],
             [1],
             [
                 GateCount(qre.CNOT.resource_rep(), 1),
             ],
         ),
         (
-            ["c1"],
+            [9],
             [0],
             [
                 GateCount(X.resource_rep(), 2),
@@ -546,14 +544,14 @@ class TestX:
             [GateCount(X.resource_rep(), 1)],
         ),
         (
-            ["c1", "c2"],
+            [9, 10],
             [1, 1],
             [
                 GateCount(qre.Toffoli.resource_rep(), 1),
             ],
         ),
         (
-            ["c1", "c2"],
+            [9, 10],
             [0, 0],
             [
                 GateCount(X.resource_rep(), 4),
@@ -561,14 +559,14 @@ class TestX:
             ],
         ),
         (
-            ["c1", "c2", "c3"],
+            [9, 10, 11],
             [1, 0, 0],
             [
                 GateCount(qre.MultiControlledX.resource_rep(3, 2), 1),
             ],
         ),
         (
-            ["c1", "c2", "c3", "c4"],
+            [9, 10, 11, 12],
             [1, 0, 0, 1],
             [
                 GateCount(qre.MultiControlledX.resource_rep(4, 2), 1),
@@ -640,14 +638,14 @@ class TestY:
 
     ctrl_data = (
         (
-            ["c1"],
+            [9],
             [1],
             [
                 GateCount(qre.CY.resource_rep(), 1),
             ],
         ),
         (
-            ["c1"],
+            [9],
             [0],
             [
                 GateCount(qre.CY.resource_rep(), 1),
@@ -655,7 +653,7 @@ class TestY:
             ],
         ),
         (
-            ["c1", "c2"],
+            [9, 10],
             [1, 1],
             [
                 GateCount(S.resource_rep(), 1),
@@ -667,7 +665,7 @@ class TestY:
             ],
         ),
         (
-            ["c1", "c2"],
+            [9, 10],
             [0, 0],
             [
                 GateCount(S.resource_rep(), 1),
@@ -679,7 +677,7 @@ class TestY:
             ],
         ),
         (
-            ["c1", "c2", "c3"],
+            [9, 10, 11],
             [1, 0, 0],
             [
                 GateCount(S.resource_rep(), 1),
@@ -751,14 +749,14 @@ class TestZ:
 
     ctrl_data = (
         (
-            ["c1"],
+            [9],
             [1],
             [
                 GateCount(qre.CZ.resource_rep(), 1),
             ],
         ),
         (
-            ["c1"],
+            [9],
             [0],
             [
                 GateCount(qre.CZ.resource_rep(), 1),
@@ -766,14 +764,14 @@ class TestZ:
             ],
         ),
         (
-            ["c1", "c2"],
+            [9, 10],
             [1, 1],
             [
                 GateCount(qre.CCZ.resource_rep(), 1),
             ],
         ),
         (
-            ["c1", "c2"],
+            [9, 10],
             [0, 0],
             [
                 GateCount(qre.CCZ.resource_rep(), 1),
@@ -781,7 +779,7 @@ class TestZ:
             ],
         ),
         (
-            ["c1", "c2", "c3"],
+            [9, 10, 11],
             [1, 0, 0],
             [
                 GateCount(Hadamard.resource_rep(), 2),

@@ -15,20 +15,22 @@ r"""
 Contains the ControlledSequence template.
 """
 
-from copy import copy
+from collections import Counter
 
+from pennylane import capture, compiler, math
+from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation, abstractify
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops.op_math import SymbolicOp, ctrl
-from pennylane.ops.op_math import pow as qp_pow
+from pennylane.decomposition.resources import CompressedResourceOp
+from pennylane.ops.op_math import SymbolicOp2, ctrl, pow
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import _pow_abstract
 from pennylane.typing import Wire
-from pennylane.wires import Wires
+from pennylane.wires import Wires, validate_no_wire_overlaps
 
 
-class ControlledSequence(SymbolicOp, Operation):
+class ControlledSequence(SymbolicOp2):
     r"""Creates a sequence of controlled gates raised to decreasing powers of 2. Can be used as
     a sub-block in building a `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
@@ -52,7 +54,45 @@ class ControlledSequence(SymbolicOp, Operation):
 
     .. seealso:: :class:`~.QuantumPhaseEstimation`
 
-    **Example**
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.ControlledSequence
+            :stacked:
+            :symbols: :math:`U=` ``base`` and :math:`n` control wires
+            :example: :math:`n=3`
+
+            .. decomposition-rule:: controlled_powers
+                :image: /_static/decomposition_thumbnails/controlled_sequence_powers.svg
+                :where: Powers are simplified eagerly when the base operator supports it.
+
+                :math:`U^{2^k}` with 1 control | :math:`n` (one per :math:`k < n`) | 3
+
+            .. decomposition-rule:: looped_controlled_repetitions
+                :image: /_static/decomposition_thumbnails/controlled_sequence_repetitions.svg
+                :where: Nested loops keep the circuit representation compact. The image shows
+                    the operations executed for three control wires.
+
+                :math:`U` with 1 control | :math:`2^n - 1` | 7
+
+    **Examples**
+
+    .. code-block:: python
+
+        dev = qp.device("default.qubit")
+
+        @qp.transforms._tape_decompose(gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1)
+        @qp.qnode(dev)
+        def circuit():
+            qp.ControlledSequence(qp.RX(0.25, wires = 3), control = [0, 1, 2])
+            return qp.state()
+
+    >>> print(qp.draw(circuit, wire_order=[0,1,2,3])())
+    0: ─╭●────────────────────────────┤ ╭State
+    1: ─│─────────╭●──────────────────┤ ├State
+    2: ─│─────────│─────────╭●────────┤ ├State
+    3: ─╰RX(1.00)─╰RX(0.50)─╰RX(0.25)─┤ ╰State
+
 
     .. code-block:: python
 
@@ -75,37 +115,24 @@ class ControlledSequence(SymbolicOp, Operation):
 
     """
 
+    wire_argnames = ("control",)
+    hybrid_argnames = ("base",)
     grad_method = None
-
-    resource_keys = {"base_rep", "num_control_wires"}
-
-    def _flatten(self):
-        return (self.base,), (self.control,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(data[0], control=metadata[0])
 
     def __init__(self, base, control):
         control_wires = Wires(control)
+        base_wires = getattr(base, "wires", ())
 
-        if len(Wires.shared_wires([base.wires, control_wires])) != 0:
-            raise ValueError("The control wires must be different from the base operation wires.")
+        wire_args = {
+            "base.wires": base_wires,
+            "control_wires": control_wires,
+        }
 
-        self.hyperparameters["control_wires"] = control_wires
-        self.hyperparameters["base"] = base
+        validate_no_wire_overlaps(wire_args)
 
         self._name = "ControlledSequence"
 
-        super().__init__(base)
-
-    @property
-    def resource_params(self) -> dict:
-        params = {
-            "base_rep": abstractify(self.hyperparameters["base"]),
-            "num_control_wires": len(self.hyperparameters["control_wires"]),
-        }
-        return params
+        super().__init__(base, control)
 
     def __hash__(self):
         return hash(
@@ -117,18 +144,20 @@ class ControlledSequence(SymbolicOp, Operation):
         )
 
     @property
-    def control(self):
-        """The control wires for the sequence"""
-        return self.hyperparameters["control_wires"]
+    def data(self):
+        return self.base.data
 
     @property
-    def control_wires(self):
-        """The control wires for the sequence"""
-        return self.hyperparameters["control_wires"]
+    def ndim_params(self):
+        return self.base.ndim_params
 
     @property
-    def wires(self):
-        return self.control + self.base.wires
+    def batch_size(self):
+        return self.base.batch_size
+
+    @property
+    def has_sparse_matrix(self):
+        return False
 
     @property
     def has_matrix(self):
@@ -137,104 +166,89 @@ class ControlledSequence(SymbolicOp, Operation):
     def __repr__(self):
         return f"ControlledSequence({self.base}, control={list(self.control)})"
 
-    def map_wires(self, wire_map: dict):
 
-        new_op = copy(self)
-        new_op.hyperparameters["base"] = self.base.map_wires(wire_map=wire_map)
-        new_op.hyperparameters["control_wires"] = Wires(
-            [wire_map.get(wire, wire) for wire in self.control]
-        )
-        return new_op
+def _ctrl_seq_execution_optimized_decomposition_resources(base, control) -> dict:
+    control = Wires(control)
+    base_rep = abstractify(base)
 
-    @staticmethod
-    def compute_decomposition(*_, base=None, control_wires=None, lazy=False, **__):
-        r"""Representation of the operator as a product of other operators.
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. seealso:: :meth:`~.CtrlSequence.decomposition`.
-
-        Args:
-            base (Operator): the operator that acts as the base for the sequence
-            control_wires (Any or Iterable[Any]): the control wires for the sequence
-
-        Returns:
-            list[.Operator]: decomposition of the operator
-
-        **Example**
-
-        .. code-block:: python
-
-            dev = qp.device("default.qubit")
-            op = qp.ControlledSequence(qp.RX(0.25, wires = 3), control = [0, 1, 2])
-
-            @qp.qnode(dev)
-            def circuit():
-                op.decomposition()
-                return qp.state()
-
-        >>> print(qp.draw(circuit, wire_order=[0,1,2,3])())
-        0: ─╭●────────────────────────────┤ ╭State
-        1: ─│─────────╭●──────────────────┤ ├State
-        2: ─│─────────│─────────╭●────────┤ ├State
-        3: ─╰RX(1.00)─╰RX(0.50)─╰RX(0.25)─┤ ╰State
-
-        To display the operators as powers of the base operator without further simplification,
-        the `compute_decomposition` method can be used with `lazy=True`.
-
-        .. code-block:: python
-
-            dev = qp.device("default.qubit")
-            op = qp.ControlledSequence(qp.RX(0.25, wires = 3), control = [0, 1, 2])
-
-            @qp.qnode(dev)
-            def circuit():
-                op.compute_decomposition(base=op.base, control_wires=op.control, lazy=True)
-                return qp.state()
-
-        >>> print(qp.draw(circuit, wire_order=[0,1,2,3])())
-        0: ─╭(RX(0.25))⁴───────────────────────────┤ ╭State
-        1: ─│────────────╭(RX(0.25))²──────────────┤ ├State
-        2: ─│────────────│────────────╭(RX(0.25))¹─┤ ├State
-        3: ─╰(RX(0.25))⁴─╰(RX(0.25))²─╰(RX(0.25))¹─┤ ╰State
-
-        """
-
-        powers_of_two = [2**i for i in range(len(control_wires))]
-        ops = []
-
-        for z, ctrl_wire in zip(powers_of_two[::-1], control_wires, strict=True):
-            ops.append(qp_pow(ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
-
-        return ops
+    if not control:
+        return {}
+    controlled_base = _ctrl_abstract(base_rep, Wire[1])
+    if isinstance(controlled_base, CompressedResourceOp):
+        return dict(Counter(_pow_abstract(controlled_base, 2**i) for i in range(len(control))))
+    return dict(
+        Counter(abstractify(pow(controlled_base, 2**i, lazy=False)) for i in range(len(control)))
+    )
 
 
-def _ctrl_seq_decomposition_resources(base_rep, num_control_wires) -> dict:
+@register_resources(_ctrl_seq_execution_optimized_decomposition_resources, name="controlled_powers")
+def _ctrl_seq_execution_optimized_decomposition(*_, base=None, control=None, **__):
+    """
+    A decomposition optimized for execution time, over IR size and compilation time.
 
-    resources = {}
+    Using Pows with different z grows the IR but the execution is faster because the powers
+    can be simplified eagerly to a single rotation each. Additionally, the Pows have more
+    decomposition variants which increases compile time.
+    """
+    if compiler.active() or capture.enabled():
+        control = math.array(control, like="jax")
 
-    powers_of_two = [2**i for i in range(num_control_wires)]
+    num_controls = len(control)
+    # To match legacy behaviour
+    lazy = not isinstance(base, Operator2)
 
-    for z in powers_of_two[::-1]:
-        controlled_rep = _ctrl_abstract(base_rep, Wire[1])
-        rep = _pow_abstract(controlled_rep, z=z)
-        resources[rep] = 1
-    return resources
+    for i in range(num_controls - 1, -1, -1):
+        j = num_controls - 1 - i
+        ctrl_wire = control[j]
+
+        controlled_base = ctrl(base, control=ctrl_wire)
+        if capture.enabled():
+            pop_op_eqns((controlled_base,))
+        pow(controlled_base, 2**i, lazy=lazy)
 
 
-# pylint: disable=no-value-for-parameter
-@register_resources(_ctrl_seq_decomposition_resources)
-def _ctrl_seq_decomposition(*_, base=None, control_wires=None, **__):
-    powers_of_two = [2**i for i in range(len(control_wires))]
+def _ctrl_seq_ir_optimized_resources(base, control) -> dict:
+    control = Wires(control)
+    if not control:
+        return {}
+    controlled_base = _ctrl_abstract(abstractify(base), Wire[1])
+    return {controlled_base: 2 ** len(control) - 1}
 
-    @for_loop(len(powers_of_two) - 1, -1, -1)
+
+@register_resources(_ctrl_seq_ir_optimized_resources, name="looped_controlled_repetitions")
+def _ctrl_seq_ir_optimized_decomposition(*_, base=None, control=None, **__):
+    """
+    A decomposition optimized for IR size and compilation time, over execution time.
+
+    Using the nested @for_loop keeps the IR compact, but the runtime increases since
+    there is no simplification of repeated operators. They are all executed individually.
+    """
+    if compiler.active() or capture.enabled():
+        control = math.array(control, like="jax")
+
+    num_controls = len(control)
+
+    @for_loop(num_controls - 1, -1, -1)
     def _powers_loop(i):
-        j = len(powers_of_two) - 1 - i
-        ctrl_wire = control_wires[j]
-        z = powers_of_two[i]
-        qp_pow(ctrl(base, control=ctrl_wire), z=z)
+        j = num_controls - 1 - i
+        ctrl_wire = control[j]
 
-    _powers_loop()
+        # Note that we cannot use both Pow here and a for_loop on line 144
+        # since the arg i which becomes z will be traced, and Pow expects a static
+        # z. Opted for an inner for_loop since it is still compact, rather than
+        # an unrolled outer python loop and Pows.
+        @for_loop(2**i)
+        def _repeat_loop(_):
+            ctrl(base, control=ctrl_wire)
+
+        _repeat_loop()  # pylint: disable=no-value-for-parameter
+
+    _powers_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(ControlledSequence, _ctrl_seq_decomposition)
+# TODO: worth exploring how Catalyst can handle these situations (execution versus compilation optimization)
+add_decomps(
+    ControlledSequence,
+    _ctrl_seq_execution_optimized_decomposition,
+    _ctrl_seq_ir_optimized_decomposition,
+)

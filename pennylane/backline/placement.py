@@ -215,7 +215,12 @@ class Node:
     * ``"config"`` (str) - a ``;``-separated ``key=value`` string configuring the backend on this
       machine, e.g. ``"dev=mlx5_0;gid=3"``. ``dev`` and ``gid`` select the RDMA device and GID
       index; the remaining keys are backend-specific (a GPU backend takes ``gpu=``, an FPGA engine
-      takes ``sq_mem=``/``data_mem=``/``reply_mem=``).
+      takes ``sq_mem=``/``data_mem=``/``reply_mem=``). An RDMA coprocessor also takes ``peer=``,
+      the kind of controller it answers: ``catalyst``, the default, for the controllers Catalyst
+      ships (``cpu_verbs``, ``hwhs``, ``fpga_verbs``), ``hsb`` for ``hsb_hwhs``, and ``balboa``
+      for ``balboa_hwhs``. For more information about how to build and load the required FPGA
+      images, please refer to the `backline <https://github.com/PennyLaneAI/backline>`__ and
+      `backline-vpk120 <https://github.com/PennyLaneAI/backline-vpk120>`__ repositories.
 
     Keys outside this set are rejected when the program is compiled.
     """
@@ -246,8 +251,15 @@ class Controller(Node):
         hardware (str): The hardware the controller executes on. Defaults to ``"cpu"``; other allowed
             values are ``"fpga"``. ``"gpu"`` is not accepted as a controller. The compiler
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
-        backend (str, None): The name of the transport backend to run this node on. Defaults to
-            ``None``, letting the compiler pick the default backend for the transport and hardware.
+        backend (str, None): The transport backend this node runs on. Defaults to ``None``, which
+            lets the compiler choose from the transport and hardware: ``cpu_verbs`` for ``"rdma"``
+            on ``cpu`` and ``memcpy`` for ``"memcpy"``. On ``fpga``, pick the backend that matches
+            the image on the board: ``hwhs`` (the default), ``hsb_hwhs`` or ``balboa_hwhs``. Each
+            coprocessor sets the matching ``peer=`` in its ``config``: ``catalyst`` for ``hwhs``
+            (the default, so it can be omitted), ``hsb`` for ``hsb_hwhs`` and ``balboa`` for
+            ``balboa_hwhs``. Catalyst's `Backline documentation
+            <https://docs.pennylane.ai/projects/catalyst/en/latest/dev/backline.html>`__ lists all
+            backends.
         remote (bool): Whether the controller runs on another machine. Defaults to ``False``.
         executor_options (dict, None): Options for the executor to launch for this controller.
             Defaults to ``None``, which runs the node in this process. See the
@@ -258,18 +270,16 @@ class Controller(Node):
             :attr:`~.Node.init_args` attribute below for the keys it accepts.
         device (pennylane.devices.Device, None): The PennyLane device the controller executes.
             Defaults to ``None``, which builds a ``null.qubit``.
-        in_bytes (int, None): The size in bytes of each message the controller sends.
-            ``"memcpy"`` supports any size to a CPU coprocessor, and to a GPU coprocessor running
-            a per-message function. A GPU coprocessor running a persistent kernel over
-            ``"memcpy"``, and every coprocessor over ``"rdma"``, currently supports up to
-            :data:`DEFAULT_MESSAGE_BYTES`. Defaults to ``None`` (unset), in which case the
-            placement sends the size the coprocessors' functions declare (as
-            :func:`~.onnx_decoder` does from its model), or else :data:`DEFAULT_MESSAGE_BYTES`.
-            See :attr:`~.Placement.in_bytes`. A size passed explicitly must match what they
-            declare.
+        in_bytes (int, None): The size in bytes of each message the controller sends. Which
+            sizes are supported depends on the transport backend the compiler selects for each
+            node, and a size no available backend carries is reported when the program is
+            compiled. Defaults to ``None`` (unset), in which case the placement sends the size the
+            coprocessors' functions declare (as :func:`~.onnx_decoder` does from its model), or
+            else :data:`DEFAULT_MESSAGE_BYTES`. See :attr:`~.Placement.in_bytes`. A size passed
+            explicitly must match what they declare.
         out_bytes (int, None): The size in bytes of each reply the controller receives. Defaults
-            to ``None``, resolved like ``in_bytes`` (see :attr:`~.Placement.out_bytes`) and with
-            the same bound.
+            to ``None``, resolved like ``in_bytes`` (see :attr:`~.Placement.out_bytes`) and
+            checked the same way.
 
     See :class:`~.Node` for the options every node shares.
 
@@ -356,7 +366,7 @@ class Coprocessor(Node):
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
         backend (str, None): The name of the transport backend to run this node on. Defaults to
             ``None``, letting the compiler pick the default backend for the transport and hardware.
-        remote (bool): Whether the controller runs on another machine. Defaults to ``False``.
+        remote (bool): Whether the coprocessor runs on another machine. Defaults to ``False``.
         coprocessor_fn (str, CoprocessorFunction): The function that processes each received
             message. A string is wrapped in a :class:`~.CoprocessorFunction` naming that symbol, so
             reading the attribute back always gives a :class:`~.CoprocessorFunction`.
@@ -539,15 +549,6 @@ class Placement:
                     raise ValueError(
                         "transport='rdma' requires every coprocessor to set endpoint; "
                         "memcpy does not require it"
-                    )
-            for name in ("in_bytes", "out_bytes"):
-                size = getattr(self, name)
-                if size > DEFAULT_MESSAGE_BYTES:
-                    raise ValueError(
-                        f"transport='rdma' carries at most {DEFAULT_MESSAGE_BYTES} bytes per "
-                        f"message, got {name}={size}. transport='memcpy' carries larger messages "
-                        "to a CPU coprocessor, and to a GPU coprocessor running a per-message "
-                        "function"
                     )
 
     def _resolve_message_sizes(self):

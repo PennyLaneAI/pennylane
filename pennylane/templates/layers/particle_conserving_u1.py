@@ -304,7 +304,7 @@ class ParticleConservingU1(Operation):
             weights (tensor_like): Array of weights of shape ``(D, M, 2)``.
                 ``D`` is the number of entangler block layers and :math:`M=N-1`
                 is the number of exchange gates :math:`U_{1,\mathrm{ex}}` per layer.
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
             init_state (tensor_like): iterable or shape ``(len(wires),)`` tensor representing the Hartree-Fock state
                 used to initialize the wires
 
@@ -314,26 +314,26 @@ class ParticleConservingU1(Operation):
         **Example**
 
         >>> weights = torch.tensor([[[0.3, 1.]]])
-        >>> ops = qp.ParticleConservingU1.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
+        >>> ops = qp.ParticleConservingU1.compute_decomposition(weights, wires=[0, 1], init_state=[0, 1])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [BasisState([0 1], wires=['a', 'b']),
-         CZ(wires=['a', 'b']),
-         CRot(-0.30000001192092896, 3.141592653589793, 0.30000001192092896, wires=['a', 'b']),
-         PhaseShift(-0.30000001192092896, wires=['b']),
-         CNOT(wires=['a', 'b']),
-         PhaseShift(0.30000001192092896, wires=['b']),
-         CNOT(wires=['a', 'b']),
-         PhaseShift(-0.30000001192092896, wires=['a']),
-         CZ(wires=['b', 'a']),
-         CRot(0, 2.0, 0, wires=['b', 'a']),
-         CZ(wires=['a', 'b']),
-         CRot(0.30000001192092896, 3.141592653589793, -0.30000001192092896, wires=['a', 'b']),
-         PhaseShift(0.30000001192092896, wires=['b']),
-         CNOT(wires=['a', 'b']),
-         PhaseShift(-0.30000001192092896, wires=['b']),
-         CNOT(wires=['a', 'b']),
-         PhaseShift(0.30000001192092896, wires=['a'])]
+        [BasisState([0 1], wires=[0, 1]),
+         CZ(wires=[0, 1]),
+         CRot(-0.30000001192092896, 3.141592653589793, 0.30000001192092896, wires=[0, 1]),
+         PhaseShift(-0.30000001192092896, wires=[1]),
+         CNOT(wires=[0, 1]),
+         PhaseShift(0.30000001192092896, wires=[1]),
+         CNOT(wires=[0, 1]),
+         PhaseShift(-0.30000001192092896, wires=[0]),
+         CZ(wires=[1, 0]),
+         CRot(0, 2.0, 0, wires=[1, 0]),
+         CZ(wires=[0, 1]),
+         CRot(0.30000001192092896, 3.141592653589793, -0.30000001192092896, wires=[0, 1]),
+         PhaseShift(0.30000001192092896, wires=[1]),
+         CNOT(wires=[0, 1]),
+         PhaseShift(-0.30000001192092896, wires=[1]),
+         CNOT(wires=[0, 1]),
+         PhaseShift(0.30000001192092896, wires=[0])]
 
         """
 
@@ -368,7 +368,7 @@ class ParticleConservingU1(Operation):
         return n_layers, n_wires - 1, 2
 
 
-def _particle_conserving_u1_resources(n_layers: int, num_wires: int):
+def _particle_conserving_u1_standard_resources(n_layers: int, num_wires: int):
     num_nm_wires = num_wires - 1  # number of pairs of even-indexed of wires
     return {
         BasisState(Bool[num_wires], Wire[num_wires]): 1,
@@ -416,10 +416,8 @@ def _decompose_ua_qfunc(phi: float, wires: WiresLike):
     PhaseShift(-phi, wires=n)
 
 
-@register_resources(_particle_conserving_u1_resources)
-def _particle_conserving_u1_decomposition(
-    weights: list, wires: WiresLike, init_state: tuple[int]
-):  # pylint: disable=arguments-differ
+@register_resources(_particle_conserving_u1_standard_resources, name="to_crot_cz")
+def _particle_conserving_u1_standard(weights: list, wires: WiresLike, init_state: tuple[int]):
     nm_wires = [wires[l : l + 2] for l in range(0, len(wires) - 1, 2)]
     nm_wires += [wires[l : l + 2] for l in range(1, len(wires) - 1, 2)]
     n_layers = math.shape(weights)[0]
@@ -463,4 +461,4 @@ def _particle_conserving_u1_decomposition(
     layers_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(ParticleConservingU1, _particle_conserving_u1_decomposition)
+add_decomps(ParticleConservingU1, _particle_conserving_u1_standard)

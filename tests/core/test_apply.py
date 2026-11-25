@@ -28,9 +28,8 @@ class TestApplyOp:
     """Tests for the apply function."""
 
     def test_public_imports(self):
-        """Test that the public and legacy imports expose the standalone utility."""
+        """Test that the public import exposes the standalone utility."""
         assert qp.apply is apply
-        assert qp.queuing.apply is apply
 
     def test_error(self):
         """Test that applying an operation without an active context raises an error."""
@@ -255,9 +254,8 @@ class TestApplyOp:
         cjaxpr = jax.make_jaxpr(f)()
 
         assert len(cjaxpr.eqns) == 2
-        info = [eqn.params["op_cls"] for eqn in cjaxpr.eqns]
-        # C(PauliX) automatically gets dispatched to CNOT
-        assert info == [qp.X, qp.CNOT]
+        info = [(eqn.params["op_cls"], eqn.params["n_ctrls"]) for eqn in cjaxpr.eqns]
+        assert info == [(qp.X, 0), (qp.X, 1)]
 
     @pytest.mark.capture
     def test_apply_twice(self):

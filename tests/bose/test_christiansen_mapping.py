@@ -109,12 +109,12 @@ WIRE_MAP_FOR_BOSE_WORDS = [
         ],
     ),
     (
-        {0: "b", 1: "a"},
+        {0: 6, 1: 5},
         [
-            qp.s_prod(-0.25j, qp.prod(Y("b"), X("a"))),
-            qp.s_prod(-0.25 + 0j, qp.prod(Y("b"), Y("a"))),
-            qp.s_prod(0.25 + 0j, qp.prod(X("b"), X("a"))),
-            qp.s_prod(-0.25j, qp.prod(X("b"), Y("a"))),
+            qp.s_prod(-0.25j, qp.prod(Y(6), X(5))),
+            qp.s_prod(-0.25 + 0j, qp.prod(Y(6), Y(5))),
+            qp.s_prod(0.25 + 0j, qp.prod(X(6), X(5))),
+            qp.s_prod(-0.25j, qp.prod(X(6), Y(5))),
         ],
     ),
 ]
@@ -144,7 +144,7 @@ class TestBoseWordMapping:
         qubit_op = christiansen_mapping(bosonic_op)
 
         expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
-        expected_op = expected_op.operation(wires)
+        expected_op = qp.pauli.to_operator(expected_op, wires)
 
         qp.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
@@ -271,14 +271,14 @@ WIRE_MAP_FOR_BOSE_SENTENCE = [
         ],
     ),
     (
-        {0: "b", 1: "a"},
+        {0: 6, 1: 5},
         [
-            qp.s_prod(-0.25j, qp.prod(Y("b"), X("a"))),
-            qp.s_prod((0.25 + 0j), qp.prod(Y("b"), Y("a"))),
-            qp.s_prod((0.25 + 0j), qp.prod(X("b"), X("a"))),
-            qp.s_prod(0.25j, qp.prod(X("b"), Y("a"))),
-            qp.s_prod((0.5 + 0j), I("b")),
-            qp.s_prod((-0.5 + 0j), Z("b")),
+            qp.s_prod(-0.25j, qp.prod(Y(6), X(5))),
+            qp.s_prod((0.25 + 0j), qp.prod(Y(6), Y(5))),
+            qp.s_prod((0.25 + 0j), qp.prod(X(6), X(5))),
+            qp.s_prod(0.25j, qp.prod(X(6), Y(5))),
+            qp.s_prod((0.5 + 0j), I(6)),
+            qp.s_prod((-0.5 + 0j), Z(6)),
         ],
     ),
 ]
@@ -312,7 +312,7 @@ class TestBoseSentencesMapping:
 
         assert ps_op == ps
 
-        result = ps.operation(wire_order=[0])
+        result = qp.pauli.to_operator(ps, identity_wires=[0])
         qp.assert_equal(qubit_op.simplify(), result.simplify())
 
     @pytest.mark.parametrize("bosonic_op, result", BOSE_AND_PAULI_SENTENCES)
@@ -329,7 +329,7 @@ class TestBoseSentencesMapping:
         wires = bosonic_op.wires or [0]
 
         qubit_op = christiansen_mapping(bosonic_op)
-        result = result.operation(wires)
+        result = qp.pauli.to_operator(result, wires)
 
         qp.assert_equal(qubit_op.simplify(), result.simplify())
 

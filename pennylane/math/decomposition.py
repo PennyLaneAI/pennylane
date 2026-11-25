@@ -320,14 +320,20 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
 
     interface = interface_a
 
-    EPS = math.finfo(math.asarray(a).dtype).eps
-    hypot = math.hypot(abs_a, abs_b) + EPS  # avoid division by zero
+    small_a, small_b = abs_a < tol, abs_b < tol
+    any_small = math.logical_or(small_a, small_b)
+    both_small = math.logical_and(small_a, small_b)
+    # Entries below ``tol`` are treated as exact zeros via ``where``, which evaluates both of its
+    # branches. Denominators that may vanish are therefore replaced by 1 (``hypot`` if both entries
+    # are small, ``aprod`` below if any entry is small), so that the discarded branch stays finite
+    # and does not leak NaNs into gradients.
+    hypot = math.where(both_small, 1.0, math.hypot(abs_a, abs_b))
 
-    cosine = math.where(abs_b < tol, 0.0, abs_b / hypot)
-    cosine = math.where(abs_a < tol, 1.0, cosine)
+    cosine = math.where(small_b, 0.0, abs_b / hypot)
+    cosine = math.where(small_a, 1.0, cosine)
 
-    sine = math.where(abs_b < tol, 1.0, abs_a / hypot)
-    sine = math.where(abs_a < tol, 0.0, sine)
+    sine = math.where(small_b, 1.0, abs_a / hypot)
+    sine = math.where(small_a, 0.0, sine)
 
     # The following logic produces four different matrices for the four possible settings
     # of ``left`` and ``real_valued``:
@@ -353,14 +359,13 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
     g00, g01 = cosine + 0j, -sine + 0j
 
     def real_branch(g00, g01):
-        phase = math.where((abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b))
+        phase = math.where(any_small, 1.0, math.sign(a * b))
         g01 *= phase
         return phase, g00, g01
 
     def complex_branch(g00, g01):
-        aprod = math.nan_to_num(abs_b * abs_a)
-        phase = math.where(abs_b < tol, 1.0, (b * math.conj(a)) / (aprod + EPS))
-        phase = math.where(abs_a < tol, 1.0, phase)
+        aprod = math.where(any_small, 1.0, abs_b * abs_a)
+        phase = math.where(any_small, 1.0, (b * math.conj(a)) / aprod)
         g00 = phase * g00
         return phase, g00, g01
 
@@ -479,15 +484,15 @@ def _commute_phases_u(left_givens, right_givens, phases):
     nleft_givens = []
     for grot_mat, (i, j) in reversed(left_givens):
         # Manually compute new Givens matrix and new phase when commuting a phase through.
-        abs_c, abs_s = math.abs(grot_mat[:, 0])
-        first_col = phases[j, j] * math.conj(phases[i, i]) * grot_mat[1, 1] * grot_mat[0, 1]
-        givens_mat = math.array(
-            [[first_col / abs_s, -abs_s], [first_col / abs_c, abs_c]], like=interface
-        )
-        nphase_diag = [
-            -math.conj(grot_mat[1, 0]) / abs_s * phases[j, j],
-            grot_mat[1, 1] / abs_c * phases[j, j],
-        ]
+        # ``grot_mat`` has the form [[p c, s], [-p s, c]] with real c, s >= 0 and a phase p.
+        # conj(p) is read off the larger of |p c| and |p s|, so that c = 0 or s = 0 (exact zeros
+        # in the decomposed matrix) do not cause a division by zero.
+        c, s = math.real(grot_mat[1, 1]), math.real(grot_mat[0, 1])
+        conj_p = math.where(s > c, -math.conj(grot_mat[1, 0]), math.conj(grot_mat[0, 0]))
+        conj_p = conj_p / math.abs(conj_p)
+        rel_phase = phases[j, j] * math.conj(phases[i, i])
+        givens_mat = math.array([[rel_phase * c, -s], [rel_phase * s, c]], like=interface)
+        nphase_diag = [conj_p * phases[j, j], phases[j, j]]
         for diag_idx, diag_val in zip([(i, i), (j, j)], nphase_diag, strict=True):
             phases = _set_unitary_matrix(
                 phases, diag_idx, diag_val, like=interface, real_valued=False

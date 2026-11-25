@@ -13,7 +13,7 @@
 # limitations under the License.
 """Tests for the QNG optimizer"""
 
-# pylint: disable=too-few-public-methods
+import jax
 import pytest
 import scipy as sp
 
@@ -106,7 +106,7 @@ class TestAttrsAffectingMetricTensor:
         assert not np.isclose(new_params_with_lam[1], y, atol=1e-11, rtol=0.0)
 
 
-class TestExceptions:
+class TestExceptions:  # pylint: disable=too-few-public-methods
     """Test exceptions are raised for incorrect usage"""
 
     def test_obj_func_not_a_qnode(self):
@@ -457,3 +457,11 @@ class TestFlatten:
         wires = _flatten_np(wires)
         for i, wire in enumerate(wires):
             assert wires_int[i] == wire
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("grad_fn", [None, lambda x: 2 * x])
+def test_optimizer_rejects_jax_parameters(grad_fn):
+    """JAX parameters require an optimizer that recognizes their trainability."""
+    with pytest.raises(ValueError, match="Optax"):
+        qp.QNGOptimizer().step(lambda x: x**2, jax.numpy.array(2.0), grad_fn=grad_fn)

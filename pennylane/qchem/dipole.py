@@ -323,7 +323,7 @@ def dipole_moment(mol, cutoff=1.0e-16, core=None, active=None, mapping="jordan_w
     return _dipole
 
 
-def molecular_dipole(
+def molecular_dipole(  # pylint: disable=too-many-arguments
     molecule,
     method="dhf",
     active_electrons=None,
@@ -333,7 +333,7 @@ def molecular_dipole(
     wires=None,
     args=None,
     cutoff=1.0e-16,
-):  # pylint: disable=too-many-arguments,protected-access
+):
     r"""Generate the dipole moment operator for a molecule in the Pauli basis.
 
     The dipole operator in the second-quantized form is
@@ -386,7 +386,8 @@ def molecular_dipole(
         mapping (str): Transformation used to map the fermionic Hamiltonian to the qubit Hamiltonian.
             Input values can be ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
         outpath (str): Path to the directory containing output files
-        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator to
+        wires (Wires or Sequence[int] or dict[int, int]): Custom wire mapping used to convert the
+            qubit operator to
             an observable measurable in a Pennylane ansatz.
             For types ``Wires``/``list``/``tuple``, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
@@ -490,7 +491,7 @@ def molecular_dipole(
             )()
         )
         if wires:
-            wires_new = qp.qchem.convert._process_wires(wires)
+            wires_new = qp.qchem.convert._process_wires(wires)  # pylint: disable=protected-access
             wires_map = dict(zip(range(len(wires_new)), list(wires_new.labels), strict=True))
             dip = [qp.map_wires(op, wires_map) for op in dip]
 

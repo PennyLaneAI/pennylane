@@ -25,6 +25,7 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.subcircuit import subcircuit
 from pennylane.typing import AbstractArray, Bool, Wire
 from pennylane.wires import WiresLike
 
@@ -59,7 +60,6 @@ class TemporaryAND(Operator2):
         control_values (tuple[bool or int]): The values on the control wires for which the target
             operator is applied. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
             Default is ``(1, 1)``, corresponding to a traditional ``AND`` gate.
-
 
     .. seealso:: The alias :class:`~Elbow`.
 
@@ -98,8 +98,6 @@ class TemporaryAND(Operator2):
 
         import pennylane as qp
 
-        qp.decomposition.enable_graph()
-
         @qp.transforms._tape_decompose(gate_set={qp.Toffoli, qp.X})
         def circuit():
             qp.TemporaryAND((0, 1, 2))
@@ -113,6 +111,38 @@ class TemporaryAND(Operator2):
     Note that we had to add ``qp.X`` to the gate set passed to ``decompose``, because the
     decomposition may contain bit flips on the control qubits, depending on potentially dynamic
     control values.
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.TemporaryAND
+            :stacked:
+            :symbols: :math:`z` entries of ``control_values`` equal to 0
+            :example: ``control_values=(1, 0)``, i.e., :math:`z=1`
+
+            .. decomposition-rule:: to_clifford_t
+                :image: /_static/decomposition_thumbnails/temporary_and_clifford_t.svg
+
+                :class:`~.Hadamard` | :math:`2` | 2
+                :class:`~.T` | :math:`2` | 2
+                :class:`Adjoint(T) <.T>` | :math:`2` | 2
+                :class:`~.CNOT` | :math:`3` | 3
+                :class:`Adjoint(S) <.S>` | :math:`1` | 1
+                :class:`~.X` | :math:`2z` | 2
+
+            .. decomposition-rule:: to_toffoli
+                :image: /_static/decomposition_thumbnails/temporary_and_toffoli.svg
+
+                :class:`~.Toffoli` | :math:`1` | 1
+                :class:`~.X` | :math:`2z` | 2
+
+            .. decomposition-rule:: to_ppr
+                :image: /_static/decomposition_thumbnails/temporary_and_ppr.svg
+
+                :class:`PPR_8(1, "ZZY") <.PPR_8>` | :math:`1` | 1
+                :class:`PPR_8(-1, "ZY") <.PPR_8>` | :math:`2` | 2
+                :class:`PPR_8(1, "Y") <.PPR_8>` | :math:`1` | 1
+                :class:`~.X` | :math:`2z` | 2
     """
 
     num_wires = 3
@@ -204,46 +234,38 @@ class TemporaryAND(Operator2):
 _number_xs = 2
 
 
-def _temporary_and_resources(*_, **__):
-    compute_rep = ops.prod(
-        ops.adjoint(ops.T(Wire[1])),
-        ops.CNOT(Wire[2]),
-        ops.T(Wire[1]),
-        ops.Hadamard(Wire[1]),
-    )
-    uncompute_rep = ops.prod(
-        ops.Hadamard(Wire[1]),
-        ops.adjoint(ops.T(Wire[1])),
-        ops.CNOT(Wire[2]),
-        ops.T(Wire[1]),
-    )
+def _temporary_and_basis_resources(**_):
+    return {ops.Hadamard: 1, ops.T: 1, ops.CNOT: 1, ops.adjoint(ops.T(Wire[1])): 1}
 
+
+@subcircuit(arg_specs={"wires": Wire[2]})
+@register_resources(_temporary_and_basis_resources)
+def _TemporaryANDBasis(wires: WiresLike):
+    """Change basis for the Clifford+T implementation of TemporaryAND."""
+    ops.H(wires[1])
+    ops.T(wires[1])
+    ops.CNOT(wires)
+    ops.adjoint(ops.T(wires[1]))
+
+
+def _temporary_and_to_clifford_t_resources(*_, **__):
+    compute_rep = _TemporaryANDBasis(Wire[2])
     resources = {
         ops.X: _number_xs,
-        _change_op_basis_abstract(compute_rep, ops.CNOT, uncompute_rep): 1,
+        _change_op_basis_abstract(compute_rep, ops.CNOT, ops.adjoint(compute_rep)): 1,
         ops.adjoint(ops.S(Wire[1])): 1,
     }
     return resources
 
 
-@register_resources(_temporary_and_resources, exact=False)
-def _temporary_and(wires: WiresLike, control_values: Sequence[bool]):
+@register_resources(_temporary_and_to_clifford_t_resources, exact=False, name="to_clifford_t")
+def _temporary_and_to_clifford_t(wires: WiresLike, control_values: Sequence[bool]):
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
 
-    def _compute_fn():
-        ops.H(wires[2])
-        ops.T(wires=wires[2])
-        ops.CNOT(wires=[wires[1], wires[2]])
-        ops.adjoint(ops.T(wires=wires[2]))
-
-    def _uncompute_fn():
-        ops.T(wires=wires[2])
-        ops.CNOT(wires=[wires[1], wires[2]])
-        ops.adjoint(ops.T(wires=wires[2]))
-        ops.H(wires[2])
-
-    ops.change_op_basis(_compute_fn, ops.CNOT(wires=[wires[0], wires[2]]), _uncompute_fn)
+    ops.change_op_basis(
+        _TemporaryANDBasis([wires[1], wires[2]]), ops.CNOT(wires=[wires[0], wires[2]])
+    )
     ops.adjoint(ops.S(wires=wires[2]))
 
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
@@ -259,12 +281,12 @@ def _toffoli_with_cvals(wires, cvals):
     ops.cond(math.logical_not(cvals[1]), ops.X)(wires[1])
 
 
-@register_resources({ops.Toffoli: 1, ops.X: _number_xs}, exact=False)
+@register_resources({ops.Toffoli: 1, ops.X: _number_xs}, exact=False, name="to_toffoli")
 def _temporary_and_to_toffoli(wires: WiresLike, control_values: Sequence[bool]):
     _toffoli_with_cvals(wires, control_values)
 
 
-def _temporary_and_ppr_resources(*_, **__):
+def _temporary_and_to_ppr_resources(*_, **__):
     return {
         ops.X: _number_xs,
         ops.PPR_8(1, "ZZY", Wire[3]): 1,
@@ -273,8 +295,8 @@ def _temporary_and_ppr_resources(*_, **__):
     }
 
 
-@register_resources(_temporary_and_ppr_resources, exact=False)
-def _temporary_and_ppr(wires: WiresLike, control_values: Sequence[bool]):
+@register_resources(_temporary_and_to_ppr_resources, exact=False, name="to_ppr")
+def _temporary_and_to_ppr(wires: WiresLike, control_values: Sequence[bool]):
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
     ops.PPR_8(1, "ZZY", wires)
@@ -285,10 +307,12 @@ def _temporary_and_ppr(wires: WiresLike, control_values: Sequence[bool]):
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
 
 
-add_decomps(TemporaryAND, _temporary_and, _temporary_and_to_toffoli, _temporary_and_ppr)
+add_decomps(
+    TemporaryAND, _temporary_and_to_clifford_t, _temporary_and_to_toffoli, _temporary_and_to_ppr
+)
 
 
-def _adjoint_temporary_and_resources(*_, **__):
+def _adjoint_temporary_and_measurement_resources(*_, **__):
     return {
         ops.Hadamard: 1,
         ops.MidMeasure(Wire[1], reset=True): 1,
@@ -297,8 +321,8 @@ def _adjoint_temporary_and_resources(*_, **__):
     }
 
 
-@register_resources(_adjoint_temporary_and_resources, exact=False)
-def _adjoint_temporary_and(base):
+@register_resources(_adjoint_temporary_and_measurement_resources, exact=False, name="measurement")
+def _adjoint_temporary_and_measurement(base):
     r"""The implementation of adjoint TemporaryAND by mid-circuit measurements
     as found in https://arxiv.org/abs/1805.03662."""
     cvals = base.control_values
@@ -319,10 +343,12 @@ def _adjoint_temporary_and(base):
         ops.X: _number_xs + 1,
     },
     exact=False,
+    name="to_ppm",
 )
-def _adjoint_temporary_and_ppm(base):
+def _adjoint_temporary_and_to_ppm(base):
     r"""The implementation of adjoint TemporaryAND by Pauli product measurements + Pauli/Clifford
-    corrections, similar to _adjoint_temporary_and above from https://arxiv.org/abs/1805.03662."""
+    corrections, similar to _adjoint_temporary_and_measurement above from https://arxiv.org/abs/1805.03662.
+    """
     cvals = base.control_values
     ops.cond(math.logical_not(cvals[0]), ops.X)(base.wires[0])
     ops.cond(math.logical_not(cvals[1]), ops.X)(base.wires[1])
@@ -338,7 +364,7 @@ def _adjoint_temporary_and_ppm(base):
     ops.cond(math.logical_not(cvals[1]), ops.X)(base.wires[1])
 
 
-@register_resources({ops.Toffoli: 1, ops.X: _number_xs}, exact=False)
+@register_resources({ops.Toffoli: 1, ops.X: _number_xs}, exact=False, name="to_toffoli")
 def _adjoint_temporary_and_to_toffoli(base):
     _toffoli_with_cvals(base.wires, base.control_values)
 
@@ -346,8 +372,8 @@ def _adjoint_temporary_and_to_toffoli(base):
 add_decomps(
     "Adjoint(TemporaryAND)",
     _adjoint_temporary_and_to_toffoli,
-    _adjoint_temporary_and_ppm,
-    _adjoint_temporary_and,
+    _adjoint_temporary_and_to_ppm,
+    _adjoint_temporary_and_measurement,
 )
 
 Elbow = TemporaryAND

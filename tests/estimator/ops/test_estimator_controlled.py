@@ -37,8 +37,6 @@ from pennylane.estimator.resource_operator import CompressedResourceOp, GateCoun
 from pennylane.estimator.wires_manager import Allocate, Deallocate
 from pennylane.exceptions import ResourcesUndefinedError
 
-# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments,too-many-positional-arguments
-
 
 class TestCH:
     """Test the Resource CH operation"""
@@ -425,17 +423,17 @@ class TestCNOT:
 
     ctrl_data = (
         (
-            ["c1"],
+            [10],
             [1],
             [GateCount(Toffoli.resource_rep(), 1)],
         ),
         (
-            ["c1", "c2"],
+            [10, 11],
             [1, 1],
             [GateCount(MultiControlledX.resource_rep(3, 0), 1)],
         ),
         (
-            ["c1", "c2", "c3"],
+            [10, 11, 12],
             [1, 0, 0],
             [GateCount(MultiControlledX.resource_rep(4, 2), 1)],
         ),
@@ -497,17 +495,17 @@ class TestTemporaryAND:
 
     ctrl_data = (
         (
-            ["c1"],
+            [10],
             [1],
             [qre.GateCount(qre.MultiControlledX.resource_rep(3, 0), 1)],
         ),
         (
-            ["c1", "c2"],
+            [10, 11],
             [1, 1],
             [qre.GateCount(qre.MultiControlledX.resource_rep(4, 0), 1)],
         ),
         (
-            ["c1", "c2", "c3"],
+            [10, 11, 12],
             [1, 0, 0],
             [qre.GateCount(qre.MultiControlledX.resource_rep(5, 2), 1)],
         ),
@@ -609,17 +607,17 @@ class TestToffoli:
 
     ctrl_data = (
         (
-            ["c1"],
+            [10],
             [1],
             [qre.GateCount(qre.MultiControlledX.resource_rep(3, 0), 1)],
         ),
         (
-            ["c1", "c2"],
+            [10, 11],
             [1, 1],
             [qre.GateCount(qre.MultiControlledX.resource_rep(4, 0), 1)],
         ),
         (
-            ["c1", "c2", "c3"],
+            [10, 11, 12],
             [1, 0, 0],
             [qre.GateCount(qre.MultiControlledX.resource_rep(5, 2), 1)],
         ),
@@ -754,19 +752,19 @@ class TestMultiControlledX:
 
     ctrl_data = (
         (
-            ["c1"],
+            [10],
             [1],
             [GateCount(MultiControlledX.resource_rep(4, 2))],
         ),
         (
-            ["c1", "c2"],
+            [10, 11],
             [1, 1],
             [
                 GateCount(MultiControlledX.resource_rep(5, 2)),
             ],
         ),
         (
-            ["c1", "c2", "c3", "c4"],
+            [10, 11, 12, 13],
             [1, 0, 0, 1],
             [
                 GateCount(MultiControlledX.resource_rep(7, 4)),
@@ -1141,9 +1139,7 @@ class TestControlledPhaseShift:
         """Test the resource parameters"""
 
         op = ControlledPhaseShift()
-        assert op.resource_params == {
-            "precision": None
-        }  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert op.resource_params == {"precision": None}
 
     def test_resource_rep(self):
         """Test the compressed representation"""

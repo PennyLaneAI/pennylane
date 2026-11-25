@@ -15,7 +15,8 @@
 This module contains the qp.equal function.
 """
 
-# pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches, too-many-positional-arguments
+# pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches
+
 
 from collections.abc import Iterable
 from functools import singledispatch
@@ -25,6 +26,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator, Operator2
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
@@ -47,7 +49,6 @@ from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.composite2 import CompositeOp2
 from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.ops.op_math.pow2 import Pow2
-from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees import flatten
 from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QSVT, ControlledSequence, PrepSelPrep, Select
@@ -108,7 +109,7 @@ def equal(
     >>> qp.equal(prod1, prod2), qp.equal(prod1, prod3)
     (True, False)
 
-    >>> H1 = qp.Hamiltonian([0.5, 0.5], [qp.Z(0) @ qp.Y(1), qp.Y(1) @ qp.Z(0) @ qp.Identity("a")])
+    >>> H1 = qp.Hamiltonian([0.5, 0.5], [qp.Z(0) @ qp.Y(1), qp.Y(1) @ qp.Z(0) @ qp.Identity(3)])
     >>> H2 = qp.Hamiltonian([1], [qp.Z(0) @ qp.Y(1)])
     >>> H3 = qp.Hamiltonian([2], [qp.Z(0) @ qp.Y(1)])
     >>> qp.equal(H1, H2), qp.equal(H1, H3)
@@ -695,7 +696,6 @@ def _equal_paulisentence(
 
 @_equal_dispatch.register(CompositeOp)
 @_equal_dispatch.register(CompositeOp2)
-# pylint: disable=protected-access
 def _equal_prod_and_sum(op1, op2, **kwargs):
     """Determine whether two Prod, Sum or Prod2 objects are equal"""
     if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
@@ -705,8 +705,8 @@ def _equal_prod_and_sum(op1, op2, **kwargs):
         return f"op1 and op2 have different number of operands. Got {len(op1.operands)} and {len(op2.operands)}"
 
     # organizes by wire indices while respecting commutation relations
-    sorted_ops1 = op1._sort(op1.operands)
-    sorted_ops2 = op2._sort(op2.operands)
+    sorted_ops1 = op1._sort(op1.operands)  # pylint: disable=protected-access
+    sorted_ops2 = op2._sort(op2.operands)  # pylint: disable=protected-access
 
     for o1, o2 in zip(sorted_ops1, sorted_ops2, strict=True):
         op_check = _equal(o1, o2, **kwargs)
@@ -720,8 +720,10 @@ def _equal_prod_and_sum(op1, op2, **kwargs):
 def _equal_controlled2(op1: Controlled2, op2: Controlled2, **kwargs):
     """Determine whether two Controlled2 or ControlledOp2 objects are equal"""
 
-    if op1.arithmetic_depth != op2.arithmetic_depth:
-        return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
+    depth1 = getattr(op1, "arithmetic_depth", None)
+    depth2 = getattr(op2, "arithmetic_depth", None)
+    if depth1 is not None and depth2 is not None and depth1 != depth2:
+        return f"op1 and op2 have different arithmetic depths. Got {depth1} and {depth2}"
 
     wire_comparison = _check_wire_value("work_wires", op1.work_wires, op2.work_wires)
     if isinstance(wire_comparison, str):
@@ -806,10 +808,14 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
 @_equal_dispatch.register
 def _equal_controlled_sequence(op1: ControlledSequence, op2: ControlledSequence, **kwargs):
     """Determine whether two ControlledSequences are equal"""
-    if op1.wires != op2.wires:
-        return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
-    if op1.arithmetic_depth != op2.arithmetic_depth:
-        return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
+    control_equal_check = _check_wire_value("control", op1.control, op2.control)
+    if isinstance(control_equal_check, str):
+        return control_equal_check
+
+    depth1 = getattr(op1, "arithmetic_depth", None)
+    depth2 = getattr(op2, "arithmetic_depth", None)
+    if depth1 is not None and depth2 is not None and depth1 != depth2:
+        return f"op1 and op2 have different arithmetic depths. Got {depth1} and {depth2}"
 
     base_equal_check = _equal(op1.base, op2.base, **kwargs)
     if isinstance(base_equal_check, str):

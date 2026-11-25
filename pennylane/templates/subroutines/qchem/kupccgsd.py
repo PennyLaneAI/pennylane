@@ -15,7 +15,9 @@ r"""
 Contains the k-UpCCGSD template.
 """
 
-# pylint: disable-msg=too-many-arguments,protected-access,too-many-positional-arguments
+# pylint: disable=too-many-arguments
+
+
 import copy
 from collections import defaultdict
 from collections.abc import Sequence
@@ -265,6 +267,7 @@ class kUpCCGSD(Operation):
         super().__init__(weights, wires=wires)
 
     def map_wires(self, wire_map: dict):
+        # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
         new_op._hyperparameters["s_wires"] = [
@@ -290,15 +293,8 @@ class kUpCCGSD(Operation):
         }
 
     @staticmethod
-    def compute_decomposition(
-        weights,
-        wires,
-        s_wires,
-        d_wires,
-        k,
-        init_state,
-        delta_sz=None,
-    ):  # pylint: disable=arguments-differ, unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_decomposition(weights, wires, s_wires, d_wires, k, init_state, delta_sz=None):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -309,10 +305,10 @@ class kUpCCGSD(Operation):
 
         Args:
             weights (tensor_like): tensor containing the parameters entering the Z rotation
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
             k (int): number of times UpCCGSD unitary is repeated
-            s_wires (Iterable[Any]): single excitation wires
-            d_wires (Iterable[Any]): double excitation wires
+            s_wires (Iterable[int]): single excitation wires
+            d_wires (Iterable[int]): double excitation wires
             init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
                 HF state.
 
@@ -365,7 +361,7 @@ class kUpCCGSD(Operation):
         return k, len(s_wires) + len(d_wires)
 
 
-def _kupccgsd_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
+def _kupccgsd_standard_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
     resources = defaultdict(int)
     resources[BasisState(Bool[num_wires], Wire[num_wires])] = 1
 
@@ -381,8 +377,8 @@ def _kupccgsd_resources(num_wires: int, k: int, d_wires: list, s_wires: list):
     return resources
 
 
-@register_resources(_kupccgsd_resources)
-def _kupccgsd_decomposition(
+@register_resources(_kupccgsd_standard_resources, name="paired_excitation_layers")
+def _kupccgsd_standard(  # pylint: disable=unused-argument
     weights: list,
     wires: WiresLike,
     s_wires: list,
@@ -390,7 +386,7 @@ def _kupccgsd_decomposition(
     k: int,
     init_state: tuple[int],
     delta_sz: int = None,
-):  # pylint: disable=too-many-arguments, arguments-differ, unused-argument
+):
     BasisState(init_state, wires=wires)
 
     @for_loop(k)
@@ -412,4 +408,4 @@ def _kupccgsd_decomposition(
     layer_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(kUpCCGSD, _kupccgsd_decomposition)
+add_decomps(kUpCCGSD, _kupccgsd_standard)

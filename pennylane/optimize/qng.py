@@ -124,7 +124,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     For VQE/VQE-like problems, the objective function for the optimizer can be
     realized as a :class:`~.QNode` that returns the expectation value of a Hamiltonian.
 
-    >>> dev = qp.device("default.qubit", wires=(0, 1, "aux"))
+    >>> dev = qp.device("default.qubit", wires=(0, 1, 2))
     >>> @qp.qnode(dev)
     ... def circuit(params):
     ...     qp.RX(params[0], wires=0)
@@ -174,7 +174,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         self.metric_tensor = None
         self.lam = lam
 
-    def step_and_cost(
+    def step_and_cost(  # pylint: disable=arguments-differ
         self, qnode, *args, grad_fn=None, recompute_tensor=True, metric_tensor_fn=None, **kwargs
     ):
         """Update the parameter array :math:`x` with one step of the optimizer and return the
@@ -200,7 +200,7 @@ class QNGOptimizer(GradientDescentOptimizer):
             tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
             prior to the step
         """
-        # pylint: disable=arguments-differ
+        self._validate_parameters(args)
         if not isinstance(qnode, QNode) and metric_tensor_fn is None:
             raise ValueError(
                 "The objective function must be encoded as a single QNode for the natural gradient "
@@ -229,8 +229,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         return new_args, forward
 
-    # pylint: disable=arguments-differ
-    def step(
+    def step(  # pylint: disable=arguments-differ
         self, qnode, *args, grad_fn=None, recompute_tensor=True, metric_tensor_fn=None, **kwargs
     ):
         """Update the parameter array :math:`x` with one step of the optimizer.

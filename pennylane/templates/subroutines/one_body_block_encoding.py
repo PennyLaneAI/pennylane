@@ -110,7 +110,7 @@ def _block_encoding_data(op_matrix):
 
     Diagonalizes ``op_matrix`` as :math:`o = V \operatorname{diag}(\mu) V^T` and returns the
     PREP weights :math:`|\mu_p|`, the number of negative eigenvalues, and the orbital-rotation
-    matrix handed to :class:`~.BasisRotation`. The row/column sign fixing keeps
+    matrix handed to :class:`~.BasisRotation`. Negating the first column if needed keeps
     :math:`\operatorname{det} V = +1` so that the Givens decomposition of ``BasisRotation``
     carries no extra phase flip.
 
@@ -127,17 +127,15 @@ def _block_encoding_data(op_matrix):
         ``BasisRotation``
     """
     mat = np.asarray(op_matrix, dtype=float)
-    norbs = mat.shape[0]
 
     mu, vmat = np.linalg.eigh(mat)  # o = vmat diag(mu) vmat.T
 
-    dvec = np.array([(-1.0) ** i for i in range(norbs)])
-    col = dvec if np.linalg.det(vmat) > 0 else np.concatenate([-dvec[:1], dvec[1:]])
-    unitary_matrix = vmat * dvec[:, None] * col[None, :]
+    if np.linalg.det(vmat) < 0:
+        vmat[:, 0] *= -1
 
     absmu = tuple(float(value) for value in np.abs(mu))
     n_neg = int(np.sum(mu < 0))
-    return absmu, n_neg, unitary_matrix
+    return absmu, n_neg, vmat
 
 
 class OneBodyBlockEncoding(Operator2):
@@ -238,6 +236,29 @@ class OneBodyBlockEncoding(Operator2):
     >>> print(np.round(circuit()[0], 3))
     0.25
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.OneBodyBlockEncoding
+            :stacked:
+            :symbols: :math:`K` = ``norbs`` spatial orbitals and :math:`\nu` negative
+                eigenvalues of ``op_matrix``
+            :example: the operator above with ``alias_sampling_nbits=1``, :math:`K=2`, :math:`\nu=1`
+
+            .. decomposition-rule:: alias_sampling_basis_rotation
+                :image: /_static/decomposition_thumbnails/one_body_block_encoding_lcu.svg
+                :where: :math:`\delta = 1` if :math:`\nu > 0` and :math:`\delta = 0` otherwise
+
+                :class:`~.AliasSampling` | :math:`1` | 1
+                :class:`Adjoint(AliasSampling) <.AliasSampling>` | :math:`1` | 1
+                :class:`~.Hadamard` | :math:`4K + 2` | 10
+                :class:`~.BasisRotation` on :math:`K` wires | :math:`4` | 4
+                :class:`~.LeftClassicalComparator` | :math:`\delta` | 1
+                :class:`Adjoint(LeftClassicalComparator) <.LeftClassicalComparator>` | :math:`\delta` | 1
+                :class:`~.Z` | :math:`\delta` | 1
+                :class:`~.QROM` | :math:`1` | 1
+                :class:`~.GlobalPhase` | :math:`1` | 1
+
     """
 
     wire_argnames = ("prep_wires", "system_wires", "work_wires")
@@ -255,7 +276,7 @@ class OneBodyBlockEncoding(Operator2):
         prep_wires: WiresLike,
         system_wires: WiresLike,
         work_wires: WiresLike,
-    ):  # pylint: disable=too-many-arguments
+    ):
         _validate_op_matrix(op_matrix)
         norbs = len(op_matrix)
 
@@ -312,9 +333,9 @@ def _split_prep_wires(prep_wires, norbs):
     return index_wires, spin_wire, garbage_wires
 
 
-def _one_body_block_encoding_resources(
+def _one_body_block_encoding_standard_resources(
     op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires
-):  # pylint: disable=too-many-arguments,unused-argument
+):
     norbs = len(op_matrix)
     absmu, n_neg, _ = _block_encoding_data(op_matrix)
     n_prep, n_work, n_system = len(prep_wires), len(work_wires), len(system_wires)
@@ -349,7 +370,7 @@ def _one_body_block_encoding_resources(
     if n_neg > 0:
         compare = LeftClassicalComparator(
             x_wires=Wire[n_index],
-            L=n_neg,
+            value=n_neg,
             target_wire=Wire[1],
             work_wires=Wire[max(n_index - 1, 0)],
             comparator="<",
@@ -361,10 +382,12 @@ def _one_body_block_encoding_resources(
     return resources
 
 
-@register_resources(_one_body_block_encoding_resources)
-def _one_body_block_encoding_decomp(
+@register_resources(
+    _one_body_block_encoding_standard_resources, name="alias_sampling_basis_rotation"
+)
+def _one_body_block_encoding_standard(
     op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires, **_
-):  # pylint: disable=too-many-arguments
+):
     norbs = len(op_matrix)
     absmu, n_neg, unitary_matrix = _block_encoding_data(op_matrix)
 
@@ -401,7 +424,7 @@ def _one_body_block_encoding_decomp(
         n_index = len(index_wires)
         compare_kwargs = {
             "x_wires": index_wires,
-            "L": n_neg,
+            "value": n_neg,
             "target_wire": work_wires[0],
             "work_wires": work_wires[1:n_index],
             "comparator": "<",
@@ -442,4 +465,4 @@ def _one_body_block_encoding_decomp(
     GlobalPhase(np.pi)
 
 
-add_decomps(OneBodyBlockEncoding, _one_body_block_encoding_decomp)
+add_decomps(OneBodyBlockEncoding, _one_body_block_encoding_standard)

@@ -16,8 +16,6 @@ Unit tests for the ArbitraryStatePreparation template.
 """
 
 import numpy as np
-
-# pylint: disable=too-many-arguments,too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -291,29 +289,6 @@ class TestDecomposition:
 
         assert qp.resource.resources_from_tape(tape).quantum_operations["CNOT"] == n_CNOT
 
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        state = np.array([1 / 2, 1 / 2, 0, 1 / 2, 0, 1 / 2, 0, 0])
-
-        dev = qp.device("default.qubit", wires=3)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.MottonenStatePreparation(state, wires=range(3))
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.MottonenStatePreparation(state, wires=["z", "a", "k"])
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
-
     def test_decomposition_includes_global_phase(self):
         """Test that the decomposition includes the correct global phase."""
         state = np.array([-0.5, 0.2j, 0.3, 0.9j, 0.5, 0.2, 0.3, 0.9])
@@ -366,7 +341,6 @@ class TestDecomposition:
         qp.assert_equal(q[10], qp.GlobalPhase(-np.pi / 8))
 
     @pytest.mark.capture
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_decomposition_capture(self):
         """Tests that the new decomposition works with capture."""
         from jax import numpy as jnp
@@ -443,7 +417,7 @@ class TestInputs:
             qp.MottonenStatePreparation(state_vector, 2)
 
 
-class TestGradient:
+class TestGradient:  # pylint: disable=too-few-public-methods
     """Tests gradients."""
 
     # TODO: Currently the template fails for more elaborate gradient

@@ -15,7 +15,6 @@ r"""
 Contains the quantum-number-preserving GateFabric template.
 """
 
-# pylint: disable=too-many-arguments
 import numpy as np
 from jax import numpy as jnp
 
@@ -242,9 +241,8 @@ class GateFabric(Operation):
         }
 
     @staticmethod
-    def compute_decomposition(
-        weights, wires, init_state, include_pi
-    ):  # pylint: disable=arguments-differ
+    # pylint: disable-next=arguments-differ
+    def compute_decomposition(weights, wires, init_state, include_pi):
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -257,7 +255,7 @@ class GateFabric(Operation):
             weights (tensor_like): Array of weights of shape ``(D, L, 2)``,
                 where ``D`` is the number of gate fabric layers and ``L = N/2-1``
                 is the number of :math:`\hat{Q}(\theta, \phi)` gates per layer with N being the total number of qubits.
-            wires (Any or Iterable[Any]): wires that the operator acts on.
+            wires (int or Iterable[int]): wires that the operator acts on.
             init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
                 in the Jordan-Wigner representation.
             include_pi (boolean): If ``True``, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
@@ -269,8 +267,10 @@ class GateFabric(Operation):
         **Example**
 
         >>> weights = torch.tensor([[[0.3, 1.]]])
-        >>> qp.GateFabric.compute_decomposition(weights, wires=["a", "b", "c", "d"], init_state=[0, 1, 0, 1], include_pi=False)
-        [BasisState([0 1 0 1], wires=['a', 'b', 'c', 'd']), DoubleExcitation(tensor(0.3000), wires=['a', 'b', 'c', 'd']), OrbitalRotation(tensor(1.), wires=['a', 'b', 'c', 'd'])]
+        >>> qp.GateFabric.compute_decomposition(
+        ...     weights, wires=[0, 1, 2, 3], init_state=[0, 1, 0, 1], include_pi=False
+        ... )
+        [BasisState([0 1 0 1], wires=[0, 1, 2, 3]), DoubleExcitation(0.3..., wires=[0, 1, 2, 3]), OrbitalRotation(1.0, wires=[0, 1, 2, 3])]
 
         """
         op_list = []
@@ -320,7 +320,7 @@ class GateFabric(Operation):
         return n_layers, n_wires // 2 - 1, 2
 
 
-def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
+def _gate_fabric_standard_resources(n_layers, num_wires, len_wire_pattern, include_pi):
     rotation_count = 2 * n_layers * len_wire_pattern if include_pi else n_layers * len_wire_pattern
     return {
         BasisState(Bool[num_wires], Wire[num_wires]): 1,
@@ -329,8 +329,8 @@ def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
     }
 
 
-@register_resources(_gate_fabric_resources)
-def _gate_fabric_decomposition(weights, wires, init_state, include_pi):
+@register_resources(_gate_fabric_standard_resources, name="excitation_orbital_layers")
+def _gate_fabric_standard(weights, wires, init_state, include_pi):
     if isinstance(wires, Wires):
         wires = wires.labels
 
@@ -373,4 +373,4 @@ def _gate_fabric_decomposition(weights, wires, init_state, include_pi):
     layers_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(GateFabric, _gate_fabric_decomposition)
+add_decomps(GateFabric, _gate_fabric_standard)

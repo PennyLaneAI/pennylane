@@ -115,7 +115,7 @@ class TestPauliGroupingStrategy:
 
     trivial_ops = [
         [Identity(0), Identity(0), Identity(7)],
-        [Identity("a") @ Identity(1), Identity("b"), Identity("b") @ Identity("c")],
+        [Identity(6) @ Identity(1), Identity(9), Identity(9) @ Identity(11)],
     ]
 
     @pytest.mark.parametrize("observables", trivial_ops)
@@ -171,7 +171,6 @@ class TestPauliGroupingStrategy:
 
         # compute observable and custom indices partitions
         observables_partitioned = groupper.partition_observables()
-        # pylint: disable=protected-access
         indices_partitioned = groupper.idx_partitions_from_graph(observables_indices=custom_indices)
         for group_obs, group_custom_indices in zip(observables_partitioned, indices_partitioned):
             for i, custom_idx in enumerate(group_custom_indices):
@@ -209,18 +208,18 @@ observables_list = [
         qp.prod(PauliX(0), PauliX(1)),
     ],
     [
-        PauliX("a") @ Identity("b"),
-        PauliX("a") @ PauliZ("b"),
-        PauliX("b") @ PauliZ("a"),
-        PauliZ("a") @ PauliZ("b") @ PauliZ("c"),
+        PauliX(6) @ Identity(9),
+        PauliX(6) @ PauliZ(9),
+        PauliX(9) @ PauliZ(6),
+        PauliZ(6) @ PauliZ(9) @ PauliZ(11),
     ],
     [
-        qp.prod(PauliX("a"), Identity("b")),
-        qp.s_prod(0.5, qp.prod(PauliX("a"), PauliZ("b"))),
-        qp.s_prod(0.5, qp.prod(PauliX("b"), PauliZ("a"))),
-        qp.prod(PauliZ("a"), PauliZ("b") @ PauliZ("c")),
+        qp.prod(PauliX(6), Identity(9)),
+        qp.s_prod(0.5, qp.prod(PauliX(6), PauliZ(9))),
+        qp.s_prod(0.5, qp.prod(PauliX(9), PauliZ(6))),
+        qp.prod(PauliZ(6), PauliZ(9) @ PauliZ(11)),
     ],
-    [PauliX([(0, 0)]), PauliZ([(0, 0)])],
+    [PauliX([8]), PauliZ([8])],
 ]
 
 qwc_sols = [
@@ -255,16 +254,16 @@ qwc_sols = [
         [PauliX(wires=[1]) @ PauliX(wires=[0])],
     ],
     [
-        [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
-        [PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
-        [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
+        [PauliX(wires=[6]), PauliX(wires=[6]) @ PauliZ(wires=[9])],
+        [PauliZ(wires=[6]) @ PauliX(wires=[9])],
+        [PauliZ(wires=[6]) @ PauliZ(wires=[9]) @ PauliZ(wires=[11])],
     ],
     [
-        [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
-        [PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
-        [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
+        [PauliX(wires=[6]), PauliX(wires=[6]) @ PauliZ(wires=[9])],
+        [PauliZ(wires=[6]) @ PauliX(wires=[9])],
+        [PauliZ(wires=[6]) @ PauliZ(wires=[9]) @ PauliZ(wires=[11])],
     ],
-    [[PauliX([(0, 0)])], [PauliZ([(0, 0)])]],
+    [[PauliX([8])], [PauliZ([8])]],
 ]
 
 commuting_sols = [
@@ -299,16 +298,16 @@ commuting_sols = [
         [PauliX(wires=[1]) @ PauliX(wires=[0])],
     ],
     [
-        [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
-        [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
-        [PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
+        [PauliZ(wires=[6]) @ PauliZ(wires=[9]) @ PauliZ(wires=[11])],
+        [PauliX(wires=[6]), PauliX(wires=[6]) @ PauliZ(wires=[9])],
+        [PauliZ(wires=[6]) @ PauliX(wires=[9])],
     ],
     [
-        [PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"])],
-        [PauliX(wires=["a"]), PauliX(wires=["a"]) @ PauliZ(wires=["b"])],
-        [PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
+        [PauliZ(wires=[6]) @ PauliZ(wires=[9]) @ PauliZ(wires=[11])],
+        [PauliX(wires=[6]), PauliX(wires=[6]) @ PauliZ(wires=[9])],
+        [PauliZ(wires=[6]) @ PauliX(wires=[9])],
     ],
-    [[PauliX([(0, 0)])], [PauliZ([(0, 0)])]],
+    [[PauliX([8])], [PauliZ([8])]],
 ]
 
 anticommuting_sols = [
@@ -344,19 +343,19 @@ anticommuting_sols = [
     ],
     [
         [
-            PauliX(wires=["a"]) @ PauliZ(wires=["b"]),
-            PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"]),
+            PauliX(wires=[6]) @ PauliZ(wires=[9]),
+            PauliZ(wires=[6]) @ PauliZ(wires=[9]) @ PauliZ(wires=[11]),
         ],
-        [PauliX(wires=["a"]), PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
+        [PauliX(wires=[6]), PauliZ(wires=[6]) @ PauliX(wires=[9])],
     ],
     [
         [
-            PauliX(wires=["a"]) @ PauliZ(wires=["b"]),
-            PauliZ(wires=["a"]) @ PauliZ(wires=["b"]) @ PauliZ(wires=["c"]),
+            PauliX(wires=[6]) @ PauliZ(wires=[9]),
+            PauliZ(wires=[6]) @ PauliZ(wires=[9]) @ PauliZ(wires=[11]),
         ],
-        [PauliX(wires=["a"]), PauliZ(wires=["a"]) @ PauliX(wires=["b"])],
+        [PauliX(wires=[6]), PauliZ(wires=[6]) @ PauliX(wires=[9])],
     ],
-    [[PauliX([(0, 0)]), PauliZ([(0, 0)])]],
+    [[PauliX([8]), PauliZ([8])]],
 ]
 
 com_tuples = list(zip(observables_list, commuting_sols))
@@ -440,16 +439,15 @@ class TestGroupObservables:
     def test_binary_repr_custom_wire_map(self):
         """Tests that the ``binary_repr`` method sets a custom
         wire map correctly."""
-        # pylint: disable=protected-access
 
-        observables = [Identity("alice"), Identity("bob"), Identity("charlie")]
+        observables = [Identity(8), Identity(10), Identity(12)]
         grouping_instance = PauliGroupingStrategy(observables, "anticommuting")
 
         n_qubits = 3
-        wire_map = {"alice": 1, "bob": 0, "charlie": 2}
+        wire_map = {8: 1, 10: 0, 12: 2}
         _ = grouping_instance.binary_repr(n_qubits, wire_map)
 
-        assert grouping_instance._wire_map == wire_map
+        assert grouping_instance._wire_map == wire_map  # pylint: disable=protected-access
 
     def test_return_list_coefficients(self):
         """Tests that if the coefficients are given as a list, the groups

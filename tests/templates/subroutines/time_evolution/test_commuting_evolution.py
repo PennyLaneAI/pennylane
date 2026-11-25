@@ -15,7 +15,6 @@
 Tests for the CommutingEvolution template.
 """
 
-# pylint: disable=too-few-public-methods
 import pytest
 from scipy.linalg import expm
 
@@ -122,7 +121,7 @@ def test_captured_decomposition_does_not_add_hamiltonian_to_tape():
     """The reconstructed Hamiltonian is consumed as an input, not collected separately."""
     hamiltonian = qp.Hamiltonian([1.0, 2.0], [qp.X(0), qp.Y(0)])
 
-    rule = qp.list_decomps(qp.CommutingEvolution)["_commuting_evolution_decomposition"]
+    rule = qp.list_decomps(qp.CommutingEvolution)["to_approx_time_evolution"]
 
     def decomposition(time):
         rule(time, wires=hamiltonian.wires, hamiltonian=hamiltonian)
@@ -194,7 +193,7 @@ def test_jax_jit():
     assert qp.math.allclose(circuit(1), jit_circuit(1))
 
 
-class TestInputs:
+class TestInputs:  # pylint: disable=too-few-public-methods
     """Tests for input validation of `CommutingEvolution`."""
 
     def test_invalid_hamiltonian(self):
@@ -255,13 +254,11 @@ class TestGradients:
 
         x_vals = np.linspace(-np.pi, np.pi, num=10)
 
-        # pylint: disable=not-callable
         grads_finite_diff = [qp.gradients.finite_diff(circuit)(x) for x in x_vals]
         grads_param_shift = [qp.gradients.param_shift(circuit)(x) for x in x_vals]
 
         assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
 
-    # pylint: disable=not-callable
     def test_four_term_case(self):
         """Tests the parameter shift rules for `CommutingEvolution` equal the
         finite difference result for a four term shift rule case."""
@@ -287,7 +284,6 @@ class TestGradients:
 
         assert all(np.isclose(grads_finite_diff, grads_param_shift, atol=1e-4))
 
-    # pylint: disable=not-callable
     def test_differentiable_hamiltonian(self):
         """Tests correct gradients are produced when the Hamiltonian is differentiable."""
 

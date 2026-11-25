@@ -15,7 +15,9 @@
 Tests for capturing nested plxpr.
 """
 
-# pylint: disable=protected-access
+# pylint: disable=wrong-import-position
+
+
 import pytest
 
 import pennylane as qp
@@ -24,7 +26,6 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
-# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import adjoint_transform_prim, ctrl_transform_prim, operator_p
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.testing import assert_eqn_matches_op
@@ -62,19 +63,17 @@ class TestAdjointQfunc:
         assert nested_jaxpr.eqns[0].params["op_cls"] is qp.PauliRot
         assert nested_jaxpr.eqns[0].params["pauli_word"][0] == ("XY",)
 
-        assert plxpr.eqns[0].params["lazy"] is True
-
         with qp.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1.2)
 
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.adjoint(qp.PauliRot(1.2, "XY", wires=(0, 1))))
 
-    def test_adjoint_qfunc_eager(self):
-        """Test eager execution can be captured by the qfunc transform."""
+    def test_adjoint_qfunc_rot(self):
+        """Test that a captured callable preserves its symbolic adjoint."""
 
         def workflow(x, y, z):
-            qp.adjoint(qp.Rot, lazy=False)(x, y, z, 0)
+            qp.adjoint(qp.Rot)(x, y, z, 0)
 
         plxpr = jax.make_jaxpr(workflow)(0.5, 0.7, 0.8)
 
@@ -84,20 +83,17 @@ class TestAdjointQfunc:
         nested_jaxpr = plxpr.eqns[0].params["jaxpr"]
         assert_eqn_matches_op(nested_jaxpr.eqns[0], qp.Rot)
 
-        assert plxpr.eqns[0].params["lazy"] is False
-
         with qp.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, -1.0, -2.0, -3.0)
 
         assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.Rot(3.0, 2.0, 1.0, 0))
+        qp.assert_equal(q.queue[0], qp.adjoint(qp.Rot(-1.0, -2.0, -3.0, 0)))
 
     @pytest.mark.parametrize("eqn_out", (None, 2))
     def test_multiple_ops_and_classical_processing(self, eqn_out):
         """Tests applying the adjoint transform with multiple operations and classical processing."""
 
-        # pylint: disable=inconsistent-return-statements
-        def func(x, w):
+        def func(x, w):  # pylint: disable=inconsistent-return-statements
             qp.X(w)
             qp.IsingXX(2 * x + 1, (w, w + 1))
             if eqn_out is None:
@@ -123,7 +119,6 @@ class TestAdjointQfunc:
         assert len(q.queue) == 2
 
         assert plxpr.eqns[0].primitive == adjoint_transform_prim
-        assert plxpr.eqns[0].params["lazy"] is True
 
         inner_plxpr = plxpr.eqns[0].params["jaxpr"]
         assert len(inner_plxpr.eqns) == 5
@@ -293,6 +288,18 @@ class TestAdjointDynamicShapes:
 class TestCtrlQfunc:
     """Tests for the ctrl primitive."""
 
+    def test_empty_controls(self):
+        """Empty controls preserve the captured function and its return value."""
+
+        def qfunc(angle):
+            qp.RX(angle, wires=0)
+            return angle
+
+        closed = jax.make_jaxpr(qp.ctrl(qfunc, control=[]))(0.123)
+        assert len(closed.eqns) == 1
+        assert_eqn_matches_op(closed.eqns[0], qp.RX)
+        assert closed.jaxpr.outvars == [closed.jaxpr.invars[0]]
+
     def test_lazy_dispatch_ctrl(self):
         """Test that the dispatch to capture happens at call time."""
 
@@ -326,7 +333,7 @@ class TestCtrlQfunc:
         assert plxpr.eqns[0].primitive == ctrl_transform_prim
         assert plxpr.eqns[0].invars[-1].val
         assert plxpr.eqns[0].params["n_control"] == 1
-        assert plxpr.eqns[0].params["work_wires"] is None
+        assert plxpr.eqns[0].params["n_work_wires"] == 0
         assert plxpr.eqns[0].params["n_consts"] == 0
 
     def test_dynamic_control_wires(self):
@@ -341,20 +348,21 @@ class TestCtrlQfunc:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 1, 2, 3)
 
         assert out == []
-        expected = qp.Toffoli(wires=(2, 3, 1))
+        expected = qp.ops.ControlledOp2(qp.X(1), control_wires=[2, 3])
         qp.assert_equal(q.queue[0], expected)
         assert len(q) == 1
 
         assert plxpr.eqns[0].primitive == ctrl_transform_prim
         assert [value.val for value in plxpr.eqns[0].invars[-2:]] == [True, True]
         assert plxpr.eqns[0].params["n_control"] == 2
-        assert plxpr.eqns[0].params["work_wires"] is None
+        assert plxpr.eqns[0].params["n_work_wires"] == 0
 
-    def test_work_wires(self):
-        """Test that work wires can be provided."""
+    @pytest.mark.parametrize("work_wires", [None, [], 3, [3], [3, 4]])
+    def test_work_wires(self, work_wires):
+        """Concrete work wires are operands and preserve their labels when evaluated."""
 
         def f(w):
-            return qp.ctrl(qp.S, (1, 2), work_wires="aux")(w)
+            return qp.ctrl(qp.S, (1, 2), work_wires=work_wires)(w)
 
         plxpr = jax.make_jaxpr(f)(6)
 
@@ -362,18 +370,132 @@ class TestCtrlQfunc:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 5)
 
         assert out == []
-        expected = qp.ctrl(qp.S(5), (1, 2), work_wires="aux")
+        expected = qp.ctrl(qp.S(5), (1, 2), work_wires=work_wires)
         qp.assert_equal(q.queue[0], expected)
         assert len(q) == 1
 
-        assert plxpr.eqns[0].params["work_wires"] == qp.wires.Wires(["aux"])
+        eqn = plxpr.eqns[0]
+        expected_wires = [] if work_wires is None else list(qp.wires.Wires(work_wires))
+        assert "work_wires" not in eqn.params
+        assert eqn.params["n_work_wires"] == len(expected_wires)
+        assert [var.val for var in eqn.invars[5:]] == expected_wires
+        tape = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, 5)
+        qp.assert_equal(tape[0], expected)
+
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    @pytest.mark.parametrize("container", [list, tuple, qp.wires.Wires, jax.numpy.array])
+    def test_dynamic_work_wires(self, work_wire_type, container):
+        """Work-wire operands survive tracing and use the labels supplied at evaluation."""
+
+        def circuit(theta, target, control, value, work):
+            qp.ctrl(
+                qp.RX,
+                control=[control, 1],
+                control_values=[value, True],
+                work_wires=container([work, 4]),
+                work_wire_type=work_wire_type,
+            )(theta, target)
+
+        with jax.checking_leaks():
+            plxpr = jax.make_jaxpr(circuit)(0.2, 0, 2, True, 3)
+
+        eqn = plxpr.eqns[-1]
+        assert eqn.primitive == ctrl_transform_prim
+        assert "work_wires" not in eqn.params
+        assert eqn.params["n_work_wires"] == 2
+        assert eqn.params["work_wire_type"] == work_wire_type
+        if container is not jax.numpy.array:
+            assert eqn.invars[-2] == plxpr.jaxpr.invars[-1]
+            assert eqn.invars[-1].val == 4
+
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts, 0.7, 5, 6, False, 7)
+        (op,) = collector.state["ops"]
+
+        expected = qp.ctrl(
+            qp.RX(0.7, 5),
+            control=[6, 1],
+            control_values=[False, True],
+            work_wires=[7, 4],
+            work_wire_type=work_wire_type,
+        )
+        assert isinstance(op, qp.ops.Controlled2)
+        qp.assert_equal(op, expected)
+        tape = qp.testing.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, 0.7, 5, 6, False, 7)
+        qp.assert_equal(tape[0], expected)
+
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_nested_dynamic_work_wires(self, work_wire_type):
+        """A nested callable control can capture a work wire from its enclosing trace."""
+
+        def circuit(theta, work):
+            def body(angle):
+                qp.ctrl(qp.RX, [1, 2], work_wires=[work], work_wire_type=work_wire_type)(angle, 0)
+
+            qp.ctrl(body, 3)(theta)
+
+        with jax.checking_leaks():
+            plxpr = jax.make_jaxpr(circuit)(0.2, 4)
+
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts, 0.7, 5)
+        (op,) = collector.state["ops"]
+
+        expected = qp.ctrl(qp.RX(0.7, 0), [3, 1, 2], work_wires=[5], work_wire_type=work_wire_type)
+        qp.assert_equal(op, expected)
+
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_controlled2_rule_forwards_work_wires(self, work_wire_type):
+        """Controlled2 rule arguments can be forwarded to a callable control without patching."""
+
+        @qp.register_resources(
+            {
+                qp.ctrl(
+                    qp.RX(qp.typing.Float, qp.typing.Wire[1]),
+                    qp.typing.Wire[2],
+                    work_wires=qp.typing.Wire[1],
+                    work_wire_type=work_wire_type,
+                ): 1
+            },
+            name="rule",
+        )
+        def rule(base, control_wires, control_values, work_wires, work_wire_type):
+            qp.ctrl(
+                qp.RX,
+                control=control_wires,
+                control_values=control_values,
+                work_wires=work_wires,
+                work_wire_type=work_wire_type,
+            )(*base.data, wires=base.wires)
+
+        def circuit(theta, work):
+            with qp.capture.pause():
+                op = qp.ops.ControlledOp2(
+                    qp.RX(theta, 0), [1, 2], work_wires=[work], work_wire_type=work_wire_type
+                )
+            rule(**op.arguments)
+
+        with jax.checking_leaks():
+            plxpr = jax.make_jaxpr(circuit)(0.2, 3)
+
+        eqn = plxpr.eqns[-1]
+        assert eqn.primitive == ctrl_transform_prim
+        assert eqn.params["n_work_wires"] == 1
+        assert "work_wires" not in eqn.params
+        assert eqn.invars[-1] == plxpr.jaxpr.invars[-1]
+
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts, 0.7, 4)
+        (op,) = collector.state["ops"]
+        expected = qp.ctrl(qp.RX(0.7, 0), [1, 2], work_wires=[4], work_wire_type=work_wire_type)
+        qp.assert_equal(op, expected)
 
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     def test_work_wire_type(self, work_wire_type):
         """Test that work_wire_type is forwarded to each inner operator."""
 
         def f(w):
-            return qp.ctrl(qp.S, (1, 2), work_wires="aux", work_wire_type=work_wire_type)(w)
+            return qp.ctrl(qp.S, (1, 2), work_wires=[3], work_wire_type=work_wire_type)(w)
 
         plxpr = jax.make_jaxpr(f)(6)
 
@@ -381,7 +503,7 @@ class TestCtrlQfunc:
             out = jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 5)
 
         assert out == []
-        expected = qp.ctrl(qp.S(5), (1, 2), work_wires="aux", work_wire_type=work_wire_type)
+        expected = qp.ctrl(qp.S(5), (1, 2), work_wires=[3], work_wire_type=work_wire_type)
         qp.assert_equal(q.queue[0], expected)
         assert q.queue[0].work_wire_type == work_wire_type
         assert plxpr.eqns[0].params["work_wire_type"] == work_wire_type
@@ -500,7 +622,7 @@ class TestCtrlQfunc:
         assert eqn.invars[-1].val
         assert eqn.params["n_consts"] == 0
         assert eqn.params["n_control"] == 1
-        assert eqn.params["work_wires"] is None
+        assert eqn.params["n_work_wires"] == 0
 
         assert len(eqn.params["jaxpr"].eqns) == 5 + include_s
 

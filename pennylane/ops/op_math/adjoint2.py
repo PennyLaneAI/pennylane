@@ -23,11 +23,13 @@ from pennylane._class_property import classproperty
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.operator.operator2 import operator_p  # tach-ignore
+from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import remove_from_program
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
     _decomp_contains_mcm,
+    _get_registered_decomps,
     _list_decomps,
     get_fixed_decomp,
     list_decomps,
@@ -76,7 +78,7 @@ class Adjoint2(SymbolicOp2):
             return None
         if not self._pauli_rep:
             rep = {pw: math.conjugate(c) for pw, c in self.base.pauli_rep.items()}
-            self._pauli_rep = qp.pauli.PauliSentence(rep)
+            self._pauli_rep = PauliSentence(rep)
         return self._pauli_rep
 
     def __repr__(self) -> str:
@@ -168,8 +170,7 @@ class Adjoint2(SymbolicOp2):
         assert len(eqns) <= 1, f"Expected at most one plxpr equation for {self.base}."
 
         if len(eqns) == 0:
-            # pylint: disable=protected-access
-            self.base._bind_primitive()
+            self.base._bind_primitive()  # pylint: disable=protected-access
             if self.base.tracer is None:
                 # If the base's tracer is `None` after explicitly re-binding the primitive,
                 # it means we're not in a tracing context, so we don't need to (and cannot)
@@ -205,10 +206,10 @@ def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
 
     # special case of cancelling nested adjoints.
     if isinstance(abs_op.base, Adjoint2):
-        return DecompCollection([cancel_adjoint])
+        return DecompCollection([_adjoint_cancel])
 
     # Custom decomposition rules registered specifically to the adjoint operator
-    custom_rules = _list_decomps.dispatch(object)(abs_op)
+    custom_rules = _get_registered_decomps(to_name(abs_op))
 
     # Shortcut that ignores general rules if an operator is self-adjoint
     if self_adjoint in custom_rules:
@@ -240,8 +241,8 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
         return {_adjoint_abstract(op): count for op, count in base_gates.items()}
 
     def _wrap_work_wire_spec(base_rule):
-
         # pylint: disable=protected-access
+
         if isinstance(base_rule._work_wire_spec, dict):
             return base_rule._work_wire_spec
 
@@ -252,7 +253,6 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
 
     base_source = base_rule._source
 
-    # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
@@ -261,9 +261,8 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
         name=f"adjoint({base_rule.name})",
     )
     def _impl(base):
-        # pylint: disable=protected-access
         non_traced_args, traced_args = get_traced_and_non_traced_args(base)
-        impl = partial(base_rule._impl, **non_traced_args)
+        impl = partial(base_rule._impl, **non_traced_args)  # pylint: disable=protected-access
         qp.adjoint(impl)(**traced_args)
 
     _impl._source = (
@@ -282,25 +281,25 @@ def _adjoint_abstract(op: AbstractOperatorLike | type[Operator]):
     return qp.adjoint(op)
 
 
-def _cancel_adjoint_resources(base):
+def _adjoint_cancel_resources(base):
     assert isinstance(base, Adjoint2)
     inner_base = base.base
     return {inner_base: 1}
 
 
-@register_resources(_cancel_adjoint_resources)
-def cancel_adjoint(base):
+@register_resources(_adjoint_cancel_resources, name="cancel")
+def _adjoint_cancel(base):
     """Decompose the adjoint of the adjoint of an operator."""
     assert isinstance(base, Adjoint2)
     type(base.base)(**base.base.arguments)
 
 
-def _adjoint_rotation_resource(base):
+def _adjoint_negate_angle_resources(base):
     return {abstractify(base): 1}
 
 
-@register_resources(_adjoint_rotation_resource)
-def adjoint_rotation(base):
+@register_resources(_adjoint_negate_angle_resources, name="negate_angle")
+def _adjoint_negate_angle(base):
     """Decompose the adjoint of a rotation operator by inverting the angle."""
     # A rotation should only have 1 dynamic parameter
     assert len(base.dynamic_argnames) == 1

@@ -65,6 +65,32 @@ class MultiplexerStatePreparation(Operator2):
         :class:`~.SelectPauliRot` for a description of the main building blocks used to
         implement this operation.
 
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.MultiplexerStatePreparation
+            :stacked:
+            :symbols: :math:`n` wires
+            :example: :math:`n=3`
+
+            .. decomposition-rule:: real
+                :image: /_static/decomposition_thumbnails/multiplexer_state_prep_real.svg
+                :requires: a real-valued ``state_vector``
+                :where: one :class:`~.SelectPauliRot` with :math:`k` control wires for each
+                    :math:`k = 0, \dots, n-1`
+
+                :class:`~.SelectPauliRot` (:math:`R_Y`) | :math:`n` | 3
+
+            .. decomposition-rule:: complex
+                :image: /_static/decomposition_thumbnails/multiplexer_state_prep_complex.svg
+                :requires: a complex-valued ``state_vector``
+                :where: one :class:`~.SelectPauliRot` with :math:`k` control wires for each
+                    :math:`k = 0, \dots, n-1`. The :class:`~.DiagonalQubitUnitary` on all
+                    :math:`n` wires is skipped if all phases vanish
+
+                :class:`~.SelectPauliRot` (:math:`R_Y`) | :math:`n` | 3
+                :class:`~.DiagonalQubitUnitary` | :math:`1` | 1
+
     """
 
     dynamic_argnames = ("state_vector",)
@@ -74,7 +100,6 @@ class MultiplexerStatePreparation(Operator2):
     # a MultiplexerStatePreparation operator with a real-valued state vector to decompose
     # differently than a complex-valued one.
     arg_specs = {"wires": Wire[-1]}
-    wire_sizes = (None,)
 
     def __init__(self, state_vector, wires, check=False):
 
@@ -117,22 +142,22 @@ def _select_pauli_rots(amplitudes, wires):
         qp.SelectPauliRot(alpha_y_k, target_wire=wires[k], control_wires=wires[:k], rot_axis="Y")
 
 
-# pylint: disable=unused-argument
-def _real_multiplexer_state_prep_resources(state_vector, wires, check=False) -> dict:
-    r"""Computes the resources of '_real_multiplexer_state_prep_decomposition'."""
+# pylint: disable-next=unused-argument
+def _multiplexer_state_prep_real_resources(state_vector, wires, check=False) -> dict:
+    r"""Computes the resources of 'real'."""
     return _select_pauli_rot_resources(len(wires))
 
 
 @register_condition(lambda state_vector, **_: not math.is_complex_dtype(state_vector))
-@register_resources(_real_multiplexer_state_prep_resources)
-def _real_multiplexer_state_prep_decomposition(state_vector, wires, **_):
+@register_resources(_multiplexer_state_prep_real_resources, name="real")
+def _multiplexer_state_prep_real(state_vector, wires, **_):
     r"""Decomposition of MultiplexerStatePreparation for a real-valued state vector."""
     _select_pauli_rots(state_vector, wires)
 
 
-# pylint: disable=unused-argument
-def _complex_multiplexer_state_prep_resources(state_vector, wires, check=False) -> dict:
-    r"""Upper bound on the gates emitted by '_complex_multiplexer_state_prep_decomposition'.
+# pylint: disable-next=unused-argument
+def _multiplexer_state_prep_complex_resources(state_vector, wires, check=False) -> dict:
+    r"""Upper bound on the gates emitted by 'complex'.
     The ``DiagonalQubitUnitary`` is skipped if the state is (close to) real-valued or all
     phases are zero."""
     num_wires = len(wires)
@@ -142,8 +167,8 @@ def _complex_multiplexer_state_prep_resources(state_vector, wires, check=False) 
 
 
 @register_condition(lambda state_vector, **_: math.is_complex_dtype(state_vector))
-@register_resources(_complex_multiplexer_state_prep_resources, exact=False)
-def _complex_multiplexer_state_prep_decomposition(state_vector, wires, **_):
+@register_resources(_multiplexer_state_prep_complex_resources, exact=False, name="complex")
+def _multiplexer_state_prep_complex(state_vector, wires, **_):
     r"""Decomposition of MultiplexerStatePreparation for a complex-valued state vector."""
 
     # A complex state vector that is (close to) real-valued can be prepared from its signed
@@ -161,6 +186,6 @@ def _complex_multiplexer_state_prep_decomposition(state_vector, wires, **_):
 
 add_decomps(
     MultiplexerStatePreparation,
-    _real_multiplexer_state_prep_decomposition,
-    _complex_multiplexer_state_prep_decomposition,
+    _multiplexer_state_prep_real,
+    _multiplexer_state_prep_complex,
 )

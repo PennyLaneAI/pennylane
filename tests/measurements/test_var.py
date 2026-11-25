@@ -51,9 +51,7 @@ class TestVar:
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
-    def test_observable_is_measurement_value(
-        self, shots, phi, tol, tol_stochastic
-    ):  # pylint: disable=too-many-arguments
+    def test_observable_is_measurement_value(self, shots, phi, tol, tol_stochastic):
         """Test that variances for mid-circuit measurement values
         are correct for a single measurement value."""
         dev = qp.device("default.qubit", wires=2)
@@ -73,9 +71,7 @@ class TestVar:
 
     @pytest.mark.parametrize("shots", [None, 5555, [5555, 5555]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
-    def test_observable_is_composite_measurement_value(
-        self, shots, phi, tol, tol_stochastic, seed
-    ):  # pylint: disable=too-many-arguments
+    def test_observable_is_composite_measurement_value(self, shots, phi, tol, tol_stochastic, seed):
         """Test that expectation values for mid-circuit measurement values
         are correct for a composite measurement value."""
         dev = qp.device("default.qubit", seed=seed)
@@ -146,7 +142,6 @@ class TestVar:
     def test_shape(self, obs):
         """Test that the shape is correct."""
         res = qp.var(obs)
-        # pylint: disable=use-implicit-booleaness-not-comparison
         assert res.shape(None, 1) == ()
         assert res.shape(100, 1) == ()
 
@@ -169,20 +164,20 @@ class TestVar:
 
     def test_permuted_wires(self):
         """Test that the variance of an operator with permuted wires is the same."""
-        obs = qp.prod(qp.PauliZ(8), qp.s_prod(2, qp.PauliZ(10)), qp.s_prod(3, qp.PauliZ("h")))
-        obs_2 = qp.prod(qp.s_prod(3, qp.PauliZ("h")), qp.PauliZ(8), qp.s_prod(2, qp.PauliZ(10)))
+        obs = qp.prod(qp.PauliZ(8), qp.s_prod(2, qp.PauliZ(10)), qp.s_prod(3, qp.PauliZ(5)))
+        obs_2 = qp.prod(qp.s_prod(3, qp.PauliZ(5)), qp.PauliZ(8), qp.s_prod(2, qp.PauliZ(10)))
 
-        dev = qp.device("default.qubit", wires=["h", 8, 10])
+        dev = qp.device("default.qubit", wires=[5, 8, 10])
 
         @qp.qnode(dev)
         def circuit():
-            qp.RX(1.23, wires=["h"])
+            qp.RX(1.23, wires=[5])
             qp.RY(2.34, wires=[8])
             return qp.var(obs)
 
         @qp.qnode(dev)
         def circuit2():
-            qp.RX(1.23, wires=["h"])
+            qp.RX(1.23, wires=[5])
             qp.RY(2.34, wires=[8])
             return qp.var(obs_2)
 

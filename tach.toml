@@ -90,6 +90,16 @@ expose = ["MeasurementProcess", "StateMeasurement", "SampleMeasurement", "Measur
 from = ["pennylane.core.measurements"]
 
 [[modules]]
+path = "pennylane.core.pauli"
+layer = "core"
+depends_on = ["pennylane.math", "pennylane.typing", "pennylane.wires", "pennylane.exceptions"]
+cannot_depend_on = ["pennylane", "pennylane.ops", "pennylane.pauli", "pennylane.core.operator", "pennylane.ftqc", "pennylane.labs"]
+
+[[interfaces]]
+expose = ["PauliWord", "PauliSentence"]
+from = ["pennylane.core.pauli"]
+
+[[modules]]
 path = "pennylane.core.shots"
 layer = "core"
 depends_on = ["pennylane.math"]
@@ -135,7 +145,7 @@ depends_on = ["pennylane.capture", "pennylane.math", "pennylane.core.apply", "pe
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[interfaces]]
-expose = ["transform", "Transform", "BoundTransform", "CompilePipeline"]
+expose = ["transform", "Transform", "BoundTransform", "CompilePipeline", "compile_pipeline.DEVICE_PREPROCESSING"]
 from = ["pennylane.core.transforms"]
 
 [[modules]]
@@ -182,12 +192,6 @@ layer = "core"
 
 [[modules]]
 path = "pennylane.compiler"
-depends_on = []
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-layer = "core"
-
-[[modules]]
-path = "pennylane.boolean_fn"
 depends_on = []
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
@@ -333,11 +337,6 @@ layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.noise"
-layer = "tertiary"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
 path = "pennylane.debugging"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
@@ -371,7 +370,7 @@ path = "pennylane.core.operator"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[interfaces]]
-expose = ["Operator", "Operator1", "Operator2", "Operation", "Channel", "StatePrepBase", "StatePrepBase2", "abstractify"]
+expose = ["Operator", "Operator1", "Operator2", "Operation", "Channel", "StatePrepBase", "StatePrepBase2", "abstractify", "get_op_class_by_name"]
 from = ["pennylane.core.operator"]
 
 [[modules]]
@@ -398,6 +397,11 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 [[modules]]
 path = "pennylane.pauli"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+
+[[modules]]
+path = "pennylane.pauli.pauli_arithmetic"
+depends_on = ["pennylane.core.pauli"]
+cannot_depend_on = ["pennylane", "pennylane.ops", "pennylane.core.operator"]
 
 [[modules]]
 path = "pennylane.resource"

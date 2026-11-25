@@ -87,6 +87,22 @@ class IQPEmbedding(Operator2):
         ValueError: if inputs do not have the correct format
 
     .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.IQPEmbedding
+            :stacked:
+            :symbols: :math:`n` wires, :math:`r` repetitions (``n_repeats``) and :math:`K`
+                entanglers (``len(pattern)``, :math:`n(n-1)/2` by default)
+            :example: :math:`n=3`, :math:`r=1`, default ``pattern`` (:math:`K = \tfrac{n(n-1)}{2} = 3`)
+
+            .. decomposition-rule:: to_h_rz_multirz
+                :image: /_static/decomposition_thumbnails/iqp_embedding_multirz.svg
+
+                :class:`~.Hadamard` | :math:`rn` | 3
+                :class:`~.RZ` | :math:`rn` | 3
+                :class:`~.MultiRZ` on 2 wires | :math:`rK` | 3
+
+    .. details::
         :title: Usage Details
 
         A typical usage example of the template is the following:
@@ -124,7 +140,7 @@ class IQPEmbedding(Operator2):
         A custom entangler pattern can be used by specifying the ``pattern`` argument. A pattern has to be
         a nested list of dimension ``(K, 2)``, where ``K`` is the number of entanglers to apply.
         Each pair contains indices into ``wires``, not wire labels. For example, with
-        ``wires=["z", "a", "k"]``, ``pattern=[[0, 2]]`` entangles ``"z"`` and ``"k"``.
+        ``wires=[4, 5, 6]``, ``pattern=[[0, 2]]`` entangles ``4`` and ``6``.
 
         .. code-block:: python
 
@@ -202,8 +218,8 @@ class IQPEmbedding(Operator2):
         super().__init__(features, wires, n_repeats, pattern)
 
 
-# pylint: disable=unused-argument
-def _iqp_embedding_resources(features, wires, n_repeats, pattern):
+# pylint: disable-next=unused-argument
+def _iqp_embedding_standard_resources(features, wires, n_repeats, pattern):
     return {
         RZ: n_repeats * len(wires),
         H: n_repeats * len(wires),
@@ -211,8 +227,8 @@ def _iqp_embedding_resources(features, wires, n_repeats, pattern):
     }
 
 
-@register_resources(_iqp_embedding_resources, exact=False)
-def _iqp_embedding_decomposition(features, wires: WiresLike, n_repeats, pattern):
+@register_resources(_iqp_embedding_standard_resources, exact=False, name="to_h_rz_multirz")
+def _iqp_embedding_standard(features, wires: WiresLike, n_repeats, pattern):
 
     if capture.enabled() or compiler.active():
         wires = math.array(wires, like="jax")
@@ -240,4 +256,4 @@ def _iqp_embedding_decomposition(features, wires: WiresLike, n_repeats, pattern)
     outer_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(IQPEmbedding, _iqp_embedding_decomposition)
+add_decomps(IQPEmbedding, _iqp_embedding_standard)

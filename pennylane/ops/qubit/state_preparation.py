@@ -17,8 +17,6 @@ with preparing a certain state on the device.
 """
 
 from collections.abc import Sequence
-
-# pylint: disable=too-many-branches,arguments-differ
 from warnings import warn
 
 import numpy as np
@@ -159,13 +157,13 @@ class BasisState(StatePrepBase2):
         return math.convert_like(ket, prep_vals)
 
 
-def _basis_state_decomp_resources(state, wires):  # pylint: disable=unused-argument
+def _basis_state_standard_resources(state, wires):  # pylint: disable=unused-argument
     num_wires = len(wires)
     return {qp.X: num_wires - num_wires // 2}  # Estimate 50% of wires (rounded up) to get flipped
 
 
-@register_resources(_basis_state_decomp_resources, exact=False)
-def _basis_state_decomp(state, wires):
+@register_resources(_basis_state_standard_resources, exact=False, name="to_x")
+def _basis_state_standard(state, wires):
     if qp.capture.enabled() or qp.compiler.active():
         # This branch makes sure that state and wires are cast to objects into which
         # a traced loop index is allowed to index (if they aren't already traced)
@@ -179,7 +177,7 @@ def _basis_state_decomp(state, wires):
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(BasisState, _basis_state_decomp)
+add_decomps(BasisState, _basis_state_standard)
 
 
 class StatePrep(StatePrepBase):
@@ -322,7 +320,7 @@ class StatePrep(StatePrepBase):
     """int: Number of dimensions per trainable parameter of the operator."""
 
     @classmethod
-    def _primitive_bind_call(cls, state, wires, **kwargs):
+    def _primitive_bind_call(cls, state, wires, **kwargs):  # pylint: disable=arguments-differ
         if isinstance(state, (tuple, list)):
             if any(qp.math.is_tracer(x) for x in state):
                 state = qp.math.asarray(state, like="jax")
@@ -330,7 +328,6 @@ class StatePrep(StatePrepBase):
                 state = qp.math.asarray(state)
         return super()._primitive_bind_call(state, wires, **kwargs)
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         state: TensorLike | csr_matrix,
@@ -365,8 +362,8 @@ class StatePrep(StatePrepBase):
         else:
             super()._check_batching()
 
-    # pylint: disable=unused-argument
     @staticmethod
+    # pylint: disable-next=unused-argument,arguments-differ
     def compute_decomposition(state: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
@@ -432,6 +429,7 @@ class StatePrep(StatePrepBase):
         return math.transpose(op_vector, transpose_axes)
 
     @staticmethod
+    # pylint: disable-next=too-many-branches
     def _preprocess(state, wires, pad_with, normalize, validate_norm):
         """Validate and pre-process inputs as follows:
 
@@ -559,16 +557,16 @@ class StatePrep(StatePrepBase):
         return state
 
 
-def _stateprep_resources(num_wires):
+def _state_prep_standard_resources(num_wires):
     return {qp.resource_rep(qp.MottonenStatePreparation, num_wires=num_wires): 1}
 
 
-@register_resources(_stateprep_resources)
-def _state_prep_decomp(state, wires, **_):
+@register_resources(_state_prep_standard_resources, name="mottonen")
+def _state_prep_standard(state, wires, **_):
     qp.MottonenStatePreparation(state, wires)
 
 
-add_decomps(StatePrep, _state_prep_decomp)
+add_decomps(StatePrep, _state_prep_standard)
 
 
 class QubitDensityMatrix(Operation):

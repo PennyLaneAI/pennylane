@@ -55,12 +55,12 @@ def map_wires(
     input: QuantumScriptBatch, wire_map: dict, queue: bool = False, replace: bool = False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]: ...
 @transform
-def map_wires(
+def map_wires(  # pylint: disable=unused-argument
     input: Operator | MeasurementProcess | QuantumScript | QNode | Callable | QuantumScriptBatch,
     wire_map: dict,
     queue=False,
     replace=False,
-):  # pylint: disable=unused-argument
+):
     """Changes the wires of an operator, tape, qnode or quantum function according
     to the given wire map.
 

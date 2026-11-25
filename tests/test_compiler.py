@@ -15,7 +15,6 @@
 Unit tests for the compiler subpackage.
 """
 
-# pylint: disable=import-outside-toplevel
 from functools import partial
 from unittest.mock import patch
 
@@ -33,10 +32,9 @@ jax = pytest.importorskip("jax")
 
 pytestmark = pytest.mark.catalyst
 
-from jax import numpy as jnp  # pylint:disable=wrong-import-order, wrong-import-position
-from jax.core import ShapedArray  # pylint:disable=wrong-import-order, wrong-import-position
-
-# pylint: disable=too-few-public-methods, too-many-public-methods
+# pylint: disable=wrong-import-position,wrong-import-order
+from jax import numpy as jnp
+from jax.core import ShapedArray
 
 
 @pytest.fixture
@@ -90,7 +88,7 @@ class TestCatalyst:
             return qp.expval(qp.PauliZ(0))
 
         assert jnp.allclose(circuit(jnp.pi, jnp.pi / 2), 1.0)
-        assert jnp.allclose(qp.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
+        assert jnp.allclose(qp.qjit(circuit, capture=False)(jnp.pi, jnp.pi / 2), -1.0)
 
     def test_active(self):
         """Test `qp.compiler.active` inside a simple circuit"""
@@ -105,7 +103,7 @@ class TestCatalyst:
             return qp.expval(qp.PauliZ(0))
 
         assert jnp.allclose(circuit(jnp.pi, jnp.pi / 2), 1.0)
-        assert jnp.allclose(qp.qjit(circuit)(jnp.pi, jnp.pi / 2), -1.0)
+        assert jnp.allclose(qp.qjit(circuit, capture=False)(jnp.pi, jnp.pi / 2), -1.0)
 
     @pytest.mark.usefixtures("preserve_jax_x64")
     @pytest.mark.parametrize("jax_enable_x64", [False, True])
@@ -274,20 +272,6 @@ class TestCatalyst:
 
         assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
 
-    def test_qjit_adjoint_lazy(self):
-        """Test that the lazy kwarg is supported."""
-        dev = qp.device("lightning.qubit", wires=2)
-
-        @qp.qnode(device=dev)
-        def workflow_pl(theta, wires):
-            qp.Hadamard(wires)
-            qp.adjoint(qp.RX(theta, wires=wires), lazy=False)
-            return qp.probs()
-
-        workflow_cl = qp.qjit(workflow_pl)
-
-        assert jnp.allclose(workflow_cl(0.1, [1]), workflow_pl(0.1, [1]))
-
     def test_control(self):
         """Test that control works with qjit."""
         dev = qp.device("lightning.qubit", wires=2)
@@ -324,7 +308,7 @@ class TestCatalyst:
         control_wire = [0]
         work_wires_ctrl = [9]
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         def func():
             return qp.ctrl(
                 qp.SemiAdder(
@@ -388,7 +372,7 @@ class TestCatalystControlFlow:
     def test_while_loop_dynamic_shapes(self):
         """Test that while loops work with default args."""
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.qnode(qp.device("lightning.qubit", wires=4))
         def f(sz):
             x = jnp.ones([sz], dtype=float)
@@ -425,7 +409,7 @@ class TestCatalystControlFlow:
         """Test nested while loops."""
         dev = qp.device("lightning.qubit", wires=1)
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.qnode(dev)
         def circuit(n, m):
             @qp.while_loop(lambda i, _: i < n)
@@ -630,11 +614,11 @@ class TestCatalystControlFlow:
                 return (x + 1) ** 2
 
             @conditional.else_if(x < -2)
-            def conditional_elif():  # pylint: disable=unused-variable
+            def conditional_elif():
                 return x + 1
 
             @conditional.otherwise
-            def conditional_false_fn():  # pylint: disable=unused-variable
+            def conditional_false_fn():
                 return -(x + 1)
 
             return conditional()
@@ -799,6 +783,68 @@ class TestCatalystGrad:
         reference = np.array([[-0.37120096, -0.45467246], [0.37120096, 0.45467246]])
         assert jnp.allclose(result, reference)
 
+    @pytest.mark.parametrize(
+        "argnums, expected",
+        [
+            pytest.param(None, -jnp.sin(0.2) * jnp.cos(0.5), id="default-argnums"),
+            pytest.param(1, -jnp.cos(0.2) * jnp.sin(0.5), id="argnums-1"),
+            pytest.param(
+                (0, 1),
+                (-jnp.sin(0.2) * jnp.cos(0.5), -jnp.cos(0.2) * jnp.sin(0.5)),
+                id="argnums-0-1",
+            ),
+        ],
+    )
+    @pytest.mark.parametrize("diff_function", [qp.grad, qp.jacobian])
+    def test_eager_jax_matches_qjit(self, diff_function, argnums, expected):
+        """Test that the same derivative call gives the same result with eager JAX inputs and
+        with Catalyst."""
+        dev = qp.device("lightning.qubit", wires=1)
+
+        @qp.qnode(dev)
+        def circuit(x, y):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=0)
+            return qp.expval(qp.PauliZ(0))
+
+        x, y = jnp.array(0.2), jnp.array(0.5)
+        eager = diff_function(circuit, argnums=argnums)(x, y)
+        compiled = qp.qjit(diff_function(circuit, argnums=argnums))(x, y)
+
+        assert jax.tree_util.tree_structure(eager) == jax.tree_util.tree_structure(compiled)
+        assert jnp.allclose(jnp.array(eager), jnp.array(expected))
+        assert jnp.allclose(jnp.array(compiled), jnp.array(expected))
+
+    @pytest.mark.parametrize(
+        "argnums",
+        [pytest.param(None, id="default-argnums"), pytest.param((0, 1, 2), id="argnums-0-1-2")],
+    )
+    def test_jacobian_argnums_follow_jax(self, argnums):
+        """Test that ``argnums=None`` differentiates only the first of several arguments, both
+        eagerly with JAX inputs and with Catalyst, while a sequence selects each argument."""
+        dev = qp.device("lightning.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit(x, y, z):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            qp.RZ(z, wires=0)
+            return qp.probs()
+
+        x, y, z = jnp.array(0.2), jnp.array(0.9), jnp.array(-1.4)
+        probs_x = jnp.array([jnp.cos(x / 2) ** 2, jnp.sin(x / 2) ** 2])
+        probs_y = jnp.array([jnp.cos(y / 2) ** 2, jnp.sin(y / 2) ** 2])
+        jac_x = jnp.kron(jnp.sin(x) / 2 * jnp.array([-1.0, 1.0]), probs_y)
+        jac_y = jnp.kron(probs_x, jnp.sin(y) / 2 * jnp.array([-1.0, 1.0]))
+        expected = jac_x if argnums is None else (jac_x, jac_y, jnp.zeros(4))
+
+        eager = qp.jacobian(circuit, argnums=argnums)(x, y, z)
+        compiled = qp.qjit(qp.jacobian(circuit, argnums=argnums))(x, y, z)
+
+        for result in (eager, compiled):
+            assert jax.tree_util.tree_structure(result) == jax.tree_util.tree_structure(expected)
+            assert jnp.allclose(jnp.array(result), jnp.array(expected))
+
     def test_jvp(self):
         """Test that the correct JVP is returned with QJIT."""
 
@@ -891,7 +937,7 @@ class TestCatalystGrad:
         assert jnp.allclose(res[1], jnp.array([-0.43750208, 0.07000001]))
 
 
-class TestCatalystSample:
+class TestCatalystSample:  # pylint: disable=too-few-public-methods
     """Test qp.sample with Catalyst."""
 
     def test_sample_measure(self):
@@ -899,7 +945,7 @@ class TestCatalystSample:
 
         dev = qp.device("lightning.qubit", wires=1)
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit(x):
@@ -912,7 +958,7 @@ class TestCatalystSample:
         assert circuit(jnp.pi) == 1
 
 
-class TestCatalystMCMs:
+class TestCatalystMCMs:  # pylint: disable=too-few-public-methods
     """Test dynamic_one_shot with Catalyst."""
 
     @pytest.mark.parametrize(
@@ -958,7 +1004,7 @@ class TestCatalystMCMs:
 
         dev = qp.device("lightning.qubit", wires=2)
 
-        @qp.qjit
+        @qp.qjit(capture=False)
         @qp.set_shots(shots)
         @qp.qnode(dev, mcm_method="one-shot")
         def func(x, y):

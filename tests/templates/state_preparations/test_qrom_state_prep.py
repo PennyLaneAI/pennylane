@@ -15,8 +15,6 @@
 Unit tests for the QROMStatePreparation template.
 """
 
-# pylint: disable=too-many-arguments,too-few-public-methods
-
 import numpy as np
 import pytest
 
@@ -139,7 +137,7 @@ class TestQROMStatePreparation:
         )
 
         for gate in decomposition:
-            assert gate.name in ["QROM", "Adjoint(QROM)", "CRY", "PhaseShift"]
+            assert gate.name in ["SelectSwap", "Adjoint(SelectSwap)", "CRY", "C(GlobalPhase)"]
 
     @pytest.mark.jax
     def test_interface_jax(self):

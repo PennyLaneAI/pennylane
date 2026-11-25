@@ -14,6 +14,10 @@
 
 """Tests for the Pow2 class."""
 
+# pylint: disable=too-few-public-methods
+
+import jax
+import jax.numpy as jnp
 import numpy as np
 import pytest
 from scipy.linalg import fractional_matrix_power
@@ -30,15 +34,12 @@ from pennylane.exceptions import (
 from pennylane.ops import ISWAP, Identity, PhaseShift, S, T, Z
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow import pow
-from pennylane.ops.op_math.pow2 import Pow2, pow_rotation
+from pennylane.ops.op_math.pow2 import Pow2, _pow_scale_angle
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 from tests.ops.op_math.test_adjoint2 import RX2, SX2
 
-# pylint: disable=unused-argument,arguments-differ,useless-parent-delegation,too-few-public-methods
 
-
-# pylint: disable=unused-argument
 def pow_using_dunder_method(base, z):
     """Helper function which computes the base raised to the power invoking the __pow__ dunder
     method."""
@@ -48,9 +49,9 @@ def pow_using_dunder_method(base, z):
 class NoPowOp(Operator2):
     """A base operator whose ``pow`` always raises ``PowUndefinedError``."""
 
-    wire_sizes = (1,)
+    arg_specs = {"wires": Wire[1]}
 
-    def __init__(self, wires):
+    def __init__(self, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(wires)
 
     def pow(self, z):
@@ -60,9 +61,9 @@ class NoPowOp(Operator2):
 class BadPowOp(Operator2):
     """A base operator whose ``pow`` raises a generic (non-``Pow``) error."""
 
-    wire_sizes = (1,)
+    arg_specs = {"wires": Wire[1]}
 
-    def __init__(self, wires):
+    def __init__(self, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(wires)
 
     def pow(self, z):
@@ -74,9 +75,9 @@ class RealPowOp(Operator2):
 
     dynamic_argnames = ("phi",)
 
-    wire_sizes = (1,)
+    arg_specs = {"wires": Wire[1]}
 
-    def __init__(self, phi, wires):
+    def __init__(self, phi, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(phi, wires)
 
     def pow(self, z):
@@ -327,15 +328,15 @@ def test_label(exp, sup):
 
 
 def test_pow_rotation2():
-    """Tests the pow_rotation decomposition with an ``Operator2`` base."""
+    """Tests the _pow_scale_angle decomposition with an ``Operator2`` base."""
 
     op = pow(OneWireDynOp(0.3, wires=[0]), 2.5)
     assert isinstance(op, Pow2)
 
-    tape = qp.testing.decomp_rule_to_tape(op, pow_rotation)
+    tape = qp.testing.decomp_rule_to_tape(op, _pow_scale_angle)
 
     assert tape.operations == [OneWireDynOp(0.3 * 2.5, wires=[0])]
-    assert pow_rotation.compute_resources(**op.arguments) == Resources(
+    assert _pow_scale_angle.compute_resources(**op.arguments) == Resources(
         {OneWireDynOp(Float, wires=Wire[1]): 1}
     )
 
@@ -359,18 +360,12 @@ def test_eigvals_fractional_power_negative_eigenvalue_2(z, power_method):
     assert np.allclose(eigvals, np.diag(qp.matrix(op)))
 
 
-# pylint: disable-next=too-few-public-methods
 class TestCapture:
     """Tests Capture"""
 
     @pytest.mark.jax
     def test_pow_2_eigvals_is_jittable(self):
         """Test that the eigvals method is jittable."""
-        import jax  # pylint: disable=import-outside-toplevel
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
-        import numpy as np  # pylint: disable=reimported,import-outside-toplevel,redefined-outer-name
-
-        import pennylane as qp  # pylint: disable=reimported,import-outside-toplevel,redefined-outer-name
 
         @jax.jit
         def f(x):

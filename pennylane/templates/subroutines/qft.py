@@ -17,8 +17,8 @@ This submodule contains the template for QFT.
 
 import numpy as np
 
-from pennylane import compiler, math
-from pennylane.capture import enabled, hint
+from pennylane import capture, compiler, math
+from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
@@ -47,7 +47,7 @@ class QFT(Operator2):
     * Gradient recipe: None
 
     Args:
-        wires (int or Iterable[Number, str]]): the wire(s) the operation acts on
+        wires (int or Iterable[int]): the wire(s) the operation acts on
 
     **Example**
 
@@ -68,6 +68,20 @@ class QFT(Operator2):
     >>> circuit_qft(np.array([1.0, 0.0, 0.0])) # doctest: +SKIP
     array([ 0.3536+0.j, -0.3536+0.j,  0.3536+0.j, -0.3536+0.j,  0.3536+0.j,
            -0.3536+0.j,  0.3536+0.j, -0.3536+0.j])
+
+    .. details::
+        :title: Available decompositions
+
+        .. decomposition-table:: qp.QFT
+            :symbols: :math:`n` wires
+            :example: :math:`n=3`
+
+            .. decomposition-rule:: controlled_phase_shifts
+                :image: /_static/decomposition_thumbnails/qft_cphase_swap.svg
+
+                :class:`~.Hadamard` | :math:`n` | 3
+                :class:`~.ControlledPhaseShift` | :math:`n(n-1)/2` | 3
+                :class:`~.SWAP` | :math:`\lfloor n/2 \rfloor` | 1
 
     .. details::
         :title: Semiclassical Quantum Fourier transform
@@ -136,7 +150,7 @@ class QFT(Operator2):
         return np.fft.ifft(np.eye(2 ** len(wires)), norm="ortho")
 
 
-def _qft_decomposition_resources(wires: AbstractWires):
+def _qft_standard_resources(wires: AbstractWires):
     num_wires = len(wires)
     return {
         Hadamard: num_wires,
@@ -145,11 +159,11 @@ def _qft_decomposition_resources(wires: AbstractWires):
     }
 
 
-@register_resources(_qft_decomposition_resources)
-def _qft_decomposition(wires: WiresLike):
+@register_resources(_qft_standard_resources, name="controlled_phase_shifts")
+def _qft_standard(wires: WiresLike):
     num_wires = len(wires)
     shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
-    if compiler.active() or enabled():
+    if compiler.active() or capture.enabled():
         shifts = math.array(shifts, like="jax")
         wires = math.array(wires, like="jax")
 
@@ -175,4 +189,4 @@ def _qft_decomposition(wires: WiresLike):
     swaps()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(QFT, _qft_decomposition)
+add_decomps(QFT, _qft_standard)

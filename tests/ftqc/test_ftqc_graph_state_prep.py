@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=no-name-in-module, no-self-use, protected-access
 """Unit tests for the GraphStatePrep module"""
 
 import networkx as nx
@@ -227,10 +226,10 @@ class TestGraphStatePrep:
         "dims, shape, wires",
         [
             ([5], "chain", [0, 1, 2, 3, 4]),
-            ([5], "chain", ["a", 1, 2, "c", 4]),
+            ([5], "chain", [10, 1, 2, 12, 4]),
             ([2, 2], "square", [0, 1, 2, 3]),
-            ([2, 2], "square", ["d", 1, 2, "f"]),
-            ([2, 3], "rectangle", ["a", "b", "c", "d", "e", "f"]),
+            ([2, 2], "square", [14, 1, 2, 16]),
+            ([2, 3], "rectangle", [10, 11, 12, 14, 15, 16]),
             ([2, 2, 2], "cubic", [0, 1, 2, 3, 4, 5, 6, 7]),
         ],
     )

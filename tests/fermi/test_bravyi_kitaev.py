@@ -449,7 +449,7 @@ def test_bravyi_kitaev_fermi_word_operation(fermionic_op, n_qubits, result):
     qubit_op = bravyi_kitaev(fermionic_op, n_qubits)
 
     expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
-    expected_op = expected_op.operation(wires)
+    expected_op = qp.pauli.to_operator(expected_op, wires)
 
     qp.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
@@ -522,7 +522,7 @@ def test_fermi_sentence_identity():
 
     assert ps_op == ps
 
-    result = ps.operation(wire_order=[0])
+    result = qp.pauli.to_operator(ps, identity_wires=[0])
     qp.assert_equal(qubit_op.simplify(), result.simplify())
 
 
@@ -623,7 +623,7 @@ def test_bravyi_kitaev_for_fermi_sentence_operation(fermionic_op, n_qubits, resu
     wires = fermionic_op.wires or [0]
 
     qubit_op = bravyi_kitaev(fermionic_op, n_qubits)
-    result = result.operation(wires)
+    result = qp.pauli.to_operator(result, wires)
 
     qp.assert_equal(qubit_op.simplify(), result.simplify())
 
@@ -674,14 +674,14 @@ WIRE_MAP_FOR_FERMI_SENTENCE = [
         ],
     ),
     (
-        {0: "b", 1: "a"},
+        {0: 8, 1: 7},
         [
-            qp.s_prod(-0.25j, qp.PauliY("b")),
-            qp.s_prod((0.25j), qp.prod(qp.PauliY("b"), qp.PauliZ("a"))),
-            qp.s_prod((-0.25 + 0j), qp.prod(qp.PauliX("b"), qp.PauliZ("a"))),
-            qp.s_prod(0.25, qp.PauliX("b")),
-            qp.s_prod((0.5 + 0j), qp.Identity("b")),
-            qp.s_prod((-0.5 + 0j), qp.PauliZ("b")),
+            qp.s_prod(-0.25j, qp.PauliY(8)),
+            qp.s_prod((0.25j), qp.prod(qp.PauliY(8), qp.PauliZ(7))),
+            qp.s_prod((-0.25 + 0j), qp.prod(qp.PauliX(8), qp.PauliZ(7))),
+            qp.s_prod(0.25, qp.PauliX(8)),
+            qp.s_prod((0.5 + 0j), qp.Identity(8)),
+            qp.s_prod((-0.5 + 0j), qp.PauliZ(8)),
         ],
     ),
 ]
@@ -739,12 +739,12 @@ WIRE_MAP_FOR_FERMI_WORDS = [
         ],
     ),
     (
-        {0: "b", 1: "a"},
+        {0: 8, 1: 7},
         [
-            qp.s_prod(-0.25j, qp.PauliY("b")),
-            qp.s_prod(0.25 + 0j, qp.prod(qp.PauliX("b"), qp.PauliZ("a"))),
-            qp.s_prod(0.25 + 0j, qp.PauliX("b")),
-            qp.s_prod(-0.25j, qp.prod(qp.PauliY("b"), qp.PauliZ("a"))),
+            qp.s_prod(-0.25j, qp.PauliY(8)),
+            qp.s_prod(0.25 + 0j, qp.prod(qp.PauliX(8), qp.PauliZ(7))),
+            qp.s_prod(0.25 + 0j, qp.PauliX(8)),
+            qp.s_prod(-0.25j, qp.prod(qp.PauliY(8), qp.PauliZ(7))),
         ],
     ),
 ]

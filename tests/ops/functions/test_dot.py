@@ -18,22 +18,22 @@ Unit tests for the dot function
 import pytest
 
 import pennylane as qp
+from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.ops import Prod, SProd, Sum
-from pennylane.pauli.pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z
 
-pw1 = PauliWord({0: I, 1: X, 2: Y})
-pw2 = PauliWord({0: Z, 2: Z, 4: Z})
-pw3 = PauliWord({"a": X, "b": X, "c": Z})
-pw4 = PauliWord({"a": Y, "b": Z, "c": X})
-pw5 = PauliWord({4: X, 5: X})
+pw1 = PauliWord({0: "I", 1: "X", 2: "Y"})
+pw2 = PauliWord({0: "Z", 2: "Z", 4: "Z"})
+pw3 = PauliWord({6: "X", 7: "X", 8: "Z"})
+pw4 = PauliWord({6: "Y", 7: "Z", 8: "X"})
+pw5 = PauliWord({4: "X", 5: "X"})
 
 ps1 = PauliSentence({pw1: 1.0, pw2: 2.0})
 ps2 = PauliSentence({pw3: 1.0, pw4: 2.0})
 
 op1 = qp.prod(qp.PauliX(1), qp.PauliY(2))
 op2 = qp.prod(qp.PauliZ(0), qp.PauliZ(2), qp.PauliZ(4))
-op3 = qp.prod(qp.PauliX("a"), qp.PauliX("b"), qp.PauliZ("c"))
-op4 = qp.prod(qp.PauliY("a"), qp.PauliZ("b"), qp.PauliX("c"))
+op3 = qp.prod(qp.PauliX(6), qp.PauliX(7), qp.PauliZ(8))
+op4 = qp.prod(qp.PauliY(6), qp.PauliZ(7), qp.PauliX(8))
 op5 = qp.prod(qp.PauliX(4), qp.PauliX(5))
 
 pw_id = PauliWord({})
@@ -202,14 +202,14 @@ class TestDotSum:
         (
             [1.0, 2.0, 3.0],
             [pw3, pw4, ps2],
-        ),  # comparisons for Sum objects with string valued wires
+        ),  # comparisons for Sum objects on wires 6, 7, and 8
     )
 
     @pytest.mark.parametrize("coeff, ops", data_words_and_sentences_pauli_false)
     def test_dot_with_words_and_sentences_pauli_false(self, coeff, ops):
         """Test operators that are a mix of pauli words and pauli sentences"""
         dot_res = qp.dot(coeff, ops, pauli=False)
-        true_res = qp.dot(coeff, [op.operation() for op in ops], pauli=False)
+        true_res = qp.dot(coeff, [qp.pauli.to_operator(op) for op in ops], pauli=False)
         assert dot_res == true_res
 
     data_op_words_and_sentences_pauli_false = (
@@ -232,7 +232,7 @@ class TestDotSum:
             [1.0, 2.0, 3.0, 1j],
             [pw3, pw4, ps2, op3],
             qp.sum(qp.s_prod(3.0 * 1 + 1 + 1j, op3), qp.s_prod(3 * 2.0 + 2, op4)),
-        ),  # string valued wires
+        ),  # wires 6, 7, and 8
     )
 
     @pytest.mark.parametrize("coeff, ops, res", data_op_words_and_sentences_pauli_false)
@@ -243,14 +243,14 @@ class TestDotSum:
 
     def test_identities_with_pauli_words_pauli_false(self):
         """Test that identities in form of empty PauliWords are treated correctly"""
-        _pw1 = PauliWord({0: I, 1: X, 2: Y})
+        _pw1 = PauliWord({0: "I", 1: "X", 2: "Y"})
         res = qp.dot([2.0, 2.0], [pw_id, _pw1], pauli=False)
         true_res = qp.sum(qp.s_prod(2.0, qp.I()), 2.0 * qp.prod(qp.X(1), qp.Y(2)))
         assert res == true_res
 
     def test_identities_with_pauli_sentences_pauli_false(self):
         """Test that identities in form of PauliSentences with empty PauliWords are treated correctly"""
-        _pw1 = PauliWord({0: I, 1: X, 2: Y})
+        _pw1 = PauliWord({0: "I", 1: "X", 2: "Y"})
         res = qp.dot([2.0, 2.0], [ps_id, _pw1], pauli=False)
         true_res = qp.s_prod(2, qp.I()) + qp.s_prod(2.0, qp.prod(qp.X(1), qp.Y(2)))
         assert res == true_res
@@ -292,7 +292,7 @@ class TestDotPauliSentence:
     def test_coeffs_and_ops(self):
         """Test that the coefficients and operators of the returned PauliSentence are correct."""
         ps = qp.dot(coeffs0, ops0, pauli=True)
-        h = ps.operation()
+        h = qp.pauli.to_operator(ps)
         hcoeffs, hops = h.terms()
         assert qp.math.allequal(hcoeffs, coeffs0)
         for _op1, _op2 in zip(hops, ops0):
@@ -304,7 +304,7 @@ class TestDotPauliSentence:
             coeffs=[0.12, 1.2, 12], ops=[qp.PauliX(0), qp.PauliX(0), qp.PauliX(0)], pauli=True
         )
         assert len(ps) == 1
-        h = ps.operation()
+        h = qp.pauli.to_operator(ps)
         assert isinstance(h, qp.ops.SProd)
         qp.assert_equal(h.base, qp.PauliX(0))
 
@@ -312,7 +312,7 @@ class TestDotPauliSentence:
         """Test that hamiltonian computed from the PauliSentence created by the dot function is equal
         to the simplified hamiltonian."""
         ps = qp.dot(coeffs0, ops0, pauli=True)
-        h_ps = ps.operation()
+        h_ps = qp.pauli.to_operator(ps)
         h = qp.Hamiltonian(coeffs0, ops0)
         h.simplify()
         qp.assert_equal(h_ps, h)

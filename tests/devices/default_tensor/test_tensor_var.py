@@ -15,6 +15,8 @@
 Tests for the variance calculation on the DefaultTensor device.
 """
 
+# pylint: disable=redefined-outer-name
+
 import numpy as np
 import pytest
 
@@ -28,8 +30,6 @@ VARPHI = np.linspace(0.02, 1, 3)
 quimb = pytest.importorskip("quimb")
 
 pytestmark = pytest.mark.external
-
-# pylint: disable=too-many-arguments, redefined-outer-name
 
 
 @pytest.fixture(
@@ -47,8 +47,8 @@ def dev(request):
 
 
 def calculate_reference(tape):
-    """Calculate the reference value of the tape using DefaultQubit."""
-    ref_dev = DefaultQubit(max_workers=1)
+    """Calculate the reference value in-process using DefaultQubit."""
+    ref_dev = DefaultQubit()
     program = ref_dev.preprocess_transforms()
     tapes, transf_fn = program([tape])
     results = ref_dev.execute(tapes)
@@ -107,29 +107,6 @@ class TestVar:
         tol = 1e-5 if dev.c_dtype == np.complex64 else 1e-7
         assert np.allclose(0.0, result, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("wires", [([0, 1]), (["a", 1]), (["b", "a"]), ([-1, 2.5])])
-    @pytest.mark.parametrize("method", ["mps", "tn"])
-    def test_custom_wires(self, theta, phi, wires, method):
-        """Tests custom wires."""
-        device = qp.device("default.tensor", wires=wires, method=method)
-
-        tape = qp.tape.QuantumScript(
-            [
-                qp.RX(theta, wires=wires[0]),
-                qp.RX(phi, wires=wires[1]),
-                qp.CNOT(wires=wires),
-            ],
-            [qp.var(qp.PauliZ(wires=wires[0])), qp.var(qp.PauliZ(wires=wires[1]))],
-        )
-
-        calculated_val = execute(device, tape)
-        reference_val = np.array(
-            [1 - np.cos(theta) ** 2, 1 - np.cos(theta) ** 2 * np.cos(phi) ** 2]
-        )
-
-        tol = 1e-5 if device.c_dtype == np.complex64 else 1e-7
-        assert np.allclose(calculated_val, reference_val, atol=tol, rtol=0)
-
     @pytest.mark.parametrize(
         "Obs, Op, expected_fn",
         [
@@ -164,6 +141,7 @@ class TestVar:
             ),
         ],
     )
+    # pylint: disable-next=too-many-arguments
     def test_single_wire_observables_variance(self, Obs, Op, expected_fn, theta, phi, dev):
         """Test that variance values for single wire observables are correct"""
 

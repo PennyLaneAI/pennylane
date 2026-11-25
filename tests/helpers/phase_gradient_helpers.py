@@ -19,6 +19,11 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.ops.op_math.composite2 import CompositeOp2
+from pennylane.templates.subroutines.select_pauli_rot import _SelectPauliRotYBasis
+from pennylane.transforms.decompositions.crz_phase_gradient import _CRZPhaseGradientCompute
+from pennylane.transforms.decompositions.select_pauli_rot_phase_gradient import (
+    _SelectPauliRotPhaseGradientCompute,
+)
 
 
 def bits_to_angles(bits, unit):
@@ -28,10 +33,16 @@ def bits_to_angles(bits, unit):
 
 
 def leaf_ops(ops):
-    """Recursively unpack composite operators (change of basis, products)."""
+    """Recursively unpack composites and the phase-gradient subcircuits and their adjoints."""
     for op in ops:
-        if isinstance(op, CompositeOp2):
-            yield from leaf_ops(op.decomposition())
+        if isinstance(op, CompositeOp2) or type(getattr(op, "base", op)) in (
+            _CRZPhaseGradientCompute,
+            _SelectPauliRotPhaseGradientCompute,
+            _SelectPauliRotYBasis,
+        ):
+            with qp.capture.pause():
+                decomposition = op.decomposition()
+            yield from leaf_ops(decomposition)
         else:
             yield op
 
@@ -48,6 +59,7 @@ def assert_decomp_realizes_op(op, tape, phase_grad_wires, seed):
 
     with qp.capture.pause():
         # Captured decompositions carry jax data, which is slow to simulate
+        tape = tape.copy(operations=list(leaf_ops(tape.operations)))
         [tape], _ = qp.transforms.convert_to_numpy_parameters(tape)
         circuit = qp.tape.QuantumScript(
             [

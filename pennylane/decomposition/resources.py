@@ -29,15 +29,6 @@ from .utils import to_name
 class CompressedResourceOp:
     """A lightweight representation of an operator to be decomposed.
 
-    .. note::
-
-        This class is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qp.decomposition.enable_graph()``. This new way of
-        doing decompositions is generally more resource efficient and accommodates multiple alternative
-        decomposition rules for an operator. In this new system, custom decomposition rules are
-        defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using :func:`~pennylane.register_resources`.
-
     The ``CompressedResourceOp`` is a lightweight data structure that contains an operator type
     and a set of parameters that affects the resource requirement of this operator. If the
     decomposition of an operator is independent of its parameters, e.g., ``Rot`` can be decomposed
@@ -77,8 +68,6 @@ class CompressedResourceOp:
         if self.op_type in (qp.ops.Controlled, qp.ops.ControlledOp):
             base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
             return f"C({base_rep.name})"
-        if self.op_type is qp.ops.MidMeasure:
-            return "MidMeasureMP"
         return self.op_type.__name__
 
     def __hash__(self) -> int:
@@ -229,15 +218,6 @@ def _validate_resource_rep(op_type, params):
 def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     """Binds an operator type with additional resource parameters.
 
-    .. note::
-
-        This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via ``qp.decomposition.enable_graph()``. This new way of
-        doing decompositions is generally more resource efficient and accommodates multiple alternative
-        decomposition rules for an operator. In this new system, custom decomposition rules are
-        defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using :func:`~pennylane.register_resources`.
-
     Args:
         op_type: the operator class to create a resource representation for.
         **params: parameters relevant to the resource estimate of the operator's decompositions.
@@ -263,7 +243,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     return CompressedResourceOp(op_type, params)
 
 
-def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+def controlled_resource_rep(  # pylint: disable=too-many-arguments
     base_class: type[Operator],
     base_params: dict,
     num_control_wires: int,
@@ -273,10 +253,7 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
 ):
     """Creates a ``CompressedResourceOp`` representation of a controlled operator.
 
-    This function mirrors the custom logic in ``qp.ctrl`` which does the following:
-
-    - Flattens nested controlled operations.
-    - Dispatches to custom-controlled operations when applicable.
+    This function mirrors ``qp.ctrl``, including flattening nested controlled operations.
 
     Args:
         base_class: the base operator type
@@ -304,11 +281,6 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
             work_wire_type=work_wire_type,
         )
 
-    custom_controlled_map = qp.ops.op_math.controlled.base_to_custom_ctrl_op()
-    custom_ctrl = custom_controlled_map.get((base_class, num_control_wires))
-    if num_zero_control_values == 0 and custom_ctrl:
-        return resource_rep(custom_ctrl)  # handles direct dispatch to custom controlled ops.
-
     return CompressedResourceOp(
         qp.ops.Controlled,
         {
@@ -322,7 +294,7 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
     )
 
 
-def adjoint_resource_rep(base_class: type[Operator], base_params: dict = None):
+def adjoint_resource_rep(base_class: type[Operator], base_params: dict | None = None):
     """Creates a ``CompressedResourceOp`` representation of the adjoint of an operator.
 
     Args:
@@ -352,7 +324,7 @@ def change_op_basis_resource_rep(
         uncompute_op: the compressed resource representation of the uncompute operator
 
     """
-    # pylint: disable=import-outside-toplevel
+    # pylint: disable-next=import-outside-toplevel
     from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 
     compute_op = abstractify(compute_op)

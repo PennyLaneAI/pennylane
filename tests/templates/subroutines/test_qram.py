@@ -20,10 +20,11 @@ import re
 import numpy as np
 import pytest
 
+import pennylane as qp
 from pennylane import apply, device, measure, qnode, registers, workflow
 from pennylane.math import int_to_binary
 from pennylane.measurements import probs, state
-from pennylane.ops import CH, CNOT, CSWAP, CZ, SWAP, Controlled, MultiControlledX, Toffoli, X
+from pennylane.ops import CH, CSWAP, CZ, SWAP, Controlled, MultiControlledX, X
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.qram import BBQRAM, FFQRAM, HybridQRAM, SelectOnlyQRAM
 from pennylane.testing import assert_decomposable, assert_valid
@@ -51,7 +52,6 @@ def bb_quantum(bitstrings, control_wires, target_wires, work_wires, address):
 
 
 @pytest.mark.jax
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
         "bitstrings",
@@ -105,14 +105,8 @@ def bb_quantum(bitstrings, control_wires, target_wires, work_wires, address):
         ),
     ],
 )
-def test_bb_quantum(
-    bitstrings,
-    control_wires,
-    target_wires,
-    work_wires,
-    address,
-    probabilities,
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def test_bb_quantum(bitstrings, control_wires, target_wires, work_wires, address, probabilities):
     if has_jax and not isinstance(bitstrings[0], str) and not isinstance(bitstrings, np.ndarray):
         bitstrings, control_wires, target_wires, work_wires = (
             jnp.array(bitstrings),
@@ -250,7 +244,7 @@ def test_raises(params, error, match):
 )
 @pytest.mark.xfail_if_capture(reason="Come back to this when we port BBQRAM [sc-129953]")
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_bbqram_decomposition_new(
+def test_bbqram_decomposition_new(  # pylint: disable=too-many-arguments
     bitstrings,
     control_wires,
     target_wires,
@@ -258,7 +252,7 @@ def test_bbqram_decomposition_new(
     dir_wires,
     portL_wires,
     portR_wires,
-):  # pylint: disable=too-many-arguments
+):
     op = BBQRAM(
         bitstrings,
         control_wires,
@@ -270,9 +264,8 @@ def test_bbqram_decomposition_new(
 
 
 @qnode(dev)
-def hybrid_quantum(
-    bitstrings, control_wires, target_wires, work_wires, k, address
-):  # pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
+def hybrid_quantum(bitstrings, control_wires, target_wires, work_wires, k, address):
     BasisEmbedding(int_to_binary(address, len(control_wires)), wires=control_wires)
     HybridQRAM(
         bitstrings,
@@ -285,7 +278,6 @@ def hybrid_quantum(
 
 
 @pytest.mark.jax
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
         "bitstrings",
@@ -337,16 +329,24 @@ def hybrid_quantum(
                 ),
                 CZ(wires=[5, 14]),
                 CZ(wires=[5, 12]),
-                Controlled(
-                    SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                    )
                 ),
-                Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9]),
-                Controlled(
-                    SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                qp.adjoint(Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9])),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                    )
                 ),
-                Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8])),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 2, 6]),
                 CH(wires=[5, 2]),
                 CH(wires=[5, 3]),
@@ -364,16 +364,24 @@ def hybrid_quantum(
                 CZ(wires=[5, 11]),
                 CZ(wires=[5, 14]),
                 CZ(wires=[5, 12]),
-                Controlled(
-                    SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                    )
                 ),
-                Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9]),
-                Controlled(
-                    SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                qp.adjoint(Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9])),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                    )
                 ),
-                Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8])),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 3, 6]),
                 CH(wires=[5, 3]),
                 CH(wires=[5, 4]),
@@ -389,25 +397,37 @@ def hybrid_quantum(
                     SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
                 ),
                 CZ(wires=[5, 14]),
-                Controlled(
-                    SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[13, 12]), control_wires=[5, 9], control_values=[True, False]
+                    )
                 ),
-                Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9]),
-                Controlled(
-                    SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                qp.adjoint(Controlled(SWAP(wires=[13, 15]), control_wires=[5, 9])),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[10, 11]), control_wires=[5, 8], control_values=[True, False]
+                    )
                 ),
-                Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(Controlled(SWAP(wires=[10, 14]), control_wires=[5, 8])),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 4, 6]),
                 CH(wires=[5, 4]),
-                CSWAP(wires=[5, 13, 9]),
-                CSWAP(wires=[5, 10, 8]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
-                CSWAP(wires=[5, 1, 6]),
-                CSWAP(wires=[5, 6, 7]),
-                CSWAP(wires=[5, 0, 6]),
+                qp.adjoint(CSWAP(wires=[5, 13, 9])),
+                qp.adjoint(CSWAP(wires=[5, 10, 8])),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
+                qp.adjoint(CSWAP(wires=[5, 1, 6])),
+                qp.adjoint(CSWAP(wires=[5, 6, 7])),
+                qp.adjoint(CSWAP(wires=[5, 0, 6])),
                 X(5),
             ],
         ),
@@ -434,8 +454,12 @@ def hybrid_quantum(
                 Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
                 Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
                 CZ(wires=[5, 13]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 2, 6]),
                 CH(wires=[5, 2]),
                 CH(wires=[5, 3]),
@@ -444,8 +468,12 @@ def hybrid_quantum(
                 Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
                 CZ(wires=[5, 10]),
                 CZ(wires=[5, 13]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 3, 6]),
                 CH(wires=[5, 3]),
                 CH(wires=[5, 4]),
@@ -453,14 +481,18 @@ def hybrid_quantum(
                 Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
                 Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
                 CZ(wires=[5, 13]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 4, 6]),
                 CH(wires=[5, 4]),
-                CSWAP(wires=[5, 6, 7]),
-                CSWAP(wires=[5, 1, 6]),
+                qp.adjoint(CSWAP(wires=[5, 6, 7])),
+                qp.adjoint(CSWAP(wires=[5, 1, 6])),
                 MultiControlledX(wires=[0, 5], control_values=[False]),
-                CNOT(wires=[0, 5]),
+                MultiControlledX(wires=[0, 5]),
                 CSWAP(wires=[5, 1, 6]),
                 CSWAP(wires=[5, 6, 7]),
                 CH(wires=[5, 2]),
@@ -468,8 +500,12 @@ def hybrid_quantum(
                 Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
                 Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
                 CZ(wires=[5, 10]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 2, 6]),
                 CH(wires=[5, 2]),
                 CH(wires=[5, 3]),
@@ -477,26 +513,34 @@ def hybrid_quantum(
                 Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
                 Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
                 CZ(wires=[5, 10]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 3, 6]),
                 CH(wires=[5, 3]),
                 CH(wires=[5, 4]),
                 CSWAP(wires=[5, 4, 6]),
                 Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
                 Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]),
-                Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7]),
+                qp.adjoint(
+                    Controlled(
+                        SWAP(wires=[6, 10]), control_wires=[5, 7], control_values=[True, False]
+                    )
+                ),
+                qp.adjoint(Controlled(SWAP(wires=[6, 13]), control_wires=[5, 7])),
                 CSWAP(wires=[5, 4, 6]),
                 CH(wires=[5, 4]),
-                CSWAP(wires=[5, 6, 7]),
-                CSWAP(wires=[5, 1, 6]),
-                CNOT(wires=[0, 5]),
+                qp.adjoint(CSWAP(wires=[5, 6, 7])),
+                qp.adjoint(CSWAP(wires=[5, 1, 6])),
+                MultiControlledX(wires=[0, 5]),
             ],
         ),
     ],
 )
-def test_hybrid_quantum(
+def test_hybrid_quantum(  # pylint: disable=too-many-arguments
     bitstrings,
     control_wires,
     target_wires,
@@ -505,7 +549,7 @@ def test_hybrid_quantum(
     address,
     probabilities,
     expected_circuit,
-):  # pylint: disable=too-many-arguments
+):
     if has_jax and not isinstance(bitstrings[0], str) and not isinstance(bitstrings, np.ndarray):
         bitstrings, control_wires, target_wires, work_wires = (
             jnp.array(bitstrings),
@@ -583,7 +627,7 @@ def test_hybrid_quantum(
 )
 @pytest.mark.xfail_if_capture(reason="Come back to this when we port HybridQRAM [sc-129954]")
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_hybrid_decomposition_new(
+def test_hybrid_decomposition_new(  # pylint: disable=too-many-arguments
     bitstrings,
     control_wires,
     target_wires,
@@ -593,7 +637,7 @@ def test_hybrid_decomposition_new(
     portL_wires,
     portR_wires,
     k,
-):  # pylint: disable=too-many-arguments
+):
     op = HybridQRAM(
         bitstrings,
         control_wires=control_wires,
@@ -695,9 +739,9 @@ def test_hybrid_raises(params, error, match):
 
 
 @qnode(dev)
-def select_only_quantum(
+def select_only_quantum(  # pylint: disable=too-many-arguments
     bitstrings, control_wires, target_wires, select_wires, select_value, address
-):  # pylint: disable=too-many-arguments
+):
     BasisEmbedding(int_to_binary(address, len(control_wires)), wires=control_wires)
     SelectOnlyQRAM(
         bitstrings,
@@ -710,7 +754,6 @@ def select_only_quantum(
 
 
 @pytest.mark.jax
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
         "bitstrings",
@@ -979,23 +1022,23 @@ def select_only_quantum(
                 BasisEmbedding([0, 0], wires=[0, 1]),
                 X(0),
                 X(1),
-                Toffoli(wires=[0, 1, 3]),
+                MultiControlledX(wires=[0, 1, 3]),
                 X(0),
                 X(1),
                 X(0),
-                Toffoli(wires=[0, 1, 2]),
-                Toffoli(wires=[0, 1, 3]),
-                Toffoli(wires=[0, 1, 4]),
+                MultiControlledX(wires=[0, 1, 2]),
+                MultiControlledX(wires=[0, 1, 3]),
+                MultiControlledX(wires=[0, 1, 4]),
                 X(0),
                 X(1),
-                Toffoli(wires=[0, 1, 2]),
-                Toffoli(wires=[0, 1, 3]),
+                MultiControlledX(wires=[0, 1, 2]),
+                MultiControlledX(wires=[0, 1, 3]),
                 X(1),
             ],
         ),
     ],
 )
-def test_select_only_quantum(
+def test_select_only_quantum(  # pylint: disable=too-many-arguments
     bitstrings,
     control_wires,
     target_wires,
@@ -1004,7 +1047,7 @@ def test_select_only_quantum(
     address,
     probabilities,
     expected_circuit,
-):  # pylint: disable=too-many-arguments
+):
     if has_jax and not isinstance(bitstrings[0], str) and not isinstance(bitstrings, np.ndarray):
         bitstrings, control_wires, target_wires, select_wires = (
             jnp.array(bitstrings),
@@ -1186,11 +1229,10 @@ def test_select_only_raises(params, error, match):
         ),
     ],
 )
-@pytest.mark.xfail_if_capture(reason="Come back to this when we port SelectOnlyQRAM [sc-129956]")
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_select_decomposition_new(
     bitstrings, control_wires, target_wires, select_wires, select_value
-):  # pylint: disable=too-many-arguments
+):
     op = SelectOnlyQRAM(
         bitstrings,
         control_wires,

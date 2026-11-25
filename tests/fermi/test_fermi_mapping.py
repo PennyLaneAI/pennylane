@@ -371,7 +371,7 @@ def test_jordan_wigner_fermi_word_operation(fermionic_op, result):
     qubit_op = jordan_wigner(fermionic_op)
 
     expected_op = pauli_sentence(qp.Hamiltonian(result[0], result[1]))
-    expected_op = expected_op.operation(wires)
+    expected_op = qp.pauli.to_operator(expected_op, wires)
 
     qp.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
@@ -442,7 +442,7 @@ def test_fermi_sentence_identity():
 
     assert ps_op == ps
 
-    result = ps.operation(wire_order=[0])
+    result = qp.pauli.to_operator(ps, identity_wires=[0])
     qp.assert_equal(qubit_op.simplify(), result.simplify())
 
 
@@ -538,7 +538,7 @@ def test_jordan_wigner_for_fermi_sentence_operation(fermionic_op, result):
     wires = fermionic_op.wires or [0]
 
     qubit_op = jordan_wigner(fermionic_op)
-    result = result.operation(wires)
+    result = qp.pauli.to_operator(result, wires)
 
     qp.assert_equal(qubit_op.simplify(), result.simplify())
 
@@ -596,14 +596,14 @@ WIRE_MAP_FOR_FERMI_SENTENCE = [
         ],
     ),
     (
-        {0: "b", 1: "a"},
+        {0: 7, 1: 6},
         [
-            qp.s_prod(-0.25j, qp.prod(qp.PauliY("b"), qp.PauliX("a"))),
-            qp.s_prod((0.25 + 0j), qp.prod(qp.PauliY("b"), qp.PauliY("a"))),
-            qp.s_prod((0.25 + 0j), qp.prod(qp.PauliX("b"), qp.PauliX("a"))),
-            qp.s_prod(0.25j, qp.prod(qp.PauliX("b"), qp.PauliY("a"))),
-            qp.s_prod((0.5 + 0j), qp.Identity("b")),
-            qp.s_prod((-0.5 + 0j), qp.PauliZ("b")),
+            qp.s_prod(-0.25j, qp.prod(qp.PauliY(7), qp.PauliX(6))),
+            qp.s_prod((0.25 + 0j), qp.prod(qp.PauliY(7), qp.PauliY(6))),
+            qp.s_prod((0.25 + 0j), qp.prod(qp.PauliX(7), qp.PauliX(6))),
+            qp.s_prod(0.25j, qp.prod(qp.PauliX(7), qp.PauliY(6))),
+            qp.s_prod((0.5 + 0j), qp.Identity(7)),
+            qp.s_prod((-0.5 + 0j), qp.PauliZ(7)),
         ],
     ),
 ]
@@ -661,12 +661,12 @@ WIRE_MAP_FOR_FERMI_WORDS = [
         ],
     ),
     (
-        {0: "b", 1: "a"},
+        {0: 7, 1: 6},
         [
-            qp.s_prod(-0.25j, qp.prod(qp.PauliY("b"), qp.PauliX("a"))),
-            qp.s_prod(-0.25 + 0j, qp.prod(qp.PauliY("b"), qp.PauliY("a"))),
-            qp.s_prod(0.25 + 0j, qp.prod(qp.PauliX("b"), qp.PauliX("a"))),
-            qp.s_prod(-0.25j, qp.prod(qp.PauliX("b"), qp.PauliY("a"))),
+            qp.s_prod(-0.25j, qp.prod(qp.PauliY(7), qp.PauliX(6))),
+            qp.s_prod(-0.25 + 0j, qp.prod(qp.PauliY(7), qp.PauliY(6))),
+            qp.s_prod(0.25 + 0j, qp.prod(qp.PauliX(7), qp.PauliX(6))),
+            qp.s_prod(-0.25j, qp.prod(qp.PauliX(7), qp.PauliY(6))),
         ],
     ),
 ]

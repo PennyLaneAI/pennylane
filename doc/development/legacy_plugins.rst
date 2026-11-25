@@ -94,7 +94,7 @@ Device capabilities
 Furthermore, you must tell PennyLane about the operations that your device supports, 
 as well as potential further capabilities, by providing the following class attributes/properties:
 
-* :attr:`pennylane.devices.LegacyDevice.stopping_condition`: This :class:`~.BooleanFn` should return ``True`` for supported
+* :attr:`pennylane.devices.LegacyDevice.stopping_condition`: This callable should return ``True`` for supported
   operations and measurement processes, and ``False`` otherwise. Note that this function is called on
   **both** ``Operator`` and ``MeasurementProcess`` classes. Though this function must accept both ``Operator``
   and ``MeasurementProcess`` classes, it does not affect whether a ``MeasurementProcess`` is supported or not.
@@ -105,7 +105,7 @@ as well as potential further capabilities, by providing the following class attr
       def stopping_condition(self):
           def accepts_obj(obj):
               return obj.name in {'CNOT', 'PauliX', 'PauliY', 'PauliZ'}
-          return qp.BooleanFn(accepts_obj)
+          return accepts_obj
 
   Supported operations can also be determined by the :attr:`pennylane.devices.LegacyDevice.operations` property.
   This property is a list of string names for supported operations.

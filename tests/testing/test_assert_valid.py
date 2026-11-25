@@ -17,6 +17,7 @@ This module contains unit tests for ``qp.testing.assert_valid``.
 
 # pylint: disable=too-few-public-methods,unused-argument
 
+
 import copy
 from pickle import PicklingError
 
@@ -132,7 +133,7 @@ class TestDecompositionErrors:
             def compute_decomposition(*args, **kwargs):
                 if kwargs["wires"][0] == 0:
                     return [qp.RX(0.2, wires=0)]
-                return [qp.RX(0.2, wires="not the ops wire")]
+                return [qp.RX(0.2, wires=3)]
 
         with pytest.raises(AssertionError, match=r"Operators in decomposition of wire\-mapped"):
             assert_valid(BadDecompositionWireMap(wires=0), skip_pickle=True)
@@ -329,7 +330,7 @@ def test_bad_eigenvalues_order():
 
     class BadEigenDecomp(qp.PauliX):
         @staticmethod
-        def compute_eigvals(wires):  # pylint: disable=signature-differs
+        def compute_eigvals(wires):
             return [-1, 1]
 
     with pytest.raises(
@@ -761,7 +762,7 @@ class TestOperator2AssertValid:
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
 
-            def __init__(self, phi, wires):  # pylint: disable=unused-argument
+            def __init__(self, phi, wires):
                 super().__init__(1.0, wires=wires)  # always 1.0, ignores ``phi``
 
         op = IgnoresParams(0.5, wires=0)

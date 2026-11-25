@@ -64,6 +64,7 @@ These compilation passes decompose or manipulate quantum circuits in the
 
     ~clifford_t_decomposition
     ~gridsynth
+    ~transforms.decompositions.make_phase_gradient_distillation_decomp
     ~transforms.ppm_compilation
     ~transforms.to_ppr
     ~transforms.commute_ppr
@@ -330,8 +331,8 @@ Alternatively, multiple transforms can be chained together to create a :class:`~
 >>> pipeline = qp.transforms.cancel_inverses(recursive=True) + qp.transforms.merge_rotations
 >>> print(pipeline)
 CompilePipeline(
-  [1] cancel_inverses(recursive=True),
-  [2] merge_rotations()
+  [0] cancel_inverses(recursive=True),
+  [1] merge_rotations()
 )
 
 The :class:`~.CompilePipeline` can also be applied on a ``QNode``, which will transform the
@@ -482,7 +483,7 @@ from .zx import (
     from_zx,
 )
 from .broadcast_expand import broadcast_expand
-from .decompose import _tape_decompose, decompose  # pylint: disable=protected-access
+from .decompose import _tape_decompose, decompose
 from .intermediate_reps import (
     parity_matrix,
     phase_polynomial,

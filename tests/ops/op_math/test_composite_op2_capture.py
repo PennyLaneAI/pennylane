@@ -24,7 +24,7 @@ jax = pytest.importorskip("jax")
 
 pytestmark = [pytest.mark.capture]
 
-# pylint: disable=wrong-import-position
+# pylint: disable-next=wrong-import-position
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp
 
 
@@ -109,19 +109,15 @@ def test_change_op_basis_public_api(defined_outside):
 
     eqns = cjaxpr.eqns
 
-    assert len(eqns) == 3  # Op1 + Op2 + Adjoint(Op1)
-
+    assert len(eqns) == 1
     assert eqns[0].primitive.name == "operator"
-    assert eqns[0].params["op_cls"] is NonParametricOp
-    assert eqns[0].params["adjoint"] is False
+    assert eqns[0].params["op_cls"] is qp.ops.ChangeOpBasis2
 
-    assert eqns[1].primitive.name == "operator"
-    assert eqns[1].params["op_cls"] is DynOp
-    assert eqns[1].params["adjoint"] is False
-
-    assert eqns[2].primitive.name == "operator"
-    assert eqns[2].params["op_cls"] is NonParametricOp
-    assert eqns[2].params["adjoint"] is True
+    tape = qp.testing.plxpr_to_tape(cjaxpr.jaxpr, cjaxpr.consts, 2.3)
+    (op,) = tape.operations
+    qp.assert_equal(op.compute_op, NonParametricOp(0))
+    qp.assert_equal(op.target_op, DynOp(2.3, 1))
+    qp.assert_equal(op.uncompute_op, qp.adjoint(NonParametricOp(0)))
 
 
 @pytest.mark.parametrize("defined_outside", (True, False))

@@ -15,8 +15,6 @@
 Unit tests for utilities for optimization transforms.
 """
 
-# pylint: disable=too-few-public-methods
-
 from itertools import product
 
 import pytest
@@ -26,23 +24,23 @@ from pennylane import numpy as np
 from pennylane.transforms.optimization.optimization_utils import find_next_gate, fuse_rot_angles
 
 sample_op_list = [
-    qp.Hadamard(wires="a"),
-    qp.CNOT(wires=["a", "b"]),
-    qp.Toffoli(wires=[0, 1, "b"]),
-    qp.Hadamard(wires="c"),
+    qp.Hadamard(wires=5),
+    qp.CNOT(wires=[5, 7]),
+    qp.Toffoli(wires=[0, 1, 7]),
+    qp.Hadamard(wires=8),
 ]
 
 
-class TestFindNextGate:
+class TestFindNextGate:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize(
         ("wires,op_list,next_gate_idx"),
         [
-            ("a", sample_op_list, 0),
-            ("b", sample_op_list, 1),
-            ("e", sample_op_list, None),
+            (5, sample_op_list, 0),
+            (7, sample_op_list, 1),
+            (9, sample_op_list, None),
             ([0, 2], sample_op_list, 2),
             ([0, 1], sample_op_list, 2),
-            ("c", sample_op_list, 3),
+            (8, sample_op_list, 3),
         ],
     )
     def test_find_next_gate(self, wires, op_list, next_gate_idx):
@@ -84,7 +82,7 @@ class TestRotGateFusion:
             qp.Rot(*qp.math.transpose(angles_1), wires=0)
             qp.Rot(*qp.math.transpose(angles_2), wires=0)
 
-        matrix_expected = qp.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
+        matrix_expected = qp.matrix(original_ops, [0])()
 
         fused_angles = fuse_rot_angles(angles_1, angles_2)
         # The reshape is only used in the _mixed_batching test. Otherwise it is irrelevant.
@@ -162,7 +160,6 @@ class TestRotGateFusion:
         angles_1, angles_2 = np.transpose(special_angles, (1, 0, 2))
         self.run_interface_test(angles_1, angles_2)
 
-    # pylint: disable=too-many-arguments
     def run_jacobian_test(self, all_angles, jac_fn, is_batched, jit_fn=None, array_fn=None):
         """Execute standard test lines for testing Jacobians with different interfaces.
         #Note that the transpose calls only are relevant for tests with batching."""
@@ -173,7 +170,7 @@ class TestRotGateFusion:
                 qp.Rot(angles1[..., 0], angles1[..., 1], angles1[..., 2], wires=0)
                 qp.Rot(angles2[..., 0], angles2[..., 1], angles2[..., 2], wires=0)
 
-            return qp.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
+            return qp.matrix(original_ops, [0])()
 
         def mat_from_fuse(angles):
             angles1, angles2 = angles[..., 0, :], angles[..., 1, :]

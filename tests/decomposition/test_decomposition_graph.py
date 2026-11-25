@@ -14,6 +14,8 @@
 
 """Unit tests for the decomposition graph."""
 
+# pylint: disable=protected-access,too-few-public-methods
+
 import warnings
 from unittest.mock import patch
 
@@ -28,9 +30,13 @@ from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_de
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract, flip_control_adjoint
+from pennylane.ops.op_math.controlled2 import (
+    ControlledOp2,
+    _controlled_flip_adjoint,
+    _ctrl_abstract,
+)
 from pennylane.ops.op_math.pow2 import _pow_abstract
-from pennylane.typing import Float, Wire
+from pennylane.typing import Bool, Float, Wire
 from tests.core.operator.operator2_utils import (
     DynOp,
     NonParametricOp,
@@ -39,7 +45,33 @@ from tests.core.operator.operator2_utils import (
 )
 from tests.decomposition.conftest import decompositions, to_resources
 
-# pylint: disable=protected-access,too-few-public-methods,useless-parent-delegation,unused-argument
+
+@pytest.mark.parametrize("op_key", [qp.SWAP, "SWAP"])
+def test_fixed_decomposition_by_public_name(op_key):
+    """A public name selects the same rule as a rule object."""
+    rule = qp.list_decomps(qp.SWAP)["to_cnot"]
+    assert rule.name == "to_cnot"
+    assert rule.__name__ == "_swap_to_cnot"
+    assert rule._compute_resources.__name__ == "_swap_to_cnot_resources"
+    op = qp.SWAP(wires=[0, 1])
+    named = DecompositionGraph([op], gate_set={qp.CNOT}, fixed_decomps={op_key: "to_cnot"})
+    explicit = DecompositionGraph([op], gate_set={qp.CNOT}, fixed_decomps={qp.SWAP: rule})
+    assert named.solve().resource_estimate(op) == explicit.solve().resource_estimate(op)
+
+
+def test_fixed_decomposition_unknown_name():
+    """An unknown fixed rule name reports the available public names."""
+    available = [rule.name for rule in qp.list_decomps(qp.SWAP)]
+    with pytest.raises(KeyError, match="missing_strategy") as exc:
+        DecompositionGraph(
+            [qp.SWAP(wires=[0, 1])],
+            gate_set={qp.CNOT},
+            fixed_decomps={qp.SWAP: "missing_strategy"},
+        )
+    assert exc.value.args[0] == (
+        "Cannot find a decomposition with the given name: missing_strategy. "
+        f"Available names: {available}."
+    )
 
 
 class CustomOp(Operation):
@@ -50,6 +82,31 @@ class CustomOp(Operation):
     @property
     def resource_params(self):
         return {}
+
+
+def test_legacy_nested_powers():
+    """The graph merges nested powers of Operator1 instances."""
+    op = qp.ops.Pow(qp.ops.Pow(CustomOp(wires=0), 3), 2)
+    solution = DecompositionGraph([op], gate_set={CustomOp}).solve()
+    rule = solution.decomposition(op)
+
+    assert rule.name == "merge_powers"
+    tape = qp.testing.decomp_rule_to_tape(op, rule)
+    assert tape.operations == [qp.ops.Pow(CustomOp(wires=0), 6)]
+    assert solution.resource_estimate(op) == to_resources({CustomOp: 6})
+
+
+def test_legacy_controlled_adjoint():
+    """The graph moves an Operator1 adjoint outside its control."""
+    op = qp.ops.Controlled(qp.ops.Adjoint(CustomOp(wires=0)), control_wires=[1])
+    expected = qp.ops.Adjoint(qp.ops.Controlled(CustomOp(wires=0), control_wires=[1]))
+    solution = DecompositionGraph([op], gate_set={expected.name}).solve()
+    rule = solution.decomposition(op)
+
+    assert rule.name == "flip_adjoint"
+    tape = qp.testing.decomp_rule_to_tape(op, rule)
+    assert tape.operations == [expected]
+    assert solution.resource_estimate(op) == to_resources({expected: 1})
 
 
 class MultiWireOp(Operation):
@@ -67,7 +124,7 @@ class MultiWireRot(Operation):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, phi, wires):
+    def __init__(self, phi, wires):  # pylint: disable=useless-parent-delegation
         super().__init__(phi, wires)
 
     @property
@@ -115,13 +172,13 @@ class TestDecompGraphConstruction:
     def test_get_decomp_rule(self):
         """Tests the internal method that gets the decomposition rules for an operator."""
 
-        @qp.register_resources({qp.PhaseShift: 2, qp.RX: 1})
+        @qp.register_resources({qp.PhaseShift: 2, qp.RX: 1}, name="custom_hadamard")
         def custom_hadamard(wires):
             qp.PhaseShift(np.pi / 2, wires=wires)
             qp.RX(np.pi / 2, wires=wires)
             qp.PhaseShift(np.pi / 2, wires=wires)
 
-        @qp.register_resources({qp.PhaseShift: 1, qp.RY: 1})
+        @qp.register_resources({qp.PhaseShift: 1, qp.RY: 1}, name="custom_hadamard_2")
         def custom_hadamard_2(wires):
             qp.PhaseShift(np.pi / 2, wires=wires)
             qp.RY(np.pi / 2, wires=wires)
@@ -159,13 +216,13 @@ class TestDecompGraphConstruction:
     def test_both_fixed_and_alt_decomps(self):
         """Tests that fixed_decomps overrides alt_decomps."""
 
-        @qp.register_resources({qp.PhaseShift: 2, qp.RX: 1})
+        @qp.register_resources({qp.PhaseShift: 2, qp.RX: 1}, name="custom_hadamard")
         def custom_hadamard(wires):
             qp.PhaseShift(np.pi / 2, wires=wires)
             qp.RX(np.pi / 2, wires=wires)
             qp.PhaseShift(np.pi / 2, wires=wires)
 
-        @qp.register_resources({qp.PhaseShift: 1, qp.RY: 1})
+        @qp.register_resources({qp.PhaseShift: 1, qp.RY: 1}, name="custom_hadamard_2")
         def custom_hadamard_2(wires):
             qp.PhaseShift(np.pi / 2, wires=wires)
             qp.RY(np.pi / 2, wires=wires)
@@ -187,15 +244,15 @@ class TestDecompGraphConstruction:
     def test_fixed_decomps_respected_for_symbolic_ops(self):
         """Tests that fixed decomps for symbolic ops are respected."""
 
-        @qp.register_resources({qp.X: 1})
+        @qp.register_resources({qp.X: 1}, name="base_decomp")
         def _base_decomp(wires):
             raise NotImplementedError
 
-        @qp.register_resources({qp.X: 1})
+        @qp.register_resources({qp.X: 1}, name="custom_adjoint")
         def _custom_adjoint(base):
             raise NotImplementedError
 
-        @qp.register_resources({qp.CNOT: 1})
+        @qp.register_resources({qp.CNOT: 1}, name="custom_ctrl")
         def _custom_ctrl(base, control_wires, control_values, **_):
             raise NotImplementedError
 
@@ -229,7 +286,7 @@ class TestDecompGraphConstruction:
     def test_get_decomps_symbolic2(self):
         """Tests that get_decomps works properly for symbolicop2."""
 
-        @qp.register_resources({qp.PhaseShift: 2, qp.RX: 1})
+        @qp.register_resources({qp.PhaseShift: 2, qp.RX: 1}, name="custom_rule")
         def _custom_rule(wires):
             raise NotImplementedError
 
@@ -276,7 +333,7 @@ class TestDecompGraphConstruction:
         """Tests rules which are not applicable are not skipped."""
 
         @qp.register_condition(lambda num_wires: num_wires == 1)
-        @qp.register_resources({qp.RZ: 1, qp.CNOT: 1})
+        @qp.register_resources({qp.RZ: 1, qp.CNOT: 1}, name="some_rule")
         def some_rule(*_, **__):
             raise NotImplementedError
 
@@ -284,7 +341,7 @@ class TestDecompGraphConstruction:
             return {qp.RZ: 1, qp.CNOT: num_wires - 1}
 
         @qp.register_condition(lambda num_wires: num_wires >= 2)
-        @qp.register_resources(_some_other_resource)
+        @qp.register_resources(_some_other_resource, name="some_other_rule")
         def some_other_rule(*_, **__):
             raise NotImplementedError
 
@@ -308,9 +365,10 @@ class TestDecompGraphConstruction:
                 qp.RX: 1,
                 qp.X: 1,
                 _adjoint_abstract(qp.RY): 1,
-                _ctrl_abstract(qp.T, Wire[2]): 1,
+                qp.ctrl(qp.T(Wire[1]), control=Wire[2], control_values=Bool[2]): 1,
                 _pow_abstract(qp.Z, z=2): 1,
-            }
+            },
+            name="custom_decomp",
         )
         def custom_decomp(wires):
             qp.RX(0.1, wires=wires[0])
@@ -345,11 +403,11 @@ class TestDecompGraphConstruction:
     def test_circular_decomposition_paths(self):
         """Tests that the graph can handle circular decomposition pathways."""
 
-        @qp.register_resources({AnotherOp: 1})
+        @qp.register_resources({AnotherOp: 1}, name="custom_rule")
         def _custom_rule(_):
             raise NotImplementedError
 
-        @qp.register_resources({_ctrl_abstract(CustomOp, Wire[1]): 1})
+        @qp.register_resources({_ctrl_abstract(CustomOp, Wire[1]): 1}, name="another_rule")
         def _another_rule(_):
             raise NotImplementedError
 
@@ -368,11 +426,11 @@ class TestDecompGraphConstruction:
     def test_circular_decomposition_paths_for_operator2(self):
         """Tests that the graph can handle circular decomposition pathways."""
 
-        @qp.register_resources({DynOp(Float, Wire[2]): 1})
+        @qp.register_resources({DynOp(Float, Wire[2]): 1}, name="custom_rule")
         def _custom_rule(_):
             raise NotImplementedError
 
-        @qp.register_resources({qp.ctrl(NonParametricOp(Wire[2]), Wire[1]): 1})
+        @qp.register_resources({qp.ctrl(NonParametricOp(Wire[2]), Wire[1]): 1}, name="another_rule")
         def _another_rule(_):
             raise NotImplementedError
 
@@ -391,6 +449,208 @@ class TestDecompGraphConstruction:
             gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
             alt_decomps={NonParametricOp: [_custom_rule], DynOp: [_another_rule]},
         )
+
+    @pytest.mark.parametrize("base", [CustomOp(0), NonParametricOp(Wire[1])])
+    def test_growing_controls_beneath_adjoint(self, base):
+        """Tests that the graph construction terminates if the number of control wires
+        grows beneath an adjoint with every pass through a decomposition cycle."""
+
+        @qp.register_resources({_ctrl_abstract(base, Wire[1]): 1}, name="base_to_ctrl")
+        def _base_to_ctrl(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources(
+            {_adjoint_abstract(_ctrl_abstract(base, Wire[1])): 1}, name="another_to_adjoint_ctrl"
+        )
+        def _another_to_adjoint_ctrl(*_, **__):
+            raise NotImplementedError
+
+        # The adjoint of C(base) with n controls decomposes into the adjoint of C(base) with
+        # n + 1 controls, by applying control to the decomposition of the base.
+        _ = DecompositionGraph(
+            [AnotherOp(0)],
+            gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
+            alt_decomps={type(base): [_base_to_ctrl], AnotherOp: [_another_to_adjoint_ctrl]},
+        )
+
+    @pytest.mark.parametrize("cyclic_rule_first", [False, True])
+    def test_cycle_with_exit_through_in_progress_controlled_op(self, cyclic_rule_first):
+        """Tests that a decomposition cycle back to a controlled operator that is still being
+        explored is kept if the controlled operator already has a node in the graph, whether
+        or not the exit of the cycle has been explored when the cycle is closed."""
+
+        @qp.register_resources({qp.X: 1}, name="custom_to_x")
+        def _custom_to_x(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({_ctrl_abstract(AnotherOp, Wire[1]): 1}, name="custom_to_another")
+        def _custom_to_another(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({_ctrl_abstract(CustomOp, Wire[1]): 1}, name="another_to_custom")
+        def _another_to_custom(*_, **__):
+            raise NotImplementedError
+
+        custom_rules = [_custom_to_x, _custom_to_another]
+        if cyclic_rule_first:
+            custom_rules.reverse()
+
+        ctrl_custom = qp.ctrl(CustomOp(0), control=[1])
+        ctrl_another = qp.ctrl(AnotherOp(0), control=[1])
+        graph = DecompositionGraph(
+            [ctrl_custom, ctrl_another],
+            gate_set={qp.X},
+            alt_decomps={
+                "C(CustomOp)": custom_rules,
+                "C(AnotherOp)": [_another_to_custom],
+            },
+        )
+        solution = graph.solve()
+        assert solution.decomposition(ctrl_another) is _another_to_custom
+
+    @pytest.mark.parametrize("consumer_first", [False, True])
+    def test_cut_cycle_does_not_depend_on_operator_order(self, consumer_first):
+        """Tests that a controlled operator whose decomposition rule was cut to break a cycle
+        while its base was being explored is explored again when it is visited later."""
+
+        @qp.register_resources({qp.X: 1}, name="custom_to_x")
+        def _custom_to_x(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources(
+            {_ctrl_abstract(AnotherOp, Wire[1]): 1}, name="custom_to_ctrl_another"
+        )
+        def _custom_to_ctrl_another(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources(
+            {_ctrl_abstract(CustomOp, Wire[1]): 1}, name="ctrl_another_to_ctrl_custom"
+        )
+        def _ctrl_another_to_ctrl_custom(*_, **__):
+            raise NotImplementedError
+
+        ctrl_another = qp.ctrl(AnotherOp(0), control=[1])
+        ops = [CustomOp(0), ctrl_another]
+        if consumer_first:
+            ops.reverse()
+
+        graph = DecompositionGraph(
+            ops,
+            gate_set={qp.X, qp.CNOT},
+            alt_decomps={
+                CustomOp: [_custom_to_x, _custom_to_ctrl_another],
+                "C(AnotherOp)": [_ctrl_another_to_ctrl_custom],
+            },
+        )
+        solution = graph.solve()
+        assert solution.decomposition(ctrl_another) is _ctrl_another_to_ctrl_custom
+
+    @pytest.mark.parametrize("entry_first", [False, True])
+    def test_reuse_of_op_under_exploration_does_not_depend_on_operator_order(self, entry_first):
+        """Tests that an operator that reuses an operator which is still being explored is
+        explored again when it is visited after a cycle cut in that exploration is resolved."""
+
+        class EntryOp(Operation):
+            """An operation that decomposes into ``HubOp``."""
+
+        class HubOp(Operation):
+            """An operation with a cheap decomposition through the controlled ``EntryOp``."""
+
+        class LoopOp(Operation):
+            """An operation that decomposes into ``HubOp``."""
+
+        @qp.register_resources({HubOp: 1}, name="to_hub")
+        def _to_hub(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.Z: 1}, name="hub_to_z")
+        def _hub_to_z(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({_ctrl_abstract(EntryOp, Wire[1]): 1}, name="hub_to_ctrl_entry")
+        def _hub_to_ctrl_entry(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({LoopOp: 1}, name="hub_to_loop")
+        def _hub_to_loop(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.X: 1}, name="ctrl_entry_to_x")
+        def _ctrl_entry_to_x(*_, **__):
+            raise NotImplementedError
+
+        ops = [EntryOp(0), LoopOp(0)]
+        if not entry_first:
+            ops.reverse()
+
+        graph = DecompositionGraph(
+            ops,
+            gate_set={qp.X: 1.0, qp.Z: 100.0},
+            alt_decomps={
+                EntryOp: [_to_hub],
+                HubOp: [_hub_to_z, _hub_to_ctrl_entry, _hub_to_loop],
+                LoopOp: [_to_hub],
+                "C(EntryOp)": [_ctrl_entry_to_x],
+            },
+        )
+        solution = graph.solve()
+        assert solution.resource_estimate(LoopOp(0)) == to_resources({qp.X: 1})
+
+    @pytest.mark.parametrize("entry_first", [False, True])
+    def test_cuts_against_several_in_progress_ops(self, entry_first):
+        """Tests that an operator is explored again when it is visited after a cycle cut in its
+        exploration is resolved, even if another cut in its exploration closed a cycle back to it.
+        """
+
+        class EntryOp(Operation):
+            """An operation that decomposes into ``HubOp``."""
+
+        class HubOp(Operation):
+            """An operation that decomposes into ``LeafOp``."""
+
+        class LeafOp(Operation):
+            """An operation with a cheap decomposition through the controlled ``EntryOp``."""
+
+        @qp.register_resources({HubOp: 1}, name="entry_to_hub")
+        def _entry_to_hub(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({LeafOp: 1}, name="hub_to_leaf")
+        def _hub_to_leaf(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.Z: 1}, name="leaf_to_z")
+        def _leaf_to_z(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({_ctrl_abstract(EntryOp, Wire[1]): 1}, name="leaf_to_ctrl_entry")
+        def _leaf_to_ctrl_entry(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({_ctrl_abstract(HubOp, Wire[1]): 1}, name="leaf_to_ctrl_hub")
+        def _leaf_to_ctrl_hub(*_, **__):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.X: 1}, name="ctrl_entry_to_x")
+        def _ctrl_entry_to_x(*_, **__):
+            raise NotImplementedError
+
+        ops = [EntryOp(0), HubOp(0)]
+        if not entry_first:
+            ops.reverse()
+
+        graph = DecompositionGraph(
+            ops,
+            gate_set={qp.X: 1.0, qp.Z: 100.0},
+            alt_decomps={
+                EntryOp: [_entry_to_hub],
+                HubOp: [_hub_to_leaf],
+                LeafOp: [_leaf_to_z, _leaf_to_ctrl_entry, _leaf_to_ctrl_hub],
+                "C(EntryOp)": [_ctrl_entry_to_x],
+            },
+        )
+        solution = graph.solve()
+        assert solution.resource_estimate(HubOp(0)) == to_resources({qp.X: 1})
 
 
 @pytest.mark.unit
@@ -438,14 +698,14 @@ class TestDecompGraphSolver:
     def test_operator2_integration(self):
         """Tests constructing and solving a graph from an Operator2."""
 
-        def _resource_fn(params, wires, op):
+        def _resource_fn(params, wires, op):  # pylint: disable=unused-argument
             return {qp.CNOT: 2 * len(wires), OneWireDynOp: 1, qp.RX: 2 * (len(wires) - 1)}
 
-        @qp.register_resources(_resource_fn)
+        @qp.register_resources(_resource_fn, name="custom_rule")
         def _custom_rule(params, wires, op):
             raise NotImplementedError
 
-        @qp.register_resources({qp.RX: 2, qp.CNOT: 2})
+        @qp.register_resources({qp.RX: 2, qp.CNOT: 2}, name="another_rule")
         def _another_rule(theta, wires):
             raise NotImplementedError
 
@@ -456,11 +716,13 @@ class TestDecompGraphSolver:
                 ): 1
             }
 
-        @qp.register_resources(_another_resource_fn)
+        @qp.register_resources(_another_resource_fn, name="another_custom_rule")
         def _another_custom_rule(*args, **kwargs):
             raise NotImplementedError
 
-        @qp.register_resources(lambda num_wires: {DynOp(Float, Wire[1]): num_wires})
+        @qp.register_resources(
+            lambda num_wires: {DynOp(Float, Wire[1]): num_wires}, name="second_rule"
+        )
         def _second_rule(*args, **kwargs):
             raise NotImplementedError
 
@@ -514,7 +776,7 @@ class TestDecompGraphSolver:
     def test_graph_strict(self, recwarn):
         """Test the graph with strict=False."""
 
-        @qp.register_resources({AnotherOp: 1})
+        @qp.register_resources({AnotherOp: 1}, name="decomp")
         def _decomp(wires):
             raise NotImplementedError
 
@@ -532,11 +794,11 @@ class TestDecompGraphSolver:
         """Tests that when strict=False, ops without decompositions are not chosen
         if there is an alternative pathway available."""
 
-        @qp.register_resources({AnotherOp: 1})
+        @qp.register_resources({AnotherOp: 1}, name="decomp")
         def _decomp(wires):
             raise NotImplementedError
 
-        @qp.register_resources({qp.H: 2, qp.CNOT: 1})
+        @qp.register_resources({qp.H: 2, qp.CNOT: 1}, name="decomp2")
         def _decomp2(wires):
             raise NotImplementedError
 
@@ -574,15 +836,15 @@ class TestDecompGraphSolver:
     def test_lazy_solve(self):
         """Tests the lazy keyword argument."""
 
-        @qp.register_resources({qp.RZ: 1, qp.CNOT: 1})
+        @qp.register_resources({qp.RZ: 1, qp.CNOT: 1}, name="custom_decomp")
         def _custom_decomp(*_, **__):
             raise NotImplementedError
 
-        @qp.register_resources({AnotherOp: 1, qp.CNOT: 1})
+        @qp.register_resources({AnotherOp: 1, qp.CNOT: 1}, name="custom_decomp_2")
         def _custom_decomp_2(*_, **__):
             raise NotImplementedError
 
-        @qp.register_resources({qp.RZ: 2, qp.CNOT: 2})
+        @qp.register_resources({qp.RZ: 2, qp.CNOT: 2}, name="another_decomp")
         def _another_decomp(*_, **__):
             raise NotImplementedError
 
@@ -615,14 +877,14 @@ class TestDecompGraphSolver:
                 qp.resource_rep(MultiWireOp, num_wires=num_wires - 1): 2,
             }
 
-        @qp.register_resources(_custom_rot_resource)
+        @qp.register_resources(_custom_rot_resource, name="custom_rot_decomp")
         def _custom_rot_decomp(*_, **__):
             raise NotImplementedError
 
         def _custom_resource(num_wires):
             return {qp.RZ: 1, qp.CNOT: 2 * (num_wires - 1)}
 
-        @qp.register_resources(_custom_resource)
+        @qp.register_resources(_custom_resource, name="custom_decomp")
         def _custom_decomp(*_, **__):
             raise NotImplementedError
 
@@ -662,11 +924,13 @@ class TestDecompGraphWorkWireBudgeting:
     def test_work_wire_requirement(self):
         """Tests that the graph respects the work wire requirement."""
 
-        @qp.register_resources({qp.Toffoli: 2, qp.CRot: 1}, work_wires={"zeroed": 1})
+        @qp.register_resources(
+            {qp.Toffoli: 2, qp.CRot: 1}, work_wires={"zeroed": 1}, name="decomp_with_work_wire"
+        )
         def _decomp_with_work_wire(*_, **__):
             raise NotImplementedError
 
-        @qp.register_resources({qp.Toffoli: 2, qp.CRot: 3})
+        @qp.register_resources({qp.Toffoli: 2, qp.CRot: 3}, name="decomp_without_work_wire")
         def _decomp_without_work_wire(*_, **__):
             raise NotImplementedError
 
@@ -689,19 +953,23 @@ class TestDecompGraphWorkWireBudgeting:
         """Tests that the same operator produced under different work wire budgets
         are stored as different nodes in the graph, and results can be queried."""
 
-        @qp.register_resources({qp.Toffoli: 2, qp.CRot: 1}, work_wires={"zeroed": 2})
+        @qp.register_resources(
+            {qp.Toffoli: 2, qp.CRot: 1}, work_wires={"zeroed": 2}, name="decomp_with_work_wire"
+        )
         def _decomp_with_work_wire(*_, **__):
             raise NotImplementedError
 
-        @qp.register_resources({qp.Toffoli: 4, qp.CRot: 3})
+        @qp.register_resources({qp.Toffoli: 4, qp.CRot: 3}, name="decomp_without_work_wire")
         def _decomp_without_work_wire(*_, **__):
             raise NotImplementedError
 
-        @qp.register_resources({qp.Toffoli: 2, CustomOp: 2}, work_wires={"zeroed": 1})
+        @qp.register_resources(
+            {qp.Toffoli: 2, CustomOp: 2}, work_wires={"zeroed": 1}, name="decomp2_with_work_wire"
+        )
         def _decomp2_with_work_wire(*_, **__):
             raise NotImplementedError
 
-        @qp.register_resources({qp.Toffoli: 4, CustomOp: 2})
+        @qp.register_resources({qp.Toffoli: 4, CustomOp: 2}, name="decomp2_without_work_wire")
         def _decomp2_without_work_wire(*_, **__):
             raise NotImplementedError
 
@@ -758,15 +1026,15 @@ class TestDecompGraphWorkWireBudgeting:
         class SimpleOp(Operation):
             """A simple operation that does not depend on work wires."""
 
-        @qp.register_resources({qp.X: 1})
+        @qp.register_resources({qp.X: 1}, name="simple_decomp")
         def _simple_decomp(_):
             raise NotImplementedError
 
-        @qp.register_resources({SimpleOp: 1}, work_wires={"zeroed": 1})
+        @qp.register_resources({SimpleOp: 1}, work_wires={"zeroed": 1}, name="custom_decomp")
         def _custom_decomp(_):
             raise NotImplementedError
 
-        @qp.register_resources({qp.X: 1})
+        @qp.register_resources({qp.X: 1}, name="another_decomp")
         def _another_decomp(_):
             raise NotImplementedError
 
@@ -778,25 +1046,193 @@ class TestDecompGraphWorkWireBudgeting:
         solution = graph.solve()
         assert solution.is_solved_for(SimpleOp(0))
 
+    def test_cycle_through_work_wire_dependent_ops(self):
+        """Tests that a cycle of work-wire dependent ops that uses more work wires on every cycle
+        iteration does not recurse indefinitely."""
+
+        class WrapperOp(Operation):
+            """An operation that decomposes into ``CustomOp`` using a work wire."""
+
+        @qp.register_resources({CustomOp: 1}, name="another_to_custom")
+        def _another_to_custom(_):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1}, name="custom_to_x")
+        def _custom_to_x(_):
+            raise NotImplementedError
+
+        @qp.register_resources({AnotherOp: 1}, work_wires={"zeroed": 1}, name="custom_to_another")
+        def _custom_to_another(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1}, work_wires={"zeroed": 1}, name="wrapper_to_custom")
+        def _wrapper_to_custom(_):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [AnotherOp(0), WrapperOp(0)],
+            gate_set={qp.X},
+            alt_decomps={
+                AnotherOp: [_another_to_custom],
+                CustomOp: [_custom_to_x, _custom_to_another],
+                WrapperOp: [_wrapper_to_custom],
+            },
+        )
+        solution = graph.solve(num_work_wires=None)
+        assert solution.decomposition(WrapperOp(0), num_work_wires=None) is _wrapper_to_custom
+
+    def test_self_loop_through_work_wire_dependent_op(self):
+        """Tests that a work-wire dependent op that decomposes into itself using an additional
+        work wire does not recurse indefinitely."""
+
+        class WrapperOp(Operation):
+            """An operation that decomposes into ``CustomOp`` using a work wire."""
+
+        @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1}, name="custom_to_x")
+        def _custom_to_x(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1}, work_wires={"zeroed": 1}, name="custom_to_custom")
+        def _custom_to_custom(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1}, work_wires={"zeroed": 1}, name="wrapper_to_custom")
+        def _wrapper_to_custom(_):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [CustomOp(0), WrapperOp(0)],
+            gate_set={qp.X},
+            alt_decomps={
+                CustomOp: [_custom_to_x, _custom_to_custom],
+                WrapperOp: [_wrapper_to_custom],
+            },
+        )
+        solution = graph.solve(num_work_wires=None)
+        assert solution.is_solved_for(WrapperOp(0), num_work_wires=None)
+
+    def test_cycle_through_work_wire_dependent_ops_without_extra_work_wires(self):
+        """Tests that a cycle of work-wire dependent ops that does not use additional work wires
+        is not pruned, so that it remains available to the solver."""
+
+        class WrapperOp(Operation):
+            """An operation that decomposes into ``CustomOp`` using a work wire."""
+
+        class OuterOp(Operation):
+            """An operation that decomposes into ``AnotherOp`` using a work wire."""
+
+        @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1}, name="custom_to_x")
+        def _custom_to_x(_):
+            raise NotImplementedError
+
+        @qp.register_resources({AnotherOp: 1}, name="custom_to_another")
+        def _custom_to_another(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1}, name="another_to_custom")
+        def _another_to_custom(_):
+            raise NotImplementedError
+
+        @qp.register_resources({qp.Z: 1}, work_wires={"zeroed": 1}, name="another_to_z")
+        def _another_to_z(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1}, work_wires={"zeroed": 1}, name="wrapper_to_custom")
+        def _wrapper_to_custom(_):
+            raise NotImplementedError
+
+        @qp.register_resources({AnotherOp: 1}, work_wires={"zeroed": 1}, name="outer_to_another")
+        def _outer_to_another(_):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [CustomOp(0), WrapperOp(0), OuterOp(0)],
+            gate_set={qp.X: 1.0, qp.Z: 100.0},
+            alt_decomps={
+                CustomOp: [_custom_to_x, _custom_to_another],
+                AnotherOp: [_another_to_custom, _another_to_z],
+                WrapperOp: [_wrapper_to_custom],
+                OuterOp: [_outer_to_another],
+            },
+        )
+        solution = graph.solve(num_work_wires=None)
+        resources = solution.resource_estimate(OuterOp(0), num_work_wires=None)
+        assert resources == to_resources({qp.X: 1})
+
+    @pytest.mark.parametrize("consumer_first", [False, True])
+    def test_cut_work_wire_cycle_does_not_depend_on_operator_order(self, consumer_first):
+        """Tests that an operator whose decomposition rule was cut to break a cycle of work-wire
+        dependent ops is explored again when it is visited outside of that cycle."""
+
+        class WrapperOp(Operation):
+            """An operation that decomposes into ``CustomOp`` using a work wire."""
+
+        class ConsumerOp(Operation):
+            """An operation that decomposes into ``AnotherOp`` using two work wires."""
+
+        @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1}, name="custom_to_x")
+        def _custom_to_x(_):
+            raise NotImplementedError
+
+        @qp.register_resources({AnotherOp: 1}, work_wires={"zeroed": 1}, name="custom_to_another")
+        def _custom_to_another(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1}, name="another_to_custom")
+        def _another_to_custom(_):
+            raise NotImplementedError
+
+        @qp.register_resources({CustomOp: 1}, work_wires={"zeroed": 1}, name="wrapper_to_custom")
+        def _wrapper_to_custom(_):
+            raise NotImplementedError
+
+        @qp.register_resources({AnotherOp: 1}, work_wires={"zeroed": 2}, name="consumer_to_another")
+        def _consumer_to_another(_):
+            raise NotImplementedError
+
+        ops = [AnotherOp(0), WrapperOp(0), ConsumerOp(0)]
+        if consumer_first:
+            ops = [ConsumerOp(0), AnotherOp(0), WrapperOp(0)]
+
+        graph = DecompositionGraph(
+            ops,
+            gate_set={qp.X},
+            alt_decomps={
+                CustomOp: [_custom_to_x, _custom_to_another],
+                AnotherOp: [_another_to_custom],
+                WrapperOp: [_wrapper_to_custom],
+                ConsumerOp: [_consumer_to_another],
+            },
+        )
+        solution = graph.solve(num_work_wires=None)
+        resources = solution.resource_estimate(ConsumerOp(0), num_work_wires=None)
+        assert resources == to_resources({qp.X: 1})
+
     def test_min_work_wires(self):
         """Tests that the graph tracks the minimum number of work wires."""
 
         class SimpleOp(Operation):
             """A simple operation that does not depend on work wires."""
 
-        @qp.register_resources({qp.X: 4})
+        @qp.register_resources({qp.X: 4}, name="simple_decomp")
         def _simple_decomp(_):
             raise NotImplementedError
 
-        @qp.register_resources({SimpleOp: 1, qp.CNOT: 4}, work_wires={"zeroed": 2})
+        @qp.register_resources(
+            {SimpleOp: 1, qp.CNOT: 4}, work_wires={"zeroed": 2}, name="custom_decomp"
+        )
         def _custom_decomp(_):
             raise NotImplementedError
 
-        @qp.register_resources({CustomOp: 1, qp.CNOT: 4}, work_wires={"zeroed": 2})
+        @qp.register_resources(
+            {CustomOp: 1, qp.CNOT: 4}, work_wires={"zeroed": 2}, name="another_decomp"
+        )
         def _another_decomp(_):
             raise NotImplementedError
 
-        @qp.register_resources({SimpleOp: 3, qp.CNOT: 4}, work_wires={"zeroed": 3})
+        @qp.register_resources(
+            {SimpleOp: 3, qp.CNOT: 4}, work_wires={"zeroed": 3}, name="yet_another_decomp"
+        )
         def _yet_another_decomp(_):
             raise NotImplementedError
 
@@ -825,21 +1261,27 @@ class TestDecompGraphWorkWireBudgeting:
         class SimpleOp(Operation):
             """A simple operation that does not depend on work wires."""
 
-        @qp.register_resources({qp.X: 4})
+        @qp.register_resources({qp.X: 4}, name="simple_decomp")
         def _simple_decomp(_):
             raise NotImplementedError
 
-        @qp.register_resources({SimpleOp: 1, qp.CNOT: 4}, work_wires={"zeroed": 1})
+        @qp.register_resources(
+            {SimpleOp: 1, qp.CNOT: 4}, work_wires={"zeroed": 1}, name="custom_decomp"
+        )
         def _custom_decomp(_):
             raise NotImplementedError
 
         # This decomposition rule isn't actually reacheable for the target gate set because it requires `qp.H`, therefore, the minimum number of
         # work wires required to decompose `AnotherOp` should be 4, not 3
-        @qp.register_resources({CustomOp: 1, qp.H: 4}, work_wires={"zeroed": 2})
+        @qp.register_resources(
+            {CustomOp: 1, qp.H: 4}, work_wires={"zeroed": 2}, name="another_decomp"
+        )
         def _another_decomp(_):
             raise NotImplementedError
 
-        @qp.register_resources({SimpleOp: 3, qp.CNOT: 4}, work_wires={"zeroed": 4})
+        @qp.register_resources(
+            {SimpleOp: 3, qp.CNOT: 4}, work_wires={"zeroed": 4}, name="yet_another_decomp"
+        )
         def _yet_another_decomp(_):
             raise NotImplementedError
 
@@ -872,11 +1314,8 @@ class TestControlledDecompositions:
             [op1, op2],
             gate_set={"ControlledPhaseShift", "PhaseShift", "GlobalPhase", "X"},
         )
-        # 6 op nodes and 3 decomposition nodes, and 1 dummy starting node.
-        assert len(graph._graph.nodes()) == 10
-        # 3 edges from decompositions to ops and 4 edges from ops to decompositions,
-        # and 4 edges from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 11
+        assert len(graph._graph.nodes()) == 17
+        assert len(graph._graph.edges()) == 22
 
         # Verify the decompositions
         solution = graph.solve()
@@ -886,18 +1325,18 @@ class TestControlledDecompositions:
 
         assert q.queue == [
             qp.PhaseShift(-0.5, wires=[1]),
-            qp.ControlledPhaseShift(-0.5, wires=[1, 2]),
+            ControlledOp2(qp.PhaseShift(-0.5, wires=2), [1]),
         ]
 
     def test_controlled_base_decomposition(self):
         """Tests applying control on the decomposition of the target operator."""
 
-        @qp.register_resources({qp.X: 1, qp.GlobalPhase: 1})
+        @qp.register_resources({qp.X: 1, qp.GlobalPhase: 1}, name="custom_decomp")
         def custom_decomp(wires):
             qp.X(wires[0])
             qp.GlobalPhase(np.pi)
 
-        @qp.register_resources({qp.Z: 1, qp.GlobalPhase: 1})
+        @qp.register_resources({qp.Z: 1, qp.GlobalPhase: 1}, name="second_decomp")
         def second_decomp(wires):
             qp.Z(wires=wires[0])
             qp.GlobalPhase(np.pi / 2)
@@ -911,7 +1350,9 @@ class TestControlledDecompositions:
             def resource_params(self):
                 return {}
 
-        @qp.register_resources({qp.Z: 1, _ctrl_abstract(CustomOp, Wire[1]): 1})
+        @qp.register_resources(
+            {qp.Z: 1, _ctrl_abstract(CustomOp, Wire[1]): 1}, name="custom_controlled_decomp"
+        )
         def custom_controlled_decomp(wires):
             qp.Z(wires=wires[0])
             qp.ctrl(CustomOp(wires=wires[1]), control=wires[0])
@@ -927,8 +1368,8 @@ class TestControlledDecompositions:
                 CustomControlledOp: [custom_controlled_decomp],
             },
         )
-        assert len(graph._graph.nodes()) == 39
-        assert len(graph._graph.edges()) == 62
+        assert len(graph._graph.nodes()) == 85
+        assert len(graph._graph.edges()) == 142
 
         solution = graph.solve()
 
@@ -944,29 +1385,13 @@ class TestControlledDecompositions:
         """Tests that the controlled form of an adjoint operator is decomposed properly."""
 
         op = qp.ctrl(qp.adjoint(qp.U1(0.5, wires=0)), control=[1])
-        # Applying ``flip_control_adjoint`` rewrites ``C(Adjoint(U1))`` as ``Adjoint(C(U1))``.
-        # With the eager ``C(U1) -> ControlledPhaseShift`` lowering, the inner ``C(U1)`` is lowered
-        # directly to ``ControlledPhaseShift``, so the result is an adjoint of a
-        # ``ControlledPhaseShift``.
-        tape = qp.testing.decomp_rule_to_tape(op, flip_control_adjoint)
-        assert tape.operations == [qp.adjoint(qp.ControlledPhaseShift(0.5, wires=[1, 0]))]
+        # Modifier interchange preserves the symbolic controlled U1.
+        tape = qp.testing.decomp_rule_to_tape(op, _controlled_flip_adjoint)
+        assert tape.operations == [qp.adjoint(ControlledOp2(qp.U1(0.5, wires=0), [1]))]
 
     def test_flip_controlled_adjoint_full_solve(self):
-        """Tests that a full graph solve resolves C(Adjoint(U1)) down to
-        Adjoint(ControlledPhaseShift), without any decomposition rule registered
-        specifically for ``C(U1)``.
-
-        The controlled U1 node only appears once ``flip_control_adjoint`` is applied, and
-        it already resolves to ``ControlledPhaseShift`` through the generic mechanism that
-        applies control to U1's own (unconditional) decomposition into ``PhaseShift``,
-        combined with the pre-existing ``(PhaseShift, 1) -> ControlledPhaseShift`` mapping.
-        ``PauliX`` must be included in the target gate set because the resource estimate for
-        a controlled operator conservatively accounts for a potential zero-control flip, even
-        though none is required for this concrete, all-``True`` control case. ``self_adjoint``
-        must be supplied for ``PauliX`` via ``alt_decomps`` since the test-local decomposition
-        registry (unlike the real one) doesn't register it for ``Adjoint(PauliX)``, which is
-        pulled in when adjointing the same zero-control-flip resource estimate.
-        """
+        """A full graph solve lowers C(Adjoint(U1)) through symbolic C(U1)
+        and C(PhaseShift), reaching named gates through registered rules."""
 
         op = qp.ctrl(qp.adjoint(qp.U1(0.5, wires=0)), control=[1])
         graph = DecompositionGraph(
@@ -980,7 +1405,7 @@ class TestControlledDecompositions:
 
         tape = qp.testing.decomp_rule_to_tape(op, solution.decomposition(op))
 
-        assert tape.operations == [qp.adjoint(qp.ControlledPhaseShift(0.5, wires=[1, 0]))]
+        assert tape.operations == [qp.adjoint(ControlledOp2(qp.U1(0.5, wires=0), [1]))]
 
     def test_decompose_with_single_work_wire(self):
         """Tests that the Lemma 7.11 decomposition from https://arxiv.org/pdf/quant-ph/9503016 is applied correctly."""
@@ -993,18 +1418,18 @@ class TestControlledDecompositions:
         tape = qp.testing.decomp_rule_to_tape(op, rule)
         [tape], _ = qp.transforms.resolve_dynamic_wires([tape], min_int=4)
         assert tape.operations == [
-            qp.MultiControlledX(wires=[1, 2, 3, 4]),
-            qp.CRot(0.123, 0.234, 0.345, wires=[4, 0]),
-            qp.MultiControlledX(wires=[1, 2, 3, 4]),
+            qp.MultiControlledX([1, 2, 3, 4]),
+            ControlledOp2(qp.Rot(0.123, 0.234, 0.345, wires=0), [4]),
+            qp.MultiControlledX([1, 2, 3, 4]),
         ]
         assert solution.resource_estimate(op, num_work_wires=1) == to_resources(
-            {_ctrl_abstract(qp.X, Wire[3]): 2, qp.CRot: 1, qp.X: 3}
+            {qp.MultiControlledX(Wire[4]): 2, qp.CRot: 1, qp.X: 4}
         )
 
     def test_base_decomp_contains_mcms(self):
         """Tests that the graph does not apply ctrl to rules that contain MCMs."""
 
-        @qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1, qp.X: 1})
+        @qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1, qp.X: 1}, name="custom_rule")
         def _custom_rule(wires):
             raise NotImplementedError
 
@@ -1015,10 +1440,10 @@ class TestControlledDecompositions:
             gate_set={"PauliX", "MidMeasure"},
         )
         rules = [node.rule for node in graph._graph.nodes() if isinstance(node, _DecompositionNode)]
-        assert all("_custom_rule" not in rule.name for rule in rules)
+        assert all("custom_rule" not in rule.name for rule in rules)
 
 
-class LegacyRX(Operator1):  # pylint: disable=too-few-public-methods
+class LegacyRX(Operator1):
     pass
 
 
@@ -1050,7 +1475,7 @@ class TestSymbolicDecompositions:
         assert q.queue == [LegacyRX(0.5, wires=[0])]
         assert solution.resource_estimate(op) == to_resources({LegacyRX: 1})
 
-    def test_adjoint_custom(self, mocker):
+    def test_adjoint_custom(self, mocker):  # pylint: disable=unused-argument
         """Tests adjoint of an operator that defines its own adjoint."""
 
         op = qp.adjoint(LegacyRX(0.5, wires=[0]))
@@ -1068,10 +1493,10 @@ class TestSymbolicDecompositions:
         assert q.queue == [LegacyRX(-0.5, wires=[0])]
         assert solution.resource_estimate(op) == to_resources({LegacyRX: 1})
 
-    def test_adjoint_general(self, mocker):
+    def test_adjoint_general(self, mocker):  # pylint: disable=unused-argument
         """Tests decomposition of a generalized adjoint operation."""
 
-        @qp.register_resources({qp.H: 1, qp.CNOT: 2, LegacyRX: 1, qp.T: 1})
+        @qp.register_resources({qp.H: 1, qp.CNOT: 2, LegacyRX: 1, qp.T: 1}, name="custom_decomp")
         def custom_decomp(phi, wires):
             qp.H(wires[0])
             qp.CNOT(wires=wires[:2])
@@ -1156,7 +1581,7 @@ class TestSymbolicDecompositions:
     def test_custom_symbolic_decompositions(self):
         """Tests that custom symbolic decompositions are used."""
 
-        @qp.register_resources({qp.RX: 1})
+        @qp.register_resources({qp.RX: 1}, name="my_adjoint_rx")
         def my_adjoint_rx(theta, wires, **__):
             qp.RX(-theta, wires=wires)
 
@@ -1259,11 +1684,11 @@ class TestSymbolicDecompositions:
     def test_base_decomp_contains_mcms_or_dynamic_wires(self):
         """Tests that the graph skips adjoint of rules that contain MCMs or dynamic wires."""
 
-        @qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1, qp.X: 1})
+        @qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1, qp.X: 1}, name="custom_rule")
         def _custom_rule(wires):
             raise NotImplementedError
 
-        @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1})
+        @qp.register_resources({qp.X: 1}, work_wires={"zeroed": 1}, name="another_rule")
         def _another_rule(wires):
             raise NotImplementedError
 
@@ -1274,5 +1699,5 @@ class TestSymbolicDecompositions:
             gate_set={"PauliX", "MidMeasure"},
         )
         rules = [node.rule for node in graph._graph.nodes() if isinstance(node, _DecompositionNode)]
-        assert all("_custom_rule" not in rule.name for rule in rules)
-        assert all("_another_rule" not in rule.name for rule in rules)
+        assert all("custom_rule" not in rule.name for rule in rules)
+        assert all("another_rule" not in rule.name for rule in rules)

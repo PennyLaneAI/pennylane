@@ -94,7 +94,7 @@ def _register_subroutine(subroutine: qtemps.Subroutine):
 
     .. code-block::
         @_register_subroutine(MySubroutine)
-        def _resources(op: SubroutineOp):
+        def _custom_label_standard_resources(op: SubroutineOp):
             return re_estimation_version(...)
 
     """
@@ -417,7 +417,33 @@ def _(op: qtemps.QROM):
     return re_temps.QROM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
-        restored=op.clean,
+        select_swap_depth=1,
+        wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.QROMLoad):
+    bitstrings = op.data[0]
+    num_bitstrings = bitstrings.shape[0]
+    size_bitstring = bitstrings.shape[1] if num_bitstrings > 0 else 0
+    return re_temps.QROM(
+        num_bitstrings=num_bitstrings,
+        size_bitstring=size_bitstring,
+        restored=True,
+        wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.SelectSwap):
+    bitstrings = op.data[0]
+    num_bitstrings = bitstrings.shape[0]
+    size_bitstring = bitstrings.shape[1] if num_bitstrings > 0 else 0
+    return re_temps.QROM(
+        num_bitstrings=num_bitstrings,
+        size_bitstring=size_bitstring,
+        restored=False,
         wires=op.wires,
     )
 
@@ -487,8 +513,8 @@ def _(op: qtemps.BasisEmbedding):
 
 @_map_to_resource_op.register
 def _(op: qtemps.ControlledSequence):
-    res_base = _map_to_resource_op(op.hyperparameters["base"])
-    num_control_wires = len(op.hyperparameters["control_wires"])
+    res_base = _map_to_resource_op(op.base)
+    num_control_wires = len(op.control)
     return re_temps.ControlledSequence(
         base=res_base,
         num_control_wires=num_control_wires,

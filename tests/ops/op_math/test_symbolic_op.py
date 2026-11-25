@@ -13,6 +13,8 @@
 # limitations under the License.
 """Unit tests for the SymbolicOp class of qubit operations"""
 
+# pylint: disable=too-few-public-methods
+
 from copy import copy
 
 import pytest
@@ -24,7 +26,7 @@ from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
 from pennylane.wires import Wires
 
 
-class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
+class TempScalar(ScalarSymbolicOp):
     """Temporary scalar symbolic op class."""
 
     _name = "TempScalar"
@@ -34,7 +36,7 @@ class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
         pass
 
 
-class TempScalarCopy(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
+class TempScalarCopy(ScalarSymbolicOp):
     """Copy of temporary scalar symbolic op class."""
 
     _name = "TempScalarCopy"
@@ -75,14 +77,14 @@ def test_copy():
 
 def test_map_wires():
     """Test the map_wires method."""
-    base = Operator("a")
+    base = Operator(6)
     op = SymbolicOp(base)
-    # pylint:disable=attribute-defined-outside-init,protected-access
-    op._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({"a": "X"}): 1})
-    wire_map = {"a": 5}
+    # pylint: disable-next=protected-access
+    op._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({6: "X"}): 1})
+    wire_map = {6: 5}
     mapped_op = op.map_wires(wire_map=wire_map)
-    assert op.wires == Wires("a")
-    assert op.base.wires == Wires("a")
+    assert op.wires == Wires(6)
+    assert op.base.wires == Wires(6)
     assert mapped_op.wires == Wires(5)
     assert mapped_op.base.wires == Wires(5)
     assert mapped_op.pauli_rep is not op.pauli_rep
@@ -91,8 +93,6 @@ def test_map_wires():
 
 class TestProperties:
     """Test the properties of the symbolic op."""
-
-    # pylint:disable=too-few-public-methods
 
     def test_data(self):
         """Test that the data property for symbolic ops is read-only."""
@@ -117,7 +117,7 @@ class TestProperties:
 
     def test_num_params(self):
         """Test symbolic ops defer num-params to those of the base operator."""
-        base = Operator(1.234, 3.432, 0.5490, 8.789453, wires="b")
+        base = Operator(1.234, 3.432, 0.5490, 8.789453, wires=7)
         op = SymbolicOp(base)
 
         assert op.num_params == base.num_params == 4
@@ -153,13 +153,13 @@ class TestProperties:
 
     def test_map_wires(self):
         """Test that base wires can be set through the operator's private `_wires` property."""
-        w = qp.wires.Wires("a")
+        w = qp.wires.Wires(6)
         base = Operator(w)
         op = SymbolicOp(base)
 
-        new_op = op.map_wires(wire_map={"a": "c"})
+        new_op = op.map_wires(wire_map={6: 8})
 
-        assert new_op.wires == Wires("c")
+        assert new_op.wires == Wires(8)
 
     def test_num_wires(self):
         """Test that the number of wires is the length of the `wires` property, rather
