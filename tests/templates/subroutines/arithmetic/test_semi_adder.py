@@ -36,7 +36,7 @@ from pennylane.templates.subroutines.arithmetic.semi_adder import (
     _semi_adder_standard_resources,
 )
 from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
-from pennylane.testing import assert_decomposable
+from pennylane.testing import assert_decomposable, assert_valid_decomp_rule
 from pennylane.typing import Wire
 from pennylane.wires import Wires
 
@@ -365,9 +365,10 @@ class TestSemiAdder:
         [([0, 1], [3, 4, 5]), ([0, 1, 2], [3, 4, 5]), ([0, 1, 2, 9], [3, 4, 5]), ([0, 1], [3])],
     )
     def test_controlled_decomposition_resources(self, x_wires, y_wires):
-        """Test that the resources of the C(SemiAdder) decomposition match the decomposition."""
-        base = qp.SemiAdder(x_wires, y_wires, [6, 7])
-        qp.testing.assert_decomposable(qp.ctrl(base, control=[8]))
+        """Test that the resources of the controlled carry ladder match its decomposition exactly.
+        The registered rule wraps it in ``flip_zero_control``, whose resources are only a bound."""
+        op = qp.ctrl(qp.SemiAdder(x_wires, y_wires, [6, 7]), control=[8])
+        assert_valid_decomp_rule(op, _controlled_semi_adder_standard)
 
     @pytest.mark.capture
     @pytest.mark.parametrize(
