@@ -447,7 +447,7 @@ def remove_from_program(*ops):
         for op in ops:
             QueuingManager.remove(op)
     if capture.enabled():
-        pop_op_eqns(ops)
+        pop_op_eqns(op for op in ops if op._operator_version == 2)
 
 
 __all__ = ["QueuingManager", "AnnotatedQueue", "remove_from_program"]
