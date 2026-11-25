@@ -877,9 +877,10 @@ New features since last release
 * Added :class:`~.QubitizationTHC`, the qubitization walk operator of a tensor hypercontracted
   Hamiltonian. It composes the (also newly added) :class:`~.SuperpositionTHC` and
   :class:`~.AliasSamplingTHC` into ``PREPARE``, applies :class:`~.SelectTHC`, and reflects about
-  :math:`|\vec 0\rangle` on the ``PREPARE`` wires that end up in superposition. Use :func:`~.qubitization_thc_wires` to
-  determine the register sizes, as well as :func:`~.alias_sampling_thc_wires` and
-  :func:`~.select_thc_wires` to determine the register sizes of the respective component.
+  :math:`|\vec 0\rangle` on the ``PREPARE`` wires that end up in superposition. Use
+  :func:`~.qubitization_thc_wires` to determine the register sizes, as well as
+  :func:`~.alias_sampling_thc_wires` and :func:`~.select_thc_wires` to determine the register
+  sizes of the respective component.
   `(#9554) <https://github.com/PennyLaneAI/pennylane/pull/9554>`__
   `(#9940) <https://github.com/PennyLaneAI/pennylane/pull/9940>`__
   `(#10119) <https://github.com/PennyLaneAI/pennylane/pull/10119>`__
@@ -887,6 +888,7 @@ New features since last release
   `(#10158) <https://github.com/PennyLaneAI/pennylane/pull/10158>`__
   `(#10163) <https://github.com/PennyLaneAI/pennylane/pull/10163>`__
   `(#10184) <https://github.com/PennyLaneAI/pennylane/pull/10184>`__
+  `(#10588) <https://github.com/PennyLaneAI/pennylane/pull/10588>`__
 
 * Added :class:`~.OneBodyBlockEncoding`, a block-encoding of a real symmetric one-body operator
   :math:`\hat O`, normalized as :math:`\hat O / \lambda` with :math:`\lambda = \sum_p |\mu_p|`,

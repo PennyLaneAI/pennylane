@@ -748,7 +748,7 @@ class SelectTHC(Operator2):
                 :math:`B` batches (:math:`B \leq` ``num_batches``, and :math:`B = 0` if
                 :math:`P = 0`), :math:`n = \lceil \log_2(M+1) \rceil` wires per index, and
                 :math:`o` the number of set bits of the one-body row offset (:math:`o = 0` if
-                the one-body flag extends the address instead)
+                the one-body flag extends the address instead, or if :math:`P = 0`)
             :example: :math:`M=1`, :math:`N=4` (:math:`h=2`, :math:`P=1`, :math:`B=1`,
                 :math:`n=1`, :math:`o=0`)
 
@@ -758,8 +758,8 @@ class SelectTHC(Operator2):
 
                 :class:`~.QROMLoad` | :math:`2 \min(B, 1)` | 2
                 :class:`Adjoint(QROMLoad) <.QROMLoad>` | :math:`2 \min(B, 1)` | 2
-                :class:`~.QROM` | :math:`2(B - 1)` | 0
-                :class:`Adjoint(QROM) <.QROM>` | :math:`2(B - 1)` | 0
+                :class:`~.QROM` | :math:`2 \max(B - 1, 0)` | 0
+                :class:`Adjoint(QROM) <.QROM>` | :math:`2 \max(B - 1, 0)` | 0
                 :class:`~.CSWAP` | :math:`4h + n + 1` | 10
                 :class:`~.Hadamard` | :math:`24P` | 24
                 :class:`~.CNOT` | :math:`8P + 4o` | 8

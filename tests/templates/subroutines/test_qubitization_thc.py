@@ -266,6 +266,40 @@ class TestQubitizationTHC:
         assert len(reflection.wires) == len(expected) == len(wires["index_wires"]) + aleph + 4
         assert set(reflection.wires) == set(expected)
 
+    def test_unreflected_wires_return_to_zero(self, seed):
+        """Test that ``PREPARE^dagger SELECT PREPARE`` returns every auxiliary wire outside the
+        reflection to |0> for arbitrary states of the system and the reflected wires. Then the
+        walk operator does not change if the reflection acts on more wires, see the note in
+        ``qubitization_thc_wires``."""
+        M, N, aleph, beth = 1, 2, 1, 1
+        zeta, t_ell, chi, tev = _dummy_input(M, N)
+        sizes = qp.qubitization_thc_wires(M, N, aleph, beth)
+        wires = qp.registers(sizes)
+        op = qp.QubitizationTHC(zeta, t_ell, chi, tev, aleph, beth, **wires)
+
+        tape = qp.testing.decomp_rule_to_tape(op, qp.list_decomps(qp.QubitizationTHC)[0])
+        sandwich, reflection = tape.operations[:2]
+        # For N = 2, SELECT has no Givens rotations, so the phase gradient register stays in |0>.
+        prepared = list(wires["system_wires"]) + list(reflection.wires)
+        others = [w for w in range(sum(sizes.values())) if w not in prepared]
+
+        rng = np.random.default_rng(seed)
+        psi = rng.standard_normal(2 ** len(prepared)) + 1j * rng.standard_normal(2 ** len(prepared))
+        psi /= np.linalg.norm(psi)
+
+        # pylint: disable-next=protected-access
+        @qp.transforms._tape_decompose(
+            gate_set=ROTATIONS_PLUS_CNOT,
+            stopping_condition=lambda op: len(op.wires) <= 3 or isinstance(op, qp.StatePrep),
+        )
+        @qp.qnode(qp.device("default.qubit", wires=sum(sizes.values())))
+        def circuit():
+            qp.StatePrep(psi, wires=prepared)
+            qp.apply(sandwich)
+            return qp.probs(wires=others)
+
+        assert np.isclose(circuit()[0], 1.0)
+
     def test_identity_shift_form(self):
         """Test the closed form quoted in the docstring: the block is H / lambda up to a
         multiple of the identity."""

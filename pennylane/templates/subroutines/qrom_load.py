@@ -247,10 +247,10 @@ class QROMLoad(Operator2):
                 :func:`PauliMeasure("Z") <.pauli_measure>` | :math:`n(k - 1)` | 3
                 :class:`~.PauliX` (conditional) | :math:`n(k - 1)` | 3
                 :class:`~.PauliX` | :math:`2` | 2
-                :class:`~.TemporaryAND` | :math:`m - 1` | 3
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`m - 1` | 3
-                :class:`~.CNOT` | :math:`2(m - 1)` | 6
-                :class:`~.Hadamard` | :math:`2m` | 8
+                :class:`~.TemporaryAND` | :math:`m - 1` | 1
+                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`m - 1` | 1
+                :class:`~.CNOT` | :math:`2(m - 1)` | 2
+                :class:`~.Hadamard` | :math:`2m` | 4
 
             .. decomposition-rule:: measurement
                 :image: /_static/decomposition_thumbnails/qrom_load_adjoint_measurement.svg
