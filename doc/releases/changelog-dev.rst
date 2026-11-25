@@ -1292,6 +1292,11 @@ Improvements 🛠
   register, ``x_wires``, is smaller than the size of the second addend register, ``y_wires``.
   `(#9807) <https://github.com/PennyLaneAI/pennylane/pull/9807>`__
 
+* Updated the decomposition of a controlled :class:`~.SemiAdder` to use one controlled :class:`~.CNOT`
+  fewer if the first addend register ``x_wires`` is at least as large as the second addend register
+  ``y_wires``. The same improvement is applied to the decomposition of :class:`~.OutSquare`.
+  `(#10599) <https://github.com/PennyLaneAI/pennylane/pull/10599>`__
+
 * Type aliases ``Int``, ``Float``, ``Complex``, ``Bool``, and ``Wire`` have been introduced to allow for intuitive
   abstract type notation.
   `(#9701) <https://github.com/PennyLaneAI/pennylane/pull/9701>`__
@@ -2679,6 +2684,9 @@ Documentation 📝
 
 Bug fixes 🐛
 ~~~~~~~~~~~~
+
+* Fixed :func:`~.ctrl` to return the original operator or callable when the control wires are empty.
+  `(#10595) <https://github.com/PennyLaneAI/pennylane/pull/10595>`__
 
 * Resource analysis of qjit-compiled circuits now reports :func:`~.pauli_measure` operations
   as ``PPM-w<n>`` when Catalyst captures them as generic measurements.
