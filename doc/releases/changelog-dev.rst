@@ -39,6 +39,7 @@ New features since last release
   repeating the Select-SWAP circuit.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
   `(#10363) <https://github.com/PennyLaneAI/pennylane/pull/10363>`__
+  `(#10588) <https://github.com/PennyLaneAI/pennylane/pull/10588>`__
 
   For example, we may use ``QROMLoad`` on a zeroed target register, but need ``QROM`` to XOR more
   data onto it afterwards:

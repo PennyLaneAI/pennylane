@@ -79,11 +79,9 @@ def qubitization_thc_wires(M, N, aleph, beth, num_batches=1):
         * ``prep_garbage_wires``: *not* a state preparation register. These are the wires
           ``PREPARE`` leaves entangled with the index until ``PREPARE``:math:`^\dagger`,
           laid out as the :class:`~.SuperpositionTHC` work register, then whatever
-          :class:`~.AliasSamplingTHC` garbage it cannot supply, then the two spin flags. The
-          spin flags are the exception to the name: they are genuine LCU index wires, placed
-          here because ``index_wires`` is sized exactly ``2 n`` by
-          :func:`~.select_thc_wires`. Only the ``aleph + 4`` of them that ``PREPARE`` puts in
-          superposition are reflected, see the note below. Exact
+          :class:`~.AliasSamplingTHC` garbage it cannot supply, then the two spin flags.
+          Only the ``aleph + 4`` of them that ``PREPARE`` puts in
+          superposition are reflected, see the note below.
         * ``gradient_wires`` (``beth + 1``): the phase gradient register, which must be
           prepared by the caller and is left unchanged
         * ``work_wires``: the shared clean pool, returned to :math:`\lvert 0 \rangle`. This
@@ -126,30 +124,8 @@ def qubitization_thc_wires(M, N, aleph, beth, num_batches=1):
         returns those wires to :math:`\lvert 0 \rangle` on every input on which they start
         in :math:`\lvert 0 \rangle`, and so does :math:`\mathcal{R}`. Reflecting them as well
         would not change the walk operator on this invariant subspace, which contains all
-        states reachable from :math:`\lvert 0 \rangle`.
-
-        In contrast, none of the reflected wires may be dropped. This does not change the
-        :math:`\lvert 0 \rangle` block, because
-        :math:`\langle 0 \rvert \mathcal{R} = \langle 0 \rvert` for any reflection whose fixed
-        subspace contains :math:`\lvert 0 \rangle`, so a single walk looks correct either way.
-        What breaks is the Chebyshev property
-        :math:`\langle 0 \rvert W^k \lvert 0 \rangle = T_k(H / \lambda)` from :math:`k = 2`
-        on, since
-
-        .. math::
-
-            \langle 0 \rvert U \Pi U \lvert 0 \rangle = B^2
-            \quad \text{but} \quad
-            \langle 0 \rvert U \Pi' U \lvert 0 \rangle
-            = B^2 + \sum_{g \neq 0} \langle 0 \rvert U \lvert 0, g \rangle
-              \langle 0, g \rvert U \lvert 0 \rangle
-
-        with :math:`B = \langle 0 \rvert U \lvert 0 \rangle`, :math:`\Pi` the projector onto
-        :math:`\lvert 0 \rangle` on all reflected wires, and :math:`\Pi'` the one with some
-        reflected wires :math:`g` dropped. The extra terms are the branches that are
-        :math:`\lvert 0 \rangle` on the remaining wires but not on :math:`g`, and they do not
-        vanish because :math:`g` is in superposition. The failure is therefore silent until
-        phase estimation.
+        states reachable from :math:`\lvert 0 \rangle`. In contrast, none of the reflected
+        wires may be dropped.
 
     **Example**
 
