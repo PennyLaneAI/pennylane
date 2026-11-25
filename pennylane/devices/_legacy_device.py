@@ -23,7 +23,6 @@ from functools import lru_cache
 
 import numpy as np
 
-from pennylane.boolean_fn import BooleanFn
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operation, Operator, StatePrepBase
 from pennylane.core.qscript import QuantumScript
@@ -554,12 +553,11 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
     @property
     def stopping_condition(self):
-        """.BooleanFn: Returns the stopping condition for the device. The returned
+        """Callable: Returns the stopping condition for the device. The returned
         function accepts a queuable object (including a PennyLane operation
         and observable) and returns ``True`` if supported by the device."""
-        return BooleanFn(
-            lambda obj: not isinstance(obj, QuantumScript)
-            and (isinstance(obj, MeasurementProcess) or self.supports_operation(obj.name))
+        return lambda obj: not isinstance(obj, QuantumScript) and (
+            isinstance(obj, MeasurementProcess) or self.supports_operation(obj.name)
         )
 
     def default_expand_fn(self, circuit, max_expansion=10):

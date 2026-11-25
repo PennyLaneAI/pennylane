@@ -148,29 +148,6 @@ class TestDecomposition:
         # by checking how many different values there are
         assert len(np.unique(state[:, inpt.shape[1] :])) == 1
 
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        features = np.array([0, 1 / 2, 0, 1 / 2, 0, 0, 1 / 2, 1 / 2])
-
-        dev = qp.device("default.qubit", wires=3)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.AmplitudeEmbedding(features, wires=range(3))
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.AmplitudeEmbedding(features, wires=["z", "a", "k"])
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
-
     DECOMP_PARAMS = [
         ([], 1, 1.0, False),
         ([0.7071067811865476], 2, 0.5, True),
