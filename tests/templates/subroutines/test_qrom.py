@@ -960,15 +960,7 @@ class TestMeasurementQROM:
     @pytest.mark.parametrize(
         ("L", "n_extra"),
         [
-            pytest.param(
-                1,
-                1,
-                marks=pytest.mark.xfail(
-                    reason="Controlled MultiX needs work wire support for control regions in Catalyst "
-                    "(Catalyst #3376).",
-                    strict=True,
-                ),
-            ),
+            (1, 1),
             (1, 2),
             (4, 1),
             (4, 2),
@@ -1010,16 +1002,22 @@ class TestMeasurementQROM:
                 qp.math.int_to_binary(j, len(wires["control_wires"])), wires=wires["control_wires"]
             )
             _qrom_measurement(bitstrings=bitstrings, **wires)
-            return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
+            if n_work:
+                return qp.sample(wires=wires["target_wires"]), qp.sample(wires=wires["work_wires"])
+            return qp.sample(wires=wires["target_wires"])
 
         for j in range(2**n_input):
-            target_samples, work_samples = circuit(j)
+            if n_work:
+                target_samples, work_samples = circuit(j)
+            else:
+                target_samples = circuit(j)
 
             # Real data is loaded only when all extra (top) wires are zero, i.e. j < L.
             expected = bitstrings[j] if j < L else np.zeros(n_target, dtype=int)
             assert np.all(
                 target_samples == expected
             ), f"L={L}, n_extra={n_extra}, j={j}: got {target_samples}, expected {expected}"
-            assert np.allclose(
-                work_samples, 0
-            ), f"L={L}, n_extra={n_extra}, j={j}: work wires not clean, got {work_samples}"
+            if n_work:
+                assert np.allclose(
+                    work_samples, 0
+                ), f"L={L}, n_extra={n_extra}, j={j}: work wires not clean, got {work_samples}"
