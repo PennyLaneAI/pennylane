@@ -777,33 +777,50 @@ class PartialUnaryStatePreparation(Operator2):
         num_work_wires = qp.math.ceil_log2(num_entries) - 1
         work_wires = list(range(15, 15 + num_work_wires))
 
-    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
+        gate_set = {
+            qp.MultiplexerStatePreparation,
+            qp.MultiX,
+            "C(MultiX)",
+            qp.QROM,
+            qp.MultiControlledX,
+            qp.SWAP,
+        }
+        dev = qp.device("null.qubit", wires=15 + 3 * num_work_wires)
+
+        @qp.qjit
+        @qp.decompose(gate_set=gate_set)
+        @qp.qnode(dev)
+        def circuit(work_wires):
+            qp.PartialUnaryStatePreparation(coefficients, wires, indices, work_wires)
+            return qp.state()
+
+    >>> print(qp.analyze(circuit)(work_wires).resources)
     Quantum operations:
     - Total: 6,046
-      - MultiplexerStatePreparation: 1
-      - MultiX: 2,420
-      - QROM: 1,207
-      - C(MultiX): 2,414
+      - 1C(MultiX): 2,414
       - MultiControlledX: 3
+      - MultiX: 2,420
+      - MultiplexerStatePreparation: 1
+      - QROM: 1,207
       - SWAP: 1
     Measurement processes:
     - state(all wires): 1
-    Total wires: 26
+    Total wires: 48
     Circuit Depth: Not computed
 
     Note that passing more work wires than the needed :math:`\max(\lceil \log_2(|L|)\rceil-1, 1)`
     makes the isometry circuit of the state preparation cheaper:
 
     >>> new_num_work_wires = 3*num_work_wires
-    >>> work_wires = list(range(15, 15 + new_num_work_wires))
-    >>> print(qp.specs(qp.transforms._tape_decompose(circuit, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1), compute_depth=False)()["resources"])  # doctest: +SKIP
+    >>> extra_work_wires = list(range(15, 15 + new_num_work_wires))
+    >>> print(qp.analyze(circuit)(extra_work_wires).resources)
     Quantum operations:
     - Total: 3,068
-      - MultiplexerStatePreparation: 1
-      - MultiX: 332
-      - QROM: 160
-      - C(MultiX): 2,553
+      - 1C(MultiX): 2,553
       - MultiControlledX: 6
+      - MultiX: 332
+      - MultiplexerStatePreparation: 1
+      - QROM: 160
       - SWAP: 16
     Measurement processes:
     - state(all wires): 1
@@ -922,7 +939,6 @@ def _partial_unary_state_prep_standard_resources(coefficients, wires, indices, w
             control_wires=Wire[n_subspace],
             target_wires=Wire[p],
             work_wires=Wire[n_subspace - 1],
-            clean=True,
         )
         for p in range(1, main_pui_batch_size + 1)
     }

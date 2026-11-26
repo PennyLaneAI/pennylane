@@ -113,9 +113,9 @@ class TestInitialization:
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qp.sum])
     def test_init_sum_op(self, sum_method):
         """Test the initialization of a Sum operator."""
-        sum_op = sum_method(qp.PauliX(wires=0), qp.RZ(0.23, wires="a"))
+        sum_op = sum_method(qp.PauliX(wires=0), qp.RZ(0.23, wires=9))
 
-        assert sum_op.wires == Wires((0, "a"))
+        assert sum_op.wires == Wires((0, 9))
         assert sum_op.num_wires == 2
         assert sum_op.name == "Sum"
 
@@ -127,8 +127,8 @@ class TestInitialization:
     def test_init_sum_op_with_sum_summands(self, sum_method):
         """Test the initialization of a Sum operator which contains a summand that is another
         Sum operator."""
-        sum_op = sum_method(Sum(qp.PauliX(wires=0), qp.RZ(0.23, wires="a")), qp.RX(9.87, wires=0))
-        assert sum_op.wires == Wires((0, "a"))
+        sum_op = sum_method(Sum(qp.PauliX(wires=0), qp.RZ(0.23, wires=9)), qp.RX(9.87, wires=0))
+        assert sum_op.wires == Wires((0, 9))
         assert sum_op.num_wires == 2
         assert sum_op.name == "Sum"
 
@@ -622,14 +622,14 @@ class TestProperties:
 
     def test_hash(self):
         """Test the hash property is independent of order."""
-        op1 = Sum(qp.PauliX("a"), qp.PauliY("b"))
-        op2 = Sum(qp.PauliY("b"), qp.PauliX("a"))
+        op1 = Sum(qp.PauliX(9), qp.PauliY(14))
+        op2 = Sum(qp.PauliY(14), qp.PauliX(9))
         assert hash(op1) == hash(op2)
 
-        op3 = Sum(qp.PauliX("a"), qp.PauliY("b"), qp.PauliZ(-1))
+        op3 = Sum(qp.PauliX(9), qp.PauliY(14), qp.PauliZ(-1))
         assert hash(op3) != hash(op1)
 
-        op4 = Sum(qp.X("a"), qp.X("a"), qp.Y("b"))
+        op4 = Sum(qp.X(9), qp.X(9), qp.Y(14))
         assert hash(op4) != hash(op1)
 
     @pytest.mark.parametrize("sum_method", [sum_using_dunder_method, qp.sum])
@@ -706,10 +706,10 @@ class TestProperties:
             qp.sum(
                 qp.PauliX(wires=0),
                 qp.PauliY(wires=1),
-                qp.PauliZ(wires="a"),
-                qp.PauliZ(wires="a"),
+                qp.PauliZ(wires=9),
+                qp.PauliZ(wires=9),
             ),
-            qp.pauli.PauliSentence({_get_pw(0, "X"): 1, _get_pw(1, "Y"): 1, _get_pw("a", "Z"): 2}),
+            qp.pauli.PauliSentence({_get_pw(0, "X"): 1, _get_pw(1, "Y"): 1, _get_pw(9, "Z"): 2}),
         ),
     )
 
@@ -850,7 +850,7 @@ class TestProperties:
 
     def test_grouping_indices_setter(self):
         """Test that grouping indices can be set"""
-        H = qp.sum(*[qp.X("a"), qp.X("b"), qp.Y("b")])
+        H = qp.sum(*[qp.X(9), qp.X(14), qp.Y(14)])
 
         H.grouping_indices = [[0, 1], [2]]
 
@@ -859,7 +859,7 @@ class TestProperties:
 
     def test_grouping_indices_setter_error(self):
         """Test that setting incompatible indices raises an error"""
-        H = qp.sum(*[qp.X("a"), qp.X("b"), qp.Y("b")])
+        H = qp.sum(*[qp.X(9), qp.X(14), qp.Y(14)])
 
         with pytest.raises(
             ValueError,
@@ -990,25 +990,25 @@ class TestSortWires:
         op_list = [
             qp.X(3),
             qp.Z(2),
-            qp.Y("a"),
+            qp.Y(9),
             qp.RX(1, 5),
             qp.Y(0),
             qp.Y(1),
-            qp.Z("c"),
+            qp.Z(17),
             qp.X(5),
-            qp.Z("ba"),
+            qp.Z(15),
         ]
         sorted_list = Sum._sort(op_list)
         final_list = [
             qp.Y(0),
             qp.Y(1),
+            qp.Z(15),
+            qp.Z(17),
             qp.Z(2),
             qp.X(3),
             qp.RX(1, 5),
             qp.X(5),
-            qp.Y("a"),
-            qp.Z("ba"),
-            qp.Z("c"),
+            qp.Y(9),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
@@ -1021,29 +1021,29 @@ class TestSortWires:
             qp.X(5),
             qp.Toffoli([2, 3, 4]),
             qp.CNOT([2, 5]),
-            qp.Z("ba"),
+            qp.Z(15),
             qp.RX(1, 5),
             qp.Y(0),
             qp.CRX(1, [0, 2]),
             qp.Z(3),
-            qp.Toffoli([1, "c", "ab"]),
+            qp.Toffoli([1, 17, 13]),
             qp.CRY(1, [1, 2]),
-            qp.X("d"),
+            qp.X(18),
         )
         sorted_list = Sum._sort(op_tuple)
         final_list = [
             qp.Y(0),
             qp.CRX(1, [0, 2]),
             qp.CRY(1, [1, 2]),
-            qp.Toffoli([1, "c", "ab"]),
+            qp.Toffoli([1, 17, 13]),
+            qp.Z(15),
+            qp.X(18),
             qp.CNOT([2, 5]),
             qp.Toffoli([2, 3, 4]),
             qp.X(3),
             qp.Z(3),
             qp.RX(1, 5),
             qp.X(5),
-            qp.Z("ba"),
-            qp.X("d"),
         ]
 
         for op1, op2 in zip(final_list, sorted_list):
@@ -1052,25 +1052,25 @@ class TestSortWires:
     def test_sorting_operators_with_wire_map(self):
         """Test that the sorting algorithm works using a wire map."""
         op_list = [
-            qp.X("three"),
+            qp.X(21),
             qp.X(5),
-            qp.Toffoli([2, "three", 4]),
+            qp.Toffoli([2, 21, 4]),
             qp.CNOT([2, 5]),
             qp.RX(1, 5),
             qp.Y(0),
-            qp.CRX(1, ["test", 2]),
-            qp.Z("three"),
-            qp.CRY(1, ["test", 2]),
+            qp.CRX(1, [19, 2]),
+            qp.Z(21),
+            qp.CRY(1, [19, 2]),
         ]
-        sorted_list = Sum._sort(op_list, wire_map={0: 0, "test": 1, 2: 2, "three": 3, 4: 4, 5: 5})
+        sorted_list = Sum._sort(op_list, wire_map={0: 0, 19: 1, 2: 2, 21: 3, 4: 4, 5: 5})
         final_list = [
             qp.Y(0),
-            qp.CRX(1, ["test", 2]),
-            qp.CRY(1, ["test", 2]),
+            qp.CRX(1, [19, 2]),
+            qp.CRY(1, [19, 2]),
             qp.CNOT([2, 5]),
-            qp.Toffoli([2, "three", 4]),
-            qp.X("three"),
-            qp.Z("three"),
+            qp.Toffoli([2, 21, 4]),
+            qp.X(21),
+            qp.Z(21),
             qp.RX(1, 5),
             qp.X(5),
         ]

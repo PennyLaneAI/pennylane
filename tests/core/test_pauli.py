@@ -38,8 +38,8 @@ sparse_matY = sparse.csr_matrix([[0, -1j], [1j, 0]])
 sparse_matZ = sparse.csr_matrix([[1, 0], [0, -1]])
 
 pw1 = PauliWord({0: "I", 1: "X", 2: "Y"})
-pw2 = PauliWord({"a": "X", "b": "X", "c": "Z"})
-pw3 = PauliWord({0: "Z", "b": "Z", "c": "Z"})
+pw2 = PauliWord({6: "X", 7: "X", 9: "Z"})
+pw3 = PauliWord({0: "Z", 7: "Z", 9: "Z"})
 pw4 = PauliWord({})
 pw_id = pw4  # Identity PauliWord
 
@@ -166,7 +166,7 @@ class TestPauliWord:
         assert copy_pw is not pw
         assert deep_copy_pw is not pw
 
-    tup_pws_wires = ((pw1, {1, 2}), (pw2, {"a", "b", "c"}), (pw3, {0, "b", "c"}), (pw4, set()))
+    tup_pws_wires = ((pw1, {1, 2}), (pw2, {6, 7, 9}), (pw3, {0, 7, 9}), (pw4, set()))
 
     @pytest.mark.parametrize("pw, wires", tup_pws_wires)
     def test_wires(self, pw, wires):
@@ -175,8 +175,8 @@ class TestPauliWord:
 
     tup_pw_str = (
         (pw1, "X(1) @ Y(2)"),
-        (pw2, "X(a) @ X(b) @ Z(c)"),
-        (pw3, "Z(0) @ Z(b) @ Z(c)"),
+        (pw2, "X(6) @ X(7) @ Z(9)"),
+        (pw3, "Z(0) @ Z(7) @ Z(9)"),
         (pw4, "I"),
     )
 
@@ -294,8 +294,8 @@ class TestPauliWord:
 
     tup_pws_matmult = (
         (pw1, pw1, PauliWord({}), 1.0),  # identities are automatically removed !
-        (pw1, pw3, PauliWord({0: "Z", 1: "X", 2: "Y", "b": "Z", "c": "Z"}), 1.0),
-        (pw2, pw3, PauliWord({"a": "X", "b": "Y", 0: "Z"}), -1.0j),
+        (pw1, pw3, PauliWord({0: "Z", 1: "X", 2: "Y", 7: "Z", 9: "Z"}), 1.0),
+        (pw2, pw3, PauliWord({6: "X", 7: "Y", 0: "Z"}), -1.0j),
         (pw3, pw4, pw3, 1.0),
     )
 
@@ -362,8 +362,8 @@ class TestPauliWord:
     tup_pws_mat_wire = (
         (pw1, [2, 0, 1], np.kron(np.kron(matY, matI), matX)),
         (pw1, [2, 1, 0], np.kron(np.kron(matY, matX), matI)),
-        (pw2, ["c", "b", "a"], np.kron(np.kron(matZ, matX), matX)),
-        (pw3, [0, "b", "c"], np.kron(np.kron(matZ, matZ), matZ)),
+        (pw2, [9, 7, 6], np.kron(np.kron(matZ, matX), matX)),
+        (pw3, [0, 7, 9], np.kron(np.kron(matZ, matZ), matZ)),
     )
 
     def test_to_mat_empty(self):
@@ -404,8 +404,8 @@ class TestPauliWord:
     tup_pw_operation = (
         (PauliWord({0: "X"}), qp.PauliX(wires=0)),
         (pw1, qp.prod(qp.PauliX(wires=1), qp.PauliY(wires=2))),
-        (pw2, qp.prod(qp.PauliX(wires="a"), qp.PauliX(wires="b"), qp.PauliZ(wires="c"))),
-        (pw3, qp.prod(qp.PauliZ(wires=0), qp.PauliZ(wires="b"), qp.PauliZ(wires="c"))),
+        (pw2, qp.prod(qp.PauliX(wires=6), qp.PauliX(wires=7), qp.PauliZ(wires=9))),
+        (pw3, qp.prod(qp.PauliZ(wires=0), qp.PauliZ(wires=7), qp.PauliZ(wires=9))),
     )
 
     @pytest.mark.parametrize("pw, op", tup_pw_operation)
@@ -449,10 +449,10 @@ class TestPauliWord:
     @pytest.mark.parametrize(
         "word,wire_map,expected",
         [
-            (PauliWord({0: "X", 1: "Y"}), {0: "a", 1: "b"}, PauliWord({"a": "X", "b": "Y"})),
-            (PauliWord({0: "X", 1: "Y"}), {1: "b"}, PauliWord({0: "X", "b": "Y"})),
+            (PauliWord({0: "X", 1: "Y"}), {0: 6, 1: 7}, PauliWord({6: "X", 7: "Y"})),
+            (PauliWord({0: "X", 1: "Y"}), {1: 7}, PauliWord({0: "X", 7: "Y"})),
             (PauliWord({0: "X", 1: "Y"}), {0: 1, 1: 0}, PauliWord({0: "Y", 1: "X"})),
-            (PauliWord({"a": "X", 0: "Y"}), {"a": 2, 0: 1, "c": "C"}, PauliWord({2: "X", 1: "Y"})),
+            (PauliWord({6: "X", 0: "Y"}), {6: 2, 0: 1, 9: 5}, PauliWord({2: "X", 1: "Y"})),
         ],
     )
     def test_map_wires(self, word, wire_map, expected):
@@ -474,7 +474,7 @@ class TestPauliSentence:
     def test_missing(self):
         """Test the result when a missing key is indexed"""
         pw = PauliWord({0: "X"})
-        new_pw = PauliWord({"a": "Z"})
+        new_pw = PauliWord({6: "Z"})
         ps = PauliSentence({pw: 1.0})
 
         assert new_pw not in ps.keys()
@@ -498,7 +498,7 @@ class TestPauliSentence:
         pw = PauliWord({0: "X"})
         ps = PauliSentence({pw: 1.0})
 
-        new_pw = PauliWord({"a": "Z"})
+        new_pw = PauliWord({6: "Z"})
         assert new_pw not in ps.keys()
 
         ps[new_pw] = 3.45
@@ -512,13 +512,13 @@ class TestPauliSentence:
     tup_ps_str = (
         (
             ps1,
-            "1.23 * X(1) @ Y(2)\n+ 4j * X(a) @ X(b) @ Z(c)\n+ -0.5 * Z(0) @ Z(b) @ Z(c)",
+            "1.23 * X(1) @ Y(2)\n+ 4j * X(6) @ X(7) @ Z(9)\n+ -0.5 * Z(0) @ Z(7) @ Z(9)",
         ),
         (
             ps2,
-            "-1.23 * X(1) @ Y(2)\n+ (-0-4j) * X(a) @ X(b) @ Z(c)\n+ 0.5 * Z(0) @ Z(b) @ Z(c)",
+            "-1.23 * X(1) @ Y(2)\n+ (-0-4j) * X(6) @ X(7) @ Z(9)\n+ 0.5 * Z(0) @ Z(7) @ Z(9)",
         ),
-        (ps3, "-0.5 * Z(0) @ Z(b) @ Z(c)\n+ 1 * I"),
+        (ps3, "-0.5 * Z(0) @ Z(7) @ Z(9)\n+ 1 * I"),
         (ps4, "1 * I"),
         (ps5, "0 * I"),
     )
@@ -530,9 +530,9 @@ class TestPauliSentence:
         assert repr(ps) == str_rep
 
     tup_ps_wires = (
-        (ps1, {0, 1, 2, "a", "b", "c"}),
-        (ps2, {0, 1, 2, "a", "b", "c"}),
-        (ps3, {0, "b", "c"}),
+        (ps1, {0, 1, 2, 6, 7, 9}),
+        (ps2, {0, 1, 2, 6, 7, 9}),
+        (ps3, {0, 7, 9}),
         (ps4, set()),
     )
 
@@ -559,8 +559,8 @@ class TestPauliSentence:
             PauliSentence(
                 {
                     PauliWord({}): -14.2371,
-                    PauliWord({1: "X", 2: "Y", "a": "X", "b": "X", "c": "Z"}): 9.84j,
-                    PauliWord({0: "Z", 1: "X", 2: "Y", "b": "Z", "c": "Z"}): -1.23,
+                    PauliWord({1: "X", 2: "Y", 6: "X", 7: "X", 9: "Z"}): 9.84j,
+                    PauliWord({0: "Z", 1: "X", 2: "Y", 7: "Z", 9: "Z"}): -1.23,
                 }
             ),
         ),
@@ -569,12 +569,12 @@ class TestPauliSentence:
             ps3,
             PauliSentence(
                 {
-                    PauliWord({0: "Z", 1: "X", 2: "Y", "b": "Z", "c": "Z"}): -0.615,
-                    PauliWord({0: "Z", "a": "X", "b": "Y"}): -2,
+                    PauliWord({0: "Z", 1: "X", 2: "Y", 7: "Z", 9: "Z"}): -0.615,
+                    PauliWord({0: "Z", 6: "X", 7: "Y"}): -2,
                     PauliWord({}): 0.25,
                     PauliWord({0: "I", 1: "X", 2: "Y"}): 1.23,
-                    PauliWord({"a": "X", "b": "X", "c": "Z"}): 4j,
-                    PauliWord({0: "Z", "b": "Z", "c": "Z"}): -0.5,
+                    PauliWord({6: "X", 7: "X", 9: "Z"}): 4j,
+                    PauliWord({0: "Z", 7: "Z", 9: "Z"}): -0.5,
                 }
             ),
         ),
@@ -915,16 +915,16 @@ class TestPauliSentence:
             ps1_hamiltonian,
             qp.sum(
                 1.23 * qp.prod(qp.PauliX(wires=1), qp.PauliY(wires=2)),
-                4 * qp.prod(qp.PauliX(wires="a"), qp.PauliX(wires="b"), qp.PauliZ(wires="c")),
-                -0.5 * qp.prod(qp.PauliZ(wires=0), qp.PauliZ(wires="b"), qp.PauliZ(wires="c")),
+                4 * qp.prod(qp.PauliX(wires=6), qp.PauliX(wires=7), qp.PauliZ(wires=9)),
+                -0.5 * qp.prod(qp.PauliZ(wires=0), qp.PauliZ(wires=7), qp.PauliZ(wires=9)),
             ),
         ),
         (
             ps2_hamiltonian,
             qp.sum(
                 -1.23 * qp.prod(qp.PauliX(wires=1), qp.PauliY(wires=2)),
-                -4 * qp.prod(qp.PauliX(wires="a"), qp.PauliX(wires="b"), qp.PauliZ(wires="c")),
-                0.5 * qp.prod(qp.PauliZ(wires=0), qp.PauliZ(wires="b"), qp.PauliZ(wires="c")),
+                -4 * qp.prod(qp.PauliX(wires=6), qp.PauliX(wires=7), qp.PauliZ(wires=9)),
+                0.5 * qp.prod(qp.PauliZ(wires=0), qp.PauliZ(wires=7), qp.PauliZ(wires=9)),
             ),
         ),
     )
@@ -957,8 +957,8 @@ class TestPauliSentence:
             full_ps_op = qp.pauli.to_operator(ps3)
         assert len(q.queue) == 0
         full_op = qp.sum(
-            -0.5 * qp.prod(qp.PauliZ(wires=0), qp.PauliZ(wires="b"), qp.PauliZ(wires="c")),
-            qp.s_prod(1, qp.Identity(wires=[0, "b", "c"])),
+            -0.5 * qp.prod(qp.PauliZ(wires=0), qp.PauliZ(wires=7), qp.PauliZ(wires=9)),
+            qp.s_prod(1, qp.Identity(wires=[0, 7, 9])),
         )
 
         ps_op, op = (
@@ -1000,16 +1000,16 @@ class TestPauliSentence:
 
     def test_operation_identity_wires(self):
         """Test that the identity_wires parameter is used when the Pauli representation is empty."""
-        op = qp.pauli.to_operator(ps5, identity_wires=["a", "b"])
-        id = qp.s_prod(0.0, qp.Identity(wires=["a", "b"]))
+        op = qp.pauli.to_operator(ps5, identity_wires=[6, 7])
+        id = qp.s_prod(0.0, qp.Identity(wires=[6, 7]))
 
         qp.assert_equal(op, id)
 
     @pytest.mark.parametrize("coeff0", [qp.math.array([0.6, 0.2, 4.3])])
     @pytest.mark.parametrize("coeff1", [qp.math.array([1.2, -0.9, 2.7])])
     def test_operation_array_input(self, coeff0, coeff1):
-        pw0 = qp.pauli.PauliWord({0: "X", "a": "Y"})
-        pw1 = qp.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})  # pylint: disable=redefined-outer-name
+        pw0 = qp.pauli.PauliWord({0: "X", 6: "Y"})
+        pw1 = qp.pauli.PauliWord({0: "Z", 1: "Y", 7: "Y"})  # pylint: disable=redefined-outer-name
         ps = qp.pauli.PauliSentence({pw0: coeff0, pw1: coeff1})
         assert qp.pauli.to_operator(ps) is not None
 
@@ -1055,9 +1055,9 @@ class TestPauliSentence:
 
     def test_map_wires(self):
         """Test the map_wires conversion method."""
-        assert ps1.map_wires({1: "u", 2: "v", "a": 1, "b": 2, "c": 3}) == PauliSentence(
+        assert ps1.map_wires({1: 10, 2: 11, 6: 1, 7: 2, 9: 3}) == PauliSentence(
             {
-                PauliWord({"u": "X", "v": "Y"}): 1.23,
+                PauliWord({10: "X", 11: "Y"}): 1.23,
                 PauliWord({1: "X", 2: "X", 3: "Z"}): 4j,
                 PauliWord({0: "Z", 2: "Z", 3: "Z"}): -0.5,
             }
@@ -1066,9 +1066,9 @@ class TestPauliSentence:
     @pytest.mark.parametrize("coeff0", [[0.6, 0.2, 4.3], -0.7])
     @pytest.mark.parametrize("coeff1", [[1.2, -0.9, 2.7], -0.7])
     def test_to_mat_with_broadcasting(self, coeff0, coeff1):
-        wire_order = [0, 1, "a", "b"]
-        pw0 = qp.pauli.PauliWord({0: "X", "a": "Y"})
-        pw1 = qp.pauli.PauliWord({0: "Z", 1: "Y", "b": "Y"})  # pylint: disable=redefined-outer-name
+        wire_order = [0, 1, 6, 7]
+        pw0 = qp.pauli.PauliWord({0: "X", 6: "Y"})
+        pw1 = qp.pauli.PauliWord({0: "Z", 1: "Y", 7: "Y"})  # pylint: disable=redefined-outer-name
         ps = qp.pauli.PauliSentence({pw0: coeff0, pw1: coeff1})
         mat0 = ps.to_mat(wire_order=wire_order)
         mat1 = qp.matrix(qp.pauli.to_operator(ps), wire_order=wire_order)
@@ -1103,7 +1103,7 @@ class TestPauliSentenceMatrix:
         actual = PauliSentence({PauliWord({}): 1.5}).to_mat([0, 1])
         assert np.allclose(actual, 1.5 * np.eye(4))
 
-    ps_wire_order = ((ps1, []), (ps1, [0, 1, 2, "a", "b"]), (ps3, [0, 1, "c"]))
+    ps_wire_order = ((ps1, []), (ps1, [0, 1, 2, 6, 7]), (ps3, [0, 1, 9]))
 
     @pytest.mark.parametrize("ps, wire_order", ps_wire_order)
     def test_to_mat_error_incomplete(self, ps, wire_order):
@@ -1125,21 +1125,21 @@ class TestPauliSentenceMatrix:
     tup_ps_mat = (
         (
             ps1,
-            [0, 1, 2, "a", "b", "c"],
+            [0, 1, 2, 6, 7, 9],
             1.23 * np.kron(np.kron(matI, np.kron(matX, matY)), np.eye(8))
             + 4j * np.kron(np.eye(8), np.kron(matX, np.kron(matX, matZ)))
             - 0.5 * np.kron(matZ, np.kron(np.eye(8), np.kron(matZ, matZ))),
         ),
         (
             ps2,
-            ["a", "b", "c", 0, 1, 2],
+            [6, 7, 9, 0, 1, 2],
             -1.23 * np.kron(np.eye(8), np.kron(matI, np.kron(matX, matY)))
             - 4j * np.kron(np.kron(matX, np.kron(matX, matZ)), np.eye(8))
             + 0.5 * np.kron(np.kron(matI, np.kron(matZ, np.kron(matZ, matZ))), np.eye(4)),
         ),
         (
             ps3,
-            [0, "b", "c"],
+            [0, 7, 9],
             -0.5 * np.kron(matZ, np.kron(matZ, matZ)) + 1 * np.eye(8),
         ),
     )
@@ -1267,8 +1267,8 @@ class TestPaulicomms:
         (X0, X0, PauliSentence({})),
         (Y0, Y0, PauliSentence({})),
         (Z0, Z0, PauliSentence({})),
-        (PauliWord({"a": "X"}), PauliWord({"a": "X"}), PauliSentence({})),
-        (PauliWord({"a": "X"}), PauliWord({"b": "Y"}), PauliSentence({})),
+        (PauliWord({6: "X"}), PauliWord({6: "X"}), PauliSentence({})),
+        (PauliWord({6: "X"}), PauliWord({7: "Y"}), PauliSentence({})),
     ]
 
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_commutes)

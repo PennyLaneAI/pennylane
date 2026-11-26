@@ -40,7 +40,7 @@ class AQFT(Operator2):
 
     Args:
         order (int): the order of approximation
-        wires (int or Iterable[Number, str]]): the wire(s) the operation acts on
+        wires (int or Iterable[int]): the wire(s) the operation acts on
 
     **Example**
 
@@ -119,7 +119,6 @@ class AQFT(Operator2):
 
     compilable_argnames = ("order",)
     arg_specs = {"wires": Wire[-1]}
-    wire_sizes = (None,)
 
     def __init__(self, order: int, wires: WiresLike) -> None:
         wires = Wires(wires)

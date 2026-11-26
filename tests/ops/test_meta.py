@@ -139,7 +139,7 @@ class TestBarrier:
         barrier = qp.Barrier(wires=[])
         assert isinstance(barrier, qp.Barrier)
 
-    @pytest.mark.parametrize("wires", [(), ("a",), (0, 1, 2, 3)])
+    @pytest.mark.parametrize("wires", [(), (6,), (0, 1, 2, 3)])
     def test_simplify(self, wires):
         """Test that simplification preserves the barrier."""
         op = qp.Barrier(wires=wires)
@@ -228,7 +228,7 @@ class TestSnapshot:
     def test_map_wires(self, mp):
         """Test that the wires of the measurement are mapped"""
         op = Snapshot(measurement=mp, tag="my tag")
-        wire_map = {0: "a", 1: "b"}
+        wire_map = {0: 6, 1: 7}
         new_op = op.map_wires(wire_map)
         target_mp = mp.map_wires(wire_map)
         qp.assert_equal(target_mp, new_op.hyperparameters["measurement"])

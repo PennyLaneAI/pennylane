@@ -133,9 +133,9 @@ class PauliWord(dict):
 
     Initializing a Pauli word:
 
-    >>> w = PauliWord({"a": 'X', 2: 'Y', 3: 'Z'})
+    >>> w = PauliWord({4: "X", 2: "Y", 3: "Z"})
     >>> w
-    X(a) @ Y(2) @ Z(3)
+    X(4) @ Y(2) @ Z(3)
 
     When multiplying Pauli words together, we obtain a :class:`~PauliSentence` with the resulting ``PauliWord`` as a key and the corresponding coefficient as its value.
 

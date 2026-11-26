@@ -53,17 +53,17 @@ class TestOptimizeMeasurements:
         ),
         (
             [
-                PauliX("a"),
-                PauliX("a") @ PauliY(1),
-                PauliZ("b") @ PauliY("c") @ Identity("a"),
-                PauliZ("a") @ PauliZ("b"),
+                PauliX(5),
+                PauliX(5) @ PauliY(1),
+                PauliZ(6) @ PauliY(7) @ Identity(5),
+                PauliZ(5) @ PauliZ(6),
             ],
             [
                 [
-                    PauliZ(wires=["b"]) @ PauliZ(wires=["c"]),
-                    PauliZ(wires=["a"]) @ PauliZ(wires=["b"]),
+                    PauliZ(wires=[6]) @ PauliZ(wires=[7]),
+                    PauliZ(wires=[5]) @ PauliZ(wires=[6]),
                 ],
-                [PauliZ(wires=["a"]), PauliZ(wires=["a"]) @ PauliZ(wires=[1])],
+                [PauliZ(wires=[5]), PauliZ(wires=[5]) @ PauliZ(wires=[1])],
             ],
         ),
     ]
