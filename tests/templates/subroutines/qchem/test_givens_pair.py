@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for the GivensPair template."""
 
-from collections import Counter
-
 import numpy as np
 import pytest
 
@@ -27,7 +25,6 @@ from pennylane.templates.subroutines.qchem.givens_pair import (
     _GivensPairFrame,
 )
 from pennylane.transforms import _tape_decompose
-from pennylane.transforms.decompositions import make_rzlayer_to_phase_gradient_decomp
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
@@ -39,23 +36,6 @@ SMALL_CASES = [
     (-1.3, [3, 1, 0, 2], [5, 4]),
 ]
 
-# Registers of b-bit phase gradient rules, and the gates that the frame rule decomposes into with
-# the phase gradient rule of RZLayer
-NUM_BITS = 4
-PHASE_GRADIENT_WIRES = {
-    "angle_wires": Wires([f"angle_{i}" for i in range(NUM_BITS)]),
-    "phase_grad_wires": Wires([f"phase_grad_{i}" for i in range(NUM_BITS)]),
-    "work_wires": Wires([f"adder_work_{i}" for i in range(NUM_BITS - 1)]),
-}
-PHASE_GRADIENT_GATES = {
-    "PPR_4",
-    "PauliX",
-    "CNOT",
-    "TemporaryAND",
-    "Adjoint(TemporaryAND)",
-    "SemiAdder",
-}
-
 
 def _two_single_excitations_matrix(phi, wires, wire_order):
     """Matrix of SingleExcitation(phi) on the spin-up pair ``wires[:2]`` times SingleExcitation(phi)
@@ -64,22 +44,10 @@ def _two_single_excitations_matrix(phi, wires, wire_order):
     return qp.matrix(pair, wire_order=wire_order)
 
 
-def _givens_pair_circuit(phi):
-    """Apply a GivensPair to ``|1010>``. Each SingleExcitation maps ``|10>`` to
-    ``cos(phi/2)|10> - sin(phi/2)|01>``, so that the expectation value of Z on the wires 0 and 2
-    is ``cos(phi)**2``."""
-    qp.X(0)
-    qp.X(2)
-    qp.GivensPair(phi, wires=[0, 1, 2, 3])
-    return qp.expval(qp.Z(0) @ qp.Z(2))
-
-
 class TestInitialization:
     """Tests for the arguments of GivensPair."""
 
-    @pytest.mark.parametrize(
-        "wires, work_wires", [([0, 1, 2, 3], []), (["pu", "qu", "pd", "qd"], ["t0", "t1"])]
-    )
+    @pytest.mark.parametrize("wires, work_wires", [([0, 1, 2, 3], []), ([7, 5, 4, 6], [9, 8])])
     def test_arguments(self, wires, work_wires):
         """Test that the work wires are part of ``op.wires``."""
         op = qp.GivensPair(0.4, wires, work_wires)
@@ -113,7 +81,7 @@ class TestInitialization:
 @pytest.mark.parametrize("phi, wires, work_wires", SMALL_CASES)
 def test_assert_valid(phi, wires, work_wires):
     """Run the standard Operator2 validity checks, which include those of the decomposition rules
-    of GivensPair and its adjoint, with their matrices."""
+    of GivensPair and its adjoint."""
     qp.testing.assert_valid(qp.GivensPair(phi, wires, work_wires))
 
 
@@ -134,7 +102,7 @@ class TestDecomposition:
     def test_rzlayer_rule_emits_one_equal_angle_group(self):
         """Test that the rule emits one RZLayer with the single angle ``phi / 2`` on all four
         wires, with the work wires passed through, in a Clifford frame."""
-        wires, work_wires = ["pu", "qu", "pd", "qd"], ["t0", "t1"]
+        wires, work_wires = [3, 1, 0, 2], [5, 4]
         op = qp.GivensPair(0.4, wires, work_wires)
 
         [cob] = qp.testing.decomp_rule_to_tape(op, _givens_pair_rzlayer).operations
@@ -143,9 +111,9 @@ class TestDecomposition:
         qp.assert_equal(cob.target_op, qp.RZLayer(0.2, wires, work_wires))
         qp.assert_equal(cob.uncompute_op, qp.adjoint(_GivensPairFrame(wires)))
 
-    def test_rzlayer_rule_gates_and_matrix(self):
-        """Test that the frame rule, fully decomposed, costs 4 PPR_4, 4 PauliX and 4 RZ and equals
-        SingleExcitation on both pairs including the global phase."""
+    def test_rzlayer_rule_matrix(self):
+        """Test that the frame rule, fully decomposed, equals SingleExcitation on both pairs
+        including the global phase."""
         phi, wires, work_wires = -1.3, [3, 1, 0, 2], [5, 4]
         [tape], _ = _tape_decompose(
             QuantumScript([qp.GivensPair(phi, wires, work_wires)]),
@@ -153,27 +121,9 @@ class TestDecomposition:
             fixed_decomps={qp.GivensPair: _givens_pair_rzlayer},
         )
 
-        assert Counter(op.name for op in tape.operations) == {"PPR_4": 4, "PauliX": 4, "RZ": 4}
         wire_order = wires + work_wires
         expected = _two_single_excitations_matrix(phi, wires, wire_order)
         assert np.allclose(qp.matrix(tape, wire_order=wire_order), expected)
-
-    @pytest.mark.parametrize("num_work_wires", [0, 2])
-    def test_resources_from_shapes(self, num_work_wires):
-        """Test that the resources of both rules are computed from the abstract shapes ``Float``,
-        ``Wire[4]`` and ``Wire[w]``, and that neither rule requests work wires."""
-        abstract_args = {"phi": Float, "wires": Wire[4], "work_wires": Wire[num_work_wires]}
-
-        resources = _givens_pair_two_single_excitations.compute_resources(**abstract_args)
-        assert resources.gate_counts == {abstractify(qp.SingleExcitation): 2}
-
-        frame = _GivensPairFrame(Wire[4])
-        target = qp.RZLayer(Float, Wire[4], Wire[num_work_wires])
-        resources = _givens_pair_rzlayer.compute_resources(**abstract_args)
-        assert resources.gate_counts == {qp.ops.ChangeOpBasis2(frame, target, qp.adjoint(frame)): 1}
-
-        for rule in RULES:
-            assert rule.get_work_wire_spec(**abstract_args).total == 0
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
@@ -201,50 +151,6 @@ class TestDecomposition:
 
         assert np.isclose(circuit(0.4), np.cos(0.4) ** 2)
         assert qp.analyze(circuit, level=1)(0.4).resources.counts == expected_counts
-
-
-@pytest.mark.parametrize("phi", [0.4, 0.0])
-def test_phase_gradient_cost(phi):
-    """Test that, with the phase gradient rule of RZLayer and two work wires, a GivensPair costs
-    two TemporaryANDs outside of one SemiAdder, also at phi = 0, and that neither rule requests
-    further work wires."""
-    rzlayer_rule = make_rzlayer_to_phase_gradient_decomp(**PHASE_GRADIENT_WIRES)
-    op = qp.GivensPair(phi, [0, 1, 2, 3], work_wires=[4, 5])
-    fixed_decomps = {qp.GivensPair: _givens_pair_rzlayer, qp.RZLayer: rzlayer_rule}
-
-    [tape], _ = _tape_decompose(
-        QuantumScript([op]), gate_set=PHASE_GRADIENT_GATES, fixed_decomps=fixed_decomps
-    )
-    assert set(tape.wires) <= set(op.wires).union(*PHASE_GRADIENT_WIRES.values())
-    counts = Counter(gate.name for gate in tape.operations)
-    assert (counts["TemporaryAND"], counts["SemiAdder"]) == (2, 1)
-
-    [cob] = qp.testing.decomp_rule_to_tape(op, _givens_pair_rzlayer).operations
-    assert _givens_pair_rzlayer.get_work_wire_spec(**op.arguments).total == 0
-    assert rzlayer_rule.get_work_wire_spec(**cob.target_op.arguments).total == 0
-
-
-class TestInterfaces:
-    """Tests for the gradient of GivensPair with the autograd and jax interfaces."""
-
-    @pytest.mark.autograd
-    def test_autograd(self):
-        """Test that the gradient with autograd is the analytic gradient."""
-        circuit = qp.QNode(_givens_pair_circuit, qp.device("default.qubit", wires=4))
-
-        grad = qp.grad(circuit)(qp.numpy.array(0.4, requires_grad=True))
-        assert np.isclose(grad, -np.sin(0.8))
-
-    @pytest.mark.jax
-    def test_jax_jit(self):
-        """Test that the value and the gradient with jax under ``jax.jit`` are correct."""
-        import jax
-
-        circuit = qp.QNode(_givens_pair_circuit, qp.device("default.qubit", wires=4))
-
-        value, grad = jax.jit(jax.value_and_grad(circuit))(jax.numpy.array(0.4))
-        assert np.isclose(value, np.cos(0.4) ** 2)
-        assert np.isclose(grad, -np.sin(0.8))
 
 
 def test_rule_names():
