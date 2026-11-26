@@ -53,8 +53,7 @@ class BasisRotationPair(Operator2):
         unitary_matrix (TensorLike): :math:`N\times N` matrix specifying the basis transformation
         wires_up (WiresLike): the :math:`N` spin-up wires
         wires_down (WiresLike): the :math:`N` spin-down wires
-        work_wires (WiresLike): auxiliary wires in the zero state that decompositions may use and
-            return to the zero state. They are included in ``op.wires``. Defaults to ``()``.
+        work_wires (WiresLike): zeroed auxiliary wires that decompositions may use.
         check (bool): test unitarity of the provided ``unitary_matrix``
 
     Raises:
@@ -71,8 +70,8 @@ class BasisRotationPair(Operator2):
     >>> [(o.name, o.wires) for o in op.decomposition()]
     [('BasisRotation', Wires([0, 2])), ('BasisRotation', Wires([1, 3]))]
 
-    For a real-valued matrix, an alternative decomposition rule applies each Givens rotation to
-    both spins as one :class:`~.GivensPair`:
+    Alternatively, the ``real`` and ``complex`` rules apply each Givens rotation to both spins as
+    one :class:`~.GivensPair`. For the real-valued matrix above:
 
     >>> rule = qp.list_decomps(qp.BasisRotationPair)["real"]
     >>> [(o.name, o.wires) for o in qp.tape.make_qscript(rule)(**op.arguments).operations]
@@ -116,7 +115,7 @@ class BasisRotationPair(Operator2):
     wire_argnames = ("wires_up", "wires_down", "work_wires")
     compilable_argnames = ("check",)
 
-    # NOTE: As for BasisRotation, 'unitary_matrix' is deliberately left out of the 'arg_specs'
+    # As for BasisRotation, 'unitary_matrix' is deliberately left out of the 'arg_specs'
     # so that real-valued and complex-valued matrices decompose differently.
     arg_specs = {"wires_up": Wire[-1], "wires_down": Wire[-1], "work_wires": Wire[-1]}
 

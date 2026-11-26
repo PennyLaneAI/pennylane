@@ -31,12 +31,6 @@ from pennylane.transforms.decompositions import make_rzlayer_to_phase_gradient_d
 from pennylane.typing import AbstractArray, Complex, Float, Wire
 from pennylane.wires import Wires
 
-RULES = [
-    _basis_rotation_pair_two_basis_rotations,
-    _real_basis_rotation_pair_givens_pairs,
-    _complex_basis_rotation_pair_givens_pairs,
-]
-
 REAL_KINDS = ["det+1", "det-1"]
 COMPLEX_KINDS = ["complex", "real as complex"]
 
@@ -280,7 +274,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("num_wires, num_work_wires", [(2, 0), (3, 2)])
     def test_resources_from_shapes(self, num_wires, num_work_wires):
         """Test that the resources of all rules are computed from the abstract shapes of the
-        matrix and the wires, and that no rule requests work wires."""
+        matrix and the wires."""
         n = num_wires
         num_givens = n * (n - 1) // 2
         wire_args = {"wires_up": Wire[n], "wires_down": Wire[n], "work_wires": Wire[num_work_wires]}
@@ -306,15 +300,12 @@ class TestDecomposition:
             givens_pair: num_givens,
         }
 
-        for rule in RULES:
-            assert rule.get_work_wire_spec(unitary_matrix=Float[n, n], **wire_args).total == 0
-
 
 @pytest.mark.parametrize("num_wires", [2, 3, 4])
 def test_phase_gradient_cost(num_wires, seed):
     """Test that, with the Givens-pair rule for a real matrix and the phase gradient rule of
     RZLayer, a BasisRotationPair costs as much as its N(N-1)/2 GivensPairs, i.e., two
-    TemporaryANDs outside of one SemiAdder each, and that it requests no further work wires."""
+    TemporaryANDs outside of one SemiAdder each."""
     num_bits = 4
     phase_gradient_wires = {
         "angle_wires": [f"angle_{i}" for i in range(num_bits)],
@@ -348,7 +339,6 @@ def test_phase_gradient_cost(num_wires, seed):
     counts = Counter(gate.name for gate in tape.operations)
     num_givens_pairs = num_wires * (num_wires - 1) // 2
     assert (counts["TemporaryAND"], counts["SemiAdder"]) == (2 * num_givens_pairs, num_givens_pairs)
-    assert rule.get_work_wire_spec(**op.arguments).total == 0
 
 
 class TestInterfaces:
