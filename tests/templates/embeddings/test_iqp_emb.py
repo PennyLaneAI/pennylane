@@ -290,6 +290,25 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.autograd
+    def test_autograd_parameter_shift(self, tol):
+        """Tests the autograd interface using the parameter-shift method."""
+
+        features = pnp.array([0.1, -1.3], requires_grad=True)
+
+        dev = qp.device("default.qubit", wires=2)
+
+        circuit = qp.QNode(circuit_template, dev, diff_method="parameter-shift")
+        circuit2 = qp.QNode(circuit_decomposed, dev, diff_method="parameter-shift")
+
+        grad_fn = qp.jacobian(circuit)
+        grads = grad_fn(features)
+
+        grad_fn2 = qp.jacobian(circuit2)
+        grads2 = grad_fn2(features)
+
+        assert np.allclose(grads, grads2, atol=tol, rtol=0)
+
     @pytest.mark.jax
     @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
     def test_jax(self, tol, features):
