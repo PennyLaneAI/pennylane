@@ -115,9 +115,9 @@ def _reference_block(M, N, zeta, t_ell, chi, t_eigenvectors, aleph):
 
 
 # pylint: disable-next=too-many-arguments
-def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi):
-    """Apply the walk to ``psi`` and return the system amplitudes with every auxiliary wire
-    on |0>."""
+def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, num_walks=1):
+    """Apply the walk ``num_walks`` times to ``psi`` and return the system amplitudes with
+    every auxiliary wire on |0>."""
     M, n_half = np.shape(chi)
     sizes = qp.qubitization_thc_wires(M, 2 * n_half, aleph, beth)
     total = sum(sizes.values())
@@ -133,19 +133,20 @@ def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi):
     def circuit():
         qp.StatePrep(psi, wires=system)
         qp.PhaseGradientStatePrep(wires["gradient_wires"])
-        qp.QubitizationTHC(
-            tuple(map(tuple, zeta)),
-            tuple(t_ell),
-            tuple(map(tuple, chi)),
-            tuple(map(tuple, t_eigenvectors)),
-            aleph,
-            beth,
-            system,
-            wires["index_wires"],
-            wires["prep_garbage_wires"],
-            wires["gradient_wires"],
-            wires["work_wires"],
-        )
+        for _ in range(num_walks):
+            qp.QubitizationTHC(
+                tuple(map(tuple, zeta)),
+                tuple(t_ell),
+                tuple(map(tuple, chi)),
+                tuple(map(tuple, t_eigenvectors)),
+                aleph,
+                beth,
+                system,
+                wires["index_wires"],
+                wires["prep_garbage_wires"],
+                wires["gradient_wires"],
+                wires["work_wires"],
+            )
         qp.adjoint(qp.PhaseGradientStatePrep(wires["gradient_wires"]))
         return qp.state()
 
@@ -239,6 +240,27 @@ class TestQubitizationTHC:
         got = _run(zeta, t_ell, chi, tev, aleph, beth, psi)
         expected = _reference_block(M, N, zeta, t_ell, chi, tev, aleph) @ psi
         assert np.allclose(got, expected, atol=1e-8)
+
+    def test_second_chebyshev_moment(self, seed):
+        """Test that two walks give T_2(H / lambda) = 2 (H / lambda)^2 - I.
+
+        The single-walk test above cannot detect a faulty reflection, because
+        ``<0| R = <0|`` for any reflection whose fixed subspace contains ``|0>``. This one
+        can, since it is the first moment that sees the reflection. At this size, it does not
+        detect every reflected wire being left out, which ``test_reflection_scope`` covers.
+        """
+        M, N, aleph, beth = 1, 2, 1, 1
+        zeta, t_ell = np.array([[2.0]]), np.array([-1.0])
+        *_, chi, tev = _dummy_input(M, N)
+
+        psi = np.random.default_rng(seed).standard_normal(2**N) + 0j
+        psi /= np.linalg.norm(psi)
+
+        block = _reference_block(M, N, zeta, t_ell, chi, tev, aleph)
+        chebyshev_2 = 2 * block @ block - np.eye(2**N)
+
+        got = _run(zeta, t_ell, chi, tev, aleph, beth, psi, num_walks=2)
+        assert np.allclose(got, chebyshev_2 @ psi, atol=1e-8)
 
     def test_reflection_scope(self):
         """Test that the reflection acts on exactly the ``2 n + aleph + 4`` wires that
