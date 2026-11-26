@@ -4,6 +4,14 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* New decomposition rules for :class:`~.TrotterCDF` and its controlled version, registered by
+  default as ``parallel_double_factorized_steps`` and
+  ``controlled_parallel_double_factorized_steps``, apply the rotations of both
+  spin channels together when enough ``work_wires`` are passed (one, or two under genuine
+  control). They use :class:`~.BasisRotationPair` and, except under genuine control,
+  :class:`~.RZLayer`, and pass the ``work_wires`` on to them.
+  `(#10580) <https://github.com/PennyLaneAI/pennylane/pull/10580>`__
+
 * The new :class:`~.BasisRotationPair` applies the same :class:`~.BasisRotation` to two
   registers, such as the spin-up and spin-down wires. Its decompositions can apply each shared
   Givens rotation as one :class:`~.GivensPair`.
