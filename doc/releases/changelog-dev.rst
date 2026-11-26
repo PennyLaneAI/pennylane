@@ -4,6 +4,11 @@ Release 0.46.0 (development release)
 New features since last release
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+* The new :class:`~.GivensPair` applies the same :class:`~.SingleExcitation` to two pairs of
+  wires, such as a spin-up and a spin-down pair. Its decomposition can apply the shared angle with
+  one :class:`~.RZLayer`.
+  `(#10578) <https://github.com/PennyLaneAI/pennylane/pull/10578>`__
+
 * The new :class:`~.RZLayer` applies :class:`~.RZ` rotations by the same angle to each of its
   wires. The shared angle allows for more efficient decomposition rules than individual rotations,
   such as Hamming-weight phasing, which applies :math:`\lfloor \log_2 m \rfloor + 1` rotations

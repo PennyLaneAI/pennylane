@@ -60,6 +60,7 @@ from pennylane.templates.subroutines.arithmetic.out_adder import _OutAdderTarget
 from pennylane.templates.subroutines.arithmetic.out_multiplier import _OutMultiplierHadamards
 from pennylane.templates.subroutines.arithmetic.phase_adder import _PhaseAdderBasis
 from pennylane.templates.subroutines.arithmetic.temporary_and import _TemporaryANDBasis
+from pennylane.templates.subroutines.qchem.givens_pair import _GivensPairFrame
 from pennylane.templates.subroutines.qubitization_thc import _THCPrepare
 from pennylane.templates.subroutines.rz_layer import _HWPPhaseShifts
 from pennylane.templates.subroutines.select_pauli_rot import (
@@ -134,6 +135,7 @@ def _subcircuit_instances():
         (_HammingWeight([0, 1, 2], [3]), {}),
         (_HWPPhaseShifts(0.37, [0, 1], [2]), {}),
         (_Monomials([0, 1, 2], [3, 4, 5, 6]), {}),
+        (_GivensPairFrame([0, 1, 2, 3]), {}),
         (
             _RZLayerPhaseGradientCompute(
                 jax.numpy.array([[False, True], [True, True]]), [0], [1], [2, 3], [4, 5]
