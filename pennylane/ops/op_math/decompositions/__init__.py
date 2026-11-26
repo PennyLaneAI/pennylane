@@ -17,4 +17,3 @@ unitary operations into sequences of elementary operations.
 
 from .solovay_kitaev import sk_decomposition
 from .ross_selinger import rs_decomposition
-from .controlled_decompositions import ctrl_decomp_bisect, ctrl_decomp_zyz

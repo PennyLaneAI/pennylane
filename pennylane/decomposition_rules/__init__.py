@@ -28,6 +28,7 @@ Import operator-specific rules and helpers from their corresponding rule modules
 .. autosummary::
 
     qubit
+    op_math
     common
     null_decomp
     identity
@@ -41,6 +42,8 @@ Import operator-specific rules and helpers from their corresponding rule modules
     one_qubit_decomposition
     two_qubit_decomposition
     multi_qubit_decomposition
+    ctrl_decomp_bisect
+    ctrl_decomp_zyz
 """
 
 from .common import null_decomp
@@ -49,7 +52,9 @@ from .qubit.matrix_ops import (
     two_qubit_decomposition,
     multi_qubit_decomposition,
 )
-from . import identity, meta, qubit, templates
+from . import identity, meta, op_math, qubit, templates
+
+from .op_math.controlled_qubit_unitary import ctrl_decomp_bisect, ctrl_decomp_zyz
 
 __all__ = [
     "common",
@@ -61,4 +66,7 @@ __all__ = [
     "one_qubit_decomposition",
     "two_qubit_decomposition",
     "multi_qubit_decomposition",
+    "ctrl_decomp_bisect",
+    "ctrl_decomp_zyz",
+    "op_math",
 ]
