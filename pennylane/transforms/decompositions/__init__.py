@@ -23,3 +23,4 @@ from .rz_phase_gradient import (
 )
 from .select_pauli_rot_phase_gradient import make_selectpaulirot_to_phase_gradient_decomp
 from .crz_phase_gradient import make_crz_to_phase_gradient_decomp
+from .rz_layer_phase_gradient import make_rzlayer_to_phase_gradient_decomp

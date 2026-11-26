@@ -7,9 +7,12 @@ New features since last release
 * The new :class:`~.RZLayer` applies :class:`~.RZ` rotations by the same angle to each of its
   wires. The shared angle allows for more efficient decomposition rules than individual rotations,
   such as Hamming-weight phasing, which applies :math:`\lfloor \log_2 m \rfloor + 1` rotations
-  instead of :math:`m` to :math:`m \geq 3` wires.
+  instead of :math:`m` to :math:`m \geq 3` wires. Phase gradient rules created with
+  :func:`~.transforms.decompositions.make_rzlayer_to_phase_gradient_decomp` need a single adder
+  for :math:`m \geq 2` wires.
   `(#10508) <https://github.com/PennyLaneAI/pennylane/pull/10508>`__
   `(#10519) <https://github.com/PennyLaneAI/pennylane/pull/10519>`__
+  `(#10577) <https://github.com/PennyLaneAI/pennylane/pull/10577>`__
 
 * Added a lattice-surgery decomposition for :class:`~.MultiX` with one control wire,
   using three Pauli product measurements and one auxiliary qubit.

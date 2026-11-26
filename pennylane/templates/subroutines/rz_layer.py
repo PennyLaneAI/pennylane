@@ -36,6 +36,8 @@ class RZLayer(Operator2):
 
         \operatorname{RZLayer}(\theta) = \prod_{j=0}^{m-1} R_Z(\theta)_{\texttt{wires}[j]}.
 
+    .. seealso:: :func:`~.transforms.decompositions.make_rzlayer_to_phase_gradient_decomp`
+
     Args:
         angle (TensorLike): the rotation angle :math:`\theta`
         wires (WiresLike): the :math:`m` wires the rotations act on
