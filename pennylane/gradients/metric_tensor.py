@@ -32,46 +32,27 @@ from pennylane.decomposition import gate_sets
 from pennylane.exceptions import TermsUndefinedError, WireError
 from pennylane.measurements import expval, probs
 from pennylane.ops.functions import generator, matrix
-from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
-from pennylane.ops.op_math import Conditional
 from pennylane.ops.qubit.attributes import has_unitary_generator
 from pennylane.transforms import _tape_decompose as decompose
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
-_LayerData = namedtuple("_LayerData", ["pre_ops", "ops", "param_inds", "post_ops"])
-
-
-def _build_tape_graph(queue, all_wires: Wires) -> rx.PyDiGraph:
-    """Build a dependency graph with queue indices as node labels.
-
-    Edges encode wire order and classical dependencies of conditional operations.
-    Objects with no wires act on all circuit wires.
-    """
-    graph = rx.PyDiGraph(multigraph=False)
-    last_on_wire = {}
-    mid_measure_nodes = {}
-
-    for index, obj in enumerate(queue):
-        node = graph.add_node(index)
-        if isinstance(obj, (MidMeasure, PauliMeasure)):
-            mid_measure_nodes[obj] = node
-        for wire in obj.wires or all_wires:
-            if wire in last_on_wire:
-                graph.add_edge(last_on_wire[wire], node, "")
-            last_on_wire[wire] = node
-        if isinstance(obj, Conditional):
-            for measurement in obj.meas_val.measurements:
-                graph.add_edge(mid_measure_nodes[measurement], node, "")
-
-    return graph
+_LayerData = namedtuple("_LayerData", ["pre_ops", "ops", "param_inds"])
 
 
 def _iterate_parametrized_layers(tape: QuantumScript):
-    """Yield trainable-parameter layers with their preceding and succeeding operations."""
-    queue = tape.operations + tape.measurements
-    graph = _build_tape_graph(queue, tape.wires)
+    """Yield trainable-parameter layers with the operations preceding them."""
+    ops_queue = tape.operations
+    graph = rx.PyDiGraph(multigraph=False)
+    last_on_wire = {}
+    for index, op in enumerate(ops_queue):
+        graph.add_node(index)
+        for wire in op.wires or tape.wires:
+            if wire in last_on_wire:
+                graph.add_edge(last_on_wire[wire], index, "")
+            last_on_wire[wire] = index
+
     layers = []
     ops, param_indices, op_indices = [], [], []
 
@@ -81,7 +62,7 @@ def _iterate_parametrized_layers(tape: QuantumScript):
         op_index = cast(int, info["op_idx"])
         ancestors = rx.ancestors(graph, op_index)
         # Compare identities to preserve layering when an operation instance is repeated.
-        if any(op is queue[ancestor] for op in ops for ancestor in ancestors):
+        if any(op is ops_queue[ancestor] for op in ops for ancestor in ancestors):
             layers.append((ops, param_indices, op_indices))
             ops, param_indices, op_indices = [], [], []
         ops.append(info["op"])
@@ -91,14 +72,8 @@ def _iterate_parametrized_layers(tape: QuantumScript):
 
     for ops, param_indices, op_indices in layers:
         ancestors = {ancestor for index in op_indices for ancestor in rx.ancestors(graph, index)}
-        descendants = {
-            descendant for index in op_indices for descendant in rx.descendants(graph, index)
-        }
         yield _LayerData(
-            [queue[index] for index in sorted(ancestors)],
-            ops,
-            tuple(param_indices),
-            [queue[index] for index in sorted(descendants)],
+            [ops_queue[index] for index in sorted(ancestors)], ops, tuple(param_indices)
         )
 
 
@@ -576,7 +551,7 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):
     obs_ids = []
 
     i = 0
-    for queue, curr_ops, param_idx, _ in _iterate_parametrized_layers(tape):
+    for queue, curr_ops, param_idx in _iterate_parametrized_layers(tape):
         params_list.append(param_idx)
         in_argnum_list.append([p in argnum for p in param_idx])
 
@@ -804,7 +779,7 @@ def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wir
             # no tapes need to be constructed for this layer
             continue
 
-        pre_ops, ops, param_idx, post_ops = layer
+        pre_ops, ops, param_idx = layer
         new_ops = []
         new_param_idx = []
 
@@ -813,7 +788,7 @@ def _metric_tensor_hadamard(tape, argnum, allow_nonunitary, aux_wire, device_wir
                 new_ops.append(o)
                 new_param_idx.append(par_idx_to_trainable_idx[idx])
 
-        layers.append(_LayerData(pre_ops, new_ops, new_param_idx, post_ops))
+        layers.append(_LayerData(pre_ops, new_ops, new_param_idx))
 
     if len(layers) <= 1:
         return diag_tapes, diag_proc_fn
