@@ -77,7 +77,7 @@ class CosineWindow(StatePrepBase):
             wires (Iterable, Wires): the wire(s) the operation acts on
 
         Returns:
-            list[Operator]: decomposition into lower level operations
+            list[LegacyOperator]: decomposition into lower level operations
         """
 
         decomp_ops = []

@@ -20,7 +20,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocate, math
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.typing import AbstractWires, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
@@ -646,7 +646,7 @@ class PUIsometryFinder:  # pylint: disable=too-many-instance-attributes
         return self.circuit, self.fanout_bits, bijection
 
 
-class PartialUnaryStatePreparation(Operator2):
+class PartialUnaryStatePreparation(Operator):
     r"""Prepare a sparse quantum state with the partial unary iteration technique.
 
     This operation prepares an arbitrary state

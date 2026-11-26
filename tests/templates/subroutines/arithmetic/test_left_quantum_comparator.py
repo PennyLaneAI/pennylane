@@ -22,7 +22,7 @@ from pennylane.testing import assert_valid
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid():
-    """Test that LeftQuantumComparator passes the standard Operator2 checks,
+    """Test that LeftQuantumComparator passes the standard Operator checks,
     with capture enabled and disabled."""
     op = qp.LeftQuantumComparator(
         x_wires=[0, 1, 2],

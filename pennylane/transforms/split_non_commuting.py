@@ -905,7 +905,7 @@ def _sum_terms(
     return summed_dot_products + offset
 
 
-def _mp_to_obs(mp: MeasurementProcess, tape: qp.tape.QuantumScript) -> qp.operation.Operator:
+def _mp_to_obs(mp: MeasurementProcess, tape: qp.tape.QuantumScript) -> qp.operation.LegacyOperator:
     """Extract the observable from a measurement process.
 
     If the measurement process has an observable, return it. Otherwise, return a dummy

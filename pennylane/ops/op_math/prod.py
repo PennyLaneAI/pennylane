@@ -28,7 +28,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.capture.autograph import wraps
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operator, abstractify
 from pennylane.core.queuing import QueuingManager, remove_from_program
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.ops._pauli_conversion import to_operator
@@ -56,7 +56,7 @@ def prod(*ops, lazy=True):
     that the given operators act on.
 
     Args:
-        *ops (Union[tuple[~.operation.Operator], Callable]): The operators we would like to multiply.
+        *ops (Union[tuple[~.operation.LegacyOperator], Callable]): The operators we would like to multiply.
             Alternatively, a single qfunc that queues operators can be passed to this function.
 
     Keyword Args:
@@ -111,7 +111,7 @@ def prod(*ops, lazy=True):
     Notice how the order in the output appears reversed. However, this is correct because the operators are applied from right to left.
     """
     if len(ops) == 1:
-        if isinstance(ops[0], qp.operation.Operator):
+        if isinstance(ops[0], qp.operation.LegacyOperator):
             return ops[0]
 
         fn = ops[0]
@@ -123,9 +123,11 @@ def prod(*ops, lazy=True):
         def wrapper(*args, **kwargs):
 
             # dequeue operators passed as arguments to the quantum function
-            leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+            leaves, _ = qp.pytrees.flatten(
+                (args, kwargs), lambda obj: isinstance(obj, LegacyOperator)
+            )
             for l in leaves:
-                if isinstance(l, Operator):
+                if isinstance(l, LegacyOperator):
                     qp.QueuingManager.remove(l)
 
             qs = qp.tape.make_qscript(fn)(*args, **kwargs)
@@ -138,7 +140,7 @@ def prod(*ops, lazy=True):
 
         return wrapper
 
-    if ops and all(isinstance(op, Operator2) for op in ops):
+    if ops and all(isinstance(op, Operator) for op in ops):
         if lazy:
             return Prod2(ops)
 
@@ -172,7 +174,7 @@ class Prod(CompositeOp):
     r"""Symbolic operator representing the product of operators.
 
     Args:
-        *factors (tuple[~.operation.Operator]): a tuple of operators which will be multiplied
+        *factors (tuple[~.operation.LegacyOperator]): a tuple of operators which will be multiplied
             together.
 
     Keyword Args:
@@ -387,11 +389,11 @@ class Prod(CompositeOp):
             return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
         return None
 
-    def _simplify_factors(self, factors: tuple[Operator]) -> tuple[complex, Operator]:
+    def _simplify_factors(self, factors: tuple[LegacyOperator]) -> tuple[complex, LegacyOperator]:
         """Reduces the depth of nested factors and groups identical factors.
 
         Returns:
-            Tuple[complex, List[~.operation.Operator]: tuple containing the global phase and a list
+            Tuple[complex, List[~.operation.LegacyOperator]: tuple containing the global phase and a list
             of the simplified factors
         """
         new_factors = _ProductFactorsGrouping()
@@ -430,17 +432,17 @@ class Prod(CompositeOp):
         return op if global_phase == 1 else qp.s_prod(global_phase, op).simplify()
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
+    def _sort(cls, op_list, wire_map: dict = None) -> list[LegacyOperator]:
         """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
         into account the operator commutivity.
 
         Args:
-            op_list (List[.Operator]): list of operators to be sorted
+            op_list (List[.LegacyOperator]): list of operators to be sorted
             wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
                 Defaults to None.
 
         Returns:
-            List[.Operator]: sorted list of operators
+            List[.LegacyOperator]: sorted list of operators
         """
 
         if isinstance(op_list, tuple):

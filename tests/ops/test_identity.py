@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the Identity Operator."""
+"""Unit tests for the Identity LegacyOperator."""
 
 import numpy as np
 import pytest
@@ -141,7 +141,7 @@ class TestIdentity:
         qp.assert_equal(jax.tree_util.tree_unflatten(tree_def, leaves), op)
 
         if all(isinstance(w, int) for w in wires):
-            # ``Operator2`` treats wires as dynamic pytree leaves, so only integer wire
+            # ``Operator`` treats wires as dynamic pytree leaves, so only integer wire
             # labels can be traced by ``jax.jit``.
             adj_op = jax.jit(lambda op: op.adjoint())(op)
             qp.assert_equal(op, adj_op)
@@ -159,7 +159,7 @@ class TestIdentity:
         assert Identity(wires=wires).decomposition() == []
 
     def test_label_method(self, wires):
-        """Test the label method for the Identity Operator"""
+        """Test the label method for the Identity LegacyOperator"""
         assert Identity(wires=wires).label() == "I"
 
     @pytest.mark.parametrize("n", (2, -3, 3.455, -1.29))

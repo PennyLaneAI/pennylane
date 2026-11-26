@@ -20,7 +20,7 @@ import numbers
 from copy import copy
 
 import pennylane as qp
-from pennylane.core.operator import Operator, Operator2
+from pennylane.core.operator import LegacyOperator, Operator
 from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.ops._pauli_conversion import to_operator
@@ -31,7 +31,7 @@ from .sum import Sum
 
 
 class LinearCombination(Sum):
-    r"""Operator representing a linear combination of operators. Also accessible as :class:`~.Hamiltonian`.
+    r"""LegacyOperator representing a linear combination of operators. Also accessible as :class:`~.Hamiltonian`.
 
     The ``LinearCombination`` is represented as a linear combination of other operators, e.g.,
     :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` are trainable parameters.
@@ -42,7 +42,7 @@ class LinearCombination(Sum):
 
     Args:
         coeffs (tensor_like): coefficients of the ``LinearCombination`` expression
-        observables (Iterable[Operator]): observables in the ``LinearCombination`` expression, of same length as ``coeffs``
+        observables (Iterable[LegacyOperator]): observables in the ``LinearCombination`` expression, of same length as ``coeffs``
         grouping_type (str): If not ``None``, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when a :class:`~.QNode` containing this
             ``LinearCombination`` is executed on devices. The string refers to the type of binary relation between Pauli words.
@@ -119,11 +119,11 @@ class LinearCombination(Sum):
     @classmethod
     # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, coeffs, observables, _pauli_rep=None, **kwargs):
-        leaves, structure = flatten(observables, is_leaf=lambda x: isinstance(x, Operator))
+        leaves, structure = flatten(observables, is_leaf=lambda x: isinstance(x, LegacyOperator))
 
         new_leaves = []
         for leaf in leaves:
-            if isinstance(leaf, Operator2):
+            if isinstance(leaf, Operator):
                 if leaf.tracer is None:
                     leaf._bind_primitive()  # pylint: disable=protected-access
                 new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
@@ -137,16 +137,16 @@ class LinearCombination(Sum):
     def __init__(
         self,
         coeffs,
-        observables: list[Operator],
+        observables: list[LegacyOperator],
         grouping_type=None,
         method="lf",
         *,
         _grouping_indices=None,
         _pauli_rep=None,
     ):
-        if isinstance(observables, Operator):
+        if isinstance(observables, LegacyOperator):
             raise ValueError(
-                "observables must be an Iterable of Operator's, and not an Operator itself."
+                "observables must be an Iterable of LegacyOperator's, and not an LegacyOperator itself."
             )
         if qp.math.shape(coeffs)[0] != len(observables):
             raise ValueError(
@@ -205,7 +205,7 @@ class LinearCombination(Sum):
         """Return the operators defining the LinearCombination.
 
         Returns:
-            Iterable[Operator]): observables in the LinearCombination expression
+            Iterable[LegacyOperator]): observables in the LinearCombination expression
         """
         return self._ops
 
@@ -326,8 +326,8 @@ class LinearCombination(Sum):
         coeffs, ops, pr = self._simplify_coeffs_ops(self.coeffs, self.ops, self.pauli_rep, cutoff)
         return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
-    def __matmul__(self, other: Operator) -> Operator:
-        """The product operation between Operator objects."""
+    def __matmul__(self, other: LegacyOperator) -> LegacyOperator:
+        """The product operation between LegacyOperator objects."""
         if isinstance(other, LinearCombination):
             coeffs1 = self.coeffs
             ops1 = self.ops
@@ -350,7 +350,7 @@ class LinearCombination(Sum):
             qp.QueuingManager.remove(other)
             return qp.ops.LinearCombination(coeffs, terms)
 
-        if isinstance(other, Operator):
+        if isinstance(other, LegacyOperator):
             if other.arithmetic_depth == 0:
                 # `other` will be de-queued in the following line, if it is in the current queue
                 # and len(self.ops) > 0. If len(self.ops)==0, we de-queue manually.
@@ -370,8 +370,8 @@ class LinearCombination(Sum):
 
         return NotImplemented
 
-    def __add__(self, H: numbers.Number | Operator) -> Operator:
-        r"""The addition operation between a LinearCombination and an Operator."""
+    def __add__(self, H: numbers.Number | LegacyOperator) -> LegacyOperator:
+        r"""The addition operation between a LinearCombination and an LegacyOperator."""
         ops = copy(self.ops)
         self_coeffs = self.coeffs
 
@@ -387,7 +387,7 @@ class LinearCombination(Sum):
                 _pauli_rep = None
             return qp.ops.LinearCombination(coeffs, ops, _pauli_rep=_pauli_rep)
 
-        if isinstance(H, Operator):
+        if isinstance(H, LegacyOperator):
             coeffs = qp.math.concatenate(
                 [self_coeffs, qp.math.cast_like([1.0], self_coeffs)], axis=0
             )
@@ -396,9 +396,9 @@ class LinearCombination(Sum):
             return qp.ops.LinearCombination(coeffs, ops)
         return NotImplemented
 
-    def __sub__(self, H: Operator) -> Operator:
-        r"""The subtraction operation between a LinearCombination and an Operator."""
-        if isinstance(H, Operator):
+    def __sub__(self, H: LegacyOperator) -> LegacyOperator:
+        r"""The subtraction operation between a LinearCombination and an LegacyOperator."""
+        if isinstance(H, LegacyOperator):
             return self + qp.s_prod(-1.0, H, lazy=False)
         return NotImplemented
 
@@ -464,10 +464,10 @@ class LinearCombination(Sum):
 
         A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
 
-        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
+        .. seealso:: :meth:`~.LegacyOperator.compute_diagonalizing_gates`.
 
         Returns:
-            list[.Operator] or None: a list of operators
+            list[.LegacyOperator] or None: a list of operators
         """
         diag_gates = []
         for ops in self.overlapping_ops:
@@ -518,7 +518,7 @@ class Hamiltonian:  # pylint: disable=too-few-public-methods
 
     Args:
         coeffs (tensor_like): coefficients of the Hamiltonian expression
-        observables (Iterable[Operator]): observables in the Hamiltonian expression, of same length as coeffs
+        observables (Iterable[LegacyOperator]): observables in the Hamiltonian expression, of same length as coeffs
         grouping_type (str): If not None, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when QNodes containing this
             Hamiltonian are executed on devices. The string refers to the type of binary relation between Pauli words.

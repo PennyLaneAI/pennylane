@@ -777,7 +777,7 @@ class FermiC(FermiWord):
     Args:
         orbital(int): the non-negative integer indicating the orbital the operator acts on.
 
-    .. note:: While the ``FermiC`` class represents a mathematical operator, it is not a PennyLane qubit :class:`~.Operator`.
+    .. note:: While the ``FermiC`` class represents a mathematical operator, it is not a PennyLane qubit :class:`~.LegacyOperator`.
 
     .. seealso:: :class:`~pennylane.FermiA`
 
@@ -821,7 +821,7 @@ class FermiA(FermiWord):
     Args:
         orbital(int): the non-negative integer indicating the orbital the operator acts on.
 
-    .. note:: While the ``FermiA`` class represents a mathematical operator, it is not a PennyLane qubit :class:`~.Operator`.
+    .. note:: While the ``FermiA`` class represents a mathematical operator, it is not a PennyLane qubit :class:`~.LegacyOperator`.
 
     .. seealso:: :class:`~pennylane.FermiC`
 

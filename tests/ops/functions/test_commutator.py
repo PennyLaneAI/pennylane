@@ -18,7 +18,7 @@ Unit tests for the comm function
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.ops import SProd
 from pennylane.pauli import PauliSentence, PauliWord
 
@@ -31,7 +31,7 @@ pw_id = PauliWord({})
 
 
 def _pauli_to_op(p):
-    """convert PauliWord or PauliSentence to Operator"""
+    """convert PauliWord or PauliSentence to LegacyOperator"""
     return qp.pauli.to_operator(p)
 
 
@@ -128,7 +128,7 @@ class TestcommPauli:
     @pytest.mark.parametrize("transform_type2", [_id, _pauli_to_op, _pw_to_ps])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations)
     def test_basic_comm_relations(self, op1, op2, true_res, transform_type1, transform_type2):
-        """Test basic comm relations between Paulis for PauliWord, PauliSentence and Operator instances"""
+        """Test basic comm relations between Paulis for PauliWord, PauliSentence and LegacyOperator instances"""
         res = qp.commutator(transform_type1(op1), transform_type2(op2), pauli=True)
         assert res == true_res
         assert isinstance(res, PauliSentence)
@@ -188,10 +188,10 @@ class TestcommPauliFalse:
     @pytest.mark.parametrize("transform_type2", [_id, _pauli_to_op, _pw_to_ps])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_ops)
     def test_basic_comm_relations(self, op1, op2, true_res, transform_type1, transform_type2):
-        """Test basic comm relations between Paulis for PauliWord, PauliSentence and Operator instances"""
+        """Test basic comm relations between Paulis for PauliWord, PauliSentence and LegacyOperator instances"""
         res = qp.commutator(transform_type1(op1), transform_type2(op2), pauli=False)
         assert res == true_res
-        assert isinstance(res, Operator)
+        assert isinstance(res, LegacyOperator)
         assert isinstance(res, SProd)
 
     data_more_comm_relations_op = (
@@ -214,7 +214,7 @@ class TestcommPauliFalse:
         """Test more comm relations between Paulis"""
         res = qp.commutator(transform_type1(op1), transform_type2(op2), pauli=False)
         assert res == true_res
-        assert isinstance(res, Operator)
+        assert isinstance(res, LegacyOperator)
         assert isinstance(res, SProd)
 
     @pytest.mark.parametrize("pauli, coeff", [(Z0, 1), (PauliSentence({Z0: 2.0}), 2)])
@@ -229,7 +229,7 @@ class TestcommPauliFalse:
             res = qp.commutator(op1, op2)
 
         expected = coeff * sign * qp.math.array([[0.0, 2.0], [-2.0, 0.0]])
-        assert isinstance(res, Operator)
+        assert isinstance(res, LegacyOperator)
         assert qp.math.allclose(qp.matrix(res, wire_order=[0]), expected)
         assert queue.queue == []
 
@@ -243,4 +243,4 @@ class TestcommPauliFalse:
         res = qp.commutator(op1, op2, pauli=False)
         spy.assert_called()
 
-        assert isinstance(res, Operator)
+        assert isinstance(res, LegacyOperator)

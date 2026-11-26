@@ -246,7 +246,7 @@ def test_parametrized_op():
 
 class TestSpecialOps:
     def test_diagonal_qubit_unitary(self):
-        """Test Operator2 capture and list canonicalization for DiagonalQubitUnitary."""
+        """Test Operator capture and list canonicalization for DiagonalQubitUnitary."""
 
         def qfunc(D, wires):
             qp.DiagonalQubitUnitary(D, wires)

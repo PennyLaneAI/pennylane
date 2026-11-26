@@ -70,7 +70,7 @@ can contain a range of object types, including:
 - ``numpy.ndarray``
 - any numeric type
 - :class:`~.qchem.Molecule`
-- most :class:`~.Operator` types
+- most :class:`~.LegacyOperator` types
 - ``list`` of any supported type
 - ``dict`` of any supported type, as long as the keys are strings
 

@@ -26,7 +26,7 @@ import pytest
 import pennylane as qp
 from pennylane import math
 from pennylane.core import Operator1
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
@@ -37,7 +37,7 @@ from pennylane.capture.primitives import operator_p  # pylint: disable=wrong-imp
 from pennylane.testing import assert_eqn_matches_op, find_eqns, plxpr_to_tape
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
-original_op_bind_code = qp.operation.Operator._primitive_bind_call.__code__
+original_op_bind_code = qp.operation.LegacyOperator._primitive_bind_call.__code__
 
 
 def normalize_for_comparison(obj):
@@ -534,7 +534,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
         qp.assert_equal(op, make(0.5))
 
-    @pytest.mark.xfail(reason="operators of operators not yet supported with Operator2")
+    @pytest.mark.xfail(reason="operators of operators not yet supported with Operator")
     def test_amplitude_amplification(self):
         """Test the primitive bind call of AmplitudeAmplification."""
 
@@ -1925,7 +1925,7 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0)
         qp.assert_equal(op, qp.TrotterCGF(1.0, 3, hamiltonian, wires))
 
-    @pytest.mark.xfail(reason="operators of operators not yet supported with Operator2")
+    @pytest.mark.xfail(reason="operators of operators not yet supported with Operator")
     def test_reflection(self):
         """Test the primitive bind call of Reflection."""
 
@@ -2142,7 +2142,7 @@ def filter_fn(member: Any) -> bool:
         return True
 
     return member.__module__.startswith("pennylane.templates") and issubclass(
-        member, qp.operation.Operator
+        member, qp.operation.LegacyOperator
     )
 
 
@@ -2167,7 +2167,7 @@ def test_templates_are_modified(template):
     """Test that all templates that are not listed as unmodified in the test cases above
     actually have their _primitive_bind_call modified."""
     # Make sure the template actually is modified in its primitive binding function
-    if template == qp.templates.SubroutineOp or issubclass(template, Operator2):
+    if template == qp.templates.SubroutineOp or issubclass(template, Operator):
         return
     assert template._primitive_bind_call.__code__ != original_op_bind_code
 

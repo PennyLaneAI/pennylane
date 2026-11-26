@@ -34,7 +34,7 @@ def append_gate(tape: QuantumScript, params, gates) -> tuple[QuantumScriptBatch,
     Args:
         tape (QuantumTape or QNode or Callable): quantum circuit to transform by adding gates
         params (array[float]): parameters of the gates to be added
-        gates (list[Operator]): list of the gates to be added
+        gates (list[LegacyOperator]): list of the gates to be added
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
@@ -163,7 +163,7 @@ class AdaptiveOptimizer:
 
         Args:
             params (array[float]): parameters of the gates to be added
-            gates (list[Operator]): list of the gates to be added
+            gates (list[LegacyOperator]): list of the gates to be added
             initial_circuit (function): user-defined circuit that returns an expectation value
 
         Returns:
@@ -178,7 +178,7 @@ class AdaptiveOptimizer:
 
         Args:
             circuit (.QNode): user-defined circuit returning an expectation value
-            operator_pool (list[Operator]): list of the gates to be used for adaptive optimization
+            operator_pool (list[LegacyOperator]): list of the gates to be used for adaptive optimization
             params_zero (bool): flag to initiate circuit parameters at zero
 
         Returns:
@@ -192,7 +192,7 @@ class AdaptiveOptimizer:
 
         Args:
             circuit (.QNode): user-defined circuit returning an expectation value
-            operator_pool (list[Operator]): list of the gates to be used for adaptive optimization
+            operator_pool (list[LegacyOperator]): list of the gates to be used for adaptive optimization
             drain_pool (bool): flag to remove selected gates from the operator pool
             params_zero (bool): flag to initiate circuit parameters at zero
 

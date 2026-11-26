@@ -506,12 +506,12 @@ class TestHasUnitaryGenerator:
         """Test directly that generators of the operators not in the ``has_unitary_generator``
         attribute are not unitary (up to a factor of 2)."""
         if entry in unitarily_generated_ops:
-            pytest.skip("Operator declared as having unitary generator")
+            pytest.skip("LegacyOperator declared as having unitary generator")
 
         op_class = getattr(qp, entry)
 
         if not op_class.has_generator:
-            pytest.skip("Operator does not have a generator")
+            pytest.skip("LegacyOperator does not have a generator")
         phi = 1.23
         try:
             wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))

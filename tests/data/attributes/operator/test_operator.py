@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.data.attributes import DatasetOperator, DatasetPyTree
 from pennylane.data.base.typing_util import get_type_str
 
@@ -234,7 +234,7 @@ def test_value_init_not_supported():
     """Test that a ValueError is raised if attempting to serialize an unsupported operator
     using the ``DatasetOperator`` attribute type."""
 
-    class NotSupported(Operator):  # pylint: disable=too-few-public-methods
+    class NotSupported(LegacyOperator):  # pylint: disable=too-few-public-methods
         """An operator."""
 
     with pytest.raises(

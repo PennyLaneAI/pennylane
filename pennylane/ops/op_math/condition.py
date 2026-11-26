@@ -32,7 +32,7 @@ from pennylane.capture.hint import get_hints
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.compiler import compiler
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operation, Operator, Operator1, Operator2
+from pennylane.core.operator import LegacyOperator, Operation, Operator, Operator1
 from pennylane.core.operator.base import AbstractOperator  # tach-ignore
 from pennylane.exceptions import ConditionalTransformError
 from pennylane.ops.op_math.symbolicop import SymbolicOp
@@ -86,11 +86,11 @@ def _add_abstract_shapes(f):
 
 
 def _is_operator_type(fn):
-    """Determine whether ``fn`` is a subclass of ``Operator``, or a (possibly nested) hinted
-    or ``partial`` wrapper of an ``Operator`` subclass."""
+    """Determine whether ``fn`` is a subclass of ``LegacyOperator``, or a (possibly nested) hinted
+    or ``partial`` wrapper of an ``LegacyOperator`` subclass."""
     while isinstance(fn, (HintedCallable, functools.partial)):
         fn = fn.f if isinstance(fn, HintedCallable) else fn.func
-    return isinstance(fn, type) and issubclass(fn, Operator)
+    return isinstance(fn, type) and issubclass(fn, LegacyOperator)
 
 
 def _format_and_validate_branch_fn(fn):
@@ -104,15 +104,15 @@ def _format_and_validate_branch_fn(fn):
 
         return fn_with_no_return
 
-    # Standard branch functions should not return any Operator2
+    # Standard branch functions should not return any Operator
 
     def wrapped_fn(*args, **kwargs):
         output = fn(*args, **kwargs)
         if any(
-            isinstance(l, Operator2)
-            for l in jax.tree.leaves(output, is_leaf=lambda obj: isinstance(obj, Operator2))
+            isinstance(l, Operator)
+            for l in jax.tree.leaves(output, is_leaf=lambda obj: isinstance(obj, Operator))
         ):
-            raise ValueError("Operator2 instances cannot be returned from conditional branches.")
+            raise ValueError("Operator instances cannot be returned from conditional branches.")
         return output
 
     return wrapped_fn
@@ -152,13 +152,13 @@ def _handle_op(fn, branch_name: str):
 
     if math.is_tracer(fn) and isinstance(fn.aval, AbstractOperator):
         raise ValueError(
-            f"Got Operator1 AbstractOperator as input to cond {branch_name}. Only Operator2 is supported."
+            f"Got Operator1 AbstractOperator as input to cond {branch_name}. Only Operator is supported."
         )
     if isinstance(fn, Operator1):
         raise ValueError(
-            f"Got Operator1 input {fn} to cond {branch_name}. Only Operator2 is supported."
+            f"Got Operator1 input {fn} to cond {branch_name}. Only Operator is supported."
         )
-    if isinstance(fn, Operator2):
+    if isinstance(fn, Operator):
         pop_op_eqns((fn,))
 
         def new_fn():
@@ -166,7 +166,7 @@ def _handle_op(fn, branch_name: str):
 
         return new_fn
     raise ValueError(
-        f"If true_fn is an Operator2, all other branches must be Operator2 or None. Got {fn} for {branch_name}."
+        f"If true_fn is an Operator, all other branches must be Operator or None. Got {fn} for {branch_name}."
     )
 
 
@@ -352,9 +352,9 @@ class CondCallable:
 
     def __call_capture_disabled(self, *args, **kwargs):
         # dequeue operators passed to args
-        leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, LegacyOperator))
         for l in leaves:
-            if isinstance(l, Operator):
+            if isinstance(l, LegacyOperator):
                 qp.QueuingManager.remove(l)
 
         # python fallback
@@ -427,7 +427,7 @@ class CondCallable:
 
 
 def _is_operator(op):
-    return isinstance(op, Operator) or (
+    return isinstance(op, LegacyOperator) or (
         math.is_tracer(op) and isinstance(op.aval, AbstractOperator)
     )
 
@@ -436,12 +436,12 @@ def _capture_dispatch(condition, true_fn, false_fn, elifs):
     if (
         len(elifs) == 2
         and not isinstance(elifs[0], (tuple, list))
-        and isinstance(elifs[1], (Callable, Operator))
+        and isinstance(elifs[1], (Callable, LegacyOperator))
     ):
         # elifs = (elif_condition, elif_function)
         elifs = (elifs,)
 
-    if isinstance(true_fn, Operator):
+    if isinstance(true_fn, LegacyOperator):
         return _handle_op_inputs(condition, true_fn, false_fn, elifs)
 
     if math.is_tracer(true_fn) and isinstance(true_fn.aval, AbstractOperator):
@@ -449,13 +449,13 @@ def _capture_dispatch(condition, true_fn, false_fn, elifs):
 
     if _is_operator(false_fn):
         raise ValueError(
-            f"Cannot provide an Operator as false_fn if true_fn is a callable. Got {false_fn}"
+            f"Cannot provide an LegacyOperator as false_fn if true_fn is a callable. Got {false_fn}"
         )
 
     for _, elif_fn in elifs:
         if _is_operator(elif_fn):
             raise ValueError(
-                f"Cannot provide an Operator as elif_fn if true_fn is a callable. Got {elif_fn}"
+                f"Cannot provide an LegacyOperator as elif_fn if true_fn is a callable. Got {elif_fn}"
             )
 
     return CondCallable(condition, true_fn, false_fn, elifs)
@@ -878,8 +878,8 @@ def cond(
         def wrapper(*args, **kwargs):
             # We assume that the callable is a quantum function
 
-            recorded_ops = [a for a in args if isinstance(a, Operator)] + [
-                k for k in kwargs.values() if isinstance(k, Operator)
+            recorded_ops = [a for a in args if isinstance(a, LegacyOperator)] + [
+                k for k in kwargs.values() if isinstance(k, LegacyOperator)
             ]
 
             # This will dequeue all operators passed in as arguments to the qfunc that is

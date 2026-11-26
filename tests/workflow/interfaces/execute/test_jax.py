@@ -39,7 +39,7 @@ def get_device(device_name, seed):
 @pytest.mark.xfail(
     strict=True,
     reason=(
-        "Passing a QuantumScript containing an Operator2 directly through jax.jit traces "
+        "Passing a QuantumScript containing an Operator directly through jax.jit traces "
         "concrete wire labels as dynamic leaves."
     ),
 )

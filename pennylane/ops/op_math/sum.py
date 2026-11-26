@@ -23,7 +23,7 @@ from copy import copy
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import QueuingManager
 from pennylane.ops._pauli_conversion import to_operator
@@ -35,7 +35,7 @@ def sum(*summands, grouping_type=None, method="lf", lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
-        *summands (tuple[~.operation.Operator]): the operators we want to sum together.
+        *summands (tuple[~.operation.LegacyOperator]): the operators we want to sum together.
 
     Keyword Args:
         lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
@@ -124,7 +124,7 @@ class Sum(CompositeOp):
     r"""Symbolic operator representing the sum of operators.
 
     Args:
-        *summands (tuple[~.operation.Operator]): a tuple of operators which will be summed together.
+        *summands (tuple[~.operation.LegacyOperator]): a tuple of operators which will be summed together.
 
     Keyword Args:
         grouping_type (str): The type of binary relation between Pauli words used to compute
@@ -223,7 +223,7 @@ class Sum(CompositeOp):
 
     def __init__(
         self,
-        *operands: Operator,
+        *operands: LegacyOperator,
         grouping_type=None,
         method="lf",
         _grouping_indices=None,
@@ -316,7 +316,9 @@ class Sum(CompositeOp):
     @handle_recursion_error
     def label(self, decimals=None, base_label=None, cache=None):
         decimals = None if (len(self.parameters) > 3) else decimals
-        return Operator.label(self, decimals=decimals, base_label=base_label or "𝓗", cache=cache)
+        return LegacyOperator.label(
+            self, decimals=decimals, base_label=base_label or "𝓗", cache=cache
+        )
 
     @handle_recursion_error
     def matrix(self, wire_order=None):
@@ -331,7 +333,7 @@ class Sum(CompositeOp):
 
         A ``MatrixUndefinedError`` is raised if the matrix representation has not been defined.
 
-        .. seealso:: :meth:`~.Operator.compute_matrix`
+        .. seealso:: :meth:`~.LegacyOperator.compute_matrix`
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels from the
@@ -388,11 +390,11 @@ class Sum(CompositeOp):
         return None
 
     @classmethod
-    def _simplify_summands(cls, summands: list[Operator]):
+    def _simplify_summands(cls, summands: list[LegacyOperator]):
         """Reduces the depth of nested summands and groups equal terms together.
 
         Args:
-            summands (List[~.operation.Operator]): summands list to simplify
+            summands (List[~.operation.LegacyOperator]): summands list to simplify
 
         Returns:
             .SumSummandsGrouping: Class containing the simplified and grouped summands.
@@ -524,26 +526,26 @@ class Sum(CompositeOp):
             )
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
+    def _sort(cls, op_list, wire_map: dict = None) -> list[LegacyOperator]:
         """Sort algorithm that sorts a list of sum summands by their wire indices.
 
         Args:
-            op_list (List[.Operator]): list of operators to be sorted
+            op_list (List[.LegacyOperator]): list of operators to be sorted
             wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
                 Defaults to None.
 
         Returns:
-            List[.Operator]: sorted list of operators
+            List[.LegacyOperator]: sorted list of operators
         """
 
         if isinstance(op_list, tuple):
             op_list = list(op_list)
 
-        def _sort_key(op: Operator) -> tuple:
+        def _sort_key(op: LegacyOperator) -> tuple:
             """Sorting key used in the `sorted` python built-in function.
 
             Args:
-                op (.Operator): Operator.
+                op (.LegacyOperator): LegacyOperator.
 
             Returns:
                 Tuple[int, int, str]: Tuple containing the minimum wire value, the number of wires
@@ -567,13 +569,13 @@ class _SumSummandsGrouping:
     def __init__(self):
         self.queue = {}  # {hash: [coeff, summand]}
 
-    def add(self, summand: Operator, coeff=1, op_hash=None):
+    def add(self, summand: LegacyOperator, coeff=1, op_hash=None):
         """Add operator to the summands dictionary.
 
         If the operator hash is already in the dictionary, the coefficient is increased instead.
 
         Args:
-            summand (Operator): operator to add to the summands dictionary
+            summand (LegacyOperator): operator to add to the summands dictionary
             coeff (int, optional): Coefficient of the operator. Defaults to 1.
             op_hash (int, optional): Hash of the operator. Defaults to None.
         """

@@ -132,7 +132,7 @@ def test_decomposition_contents(weights, pattern, spin_sym, wires, expected_circ
 @pytest.mark.parametrize("spin_sym", [False, True])
 @pytest.mark.parametrize("max_weight", [1, 2])
 def test_standard_validity(spin_sym, max_weight):
-    """Test that IQP satisfies the standard ``Operator2`` validity checks."""
+    """Test that IQP satisfies the standard ``Operator`` validity checks."""
     pattern = local_gates(4, max_weight)
     weights = math.random.uniform(0, 2 * np.pi, len(pattern))
     op = IQP(weights, [0, 1, 2, 3], pattern, spin_sym)

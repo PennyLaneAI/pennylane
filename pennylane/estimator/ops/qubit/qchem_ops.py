@@ -143,7 +143,7 @@ class SingleExcitation(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, precision: float | None = None) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             precision (float, optional): error threshold for clifford plus T decomposition of this operation

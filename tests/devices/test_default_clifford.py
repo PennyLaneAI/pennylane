@@ -668,7 +668,7 @@ def test_clifford_error(check):
 
     with pytest.raises(
         DeviceError,
-        match=r"Operator LegacyRX\(1.0, wires=\[0\]\) not supported with default.clifford and does not provide a decomposition",
+        match=r"LegacyOperator LegacyRX\(1.0, wires=\[0\]\) not supported with default.clifford and does not provide a decomposition",
     ):
         if check:
             with pytest.warns(DecompositionWarning):
@@ -700,7 +700,7 @@ def test_meas_error_noisy():
 
     with pytest.raises(
         DeviceError,
-        match=r"Operator AmplitudeDamping\(0.2, wires=\[0\]\) not supported with default.clifford",
+        match=r"LegacyOperator AmplitudeDamping\(0.2, wires=\[0\]\) not supported with default.clifford",
     ):
         circ_2()
 

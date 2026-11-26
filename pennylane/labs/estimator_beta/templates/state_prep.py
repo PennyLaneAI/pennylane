@@ -78,7 +78,7 @@ class LabsMottonenStatePreparation(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_wires: int) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -179,7 +179,7 @@ class LabsCosineWindow(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_wires: int) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -337,7 +337,7 @@ class LabsSumOfSlatersPrep(ResourceOperator):
         select_swap_depth: int | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation

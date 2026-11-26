@@ -72,7 +72,7 @@ class TestSingleOperation:
         dummy_op = CustomOp(0.5, wires=0)
         with pytest.raises(
             qp.operation.MatrixUndefinedError,
-            match="Operator must define a matrix, sparse matrix, or decomposition",
+            match="LegacyOperator must define a matrix, sparse matrix, or decomposition",
         ):
             qp.matrix(dummy_op)
 
@@ -618,7 +618,7 @@ class TestValidation:
         """Assert error raised when input is neither a tape, QNode, nor quantum function"""
         with pytest.raises(
             TransformError,
-            match="Input is not an Operator, tape, QNode, or quantum function",
+            match="Input is not an LegacyOperator, tape, QNode, or quantum function",
         ):
             _ = qp.matrix(None)
 

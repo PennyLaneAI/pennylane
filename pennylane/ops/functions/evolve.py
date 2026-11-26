@@ -15,11 +15,11 @@
 This module contains the qp.evolve function.
 """
 
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.ops import Evolution
 
 
-def evolve(op: Operator, coeff: float = 1):
+def evolve(op: LegacyOperator, coeff: float = 1):
     r"""Returns a new operator that computes the evolution of ``op``.
 
     .. math::
@@ -27,7 +27,7 @@ def evolve(op: Operator, coeff: float = 1):
         e^{-i x \bm{O}}
 
     Args:
-        op (.Operator): operator to evolve
+        op (.LegacyOperator): operator to evolve
         coeff (float): coefficient multiplying the exponentiated operator
 
     Returns:

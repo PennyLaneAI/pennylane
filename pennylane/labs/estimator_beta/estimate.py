@@ -88,7 +88,7 @@ def estimate(  # pylint: disable=too-many-arguments
       that lead to more optimal resource estimates.
 
     Args:
-        workflow (Callable | :class:`~.pennylane.estimator.resource_operator.ResourceOperator` | :class:`~.pennylane.estimator.resources_base.Resources` | :class:`~.Operator` | QNode):
+        workflow (Callable | :class:`~.pennylane.estimator.resource_operator.ResourceOperator` | :class:`~.pennylane.estimator.resources_base.Resources` | :class:`~.LegacyOperator` | QNode):
             The quantum circuit or operator for which to estimate resources.
         gate_set (set[str] | None): A set of names (strings) of the fundamental operators to count
             throughout the quantum workflow. If not provided, the default gate set will be used,

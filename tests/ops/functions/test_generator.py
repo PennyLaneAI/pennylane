@@ -368,7 +368,7 @@ class TestHamiltonianReturn:
 
 
 class TestArithmeticReturn:
-    """Tests for format="arithmetic". This format always returns the generator as an Arithmetic Operator."""
+    """Tests for format="arithmetic". This format always returns the generator as an Arithmetic LegacyOperator."""
 
     def test_observable_no_coeff(self):
         """Test a generator that returns an observable with no coefficient is correct"""

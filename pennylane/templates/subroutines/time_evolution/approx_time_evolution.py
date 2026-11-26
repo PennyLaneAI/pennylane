@@ -196,7 +196,7 @@ class ApproxTimeEvolution(Operation):
             n (int): The number of Trotter steps used when approximating the time-evolution operator.
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
 
 
         .. code-block:: python

@@ -256,7 +256,7 @@ class TestAliasSamplingTHC:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_assert_valid_and_decomposition(self):
-        """Operator2 validity and decomposition rules, with and without capture."""
+        """Operator validity and decomposition rules, with and without capture."""
         M, N, aleph = 2, 2, 1
         zeta, t_ell = _static_coeffs(np.ones((M, M)), np.ones(N // 2))
         sizes = qp.alias_sampling_thc_wires(M, N, aleph)

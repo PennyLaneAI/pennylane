@@ -23,7 +23,7 @@ import jax
 
 from pennylane import capture, math
 from pennylane.core import queuing
-from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operator, Operator1, abstractify
 from pennylane.decomposition import DecompositionRule, list_decomps
 from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
 from pennylane.decomposition.utils import _get_decomp_args
@@ -61,14 +61,14 @@ def _assert_counts_match(expected, actual):
     if not mismatches:
         return
 
-    width = max(len("Operator"), *(len(op) for op, _, _ in mismatches))
-    header = [f"{'Operator'.rjust(width)} : Actual  !=  Resource Estimate"]
+    width = max(len("LegacyOperator"), *(len(op) for op, _, _ in mismatches))
+    header = [f"{'LegacyOperator'.rjust(width)} : Actual  !=  Resource Estimate"]
     rows = [f"{op.rjust(width)} : {str(a).rjust(6)}  !=  {e}" for op, a, e in mismatches]
     table = "\n".join(header + rows)
     raise AssertionError("The actual gate counts do not match the resource estimate:\n" + table)
 
 
-def decomp_rule_to_tape(op: Operator, rule: DecompositionRule) -> QuantumScript:
+def decomp_rule_to_tape(op: LegacyOperator, rule: DecompositionRule) -> QuantumScript:
     """Apply a decomposition rule to an operator and record the result as a tape.
 
     If program capture is enabled, the rule is captured and the tape is extracted from the
@@ -76,7 +76,7 @@ def decomp_rule_to_tape(op: Operator, rule: DecompositionRule) -> QuantumScript:
     a queuing context, and the queued operations are returned.
 
     Args:
-        op (Operator): the operator to decompose
+        op (LegacyOperator): the operator to decompose
         rule (DecompositionRule): a decomposition rule for ``op``
 
     Returns:
@@ -103,7 +103,7 @@ def decomp_rule_to_tape(op: Operator, rule: DecompositionRule) -> QuantumScript:
         return QuantumScript.from_queue(q)
 
     # Match each operator model's capture boundary: legacy hyperparameters remain
-    # closed over, while Operator2 exposes its dynamic, wire, and hybrid arguments.
+    # closed over, while Operator exposes its dynamic, wire, and hybrid arguments.
     decomp, args, kwargs = _prepare_decomp_for_capture(op, rule)
     plxpr = capture.make_plxpr(decomp, autograph=False)(*args, **kwargs)
     flat_capture_args = jax.tree.leaves((args, kwargs))
@@ -111,7 +111,7 @@ def decomp_rule_to_tape(op: Operator, rule: DecompositionRule) -> QuantumScript:
 
 
 @singledispatch
-def _prepare_decomp_for_capture(op: Operator, rule: DecompositionRule):
+def _prepare_decomp_for_capture(op: LegacyOperator, rule: DecompositionRule):
     raise NotImplementedError  # pragma: no cover
 
 
@@ -124,7 +124,7 @@ def _prepare_for_operator1(op: Operator1, rule: DecompositionRule):
 
 
 @_prepare_decomp_for_capture.register
-def _prepare_operator2_rule(op: Operator2, rule: DecompositionRule):
+def _prepare_operator2_rule(op: Operator, rule: DecompositionRule):
     decomp = partial(rule, **op.static_args, **op.compilable_args)
     wire_args = {k: math.array(w, like="jax") for k, w in op.wire_args.items()}
     capture_kwargs = {**op.dynamic_args, **wire_args, **op.hybrid_args}
@@ -132,7 +132,7 @@ def _prepare_operator2_rule(op: Operator2, rule: DecompositionRule):
 
 
 def assert_valid_decomp_rule(
-    op: Operator,
+    op: LegacyOperator,
     rule: DecompositionRule,
     check_matrix: bool = True,
 ) -> None:
@@ -144,7 +144,7 @@ def assert_valid_decomp_rule(
     decomposition must match the matrix of ``op``.
 
     Args:
-        op (Operator): the operator to decompose
+        op (LegacyOperator): the operator to decompose
         rule (DecompositionRule): a decomposition rule for ``op``
         check_matrix (bool): If ``True``, the matrix of the decomposition is compared with the
             matrix of ``op``. Defaults to ``True``.
@@ -172,7 +172,7 @@ def assert_valid_decomp_rule(
     Traceback (most recent call last):
         ...
     AssertionError: The actual gate counts do not match the resource estimate:
-    Operator : Actual  !=  Resource Estimate
+    LegacyOperator : Actual  !=  Resource Estimate
     Hadamard :      2  !=  1
 
     """
@@ -249,14 +249,14 @@ def assert_valid_decomp_rule(
         ), "decomposition must produce the same matrix as the operator."
 
 
-def assert_decomposable(op: Operator, check_matrix: bool = True) -> None:
+def assert_decomposable(op: LegacyOperator, check_matrix: bool = True) -> None:
     """Check that an operator can be decomposed with its registered decomposition rules.
 
     At least one rule registered for ``op`` with :func:`~.decomposition.add_decomps` must be applicable to
     ``op``, and every applicable rule is checked with :func:`~.testing.assert_valid_decomp_rule`.
 
     Args:
-        op (Operator): the operator to decompose
+        op (LegacyOperator): the operator to decompose
         check_matrix (bool): If ``True``, the matrix of each decomposition is compared with the
             matrix of ``op``. Defaults to ``True``.
 
@@ -270,7 +270,7 @@ def assert_decomposable(op: Operator, check_matrix: bool = True) -> None:
 
     .. code-block:: python
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
             num_wires = 1
 
         op = MyOp(0)

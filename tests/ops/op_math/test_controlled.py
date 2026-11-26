@@ -27,8 +27,8 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.core import Operator2
-from pennylane.core.operator import Operation, Operator
+from pennylane.core import Operator
+from pennylane.core.operator import LegacyOperator, Operation
 from pennylane.core.qscript import QuantumScript
 from pennylane.decomposition import gate_sets
 from pennylane.decomposition.decomposition_rule import register_resources
@@ -50,7 +50,7 @@ def equal_list(lhs, rhs):
     return len(lhs) == len(rhs) and all(qp.equal(l, r) for l, r in zip(lhs, rhs))
 
 
-class TempOperator(Operator):
+class TempOperator(LegacyOperator):
     num_wires = 1
 
 
@@ -72,13 +72,13 @@ class TestControlledInheritance:
     """Test the inheritance structure modified through dynamic __new__ method."""
 
     def test_plain_operator(self):
-        """Test when base directly inherits from Operator only inherits from Operator."""
+        """Test when base directly inherits from LegacyOperator only inherits from LegacyOperator."""
 
         base = TempOperator(1.234, wires=0)
         op = Controlled(base, 46)
 
         assert isinstance(op, Controlled)
-        assert isinstance(op, Operator)
+        assert isinstance(op, LegacyOperator)
         assert not isinstance(op, Operation)
         assert not isinstance(op, ControlledOp)
 
@@ -96,7 +96,7 @@ class TestControlledInheritance:
         assert type(op) is ControlledOp  # pylint: disable=unidiomatic-typecheck
 
         assert isinstance(op, Controlled)
-        assert isinstance(op, Operator)
+        assert isinstance(op, LegacyOperator)
         assert isinstance(op, Operation)
         assert isinstance(op, ControlledOp)
 
@@ -236,7 +236,7 @@ class TestControlledInit:
         qp.testing.assert_valid(op)
 
 
-class DummyHadamard(qp.operation.Operator):
+class DummyHadamard(qp.operation.LegacyOperator):
     resource_keys = set({})
     num_wires = 1
 
@@ -289,7 +289,7 @@ class TestControlledProperties:
     def test_has_matrix(self, value):
         """Test that Controlled defers has_matrix to base operator."""
 
-        class DummyOp(Operator):
+        class DummyOp(LegacyOperator):
             num_wires = 1
             has_matrix = value
 
@@ -363,7 +363,7 @@ class TestControlledProperties:
     def test_has_adjoint(self, value):
         """Test that Controlled defers has_adjoint to base operator."""
 
-        class DummyOp(Operator):
+        class DummyOp(LegacyOperator):
             num_wires = 1
             has_adjoint = value
 
@@ -374,7 +374,7 @@ class TestControlledProperties:
     def test_has_diagonalizing_gates(self, value):
         """Test that Controlled defers has_diagonalizing_gates to base operator."""
 
-        class DummyOp(Operator):
+        class DummyOp(LegacyOperator):
             num_wires = 1
             has_diagonalizing_gates = value
 
@@ -385,7 +385,7 @@ class TestControlledProperties:
     def test_is_hermitian(self, value):
         """Test that Controlled defers `is_hermitian` to base operator."""
 
-        class DummyOp(Operator):
+        class DummyOp(LegacyOperator):
             num_wires = 1
             is_verified_hermitian = value
 
@@ -980,8 +980,8 @@ class TestDecomposition:
         ctrl_op = qp.ctrl(base_op, control=ctrl_wires)
         custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
 
-        # Operator2 uses registered rules; the GlobalPhase and Identity fixtures are callables.
-        if not issubclass(base_cls, Operator2) and base_cls not in (qp.GlobalPhase, qp.Identity):
+        # Operator uses registered rules; the GlobalPhase and Identity fixtures are callables.
+        if not issubclass(base_cls, Operator) and base_cls not in (qp.GlobalPhase, qp.Identity):
             assert custom_ctrl_cls.compute_decomposition(*params, active_wires) == expected
 
         mat = qp.matrix(ctrl_op.decomposition, wire_order=active_wires)()
@@ -1101,7 +1101,7 @@ class TestArithmetic:
     def test_adjoint(self):
         """Test the adjoint method for Controlled Operators."""
 
-        class DummyOp(Operator):
+        class DummyOp(LegacyOperator):
             num_wires = 1
 
             def adjoint(self):
@@ -1122,7 +1122,7 @@ class TestArithmetic:
     def test_pow(self, z):
         """Test the pow method for Controlled Operators."""
 
-        class DummyOp(Operator):
+        class DummyOp(LegacyOperator):
             num_wires = 1
 
             def pow(self, z):
@@ -1571,7 +1571,9 @@ class TestCtrl:
 
     def test_invalid_input_error(self):
         """Test that a ValueError is raised upon invalid inputs."""
-        with pytest.raises(ValueError, match=r"<class 'int'> is not an Operator or callable."):
+        with pytest.raises(
+            ValueError, match=r"<class 'int'> is not an LegacyOperator or callable."
+        ):
             qp.ctrl(1, control=2)
 
     def test_None_input_error(self):

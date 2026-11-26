@@ -18,7 +18,7 @@ Decomposition rule for SelectPauliRot in terms of `phase gradient states <https:
 import numpy as np
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -70,7 +70,7 @@ def _select_pauli_rot_phase_gradient(  # pylint: disable=too-many-arguments
     angle_wires: Wires,
     phase_grad_wires: Wires,
     work_wires: Wires,
-) -> Operator:
+) -> LegacyOperator:
     """Function that transforms the SelectPauliRot gate to the phase gradient circuit
     The precision is implicitly defined by the length of ``angle_wires``
     """

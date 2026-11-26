@@ -157,7 +157,7 @@ class SimplifiedTwoDesign(Operation):
             wires (int or Iterable[int]): wires that the operator acts on
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
 
         **Example**
 

@@ -16,13 +16,13 @@
 from collections.abc import Iterable
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.pauli import PauliSentence
 from pennylane.typing import TensorLike
 
 
 def trace_inner_product(
-    A: PauliSentence | Operator | TensorLike, B: PauliSentence | Operator | TensorLike
+    A: PauliSentence | LegacyOperator | TensorLike, B: PauliSentence | LegacyOperator | TensorLike
 ):
     r"""Trace inner product :math:`\langle A, B \rangle = \text{tr}\left(A^\dagger B\right)/\text{dim}(A)` between two operators :math:`A` and :math:`B`.
 
@@ -31,15 +31,15 @@ def trace_inner_product(
 
      .. warning::
 
-         Operator inputs are assumed to be Hermitian. In particular,
+         LegacyOperator inputs are assumed to be Hermitian. In particular,
          sums of Pauli operators are assumed to have real-valued coefficients.
          We recommend to use matrix representations for non-Hermitian inputs.
-         In case of non-Hermitian :class:`~PauliSentence` or :class:`Operator` inputs,
+         In case of non-Hermitian :class:`~PauliSentence` or :class:`LegacyOperator` inputs,
          the Hermitian conjugation needs to be done manually by inputting :math:`A^\dagger`.
 
      Args:
-         A (Union[PauliSentence, Operator, TensorLike]): First operator
-         B (Union[PauliSentence, Operator, TensorLike]): Second operator of the same type as ``A``
+         A (Union[PauliSentence, LegacyOperator, TensorLike]): First operator
+         B (Union[PauliSentence, LegacyOperator, TensorLike]): Second operator of the same type as ``A``
 
      Returns:
          Union[float, TensorLike]: Result is either a single float or an array of floats (in batches of the broadcasting dimension).
@@ -68,7 +68,7 @@ def trace_inner_product(
      .. details::
          :title: Usage Details
 
-         :class:`~PauliSentence` and :class:`~Operator` inputs are assumed to be Hermitian. In particular,
+         :class:`~PauliSentence` and :class:`~LegacyOperator` inputs are assumed to be Hermitian. In particular,
          the input ``A`` is not conjugated when operators are used. To get correct results, we can either use
          the matrix representation or manually conjugate the operator.
 

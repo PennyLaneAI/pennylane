@@ -169,7 +169,7 @@ class QubitCarry(Operation):
 
     @staticmethod
     # pylint: disable-next=arguments-differ
-    def compute_decomposition(wires: WiresLike) -> list[qp.operation.Operator]:
+    def compute_decomposition(wires: WiresLike) -> list[qp.operation.LegacyOperator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -180,7 +180,7 @@ class QubitCarry(Operation):
             wires (Iterable[int], Wires): wires that the operator acts on
 
         Returns:
-            list[Operator]: decomposition of the operator
+            list[LegacyOperator]: decomposition of the operator
 
         **Example:**
 
@@ -327,7 +327,7 @@ class QubitSum(Operation):
 
     @staticmethod
     # pylint: disable-next=arguments-differ
-    def compute_decomposition(wires: WiresLike) -> qp.operation.Operator:
+    def compute_decomposition(wires: WiresLike) -> qp.operation.LegacyOperator:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -338,7 +338,7 @@ class QubitSum(Operation):
             wires (Iterable[int], Wires): wires that the operator acts on
 
         Returns:
-            list[Operator]: decomposition of the operator
+            list[LegacyOperator]: decomposition of the operator
 
         **Example:**
 
@@ -564,7 +564,7 @@ class IntegerComparator(Operation):
         geq: bool = True,
         work_wires: WiresLike | None = None,
         **kwargs,
-    ) -> list[qp.operation.Operator]:
+    ) -> list[qp.operation.LegacyOperator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -579,7 +579,7 @@ class IntegerComparator(Operation):
                 the operation acts on.
 
         Returns:
-            list[Operator]: decomposition into lower level operations
+            list[LegacyOperator]: decomposition into lower level operations
 
         **Example:**
 

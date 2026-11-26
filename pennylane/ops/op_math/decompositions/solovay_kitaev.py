@@ -331,7 +331,7 @@ def sk_decomposition(op, epsilon, *, max_depth=5, basis_set=("H", "S", "T"), bas
     # Check for length of wires in the operation
     if len(op.wires) != 1:
         raise ValueError(
-            f"Operator must be a single qubit operation, got {op} acting on {op.wires} wires."
+            f"LegacyOperator must be a single qubit operation, got {op} acting on {op.wires} wires."
         )
 
     with QueuingManager.stop_recording():

@@ -637,7 +637,7 @@ def pauli_sentence(op):
     """Return the PauliSentence representation of an arithmetic operator or Hamiltonian.
 
     Args:
-        op (~.Operator): The operator or Hamiltonian that needs to be converted.
+        op (~.LegacyOperator): The operator or Hamiltonian that needs to be converted.
 
     Raises:
         ValueError: Op must be a linear combination of Pauli operators

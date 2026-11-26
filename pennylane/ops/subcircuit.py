@@ -18,11 +18,11 @@ using quantum functions.
 from collections.abc import Callable
 from inspect import Parameter, Signature, signature
 
-from pennylane.core import Operator2
+from pennylane.core import Operator
 from pennylane.decomposition import DecompositionRule, add_decomps
 
 
-def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator2]:
+def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator]:
     """Implementation of ``subcircuit``."""
     # pylint: disable=protected-access
 
@@ -38,7 +38,7 @@ def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator2]:
     init_sig = Signature((self_p, *s.parameters.values()))
 
     def _init(self, *args, **kwargs):
-        Operator2.__init__(self, *args, **kwargs)
+        Operator.__init__(self, *args, **kwargs)
 
     _init.__signature__ = init_sig
 
@@ -50,7 +50,7 @@ def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator2]:
     attrs["__qualname__"] = qfunc._impl.__qualname__
 
     # creates a new class
-    new_operator = type(qfunc.name, (Operator2,), attrs)
+    new_operator = type(qfunc.name, (Operator,), attrs)
 
     # registers the decomposition
     decomp_name = qfunc.name + "_decomp"
@@ -73,15 +73,15 @@ def subcircuit(  # pylint: disable=too-many-arguments
     hybrid_argnames=(),
     static_argnames=(),
     **cls_attrs,
-) -> Callable | type[Operator2]:
+) -> Callable | type[Operator]:
     r"""A decorator for turning a quantum function with registered resources into an
-    :class:`~.Operator2` subclass.
+    :class:`~.Operator` subclass.
 
     The quantum function decorated with `subcircuit` can be any valid quantum
     function, provided that nothing is returned from it (e.g., terminal measurements are
     not allowed) and that it has resources registered to it via :func:`~pennylane.register_resources`.
 
-    The decorated quantum function will automatically be registered as an :class:`~.Operator2`
+    The decorated quantum function will automatically be registered as an :class:`~.Operator`
     subclass with a single decomposition rule that corresponds to the quantum function body.
 
 
@@ -91,27 +91,27 @@ def subcircuit(  # pylint: disable=too-many-arguments
 
     Keyword Args:
         dynamic_argnames (Sequence[str]): names of the arguments that are dynamic data of the
-            operator. For more details, see :attr:`~.Operator2.dynamic_argnames`
+            operator. For more details, see :attr:`~.Operator.dynamic_argnames`
         wire_argnames (Sequence[str]): names of the arguments that are wires. Defaults to
-            ``("wires",)``. For more details, see :attr:`~.Operator2.wire_argnames`
+            ``("wires",)``. For more details, see :attr:`~.Operator.wire_argnames`
         compilable_argnames (Sequence[str]): names of arguments that are static **and compilable**
-            data of the operator. For more details, see :attr:`~.Operator2.compilable_argnames`
+            data of the operator. For more details, see :attr:`~.Operator.compilable_argnames`
         hybrid_argnames (Sequence[str]): names of arguments that are dynamic data wrapped in static
-            data structures (pytrees). For more details, see :attr:`~.Operator2.hybrid_argnames`
+            data structures (pytrees). For more details, see :attr:`~.Operator.hybrid_argnames`
         static_argnames (Sequence[str]): names of arguments that are static but **not compilable**.
-            For more details, see :attr:`~.Operator2.static_argnames`
+            For more details, see :attr:`~.Operator.static_argnames`
         **cls_attrs: additional class attributes to set on the created operator class
 
     Returns:
-        type[~.Operator2]: a new operator class named after the quantum function
+        type[~.Operator]: a new operator class named after the quantum function
 
     .. note::
 
         Every parameter of the quantum function must be classified into one of ``dynamic_argnames``,
         ``wire_argnames``, ``compilable_argnames``, ``hybrid_argnames`` or ``static_argnames``.
-        See :class:`~.Operator2` for details on how arguments are classified.
+        See :class:`~.Operator` for details on how arguments are classified.
 
-    .. seealso:: :class:`~.Operator2`, :func:`~pennylane.register_resources`
+    .. seealso:: :class:`~.Operator`, :func:`~pennylane.register_resources`
 
     **Example**
 
@@ -127,13 +127,13 @@ def subcircuit(  # pylint: disable=too-many-arguments
             qp.H(wires)
             qp.RZ(phi, wires)
 
-    The returned object is an :class:`~.Operator2` subclass named after the quantum function, and
+    The returned object is an :class:`~.Operator` subclass named after the quantum function, and
     is instantiated and used like any other operator:
 
     >>> op = MyOp(0.5, wires=0)
     >>> op
     MyOp(0.5, wires=[0])
-    >>> isinstance(op, qp.core.Operator2)
+    >>> isinstance(op, qp.core.Operator)
     True
 
     The body of the quantum function is registered as its decomposition rule:

@@ -28,7 +28,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.exceptions import DecompositionUndefinedError
@@ -88,7 +88,7 @@ def _walsh_hadamard_transform(D: TensorLike, n: int | None = None):
     return math.reshape(math.transpose(D), orig_shape)
 
 
-class QubitUnitary(Operator2):
+class QubitUnitary(Operator):
     r"""QubitUnitary(U, wires)
     Apply an arbitrary unitary matrix with a dimension that is a power of two.
 
@@ -255,7 +255,7 @@ class QubitUnitary(Operator2):
         # here we issue a warning to check the operation, instead of raising an error outright.
         if unitary_check and not self._unitary_check(U, dim):
             warnings.warn(
-                f"Operator {U}\n may not be unitary. "
+                f"LegacyOperator {U}\n may not be unitary. "
                 "Verify unitarity of operation, or use a datatype with increased precision.",
                 UserWarning,
             )
@@ -358,7 +358,7 @@ class QubitUnitary(Operator2):
             wires (Iterable[int] or Wires): the wire(s) the operation acts on
 
         Returns:
-            list[Operator]: decomposition of the operator
+            list[LegacyOperator]: decomposition of the operator
 
         **Example:**
 
@@ -520,7 +520,7 @@ def _controlled_qubit_unitary_standard(
 add_decomps("C(QubitUnitary)", _controlled_qubit_unitary_standard)
 
 
-class DiagonalQubitUnitary(Operator2):
+class DiagonalQubitUnitary(Operator):
     r"""DiagonalQubitUnitary(D, wires)
     Apply an arbitrary diagonal unitary matrix with a dimension that is a power of two.
 
@@ -615,7 +615,7 @@ class DiagonalQubitUnitary(Operator2):
         D = math.asarray(D)
 
         if not math.is_tracer(D) and not math.allclose(D * math.conj(D), math.ones_like(D)):
-            raise ValueError("Operator must be unitary.")
+            raise ValueError("LegacyOperator must be unitary.")
 
         # The diagonal is supposed to have one-dimension. If it is broadcasted, it has two
         if math.ndim(D) == 2:
@@ -653,7 +653,7 @@ class DiagonalQubitUnitary(Operator2):
         D = math.asarray(D)
 
         if not (math.is_tracer(D) or math.allclose(D * math.conj(D), math.ones_like(D))):
-            raise ValueError("Operator must be unitary.")
+            raise ValueError("LegacyOperator must be unitary.")
 
         return D
 
@@ -744,7 +744,7 @@ def _pow_diagonal_unitary_standard(base, z):
 add_decomps("Pow(DiagonalQubitUnitary)", _pow_diagonal_unitary_standard)
 
 
-class BlockEncode(Operator2):
+class BlockEncode(Operator):
     r"""BlockEncode(A, wires)
     Construct a unitary :math:`U(A)` such that an arbitrary matrix :math:`A`
     is encoded in the top-left block.

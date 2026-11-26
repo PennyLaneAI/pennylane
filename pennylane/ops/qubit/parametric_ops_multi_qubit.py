@@ -28,7 +28,7 @@ import numpy as np
 import pennylane as qp
 from pennylane import math
 from pennylane.capture.autograph import disable_autograph
-from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.operator import LegacyOperator, Operation, Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import _adjoint_negate_angle
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -45,7 +45,7 @@ from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 from .parametric_ops_single_qubit import RX, RY, RZ, PhaseShift, _can_replace, stack_last
 
 
-class MultiRZ(Operator2):
+class MultiRZ(Operator):
     r"""
     Arbitrary multi Z rotation.
 
@@ -207,7 +207,7 @@ class MultiRZ(Operator2):
     def adjoint(self) -> "MultiRZ":
         return MultiRZ(-self.parameters[0], wires=self.wires)
 
-    def pow(self, z: int | float) -> list[Operator]:
+    def pow(self, z: int | float) -> list[LegacyOperator]:
         return [MultiRZ(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "MultiRZ":
@@ -273,7 +273,7 @@ add_decomps("Adjoint(MultiRZ)", adjoint_rotation2)
 add_decomps("Pow(MultiRZ)", pow_rotation2)
 
 
-class PauliRot(Operator2):
+class PauliRot(Operator):
     r"""
     Arbitrary Pauli word rotation.
 
@@ -628,7 +628,7 @@ add_decomps("Adjoint(PauliRot)", adjoint_rotation2)
 add_decomps("Pow(PauliRot)", pow_rotation2)
 
 
-class PCPhase(Operator2):
+class PCPhase(Operator):
     r"""PCPhase(phi, dim, wires)
     A projector-controlled phase gate.
 
@@ -903,7 +903,7 @@ class PCPhase(Operator2):
         dim = self.dim
         return PCPhase(-1 * phi, dim=dim, wires=self.wires)
 
-    def pow(self, z: int | float) -> list[Operator]:
+    def pow(self, z: int | float) -> list[LegacyOperator]:
         """Computes the operator raised to z."""
         phi = self.phi
         dim = self.dim
@@ -1096,7 +1096,7 @@ add_decomps(PCPhase, _decompose_pcphase_standard)
 add_decomps("Adjoint(PCPhase)", adjoint_rotation2)
 
 
-class IsingXX(Operator2):
+class IsingXX(Operator):
     r"""
     Ising XX coupling gate
 
@@ -1214,7 +1214,7 @@ class IsingXX(Operator2):
     def adjoint(self) -> "IsingXX":
         return IsingXX(-self.phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> list[Operator]:
+    def pow(self, z: int | float) -> list[LegacyOperator]:
         return [IsingXX(self.phi * z, wires=self.wires)]
 
     def simplify(self) -> "IsingXX":
@@ -1257,7 +1257,7 @@ add_decomps("Adjoint(IsingXX)", adjoint_rotation2)
 add_decomps("Pow(IsingXX)", pow_rotation2)
 
 
-class IsingYY(Operator2):
+class IsingYY(Operator):
     r"""
     Ising YY coupling gate
 
@@ -1385,7 +1385,7 @@ class IsingYY(Operator2):
     def adjoint(self) -> "IsingYY":
         return IsingYY(-self.phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> list[Operator]:
+    def pow(self, z: int | float) -> list[LegacyOperator]:
         return [IsingYY(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingYY":
@@ -1428,7 +1428,7 @@ add_decomps("Adjoint(IsingYY)", adjoint_rotation2)
 add_decomps("Pow(IsingYY)", pow_rotation2)
 
 
-class IsingZZ(Operator2):
+class IsingZZ(Operator):
     r"""
     Ising ZZ coupling gate
 
@@ -1591,7 +1591,7 @@ class IsingZZ(Operator2):
     def adjoint(self) -> "IsingZZ":
         return IsingZZ(-self.phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> list[Operator]:
+    def pow(self, z: int | float) -> list[LegacyOperator]:
         return [IsingZZ(self.phi * z, wires=self.wires)]
 
     def simplify(self) -> "IsingZZ":
@@ -1678,7 +1678,7 @@ add_decomps("Pow(IsingZZ)", pow_rotation2)
 add_decomps("C(IsingZZ)", controlled_ising_zz)
 
 
-class IsingXY(Operator2):
+class IsingXY(Operator):
     r"""
     Ising (XX + YY) coupling gate
 
@@ -1855,7 +1855,7 @@ class IsingXY(Operator2):
     def adjoint(self) -> "IsingXY":
         return IsingXY(-self.phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> list[Operator]:
+    def pow(self, z: int | float) -> list[LegacyOperator]:
         return [IsingXY(self.phi * z, wires=self.wires)]
 
     def simplify(self) -> "IsingXY":
@@ -1955,7 +1955,7 @@ class PSWAP(Operation):
 
     @staticmethod
     # pylint: disable-next=arguments-differ
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[LegacyOperator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1968,7 +1968,7 @@ class PSWAP(Operation):
             wires (Iterable, Wires): the subsystem the gate acts on
 
         Returns:
-            list[Operator]: decomposition into lower level operations
+            list[LegacyOperator]: decomposition into lower level operations
 
         **Example:**
 
@@ -2104,7 +2104,7 @@ add_decomps(PSWAP, _pswap_to_swap_cnot_phaseshift_cnot, _pswap_to_ppr)
 add_decomps("Adjoint(PSWAP)", _adjoint_negate_angle)
 
 
-class CPhaseShift00(Operator2):
+class CPhaseShift00(Operator):
     r"""
     A qubit controlled phase shift.
 
@@ -2277,7 +2277,7 @@ add_decomps("Adjoint(CPhaseShift00)", adjoint_rotation2)
 add_decomps("Pow(CPhaseShift00)", pow_rotation2)
 
 
-class CPhaseShift01(Operator2):
+class CPhaseShift01(Operator):
     r"""
     A qubit controlled phase shift.
 
@@ -2448,7 +2448,7 @@ add_decomps("Adjoint(CPhaseShift01)", adjoint_rotation2)
 add_decomps("Pow(CPhaseShift01)", pow_rotation2)
 
 
-class CPhaseShift10(Operator2):
+class CPhaseShift10(Operator):
     r"""
     A qubit controlled phase shift.
 

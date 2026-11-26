@@ -195,7 +195,7 @@ class QubitizeTHC(ResourceOperator):
         rotation_precision: int | None = None,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted

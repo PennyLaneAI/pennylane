@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core import Operator2
+from pennylane.core import Operator
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.operation import abstractify
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
@@ -34,7 +34,7 @@ from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import CompilableOp, DynOp, NonParametricOp, OneWireDynOp
 
 
-class CustomBase(Operator2):
+class CustomBase(Operator):
     """A custom base op."""
 
     arg_specs = {"wires": Wire[1]}
@@ -161,7 +161,7 @@ class TestControlled2:
     def test_custom_controlled_op_abstract(self):
         """Test creating an abstract custom controlled op."""
 
-        class Rot2(Operator2):
+        class Rot2(Operator):
             """A new Rot."""
 
             dynamic_argnames = ("phi", "theta", "omega")
@@ -601,7 +601,7 @@ class TestControlledOp2:
         assert qp.math.allclose(op.control_values, [0, 1])
 
     def test_create_controlled_op2(self):
-        """Tests qp.ctrl on Operator2 creates a ControlledOp2."""
+        """Tests qp.ctrl on Operator creates a ControlledOp2."""
 
         op = OneWireDynOp(0.5, wires=[0])
         op = qp.ctrl(OneWireDynOp(0.5, wires=[0]), control=[1], control_values=0)

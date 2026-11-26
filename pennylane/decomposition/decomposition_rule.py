@@ -29,7 +29,7 @@ from typing import overload
 
 import pennylane as qp
 from pennylane.core import QueuingManager, queuing
-from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operator, abstractify
 from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
@@ -416,13 +416,13 @@ class DecompositionRule:  # pylint: disable=too-many-instance-attributes
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
             if not (
-                isinstance(op, (CompressedResourceOp, Operator2))
-                or (isinstance(op, type) and issubclass(op, Operator))
+                isinstance(op, (CompressedResourceOp, Operator))
+                or (isinstance(op, type) and issubclass(op, LegacyOperator))
             ):
                 raise TypeError(
                     "The keys of the dictionary returned by the resource function must be a "
-                    "subclass of Operator or a CompressedResourceOp constructed with "
-                    "qp.resource_rep, or an Operator2 constructed with abstract inputs."
+                    "subclass of LegacyOperator or a CompressedResourceOp constructed with "
+                    "qp.resource_rep, or an Operator constructed with abstract inputs."
                 )
             op = abstractify(op)
             _verify_is_abstract_and_fixed(op)
@@ -616,7 +616,9 @@ _excluded_decomps_private = {}
 _excluded_decomps_var = ContextVar("_excluded_decomps", default=_excluded_decomps_private)
 
 
-def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
+def add_decomps(
+    op_type: type[LegacyOperator | Operator] | str, *decomps: DecompositionRule
+) -> None:
     """Globally registers new decomposition rules with an operator class.
 
     Multiple decomposition rules can be registered for the same operator class.
@@ -695,7 +697,7 @@ def _get_registered_decomps(op_name: str) -> DecompCollection:
 
 
 @singledispatch
-def _list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
+def _list_decomps(op: type[LegacyOperator] | LegacyOperator | str) -> DecompCollection:
     """Retrieves decomposition rules before exclusion filtering."""
     if fixed_rule := get_fixed_decomp(op):
         return DecompCollection([fixed_rule])
@@ -728,11 +730,11 @@ def _list_control_decomps(op_name: str) -> DecompCollection:
     return registered_rules + generic_rules
 
 
-def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
+def list_decomps(op: type[LegacyOperator] | LegacyOperator | str) -> DecompCollection:
     """Lists decomposition rules for an operator.
 
     Args:
-        op (type or Operator or str): the operator or operator type to retrieve decomposition
+        op (type or LegacyOperator or str): the operator or operator type to retrieve decomposition
             rules for. For symbolic operators, use strings like ``"Adjoint(RY)"``, ``"Pow(H)"``,
             ``"C(RX)"``, etc.
 
@@ -801,7 +803,9 @@ class _DecompExclusion:
         _excluded_decomps_var.set(all_excluded | {self._op_name: remaining})
 
 
-def exclude_decomps(op: type[Operator] | Operator | str, *names: str) -> _DecompExclusion:
+def exclude_decomps(
+    op: type[LegacyOperator] | LegacyOperator | str, *names: str
+) -> _DecompExclusion:
     """Excludes decomposition rules of an operator by name.
 
     Excluded rules are not removed from the registry. They are hidden from :func:`~pennylane.list_decomps`,
@@ -809,7 +813,7 @@ def exclude_decomps(op: type[Operator] | Operator | str, *names: str) -> _Decomp
     context manager, the rules are excluded only within the context. This function is thread-safe.
 
     Args:
-        op (type or Operator or str): the operator type to exclude decomposition rules for.
+        op (type or LegacyOperator or str): the operator type to exclude decomposition rules for.
             For symbolic operators, use strings like ``"Adjoint(RY)"``, ``"C(RX)"``, etc.
         *names (str): the names of the decomposition rules to exclude. Each name must be one of
             the rules listed by :func:`~pennylane.list_decomps` for ``op``. To exclude rules that
@@ -869,11 +873,11 @@ def exclude_decomps(op: type[Operator] | Operator | str, *names: str) -> _Decomp
     return _DecompExclusion(op_name, frozenset(names) - already_excluded)
 
 
-def has_decomp(op: type[Operator] | Operator | str) -> bool:
+def has_decomp(op: type[LegacyOperator] | LegacyOperator | str) -> bool:
     """Checks whether an operator has decomposition rules defined.
 
     Args:
-        op (type or Operator or str): the operator or operator type to check for
+        op (type or LegacyOperator or str): the operator or operator type to check for
             decomposition rules. For symbolic operators, use strings like ``"Adjoint(RY)"``,
             ``"Pow(H)"``, ``"C(RX)"``, etc.
 
@@ -912,7 +916,7 @@ def local_decomps():
         _excluded_decomps_var.reset(token_excluded_decomps)
 
 
-def _fix_decomp(op: type[Operator] | Operator | str, rule: DecompositionRule):
+def _fix_decomp(op: type[LegacyOperator] | LegacyOperator | str, rule: DecompositionRule):
     """Fix a unique decomposition rule for an operator.
 
     This is a developer-facing function meant to be used within a local decomps context.
@@ -921,7 +925,7 @@ def _fix_decomp(op: type[Operator] | Operator | str, rule: DecompositionRule):
     _fixed_decomps_var.get()[to_name(op)] = rule
 
 
-def get_fixed_decomp(op: type[Operator] | Operator | str) -> DecompositionRule | None:
+def get_fixed_decomp(op: type[LegacyOperator] | LegacyOperator | str) -> DecompositionRule | None:
     """Get the decomposition rule fixed to an operator if there is one.
 
     This is a developer-facing function meant to be used within a local decomps context.
@@ -933,7 +937,9 @@ def get_fixed_decomp(op: type[Operator] | Operator | str) -> DecompositionRule |
 class _DecompInfo:  # pylint: disable=too-few-public-methods
     """A data structure that stores a decomposition rule and an operator for inspectability."""
 
-    def __init__(self, op: Operator, rule: DecompositionRule, num_work_wires: int | None) -> None:
+    def __init__(
+        self, op: LegacyOperator, rule: DecompositionRule, num_work_wires: int | None
+    ) -> None:
         self._op = op
         self._rule = rule
         self._decomp_args = _get_decomp_args(op)
@@ -1084,7 +1090,7 @@ class _DecompInfoCollection:
 
 
 def inspect_decomps(
-    op: Operator,
+    op: LegacyOperator,
     *rules: str | DecompositionRule,
     show_not_applicable: bool = True,
     num_work_wires: int | None = None,
@@ -1095,7 +1101,7 @@ def inspect_decomps(
     using different decomposition rules.
 
     Args:
-        op (Operator): the operator instance whose decomposition rules will be inspected.
+        op (LegacyOperator): the operator instance whose decomposition rules will be inspected.
         *rules (str or DecompositionRule): the decomposition rules to inspect. Accepts instances
             of the ``DecompositionRule`` class or rule names (str) that represent the decomposition
             rules registered with the type of ``op``. If none are provided, all available rules
@@ -1164,7 +1170,7 @@ def inspect_decomps(
 
     """
 
-    if isinstance(op, type) and issubclass(op, Operator):
+    if isinstance(op, type) and issubclass(op, LegacyOperator):
         raise TypeError(
             "The inspect_decomps function takes a concrete operator instance as its "
             "first argument, not an operator type."
@@ -1179,7 +1185,7 @@ def inspect_decomps(
     return _DecompInfoCollection(rule_infos, show_not_applicable)
 
 
-def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
+def _count_gates(op: LegacyOperator, rule: DecompositionRule) -> tuple[dict, dict]:
     """Count the gates that a decomposition rule produced."""
 
     _, args, kwargs = _get_decomp_args(op)

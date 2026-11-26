@@ -173,7 +173,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         For more details, see:
 
-        * Andrew Arrasmith, Lukasz Cincio, Rolando D. Somma, and Patrick J. Coles. "Operator Sampling
+        * Andrew Arrasmith, Lukasz Cincio, Rolando D. Somma, and Patrick J. Coles. "LegacyOperator Sampling
           for Shot-frugal Optimization in Variational Algorithms." `arXiv:2004.06252
           <https://arxiv.org/abs/2004.06252>`__ (2020).
 
@@ -221,7 +221,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         Args:
             qnode (.QNode): A QNode that returns the expectation value of a Hamiltonian.
             coeffs (List[float]): The coefficients of the Hamiltonian being measured
-            observables (List[Operator]]): The terms of the Hamiltonian being measured
+            observables (List[LegacyOperator]]): The terms of the Hamiltonian being measured
             shots (int): The number of shots used to estimate the Hamiltonian expectation
                 value. These shots are distributed over the terms in the Hamiltonian,
                 as per a Multinomial distribution.

@@ -21,18 +21,18 @@ from collections.abc import Sequence
 from typing import TypeGuard
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.pauli import PauliSentence, PauliWord
 from pennylane.ops._pauli_conversion import to_operator
 
 
 def dot(
     coeffs: Sequence[float],
-    ops: Sequence[Operator | PauliWord | PauliSentence],
+    ops: Sequence[LegacyOperator | PauliWord | PauliSentence],
     pauli=False,
     grouping_type=None,
     method="lf",
-) -> Operator | PauliSentence:
+) -> LegacyOperator | PauliSentence:
     r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of operators.
 
     This function returns the following linear combination: :math:`\sum_{k} c_k O_k`, where
@@ -40,7 +40,7 @@ def dot(
 
     Args:
         coeffs (Sequence[float]): sequence containing the coefficients of the linear combination
-        ops (Sequence[Operator, PauliWord, PauliSentence]): sequence containing the operators of the linear combination.
+        ops (Sequence[LegacyOperator, PauliWord, PauliSentence]): sequence containing the operators of the linear combination.
            Can also be ``PauliWord`` or ``PauliSentence`` instances.
         pauli (bool, optional): If ``True``, a :class:`~.PauliSentence`
             operator is used to represent the linear combination. If False, a :class:`Sum` operator
@@ -58,7 +58,7 @@ def dot(
         ValueError: if the number of coefficients and operators does not match or if they are empty
 
     Returns:
-        Operator: operator describing the linear combination
+        LegacyOperator: operator describing the linear combination
 
     .. note::
 
@@ -87,13 +87,13 @@ def dot(
     2.0 * X(0)
 
     ``pauli=True`` can be used to construct a more efficient, simplified version of the operator.
-    Note that it returns a :class:`~.PauliSentence`, which is not an :class:`~.Operator`. This
+    Note that it returns a :class:`~.PauliSentence`, which is not an :class:`~.LegacyOperator`. This
     specialized representation can be converted to an operator:
 
     >>> qp.pauli.to_operator(qp.dot([1, 2], [qp.X(0), qp.X(0)], pauli=True))
     3.0 * X(0)
 
-    Using ``pauli=True`` and then converting the result to an :class:`~.Operator` is much faster
+    Using ``pauli=True`` and then converting the result to an :class:`~.LegacyOperator` is much faster
     than using ``pauli=False``, but it only works for pauli words
     (see :func:`~.is_pauli_word`).
 
@@ -125,7 +125,7 @@ def dot(
         :func:`~pennylane.pauli.compute_partition_indices`.
     """
 
-    for t in (Operator, PauliWord, PauliSentence):
+    for t in (LegacyOperator, PauliWord, PauliSentence):
         if isinstance(ops, t):
             raise ValueError(
                 f"ops must be an Iterable of {t.__name__}'s, not a {t.__name__} itself."
@@ -136,7 +136,7 @@ def dot(
     if len(coeffs) == 0 and len(ops) == 0:
         raise ValueError("Cannot compute the dot product of an empty sequence.")
 
-    for t in (Operator, PauliWord, PauliSentence):
+    for t in (LegacyOperator, PauliWord, PauliSentence):
         if isinstance(ops, t):
             raise ValueError(
                 f"ops must be an Iterable of {t.__name__}'s, not a {t.__name__} itself."
@@ -167,14 +167,14 @@ def dot(
 
 
 def _all_paulis(
-    ops: Sequence[Operator | PauliWord | PauliSentence],
+    ops: Sequence[LegacyOperator | PauliWord | PauliSentence],
 ) -> TypeGuard[Sequence[PauliWord | PauliSentence]]:
     """Check whether all operators are Pauli words or sentences."""
     return all(isinstance(pauli, (PauliWord, PauliSentence)) for pauli in ops)
 
 
 def _dot_with_ops_and_paulis(
-    coeffs: Sequence[float], ops: Sequence[Operator | PauliWord | PauliSentence]
+    coeffs: Sequence[float], ops: Sequence[LegacyOperator | PauliWord | PauliSentence]
 ):
     """Compute dot when operators are a mix of pennylane operators, PauliWord and PauliSentence by turning them all into a PauliSentence instance.
     Returns a PauliSentence instance"""

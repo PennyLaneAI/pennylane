@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 
 import pennylane as qp
-from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operator, abstractify
 
 from .utils import to_name
 
@@ -50,11 +50,11 @@ class CompressedResourceOp:
 
     """
 
-    def __init__(self, op_type: type[Operator], params: dict | None = None):
+    def __init__(self, op_type: type[LegacyOperator], params: dict | None = None):
         if not isinstance(op_type, type):
-            raise TypeError(f"op_type must be an Operator type, got {type(op_type)}")
-        if not issubclass(op_type, qp.operation.Operator):
-            raise TypeError(f"op_type must be a subclass of Operator, got {op_type}")
+            raise TypeError(f"op_type must be an LegacyOperator type, got {type(op_type)}")
+        if not issubclass(op_type, qp.operation.LegacyOperator):
+            raise TypeError(f"op_type must be a subclass of LegacyOperator, got {op_type}")
         self.op_type = op_type
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()
@@ -96,7 +96,7 @@ class CompressedResourceOp:
         return f"{self.op_type.__name__}({params})" if self.params else self.op_type.__name__
 
 
-AbstractOperatorLike = CompressedResourceOp | Operator2
+AbstractOperatorLike = CompressedResourceOp | Operator
 
 
 @abstractify.register(CompressedResourceOp)
@@ -192,8 +192,8 @@ def _make_hashable(d):
 def _validate_resource_rep(op_type, params):
     """Validates the resource representation of an operator."""
 
-    if not issubclass(op_type, qp.operation.Operator):
-        raise TypeError(f"op_type must be a type of Operator, got {op_type}")
+    if not issubclass(op_type, qp.operation.LegacyOperator):
+        raise TypeError(f"op_type must be a type of LegacyOperator, got {op_type}")
 
     if not isinstance(op_type.resource_keys, Set):
         raise TypeError(
@@ -215,7 +215,7 @@ def _validate_resource_rep(op_type, params):
         )
 
 
-def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
+def resource_rep(op_type: type[LegacyOperator], **params) -> CompressedResourceOp:
     """Binds an operator type with additional resource parameters.
 
     Args:
@@ -244,7 +244,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
 
 
 def controlled_resource_rep(  # pylint: disable=too-many-arguments
-    base_class: type[Operator],
+    base_class: type[LegacyOperator],
     base_params: dict,
     num_control_wires: int,
     num_zero_control_values: int = 0,
@@ -294,7 +294,7 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments
     )
 
 
-def adjoint_resource_rep(base_class: type[Operator], base_params: dict | None = None):
+def adjoint_resource_rep(base_class: type[LegacyOperator], base_params: dict | None = None):
     """Creates a ``CompressedResourceOp`` representation of the adjoint of an operator.
 
     Args:
@@ -311,9 +311,9 @@ def adjoint_resource_rep(base_class: type[Operator], base_params: dict | None = 
 
 
 def change_op_basis_resource_rep(
-    compute_op: type[Operator] | CompressedResourceOp,
-    target_op: type[Operator] | CompressedResourceOp,
-    uncompute_op: type[Operator] | CompressedResourceOp | None = None,
+    compute_op: type[LegacyOperator] | CompressedResourceOp,
+    target_op: type[LegacyOperator] | CompressedResourceOp,
+    uncompute_op: type[LegacyOperator] | CompressedResourceOp | None = None,
 ):
     """Creates a ``CompressedResourceOp`` representation of the compute-uncompute pattern
     :class:`~.ChangeOpBasis` of operators.

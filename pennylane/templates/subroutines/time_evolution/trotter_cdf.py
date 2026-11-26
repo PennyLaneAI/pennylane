@@ -21,7 +21,7 @@ import numpy as np
 from pennylane import math
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -40,7 +40,7 @@ from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
 
 
-class TrotterCDF(Operator2):
+class TrotterCDF(Operator):
     r"""Second-order Trotter time evolution for a Compressed Double Factorization (CDF) Hamiltonian.
 
     This template realizes :math:`U \approx e^{-iHt}` for an electronic-structure Hamiltonian in

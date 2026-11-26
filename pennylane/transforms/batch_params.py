@@ -43,7 +43,7 @@ def _split_operations(ops, params, split_indices, num_tapes):
     of new operators with the parameters at the given indices unbatched.
 
     Args:
-        ops (Sequence[.Operator]): list of operators to split
+        ops (Sequence[.LegacyOperator]): list of operators to split
         params (Sequence[TensorLike]): list of parameters which may have a batch dimension.
             The size of this list must be the total number of parameters in the ``ops`` list.
         split_indices (Sequence[int]): the parameter indices that need to be unbatched. The

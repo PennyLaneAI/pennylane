@@ -1077,17 +1077,17 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("D", [[1, 2], [[0.2, 1.0, -1.0], [1.0, -1j, 1j]]])
     def test_error_matrix_not_unitary(self, D):
         """Tests that error is raised if diagonal by `compute_matrix` does not lead to a unitary"""
-        with pytest.raises(ValueError, match="Operator must be unitary"):
+        with pytest.raises(ValueError, match="LegacyOperator must be unitary"):
             qp.DiagonalQubitUnitary.compute_matrix(np.array(D))
-        with pytest.raises(ValueError, match="Operator must be unitary"):
+        with pytest.raises(ValueError, match="LegacyOperator must be unitary"):
             qp.DiagonalQubitUnitary(np.array(D), wires=1).matrix()
 
     @pytest.mark.parametrize("D", [[1, 2], [[0.2, 1.0, -1.0], [1.0, -1j, 1j]]])
     def test_error_eigvals_not_unitary(self, D):
         """Tests that error is raised if diagonal by `compute_matrix` does not lead to a unitary"""
-        with pytest.raises(ValueError, match="Operator must be unitary"):
+        with pytest.raises(ValueError, match="LegacyOperator must be unitary"):
             qp.DiagonalQubitUnitary.compute_eigvals(np.array(D))
-        with pytest.raises(ValueError, match="Operator must be unitary"):
+        with pytest.raises(ValueError, match="LegacyOperator must be unitary"):
             qp.DiagonalQubitUnitary(np.array(D), wires=0).eigvals()
 
     @pytest.mark.jax

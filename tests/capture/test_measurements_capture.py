@@ -434,8 +434,8 @@ class TestExpvalVar:
     def test_capture_operator2(self, m_type, defined_outside):
         """Test that the expectation value of an observable can be captured."""
 
-        class PauliX(qp.core.Operator2):  # pylint: disable=too-few-public-methods
-            """Operator2 version of X."""
+        class PauliX(qp.core.Operator):  # pylint: disable=too-few-public-methods
+            """Operator version of X."""
 
             def __init__(self, wires):
                 super().__init__(wires=wires)
@@ -520,7 +520,7 @@ class TestExpvalVar:
         assert shapes == jax.core.ShapedArray((), t)
 
     def test_closure_obs(self, m_type):
-        """Test that closure Operator instances are converted to AbstractOperator."""
+        """Test that closure LegacyOperator instances are converted to AbstractOperator."""
 
         obs = 3 * qp.X(0) + qp.Y(1)
 

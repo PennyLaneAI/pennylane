@@ -715,7 +715,7 @@ class TestGraphModeExclusiveFeatures:
         requires 5 burnable work wires, that decomposition should be discarded.
         """
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
             num_wires = 1
 
         # Fallback decomposition (no work wires needed)

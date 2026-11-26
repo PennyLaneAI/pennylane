@@ -1353,6 +1353,6 @@ def test_generators(op):
     """Check that the type of the generator returned by the qchem ops is
     the same as the type pointed to by LinearCombiantion"""
     if isinstance(op, (qp.ops.DoubleExcitationPlus, qp.ops.DoubleExcitationMinus)):
-        pytest.skip(reason="Operator has SparseHamiltonian generator instead")
+        pytest.skip(reason="LegacyOperator has SparseHamiltonian generator instead")
 
     assert isinstance(op.generator(), qp.Hamiltonian)

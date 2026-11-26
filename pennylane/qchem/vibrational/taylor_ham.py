@@ -826,7 +826,7 @@ def taylor_hamiltonian(  # pylint: disable=too-many-arguments
         tol (float): tolerance for discarding the imaginary part of the coefficients during mapping
 
     Returns:
-        Operator: the Taylor Hamiltonian
+        LegacyOperator: the Taylor Hamiltonian
 
     **Example**
 

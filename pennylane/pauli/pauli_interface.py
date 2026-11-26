@@ -27,7 +27,7 @@ def pauli_word_prefactor(observable):
     of pauli operators), then this function extracts the prefactor.
 
     Args:
-        observable (~.Operator): the operator to be examined
+        observable (~.LegacyOperator): the operator to be examined
 
     Returns:
         Union[int, float, complex]: The scaling/phase coefficient of the Pauli word.

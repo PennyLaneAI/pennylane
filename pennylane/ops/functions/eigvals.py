@@ -27,7 +27,7 @@ from pennylane.exceptions import TransformError
 from pennylane.typing import PostprocessingFn, TensorLike
 
 
-def eigvals(op: qp.operation.Operator, k=1, which="SA") -> TensorLike:
+def eigvals(op: qp.operation.LegacyOperator, k=1, which="SA") -> TensorLike:
     r"""The eigenvalues of one or more operations.
 
     .. note::
@@ -45,7 +45,7 @@ def eigvals(op: qp.operation.Operator, k=1, which="SA") -> TensorLike:
           for a molecular Hamiltonian might not always correspond to the neutral molecule.
 
     Args:
-        op (Operator or QNode or QuantumTape or Callable): A quantum operator or quantum circuit.
+        op (LegacyOperator or QNode or QuantumTape or Callable): A quantum operator or quantum circuit.
         k (int): The number of eigenvalues to be returned for a :class:`~.SparseHamiltonian`.
         which (str): Method for computing the eigenvalues of a :class:`~.SparseHamiltonian`. The
             possible methods are ``'LM'`` (largest in magnitude), ``'SM'`` (smallest in magnitude),
@@ -109,9 +109,9 @@ def eigvals(op: qp.operation.Operator, k=1, which="SA") -> TensorLike:
         array([ 0.92387953+0.38268343j, -0.92387953-0.38268343j,
             0.92387953-0.38268343j, -0.92387953+0.38268343j])
     """
-    if not isinstance(op, qp.operation.Operator):
+    if not isinstance(op, qp.operation.LegacyOperator):
         if not isinstance(op, (qp.tape.QuantumScript, qp.QNode)) and not callable(op):
-            raise TransformError("Input is not an Operator, tape, QNode, or quantum function")
+            raise TransformError("Input is not an LegacyOperator, tape, QNode, or quantum function")
         return _eigvals_transform(op, k=k, which=which)
 
     if isinstance(op, qp.SparseHamiltonian):

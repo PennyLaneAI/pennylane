@@ -26,12 +26,12 @@ def commutator(op1, op2, pauli=False):
     .. math:: [O_1, O_2] = O_1 O_2 - O_2 O_1
 
     Args:
-        op1 (Union[Operator, PauliWord, PauliSentence]): First operator
-        op2 (Union[Operator, PauliWord, PauliSentence]): Second operator
-        pauli (bool): When ``True``, all results are passed as a ``PauliSentence`` instance. Else, results are always returned as ``Operator`` instances.
+        op1 (Union[LegacyOperator, PauliWord, PauliSentence]): First operator
+        op2 (Union[LegacyOperator, PauliWord, PauliSentence]): Second operator
+        pauli (bool): When ``True``, all results are passed as a ``PauliSentence`` instance. Else, results are always returned as ``LegacyOperator`` instances.
 
     Returns:
-        ~Operator or ~PauliSentence: The commutator
+        ~LegacyOperator or ~PauliSentence: The commutator
 
     **Examples**
 
@@ -73,7 +73,7 @@ def commutator(op1, op2, pauli=False):
     >>> res = qp.commutator(op1, op2, pauli=False)
     >>> res
     2j * (Z(0) @ X(1)) + 2j * (X(0) @ Z(1))
-    >>> isinstance(res, qp.operation.Operator)
+    >>> isinstance(res, qp.operation.LegacyOperator)
     True
 
     It is worth noting that computing commutators with Paulis is typically faster.

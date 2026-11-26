@@ -18,7 +18,7 @@ from functools import wraps
 from inspect import signature
 
 import pennylane.labs.estimator_beta as qre
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.labs.estimator_beta import (
     CompressedResourceOp,
@@ -258,7 +258,7 @@ class ResourceQfunc(ResourceOperator):
             for op in q.queue:  # Filter the queue and only pull the operators
                 if isinstance(op, ResourceOperator):
                     decomp.append(op)
-                elif isinstance(op, Operator):
+                elif isinstance(op, LegacyOperator):
                     decomp.append(qre._map_to_resource_op(op))
                 elif isinstance(
                     op, qre.MarkQubits

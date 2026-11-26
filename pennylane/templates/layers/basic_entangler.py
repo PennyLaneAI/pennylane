@@ -177,7 +177,7 @@ class BasicEntanglerLayers(Operation):
             rotation (Type[pennylane.ops.Operation]): one-parameter single-qubit gate to use
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
 
         **Example**
 

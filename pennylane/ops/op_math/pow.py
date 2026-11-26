@@ -23,7 +23,7 @@ from scipy.linalg import fractional_matrix_power
 import pennylane as qp
 from pennylane import math
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operation, Operator, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operation, Operator, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -40,11 +40,11 @@ from .symbolicop import ScalarSymbolicOp
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
 
-def pow(base, z=1, lazy=True) -> Operator:
-    """Raise an Operator to a power.
+def pow(base, z=1, lazy=True) -> LegacyOperator:
+    """Raise an LegacyOperator to a power.
 
     Args:
-        base (~.operation.Operator): the operator to be raised to a power
+        base (~.operation.LegacyOperator): the operator to be raised to a power
         z (float): the exponent (default value is 1)
 
     Keyword Args:
@@ -52,7 +52,7 @@ def pow(base, z=1, lazy=True) -> Operator:
             and handled later. If ``lazy=False``, operation-specific simplifications are first attempted.
 
     Returns:
-        Operator
+        LegacyOperator
 
     .. note::
 
@@ -75,7 +75,7 @@ def pow(base, z=1, lazy=True) -> Operator:
             ...
         AttributeError: 'list' object has no attribute 'name'
 
-    .. seealso:: :class:`~.Pow`, :meth:`~.Operator.pow`.
+    .. seealso:: :class:`~.Pow`, :meth:`~.LegacyOperator.pow`.
 
     **Example**
 
@@ -92,11 +92,11 @@ def pow(base, z=1, lazy=True) -> Operator:
 
     """
     if lazy:
-        return Pow2(base, z) if isinstance(base, Operator2) else Pow(base, z)
+        return Pow2(base, z) if isinstance(base, Operator) else Pow(base, z)
     try:
         pow_ops = base.pow(z)
     except PowUndefinedError:
-        return Pow2(base, z) if isinstance(base, Operator2) else Pow(base, z)
+        return Pow2(base, z) if isinstance(base, Operator) else Pow(base, z)
 
     num_ops = len(pow_ops)
     if num_ops == 0:
@@ -114,7 +114,7 @@ class Pow(ScalarSymbolicOp):
     """Symbolic operator denoting an operator raised to a power.
 
     Args:
-        base (~.operation.Operator): the operator to be raised to a power
+        base (~.operation.LegacyOperator): the operator to be raised to a power
         z=1 (float): the exponent
 
     **Example**
@@ -203,7 +203,7 @@ class Pow(ScalarSymbolicOp):
 
     @property
     def resource_params(self) -> dict:
-        if isinstance(self.base, Operator2):
+        if isinstance(self.base, Operator):
             return {
                 "base_class": type(self.base),
                 "base_params": abstractify(self.base).arguments,
@@ -311,10 +311,10 @@ class Pow(ScalarSymbolicOp):
 
         A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
 
-        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
+        .. seealso:: :meth:`~.LegacyOperator.compute_diagonalizing_gates`.
 
         Returns:
-            list[.Operator] or None: a list of operators
+            list[.LegacyOperator] or None: a list of operators
         """
         return self.base.diagonalizing_gates()
 

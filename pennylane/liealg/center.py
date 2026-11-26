@@ -18,7 +18,7 @@ from itertools import combinations
 import numpy as np
 from scipy.linalg import norm, null_space
 
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.pauli import PauliSentence, PauliWord, to_operator
 
 from .structure_constants import structure_constants
@@ -64,8 +64,8 @@ def _center_pauli_words(g, pauli):
 
 
 def center(
-    g: list[Operator | PauliWord | PauliSentence], pauli: bool = False
-) -> list[Operator | PauliSentence]:
+    g: list[LegacyOperator | PauliWord | PauliSentence], pauli: bool = False
+) -> list[LegacyOperator | PauliSentence]:
     r"""
     Compute the center of a Lie algebra.
 
@@ -75,15 +75,15 @@ def center(
     .. math:: \mathfrak{\xi}(\mathfrak{g}) := \{h \in \mathfrak{g} | [h, h_i]=0 \ \forall h_i \in \mathfrak{g} \}
 
     Args:
-        g (List[Union[Operator, PauliSentence, PauliWord]]): List of operators that spans
+        g (List[Union[LegacyOperator, PauliSentence, PauliWord]]): List of operators that spans
             the algebra for which to find the center.
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or
             :class:`~.PauliWord` instances are input and returned. This can help with performance
-            to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
+            to avoid unnecessary conversions to :class:`~pennylane.operation.LegacyOperator`
             and vice versa. Default is ``False``.
 
     Returns:
-        List[Union[Operator, PauliSentence]]: The center of the Lie algebra ``g``.
+        List[Union[LegacyOperator, PauliSentence]]: The center of the Lie algebra ``g``.
 
     .. seealso:: 
         :func:`~lie_closure`, :func:`~structure_constants`, :class:`~pennylane.pauli.PauliVSpace`,

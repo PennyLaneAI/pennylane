@@ -20,7 +20,7 @@ from collections import Counter
 from pennylane import capture, compiler, math
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.ops.op_math import SymbolicOp2, ctrl, pow
@@ -35,8 +35,8 @@ class ControlledSequence(SymbolicOp2):
     a sub-block in building a `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
 
-    Given an :class:`~.Operator` and a list of control wires, this template creates a sequence of
-    controlled gates, one for each control wire, with the base :class:`~.Operator` raised to
+    Given an :class:`~.LegacyOperator` and a list of control wires, this template creates a sequence of
+    controlled gates, one for each control wire, with the base :class:`~.LegacyOperator` raised to
     decreasing powers of 2:
 
     .. figure:: ../../_static/templates/subroutines/big_ctrl.png
@@ -45,7 +45,7 @@ class ControlledSequence(SymbolicOp2):
         :target: javascript:void(0);
 
     Args:
-        base (Operator): the phase estimation unitary, specified as an :class:`~.Operator`
+        base (LegacyOperator): the phase estimation unitary, specified as an :class:`~.LegacyOperator`
         control (Union[Wires, Sequence[int], or int]): the wires to be used for control
 
     Raises:
@@ -195,7 +195,7 @@ def _ctrl_seq_execution_optimized_decomposition(*_, base=None, control=None, **_
 
     num_controls = len(control)
     # To match legacy behaviour
-    lazy = not isinstance(base, Operator2)
+    lazy = not isinstance(base, Operator)
 
     for i in range(num_controls - 1, -1, -1):
         j = num_controls - 1 - i

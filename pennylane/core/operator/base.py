@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Defines the base class for Operator and Operation.
+Defines the base class for LegacyOperator and Operation.
 """
 
 import abc
@@ -62,7 +62,7 @@ _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been 
 # =============================================================================
 
 
-# Coverage is lost as we migrated operators to the `Operator2` interface; we don't
+# Coverage is lost as we migrated operators to the `Operator` interface; we don't
 # really care about maintaining coverage of Operator1 code if it turns out to be a lot of work.
 class AbstractOperator(jax.core.AbstractValue):  # pragma: no cover
     """An operator captured into plxpr."""
@@ -87,12 +87,14 @@ class AbstractOperator(jax.core.AbstractValue):  # pragma: no cover
 
     @staticmethod
     def _is_op(x):
-        """True for Operator instances and operator-valued tracers.
+        """True for LegacyOperator instances and operator-valued tracers.
 
         ``+``/``-`` between an operator tracer and a scalar return ``NotImplemented`` (a clear
         ``TypeError``) rather than building a ``Sum`` with a non-operator operand.
         """
-        return isinstance(x, Operator) or isinstance(getattr(x, "aval", None), AbstractOperator)
+        return isinstance(x, LegacyOperator) or isinstance(
+            getattr(x, "aval", None), AbstractOperator
+        )
 
     @staticmethod
     def _matmul(*args):
@@ -137,15 +139,15 @@ class AbstractOperator(jax.core.AbstractValue):  # pragma: no cover
 
 
 def create_operator_primitive(
-    operator_type: type["qp.operation.Operator"],
+    operator_type: type["qp.operation.LegacyOperator"],
 ) -> jax.extend.core.Primitive:
     """Create a primitive corresponding to an operator type.
 
-    Called when defining any :class:`~.Operator` subclass, and is used to set the
-    ``Operator._primitive`` class property.
+    Called when defining any :class:`~.LegacyOperator` subclass, and is used to set the
+    ``LegacyOperator._primitive`` class property.
 
     Args:
-        operator_type (type): a subclass of qp.operation.Operator
+        operator_type (type): a subclass of qp.operation.LegacyOperator
 
     Returns:
         jax.extend.core.Primitive: A new jax primitive with the same name as the operator subclass.
@@ -176,7 +178,7 @@ def create_operator_primitive(
 
 
 # =============================================================================
-# Base Operator class
+# Base LegacyOperator class
 # =============================================================================
 
 
@@ -198,19 +200,21 @@ def _process_data(op):
 
 
 class _GiveOperatorMeta(ABCCaptureMeta):  # pylint: disable=abstract-method
-    """When someone tries to inherit from Operator1, we switch it out for Operator instead."""
+    """When someone tries to inherit from Operator1, we switch it out for LegacyOperator instead."""
 
     def __new__(mcs, name, bases, attrs):
-        new_bases = tuple(Operator if base.__name__ == "Operator1" else base for base in bases)
+        new_bases = tuple(
+            LegacyOperator if base.__name__ == "Operator1" else base for base in bases
+        )
         return super().__new__(mcs, name, new_bases, attrs)
 
 
 class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
-    """A class for checking if a object specifying implements the old version of :class:`~.Operator`.
+    """A class for checking if a object specifying implements the old version of :class:`~.LegacyOperator`.
 
-    While inheriting from :class:`~.Operator` provides the old, version 1 interface, using ``Operator``
-    with ``isinstance`` and ``issubclass`` checks returns whether an object is *either* ``Operator``
-    *or* the new :class:`~.Operator2`. This has been done to speed up integration, as the exposed interfaces
+    While inheriting from :class:`~.LegacyOperator` provides the old, version 1 interface, using ``LegacyOperator``
+    with ``isinstance`` and ``issubclass`` checks returns whether an object is *either* ``LegacyOperator``
+    *or* the new :class:`~.Operator`. This has been done to speed up integration, as the exposed interfaces
     are mostly the same. This ``Operator1`` class can be used to check if an instance is *specifically*
     the old version of the interface.
 
@@ -218,10 +222,10 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
 
     .. code-block:: python
 
-        class OldOp(qp.core.Operator):
+        class OldOp(qp.core.LegacyOperator):
             pass
 
-        class NewOp(qp.core.Operator2):
+        class NewOp(qp.core.Operator):
 
             def __init__(self, wires):
                 super().__init__(wires)
@@ -229,11 +233,11 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
         old_op = OldOp(wires=0)
         new_op = NewOp(wires=0)
 
-    We can see that both versions are "instances" of ``Operator``:
+    We can see that both versions are "instances" of ``LegacyOperator``:
 
-    >>> isinstance(old_op, qp.core.Operator)
+    >>> isinstance(old_op, qp.core.LegacyOperator)
     True
-    >>> isinstance(new_op, qp.core.Operator)
+    >>> isinstance(new_op, qp.core.LegacyOperator)
     True
 
     but only ``old_op`` is an instance of ``Operator1``.
@@ -243,8 +247,8 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
     >>> isinstance(new_op, qp.core.Operator1)
     False
 
-    When inheriting from this class, it is switched out for :class:`~.Operator`. The following
-    is equivalent to inheriting from ``qp.core.Operator``.
+    When inheriting from this class, it is switched out for :class:`~.LegacyOperator`. The following
+    is equivalent to inheriting from ``qp.core.LegacyOperator``.
 
     .. code-block:: python
 
@@ -263,7 +267,7 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
 
 
 # pylint: disable-next=too-many-instance-attributes,too-many-public-methods
-class Operator(abc.ABC, metaclass=ABCCaptureMeta):
+class LegacyOperator(abc.ABC, metaclass=ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,
@@ -272,20 +276,20 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     An operator can define any of the following representations:
 
-    * Representation as a **matrix** (:meth:`.Operator.matrix`), as specified by a
+    * Representation as a **matrix** (:meth:`.LegacyOperator.matrix`), as specified by a
       global wire order that tells us where the wires are found on a register.
 
-    * Representation as a **sparse matrix** (:meth:`.Operator.sparse_matrix`). Currently, this
+    * Representation as a **sparse matrix** (:meth:`.LegacyOperator.sparse_matrix`). Currently, this
       is a SciPy CSR matrix format.
 
     * Representation via the **eigenvalue decomposition** specified by eigenvalues
-      (:meth:`.Operator.eigvals`) and diagonalizing gates (:meth:`.Operator.diagonalizing_gates`).
+      (:meth:`.LegacyOperator.eigvals`) and diagonalizing gates (:meth:`.LegacyOperator.diagonalizing_gates`).
 
-    * Representation as a **product of operators** (:meth:`.Operator.decomposition`).
+    * Representation as a **product of operators** (:meth:`.LegacyOperator.decomposition`).
 
-    * Representation as a **linear combination of operators** (:meth:`.Operator.terms`).
+    * Representation as a **linear combination of operators** (:meth:`.LegacyOperator.terms`).
 
-    * Representation by a **generator** via :math:`e^{G}` (:meth:`.Operator.generator`).
+    * Representation by a **generator** via :math:`e^{G}` (:meth:`.LegacyOperator.generator`).
 
     Each representation method comes with a static method prefixed by ``compute_``, which
     takes the signature ``(*parameters, **hyperparameters)`` (for numerical representations that do not need
@@ -299,7 +303,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     **Example**
 
-    A custom operator can be created by inheriting from :class:`~.Operator` or one of its subclasses.
+    A custom operator can be created by inheriting from :class:`~.LegacyOperator` or one of its subclasses.
 
     The following is an example for a custom gate that inherits from the :class:`~.Operation` subclass.
     It acts by potentially flipping a qubit and rotating another qubit.
@@ -357,7 +361,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             @staticmethod
             def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
                 # Overwriting this method defines the decomposition of the new gate, as it is
-                # called by Operator.decomposition().
+                # called by LegacyOperator.decomposition().
                 # The general signature of this function is (*parameters, wires, **hyperparameters).
                 op_list = []
                 if do_flip:
@@ -512,19 +516,19 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         the ``_check_batching`` method, by comparing the shape of the input data to
         the expected shape. Therefore, it is necessary to call ``_check_batching`` on
         any new input parameters passed to the operator. By default, any class inheriting
-        from :class:`~.operation.Operator` will do so the first time its
+        from :class:`~.operation.LegacyOperator` will do so the first time its
         ``batch_size`` property is accessed.
 
         ``_check_batching`` modifies the following instance attributes:
 
         - ``_ndim_params``: The number of dimensions of the parameters passed to
-          ``_check_batching``. For an ``Operator`` that does _not_ set the ``ndim_params``
+          ``_check_batching``. For an ``LegacyOperator`` that does _not_ set the ``ndim_params``
           attribute, ``_ndim_params`` is used as a surrogate, interpreting any parameters
           as "not broadcasted". This attribute should be understood as temporary and likely
           should not be used in other contexts.
 
-        - ``_batch_size``: If the ``Operator`` is broadcasted: The batch size/size of the
-          broadcasting axis. If it is not broadcasted: ``None``. An ``Operator`` that does
+        - ``_batch_size``: If the ``LegacyOperator`` is broadcasted: The batch size/size of the
+          broadcasting axis. If it is not broadcasted: ``None``. An ``LegacyOperator`` that does
           not support broadcasting will report to not be broadcasted independently of the
           input.
 
@@ -553,13 +557,13 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     The default implementation is an empty set, which is suitable for most operators.
 
     .. seealso::
-        :meth:`~.Operator.resource_params`
+        :meth:`~.LegacyOperator.resource_params`
 
     """
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        if cls is Operator:
+        if cls is LegacyOperator:
             return getattr(subclass, "_operator_version", None) in {1, 2}
         return NotImplemented
 
@@ -572,9 +576,9 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         # override it here
 
         if (
-            cls.compute_decomposition != Operator.compute_decomposition
-            or cls.decomposition != Operator.decomposition
-        ) and (cls.has_decomposition == Operator.has_decomposition):
+            cls.compute_decomposition != LegacyOperator.compute_decomposition
+            or cls.decomposition != LegacyOperator.decomposition
+        ) and (cls.has_decomposition == LegacyOperator.has_decomposition):
             cls.has_decomposition = True
 
         register_pytree(cls, cls._flatten, cls._unflatten)
@@ -629,7 +633,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         return cls._primitive.bind(*args, **kwargs)
 
-    def __copy__(self) -> "Operator":
+    def __copy__(self) -> "LegacyOperator":
         cls = self.__class__
         copied_op = cls.__new__(cls)
         copied_op._data = copy.copy(self.data)
@@ -642,7 +646,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         return copied_op
 
-    def __deepcopy__(self, memo) -> "Operator":
+    def __deepcopy__(self, memo) -> "LegacyOperator":
         copied_op = object.__new__(type(self))
 
         # The memo dict maps object ID to object, and is required by
@@ -665,7 +669,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     def hash(self) -> int:
         """int: Integer hash that uniquely represents the operator."""
         warnings.warn(
-            "The Operator.hash property has been deprecated, use hash(op) instead.",
+            "The LegacyOperator.hash property has been deprecated, use hash(op) instead.",
             PennyLaneDeprecationWarning,
         )
         return hash(self)
@@ -690,7 +694,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`.Operator.matrix` and :func:`qp.matrix() <pennylane.matrix>`
+        .. seealso:: :meth:`.LegacyOperator.matrix` and :func:`qp.matrix() <pennylane.matrix>`
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -703,12 +707,15 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     @classproperty
     def has_matrix(cls) -> bool:  # pylint: disable=no-self-argument
-        r"""Bool: Whether or not the Operator returns a defined matrix.
+        r"""Bool: Whether or not the LegacyOperator returns a defined matrix.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
         # pylint: disable-next=comparison-with-callable
-        return cls.compute_matrix != Operator.compute_matrix or cls.matrix != Operator.matrix
+        return (
+            cls.compute_matrix != LegacyOperator.compute_matrix
+            or cls.matrix != LegacyOperator.matrix
+        )
 
     def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a matrix in the computational basis.
@@ -722,7 +729,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         A ``MatrixUndefinedError`` is raised if the matrix representation has not been defined.
 
-        .. seealso:: :meth:`~.Operator.compute_matrix`
+        .. seealso:: :meth:`~.LegacyOperator.compute_matrix`
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
@@ -753,7 +760,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.Operator.sparse_matrix`
+        .. seealso:: :meth:`~.LegacyOperator.sparse_matrix`
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -768,14 +775,14 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     @classproperty
     def has_sparse_matrix(cls) -> bool:  # pylint: disable=no-self-argument
-        r"""Bool: Whether the Operator returns a defined sparse matrix.
+        r"""Bool: Whether the LegacyOperator returns a defined sparse matrix.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
         return (
-            cls.compute_sparse_matrix != Operator.compute_sparse_matrix
+            cls.compute_sparse_matrix != LegacyOperator.compute_sparse_matrix
             # pylint: disable-next=comparison-with-callable
-            or cls.sparse_matrix != Operator.sparse_matrix
+            or cls.sparse_matrix != LegacyOperator.sparse_matrix
         )
 
     def sparse_matrix(self, wire_order: WiresLike | None = None, format="csr") -> spmatrix:
@@ -787,7 +794,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         A ``SparseMatrixUndefinedError`` is raised if the sparse matrix representation has not been defined.
 
-        .. seealso:: :meth:`~.Operator.compute_sparse_matrix`
+        .. seealso:: :meth:`~.LegacyOperator.compute_sparse_matrix`
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
@@ -818,7 +825,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`Operator.eigvals() <.eigvals>` and :func:`qp.eigvals() <pennylane.eigvals>`
+        .. seealso:: :meth:`LegacyOperator.eigvals() <.eigvals>` and :func:`qp.eigvals() <pennylane.eigvals>`
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -848,7 +855,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         A ``EigvalsUndefinedError`` is raised if the eigenvalues have not been defined and cannot be
         inferred from the matrix representation.
 
-        .. seealso:: :meth:`~.Operator.compute_eigvals` and :func:`qp.eigvals() <pennylane.eigvals>`
+        .. seealso:: :meth:`~.LegacyOperator.compute_eigvals` and :func:`qp.eigvals() <pennylane.eigvals>`
 
         Returns:
             tensor_like: eigenvalues
@@ -1003,7 +1010,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         self._num_params: int = len(params)
 
         # Check if the expected number of parameters coincides with the one received.
-        # This is always true for the default `Operator.num_params` property, but
+        # This is always true for the default `LegacyOperator.num_params` property, but
         # subclasses may overwrite it to define a fixed expected value.
         if len(params) != self.num_params:
             if wires_from_args and len(params) == (self.num_params - 1):
@@ -1039,7 +1046,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         ones received and sets the ``_batch_size`` attribute.
 
         The check always passes and sets the ``_batch_size`` to ``None`` for the default
-        ``Operator.ndim_params`` property but subclasses may overwrite it to define fixed
+        ``LegacyOperator.ndim_params`` property but subclasses may overwrite it to define fixed
         expected numbers of dimensions, allowing to infer a batch size.
         """
         self._batch_size = None
@@ -1152,7 +1159,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     @property
     def pauli_rep(self) -> PauliSentence | None:
-        """A :class:`~.PauliSentence` representation of the Operator, or ``None`` if it doesn't have one."""
+        """A :class:`~.PauliSentence` representation of the LegacyOperator, or ``None`` if it doesn't have one."""
         return self._pauli_rep
 
     @property
@@ -1192,24 +1199,24 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     @property
     def has_decomposition(self) -> bool:
-        r"""Bool: Whether or not the Operator returns a defined decomposition."""
+        r"""Bool: Whether or not the LegacyOperator returns a defined decomposition."""
         # if compute_decomposition or decomposition overwritten and property
         # not overwritten, set as class property during __init_subclass__
         return any(rule.is_applicable(**self.resource_params) for rule in qp.list_decomps(self))
 
-    def decomposition(self) -> list["Operator"]:
+    def decomposition(self) -> list["LegacyOperator"]:
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n
 
         A ``DecompositionUndefinedError`` is raised if no representation by decomposition is defined.
 
-        .. seealso:: :meth:`~.Operator.compute_decomposition`.
+        .. seealso:: :meth:`~.LegacyOperator.compute_decomposition`.
 
         Returns:
-            list[Operator]: decomposition of the operator
+            list[LegacyOperator]: decomposition of the operator
         """
-        if type(self).compute_decomposition != Operator.compute_decomposition:
+        if type(self).compute_decomposition != LegacyOperator.compute_decomposition:
             return self.compute_decomposition(
                 *self.parameters, wires=self.wires, **self.hyperparameters
             )
@@ -1229,7 +1236,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         *params: TensorLike,
         wires: WiresLike | None = None,
         **hyperparameters: dict[str, Any],
-    ) -> list["Operator"]:
+    ) -> list["LegacyOperator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1239,7 +1246,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             Operations making up the decomposition should be queued within the
             ``compute_decomposition`` method.
 
-        .. seealso:: :meth:`~.Operator.decomposition`.
+        .. seealso:: :meth:`~.LegacyOperator.decomposition`.
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -1247,7 +1254,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
-            list[Operator]: decomposition of the operator
+            list[LegacyOperator]: decomposition of the operator
         """
         raise DecompositionUndefinedError
 
@@ -1266,22 +1273,22 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     @classproperty
     def has_diagonalizing_gates(cls) -> bool:  # pylint: disable=no-self-argument
-        r"""Bool: Whether or not the Operator returns defined diagonalizing gates.
+        r"""Bool: Whether or not the LegacyOperator returns defined diagonalizing gates.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
         # Operators may overwrite `diagonalizing_gates` instead of `compute_diagonalizing_gates`
         # Currently, those are mostly classes from the operator arithmetic module.
         return (
-            cls.compute_diagonalizing_gates != Operator.compute_diagonalizing_gates
+            cls.compute_diagonalizing_gates != LegacyOperator.compute_diagonalizing_gates
             # pylint: disable-next=comparison-with-callable
-            or cls.diagonalizing_gates != Operator.diagonalizing_gates
+            or cls.diagonalizing_gates != LegacyOperator.diagonalizing_gates
         )
 
     @staticmethod
     def compute_diagonalizing_gates(
         *params: TensorLike, wires: WiresLike, **hyperparams: dict[str, Any]
-    ) -> list["Operator"]:
+    ) -> list["LegacyOperator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1291,7 +1298,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
 
-        .. seealso:: :meth:`~.Operator.diagonalizing_gates`.
+        .. seealso:: :meth:`~.LegacyOperator.diagonalizing_gates`.
 
         Args:
             params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -1299,11 +1306,11 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
-            list[.Operator]: list of diagonalizing gates
+            list[.LegacyOperator]: list of diagonalizing gates
         """
         raise DiagGatesUndefinedError
 
-    def diagonalizing_gates(self) -> list["Operator"]:
+    def diagonalizing_gates(self) -> list["LegacyOperator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis.
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1315,10 +1322,10 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
 
-        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
+        .. seealso:: :meth:`~.LegacyOperator.compute_diagonalizing_gates`.
 
         Returns:
-            list[.Operator] or None: a list of operators
+            list[.LegacyOperator] or None: a list of operators
         """
         return self.compute_diagonalizing_gates(
             *self.parameters, wires=self.wires, **self.hyperparameters
@@ -1326,13 +1333,13 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     @classproperty
     def has_generator(cls) -> bool:  # pylint: disable=no-self-argument
-        r"""Bool: Whether or not the Operator returns a defined generator.
+        r"""Bool: Whether or not the LegacyOperator returns a defined generator.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        return cls.generator != Operator.generator
+        return cls.generator != LegacyOperator.generator
 
-    def generator(self) -> "Operator":
+    def generator(self) -> "LegacyOperator":
         r"""Generator of an operator that is in single-parameter-form.
 
         For example, for operator
@@ -1352,20 +1359,20 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
-    def pow(self, z: float) -> list["Operator"]:
+    def pow(self, z: float) -> list["LegacyOperator"]:
         """A list of new operators equal to this one raised to the given power. This method is used to simplify
         :class:`~.Pow` instances created by :func:`~.pow` or ``op ** power``.
 
-        ``Operator.pow`` can be optionally defined by Operator developers, while :func:`~.pow` or ``op ** power``
+        ``LegacyOperator.pow`` can be optionally defined by LegacyOperator developers, while :func:`~.pow` or ``op ** power``
         are the entry point for constructing generic powers to exponents.
 
         Args:
             z (float): exponent for the operator
 
         Returns:
-            list[:class:`~.operation.Operator`]
+            list[:class:`~.operation.LegacyOperator`]
 
-        >>> class MyClass(qp.operation.Operator):
+        >>> class MyClass(qp.operation.LegacyOperator):
         ...
         ...     def pow(self, z):
         ...         return [MyClass(self.data[0]*z, self.wires)]
@@ -1391,19 +1398,19 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         raise PowUndefinedError
 
     def queue(self, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
+        """Append the operator to the LegacyOperator queue."""
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
     @classproperty
     def has_adjoint(cls) -> bool:  # pylint: disable=no-self-argument
-        r"""Bool: Whether or not the Operator can compute its own adjoint.
+        r"""Bool: Whether or not the LegacyOperator can compute its own adjoint.
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        return cls.adjoint != Operator.adjoint
+        return cls.adjoint != LegacyOperator.adjoint
 
-    def adjoint(self) -> "Operator":
+    def adjoint(self) -> "LegacyOperator":
         """Create an operation that is the adjoint of this one. Used to simplify
         :class:`~.Adjoint` operators constructed by :func:`~.adjoint`.
 
@@ -1411,13 +1418,13 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         original operation. Adjointed ops are equivalent to the inverted operation for unitary
         gates.
 
-        ``Operator.adjoint`` can be optionally defined by Operator developers, while :func:`~.adjoint`
+        ``LegacyOperator.adjoint`` can be optionally defined by LegacyOperator developers, while :func:`~.adjoint`
         is the entry point for constructing generic adjoint representations.
 
         Returns:
             The adjointed operation.
 
-        >>> class MyClass(qp.operation.Operator):
+        >>> class MyClass(qp.operation.LegacyOperator):
         ...
         ...     def adjoint(self):
         ...         return self
@@ -1439,7 +1446,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """Arithmetic depth of the operator."""
         return 0
 
-    def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "Operator":
+    def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "LegacyOperator":
         """Returns a copy of the current operator with its wires changed according to the given
         wire map.
 
@@ -1447,7 +1454,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             wire_map (dict): dictionary containing the old wires as keys and the new wires as values
 
         Returns:
-            .Operator: new operator
+            .LegacyOperator: new operator
         """
         # pylint: disable=protected-access
         new_op = copy.copy(self)
@@ -1456,17 +1463,17 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             new_op._pauli_rep = p_rep.map_wires(wire_map)
         return new_op
 
-    def simplify(self) -> "Operator":
+    def simplify(self) -> "LegacyOperator":
         """Reduce the depth of nested operators to the minimum.
 
         Returns:
-            .Operator: simplified operator
+            .LegacyOperator: simplified operator
         """
         return self
 
-    def __add__(self, other: Union["Operator", TensorLike]) -> "Operator":
-        """The addition operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, Operator):
+    def __add__(self, other: Union["LegacyOperator", TensorLike]) -> "LegacyOperator":
+        """The addition operation of LegacyOperator-LegacyOperator objects and LegacyOperator-scalar."""
+        if isinstance(other, LegacyOperator):
             return qp.sum(self, other, lazy=False)
         if isinstance(other, TensorLike):
             if qp.math.allequal(other, 0):
@@ -1480,42 +1487,46 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     __radd__ = __add__
 
-    def __mul__(self, other: TensorLike) -> "Operator":
+    def __mul__(self, other: TensorLike) -> "LegacyOperator":
         """The scalar multiplication between scalars and Operators."""
         if isinstance(other, TensorLike):
             return qp.s_prod(scalar=other, operator=self, lazy=False)
         return NotImplemented  # pragma: no cover
 
     def __truediv__(self, other: TensorLike):
-        """The division between an Operator and a number."""
+        """The division between an LegacyOperator and a number."""
         if isinstance(other, TensorLike):
             return self.__mul__(1 / other)
         return NotImplemented  # pragma: no cover
 
     __rmul__ = __mul__
 
-    def __matmul__(self, other: "Operator") -> "Operator":
-        """The product operation between Operator objects."""
-        return qp.prod(self, other, lazy=False) if isinstance(other, Operator) else NotImplemented
+    def __matmul__(self, other: "LegacyOperator") -> "LegacyOperator":
+        """The product operation between LegacyOperator objects."""
+        return (
+            qp.prod(self, other, lazy=False)
+            if isinstance(other, LegacyOperator)
+            else NotImplemented
+        )
 
-    def __sub__(self, other: Union["Operator", TensorLike]) -> "Operator":
-        """The subtraction operation of Operator-Operator objects and Operator-scalar."""
-        if isinstance(other, Operator):
+    def __sub__(self, other: Union["LegacyOperator", TensorLike]) -> "LegacyOperator":
+        """The subtraction operation of LegacyOperator-LegacyOperator objects and LegacyOperator-scalar."""
+        if isinstance(other, LegacyOperator):
             return self + qp.s_prod(-1, other, lazy=False)
         if isinstance(other, TensorLike):  # pragma: no cover
             return self + (qp.math.multiply(-1, other))
         return NotImplemented  # pragma: no cover
 
-    def __rsub__(self, other: Union["Operator", TensorLike]):
-        """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
+    def __rsub__(self, other: Union["LegacyOperator", TensorLike]):
+        """The reverse subtraction operation of LegacyOperator-LegacyOperator objects and LegacyOperator-scalar."""
         return -self + other  # pragma: no cover
 
     def __neg__(self):
-        """The negation operation of an Operator object."""
+        """The negation operation of an LegacyOperator object."""
         return qp.s_prod(scalar=-1, operator=self, lazy=False)
 
-    def __pow__(self, other: TensorLike) -> "Operator":
-        r"""The power operation of an Operator object."""
+    def __pow__(self, other: TensorLike) -> "LegacyOperator":
+        r"""The power operation of an LegacyOperator object."""
         if isinstance(other, TensorLike):
             return qp.pow(self, z=other)
         return NotImplemented
@@ -1526,14 +1537,14 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         Returns:
             data, metadata: The trainable and non-trainable components.
 
-        See ``Operator._unflatten``.
+        See ``LegacyOperator._unflatten``.
 
         The data component can be recursive and include other operations. For example, the trainable component of ``Adjoint(RX(1, wires=0))``
         will be the operator ``RX(1, wires=0)``.
 
         The metadata **must** be hashable.  If the hyperparameters contain a non-hashable component, then this
-        method and ``Operator._unflatten`` should be overridden to provide a hashable version of the hyperparameters. Operators
-        that have trainable components that differ from their ``Operator.data`` must implement their own ``_flatten`` methods.
+        method and ``LegacyOperator._unflatten`` should be overridden to provide a hashable version of the hyperparameters. Operators
+        that have trainable components that differ from their ``LegacyOperator.data`` must implement their own ``_flatten`` methods.
 
         """
         hashable_hyperparameters = tuple(
@@ -1549,8 +1560,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             data: the trainable component of the operation
             metadata: the non-trainable component of the operation.
 
-        The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
-        operation with ``Operator._unflatten``.
+        The output of ``LegacyOperator._flatten`` and the class type must be sufficient to reconstruct the original
+        operation with ``LegacyOperator._unflatten``.
 
         """
         hyperparameters_dict = dict(metadata[1])
@@ -1558,12 +1569,12 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
 
 @abstractify.register(ABCCaptureMeta)
-def _abstractify_operator1_subclass(op_type: type[Operator]) -> "CompressedResourceOp":
+def _abstractify_operator1_subclass(op_type: type[LegacyOperator]) -> "CompressedResourceOp":
     return qp.resource_rep(op_type)
 
 
-@abstractify.register(Operator)
-def _abstractify_operator1(op: Operator) -> "CompressedResourceOp":
+@abstractify.register(LegacyOperator)
+def _abstractify_operator1(op: LegacyOperator) -> "CompressedResourceOp":
     return qp.resource_rep(type(op), **op.resource_params)
 
 
@@ -1572,7 +1583,7 @@ def _abstractify_operator1(op: Operator) -> "CompressedResourceOp":
 # =============================================================================
 
 
-class Operation(Operator):
+class Operation(LegacyOperator):
     r"""Base class representing quantum gates or channels applied to quantum states.
 
     Operations define some additional properties, that are used for external
@@ -1751,4 +1762,4 @@ class Operation(Operator):
             self.grad_recipe = [None] * self.num_params
 
 
-__all__ = ["Operator", "Operation"]
+__all__ = ["LegacyOperator", "Operation"]

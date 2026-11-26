@@ -481,7 +481,7 @@ class TestEstimateResources:  # pylint: disable=too-many-public-methods
 
         with pytest.raises(
             ValueError,
-            match="Circuit must contain only instances of 'ResourceOperator', 'Operator', 'MeasurementProcess' and 'MarkQubits',",
+            match="Circuit must contain only instances of 'ResourceOperator', 'LegacyOperator', 'MeasurementProcess' and 'MarkQubits',",
         ):
             estimate(my_circuit)()
 

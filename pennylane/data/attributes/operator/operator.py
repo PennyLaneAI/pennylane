@@ -22,21 +22,21 @@ from typing import Generic, TypeVar
 import numpy as np
 
 from pennylane import ops as qops
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.queuing import QueuingManager
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group, h5py
 
 from ._wires import wires_to_json
 
-Op = TypeVar("Op", bound=Operator)
+Op = TypeVar("Op", bound=LegacyOperator)
 
 
 class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
-    """``DatasetAttribute`` for ``pennylane.operation.Operator`` classes.
+    """``DatasetAttribute`` for ``pennylane.operation.LegacyOperator`` classes.
 
     Supports all operator types that meet the following conditions:
-        - The ``__init__()`` method matches the signature of ``Operator.__init__``,
+        - The ``__init__()`` method matches the signature of ``LegacyOperator.__init__``,
             or any additional arguments are optional and do not affect the value of
             the operator
         - The ``data`` and ``wires`` attributes will produce an identical copy of
@@ -51,7 +51,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
 
     @classmethod
     @lru_cache(1)
-    def supported_ops(cls) -> frozenset[type[Operator]]:
+    def supported_ops(cls) -> frozenset[type[LegacyOperator]]:
         """Set of supported operators."""
         return frozenset(
             (
@@ -155,7 +155,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         return self._hdf5_to_ops(bind)[0]
 
     def _ops_to_hdf5(
-        self, bind_parent: HDF5Group, key: str, value: Sequence[Operator]
+        self, bind_parent: HDF5Group, key: str, value: Sequence[LegacyOperator]
     ) -> HDF5Group:
         """Serialize op sequence ``value``, and create nested sequences for any
         composite ops in ``value``.
@@ -201,7 +201,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
 
         return bind
 
-    def _hdf5_to_ops(self, bind: HDF5Group) -> list[Operator]:
+    def _hdf5_to_ops(self, bind: HDF5Group) -> list[LegacyOperator]:
         """Load list of serialized ops from ``bind``."""
         ops = []
 
@@ -246,8 +246,8 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
 
     @classmethod
     @lru_cache(1)
-    def _supported_ops_dict(cls) -> dict[str, type[Operator]]:
-        """Returns a dict mapping ``Operator`` subclass names to the class."""
+    def _supported_ops_dict(cls) -> dict[str, type[LegacyOperator]]:
+        """Returns a dict mapping ``LegacyOperator`` subclass names to the class."""
         ops_dict = {op.__name__: op for op in cls.supported_ops()}
         ops_dict["Hamiltonian"] = qops.LinearCombination
         ops_dict["Tensor"] = qops.Prod

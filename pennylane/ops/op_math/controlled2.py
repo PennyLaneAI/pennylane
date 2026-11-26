@@ -25,7 +25,7 @@ from scipy import sparse
 import pennylane as qp
 from pennylane import allocation, capture, compiler, math
 from pennylane.capture.op_eqns import pop_op_eqns
-from pennylane.core.operator import Operator, abstractify
+from pennylane.core.operator import LegacyOperator, abstractify
 from pennylane.core.operator.operator2 import _to_symbolic_array, operator_p  # tach-ignore
 from pennylane.core.queuing import remove_from_program
 from pennylane.decomposition.decomposition_rule import (
@@ -145,7 +145,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
         # The purpose of this function here is to intercept the argument passed to the
         # constructor of the subclass and store it on the operator, so that in __init__,
-        # we can pass that along to the base Operator2.__init__, which expects the
+        # we can pass that along to the base Operator.__init__, which expects the
         # arguments to match the pre-defined signature of the subclass.
         sig = signature(cls)
         bound_args = sig.bind(*args, **kwargs)
@@ -156,7 +156,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     def __init__(
         self,
-        base: Operator,
+        base: LegacyOperator,
         control_wires: WiresLike,
         control_values: int | bool | Sequence[int | bool] | None = None,
         work_wires: WiresLike | None = None,
@@ -247,7 +247,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
 
     @property
     @override
-    def base(self) -> Operator:
+    def base(self) -> LegacyOperator:
         """The target operator."""
         return self._base
 
@@ -486,7 +486,7 @@ class ControlledOp2(Controlled2):
     """Represents a controlled version of an arbitrary base operator.
 
     Args:
-        base (~.core.Operator): the operator that is controlled
+        base (~.core.LegacyOperator): the operator that is controlled
         control_wires (WiresLike): The wires to control on.
 
     Keyword Args:
@@ -517,7 +517,7 @@ class ControlledOp2(Controlled2):
     # of the __init__ is correctly retrieved as the signature of the operator subclass.
     def __init__(
         self,
-        base: Operator,
+        base: LegacyOperator,
         control_wires: WiresLike,
         control_values: Sequence[int | bool] | None = None,
         work_wires: WiresLike | None = None,
@@ -556,7 +556,7 @@ class ControlledOp2(Controlled2):
     @override
     def _bind_primitive(self):
         """Bind the operator primitive. ``ControlledOp2`` has to override the method of
-        the base ``Operator2`` class so that we can "edit" the original primitive."""
+        the base ``Operator`` class so that we can "edit" the original primitive."""
 
         if not qp.capture.enabled():
             return
@@ -912,7 +912,7 @@ ctrl_many_zeroed_work_wires = flip_zero_control(
 
 
 def _ctrl_abstract(
-    op: AbstractOperatorLike | type[Operator],
+    op: AbstractOperatorLike | type[LegacyOperator],
     control_wires: AbstractWires,
     work_wires: AbstractWires = Wire[0],
     work_wire_type: str = "borrowed",

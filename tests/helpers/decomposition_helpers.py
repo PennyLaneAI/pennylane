@@ -14,11 +14,11 @@
 """Shared assertions for structured decomposition rules."""
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.decomposition import DecompositionRule
 
 
-def assert_basis_change_decomposition(op: Operator, rule: DecompositionRule) -> None:
+def assert_basis_change_decomposition(op: LegacyOperator, rule: DecompositionRule) -> None:
     """Check a rule and the decompositions of its structured basis-change operands."""
     qp.testing.assert_valid_decomp_rule(op, rule)
     for gate in qp.testing.decomp_rule_to_tape(op, rule).operations:

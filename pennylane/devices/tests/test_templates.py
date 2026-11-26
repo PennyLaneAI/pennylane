@@ -16,7 +16,7 @@
 # Can generate a list of all templates using the following code:
 #
 # from inspect import getmembers, isclass
-# all_templates = [i for (_, i) in getmembers(qp.templates) if isclass(i) and issubclass(i, qp.operation.Operator)]
+# all_templates = [i for (_, i) in getmembers(qp.templates) if isclass(i) and issubclass(i, qp.operation.LegacyOperator)]
 
 from functools import partial
 

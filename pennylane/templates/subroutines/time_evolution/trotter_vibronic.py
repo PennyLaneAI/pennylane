@@ -22,7 +22,7 @@ from pennylane import capture, compiler, math
 from pennylane.allocation import allocate
 from pennylane.capture import hint
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.numeric_hamiltonians import VibronicHamiltonian
 from pennylane.ops import CNOT, Hadamard, adjoint, cond
@@ -44,7 +44,7 @@ from ..qrom import QROM
 _BRANCH_TERMS = ("constant", "linear", "quadratic", "bilinear", "kinetic")
 
 
-class TrotterVibronic(Operator2):
+class TrotterVibronic(Operator):
     r"""Second-order Trotter circuit for vibronic Hamiltonian simulation using phase-gradient
     arithmetic.
 
@@ -256,7 +256,7 @@ class TrotterVibronic(Operator2):
         <https://pennylane.ai/demos/simulating_vibronic_dynamics>`__ for a from-scratch,
         step-by-step implementation). The mode positions :math:`Q_r` and momenta
         :math:`P_r` are the signed (two's-complement) integers on the mode sub-registers of
-        ``vib_wires``, and :math:`a` labels an ``electronic_wires`` basis state. Operator products
+        ``vib_wires``, and :math:`a` labels an ``electronic_wires`` basis state. LegacyOperator products
         below use the standard convention that the rightmost factor is applied first.
 
         The Hamiltonian is a sum of :math:`F` position fragments and one kinetic fragment,

@@ -24,7 +24,7 @@ from collections.abc import Callable, Sequence
 from copy import copy
 
 from pennylane.core.measurements import SampleMeasurement, StateMeasurement
-from pennylane.core.operator import Operator, StatePrepBase
+from pennylane.core.operator import LegacyOperator, StatePrepBase
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import (
     AllocationError,
@@ -268,10 +268,10 @@ def validate_adjoint_trainable_params(
 @transform
 def decompose(  # pylint: disable=too-many-arguments
     tape: QuantumScript,
-    stopping_condition: Callable[[Operator], bool],
-    stopping_condition_shots: Callable[[Operator], bool] | None = None,
+    stopping_condition: Callable[[LegacyOperator], bool],
+    stopping_condition_shots: Callable[[LegacyOperator], bool] | None = None,
     skip_initial_state_prep: bool = True,
-    decomposer: Callable[[Operator], Sequence[Operator]] | None = None,
+    decomposer: Callable[[LegacyOperator], Sequence[LegacyOperator]] | None = None,
     device_wires: Wires | None = None,
     num_work_wires: int | None = None,
     target_gates: set | dict | None = None,
@@ -351,7 +351,7 @@ def decompose(  # pylint: disable=too-many-arguments
     >>> decompose(tape, lambda obj: obj.name == "S")  # doctest: +SKIP
     Traceback (most recent call last):
     ...
-    pennylane.exceptions.DeviceError: Operator RZ(1.5707963267948966, wires=[1]) not supported with device and does not provide a decomposition.
+    pennylane.exceptions.DeviceError: LegacyOperator RZ(1.5707963267948966, wires=[1]) not supported with device and does not provide a decomposition.
 
     The ``skip_initial_state_prep`` specifies whether the device supports state prep operations
     at the beginning of the circuit.
@@ -420,7 +420,7 @@ def decompose(  # pylint: disable=too-many-arguments
     except RecursionError as e:
         raise error(
             "Reached recursion limit trying to decompose operations. "
-            "Operator decomposition may have entered an infinite loop."
+            "LegacyOperator decomposition may have entered an infinite loop."
         ) from e
 
     except DecompositionUndefinedError as e:
@@ -435,8 +435,8 @@ def decompose(  # pylint: disable=too-many-arguments
 @transform
 def validate_observables(
     tape: QuantumScript,
-    stopping_condition: Callable[[Operator], bool],
-    stopping_condition_shots: Callable[[Operator], bool] | None = None,
+    stopping_condition: Callable[[LegacyOperator], bool],
+    stopping_condition_shots: Callable[[LegacyOperator], bool] | None = None,
     name: str = "device",
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Validates the observables and measurements for a circuit.

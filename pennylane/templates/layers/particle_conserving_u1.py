@@ -48,7 +48,7 @@ def decompose_ua(phi, wires=None):
         wires (Iterable): the wires ``n`` and ``m`` the circuit acts on
 
     Returns:
-          list[.Operator]: sequence of operators defined by this function
+          list[.LegacyOperator]: sequence of operators defined by this function
     """
     op_list = []
     n, m = wires
@@ -78,7 +78,7 @@ def u1_ex_gate(phi, theta, wires=None):
         wires (list[Iterable]): the two wires ``n`` and ``m`` the circuit acts on
 
     Returns:
-        list[.Operator]: sequence of operators defined by this function
+        list[.LegacyOperator]: sequence of operators defined by this function
     """
     op_list = []
 
@@ -309,7 +309,7 @@ class ParticleConservingU1(Operation):
                 used to initialize the wires
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
 
         **Example**
 
@@ -401,7 +401,7 @@ def _decompose_ua_qfunc(phi: float, wires: WiresLike):
         wires (Iterable): the wires ``n`` and ``m`` the circuit acts on
 
     Returns:
-          list[.Operator]: sequence of operators defined by this function
+          list[.LegacyOperator]: sequence of operators defined by this function
     """
     n, m = wires
 

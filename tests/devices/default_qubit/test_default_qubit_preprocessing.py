@@ -111,7 +111,7 @@ class NoMatNoDecompOp(qp.operation.Operation):
         return False
 
 
-class HasDiagonalizingGatesOp(qp.operation.Operator):
+class HasDiagonalizingGatesOp(qp.operation.LegacyOperator):
     """Dummy observable that has diagonalizing gates."""
 
     @classproperty
@@ -119,7 +119,7 @@ class HasDiagonalizingGatesOp(qp.operation.Operator):
         return True
 
 
-class CustomizedSparseOp(qp.operation.Operator):
+class CustomizedSparseOp(qp.operation.LegacyOperator):
     def __init__(self, wires):
         U = sp.sparse.eye(2 ** len(wires))
         super().__init__(U, wires)
@@ -438,7 +438,7 @@ class TestPreprocessing:
         batch, _ = program((tape2,))
         assert batch[0].circuit != tape3.circuit
 
-        class CustomOpWithGenerator(qp.operation.Operator):
+        class CustomOpWithGenerator(qp.operation.LegacyOperator):
             """A custom operator with a generator."""
 
             def generator(self):
@@ -737,7 +737,7 @@ class TestPreprocessingIntegration:
 
         program = qp.device("default.qubit").preprocess_transforms()
 
-        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+        with pytest.raises(DeviceError, match="LegacyOperator NoMatNoDecompOp"):
             with pytest.warns(DecompositionWarning):
                 program(tapes)
 
@@ -897,7 +897,7 @@ class TestPreprocessingIntegration:
 
         m0 = qp.measure(0)
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
             def decomposition(self):
                 return m0.measurements
 
@@ -1132,7 +1132,7 @@ class TestDefaultQubitGraphModeExclusive:
         """Test that if a decomposition requires more work wires than available on default.qubit,
         that decomposition is discarded and fallback is used."""
 
-        class MyDefaultQubitOp(qp.operation.Operator):
+        class MyDefaultQubitOp(qp.operation.LegacyOperator):
             num_wires = 1
 
         @qp.register_resources({qp.H: 2}, name="decomp_fallback")

@@ -37,13 +37,13 @@ PennyLane supports the following operators and operator functions:
 
 .. _intro_ref_ops_funcs:
 
-Operator functions
+LegacyOperator functions
 ------------------
 
 Various functions and transforms are available for manipulating operators,
 and extracting information. These can be broken down into two main categories:
 
-Operator to Operator functions
+LegacyOperator to LegacyOperator functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
@@ -70,7 +70,7 @@ These operator functions act on operators to produce new operators.
 >>> op
 1.2 * (H(0) + X(0) @ Z(1))
 
-Operator to Other functions
+LegacyOperator to Other functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::
@@ -123,7 +123,7 @@ array([[ 0.92387953+0.j        ,  0.        -0.38268343j,
          0.        +0.38268343j, -0.92387953+0.j        ]])
 
 
-Matrix to Operator functions
+Matrix to LegacyOperator functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autosummary::

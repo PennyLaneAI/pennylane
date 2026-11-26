@@ -22,7 +22,7 @@ import numpy as np
 
 import pennylane.ops.functions as op_func
 from pennylane import math
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.pauli import (
     PauliSentence,
     PauliVSpace,
@@ -40,14 +40,14 @@ _LINEAR_DEPENDENCE_TOL = 1e-10
 
 
 def lie_closure(  # pylint: disable=too-many-arguments
-    generators: Iterable[PauliWord | PauliSentence | Operator | TensorLike],
+    generators: Iterable[PauliWord | PauliSentence | LegacyOperator | TensorLike],
     *,  # force non-positional kwargs of the following
     max_iterations: int = 10000,
     verbose: bool = False,
     pauli: bool = False,
     matrix: bool = False,
     tol: float = None,
-) -> Iterable[PauliWord | PauliSentence | Operator | np.ndarray]:
+) -> Iterable[PauliWord | PauliSentence | LegacyOperator | np.ndarray]:
     r"""Compute the (dynamical) Lie algebra from a set of generators.
 
     The Lie closure, pronounced "Lee" closure, is a way to compute the so-called dynamical Lie algebra (DLA) of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}`.
@@ -55,21 +55,21 @@ def lie_closure(  # pylint: disable=too-many-arguments
     All these operators together form the DLA, see e.g. section IIB of `arXiv:2308.01432 <https://arxiv.org/abs/2308.01432>`__.
 
     Args:
-        generators (Iterable[Union[PauliWord, PauliSentence, Operator, TensorLike]]): generating set for which to compute the
+        generators (Iterable[Union[PauliWord, PauliSentence, LegacyOperator, TensorLike]]): generating set for which to compute the
             Lie closure.
         max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
         verbose (bool): whether to print out progress updates during Lie closure
             calculation. Default is ``False``.
         pauli (bool): Indicates whether it is assumed that :class:`~.PauliSentence` or :class:`~.PauliWord` instances are input and returned.
-            This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.Operator`
+            This can help with performance to avoid unnecessary conversions to :class:`~pennylane.operation.LegacyOperator`
             and vice versa. Default is ``False``.
         matrix (bool): Whether or not matrix representations should be used and returned in the Lie closure computation. This can help
             speed up the computation when using sums of Paulis with many terms. Default is ``False``.
         tol (float): Numerical tolerance for the linear independence check used in :class:`~.PauliVSpace`.
 
     Returns:
-        Union[list[:class:`~.PauliSentence`], list[:class:`~.Operator`], np.ndarray]: A basis of either :class:`~.PauliSentence`,
-        :class:`~.Operator`, or ``np.ndarray`` instances that is closed under commutators (Lie closure).
+        Union[list[:class:`~.PauliSentence`], list[:class:`~.LegacyOperator`], np.ndarray]: A basis of either :class:`~.PauliSentence`,
+        :class:`~.LegacyOperator`, or ``np.ndarray`` instances that is closed under commutators (Lie closure).
 
     .. seealso::
         :func:`~structure_constants`, :func:`~center`, :class:`~pennylane.pauli.PauliVSpace`,
@@ -124,7 +124,7 @@ def lie_closure(  # pylint: disable=too-many-arguments
         <class 'pennylane.core.pauli.PauliSentence'>
 
         In the case of sums of Pauli operators with many terms, it is often faster to use the matrix representation of the operators rather than
-        the semi-analytic :class:`~pennylane.pauli.PauliSentence` or :class:`~Operator` representation.
+        the semi-analytic :class:`~pennylane.pauli.PauliSentence` or :class:`~LegacyOperator` representation.
         We can force this by using the ``matrix`` keyword. The resulting ``dla`` is a ``np.ndarray`` of dimension ``(dim_g, 2**n, 2**n)``, where ``dim_g`` is the
         dimension of the DLA and ``n`` the number of qubits.
 
@@ -243,7 +243,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
 
 def _lie_closure_matrix(
-    generators: Iterable[PauliWord | PauliSentence | Operator | np.ndarray],
+    generators: Iterable[PauliWord | PauliSentence | LegacyOperator | np.ndarray],
     max_iterations: int = 10000,
     verbose: bool = False,
     tol: float = None,
@@ -260,7 +260,7 @@ def _lie_closure_matrix(
         :doc:`Introduction to Dynamical Lie Algebras for quantum practitioners <demo:demos/tutorial_liealgebra>`.
 
     Args:
-        generators (Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]): generating set for which to compute the
+        generators (Iterable[Union[PauliWord, PauliSentence, LegacyOperator, np.ndarray]]): generating set for which to compute the
             Lie closure.
         max_iterations (int): maximum depth of nested commutators to consider. Default is ``10000``.
         verbose (bool): whether to print out progress updates during Lie closure

@@ -22,13 +22,13 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.core.operator.base import Operator
+from pennylane.core.operator.base import LegacyOperator
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions import single_qubit_zyz_angles
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
 
 
-class PlainOperator(qp.operation.Operator):
+class PlainOperator(qp.operation.LegacyOperator):
     """just an operator."""
 
 
@@ -44,14 +44,14 @@ class TestInheritanceMixins:
     """Test inheritance structure and mixin addition through dynamic __new__ method."""
 
     def test_plain_operator(self):
-        """Test when base directly inherits from Operator, Adjoint only inherits
-        from Adjoint and Operator."""
+        """Test when base directly inherits from LegacyOperator, Adjoint only inherits
+        from Adjoint and LegacyOperator."""
 
         base = PlainOperator(1.234, wires=0)
         op = Adjoint(base)
 
         assert isinstance(op, Adjoint)
-        assert isinstance(op, qp.operation.Operator)
+        assert isinstance(op, qp.operation.LegacyOperator)
         assert not isinstance(op, qp.operation.Operation)
         assert not isinstance(op, AdjointOperation)
 
@@ -70,7 +70,7 @@ class TestInheritanceMixins:
         op = Adjoint(base)
 
         assert isinstance(op, Adjoint)
-        assert isinstance(op, qp.operation.Operator)
+        assert isinstance(op, qp.operation.LegacyOperator)
         assert isinstance(op, qp.operation.Operation)
         assert isinstance(op, AdjointOperation)
 
@@ -264,7 +264,7 @@ class TestProperties:
     def test_is_verified_hermitian(self, value):
         """Test `is_verified_hermitian` property mirrors that of the base."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             num_wires = 1
             is_verified_hermitian = value
 
@@ -367,7 +367,7 @@ class TestMiscMethods:
     def test_flatten_unflatten(self):
         """Test the flatten and unflatten methods."""
 
-        class CustomOp(qp.operation.Operator):
+        class CustomOp(qp.operation.LegacyOperator):
             pass
 
         op = CustomOp(1.2, 2.3, wires=0)
@@ -880,7 +880,7 @@ class TestAdjointConstructorOutsideofQueuing:
     def test_single_op(self):
         """Test providing a single op outside of a queuing context."""
 
-        class DummyOp(Operator):
+        class DummyOp(LegacyOperator):
             pass
 
         x = 1.234

@@ -16,14 +16,14 @@
 
 from typing import override
 
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.core.queuing import QueuingManager
 
 
-class SymbolicOp2(Operator2, is_baseclass=True):
+class SymbolicOp2(Operator, is_baseclass=True):
     """Developer-facing base class for symbolic operators."""
 
-    base: Operator2  # declares the existance of a `base` attribute for static type checking
+    base: Operator  # declares the existance of a `base` attribute for static type checking
 
     @property
     @override

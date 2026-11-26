@@ -25,7 +25,7 @@ from jax._src.pjit import jit_p as pjit_p
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 
 from .flatfn import FlatFn
 from .primitives import (
@@ -288,11 +288,11 @@ class PlxprInterpreter:
         a Catalyst variant jaxpr.
         """
 
-    def interpret_operation(self, op: "pennylane.operation.Operator"):
+    def interpret_operation(self, op: "pennylane.operation.LegacyOperator"):
         """Interpret a PennyLane operation instance.
 
         Args:
-            op (Operator): a pennylane operator instance
+            op (LegacyOperator): a pennylane operator instance
 
         Returns:
             Any
@@ -305,8 +305,8 @@ class PlxprInterpreter:
         """
         data, struct = jax.tree_util.tree_flatten(op)
         new_op = jax.tree_util.tree_unflatten(struct, data)
-        if isinstance(new_op, Operator2):
-            # Operator2 pytree reconstruction occurs with capture paused, so explicitly
+        if isinstance(new_op, Operator):
+            # Operator pytree reconstruction occurs with capture paused, so explicitly
             # bind the reconstructed operation into the surrounding trace.
             new_op._bind_primitive()  # pylint: disable=protected-access
         return new_op
@@ -398,7 +398,7 @@ class PlxprInterpreter:
         outvals = []
         for var in jaxpr.outvars:
             outval = self.read(var)
-            if isinstance(outval, qp.operation.Operator):
+            if isinstance(outval, qp.operation.LegacyOperator):
                 outvals.append(self.interpret_operation(outval))
             else:
                 outvals.append(outval)

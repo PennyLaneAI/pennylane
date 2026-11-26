@@ -21,7 +21,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.measurements import SampleMeasurement
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import MeasurementShapeError, QuantumFunctionError
 from pennylane.ops import MeasurementValue
@@ -39,7 +39,7 @@ class SampleMP(SampleMeasurement):
     Please refer to :func:`pennylane.sample` for detailed documentation.
 
     Args:
-        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+        obs (Union[.LegacyOperator, .MeasurementValue]): The observable that is to be measured
             as part of the measurement process. Not all measurement processes require observables
             (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
@@ -179,7 +179,7 @@ class SampleMP(SampleMeasurement):
 
 
 def sample(
-    op: Operator | MeasurementValue | Sequence[MeasurementValue] | None = None,
+    op: LegacyOperator | MeasurementValue | Sequence[MeasurementValue] | None = None,
     wires: WiresLike = None,
     dtype=None,
 ) -> SampleMP:
@@ -192,7 +192,7 @@ def sample(
     specified on the device.
 
     Args:
-        op (Operator or MeasurementValue): a quantum observable object. To get samples
+        op (LegacyOperator or MeasurementValue): a quantum observable object. To get samples
             for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``.

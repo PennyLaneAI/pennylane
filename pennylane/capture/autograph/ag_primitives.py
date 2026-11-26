@@ -463,7 +463,7 @@ def converted_call(fn, args, kwargs, caller_fn_scope=None, options=None):
                 args[0].aval, qp.capture.primitives.AbstractOperator
             )
             # If first argument is already an operator, pass it through directly
-            if isinstance(args[0], qp.operation.Operator) or (
+            if isinstance(args[0], qp.operation.LegacyOperator) or (
                 is_abstract_operator and fn in {qp.adjoint, qp.ctrl}
             ):
                 return ag_converted_call(fn, args, kwargs, caller_fn_scope, options)

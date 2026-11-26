@@ -25,7 +25,7 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.core.operator import Operation, Operator, Operator1, Operator2, StatePrepBase
+from pennylane.core.operator import LegacyOperator, Operation, Operator, Operator1, StatePrepBase
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.gradients import parameter_frequencies
 from pennylane.operation import (
@@ -43,6 +43,22 @@ CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
 
 
+def test_operator_exports():
+    """Test the renamed operator and its public exports."""
+    assert Operator.__name__ == "Operator"
+    assert qp.core.Operator is Operator
+    assert qp.operation.Operator is Operator
+    assert Operator is not LegacyOperator
+
+
+def test_legacy_operator_exports():
+    """Test the renamed class and its public exports."""
+    assert LegacyOperator.__name__ == "LegacyOperator"
+    assert qp.core.LegacyOperator is LegacyOperator
+    assert qp.operation.LegacyOperator is LegacyOperator
+    assert Operation.__bases__ == (LegacyOperator,)
+
+
 def test_basis_deprecation():
     """Test that Operation.basis is deprecated."""
 
@@ -54,9 +70,9 @@ def test_basis_deprecation():
 
 
 def test_operator2_isinstance_operator_operation():
-    """Test that anything that inherits from Operator2 is an Operator."""
+    """Test that anything that inherits from Operator is an LegacyOperator."""
 
-    class NewOp(Operator2):
+    class NewOp(Operator):
         """dummy operator2"""
 
         dynamic_argnames = ()
@@ -65,8 +81,8 @@ def test_operator2_isinstance_operator_operation():
             super().__init__(wires=wires)
 
     new_op = NewOp(wires=0)
-    assert isinstance(new_op, Operator)
-    assert issubclass(NewOp, Operator)
+    assert isinstance(new_op, LegacyOperator)
+    assert issubclass(NewOp, LegacyOperator)
 
     assert isinstance(new_op, Operation)
     assert issubclass(NewOp, Operation)
@@ -78,7 +94,7 @@ class TestOperator1:
     def test_operator1_against_new_op(self):
         """Test that Operator1 checks reject new operator interface."""
 
-        class NewOp(Operator2):
+        class NewOp(Operator):
             """dummy operator2"""
 
             dynamic_argnames = ()
@@ -93,7 +109,7 @@ class TestOperator1:
     def test_operator1_against_old_op(self):
         """Test that Operator1 checks accept old interface."""
 
-        class OldOp(Operator):
+        class OldOp(LegacyOperator):
             pass
 
         old_op = OldOp(wires=0)
@@ -107,17 +123,17 @@ class TestOperator1:
         assert not issubclass(list, Operator1)
 
     def test_inheritance_switch_for_Operator(self):
-        """Test that inheriting from Operator1 switches it out for Operator."""
+        """Test that inheriting from Operator1 switches it out for LegacyOperator."""
 
         class OldOp(Operator1):
             """op inheriting from Operator1"""
 
-        assert OldOp.__bases__ == (Operator,)
+        assert OldOp.__bases__ == (LegacyOperator,)
 
         op = OldOp(wires=0)
-        assert isinstance(op, Operator)
+        assert isinstance(op, LegacyOperator)
         assert isinstance(op, Operator1)
-        assert not op.has_matrix  # check it has an Operator thing
+        assert not op.has_matrix  # check it has an LegacyOperator thing
 
     def test_instantiating_Operator1_on_its_own(self):
         """Test that an error is raised if someone tries to instantiate Operator1."""
@@ -143,7 +159,7 @@ class TestOperatorConstruction:
     def test_incorrect_num_wires(self):
         """Test that an exception is raised if called with wrong number of wires"""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             r"""Dummy custom operator"""
 
             num_wires = 1
@@ -154,7 +170,7 @@ class TestOperatorConstruction:
     def test_non_unique_wires(self):
         """Test that an exception is raised if called with identical wires"""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             r"""Dummy custom operator"""
 
             num_wires = 1
@@ -165,16 +181,16 @@ class TestOperatorConstruction:
     def test_num_wires_default_any_wires(self):
         """Test that num_wires is None by default."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             r"""Dummy custom operator"""
 
         assert DummyOp.num_wires is None
-        assert Operator.num_wires is None
+        assert LegacyOperator.num_wires is None
 
     def test_incorrect_num_params(self):
         """Test that an exception is raised if called with wrong number of parameters"""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             r"""Dummy custom operator that declares num_params as an instance property"""
 
             num_wires = 1
@@ -190,7 +206,7 @@ class TestOperatorConstruction:
         op = DummyOp(0.5, wires=0)
         assert op.num_params == 1
 
-        class DummyOp2(qp.operation.Operator):
+        class DummyOp2(qp.operation.LegacyOperator):
             r"""Dummy custom operator that declares num_params as a class property"""
 
             num_params = 4
@@ -204,7 +220,7 @@ class TestOperatorConstruction:
         assert op2.num_params == 4
         assert DummyOp2.num_params == 4
 
-        class DummyOp3(qp.operation.Operator):
+        class DummyOp3(qp.operation.LegacyOperator):
             r"""Dummy custom operator that does not declare num_params at all"""
 
             num_wires = 1
@@ -217,7 +233,7 @@ class TestOperatorConstruction:
     def test_incorrect_ndim_params(self):
         """Test that an exception is raised if called with wrongly-shaped parameters"""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             r"""Dummy custom operator that declares ndim_params as an instance property"""
 
             num_wires = 1
@@ -231,7 +247,7 @@ class TestOperatorConstruction:
         op = DummyOp(0.5, wires=0)
         assert op.ndim_params == (0,)
 
-        class DummyOp2(qp.operation.Operator):
+        class DummyOp2(qp.operation.LegacyOperator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             ndim_params = (1, 2)
@@ -246,7 +262,7 @@ class TestOperatorConstruction:
         assert op2.ndim_params == (1, 2)
         assert DummyOp2.ndim_params == (1, 2)
 
-        class DummyOp3(qp.operation.Operator):
+        class DummyOp3(qp.operation.LegacyOperator):
             r"""Dummy custom operator that does not declare ndim_params at all"""
 
             num_wires = 1
@@ -258,7 +274,7 @@ class TestOperatorConstruction:
         # because it will simply set `ndim_params` to the ndims of the provided arguments
         assert op3.ndim_params == (0, 2)
 
-        class DummyOp4(qp.operation.Operator):
+        class DummyOp4(qp.operation.LegacyOperator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             ndim_params = (0, 2)
@@ -272,7 +288,7 @@ class TestOperatorConstruction:
     def test_default_pauli_rep(self):
         """Test that the default _pauli_rep attribute is None"""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             r"""Dummy custom operator"""
 
             num_wires = 1
@@ -283,7 +299,7 @@ class TestOperatorConstruction:
     def test_list_or_tuple_params_casted_into_numpy_array(self):
         """Test that list parameters are casted into numpy arrays."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             r"""Dummy custom operator"""
 
             num_wires = 1
@@ -298,7 +314,7 @@ class TestOperatorConstruction:
     def test_data_is_read_only(self):
         """Test that operator data is exposed through a read-only property."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             num_wires = 1
             num_params = 1
 
@@ -312,7 +328,7 @@ class TestOperatorConstruction:
     def test_wires_by_final_argument(self):
         """Test that wires can be passed as the final positional argument."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             num_wires = 1
             num_params = 1
 
@@ -323,7 +339,7 @@ class TestOperatorConstruction:
     def test_no_wires(self):
         """Test an error is raised if no wires are passed."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             num_wires = 1
             num_params = 1
 
@@ -333,7 +349,7 @@ class TestOperatorConstruction:
     def test_no_wires_for_op_with_any_wires(self):
         """Test that an operator that allows any number of wires can have zero wires."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             pass
 
         assert DummyOp(wires=()).wires == qp.wires.Wires(())
@@ -341,7 +357,7 @@ class TestOperatorConstruction:
     def test_name_setter(self):
         """Tests that we can set the name of an operator"""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             r"""Dummy custom operator"""
 
             num_wires = 1
@@ -384,7 +400,7 @@ class TestOperatorConstruction:
         """Test that using `==` on operators behaves the same as
         `qp.equal`."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             num_wires = 1
 
         op1 = DummyOp(0)
@@ -396,7 +412,7 @@ class TestOperatorConstruction:
     def test_hash_correctness(self):
         """Test that the hash of two equivalent operators is the same."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             num_wires = 1
 
         op1 = DummyOp(0)
@@ -417,7 +433,7 @@ class TestOperatorConstruction:
         """Test that ndim_params and batch_size are lazy properties."""
         # pylint: disable=protected-access
 
-        class DummyOp(Operator):
+        class DummyOp(LegacyOperator):
             num_wires = 1
             num_params = 1
             ndim_params = (0,)
@@ -434,7 +450,7 @@ class TestPytreeMethods:
     def test_pytree_defaults(self):
         """Test the default behavior for the flatten and unflatten methods."""
 
-        class CustomOp(qp.operation.Operator):
+        class CustomOp(qp.operation.LegacyOperator):
             """A dummy operation with hyperparameters."""
 
             def __init__(self, x1, x2, wires, info):
@@ -480,7 +496,7 @@ class TestBroadcasting:
         r"""Test that initialization of an operator with broadcasted parameters
         works and sets the ``batch_size`` correctly."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             ndim_params = (0, 2)
@@ -496,7 +512,7 @@ class TestBroadcasting:
         r"""Test that initialization of an operator with broadcasted parameters
         works and sets the ``batch_size`` correctly with Autograd parameters."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             ndim_params = (0, 2)
@@ -514,7 +530,7 @@ class TestBroadcasting:
         works and sets the ``batch_size`` correctly with JAX parameters."""
         import jax
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             ndim_params = (0, 2)
@@ -532,7 +548,7 @@ class TestBroadcasting:
         works and sets the ``batch_size`` correctly with Torch parameters."""
         import torch
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             ndim_params = (0, 2)
@@ -550,7 +566,7 @@ class TestHasReprProperties:
     def test_has_matrix_true(self):
         """Test has_matrix property detects overriding of `compute_matrix` method."""
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
             num_wires = 1
 
             @staticmethod
@@ -563,7 +579,7 @@ class TestHasReprProperties:
     def test_has_matrix_true_overridden_matrix(self):
         """Test has_matrix is true if `matrix` is overridden instead of `compute_matrix`."""
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
             def matrix(self, _=None):
                 return np.eye(2)
 
@@ -573,7 +589,7 @@ class TestHasReprProperties:
     def test_has_matrix_false(self):
         """Test has_matrix property defaults to false if `compute_matrix` not overwritten."""
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
             num_wires = 1
 
         assert MyOp.has_matrix is False
@@ -592,7 +608,7 @@ class TestHasReprProperties:
     def test_has_adjoint_true(self):
         """Test has_adjoint property detects overriding of `adjoint` method."""
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
             num_wires = 1
             adjoint = lambda self: self
 
@@ -602,7 +618,7 @@ class TestHasReprProperties:
     def test_has_adjoint_false(self):
         """Test has_adjoint property defaults to false if `adjoint` not overwritten."""
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
             num_wires = 1
 
         assert MyOp.has_adjoint is False
@@ -611,7 +627,7 @@ class TestHasReprProperties:
     def test_has_decomposition_true_compute_decomposition(self):
         """Test has_decomposition property detects overriding of `compute_decomposition` method."""
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
             num_wires = 1
             num_params = 1
 
@@ -625,7 +641,7 @@ class TestHasReprProperties:
     def test_has_decomposition_true_decomposition(self):
         """Test has_decomposition property detects overriding of `decomposition` method."""
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
             num_wires = 1
             num_params = 1
 
@@ -638,7 +654,7 @@ class TestHasReprProperties:
     def test_has_decomposition_graph_decomp(self):
         """Test that an operator provides a decomposition if it has a register graph decomp."""
 
-        class SomeRandomName(qp.operation.Operator):
+        class SomeRandomName(qp.operation.LegacyOperator):
             pass
 
         @qp.register_resources({qp.X: 1}, name="decomp")
@@ -653,7 +669,7 @@ class TestHasReprProperties:
         """Test that operators with multiple decompositions and conditions have
         correct has_decomposition properties."""
 
-        class MNBV(qp.operation.Operator):
+        class MNBV(qp.operation.LegacyOperator):
             @property
             def resource_params(self):
                 return {"num_wires": len(self.wires)}
@@ -678,7 +694,7 @@ class TestHasReprProperties:
         """Test has_decomposition property defaults to false if neither
         `decomposition` nor `compute_decomposition` are overwritten."""
 
-        class TREWQ(qp.operation.Operator):
+        class TREWQ(qp.operation.LegacyOperator):
             num_wires = 1
 
         assert TREWQ(wires=0).has_decomposition is False
@@ -687,7 +703,7 @@ class TestHasReprProperties:
         """Test has_diagonalizing_gates property detects
         overriding of `compute_diagonalizing_gates` method."""
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
             num_wires = 1
             num_params = 1
 
@@ -702,7 +718,7 @@ class TestHasReprProperties:
         """Test has_diagonalizing_gates property detects
         overriding of `diagonalizing_gates` method."""
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
             num_wires = 1
             num_params = 1
 
@@ -716,7 +732,7 @@ class TestHasReprProperties:
         """Test has_diagonalizing_gates property defaults to false if neither
         `diagonalizing_gates` nor `compute_diagonalizing_gates` are overwritten."""
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
             num_wires = 1
 
         assert MyOp.has_diagonalizing_gates is False
@@ -725,7 +741,7 @@ class TestHasReprProperties:
     def test_has_generator_true(self):
         """Test `has_generator` property detects overriding of `generator` method."""
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
             num_wires = 1
 
             @staticmethod
@@ -745,7 +761,7 @@ class TestHasReprProperties:
     def test_has_generator_false(self):
         """Test `has_generator` property defaults to false if `generator` not overwritten."""
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
             num_wires = 1
 
         assert MyOp.has_generator is False
@@ -765,7 +781,7 @@ class TestModificationMethods:
     def test_simplify_method(self):
         """Test that simplify method returns the same instance."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             num_wires = 1
@@ -777,7 +793,7 @@ class TestModificationMethods:
     def test_map_wires(self):
         """Test the map_wires method."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             num_wires = 3
@@ -807,7 +823,7 @@ class TestModificationMethods:
         """Test that the map_wires method doesn't change wires that are not present in the wire
         map."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
 
             num_wires = 3
@@ -1013,7 +1029,7 @@ class TestOperationConstruction:
         assert op.control_wires == qp.wires.Wires([])
 
     def test_is_hermitian(self):
-        """Test that is_hermitian defaults to False for an Operator"""
+        """Test that is_hermitian defaults to False for an LegacyOperator"""
 
         class DummyOp(qp.operation.Operation):
             r"""Dummy custom operation"""
@@ -1031,7 +1047,7 @@ class TestObservableConstruction:
     def test_construction_with_wires_pos_arg(self):
         """Test that the wires can be given as a positional argument"""
 
-        class DummyObserv(qp.operation.Operator):
+        class DummyObserv(qp.operation.LegacyOperator):
             r"""Dummy custom observable"""
 
             num_wires = 1
@@ -1066,7 +1082,7 @@ class TestObservableConstruction:
     def test_raises_if_no_wire_is_given(self):
         """Test that an error is raised if no wire is passed at initialization."""
 
-        class DummyObservable(qp.operation.Operator):
+        class DummyObservable(qp.operation.LegacyOperator):
             num_wires = 1
 
         with pytest.raises(Exception, match="Must specify the wires *"):
@@ -1075,7 +1091,7 @@ class TestObservableConstruction:
     def test_is_hermitian(self):
         """Test that the id attribute of an observable can be set."""
 
-        class DummyObserv(qp.operation.Operator):
+        class DummyObserv(qp.operation.LegacyOperator):
             r"""Dummy custom observable"""
 
             num_wires = 1
@@ -1086,10 +1102,10 @@ class TestObservableConstruction:
 
 
 class TestOperatorIntegration:  # pylint: disable=too-many-public-methods
-    """Integration tests for the Operator class"""
+    """Integration tests for the LegacyOperator class"""
 
     def test_pow_method_with_non_numeric_power_raises_error(self):
-        """Test that when raising an Operator to a power that is not a number raises
+        """Test that when raising an LegacyOperator to a power that is not a number raises
         a ValueError."""
 
         class DummyOp(qp.operation.Operation):
@@ -1157,7 +1173,7 @@ class TestOperatorIntegration:  # pylint: disable=too-many-public-methods
         assert np.allclose(a=neg_op.matrix(), b=np.array([[0, -1], [-1, 0]]), rtol=0)
 
     def test_sub_obs_from_op(self):
-        """Test that __sub__ returns an SProd to be consistent with other Operator dunders."""
+        """Test that __sub__ returns an SProd to be consistent with other LegacyOperator dunders."""
         op = qp.S(0) - qp.PauliX(1)
         assert isinstance(op, Sum)
         assert isinstance(op[1], SProd)
@@ -1222,7 +1238,7 @@ class TestOperatorIntegration:  # pylint: disable=too-many-public-methods
             _ = obs / object()
 
     def test_dunder_method_with_new_class(self):
-        """Test that when calling any Operator dunder method with a non-supported class that
+        """Test that when calling any LegacyOperator dunder method with a non-supported class that
         has its right dunder method defined, the class' right dunder method is called."""
 
         class Dummy:
@@ -1294,8 +1310,8 @@ class TestOperatorIntegration:  # pylint: disable=too-many-public-methods
             _ = qp.PauliX(0) @ "dummy"
 
 
-# Dummy class inheriting from Operator
-class UndefinedOp(Operator):
+# Dummy class inheriting from LegacyOperator
+class UndefinedOp(LegacyOperator):
     num_wires = 1
 
 
@@ -1314,7 +1330,7 @@ class TestDefaultRepresentations:
     def test_decomposition_undefined(self):
         """Tests that custom error is raised in the default decomposition representation."""
 
-        class Operator_with_no_decomp(Operator):
+        class Operator_with_no_decomp(LegacyOperator):
             pass
 
         op = Operator_with_no_decomp(wires=0)
@@ -1326,7 +1342,7 @@ class TestDefaultRepresentations:
     def test_decomposition_graph_fallback(self):
         """Test that the first registered decomp can be used if compute_decomposition is not overridden."""
 
-        class OpWithACustomName98786(qp.operation.Operator):
+        class OpWithACustomName98786(qp.operation.LegacyOperator):
             pass
 
         @qp.register_resources({qp.RX: 1}, name="decomp1")
@@ -1356,7 +1372,7 @@ class TestDefaultRepresentations:
         """Test that operators with multiple decompositions and conditions have
         correct has_decomposition properties."""
 
-        class BVCX(qp.operation.Operator):
+        class BVCX(qp.operation.LegacyOperator):
             @property
             def resource_params(self):
                 return {"num_wires": len(self.wires)}
@@ -1440,7 +1456,7 @@ class TestDefaultRepresentations:
             gate.pow(1.234)
 
 
-class MyOpWithMat(Operator):
+class MyOpWithMat(LegacyOperator):
     num_wires = 1
 
     @staticmethod
@@ -1594,7 +1610,7 @@ class TestStatePrepBase:
         assert self.DefaultPrep([1], 0).label() == "|Ψ⟩"
 
 
-class MultiRot(Operator2):
+class MultiRot(Operator):
     """MultiRot class used for testing purposes."""
 
     dynamic_argnames = ("angles",)
@@ -1603,7 +1619,7 @@ class MultiRot(Operator2):
 
     def __init__(self, angles: TensorLike, wires: WiresLike, string: str):
         """
-        A simple MultiRot operator based on Operator2.
+        A simple MultiRot operator based on Operator.
 
         Args:
             angles: The angles of each rotation.
@@ -1671,7 +1687,7 @@ class TestNewOpMath:
 
         @pytest.mark.parametrize("op", [X2(0), qp.S(0)])
         def test_sub_with_unknown_not_supported(self, op):
-            """Test subtracting an unexpected type from an Operator."""
+            """Test subtracting an unexpected type from an LegacyOperator."""
             with pytest.raises(TypeError, match="unsupported operand type"):
                 _ = op - "foo"
 
@@ -1847,7 +1863,7 @@ class TestNewOpMath:
         def test_pow(self, power, base):
             """Tests multiplying an operator by a scalar coefficient works as expected."""
             op = base**power
-            if isinstance(base, Operator2):
+            if isinstance(base, Operator):
                 assert isinstance(op, Pow2)
             else:
                 assert isinstance(op, PowOperation)
@@ -1916,7 +1932,7 @@ def test_symmetric_matrix_early_return(op, mocker):
 
 def test_docstring_example_of_operator_class(tol):
     """Tests an example of how to create an operator which is used in the
-    Operator class docstring, as well as in the 'adding_operators'
+    LegacyOperator class docstring, as well as in the 'adding_operators'
     page in the developer guide."""
 
     class FlipAndRotate(qp.operation.Operation):
@@ -1974,7 +1990,7 @@ def test_custom_operator_is_jax_pytree():
 
     import jax
 
-    class CustomOperator(qp.operation.Operator):
+    class CustomOperator(qp.operation.LegacyOperator):
         pass
 
     op = CustomOperator(1.2, wires=0)

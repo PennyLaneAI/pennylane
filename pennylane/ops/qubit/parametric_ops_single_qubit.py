@@ -29,7 +29,7 @@ import numpy as np
 import scipy as sp
 
 import pennylane as qp
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator, abstractify
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -59,7 +59,7 @@ def _can_replace(x, y):
     return not qp.math.is_tracer(x) and not qp.math.requires_grad(x) and qp.math.allclose(x, y)
 
 
-class RX(Operator2):
+class RX(Operator):
     r"""
     The single qubit X rotation
 
@@ -217,7 +217,7 @@ class RX(Operator2):
         return RX(-self.phi, wires=self.wires)
 
     @override
-    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.LegacyOperator"]:
         return [RX(self.phi * z, wires=self.wires)]
 
     @override
@@ -323,7 +323,7 @@ def _controlled_rx_standard(base, control_wires, control_values, work_wires, wor
 add_decomps("C(RX)", flip_zero_control2(_controlled_rx_standard, name="to_rz_mcx"))
 
 
-class RY(Operator2):
+class RY(Operator):
     r"""
     The single qubit Y rotation
 
@@ -483,7 +483,7 @@ class RY(Operator2):
         return RY(-self.phi, wires=self.wires)
 
     @override
-    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.LegacyOperator"]:
         return [RY(self.phi * z, wires=self.wires)]
 
     @override
@@ -610,7 +610,7 @@ def _controlled_ry_standard(base, control_wires, control_values, work_wires, wor
 add_decomps("C(RY)", flip_zero_control2(_controlled_ry_standard, name="to_ry_mcx"))
 
 
-class RZ(Operator2):
+class RZ(Operator):
     r"""
     The single qubit Z rotation
 
@@ -799,7 +799,7 @@ class RZ(Operator2):
     def adjoint(self) -> "RZ":
         return RZ(-self.arguments["phi"], wires=self.wires)
 
-    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.LegacyOperator"]:
         return [RZ(self.arguments["phi"] * z, wires=self.wires)]
 
     def simplify(self) -> "RZ":
@@ -929,7 +929,7 @@ def _controlled_rz_standard(base, control_wires, control_values, work_wires, wor
 add_decomps("C(RZ)", flip_zero_control2(_controlled_rz_standard, name="to_rz_mcx"))
 
 
-class PhaseShift(Operator2):
+class PhaseShift(Operator):
     r"""
     Arbitrary single qubit local phase shift
 
@@ -1110,7 +1110,7 @@ class PhaseShift(Operator2):
     def adjoint(self) -> "PhaseShift":
         return PhaseShift(-self.phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.LegacyOperator"]:
         return [PhaseShift(self.phi * z, wires=self.wires)]
 
     def simplify(self) -> "PhaseShift":
@@ -1206,7 +1206,7 @@ add_decomps(
 )
 
 
-class Rot(Operator2):
+class Rot(Operator):
     r"""
     Arbitrary single qubit rotation
 
@@ -1424,7 +1424,7 @@ def _controlled_rot_standard(base, control_wires, control_values, work_wires, wo
 add_decomps("C(Rot)", flip_zero_control2(_controlled_rot_standard, name="to_rz_ry_mcx"))
 
 
-class U1(Operator2):
+class U1(Operator):
     r"""
     U1 gate.
 
@@ -1526,7 +1526,7 @@ class U1(Operator2):
     def adjoint(self) -> "U1":
         return U1(-self.phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> list["qp.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qp.operation.LegacyOperator"]:
         return [U1(self.phi * z, wires=self.wires)]
 
     def simplify(self) -> "U1":
@@ -1552,7 +1552,7 @@ add_decomps("Adjoint(U1)", adjoint_rotation2)
 add_decomps("Pow(U1)", pow_rotation2)
 
 
-class U2(Operator2):
+class U2(Operator):
     r"""
     U2 gate.
 
@@ -1697,7 +1697,7 @@ def _adjoint_u2_standard(base):
 add_decomps("Adjoint(U2)", _adjoint_u2_standard)
 
 
-class U3(Operator2):
+class U3(Operator):
     r"""
     Arbitrary single qubit unitary.
 

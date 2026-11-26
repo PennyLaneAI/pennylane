@@ -344,7 +344,7 @@ class ParametricMidMeasure(MidMeasure):
 
     _shortname = "measure"
 
-    # TODO: Migrate this class to Operator2. This declaration only keeps the legacy subclass
+    # TODO: Migrate this class to Operator. This declaration only keeps the legacy subclass
     # importable while that work is deferred.
     compilable_argnames = ("angle", "plane", "reset", "postselect", "meas_uid")
 

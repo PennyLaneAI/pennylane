@@ -35,7 +35,7 @@ Users provide *quantum functions* which PennyLane needs to convert into a circui
 of being executed by a device. A quantum function is any callable that:
 
 * accepts classical inputs
-* constructs any number of quantum :class:`~.Operator` objects
+* constructs any number of quantum :class:`~.LegacyOperator` objects
 * returns one or more :class:`~.MeasurementProcess` objects.
 
 For example:
@@ -50,9 +50,9 @@ For example:
 
 To convert from a quantum function to a representation of a circuit, we use queuing.
 
-A *queuable object* is anything that can be placed into a queue. These will be :class:`~.Operator`,
-:class:`~.MeasurementProcess`, and :class:`~.QuantumTape` objects. :class:`~.Operator` and
-:class:`~.MeasurementProcess` objects achieve queuing via a :meth:`~.Operator.queue` method called upon construction.
+A *queuable object* is anything that can be placed into a queue. These will be :class:`~.LegacyOperator`,
+:class:`~.MeasurementProcess`, and :class:`~.QuantumTape` objects. :class:`~.LegacyOperator` and
+:class:`~.MeasurementProcess` objects achieve queuing via a :meth:`~.LegacyOperator.queue` method called upon construction.
 Note that even though :class:`~.QuantumTape` is a queuable object, it does not have a ``queue`` method.
 
 When an object is queued, it sends itself to the :class:`~.QueuingManager`. The :class:`~.QueuingManager`
@@ -101,7 +101,7 @@ If we construct an operator inside the recording context, we can see it is added
 [X(0)]
 
 If an operator is constructed outside of the context, we can manually add it to the queue by
-calling the :meth:`~.Operator.queue` method. The :meth:`~.Operator.queue` method is automatically
+calling the :meth:`~.LegacyOperator.queue` method. The :meth:`~.LegacyOperator.queue` method is automatically
 called upon initialization, but it can also be manually called at a later time.
 
 >>> op = qp.X(0)
@@ -221,10 +221,10 @@ class QueuingManager:
     This class consists purely of class methods. It both maintains a list of
     recording queues and allows communication with the currently active object.
 
-    Queueable objects, like :class:`~.operation.Operator` and :class:`~.measurements.MeasurementProcess`, should
+    Queueable objects, like :class:`~.operation.LegacyOperator` and :class:`~.measurements.MeasurementProcess`, should
     use ``QueuingManager`` as an entry point for accessing the active queue.
 
-    See also: :class:`~.AnnotatedQueue`, :class:`~.tape.QuantumTape`, :meth:`~.operation.Operator.queue`.
+    See also: :class:`~.AnnotatedQueue`, :class:`~.tape.QuantumTape`, :meth:`~.operation.LegacyOperator.queue`.
 
     Recording queues, such as :class:`~.AnnotatedQueue`, must define the following methods:
 

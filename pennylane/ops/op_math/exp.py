@@ -25,7 +25,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core import queuing
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import LegacyOperator, Operation
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -103,14 +103,14 @@ def _find_equal_generator(base, coeff):
 
 
 def exp(op, coeff: float = 1.0):
-    """Take the exponential of an Operator times a coefficient.
+    """Take the exponential of an LegacyOperator times a coefficient.
 
     Args:
-        base (~.operation.Operator): The Operator to be exponentiated
+        base (~.operation.LegacyOperator): The LegacyOperator to be exponentiated
         coeff (float): a scalar coefficient of the operator
 
     Returns:
-       :class:`Exp`: An :class:`~.operation.Operator` representing an operator exponential.
+       :class:`Exp`: An :class:`~.operation.LegacyOperator` representing an operator exponential.
 
 
     .. note::
@@ -132,7 +132,7 @@ def exp(op, coeff: float = 1.0):
         >>> qp.exp([qp.RX(1, wires=0), qp.RX(2, wires=0)], coeff=4)
         Traceback (most recent call last):
             ...
-        TypeError: base is expected to be of type Operator, but received <class 'list'>
+        TypeError: base is expected to be of type LegacyOperator, but received <class 'list'>
 
     **Example**
 
@@ -180,7 +180,7 @@ class Exp(ScalarSymbolicOp, Operation):
     """A symbolic operator representing the exponential of a operator.
 
     Args:
-        base (~.operation.Operator): The Operator to be exponentiated
+        base (~.operation.LegacyOperator): The LegacyOperator to be exponentiated
         coeff=1 (Number): A scalar coefficient of the operator.
 
     **Example**
@@ -236,8 +236,10 @@ class Exp(ScalarSymbolicOp, Operation):
         return cls(base, coeff)
 
     def __init__(self, base, coeff=1.0):
-        if not isinstance(base, Operator):
-            raise TypeError(f"base is expected to be of type Operator, but received {type(base)}")
+        if not isinstance(base, LegacyOperator):
+            raise TypeError(
+                f"base is expected to be of type LegacyOperator, but received {type(base)}"
+            )
         super().__init__(base, scalar=coeff)
         self.grad_recipe = [None]
 
@@ -315,15 +317,15 @@ class Exp(ScalarSymbolicOp, Operation):
 
         return d
 
-    def _recursive_decomposition(self, base: Operator, coeff: complex):
+    def _recursive_decomposition(self, base: LegacyOperator, coeff: complex):
         """Decompose the exponential of ``base`` multiplied by ``coeff``.
 
         Args:
-            base (Operator): exponentiated operator
+            base (LegacyOperator): exponentiated operator
             coeff (complex): coefficient multiplying the exponentiated operator
 
         Returns:
-            List[Operator]: decomposition
+            List[LegacyOperator]: decomposition
         """
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
@@ -356,15 +358,15 @@ class Exp(ScalarSymbolicOp, Operation):
         raise DecompositionUndefinedError(error_msg)
 
     @staticmethod
-    def _pauli_rot_standard(base: Operator, coeff: complex):
+    def _pauli_rot_standard(base: LegacyOperator, coeff: complex):
         """Decomposes the exponential of a Pauli word into a PauliRot.
 
         Args:
-            base (Operator): exponentiated operator
+            base (LegacyOperator): exponentiated operator
             coeff (complex): coefficient multiplying the exponentiated operator
 
         Returns:
-            List[Operator]: list containing the PauliRot operator
+            List[LegacyOperator]: list containing the PauliRot operator
         """
         # Cancel the coefficients added by PauliRot and Ising gates
         coeff = (

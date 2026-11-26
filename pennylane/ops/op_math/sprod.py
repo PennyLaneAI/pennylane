@@ -18,7 +18,7 @@ computing the scalar product of operations.
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import DecompositionUndefinedError, TermsUndefinedError
@@ -37,7 +37,7 @@ def s_prod(scalar, operator, lazy=True):
 
     Args:
         scalar (float or complex): the scale factor being multiplied to the operator.
-        operator (~.operation.Operator): the operator which will get scaled.
+        operator (~.operation.LegacyOperator): the operator which will get scaled.
 
     Keyword Args:
         lazy=True (bool): If ``lazy=False`` and the operator is already a scalar product operator, the scalar provided will simply be combined with the existing scaling factor.
@@ -85,7 +85,7 @@ class SProd(ScalarSymbolicOp):
 
     Args:
         scalar (float or complex): the scale factor being multiplied to the operator.
-        base (~.operation.Operator): the operator which will get scaled.
+        base (~.operation.LegacyOperator): the operator which will get scaled.
 
     .. note::
         Currently this operator can not be queued in a circuit as an operation, only measured terminally.
@@ -133,7 +133,7 @@ class SProd(ScalarSymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0], data[1])
 
-    def __init__(self, scalar: TensorLike, base: Operator, _pauli_rep=None):
+    def __init__(self, scalar: TensorLike, base: LegacyOperator, _pauli_rep=None):
         super().__init__(base=base, scalar=scalar)
 
         if _pauli_rep:
@@ -210,7 +210,7 @@ class SProd(ScalarSymbolicOp):
     @handle_recursion_error
     # pylint: disable-next=arguments-renamed,invalid-overridden-method
     def has_diagonalizing_gates(self):
-        """Bool: Whether the Operator returns defined diagonalizing gates."""
+        """Bool: Whether the LegacyOperator returns defined diagonalizing gates."""
         return self.base.has_diagonalizing_gates
 
     @handle_recursion_error
@@ -226,10 +226,10 @@ class SProd(ScalarSymbolicOp):
 
         A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
 
-        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
+        .. seealso:: :meth:`~.LegacyOperator.compute_diagonalizing_gates`.
 
         Returns:
-            list[.Operator] or None: a list of operators
+            list[.LegacyOperator] or None: a list of operators
         """
         return self.base.diagonalizing_gates()
 
@@ -276,7 +276,7 @@ class SProd(ScalarSymbolicOp):
     @property
     @handle_recursion_error
     def has_matrix(self):
-        """Bool: Whether or not the Operator returns a defined matrix."""
+        """Bool: Whether or not the LegacyOperator returns a defined matrix."""
         return self.base.has_matrix
 
     @staticmethod
@@ -301,11 +301,11 @@ class SProd(ScalarSymbolicOp):
         return SProd(scalar=math.conjugate(self.scalar), base=qp.adjoint(self.base))
 
     @handle_recursion_error
-    def simplify(self) -> Operator:  # pylint: disable=too-many-return-statements
+    def simplify(self) -> LegacyOperator:  # pylint: disable=too-many-return-statements
         """Reduce the depth of nested operators to the minimum.
 
         Returns:
-            .Operator: simplified operator
+            .LegacyOperator: simplified operator
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:

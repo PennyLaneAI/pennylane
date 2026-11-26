@@ -42,7 +42,7 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
     Args:
         prob (tensor_like): probability distribution
-        obs (list[.Operator]): a list of observables for which
+        obs (list[.LegacyOperator]): a list of observables for which
             to compute the covariance matrix
         diag_approx (bool): if True, return the diagonal approximation
         wires (.Wires): The wire register of the system. If not provided,
@@ -771,7 +771,7 @@ def _check_hermitian_operator(operators):
         or not np.log2(dim).is_integer()
     ):
         raise ValueError(
-            "Operator matrix must be of shape (2**wires,2**wires) "
+            "LegacyOperator matrix must be of shape (2**wires,2**wires) "
             "or (batch_dim, 2**wires, 2**wires)."
         )
 

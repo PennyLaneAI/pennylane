@@ -101,7 +101,7 @@ class QubitUnitary(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_wires, precision=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             num_wires (int): the number of qubits the operation acts upon

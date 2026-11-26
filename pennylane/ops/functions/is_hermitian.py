@@ -24,10 +24,10 @@ from pennylane.ops import adjoint
 from pennylane.ops.functions.matrix import matrix
 
 if TYPE_CHECKING:
-    from pennylane.core.operator import Operator
+    from pennylane.core.operator import LegacyOperator
 
 
-def is_hermitian(op: Operator):
+def is_hermitian(op: LegacyOperator):
     r"""Check if the operation is hermitian.
 
     A hermitian matrix is a complex square matrix that is equal to its own adjoint
@@ -35,7 +35,7 @@ def is_hermitian(op: Operator):
     .. math:: O^\dagger = O
 
     Args:
-        op (~.operation.Operator): the operator to check against
+        op (~.operation.LegacyOperator): the operator to check against
 
     Returns:
         bool: True if the operation is hermitian, False otherwise

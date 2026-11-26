@@ -55,7 +55,7 @@ class TestCurrentlyUnsupportedCases:  # pylint: disable=too-few-public-methods
 def test_custom_operation():
     """Test execution works with a manually defined operator if it has a matrix."""
 
-    class MyOperator(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+    class MyOperator(qp.operation.LegacyOperator):  # pylint: disable=too-few-public-methods
         num_wires = 1
 
         @staticmethod

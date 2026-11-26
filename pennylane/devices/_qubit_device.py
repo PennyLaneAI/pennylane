@@ -38,7 +38,7 @@ from pennylane.core.measurements import (
     SampleMeasurement,
     StateMeasurement,
 )
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import LegacyOperator, Operation
 from pennylane.core.qscript import QuantumScript
 from pennylane.exceptions import DeviceError, EigvalsUndefinedError, QuantumFunctionError
 from pennylane.math import multiply as qpmul
@@ -752,7 +752,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
                 result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
 
             else:
-                name = obs.name if isinstance(obs, Operator) else type(obs).__name__
+                name = obs.name if isinstance(obs, LegacyOperator) else type(obs).__name__
                 raise QuantumFunctionError(
                     f"Unsupported return type specified for observable {name}"
                 )
@@ -1502,7 +1502,7 @@ class QubitDevice(Device):  # pylint: disable=too-many-public-methods
         """Return samples of an observable.
 
         Args:
-            observable (Operator): the observable to sample
+            observable (LegacyOperator): the observable to sample
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and

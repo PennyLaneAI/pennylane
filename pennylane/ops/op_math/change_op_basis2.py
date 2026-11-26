@@ -20,7 +20,7 @@ from functools import reduce
 
 from pennylane import math
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operator, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import change_op_basis_resource_rep
 from pennylane.exceptions import (
@@ -39,12 +39,12 @@ from .composite2 import CompositeOp2
 
 
 class ChangeOpBasis2(CompositeOp2):
-    r"""Composite operator representing a compute-uncompute pattern of ``Operator2``\ s.
+    r"""Composite operator representing a compute-uncompute pattern of ``Operator``\ s.
 
     Args:
-        compute_op (~.Operator2): operator applied before the target
-        target_op (~.Operator2): operator applied in the changed basis
-        uncompute_op (~.Operator2 or None): Operator applied after the target.
+        compute_op (~.Operator): operator applied before the target
+        target_op (~.Operator): operator applied in the changed basis
+        uncompute_op (~.Operator or None): LegacyOperator applied after the target.
             ``None`` uses the adjoint of ``compute_op``.
 
     .. note::
@@ -62,7 +62,10 @@ class ChangeOpBasis2(CompositeOp2):
     """
 
     def __init__(
-        self, compute_op: Operator, target_op: Operator, uncompute_op: Operator | None = None
+        self,
+        compute_op: LegacyOperator,
+        target_op: LegacyOperator,
+        uncompute_op: LegacyOperator | None = None,
     ):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
@@ -102,18 +105,18 @@ class ChangeOpBasis2(CompositeOp2):
     grad_method = None
 
     @classmethod
-    def _sort(cls, op_list: list, wire_map: dict = None) -> list[Operator]:
+    def _sort(cls, op_list: list, wire_map: dict = None) -> list[LegacyOperator]:
         """
         We do not sort the ops. The order is guaranteed to matter since if the compute operator
         and the base operator commute, the pattern would simplify to just being the base operator.
 
         Args:
-            op_list (List[.Operator]): list of operators to be sorted
+            op_list (List[.LegacyOperator]): list of operators to be sorted
             wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
                 Defaults to None.
 
         Returns:
-            List[.Operator]: sorted list of operators
+            List[.LegacyOperator]: sorted list of operators
         """
         return op_list
 
@@ -171,7 +174,7 @@ def _change_op_basis_abstract(compute_op, target_op, uncompute_op):
     compute_op = abstractify(compute_op)
     target_op = abstractify(target_op)
     uncompute_op = abstractify(uncompute_op)
-    if all(isinstance(op, Operator2) for op in (compute_op, target_op, uncompute_op)):
+    if all(isinstance(op, Operator) for op in (compute_op, target_op, uncompute_op)):
         return ChangeOpBasis2(compute_op, target_op, uncompute_op)
     return change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
 

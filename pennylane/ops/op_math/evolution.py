@@ -31,12 +31,12 @@ class Evolution(Exp):
     r"""Create an exponential operator that defines a generator, of the form :math:`e^{-ix\hat{G}}`
 
     Args:
-        base (~.operation.Operator): The operator to be used as a generator, G.
+        base (~.operation.LegacyOperator): The operator to be used as a generator, G.
         param (float): The evolution parameter, x. This parameter is expected not to have
             any complex component.
 
     Returns:
-       :class:`Evolution`: A :class:`~.operation.Operator` representing an operator exponential of the form :math:`e^{-ix\hat{G}}`,
+       :class:`Evolution`: A :class:`~.operation.LegacyOperator` representing an operator exponential of the form :math:`e^{-ix\hat{G}}`,
        where x is real.
 
 

@@ -11,7 +11,7 @@ action is defined by specifying a representation as a combination of other opera
 For historical reasons, you find circuit ansaetze in the ``pennylane/template/`` folder,
 while all other operations are found in ``pennylane/ops/``.
 
-The base classes to construct new operators, :class:`~.Operator` and
+The base classes to construct new operators, :class:`~.LegacyOperator` and
 corresponding subclasses, are found in ``pennylane/operations.py``.
 
 .. note::
@@ -22,29 +22,29 @@ Abstraction
 ###########
 
 Operators in quantum mechanics are maps that act on vector spaces, and in differentiable quantum computing, these
-maps can depend on a set of trainable parameters. The :class:`~.Operator` class
+maps can depend on a set of trainable parameters. The :class:`~.LegacyOperator` class
 serves as the main abstraction of such objects, and all operators (such as gates, channels, observables)
 inherit from it.
 
 >>> from jax import numpy as jnp
 >>> op = qp.Rot(jnp.array(0.1), jnp.array(0.2), jnp.array(0.3), wires=["a"])
->>> isinstance(op, qp.operation.Operator)
+>>> isinstance(op, qp.operation.LegacyOperator)
 True
 
 The basic components of operators are the following:
 
-#. **The name of the operator** (:attr:`.Operator.name`), which may have a canonical, universally known interpretation (such as a "Hadamard" gate),
+#. **The name of the operator** (:attr:`.LegacyOperator.name`), which may have a canonical, universally known interpretation (such as a "Hadamard" gate),
    or could be a name specific to PennyLane.
 
    >>> op.name
    Rot
 
-#. **The subsystems that the operator addresses** (:attr:`.Operator.wires`), which mathematically speaking defines the subspace that it acts on.
+#. **The subsystems that the operator addresses** (:attr:`.LegacyOperator.wires`), which mathematically speaking defines the subspace that it acts on.
 
    >>> op.wires
    Wires(['a'])
 
-#. **Trainable parameters** (:attr:`.Operator.parameters`) that the map depends on, such as a rotation angle,
+#. **Trainable parameters** (:attr:`.LegacyOperator.parameters`) that the map depends on, such as a rotation angle,
    which can be fed to the operator as tensor-like objects. For example, since we used jax arrays to
    specify the three rotation angles of ``op``, the parameters are jax ``Arrays``.
 
@@ -53,7 +53,7 @@ The basic components of operators are the following:
     Array(0.2, dtype=float32, weak_type=True),
     Array(0.3, dtype=float32, weak_type=True)]
 
-#. **Non-trainable hyperparameters** (:attr:`.Operator.hyperparameters`) that influence the action of the operator.
+#. **Non-trainable hyperparameters** (:attr:`.LegacyOperator.hyperparameters`) that influence the action of the operator.
    Not every operator has hyperparameters.
 
    >>> op.hyperparameters
@@ -62,20 +62,20 @@ The basic components of operators are the following:
 #. Possible **symbolic or numerical representations** of the operator, which can be used by PennyLane's
    devices to interpret the map. Examples are:
 
-   * Representation as a **product of operators** (:meth:`.Operator.decomposition`):
+   * Representation as a **product of operators** (:meth:`.LegacyOperator.decomposition`):
 
      >>> op = qp.Rot(0.1, 0.2, 0.3, wires=["a"])
      >>> op.decomposition()
      [RZ(0.1, wires=['a']), RY(0.2, wires=['a']), RZ(0.3, wires=['a'])]
 
-   * Representation as a **linear combination of operators** (:meth:`.Operator.terms`):
+   * Representation as a **linear combination of operators** (:meth:`.LegacyOperator.terms`):
 
      >>> op = qp.Hamiltonian([1., 2.], [qp.PauliX(0), qp.PauliZ(0)])
      >>> op.terms()
      ((1.0, 2.0), [PauliX(wires=[0]), PauliZ(wires=[0])])
 
-   * Representation via the **eigenvalue decomposition** specified by eigenvalues (for the diagonal matrix, :meth:`.Operator.eigvals`)
-     and diagonalizing gates (for the unitaries :meth:`.Operator.diagonalizing_gates`):
+   * Representation via the **eigenvalue decomposition** specified by eigenvalues (for the diagonal matrix, :meth:`.LegacyOperator.eigvals`)
+     and diagonalizing gates (for the unitaries :meth:`.LegacyOperator.diagonalizing_gates`):
 
      >>> op = qp.PauliX(0)
      >>> op.diagonalizing_gates()
@@ -83,7 +83,7 @@ The basic components of operators are the following:
      >>> op.eigvals()
      [ 1 -1]
 
-   * Representation as a **matrix** (:meth:`.Operator.matrix`), as specified by a global wire order that tells us where the
+   * Representation as a **matrix** (:meth:`.LegacyOperator.matrix`), as specified by a global wire order that tells us where the
      wires are found on a register:
 
      >>> op = qp.PauliRot(0.2, "X", wires=["b"])
@@ -93,7 +93,7 @@ The basic components of operators are the following:
       [0+0j, 0+0j, 9.95e-01-2.26e-18j 2.72e-17-9.98e-02j]
       [0+0j, 0+0j, 2.72e-17-9.98e-02j 9.95e-01-2.26e-18j]]
 
-   * Representation as a **sparse matrix** (:meth:`.Operator.sparse_matrix`):
+   * Representation as a **sparse matrix** (:meth:`.LegacyOperator.sparse_matrix`):
 
      >>> from scipy.sparse.coo import coo_matrix
      >>> row = np.array([0, 1])
@@ -109,7 +109,7 @@ New operators can be created by applying arithmetic functions to operators, such
 multiplication, taking the adjoint, or controlling an operator. At the moment, such arithmetic is only implemented for
 specific subclasses.
 
-* Operators inheriting from :class:`~.Operator` support addition and scalar multiplication:
+* Operators inheriting from :class:`~.LegacyOperator` support addition and scalar multiplication:
 
   >>> op = qp.PauliX(0) + 0.1 * qp.PauliZ(0)
   >>> op.name
@@ -126,7 +126,7 @@ specific subclasses.
 Creating custom operators
 #########################
 
-A custom operator can be created by inheriting from :class:`~.Operator` or one of its subclasses.
+A custom operator can be created by inheriting from :class:`~.LegacyOperator` or one of its subclasses.
 
 The following is an example for a custom gate that possibly flips a qubit and then rotates another qubit.
 The custom operator defines a decomposition, which the devices can use (since it is unlikely that a device
@@ -181,7 +181,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
         @staticmethod
         def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
             # Overwriting this method defines the decomposition of the new gate, as it is
-            # called by Operator.decomposition().
+            # called by LegacyOperator.decomposition().
             # The general signature of this function is (*parameters, wires, **hyperparameters).
             op_list = []
             if do_flip:
@@ -198,7 +198,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
             # as the class differs from the standard `__init__` call signature of
             # (*data, wires=wires, **hyperparameters), the _unflatten method that
             # must be defined as well
-            # _unflatten recreates an operation from the serialized data and metadata of ``Operator._flatten``
+            # _unflatten recreates an operation from the serialized data and metadata of ``LegacyOperator._flatten``
             # copied_op = type(op)._unflatten(*op._flatten())
             wires = metadata[0]
             hyperparams = dict(metadata[1])
@@ -238,15 +238,15 @@ If the above operator omitted the ``_unflatten`` custom definition, it would rai
 
 The new gate can be used with PennyLane devices.
 
-``DefaultQubit`` first checks if the operator has a matrix using the :attr:`~.Operator.has_matrix` property.
+``DefaultQubit`` first checks if the operator has a matrix using the :attr:`~.LegacyOperator.has_matrix` property.
 
 - If the device registers support for an operation with the same name,
   PennyLane leaves the gate implementation up to the device. The device
   might have a hardcoded implementation, *or* it may refer to one of the
-  numerical representations of the operator (such as :meth:`.Operator.matrix`).
+  numerical representations of the operator (such as :meth:`.LegacyOperator.matrix`).
   
 - If the device does not support an operation, PennyLane will automatically
-  decompose the gate using :meth:`.Operator.decomposition`.
+  decompose the gate using :meth:`.LegacyOperator.decomposition`.
 
 .. code-block:: python
 
@@ -287,7 +287,7 @@ we can even compute gradients of circuits that use the new gate without any extr
 Defining special properties of an operator
 ##########################################
 
-Apart from the main :class:`~.Operator` class, operators with special methods or representations
+Apart from the main :class:`~.LegacyOperator` class, operators with special methods or representations
 are implemented as subclasses :class:`~.Operation` and :class:`~.Channel`.
 
 However, unlike many other frameworks, PennyLane does not use class

@@ -63,7 +63,7 @@ def no_tape_transform(
 
 
 def no_quantum_tape_transform(
-    tape: qp.operation.Operator, index: int
+    tape: qp.operation.LegacyOperator, index: int
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transform with wrong hinting."""
     tape = tape.copy()

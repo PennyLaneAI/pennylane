@@ -252,7 +252,7 @@ From here, we can iterate through the stages of decomposition:
 2: ··· ─╰●────────│─────────│──────────╭(Rϕ(1.57))†──H†─│────────────╰(Rϕ(1.57))†─────┤
 3: ··· ───────────╰●────────╰SWAP†──H†─╰(Rϕ(1.57))†─────╰(Rϕ(0.79))†──────────────────┤
 
-Custom Operator Decomposition
+Custom LegacyOperator Decomposition
 -----------------------------
 
 When executing QNodes on a device, PennyLane will automatically decompose gates 

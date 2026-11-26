@@ -103,7 +103,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12, mapping="jordan_wigner"):
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can
             be ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
     Returns:
-        Operator: Simplified PennyLane Hamiltonian
+        LegacyOperator: Simplified PennyLane Hamiltonian
 
     **Example**
 

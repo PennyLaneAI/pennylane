@@ -20,7 +20,7 @@ import pytest
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math import prod
 from pennylane.ops.op_math.prod import Prod
@@ -37,7 +37,7 @@ def _product_matrix(factors, wire_order):
 
 
 class TestProdDispatch:
-    """qp.prod must return Prod2 iff every operator is an Operator2."""
+    """qp.prod must return Prod2 iff every operator is an Operator."""
 
     def test_all_operator2_dispatches_to_prod2(self):
         assert isinstance(prod(NonParametricOp(0), NonParametricOp(1)), Prod2)
@@ -50,10 +50,10 @@ class TestProdDispatch:
         assert isinstance(prod(), Prod)
 
     def test_mixed_operators_stays_legacy(self):
-        class LegacyOp(qp.core.operator.Operator):  # pylint: disable=too-few-public-methods
+        class LegacyOp(qp.core.operator.LegacyOperator):  # pylint: disable=too-few-public-methods
             pass
 
-        assert not isinstance(LegacyOp(0), Operator2)
+        assert not isinstance(LegacyOp(0), Operator)
         assert isinstance(prod(LegacyOp(0), NonParametricOp(0)), Prod)
         assert isinstance(prod(LegacyOp(0), LegacyOp(1)), Prod)
 

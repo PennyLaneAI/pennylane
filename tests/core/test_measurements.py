@@ -338,7 +338,7 @@ class TestProperties:
         """An observable with no eigenvalues defined should cause
         the eigvals method to return a NotImplementedError"""
 
-        class DummyObs(qp.core.Operator2):
+        class DummyObs(qp.core.Operator):
 
             def __init__(self, wires):
                 super().__init__(wires=wires)
@@ -415,7 +415,7 @@ class TestDiagonalizingGates:
         mp0 = qp.expval(qp.X(0))
         assert mp0.has_decomposition
 
-        class _NoDiagonalizingGates(qp.core.operator.Operator):
+        class _NoDiagonalizingGates(qp.core.operator.LegacyOperator):
             pass
 
         mp1 = qp.expval(_NoDiagonalizingGates(wires=0))

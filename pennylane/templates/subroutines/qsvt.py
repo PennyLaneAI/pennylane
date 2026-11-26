@@ -30,7 +30,7 @@ from numpy.polynomial import Polynomial, chebyshev
 
 from pennylane import math, ops
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operator, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     CompressedResourceOp,
@@ -127,7 +127,7 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding, angle_solver="r
 
 
 def qsvt(
-    A: Operator | TensorLike,
+    A: LegacyOperator | TensorLike,
     poly: TensorLike,
     encoding_wires: Sequence,
     block_encoding: Literal[None, "prepselprep", "qubitization", "embedding", "fable"] = None,
@@ -161,7 +161,7 @@ def qsvt(
 
     Args:
 
-        A (Union[tensor_like, Operator]): The matrix on which the QSVT will be applied.
+        A (Union[tensor_like, LegacyOperator]): The matrix on which the QSVT will be applied.
             This can be an array or an object that has a Pauli representation. See :func:`~.pauli_decompose`.
 
         poly (tensor_like): coefficients of the polynomial ordered from lowest to highest power
@@ -191,7 +191,7 @@ def qsvt(
               and JAX enabled in 64-bit mode. 
 
     Returns:
-        (Operator): A quantum operator implementing QSVT on the matrix ``A`` with the
+        (LegacyOperator): A quantum operator implementing QSVT on the matrix ``A`` with the
         specified encoding and projector phases.
 
     .. seealso:: :class:`~.QSVT`
@@ -312,7 +312,7 @@ def qsvt(
     return QSVT(encoding, projectors)
 
 
-class QSVT(Operator2):
+class QSVT(Operator):
     r"""QSVT(UA,projectors)
     Implements the
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ (QSVT) circuit.
@@ -324,7 +324,7 @@ class QSVT(Operator2):
         tailored to work directly with an input matrix and a transformation polynomial
         see :func:`~.qsvt`.
 
-    Given an :class:`~.Operator` :math:`U`, which block encodes the matrix :math:`A`, and a list of
+    Given an :class:`~.LegacyOperator` :math:`U`, which block encodes the matrix :math:`A`, and a list of
     projector-controlled phase shift operations :math:`\vec{\Pi}_\phi`, this template applies a
     circuit for the quantum singular value transformation as follows.
 
@@ -362,9 +362,9 @@ class QSVT(Operator2):
         :func:`~.qsvt` and `A Grand Unification of Quantum Algorithms <https://arxiv.org/pdf/2105.02859.pdf>`_.
 
     Args:
-        UA (Operator): the block encoding circuit, specified as an :class:`~.Operator`,
+        UA (LegacyOperator): the block encoding circuit, specified as an :class:`~.LegacyOperator`,
             like :class:`~.BlockEncode`
-        projectors (Sequence[Operator]): a list of projector-controlled phase
+        projectors (Sequence[LegacyOperator]): a list of projector-controlled phase
             shifts that implement the desired polynomial
 
     Raises:
@@ -506,15 +506,17 @@ class QSVT(Operator2):
 
         # CompressedResourceOp is added here defensively because `abstractify` may
         # turn an Operator1 subclass into a CompressedResourceOp.
-        if not isinstance(UA, (Operator, CompressedResourceOp)):
-            raise ValueError("Input block encoding must be an Operator")
+        if not isinstance(UA, (LegacyOperator, CompressedResourceOp)):
+            raise ValueError("Input block encoding must be an LegacyOperator")
 
         super().__init__(UA, projectors)
 
         # The constructor takes `UA` before `projectors`, but the canonical wire
         # order is projector wires followed by UA wires. Here we re-calculate the
         # wires to maintain the same wire order as before.
-        all_wire_args = tuple(op.wires for op in (*projectors, UA) if isinstance(op, Operator))
+        all_wire_args = tuple(
+            op.wires for op in (*projectors, UA) if isinstance(op, LegacyOperator)
+        )
         self._wires = Wires.all_wires(all_wire_args)
 
     @property

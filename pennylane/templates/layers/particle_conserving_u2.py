@@ -45,7 +45,7 @@ def u2_ex_gate(phi, wires=None):
         wires (list[Wires]): the two wires ``n`` and ``m`` the circuit acts on
 
     Returns:
-        list[.Operator]: sequence of operators defined by this function
+        list[.LegacyOperator]: sequence of operators defined by this function
     """
     return [CNOT(wires=wires), CRX(2 * phi, wires=wires[::-1]), CNOT(wires=wires)]
 
@@ -210,7 +210,7 @@ class ParticleConservingU2(Operation):
                 used to initialize the wires.
 
         Returns:
-            list[.Operator]: decomposition of the operator
+            list[.LegacyOperator]: decomposition of the operator
 
         **Example**
 

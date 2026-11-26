@@ -707,8 +707,8 @@ class TestPassByPassSpecs:
     def test_operator2(self):
         """Test that specs works with operator2 classes."""
 
-        class DummyOp(qp.core.Operator2):  # pylint: disable=too-few-public-methods
-            """Dummy Local Operator."""
+        class DummyOp(qp.core.Operator):  # pylint: disable=too-few-public-methods
+            """Dummy Local LegacyOperator."""
 
             dynamic_argnames = ("phi",)
             wire_argnames = ("reg1", "reg2")
@@ -1779,7 +1779,7 @@ class TestSpecsAbstractArrayIntegartion:
     def test_hybrid_op(self):
         """Test capturing a hybrid op."""
 
-        class HybridOp(qp.core.Operator2):  # pylint: disable=too-few-public-methods
+        class HybridOp(qp.core.Operator):  # pylint: disable=too-few-public-methods
 
             hybrid_argnames = "op"
             wire_argnames = ()
@@ -1800,7 +1800,7 @@ class TestSpecsAbstractArrayIntegartion:
     def test_pytree_input(self):
         """Test the input being in a pytree."""
 
-        class PytreeOp(qp.core.Operator2):  # pylint: disable=too-few-public-methods
+        class PytreeOp(qp.core.Operator):  # pylint: disable=too-few-public-methods
 
             hybrid_argnames = "a"
 

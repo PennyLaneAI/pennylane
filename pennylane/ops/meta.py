@@ -22,7 +22,7 @@ from typing import Literal
 
 import pennylane as qp
 from pennylane.capture.custom_primitives import QpPrimitive
-from pennylane.core.operator import Operation, Operator2
+from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition.decomposition_rule import add_decomps, null_decomp
 from pennylane.typing import Wire
 from pennylane.wires import WiresLike
@@ -40,7 +40,7 @@ barrier_p.multiple_results = True
 barrier_p.def_abstract_eval(lambda *wires: [])
 
 
-class Barrier(Operator2):
+class Barrier(Operator):
     r"""Barrier(wires)
     The Barrier operator, used to separate the compilation process into blocks or as a visual tool.
 

@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
-representation of a quantum circuit from an Operator queue.
+representation of a quantum circuit from an LegacyOperator queue.
 """
 
 from collections import defaultdict, namedtuple
@@ -24,7 +24,7 @@ import numpy as np
 import rustworkx as rx
 
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.queuing import QueuingManager
 from pennylane.ops.identity import I
 from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
@@ -63,7 +63,7 @@ and only if they can only be applied sequentially.
 
 Args:
 
-    ops (list[Operator]): parametrized operators in the layer
+    ops (list[LegacyOperator]): parametrized operators in the layer
     param_inds (list[int]): corresponding free parameter indices
     ops_inds (list[int]): the indices into the circuit for ops
 """
@@ -72,10 +72,10 @@ LayerData = namedtuple("LayerData", ["pre_ops", "ops", "param_inds", "post_ops"]
 """Parametrized layer of the circuit.
 
 Args:
-    pre_ops (list[Operator]): operators that precede the layer
-    ops (list[Operator]): parametrized operators in the layer
+    pre_ops (list[LegacyOperator]): operators that precede the layer
+    ops (list[LegacyOperator]): parametrized operators in the layer
     param_inds (tuple[int]): corresponding free parameter indices
-    post_ops (list[Operator]): operators that succeed the layer
+    post_ops (list[LegacyOperator]): operators that succeed the layer
 """
 
 
@@ -106,14 +106,14 @@ def _construct_graph_from_queue(queue, all_wires):
 class CircuitGraph:  # pylint: disable=too-many-instance-attributes
     """Represents a quantum circuit as a directed acyclic graph.
 
-    In this representation the :class:`~.Operator` instances are the nodes of the graph,
+    In this representation the :class:`~.LegacyOperator` instances are the nodes of the graph,
     and each directed edge represent a subsystem (or a group of subsystems) on which the two
     Operators act subsequently. This representation can describe the causal relationships
     between arbitrary quantum channels and measurements, not just unitary gates.
 
     Args:
-        ops (Iterable[.Operator]): quantum operators constituting the circuit, in temporal order
-        obs (list[Union[MeasurementProcess, Operator]]): terminal measurements, in temporal order
+        ops (Iterable[.LegacyOperator]): quantum operators constituting the circuit, in temporal order
+        obs (list[Union[MeasurementProcess, LegacyOperator]]): terminal measurements, in temporal order
         wires (.Wires): The addressable wire registers of the device that will be executing this graph
         par_info (Optional[list[dict]]): Parameter information. For each index, the entry is a dictionary containing an operation
         and an index into that operation's parameters.
@@ -124,8 +124,8 @@ class CircuitGraph:  # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
-        ops: list[Operator | MeasurementProcess],
-        obs: list[MeasurementProcess | Operator],
+        ops: list[LegacyOperator | MeasurementProcess],
+        obs: list[MeasurementProcess | LegacyOperator],
         wires: Wires,
         par_info: list[dict] | None = None,
         trainable_params: set[int] | None = None,
@@ -235,7 +235,7 @@ class CircuitGraph:  # pylint: disable=too-many-instance-attributes
         return self._graph
 
     def wire_indices(self, wire):
-        """Operator indices on the given wire.
+        """LegacyOperator indices on the given wire.
 
         Args:
             wire (int): wire to examine
@@ -249,14 +249,14 @@ class CircuitGraph:  # pylint: disable=too-many-instance-attributes
         """Ancestors of a given set of operators.
 
         Args:
-            ops (Iterable[Operator]): set of operators in the circuit
+            ops (Iterable[LegacyOperator]): set of operators in the circuit
             sort=False (bool): if ``True``, sort the operators according
             to the topological order determined by the queue index
 
         Returns:
-            list[Operator]: ancestors of the given operators
+            list[LegacyOperator]: ancestors of the given operators
         """
-        if isinstance(ops, (Operator, MeasurementProcess)):
+        if isinstance(ops, (LegacyOperator, MeasurementProcess)):
             raise ValueError(
                 "CircuitGraph.ancestors accepts an iterable of"
                 " operators and measurements, not operators and measurements themselves."
@@ -284,7 +284,7 @@ class CircuitGraph:  # pylint: disable=too-many-instance-attributes
             to the topological order determined by the queue index
 
         Returns:
-            list[Operator]: ancestors of the given operators
+            list[LegacyOperator]: ancestors of the given operators
         """
 
         ancestors = {i for ind in indexes for i in rx.ancestors(self._graph, ind)}
@@ -301,7 +301,7 @@ class CircuitGraph:  # pylint: disable=too-many-instance-attributes
             to the topological order determined by the queue index
 
         Returns:
-            list[Operator]: descendants of the given operators
+            list[LegacyOperator]: descendants of the given operators
         """
 
         ancestors = {i for ind in indexes for i in rx.descendants(self._graph, ind)}
@@ -313,14 +313,14 @@ class CircuitGraph:  # pylint: disable=too-many-instance-attributes
         """Descendants of a given set of operators.
 
         Args:
-            ops (Iterable[Operator]): set of operators in the circuit
+            ops (Iterable[LegacyOperator]): set of operators in the circuit
             sort=False (bool): if ``True``, sort the operators according
             to the topological order determined by the queue index
 
         Returns:
-            list[Operator]: descendants of the given operators
+            list[LegacyOperator]: descendants of the given operators
         """
-        if isinstance(ops, (Operator, MeasurementProcess)):
+        if isinstance(ops, (LegacyOperator, MeasurementProcess)):
             raise ValueError(
                 "CircuitGraph.descendants accepts an iterable of"
                 " operators and measurements, not operators and measurements themselves."
@@ -347,11 +347,11 @@ class CircuitGraph:  # pylint: disable=too-many-instance-attributes
         The endpoints belong to the path.
 
         Args:
-            a (Operator): initial node
-            b (Operator): final node
+            a (LegacyOperator): initial node
+            b (LegacyOperator): final node
 
         Returns:
-            list[Operator]: nodes on all the directed paths between a and b
+            list[LegacyOperator]: nodes on all the directed paths between a and b
         """
         A = self.descendants([a])
         A.append(a)
@@ -409,15 +409,15 @@ class CircuitGraph:  # pylint: disable=too-many-instance-attributes
         """Replaces the given circuit graph node with a new one.
 
         Args:
-            old (Operator): node to replace
-            new (Operator): replacement
+            old (LegacyOperator): node to replace
+            new (LegacyOperator): replacement
 
         Raises:
-            ValueError: if the new :class:`~.Operator` does not act on the same wires as the old one
+            ValueError: if the new :class:`~.LegacyOperator` does not act on the same wires as the old one
         """
         # NOTE Does not alter the graph edges in any way. variable_deps is not changed, Dangerous!
         if new.wires != old.wires:
-            raise ValueError("The new Operator must act on the same wires as the old one.")
+            raise ValueError("The new LegacyOperator must act on the same wires as the old one.")
 
         self._inds_for_objs[_WrappedObj(new)] = self._inds_for_objs.pop(_WrappedObj(old))
 
@@ -482,8 +482,8 @@ class CircuitGraph:  # pylint: disable=too-many-instance-attributes
         """Checks if a path exists between the two given nodes.
 
         Args:
-            a (Operator): initial node
-            b (Operator): final node
+            a (LegacyOperator): initial node
+            b (LegacyOperator): final node
 
         Returns:
             bool: returns ``True`` if a path exists

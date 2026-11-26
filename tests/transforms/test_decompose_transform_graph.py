@@ -619,7 +619,7 @@ class TestDecomposeGraphEnabled:
         """Tests that circuits and decomposition rules containing MCMs and PPMs are supported."""
 
         measure_obj_class = MidMeasure if m_type == "mcm" else PauliMeasure
-        # ``MidMeasure`` and ``PauliMeasure`` are ``Operator2``s with compilable arguments, so
+        # ``MidMeasure`` and ``PauliMeasure`` are ``Operator``s with compilable arguments, so
         # neither can be abstractified from its bare type; abstract instances are used as the
         # resource keys.
         measure_resource = (
@@ -815,7 +815,7 @@ class TestDecomposeGraphEnabled:
             qp.assert_equal(actual, exp)
 
     def test_operator2_integration(self):
-        """Tests that circuits containing Operator2 instances can be decomposed."""
+        """Tests that circuits containing Operator instances can be decomposed."""
 
         @qp.register_resources(
             {qp.H: 2, qp.CNOT: 1, DynOp(Float, Wire[2]): 2}, name="custom_decomp"

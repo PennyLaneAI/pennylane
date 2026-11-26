@@ -696,7 +696,7 @@ class TestDecompGraphSolver:
         assert solution.resource_estimate(op) == expected_res
 
     def test_operator2_integration(self):
-        """Tests constructing and solving a graph from an Operator2."""
+        """Tests constructing and solving a graph from an Operator."""
 
         def _resource_fn(params, wires, op):  # pylint: disable=unused-argument
             return {qp.CNOT: 2 * len(wires), OneWireDynOp: 1, qp.RX: 2 * (len(wires) - 1)}

@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for capturing ``Operator2`` instances into plxpr."""
+"""Tests for capturing ``Operator`` instances into plxpr."""
 
 # pylint: disable=too-few-public-methods,protected-access,wrong-import-position
 
@@ -123,7 +123,7 @@ class TestCaptureBasics:
 
     def test_construction_returns_concrete_instance(self):
         """Test that constructing an operator during capture returns a concrete
-        ``Operator2`` instance with a tracer attached (rather than the tracer itself)."""
+        ``Operator`` instance with a tracer attached (rather than the tracer itself)."""
 
         def f(x):
             op = DynOp(x, wires=0)
@@ -368,7 +368,7 @@ class TestHybridCapture:
     def test_scalar_and_operator_tuple_forward_mask(self):
         """Hybrid tuples with scalar and operator leaves should partition the mask."""
 
-        class TupleHybridOp(qp.core.Operator2):
+        class TupleHybridOp(qp.core.Operator):
             hybrid_argnames = ("data",)
 
             def __init__(self, data, wires):
@@ -385,7 +385,7 @@ class TestHybridCapture:
     def test_multi_wire_operator_forward_mask(self):
         """Nested operators with multi-wire arguments should mark each wire leaf."""
 
-        class MultiWireDyn(qp.core.Operator2):
+        class MultiWireDyn(qp.core.Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -411,7 +411,7 @@ class TestReconstruction:
     """Tests that evaluating a captured jaxpr reconstructs the operator."""
 
     def test_interpreter_rebinds_with_traced_wires(self):
-        """Test that interpreting an Operator2 equation rebinds its primitive."""
+        """Test that interpreting an Operator equation rebinds its primitive."""
         captured = jax.make_jaxpr(lambda wire: DynOp(0.5, wires=wire).tracer)(0)
 
         def interpret(wire):
@@ -533,7 +533,7 @@ class TestReconstruction:
 class TestApply:
     @pytest.mark.parametrize("op2", [DynOp(1.0, wires=0), FullOp(0.3, "lbl", [1.0, 2.0], wires=0)])
     def test_apply_adds_eqn(self, op2):
-        """Tests that when an Operator2 is applied, an equation is added for it."""
+        """Tests that when an Operator is applied, an equation is added for it."""
 
         def f():
             apply(op2)

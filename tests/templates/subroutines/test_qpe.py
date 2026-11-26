@@ -255,7 +255,7 @@ class TestDecomposition:
 
         unitary = unitary_group.rvs(4, random_state=1967)
 
-        with pytest.raises(TypeError, match="must be an Operator, got ndarray"):
+        with pytest.raises(TypeError, match="must be an LegacyOperator, got ndarray"):
             qp.QuantumPhaseEstimation(unitary, estimation_wires=[2, 3])
 
         with pytest.raises(TypeError, match="target_wires"):

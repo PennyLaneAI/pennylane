@@ -32,7 +32,7 @@ class TestMapToResourceOp:
     """Test the class for mapping PennyLane operations to their resource operators."""
 
     def test_all_operators_with_resource_ops_mapped(self):
-        """Test that everything with both an Operator and a ResourceOperator version
+        """Test that everything with both an LegacyOperator and a ResourceOperator version
         have a registered mapping.  Bypasses Qubitization for the moment."""
 
         special_cases = {"Qubitization", "QSVT"}
@@ -50,7 +50,7 @@ class TestMapToResourceOp:
 
                 if (
                     isinstance(qp_val, type)
-                    and issubclass(qp_val, qp.operation.Operator)
+                    and issubclass(qp_val, qp.operation.LegacyOperator)
                     and qp_val not in _map_to_resource_op.registry
                 ):
                     raise ValueError(

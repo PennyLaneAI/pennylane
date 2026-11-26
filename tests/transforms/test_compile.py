@@ -316,7 +316,7 @@ class TestCompileIntegration:
 
         with qp.queuing.AnnotatedQueue() as queue:
             transformed_qfunc(0.3, 0.4, 0.5)
-        operations = [op for op in queue.queue if isinstance(op, qp.operation.Operator)]
+        operations = [op for op in queue.queue if isinstance(op, qp.operation.LegacyOperator)]
         assert all(op.name in basis_set for op in operations)
         assert qp.math.allclose(
             qp.matrix(transformed_qfunc, wire_order=wires)(0.3, 0.4, 0.5),

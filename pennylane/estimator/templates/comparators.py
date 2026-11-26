@@ -87,7 +87,7 @@ class SingleQubitComparator(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> CompressedResourceOp:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -197,7 +197,7 @@ class TwoQubitComparator(ResourceOperator):
     @classmethod
     def resource_rep(cls) -> dict:  # pylint: disable=arguments-differ
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -379,7 +379,7 @@ class IntegerComparator(ResourceOperator):
         cls, value: int, register_size: int, geq: bool = False
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             value (int): The value :math:`L` that the state’s decimal representation is compared against.
@@ -600,7 +600,7 @@ class RegisterComparator(ResourceOperator):
         cls, first_register: int, second_register: int, geq: bool = False
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             first_register (int): the size of the first register

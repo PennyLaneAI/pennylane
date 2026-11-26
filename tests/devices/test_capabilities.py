@@ -283,7 +283,9 @@ class TestTOML:
         document = load_toml_file(request.node.toml_file)
         with pytest.raises(
             InvalidCapabilitiesError,
-            match=re.escape("Operator 'PauliX' has unknown attributes: ['invalid_attribute']"),
+            match=re.escape(
+                "LegacyOperator 'PauliX' has unknown attributes: ['invalid_attribute']"
+            ),
         ):
             _get_operations(document)
 
@@ -311,7 +313,7 @@ class TestTOML:
         document = load_toml_file(request.node.toml_file)
         with pytest.raises(
             InvalidCapabilitiesError,
-            match=re.escape("Operator 'PauliX' has unknown properties: ['invalid_property']"),
+            match=re.escape("LegacyOperator 'PauliX' has unknown properties: ['invalid_property']"),
         ):
             _get_operations(document)
 
@@ -335,7 +337,9 @@ class TestTOML:
         document = load_toml_file(request.node.toml_file)
         with pytest.raises(
             InvalidCapabilitiesError,
-            match=re.escape("Operator 'Hamiltonian' has unknown conditions: ['invalid_condition']"),
+            match=re.escape(
+                "LegacyOperator 'Hamiltonian' has unknown conditions: ['invalid_condition']"
+            ),
         ):
             _get_observables(document)
 

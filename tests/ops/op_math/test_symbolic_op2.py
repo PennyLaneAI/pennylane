@@ -15,13 +15,13 @@
 """Unit tests for the SymbolicOp2 class."""
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.wires import Wires
 
 
-class RX2(Operator2):
-    """A simplified RX operator that inherit from Operator2."""
+class RX2(Operator):
+    """A simplified RX operator that inherit from Operator."""
 
     dynamic_argnames = ("theta",)
 

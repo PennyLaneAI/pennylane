@@ -28,12 +28,12 @@ Description
 
 Qubit Operations
 ~~~~~~~~~~~~~~~~
-The :class:`Operator` class serves as a base class for operators,
+The :class:`LegacyOperator` class serves as a base class for operators,
 and is inherited by the
 :class:`Operation` class. These classes are subclassed to implement quantum operations
 and measure observables in PennyLane.
 
-* Each :class:`~.Operator` subclass represents a general type of
+* Each :class:`~.LegacyOperator` subclass represents a general type of
   map between physical states. Each instance of these subclasses
   represents either
 
@@ -70,7 +70,7 @@ Contents
 
 .. currentmodule:: pennylane.core.operator
 
-Operator Types
+LegacyOperator Types
 ~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane.core.operator
@@ -78,17 +78,17 @@ Operator Types
 .. autosummary::
     :toctree: api
 
+    ~LegacyOperator
     ~Operator
-    ~Operator2
     ~Operation
     ~Channel
     ~StatePrepBase
     ~Operator1
-    ~Operator2
+    ~Operator
 
 .. currentmodule:: pennylane.core.operator
 
-.. inheritance-diagram:: Operator Operation Channel StatePrepBase
+.. inheritance-diagram:: LegacyOperator Operation Channel StatePrepBase
     :parts: 1
 
 Utility Functions
@@ -137,16 +137,16 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 
 """
 
-from .base import Operator, Operation, Operator1
-from .operator2 import Operator2, StatePrepBase2
+from .base import LegacyOperator, Operation, Operator1
+from .operator2 import Operator, StatePrepBase2
 from .channel import Channel
 from .state_prep import StatePrepBase
 from .utils import abstractify
 from .operator2 import get_op_class_by_name
 
 __all__ = [
+    "LegacyOperator",
     "Operator",
-    "Operator2",
     "Operation",
     "Channel",
     "StatePrepBase",

@@ -1863,7 +1863,7 @@ class TestTapeExpansion:
 def test_resets_after_execution_error():
     """Test that the interface is reset to ``"auto"`` if an error occurs during execution."""
 
-    class BadOp(qp.operation.Operator):
+    class BadOp(qp.operation.LegacyOperator):
         """An operator that will cause an error during execution."""
 
     @qp.qnode(qp.device("default.qubit"))

@@ -42,7 +42,7 @@ from .utils import (
 )
 
 if TYPE_CHECKING:
-    from pennylane.core.operator import Operator
+    from pennylane.core.operator import LegacyOperator
     from pennylane.core.qscript import QuantumScript
 
 
@@ -58,11 +58,13 @@ _Config = namedtuple(
 
 
 @singledispatch
-def _add_operation_to_drawer(op: Operator, drawer: MPLDrawer, layer: int, config: _Config) -> None:
+def _add_operation_to_drawer(
+    op: LegacyOperator, drawer: MPLDrawer, layer: int, config: _Config
+) -> None:
     """Adds the ``op`` to an ``MPLDrawer`` at the designated location.
 
     Args:
-        op (.Operator): An operator to add to the drawer
+        op (.LegacyOperator): An operator to add to the drawer
         drawer (.MPLDrawer): A matplotlib drawer
         layer (int): The layer to place the operator in.
         config (_Config): named tuple containing ``wire_map``, ``decimals``, and ``active_wire_notches``.
@@ -170,7 +172,7 @@ def _(op: ops.PauliMeasure, drawer, layer, _):
     drawer.pauli_measure(layer, op.pauli_word, op.wires, op.postselect)
 
 
-def _conditional_frame_wires(op: Operator, n_wires: int) -> Sequence[int]:
+def _conditional_frame_wires(op: LegacyOperator, n_wires: int) -> Sequence[int]:
     """Return the wires of a conditional diagram needing an outer boundary."""
     if not isinstance(op, ops.Conditional):
         return ()

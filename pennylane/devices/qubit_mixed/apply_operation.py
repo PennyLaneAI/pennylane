@@ -23,7 +23,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Channel, Operator
+from pennylane.core.operator import Channel, LegacyOperator
 from pennylane.devices.qubit.apply_operation import _apply_grover_without_matrix
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.typing import TensorLike
@@ -154,7 +154,7 @@ def _conjugate_state_with(k, state, axes_left, axes_right):
 
 
 def apply_operation_einsum(
-    op: qp.operation.Operator,
+    op: qp.operation.LegacyOperator,
     state,
     is_state_batched: bool = False,
     debugger=None,
@@ -164,7 +164,7 @@ def apply_operation_einsum(
     quantum state. For a unitary gate, there is a single Kraus operator.
 
     Args:
-        op (Operator): Operator to apply to the quantum state
+        op (LegacyOperator): LegacyOperator to apply to the quantum state
         state (array[complex]): Input quantum state
         is_state_batched (bool): Boolean representing whether the state is batched or not
 
@@ -205,13 +205,13 @@ def apply_operation_einsum(
 
 
 def apply_operation_tensordot(
-    op: qp.operation.Operator, state, is_state_batched: bool = False, debugger=None, **_
+    op: qp.operation.LegacyOperator, state, is_state_batched: bool = False, debugger=None, **_
 ):
-    """Apply ``Operator`` to ``state`` using ``math.tensordot``. This is more efficent at higher qubit
+    """Apply ``LegacyOperator`` to ``state`` using ``math.tensordot``. This is more efficent at higher qubit
     numbers.
 
     Args:
-        op (Operator): Operator to apply to the quantum state
+        op (LegacyOperator): LegacyOperator to apply to the quantum state
         state (array[complex]): Input quantum state
         is_state_batched (bool): Boolean representing whether the state is batched or not
 
@@ -258,7 +258,7 @@ def apply_operation_tensordot(
 
 @singledispatch
 def apply_operation(
-    op: qp.operation.Operator,
+    op: qp.operation.LegacyOperator,
     state,
     is_state_batched: bool = False,
     debugger=None,
@@ -267,7 +267,7 @@ def apply_operation(
     """Apply an operation to a given state.
 
     Args:
-        op (Operator): The operation to apply to ``state``
+        op (LegacyOperator): The operation to apply to ``state``
         state (TensorLike): The starting state.
         is_state_batched (bool): Boolean representing whether the state is batched or not.
         debugger (_Debugger): The debugger to use.
@@ -563,7 +563,9 @@ def apply_grover(
     return state
 
 
-def apply_diagonal_unitary(op: Operator, state: TensorLike, is_state_batched: bool = False, **_):
+def apply_diagonal_unitary(
+    op: LegacyOperator, state: TensorLike, is_state_batched: bool = False, **_
+):
     """Apply a diagonal unitary operation to the density matrix state using its eigenvalues.
 
     Args:

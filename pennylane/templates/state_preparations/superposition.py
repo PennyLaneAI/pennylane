@@ -309,7 +309,7 @@ class Superposition(Operation):
             work_wire (Wires or int): the auxiliary wire used for the permutation
 
         Returns:
-            list[.Operator]: Decomposition of the operator
+            list[.LegacyOperator]: Decomposition of the operator
 
         **Example**
 

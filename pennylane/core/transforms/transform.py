@@ -31,7 +31,7 @@ from pennylane.capture import autograph, register_custom_staging_rule
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.core.apply import apply
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.exceptions import TransformError
@@ -527,7 +527,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
                 return (tape, ), lambda x: x[0]
 
             @printer.register
-            def _(obj: qp.operation.Operator, *targs, **tkwargs):
+            def _(obj: qp.operation.LegacyOperator, *targs, **tkwargs):
                 print("I have an operator:", obj)
                 return obj
 
@@ -1040,9 +1040,9 @@ def apply_to_callable(obj: Callable, transform, *targs, **tkwargs):
             return _capture_apply(obj, transform, *targs, **tkwargs)(*args, **kwargs)
 
         # removes the argument to the qfuncs from the active queuing context.
-        leaves, _ = flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        leaves, _ = flatten((args, kwargs), lambda obj: isinstance(obj, LegacyOperator))
         for l in leaves:
-            if isinstance(l, Operator):
+            if isinstance(l, LegacyOperator):
                 QueuingManager.remove(l)
 
         with AnnotatedQueue() as q:

@@ -105,7 +105,7 @@ def test_change_op_basis_with_none():
 
 
 def test_change_op_basis_callable_converts_to_prod2():
-    """A callable producing multiple Operator2 ops is converted to a ``Prod2`` operand."""
+    """A callable producing multiple Operator ops is converted to a ``Prod2`` operand."""
 
     def compute(wires):
         qp.PauliX(wires[0])
@@ -164,7 +164,7 @@ def test_change_op_basis_raises():
     """Tests that we appropriately raise from change_op_basis."""
 
     with pytest.raises(
-        TypeError, match="The parameters to change_op_basis must be Operator or Callable"
+        TypeError, match="The parameters to change_op_basis must be LegacyOperator or Callable"
     ):
         qp.change_op_basis("X", "Y")
 
@@ -202,7 +202,7 @@ def test_change_op_basis_with_mixed_types():
         (NonParametricOp, NonParametricOp, NonParametricOp),
         (qp.X, NonParametricOp, qp.X),
         (NonParametricOp, qp.X, NonParametricOp),
-        (NonParametricOp, NonParametricOp, None),  # Operator2 default uncompute
+        (NonParametricOp, NonParametricOp, None),  # Operator default uncompute
     ),
 )
 @pytest.mark.capture
@@ -308,7 +308,7 @@ class TestInitialization:
         assert change_op_basis_op.num_params == 1
 
     def test_map_wires_with_mixed_operator_versions(self):
-        """Test mapping wires belonging to both Operator1 and Operator2 operands."""
+        """Test mapping wires belonging to both Operator1 and Operator operands."""
         op = ChangeOpBasis2(qp.X(0), NonParametricOp(1), qp.RX(0.2, 2))
 
         mapped_op = op.map_wires({0: 5, 1: 6, 2: 7})
@@ -510,7 +510,7 @@ class TestDecomposition:
         }
 
     def test_mixed_abstract_hash_and_equality(self):
-        """Test abstract resources containing both Operator1 and Operator2 operands."""
+        """Test abstract resources containing both Operator1 and Operator operands."""
         op = ChangeOpBasis2(qp.X(0), NonParametricOp(1), qp.RX(0.2, 2))
         abstract_op1 = abstractify(op)
         abstract_op2 = abstractify(op)

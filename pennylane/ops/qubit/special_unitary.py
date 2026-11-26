@@ -676,7 +676,7 @@ class SpecialUnitary(Operation):
         generators = self.get_one_parameter_generators(interface)
         return _pauli_decompose(generators, num_wires)
 
-    def decomposition(self) -> list["qp.operation.Operator"]:
+    def decomposition(self) -> list["qp.operation.LegacyOperator"]:
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n
@@ -684,7 +684,7 @@ class SpecialUnitary(Operation):
         This ``Operation`` is decomposed into the corresponding ``QubitUnitary``.
 
         Returns:
-            list[Operator]: decomposition of the operator
+            list[LegacyOperator]: decomposition of the operator
 
         **Example:**
 
@@ -767,7 +767,7 @@ class TmpPauliRot(PauliRot):
             pauli_word (string): the Pauli word defining the rotation
 
         Returns:
-            list[Operator]: decomposition into an empty list of operations for
+            list[LegacyOperator]: decomposition into an empty list of operations for
             vanishing ``theta``, or into a list containing a single :class:`~.PauliRot`
             for non-zero ``theta``.
 

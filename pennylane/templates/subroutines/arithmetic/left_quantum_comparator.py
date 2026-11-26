@@ -15,7 +15,7 @@
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, X
 from pennylane.typing import AbstractWires, Wire
@@ -24,7 +24,7 @@ from pennylane.wires import Wires, WiresLike
 from .temporary_and import Elbow
 
 
-class LeftQuantumComparator(Operator2):
+class LeftQuantumComparator(Operator):
     r"""Perform an inequality test :math:`\lvert x\rangle\lvert y\rangle\lvert 0\rangle \mapsto \lvert x\rangle \lvert y\rangle\lvert x \leq y\rangle` between two states in separate quantum registers.
 
     This operator performs an inequality test between two quantum registers :math:`x` and

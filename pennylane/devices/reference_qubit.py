@@ -19,7 +19,7 @@ and plugin development purposes.
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.qscript import QuantumScript
 from pennylane.core.transforms import CompilePipeline
 from pennylane.transforms import (
@@ -107,7 +107,7 @@ operations = frozenset(
 )
 
 
-def supports_operation(op: Operator) -> bool:
+def supports_operation(op: LegacyOperator) -> bool:
     """This function used by preprocessing determines what operations
     are natively supported by the device.
 

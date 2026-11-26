@@ -37,7 +37,7 @@ def controlled_pauli_evolution(theta, wires, pauli_word, controls):
           Hadamard test and the quantum signal processing part on
 
     Returns:
-        list[Operator]: decomposition that make up the controlled evolution
+        list[LegacyOperator]: decomposition that make up the controlled evolution
     """
     active_wires, active_gates = zip(
         *[(wire, gate) for wire, gate in zip(wires, pauli_word, strict=True) if gate != "I"],
@@ -69,7 +69,7 @@ def evolve_under(ops, coeffs, time, controls):
     Evolves under the given Hamiltonian deconstructed into its Pauli words
 
     Args:
-        ops (List[Operator): List of Pauli words that comprise the Hamiltonian
+        ops (List[LegacyOperator): List of Pauli words that comprise the Hamiltonian
         coeffs (List[int]): List of the respective coefficients of the Pauliwords of the Hamiltonian
         time (float): At what time to evaluate these Pauliwords
     """

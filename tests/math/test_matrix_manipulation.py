@@ -477,7 +477,7 @@ class TestExpandMatrix:  # pylint: disable=too-many-public-methods
             ]
         )
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             """Dummy operator for testing the expand_matrix method."""
 
             num_wires = 2
@@ -509,7 +509,7 @@ class TestExpandMatrix:  # pylint: disable=too-many-public-methods
         )
         expanded_matrix = np.moveaxis(expanded_matrix, 0, -2)
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             """Dummy operator for testing the expand_matrix method."""
 
             num_wires = 2

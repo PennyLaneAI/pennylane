@@ -21,7 +21,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
 from pennylane.capture.op_eqns import pop_op_eqns
-from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operator, abstractify
 from pennylane.core.operator.operator2 import operator_p  # tach-ignore
 from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import remove_from_program
@@ -47,8 +47,8 @@ from pennylane.decomposition.utils import to_name
 from .symbolicop2 import SymbolicOp2
 
 
-def get_traced_and_non_traced_args(op: Operator2) -> tuple[dict, dict]:
-    """Split an ``Operator2``'s bound arguments into non-dynamic (static and compilable)
+def get_traced_and_non_traced_args(op: Operator) -> tuple[dict, dict]:
+    """Split an ``Operator``'s bound arguments into non-dynamic (static and compilable)
     and traced (everything else, including hybrid) argument dicts."""
     non_traced_argnames = op.static_argnames + op.compilable_argnames
     non_traced_args = {k: v for k, v in op.arguments.items() if k in non_traced_argnames}
@@ -63,7 +63,7 @@ class Adjoint2(SymbolicOp2):
 
     hybrid_argnames = ("base",)
 
-    def __init__(self, base: Operator2):
+    def __init__(self, base: Operator):
         super().__init__(base)
 
     @property
@@ -162,7 +162,7 @@ class Adjoint2(SymbolicOp2):
     @override
     def _bind_primitive(self):
         """Bind the operator primitive. ``Adjoint2`` has to override the method of the base
-        ``Operator2`` class so that we can "edit" the original primitive."""
+        ``Operator`` class so that we can "edit" the original primitive."""
         if not qp.capture.enabled():
             return
 
@@ -274,7 +274,7 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
     return _impl
 
 
-def _adjoint_abstract(op: AbstractOperatorLike | type[Operator]):
+def _adjoint_abstract(op: AbstractOperatorLike | type[LegacyOperator]):
     op = abstractify(op)
     if isinstance(op, CompressedResourceOp):
         return adjoint_resource_rep(op.op_type, op.params)

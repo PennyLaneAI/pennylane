@@ -72,7 +72,7 @@ logger.addHandler(logging.NullHandler())
 if TYPE_CHECKING:
     from numbers import Number
 
-    from pennylane.core.operator import Operator
+    from pennylane.core.operator import LegacyOperator
 
 
 # Base gate set for DefaultQubit
@@ -135,8 +135,8 @@ _special_operator_support = {
 """Map from gates with a special support condition."""
 
 
-def stopping_condition(op: Operator, allow_mcms=True) -> bool:
-    """Specify whether or not an Operator object is supported by the device."""
+def stopping_condition(op: LegacyOperator, allow_mcms=True) -> bool:
+    """Specify whether or not an LegacyOperator object is supported by the device."""
     if constraint := _special_operator_support.get(op.name):
         return constraint(op)
     if op.__class__.__name__[:3] == "Pow" and any(math.requires_grad(d) for d in op.data):
@@ -151,7 +151,7 @@ allow_mcms_stopping_condition = partial(stopping_condition, allow_mcms=True)
 no_mcms_stopping_condition = partial(stopping_condition, allow_mcms=False)
 
 
-def observable_accepts_sampling(obs: Operator) -> bool:
+def observable_accepts_sampling(obs: LegacyOperator) -> bool:
     """Verifies whether an observable supports sample measurement"""
 
     if isinstance(obs, ops.CompositeOp):
@@ -163,7 +163,7 @@ def observable_accepts_sampling(obs: Operator) -> bool:
     return obs.has_diagonalizing_gates
 
 
-def observable_accepts_analytic(obs: Operator, is_expval=False) -> bool:
+def observable_accepts_analytic(obs: LegacyOperator, is_expval=False) -> bool:
     """Verifies whether an observable supports analytic measurement"""
 
     if isinstance(obs, ops.CompositeOp):
@@ -271,8 +271,8 @@ def adjoint_state_measurements(  # pylint: disable=unused-argument
     )
 
 
-def adjoint_ops(op: Operator) -> bool:
-    """Specify whether or not an Operator is supported by adjoint differentiation."""
+def adjoint_ops(op: LegacyOperator) -> bool:
+    """Specify whether or not an LegacyOperator is supported by adjoint differentiation."""
     return not isinstance(op, (Conditional, MidMeasure)) and (
         op.num_params == 0
         or not any(math.requires_grad(d) for d in op.data)
@@ -280,7 +280,7 @@ def adjoint_ops(op: Operator) -> bool:
     )
 
 
-def adjoint_observables(obs: Operator) -> bool:
+def adjoint_observables(obs: LegacyOperator) -> bool:
     """Specifies whether or not an observable is compatible with adjoint differentiation on DefaultQubit."""
     return obs.has_matrix
 

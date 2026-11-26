@@ -19,7 +19,7 @@ import pytest
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.decomposition.resources import Resources
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
@@ -29,7 +29,7 @@ from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import CompilableOp, OneWireDynOp
 
 
-class SX2(Operator2):
+class SX2(Operator):
     """A new SX gate."""
 
     arg_specs = {"wires": Wire[1]}
@@ -65,8 +65,8 @@ class SX2(Operator2):
         return [qp.Hadamard(wires=wires)]
 
 
-class RX2(Operator2):
-    """A simplified RX operator that inherit from Operator2."""
+class RX2(Operator):
+    """A simplified RX operator that inherit from Operator."""
 
     dynamic_argnames = ("theta",)
 
@@ -242,7 +242,7 @@ def test_adjoint_equality():
 
 
 def test_adjoint_rotation_decomposition_rule():
-    """Tests the _adjoint_negate_angle decomposition with an ``Operator2`` base."""
+    """Tests the _adjoint_negate_angle decomposition with an ``Operator`` base."""
 
     op = qp.adjoint(OneWireDynOp(0.5, wires=[0]))
     assert isinstance(op, Adjoint2)

@@ -96,7 +96,7 @@ as well as potential further capabilities, by providing the following class attr
 
 * :attr:`pennylane.devices.LegacyDevice.stopping_condition`: This callable should return ``True`` for supported
   operations and measurement processes, and ``False`` otherwise. Note that this function is called on
-  **both** ``Operator`` and ``MeasurementProcess`` classes. Though this function must accept both ``Operator``
+  **both** ``LegacyOperator`` and ``MeasurementProcess`` classes. Though this function must accept both ``LegacyOperator``
   and ``MeasurementProcess`` classes, it does not affect whether a ``MeasurementProcess`` is supported or not.
 
   .. code-block:: python
@@ -500,7 +500,7 @@ Supporting custom operators
 ---------------------------
 
 If you would like to support an operator (such as a gate or observable) that is not currently supported by
-PennyLane, you can subclass the :class:`~.Operator` class. Detailed information can be found in the
+PennyLane, you can subclass the :class:`~.LegacyOperator` class. Detailed information can be found in the
 section :doc:`/development/adding_operators`.
 
 Users can then import this operator directly from your plugin, and use it when defining a QNode:

@@ -23,7 +23,7 @@ from typing import Literal
 import numpy as np
 
 from pennylane import math, ops
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
 from pennylane.measurements import ProbabilityMP, expval
@@ -53,7 +53,7 @@ def _hadamard_stopping_condition(op) -> bool:
         # let things without decompositions through without error
         # error will happen when calculating hadamard grad
         return True
-    if isinstance(op, Operator) and any(math.requires_grad(p) for p in op.data):
+    if isinstance(op, LegacyOperator) and any(math.requires_grad(p) for p in op.data):
         return op.has_generator
     return True
 

@@ -227,7 +227,7 @@ imported into PennyLane. To see this in action, we first define a ``SparsePauliO
     qk_op = SparsePauliOp(["II", "XY"])
 
 Then, we apply the :func:`~pennylane.from_qiskit_op` function to convert the ``SparsePauliOp`` into
-a PennyLane :class:`Operator <pennylane.operation.Operator>`:
+a PennyLane :class:`LegacyOperator <pennylane.operation.LegacyOperator>`:
 
 .. code-block:: python
 

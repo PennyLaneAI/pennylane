@@ -263,7 +263,7 @@ class TestDeviceSupportedLogic:
 
         with pytest.raises(
             ValueError,
-            match="The given observable must either be a pennylane.operation.Operator class or a string.",
+            match="The given observable must either be a pennylane.operation.LegacyOperator class or a string.",
         ):
             dev.supports_observable(3)
 

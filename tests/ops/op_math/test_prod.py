@@ -27,7 +27,7 @@ import pytest
 import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane import math
-from pennylane.core.operator import Operator, abstractify
+from pennylane.core.operator import LegacyOperator, abstractify
 from pennylane.exceptions import DeviceError, MatrixUndefinedError
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.testing import assert_decomposable
@@ -514,7 +514,7 @@ class TestInitialization:  # pylint: disable=too-many-public-methods
             Prod(x)
 
     def test_prod_fails_with_non_callable_arg(self):
-        """Tests that prod explicitly checks that a single-arg is either an Operator or callable."""
+        """Tests that prod explicitly checks that a single-arg is either an LegacyOperator or callable."""
         with pytest.raises(TypeError, match="Unexpected argument of type int passed to qp.prod"):
             prod(1)
 
@@ -531,9 +531,9 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("op2, mat2", non_param_ops)
     def test_non_parametric_ops_two_terms(
         self,
-        op1: Operator,
+        op1: LegacyOperator,
         mat1: np.ndarray,
-        op2: Operator,
+        op2: LegacyOperator,
         mat2: np.ndarray,
     ):
         """Test matrix method for a product of non_parametric ops"""
@@ -552,9 +552,9 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("op2, mat2", param_ops)
     def test_parametric_ops_two_terms(
         self,
-        op1: Operator,
+        op1: LegacyOperator,
         mat1: np.ndarray,
-        op2: Operator,
+        op2: LegacyOperator,
         mat2: np.ndarray,
     ):
         """Test matrix method for a product of parametric ops"""
@@ -570,7 +570,7 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
         assert np.allclose(prod_mat, true_mat)
 
     @pytest.mark.parametrize("op", no_mat_ops)
-    def test_error_no_mat(self, op: Operator):
+    def test_error_no_mat(self, op: LegacyOperator):
         """Test that an error is raised if one of the factors doesn't
         have its matrix method defined."""
         prod_op = Prod(op(wires=0), qp.PauliX(wires=2), qp.PauliZ(wires=1))

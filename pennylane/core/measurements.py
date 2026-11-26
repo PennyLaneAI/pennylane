@@ -49,7 +49,7 @@ from ._capture_measurements import (
     create_measurement_obs_primitive,
     create_measurement_wires_primitive,
 )
-from .operator import Operator, Operator2
+from .operator import LegacyOperator, Operator
 
 
 class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
@@ -57,7 +57,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
     quantum variational circuit.
 
     Args:
-        obs (Union[.Operator, .MeasurementValue, Sequence[.MeasurementValue]]): The observable that
+        obs (Union[.LegacyOperator, .MeasurementValue, Sequence[.MeasurementValue]]): The observable that
             is to be measured as part of the measurement process. Not all measurement processes
             require observables (for example ``Probability``); this argument is optional.
         wires (.Wires): The wires the measurement process applies to.
@@ -104,13 +104,13 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
                 *wires, eigvals, has_eigvals=True, **kwargs
             )  # wires + eigvals
 
-        if isinstance(obs, Operator2):
+        if isinstance(obs, Operator):
             if obs.tracer is None:
                 obs._bind_primitive()  # pylint: disable=protected-access
             # capture on but not tracing, tracer will still be None
             obs = obs if obs.tracer is None else obs.tracer
 
-        if isinstance(obs, Operator):
+        if isinstance(obs, LegacyOperator):
             QueuingManager.remove(obs)
             # turn into abstract operator
             with QueuingManager.stop_recording():
@@ -173,7 +173,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
     def __init__(
         self,
-        obs: Union[None, Operator, "MeasurementValue", Sequence["MeasurementValue"]] = None,
+        obs: Union[None, LegacyOperator, "MeasurementValue", Sequence["MeasurementValue"]] = None,
         wires: Wires | None = None,
         eigvals: TensorLike | None = None,
     ):

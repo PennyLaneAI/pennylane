@@ -18,7 +18,7 @@ from collections.abc import Sequence
 from functools import partial
 from typing import override
 
-from pennylane.core.operator import Operator, abstractify
+from pennylane.core.operator import LegacyOperator, abstractify
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import DecompGraphSolution, DecompositionGraph
 from pennylane.decomposition.decomposition_graph import _DecompositionNode, _OperatorNode
@@ -35,7 +35,7 @@ class _DecompInGraphInfo(_DecompInfo):  # pylint: disable=too-few-public-methods
 
     def __init__(
         self,
-        op: Operator,
+        op: LegacyOperator,
         decomp_node_idx: int,
         num_work_wires: int | None,
         solution: DecompGraphSolution,
@@ -207,12 +207,16 @@ class DecompGraphInspector:  # pylint: disable=too-few-public-methods
         self._max_work_wires = self._solution.num_work_wires
 
     def inspect_decomps(
-        self, op: Operator, *, num_work_wires: int | None = 0, show_not_applicable: bool = True
+        self,
+        op: LegacyOperator,
+        *,
+        num_work_wires: int | None = 0,
+        show_not_applicable: bool = True,
     ) -> _DecompInGraphInfoCollection:
         """Display all decomposition rules considered for a given operator.
 
         Args:
-            op (Operator): the operator instance to inspect the decomposition rules for.
+            op (LegacyOperator): the operator instance to inspect the decomposition rules for.
             num_work_wires (int, optional): the number of work wires available for dynamic allocation.
             show_not_applicable (bool): if True (the default), all decomposition rules, including
                 those that are not applicable to the specific operator instance (e.g., due to constraints
@@ -244,8 +248,10 @@ class DecompGraphInspector:  # pylint: disable=too-few-public-methods
                 chosen_idx = rule_idx
         return _DecompInGraphInfoCollection(rule_infos, show_not_applicable, chosen_idx)
 
-    def _find_op_node(self, op: Operator, num_work_wires: int | None = 0) -> _OperatorNode | str:
-        if isinstance(op, type) and issubclass(op, Operator):
+    def _find_op_node(
+        self, op: LegacyOperator, num_work_wires: int | None = 0
+    ) -> _OperatorNode | str:
+        if isinstance(op, type) and issubclass(op, LegacyOperator):
             raise TypeError(
                 "The inspect_decomps function takes a concrete operator instance as its "
                 "first argument, not an operator type."
@@ -310,11 +316,11 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
             If ``None``, assume an infinite number of work wires. Defaults to ``0``.
         minimize_work_wires (bool): If ``True``, minimize the number of work wires simultaneously
             allocated throughout the circuit. Defaults to ``False``.
-        fixed_decomps (Dict[Type[Operator], DecompositionRule]): a dictionary mapping operator types
+        fixed_decomps (Dict[Type[LegacyOperator], DecompositionRule]): a dictionary mapping operator types
             to custom decomposition rules. A decomposition rule is a quantum function decorated with
             :func:`~pennylane.register_resources`. The custom decomposition rules specified here
             will be used in place of the existing decomposition rules defined for this operator.
-        alt_decomps (Dict[Type[Operator], List[DecompositionRule]]): a dictionary mapping operator
+        alt_decomps (Dict[Type[LegacyOperator], List[DecompositionRule]]): a dictionary mapping operator
             types to lists of alternative custom decomposition rules. A decomposition rule is a
             quantum function decorated with :func:`~pennylane.register_resources`. The custom
             decomposition rules specified here will be considered as alternatives to the existing

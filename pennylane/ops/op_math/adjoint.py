@@ -28,7 +28,7 @@ from pennylane.capture.autograph import wraps
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.op_eqns import pop_op_eqns
 from pennylane.compiler import compiler
-from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.operator import LegacyOperator, Operation, Operator
 from pennylane.core.pauli import PauliSentence
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -39,19 +39,19 @@ from .symbolicop import SymbolicOp
 
 
 @overload
-def adjoint(fn: Operator) -> Operator: ...
+def adjoint(fn: LegacyOperator) -> LegacyOperator: ...
 @overload
 def adjoint(fn: Callable) -> Callable: ...
 def adjoint(fn):
-    """Create the adjoint of an Operator or a function that applies the adjoint of the provided function.
+    """Create the adjoint of an LegacyOperator or a function that applies the adjoint of the provided function.
     :func:`~.qjit` compatible.
 
     Args:
-        fn (function or :class:`~.operation.Operator`): A single operator or a quantum function that
+        fn (function or :class:`~.operation.LegacyOperator`): A single operator or a quantum function that
             applies quantum operations.
 
     Returns:
-        (function or :class:`~.operation.Operator`): If an Operator is provided, returns an Operator that is the adjoint.
+        (function or :class:`~.operation.LegacyOperator`): If an LegacyOperator is provided, returns an LegacyOperator that is the adjoint.
         If a function is provided, returns a function with the same call signature that returns the Adjoint of the
         provided function.
 
@@ -85,7 +85,7 @@ def adjoint(fn):
         ValueError: The object [RX(1, wires=[0]), RX(2, wires=[0])] of type <class 'list'> is not callable.
         This error might occur if you apply adjoint to a list of operations instead of a function or template.
 
-    .. seealso:: :class:`~.ops.op_math.Adjoint` and :meth:`.Operator.adjoint`
+    .. seealso:: :class:`~.ops.op_math.Adjoint` and :meth:`.LegacyOperator.adjoint`
 
     **Example**
 
@@ -167,7 +167,7 @@ def create_adjoint_op(fn):
     """Main logic for qp.adjoint, but allows bypassing the compiler dispatch if needed."""
     if qp.math.is_tracer(fn) and isinstance(fn.aval, qp.capture.AbstractOperator):
         return _make_adjoint_op(fn)
-    if isinstance(fn, Operator):
+    if isinstance(fn, LegacyOperator):
         return _make_adjoint_op(fn)
     if callable(fn):
         return _adjoint_transform(fn)
@@ -238,8 +238,8 @@ def _adjoint_transform(qfunc: Callable) -> Callable:
             return _capture_adjoint_transform(qfunc)(*args, **kwargs)
 
         qscript = qp.tape.make_qscript(qfunc)(*args, **kwargs)
-        leaves, _ = qp.pytrees.flatten((args, kwargs), lambda op: isinstance(op, Operator))
-        _ = [qp.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
+        leaves, _ = qp.pytrees.flatten((args, kwargs), lambda op: isinstance(op, LegacyOperator))
+        _ = [qp.QueuingManager.remove(l) for l in leaves if isinstance(l, LegacyOperator)]
 
         adjoint_ops = [_make_adjoint_op(op) for op in reversed(qscript.operations)]
 
@@ -248,12 +248,12 @@ def _adjoint_transform(qfunc: Callable) -> Callable:
     return wrapper
 
 
-def _adjoint_eager(op: Operator, update_queue: bool = False) -> Operator:
+def _adjoint_eager(op: LegacyOperator, update_queue: bool = False) -> LegacyOperator:
     """Construct a concrete adjoint when available, for representation-sensitive algorithms."""
     if op.has_adjoint:
         adj = op.adjoint()
         if update_queue:
-            if isinstance(op, Operator2):
+            if isinstance(op, Operator):
                 _ = pop_op_eqns((op,))
             QueuingManager.remove(op)
             QueuingManager.append(adj)
@@ -266,9 +266,9 @@ class Adjoint(SymbolicOp):
     The Adjoint of an operator.
 
     Args:
-        base (~.operation.Operator): The operator that is adjointed.
+        base (~.operation.LegacyOperator): The operator that is adjointed.
 
-    .. seealso:: :func:`~.adjoint`, :meth:`~.operation.Operator.adjoint`
+    .. seealso:: :func:`~.adjoint`, :meth:`~.operation.LegacyOperator.adjoint`
 
     This is a *developer*-facing class, and the :func:`~.adjoint` transform should be used to
     construct instances
@@ -290,7 +290,7 @@ class Adjoint(SymbolicOp):
     .. details::
         :title: Developer Details
 
-        This class mixes in parent classes based on the inheritance tree of the provided ``Operator``.
+        This class mixes in parent classes based on the inheritance tree of the provided ``LegacyOperator``.
         For example, when provided an ``Operation``, the instance will inherit from ``Operation`` and
         the ``AdjointOperation`` mixin.
 
@@ -315,7 +315,7 @@ class Adjoint(SymbolicOp):
 
     @classmethod
     def _primitive_bind_call(cls, base, **kwargs):  # pylint: disable=arguments-differ
-        if isinstance(base, Operator):
+        if isinstance(base, LegacyOperator):
             qp.QueuingManager.remove(base)
             base = pytrees.unflatten(*pytrees.flatten(base))
         return cls._primitive.bind(base, **kwargs)
@@ -478,8 +478,8 @@ class AdjointOperation(Adjoint, Operation):
         return -1 * self.base.generator()
 
 
-def _make_adjoint_op(op: Operator) -> Adjoint | Adjoint2:
-    if isinstance(op, Operator2):
+def _make_adjoint_op(op: LegacyOperator) -> Adjoint | Adjoint2:
+    if isinstance(op, Operator):
         _ = pop_op_eqns((op,))
         return Adjoint2(op)
 

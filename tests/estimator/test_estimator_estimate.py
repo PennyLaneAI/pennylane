@@ -549,7 +549,7 @@ class TestEstimateResources:
 
         with pytest.raises(
             ValueError,
-            match="Queued object.*is not a ResourceOperator or Operator, and cannot be processed.",
+            match="Queued object.*is not a ResourceOperator or LegacyOperator, and cannot be processed.",
         ):
             estimate(my_circuit)()
 

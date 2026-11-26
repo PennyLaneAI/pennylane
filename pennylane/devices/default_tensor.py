@@ -30,7 +30,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.measurements import MeasurementProcess, StateMeasurement
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import LegacyOperator, Operation
 from pennylane.core.qscript import QuantumScript, QuantumScriptOrBatch
 from pennylane.core.transforms import CompilePipeline
 from pennylane.devices import Device, ExecutionConfig
@@ -163,12 +163,12 @@ def accepted_methods(method: str) -> bool:
     return method in _methods
 
 
-def stopping_condition(op: qp.operation.Operator) -> bool:
+def stopping_condition(op: qp.operation.LegacyOperator) -> bool:
     """A function that determines if an operation is supported by ``default.tensor``."""
     return op.name in _operations
 
 
-def accepted_observables(obs: qp.operation.Operator) -> bool:
+def accepted_observables(obs: qp.operation.LegacyOperator) -> bool:
     """A function that determines if an observable is supported by ``default.tensor``."""
     return obs.name in _observables
 
@@ -724,13 +724,13 @@ class DefaultTensor(Device):  # pylint: disable=too-many-instance-attributes
 
         raise NotImplementedError  # pragma: no cover
 
-    def _apply_operation(self, op: qp.operation.Operator) -> None:
+    def _apply_operation(self, op: qp.operation.LegacyOperator) -> None:
         """Apply a single operator to the circuit.
 
         Internally it uses ``quimb``'s ``apply_gate`` method. This method modifies the tensor state of the device.
 
         Args:
-            op (Operator): The operation to apply.
+            op (LegacyOperator): The operation to apply.
         """
         apply_operation_core(op, self)
 
@@ -981,7 +981,7 @@ def apply_operation_core_multirz(ops: qp.MultiRZ, device):
 
 @apply_operation_core.register
 def apply_operation_core_paulirot(ops: qp.PauliRot, device):
-    """Apply a Pauli rotation operation in the form of a Matrix Product Operator (MPO)."""
+    """Apply a Pauli rotation operation in the form of a Matrix Product LegacyOperator (MPO)."""
 
     theta = ops.arguments["theta"]
     pauli_string = ops.arguments["pauli_word"]
@@ -1043,7 +1043,7 @@ def apply_operation_core_trotter_product(ops: qp.TrotterProduct, device):
 
 
 @singledispatch
-def expval_core(obs: Operator, device) -> float:
+def expval_core(obs: LegacyOperator, device) -> float:
     """Dispatcher for expval."""
     return device._local_expectation(qp.matrix(obs), tuple(obs.wires))
 

@@ -23,7 +23,7 @@ from typing import overload
 import pennylane as qp
 from pennylane import transform
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
 from pennylane.typing import PostprocessingFn
@@ -32,8 +32,8 @@ from pennylane.workflow import QNode
 
 @overload
 def map_wires(
-    input: Operator, wire_map: dict, queue: bool = False, replace: bool = False
-) -> Operator: ...
+    input: LegacyOperator, wire_map: dict, queue: bool = False, replace: bool = False
+) -> LegacyOperator: ...
 @overload
 def map_wires(
     input: MeasurementProcess, wire_map: dict, queue: bool = False, replace: bool = False
@@ -56,7 +56,9 @@ def map_wires(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]: ...
 @transform
 def map_wires(  # pylint: disable=unused-argument
-    input: Operator | MeasurementProcess | QuantumScript | QNode | Callable | QuantumScriptBatch,
+    input: (
+        LegacyOperator | MeasurementProcess | QuantumScript | QNode | Callable | QuantumScriptBatch
+    ),
     wire_map: dict,
     queue=False,
     replace=False,
@@ -65,14 +67,14 @@ def map_wires(  # pylint: disable=unused-argument
     to the given wire map.
 
     Args:
-        input (Operator or QNode or QuantumTape or Callable): an operator or a quantum circuit.
+        input (LegacyOperator or QNode or QuantumTape or Callable): an operator or a quantum circuit.
         wire_map (dict): dictionary containing the old wires as keys and the new wires as values
         queue (bool): Whether or not to queue the object when recording. Defaults to False.
         replace (bool): When ``queue=True``, if ``replace=True`` the input operators will be
             replaced by its mapped version. Defaults to False.
 
     Returns:
-        operator (Operator) or qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+        operator (LegacyOperator) or qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
 
         The transformed circuit or operator with updated wires in :func:`qp.transform <pennylane.transform>`.
 
@@ -143,7 +145,10 @@ def map_wires(  # pylint: disable=unused-argument
 
 @map_wires.register
 def _map_op_meas_wires(
-    input: Operator | MeasurementProcess, wire_map: dict, queue: bool = False, replace: bool = False
+    input: LegacyOperator | MeasurementProcess,
+    wire_map: dict,
+    queue: bool = False,
+    replace: bool = False,
 ):
     if QueuingManager.recording():
         with QueuingManager.stop_recording():

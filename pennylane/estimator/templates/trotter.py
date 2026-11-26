@@ -200,7 +200,7 @@ class TrotterProduct(ResourceOperator):
         num_wires: int,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             first_order_expansion (list[:class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`]): A list of operators,
@@ -415,7 +415,7 @@ class TrotterCDF(ResourceOperator):
         cls, cdf_ham: CDFHamiltonian, num_steps: int, order: int
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             cdf_ham (:class:`pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`):
@@ -767,7 +767,7 @@ class TrotterTHC(ResourceOperator):
         cls, thc_ham: THCHamiltonian, num_steps: int, order: int
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             thc_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted
@@ -1145,7 +1145,7 @@ class TrotterVibrational(ResourceOperator):
         coeff_precision: float | None = None,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             vibration_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibrationalHamiltonian`): a real space vibrational
@@ -1576,7 +1576,7 @@ class TrotterVibronic(ResourceOperator):
         coeff_precision: float | None = None,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             vibronic_ham (:class:`pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real space vibronic
@@ -2042,7 +2042,7 @@ class TrotterPauli(ResourceOperator):
         order: int,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             pauli_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.PauliHamiltonian`):

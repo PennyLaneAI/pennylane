@@ -30,7 +30,7 @@ from pennylane import ops, pytrees
 from pennylane._grad import jacobian
 from pennylane.allocation import Allocate
 from pennylane.core import apply, queuing
-from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operator, Operator1, abstractify
 from pennylane.decomposition import has_decomp, list_decomps
 from pennylane.decomposition.decomposition_rule import _get_registered_decomps
 from pennylane.decomposition.resources import CompressedResourceOp
@@ -143,10 +143,10 @@ def _check_decomposition_legacy(op, skip_wire_mapping):  # pylint: disable=too-m
     assert op not in decomp_output, "an operator should not be included in its own decomposition"
 
     failure_comment = "decomposition must contain operators"
-    assert all(isinstance(o, Operator) for o in decomp_output), failure_comment
+    assert all(isinstance(o, LegacyOperator) for o in decomp_output), failure_comment
 
     if compute_decomp_output is not None:
-        assert all(isinstance(o, Operator) for o in compute_decomp_output), failure_comment
+        assert all(isinstance(o, LegacyOperator) for o in compute_decomp_output), failure_comment
         try:
             _assert_equal_ops(decomp_output, compute_decomp_output)
         except AssertionError as e:
@@ -196,7 +196,7 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
         err_msg = "resource_params must have the same keys as specified by resource_keys"
         assert set(op.resource_params.keys()) == set(op_type.resource_keys), err_msg
 
-        if op_type.resource_params is Operator.resource_params:
+        if op_type.resource_params is LegacyOperator.resource_params:
             err_msg = "resource_params must be defined for operators with decompositions"
             assert not has_decomp(op_type), err_msg
 
@@ -339,7 +339,7 @@ def _check_generator(op):
         return
 
     gen = op.generator()
-    assert isinstance(gen, Operator)
+    assert isinstance(gen, LegacyOperator)
     new_op = ops.exp(gen, 1j * op.data[0])
     matrix = op_funcs.matrix(op, wire_order=op.wires)
     expected = op_funcs.matrix(new_op, wire_order=op.wires)
@@ -408,20 +408,20 @@ def _check_pytree(op):
 def _check_pytree_operator1(op):
     """Operator1 specific pytree tests."""
 
-    # Nested operators can contribute parameters or structural leaves (such as Operator2
+    # Nested operators can contribute parameters or structural leaves (such as Operator
     # wires) that are intentionally absent from the outer legacy ``data`` view. Stop at
     # nested PennyLane objects and expand only their numerical data. The outer ``data`` may
     # intentionally omit some nested parameters (for example, ``Evolution`` excludes its
     # generator's parameters), but every exposed parameter must still occur in pytree order.
     def nested_pl_object(obj):
-        return obj is not op and isinstance(obj, (Operator, MeasurementProcess))
+        return obj is not op and isinstance(obj, (LegacyOperator, MeasurementProcess))
 
     leaves, _ = pytrees.flatten(op, is_leaf=nested_pl_object)
     ordered_data = []
     for leaf in leaves:
         if isinstance(leaf, Operator1):
             ordered_data.extend(leaf.data)
-        elif isinstance(leaf, Operator2):
+        elif isinstance(leaf, Operator):
             ordered_data.extend(leaf.dynamic_args.values())
         elif not isinstance(leaf, MeasurementProcess):
             ordered_data.append(leaf)
@@ -445,7 +445,7 @@ def _check_capture(op):
 
     def test_fn(*args):
         op = jax.tree_util.tree_unflatten(struct, args)
-        if isinstance(op, Operator2):
+        if isinstance(op, Operator):
             op._bind_primitive()  # pylint: disable=protected-access
             return op.tracer
         return op
@@ -471,13 +471,13 @@ def _check_pickle(op):
 
 
 @singledispatch
-def _check_bind_new_parameters(op: Operator):
+def _check_bind_new_parameters(op: LegacyOperator):
     """Check that bind new parameters can create a new op with different bound arguments."""
     raise NotImplementedError  # pragma: no cover
 
 
 @_check_bind_new_parameters.register
-def _check_bind_new_parameters_legacy(op: Operator):
+def _check_bind_new_parameters_legacy(op: LegacyOperator):
     """Check that bind new parameters can create a new op with different data."""
     new_data = [d * 0.0 for d in op.data]
     new_data_op = op_funcs.bind_new_parameters(op, new_data)
@@ -487,8 +487,8 @@ def _check_bind_new_parameters_legacy(op: Operator):
 
 
 @_check_bind_new_parameters.register
-def _check_bind_new_parameters_op2(op: Operator2):
-    """Check that bind_new_parameters works for an Operator2"""
+def _check_bind_new_parameters_op2(op: Operator):
+    """Check that bind_new_parameters works for an Operator"""
     dyn_args = op.base.dynamic_args if isinstance(op, SymbolicOp2) else op.dynamic_args
     new_dyn_args = {k: math.cast_like(v * 0.0, v) for k, v in dyn_args.items()}
     new_data_op = op_funcs.bind_new_parameters(op, tuple(new_dyn_args.values()))
@@ -554,13 +554,13 @@ def _check_wires(op, skip_wire_mapping):
 
 
 @singledispatch
-def _check_properties(op: Operator):
+def _check_properties(op: LegacyOperator):
     """Check the properties of an operator."""
     raise NotImplementedError  # pragma: no cover
 
 
 @_check_properties.register
-def _check_properties_legacy(op: Operator):
+def _check_properties_legacy(op: LegacyOperator):
     """Checks the properties of an Operator1."""
     assert isinstance(op.data, tuple), "op.data must be a tuple"
     assert isinstance(op.parameters, list), "op.parameters must be a list"
@@ -570,8 +570,8 @@ def _check_properties_legacy(op: Operator):
 
 
 @_check_properties.register
-def _check_properties_operator2(op: Operator2) -> None:
-    """Checks the properties of an Operator2."""
+def _check_properties_operator2(op: Operator) -> None:
+    """Checks the properties of an Operator."""
 
     # the following two properties are not necessarily promised
     if hasattr(op, "data"):
@@ -622,7 +622,7 @@ def _check_properties_operator2(op: Operator2) -> None:
 
 
 def assert_valid(  # pylint: disable=too-many-arguments
-    op: Operator,
+    op: LegacyOperator,
     *,
     skip_deepcopy=False,
     skip_differentiation=False,
@@ -633,11 +633,11 @@ def assert_valid(  # pylint: disable=too-many-arguments
     skip_bind_new_parameters=False,
     skip_eigvals=False,
 ) -> None:
-    """Runs basic validation checks on an :class:`~.core.Operator` or :class:`~.core.Operator2` to make
+    """Runs basic validation checks on an :class:`~.core.LegacyOperator` or :class:`~.core.Operator` to make
     sure it has been correctly defined.
 
     Args:
-        op (.Operator): an operator instance to validate
+        op (.LegacyOperator): an operator instance to validate
 
     Keyword Args:
         skip_deepcopy=False: If ``True``, deepcopy tests are not run.
@@ -657,7 +657,7 @@ def assert_valid(  # pylint: disable=too-many-arguments
 
     .. code-block:: python
 
-        class MyOp(Operator):
+        class MyOp(LegacyOperator):
 
             def __init__(self, data, wires):
                 self._data = data
@@ -672,7 +672,7 @@ def assert_valid(  # pylint: disable=too-many-arguments
 
     .. code-block:: python
 
-        class MyOp(Operator):
+        class MyOp(LegacyOperator):
 
             def __init__(self, wires):
                 self.hyperparameters["unhashable_list"] = []

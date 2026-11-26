@@ -191,7 +191,7 @@ class SelectTHC(ResourceOperator):
         select_swap_depth: int | None = None,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): A tensor hypercontracted
@@ -798,7 +798,7 @@ class SelectPauli(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, pauli_ham: PauliHamiltonian) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             pauli_ham (:class:`~pennylane.estimator.compact_hamiltonian.PauliHamiltonian`): A Hamiltonian

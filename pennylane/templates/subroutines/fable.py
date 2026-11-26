@@ -158,7 +158,7 @@ class FABLE(Operation):
             tol (float): rotation gates that have an angle value smaller than this tolerance are removed
 
         Returns:
-            list[.Operator]: list of gates for efficient circuit
+            list[.LegacyOperator]: list of gates for efficient circuit
         """
         alphas = math.arccos(input_matrix).flatten()
         thetas = compute_theta(alphas)

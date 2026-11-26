@@ -82,17 +82,17 @@ def _generator_prefactor(gen):
     return gen, prefactor
 
 
-def generator(op: qp.operation.Operator, format="prefactor"):
+def generator(op: qp.operation.LegacyOperator, format="prefactor"):
     r"""Returns the generator of an operation.
 
     Args:
-        op (.Operator or Callable): A single operator, or a function that
+        op (.LegacyOperator or Callable): A single operator, or a function that
             applies a single quantum operation.
         format (str): The format to return the generator in. Must be one of ``'prefactor'``,
             ``'observable'``, or ``'hamiltonian'``. See below for more details.
 
     Returns:
-        .Operator or tuple[.Operator, float]: The returned generator, with format/type
+        .LegacyOperator or tuple[.LegacyOperator, float]: The returned generator, with format/type
         dependent on the ``format`` argument.
 
         * ``"prefactor"``: Return the generator as ``(obs, prefactor)`` (representing

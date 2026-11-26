@@ -221,7 +221,7 @@ class TestOneBodyBlockEncoding:
         ],
     )
     def test_assert_valid(self, op_matrix):
-        """Test that OneBodyBlockEncoding is a valid Operator2, with and without capture.
+        """Test that OneBodyBlockEncoding is a valid Operator, with and without capture.
 
         ``assert_valid`` already covers the decomposition rules of both the operator and its
         adjoint. The two matrices cover the two branches of the decomposition: with and without

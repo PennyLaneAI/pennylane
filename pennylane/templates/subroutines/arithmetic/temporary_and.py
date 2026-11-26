@@ -19,7 +19,7 @@ from collections.abc import Sequence
 from typing import override
 
 from pennylane import math, ops
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
@@ -30,7 +30,7 @@ from pennylane.typing import AbstractArray, Bool, Wire
 from pennylane.wires import WiresLike
 
 
-class TemporaryAND(Operator2):
+class TemporaryAND(Operator):
     r"""TemporaryAND(wires, control_values)
 
     The ``TemporaryAND`` operation is a three-qubit gate equivalent to a reversible ``AND``,

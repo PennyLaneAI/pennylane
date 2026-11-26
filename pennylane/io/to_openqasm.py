@@ -19,7 +19,7 @@ from collections.abc import Callable
 from functools import singledispatch, wraps
 from typing import Any, overload
 
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.qscript import QuantumScript
 from pennylane.devices.preprocess import decompose
 from pennylane.ops import Conditional, MidMeasure
@@ -69,7 +69,7 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 
 @singledispatch
 # pylint: disable-next=unused-argument
-def _obj_string(op: Operator, wires: Wires, bit_map: dict, precision: None | int) -> str:
+def _obj_string(op: LegacyOperator, wires: Wires, bit_map: dict, precision: None | int) -> str:
     try:
         gate = OPENQASM_GATES[op.name]
     except KeyError as e:

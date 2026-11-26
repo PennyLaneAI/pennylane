@@ -25,7 +25,7 @@ from scipy.sparse import csr_array, csr_matrix
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operation, Operator, StatePrepBase, StatePrepBase2
+from pennylane.core.operator import LegacyOperator, Operation, StatePrepBase, StatePrepBase2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import WireError
 from pennylane.templates.state_preparations import MottonenStatePreparation
@@ -364,7 +364,9 @@ class StatePrep(StatePrepBase):
 
     @staticmethod
     # pylint: disable-next=unused-argument,arguments-differ
-    def compute_decomposition(state: TensorLike, wires: WiresLike, **kwargs) -> list[Operator]:
+    def compute_decomposition(
+        state: TensorLike, wires: WiresLike, **kwargs
+    ) -> list[LegacyOperator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -377,7 +379,7 @@ class StatePrep(StatePrepBase):
             wires (Iterable, Wires): the wire(s) the operation acts on
 
         Returns:
-            list[Operator]: decomposition into lower level operations
+            list[LegacyOperator]: decomposition into lower level operations
 
         **Example:**
 

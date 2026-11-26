@@ -15,7 +15,7 @@
 
 from functools import partial
 
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.math import is_tracer
 from pennylane.ops.op_math import Adjoint
@@ -44,7 +44,7 @@ def _check_equality(items1: TensorLike | Wires, items2: TensorLike | Wires) -> b
     return True
 
 
-def _ops_equal(op1: Operator, op2: Operator) -> bool:
+def _ops_equal(op1: LegacyOperator, op2: LegacyOperator) -> bool:
     """Checks if two operators are equal up to class, data, hyperparameters, and wires"""
     return (
         op1.__class__ is op2.__class__
@@ -53,12 +53,12 @@ def _ops_equal(op1: Operator, op2: Operator) -> bool:
     )
 
 
-def _are_inverses(op1: Operator, op2: Operator) -> bool:
+def _are_inverses(op1: LegacyOperator, op2: LegacyOperator) -> bool:
     """Checks if two operators are inverses of each other
 
     Args:
-        op1 (~.Operator)
-        op2 (~.Operator)
+        op1 (~.LegacyOperator)
+        op2 (~.LegacyOperator)
 
     Returns:
         Bool

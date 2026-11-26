@@ -20,7 +20,7 @@ import numpy as np
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import ceil_log2
 from pennylane.ops import SWAP, Hadamard, adjoint, ctrl
@@ -323,7 +323,7 @@ def _symmetrize(mu_wires, nu_wires, swap_flag, edge_flag, work_wires):
     adjoint(TemporaryAND([swap_flag, edge_flag, joint_flag], control_values=(1, 0)))
 
 
-class AliasSamplingTHC(Operator2):
+class AliasSamplingTHC(Operator):
     r"""Coefficient oracle for tensor hypercontraction (THC) qubitization via
     coherent alias (Walker) sampling.
 

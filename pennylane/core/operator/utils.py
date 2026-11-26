@@ -26,11 +26,11 @@ from pennylane.wires import Wires
 if TYPE_CHECKING:
     from pennylane.decomposition.resources import CompressedResourceOp
 
-    from .base import Operator
+    from .base import LegacyOperator
 
 
 @singledispatch
-def abstractify(val) -> AbstractArray | AbstractWires | Operator | CompressedResourceOp:
+def abstractify(val) -> AbstractArray | AbstractWires | LegacyOperator | CompressedResourceOp:
     """Convert the provided object into its abstract form.
 
     Args:
@@ -79,10 +79,10 @@ def abstractify(val) -> AbstractArray | AbstractWires | Operator | CompressedRes
 
     """
 
-    from .base import Operator  # pylint: disable=import-outside-toplevel
+    from .base import LegacyOperator  # pylint: disable=import-outside-toplevel
 
-    # NOTE: Don't flatten Operator instances as they can be handled by their custom dispatch.
-    leaves, tree = flatten(val, is_leaf=lambda x: isinstance(x, (Wires, Operator)))
+    # NOTE: Don't flatten LegacyOperator instances as they can be handled by their custom dispatch.
+    leaves, tree = flatten(val, is_leaf=lambda x: isinstance(x, (Wires, LegacyOperator)))
     if tree != leaf:
         abstract_leaves = tuple(abstractify(l) for l in leaves)
         return unflatten(abstract_leaves, tree)

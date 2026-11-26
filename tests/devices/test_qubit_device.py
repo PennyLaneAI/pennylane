@@ -642,7 +642,7 @@ class TestExpval:
         dev = mock_qubit_device_with_original_statistics()
 
         # observable with no eigenvalue representation defined
-        class MyObs(qp.operation.Operator):
+        class MyObs(qp.operation.LegacyOperator):
             num_wires = 1
 
             def eigvals(self):
@@ -720,7 +720,7 @@ class TestVar:
         """Tests that an error is thrown if var is called with an observable that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
 
-        class MyObs(qp.operation.Operator):
+        class MyObs(qp.operation.LegacyOperator):
             """Observable with no eigenvalue representation defined."""
 
             num_wires = 1
@@ -792,7 +792,7 @@ class TestSample:
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[1, 0], [0, 0]])
 
-        class MyObs(qp.operation.Operator):
+        class MyObs(qp.operation.LegacyOperator):
             """Observable with no eigenvalue representation defined."""
 
             num_wires = 1
@@ -862,7 +862,7 @@ class TestSampleWithBroadcasting:
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[[1, 0], [1, 1]], [[1, 1], [0, 0]], [[0, 1], [1, 0]]])
 
-        class MyObs(qp.operation.Operator):
+        class MyObs(qp.operation.LegacyOperator):
             """Observable with no eigenvalue representation defined."""
 
             num_wires = 1

@@ -19,7 +19,7 @@ from collections import defaultdict
 from functools import reduce
 
 from pennylane import math
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import expand_matrix
 from pennylane.ops import PPR_4, Hadamard, MultiRZ, PauliX
@@ -27,7 +27,7 @@ from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 
-class IQP(Operator2):
+class IQP(Operator):
     r"""
     A template that builds an Instantaneous Quantum Polynomial (IQP) circuit. The gates of these circuits correspond
     to multi-qubit X rotations, whose generators are given by tensor products of Pauli X operators.

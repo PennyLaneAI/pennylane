@@ -23,7 +23,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.measurements import MeasurementTransform
-from pennylane.core.operator import Operator, Operator2
+from pennylane.core.operator import LegacyOperator, Operator
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import MeasurementShapeError
 from pennylane.ops import RZ, Hadamard, I, X, Y, Z
@@ -424,7 +424,7 @@ class ShadowExpvalMP(MeasurementTransform):
     Please refer to :func:`~pennylane.shadow_expval` for detailed documentation.
 
     Args:
-        H (Operator, Sequence[Operator]): Operator or list of Operators to compute the expectation value over.
+        H (LegacyOperator, Sequence[LegacyOperator]): LegacyOperator or list of Operators to compute the expectation value over.
         seed (Union[int, None]): The seed used to generate the random measurements
         k (int): Number of equal parts to split the shadow's measurements to compute the median of means.
             ``k=1`` corresponds to simply taking the mean over all measurements.
@@ -443,7 +443,9 @@ class ShadowExpvalMP(MeasurementTransform):
     def _unflatten(cls, data, metadata):
         return cls(data[0], **dict(metadata))
 
-    def __init__(self, H: Operator | Sequence[Operator], seed: int | None = None, k: int = 1):
+    def __init__(
+        self, H: LegacyOperator | Sequence[LegacyOperator], seed: int | None = None, k: int = 1
+    ):
         self.seed = seed
         self.H = H
         self.k = k
@@ -452,13 +454,13 @@ class ShadowExpvalMP(MeasurementTransform):
     @classmethod
     def _primitive_bind_call(  # pylint: disable=arguments-renamed
         cls,
-        H: Operator | Sequence,
+        H: LegacyOperator | Sequence,
         seed: int | None = None,
         k: int = 1,
         **kwargs,
     ):
         def _get_tracer(op):
-            if isinstance(op, Operator2):
+            if isinstance(op, Operator):
                 if op.tracer is None:
                     op._bind_primitive()  # pragma: no cover  # pylint: disable=protected-access
                 return op.tracer if op.tracer is not None else op
@@ -539,7 +541,7 @@ class ShadowExpvalMP(MeasurementTransform):
         return float
 
     def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
-        return () if isinstance(self.H, Operator) else (len(self.H),)
+        return () if isinstance(self.H, LegacyOperator) else (len(self.H),)
 
     @property
     def wires(self):
@@ -558,7 +560,7 @@ class ShadowExpvalMP(MeasurementTransform):
         # A CompositeOp is also an Sequence, but we should consider it to be a single observable
         Hs = (
             self.H
-            if isinstance(self.H, Sequence) and not isinstance(self.H, Operator)
+            if isinstance(self.H, Sequence) and not isinstance(self.H, LegacyOperator)
             else [self.H]
         )
         for H in Hs:
@@ -571,7 +573,7 @@ class ShadowExpvalMP(MeasurementTransform):
         # A CompositeOp is also an Sequence, we do not want to copy each operand of the op.
         H_copy = (
             [copy.copy(H) for H in self.H]
-            if isinstance(self.H, Sequence) and not isinstance(self.H, Operator)
+            if isinstance(self.H, Sequence) and not isinstance(self.H, LegacyOperator)
             else copy.copy(self.H)
         )
         return self.__class__(
@@ -582,7 +584,7 @@ class ShadowExpvalMP(MeasurementTransform):
 
 
 def shadow_expval(
-    H: Operator | Sequence[Operator], k: int = 1, seed: int | None = None
+    H: LegacyOperator | Sequence[LegacyOperator], k: int = 1, seed: int | None = None
 ) -> ShadowExpvalMP:
     r"""Estimate expectation values using Classical Shadows with full differentiability support.
 
@@ -591,7 +593,7 @@ def shadow_expval(
     See `arXiv:2002.08953 <https://arxiv.org/abs/2002.08953>`_ for the original proposal and theoretical details.
 
     Args:
-        H (Sequence[Operator] | Operator): Obserable(s) whose expectation values are to be estimated.
+        H (Sequence[LegacyOperator] | LegacyOperator): Obserable(s) whose expectation values are to be estimated.
             Provide a single observable or a sequence to estimate the expectation values of multiple
             observables from the same classical shadows data.
         k (int): Number of equal parts for which to split the shadow's measurements in order to compute the median of means.

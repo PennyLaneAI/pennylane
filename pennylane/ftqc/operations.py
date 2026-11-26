@@ -83,7 +83,7 @@ class RotXZX(Operation):
             wires (Any, Wires): the wire the operation acts on
 
         Returns:
-            list[Operator]: decomposition into lower level operations
+            list[LegacyOperator]: decomposition into lower level operations
 
         **Example:**
 

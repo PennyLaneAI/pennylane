@@ -105,7 +105,7 @@ class UniformStatePrep(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_states: int) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -226,7 +226,7 @@ class AliasSampling(ResourceOperator):
     # pylint: disable-next=arguments-differ
     def resource_rep(cls, num_coeffs: int, precision: float | None = None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Returns:
             :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`: the operator in a compressed representation
@@ -368,7 +368,7 @@ class MPSPrep(ResourceOperator):
         cls, num_mps_matrices: int, max_bond_dim: int, precision: float | None = None
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             num_mps_matrices (int): the number of matrices in the MPS representation
@@ -635,7 +635,7 @@ class QROMStatePreparation(ResourceOperator):
         selswap_depths=1,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
 
         Args:
             num_state_qubits (int): number of qubits required to represent the state-vector
@@ -1010,7 +1010,7 @@ class PrepTHC(ResourceOperator):
         select_swap_depth: int | None = None,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the LegacyOperator that are needed to compute a resource estimation.
 
         Args:
             thc_ham (:class:`~pennylane.estimator.compact_hamiltonian.THCHamiltonian`): a tensor hypercontracted

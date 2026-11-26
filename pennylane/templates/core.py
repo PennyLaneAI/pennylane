@@ -42,7 +42,7 @@ from pennylane import capture, math
 from pennylane.capture import subroutine as capture_subroutine
 from pennylane.core import queuing
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operation, Operator, abstractify
+from pennylane.core.operator import LegacyOperator, Operation, abstractify
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
@@ -67,22 +67,22 @@ def _make_signature_key(subroutine: "Subroutine", *args, **kwargs):
     return tuple(bound.arguments.values())
 
 
-def _get_non_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"):
-    if isinstance(initial, (Operator, CompressedResourceOp)):
+def _get_non_adjoint_rep(initial: "LegacyOperator | CompressedResourceOp | Subroutine"):
+    if isinstance(initial, (LegacyOperator, CompressedResourceOp)):
         return abstractify(initial)
     return subroutine_resource_rep(initial.func, *initial.args, **initial.keywords)
 
 
-def _get_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"):
-    if isinstance(initial, (Operator, CompressedResourceOp)):
+def _get_adjoint_rep(initial: "LegacyOperator | CompressedResourceOp | Subroutine"):
+    if isinstance(initial, (LegacyOperator, CompressedResourceOp)):
         return _adjoint_abstract(abstractify(initial))
     return adjoint_subroutine_resource_rep(initial.func, *initial.args, **initial.keywords)
 
 
 def change_op_basis_subroutine_resource_rep(
-    compute: "Operator | CompressedResourceOp | Subroutine",
-    target: "Operator | CompressedResourceOp | Subroutine",
-    uncompute: "Operator | CompressedResourceOp | Subroutine" = None,
+    compute: "LegacyOperator | CompressedResourceOp | Subroutine",
+    target: "LegacyOperator | CompressedResourceOp | Subroutine",
+    uncompute: "LegacyOperator | CompressedResourceOp | Subroutine" = None,
 ) -> ChangeOpBasis | CompressedResourceOp:
     """Generate an abstract :class:`~pennylane.ops.ChangeOpBasis` resource representation that is more
     specifically targeted for use with :class:`~.Subroutine` instances.
@@ -91,9 +91,9 @@ def change_op_basis_subroutine_resource_rep(
     in advance.
 
     Args:
-        compute (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine): the compute operator or subroutine.
-        target (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine): the target operator or subroutine.
-        uncompute (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine | None): the optional uncompute operator or subroutine.
+        compute (LegacyOperator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine): the compute operator or subroutine.
+        target (LegacyOperator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine): the target operator or subroutine.
+        uncompute (LegacyOperator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine | None): the optional uncompute operator or subroutine.
     Returns:
         pennylane.ops.ChangeOpBasis: an abstract representation of :func:`~.change_op_basis` involving a subroutine that can be
         used in specifying the resources of another operator, template or subroutine.
@@ -149,7 +149,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
     .. warning:: Note that the following features only work with tape-based PennyLane, and
         do not work with Catalyst.
 
-    Suppose we have a ``Subroutine`` we want to use in the decomposition of another ``Operator``.
+    Suppose we have a ``Subroutine`` we want to use in the decomposition of another ``LegacyOperator``.
 
     .. code-block:: python
 
@@ -163,7 +163,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
             for x in params:
                 rotation(x, wires)
 
-    We can add ``S`` to the resources of another ``Operator`` by using this function together with
+    We can add ``S`` to the resources of another ``LegacyOperator`` by using this function together with
     an abstract form of the arguments it will be called with, using :class:`~.AbstractArray` and
     :class:`~.AbstractWires`. These can be created by indexing into the :func:`~.typing.Float` and
     :func:`~.typing.Wire` abstract types respectively.
@@ -260,7 +260,7 @@ class SubroutineOp(Operation):
     Args:
         subroutine (Subroutine): the definition of a subroutine from a quantum function
         bound_args (inspect.BoundArguments): the inputs to the subroutine bound to the subroutine's signature
-        decomposition (list[Operator]): the decomposition of the subroutine with the given ``bound_args``.
+        decomposition (list[LegacyOperator]): the decomposition of the subroutine with the given ``bound_args``.
         output (Any): Any output from the subroutine.
 
     """
@@ -577,7 +577,7 @@ class Subroutine:  # pylint: disable=too-many-instance-attributes
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
     {<class 'pennylane.ops.qubit.parametric_ops_single_qubit.RX'>: 10}
 
-    We can create an ``Operator`` that can decompose to a ``Subroutine`` using :class:`~.AbstractArray`,
+    We can create an ``LegacyOperator`` that can decompose to a ``Subroutine`` using :class:`~.AbstractArray`,
     :class:`~.AbstractWires`, and :func:`~.subroutine_resource_rep`.
 
     .. code-block:: python
@@ -810,7 +810,7 @@ class CollectedSubroutine(Operation):
     While it contains less information than the corresponding :class:`~.SubroutineOp`,
     it can be useful for testing the captured plxpr.
 
-    The only properties held onto by this "Operator" are name (a string), wires, and
+    The only properties held onto by this "LegacyOperator" are name (a string), wires, and
     decomposition.
 
     """

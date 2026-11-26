@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains classes and functions for Operator arithmetic.
+This module contains classes and functions for LegacyOperator arithmetic.
 
 Constructor Functions
 ~~~~~~~~~~~~~~~~~~~~~
@@ -61,7 +61,7 @@ Symbolic Classes
     ~SymbolicOp2
     ~ScalarSymbolicOp
 
-Controlled Operator Classes
+Controlled LegacyOperator Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. currentmodule:: pennylane

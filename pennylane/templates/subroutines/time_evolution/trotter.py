@@ -20,7 +20,7 @@ import copy
 from pennylane import ops as qp_ops
 from pennylane.capture.autograph import wraps
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import LegacyOperator, Operation
 from pennylane.core.qscript import make_qscript
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
@@ -314,13 +314,13 @@ class TrotterProduct(Operation):
         Returns:
             data, metadata: The trainable and non-trainable components.
 
-        See ``Operator._unflatten``.
+        See ``LegacyOperator._unflatten``.
 
         The data component can be recursive and include other operations. For example, the trainable component of ``Adjoint(RX(1, wires=0))``
         will be the operator ``RX(1, wires=0)``.
 
         The metadata **must** be hashable.  If the hyperparameters contain a non-hashable component, then this
-        method and ``Operator._unflatten`` should be overridden to provide a hashable version of the hyperparameters.
+        method and ``LegacyOperator._unflatten`` should be overridden to provide a hashable version of the hyperparameters.
 
         **Example:**
 
@@ -331,7 +331,7 @@ class TrotterProduct(Operation):
         >>> qp.PauliRot._unflatten(*op._flatten())
         PauliRot(theta=1.2, pauli_word=XY, wires=[0, 1])
 
-        Operators that have trainable components that differ from their ``Operator.data`` must implement their own
+        Operators that have trainable components that differ from their ``LegacyOperator.data`` must implement their own
         ``_flatten`` methods.
 
         >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires=4), (2, 3))
@@ -362,7 +362,7 @@ class TrotterProduct(Operation):
             Operations making up the decomposition should be queued within the
             ``compute_decomposition`` method.
 
-        .. seealso:: :meth:`~.Operator.decomposition`.
+        .. seealso:: :meth:`~.LegacyOperator.decomposition`.
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -370,7 +370,7 @@ class TrotterProduct(Operation):
             **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
-            list[Operator]: decomposition of the operator
+            list[LegacyOperator]: decomposition of the operator
         """
         time = args[-1]
         n = kwargs["n"]
@@ -578,7 +578,7 @@ class TrotterizedQfunc(Operation):
 
         super().__init__(time, *trainable_args, wires=wires)
 
-    def decomposition(self) -> list[Operator]:
+    def decomposition(self) -> list[LegacyOperator]:
         """The decomposition"""
         n = self.hyperparameters["n"]
         order = self.hyperparameters["order"]

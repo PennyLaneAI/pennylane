@@ -95,15 +95,15 @@ By default, the mechanism is disabled:
     instead of using `qp.capture.enable`. By default, `capture=False`.
 
 
-**Custom Operator Behaviour**
+**Custom LegacyOperator Behaviour**
 
-Any operator that inherits from :class:`~.Operator` gains a default ability to be captured
+Any operator that inherits from :class:`~.LegacyOperator` gains a default ability to be captured
 in a Jaxpr. Any positional argument is bound as a tracer, wires are processed out into individual tracers,
 and any keyword arguments are passed as keyword metadata.
 
 .. code-block:: python
 
-    class MyOp1(qp.operation.Operator):
+    class MyOp1(qp.operation.LegacyOperator):
 
         def __init__(self, arg1, wires, key=None):
             super().__init__(arg1, wires=wires)
@@ -131,7 +131,7 @@ will be called when constructing a new class instance instead of ``type.__call__
 
 .. code-block:: python
 
-    class JustMetadataOp(qp.operation.Operator):
+    class JustMetadataOp(qp.operation.LegacyOperator):
 
         def __init__(self, metadata):
             super().__init__(wires=[])
@@ -160,7 +160,7 @@ If needed, developers can also override the implementation method of the primiti
 
 .. code-block:: python
 
-    class MyCustomOp(qp.operation.Operator):
+    class MyCustomOp(qp.operation.LegacyOperator):
         pass
 
     @MyCustomOp._primitive.def_impl

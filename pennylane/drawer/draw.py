@@ -268,7 +268,7 @@ def draw(  # pylint: disable=too-many-arguments
 
         **Operators without wires:**
 
-        Some operators deviate from the standard :class:`~.operation.Operator` class in their
+        Some operators deviate from the standard :class:`~.operation.LegacyOperator` class in their
         handling of wires. In particular, tools like :class:`~.Snapshot`
         always occupy all qubits, and are drawn accordingly:
 
@@ -738,7 +738,7 @@ def draw_mpl(  # pylint: disable=too-many-arguments
 
         **Operators without wires:**
 
-        Some operators deviate from the standard :class:`~.operation.Operator` class in their
+        Some operators deviate from the standard :class:`~.operation.LegacyOperator` class in their
         handling of wires. In particular, tools like :class:`~.Snapshot`
         always occupy all qubits, and are drawn accordingly:
 

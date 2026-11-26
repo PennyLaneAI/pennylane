@@ -112,7 +112,7 @@ class TestResources:
         assert repr(resources) == "<num_gates=3, gate_counts={DummyRX: 2, S: 1}, weighted_cost=5.0>"
 
 
-class DummyOp(qp.operation.Operator):
+class DummyOp(qp.operation.LegacyOperator):
     resource_keys = {"foo", "bar"}
 
 
@@ -138,10 +138,10 @@ class TestCompressedResourceOp:
     def test_invalid_op_type(self):
         """Tests that an error is raised if the op is invalid."""
 
-        with pytest.raises(TypeError, match="op_type must be an Operator type"):
+        with pytest.raises(TypeError, match="op_type must be an LegacyOperator type"):
             CompressedResourceOp("RX", {})
 
-        with pytest.raises(TypeError, match="op_type must be a subclass of Operator"):
+        with pytest.raises(TypeError, match="op_type must be a subclass of LegacyOperator"):
             CompressedResourceOp(int, {})
 
     def test_hash(self):
@@ -185,7 +185,7 @@ class TestCompressedResourceOp:
     def test_hash_list_params(self):
         """Tests when the resource params contains a list."""
 
-        class CustomOp(qp.operation.Operator):
+        class CustomOp(qp.operation.LegacyOperator):
             resource_keys = {"foo", "bar"}
 
             @property
@@ -288,10 +288,10 @@ class TestResourceRep:
     def test_resource_rep_fail(self):
         """Tests that an error is raised if the op is invalid."""
 
-        with pytest.raises(TypeError, match="op_type must be a type of Operator"):
+        with pytest.raises(TypeError, match="op_type must be a type of LegacyOperator"):
             resource_rep(int)
 
-        class CustomOp(qp.operation.Operator):
+        class CustomOp(qp.operation.LegacyOperator):
             resource_keys = {}
 
             @property

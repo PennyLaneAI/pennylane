@@ -365,26 +365,26 @@ class TestHilbertSchmidt:
             assert qp.math.allclose(val.parameters, results[idx].parameters)
 
     def test_v_not_operator(self):
-        """Test that V must be a an Operator or an iterable of Operators."""
+        """Test that V must be a an LegacyOperator or an iterable of Operators."""
 
         U = qp.Hadamard(wires=0)
         V = "qp.RZ(0.1, wires=1)"
 
         with pytest.raises(
             ValueError,
-            match="The argument 'V' must be an Operator or an iterable of Operators.",
+            match="The argument 'V' must be an LegacyOperator or an iterable of Operators.",
         ):
             qp.HilbertSchmidt(V, U)
 
     def test_u_not_operator(self):
-        """Test that U must be a an Operator or an iterable of Operators."""
+        """Test that U must be a an LegacyOperator or an iterable of Operators."""
 
         U = "qp.CNOT(wires=[0, 1])"
         V = qp.RZ(0.1, wires=1)
 
         with pytest.raises(
             ValueError,
-            match="The argument 'U' must be an Operator or an iterable of Operators.",
+            match="The argument 'U' must be an LegacyOperator or an iterable of Operators.",
         ):
             qp.HilbertSchmidt(V, U)
 
@@ -644,26 +644,26 @@ class TestLocalHilbertSchmidt:
         # if the answer changes.
 
     def test_v_not_operator(self):
-        """Test that V must be a an Operator or an iterable of Operators."""
+        """Test that V must be a an LegacyOperator or an iterable of Operators."""
 
         U = qp.Hadamard(wires=0)
         V = "qp.RZ(0.1, wires=1)"
 
         with pytest.raises(
             ValueError,
-            match="The argument 'V' must be an Operator or an iterable of Operators.",
+            match="The argument 'V' must be an LegacyOperator or an iterable of Operators.",
         ):
             qp.LocalHilbertSchmidt(V, U)
 
     def test_u_not_operator(self):
-        """Test that U must be a an Operator or an iterable of Operators."""
+        """Test that U must be a an LegacyOperator or an iterable of Operators."""
 
         U = "qp.CNOT(wires=[0, 1])"
         V = qp.RZ(0.1, wires=1)
 
         with pytest.raises(
             ValueError,
-            match="The argument 'U' must be an Operator or an iterable of Operators.",
+            match="The argument 'U' must be an LegacyOperator or an iterable of Operators.",
         ):
             qp.LocalHilbertSchmidt(V, U)
 

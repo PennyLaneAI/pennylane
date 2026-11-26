@@ -570,7 +570,7 @@ class TestCountsIntegration:  # pylint: disable=too-many-public-methods
 
         circuit()
 
-    @pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator2.")
+    @pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator.")
     def test_batched_counts_work_individually(self):
         """Test that each counts call operates independently"""
         n_shots = 10
@@ -841,7 +841,7 @@ class TestCountsIntegration:  # pylint: disable=too-many-public-methods
         assert res[1] == {"00": 10}
         assert res[2] == {"00": 10, "01": 0, "10": 0, "11": 0}
 
-    @pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator2.")
+    @pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator.")
     def test_batched_all_outcomes(self):
         """Tests that all_outcomes=True works with broadcasting."""
         n_shots = 10
@@ -895,7 +895,7 @@ def test_counts_no_op_finite_shots(interface, wires, basis_state):
 
 
 @pytest.mark.all_interfaces
-@pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator2.")
+@pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator.")
 @pytest.mark.parametrize("wires, basis_states", [(None, ("010", "000")), ([2, 1], ("01", "00"))])
 @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 def test_batched_counts_no_op_finite_shots(interface, wires, basis_states):
@@ -915,7 +915,7 @@ def test_batched_counts_no_op_finite_shots(interface, wires, basis_states):
 
 
 @pytest.mark.all_interfaces
-@pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator2.")
+@pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator.")
 @pytest.mark.parametrize("wires, basis_states", [(None, ("010", "000")), ([2, 1], ("01", "00"))])
 @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 def test_batched_counts_and_expval_no_op_finite_shots(interface, wires, basis_states):
@@ -940,7 +940,7 @@ def test_batched_counts_and_expval_no_op_finite_shots(interface, wires, basis_st
 
 
 @pytest.mark.all_interfaces
-@pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator2.")
+@pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator.")
 @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 def test_batched_counts_operator_finite_shots(interface):
     """Check all interfaces with observable measurement counts, batching and finite shots"""
@@ -958,7 +958,7 @@ def test_batched_counts_operator_finite_shots(interface):
 
 
 @pytest.mark.all_interfaces
-@pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator2.")
+@pytest.mark.pl2do(reason="parameter broadcasting not supported with Operator.")
 @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 def test_batched_counts_and_expval_operator_finite_shots(interface):
     """Check all interfaces with observable measurement counts, batching and finite shots"""

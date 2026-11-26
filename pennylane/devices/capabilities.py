@@ -23,7 +23,7 @@ from enum import Enum
 from itertools import repeat
 from typing import TypedDict, cast, get_type_hints
 
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.exceptions import InvalidCapabilitiesError, QuantumFunctionError
 from pennylane.ops import CompositeOp, SymbolicOp
 
@@ -208,12 +208,12 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
                 gate_set.add(f"Adjoint({op})")
         return gate_set
 
-    def supports_operation(self, operation: str | Operator) -> bool:
+    def supports_operation(self, operation: str | LegacyOperator) -> bool:
         """Checks if the given operation is supported by name."""
         operation_name = operation if isinstance(operation, str) else operation.name
         return bool(_get_supported_base_op(operation_name, self.operations))
 
-    def supports_observable(self, observable: str | Operator) -> bool:
+    def supports_observable(self, observable: str | LegacyOperator) -> bool:
         """Checks if the given observable is supported by name."""
         observable_name = observable if isinstance(observable, str) else observable.name
         return bool(_get_supported_base_op(observable_name, self.observables))
@@ -286,17 +286,17 @@ def _get_operators(section: dict) -> dict[str, OperatorProperties]:
     for o, attributes in iterator:
         if unknowns := set(attributes) - {"properties", "conditions"}:
             raise InvalidCapabilitiesError(
-                f"Operator '{o}' has unknown attributes: {list(unknowns)}"
+                f"LegacyOperator '{o}' has unknown attributes: {list(unknowns)}"
             )
         properties = attributes.get("properties", {})
         if unknowns := set(properties) - {"invertible", "controllable", "differentiable"}:
             raise InvalidCapabilitiesError(
-                f"Operator '{o}' has unknown properties: {list(unknowns)}"
+                f"LegacyOperator '{o}' has unknown properties: {list(unknowns)}"
             )
         condition_strs = attributes.get("conditions", [])
         if unknowns := set(condition_strs) - VALID_CONDITION_STRINGS:
             raise InvalidCapabilitiesError(
-                f"Operator '{o}' has unknown conditions: {list(unknowns)}"
+                f"LegacyOperator '{o}' has unknown conditions: {list(unknowns)}"
             )
         conditions = [ExecutionCondition(c) for c in condition_strs]
         _validate_conditions(conditions, o)
@@ -441,7 +441,7 @@ def update_device_capabilities(
 
 def observable_stopping_condition_factory(
     capabilities: DeviceCapabilities,
-) -> Callable[[Operator], bool]:
+) -> Callable[[LegacyOperator], bool]:
     """Returns a default observable validation check from a capabilities object.
 
     The returned function checks if an observable is supported, for composite and nested
@@ -449,7 +449,7 @@ def observable_stopping_condition_factory(
 
     """
 
-    def observable_stopping_condition(obs: Operator) -> bool:
+    def observable_stopping_condition(obs: LegacyOperator) -> bool:
         if not capabilities.supports_observable(obs.name):
             return False
 

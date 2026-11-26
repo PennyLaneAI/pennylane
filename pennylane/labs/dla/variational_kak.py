@@ -25,7 +25,7 @@ import jax.numpy as jnp
 import numpy as np
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.liealg import adjvec_to_op, op_to_adjvec
 from pennylane.pauli import PauliSentence
 
@@ -76,7 +76,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     .. code-block:: python
 
-        def Kc(theta_opt: Iterable[float], k: Iterable[Operator]):
+        def Kc(theta_opt: Iterable[float], k: Iterable[LegacyOperator]):
             assert len(theta_opt) == len(k)
             for theta_j, k_j in zip(theta_opt, k):
                 qp.exp(-1j * theta_j * k_j)
@@ -93,8 +93,8 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
     .. seealso:: :doc:`The KAK decomposition in theory (demo) <demo:demos/tutorial_kak_decomposition>`, :doc:`The KAK decomposition in practice (demo) <demo:demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`.
 
     Args:
-        H (Union[Operator, PauliSentence, np.ndarray]): Hamiltonian to decompose
-        g (List[Union[Operator, PauliSentence, np.ndarray]]): DLA of the Hamiltonian
+        H (Union[LegacyOperator, PauliSentence, np.ndarray]): Hamiltonian to decompose
+        g (List[Union[LegacyOperator, PauliSentence, np.ndarray]]): DLA of the Hamiltonian
         dims (Tuple[int]): Tuple of dimensions ``(dim_k, dim_mtilde, dim_a)`` of
             Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus (\tilde{\mathfrak{m}} \oplus \mathfrak{a})`
         adj (np.ndarray): Adjoint representation of dimension ``(dim_g, dim_g, dim_g)``,
@@ -304,7 +304,7 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
     vec_a, theta_opt = kak_res
     [a_elem] = adjvec_to_op([vec_a], g[len(k) :])  # sum(c * op for c, op in zip(vec_h, m))
 
-    if isinstance(a_elem, Operator):
+    if isinstance(a_elem, LegacyOperator):
         a_elem_m = qp.matrix(a_elem, wire_order=range(n))
     elif isinstance(a_elem, PauliSentence):
         a_elem_m = a_elem.to_mat(wire_order=range(n))

@@ -83,7 +83,7 @@ def test_ps_ps_multiplication_non_commutativity():
 
 
 def _pauli_to_op(p):
-    """convert PauliWord or PauliSentence to Operator"""
+    """convert PauliWord or PauliSentence to LegacyOperator"""
     return qp.pauli.to_operator(p)
 
 
@@ -1356,7 +1356,7 @@ class TestPaulicomms:
     @pytest.mark.parametrize("convert2", [_id, _pw_to_ps])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
     def test_pauli_word_comm_different_types(self, op1, op2, true_res, convert1, convert2):
-        """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, Operator"""
+        """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, LegacyOperator"""
         op1 = convert1(op1)
         op2 = convert2(op2)
         res2 = op1.commutator(op2)
@@ -1385,7 +1385,7 @@ class TestPaulicomms:
     @pytest.mark.parametrize("convert1", [_id, _pw_to_ps])
     @pytest.mark.parametrize("op1, op2, true_res", data_pauli_relations_different_types)
     def test_pauli_word_comm_commutes(self, op1, op2, true_res, convert1):
-        """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, Operator for the case when the operators commute"""
+        """Test native comm in between a PauliSentence and either of PauliWord, PauliSentence, LegacyOperator for the case when the operators commute"""
         op1 = convert1(op1)
         op2 = qp.pauli.pauli_sentence(op2)
         res2 = op1.commutator(op2)

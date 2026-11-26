@@ -26,9 +26,9 @@ import pytest
 import pennylane as qp
 from pennylane.core.operator import (
     Channel,
+    LegacyOperator,
     Operation,
     Operator,
-    Operator2,
     StatePrepBase,
     StatePrepBase2,
 )
@@ -192,7 +192,7 @@ _INSTANCES_TO_TEST = [
         marks=pytest.mark.xfail(
             reason=(
                 "Real exponent decomposes to complex PauliRot, which is not "
-                "supported with Operator2"
+                "supported with Operator"
             )
         ),
     ),
@@ -270,7 +270,7 @@ _INSTANCES_TO_FAIL = [
     ),
 ]
 """
-List[Tuple[Operator, Type[Exception]]]: List of tuples containing Operator instances that could
+List[Tuple[LegacyOperator, Type[Exception]]]: List of tuples containing LegacyOperator instances that could
 not be auto-generated, along with the exception type raised when trying to assert its validity.
 
 These operators need to break PL conventions, and each one's reason is specified in a comment.
@@ -282,8 +282,8 @@ _ABSTRACT_OR_META_TYPES = {
     Adjoint,
     Adjoint2,
     AdjointOperation,
+    LegacyOperator,
     Operator,
-    Operator2,
     Operation,
     Channel,
     qp.ops.Projector,
@@ -320,7 +320,7 @@ _ABSTRACT_OR_META_TYPES = {
 
 def get_all_classes(c):
     """Recursive function to generate a flat list of all child classes of ``c``.
-    (first called with ``Operator``)."""
+    (first called with ``LegacyOperator``)."""
     if c.__module__[:10] != "pennylane.":
         return []
     subs = c.__subclasses__()
@@ -331,8 +331,8 @@ def get_all_classes(c):
 
 
 _CLASSES_TO_TEST = (
-    (set(get_all_classes(Operator)) | set(get_all_classes(Operator2)))
-    - {i[1] for i in getmembers(qp.templates) if isclass(i[1]) and issubclass(i[1], Operator)}
+    (set(get_all_classes(LegacyOperator)) | set(get_all_classes(Operator)))
+    - {i[1] for i in getmembers(qp.templates) if isclass(i[1]) and issubclass(i[1], LegacyOperator)}
     # `pytest.param` returns a `ParameterSet` (a namedtuple)
     - {type(v.values[0][0] if hasattr(v, "values") else v[0]) for v in _INSTANCES_TO_TEST}
     - {type(op) for (op, _) in _INSTANCES_TO_FAIL}

@@ -240,7 +240,7 @@ class ResourceOperator(ABC):
         )
 
     def queue(self, context: QueuingManager = QueuingManager) -> ResourceOperator:
-        """Append the operator to the Operator queue."""
+        """Append the operator to the LegacyOperator queue."""
         context.append(self)
         return self
 
@@ -443,7 +443,7 @@ def _dequeue(
     op_to_remove: ResourceOperator | Iterable,
     context: QueuingManager = QueuingManager,
 ):
-    """Remove the given resource operator(s) from the Operator queue."""
+    """Remove the given resource operator(s) from the LegacyOperator queue."""
     if not isinstance(op_to_remove, Iterable):
         op_to_remove = [op_to_remove]
 

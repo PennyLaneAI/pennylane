@@ -19,7 +19,7 @@ import numpy as np
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import ceil_log2
 from pennylane.ops import CSWAP, RZ, GlobalPhase, Hadamard, adjoint, ctrl
@@ -46,7 +46,7 @@ def _apply_hadamards(wires):
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-class UniformPrep(Operator2):
+class UniformPrep(Operator):
     r"""Prepare a uniform superposition over the first ``n_states`` basis states.
 
     .. math::
@@ -336,7 +336,7 @@ def _validate_probs(probs):
         raise ValueError("probs must sum to a positive value")
 
 
-class AliasSampling(Operator2):
+class AliasSampling(Operator):
     r"""Prepare a state with real and positive amplitudes via coherent alias sampling.
 
     Starting from all-zeros, the circuit of Figure 11 in

@@ -48,7 +48,7 @@ General Execution Errors
     ~InvalidCapabilitiesError
     ~NonDifferentiableError
 
-Operator Property Errors
+LegacyOperator Property Errors
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. autosummary::
@@ -122,45 +122,45 @@ class MeasurementShapeError(ValueError):
 
 
 # =============================================================================
-# Operator Property Errors
+# LegacyOperator Property Errors
 # =============================================================================
 
 
 class OperatorPropertyUndefined(Exception):
     """Generic exception to be used for undefined
-    Operator properties or methods."""
+    LegacyOperator properties or methods."""
 
 
 class DecompositionUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's representation as a decomposition is undefined."""
+    """Raised when an LegacyOperator's representation as a decomposition is undefined."""
 
 
 class TermsUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's representation as a linear combination is undefined."""
+    """Raised when an LegacyOperator's representation as a linear combination is undefined."""
 
 
 class MatrixUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's matrix representation is undefined."""
+    """Raised when an LegacyOperator's matrix representation is undefined."""
 
 
 class SparseMatrixUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's sparse matrix representation is undefined."""
+    """Raised when an LegacyOperator's sparse matrix representation is undefined."""
 
 
 class EigvalsUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's eigenvalues are undefined."""
+    """Raised when an LegacyOperator's eigenvalues are undefined."""
 
 
 class DiagGatesUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's diagonalizing gates are undefined."""
+    """Raised when an LegacyOperator's diagonalizing gates are undefined."""
 
 
 class AdjointUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's adjoint version is undefined."""
+    """Raised when an LegacyOperator's adjoint version is undefined."""
 
 
 class PowUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's power is undefined."""
+    """Raised when an LegacyOperator's power is undefined."""
 
 
 class GeneratorUndefinedError(OperatorPropertyUndefined):

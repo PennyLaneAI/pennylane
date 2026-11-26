@@ -201,7 +201,7 @@ class PrepSelPrep(Operation):
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
 
     def queue(self, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
+        """Append the operator to the LegacyOperator queue."""
         context.remove(self.lcu)
         context.append(self)
         return self

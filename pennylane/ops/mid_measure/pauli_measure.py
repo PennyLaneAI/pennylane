@@ -27,7 +27,7 @@ from pennylane.capture import enabled as capture_enabled
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.compiler import compiler
 from pennylane.core import QueuingManager
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator, abstractify
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -36,7 +36,7 @@ from .measurement_value import MeasurementValue
 _VALID_PAULI_CHARS = "XYZ"
 
 
-class PauliMeasure(Operator2):
+class PauliMeasure(Operator):
     """A Pauli product measurement."""
 
     compilable_argnames = ("pauli_word", "postselect", "meas_uid")

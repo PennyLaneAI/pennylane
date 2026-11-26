@@ -23,7 +23,7 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 
-def _convert_op_to_numpy_data(op: qp.operation.Operator) -> qp.operation.Operator:
+def _convert_op_to_numpy_data(op: qp.operation.LegacyOperator) -> qp.operation.LegacyOperator:
     if math.get_interface(*op.data) == "numpy":
         return op
     # Use operator method to change parameters when it become available

@@ -320,7 +320,7 @@ class DummyOp_decomps(ResourceOperator):
     @classmethod
     def resource_rep(cls, max_register_size):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute the resources.
+        the LegacyOperator that are needed to compute the resources.
         """
         num_wires = 2 * max_register_size
         return CompressedResourceOp(cls, num_wires, {"max_register_size": max_register_size})

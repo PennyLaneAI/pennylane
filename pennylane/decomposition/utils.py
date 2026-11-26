@@ -22,7 +22,7 @@ from functools import singledispatch
 from types import MappingProxyType, NoneType
 from typing import overload
 
-from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operator, Operator1, abstractify
 from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
 
@@ -81,7 +81,7 @@ def _type_to_name(op: type):
 
 
 @to_name.register
-def _operator_to_name(op: Operator):
+def _operator_to_name(op: LegacyOperator):
     return translate_op_alias(op.name)
 
 
@@ -90,7 +90,7 @@ def _str_to_name(op: str):
     return translate_op_alias(op)
 
 
-def _get_decomp_args(op: Operator):
+def _get_decomp_args(op: LegacyOperator):
     if isinstance(op, Operator1):
         return op.resource_params, op.data, {"wires": op.wires, **op.hyperparameters}
     return abstractify(op).arguments, (), op.arguments
@@ -100,7 +100,7 @@ def _init_signature_registration():
     # The signature registry is deliberately built in two stages: a *lazy* registry that records
     # pending registrations, and a *materialized* registry of the resulting abstract operators.
     #
-    # This split exists because ``register`` is invoked from ``Operator2.__init_subclass__`` to
+    # This split exists because ``register`` is invoked from ``Operator.__init_subclass__`` to
     # auto-register every fixed-signature operator as its class is defined, which happens *while
     # pennylane itself is still being imported*. At that point we cannot eagerly build the abstract
     # operator a signature ultimately needs, because both required steps assume a fully imported
@@ -122,10 +122,10 @@ def _init_signature_registration():
     _lazy_registry = defaultdict(tuple)
 
     @overload
-    def register(op: Operator2) -> None: ...
+    def register(op: Operator) -> None: ...
     @overload
-    def register(op: type[Operator2], **kwargs) -> None: ...
-    def register(op: Operator2 | type[Operator2], **kwargs) -> None:
+    def register(op: type[Operator], **kwargs) -> None: ...
+    def register(op: Operator | type[Operator], **kwargs) -> None:
         r"""Register a possible signature for an operator.
 
         A *signature* is a fully abstract instance of an operator, capturing the abstract type of
@@ -135,7 +135,7 @@ def _init_signature_registration():
         improving the performance of decomposition passes in :func:`~.qjit`-compiled workflows.
 
         Args:
-            op (~.Operator2 | type[~.Operator2]): the operator to register a signature for. If an
+            op (~.Operator | type[~.Operator]): the operator to register a signature for. If an
                 operator *instance* is given, it must be fully abstract and is stored as-is. If an
                 operator *type* is given, its ``arg_specs`` (optionally overridden by keyword
                 arguments) are used to construct the abstract instance when the registry is
@@ -154,7 +154,7 @@ def _init_signature_registration():
 
         .. seealso:: :func:`pennylane.decomposition.signature_registry`
         """
-        if isinstance(op, Operator2):
+        if isinstance(op, Operator):
             if kwargs:
                 raise ValueError(
                     "Keyword arguments can only be provided when registering a signature for an "
@@ -197,11 +197,11 @@ def _init_signature_registration():
 
         _lazy_registry[op] += (specs,)
 
-    def registry() -> dict[type[Operator2], set[Operator2]]:
+    def registry() -> dict[type[Operator], set[Operator]]:
         r"""Return a read-only mapping of the registered operator signatures.
 
         Returns:
-            MappingProxyType[type[~.Operator2], set[~.Operator2]]: a read-only mapping from each
+            MappingProxyType[type[~.Operator], set[~.Operator]]: a read-only mapping from each
             registered operator class to the set of its fully abstract signature instances.
 
         .. seealso:: :func:`pennylane.decomposition.register_signature`
@@ -210,7 +210,7 @@ def _init_signature_registration():
         # cannot happen at registration time
         for op_cls, sigs in _lazy_registry.items():
             for sig in sigs:
-                op = sig if isinstance(sig, Operator2) else op_cls(**sig)
+                op = sig if isinstance(sig, Operator) else op_cls(**sig)
                 _registry[op_cls].add(abstractify(op))
 
         _lazy_registry.clear()

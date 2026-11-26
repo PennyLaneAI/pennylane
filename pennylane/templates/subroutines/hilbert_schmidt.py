@@ -22,7 +22,7 @@ from collections.abc import Iterable
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operation, Operator, Operator2, abstractify
+from pennylane.core.operator import LegacyOperator, Operation, Operator, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     CompressedResourceOp,
@@ -60,12 +60,12 @@ class HilbertSchmidt(Operation):
     It defines our decomposition for the Hilbert-Schmidt Test template.
 
     Args:
-        V (Operator or Iterable[Operator]): The operators that represent the unitary `V`.
-        U (Operator or Iterable[Operator]): The operators that represent the unitary `U`.
+        V (LegacyOperator or Iterable[LegacyOperator]): The operators that represent the unitary `V`.
+        U (LegacyOperator or Iterable[LegacyOperator]): The operators that represent the unitary `U`.
 
     Raises:
-        ValueError: ``V`` is not an Operator or an iterable of Operators.
-        ValueError: ``U`` is not an Operator or an iterable of Operators.
+        ValueError: ``V`` is not an LegacyOperator or an iterable of Operators.
+        ValueError: ``U`` is not an LegacyOperator or an iterable of Operators.
         ValueError: ``U`` and ``V`` do not have the same number of wires.
         ValueError: Operators in ``U`` must act on distinct wires from those in ``v_wires``.
 
@@ -115,11 +115,11 @@ class HilbertSchmidt(Operation):
     @classmethod
     # pylint: disable-next=arguments-differ
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
-        U = (U,) if isinstance(U, Operator) or is_tracer(U) else U
-        V = (V,) if isinstance(V, Operator) or is_tracer(V) else V
+        U = (U,) if isinstance(U, LegacyOperator) or is_tracer(U) else U
+        V = (V,) if isinstance(V, LegacyOperator) or is_tracer(V) else V
 
         def _get_tracer(op):
-            if isinstance(op, Operator2):
+            if isinstance(op, Operator):
                 if op.tracer is None:
                     op._bind_primitive()  # pylint: disable=protected-access
                 return op.tracer if op.tracer is not None else op
@@ -150,17 +150,21 @@ class HilbertSchmidt(Operation):
 
     def __init__(
         self,
-        V: Operator | Iterable[Operator],
-        U: Operator | Iterable[Operator],
+        V: LegacyOperator | Iterable[LegacyOperator],
+        U: LegacyOperator | Iterable[LegacyOperator],
     ) -> None:
-        u_ops = (U,) if isinstance(U, Operator) else tuple(U)
-        if not all(isinstance(op, Operator) for op in u_ops):
-            raise ValueError("The argument 'U' must be an Operator or an iterable of Operators.")
+        u_ops = (U,) if isinstance(U, LegacyOperator) else tuple(U)
+        if not all(isinstance(op, LegacyOperator) for op in u_ops):
+            raise ValueError(
+                "The argument 'U' must be an LegacyOperator or an iterable of Operators."
+            )
         u_wires = Wires.all_wires([op.wires for op in u_ops])
 
-        v_ops = (V,) if isinstance(V, Operator) else tuple(V)
-        if not all(isinstance(op, Operator) for op in v_ops):
-            raise ValueError("The argument 'V' must be an Operator or an iterable of Operators.")
+        v_ops = (V,) if isinstance(V, LegacyOperator) else tuple(V)
+        if not all(isinstance(op, LegacyOperator) for op in v_ops):
+            raise ValueError(
+                "The argument 'V' must be an LegacyOperator or an iterable of Operators."
+            )
         v_wires = Wires.all_wires([op.wires for op in v_ops])
 
         self._hyperparameters = {
@@ -186,7 +190,7 @@ class HilbertSchmidt(Operation):
         return tuple(datum for op in self._operators for datum in op.data)
 
     def __copy__(self):
-        # Override Operator.__copy__() to avoid setting the "data" property before the new instance
+        # Override LegacyOperator.__copy__() to avoid setting the "data" property before the new instance
         # is assigned hyper-parameters since HilbertSchmidt data is derived from the hyper-parameters.
         clone = HilbertSchmidt.__new__(HilbertSchmidt)
 
@@ -203,7 +207,7 @@ class HilbertSchmidt(Operation):
         return clone
 
     @property
-    def _operators(self) -> list[Operator]:
+    def _operators(self) -> list[LegacyOperator]:
         """Flattened list of operators that compose this HilbertSchmidt operation."""
         return [*self._hyperparameters["V"], *self._hyperparameters["U"]]
 
@@ -219,13 +223,13 @@ class HilbertSchmidt(Operation):
     def compute_decomposition(  # pylint: disable=arguments-differ
         *params: TensorLike,
         wires: int | Iterable[int | str] | Wires,
-        U: Operator | Iterable[Operator],
-        V: Operator | Iterable[Operator],
-    ) -> list[Operator]:
+        U: LegacyOperator | Iterable[LegacyOperator],
+        V: LegacyOperator | Iterable[LegacyOperator],
+    ) -> list[LegacyOperator]:
         r"""Representation of the operator as a product of other operators."""
 
-        u_ops = (U,) if isinstance(U, Operator) else tuple(U)
-        v_ops = (V,) if isinstance(V, Operator) else tuple(V)
+        u_ops = (U,) if isinstance(U, LegacyOperator) else tuple(U)
+        v_ops = (V,) if isinstance(V, LegacyOperator) else tuple(V)
         u_wires = Wires.all_wires([op.wires for op in u_ops])
         v_wires = Wires.all_wires([op.wires for op in v_ops])
 
@@ -287,12 +291,12 @@ class LocalHilbertSchmidt(HilbertSchmidt):  # pylint: disable=abstract-method
         :target: javascript:void(0);
 
     Args:
-        V (Operator or Iterable[Operator]): The operators that represent the approximate compiled unitary `V`.
-        U (Operator or Iterable[Operator]): The operators that represent the unitary `U`.
+        V (LegacyOperator or Iterable[LegacyOperator]): The operators that represent the approximate compiled unitary `V`.
+        U (LegacyOperator or Iterable[LegacyOperator]): The operators that represent the unitary `U`.
 
     Raises:
-        ValueError: ``V`` is not an Operator or an iterable of Operators.
-        ValueError: ``U`` is not an Operator or an iterable of Operators.
+        ValueError: ``V`` is not an LegacyOperator or an iterable of Operators.
+        ValueError: ``U`` is not an LegacyOperator or an iterable of Operators.
         ValueError: ``U`` and ``V`` do not have the same number of wires.
         ValueError: Operators in ``U`` must act on distinct wires from those in ``v_wires``.
 
@@ -348,13 +352,13 @@ class LocalHilbertSchmidt(HilbertSchmidt):  # pylint: disable=abstract-method
     def compute_decomposition(
         *params: TensorLike,
         wires: int | Iterable[int | str] | Wires,
-        U: Operator | Iterable[Operator],
-        V: Operator | Iterable[Operator],
-    ) -> list[Operator]:
+        U: LegacyOperator | Iterable[LegacyOperator],
+        V: LegacyOperator | Iterable[LegacyOperator],
+    ) -> list[LegacyOperator]:
         r"""Representation of the operator as a product of other operators (static method)."""
 
-        u_ops = (U,) if isinstance(U, Operator) else tuple(U)
-        v_ops = (V,) if isinstance(V, Operator) else tuple(V)
+        u_ops = (U,) if isinstance(U, LegacyOperator) else tuple(U)
+        v_ops = (V,) if isinstance(V, LegacyOperator) else tuple(V)
         u_wires = Wires.all_wires([op.wires for op in u_ops])
         v_wires = Wires.all_wires([op.wires for op in v_ops])
 
@@ -460,11 +464,11 @@ def _local_hilbert_schmidt_standard_resources(
 
 def _up_to_last_layer(
     wires: int | Iterable[int | str] | Wires,
-    U: Operator | Iterable[Operator],
-    V: Operator | Iterable[Operator],
+    U: LegacyOperator | Iterable[LegacyOperator],
+    V: LegacyOperator | Iterable[LegacyOperator],
 ) -> tuple[int, Iterable, Iterable, list[int]]:
-    u_ops = (U,) if isinstance(U, Operator) else tuple(U)
-    v_ops = (V,) if isinstance(V, Operator) else tuple(V)
+    u_ops = (U,) if isinstance(U, LegacyOperator) else tuple(U)
+    v_ops = (V,) if isinstance(V, LegacyOperator) else tuple(V)
 
     def collect_wires_in_order(ops):
         accumulator = []
@@ -525,8 +529,8 @@ def _up_to_last_layer(
 def _hilbert_schmidt_standard(  # pylint: disable=unused-argument
     *params: TensorLike,
     wires: int | Iterable[int | str] | Wires,
-    U: Operator | Iterable[Operator],
-    V: Operator | Iterable[Operator],
+    U: LegacyOperator | Iterable[LegacyOperator],
+    V: LegacyOperator | Iterable[LegacyOperator],
 ):
     _, first_range, second_range, wires = _up_to_last_layer(wires, U, V)
 
@@ -547,8 +551,8 @@ def _hilbert_schmidt_standard(  # pylint: disable=unused-argument
 def _local_hilbert_schmidt_standard(  # pylint: disable=unused-argument
     *params: TensorLike,
     wires: int | Iterable[int | str] | Wires,
-    U: Operator | Iterable[Operator],
-    V: Operator | Iterable[Operator],
+    U: LegacyOperator | Iterable[LegacyOperator],
+    V: LegacyOperator | Iterable[LegacyOperator],
 ):
     n_wires, _, _, wires = _up_to_last_layer(wires, U, V)
 

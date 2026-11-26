@@ -18,7 +18,7 @@ This submodule contains the template SelectSwap.
 from collections.abc import Sequence
 
 from pennylane import capture, math
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import SWAP, ctrl
 from pennylane.typing import Bool, TensorLike, Wire
@@ -37,7 +37,7 @@ from .qrom_load import (
 )
 
 
-class SelectSwap(Operator2):
+class SelectSwap(Operator):
     r"""Load bitstrings into a zeroed target register with Select-SWAP, leaving the work wires in a
     garbage state.
 

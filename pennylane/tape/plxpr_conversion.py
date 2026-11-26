@@ -39,7 +39,7 @@ from pennylane.capture.primitives import (
     vjp_prim,
 )
 from pennylane.core import queuing
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.ops.mid_measure import (
     MeasurementValue,
     get_mcm_predicates,
@@ -102,7 +102,7 @@ class CollectOpsandMeas(FlattenedInterpreter):
         if self.state is None:
             self.state = {"ops": [], "measurements": [], "dynamic_wire_map": {}}
 
-    def interpret_operation(self, op: Operator):
+    def interpret_operation(self, op: LegacyOperator):
         self.state["ops"].append(op)
 
     def interpret_measurement(self, measurement):

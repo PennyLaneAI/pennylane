@@ -126,7 +126,7 @@ def test_set_device_target():
 def test_supports_operator_without_decomp(shots):
     """Test that null.qubit automatically supports any operation without a decomposition."""
 
-    class MyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+    class MyOp(qp.operation.LegacyOperator):  # pylint: disable=too-few-public-methods
         pass
 
     tape = qp.tape.QuantumScript([MyOp(wires=(0, 1))], [qp.expval(qp.Z(0))], shots=shots)
@@ -1244,7 +1244,7 @@ class TestNullQubitGraphModeExclusive:
         """Test that if a decomposition requires more work wires than available on null.qubit,
         that decomposition is discarded and fallback is used."""
 
-        class MyNullQubitOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class MyNullQubitOp(qp.operation.LegacyOperator):  # pylint: disable=too-few-public-methods
             num_wires = 1
 
         @qp.register_resources({qp.H: 2}, name="decomp_fallback")
@@ -1272,7 +1272,7 @@ class TestNullQubitGraphModeExclusive:
         still runs without error on NullQubit."""
 
         # Create a custom operator that's not in the standard gateset
-        class CustomOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qp.operation.LegacyOperator):  # pylint: disable=too-few-public-methods
             num_wires = 2
 
             def decomposition(self):

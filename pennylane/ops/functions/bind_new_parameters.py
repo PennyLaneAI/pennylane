@@ -23,9 +23,9 @@ from collections.abc import Sequence
 from functools import singledispatch
 
 from pennylane import capture, ops, queuing
-from pennylane.core import Operator2
+from pennylane.core import Operator
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operator
+from pennylane.core.operator import LegacyOperator
 from pennylane.ops import (
     Adjoint,
     CompositeOp,
@@ -57,20 +57,20 @@ from pennylane.typing import TensorLike
 
 
 @singledispatch
-def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
+def bind_new_parameters(op: LegacyOperator, params: Sequence[TensorLike]) -> LegacyOperator:
     """Create a new operator with updated parameters
 
-    This function takes an :class:`~.Operator` and new parameters as input and
+    This function takes an :class:`~.LegacyOperator` and new parameters as input and
     returns a new operator of the same type with the new parameters. This function
     does not mutate the original operator.
 
     Args:
-        op (.Operator): Operator to update
+        op (.LegacyOperator): LegacyOperator to update
         params (Sequence[TensorLike]): New parameters to create operator with. This
             must have the same shape as `op.data`.
 
     Returns:
-        .Operator: New operator with updated parameters
+        .LegacyOperator: New operator with updated parameters
     """
     try:
         return op.__class__(*params, wires=op.wires, **copy.deepcopy(op.hyperparameters))
@@ -85,9 +85,9 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
 
 @bind_new_parameters.register
 def bind_new_dynamic_arguments(
-    op: Operator2,
+    op: Operator,
     dynamic_args: Sequence[TensorLike],
-) -> Operator2:
+) -> Operator:
     kwargs = op.wire_args | op.static_args | op.compilable_args | op.hybrid_args
     kwargs.update(zip(op.dynamic_argnames, dynamic_args, strict=True))
     return op.__class__(**kwargs)
@@ -255,7 +255,7 @@ def bind_new_parameters_prep_sel_prep(op: PrepSelPrep, params: Sequence[TensorLi
 
 @bind_new_parameters.register
 def bind_new_parameters_select(op: Select, params: Sequence[TensorLike]):
-    # ``Select`` (an ``Operator2``) stores its data in the target operators
+    # ``Select`` (an ``Operator``) stores its data in the target operators
     params = list(params)
     if not params:
         return copy.copy(op)

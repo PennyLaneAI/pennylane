@@ -20,7 +20,7 @@ import inspect
 import pytest
 
 import pennylane as qp
-from pennylane.core import Operator2
+from pennylane.core import Operator
 from pennylane.testing import assert_valid
 from pennylane.typing import Bool, Float, Wire
 
@@ -52,7 +52,7 @@ def LoopOp(phi, w, n_iters):
 
 
 class TestClassCreation:
-    """Tests that ``subcircuit`` builds a valid ``Operator2`` subclass."""
+    """Tests that ``subcircuit`` builds a valid ``Operator`` subclass."""
 
     def test_decomposition_rule_name(self):
         """Generated rule names separate the operator name from the suffix."""
@@ -82,8 +82,8 @@ class TestClassCreation:
             _ = qp.subcircuit(invalid_fn)
 
     def test_returns_operator2_subclass(self):
-        """Test that ``subcircuit`` returns a subclass of ``Operator2``."""
-        assert isinstance(FixedOp, type) and issubclass(FixedOp, Operator2)
+        """Test that ``subcircuit`` returns a subclass of ``Operator``."""
+        assert isinstance(FixedOp, type) and issubclass(FixedOp, Operator)
 
     def test_class_variables(self):
         """Test that various class variables of the operator created by ``subcircuit``
@@ -170,7 +170,7 @@ class TestDecorator:
         def ConfiguredOp(phi, wires):
             qp.RZ(phi, wires)
 
-        assert issubclass(ConfiguredOp, Operator2)
+        assert issubclass(ConfiguredOp, Operator)
         assert ConfiguredOp.__name__ == "ConfiguredOp"
         assert ConfiguredOp.dynamic_argnames == ("phi",)
 
@@ -183,7 +183,7 @@ class TestDecorator:
             qp.X(wires)
             qp.X(wires)
 
-        assert issubclass(DirectOp, Operator2)
+        assert issubclass(DirectOp, Operator)
         assert DirectOp.__name__ == "DirectOp"
         assert DirectOp.wire_argnames == ("wires",)
         assert DirectOp.dynamic_argnames == ()

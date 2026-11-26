@@ -17,7 +17,7 @@ Contains the OutSquare template.
 
 from collections import defaultdict
 
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -39,8 +39,8 @@ from .semi_adder import (
 from .temporary_and import TemporaryAND
 
 
-class _SquareArithmeticOp(Operator2, is_baseclass=True):
-    """Shared ``Operator2`` boilerplate for :class:`~.OutSquare` and :class:`~.SignedOutSquare`."""
+class _SquareArithmeticOp(Operator, is_baseclass=True):
+    """Shared ``Operator`` boilerplate for :class:`~.OutSquare` and :class:`~.SignedOutSquare`."""
 
     wire_argnames = ("x_wires", "output_wires", "work_wires")
     compilable_argnames = ("output_wires_zeroed",)

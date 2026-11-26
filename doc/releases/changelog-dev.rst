@@ -1676,6 +1676,10 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* Renamed ``Operator`` to ``LegacyOperator`` and ``Operator2`` to ``Operator``.
+  Update imports and references accordingly.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
   ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
   ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,

@@ -32,7 +32,7 @@ from pennylane.ops.op_math.pow import Pow, PowOperation
 from pennylane.ops.op_math.pow2 import Pow2
 
 
-class TempOperator(qp.operation.Operator):
+class TempOperator(qp.operation.LegacyOperator):
     """Dummy operator"""
 
     num_wires = 1
@@ -92,7 +92,7 @@ class TestConstructor:
         """Test that when the simplification method returns a list of multiple operators,
         pow returns a list of multiple operators."""
 
-        class Temp(qp.operation.Operator):
+        class Temp(qp.operation.LegacyOperator):
             num_wires = 1
 
             def pow(self, z):  # pylint: disable=unused-argument
@@ -116,7 +116,7 @@ class TestConstructor:
     def test_simplify_squared(self):
         """Test that an op without a special pow method can still be simplified when raised to an integer power."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             pass
 
         simplified = (DummyOp(0) ** 2).simplify()
@@ -128,13 +128,13 @@ class TestInheritanceMixins:
     """Test the inheritance structure and mixin addition through dynamic __new__ method."""
 
     def test_plain_operator(self, power_method):
-        """Test when base directly inherits from Operator only inherits from Operator."""
+        """Test when base directly inherits from LegacyOperator only inherits from LegacyOperator."""
 
         base = TempOperator(1.234, wires=0)
         op: Pow = power_method(base=base, z=1.2)
 
         assert isinstance(op, Pow)
-        assert isinstance(op, qp.operation.Operator)
+        assert isinstance(op, qp.operation.LegacyOperator)
         assert not isinstance(op, qp.operation.Operation)
         assert not isinstance(op, PowOperation)
 
@@ -153,7 +153,7 @@ class TestInheritanceMixins:
         op: Pow = power_method(base=base, z=6.5)
 
         assert isinstance(op, Pow)
-        assert isinstance(op, qp.operation.Operator)
+        assert isinstance(op, qp.operation.LegacyOperator)
         assert isinstance(op, qp.operation.Operation)
         assert isinstance(op, PowOperation)
 
@@ -304,7 +304,7 @@ class TestProperties:
     def test_no_decomposition_batching_error(self, power_method):
         """Test that if an error occurs with a batched exponent, has_decomposition is False."""
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
 
             def pow(self, z):
                 return super().pow(z % 2)
@@ -316,9 +316,9 @@ class TestProperties:
             pow_op.decomposition()
 
     def test_error_raised_if_no_batching(self, power_method):
-        """Test that if Operator.pow raises an error and no batching is present, the erorr is raised."""
+        """Test that if LegacyOperator.pow raises an error and no batching is present, the erorr is raised."""
 
-        class MyOp(qp.operation.Operator):
+        class MyOp(qp.operation.LegacyOperator):
 
             def pow(self, z):
                 raise ValueError
@@ -335,7 +335,7 @@ class TestProperties:
     def test_has_diagonalizing_gates(self, value, power_method):
         """Test that Pow defers has_diagonalizing_gates to base operator."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             num_wires = 1
             has_diagonalizing_gates = value
 
@@ -346,7 +346,7 @@ class TestProperties:
     def test_is_hermitian(self, value, power_method):
         """Test that if the base is hermitian, then the power is hermitian."""
 
-        class DummyOp(qp.operation.Operator):
+        class DummyOp(qp.operation.LegacyOperator):
             """Dummy operator."""
 
             num_wires = 1
@@ -827,7 +827,7 @@ class TestSparseMatrix:
 
 
 class TestDecompositionExpand:
-    """Test the Pow Operator decomposition and expand methods."""
+    """Test the Pow LegacyOperator decomposition and expand methods."""
 
     def test_shortcut_exists(self):
         """Test the decomposition method uses a shortcut if it is defined for that exponent and base."""

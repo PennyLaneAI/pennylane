@@ -114,7 +114,7 @@ def test_postselection_error_with_wrong_device():
     with pytest.raises(
         DeviceError,
         match=re.escape(
-            "Operator Projector(array([1]), wires=[0]) not supported with default.mixed and does not provide a decomposition."
+            "LegacyOperator Projector(array([1]), wires=[0]) not supported with default.mixed and does not provide a decomposition."
         ),
     ):
         with pytest.warns(DecompositionWarning):

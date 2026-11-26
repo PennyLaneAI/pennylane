@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Basic unit tests for ``Operator2``."""
+"""Basic unit tests for ``Operator``."""
 
 # pylint: disable=protected-access,too-few-public-methods
 
@@ -36,7 +36,7 @@ from scipy.sparse import csr_matrix
 
 import pennylane as qp
 from pennylane.core.apply import apply
-from pennylane.core.operator import Operator2, StatePrepBase2, abstractify
+from pennylane.core.operator import Operator, StatePrepBase2, abstractify
 from pennylane.core.operator.operator2 import OperatorRegistry, get_op_class_by_name
 from pennylane.core.queuing import AnnotatedQueue
 from pennylane.exceptions import (
@@ -63,14 +63,14 @@ class TestOperatorRegistry:
     @pytest.mark.parametrize("op_class", (qp.Hadamard, qp.PauliX, qp.GlobalPhase))
     def test_builtin_subclasses(self, op_class):
         """Built-in operators are registered under their class names."""
-        assert issubclass(op_class, Operator2)
+        assert issubclass(op_class, Operator)
         assert OperatorRegistry()[op_class.__name__] is op_class
         assert get_op_class_by_name(op_class.__name__) is op_class
 
     def test_user_defined_subclass(self):
         """A custom operator is registered without constructing an instance."""
 
-        class RegistryCustomOp(Operator2):
+        class RegistryCustomOp(Operator):
             """A user-defined operator with a wire argument."""
 
             def __init__(self, wires):
@@ -82,7 +82,7 @@ class TestOperatorRegistry:
     def test_indirect_subclass(self):
         """An inherited custom operator has its own registry entry."""
 
-        class RegistryParentOp(Operator2):
+        class RegistryParentOp(Operator):
             """A user-defined parent operator."""
 
             def __init__(self, wires):
@@ -99,7 +99,7 @@ class TestOperatorRegistry:
     def test_duplicate_name(self):
         """Duplicate names warn and preserve the first registered class."""
 
-        class RegistryDuplicateOp(Operator2):
+        class RegistryDuplicateOp(Operator):
             """The first operator registered under this name."""
 
             def __init__(self, wires):
@@ -111,7 +111,7 @@ class TestOperatorRegistry:
             match=r"More than one operator class by the same name \(RegistryDuplicateOp\)",
         ):
 
-            class RegistryDuplicateOp(Operator2):  # pylint: disable=function-redefined
+            class RegistryDuplicateOp(Operator):  # pylint: disable=function-redefined
                 """A different operator with the same name."""
 
                 def __init__(self, wires):
@@ -131,17 +131,17 @@ class TestOperatorRegistry:
             lookup("RegistryUnknownOp")
 
         assert exc_info.value.args == (
-            "No defined Operator2 with the name RegistryUnknownOp found.",
+            "No defined Operator with the name RegistryUnknownOp found.",
         )
 
 
 class TestInitSubclass:  # pylint: disable=too-many-public-methods
-    """Tests for the validation performed in ``Operator2.__init_subclass__``."""
+    """Tests for the validation performed in ``Operator.__init_subclass__``."""
 
     def test_str_argnames_converted_to_tuple(self):
         """Test that string argnames are converted into one-tuples."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = "phi"
             static_argnames = "pw"
             hybrid_argnames = "wires"
@@ -158,7 +158,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
     def test_sorting_argnames_order(self):
         """Test that argnames are automatically sorted to be in signature order."""
 
-        class DummyOp(qp.core.Operator2):
+        class DummyOp(qp.core.Operator):
             wire_argnames = ("reg2", "reg1")
             dynamic_argnames = ("b", "a")
             static_argnames = ("s2", "s1")
@@ -173,7 +173,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         assert DummyOp.static_argnames == ("s1", "s2")
         assert DummyOp.hybrid_argnames == ("h1", "h2")
 
-        class DummyOp2(qp.core.Operator2):
+        class DummyOp2(qp.core.Operator):
             compilable_argnames = ("c3", "c2", "c1")
 
             def __init__(self, c1, wires, c2, c3):  # pylint: disable=useless-parent-delegation
@@ -194,7 +194,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         ``compilable_argnames`` is not allowed."""
 
         def __init__(self, x, y, z, wires):
-            Operator2.__init__(self, x, y, z, wires=wires)
+            Operator.__init__(self, x, y, z, wires=wires)
 
         attrs = {"__init__": __init__, "compilable_argnames": ("x",), **other_argnames}
 
@@ -204,7 +204,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         ):
             # This creates a class while allowing us to parametrize the attributes
             # that we want to test.
-            type("Op", (Operator2,), attrs)
+            type("Op", (Operator,), attrs)
 
     @pytest.mark.parametrize(
         "first, second",
@@ -220,7 +220,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         """Test that dynamic, wire, static, and compilable argnames must be disjoint."""
 
         def __init__(self, x):
-            Operator2.__init__(self, x)
+            Operator.__init__(self, x)
 
         attrs = {first: ("x",), second: ("x",), "__init__": __init__}
         # If neither overlapping group is ``wire_argnames``, blank out the
@@ -231,12 +231,12 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         with pytest.raises(TypeError, match="must not overlap"):
             # This creates a class while allowing us to parametrize the attributes
             # that we want to test.
-            _ = type("Op", (Operator2,), attrs)
+            _ = type("Op", (Operator,), attrs)
 
     def test_hybrid_may_overlap_with_wires(self):
         """Test that ``hybrid_argnames`` is allowed to overlap with ``wire_argnames``."""
 
-        class Op(Operator2):
+        class Op(Operator):
             wire_argnames = ("wires",)
             hybrid_argnames = ("wires",)
 
@@ -251,21 +251,21 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         or compilable argnames."""
 
         def __init__(self, x, wires):
-            Operator2.__init__(self, x, wires=wires)
+            Operator.__init__(self, x, wires=wires)
 
         attrs = {"hybrid_argnames": ("x",), other_group: ("x",), "__init__": __init__}
 
         with pytest.raises(TypeError, match="overlap with dynamic, static"):
             # This creates a class while allowing us to parametrize the attributes
             # that we want to test.
-            type("Op", (Operator2,), attrs)
+            type("Op", (Operator,), attrs)
 
     def test_unclassified_signature_parameter_error(self):
         """Test that every parameter in the signature must appear in some ``**_argnames`` tuple."""
 
         with pytest.raises(TypeError, match="not classified in any argnames"):
 
-            class Op(Operator2):  # pylint: disable=unused-variable
+            class Op(Operator):  # pylint: disable=unused-variable
                 # ``phi`` is not in any argnames tuple
                 def __init__(self, phi, wires):
                     super().__init__(phi, wires=wires)
@@ -273,7 +273,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
     def test_signature_captured(self):
         """Test that ``cls._sig`` is set to the subclass's __init__ signature."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -285,7 +285,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
     def test_class_registered_as_pytree(self):
         """Test that subclasses are automatically registered as pytrees."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -298,7 +298,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         """Test that when ``arg_specs`` is not declared, wire arguments are
         unconstrained and accept arbitrary lengths."""
 
-        class Op(Operator2):
+        class Op(Operator):
             wire_argnames = ("wires", "ctrl_wires")
 
             def __init__(self, wires, ctrl_wires):
@@ -316,7 +316,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         """Test that declaring both wire arguments and a fixed wire spec in
         ``arg_specs`` enforces matching wire counts."""
 
-        class Op(Operator2):
+        class Op(Operator):
             wire_argnames = ("wires", "ctrl_wires")
             arg_specs = {"wires": AbstractWires(2)}
 
@@ -340,7 +340,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
                 "extra": AbstractArray((), float),
             },
             attr: ("extra",),
-            "__init__": lambda self, phi, extra, wires: Operator2.__init__(
+            "__init__": lambda self, phi, extra, wires: Operator.__init__(
                 self, phi, extra, wires=wires
             ),
         }
@@ -349,12 +349,12 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
             TypeError,
             match=r"Op\.arg_specs can only contain dynamic and wire arguments",
         ):
-            type("Op", (Operator2,), attrs)
+            type("Op", (Operator,), attrs)
 
     def test_arg_specs_builtin_num_types_canonicalized(self):
         """Test that builtin Python number types are canonicalized to ``AbstractArrays``."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             arg_specs = {"phi": float}
 
@@ -368,7 +368,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
 
         with pytest.raises(TypeError, match=r"'Wire' cannot be used on its own"):
 
-            class InvalidSpecsOp(Operator2):  # pylint: disable=unused-variable
+            class InvalidSpecsOp(Operator):  # pylint: disable=unused-variable
 
                 arg_specs = {"wires": Wire}
 
@@ -379,7 +379,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         """Test that ``has_fixed_sig`` is ``False`` when ``arg_specs`` is not declared and there
         are any arguments."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -391,7 +391,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         """Test that ``has_fixed_sig`` is ``True`` when ``arg_specs`` is not declared and there
         are no arguments."""
 
-        class Op(Operator2):
+        class Op(Operator):
             wire_argnames = ()
 
             def __init__(self):  # pylint: disable=useless-parent-delegation
@@ -402,7 +402,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
     def test_has_fixed_sig_true_for_fully_specified_static_types(self):
         """Test that ``has_fixed_sig`` is ``True`` when only dynamic and wire args are fully typed."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi", "theta")
             wire_argnames = ("wires", "ctrl_wires")
             arg_specs = {
@@ -420,7 +420,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
     def test_has_fixed_sig_false_for_partial_arg_specs(self):
         """Test that ``has_fixed_sig`` is ``False`` when ``arg_specs`` omits some arguments."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             arg_specs = {"phi": AbstractArray((), float)}
 
@@ -433,7 +433,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
     def test_has_fixed_sig_false_for_unknown_rank_or_axis(self, phi_spec):
         """Test that ``has_fixed_sig`` is ``False`` for dynamic shapes that are not fully fixed."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             arg_specs = {"phi": phi_spec, "wires": AbstractWires(1)}
 
@@ -445,7 +445,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
     def test_has_fixed_sig_false_for_dynamic_wire_count(self):
         """Test that ``has_fixed_sig`` is ``False`` when a wire arg has unknown length."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             arg_specs = {
                 "phi": AbstractArray((), float),
@@ -460,7 +460,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
     def test_has_fixed_sig_true_after_number_type_canonicalization(self):
         """Test that canonicalized builtin number types still yield a fixed signature."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             arg_specs = {"phi": float, "wires": AbstractWires(2)}
 
@@ -491,25 +491,25 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
         }
 
         if "static_argnames" in extra_argnames:
-            attrs["__init__"] = lambda self, phi, label, wires: Operator2.__init__(
+            attrs["__init__"] = lambda self, phi, label, wires: Operator.__init__(
                 self, phi, label, wires=wires
             )
         elif "hybrid_argnames" in extra_argnames:
-            attrs["__init__"] = lambda self, phi, ops, wires: Operator2.__init__(
+            attrs["__init__"] = lambda self, phi, ops, wires: Operator.__init__(
                 self, phi, ops, wires=wires
             )
         else:
-            attrs["__init__"] = lambda self, phi, n, wires: Operator2.__init__(
+            attrs["__init__"] = lambda self, phi, n, wires: Operator.__init__(
                 self, phi, n, wires=wires
             )
 
-        Op = type("Op", (Operator2,), attrs)
+        Op = type("Op", (Operator,), attrs)
         assert Op.has_fixed_sig is False
 
     def test_has_fixed_sig_false_with_hybrid_wire_arg(self):
         """Test that a hybrid wire argument prevents a fixed signature."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "pytree_wires")
             hybrid_argnames = ("pytree_wires",)
@@ -525,7 +525,7 @@ class TestInitSubclass:  # pylint: disable=too-many-public-methods
 
 
 class TestOperatorInit:
-    """Tests for ``Operator2.__init__``."""
+    """Tests for ``Operator.__init__``."""
 
     def test_operators_without_fixed_shape_wires_raise_error_on_construction(self):
         """Tests that operators cannot be constructed with wires of unbound length."""
@@ -557,7 +557,7 @@ class TestOperatorInit:
     def test_defaults_applied(self):
         """Test that missing kwargs receive their default values."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             static_argnames = ("method",)
 
@@ -577,7 +577,7 @@ class TestOperatorInit:
     def test_wires_collected_from_multiple_wire_args(self):
         """Test that multiple wire argnames are unioned, preserving order."""
 
-        class TwoWiresArgsOp(Operator2):
+        class TwoWiresArgsOp(Operator):
             wire_argnames = ("wires", "ctrl_wires")
 
             def __init__(self, wires, ctrl_wires):
@@ -589,7 +589,7 @@ class TestOperatorInit:
     def test_work_wires_excluded_from_wires(self):
         """Test that the ``work_wires``/``work_wire`` argnames are not added to ``_wires``."""
 
-        class WithWorkWires(Operator2):
+        class WithWorkWires(Operator):
             wire_argnames = ("wires", "work_wires", "work_wire")
 
             def __init__(self, wires, work_wires, work_wire):
@@ -601,7 +601,7 @@ class TestOperatorInit:
     def test_hybrid_arg_operator_wires_collected(self):
         """Test that operators inside ``hybrid_argnames`` contribute their wires."""
 
-        class Composite(Operator2):
+        class Composite(Operator):
             hybrid_argnames = ("ops", "pytree_wires")
             wire_argnames = ("wires", "pytree_wires")
 
@@ -616,9 +616,9 @@ class TestOperatorInit:
 
     def test_non_hybrid_wire_arg_auto_wrapped_in_constructor(self):
         """Test that non-hybrid wire arguments are wrapped in ``Wires`` by the
-        ``Operator2`` constructor even if the subclass forwards a raw value."""
+        ``Operator`` constructor even if the subclass forwards a raw value."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -643,7 +643,7 @@ class TestOperatorInit:
         """Test that the constructor accepts a variety of raw inputs for wire
         arguments and canonicalizes them to a ``Wires`` instance."""
 
-        class Op(Operator2):
+        class Op(Operator):
             def __init__(self, wires):
                 super().__init__(wires=wires)
 
@@ -655,7 +655,7 @@ class TestOperatorInit:
         """Test that a hybrid wire argument whose leaves are not ``Wires``
         instances raises a ``TypeError``."""
 
-        class Op(Operator2):
+        class Op(Operator):
             wire_argnames = ("wires",)
             hybrid_argnames = ("wires",)
 
@@ -669,7 +669,7 @@ class TestOperatorInit:
     def test_wire_size_match(self):
         """Test that a wire argument matching the declared ``arg_specs`` is accepted."""
 
-        class Op(Operator2):
+        class Op(Operator):
             arg_specs = {"wires": Wire[2]}
 
             def __init__(self, wires):
@@ -681,7 +681,7 @@ class TestOperatorInit:
     def test_wire_size_mismatch_error(self):
         """Test that supplying a different number of wires than ``arg_specs`` raises an error."""
 
-        class Op(Operator2):
+        class Op(Operator):
             arg_specs = {"wires": Wire[2]}
 
             def __init__(self, wires):
@@ -696,7 +696,7 @@ class TestOperatorInit:
     def test_wire_size_none_accepts_any_count(self, num_wires):
         """Test that ``arg_specs`` of ``None`` (default) accepts any number of wires."""
 
-        class Op(Operator2):
+        class Op(Operator):
             def __init__(self, wires):
                 super().__init__(wires=wires)
 
@@ -705,7 +705,7 @@ class TestOperatorInit:
     def test_wire_sizes_mixed(self):
         """Test that fixed and ``None`` wire sizes are individually enforced."""
 
-        class Op(Operator2):
+        class Op(Operator):
             wire_argnames = ("wires", "ctrl_wires")
             arg_specs = {"wires": Wire[2]}
 
@@ -722,7 +722,7 @@ class TestOperatorInit:
     def test_wire_sizes_none_skips_check_for_hybrid_wire_arg(self):
         """Test that a hybrid wire argument is not size-checked."""
 
-        class Op(Operator2):
+        class Op(Operator):
             wire_argnames = ("pytree_wires",)
             hybrid_argnames = ("pytree_wires",)
 
@@ -743,7 +743,7 @@ class TestOperatorInit:
 
     def test_hybrid_operator_arguments_dequeued_on_init(self):
         """Test that operator arguments to a hybrid op are removed from the queue,
-        for both ``Operator2`` and legacy ``Operator`` leaves."""
+        for both ``Operator`` and legacy ``LegacyOperator`` leaves."""
 
         with AnnotatedQueue() as q:
             op2_leaf = DynOp(0.5, wires=0)
@@ -761,7 +761,7 @@ class TestInitExpectedArgtypesValidation:
     def test_valid_arg_specs_accepts_matching_args(self):
         """Test that matching dynamic and wire arguments pass validation."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             arg_specs = {
                 "phi": AbstractArray((), float),
@@ -782,7 +782,7 @@ class TestInitExpectedArgtypesValidation:
     def test_numpy_scalar_passes_validation(self):
         """Test that numpy scalar dynamic arguments pass ``arg_specs`` validation."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             arg_specs = {
                 "phi": AbstractArray((), float),
@@ -804,7 +804,7 @@ class TestInitExpectedArgtypesValidation:
     def test_dynamic_arg_wrong_shape_error(self):
         """Test that a dynamic argument with the wrong shape raises an error."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             arg_specs = {
                 "phi": AbstractArray((2,), float),
@@ -823,7 +823,7 @@ class TestInitExpectedArgtypesValidation:
     def test_dynamic_arg_wrong_dtype_error(self):
         """Test that a dynamic argument with the wrong dtype raises an error."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             arg_specs = {
                 "phi": AbstractArray((), int),
@@ -842,7 +842,7 @@ class TestInitExpectedArgtypesValidation:
     def test_weak_type_allows_python_scalar(self):
         """Test that ``arg_specs`` weak types accept Python scalar inputs."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             arg_specs = {
                 "phi": AbstractArray((), float),
@@ -858,7 +858,7 @@ class TestInitExpectedArgtypesValidation:
     def test_wire_arg_wrong_length_error(self):
         """Test that a wire argument with the wrong length raises an error."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             arg_specs = {
                 "phi": AbstractArray((), float),
@@ -875,7 +875,7 @@ class TestInitExpectedArgtypesValidation:
 
 
 class TestProperties:
-    """Tests for public properties of ``Operator2``."""
+    """Tests for public properties of ``Operator``."""
 
     def test_arguments(self):
         """Test that ``arguments`` maps all arguments to their values."""
@@ -910,7 +910,7 @@ class TestProperties:
     def test_compilable_args(self):
         """Test that ``compilable_args`` is set correctly."""
 
-        class Op(Operator2):
+        class Op(Operator):
             compilable_argnames = ("pw",)
 
             def __init__(self, pw, wires):
@@ -927,7 +927,7 @@ class TestProperties:
     def test_wires(self):
         """Test ``wires`` is set correctly."""
 
-        class Op(Operator2):
+        class Op(Operator):
             wire_argnames = ("wires1", "wires")
 
             def __init__(self, wires, wires1):
@@ -958,7 +958,7 @@ class TestBroadcasting:
     def test_broadcasted_scalar_passes_validation(self):
         """Test that broadcasted scalar parameters pass ``arg_specs`` validation."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             ndim_params = (0,)
             arg_specs = {
@@ -976,7 +976,7 @@ class TestBroadcasting:
         """Test that broadcasted parameters validate the non-broadcasting dimensions
         against ``arg_specs``."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             ndim_params = (1,)
             arg_specs = {
@@ -992,7 +992,7 @@ class TestBroadcasting:
     def test_broadcasted_array_wrong_shape_error(self):
         """Test that an invalid broadcasted parameter shape raises an error."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             ndim_params = (1,)
             arg_specs = {
@@ -1014,7 +1014,7 @@ class TestBroadcasting:
     def test_broadcasted_array_wrong_dtype_error(self):
         """Test that broadcasted parameters still enforce dtype compatibility."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             ndim_params = (0,)
             arg_specs = {
@@ -1032,7 +1032,7 @@ class TestBroadcasting:
     def test_broadcasted_inferred_ndim_from_arg_specs(self):
         """Test broadcast validation when ``ndim_params`` is inferred from ``arg_specs``."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             arg_specs = {
                 "phi": AbstractArray((2, 3), float),
@@ -1049,7 +1049,7 @@ class TestBroadcasting:
         """Test that ``batch_size`` is correct when ndim_params are specified
         during class definition."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             ndim_params = (0,)
 
@@ -1067,7 +1067,7 @@ class TestBroadcasting:
         """Test that ``ndim_params`` is assumed to be the same as the number of dimensions of
         input dynamic parameters if not set as a class variable."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("a", "b")
 
             def __init__(self, a, b, wires):
@@ -1081,7 +1081,7 @@ class TestBroadcasting:
     def test_wrong_ndim_error(self):
         """Test that parameters with wrong dimensionality raise an error."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             ndim_params = (0,)
 
@@ -1095,7 +1095,7 @@ class TestBroadcasting:
     def test_mismatched_broadcasting_error(self):
         """Test that different broadcast dimensions across parameters raise an error."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("a", "b")
             ndim_params = (0, 0)
 
@@ -1108,7 +1108,7 @@ class TestBroadcasting:
 
 
 class TestEquality:
-    """Tests for operator equality. Since ``Operator2.__eq__`` uses ``qp.equal``
+    """Tests for operator equality. Since ``Operator.__eq__`` uses ``qp.equal``
     under the hood, the bulk of testing for operator equality are elsewhere."""
 
     def test_eq_identical_instance(self):
@@ -1138,9 +1138,9 @@ class TestEquality:
         assert op2 != op1
 
     def test_eq_different_type(self):
-        """Test that two ``Operator2`` subclasses are not equal."""
+        """Test that two ``Operator`` subclasses are not equal."""
 
-        class Other(Operator2):
+        class Other(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -1153,21 +1153,21 @@ class TestEquality:
 
     @pytest.mark.parametrize("other", [42, "string", 0.5, None, [DynOp(0.5, wires=0)]])
     def test_eq_against_non_operator(self, other):
-        """Test that comparing an operator with a non-``Operator2`` value returns False."""
+        """Test that comparing an operator with a non-``Operator`` value returns False."""
         op = DynOp(0.5, wires=0)
         assert op != other
 
 
 class TestHash:
-    """Tests for ``Operator2`` hashing."""
+    """Tests for ``Operator`` hashing."""
 
     def test_op_is_hashable(self):
-        """Test that ``Operator2`` is hashable."""
+        """Test that ``Operator`` is hashable."""
         op = DynOp(0.5, wires=0)
         assert isinstance(hash(op), int)
 
     def test_op_can_be_dict_key(self):
-        """Test that an ``Operator2`` instance can be used as a dict key."""
+        """Test that an ``Operator`` instance can be used as a dict key."""
         op = DynOp(0.5, wires=0)
         d = {op: "value"}
         assert d[DynOp(0.5, wires=0)] == "value"
@@ -1205,14 +1205,14 @@ class TestHash:
 
     @pytest.mark.parametrize("pytree_wires", ([Wire[1]], [[Wire[2]], [Wire[3]]]))
     def test_op_is_hashable_with_abstract_wires_in_hybrid(self, pytree_wires):
-        """Test that ``Operator2`` is hashable when the wires are `AbstractWires` in hybrid args."""
+        """Test that ``Operator`` is hashable when the wires are `AbstractWires` in hybrid args."""
         op = HybridWireOp(pytree_wires)
         assert isinstance(hash(op), int)
 
     def test_different_types_different_hash(self):
         """Test that operators of different types produce different hashes."""
 
-        class Other(Operator2):
+        class Other(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -1250,10 +1250,10 @@ class TestHash:
 
         Op = type(
             name,
-            (Operator2,),
+            (Operator,),
             {
                 "dynamic_argnames": ("phi",),
-                "__init__": lambda self, phi, wires: Operator2.__init__(self, phi, wires=wires),
+                "__init__": lambda self, phi, wires: Operator.__init__(self, phi, wires=wires),
             },
         )
 
@@ -1274,7 +1274,7 @@ class TestPytreeMethods:
     def test_static_arg_in_metadata(self):
         """Test that flattening and unflattening work correctly when there are static_args."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             static_argnames = ("static",)
 
@@ -1294,7 +1294,7 @@ class TestPytreeMethods:
     def test_compilable_arg_in_metadata(self):
         """Test that flattening and unflattening work correctly when there are compilable_args."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             compilable_argnames = ("static",)
 
@@ -1327,7 +1327,7 @@ class TestPytreeMethods:
     def test_hybrid_overlapping_with_wire_not_duplicated(self):
         """Test that hybrid wire arguments are flattened and unflattened correctly."""
 
-        class Op(Operator2):
+        class Op(Operator):
             wire_argnames = ("wires",)
             hybrid_argnames = ("wires",)
 
@@ -1376,7 +1376,7 @@ class TestDynamicProperties:
     def test_explicit_class_attribute_not_overridden(self):
         """Test that attributes present in the class are not overridden by dynamic properties."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             phi = -1
 
@@ -1388,7 +1388,7 @@ class TestDynamicProperties:
 
 
 class TestDunderMethods:
-    """Tests for ``Operator2`` dunder methods."""
+    """Tests for ``Operator`` dunder methods."""
 
     def test_repr_with_abstract_args(self):
         """Tests that abstract wires properly render."""
@@ -1407,7 +1407,7 @@ class TestDunderMethods:
     def test_repr_without_dynamic_args(self):
         """Test that __repr__ prints without dynamic parameters if there are none."""
 
-        class Op(Operator2):
+        class Op(Operator):
             def __init__(self, wires):
                 super().__init__(wires=wires)
 
@@ -1421,7 +1421,7 @@ class TestDunderMethods:
     def test_repr_without_dynamic_args_abstract_wires(self, num_wires):
         """Test that __repr__ prints without dynamic parameters if there are none."""
 
-        class Op(Operator2):
+        class Op(Operator):
             def __init__(self, wires):
                 super().__init__(wires=wires)
 
@@ -1431,7 +1431,7 @@ class TestDunderMethods:
     def test_repr_without_dynamic_args_multiwire(self):
         """Test that __repr__ prints without dynamic parameters if there are none."""
 
-        class Op(Operator2):
+        class Op(Operator):
             def __init__(self, wires):
                 super().__init__(wires=wires)
 
@@ -1441,7 +1441,7 @@ class TestDunderMethods:
     def test_repr_without_dynamic_args_different_wire_argname(self):
         """Test that __repr__ prints without dynamic parameters if there are none."""
 
-        class Op(Operator2):
+        class Op(Operator):
             wire_argnames = ("my_wires",)
 
             def __init__(self, my_wires):
@@ -1453,7 +1453,7 @@ class TestDunderMethods:
     def test_repr_with_hybrid_wires(self):
         """Test that __repr__ prints correctly if there are hybrid wire arguments."""
 
-        class Op(Operator2):
+        class Op(Operator):
             hybrid_argnames = ("wires",)
 
             def __init__(self, wires):
@@ -1465,7 +1465,7 @@ class TestDunderMethods:
     def test_str_with_abstract_and_fixed_sigs(self):
         """Tests that __str__ is simplified for abstract and fixed ops."""
 
-        class Op(Operator2):
+        class Op(Operator):
             wire_argnames = ("wires",)
             arg_specs = {"wires": Wire[1]}
 
@@ -1475,7 +1475,7 @@ class TestDunderMethods:
         op = Op(Wire[1])
         assert str(op) == "Op"
 
-        class Op2(Operator2):
+        class Op2(Operator):
             wire_argnames = ("wires",)
 
             def __init__(self, wires):  # pylint: disable=useless-parent-delegation
@@ -1523,7 +1523,7 @@ class TestDunderMethods:
 
 
 class TestPublicProperties:
-    """Tests for public properties of ``Operator2``."""
+    """Tests for public properties of ``Operator``."""
 
     def test_arithmetic_depth_default(self):
         """Test that the default ``arithmetic_depth`` is 0."""
@@ -1549,7 +1549,7 @@ class TestLabel:
         """Test that ``label`` returns just the class name when there
         are no dynamic args."""
 
-        class Op(Operator2):
+        class Op(Operator):
             def __init__(self, wires):
                 super().__init__(wires=Wires(wires))
 
@@ -1563,7 +1563,7 @@ class TestLabel:
         in the label."""
 
         def __init__(self, phi, arg, wires):
-            Operator2.__init__(self, phi, arg, Wires(wires))
+            Operator.__init__(self, phi, arg, Wires(wires))
 
         attrs = {
             "dynamic_argnames": ("phi",),
@@ -1573,7 +1573,7 @@ class TestLabel:
         }
         # This creates a class while allowing us to parametrize the attributes
         # that we want to test.
-        OpClass = type("OpClass", (Operator2,), attrs)
+        OpClass = type("OpClass", (Operator,), attrs)
 
         assert OpClass(phi=1.5, arg=[1, 2, 3], wires=0).label() == "OpClass"
 
@@ -1581,7 +1581,7 @@ class TestLabel:
         """Test that ``base_label`` overrides the class name even with
         no dynamic args."""
 
-        class Op(Operator2):
+        class Op(Operator):
             def __init__(self, wires):
                 super().__init__(wires=Wires(wires))
 
@@ -1606,7 +1606,7 @@ class TestLabel:
     def test_multiple_dynamic_args(self):
         """Test that multiple dynamic params are joined with ``,\\n``."""
 
-        class TwoArgs(Operator2):
+        class TwoArgs(Operator):
             dynamic_argnames = ("phi", "theta")
 
             def __init__(self, phi, theta, wires):
@@ -1619,7 +1619,7 @@ class TestLabel:
         """Test that a matrix parameter is omitted from the label when no
         cache is provided."""
 
-        class MatOp(Operator2):
+        class MatOp(Operator):
             dynamic_argnames = ("U",)
 
             def __init__(self, U, wires):
@@ -1633,7 +1633,7 @@ class TestLabel:
         """Test that matrix parameters are recorded in the cache and referenced
         as ``M{index}``."""
 
-        class MatOp(Operator2):
+        class MatOp(Operator):
             dynamic_argnames = ("U",)
 
             def __init__(self, U, wires):
@@ -1649,7 +1649,7 @@ class TestLabel:
     def test_matrix_param_cache_reuse(self):
         """Test that the same matrix is reused from the cache rather than appended again."""
 
-        class MatOp(Operator2):
+        class MatOp(Operator):
             dynamic_argnames = ("U",)
 
             def __init__(self, U, wires):
@@ -1666,7 +1666,7 @@ class TestLabel:
     def test_matrix_param_cache_growth(self):
         """Test that distinct matrices are appended with incrementing indices."""
 
-        class MatOp(Operator2):
+        class MatOp(Operator):
             dynamic_argnames = ("U",)
 
             def __init__(self, U, wires):
@@ -1683,7 +1683,7 @@ class TestLabel:
     def test_subclass_override(self):
         """Test that a subclass can override ``label``."""
 
-        class Op(Operator2):
+        class Op(Operator):
             def __init__(self, wires):
                 super().__init__(wires=Wires(wires))
 
@@ -1695,7 +1695,7 @@ class TestLabel:
 
 
 class TestGeneralMethods:
-    """Tests for various general methods in ``Operator2``."""
+    """Tests for various general methods in ``Operator``."""
 
     def test_pow_zero_returns_empty(self):
         """Test that ``op.pow(0)`` returns an empty list."""
@@ -1743,7 +1743,7 @@ class TestGeneralMethods:
     def test_subclass_pow_override(self):
         """Test that a subclass can override ``pow``."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -1785,7 +1785,7 @@ class TestGeneralMethods:
     def test_map_wires_multiple_wire_args(self):
         """Test that ``map_wires`` maps wires across multiple wire arguments."""
 
-        class TwoWireOp(Operator2):
+        class TwoWireOp(Operator):
             wire_argnames = ("wires", "ctrl_wires")
 
             def __init__(self, wires, ctrl_wires):
@@ -1801,7 +1801,7 @@ class TestGeneralMethods:
     def test_map_wires_pytree_hybrid_wires(self):
         """Test that ``map_wires`` correctly maps pytree-structured wires inside a hybrid arg."""
 
-        class PytreeWiresOp(Operator2):
+        class PytreeWiresOp(Operator):
             wire_argnames = ("wires",)
             hybrid_argnames = ("wires",)
 
@@ -1828,10 +1828,10 @@ class TestGeneralMethods:
         assert new_op.wires == Wires([9, 1, 10, 11, 4])
 
     def test_map_wires_pauli_rep(self):
-        """Test that ``Operator2.map_wires`` maps the ``pauli_rep`` correctly
+        """Test that ``Operator.map_wires`` maps the ``pauli_rep`` correctly
         when the subclass computes it during construction."""
 
-        class PauliRepOp(Operator2):
+        class PauliRepOp(Operator):
             wire_argnames = ("wires",)
 
             def __init__(self, wires):
@@ -1852,7 +1852,7 @@ class TestGeneralMethods:
     def test_subclass_simplify_override(self):
         """Test that a subclass can override ``simplify``."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -1875,12 +1875,12 @@ class TestHasRepresentations:
     def test_has_adjoint_default(self):
         """Test that ``has_adjoint`` is False by default."""
         assert DynOp.has_adjoint is False
-        assert Operator2.has_adjoint is False
+        assert Operator.has_adjoint is False
 
     def test_has_adjoint_true_when_adjoint_overridden(self):
         """Test that ``has_adjoint`` is True when the subclass overrides ``adjoint``."""
 
-        class SelfAdj(Operator2):
+        class SelfAdj(Operator):
             def __init__(self, wires):
                 super().__init__(wires=Wires(wires))
 
@@ -1896,7 +1896,7 @@ class TestHasRepresentations:
     def test_has_matrix_true_when_compute_overridden(self):
         """Test that ``has_matrix`` is True when ``compute_matrix`` is overridden."""
 
-        class WithMatrix(Operator2):
+        class WithMatrix(Operator):
             @staticmethod
             def compute_matrix(*_, **__):
                 return np.eye(2)
@@ -1909,7 +1909,7 @@ class TestHasRepresentations:
     def test_has_matrix_true_when_method_overridden(self):
         """Test that ``has_matrix`` is True when ``matrix`` is overridden."""
 
-        class WithMatrix(Operator2):
+        class WithMatrix(Operator):
             def matrix(self, wire_order=None):  # pylint: disable=unused-argument
                 return np.eye(2)
 
@@ -1925,7 +1925,7 @@ class TestHasRepresentations:
     def test_has_sparse_matrix_true_when_compute_overridden(self):
         """Test that ``has_sparse_matrix`` is True when ``compute_sparse_matrix`` is overridden."""
 
-        class WithSparse(Operator2):
+        class WithSparse(Operator):
             @staticmethod
             def compute_sparse_matrix(*_, **__):
                 return csr_matrix(np.eye(2))
@@ -1938,7 +1938,7 @@ class TestHasRepresentations:
     def test_has_sparse_matrix_true_when_method_overridden(self):
         """Test that ``has_sparse_matrix`` is True when ``sparse_matrix`` is overridden."""
 
-        class WithSparse(Operator2):
+        class WithSparse(Operator):
             # pylint: disable-next=unused-argument
             def sparse_matrix(self, wire_order=None, format="csr"):
                 return csr_matrix(np.eye(2))
@@ -1955,7 +1955,7 @@ class TestHasRepresentations:
     def test_has_decomposition_true_when_compute_overridden(self):
         """Test that ``has_decomposition`` is True when ``compute_decomposition`` is overridden."""
 
-        class WithDecomp(Operator2):
+        class WithDecomp(Operator):
             @staticmethod
             def compute_decomposition(*_, **__):
                 return []
@@ -1968,7 +1968,7 @@ class TestHasRepresentations:
     def test_has_decomposition_true_when_method_overridden(self):
         """Test that ``has_decomposition`` is True when ``decomposition`` is overridden."""
 
-        class WithDecomp(Operator2):
+        class WithDecomp(Operator):
             def decomposition(self):
                 return []
 
@@ -1984,7 +1984,7 @@ class TestHasRepresentations:
     def test_has_diagonalizing_gates_true_when_compute_overridden(self):
         """Test that ``has_diagonalizing_gates`` is True when ``compute_diagonalizing_gates`` is overridden."""
 
-        class WithDiag(Operator2):
+        class WithDiag(Operator):
             @staticmethod
             def compute_diagonalizing_gates(*_, **__):
                 return []
@@ -1997,7 +1997,7 @@ class TestHasRepresentations:
     def test_has_diagonalizing_gates_true_when_method_overridden(self):
         """Test that ``has_diagonalizing_gates`` is True when ``diagonalizing_gates`` is overridden."""
 
-        class WithDiag(Operator2):
+        class WithDiag(Operator):
             def diagonalizing_gates(self):
                 return []
 
@@ -2013,7 +2013,7 @@ class TestHasRepresentations:
     def test_has_generator_true_when_method_overridden(self):
         """Test that ``has_generator`` is True when ``generator`` is overridden."""
 
-        class WithGen(Operator2):
+        class WithGen(Operator):
             def generator(self):
                 return DynOp(0.5, wires=self.wires)
 
@@ -2036,7 +2036,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
     def test_subclass_adjoint_override(self):
         """Test that a subclass can override ``adjoint``."""
 
-        class SelfAdj(Operator2):
+        class SelfAdj(Operator):
             def __init__(self, wires):
                 super().__init__(wires=Wires(wires))
 
@@ -2102,7 +2102,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
     def test_compute_matrix_used_by_matrix(self):
         """Test that ``matrix`` dispatches to ``compute_matrix`` with bound arguments."""
 
-        class WithMatrix(Operator2):
+        class WithMatrix(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2118,7 +2118,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
     def test_matrix_expands_for_wire_order(self):
         """Test that ``matrix`` expands the canonical matrix when ``wire_order`` is given."""
 
-        class WithMatrix(Operator2):
+        class WithMatrix(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2137,7 +2137,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
     def test_compute_sparse_matrix_used_by_sparse_matrix(self):
         """Test that ``sparse_matrix`` dispatches to ``compute_sparse_matrix``."""
 
-        class WithSparse(Operator2):
+        class WithSparse(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2155,7 +2155,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
     def test_compute_decomposition_used_by_decomposition(self):
         """Test that ``decomposition`` dispatches to ``compute_decomposition``."""
 
-        class WithDecomp(Operator2):
+        class WithDecomp(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2173,7 +2173,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
     def test_compute_eigvals_used_by_eigvals(self):
         """Test that ``eigvals`` dispatches to ``compute_eigvals`` when defined."""
 
-        class WithEigvals(Operator2):
+        class WithEigvals(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2189,7 +2189,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
     def test_eigvals_inferred_from_matrix(self):
         """Test that ``eigvals`` is computed from the matrix when ``compute_eigvals`` is undefined."""
 
-        class WithMatrix(Operator2):
+        class WithMatrix(Operator):
             dynamic_argnames = ("theta",)
 
             def __init__(self, theta, wires):
@@ -2205,7 +2205,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
     def test_compute_diagonalizing_gates_used_by_diagonalizing_gates(self):
         """Test that ``diagonalizing_gates`` dispatches to ``compute_diagonalizing_gates``."""
 
-        class WithDiag(Operator2):
+        class WithDiag(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2222,7 +2222,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
         """Test that ``matrix`` returns the canonical matrix when ``wire_order`` matches
         ``op.wires`` exactly (no expansion)."""
 
-        class WithMatrix(Operator2):
+        class WithMatrix(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2239,7 +2239,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
     def test_matrix_same_wire_order_no_expand(self, mocker):
         """Test that ``expand_matrix`` is not called when ``wire_order`` equals ``op.wires``."""
 
-        class WithMatrix(Operator2):
+        class WithMatrix(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2258,7 +2258,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
     def test_sparse_matrix_with_wire_order_and_format(self):
         """Test that ``sparse_matrix`` expands for ``wire_order`` and respects ``format``."""
 
-        class WithSparse(Operator2):
+        class WithSparse(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2280,7 +2280,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
     def test_sparse_matrix_instance_override(self):
         """Test that overriding ``sparse_matrix`` alone provides a working representation."""
 
-        class WithSparse(Operator2):
+        class WithSparse(Operator):
             # pylint: disable-next=unused-argument
             def sparse_matrix(self, wire_order=None, format="csr"):
                 return csr_matrix(np.eye(2)).asformat(format)
@@ -2294,7 +2294,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
     def test_decomposition_instance_override_only(self):
         """Test that overriding only ``decomposition`` (not ``compute_decomposition``) works."""
 
-        class WithDecomp(Operator2):
+        class WithDecomp(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2311,7 +2311,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
     def test_terms_returns_coefficients_and_operators(self):
         """Test that a subclass may override ``terms`` to return a linear combination."""
 
-        class WithTerms(Operator2):
+        class WithTerms(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2331,7 +2331,7 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
     def test_generator_returns_operator(self):
         """Test that a subclass may override ``generator`` to return an operator."""
 
-        class WithGen(Operator2):
+        class WithGen(Operator):
             def __init__(self, wires):
                 super().__init__(wires=wires)
 
@@ -2343,14 +2343,14 @@ class TestRepresentations:  # pylint: disable=too-many-public-methods
 
 
 class TestGraphDecomposition:
-    """Tests for the graph-based decomposition fallback in ``Operator2.decomposition``:
+    """Tests for the graph-based decomposition fallback in ``Operator.decomposition``:
     when ``compute_decomposition`` is not overridden, ``decomposition`` falls
     back to registered graph decomposition rules instead of immediately raising."""
 
     def test_compute_decomposition_takes_precedence(self):
         """An overridden ``compute_decomposition`` is used over registered graph rules."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2373,7 +2373,7 @@ class TestGraphDecomposition:
     def test_registered_rule_used_as_fallback(self):
         """Without an overridden ``compute_decomposition``, a registered rule is used."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2397,7 +2397,7 @@ class TestGraphDecomposition:
         """The rule is invoked with ``**op.arguments`` (dynamic, static, and wires)."""
         captured = {}
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
             static_argnames = ("label",)
 
@@ -2426,7 +2426,7 @@ class TestGraphDecomposition:
     def test_no_rule_raises(self):
         """Without any registered rule, ``decomposition`` raises ``DecompositionUndefinedError``."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2439,7 +2439,7 @@ class TestGraphDecomposition:
     def test_decomposition_queued_during_recording(self):
         """Produced ops are queued when decomposition happens during active recording."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2462,7 +2462,7 @@ class TestGraphDecomposition:
     def test_decomposition_not_queued_outside_recording(self):
         """Outside an active recording context, decomposition returns ops without queuing."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2484,7 +2484,7 @@ class TestGraphDecomposition:
         """``has_decomposition`` (a class-level check) reports ``True`` once decomposition rules
         are registered for the operator type, for both class and instance access."""
 
-        class Op(Operator2):
+        class Op(Operator):
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -2600,7 +2600,7 @@ class TestLegacyGradRecipeProperty:
 
 
 class TestLegacyCompatibilityViews:
-    """Tests for selected legacy ``Operator`` compatibility views on ``Operator2``."""
+    """Tests for selected legacy ``LegacyOperator`` compatibility views on ``Operator``."""
 
     def test_no_param_op_legacy_views(self):
         """Test legacy views for an operator with no dynamic parameters."""
@@ -2613,7 +2613,7 @@ class TestLegacyCompatibilityViews:
     def test_dynamic_op_data_preserves_order(self):
         """Test that ``data`` preserves dynamic argument order."""
 
-        class TwoParamOp(Operator2):
+        class TwoParamOp(Operator):
             dynamic_argnames = ("alpha", "beta")
 
             def __init__(self, alpha, beta, wires):
@@ -2654,7 +2654,7 @@ class TestLegacyCompatibilityViews:
     def test_nonstandard_wire_arg_excluded_from_hyperparameters(self):
         """Test that non-``wires`` wire argument names are excluded."""
 
-        class AuxWiresOp(Operator2):
+        class AuxWiresOp(Operator):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires", "aux_wires")
 
@@ -2671,7 +2671,7 @@ class TestLegacyCompatibilityViews:
 class TestApply:
     @pytest.mark.parametrize("op2", [DynOp(1.0, wires=0), FullOp(0.3, "lbl", [1.0, 2.0], wires=0)])
     def test_apply(self, op2):
-        """Tests that Operator2 can queue like Operator1 using ``qp.apply``."""
+        """Tests that Operator can queue like Operator1 using ``qp.apply``."""
 
         with AnnotatedQueue() as q:
             apply(op2)
@@ -2680,7 +2680,7 @@ class TestApply:
         assert q.queue[0] == op2
 
     def test_raises_outside_queueing_context(self):
-        """Tests that outside a queuing context and without capture enabled, apply() raises when given an Operator2."""
+        """Tests that outside a queuing context and without capture enabled, apply() raises when given an Operator."""
 
         with pytest.raises(
             RuntimeError, match="No queuing context available to append operation to"

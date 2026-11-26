@@ -17,7 +17,7 @@ import numpy as np
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import GlobalPhase, Hadamard, Z, adjoint
 from pennylane.typing import Bool, Float, Wire
@@ -138,7 +138,7 @@ def _block_encoding_data(op_matrix):
     return absmu, n_neg, vmat
 
 
-class OneBodyBlockEncoding(Operator2):
+class OneBodyBlockEncoding(Operator):
     r"""Block-encoding of a one-body operator.
 
     Implements :math:`\hat{B} = -\,\text{PREP}^\dagger \cdot \text{SEL} \cdot \text{PREP}`,

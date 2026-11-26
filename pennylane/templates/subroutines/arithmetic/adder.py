@@ -17,7 +17,7 @@ Contains the Adder template.
 
 from collections import defaultdict
 
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
@@ -69,7 +69,7 @@ def _add_constant(k, wires, control=()):
             _increment(wires[: n - j], control)
 
 
-class Adder(Operator2):
+class Adder(Operator):
     r"""Performs the in-place modular addition operation.
 
     This operator performs the modular addition by an integer :math:`k` modulo :math:`mod` in the

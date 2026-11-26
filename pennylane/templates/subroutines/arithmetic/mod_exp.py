@@ -229,7 +229,7 @@ class ModExp(Operation):
                 :math:`mod=2^{\text{len(output_wires)}}`, the number of auxiliary wires must be ``len(output_wires)``. Otherwise
                 ``len(output_wires) + 2`` auxiliary wires are needed.
         Returns:
-            list[.Operator]: Decomposition of the operator
+            list[.LegacyOperator]: Decomposition of the operator
 
         **Example**
 
