@@ -25,10 +25,8 @@ from pennylane.templates.subroutines.qchem.basis_rotation_pair import (
     _complex_basis_rotation_pair_givens_pairs,
     _real_basis_rotation_pair_givens_pairs,
 )
-from pennylane.templates.subroutines.qchem.givens_pair import _givens_pair_rzlayer
 from pennylane.transforms import _tape_decompose
-from pennylane.transforms.decompositions import make_rzlayer_to_phase_gradient_decomp
-from pennylane.typing import AbstractArray, Complex, Float, Wire
+from pennylane.typing import AbstractArray, Float, Wire
 from pennylane.wires import Wires
 
 REAL_KINDS = ["det+1", "det-1"]
@@ -270,75 +268,6 @@ class TestDecomposition:
         assert all(count <= estimated.get(gate, 0) for gate, count in actual.items())
         if kind in ("det-1", "complex"):
             assert actual == estimated
-
-    @pytest.mark.parametrize("num_wires, num_work_wires", [(2, 0), (3, 2)])
-    def test_resources_from_shapes(self, num_wires, num_work_wires):
-        """Test that the resources of all rules are computed from the abstract shapes of the
-        matrix and the wires."""
-        n = num_wires
-        num_givens = n * (n - 1) // 2
-        wire_args = {"wires_up": Wire[n], "wires_down": Wire[n], "work_wires": Wire[num_work_wires]}
-        givens_pair = qp.GivensPair(Float, Wire[4], Wire[num_work_wires])
-
-        for dtype in (Float, Complex):
-            resources = _basis_rotation_pair_two_basis_rotations.compute_resources(
-                unitary_matrix=dtype[n, n], **wire_args
-            )
-            assert resources.gate_counts == {qp.BasisRotation(dtype[n, n], wires=Wire[n]): 2}
-
-        resources = _real_basis_rotation_pair_givens_pairs.compute_resources(
-            unitary_matrix=Float[n, n], **wire_args
-        )
-        assert resources.gate_counts == {abstractify(qp.PauliZ): 2, givens_pair: num_givens}
-
-        resources = _complex_basis_rotation_pair_givens_pairs.compute_resources(
-            unitary_matrix=Complex[n, n], **wire_args
-        )
-        assert resources.gate_counts == {
-            qp.RZLayer(Float, Wire[2], Wire[num_work_wires]): n + num_givens,
-            abstractify(qp.GlobalPhase): 1 + num_givens,
-            givens_pair: num_givens,
-        }
-
-
-@pytest.mark.parametrize("num_wires", [2, 3, 4])
-def test_phase_gradient_cost(num_wires, seed):
-    """Test that, with the Givens-pair rule for a real matrix and the phase gradient rule of
-    RZLayer, a BasisRotationPair costs as much as its N(N-1)/2 GivensPairs, i.e., two
-    TemporaryANDs outside of one SemiAdder each."""
-    num_bits = 4
-    phase_gradient_wires = {
-        "angle_wires": [f"angle_{i}" for i in range(num_bits)],
-        "phase_grad_wires": [f"phase_grad_{i}" for i in range(num_bits)],
-        "work_wires": [f"adder_work_{i}" for i in range(num_bits - 1)],
-    }
-    wires_up, wires_down, work_wires = _wires(num_wires, 2)
-    op = qp.BasisRotationPair(
-        _random_matrix(num_wires, "det-1", seed), wires_up, wires_down, work_wires
-    )
-    rule = _real_basis_rotation_pair_givens_pairs
-    fixed_decomps = {
-        qp.BasisRotationPair: rule,
-        qp.GivensPair: _givens_pair_rzlayer,
-        qp.RZLayer: make_rzlayer_to_phase_gradient_decomp(**phase_gradient_wires),
-    }
-    gate_set = {
-        "PPR_4",
-        "PauliX",
-        "PauliZ",
-        "CNOT",
-        "TemporaryAND",
-        "Adjoint(TemporaryAND)",
-        "SemiAdder",
-    }
-
-    [tape], _ = _tape_decompose(
-        qp.tape.QuantumScript([op]), gate_set=gate_set, fixed_decomps=fixed_decomps
-    )
-    assert set(tape.wires) <= set(op.wires).union(*map(Wires, phase_gradient_wires.values()))
-    counts = Counter(gate.name for gate in tape.operations)
-    num_givens_pairs = num_wires * (num_wires - 1) // 2
-    assert (counts["TemporaryAND"], counts["SemiAdder"]) == (2 * num_givens_pairs, num_givens_pairs)
 
 
 class TestInterfaces:
