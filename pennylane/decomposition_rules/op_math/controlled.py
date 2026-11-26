@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 from pennylane import math, ops
-from pennylane.core import QueuingManager
+from pennylane.core.queuing import QueuingManager
 from pennylane.core.operator import Operator
 from pennylane.ops.op_math.controlled import (
     Controlled,

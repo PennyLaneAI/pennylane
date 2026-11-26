@@ -95,15 +95,6 @@ Decompositions
     ~sk_decomposition
     ~rs_decomposition
 
-Control Decompositions
-~~~~~~~~~~~~~~~~~~~~~~
-
-.. currentmodule:: pennylane.ops.op_math
-
-.. autosummary::
-    :toctree: api
-
-
 """
 
 from .adjoint import Adjoint, adjoint
