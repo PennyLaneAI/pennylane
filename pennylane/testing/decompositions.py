@@ -61,8 +61,8 @@ def _assert_counts_match(expected, actual):
     if not mismatches:
         return
 
-    width = max(len("LegacyOperator"), *(len(op) for op, _, _ in mismatches))
-    header = [f"{'LegacyOperator'.rjust(width)} : Actual  !=  Resource Estimate"]
+    width = max(len("Operator"), *(len(op) for op, _, _ in mismatches))
+    header = [f"{'Operator'.rjust(width)} : Actual  !=  Resource Estimate"]
     rows = [f"{op.rjust(width)} : {str(a).rjust(6)}  !=  {e}" for op, a, e in mismatches]
     table = "\n".join(header + rows)
     raise AssertionError("The actual gate counts do not match the resource estimate:\n" + table)
@@ -172,7 +172,7 @@ def assert_valid_decomp_rule(
     Traceback (most recent call last):
         ...
     AssertionError: The actual gate counts do not match the resource estimate:
-    LegacyOperator : Actual  !=  Resource Estimate
+    Operator : Actual  !=  Resource Estimate
     Hadamard :      2  !=  1
 
     """
