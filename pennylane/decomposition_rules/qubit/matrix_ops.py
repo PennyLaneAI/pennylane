@@ -1,4 +1,4 @@
-# Copyright 2026 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 
 """Built-in decomposition rules for qubit.matrix_ops."""
 
@@ -41,7 +40,7 @@ from pennylane.ops.qubit.matrix_ops import DiagonalQubitUnitary, QubitUnitary
 from pennylane.typing import Bool, Complex, Float, Wire
 from pennylane.wires import Wires, concatenate_wires
 
-
+#: Maximum tolerated error for a valid real SO(4) decomposition.
 _SO4_DECOMP_ERROR_THRESHOLD = 1e-5
 
 
@@ -289,9 +288,29 @@ def multi_qubit_decomposition(U, wires):
     return q.queue
 
 
-#####################
-# Numerical Helpers #
-#####################
+#######################
+# Decomposition Rules #
+#######################
+
+
+def make_one_qubit_unitary_rule(su2_rule, su2_resources, name=""):
+    """Wrapper around a naive one-qubit decomposition rule that adds a global phase."""
+
+    name = name or su2_rule.name
+
+    # Resources are not exact because the global phase or rotations might be skipped
+    @register_condition(lambda U, wires, **_: len(wires) == 1)
+    @register_resources(su2_resources | {ops.GlobalPhase: 1}, exact=False, name=name)
+    def _impl(U, wires, **__):
+        if sparse.issparse(U):
+            U = U.todense()
+        phase = su2_rule(U, wires=wires)
+        if _is_jax_jit(U):
+            ops.GlobalPhase(-phase)
+        else:
+            ops.cond(math.logical_not(math.allclose(phase, 0)), ops.GlobalPhase)(-phase)
+
+    return _impl
 
 
 def _su2_rot_decomp(U, wires, **__):
@@ -338,6 +357,51 @@ def _su2_zxz_decomp(U, wires, **__):
     ops.RX(theta, wires=wires[0])
     ops.RZ(omega, wires=wires[0])
     return alpha
+
+
+# RZ is produced in a special case, which has to be accounted for.
+rot_decomp_rule = make_one_qubit_unitary_rule(_su2_rot_decomp, {ops.Rot: 1, ops.RZ: 1}, "rot")
+zyz_decomp_rule = make_one_qubit_unitary_rule(_su2_zyz_decomp, {ops.RZ: 2, ops.RY: 1}, "zyz")
+xyx_decomp_rule = make_one_qubit_unitary_rule(_su2_xyx_decomp, {ops.RX: 2, ops.RY: 1}, "xyx")
+xzx_decomp_rule = make_one_qubit_unitary_rule(_su2_xzx_decomp, {ops.RX: 2, ops.RZ: 1}, "xzx")
+zxz_decomp_rule = make_one_qubit_unitary_rule(_su2_zxz_decomp, {ops.RZ: 2, ops.RX: 1}, "zxz")
+
+
+# Worst-case resource estimate for the two-qubit unitary decomposition.
+@register_condition(lambda U, wires, **_: len(wires) == 2)
+@register_resources(
+    {
+        QubitUnitary(Complex[2, 2], wires=Wire[1]): 4,
+        ops.CNOT: 3,
+        ops.RZ: 1,
+        ops.RY: 2,
+        ops.GlobalPhase: 1,
+    },
+    exact=False,
+    name="two_qubit",
+)
+def qubit_unitary_two_qubit(U, wires, **_):
+    """The decomposition rule for a two-qubit unitary."""
+
+    U, initial_phase = math.convert_to_su4(U)
+    num_cnots = _compute_num_cnots(U)
+
+    elifs = [(num_cnots == 1, _decompose_1_cnot)]
+
+    # The 2-CNOT decomposition relies on sorting eigenvalues, which is not supported
+    # with abstract tracers when capture is enabled. In that case, we fall back
+    # to the 3-CNOT decomposition.
+    if not capture.enabled() and not compiler.active():
+        elifs.append((num_cnots == 2, _decompose_2_cnots))
+
+    additional_phase = ops.cond(
+        num_cnots == 0,
+        _decompose_0_cnots,
+        _decompose_3_cnots,
+        elifs=elifs,
+    )(U, wires, initial_phase)
+    total_phase = initial_phase + additional_phase
+    ops.cond(math.logical_not(math.allclose(total_phase, 0)), ops.GlobalPhase)(-total_phase)
 
 
 def _qubit_unitary_multi_qubit_resources(U, wires, **_):  # pylint: disable=unused-argument
@@ -401,6 +465,13 @@ def _qubit_unitary_multi_qubit_impl(U, wires, **__):
     )
 
     ops.QubitUnitary(u11, wires=wires[1:])
+
+
+@register_condition(lambda U, wires, **_: len(wires) > 2)
+@register_resources(_qubit_unitary_multi_qubit_resources, name="multi_qubit")
+def qubit_unitary_multi_qubit(U, wires, **__):
+    """The decomposition rule for a multi-qubit unitary."""
+    return _qubit_unitary_multi_qubit_impl(U, wires, **__)
 
 
 ####################
@@ -1085,78 +1156,6 @@ def _cossin_decomposition(U, p):
 def _is_jax_jit(U):
     """Assume jax-jit if U is abstract and not in a capture or qjit context."""
     return math.is_tracer(U) and not (capture.enabled() or compiler.active())
-
-
-def make_one_qubit_unitary_rule(su2_rule, su2_resources, name=""):
-    """Wrapper around a naive one-qubit decomposition rule that adds a global phase."""
-
-    name = name or su2_rule.name
-
-    # Resources are not exact because the global phase or rotations might be skipped
-    @register_condition(lambda U, wires, **_: len(wires) == 1)
-    @register_resources(su2_resources | {ops.GlobalPhase: 1}, exact=False, name=name)
-    def _impl(U, wires, **__):
-        if sparse.issparse(U):
-            U = U.todense()
-        phase = su2_rule(U, wires=wires)
-        if _is_jax_jit(U):
-            ops.GlobalPhase(-phase)
-        else:
-            ops.cond(math.logical_not(math.allclose(phase, 0)), ops.GlobalPhase)(-phase)
-
-    return _impl
-
-
-# RZ is produced in a special case, which has to be accounted for.
-rot_decomp_rule = make_one_qubit_unitary_rule(_su2_rot_decomp, {ops.Rot: 1, ops.RZ: 1}, "rot")
-zyz_decomp_rule = make_one_qubit_unitary_rule(_su2_zyz_decomp, {ops.RZ: 2, ops.RY: 1}, "zyz")
-xyx_decomp_rule = make_one_qubit_unitary_rule(_su2_xyx_decomp, {ops.RX: 2, ops.RY: 1}, "xyx")
-xzx_decomp_rule = make_one_qubit_unitary_rule(_su2_xzx_decomp, {ops.RX: 2, ops.RZ: 1}, "xzx")
-zxz_decomp_rule = make_one_qubit_unitary_rule(_su2_zxz_decomp, {ops.RZ: 2, ops.RX: 1}, "zxz")
-
-
-# Worst-case resource estimate for the two-qubit unitary decomposition.
-@register_condition(lambda U, wires, **_: len(wires) == 2)
-@register_resources(
-    {
-        QubitUnitary(Complex[2, 2], wires=Wire[1]): 4,
-        ops.CNOT: 3,
-        ops.RZ: 1,
-        ops.RY: 2,
-        ops.GlobalPhase: 1,
-    },
-    exact=False,
-    name="two_qubit",
-)
-def qubit_unitary_two_qubit(U, wires, **_):
-    """The decomposition rule for a two-qubit unitary."""
-
-    U, initial_phase = math.convert_to_su4(U)
-    num_cnots = _compute_num_cnots(U)
-
-    elifs = [(num_cnots == 1, _decompose_1_cnot)]
-
-    # The 2-CNOT decomposition relies on sorting eigenvalues, which is not supported
-    # with abstract tracers when capture is enabled. In that case, we fall back
-    # to the 3-CNOT decomposition.
-    if not capture.enabled() and not compiler.active():
-        elifs.append((num_cnots == 2, _decompose_2_cnots))
-
-    additional_phase = ops.cond(
-        num_cnots == 0,
-        _decompose_0_cnots,
-        _decompose_3_cnots,
-        elifs=elifs,
-    )(U, wires, initial_phase)
-    total_phase = initial_phase + additional_phase
-    ops.cond(math.logical_not(math.allclose(total_phase, 0)), ops.GlobalPhase)(-total_phase)
-
-
-@register_condition(lambda U, wires, **_: len(wires) > 2)
-@register_resources(_qubit_unitary_multi_qubit_resources, name="multi_qubit")
-def qubit_unitary_multi_qubit(U, wires, **__):
-    """The decomposition rule for a multi-qubit unitary."""
-    return _qubit_unitary_multi_qubit_impl(U, wires, **__)
 
 
 add_decomps(
