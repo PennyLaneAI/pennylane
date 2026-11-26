@@ -409,25 +409,17 @@ class TestIntegerComparator:
         with pytest.raises(ValueError, match=expected_error_message):
             qp.IntegerComparator.compute_decomposition(value, wires=wires, geq=geq)
 
-    @pytest.mark.parametrize("geq,expected_op", [(True, qp.X), (False, qp.Z)])
-    def test_compute_decomposition_selects_named_rule(self, geq, expected_op, mocker):
-        """The static API selects its named strategy and queues its operations once."""
-
-        @qp.register_resources({qp.Z: 1}, name="less_than")
-        def less_than(wires, **_):
-            qp.Z(wires[-1])
-
-        @qp.register_resources({qp.X: 1}, name="greater_equal")
-        def greater_equal(wires, **_):
-            qp.X(wires[-1])
-
-        collection = qp.decomposition.DecompCollection([less_than, greater_equal])
-        mocker.patch("pennylane.list_decomps", return_value=collection)
+    @pytest.mark.parametrize("geq", [True, False])
+    def test_compute_decomposition_uses_builtin_helpers(self, geq, mocker):
+        """The static API bypasses registry lookup and queues its operations once."""
+        mocker.patch("pennylane.list_decomps", side_effect=AssertionError("unexpected registry lookup"))
         with qp.queuing.AnnotatedQueue() as queue:
             decomposition = qp.IntegerComparator.compute_decomposition(2, [0, 1, 2], geq=geq)
 
-        assert decomposition == [expected_op(2)]
         assert queue.queue == decomposition
+        matrix = qp.matrix(qp.tape.QuantumScript(decomposition), wire_order=[0, 1, 2])
+        expected = qp.IntegerComparator.compute_matrix(value=2, control_wires=[0, 1], geq=geq)
+        assert np.allclose(matrix, expected)
 
     @pytest.mark.parametrize("geq", [True, False])
     @pytest.mark.parametrize("value", list(range(9)))

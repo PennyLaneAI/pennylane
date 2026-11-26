@@ -567,8 +567,8 @@ class IntegerComparator(Operation):
             )
 
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
-        rule = qp.list_decomps(IntegerComparator)["greater_equal" if geq else "less_than"]
-        return _to_op_list(rule)(wires=wires, value=value, work_wires=work_wires)
+        decomp = _integer_comparator_ge_impl if geq else _integer_comparator_lt_impl
+        return _to_op_list(decomp)(wires=wires, value=value, work_wires=work_wires)
 
     @property
     def control_wires(self) -> Wires:
@@ -579,3 +579,146 @@ class IntegerComparator(Operation):
 
     def pow(self, z: int) -> list["IntegerComparator"]:
         return super().pow(z % 2)
+
+
+def _integer_comparator_lt_impl(wires, value, work_wires):
+    """Decompose the ``IntegerComparator`` for when the flipping condition is ``n < value``.
+
+    This decomposition uses the minimum number of ``MultiControlledX`` gates. For a given value,
+    we first convert it to binary, and iteratively look for the significant bits. For example,
+    with 6 control wires, if the value is 22, which is 010110 in 6-bit binary, we observe
+    that all 6-bit numbers that start with 00 will satisfy the flipping condition, so we apply
+    a ``MultiControlledX`` with only the first two wires as controls, and 00 as the control values.
+    Then we look for the next significant bit, and observe that 22 starts with 0101. Therefore,
+    all 6-bit numbers that start with 0100 will also satisfy the flipping condition, so we apply
+    a ``MultiControlledX`` with the first four wires as controls, and 0100 as the control values.
+    This continues until we add a ``MultiControlledX`` for every significant bit in the value.
+
+    .. code-block:: pycon
+
+        0: ─╭○─╭○─╭○─┤
+        1: ─├○─├●─├●─┤
+        2: ─│──├○─├○─┤
+        3: ─│──├○─├●─┤
+        4: ─│──│──├○─┤
+        6: ─╰X─╰X─╰X─┤
+
+    If we decompose this circuit one level further, we get
+
+    .. code-block:: pycon
+
+        0: ──X─╭●──X──X─╭●──X──X─╭●──X─┤
+        1: ──X─├●──X────├●───────├●────┤
+        2: ────│───X────├●──X──X─├●──X─┤
+        3: ────│───X────├●──X────├●────┤
+        4: ────│────────│───X────├●──X─┤
+        6: ────╰X───────╰X───────╰X────┤
+
+    And we observe that the ``PauliX`` gates used to flip the control values can be merged:
+
+    .. code-block:: pycon
+
+        0: ──X─╭●────╭●────╭●──X─┤
+        1: ──X─├●──X─├●────├●────┤
+        2: ──X─│─────├●────├●──X─┤
+        3: ──X─│─────├●──X─├●────┤
+        4: ──X─│─────│─────├●──X─┤
+        6: ────╰X────╰X────╰X────┤
+
+    """
+    if value == 0:
+        return
+
+    num_controls = len(wires) - 1
+
+    # If the value is larger than the maximum value that can be represented by
+    # the number of control bits, the flipping condition is always satisfied, in
+    # which case we apply an X gate to the target wire and terminate.
+    if value > 2**num_controls - 1:
+        qp.X(wires[-1])
+        return
+
+    # Track which control bits have been flipped back
+    control_value_tracker = [0] * num_controls
+
+    # First apply X to all wires until the last significant bit to flip control values to 1.
+    binary_str = format(value, f"0{num_controls}b")
+    last_significant = binary_str.rfind("1")
+    for i in range(last_significant + 1):
+        qp.X(wires[i])
+
+    # The flipping condition is satisfied if all bits from the first bit to the
+    # first non-zero bit of the value are zeroes.
+    first_significant = binary_str.find("1")
+    qp.MultiControlledX(
+        wires=wires[: first_significant + 1] + wires[-1:],
+        work_wires=wires[first_significant + 1 : -1] + work_wires,
+    )
+    control_value_tracker[first_significant] = 1
+    qp.X(wires[first_significant])
+
+    # If the wire corresponding to the first significant bit of the value is 1, then we
+    # iteratively look for the next significant bit, and apply a flip conditioned on all
+    # bits from the last significant bit to this next significant bit being zeroes.
+    while (first_significant := binary_str.find("1", first_significant + 1)) != -1:
+        qp.MultiControlledX(
+            wires=wires[: first_significant + 1] + wires[-1:],
+            work_wires=wires[first_significant + 1 : -1] + work_wires,
+        )
+        control_value_tracker[first_significant] = 1
+        qp.X(wires[first_significant])
+
+    for i in range(last_significant + 1):
+        if control_value_tracker[i] == 0:
+            qp.X(wires[i])
+
+
+def _integer_comparator_ge_impl(wires, value, work_wires):
+    """Decompose the ``IntegerComparator`` for when the flipping condition is ``n >= value``.
+
+    This decomposition rule mirrors the implementation for the ``n < value`` case.
+
+    """
+    if value == 0:
+        qp.X(wires[-1])
+        return
+
+    num_controls = len(wires) - 1
+
+    # If the value is larger than the maximum value that can be represented by
+    # the number of control bits, the flipping condition is never satisfied,
+    if value > 2**num_controls - 1:
+        return
+
+    # Track which control bits have been flipped
+    control_value_tracker = [0] * num_controls
+
+    binary_str = format(value, f"0{num_controls}b")
+    first_zero = binary_str.find("0")
+
+    if first_zero == -1:
+        # If the value happens to be the all-one state, then we apply a single MCX
+        qp.MultiControlledX(wires=wires, work_wires=work_wires)
+        return
+
+    qp.MultiControlledX(
+        wires=wires[: first_zero + 1] + wires[-1:],
+        work_wires=wires[first_zero + 1 : -1] + work_wires,
+    )
+    control_value_tracker[first_zero] = 1
+    qp.X(wires[first_zero])
+
+    while (first_zero := binary_str.find("0", first_zero + 1)) != -1:
+        qp.MultiControlledX(
+            wires=wires[: first_zero + 1] + wires[-1:],
+            work_wires=wires[first_zero + 1 : -1] + work_wires,
+        )
+        control_value_tracker[first_zero] = 1
+        qp.X(wires[first_zero])
+
+    # The last MCX corresponds to the equal case.
+    qp.MultiControlledX(wires=wires, work_wires=work_wires)
+
+    for i in range(num_controls):
+        if control_value_tracker[i]:
+            qp.X(wires[i])
