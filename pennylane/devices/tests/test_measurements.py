@@ -533,13 +533,15 @@ class TestTensorExpval:
         For example:
 
         dev1 = qp.device("default.qubit", wires=[0, 1, 2])
-        dev2 = qp.device("default.qubit", wires=['c', 'b', 'a']
+        dev2 = qp.device("default.qubit", wires=[5, 4, 3])
+
 
         def circ(wire_labels):
             return qp.expval(qp.Z(wire_labels[0]) @ qp.X(wire_labels[2]))
 
+
         c1, c2 = qp.QNode(circ, dev1), qp.QNode(circ, dev2)
-        c1([0, 1, 2]) == c2(['c', 'b', 'a'])
+        c1([0, 1, 2]) == c2([5, 4, 3])
         """
         dev = device(wires=3)
         dev_custom_labels = device(wires=label_map)
@@ -1477,13 +1479,15 @@ class TestTensorVar:
 
         eg:
         dev1 = qp.device("default.qubit", wires=[0, 1, 2])
-        dev2 = qp.device("default.qubit", wires=['c', 'b', 'a']
+        dev2 = qp.device("default.qubit", wires=[5, 4, 3])
+
 
         def circ(wire_labels):
             return qp.var(qp.Z(wire_labels[0]) @ qp.X(wire_labels[2]))
 
+
         c1, c2 = qp.QNode(circ, dev1), qp.QNode(circ, dev2)
-        c1([0, 1, 2]) == c2(['c', 'b', 'a'])
+        c1([0, 1, 2]) == c2([5, 4, 3])
         """
         dev = device(wires=3)
         dev_custom_labels = device(wires=label_map)

@@ -1043,24 +1043,24 @@ class TestObservableConstruction:
     def test_repr(self):
         """Test the string representation of an observable with and without a return type."""
 
-        m = qp.expval(qp.PauliZ(wires=["a"]) @ qp.PauliZ(wires=["b"]))
-        expected = "expval(Z('a') @ Z('b'))"
+        m = qp.expval(qp.PauliZ(wires=[6]) @ qp.PauliZ(wires=[7]))
+        expected = "expval(Z(6) @ Z(7))"
         assert str(m) == expected
 
-        m = qp.probs(wires=["a"])
-        expected = "probs(wires=['a'])"
+        m = qp.probs(wires=[6])
+        expected = "probs(wires=[6])"
         assert str(m) == expected
 
-        m = qp.probs(op=qp.PauliZ(wires=["a"]))
-        expected = "probs(Z('a'))"
+        m = qp.probs(op=qp.PauliZ(wires=[6]))
+        expected = "probs(Z(6))"
         assert str(m) == expected
 
-        m = qp.PauliZ(wires=["a"]) @ qp.PauliZ(wires=["b"])
-        expected = "Z('a') @ Z('b')"
+        m = qp.PauliZ(wires=[6]) @ qp.PauliZ(wires=[7])
+        expected = "Z(6) @ Z(7)"
         assert str(m) == expected
 
-        m = qp.PauliZ(wires=["a"])
-        expected = "Z('a')"
+        m = qp.PauliZ(wires=[6])
+        expected = "Z(6)"
         assert str(m) == expected
 
     def test_raises_if_no_wire_is_given(self):
@@ -1592,24 +1592,6 @@ class TestStatePrepBase:
     def test_StatePrepBase_label(self):
         """Tests that StatePrepBase classes by default have a psi ket label"""
         assert self.DefaultPrep([1], 0).label() == "|Ψ⟩"
-
-
-class TestCriteria:
-    doubleExcitation = qp.DoubleExcitation(0.1, wires=[0, 1, 2, 3])
-    rx = qp.RX(qp.numpy.array(0.3, requires_grad=True), wires=1)
-    stiff_rx = qp.RX(0.3, wires=1)
-    cnot = qp.CNOT(wires=[1, 0])
-    rot = qp.Rot(*qp.numpy.array([0.1, -0.7, 0.2], requires_grad=True), wires=0)
-    stiff_rot = qp.Rot(0.1, -0.7, 0.2, wires=0)
-    exp = qp.expval(qp.PauliZ(0))
-
-    def test_is_trainable(self):
-        """Test is_trainable criterion."""
-        assert qp.operation.is_trainable(self.rx)
-        assert not qp.operation.is_trainable(self.stiff_rx)
-        assert qp.operation.is_trainable(self.rot)
-        assert not qp.operation.is_trainable(self.stiff_rot)
-        assert not qp.operation.is_trainable(self.cnot)
 
 
 class MultiRot(Operator2):

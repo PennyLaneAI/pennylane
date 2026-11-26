@@ -390,6 +390,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             list[array]: The new variable values :math:`x^{(t+1)}`.
             If single arg is provided, list[array] is replaced by array.
         """
+        self._validate_parameters(args)
         self.trainable_args = set()
 
         for index, arg in enumerate(args):

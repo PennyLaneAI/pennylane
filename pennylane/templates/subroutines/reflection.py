@@ -47,7 +47,7 @@ class Reflection(Operation):
     Args:
         U (Operator): the operator that prepares the state :math:`|\Psi\rangle`
         alpha (float): the angle of the operator, default is :math:`\pi`
-        reflection_wires (Any or Iterable[Any]): subsystem of wires on which to reflect, the
+        reflection_wires (int or Iterable[int]): subsystem of wires on which to reflect, the
             default is ``None`` and the reflection will be applied on the ``U`` wires.
 
     **Example**

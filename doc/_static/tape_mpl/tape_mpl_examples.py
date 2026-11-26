@@ -59,7 +59,7 @@ def wire_order(tape):
 
 def show_all_wires(tape):
 
-    fig, ax = tape_mpl(tape, wire_order=["aux"], show_all_wires=show_all_wires)
+    fig, ax = tape_mpl(tape, wire_order=[4], show_all_wires=True)
     plt.savefig(folder / "show_all_wires.png")
     plt.close()
 
@@ -85,7 +85,7 @@ def rcparams(tape):
 
 def use_style(tape):
 
-    fig, ax = tape_mpl(tape, style='sketch')
+    fig, ax = tape_mpl(tape, style="sketch")
 
     plt.savefig(folder / "sketch_style.png")
     plt.close()
@@ -99,6 +99,17 @@ def wires_and_labels(tape):
     )
 
     plt.savefig(folder / "wires_labels.png")
+    plt.close()
+
+
+def per_wire_options(tape):
+    wire_options = {
+        "color": "teal",  # all wires but wire 2 will be teal
+        "linewidth": 5,  # all wires but wire 2 will be bold
+        2: {"color": "orange", "linestyle": "--"},  # wire 2 will be orange and dashed
+    }
+    fig, ax = tape_mpl(tape, wire_options=wire_options)
+    plt.savefig(folder / "per_wire_options.png")
     plt.close()
 
 
@@ -155,5 +166,6 @@ if __name__ == "__main__":
     use_style(tape)
     rcparams(tape)
     wires_and_labels(tape)
+    per_wire_options(tape)
     postprocessing(tape)
     mid_measure()

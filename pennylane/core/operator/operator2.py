@@ -18,7 +18,7 @@ TODO: [sc-120453] Fill docstring
 
 import warnings
 from abc import abstractmethod
-from collections.abc import Hashable, Iterable, Sequence
+from collections.abc import Hashable, Iterable
 from copy import copy, deepcopy
 from enum import Enum, StrEnum, auto
 from functools import partial
@@ -401,21 +401,20 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
         not be lowerable.
     """
 
-    wire_sizes: ClassVar[tuple[int | None, ...] | None] = None
-    """The expected number of wire labels for each wire argument. If any wire arguments
-    support an arbitrary size, ``None`` must be used. By default, all wire arguments are
-    assumed to support arbitrary sizes. For hybrid wire arguments, the wire size must
-    always be ``None``. Specifying wire sizes allows for additional automatic validation
-    to be implemented, but, specifying it is optional if such validation is not needed.
-    """
-
     arg_specs: ClassVar[dict[str, ArgSpecType] | None] = None
     """The expected types for the arguments of an operator. This attribute is optional—not
     setting it has no loss of functionality. If set, it can be used to perform automatic
-    validation of an operators inputs during construction. Additionally, when defining
+    validation of an operator's inputs during construction, including enforcing fixed wire
+    counts for wire arguments listed in ``arg_specs``. Additionally, when defining
     decomposition rules for an operator, operator types with ``arg_specs`` that spans
     all the arguments with static types can be placed in the rules' resources without needing
     to fully construct abstract operators.
+
+    For wire arguments, ``arg_specs`` also specifies expected wire counts: fixed-shape
+    specs enforce an exact wire count during operator construction, whereas dynamic/unfixed
+    specs (or omitting the wire argument from ``arg_specs``) allow arbitrary wire sizes.
+    Hybrid wire arguments (pytrees of wires) are not constrained to a single fixed wire count
+    via a flat wire size.
 
     .. note::
 
@@ -1642,7 +1641,6 @@ class Operator2(metaclass=OperatorMeta):  # pylint: disable=too-many-public-meth
 
         _init_subclass_validate_argnames(cls)
         _init_subclass_arg_specs_setup(cls)
-        _init_subclass_wire_sizes_setup(cls)
         _init_subclass_add_dynamic_properties(cls)
         register_pytree(cls, cls._flatten, cls._unflatten)
 
@@ -1704,16 +1702,21 @@ def _init_wires(op: Operator2):
     # pylint: disable=protected-access
     all_algorithmic_wires = []
 
-    for wname, wsize in zip(op.wire_argnames, op.wire_sizes, strict=True):
+    for wname in op.wire_argnames:
         if wname not in op.hybrid_argnames:
             warg = op._bound_args.arguments[wname]
             canonical_wires = warg if isinstance(warg, AbstractWires) else Wires(warg)
             op._bound_args.arguments[wname] = canonical_wires
-            if wsize is not None and len(canonical_wires) != wsize:
-                raise ValueError(
-                    f"Incorrect number of wires for '{op.name}.{wname}'. Expected {wsize} "
-                    f"wires but got {len(canonical_wires)}."
-                )
+
+            if op.arg_specs and wname in op.arg_specs:
+                exp_type = op.arg_specs[wname]
+                if getattr(exp_type, "shape_fixed", False) and len(canonical_wires) != len(
+                    exp_type
+                ):
+                    raise ValueError(
+                        f"Incorrect number of wires for '{op.name}.{wname}'. "
+                        f"Expected {len(exp_type)} wires but got {len(canonical_wires)}."
+                    )
 
             # Work wires are NOT included in the full wires list.
             if wname not in ("work_wires", "work_wire"):
@@ -1881,62 +1884,6 @@ def _init_subclass_arg_specs_setup(cls: type[Operator2]) -> None:
             cls.arg_specs[name] = canonical_exp_type
         if not canonical_exp_type.shape_fixed:
             cls.has_fixed_sig = False
-
-
-def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
-    """Set up ``wire_sizes`` for ``Operator2`` subclasses."""
-    arg_specs = cls.arg_specs or {}
-
-    if cls.wire_sizes is None:
-        cls.wire_sizes = tuple(
-            (
-                None
-                if name not in arg_specs or not arg_specs[name].shape_fixed
-                else len(arg_specs[name])
-            )
-            for name in cls.wire_argnames
-        )
-        return
-
-    if not isinstance(cls.wire_sizes, Sequence):
-        cls.wire_sizes = (cls.wire_sizes,)
-
-    if len(cls.wire_sizes) != len(cls.wire_argnames):
-        raise TypeError("'wire_sizes' must have the same length as 'wire_argnames'.")
-
-    for wname, wsize in zip(cls.wire_argnames, cls.wire_sizes, strict=True):
-        # Hybrid wire arguments' entry in wire_sizes must always be ``None``. Hybrid arguments
-        # can be arbitrary pytrees by design
-        if wname in cls.hybrid_argnames and wsize is not None:
-            raise TypeError(
-                f"Expected wire_size == None for '{wname}' as it is a hybrid wire argument."
-            )
-
-        if not ((isinstance(wsize, int) and wsize > 0) or wsize is None):
-            raise TypeError(
-                f"'{cls.__name__}.wire_sizes' is invalid. 'wire_sizes' must be a sequence "
-                f"of positive integers or 'None' values, but got {cls.wire_sizes}."
-            )
-
-        # If the wire argument is in arg_specs, the entries in arg_specs
-        # and wire_sizes must match. Arbitrary number of wires is denoted by ``None`` and
-        # ``-1`` in wire_sizes and arg_specs respectively.
-        if (expected_type := arg_specs.get(wname, None)) is not None:
-            if not expected_type.shape_fixed:
-                # Dynamic wire count, wire_sizes must specify arbitrary wires (None)
-                mismatch = wsize is not None
-            else:
-                # Fixed wire count: wire count must match size
-                mismatch = len(expected_type) != wsize
-
-            if mismatch:
-                cname = cls.__name__
-                declared_num = len(expected_type) if expected_type.shape_fixed else -1
-                raise TypeError(
-                    f"Number of wires specified for '{wname}' does not match the declared "
-                    f"type in {cname}.arg_specs and {cname}.wire_sizes. Got "
-                    f"{declared_num} and {wsize} respectively."
-                )
 
 
 def _init_subclass_add_dynamic_properties(cls: type[Operator2]) -> None:

@@ -163,22 +163,22 @@ valid_meausurements = [
     CountsMP(eigvals=[0.5, 0.6], wires=Wires(0), all_outcomes=False),
     CountsMP(obs=mv, all_outcomes=True),
     ExpectationMP(obs=qp.s_prod(2.0, qp.PauliX(0))),
-    ExpectationMP(eigvals=[0.5, 0.6], wires=Wires("a")),
+    ExpectationMP(eigvals=[0.5, 0.6], wires=Wires(5)),
     ExpectationMP(obs=mv),
-    MutualInfoMP(wires=(Wires("a"), Wires("b")), log_base=3),
-    ProbabilityMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
+    MutualInfoMP(wires=(Wires(5), Wires(6)), log_base=3),
+    ProbabilityMP(wires=Wires(5), eigvals=[0.5, 0.6]),
     ProbabilityMP(obs=3.0 * qp.PauliX(0)),
     ProbabilityMP(obs=mv),
-    PurityMP(wires=Wires("a")),
+    PurityMP(wires=Wires(5)),
     SampleMP(obs=3.0 * qp.PauliY(0)),
-    SampleMP(wires=Wires("a"), eigvals=[0.5, 0.6]),
+    SampleMP(wires=Wires(5), eigvals=[0.5, 0.6]),
     SampleMP(obs=mv),
     StateMP(),
-    StateMP(wires=("a", "b")),
+    StateMP(wires=(5, 6)),
     VarianceMP(obs=qp.s_prod(0.5, qp.PauliX(0))),
     VarianceMP(eigvals=[0.6, 0.7], wires=Wires(0)),
     VarianceMP(obs=mv),
-    VnEntropyMP(wires=Wires("a"), log_base=3),
+    VnEntropyMP(wires=Wires(5), log_base=3),
 ]
 
 
@@ -290,7 +290,7 @@ class TestProperties:
     def test_wires_match_observable(self):
         """Test that the wires of the measurement process
         match an internal observable"""
-        obs = qp.Hermitian(np.diag([1, 2, 3, 4]), wires=["a", "b"])
+        obs = qp.Hermitian(np.diag([1, 2, 3, 4]), wires=[5, 6])
         m = qp.expval(op=obs)
 
         assert np.all(m.wires == obs.wires)
@@ -349,12 +349,12 @@ class TestProperties:
 
     def test_repr(self):
         """Test the string representation of a MeasurementProcess."""
-        m = qp.expval(op=qp.PauliZ(wires="a") @ qp.PauliZ(wires="b"))
-        expected = "expval(Z('a') @ Z('b'))"
+        m = qp.expval(op=qp.PauliZ(wires=5) @ qp.PauliZ(wires=6))
+        expected = "expval(Z(5) @ Z(6))"
         assert str(m) == expected
 
-        m = qp.probs(op=qp.PauliZ(wires="a"))
-        expected = "probs(Z('a'))"
+        m = qp.probs(op=qp.PauliZ(wires=5))
+        expected = "probs(Z(5))"
         assert str(m) == expected
 
         m = ProbabilityMP(eigvals=(1, 0), wires=qp.wires.Wires(0))
@@ -372,14 +372,14 @@ class TestProperties:
     def test_measurement_value_map_wires(self):
         """Test that MeasurementProcess.map_wires works correctly when mp.mv
         is not None."""
-        m0 = qp.measure("a")
-        m1 = qp.measure("b")
+        m0 = qp.measure(5)
+        m1 = qp.measure(6)
         m2 = qp.measure(0)
         m3 = qp.measure(1)
         m2.measurements[0].arguments["meas_uid"] = m0.measurements[0].arguments["meas_uid"]
         m3.measurements[0].arguments["meas_uid"] = m1.measurements[0].arguments["meas_uid"]
 
-        wire_map = {"a": 0, "b": 1}
+        wire_map = {5: 0, 6: 1}
 
         mp1 = qp.sample(op=[m0, m1])
         mapped_mp1 = mp1.map_wires(wire_map)

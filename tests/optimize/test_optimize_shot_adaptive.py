@@ -16,6 +16,7 @@
 # pylint: disable=unused-argument
 
 
+import jax
 import pytest
 
 import pennylane as qp
@@ -704,3 +705,11 @@ class TestStepAndCost:  # pylint: disable=too-few-public-methods
             params, res = opt.step_and_cost(circuit, params)
 
         assert np.allclose(res, -1, atol=tol, rtol=0)
+
+
+@pytest.mark.jax
+def test_shot_adaptive_optimizer_rejects_jax_parameters():
+    """Shot-adaptive optimization validates JAX inputs before sampling gradients."""
+    optimizer = qp.ShotAdaptiveOptimizer(min_shots=10)
+    with pytest.raises(ValueError, match="Optax"):
+        optimizer.step(lambda value: value**2, jax.numpy.array(2.0))
