@@ -416,6 +416,7 @@ class TestInterfaces:
     def test_qjit(self, rule, kind, seed):
         """Test that the Givens rules, compiled with qjit, map a random state like BasisRotation
         on both spins, including the global phase."""
+        pytest.importorskip("catalyst")
         unitary_matrix = _random_matrix(3, kind, seed)
         in_state = _random_state(7, seed)
 
