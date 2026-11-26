@@ -24,7 +24,6 @@ from pennylane.templates.subroutines.select_thc import (
     _apply_loaded_rotation,
     _build_qrom_givens_data,
     _cascade_angles,
-    _one_body_offset,
     _select_half,
     _SelectTHCBasis,
     _THCIndexSwaps,
@@ -112,9 +111,9 @@ class TestQROMTable:
 
     @pytest.mark.parametrize("M, n_half", [(3, 4), (2, 3), (4, 2), (8, 4), (5, 2)])
     @pytest.mark.parametrize("one_body", [False, True])
-    def test_shape_and_padding(self, M, n_half, one_body):
-        """Test that the QROM table stops at the last one-body row and pads the gap between the
-        two-body and the one-body rows."""
+    def test_shape(self, M, n_half, one_body):
+        """Test that the QROM table has one row per two-body leaf, followed by one row per
+        one-body eigenvector, without padding."""
         beth = 5
         rng = np.random.default_rng(0)
         rows = _build_qrom_givens_data(
@@ -125,13 +124,9 @@ class TestQROMTable:
             _angle_batches(n_half, 1)[0],
         )[0]
 
-        offset, _, _ = _one_body_offset(M, n_half, qp.math.ceil_log2(M + 1))
-        assert len(rows) == (offset + n_half if one_body else M)
+        assert len(rows) == (M + n_half if one_body else M)
         assert all(len(r) == (n_half - 1) * beth for r in rows)
         assert all(set(r) <= {0, 1} for r in rows)
-
-        if one_body:
-            assert all(all(b == 0 for b in rows[a]) for a in range(M, offset))
 
     @pytest.mark.parametrize("beth", [3, 6])
     def test_grid_angles_are_exact(self, beth):
@@ -149,16 +144,9 @@ class TestQROMTable:
         for m in range(1 << beth):
             assert rows[m] == list(qp.math.int_to_binary(levels - 1 - m, beth))
 
-    @pytest.mark.parametrize(
-        "M, n_half, offset",
-        [
-            (5, 2, 6),  # 6 = 0b110 fits into the 3 index wires
-            (2, 3, 4),  # nothing fits into the 2 index wires, the one-body flag is address bit 2
-        ],
-    )
-    def test_one_body_block_placement(self, M, n_half, offset):
-        """Test that the rotation of the one-body eigenvector ``ell`` sits at address
-        ``offset + ell``."""
+    @pytest.mark.parametrize("M, n_half", [(5, 2), (2, 3)])
+    def test_one_body_block_placement(self, M, n_half):
+        """Test that the rotation of the one-body eigenvector ``ell`` sits in row ``M + ell``."""
         beth = 4
         pairs = _angle_batches(n_half, 1)[0]
         rng = np.random.default_rng(1)
@@ -167,7 +155,7 @@ class TestQROMTable:
         rows = _build_qrom_givens_data(chi, tev, beth, True, pairs)[0]
         expected = _build_qrom_givens_data(tev.T, np.eye(n_half), beth, False, pairs)[0]
         for ell in range(n_half):
-            assert rows[offset + ell] == expected[ell]
+            assert rows[M + ell] == expected[ell]
 
     def test_empty_for_one_orbital(self):
         """Test that the QROM data is empty for a single orbital."""
@@ -217,60 +205,38 @@ class TestQROMTable:
         assert all(all(bit == 0 for bit in row) for row in register)
 
 
-class TestOneBodyLayout:
-    """Tests for the placement of the one-body rows in the rotation table and the routing of
-    a one-body index onto them."""
-
-    @pytest.mark.parametrize(
-        "M, n_half, expected",
-        [
-            (1, 1, (1, 1, False)),
-            (3, 1, (3, 2, False)),
-            (4, 2, (4, 3, False)),
-            (5, 2, (6, 3, False)),
-            (8, 4, (8, 4, False)),
-            (2, 3, (4, 2, True)),
-            (5, 3, (8, 3, True)),
-        ],
+@pytest.mark.parametrize(
+    "M, n_half, n_two_body, n_one_body",
+    [
+        (2, 2, 1, 1),
+        (4, 2, 2, 1),
+        (5, 2, 3, 1),
+        (2, 3, 1, 2),
+        (5, 3, 3, 2),
+    ],
+)
+def test_one_body_routing(M, n_half, n_two_body, n_one_body):
+    """Test that the two-body and the one-body QROM addresses both carry the one-body flag on
+    top of the least significant index wires that their rows need."""
+    beth = 2
+    n = qp.math.ceil_log2(M + 1)
+    regs = qp.registers(
+        {
+            "system": 2 * n_half,
+            "index": n,
+            "flags": 3,
+            "gradient": beth + 1,
+            "work": select_thc_wires(M, 2 * n_half, beth)["work_wires"],
+        }
     )
-    def test_one_body_offset(self, M, n_half, expected):
-        """Test that the one-body rows start at the smallest multiple of
-        ``2**ceil(log2(N/2))`` that is at least ``M``, unless they do not fit into the index
-        register, in which case the one-body flag becomes the top address bit."""
-        assert _one_body_offset(M, n_half, qp.math.ceil_log2(M + 1)) == expected
+    _, edge, spin = regs["flags"]
+    index = list(regs["index"])
+    chi = np.random.default_rng(M).standard_normal((M, n_half))
+    sandwich = _select_half(chi, np.eye(n_half), beth, *regs.values(), one_body_table=True)
 
-    @pytest.mark.parametrize(
-        "M, n_half, set_bits, edge_is_address",
-        [
-            (2, 2, [0], False),  # offset 2 = 0b10
-            (4, 2, [0], False),  # offset 4 = 0b100
-            (5, 2, [0, 1], False),  # offset 6 = 0b110
-            (2, 3, [], True),
-        ],
-    )
-    def test_one_body_routing(self, M, n_half, set_bits, edge_is_address):
-        """Test that the one-body flag either flips the index wires of the set bits of the
-        offset, or extends the QROM address as its top bit."""
-        beth = 2
-        n = qp.math.ceil_log2(M + 1)
-        regs = qp.registers(
-            {
-                "system": 2 * n_half,
-                "index": n,
-                "flags": 3,
-                "gradient": beth + 1,
-                "work": select_thc_wires(M, 2 * n_half, beth)["work_wires"],
-            }
-        )
-        _, edge, spin = regs["flags"]
-        index = list(regs["index"])
-        chi = np.random.default_rng(M).standard_normal((M, n_half))
-        sandwich = _select_half(chi, np.eye(n_half), beth, *regs.values(), one_body_table=True)
-
-        basis = sandwich.compute_op
-        expected_offset_wires = [edge] + [index[j] for j in set_bits] if set_bits else []
-        assert list(basis.offset_wires) == expected_offset_wires
-        assert list(basis.control_wires) == [spin] + [edge] * edge_is_address + index
+    basis = sandwich.compute_op
+    assert list(basis.control_wires) == [spin, edge] + index[n - n_two_body :]
+    assert list(basis.one_body_wires) == [edge] + index[n - n_one_body :]
 
 
 @pytest.mark.parametrize(
@@ -623,8 +589,8 @@ class TestSelectTHCOperator:
     @pytest.mark.parametrize(
         "M, ell",
         [
-            (2, 0),  # the one-body table follows the two-body one at address 2
-            (3, 1),  # no offset fits into the address register, so edge is an address bit
+            (2, 0),
+            (3, 1),
         ],
     )
     def test_one_body_branch(self, M, ell):
@@ -915,7 +881,7 @@ class TestControlledSelectTHC:
         tape = qp.transforms._tape_decompose(tape, gate_set=gate_set, max_expansion=1)[0][0]
 
         loads = [op for op in tape.operations if "QROM" in op.name or "SemiAdder" in op.name]
-        assert len(loads) == 12
+        assert len(loads) == 14
         assert all(control not in op.wires for op in loads)
 
     def test_controlled_select_acts_as_the_control(self):
