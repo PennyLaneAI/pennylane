@@ -13,7 +13,8 @@
 # limitations under the License.
 """Contains the GivensPair template."""
 
-from pennylane import math
+from pennylane import capture, compiler, math
+from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import PPR_4, PauliX, SingleExcitation, adjoint, change_op_basis
@@ -27,9 +28,9 @@ from ..rz_layer import RZLayer
 
 
 class GivensPair(Operator2):
-    r"""Applies the same :class:`~.SingleExcitation` to a spin-up and a spin-down pair of wires.
+    r"""Applies the same :class:`~.SingleExcitation` to two pairs of wires, for example to two spin channels.
 
-    For the wires ``[p_up, q_up, p_down, q_down]``, this is
+    For the wires :math:`\{p_\uparrow , q_\uparrow , p_\downarrow, q_\downarrow\}`, this is
 
     .. math::
 
@@ -41,22 +42,14 @@ class GivensPair(Operator2):
 
     Args:
         phi (TensorLike): rotation angle :math:`\phi`
-        wires (WiresLike): the four wires ``[p_up, q_up, p_down, q_down]``
-        work_wires (WiresLike): auxiliary wires in the zero state that decompositions may use and
-            return to the zero state. They are included in ``op.wires``. Defaults to ``()``.
+        wires (WiresLike): the four wires :math:`\{p_\uparrow , q_\uparrow , p_\downarrow, q_\downarrow\}`
+        work_wires (WiresLike): zeroed auxiliary wires that decompositions may use.
 
     Raises:
         ValueError: if the number of wires is not four, or if ``wires`` and ``work_wires`` overlap
 
-    **Example**
-
-    >>> op = qp.GivensPair(0.4, wires=[0, 1, 2, 3])
-    >>> op.decomposition()
-    [SingleExcitation(0.4, wires=[0, 1]), SingleExcitation(0.4, wires=[2, 3])]
-
-    In a Clifford frame, both excitations together become a single :class:`~.RZLayer` that applies
-    the angle :math:`\phi/2` to all four wires, so that decompositions of ``RZLayer`` can exploit
-    the four equal angles.
+    It decomposes into two :class:`~.SingleExcitation` gates or, in a Clifford frame, into a single
+    :class:`~.RZLayer` that applies :math:`\phi/2` to all four wires, see the table below.
 
     .. details::
         :title: Available decompositions
@@ -104,13 +97,6 @@ class GivensPair(Operator2):
         """All wires involved in the operation, with the work wires last."""
         return self.arguments["wires"] + self.work_wires
 
-    def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
-        single_excitation = SingleExcitation.compute_matrix(self.phi)
-        canonical_matrix = math.kron(
-            math.kron(single_excitation, single_excitation), math.eye(2 ** len(self.work_wires))
-        )
-        return self._expand_canonical_matrix(canonical_matrix, wire_order)
-
     def adjoint(self) -> "GivensPair":
         return GivensPair(-self.phi, **self.wire_args)
 
@@ -124,9 +110,14 @@ def _givens_pair_two_single_excitations(phi, wires, **_):
 @subcircuit(arg_specs={"wires": Wire[4]})
 @register_resources({PPR_4(1, "XX", wires=Wire[2]): 2, PauliX: 2})
 def _GivensPairFrame(wires: WiresLike):
-    for pair in (wires[:2], wires[2:]):
-        PPR_4(1, "XX", wires=pair)
-        PauliX(pair[1])
+    if capture.enabled() or compiler.active():
+        wires = math.array(wires, like="jax")
+
+    def _pair(i):
+        PPR_4(1, "XX", wires=[wires[2 * i], wires[2 * i + 1]])
+        PauliX(wires[2 * i + 1])
+
+    for_loop(2)(_pair)()
 
 
 def _givens_pair_rzlayer_resources(work_wires, **_):
@@ -139,7 +130,7 @@ def _givens_pair_rzlayer_resources(work_wires, **_):
 def _givens_pair_rzlayer(phi, wires, work_wires):
     r"""In the frame of ``_single_excitation_ppr_rz``, a SingleExcitation on ``(p, q)`` is
     :math:`RZ(\phi/2)_p RZ(-\phi/2)_q`. Conjugating ``q`` with ``PauliX`` flips the second angle,
-    so that both pairs become four rotations by the same angle :math:`\phi/2`."""
+    so that both pairs together become four rotations by the same angle :math:`\phi/2`."""
     change_op_basis(_GivensPairFrame(wires), RZLayer(phi / 2, wires, work_wires))
 
 
