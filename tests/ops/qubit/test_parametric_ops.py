@@ -867,17 +867,10 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("control_values", [[], [0], [1], [1, 1], [0, 1, 0]])
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     def test_controlled_phase_shift_with_work_wires_decomposable(
-        self, base_type, control_values, work_wire_type, request
+        self, base_type, control_values, work_wire_type
     ):
         """Tests that the decomposition rules of a controlled phase shift with work wires
         are valid."""
-        if control_values == [] and qp.capture.enabled():
-            request.applymarker(
-                pytest.mark.xfail(
-                    reason="Empty control registers are currently not supported [sc-137261]",
-                    strict=True,
-                )
-            )
         num_controls = len(control_values)
         op = qp.ctrl(
             base_type(0.3, 0),
