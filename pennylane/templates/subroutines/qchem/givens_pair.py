@@ -103,8 +103,13 @@ class GivensPair(Operator2):
 
 @register_resources({SingleExcitation: 2}, name="to_single_excitations")
 def _givens_pair_two_single_excitations(phi, wires, **_):
-    SingleExcitation(phi, wires=wires[:2])
-    SingleExcitation(phi, wires=wires[2:])
+    if capture.enabled() or compiler.active():
+        wires = math.array(wires, like="jax")
+
+    def _pair(i):
+        SingleExcitation(phi, wires=[wires[2 * i], wires[2 * i + 1]])
+
+    for_loop(2)(_pair)()
 
 
 @subcircuit(arg_specs={"wires": Wire[4]})
