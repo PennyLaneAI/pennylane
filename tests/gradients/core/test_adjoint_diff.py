@@ -428,8 +428,8 @@ class TestAdjointJacobian:
     def test_with_nontrainable_parametrized(self):
         """Test that a parametrized `QubitUnitary` is accounted for correctly
         when it is not trainable."""
-
         import torch
+        from torch.autograd.functional import jacobian as torch_jacobian
 
         dev = DefaultQubitLegacy(wires=1)
         par = torch.tensor(0.6, dtype=torch.float64, requires_grad=True)
@@ -440,7 +440,7 @@ class TestAdjointJacobian:
             return qp.expval(qp.PauliZ(0))
 
         circ = qp.QNode(circuit, dev, diff_method="adjoint")
-        grad_adjoint = qp.jacobian(circ)(par)
+        grad_adjoint = torch_jacobian(circ, par)
         circ = qp.QNode(circuit, dev, diff_method="parameter-shift")
-        grad_psr = qp.jacobian(circ)(par)
+        grad_psr = torch_jacobian(circ, par)
         assert qp.math.allclose(grad_adjoint, grad_psr)

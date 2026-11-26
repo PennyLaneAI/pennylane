@@ -289,10 +289,12 @@ class TestAdjointMetricTensorTape:
         """Test that the output is correct when using Torch and
         calling the adjoint metric tensor directly on a tape."""
 
+        import jax
         import torch
 
         t_params = tuple(torch.tensor(p, requires_grad=True) for p in params)
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*t_params)
+        j_params = tuple(jax.numpy.array(p) for p in params)
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*j_params)
         dev = qp.device("default.qubit", wires=self.num_wires)
 
         @qp.qnode(dev, interface=interface)
@@ -355,10 +357,12 @@ class TestAdjointMetricTensorQNode:
         """Test that the output is correct when using Torch and
         calling the adjoint metric tensor on a QNode."""
 
+        import jax
         import torch
 
         t_params = tuple(torch.tensor(p, requires_grad=True, dtype=torch.float64) for p in params)
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*t_params)
+        j_params = tuple(jax.numpy.array(p) for p in params)
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*j_params)
         dev = qp.device("default.qubit", wires=self.num_wires)
 
         @qp.qnode(dev, interface=interface)
@@ -430,10 +434,12 @@ class TestAdjointMetricTensorDifferentiability:
         """Test that the derivative is correct when using Torch and
         calling the adjoint metric tensor on a QNode."""
 
+        import jax
         import torch
 
         t_params = tuple(torch.tensor(p, requires_grad=True, dtype=torch.float64) for p in params)
-        expected = qp.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*t_params)
+        j_params = tuple(jax.numpy.array(p) for p in params)
+        expected = qp.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*j_params)
         dev = qp.device("default.qubit", wires=self.num_wires)
 
         @qp.qnode(dev, interface="torch")

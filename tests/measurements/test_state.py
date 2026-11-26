@@ -371,8 +371,8 @@ class TestState:
     def test_gradient_with_passthru_torch(self):
         """Test that the gradient of the state is accessible when using default.qubit
         with Torch interface and the backprop diff_method."""
-
         import torch
+        from torch.autograd.functional import jacobian as torch_jacobian
 
         dev = qp.device("default.qubit", wires=1)
 
@@ -387,9 +387,7 @@ class TestState:
             res = func(x)
             return res.real
 
-        d_loss_fn = qp.jacobian(loss_fn)
-
-        grad = d_loss_fn(x)
+        grad = torch_jacobian(loss_fn, x)
         expected = np.array([-0.5 * np.sin(0.1 / 2), 0.5 * np.cos(0.1 / 2)])
         assert np.allclose(grad.detach().numpy(), expected)
 

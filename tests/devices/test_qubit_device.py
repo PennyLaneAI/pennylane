@@ -1575,6 +1575,7 @@ class TestResourcesTracker:
     def test_tracker_grad_torch(self):
         """Test that the tracker can track resources through a gradient computation"""
         import torch
+        from torch.autograd.functional import jacobian as torch_jacobian
 
         dev = DefaultQubitLegacy(wires=1)
 
@@ -1592,7 +1593,7 @@ class TestResourcesTracker:
         )
 
         with qp.Tracker(dev) as tracker:
-            qp.grad(circuit)(x)
+            torch_jacobian(circuit, x)
 
         assert tracker.totals["executions"] == 3
         assert len(tracker.history["resources"]) == 3

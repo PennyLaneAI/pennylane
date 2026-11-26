@@ -367,6 +367,7 @@ class TestVQE:
         and correct when using observable grouping optimization and the
         Torch interface."""
         import torch
+        from torch.autograd.functional import jacobian as torch_jacobian
 
         dev = qp.device("default.qubit", wires=4)
 
@@ -395,11 +396,11 @@ class TestVQE:
         w = torch.tensor(_rng.uniform(low=0, high=2 * np.pi, size=shape), requires_grad=True)
 
         with qp.Tracker(dev) as tracker:
-            dc = qp.grad(cost)(w)
+            dc = torch_jacobian(cost, w)
         exec_opt = tracker.totals["executions"]
 
         with tracker:
-            dc2 = qp.grad(cost2)(w)
+            dc2 = torch_jacobian(cost2, w)
         exec_no_opt = tracker.totals["executions"]
 
         assert exec_no_opt > exec_opt
@@ -413,6 +414,7 @@ class TestVQE:
         and correct when using observable grouping optimization and the
         Torch interface, with a zero Hamiltonian."""
         import torch
+        from torch.autograd.functional import jacobian as torch_jacobian
 
         dev = qp.device("default.qubit", wires=4)
         hamiltonian = qp.Hamiltonian([0], [qp.PauliX(0)])
@@ -429,7 +431,7 @@ class TestVQE:
         shape = qp.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
         w = torch.tensor(np.random.random(shape), requires_grad=True)
 
-        dc = qp.grad(cost)(w)
+        dc = torch_jacobian(cost, w)
         assert np.allclose(dc.detach().numpy(), 0)
 
     @pytest.mark.torch
@@ -633,6 +635,7 @@ class TestNewVQE:
     def test_grad_zero_hamiltonian_torch(self, tol):
         """Tests the VQE gradient for a "zero" Hamiltonian."""
         import torch
+        from torch.autograd.functional import jacobian as torch_jacobian
 
         dev = qp.device("default.qubit", wires=4)
         H = qp.Hamiltonian([0], [qp.PauliX(0)])
@@ -643,7 +646,7 @@ class TestNewVQE:
             qp.templates.StronglyEntanglingLayers(w, wires=range(4))
             return qp.expval(H)
 
-        dc = qp.grad(circuit)(w)
+        dc = torch_jacobian(circuit, w)
         assert np.allclose(dc.detach().numpy(), 0, atol=tol)
 
     @pytest.mark.torch

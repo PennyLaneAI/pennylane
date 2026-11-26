@@ -42,7 +42,7 @@ def test_vector_jacobian_reuses_shifted_results(shots, max_diff, seed):
 
     x = torch.tensor(0.3, dtype=torch.float64, requires_grad=True)
     with device.tracker:
-        jac = qp.jacobian(circuit)(x)
+        jac = torch.autograd.functional.jacobian(circuit, x, create_graph=True)
 
     assert device.tracker.totals["simulations"] == 3
     if isinstance(jac, tuple):
@@ -63,7 +63,11 @@ def test_cached_vector_jacobian_preserves_second_derivatives():
         return qp.probs(wires=0)
 
     x = torch.tensor(0.3, dtype=torch.float64, requires_grad=True)
-    hessian = qp.jacobian(qp.jacobian(circuit))(x)
+
+    def jacobian(value):
+        return torch.autograd.functional.jacobian(circuit, value, create_graph=True)
+
+    hessian = torch.autograd.functional.jacobian(jacobian, x)
     expected = torch.stack((-0.5 * torch.cos(x), 0.5 * torch.cos(x)))
     assert torch.allclose(hessian, expected)
 

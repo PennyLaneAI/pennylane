@@ -427,6 +427,8 @@ class TestGradientTransformIntegration:
     def test_permuted_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when the QNode arguments are permuted"""
+        from torch.autograd.functional import jacobian as torch_jacobian
+
         dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev)
@@ -442,13 +444,15 @@ class TestGradientTransformIntegration:
         w = _torch_array([-0.654, 0.543], requires_grad=True)
         res = qp.gradients.param_shift(circuit)(w)
 
-        expected = qp.jacobian(cost)(w)
+        expected = torch_jacobian(cost, w)
         assert _allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_multiple_tensor_arguments(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when multiple tensor QNode arguments are present"""
+        from torch.autograd.functional import jacobian as torch_jacobian
+
         dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev)
@@ -461,7 +465,7 @@ class TestGradientTransformIntegration:
         x = _torch_array([[0.1, 0.3], [0.2, -0.1]], requires_grad=True)
         y = _torch_array([[0.2, 0.2], [0.3, 0.5]], requires_grad=True)
 
-        expected = qp.jacobian(circuit)(x, y)
+        expected = torch_jacobian(circuit, (x, y))
         res = qp.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert all(_allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
@@ -470,6 +474,8 @@ class TestGradientTransformIntegration:
     def test_multiple_tensor_arguments_old_version(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when multiple tensor QNode arguments are present"""
+        from torch.autograd.functional import jacobian as torch_jacobian
+
         dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev)
@@ -482,7 +488,7 @@ class TestGradientTransformIntegration:
         x = _torch_array([[0.1], [0.2]], requires_grad=True)
         y = _torch_array([[0.2], [0.3]], requires_grad=True)
 
-        expected = qp.jacobian(circuit)(x, y)
+        expected = torch_jacobian(circuit, (x, y))
         res = qp.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         for _r, _e in zip(res, expected):
@@ -492,6 +498,8 @@ class TestGradientTransformIntegration:
     def test_high_dimensional_single_parameter_arg(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single high-dimensional tensor QNode arguments is used"""
+        from torch.autograd.functional import jacobian as torch_jacobian
+
         dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev)
@@ -502,7 +510,7 @@ class TestGradientTransformIntegration:
 
         x = _torch_array([[0.1, 0.1], [0.1, 0.1]], requires_grad=True)
 
-        expected = qp.jacobian(circuit)(x)
+        expected = torch_jacobian(circuit, x)
         res = qp.gradients.param_shift(circuit)(x)
         assert _allclose(res, expected, atol=tol, rtol=0)
 
@@ -510,6 +518,8 @@ class TestGradientTransformIntegration:
     def test_high_dimensional_single_parameter_arg_and_single_gate(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single high-dimensional tensor QNode arguments is used"""
+        from torch.autograd.functional import jacobian as torch_jacobian
+
         dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev)
@@ -519,7 +529,7 @@ class TestGradientTransformIntegration:
 
         x = _torch_array([[0.1]], requires_grad=True)
 
-        expected = qp.jacobian(circuit)(x)
+        expected = torch_jacobian(circuit, x)
         res = qp.gradients.param_shift(circuit)(x)
         assert _allclose(res, expected, atol=tol, rtol=0)
 
@@ -527,6 +537,8 @@ class TestGradientTransformIntegration:
     def test_single_gate_arg(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single QNode argument and gate are present"""
+        from torch.autograd.functional import jacobian as torch_jacobian
+
         dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev, interface="torch")
@@ -536,7 +548,7 @@ class TestGradientTransformIntegration:
 
         x = _torch_array([0.1, 0.2], requires_grad=True)
 
-        expected = qp.jacobian(circuit)(x)
+        expected = torch_jacobian(circuit, x)
         res = qp.gradients.param_shift(circuit)(x)
         assert _allclose(res, expected, atol=tol, rtol=0)
 
@@ -544,6 +556,8 @@ class TestGradientTransformIntegration:
     def test_first_non_trainable_argument(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when the first argument is non-trainable"""
+        from torch.autograd.functional import jacobian as torch_jacobian
+
         dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev)
@@ -557,7 +571,7 @@ class TestGradientTransformIntegration:
         x = _torch_array([0.1], requires_grad=False)
         y = _torch_array([0.2, 0.3], requires_grad=True)
 
-        expected = qp.jacobian(circuit)(x, y)
+        expected = torch_jacobian(lambda y_: circuit(x, y_), y)
         res = qp.gradients.param_shift(circuit)(x, y)
 
         assert _allclose(res, expected, atol=tol, rtol=0)
@@ -622,6 +636,8 @@ class TestGradientTransformIntegration:
         """Test that a gradient transform acts on QNodes
         correctly when the QNode arguments are classically processed,
         and the input weights and the output weights have weird shape."""
+        from torch.autograd.functional import jacobian as torch_jacobian
+
         dev = qp.device("default.qubit", wires=2)
 
         @qp.qnode(dev)
@@ -635,7 +651,7 @@ class TestGradientTransformIntegration:
         res = qp.gradients.param_shift(circuit)(w)
         assert res.shape == (4, 2, 2)
 
-        expected = qp.jacobian(circuit)(w)
+        expected = torch_jacobian(circuit, w)
         assert _allclose(res, expected, atol=tol, rtol=0)
 
         @qp.qnode(dev)
@@ -646,7 +662,7 @@ class TestGradientTransformIntegration:
             return qp.probs(wires=[0, 1])
 
         w = _torch_array([0.543**2, -0.654], requires_grad=True)
-        expected = qp.jacobian(circuit1)(w)
+        expected = torch_jacobian(circuit1, w)
 
         assert _allclose(res[0][0], expected[0], atol=10e-2, rtol=0)
         assert _allclose(res[1][0], expected[1], atol=10e-2, rtol=0)
@@ -655,6 +671,8 @@ class TestGradientTransformIntegration:
     def test_template_integration(self, tol):
         """Test that the gradient transform acts on QNodes
         correctly when the QNode contains a template"""
+        from torch.autograd.functional import jacobian as torch_jacobian
+
         dev = qp.device("default.qubit", wires=3)
 
         @qp.qnode(dev)
@@ -666,7 +684,7 @@ class TestGradientTransformIntegration:
         res = qp.gradients.param_shift(circuit)(weights)
         assert res.shape == (4, 2, 3, 3)
 
-        expected = qp.jacobian(circuit)(weights)
+        expected = torch_jacobian(circuit, weights)
         assert _allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.torch

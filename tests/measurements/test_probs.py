@@ -508,6 +508,7 @@ class TestProbs:  # pylint: disable=too-many-public-methods
         """Test that the finite difference and parameter shift rule
         provide the same Jacobian."""
         import torch
+        from torch.autograd.functional import jacobian as torch_jacobian
 
         w = 4
         dev = qp.device("default.qubit", wires=w)
@@ -530,8 +531,8 @@ class TestProbs:  # pylint: disable=too-many-public-methods
 
         circuit_F = qp.QNode(circuit, dev, diff_method="finite-diff")
         circuit_A = qp.QNode(circuit, dev, diff_method="parameter-shift")
-        res_F = qp.jacobian(circuit_F)(*params)
-        res_A = qp.jacobian(circuit_A)(*params)
+        res_F = torch_jacobian(circuit_F, params)
+        res_A = torch_jacobian(circuit_A, params)
 
         # Both jacobians should be of shape (2**prob.wires, num_params)
         assert isinstance(res_F, tuple) and len(res_F) == 3

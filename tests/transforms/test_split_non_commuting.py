@@ -767,6 +767,7 @@ class TestDifferentiability:
     def test_non_trainable_obs_torch(self, grouping_strategy):
         """Test that fixed coefficients remain constant during native differentiation."""
         import torch
+        from torch.autograd.functional import jacobian as torch_jacobian
 
         dev = qp.device("default.qubit")
 
@@ -780,7 +781,7 @@ class TestDifferentiability:
             return qp.expval(H)
 
         x = torch.tensor(0.5, dtype=torch.float64, requires_grad=True)
-        actual = qp.grad(circuit)(x)
+        actual = torch_jacobian(circuit, x)
 
         assert qp.math.allclose(actual, -0.1 * torch.sin(x))
 

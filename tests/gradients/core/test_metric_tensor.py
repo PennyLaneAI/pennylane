@@ -1077,8 +1077,8 @@ class TestFullMetricTensor:
     def test_correct_output_torch(self, dev_name, ansatz, params, interface):
         import torch
 
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*(jnp.array(p) for p in params))
         params = tuple(torch.tensor(p, dtype=torch.float64, requires_grad=True) for p in params)
-        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qp.device(dev_name, wires=self.num_wires + 1)
 
         @qp.qnode(dev, interface=interface)
@@ -1287,18 +1287,20 @@ class TestDifferentiability:
     @pytest.mark.parametrize("interface", ["auto", "torch"])
     def test_torch(self, diff_method, tol, ansatz, weights, interface):
         """Test metric tensor differentiability in the torch interface"""
+        import jax
         import torch
 
         circuit = self.get_circuit(ansatz)
         qnode = qp.QNode(circuit, self.dev, interface=interface, diff_method=diff_method)
         weights_t = tuple(torch.tensor(w, requires_grad=True) for w in weights)
+        weights_jax = tuple(jnp.array(w) for w in weights)
         qnode(*weights_t)
         cost_full = qp.metric_tensor(qnode, approx=None)
         _cost_full = autodiff_metric_tensor(ansatz, num_wires=3)
         jac = torch.autograd.functional.jacobian(cost_full, weights_t)
-        expected_full = qp.jacobian(_cost_full)(*weights_t)
+        expected_full = jax.jacobian(_cost_full)(*weights_jax)
         assert qp.math.allclose(
-            _cost_full(*weights_t), cost_full(*weights_t).detach().numpy(), atol=tol, rtol=0
+            _cost_full(*weights_jax), cost_full(*weights_t).detach().numpy(), atol=tol, rtol=0
         )
         if isinstance(jac, tuple) and len(jac) != 1:
             assert all(
