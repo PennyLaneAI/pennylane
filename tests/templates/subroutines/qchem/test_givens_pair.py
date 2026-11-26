@@ -139,6 +139,7 @@ class TestDecomposition:
     )
     def test_qjit(self, rule, gate_set, expected_counts):
         """Test that each rule, compiled with qjit, gives the expected value and gates."""
+        pytest.importorskip("catalyst")
 
         @qp.qjit(capture=True)
         @qp.decompose(gate_set=gate_set, fixed_decomps={qp.GivensPair: rule})
