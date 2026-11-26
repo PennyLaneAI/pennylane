@@ -32,8 +32,8 @@ from .qrom_load import (
     _phase_fixup,
     _phase_fixup_resources,
     _select_ops,
-    _select_swap_fixups,
     _select_swap_sizes,
+    _select_swap_table,
     _swap_ops,
 )
 
@@ -277,19 +277,14 @@ def _adjoint_select_swap_measurement(base):
     """
     bitstrings = math.cast(base.bitstrings, int)
     target_wires, work_wires = base.target_wires, base.work_wires
-    num_targets = len(target_wires)
     _, _, num_work_wires_swap, _, depth = _select_swap_sizes(
         bitstrings, base.control_wires, target_wires, work_wires
     )
 
     outcomes = _measure_and_reset(Wires(target_wires) + Wires(work_wires[:num_work_wires_swap]))
-    outcomes = math.reshape(math.cast(math.stack(outcomes), int), (depth, num_targets))
-
-    _phase_fixup(
-        _select_swap_fixups(bitstrings, outcomes, depth),
-        base.control_wires,
-        Wires(target_wires) + Wires(work_wires),
-    )
+    table = _select_swap_table(bitstrings, depth)
+    fixups = math.dot(table, math.cast(math.stack(outcomes), int)) % 2
+    _phase_fixup(fixups, base.control_wires, Wires(target_wires) + Wires(work_wires))
 
 
 add_decomps(SelectSwap, _select_swap)

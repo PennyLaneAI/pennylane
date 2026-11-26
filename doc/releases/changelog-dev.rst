@@ -39,8 +39,8 @@ New features since last release
   Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__, which reduces their Toffoli 
   cost to roughly :math:`2\sqrt{L}` for :math:`L` bitstrings, given enough work wires.
   The same technique gives ``QROMLoad`` a new decomposition, which loads with ``SelectSwap`` and
-  then cleans up the garbage on the work wires with measurements and a phase fixup, instead of
-  repeating the Select-SWAP circuit.
+  then cleans up the garbage on the work wires with ``Adjoint(QROMLoad)``, instead of repeating
+  the Select-SWAP circuit.
   `(#10443) <https://github.com/PennyLaneAI/pennylane/pull/10443>`__
   `(#10363) <https://github.com/PennyLaneAI/pennylane/pull/10363>`__
   `(#10588) <https://github.com/PennyLaneAI/pennylane/pull/10588>`__

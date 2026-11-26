@@ -234,23 +234,14 @@ class QROMLoad(Operator2):
                 :requires: program capture, as with :func:`qjit(capture=True) <.qjit>`,
                     and :math:`k > 1`
                 :where: :math:`k` is the number of bitstrings that :class:`~.SelectSwap` loads in
-                    parallel, whose :math:`n(k - 1)` work wires holding the bitstrings that
-                    were not swapped into the target register are measured and reset. Then, the
-                    :math:`s` least-significant control wires are encoded into a one-hot
-                    register of :math:`m = 2^s` auxiliary wires, taken from the work wires, with
-                    :math:`s \leq \min(c, \lfloor \log_2 w \rfloor)` chosen to minimize the
-                    estimated T-count, and :math:`L' = k \lceil L/k \rceil`
+                    parallel. The :math:`n(k - 1)` work wires holding the bitstrings that were
+                    not swapped into the target register are unloaded by the adjoint of a
+                    ``QROMLoad`` of these bitstrings for each of the
+                    :math:`L' = k \lceil L/k \rceil` addresses, which can be decomposed with
+                    measurements and a phase fixup (see the ``measurement`` rule below)
 
                 :class:`~.SelectSwap` | :math:`1` | 1
-                :class:`~.QROM` with :math:`\lceil L'/m \rceil` bitstrings of length :math:`m` on :math:`c - s` control wires and :math:`w - m` work wires | :math:`1` | 1
-                :func:`PauliMeasure("X") <.pauli_measure>` | :math:`n(k - 1)` | 3
-                :func:`PauliMeasure("Z") <.pauli_measure>` | :math:`n(k - 1)` | 3
-                :class:`~.PauliX` (conditional) | :math:`n(k - 1)` | 3
-                :class:`~.PauliX` | :math:`2` | 2
-                :class:`~.TemporaryAND` | :math:`m - 1` | 1
-                :class:`Adjoint(TemporaryAND) <.TemporaryAND>` | :math:`m - 1` | 1
-                :class:`~.CNOT` | :math:`2(m - 1)` | 2
-                :class:`~.Hadamard` | :math:`2m` | 4
+                :class:`Adjoint(QROMLoad) <.QROMLoad>` with :math:`L'` bitstrings of length :math:`n(k - 1)` on :math:`c` control wires and :math:`w - n(k - 1)` work wires | :math:`1` | 1
 
             .. decomposition-rule:: measurement
                 :image: /_static/decomposition_thumbnails/qrom_load_adjoint_measurement.svg
@@ -776,28 +767,33 @@ def _swap_permutations(depth):
     return perms
 
 
-def _select_swap_fixups(bitstrings, outcomes, depth):
-    r"""Return the fixup bit of each address after measuring the :math:`k` columns of wires
-    holding the bitstrings that ``SelectSwap`` loaded in parallel, with :math:`k` = ``depth``.
+def _select_swap_table(bitstrings, depth):
+    r"""Return the bits that ``SelectSwap`` leaves on its target wires followed by the first
+    :math:`n(k - 1)` work wires, for each of the :math:`k\lceil L/k \rceil` addresses, with
+    :math:`k` = ``depth``.
+
+    Row :math:`i` consists of the :math:`k` bitstrings :math:`b_{\pi_i(p)}` that were loaded in
+    parallel, in the order :math:`p` in which the SWAP network leaves them, starting with the
+    bitstring in the target register. As ``SelectSwap`` loads nothing beyond these rows, it acts
+    on the target and first :math:`n(k - 1)` work wires like a ``QROMLoad`` of this table.
 
     Args:
         bitstrings (TensorLike): the :math:`L` loaded bitstrings as integers
-        outcomes (TensorLike): the :math:`X`-basis outcomes of shape ``(depth, n)``, where row
-            ``p`` belongs to column ``p`` and column ``0`` is the target register
+        depth (int): the number :math:`k` of bitstrings loaded in parallel
 
     Returns:
-        TensorLike: the parity :math:`\sum_p m_p\cdot b_{\pi_i(p)}` for each of the
-        ``depth * ceil(L / depth)`` addresses :math:`i`
+        TensorLike: the table of shape ``(depth * ceil(L / depth), depth * n)``
     """
-    num_bitstrings = len(bitstrings)
+    num_bitstrings, num_targets = math.shape(bitstrings)
     num_columns = -(-num_bitstrings // depth)
-    # parities[h, q, p] is the parity of bitstring q of column h when it is moved into position p
-    parities = math.dot(bitstrings, math.transpose(outcomes))
-    padding = math.zeros((num_columns * depth - num_bitstrings, depth), dtype=int, like=parities)
-    parities = math.reshape(math.concatenate([parities, padding]), (num_columns, depth, depth))
-    perms = _swap_permutations(depth)
-    fixups = math.sum(parities[:, perms, math.arange(depth)], axis=-1) % 2
-    return math.reshape(fixups, (-1,))
+    padding = math.zeros(
+        (num_columns * depth - num_bitstrings, num_targets), dtype=int, like=bitstrings
+    )
+    columns = math.concatenate([bitstrings, padding])
+    columns = math.reshape(columns, (num_columns, depth, num_targets))
+    # loaded[h, l, p] is the bitstring that the SWAP network moves into position p of column h
+    loaded = columns[:, _swap_permutations(depth)]
+    return math.reshape(loaded, (num_columns * depth, depth * num_targets))
 
 
 def _select_swap_measure_garbage_condition(bitstrings, control_wires, target_wires, work_wires):
@@ -821,44 +817,46 @@ def _select_swap_measure_garbage_resources(bitstrings, control_wires, target_wir
         Wire[len(target_wires)],
         Wire[len(work_wires)],
     )
-    resources = _phase_fixup_resources(num_entries, len(control_wires), len(work_wires))
-    resources[select_swap] += 1
-    for op, count in _measure_and_reset_resources(num_work_wires_swap).items():
-        resources[op] += count
-    return resources
+    unload_garbage = qp_ops.adjoint(
+        QROMLoad(
+            Bool[num_entries, num_work_wires_swap],
+            Wire[len(control_wires)],
+            Wire[num_work_wires_swap],
+            Wire[len(work_wires) - num_work_wires_swap],
+        )
+    )
+    return {select_swap: 1, unload_garbage: 1}
 
 
 @register_condition(_select_swap_measure_garbage_condition)
-@register_resources(
-    _select_swap_measure_garbage_resources, exact=False, name="select_swap_measure_garbage"
-)
+@register_resources(_select_swap_measure_garbage_resources, name="select_swap_measure_garbage")
 def _select_swap_measure_garbage(bitstrings, control_wires, target_wires, work_wires):
-    r"""Load with ``SelectSwap`` and clean up its garbage with measurements and a phase fixup,
-    following Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__.
+    r"""Load with ``SelectSwap`` and unload the garbage on its work wires with
+    ``Adjoint(QROMLoad)``, which can be decomposed with measurements and a phase fixup following
+    Appendix C of `arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`__.
 
-    This is the measurement-based uncomputation of ``Adjoint(SelectSwap)``, restricted to the
-    work wires holding the bitstrings that were loaded in parallel but not swapped into the
-    target register. Their phase fixup is applied right away, so that the work wires are
-    restored as promised by ``QROMLoad``. Compared to the ``select_swap`` rule, this replaces
-    the second round of Select and SWAPs by a single phase fixup.
+    The work wires holding the bitstrings that were loaded in parallel but not swapped into the
+    target register are in the state that a ``QROMLoad`` of these bitstrings would prepare, and
+    the remaining work wires are in :math:`|0\rangle`. Compared to the ``select_swap`` rule, this
+    replaces the second round of Select and SWAPs by the uncomputation of that ``QROMLoad``.
     """
     # pylint: disable-next=import-outside-toplevel
     from .select_swap import SelectSwap
 
     bitstrings = math.cast(bitstrings, int)
-    num_targets = len(target_wires)
     _, _, num_work_wires_swap, _, depth = _select_swap_sizes(
         bitstrings, control_wires, target_wires, work_wires
     )
 
     SelectSwap(bitstrings, control_wires, target_wires, work_wires)
 
-    outcomes = _measure_and_reset(work_wires[:num_work_wires_swap])
-    outcomes = math.reshape(math.cast(math.stack(outcomes), int), (depth - 1, num_targets))
-    # The target register is not measured, which is equivalent to an outcome of 0 on it.
-    outcomes = math.concatenate([math.zeros((1, num_targets), dtype=int, like=outcomes), outcomes])
-
-    _phase_fixup(_select_swap_fixups(bitstrings, outcomes, depth), control_wires, work_wires)
+    garbage = _select_swap_table(bitstrings, depth)[:, len(target_wires) :]
+    qp_ops.adjoint(QROMLoad)(
+        garbage,
+        control_wires,
+        work_wires[:num_work_wires_swap],
+        work_wires[num_work_wires_swap:],
+    )
 
 
 add_decomps(QROMLoad, _select_swap, _qrom_load_to_qrom, _select_swap_measure_garbage)
