@@ -1681,6 +1681,10 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* :func:`~.sign_expand` now requires `controls` wires instead of defaulting to ``("Hadamard", "Target")``
+  as string wires will no longer be supported.
+  `(#10592) <https://github.com/PennyLaneAI/pennylane/pull/10592>`__
+
 * The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
   ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
   ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
