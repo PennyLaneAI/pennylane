@@ -2125,6 +2125,9 @@ Internal changes ⚙️
 
 * Created ``pennylane.decomposition_rules`` and moved built-in qubit, identity, meta,
   and shared decomposition rules into it. Rule imports now use the new package.
+  The unitary decomposition functions are now available as
+  ``qp.decomposition_rules.one_qubit_decomposition``, ``two_qubit_decomposition``,
+  and ``multi_qubit_decomposition``.
   `(#10596) <https://github.com/PennyLaneAI/pennylane/pull/10596>`__
 
 * The helper that inserts the resource analysis passes for :func:`~.analyze` and
