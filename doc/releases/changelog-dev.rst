@@ -1681,6 +1681,10 @@ Labs: a place for unified and rapid prototyping of research software 🧪
 Breaking changes 💔
 ~~~~~~~~~~~~~~~~~~~
 
+* Catalyst (``pennylane-catalyst``) is now a required dependency of PennyLane. Installing
+  PennyLane automatically installs Catalyst and its dependencies.
+  `(#10547) <https://github.com/PennyLaneAI/pennylane/pull/10547>`__
+
 * :func:`~.sign_expand` now requires `controls` wires instead of defaulting to ``("Hadamard", "Target")``
   as string wires will no longer be supported.
   `(#10592) <https://github.com/PennyLaneAI/pennylane/pull/10592>`__
