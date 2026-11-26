@@ -44,10 +44,10 @@ def test_identity_wires_in_mixed_sentence():
     """Only the identity term receives the explicitly supplied wires."""
     sentence = PauliSentence({PauliWord({0: "X"}): 2.0, PauliWord({}): 3.0})
 
-    op = to_operator(sentence, identity_wires=["a", "b"])
+    op = to_operator(sentence, identity_wires=[4, 5])
 
     qp.assert_equal(op.operands[0], 2.0 * qp.X(0))
-    qp.assert_equal(op.operands[1], 3.0 * qp.Identity(["a", "b"]))
+    qp.assert_equal(op.operands[1], 3.0 * qp.Identity([4, 5]))
 
 
 def test_batched_coefficients(interface):

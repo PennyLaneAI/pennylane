@@ -188,8 +188,8 @@ class TestGQSP:
 
         op = qp.GQSP(qp.RX(0.3, wires=1), np.ones([3, 3]), control=0)
         compare_op = qp.GQSP(qp.RX(0.3, wires=1), np.ones([3, 3]), control=0)
-        mapped_op = op.map_wires({0: "a", 1: "b"})
-        expected_mapped_op = qp.GQSP(qp.RX(0.3, wires="b"), np.ones([3, 3]), control="a")
+        mapped_op = op.map_wires({0: 11, 1: 10})
+        expected_mapped_op = qp.GQSP(qp.RX(0.3, wires=10), np.ones([3, 3]), control=11)
 
         qp.assert_equal(mapped_op, expected_mapped_op)
         # Check that the original op is not mutated

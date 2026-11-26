@@ -122,7 +122,7 @@ class TrotterVibronic(Operator2):
             ),
         )
 
-    With this, we can setup a simple circuit that includes ``TrotterVibronic``.
+    We can analyze a compiled circuit that includes ``TrotterVibronic``.
 
     .. code-block:: python
 
@@ -132,9 +132,17 @@ class TrotterVibronic(Operator2):
         })
         all_wires = qp.wires.Wires.all_wires(list(wires.values()))
 
-        # decompose by one step to see the top-level sub-templates
-        @qp.transforms._tape_decompose(max_expansion=1, gate_set=qp.gate_sets.ALL_OPS | {qp.PhaseGradientStatePrep})
-        @qp.qnode(qp.device("default.qubit", wires=all_wires))
+        # Retain the arithmetic subtemplates in the resource counts.
+        gate_set = qp.gate_sets.ALL_OPS | {
+            qp.PhaseGradientStatePrep, qp.QROM, qp.SemiAdder, qp.MultiX,
+            qp.MultiControlledX, qp.TemporaryAND, "Adjoint(TemporaryAND)",
+            qp.AQFT, "Adjoint(AQFT)", qp.SignedOutSquare, "Adjoint(SignedOutSquare)",
+            qp.OutMultiplier, "C(MultiX)",
+        }
+
+        @qp.qjit(target="mlir")
+        @qp.decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("null.qubit", wires=all_wires))
         def circuit():
             qp.PhaseGradientStatePrep(wires["phase_gradient"])
             qp.TrotterVibronic(
@@ -146,8 +154,8 @@ class TrotterVibronic(Operator2):
             )
             return qp.probs(wires=wires["electronic"])
 
-    >>> qp.specs(circuit)().resources.quantum_operations  # doctest: +SKIP
-    {'PhaseGradientStatePrep': 1, 'QROM': 6, 'SemiAdder': 4, 'PauliX': 28, 'C(MultiX)': 8, 'MultiControlledX': 16, 'TemporaryAND': 10, 'CNOT': 48, 'Adjoint(TemporaryAND)': 10, 'AQFT': 1, 'MultiX': 2, 'SignedOutSquare': 1, 'OutMultiplier': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(AQFT)': 1}
+    >>> qp.analyze(circuit)().resources.quantum_operations
+    {'1C(MultiX)': 8, 'AQFT': 1, 'Adjoint(AQFT)': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(TemporaryAND)': 10, 'CNOT': 48, 'MultiControlledX': 16, 'MultiX': 2, 'OutMultiplier': 1, 'PauliX': 28, 'PhaseGradientStatePrep': 1, 'QROM': 6, 'SemiAdder': 4, 'SignedOutSquare': 1, 'TemporaryAND': 10}
 
     .. note::
 

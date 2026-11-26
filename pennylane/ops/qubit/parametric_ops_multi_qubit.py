@@ -298,7 +298,7 @@ class PauliRot(Operator2):
     Args:
         theta (float): rotation angle :math:`\theta`
         pauli_word (string): the Pauli word defining the rotation
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[int] or int): the wires the operation acts on
 
     **Example**
 
@@ -356,7 +356,6 @@ class PauliRot(Operator2):
     dynamic_argnames = ("theta",)
     compilable_argnames = ("pauli_word",)
     wire_argnames = ("wires",)
-    wire_sizes = (None,)
     arg_specs = {"theta": Float, "wires": Wire[-1]}
 
     grad_recipe = (None,)
@@ -657,7 +656,7 @@ class PCPhase(Operator2):
     Args:
         phi (float): rotation angle :math:`\phi`
         dim (int): the dimension of the subspace
-        wires (Iterable[int, str], Wires): the wires the operation acts on
+        wires (Iterable[int] or Wires): the wires the operation acts on
 
     **Example:**
 
@@ -2139,7 +2138,6 @@ class CPhaseShift00(Operator2):
     dynamic_argnames = ("phi",)
     wire_argnames = ("wires",)
     arg_specs = {"phi": Float, "wires": Wire[2]}
-    wire_sizes = (2,)
 
     num_wires = 2
     num_params = 1
@@ -2313,7 +2311,6 @@ class CPhaseShift01(Operator2):
     dynamic_argnames = ("phi",)
     wire_argnames = ("wires",)
     arg_specs = {"phi": Float, "wires": Wire[2]}
-    wire_sizes = (2,)
 
     num_wires = 2
     num_params = 1
@@ -2478,13 +2475,12 @@ class CPhaseShift10(Operator2):
 
     Args:
         phi (float): rotation angle :math:`\phi`
-        wires (Any, Wires): the wire the operation acts on
+        wires (int, Wires): the wire the operation acts on
     """
 
     dynamic_argnames = ("phi",)
     wire_argnames = ("wires",)
     arg_specs = {"phi": Float, "wires": Wire[2]}
-    wire_sizes = (2,)
 
     num_wires = 2
     num_params = 1

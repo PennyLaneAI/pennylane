@@ -139,7 +139,7 @@ class TestPrepSelPrep:
         ("lcu", "control", "wire_order"),
         [
             (lcu1, 0, [0, 1, 2]),
-            (lcu2, "aux", ["aux", 0]),
+            (lcu2, 6, [6, 0]),
             (lcu3, [0], [0, 1, 2]),
             (lcu4, [0], [0, 1, 2]),
             (lcu5, [0, 1], [0, 1, 2, 3]),
@@ -165,8 +165,8 @@ class TestPrepSelPrep:
             (qp.dot([0.5j, -0.5j], [qp.Z(2), qp.X(2)]), [0, 1], [0, 1, 2], 2),
             (
                 qp.dot([0.5, 0.5], [qp.Identity(0), qp.PauliZ(0)]),
-                "auxiliary",
-                ["auxiliary", 0],
+                7,
+                [7, 0],
                 2,
             ),
             (

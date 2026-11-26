@@ -120,42 +120,6 @@ class TestDecomposition:
         for wires1, wires2 in zip(exp_wires, res_wires):
             assert np.all(wires1 == wires2)
 
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-
-        weights = np.random.random(size=(1, 6))
-
-        dev = qp.device("default.qubit", wires=4)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k", "e"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.kUpCCGSD(
-                weights,
-                wires=range(4),
-                k=1,
-                delta_sz=0,
-                init_state=np.array([0, 1, 0, 1]),
-            )
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.kUpCCGSD(
-                weights,
-                wires=["z", "a", "k", "e"],
-                k=1,
-                delta_sz=0,
-                init_state=np.array([0, 1, 0, 1]),
-            )
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
-
     @pytest.mark.parametrize(
         ("num_wires", "k", "exp_state"),
         [
@@ -300,26 +264,26 @@ class TestDecomposition:
                 ],
             ),
             (
-                ["a0", "b1", "c2", "d3", "e4", "f5"],
+                [9, 10, 11, 12, 13, 14],
                 1,
                 [
-                    ["b1", "a0"],
-                    ["b1", "c2"],
-                    ["b1", "c2", "d3", "e4"],
-                    ["d3", "c2", "b1", "a0"],
-                    ["d3", "c2"],
-                    ["d3", "e4"],
-                    ["f5", "e4", "d3", "c2", "b1", "a0"],
-                    ["f5", "e4", "d3", "c2"],
-                    ["f5", "e4"],
+                    [10, 9],
+                    [10, 11],
+                    [10, 11, 12, 13],
+                    [12, 11, 10, 9],
+                    [12, 11],
+                    [12, 13],
+                    [14, 13, 12, 11, 10, 9],
+                    [14, 13, 12, 11],
+                    [14, 13],
                 ],
                 [
-                    [["a0", "b1"], ["c2", "d3"]],
-                    [["a0", "b1"], ["e4", "f5"]],
-                    [["c2", "d3"], ["a0", "b1"]],
-                    [["c2", "d3"], ["e4", "f5"]],
-                    [["e4", "f5"], ["a0", "b1"]],
-                    [["e4", "f5"], ["c2", "d3"]],
+                    [[9, 10], [11, 12]],
+                    [[9, 10], [13, 14]],
+                    [[11, 12], [9, 10]],
+                    [[11, 12], [13, 14]],
+                    [[13, 14], [9, 10]],
+                    [[13, 14], [11, 12]],
                 ],
             ),
         ],

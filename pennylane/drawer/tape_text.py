@@ -256,7 +256,7 @@ def tape_text(  # pylint: disable=too-many-arguments
         tape (QuantumTape): the operations and measurements to draw
 
     Keyword Args:
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+        wire_order (Sequence[int]): the order (from top to bottom) to print the wires of the circuit
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int): How many decimal points to include when formatting operation parameters.
             Default ``None`` will omit parameters from operation labels.
@@ -279,20 +279,16 @@ def tape_text(  # pylint: disable=too-many-arguments
             qp.RX(1.234, wires=0),
             qp.RY(1.234, wires=1),
             qp.RZ(1.234, wires=2),
-            qp.Toffoli(wires=(0, 1, "aux"))
+            qp.Toffoli(wires=(0, 1, 3)),
         ]
-        measurements = [
-            qp.expval(qp.Z("aux")),
-            qp.var(qp.Z(0) @ qp.Z(1)),
-            qp.probs(wires=(0, 1, 2, "aux"))
-        ]
+        measurements = [qp.expval(qp.Z(3)), qp.var(qp.Z(0) @ qp.Z(1)), qp.probs(wires=(0, 1, 2, 3))]
         tape = qp.tape.QuantumTape(ops, measurements)
 
     >>> print(qp.drawer.tape_text(tape))
-      0: ─╭QFT──RX─╭●─┤ ╭Var[Z@Z] ╭Probs
-      1: ─├QFT──RY─├●─┤ ╰Var[Z@Z] ├Probs
-      2: ─╰QFT──RZ─│──┤           ├Probs
-    aux: ──────────╰X─┤  <Z>      ╰Probs
+    0: ─╭QFT──RX─╭●─┤ ╭Var[Z@Z] ╭Probs
+    1: ─├QFT──RY─├●─┤ ╰Var[Z@Z] ├Probs
+    2: ─╰QFT──RZ─│──┤           ├Probs
+    3: ──────────╰X─┤  <Z>      ╰Probs
 
     .. details::
         :title: Usage Details
@@ -301,10 +297,10 @@ def tape_text(  # pylint: disable=too-many-arguments
     are displayed to the specified precision. Matrix-valued parameters are never displayed.
 
     >>> print(qp.drawer.tape_text(tape, decimals=2))
-      0: ─╭QFT──RX(1.23)─╭●─┤ ╭Var[Z@Z] ╭Probs
-      1: ─├QFT──RY(1.23)─├●─┤ ╰Var[Z@Z] ├Probs
-      2: ─╰QFT──RZ(1.23)─│──┤           ├Probs
-    aux: ────────────────╰X─┤  <Z>      ╰Probs
+    0: ─╭QFT──RX(1.23)─╭●─┤ ╭Var[Z@Z] ╭Probs
+    1: ─├QFT──RY(1.23)─├●─┤ ╰Var[Z@Z] ├Probs
+    2: ─╰QFT──RZ(1.23)─│──┤           ├Probs
+    3: ────────────────╰X─┤  <Z>      ╰Probs
 
 
     The ``max_length`` keyword wraps long circuits:
@@ -316,42 +312,44 @@ def tape_text(  # pylint: disable=too-many-arguments
         params = rng.random(shape)
         op = qp.StronglyEntanglingLayers(params, wires=range(5))
         tape2 = qp.tape.QuantumScript(op.decomposition())
-        print(qp.drawer.tape_text(tape2, max_length=60))
 
-
-    .. code-block:: none
-
-        0: ──Rot─╭●──────────╭X──Rot─╭●───────╭X──Rot──────╭●────╭X
-        1: ──Rot─╰X─╭●───────│───Rot─│──╭●────│──╭X────Rot─│──╭●─│─
-        2: ──Rot────╰X─╭●────│───Rot─╰X─│──╭●─│──│─────Rot─│──│──╰●
-        3: ──Rot───────╰X─╭●─│───Rot────╰X─│──╰●─│─────Rot─╰X─│────
-        4: ──Rot──────────╰X─╰●──Rot───────╰X────╰●────Rot────╰X───
-
-        ───Rot───────────╭●─╭X──Rot──────╭●──────────────╭X─┤
-        ──╭X────Rot──────│──╰●─╭X────Rot─╰X───╭●─────────│──┤
-        ──│────╭X────Rot─│─────╰●───╭X────Rot─╰X───╭●────│──┤
-        ──╰●───│─────Rot─│──────────╰●───╭X────Rot─╰X─╭●─│──┤
-        ───────╰●────Rot─╰X──────────────╰●────Rot────╰X─╰●─┤
-
+    >>> print(qp.drawer.tape_text(tape2, max_length=60))
+    0: ──Rot─╭●──────────╭X──Rot─╭●───────╭X──Rot──────╭●─── ···
+    1: ──Rot─╰X─╭●───────│───Rot─│──╭●────│──╭X────Rot─│──╭● ···
+    2: ──Rot────╰X─╭●────│───Rot─╰X─│──╭●─│──│─────Rot─│──│─ ···
+    3: ──Rot───────╰X─╭●─│───Rot────╰X─│──╰●─│─────Rot─╰X─│─ ···
+    4: ──Rot──────────╰X─╰●──Rot───────╰X────╰●────Rot────╰X ···
+    <BLANKLINE>
+    0: ··· ─╭X──Rot───────────╭●─╭X──Rot──────╭●────────── ···
+    1: ··· ─│──╭X────Rot──────│──╰●─╭X────Rot─╰X───╭●───── ···
+    2: ··· ─╰●─│────╭X────Rot─│─────╰●───╭X────Rot─╰X───╭● ···
+    3: ··· ────╰●───│─────Rot─│──────────╰●───╭X────Rot─╰X ···
+    4: ··· ─────────╰●────Rot─╰X──────────────╰●────Rot─── ···
+    <BLANKLINE>
+    0: ··· ────╭X─┤
+    1: ··· ────│──┤
+    2: ··· ────│──┤
+    3: ··· ─╭●─│──┤
+    4: ··· ─╰X─╰●─┤
 
     The ``wire_order`` keyword specifies the order of the wires from
     top to bottom:
 
-    >>> print(qp.drawer.tape_text(tape, wire_order=["aux", 2, 1, 0]))
-    aux: ──────────╭X─┤  <Z>      ╭Probs
-      2: ─╭QFT──RZ─│──┤           ├Probs
-      1: ─├QFT──RY─├●─┤ ╭Var[Z@Z] ├Probs
-      0: ─╰QFT──RX─╰●─┤ ╰Var[Z@Z] ╰Probs
+    >>> print(qp.drawer.tape_text(tape, wire_order=[3, 2, 1, 0]))
+    3: ──────────╭X─┤  <Z>      ╭Probs
+    2: ─╭QFT──RZ─│──┤           ├Probs
+    1: ─├QFT──RY─├●─┤ ╭Var[Z@Z] ├Probs
+    0: ─╰QFT──RX─╰●─┤ ╰Var[Z@Z] ╰Probs
 
     If the wire order contains empty wires, they are only shown if the ``show_all_wires=True``.
 
-    >>> print(qp.drawer.tape_text(tape, wire_order=["a", "b", "aux", 0, 1, 2], show_all_wires=True))
-      a: ─────────────┤
-      b: ─────────────┤
-    aux: ──────────╭X─┤  <Z>      ╭Probs
-      0: ─╭QFT──RX─├●─┤ ╭Var[Z@Z] ├Probs
-      1: ─├QFT──RY─╰●─┤ ╰Var[Z@Z] ├Probs
-      2: ─╰QFT──RZ────┤           ╰Probs
+    >>> print(qp.drawer.tape_text(tape, wire_order=[4, 6, 3, 0, 1, 2], show_all_wires=True))
+    4: ─────────────┤
+    6: ─────────────┤
+    3: ──────────╭X─┤  <Z>      ╭Probs
+    0: ─╭QFT──RX─├●─┤ ╭Var[Z@Z] ├Probs
+    1: ─├QFT──RY─╰●─┤ ╰Var[Z@Z] ├Probs
+    2: ─╰QFT──RZ────┤           ╰Probs
 
     Matrix valued parameters are always denoted by ``M`` followed by an integer corresponding to
     unique matrices.  The list of unique matrices can be printed at the end of the diagram by
@@ -361,9 +359,9 @@ def tape_text(  # pylint: disable=too-many-arguments
 
         ops = [
             qp.QubitUnitary(np.eye(2), wires=0),
-            qp.QubitUnitary(np.eye(2), wires=1)
+            qp.QubitUnitary(np.eye(2), wires=1),
         ]
-        measurements = [qp.expval(qp.Hermitian(np.eye(4), wires=(0,1)))]
+        measurements = [qp.expval(qp.Hermitian(np.eye(4), wires=(0, 1)))]
         tape = qp.tape.QuantumTape(ops, measurements)
 
     >>> print(qp.drawer.tape_text(tape))
@@ -371,33 +369,33 @@ def tape_text(  # pylint: disable=too-many-arguments
     1: ──U(M0)─┤ ╰<𝓗(M1)>
     M0 =
     [[1. 0.]
-    [0. 1.]]
+     [0. 1.]]
     M1 =
     [[1. 0. 0. 0.]
-    [0. 1. 0. 0.]
-    [0. 0. 1. 0.]
-    [0. 0. 0. 1.]]
+     [0. 1. 0. 0.]
+     [0. 0. 1. 0.]
+     [0. 0. 0. 1.]]
 
     An existing matrix cache can be passed via the ``cache`` keyword. Note that the dictionary
     passed to ``cache`` will be modified during execution to contain any new matrices and the
     tape offset.
 
-    >>> cache = {'matrices': [-np.eye(3)]}
+    >>> cache = {"matrices": [-np.eye(3)]}
     >>> print(qp.drawer.tape_text(tape, cache=cache))
     0: ──U(M1)─┤ ╭<𝓗(M2)>
     1: ──U(M1)─┤ ╰<𝓗(M2)>
     M0 =
     [[-1. -0. -0.]
-    [-0. -1. -0.]
-    [-0. -0. -1.]]
+     [-0. -1. -0.]
+     [-0. -0. -1.]]
     M1 =
     [[1. 0.]
-    [0. 1.]]
+     [0. 1.]]
     M2 =
     [[1. 0. 0. 0.]
-    [0. 1. 0. 0.]
-    [0. 0. 1. 0.]
-    [0. 0. 0. 1.]]
+     [0. 1. 0. 0.]
+     [0. 0. 1. 0.]
+     [0. 0. 0. 1.]]
     >>> cache
     {'matrices': [array([[-1., -0., -0.],
            [-0., -1., -0.],
@@ -418,18 +416,15 @@ def tape_text(  # pylint: disable=too-many-arguments
             with qp.tape.QuantumTape() as tape_inner:
                 qp.X(0)
 
-        cache = {'tape_offset': 3}
-        print(qp.drawer.tape_text(tape, cache=cache))
-        print("New tape offset: ", cache['tape_offset'])
+        cache = {"tape_offset": 3}
 
-
-    .. code-block:: none
-
-        0: ──Tape:3─┤
-
-        Tape:3
-        0: ──X─┤
-        New tape offset:  4
+    >>> print(qp.drawer.tape_text(tape, cache=cache))
+    0: ──Tape:3─┤
+    <BLANKLINE>
+    Tape:3
+    0: ──X─┤
+    >>> print("New tape offset: ", cache["tape_offset"])
+    New tape offset:  4
 
     """
     tape = transform_deferred_measurements_tape(tape)

@@ -45,7 +45,7 @@ def _wire_map_from_pauli_pair(pauli_word_1, pauli_word_2):
         pauli_word_2 (.Operation): A second Pauli word.
 
     Returns:
-        dict[Union[str, int], int]): dictionary containing all wire labels used
+        dict[int, int]): dictionary containing all wire labels used
         in the Pauli word as keys, and unique integer labels as their values.
     """
     wire_labels = Wires.all_wires([pauli_word_1.wires, pauli_word_2.wires]).labels
@@ -194,9 +194,9 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
     Pauli operations will be read from left-to-right in the tensor product when ``wire_map`` is
     unspecified, e.g.,
 
-    >>> pauli_to_binary(qp.X('a') @ qp.Y('b') @ qp.Z('c'))
+    >>> pauli_to_binary(qp.X(4) @ qp.Y(6) @ qp.Z(3))
     array([1., 1., 0., 0., 1., 1.])
-    >>> pauli_to_binary(qp.X('c') @ qp.Y('a') @ qp.Z('b'))
+    >>> pauli_to_binary(qp.X(3) @ qp.Y(4) @ qp.Z(6))
     array([1., 1., 0., 0., 1., 1.])
 
     The above cases have the same binary representation since they are equivalent up to a
@@ -204,10 +204,10 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
     labelling across multiple Pauli words, or define any arbitrary enumeration, one can use
     keyword argument ``wire_map`` to set this enumeration.
 
-    >>> wire_map = {'a': 0, 'b': 1, 'c': 2}
-    >>> pauli_to_binary(qp.X('a') @ qp.Y('b') @ qp.Z('c'), wire_map=wire_map)
+    >>> wire_map = {4: 0, 6: 1, 3: 2}
+    >>> pauli_to_binary(qp.X(4) @ qp.Y(6) @ qp.Z(3), wire_map=wire_map)
     array([1., 1., 0., 0., 1., 1.])
-    >>> pauli_to_binary(qp.X('c') @ qp.Y('a') @ qp.Z('b'), wire_map=wire_map)
+    >>> pauli_to_binary(qp.X(3) @ qp.Y(4) @ qp.Z(6), wire_map=wire_map)
     array([1., 0., 1., 1., 1., 0.])
 
     Now the two Pauli words are distinct in the binary vector representation, as the vector
@@ -305,9 +305,9 @@ def binary_to_pauli(binary_vector, wire_map=None):
 
     An arbitrary labelling can be assigned by using ``wire_map``:
 
-    >>> wire_map = {'a': 0, 'b': 1, 'c': 2}
+    >>> wire_map = {3: 0, 4: 1, 5: 2}
     >>> binary_to_pauli([0,1,1,0,1,0], wire_map=wire_map)
-    Y('b') @ X('c')
+    Y(4) @ X(5)
 
     Note that the values of ``wire_map``, if specified, must be ``0,1,..., N``,
     where ``N`` is the dimension of the vector divided by two, i.e.,
@@ -386,7 +386,7 @@ def pauli_word_to_string(pauli_word, wire_map=None):
     Args:
         pauli_word (Operator): an observable, either a single-qubit observable
             representing a Pauli group element, or a tensor product of single-qubit observables.
-        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
+        wire_map (dict[int, int]): dictionary containing all wire labels used in
             the Pauli word as keys, and unique integer labels as their values
 
     Returns:
@@ -398,8 +398,8 @@ def pauli_word_to_string(pauli_word, wire_map=None):
 
     **Example**
 
-    >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
-    >>> pauli_word = qp.X('a') @ qp.Y('c')
+    >>> wire_map = {3: 0, 4: 1, 5: 2}
+    >>> pauli_word = qp.X(3) @ qp.Y(5)
     >>> pauli_word_to_string(pauli_word, wire_map=wire_map)
     'XIY'
     """
@@ -431,7 +431,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
     Args:
         pauli_string (str): A string of characters consisting of ``'I'``, ``'X'``, ``'Y'``, and ``'Z'``
             indicating a Pauli word.
-        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
+        wire_map (dict[int, int]): dictionary containing all wire labels used in
             the Pauli word as keys, and unique integer labels as their values
 
     Returns:
@@ -440,9 +440,9 @@ def string_to_pauli_word(pauli_string, wire_map=None):
 
     **Example**
 
-    >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
+    >>> wire_map = {3: 0, 4: 1, 5: 2}
     >>> string_to_pauli_word('XIY', wire_map=wire_map)
-    X('a') @ Y('c')
+    X(3) @ Y(5)
     """
 
     if not isinstance(pauli_string, str):
@@ -499,7 +499,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
     Args:
         pauli_word (Operator): an observable, either a single-qubit observable
             representing a Pauli group element, or a tensor product of single-qubit observables.
-        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels used in
+        wire_map (dict[int, int]): dictionary containing all wire labels used in
             the Pauli word as keys, and unique integer labels as their values
 
     Returns:
@@ -511,8 +511,8 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
 
     **Example**
 
-    >>> wire_map = {'a' : 0, 'b' : 1}
-    >>> pauli_word = qp.X('a') @ qp.Y('b')
+    >>> wire_map = {2: 0, 3: 1}
+    >>> pauli_word = qp.X(2) @ qp.Y(3)
     >>> pauli_word_to_matrix(pauli_word, wire_map=wire_map).astype(np.complex128)
     array([[0.+0.j, 0.+0.j, 0.+0.j, 0.-1.j],
            [0.+0.j, 0.+0.j, 0.+1.j, 0.+0.j],
@@ -770,7 +770,7 @@ def _pauli_group_generator(n_qubits, wire_map=None):
 
     Args:
         n_qubits (int): The number of qubits for which to create the group.
-        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels
+        wire_map (dict[int, int]): dictionary containing all wire labels
             used in the Pauli word as keys, and unique integer labels as their values.
             If no wire map is provided, wires will be labeled by consecutive integers between :math:`0` and ``n_qubits``.
 
@@ -804,7 +804,7 @@ def pauli_group(n_qubits, wire_map=None):
 
     Args:
         n_qubits (int): The number of qubits for which to create the group.
-        wire_map (dict[Union[str, int], int]): dictionary containing all wire labels
+        wire_map (dict[int, int]): dictionary containing all wire labels
             used in the Pauli word as keys, and unique integer labels as their values.
             If no wire map is provided, wires will be labeled by integers between 0 and ``n_qubits``.
 
@@ -836,14 +836,14 @@ def pauli_group(n_qubits, wire_map=None):
     above will be created. (Note: in the example below, we display only the first
     5 elements for brevity.)
 
-    >>> wire_map = {'a' : 0, 'b' : 1, 'c' : 2}
+    >>> wire_map = {3: 0, 4: 1, 5: 2}
     >>> for p in pauli_group(n_qubits, wire_map=wire_map):
     ...     print(p)
-    I('a')
-    Z('c')
-    Z('b')
-    Z('b') @ Z('c')
-    Z('a')
+    I(3)
+    Z(5)
+    Z(4)
+    Z(4) @ Z(5)
+    Z(3)
     ...
 
     """
@@ -967,9 +967,9 @@ def qwc_rotation(pauli_operators):
 
     **Example**
 
-    >>> pauli_operators = [qp.X('a'), qp.Y('b'), qp.Z('c')]
+    >>> pauli_operators = [qp.X(0), qp.Y(1), qp.Z(2)]
     >>> qwc_rotation(pauli_operators)
-    [RY(-1.5707963267948966, wires=['a']), RX(1.5707963267948966, wires=['b'])]
+    [RY(-1.5707963267948966, wires=[0]), RX(1.5707963267948966, wires=[1])]
     """
     paulis_with_identity = (qp.Identity, qp.X, qp.Y, qp.Z)
     if not all(isinstance(element, paulis_with_identity) for element in pauli_operators):
@@ -1004,8 +1004,8 @@ def diagonalize_pauli_word(pauli_word):
 
     **Example**
 
-    >>> diagonalize_pauli_word(qp.X('a') @ qp.Y('b') @ qp.Z('c'))
-    Z('a') @ Z('b') @ Z('c')
+    >>> diagonalize_pauli_word(qp.X(1) @ qp.Y(2) @ qp.Z(0))
+    Z(1) @ Z(2) @ Z(0)
     """
 
     if not is_pauli_word(pauli_word):
@@ -1182,10 +1182,8 @@ def _binary_matrix_from_pws(terms, num_qubits, wire_map=None):
     **Example**
 
     >>> from pennylane.pauli import PauliWord
-    >>> wire_map = {'a':0, 'b':1, 'c':2, 'd':3}
-    >>> terms = [PauliWord({'a': 'Z', 'b': 'X'}),
-    ...          PauliWord({'a': 'Z', 'c': 'Y'}),
-    ...          PauliWord({'a': 'X', 'd': 'Y'})]
+    >>> wire_map = {4: 0, 5: 1, 6: 2, 7: 3}
+    >>> terms = [PauliWord({4: "Z", 5: "X"}), PauliWord({4: "Z", 6: "Y"}), PauliWord({4: "X", 7: "Y"})]
     >>> _binary_matrix_from_pws(terms, 4, wire_map=wire_map)
     array([[1, 0, 0, 0, 0, 1, 0, 0],
            [1, 0, 1, 0, 0, 0, 1, 0],

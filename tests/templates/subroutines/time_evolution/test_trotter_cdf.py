@@ -257,14 +257,14 @@ class TestInitialization:
     def test_work_wires_and_mapping(self, toy_hamiltonian_cdf_concrete):
         """System and work registers remain distinct when mapping heterogeneous wire labels."""
         ham, _ = toy_hamiltonian_cdf_concrete
-        wires = ["alpha0", "beta0", "alpha1", "beta1"]
-        op = qp.TrotterCDF(0.3, 2, ham, wires, work_wires=["and", "controlled_and"])
+        wires = [14, 17, 15, 18]
+        op = qp.TrotterCDF(0.3, 2, ham, wires, work_wires=[16, 19])
 
         assert op.wires == Wires(wires)
-        assert op.arguments["work_wires"] == Wires(["and", "controlled_and"])
-        mapped = op.map_wires({"alpha0": 10, "beta0": 11, "alpha1": 12, "beta1": 13, "and": 20})
+        assert op.arguments["work_wires"] == Wires([16, 19])
+        mapped = op.map_wires({14: 10, 17: 11, 15: 12, 18: 13, 16: 20})
         assert mapped.wires == Wires([10, 11, 12, 13])
-        assert mapped.arguments["work_wires"] == Wires([20, "controlled_and"])
+        assert mapped.arguments["work_wires"] == Wires([20, 19])
         assert np.array_equal(mapped.arguments["hamiltonian"].core_tensors, ham.core_tensors)
         assert np.array_equal(mapped.arguments["hamiltonian"].leaf_tensors, ham.leaf_tensors)
         assert mapped.arguments["hamiltonian"].nuc_constant == ham.nuc_constant
@@ -407,7 +407,7 @@ class TestResourceRule:
     """Direct unit tests for the registered resource functions, following the
     graph-based decomposition testing convention."""
 
-    @pytest.mark.parametrize("work_wires", [(), ("and",)])
+    @pytest.mark.parametrize("work_wires", [(), (16,)])
     def test_num_trotter_steps_zero_has_no_resources(
         self, toy_hamiltonian_cdf_concrete, work_wires
     ):
@@ -426,7 +426,7 @@ class TestResourceRule:
         assert resources == Resources({})
 
     @pytest.mark.parametrize("double_phase", [False, True])
-    @pytest.mark.parametrize("work_wires", [(), ("and", "controlled_and")])
+    @pytest.mark.parametrize("work_wires", [(), (16, 19)])
     def test_controlled_zero_steps_empty_decomposition(
         self, toy_hamiltonian_cdf_concrete, double_phase, work_wires
     ):
