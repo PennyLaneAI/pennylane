@@ -24,7 +24,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.allocation import Allocate, Deallocate
-from pennylane.templates.subroutines import AQFT, QROM, SemiAdder
+from pennylane.templates.subroutines import AQFT, QROM, QROMLoad, SemiAdder
 from pennylane.templates.subroutines.arithmetic import (
     OutMultiplier,
     SignedOutMultiplier,
@@ -629,17 +629,26 @@ class TestDecomposition:
         assert count_ops(nonzero, AQFT) > 0
         assert count_ops(nonzero, qp.BasisState) == 0  # momentum coeffs loaded via ``PauliX``
 
-    def test_basis_loading_uses_multix(self):
-        """Test that non-zero momentum coefficients are loaded with ``MultiX``."""
-        n_states, n_modes = 2, 1
+    def test_kinetic_term_uses_qrom_load(self):
+        """Test that the kinetic phases are loaded with ``QROMLoad`` controlled on the mode
+        register and added with a ``SemiAdder``, without squaring or multiplying."""
+        n_states, n_modes = 2, 2
         position = _zero_fragment(n_states, n_modes)
         kinetic = _zero_fragment(n_states, n_modes)
         for i in range(n_states):
             kinetic["kinetic"][i, i] = np.diag([3.0] * n_modes)
         hamiltonian = build_hamiltonian([position, kinetic])
-        queue = decomposition_queue(make_op(hamiltonian, make_wires(n_states, n_modes), 1.0))
-        assert count_ops(queue, qp.BasisState) == 0
-        assert count_ops(queue, qp.MultiX) > 0
+        wires = make_wires(n_states, n_modes)
+        queue = decomposition_queue(make_op(hamiltonian, wires, 1.0))
+
+        loads = [op for op in queue if isinstance(op, QROMLoad)]
+        unloads = [op for op in queue if isinstance(op, qp.ops.Adjoint)]
+        unloads = [op.base for op in unloads if isinstance(op.base, QROMLoad)]
+        mode_registers = np.array(wires["vib_wires"]).reshape(n_modes, -1)
+        assert [list(op.control_wires) for op in loads] == mode_registers.tolist()
+        assert loads == unloads
+        assert count_ops(queue, SemiAdder) == n_modes
+        assert count_ops(queue, qp.MultiX, SignedOutSquare, OutMultiplier) == 0
 
     def test_bilinear_queues_signed_out_multiplier(self):
         """Test that a bilinear fragment queues a SignedOutMultiplier."""
@@ -832,10 +841,13 @@ class TestDecomposition:
         num_bilinear = counts["SignedOutMultiplier"]
         num_ctrl_multix_linear = counts["C(MultiX)"] - 2 * min(2 * k, b + 1) * num_bilinear
         num_linear = num_ctrl_multix_linear / (2 * min(k, b + 1))
-        p_kinetic = counts["AQFT"] / (num_steps * n_modes)
-        p_constant = (counts["SemiAdder"] - num_linear - num_bilinear) / position_visits
+        num_kinetic = counts["AQFT"]
+        p_kinetic = num_kinetic / (num_steps * n_modes)
+        p_constant = (
+            counts["SemiAdder"] - num_linear - num_bilinear - num_kinetic
+        ) / position_visits
         p_linear = num_linear / (position_visits * n_modes)
-        p_quadratic = (counts["SignedOutSquare"] - counts["AQFT"]) / (position_visits * n_modes)
+        p_quadratic = counts["SignedOutSquare"] / (position_visits * n_modes)
         p_bilinear = num_bilinear / (position_visits * num_pairs)
 
         def skip_hint(p):
@@ -953,9 +965,13 @@ def _binary_decimals_int(value, precision):
     return int(np.dot(np.asarray(bits), 2 ** np.arange(precision)[::-1]))
 
 
-def _phase_gradient_int(hamiltonian, wires, mode_value=0, electronic_state=0, evolution_time=1.0):
+# pylint: disable-next=too-many-arguments
+def _phase_gradient_int(
+    hamiltonian, wires, mode_value=0, electronic_state=0, evolution_time=1.0, momentum=False
+):
     """Run ``TrotterVibronic`` with the phase-gradient register prepared in ``|0>`` and return the
-    integer it holds afterwards.
+    integer it holds afterwards. With ``momentum=True``, ``mode_value`` is the momentum of the
+    mode instead of its position, which requires a single mode with three wires.
 
     Preparing the phase-gradient register (and everything else) in a computational basis state
     turns the phase-gradient arithmetic into an exact integer accumulation: every sub-operation
@@ -971,7 +987,10 @@ def _phase_gradient_int(hamiltonian, wires, mode_value=0, electronic_state=0, ev
     @qp.qnode(dev)
     def circuit():
         if mode_value:
-            qp.BasisState(qp.math.int_to_binary(mode_value, k), wires=wires["vib_wires"])
+            qp.BasisState(qp.math.int_to_binary(mode_value % 2**k, k), wires=wires["vib_wires"])
+        if momentum:
+            # ``make_op`` uses ``aqft_order=1`` for three wires per mode
+            qp.adjoint(AQFT(order=1, wires=wires["vib_wires"]))
         if electronic_state:
             qp.BasisState(qp.math.int_to_binary(electronic_state, n), wires=wires["electronic"])
         make_op(hamiltonian, wires, evolution_time=evolution_time, num_trotter_steps=1)
@@ -1028,6 +1047,58 @@ class TestNumericalCorrectness:
         # Negated coefficient (see ``test_constant_term_phase``) times the (signed) mode value.
         expected = (2 * _binary_decimals_int(-lam / 2, b) * q) % (2**b)
         assert got == expected == (-2 * m * q) % (2**b)
+
+    @pytest.mark.parametrize("momentum", [0, 1, 3, -1, -4])
+    def test_kinetic_term_phase(self, momentum):
+        """A kinetic fragment adds ``binary_decimals(t P^2)`` for the (signed) momentum ``P``,
+        rounding the full phase rather than the coefficient ``t``."""
+        n_states, n_modes, k, b = 2, 1, 3, 5
+        t, evolution_time = 0.37, 0.8
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=np.zeros((1, n_states, n_states)),
+            linear=np.zeros((1, n_states, n_states, n_modes)),
+            quadratic=np.zeros((1, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.einsum("ab,cd->abcd", np.eye(n_states), np.diag([t])),
+        )
+        wires = make_wires(n_states, n_modes, k=k, b=b)
+        got = _phase_gradient_int(
+            hamiltonian, wires, mode_value=momentum, evolution_time=evolution_time, momentum=True
+        )
+        assert got == _binary_decimals_int(-t * evolution_time * momentum**2, b)
+
+    def test_kinetic_term_matches_exact_evolution(self):
+        """With a genuine phase-gradient state, the kinetic fragment realizes
+        ``AQFT^dagger e^{-i t P^2} AQFT`` on the mode register, for a coefficient whose phases
+        are exact binary fractions of ``2 pi``."""
+        n_states, n_modes, k, b = 2, 1, 2, 4
+        t = 2 * np.pi * 3 / 2**b
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=np.zeros((1, n_states, n_states)),
+            linear=np.zeros((1, n_states, n_states, n_modes)),
+            quadratic=np.zeros((1, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.einsum("ab,cd->abcd", np.eye(n_states), np.diag([t])),
+        )
+        wires = make_wires(n_states, n_modes, k=k, b=b)
+        mode_wires = wires["vib_wires"]
+        num_wires = max(w for reg in wires.values() for w in reg) + 1
+
+        def prepare_mode():
+            qp.RY(0.4, mode_wires[0])
+            qp.RX(0.7, mode_wires[1])
+            qp.CNOT(mode_wires)
+
+        @qp.qnode(qp.device("default.qubit", wires=num_wires))
+        def circuit():
+            prepare_mode()
+            qp.PhaseGradientStatePrep(wires["phase_gradient"])
+            make_op(hamiltonian, wires, evolution_time=1.0, num_trotter_steps=1)
+            return qp.density_matrix(wires=mode_wires)
+
+        initial = qp.matrix(prepare_mode, wire_order=mode_wires)()[:, 0]
+        qft = qp.matrix(AQFT(order=k - 1, wires=mode_wires))
+        momenta = np.array([0, 1, -2, -1])
+        expected = qft.conj().T @ (np.exp(-1j * t * momenta**2) * (qft @ initial))
+        assert np.allclose(circuit(), np.outer(expected, expected.conj()))
 
     @pytest.mark.parametrize("num_extra_pg_wires", [0, 2])
     @pytest.mark.parametrize("mode_value", [0, 1, -1])
@@ -1087,10 +1158,10 @@ class TestNumericalCorrectness:
         rotations that reuse the coefficient wires as angle wires, which requires the coefficient
         register to be zeroed during the ``AQFT``."""
         n_states, n_modes, k, b = 2, 1, 2, 4
-        # The kinetic coefficient loads the bitstring 0101 into the coefficient register. For most
-        # other bitstrings, a coefficient register that is occupied during the ``AQFT`` leads to a
-        # global phase or to an error that commutes with the kinetic evolution, and thus would
-        # not be detected.
+        # The kinetic phases load the bitstrings 0101 (for momenta +-1) and 0100 (for momentum -2)
+        # into the coefficient register. For many other bitstrings, a coefficient register that
+        # is occupied during the ``AQFT`` leads to a global phase or to an error that commutes
+        # with the kinetic evolution, and thus would not be detected.
         kinetic = 2 * np.pi * 11 / 2**b
         hamiltonian = qp.VibronicHamiltonian(
             constant=np.zeros((1, n_states, n_states)),
@@ -1115,6 +1186,8 @@ class TestNumericalCorrectness:
             "C(MultiX)",
             "SemiAdder",
             "QROM",
+            "QROMLoad",
+            "Adjoint(QROMLoad)",
             "OutMultiplier",
             "SignedOutSquare",
             "Adjoint(SignedOutSquare)",
