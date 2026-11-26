@@ -33,7 +33,7 @@ def validate_phase_gradient_wires(angle_wires, phase_grad_wires, work_wires):
     Args:
         angle_wires (Wires): wires that encode the binary representation of the rotation angle
         phase_grad_wires (Wires): wires that carry a phase gradient state.
-        work_wires (Wires): work wires for :class:`~.SemiAdder` (and possibly :class:`~.QROM`)
+        work_wires (Wires): work wires for :class:`~.SemiAdder` (and possibly :class:`~.QROMLoad`)
             decomposition.
 
     """
@@ -248,20 +248,17 @@ def make_rz_to_phase_gradient_decomp(
         from pennylane.transforms.decompositions import make_rz_to_phase_gradient_decomp
         import numpy as np
 
-        qp.decomposition.enable_graph()
-
         prec = 3
-        phi = (1/2 + 1/4 + 1/8) * 2 * np.pi # binary rep is (111)
+        phi = (1 / 2 + 1 / 4 + 1 / 8) * 2 * np.pi  # binary rep is (111)
 
-        angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-        phase_grad_wires = qp.wires.Wires([f"phg_{i}" for i in range(prec)])
-        work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
+        angle_wires = qp.wires.Wires(range(1, 1 + prec))
+        phase_grad_wires = qp.wires.Wires(range(1 + prec, 1 + 2 * prec))
+        work_wires = qp.wires.Wires(range(1 + 2 * prec, 1 + 3 * prec - 1))
 
-        custom_decomp = make_rz_to_phase_gradient_decomp(
-            angle_wires, phase_grad_wires, work_wires
-        )
+        custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
 
         gate_set = {"CNOT", "SemiAdder", "GlobalPhase", "PauliX"}
+
 
         @qp.transforms._tape_decompose(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
         @qp.qnode(qp.device("null.qubit"))
@@ -274,15 +271,14 @@ def make_rz_to_phase_gradient_decomp(
 
     >>> print(qp.draw(circuit)())
          0: ─╭GlobalPhase(2.75)─╭●─╭●─╭●────────────╭●─╭●─╭●─┤ ╭State
-     aux_0: ─├GlobalPhase(2.75)─╰X─│──│──╭SemiAdder─╰X─│──│──┤ ├State
-     aux_1: ─├GlobalPhase(2.75)────╰X─│──├SemiAdder────╰X─│──┤ ├State
-     aux_2: ─├GlobalPhase(2.75)───────╰X─├SemiAdder───────╰X─┤ ├State
-     phg_0: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤ ├State
-     phg_1: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤ ├State
-     phg_2: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤ ├State
-    work_0: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤ ├State
-    work_1: ─╰GlobalPhase(2.75)──────────╰SemiAdder──────────┤ ╰State
-
+     1: ─├GlobalPhase(2.75)─╰X─│──│──╭SemiAdder─╰X─│──│──┤ ├State
+     2: ─├GlobalPhase(2.75)────╰X─│──├SemiAdder────╰X─│──┤ ├State
+     3: ─├GlobalPhase(2.75)───────╰X─├SemiAdder───────╰X─┤ ├State
+     4: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤ ├State
+     5: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤ ├State
+     6: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤ ├State
+    7: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤ ├State
+    8: ─╰GlobalPhase(2.75)──────────╰SemiAdder──────────┤ ╰State
 
     .. details::
         :title: Usage details
@@ -337,21 +333,21 @@ def make_rz_to_phase_gradient_decomp(
         >>> wire_order = [0] + angle_wires + phase_grad_wires + work_wires
         >>> print(qp.draw(truncated_circuit, wire_order=wire_order)(angles[0]))
              0: ─╭GlobalPhase(1.57)─╭●────────────╭●─┤ ╭State
-         aux_0: ─├GlobalPhase(1.57)─╰X─╭SemiAdder─╰X─┤ ├State
-         phg_0: ─├GlobalPhase(1.57)────├SemiAdder────┤ ├State
-        work_0: ─├GlobalPhase(1.57)────├SemiAdder────┤ ├State
-        work_1: ─╰GlobalPhase(1.57)────╰SemiAdder────┤ ╰State
+         1: ─├GlobalPhase(1.57)─╰X─╭SemiAdder─╰X─┤ ├State
+         4: ─├GlobalPhase(1.57)────├SemiAdder────┤ ├State
+        7: ─├GlobalPhase(1.57)────├SemiAdder────┤ ├State
+        8: ─╰GlobalPhase(1.57)────╰SemiAdder────┤ ╰State
 
         >>> print(qp.draw(truncated_circuit, wire_order=wire_order)(angles[1]))
              0: ─╭GlobalPhase(1.18)─╭●─╭●────────────╭●─╭●─┤ ╭State
-         aux_0: ─├GlobalPhase(1.18)─│──│──╭SemiAdder─│──│──┤ ├State
-         aux_1: ─├GlobalPhase(1.18)─╰X─│──├SemiAdder─╰X─│──┤ ├State
-         aux_2: ─├GlobalPhase(1.18)────╰X─├SemiAdder────╰X─┤ ├State
-         phg_0: ─├GlobalPhase(1.18)───────├SemiAdder───────┤ ├State
-         phg_1: ─├GlobalPhase(1.18)───────├SemiAdder───────┤ ├State
-         phg_2: ─├GlobalPhase(1.18)───────├SemiAdder───────┤ ├State
-        work_0: ─├GlobalPhase(1.18)───────├SemiAdder───────┤ ├State
-        work_1: ─╰GlobalPhase(1.18)───────╰SemiAdder───────┤ ╰State
+         1: ─├GlobalPhase(1.18)─│──│──╭SemiAdder─│──│──┤ ├State
+         2: ─├GlobalPhase(1.18)─╰X─│──├SemiAdder─╰X─│──┤ ├State
+         3: ─├GlobalPhase(1.18)────╰X─├SemiAdder────╰X─┤ ├State
+         4: ─├GlobalPhase(1.18)───────├SemiAdder───────┤ ├State
+         5: ─├GlobalPhase(1.18)───────├SemiAdder───────┤ ├State
+         6: ─├GlobalPhase(1.18)───────├SemiAdder───────┤ ├State
+        7: ─├GlobalPhase(1.18)───────├SemiAdder───────┤ ├State
+        8: ─╰GlobalPhase(1.18)───────╰SemiAdder───────┤ ╰State
 
         Finally, keep the following in mind when using ``precision_stats``:
 
@@ -371,7 +367,7 @@ def make_rz_to_phase_gradient_decomp(
     )
     precisions, dispatch = _precision_dispatcher(precision_stats, len(angle_wires), "RZ")
 
-    def _resource_fn(phi, wires):  # pylint: disable=unused-argument
+    def _rz_phase_gradient_standard_resources(phi, wires):  # pylint: disable=unused-argument
         # rz decomposition costs, using information about angle_wires etc from the outer scope.
         # Each non-zero precision that may be applied is counted once.
         resources = {qp.GlobalPhase: 1}
@@ -382,8 +378,10 @@ def make_rz_to_phase_gradient_decomp(
         return resources
 
     # MultiX only emits a gate per set bit, so the gate count depends on the concrete angle.
-    @qp.register_resources(_resource_fn, exact=False)
-    def _rz_phase_gradient_decomp(phi, wires):
+    @qp.register_resources(
+        _rz_phase_gradient_standard_resources, exact=False, name="phase_gradient"
+    )
+    def _rz_phase_gradient_standard(phi, wires):
         qp.GlobalPhase(phi / 2)
         dispatch(
             phi,
@@ -392,4 +390,4 @@ def make_rz_to_phase_gradient_decomp(
             ),
         )
 
-    return _rz_phase_gradient_decomp
+    return _rz_phase_gradient_standard

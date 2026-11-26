@@ -294,7 +294,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     Args:
         *params (tuple[tensor_like]): trainable parameters
-        wires (Iterable[Any] | Any): Wire label(s) that the operator acts on.
+        wires (Iterable[int] | int): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
 
     **Example**
@@ -375,12 +375,13 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         import numpy as np
 
-        dev = qp.device("default.qubit", wires=["q1", "q2", "q3"])
+        dev = qp.device("default.qubit", wires=[0, 1, 2])
+
 
         @qp.qnode(dev)
         def circuit(angle):
-            FlipAndRotate(angle, wire_rot="q1", wire_flip="q1")
-            return qp.expval(qp.Z("q1"))
+            FlipAndRotate(angle, wire_rot=0, wire_flip=0)
+            return qp.expval(qp.Z(0))
 
     >>> a = np.array(3.14)
     >>> print(circuit(a))
@@ -1241,7 +1242,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
             **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
@@ -1293,7 +1294,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
         Args:
             params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            wires (Iterable[Any], Wires): wires that the operator acts on
+            wires (Iterable[int], Wires): wires that the operator acts on
             hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
 
         Returns:
@@ -1593,7 +1594,7 @@ class Operation(Operator):
 
     Args:
         *params (tuple[tensor_like]): trainable parameters
-        wires (Iterable[Any] or Any): Wire label(s) that the operator acts on.
+        wires (Iterable[int] or int): Wire label(s) that the operator acts on.
             If not given, args[-1] is interpreted as wires.
     """
 

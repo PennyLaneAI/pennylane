@@ -31,14 +31,14 @@ class TestHadamardGradients:
 
     @pytest.mark.parametrize("diff_method", ["hadamard", "reversed-hadamard"])
     def test_nonstandard_device_wires(self, interface, diff_method):
-        """Test that we can automatically determine a work wire with nonstandard wire labels."""
+        """Test Hadamard gradients with nonconsecutive integer device and auxiliary wires."""
 
-        dev = qp.device("default.qubit", wires=("a", "b"))
+        dev = qp.device("default.qubit", wires=(4, 6))
 
-        @qp.qnode(dev, diff_method=diff_method, gradient_kwargs={"aux_wire": "b"})
+        @qp.qnode(dev, diff_method=diff_method, gradient_kwargs={"aux_wire": 6})
         def circuit(x):
-            qp.RX(x, "a")
-            return qp.expval(qp.Z("a"))
+            qp.RX(x, 4)
+            return qp.expval(qp.Z(4))
 
         x = qp.math.asarray(0.5, requires_grad=True, like=interface)
         result = qp.math.grad(circuit)(x)

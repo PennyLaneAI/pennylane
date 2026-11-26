@@ -124,7 +124,7 @@ class QNGOptimizer(GradientDescentOptimizer):
     For VQE/VQE-like problems, the objective function for the optimizer can be
     realized as a :class:`~.QNode` that returns the expectation value of a Hamiltonian.
 
-    >>> dev = qp.device("default.qubit", wires=(0, 1, "aux"))
+    >>> dev = qp.device("default.qubit", wires=(0, 1, 2))
     >>> @qp.qnode(dev, interface="numpy")
     ... def circuit(params):
     ...     qp.RX(params[0], wires=0)
@@ -210,6 +210,7 @@ class QNGOptimizer(GradientDescentOptimizer):
             tuple: the new variable values :math:`x^{(t+1)}` and the objective function output
             prior to the step
         """
+        self._validate_parameters(args)
         if not isinstance(qnode, QNode) and metric_tensor_fn is None:
             raise ValueError(
                 "The objective function must be encoded as a single QNode for the natural gradient "

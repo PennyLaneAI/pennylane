@@ -173,7 +173,7 @@ class BasicEntanglerLayers(Operation):
         Args:
             weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
                 for the rotation.
-            wires (Any or Iterable[Any]): wires that the operator acts on
+            wires (int or Iterable[int]): wires that the operator acts on
             rotation (Type[pennylane.ops.Operation]): one-parameter single-qubit gate to use
 
         Returns:
@@ -182,8 +182,8 @@ class BasicEntanglerLayers(Operation):
         **Example**
 
         >>> weights = torch.tensor([[1.2, -0.4], [0.3, -0.2]])
-        >>> qp.BasicEntanglerLayers.compute_decomposition(weights, wires=["a", "b"], rotation=qp.RX)
-        [RX(1.200..., wires=['a']), RX(-0.400..., wires=['b']), CNOT(wires=['a', 'b']), RX(0.300..., wires=['a']), RX(-0.200..., wires=['b']), CNOT(wires=['a', 'b'])]
+        >>> qp.BasicEntanglerLayers.compute_decomposition(weights, wires=[0, 1], rotation=qp.RX)
+        [RX(1.200..., wires=[0]), RX(-0.400..., wires=[1]), CNOT(wires=[0, 1]), RX(0.300..., wires=[0]), RX(-0.200..., wires=[1]), CNOT(wires=[0, 1])]
         """
         # first dimension of the weights tensor (second when batching) determines
         # the number of layers
@@ -219,7 +219,7 @@ class BasicEntanglerLayers(Operation):
         return n_layers, n_wires
 
 
-def _basic_entangler_resources(repeat, num_wires, rotation):
+def _basic_entangler_standard_resources(repeat, num_wires, rotation):
     resources = {abstractify(rotation): repeat * num_wires}
 
     if num_wires == 2:
@@ -231,8 +231,8 @@ def _basic_entangler_resources(repeat, num_wires, rotation):
     return resources
 
 
-@register_resources(_basic_entangler_resources)
-def _basic_entangler_decomposition(weights, wires, rotation):
+@register_resources(_basic_entangler_standard_resources, name="rotations_cnot_ring")
+def _basic_entangler_standard(weights, wires, rotation):
     repeat = math.shape(weights)[-2]
 
     if capture.enabled():
@@ -260,4 +260,4 @@ def _basic_entangler_decomposition(weights, wires, rotation):
     repeat_loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(BasicEntanglerLayers, _basic_entangler_decomposition)
+add_decomps(BasicEntanglerLayers, _basic_entangler_standard)

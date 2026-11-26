@@ -74,8 +74,8 @@ def test_operator_definition_qpe(hamiltonian):
         (qp.X(0) @ qp.Z(1), [2]),
         (qp.X(1) @ qp.Z(2) @ qp.Y(3), [0]),
         (qp.X(0) @ qp.Z(1) @ qp.Y(2), [3]),
-        (qp.PauliX("a") @ qp.PauliZ(1), [0]),
-        (qp.PauliX("a") @ qp.PauliZ(1) @ qp.PauliY(2), [0]),
+        (qp.PauliX(9) @ qp.PauliZ(1), [0]),
+        (qp.PauliX(9) @ qp.PauliZ(1) @ qp.PauliY(2), [0]),
     ],
 )
 def test_standard_validity(lcu, control):
@@ -251,12 +251,12 @@ def test_map_wires():
 @pytest.mark.parametrize(
     "hamiltonian, control",
     [
-        (qp.dot([1.0, 2.0], [qp.PauliX("a"), qp.PauliZ(1)]), [0]),
-        (qp.dot([1.0, -2.0], [qp.PauliX("a"), qp.PauliZ(1)]), [0]),
+        (qp.dot([1.0, 2.0], [qp.PauliX(9), qp.PauliZ(1)]), [0]),
+        (qp.dot([1.0, -2.0], [qp.PauliX(9), qp.PauliZ(1)]), [0]),
         (
             qp.dot(
                 [1.0, 2.0, 1.0, 1.0],
-                [qp.PauliZ("a"), qp.PauliX("a") @ qp.PauliZ(4), qp.PauliX("a"), qp.PauliZ(4)],
+                [qp.PauliZ(9), qp.PauliX(9) @ qp.PauliZ(4), qp.PauliX(9), qp.PauliZ(4)],
             ),
             [0, 1],
         ),

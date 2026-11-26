@@ -78,7 +78,8 @@ def draw(  # pylint: disable=too-many-arguments
     Args:
         qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn.
             ``functools.partial`` wrappers around supported callables are also accepted.
-        wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
+        wire_order (Sequence[int]): The order (from top to bottom) to print the wires of the
+            circuit.
             Defaults to the device wires. If device wires are not available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         decimals (int | None): How many decimal points to include when formatting operation parameters. Defaults to ``2`` decimal points.
@@ -417,7 +418,8 @@ def draw_mpl(  # pylint: disable=too-many-arguments
     Args:
         qnode (.QNode or Callable): the input QNode/quantum function that is to be drawn.
             ``functools.partial`` wrappers around supported callables are also accepted.
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit.
+        wire_order (Sequence[int]): the order (from top to bottom) to print the wires of the
+            circuit.
            If not provided, the wire order defaults to the device wires. If device wires are not
            available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
@@ -530,7 +532,7 @@ def draw_mpl(  # pylint: disable=too-many-arguments
 
         .. code-block:: python
 
-            fig, ax = qp.draw_mpl(circuit, wire_order=["aux"], show_all_wires=True)(1.2345,1.2345)
+            fig, ax = qp.draw_mpl(circuit, wire_order=[4], show_all_wires=True)(1.2345, 1.2345)
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/show_all_wires.png
@@ -718,7 +720,7 @@ def draw_mpl(  # pylint: disable=too-many-arguments
             fig, ax = qp.draw_mpl(circ, level="device")()
             fig.show()
 
-        .. figure:: ../../_static/draw_mpl/level_none.png
+        .. figure:: ../../_static/draw_mpl/level_device.png
             :align: center
             :width: 60%
             :target: javascript:void(0);

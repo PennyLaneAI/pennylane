@@ -288,6 +288,18 @@ class TestAdjointDynamicShapes:
 class TestCtrlQfunc:
     """Tests for the ctrl primitive."""
 
+    def test_empty_controls(self):
+        """Empty controls preserve the captured function and its return value."""
+
+        def qfunc(angle):
+            qp.RX(angle, wires=0)
+            return angle
+
+        closed = jax.make_jaxpr(qp.ctrl(qfunc, control=[]))(0.123)
+        assert len(closed.eqns) == 1
+        assert_eqn_matches_op(closed.eqns[0], qp.RX)
+        assert closed.jaxpr.outvars == [closed.jaxpr.invars[0]]
+
     def test_lazy_dispatch_ctrl(self):
         """Test that the dispatch to capture happens at call time."""
 
@@ -444,7 +456,8 @@ class TestCtrlQfunc:
                     work_wires=qp.typing.Wire[1],
                     work_wire_type=work_wire_type,
                 ): 1
-            }
+            },
+            name="rule",
         )
         def rule(base, control_wires, control_values, work_wires, work_wire_type):
             qp.ctrl(

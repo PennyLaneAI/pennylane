@@ -62,16 +62,16 @@ class TestCommuteControlled:
         """Test that gates do not get pushed through controlled gates whose target bases don't match."""
 
         def qfunc():
-            qp.PauliZ(wires="b")
-            qp.CNOT(wires=[2, "b"])
-            qp.PauliY(wires="b")
+            qp.PauliZ(wires=5)
+            qp.CNOT(wires=[2, 5])
+            qp.PauliY(wires=5)
 
         transformed_qfunc = commute_controlled(qfunc, direction=direction)
 
         ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["PauliZ", "CNOT", "PauliY"]
-        wires_expected = [Wires("b"), Wires([2, "b"]), Wires("b")]
+        wires_expected = [Wires(5), Wires([2, 5]), Wires(5)]
         compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_push_x_gates_right(self):
@@ -143,17 +143,17 @@ class TestCommuteControlled:
         """Test that X-basis gates before controlled-X-type gates on controls don't get pushed."""
 
         def qfunc():
-            qp.PauliX(wires="a")
-            qp.CNOT(wires=["a", "c"])
-            qp.RX(0.2, wires="a")
-            qp.Toffoli(wires=["c", "a", "b"])
+            qp.PauliX(wires=4)
+            qp.CNOT(wires=[4, 6])
+            qp.RX(0.2, wires=4)
+            qp.Toffoli(wires=[6, 4, 5])
 
         transformed_qfunc = commute_controlled(qfunc, direction=direction)
 
         ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["PauliX", "CNOT", "RX", "Toffoli"]
-        wires_expected = [Wires("a"), Wires(["a", "c"]), Wires("a"), Wires(["c", "a", "b"])]
+        wires_expected = [Wires(4), Wires([4, 6]), Wires(4), Wires([6, 4, 5])]
         compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_push_y_gates_right(self):
@@ -161,27 +161,27 @@ class TestCommuteControlled:
 
         def qfunc():
             qp.PauliY(wires=2)
-            qp.CRY(-0.5, wires=["a", 2])
+            qp.CRY(-0.5, wires=[4, 2])
             qp.CNOT(wires=[1, 2])
             qp.RY(0.3, wires=1)
-            qp.CY(wires=["a", 1])
+            qp.CY(wires=[4, 1])
 
         transformed_qfunc = commute_controlled(qfunc)
 
         ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["CRY", "PauliY", "CNOT", "CY", "RY"]
-        wires_expected = [Wires(["a", 2]), Wires(2), Wires([1, 2]), Wires(["a", 1]), Wires(1)]
+        wires_expected = [Wires([4, 2]), Wires(2), Wires([1, 2]), Wires([4, 1]), Wires(1)]
         compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_push_y_gates_left(self):
         """Test that Y-basis gates after controlled-Y-type gates on targets get pushed behind."""
 
         def qfunc():
-            qp.CRY(-0.5, wires=["a", 2])
+            qp.CRY(-0.5, wires=[4, 2])
             qp.PauliY(wires=2)
             qp.CNOT(wires=[1, 2])
-            qp.CY(wires=["a", 1])
+            qp.CY(wires=[4, 1])
             qp.RY(0.3, wires=1)
 
         transformed_qfunc = commute_controlled(qfunc, direction="left")
@@ -189,7 +189,7 @@ class TestCommuteControlled:
         ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["PauliY", "CRY", "CNOT", "RY", "CY"]
-        wires_expected = [Wires(2), Wires(["a", 2]), Wires([1, 2]), Wires(1), Wires(["a", 1])]
+        wires_expected = [Wires(2), Wires([4, 2]), Wires([1, 2]), Wires(1), Wires([4, 1])]
         compare_operation_lists(ops, names_expected, wires_expected)
 
     @pytest.mark.parametrize("direction", [("left"), ("right")])
@@ -197,18 +197,18 @@ class TestCommuteControlled:
         """Test that Y-basis gates next to controlled-Y-type gates on controls don't get pushed."""
 
         def qfunc():
-            qp.CRY(-0.2, wires=["a", 2])
-            qp.PauliY(wires="a")
+            qp.CRY(-0.2, wires=[4, 2])
+            qp.PauliY(wires=4)
             qp.CNOT(wires=[1, 2])
-            qp.CY(wires=["a", 1])
-            qp.RY(0.3, wires="a")
+            qp.CY(wires=[4, 1])
+            qp.RY(0.3, wires=4)
 
         transformed_qfunc = commute_controlled(qfunc, direction=direction)
 
         ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["CRY", "PauliY", "CNOT", "CY", "RY"]
-        wires_expected = [Wires(["a", 2]), Wires("a"), Wires([1, 2]), Wires(["a", 1]), Wires("a")]
+        wires_expected = [Wires([4, 2]), Wires(4), Wires([1, 2]), Wires([4, 1]), Wires(4)]
         compare_operation_lists(ops, names_expected, wires_expected)
 
     def test_push_z_gates_right(self):

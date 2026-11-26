@@ -23,8 +23,8 @@ from pennylane.ops import Prod, SProd, Sum
 
 pw1 = PauliWord({0: "I", 1: "X", 2: "Y"})
 pw2 = PauliWord({0: "Z", 2: "Z", 4: "Z"})
-pw3 = PauliWord({"a": "X", "b": "X", "c": "Z"})
-pw4 = PauliWord({"a": "Y", "b": "Z", "c": "X"})
+pw3 = PauliWord({6: "X", 7: "X", 8: "Z"})
+pw4 = PauliWord({6: "Y", 7: "Z", 8: "X"})
 pw5 = PauliWord({4: "X", 5: "X"})
 
 ps1 = PauliSentence({pw1: 1.0, pw2: 2.0})
@@ -32,8 +32,8 @@ ps2 = PauliSentence({pw3: 1.0, pw4: 2.0})
 
 op1 = qp.prod(qp.PauliX(1), qp.PauliY(2))
 op2 = qp.prod(qp.PauliZ(0), qp.PauliZ(2), qp.PauliZ(4))
-op3 = qp.prod(qp.PauliX("a"), qp.PauliX("b"), qp.PauliZ("c"))
-op4 = qp.prod(qp.PauliY("a"), qp.PauliZ("b"), qp.PauliX("c"))
+op3 = qp.prod(qp.PauliX(6), qp.PauliX(7), qp.PauliZ(8))
+op4 = qp.prod(qp.PauliY(6), qp.PauliZ(7), qp.PauliX(8))
 op5 = qp.prod(qp.PauliX(4), qp.PauliX(5))
 
 pw_id = PauliWord({})
@@ -203,7 +203,7 @@ class TestDotSum:
         (
             [1.0, 2.0, 3.0],
             [pw3, pw4, ps2],
-        ),  # comparisons for Sum objects with string valued wires
+        ),  # comparisons for Sum objects on wires 6, 7, and 8
     )
 
     @pytest.mark.parametrize("coeff, ops", data_words_and_sentences_pauli_false)
@@ -233,7 +233,7 @@ class TestDotSum:
             [1.0, 2.0, 3.0, 1j],
             [pw3, pw4, ps2, op3],
             qp.sum(qp.s_prod(3.0 * 1 + 1 + 1j, op3), qp.s_prod(3 * 2.0 + 2, op4)),
-        ),  # string valued wires
+        ),  # wires 6, 7, and 8
     )
 
     @pytest.mark.parametrize("coeff, ops, res", data_op_words_and_sentences_pauli_false)

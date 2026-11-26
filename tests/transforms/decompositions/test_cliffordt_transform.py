@@ -154,9 +154,9 @@ class TestCliffordCompile:
             (qp.PauliX(wires=[1]), True),
             (qp.RX(3 * PI, wires=[1]), True),
             (qp.adjoint(qp.RX(3 * PI, wires=[1])), True),
-            (qp.PhaseShift(2 * PI, wires=["a"]), True),
-            (qp.ECR(wires=["e", "f"]), True),
-            (qp.CH(wires=["a", "b"]), False),
+            (qp.PhaseShift(2 * PI, wires=[6]), True),
+            (qp.ECR(wires=[9, 11]), True),
+            (qp.CH(wires=[6, 7]), False),
         ],
     )
     def test_clifford_checker(self, op, res):
@@ -367,7 +367,7 @@ class TestCliffordCompile:
         qp.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
     @pytest.mark.parametrize(
-        "op", [qp.RX(1.0, wires="a"), qp.U3(1, 2, 3, wires=[1]), qp.PhaseShift(1.0, wires=[2])]
+        "op", [qp.RX(1.0, wires=6), qp.U3(1, 2, 3, wires=[1]), qp.PhaseShift(1.0, wires=[2])]
     )
     def test_one_qubit_decomposition(self, op):
         """Test decomposition for the Clifford transform."""
@@ -400,7 +400,7 @@ class TestCliffordCompile:
     @pytest.mark.parametrize(
         "op",
         [
-            qp.PSWAP(1.0, wires=["a", "b"]),
+            qp.PSWAP(1.0, wires=[6, 7]),
             qp.SingleExcitation(1, wires=[1, 2]),
             qp.IsingXX(1.0, wires=[2, 3]),
         ],
@@ -435,7 +435,7 @@ class TestCliffordCompile:
     @pytest.mark.parametrize(
         "op",
         [
-            qp.adjoint(qp.RX(1.0, wires=["b"])),
+            qp.adjoint(qp.RX(1.0, wires=[7])),
             qp.Rot(1, 2, 3, wires=[2]),
             qp.PhaseShift(1.0, wires=[0]),
             qp.PhaseShift(3 * PI, wires=[0]),
@@ -512,7 +512,7 @@ class TestCliffordCompile:
         with pytest.raises(ValueError, match="Cannot unroll"):
             clifford_t_decomposition(tape)
 
-    @pytest.mark.parametrize("op", [qp.U1(1.0, wires=["b"])])
+    @pytest.mark.parametrize("op", [qp.U1(1.0, wires=[7])])
     def test_raise_with_rot_decomposition(self, op):
         """Test that exception is correctly raise when decomposing parametrized gates for which we already don't have a recipe"""
 

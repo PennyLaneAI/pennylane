@@ -2033,42 +2033,6 @@ class TestCovMatrix:
             ]
         )
 
-    @pytest.mark.jax
-    def test_weird_wires(self, tol):
-        """Test that the covariance matrix computes the correct
-        result when weird wires are used"""
-        dev = qp.device("default.qubit", wires=["a", -1, "q"])
-        obs_list = [qp.PauliZ("a") @ qp.PauliZ(-1), qp.PauliY("q")]
-
-        @qp.qnode(dev, interface="jax")
-        def circuit(weights):
-            """Returns the shared probability distribution of ansatz
-            in the joint basis for obs_list"""
-            self.ansatz(weights, wires=dev.wires)
-
-            for o in obs_list:
-                o.diagonalizing_gates()
-
-            return qp.probs(wires=dev.wires)
-
-        def cov(weights):
-            probs = circuit(weights)
-            return fn.cov_matrix(probs, obs_list, wires=dev.wires)
-
-        weights = jnp.array([0.1, 0.2, 0.3])
-        res = cov(weights)
-        expected = self.expected_cov(weights)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        def grab_cov_entry(weights):
-            """Grab an entry of the cov output."""
-            return cov(weights)[0, 1]
-
-        grad_fn = jax.grad(grab_cov_entry)
-        res = grad_fn(weights)
-        expected = self.expected_grad(weights)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
     def test_torch(self, tol):
         """Test that the covariance matrix computes the correct
         result, and is differentiable, using the Torch interface"""

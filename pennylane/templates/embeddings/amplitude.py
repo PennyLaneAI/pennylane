@@ -17,7 +17,7 @@ Contains the AmplitudeEmbedding template.
 
 from pennylane.decomposition import add_decomps
 from pennylane.ops import StatePrep
-from pennylane.ops.qubit.state_preparation import _state_prep_decomp
+from pennylane.ops.qubit.state_preparation import _state_prep_standard
 
 
 class AmplitudeEmbedding(StatePrep):
@@ -33,7 +33,7 @@ class AmplitudeEmbedding(StatePrep):
 
     Args:
         features (tensor_like): input tensor of dimension ``(2^len(wires),)``, or less if `pad_with` is specified
-        wires (Any or Iterable[Any]): wires that the template acts on
+        wires (int or Iterable[int]): wires that the template acts on
         pad_with (float or complex): if not None, the input is padded with this constant to size :math:`2^n`
         normalize (bool): whether to automatically normalize the features
         validate_norm (bool): whether to validate the norm of the input state
@@ -120,4 +120,4 @@ class AmplitudeEmbedding(StatePrep):
         )
 
 
-add_decomps(AmplitudeEmbedding, _state_prep_decomp)
+add_decomps(AmplitudeEmbedding, _state_prep_standard)

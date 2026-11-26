@@ -29,21 +29,6 @@ def adjoint_ops(op: qp.operation.Operator) -> bool:
 class TestAdjointJacobian:
     """Tests for adjoint_jacobian"""
 
-    def test_custom_wire_labels(self, tol):
-        """Test that adjoint_jacbonian works as expected when custom wire labels are used."""
-        qs = QuantumScript(
-            [qp.RX(0.123, wires="a"), qp.RY(0.456, wires="b")],
-            [qp.expval(qp.PauliX("a"))],
-            trainable_params=[0, 1],
-        )
-
-        calculated_val = adjoint_jacobian(qs)
-
-        tapes, fn = qp.gradients.finite_diff(qs)
-        results = tuple(qp.devices.qubit.simulate(t) for t in tapes)
-        numeric_val = fn(results)
-        assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
-
     @pytest.mark.core
     @pytest.mark.autograd
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
@@ -432,29 +417,6 @@ class TestAdjointJVP:
         expected = jac @ np.array(tangents)
         assert np.allclose(actual, expected, atol=tol)
 
-    @pytest.mark.parametrize("tangents", [(0, 0), (0, 0.653), (1.232, 2.963)])
-    @pytest.mark.parametrize("wires", [[1, 0], ["a", "b"]])
-    def test_custom_wire_labels(self, tangents, wires, tol):
-        """Test JVP is correct for custom wire labels"""
-        x = np.array(0.654)
-        y = np.array(1.221)
-
-        obs = [
-            qp.expval(qp.PauliZ(wires[0])),
-            qp.expval(qp.PauliY(wires[1])),
-            qp.expval(qp.PauliX(wires[0])),
-        ]
-        qs = QuantumScript([qp.RY(x, wires[0]), qp.RX(y, wires[1])], obs, trainable_params=[0, 1])
-        assert qs.wires.tolist() == wires
-
-        actual = adjoint_jvp(qs, tangents)
-        assert isinstance(actual, tuple)
-        assert len(actual) == 3
-
-        jac = np.array([[-np.sin(x), 0], [0, -np.cos(y)], [np.cos(x), 0]])
-        expected = jac @ np.array(tangents)
-        assert np.allclose(actual, expected, atol=tol)
-
     def test_with_nontrainable_parametrized(self):
         """Test that a parametrized `QubitUnitary` is accounted for correctly
         when it is not trainable."""
@@ -541,31 +503,6 @@ class TestAdjointVJP:
                 [np.cos(x) * np.sin(y), np.sin(x) * np.cos(y)],
             ]
         )
-        expected = np.array(cotangents) @ jac
-        assert np.allclose(actual, expected, atol=tol)
-
-    @pytest.mark.parametrize(
-        "cotangents", [(0, 0, 0), (0, 0.653, 0), (1.236, 0, 0.573), (1.232, 2.963, 1.942)]
-    )
-    @pytest.mark.parametrize("wires", [[1, 0], ["a", "b"]])
-    def test_custom_wire_labels(self, cotangents, wires, tol):
-        """Test VJP is correct for custom wire labels"""
-        x = np.array(0.654)
-        y = np.array(1.221)
-
-        obs = [
-            qp.expval(qp.PauliZ(wires[0])),
-            qp.expval(qp.PauliY(wires[1])),
-            qp.expval(qp.PauliX(wires[0])),
-        ]
-        qs = QuantumScript([qp.RY(x, wires[0]), qp.RX(y, wires[1])], obs, trainable_params=[0, 1])
-        assert qs.wires.tolist() == wires
-
-        actual = adjoint_vjp(qs, cotangents)
-        assert isinstance(actual, tuple)
-        assert len(actual) == 2
-
-        jac = np.array([[-np.sin(x), 0], [0, -np.cos(y)], [np.cos(x), 0]])
         expected = np.array(cotangents) @ jac
         assert np.allclose(actual, expected, atol=tol)
 

@@ -293,7 +293,8 @@ def molecular_hamiltonian(*args, **kwargs):
             are considered to be active.
         mapping (str): transformation used to map the fermionic Hamiltonian to the qubit Hamiltonian
         outpath (str): path to the directory containing output files
-        wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
+        wires (Wires or Sequence[int] or dict[int, int]): Custom wire mapping for connecting to
+            Pennylane ansatz.
             For types ``Wires``/``list``/``tuple``, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted for

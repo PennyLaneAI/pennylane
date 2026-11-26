@@ -393,7 +393,8 @@ def molecular_dipole(  # pylint: disable=too-many-arguments
         mapping (str): Transformation used to map the fermionic Hamiltonian to the qubit Hamiltonian.
             Input values can be ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
         outpath (str): Path to the directory containing output files
-        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator to
+        wires (Wires or Sequence[int] or dict[int, int]): Custom wire mapping used to convert the
+            qubit operator to
             an observable measurable in a Pennylane ansatz.
             For types ``Wires``/``list``/``tuple``, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.

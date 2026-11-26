@@ -207,9 +207,8 @@ class DefaultTensor(Device):  # pylint: disable=too-many-instance-attributes
     Finally, ``UserWarnings`` from the ``cotengra`` package may appear when using this device.
 
     Args:
-        wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
-            contains unique labels for the wires as numbers (e.g., ``[-1, 0, 2]``) or strings
-            (e.g., ``['aux_wire', 'q1', 'q2']``).
+        wires (int, Iterable[int]): Number of wires present on the device, or iterable that
+            contains unique non-negative integer wire labels (e.g., ``[0, 2, 5]``).
         method (str): Supported method. The supported methods are ``"mps"`` (Matrix Product State) and ``"tn"`` (Tensor Network).
         c_dtype (type): Complex data type for the tensor representation. Must be one of ``numpy.complex64`` or ``numpy.complex128``.
         **kwargs: Keyword arguments for the device, passed to the ``quimb`` backend.

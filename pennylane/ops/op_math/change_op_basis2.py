@@ -29,7 +29,8 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import adjoint, ctrl
-from pennylane.ops.op_math.adjoint import _adjoint_eager
+from pennylane.ops.op_math.adjoint import Adjoint, _adjoint_eager
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.controlled2 import flip_zero_control
 from pennylane.typing import Bool
 
@@ -38,27 +39,31 @@ from .composite2 import CompositeOp2
 
 
 class ChangeOpBasis2(CompositeOp2):
-    """
-    Composite operator representing a compute-uncompute pattern of operators, which constitutes changing the basis in
-    which an operator is applied.
+    r"""Composite operator representing a compute-uncompute pattern of ``Operator2``\ s.
 
     Args:
-        compute_op (:class:`~.Operator`): A single operator or product that applies quantum operations.
-        target_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
-            Default is uncompute_op=qp.adjoint(compute_op).
-
-    Returns:
-        (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.
+        compute_op (~.Operator2): operator applied before the target
+        target_op (~.Operator2): operator applied in the changed basis
+        uncompute_op (~.Operator2 or None): Operator applied after the target.
+            ``None`` uses the adjoint of ``compute_op``.
 
     .. note::
-        When a ``ChangeOpBasis`` operator is iterated over, its factors are iterated in the reverse order. This is to
-        have a similar behaviour to ``Prod`` which applies its factors in reverse order.
+        The factors are stored and iterated in matrix-product order: uncompute, target, compute.
 
-    .. seealso:: :func:`~.change_op_basis`
+    .. seealso:: :func:`~.change_op_basis`, :class:`~.ops.op_math.ChangeOpBasis`
+
+    **Example**
+
+    >>> op = qp.ops.ChangeOpBasis2(qp.H(0), qp.RZ(0.3, 0))
+    >>> op.compute_op
+    H(0)
+    >>> op.target_op
+    RZ(0.3, wires=[0])
     """
 
-    def __init__(self, compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
+    def __init__(
+        self, compute_op: Operator, target_op: Operator, uncompute_op: Operator | None = None
+    ):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
             self._init_args["uncompute_op"] = uncompute_op
@@ -124,9 +129,9 @@ class ChangeOpBasis2(CompositeOp2):
 
     def adjoint(self):
         return ChangeOpBasis2(
-            self.compute_op,
+            _adjoint_eager(self.uncompute_op, update_queue=True),
             _adjoint_eager(self.target_op, update_queue=True),
-            self.uncompute_op,
+            _adjoint_eager(self.compute_op, update_queue=True),
         )
 
     @handle_recursion_error
@@ -171,7 +176,7 @@ def _change_op_basis_abstract(compute_op, target_op, uncompute_op):
     return change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
 
 
-def _controlled_change_op_basis_resources(  # pylint: disable=unused-argument
+def _controlled_change_op_basis_standard_resources(  # pylint: disable=unused-argument
     base,
     control_wires,
     control_values,
@@ -193,8 +198,8 @@ def _controlled_change_op_basis_resources(  # pylint: disable=unused-argument
     return resources
 
 
-@register_resources(_controlled_change_op_basis_resources)
-def _controlled_change_op_basis_decomposition(
+@register_resources(_controlled_change_op_basis_standard_resources, name="control_target")
+def _controlled_change_op_basis_standard(
     base,
     control_wires,
     control_values,
@@ -212,7 +217,7 @@ def _controlled_change_op_basis_decomposition(
     apply(base.uncompute_op)
 
 
-def _change_op_basis_resources(compute_op, target_op, uncompute_op):
+def _change_op_basis_standard_resources(compute_op, target_op, uncompute_op):
     resources = Counter()
 
     resources[compute_op] += 1
@@ -222,30 +227,38 @@ def _change_op_basis_resources(compute_op, target_op, uncompute_op):
     return resources
 
 
-@register_resources(_change_op_basis_resources)
-def _change_op_basis_decomp(compute_op, target_op, uncompute_op):
+@register_resources(_change_op_basis_standard_resources, name="expand_basis_change")
+def _change_op_basis_standard(compute_op, target_op, uncompute_op):
     apply(compute_op)
     apply(target_op)
     apply(uncompute_op)
 
 
-add_decomps(ChangeOpBasis2, _change_op_basis_decomp)
-add_decomps("C(ChangeOpBasis2)", flip_zero_control(_controlled_change_op_basis_decomposition))
+add_decomps(ChangeOpBasis2, _change_op_basis_standard)
+add_decomps(
+    "C(ChangeOpBasis2)",
+    flip_zero_control(_controlled_change_op_basis_standard, name="control_target"),
+)
 
 
-def _adjoint_change_op_basis_resources(base):
-    resources = Counter()
-    resources[base.compute_op] += 1
-    resources[adjoint(base.target_op)] += 1
-    resources[base.uncompute_op] += 1
-    return dict(resources)
+def _inverse(op):
+    """Invert an operand, unwrapping an existing adjoint instead of nesting another one."""
+    if isinstance(op, (Adjoint, Adjoint2)):
+        return op.base
+    return adjoint(op)
 
 
-@register_resources(_adjoint_change_op_basis_resources)
-def _adjoint_change_op_basis_decomp(base):
-    apply(base.compute_op)
-    adjoint(base.target_op)
-    apply(base.uncompute_op)
+def _adjoint_change_op_basis_standard_resources(base):
+    return {
+        _change_op_basis_abstract(
+            _inverse(base.uncompute_op), adjoint(base.target_op), _inverse(base.compute_op)
+        ): 1
+    }
 
 
-add_decomps("Adjoint(ChangeOpBasis2)", _adjoint_change_op_basis_decomp)
+@register_resources(_adjoint_change_op_basis_standard_resources, name="adjoint_target")
+def _adjoint_change_op_basis_standard(base):
+    ChangeOpBasis2(_inverse(base.uncompute_op), adjoint(base.target_op), _inverse(base.compute_op))
+
+
+add_decomps("Adjoint(ChangeOpBasis2)", _adjoint_change_op_basis_standard)

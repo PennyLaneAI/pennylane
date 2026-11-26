@@ -154,26 +154,26 @@ class TestSingleQubitFusion:
         """Test that all sequences of single-qubit gates across multiple qubits fuse properly."""
 
         def qfunc():
-            qp.RZ(0.3, wires="a")
-            qp.RY(0.5, wires="a")
-            qp.Rot(0.1, 0.2, 0.3, wires="b")
-            qp.RX(0.1, wires="a")
-            qp.CNOT(wires=["b", "a"])
-            qp.SX(wires="b")
-            qp.S(wires="b")
-            qp.PhaseShift(0.3, wires="b")
+            qp.RZ(0.3, wires=4)
+            qp.RY(0.5, wires=4)
+            qp.Rot(0.1, 0.2, 0.3, wires=5)
+            qp.RX(0.1, wires=4)
+            qp.CNOT(wires=[5, 4])
+            qp.SX(wires=5)
+            qp.S(wires=5)
+            qp.PhaseShift(0.3, wires=5)
 
         transformed_qfunc = single_qubit_fusion(qfunc)
         transformed_ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Rot", "Rot", "CNOT", "Rot", "GlobalPhase"]
-        wires_expected = [Wires("a"), Wires("b"), Wires(["b", "a"]), Wires("b"), Wires([])]
+        wires_expected = [Wires(4), Wires(5), Wires([5, 4]), Wires(5), Wires([])]
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
         # Check matrix representation
-        matrix_expected = qp.matrix(qfunc, ["a", "b"])()
+        matrix_expected = qp.matrix(qfunc, [4, 5])()
 
-        matrix_obtained = qp.matrix(transformed_qfunc, ["a", "b"])()
+        matrix_obtained = qp.matrix(transformed_qfunc, [4, 5])()
 
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)
 

@@ -45,11 +45,10 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         The shot adaptive optimizer only supports single QNode objects as objective functions.
         The bound device must also be instantiated with a finite number of shots.
 
-        Native JAX and PyTorch parameters are supported in eager execution. Floating-point
+        Native JAX parameters are supported in eager execution. Floating-point
         JAX arrays are trainable; pass fixed values as ordinary NumPy arrays or Python values.
-        PyTorch tensors use their ``requires_grad`` flags. Updated tensors preserve their
-        dtype and device, and PyTorch updates are detached trainable leaves. Gradient statistics
-        and shot budgets are maintained as NumPy arrays, so optimizer steps cannot be JIT-compiled.
+        Updated arrays preserve their dtype. Gradient statistics and shot budgets are
+        maintained as NumPy arrays, so optimizer steps cannot be JIT-compiled.
         With JAX, use float64 parameters when ``jax_enable_x64`` is enabled, or float32 parameters
         when it is disabled, matching the QNode's finite-shot differentiation precision.
 
@@ -375,13 +374,9 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         trainable_args = (i for i, arg in enumerate(args) if self._is_trainable(arg))
         for index, gradient in zip(trainable_args, grad, strict=True):
             arg = args[index]
-            interface = math.get_interface(arg)
-            if interface in {"jax", "torch"}:
+            if math.get_interface(arg) == "jax":
                 gradient = math.cast_like(math.convert_like(gradient, arg), arg)
-            updated = arg - self.stepsize * gradient
-            if interface == "torch":
-                updated = updated.detach().requires_grad_(True)
-            new_args[index] = updated
+            new_args[index] = arg - self.stepsize * gradient
         return new_args
 
     def step(self, objective_fn, *args, **kwargs):
@@ -400,7 +395,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         if not self.trainable_args:
             raise ValueError(
                 "No trainable arguments found. Use floating-point JAX arrays or "
-                "tensors with requires_grad=True."
+                "pennylane.numpy arrays with requires_grad=True."
             )
 
         if self.s is None:

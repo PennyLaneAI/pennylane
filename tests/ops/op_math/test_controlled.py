@@ -75,7 +75,7 @@ class TestControlledInheritance:
         """Test when base directly inherits from Operator only inherits from Operator."""
 
         base = TempOperator(1.234, wires=0)
-        op = Controlled(base, 1.2)
+        op = Controlled(base, 46)
 
         assert isinstance(op, Controlled)
         assert isinstance(op, Operator)
@@ -91,7 +91,7 @@ class TestControlledInheritance:
             num_params = 1
 
         base = CustomOp(1.234, wires=0)
-        op = Controlled(base, 6.5)
+        op = Controlled(base, 47)
 
         assert type(op) is ControlledOp  # pylint: disable=unidiomatic-typecheck
 
@@ -104,8 +104,8 @@ class TestControlledInheritance:
         """Test that if a `ControlledOp` is directly requested, it is created
         even if the base isn't an operation."""
 
-        base = TempOperator(1.234, wires="a")
-        op = ControlledOp(base, "b")
+        base = TempOperator(1.234, wires=37)
+        op = ControlledOp(base, 39)
 
         assert type(op) is ControlledOp  # pylint: disable=unidiomatic-typecheck
 
@@ -138,27 +138,27 @@ class TestControlledInheritance:
 class TestControlledInit:
     """Test the initialization process and standard properties."""
 
-    temp_op = TempOperator("a")
+    temp_op = TempOperator(37)
 
     def test_nonparametric_ops(self):
         """Test pow initialization for a non parameteric operation."""
 
-        op = Controlled(self.temp_op, (0, 1), control_values=[True, False], work_wires="aux")
+        op = Controlled(self.temp_op, (0, 1), control_values=[True, False], work_wires=38)
 
         assert op.base is self.temp_op
         assert op.hyperparameters["base"] is self.temp_op
 
-        assert op.wires == Wires((0, 1, "a"))
+        assert op.wires == Wires((0, 1, 37))
 
         assert op.control_wires == Wires((0, 1))
         assert op.hyperparameters["control_wires"] == Wires((0, 1))
 
-        assert op.target_wires == Wires("a")
+        assert op.target_wires == Wires(37)
 
         assert op.control_values == [True, False]
         assert op.hyperparameters["control_values"] == [True, False]
 
-        assert op.work_wires == Wires("aux")
+        assert op.work_wires == Wires(38)
 
         assert op.name == "C(TempOperator)"
 
@@ -202,22 +202,22 @@ class TestControlledInit:
     def test_target_control_wires_overlap(self):
         """Test checking overlap of target wires and control_wires"""
         with pytest.raises(ValueError, match="The control wires must be different"):
-            Controlled(self.temp_op, "a")
+            Controlled(self.temp_op, 37)
 
     def test_work_wires_overlap_target(self):
         """Test checking work wires are not in target wires."""
         with pytest.raises(ValueError, match="Work wires must be different"):
-            Controlled(self.temp_op, "b", work_wires="a")
+            Controlled(self.temp_op, 39, work_wires=37)
 
     def test_work_wires_overlap_control(self):
         """Test checking work wires are not in contorl wires."""
         with pytest.raises(ValueError, match="Work wires must be different."):
-            Controlled(self.temp_op, control_wires="b", work_wires="b")
+            Controlled(self.temp_op, control_wires=39, work_wires=39)
 
     def test_work_wire_type(self):
         """Tests that work_wire_type must be correct."""
         with pytest.raises(ValueError, match="work_wire_type must be either"):
-            Controlled(self.temp_op, control_wires="b", work_wires="c", work_wire_type="foo")
+            Controlled(self.temp_op, control_wires=39, work_wires=40, work_wire_type="foo")
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
@@ -267,7 +267,7 @@ class TestControlledProperties:
 
         x = pnp.array(1.234)
 
-        base = qp.RX(x, wires="a")
+        base = qp.RX(x, wires=37)
         op = Controlled(base, (0, 1))
 
         assert op.data == (x,)
@@ -397,15 +397,15 @@ class TestControlledProperties:
         """Test that we can get and set private wires."""
 
         base = qp.IsingXX(1.234, wires=(0, 1))
-        op = Controlled(base, (3, 4), work_wires="aux", work_wire_type=work_wire_type)
+        op = Controlled(base, (3, 4), work_wires=38, work_wire_type=work_wire_type)
 
         assert op.wires == Wires((3, 4, 0, 1))
 
-        op = op.map_wires(wire_map={3: "a", 4: "b", 0: "c", 1: "d", "aux": "extra"})
+        op = op.map_wires(wire_map={3: 37, 4: 39, 0: 40, 1: 42, 38: 43})
 
-        assert op.base.wires == Wires(("c", "d"))
-        assert op.control_wires == Wires(("a", "b"))
-        assert op.work_wires == Wires("extra")
+        assert op.base.wires == Wires((40, 42))
+        assert op.control_wires == Wires((37, 39))
+        assert op.work_wires == Wires(43)
         assert op.work_wire_type == work_wire_type
 
 
@@ -454,7 +454,7 @@ class TestControlledMiscMethods:
         independently of the original operator."""
 
         param1 = 1.234
-        base_wire = "a"
+        base_wire = 37
         control_wires = [0, 1]
         base = qp.RX(param1, base_wire)
         op = Controlled(base, control_wires, control_values=[0, 1])
@@ -474,7 +474,7 @@ class TestControlledMiscMethods:
     def test_label(self):
         """Test that the label method defers to the label of the base."""
         base = qp.U1(1.23, wires=0)
-        op = Controlled(base, "a")
+        op = Controlled(base, 37)
 
         assert op.label() == base.label()
         assert op.label(decimals=2) == base.label(decimals=2)
@@ -484,7 +484,7 @@ class TestControlledMiscMethods:
         """Test that the label method simply returns the label of the base and updates the cache."""
         U = pnp.eye(2)
         base = qp.QubitUnitary(U, wires=0)
-        op = Controlled(base, ["a", "b"])
+        op = Controlled(base, [37, 39])
 
         cache = {"matrices": []}
         assert op.label(cache=cache) == base.label(cache=cache)
@@ -506,23 +506,23 @@ class TestControlledMiscMethods:
     def test_has_generator_true(self):
         """Test `has_generator` property carries over when base op defines generator."""
         base = qp.RX(0.5, 0)
-        op = Controlled(base, ("b", "c"))
+        op = Controlled(base, (39, 40))
 
         assert op.has_generator is True
 
     def test_has_generator_false(self):
         """Test `has_generator` property carries over when base op does not define a generator."""
         base = qp.PauliX(0)
-        op = Controlled(base, ("b", "c"))
+        op = Controlled(base, (39, 40))
 
         assert op.has_generator is False
 
     def test_generator(self):
         """Test that the generator is a tensor product of projectors and the base's generator."""
 
-        base = qp.RZ(-0.123, wires="a")
+        base = qp.RZ(-0.123, wires=37)
         control_values = [0, 1]
-        op = Controlled(base, ("b", "c"), control_values=control_values)
+        op = Controlled(base, (39, 40), control_values=control_values)
 
         base_gen, base_gen_coeff = qp.generator(base, format="prefactor")
         gen_tensor, gen_coeff = qp.generator(op, format="prefactor")
@@ -540,7 +540,7 @@ class TestControlledMiscMethods:
 
         expected = qp.exp(op.generator(), 1j * op.data[0])
         assert qp.math.allclose(
-            expected.matrix(wire_order=["a", "b", "c"]), op.matrix(wire_order=["a", "b", "c"])
+            expected.matrix(wire_order=[37, 39, 40]), op.matrix(wire_order=[37, 39, 40])
         )
 
     def test_diagonalizing_gates(self):
@@ -579,7 +579,7 @@ class TestControlledMiscMethods:
         assert hash(op4) == hash(op6)
 
         # work wires
-        op7 = Controlled(base, (1, 2), [0, 1], work_wires="aux")
+        op7 = Controlled(base, (1, 2), [0, 1], work_wires=38)
         assert hash(op7) != hash(op1)
 
 
@@ -696,23 +696,23 @@ class TestControlledQueuing:
 
         base = qp.IsingXX(1.234, wires=(0, 1))
         with qp.queuing.AnnotatedQueue() as q:
-            op = Controlled(base, ("a", "b"))
+            op = Controlled(base, (37, 39))
 
         assert len(q) == 1
         assert q.queue[0] is op
 
 
 base_num_control_mats = [
-    (qp.PauliX("a"), 1, CNOT),
-    (qp.PauliX("a"), 2, Toffoli),
-    (qp.CNOT(["a", "b"]), 1, Toffoli),
-    (qp.SWAP(("a", "b")), 1, CSWAP),
-    (qp.Hadamard("a"), 1, CH),
-    (qp.RX(1.234, "b"), 1, CRotx(1.234)),
-    (qp.RY(-0.432, "a"), 1, CRoty(-0.432)),
-    (qp.RZ(6.78, "a"), 1, CRotz(6.78)),
-    (qp.Rot(1.234, -0.432, 9.0, "a"), 1, CRot3(1.234, -0.432, 9.0)),
-    (qp.PhaseShift(1.234, wires="a"), 1, ControlledPhaseShift(1.234)),
+    (qp.PauliX(37), 1, CNOT),
+    (qp.PauliX(37), 2, Toffoli),
+    (qp.CNOT([37, 39]), 1, Toffoli),
+    (qp.SWAP((37, 39)), 1, CSWAP),
+    (qp.Hadamard(37), 1, CH),
+    (qp.RX(1.234, 39), 1, CRotx(1.234)),
+    (qp.RY(-0.432, 37), 1, CRoty(-0.432)),
+    (qp.RZ(6.78, 37), 1, CRotz(6.78)),
+    (qp.Rot(1.234, -0.432, 9.0, 37), 1, CRot3(1.234, -0.432, 9.0)),
+    (qp.PhaseShift(1.234, wires=37), 1, ControlledPhaseShift(1.234)),
 ]
 
 
@@ -741,7 +741,7 @@ class TestMatrix:
         op = Controlled(
             base,
             0,
-            work_wires="aux",
+            work_wires=38,
         )
         mat = op.matrix()
         assert mat.shape == (4, 4)
@@ -782,8 +782,8 @@ class TestMatrix:
         sparse matrix."""
 
         Hmat = (1.0 * qp.PauliX(0)).sparse_matrix()
-        H_sparse = qp.SparseHamiltonian(Hmat, wires="0")
-        op = Controlled(H_sparse, "a")
+        H_sparse = qp.SparseHamiltonian(Hmat, wires=12)
+        op = Controlled(H_sparse, 37)
 
         sparse_mat = op.sparse_matrix()
         assert isinstance(sparse_mat, sparse.csr_matrix)
@@ -1038,7 +1038,7 @@ class TestDecomposition:
         control_wires = (0, 1, 2)
         control_values = [True, False, False]
 
-        base = TempOperator("a")
+        base = TempOperator(37)
         op = Controlled(base, control_wires, control_values)
 
         decomp = op.decomposition()
@@ -1095,7 +1095,7 @@ class TestArithmetic:
     """Test arithmetic decomposition methods."""
 
     control_wires = qp.wires.Wires((3, 4))
-    work_wires = qp.wires.Wires("aux")
+    work_wires = qp.wires.Wires(38)
     control_values = [True, False]
 
     def test_adjoint(self):
@@ -1260,14 +1260,14 @@ class TestControlledSupportsBroadcasting:
         on a single wire marked as supporting parameter broadcasting actually do support broadcasting.
         """
         par = pnp.array([0.25, 2.1, -0.42])
-        wires = ["wire0"]
+        wires = [44]
 
         cls = getattr(qp, name)
         base = cls(par, wires=wires)
-        op = Controlled(base, "wire1")
+        op = Controlled(base, 45)
 
         mat = op.matrix()
-        single_mats = [Controlled(cls(p, wires=wires), "wire1").matrix() for p in par]
+        single_mats = [Controlled(cls(p, wires=wires), 45).matrix() for p in par]
 
         assert qp.math.allclose(mat, single_mats)
 
@@ -1281,12 +1281,12 @@ class TestControlledSupportsBroadcasting:
 
         # Provide up to 6 wires and take as many as the class requires
         # This assumes that the class does *not* have `num_wires=None`
-        wires = ["wire0", 5, 41, "aux_wire", -1, 9][: cls.num_wires]
+        wires = [44, 5, 41, 48, -1, 9][: cls.num_wires]
         base = cls(par, wires=wires)
-        op = Controlled(base, "wire1")
+        op = Controlled(base, 45)
 
         mat = op.matrix()
-        single_mats = [Controlled(cls(p, wires=wires), "wire1").matrix() for p in par]
+        single_mats = [Controlled(cls(p, wires=wires), 45).matrix() for p in par]
 
         assert qp.math.allclose(mat, single_mats)
 
@@ -1296,15 +1296,15 @@ class TestControlledSupportsBroadcasting:
         on a single wire marked as supporting parameter broadcasting actually do support broadcasting.
         """
         par = (pnp.array([0.25, 2.1, -0.42]), pnp.array([-6.2, 0.12, 0.421]))
-        wires = ["wire0"]
+        wires = [44]
 
         cls = getattr(qp, name)
         base = cls(*par, wires=wires)
-        op = Controlled(base, "wire1")
+        op = Controlled(base, 45)
 
         mat = op.matrix()
         single_pars = [tuple(p[i] for p in par) for i in range(3)]
-        single_mats = [Controlled(cls(*p, wires=wires), "wire1").matrix() for p in single_pars]
+        single_mats = [Controlled(cls(*p, wires=wires), 45).matrix() for p in single_pars]
 
         assert qp.math.allclose(mat, single_mats)
 
@@ -1318,15 +1318,15 @@ class TestControlledSupportsBroadcasting:
             pnp.array([-6.2, 0.12, 0.421]),
             pnp.array([0.2, 1.1, -5.2]),
         )
-        wires = ["wire0"]
+        wires = [44]
 
         cls = getattr(qp, name)
         base = cls(*par, wires=wires)
-        op = Controlled(base, "wire1")
+        op = Controlled(base, 45)
 
         mat = op.matrix()
         single_pars = [tuple(p[i] for p in par) for i in range(3)]
-        single_mats = [Controlled(cls(*p, wires=wires), "wire1").matrix() for p in single_pars]
+        single_mats = [Controlled(cls(*p, wires=wires), 45).matrix() for p in single_pars]
 
         assert qp.math.allclose(mat, single_mats)
 
@@ -1340,15 +1340,15 @@ class TestControlledSupportsBroadcasting:
             pnp.array([-6.2, 0.12, 0.421]),
             pnp.array([0.2, 1.1, -5.2]),
         )
-        wires = ["wire0", 214]
+        wires = [44, 214]
 
         cls = getattr(qp, name)
         base = cls(*par, wires=wires)
-        op = Controlled(base, "wire1")
+        op = Controlled(base, 45)
 
         mat = op.matrix()
         single_pars = [tuple(p[i] for p in par) for i in range(3)]
-        single_mats = [Controlled(cls(*p, wires=wires), "wire1").matrix() for p in single_pars]
+        single_mats = [Controlled(cls(*p, wires=wires), 45).matrix() for p in single_pars]
 
         assert qp.math.allclose(mat, single_mats)
 
@@ -1357,47 +1357,45 @@ class TestControlledSupportsBroadcasting:
         """Test that a Controlled operation whose base is a DiagonalQubitUnitary, which is marked
         as supporting parameter broadcasting, actually does support broadcasting."""
         diag = pnp.array([[1j, 1, 1, -1j], [-1j, 1j, 1, -1], [1j, -1j, 1.0, -1]])
-        wires = ["a", 5]
+        wires = [37, 5]
 
         base = qp.DiagonalQubitUnitary(diag, wires=wires)
-        op = Controlled(base, "wire1")
+        op = Controlled(base, 45)
 
         mat = op.matrix()
         single_mats = [
-            Controlled(qp.DiagonalQubitUnitary(d, wires=wires), "wire1").matrix() for d in diag
+            Controlled(qp.DiagonalQubitUnitary(d, wires=wires), 45).matrix() for d in diag
         ]
 
         assert qp.math.allclose(mat, single_mats)
 
-    @pytest.mark.parametrize(
-        "pauli_word, wires", [("XYZ", [0, "4", 1]), ("II", [1, 5]), ("X", [7])]
-    )
+    @pytest.mark.parametrize("pauli_word, wires", [("XYZ", [0, 13, 1]), ("II", [1, 5]), ("X", [7])])
     def test_controlled_pauli_rot(self, pauli_word, wires):
         """Test that a Controlled operation whose base is PauliRot, which is marked as supporting
         parameter broadcasting, actually does support broadcasting."""
         par = pnp.array([0.25, 2.1, -0.42])
 
         base = qp.PauliRot(par, pauli_word, wires=wires)
-        op = Controlled(base, "wire1")
+        op = Controlled(base, 45)
 
         mat = op.matrix()
         single_mats = [
-            Controlled(qp.PauliRot(p, pauli_word, wires=wires), "wire1").matrix() for p in par
+            Controlled(qp.PauliRot(p, pauli_word, wires=wires), 45).matrix() for p in par
         ]
 
         assert qp.math.allclose(mat, single_mats)
 
-    @pytest.mark.parametrize("wires", [[0, "4", 1], [1, 5], [7]])
+    @pytest.mark.parametrize("wires", [[0, 13, 1], [1, 5], [7]])
     def test_controlled_multi_rz(self, wires):
         """Test that a Controlled operation whose base is MultiRZ, which is marked as supporting
         parameter broadcasting, actually does support broadcasting."""
         par = pnp.array([0.25, 2.1, -0.42])
 
         base = qp.MultiRZ(par, wires=wires)
-        op = Controlled(base, "wire1")
+        op = Controlled(base, 45)
 
         mat = op.matrix()
-        single_mats = [Controlled(qp.MultiRZ(p, wires=wires), "wire1").matrix() for p in par]
+        single_mats = [Controlled(qp.MultiRZ(p, wires=wires), 45).matrix() for p in par]
 
         assert qp.math.allclose(mat, single_mats)
 
@@ -1411,7 +1409,7 @@ class TestControlledSupportsBroadcasting:
 
         state = pnp.array([state_])
         base = qp.StatePrep(state, wires=list(range(num_wires)))
-        op = Controlled(base, "wire1")
+        op = Controlled(base, 45)
 
         assert op.batch_size == 1
         qp.StatePrep.compute_decomposition(state, list(range(num_wires)))
@@ -1419,7 +1417,7 @@ class TestControlledSupportsBroadcasting:
 
         state = pnp.array([state_] * 3)
         base = qp.StatePrep(state, wires=list(range(num_wires)))
-        op = Controlled(base, "wire1")
+        op = Controlled(base, 45)
         assert op.batch_size == 3
         qp.StatePrep.compute_decomposition(state, list(range(num_wires)))
         op.decomposition()
@@ -1434,14 +1432,14 @@ class TestControlledSupportsBroadcasting:
 
         features = pnp.array([state])
         base = qp.AmplitudeEmbedding(features, wires=list(range(num_wires)))
-        op = Controlled(base, "wire1")
+        op = Controlled(base, 45)
         assert op.batch_size == 1
         qp.AmplitudeEmbedding.compute_decomposition(features, list(range(num_wires)))
         op.decomposition()
 
         features = pnp.array([state] * 3)
         base = qp.AmplitudeEmbedding(features, wires=list(range(num_wires)))
-        op = Controlled(base, "wire1")
+        op = Controlled(base, 45)
         assert op.batch_size == 3
         qp.AmplitudeEmbedding.compute_decomposition(features, list(range(num_wires)))
         op.decomposition()
@@ -1459,7 +1457,7 @@ class TestControlledSupportsBroadcasting:
         actually does support broadcasting."""
 
         base = qp.AngleEmbedding(angles, wires=list(range(num_wires)))
-        op = Controlled(base, "wire1")
+        op = Controlled(base, 45)
         assert op.batch_size == 2
         qp.AngleEmbedding.compute_decomposition(angles, list(range(num_wires)), rotation=qp.RX)
         op.decomposition()
@@ -1476,7 +1474,7 @@ class TestControlledSupportsBroadcasting:
         actually does support broadcasting."""
 
         base = qp.IQPEmbedding(features, wires=list(range(num_wires)))
-        op = Controlled(base, "wire1")
+        op = Controlled(base, 45)
         assert op.batch_size == 2
         qp.IQPEmbedding.compute_decomposition(
             features,
@@ -1499,11 +1497,8 @@ class TestControlledSupportsBroadcasting:
         actually does support broadcasting."""
 
         base = qp.QAOAEmbedding(features, weights, wires=list(range(num_wires)))
-        op = Controlled(base, "wire1")
+        op = Controlled(base, 45)
         assert op.batch_size == batch_size
-        qp.QAOAEmbedding.compute_decomposition(
-            features, weights, wires=list(range(num_wires)), local_field=qp.RY
-        )
         op.decomposition()
 
 
@@ -1529,12 +1524,27 @@ custom_ctrl_ops = [
 
 def test_ctrl_non_boolean_control_values():
     """Test that qp.ctrl converts control values using Python truth values."""
-    op = qp.ctrl(TempOperator("a"), (0, 1, 2), control_values=["", None, 5])
+    op = qp.ctrl(TempOperator(37), (0, 1, 2), control_values=["", None, 5])
     assert op.control_values == [False, False, True]
 
 
 class TestCtrl:
     """Tests for the ctrl transform."""
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("op", [TempOperation(wires=0), qp.RX(0.123, wires=0), qp.RX])
+    def test_empty_controls(self, op):
+        """Empty controls return the original operator or callable."""
+        assert qp.ctrl(op, control=[]) is op
+
+    def test_empty_controls_queueing(self):
+        """Empty controls apply the original operator exactly once."""
+        with qp.queuing.AnnotatedQueue() as queue:
+            base = qp.RX(0.123, wires=0)
+            op = qp.ctrl(base, control=[])
+
+        assert queue.queue == [op]
+        qp.assert_equal(op, base)
 
     def test_sparse_qubit_unitary(self):
         """Test that the controlled sparse QubitUnitary works correctly"""
@@ -1652,14 +1662,14 @@ class TestCtrl:
         op = qp.ctrl(
             qp.ctrl(
                 ctrl_op,
-                control=["b"],
+                control=[39],
                 control_values=[0],
             ),
-            control=["a"],
+            control=[37],
         )
         expected = qp.ctrl(
             expected_base,
-            control=["a", "b"] + base_ctrl_wires,
+            control=[37, 39] + base_ctrl_wires,
             control_values=[1, 0] + base_ctrl_values,
         )
         assert op == expected
@@ -1834,7 +1844,7 @@ class TestTapeExpansionWithControlled:
 
         tape = QuantumScript.from_queue(q_tape)
 
-        @register_resources({qp.RZ: 2, qp.RY: 1})
+        @register_resources({qp.RZ: 2, qp.RY: 1}, name="rot_to_rz_ry_rz")
         def _rot_to_rz_ry_rz(phi, theta, omega, wires, **__):
             qp.RZ(phi, wires=wires)
             qp.RY(theta, wires=wires)

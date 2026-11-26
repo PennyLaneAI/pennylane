@@ -35,7 +35,7 @@ class TestInitialization:
 
     def test_pauli_base(self, constructor):
         """Test initialization with no coeff and a simple base."""
-        base = qp.PauliX("a")
+        base = qp.PauliX(4)
 
         op = constructor(base)
 
@@ -47,13 +47,13 @@ class TestInitialization:
         assert op.parameters == [1]
         assert op.data == (1,)
 
-        assert op.wires == qp.wires.Wires("a")
+        assert op.wires == qp.wires.Wires(4)
 
         assert op.control_wires == qp.wires.Wires([])
 
     def test_provided_coeff(self, constructor):
         """Test initialization with a provided coefficient and a Tensor base."""
-        base = qp.PauliZ("b") @ qp.PauliZ("c")
+        base = qp.PauliZ(7) @ qp.PauliZ(8)
         coeff = np.array(1.234)
 
         op = constructor(base, coeff)
@@ -66,7 +66,7 @@ class TestInitialization:
         assert op.parameters == [coeff]
         assert op.data == (coeff,)
 
-        assert op.wires == qp.wires.Wires(("b", "c"))
+        assert op.wires == qp.wires.Wires((7, 8))
 
     def test_parametric_base(self, constructor):
         """Test initialization with a coefficient and a parametric operation base."""
@@ -553,7 +553,6 @@ class TestDecomposition:
             op.decomposition()
 
     @pytest.mark.integration
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "coeff, hamiltonian",
         [

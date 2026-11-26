@@ -153,7 +153,7 @@ class TestHadamardValidation:
 
     @pytest.mark.parametrize("mode", ["standard", "reversed"])
     @pytest.mark.parametrize("aux_wire", [qp.wires.Wires(0), qp.wires.Wires(1)])
-    @pytest.mark.parametrize("device_wires", [qp.wires.Wires([0, 1, "aux"])])
+    @pytest.mark.parametrize("device_wires", [qp.wires.Wires([0, 1, 10])])
     def test_aux_wire_already_used_wires(self, aux_wire, device_wires, mode):
         """Test the aux wire is available."""
         dev = qp.device("default.qubit", wires=device_wires)
@@ -176,7 +176,7 @@ class TestHadamardValidation:
     @pytest.mark.parametrize("device_wires", [qp.wires.Wires([0, 1, 2])])
     def test_requested_wire_not_exist(self, device_wires, mode):
         """Test if the aux wire is not on the device an error is raised."""
-        aux_wire = qp.wires.Wires("aux")
+        aux_wire = qp.wires.Wires(10)
         dev = qp.device("default.qubit", wires=device_wires)
         x = 0.543
         y = -0.654
@@ -213,7 +213,7 @@ class TestHadamardValidation:
     def test_device_wire_does_not_exist(self, mode):
         """Test that an error is raised when the device cannot accept an auxiliary wire
         because it does not exist on the device."""
-        aux_wire = qp.wires.Wires("aux")
+        aux_wire = qp.wires.Wires(10)
         dev = qp.device("default.qubit", wires=2)
         m = qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
         tape = qp.tape.QuantumScript([qp.RX(0.543, wires=[0]), qp.RY(-0.654, wires=[1])], [m])
@@ -419,12 +419,12 @@ class TestDifferentModes:
         standard = mocker.spy(hadamard_gradient, "_hadamard_test")
         reverse = mocker.spy(hadamard_gradient, "_reversed_hadamard_test")
 
-        batch, _ = qp.gradients.hadamard_grad(tape, mode="auto", aux_wire="a")
+        batch, _ = qp.gradients.hadamard_grad(tape, mode="auto", aux_wire=9)
         assert len(batch) == 3
 
-        assert qp.ctrl(qp.X(0), "a") in batch[0].operations
-        assert qp.ctrl(qp.X(0), "a") in batch[1].operations
-        assert qp.ctrl(qp.Y(0), "a") in batch[2].operations
+        assert qp.ctrl(qp.X(0), 9) in batch[0].operations
+        assert qp.ctrl(qp.X(0), 9) in batch[1].operations
+        assert qp.ctrl(qp.Y(0), 9) in batch[2].operations
 
         standard.assert_called_once()
         reverse.assert_called_once()
@@ -1144,10 +1144,10 @@ class TestHadamardGrad:  # pylint: disable=too-many-public-methods
 class TestHadamardGradEdgeCases:
     """Test the Hadamard gradient transform and edge cases such as non diff parameters, auxiliary wires, etc..."""
 
-    device_wires = [qp.wires.Wires([0, 1, "aux"])]
+    device_wires = [qp.wires.Wires([0, 1, 10])]
     device_wires_no_aux = [qp.wires.Wires([0, 1, 2])]
 
-    working_wires = [qp.wires.Wires("aux"), "aux"]
+    working_wires = [qp.wires.Wires(10), 10]
     already_used_wires = [qp.wires.Wires(0), qp.wires.Wires(1)]
 
     @pytest.mark.parametrize("mode", ["standard"])  # test is fairly standard specific

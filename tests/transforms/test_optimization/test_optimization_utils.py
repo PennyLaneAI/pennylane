@@ -24,10 +24,10 @@ from pennylane import numpy as np
 from pennylane.transforms.optimization.optimization_utils import find_next_gate, fuse_rot_angles
 
 sample_op_list = [
-    qp.Hadamard(wires="a"),
-    qp.CNOT(wires=["a", "b"]),
-    qp.Toffoli(wires=[0, 1, "b"]),
-    qp.Hadamard(wires="c"),
+    qp.Hadamard(wires=5),
+    qp.CNOT(wires=[5, 7]),
+    qp.Toffoli(wires=[0, 1, 7]),
+    qp.Hadamard(wires=8),
 ]
 
 
@@ -35,12 +35,12 @@ class TestFindNextGate:  # pylint: disable=too-few-public-methods
     @pytest.mark.parametrize(
         ("wires,op_list,next_gate_idx"),
         [
-            ("a", sample_op_list, 0),
-            ("b", sample_op_list, 1),
-            ("e", sample_op_list, None),
+            (5, sample_op_list, 0),
+            (7, sample_op_list, 1),
+            (9, sample_op_list, None),
             ([0, 2], sample_op_list, 2),
             ([0, 1], sample_op_list, 2),
-            ("c", sample_op_list, 3),
+            (8, sample_op_list, 3),
         ],
     )
     def test_find_next_gate(self, wires, op_list, next_gate_idx):

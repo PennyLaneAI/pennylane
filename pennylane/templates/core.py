@@ -180,7 +180,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
         abstract_wires = Wire[1] # a single wire
         S_rep = subroutine_resource_rep(S, abstract_params, abstract_wires, qp.RX)
 
-        @qp.decomposition.register_resources({S_rep: 1})
+        @qp.decomposition.register_resources({S_rep: 1}, name="my_op_decomposition")
         def my_op_decomposition(wires):
             # data of shape (4, ) and dtype float
             params = np.array([1.0, 2.0, 3.0, 4.0])
@@ -192,14 +192,12 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     .. code-block:: python
 
-        qp.decomposition.enable_graph()
-
         @qp.qnode(qp.device('reference.qubit', wires=1))
         def c():
             MyOp(wires=0)
             return qp.state()
 
-    >>> print(qp.draw(qp.transforms._tape_decompose(c, max_expansion=1))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(c, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1))())
     0: ──S(M0)─┤  State
     <BLANKLINE>
     M0 =
@@ -394,7 +392,7 @@ def _default_resources(subroutine: "Subroutine", *args, **kwargs) -> defaultdict
     return resources
 
 
-def _calculate_resources(subroutine: "Subroutine", signature_key):
+def _subroutine_standard_resources(subroutine: "Subroutine", signature_key):
     sig = subroutine.signature.bind(*signature_key)
     for arg in subroutine.dynamic_argnames:
         struct, shapes = sig.arguments[arg]
@@ -402,12 +400,12 @@ def _calculate_resources(subroutine: "Subroutine", signature_key):
     return subroutine.compute_resources(**sig.arguments)
 
 
-@register_resources(_calculate_resources)
-def _subroutine_decomp(*data, wires, decomposition):  # pylint: disable=unused-argument
+@register_resources(_subroutine_standard_resources, name="expand_operations")
+def _subroutine_standard(*data, wires, decomposition):  # pylint: disable=unused-argument
     _ = [apply(op) for op in decomposition]
 
 
-add_decomps(SubroutineOp, _subroutine_decomp)
+add_decomps(SubroutineOp, _subroutine_standard)
 
 P = ParamSpec("P")
 
@@ -504,7 +502,6 @@ class Subroutine:  # pylint: disable=too-many-instance-attributes
             for word in pauli_words:
                 qp.PauliRot(x, word, wires)
 
-
     >>> print(qp.draw(WithSetup)(0.5, [0, 1], ["XX", "XY", "XZ"]))
     0: ─╭WithSetup(0.50)─┤
     1: ─╰WithSetup(0.50)─┤
@@ -521,7 +518,6 @@ class Subroutine:  # pylint: disable=too-many-instance-attributes
             if y is None:
                 y = len(wires)
             return (y, wires), {}
-
 
     ``setup_inputs`` should only interact with with compile-time information like
     static arguments, pytree structures, shapes, and dtypes, and *not* interact with any
@@ -542,7 +538,6 @@ class Subroutine:  # pylint: disable=too-many-instance-attributes
                 # do something else
             ...
 
-
     **Integration with Graph decompositions:**
 
     .. warning::
@@ -551,7 +546,6 @@ class Subroutine:  # pylint: disable=too-many-instance-attributes
         Ahead-Of-Time compiled decomposition rules and simple call signatures. Graph decompositions
         are not available for higher order algorithmic abstractions like ``Subroutine``, or operators
         that decompose to ``Subroutine``, in Catalyst.
-
 
     To use ``Subroutine`` with graph-based decompositions, we need a function to compute the resources.
     A default fallback calculates the resources by calling the subroutine with
@@ -598,7 +592,7 @@ class Subroutine:  # pylint: disable=too-many-instance-attributes
         abstract_wires = Wire[3]
         rxlayer_rep = subroutine_resource_rep(RXLayer, abstract_params, abstract_wires)
 
-        @qp.decomposition.register_resources({rxlayer_rep: 1})
+        @qp.decomposition.register_resources({rxlayer_rep: 1}, name="MyOpDecomposition")
         def MyOpDecomposition(wires):
             params = np.arange(3, dtype=float)
             RXLayer(params, wires)
@@ -612,21 +606,18 @@ class Subroutine:  # pylint: disable=too-many-instance-attributes
             MyOp((0,1,2))
             return qp.expval(qp.Z(0))
 
-        qp.decomposition.enable_graph()
-
-
     >>> print(qp.draw(c)())
     0: ─╭MyOp─┤  <Z>
     1: ─├MyOp─┤
     2: ─╰MyOp─┤
-    >>> print(qp.draw(qp.transforms._tape_decompose(c, max_expansion=1))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(c, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=1))())
     0: ─╭RXLayer(M0)─┤  <Z>
     1: ─├RXLayer(M0)─┤
     2: ─╰RXLayer(M0)─┤
     <BLANKLINE>
     M0 =
     [0. 1. 2.]
-    >>> print(qp.draw(qp.transforms._tape_decompose(c, max_expansion=2))())
+    >>> print(qp.draw(qp.transforms._tape_decompose(c, gate_set=qp.gate_sets.ROTATIONS_PLUS_CNOT, max_expansion=2))())
     0: ──RX(0.00)─┤  <Z>
     1: ──RX(1.00)─┤
     2: ──RX(2.00)─┤

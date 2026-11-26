@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import execute
+from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 from pennylane.gradients import param_shift
 from pennylane.typing import TensorLike
 
@@ -634,12 +635,15 @@ class TestJaxExecuteIntegration:
             qscript = qp.tape.QuantumScript(
                 [qp.RX(a, wires=0), MyU3(*p, wires=0)], [qp.expval(qp.PauliX(0))]
             )
-            [qscript], _ = qp.transforms._tape_decompose(  # pylint: disable=protected-access
-                qscript, stopping_condition=qp.devices.default_qubit.stopping_condition
+            # pylint: disable-next=protected-access
+            [qscript], _ = qp.transforms._tape_decompose(
+                qscript,
+                gate_set=ROTATIONS_PLUS_CNOT,
+                stopping_condition=qp.devices.default_qubit.stopping_condition,
             )
             return execute([qscript], device, **execute_kwargs)[0]
 
-        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1}, name="decomp")
         def _decomp(theta, phi, delta, wires):
             qp.Rot(delta, theta, -delta, wires)
             qp.PhaseShift(phi + delta, wires)

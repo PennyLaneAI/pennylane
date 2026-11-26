@@ -523,7 +523,7 @@ class TestQNode:
                     qp.PhaseShift(phi + lam, wires=wires),
                 ]
 
-        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
+        @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1}, name="decomp")
         def _decomp(theta, phi, delta, wires):
             qp.Rot(delta, theta, -delta, wires)
             qp.PhaseShift(phi + delta, wires)
@@ -1256,9 +1256,9 @@ class TestTapeExpansion:
             def decomposition(self):
                 return [qp.RY(3 * self.data[0], wires=self.wires)]
 
-        @qp.register_resources({qp.RY: 1})
-        def custom_decomposition(param, wires):
-            qp.RY(3 * param, wires=wires)
+        @qp.register_resources({qp.RY: 1}, name="custom_decomposition")
+        def custom_decomposition(phi, wires):
+            qp.RY(3 * phi, wires=wires)
 
         qp.add_decomps(PhaseShift, custom_decomposition)
 

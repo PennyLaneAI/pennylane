@@ -300,13 +300,7 @@ class TestSample:  # pylint: disable=too-many-public-methods
             (qp.Hermitian(np.diag([1, 2]), 0)),
             (qp.Hermitian(np.diag([1.0, 2.0]), 0)),
             # Tensor product observables
-            (
-                qp.PauliX("c")
-                @ qp.PauliY("a")
-                @ qp.PauliZ(1)
-                @ qp.Hadamard("wire1")
-                @ qp.Identity("b")
-            ),
+            (qp.PauliX(7) @ qp.PauliY(4) @ qp.PauliZ(1) @ qp.Hadamard(8) @ qp.Identity(6)),
             (qp.Projector([0, 1], wires=[0, 1]) @ qp.PauliZ(2)),
             (qp.Hermitian(np.array(np.eye(2)), wires=[0]) @ qp.PauliZ(2)),
             (qp.Projector([0, 1], wires=[0, 1]) @ qp.Hermitian(np.array(np.eye(2)), wires=[2])),

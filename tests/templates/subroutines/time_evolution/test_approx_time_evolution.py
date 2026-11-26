@@ -79,13 +79,13 @@ class TestDecomposition:
             ),
             (
                 2,
-                qp.Hamiltonian([2, 0.5], [qp.PauliX("a"), qp.PauliX("a") @ qp.PauliZ("b")]),
+                qp.Hamiltonian([2, 0.5], [qp.PauliX(5), qp.PauliX(5) @ qp.PauliZ(6)]),
                 2,
                 [
-                    qp.PauliRot(4.0, "X", wires=["a"]),
-                    qp.PauliRot(1.0, "XZ", wires=["a", "b"]),
-                    qp.PauliRot(4.0, "X", wires=["a"]),
-                    qp.PauliRot(1.0, "XZ", wires=["a", "b"]),
+                    qp.PauliRot(4.0, "X", wires=[5]),
+                    qp.PauliRot(1.0, "XZ", wires=[5, 6]),
+                    qp.PauliRot(4.0, "X", wires=[5]),
+                    qp.PauliRot(1.0, "XZ", wires=[5, 6]),
                 ],
             ),
             (
@@ -99,15 +99,15 @@ class TestDecomposition:
                 qp.Hamiltonian(
                     [2, 0.5, 0.5],
                     [
-                        qp.PauliX("a"),
-                        qp.PauliX("a") @ qp.PauliZ(-15),
+                        qp.PauliX(5),
+                        qp.PauliX(5) @ qp.PauliZ(-15),
                         qp.Identity(0) @ qp.PauliY(-15),
                     ],
                 ),
                 1,
                 [
-                    qp.PauliRot(8.0, "X", wires=["a"]),
-                    qp.PauliRot(2.0, "XZ", wires=["a", -15]),
+                    qp.PauliRot(8.0, "X", wires=[5]),
+                    qp.PauliRot(2.0, "XZ", wires=[5, -15]),
                     qp.PauliRot(2.0, "Y", wires=[-15]),
                 ],
             ),
@@ -169,30 +169,6 @@ class TestDecomposition:
             return [qp.expval(qp.PauliZ(wires=i)) for i in range(n_wires)]
 
         assert np.allclose(circuit(), expectation)
-
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-        hamiltonian = qp.Hamiltonian([1, 1, 1], [qp.PauliX(0), qp.PauliX(1), qp.PauliX(2)])
-        hamiltonian2 = qp.Hamiltonian([1, 1, 1], [qp.PauliX("z"), qp.PauliX("a"), qp.PauliX("k")])
-
-        dev = qp.device("default.qubit", wires=3)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.ApproxTimeEvolution(hamiltonian, 0.5, 2)
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.ApproxTimeEvolution(hamiltonian2, 0.5, 2)
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     DECOMP_PARAMS = [
         (qp.Hamiltonian([1, 1], [qp.PauliX(0), qp.PauliY(0)]), 0.5, 2),

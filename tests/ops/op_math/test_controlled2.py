@@ -69,7 +69,7 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, wires):
                 super().__init__(qp.H(wires[1]), wires[0])
@@ -134,7 +134,7 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, phi, theta, omega, wires):
                 super().__init__(qp.Rot(phi, theta, omega, wires=wires[1]), control_wires=wires[0])
@@ -204,7 +204,7 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, phi, theta, omega, wires):
                 super().__init__(qp.Rot(phi, theta, omega, wires=wires[1]), control_wires=wires[0])
@@ -239,7 +239,7 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, theta, wires):
                 super().__init__(qp.RX(theta, wires[1]), control_wires=wires[0])
@@ -254,7 +254,7 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, wires):
                 super().__init__(qp.H(wires[1]), wires[0])
@@ -274,7 +274,7 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, theta, wires):
                 super().__init__(qp.RX(theta, wires[1]), control_wires=wires[0])
@@ -298,7 +298,7 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, wires):
                 super().__init__(qp.H(wires[1]), wires[0])
@@ -321,7 +321,7 @@ class TestControlled2:
 
             wire_argnames = ("wires",)
 
-            wire_sizes = (2,)
+            arg_specs = {"wires": Wire[2]}
 
             def __init__(self, wires):
                 super().__init__(qp.H(wires[1]), wires[0])
@@ -646,7 +646,7 @@ class TestControlledOp2:
     def test_old_decomp_integration(self):
         """Tests that ControlledOp2 is compatible with the old decomposition convention."""
 
-        @register_resources({qp.RX: 1})
+        @register_resources({qp.RX: 1}, name="custom_decomp")
         def _custom_decomp(wires):
             qp.RX(np.pi / 2, wires=wires)
 
@@ -665,7 +665,7 @@ def test_make_controlled_decomp_closes_over_compilable_args():
     and break any decomposition that branches on it with a Python ``if`` (as
     :class:`~.OutMultiplier`'s ``mod``/``output_wires_zeroed`` do)."""
 
-    @register_resources(lambda n, wires: {qp.X: 1} if n else {qp.Y: 1})
+    @register_resources(lambda n, wires: {qp.X: 1} if n else {qp.Y: 1}, name="some_decomp")
     def _some_decomp(n, wires):
         if n:
             qp.X(wires[0])

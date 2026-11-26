@@ -211,8 +211,8 @@ class TestDecomposition:
         a PauliZ for a negative determinant and nothing otherwise."""
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
         from pennylane.templates.subroutines.qchem.basis_rotation import (
-            _real_basis_rotation_decomp,
-            _real_basis_rotation_resources,
+            _basis_rotation_real,
+            _basis_rotation_real_resources,
         )
 
         rng = np.random.default_rng(seed)
@@ -222,9 +222,9 @@ class TestDecomposition:
             ortho_matrix[:, 0] *= -1
 
         def circuit(unitary_matrix):
-            resources = _real_basis_rotation_resources(unitary_matrix, wires=[0, 1, 2])
+            resources = _basis_rotation_real_resources(unitary_matrix, wires=[0, 1, 2])
             assert resources == {qp.PauliZ: 1, qp.SingleExcitation: 3}
-            _real_basis_rotation_decomp(unitary_matrix, wires=[0, 1, 2])
+            _basis_rotation_real(unitary_matrix, wires=[0, 1, 2])
 
         plxpr = qp.capture.make_plxpr(circuit)(ortho_matrix)
         collector = CollectOpsandMeas()
@@ -241,18 +241,18 @@ class TestDecomposition:
         import jax
 
         from pennylane.templates.subroutines.qchem.basis_rotation import (
-            _real_basis_rotation_resources,
+            _basis_rotation_real_resources,
         )
 
         @jax.jit
         def check_jit_resources(unitary_matrix):
-            resources = _real_basis_rotation_resources(unitary_matrix, wires=[0, 1, 2])
+            resources = _basis_rotation_real_resources(unitary_matrix, wires=[0, 1, 2])
             assert resources == {qp.PhaseShift: 1, qp.SingleExcitation: 3}
             return unitary_matrix
 
         check_jit_resources(np.eye(3))
 
-        resources = _real_basis_rotation_resources(np.eye(3), wires=[0, 1, 2])
+        resources = _basis_rotation_real_resources(np.eye(3), wires=[0, 1, 2])
         assert resources == {qp.PauliZ: 1, qp.SingleExcitation: 3}
 
     @pytest.mark.parametrize(
@@ -331,7 +331,6 @@ class TestDecomposition:
         ],
     )
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_basis_rotation_operations_real_without_jax(self, num_wires, ortho_matrix):
         """Test the correctness of the BasisRotation template including the gate count
         and their order, the wires the operation acts on and the correct use of parameters
@@ -341,44 +340,6 @@ class TestDecomposition:
         # Tests the decomposition rule defined with the new system
         assert_decomposable(op)
 
-    def test_custom_wire_labels(self, tol):
-        """Test that BasisRotation template can deal with non-numeric, nonconsecutive wire labels."""
-
-        weights = qp.math.array(
-            [
-                [-0.618452, -0.68369054 - 0.38740723j],
-                [-0.78582258, 0.53807284 + 0.30489424j],
-            ]
-        )
-
-        dev = qp.device("default.qubit", wires=2)
-        dev2 = qp.device("default.qubit", wires=["z", "a"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.PauliX(wires=[0])
-            qp.BasisRotation(
-                wires=range(2),
-                unitary_matrix=weights,
-            )
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.PauliX(wires=["z"])
-            qp.BasisRotation(
-                wires=["z", "a"],
-                unitary_matrix=weights,
-            )
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
-
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     @pytest.mark.parametrize(
         ("unitary_matrix", "eigen_values", "exp_state"),
         [
@@ -577,7 +538,6 @@ def circuit_decomposed(weights):
     return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestInterfaces:
     """Test that the template is compatible with all interfaces, including the computation
     of gradients."""

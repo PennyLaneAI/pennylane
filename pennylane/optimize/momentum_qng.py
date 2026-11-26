@@ -64,7 +64,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
     Consider an objective function realized as a :class:`~.QNode` that returns the
     expectation value of a Hamiltonian.
 
-    >>> dev = qp.device("default.qubit", wires=(0, 1, "aux"))
+    >>> dev = qp.device("default.qubit", wires=(0, 1, 2))
     >>> @qp.qnode(dev, interface="numpy")
     ... def circuit(params):
     ...     qp.RX(params[0], wires=0)

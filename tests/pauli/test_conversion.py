@@ -80,14 +80,14 @@ hamiltonian_ps = (
             [2, -0.5, 3.14],
             [
                 qp.PauliZ(wires=0),
-                qp.prod(qp.X(wires=0), qp.Z(wires="a")),
-                qp.Identity(wires="b"),
+                qp.prod(qp.X(wires=0), qp.Z(wires=9)),
+                qp.Identity(wires=11),
             ],
         ),
         PauliSentence(
             {
                 PauliWord({0: "Z"}): 2,
-                PauliWord({0: "X", "a": "Z"}): -0.5,
+                PauliWord({0: "X", 9: "Z"}): -0.5,
                 PauliWord({}): 3.14,
             }
         ),
@@ -174,8 +174,8 @@ class TestDecomposition:  # pylint: disable=too-many-public-methods
 
     def test_wire_order(self):
         """Test that wire ordering is working"""
-        wire_order1 = ["a", 0]
-        wire_order2 = ["auxiliary", "working"]
+        wire_order1 = [9, 0]
+        wire_order2 = [10, 12]
         hamiltonian = np.array(
             [[-2, -2 + 1j, -2, -2], [-2 - 1j, 0, 0, -1], [-2, 0, -2, -1], [-2, -1, -1, 0]]
         )
@@ -257,7 +257,7 @@ class TestDecomposition:  # pylint: disable=too-many-public-methods
         """Test that wire ordering works with sparse matrices"""
         import scipy.sparse as sps
 
-        wire_order = ["a", 0]
+        wire_order = [9, 0]
         hamiltonian = np.array(
             [[-2, -2 + 1j, -2, -2], [-2 - 1j, 0, 0, -1], [-2, 0, -2, -1], [-2, -1, -1, 0]]
         )
@@ -675,8 +675,8 @@ class TestPhasedDecomposition:
 
     def test_wire_order(self):
         """Test wire order is working as intended"""
-        wire_order1 = ["a", 0]
-        wire_order2 = ["auxiliary", "working"]
+        wire_order1 = [9, 0]
+        wire_order2 = [10, 12]
         hamiltonian = np.array(
             [[-2, -2 + 1j, -2, -2], [-2 - 1j, 0, 0, -1], [-2, 0, -2, -1], [-2, -1, -1, 0]]
         )
@@ -769,7 +769,7 @@ class TestPauliSentence:
     pauli_op_ps = (
         (qp.PauliX(wires=0), PauliSentence({PauliWord({0: "X"}): 1})),
         (qp.PauliY(wires=1), PauliSentence({PauliWord({1: "Y"}): 1})),
-        (qp.PauliZ(wires="a"), PauliSentence({PauliWord({"a": "Z"}): 1})),
+        (qp.PauliZ(wires=9), PauliSentence({PauliWord({9: "Z"}): 1})),
         (qp.Identity(wires=0), PauliSentence({PauliWord({}): 1})),
     )
 
@@ -785,8 +785,8 @@ class TestPauliSentence:
         ),
         (qp.PauliX(wires=0) @ qp.Identity(wires=1), PauliSentence({PauliWord({0: "X"}): 1})),
         (
-            qp.PauliX(wires=0) @ qp.PauliY(wires="a") @ qp.PauliZ(wires=1) @ qp.Identity(wires="b"),
-            PauliSentence({PauliWord({0: "X", "a": "Y", 1: "Z"}): 1}),
+            qp.PauliX(wires=0) @ qp.PauliY(wires=9) @ qp.PauliZ(wires=1) @ qp.Identity(wires=11),
+            PauliSentence({PauliWord({0: "X", 9: "Y", 1: "Z"}): 1}),
         ),
         (qp.PauliX(wires=0) @ qp.PauliY(wires=0), PauliSentence({PauliWord({0: "Z"}): 1j})),
     )
@@ -834,14 +834,14 @@ class TestPauliSentence:
         (
             qp.sum(
                 qp.s_prod(2, qp.PauliZ(wires=0)),
-                -0.5 * qp.prod(qp.PauliX(wires=0), qp.PauliZ(wires="a")),
+                -0.5 * qp.prod(qp.PauliX(wires=0), qp.PauliZ(wires=9)),
                 qp.s_prod(2.14, qp.Identity(wires=0)),
-                qp.Identity(wires="a"),
+                qp.Identity(wires=9),
             ),
             PauliSentence(
                 {
                     PauliWord({0: "Z"}): 2,
-                    PauliWord({0: "X", "a": "Z"}): -0.5,
+                    PauliWord({0: "X", 9: "Z"}): -0.5,
                     PauliWord({}): 3.14,
                 }
             ),
@@ -864,7 +864,7 @@ class TestPauliSentence:
         error_ps = (
             qp.Hadamard(wires=0),
             qp.Hamiltonian([1, 2], [qp.Projector([0], wires=0), qp.PauliZ(wires=1)]),
-            qp.RX(1.23, wires="a") + qp.PauliZ(wires=0),
+            qp.RX(1.23, wires=9) + qp.PauliZ(wires=0),
         )
 
     @pytest.mark.parametrize("op", error_ps)
@@ -879,7 +879,7 @@ class TestPauliSentence:
     words = (
         PauliWord({0: "X"}),
         PauliWord({0: "X", 1: "Y"}),
-        PauliWord({"a": "X", 0: "Y"}),
+        PauliWord({9: "X", 0: "Y"}),
     )
 
     @pytest.mark.parametrize("pw", words)

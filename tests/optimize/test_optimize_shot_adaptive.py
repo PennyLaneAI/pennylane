@@ -402,40 +402,24 @@ class TestShotAllocation:
 
 
 class TestNativeOptimization:
-    """Exercise native optimizer steps through real single-shot gradient sampling."""
+    """Exercise JAX optimizer steps through real single-shot gradient sampling."""
 
-    @staticmethod
-    def tensor(value, interface, dtype):
-        if interface == "jax":
-            import jax.numpy as jnp
-
-            return jnp.array(value, dtype=dtype)
-        import torch
-
-        return torch.tensor(value, dtype=getattr(torch, dtype), requires_grad=True)
-
-    @pytest.mark.parametrize(
-        "interface",
-        [
-            pytest.param("jax", marks=pytest.mark.jax),
-            pytest.param("torch", marks=pytest.mark.torch),
-        ],
-    )
+    @pytest.mark.jax
     @pytest.mark.parametrize("dtype", ["float32", "float64"])
     @pytest.mark.parametrize("term_sampling", [None, "weighted_random_sampling"])
     @pytest.mark.usefixtures("preserve_jax_x64")
-    def test_step_and_cost_native_arguments(self, interface, dtype, term_sampling):
-        """Real sampled updates retain native types, frozen arguments, and trainability."""
-        if interface == "jax":
-            import jax
+    def test_step_and_cost_native_arguments(self, dtype, term_sampling):
+        """Real sampled updates retain native types and frozen arguments."""
+        import jax
+        import jax.numpy as jnp
 
-            jax.config.update("jax_enable_x64", dtype == "float64")
+        jax.config.update("jax_enable_x64", dtype == "float64")
         seen = []
 
         @qp.set_shots(100)
         @qp.qnode(
             qp.device("default.qubit", wires=1, seed=123),
-            interface=interface,
+            interface="jax",
             diff_method="parameter-shift",
         )
         def circuit(angle, frozen, weights):
@@ -443,13 +427,9 @@ class TestNativeOptimization:
             qp.RX(angle + frozen + 2 * weights[0] + 3 * weights[1], 0)
             return qp.expval(qp.Hamiltonian([0.25], [qp.Z(0)]))
 
-        angle = self.tensor(np.pi / 2, interface, dtype)
-        weights = self.tensor([0.0, 0.0], interface, dtype)
+        angle = jnp.array(np.pi / 2, dtype=dtype)
+        weights = jnp.array([0.0, 0.0], dtype=dtype)
         frozen = np.array(0.0, dtype=dtype)
-        if interface == "torch":
-            import torch
-
-            frozen = torch.tensor(0.0, dtype=getattr(torch, dtype), requires_grad=False)
         opt = qp.ShotAdaptiveOptimizer(min_shots=5, stepsize=0.1, term_sampling=term_sampling)
 
         updated, cost = opt.step_and_cost(circuit, angle, frozen, weights)
@@ -466,7 +446,7 @@ class TestNativeOptimization:
         assert seen[-1][0] is angle
         assert seen[-1][1] is frozen
         assert seen[-1][2] is weights
-        assert qp.math.get_interface(cost) == interface
+        assert qp.math.get_interface(cost) == "jax"
         assert qp.math.shape(cost) == ()
         assert -0.25 <= qp.math.toarray(cost) <= 0.25
         for result, original, increment in zip(
@@ -475,14 +455,10 @@ class TestNativeOptimization:
             [0.025, np.array([0.05, 0.075])],
             strict=True,
         ):
-            assert qp.math.get_interface(result) == interface
+            assert qp.math.get_interface(result) == "jax"
             assert result.dtype == original.dtype
             assert qp.math.shape(result) == qp.math.shape(original)
             assert np.allclose(qp.math.toarray(result), qp.math.toarray(original) + increment)
-            if interface == "torch":
-                assert result.device == original.device
-                assert result.requires_grad
-                assert result.is_leaf
 
         second = opt.step(circuit, *updated)
 
@@ -493,28 +469,18 @@ class TestNativeOptimization:
         assert np.all(np.isfinite(opt.xi[0]))
         assert np.all(np.isfinite(opt.chi[1]))
         assert np.all(np.isfinite(opt.xi[1]))
-        if interface == "torch":
-            assert second[0].requires_grad and second[0].is_leaf
-            assert second[2].requires_grad and second[2].is_leaf
 
-    @pytest.mark.parametrize(
-        "interface",
-        [
-            pytest.param("jax", marks=pytest.mark.jax),
-            pytest.param("torch", marks=pytest.mark.torch),
-        ],
-    )
+    @pytest.mark.jax
     @pytest.mark.parametrize("min_shots", [3, 11])
     @pytest.mark.parametrize("gate, angle, gradient", [(qp.RZ, 0.4, 0.0), (qp.RX, np.pi / 2, -1.0)])
-    def test_zero_variance_preserves_positive_shot_floor(
-        self, interface, min_shots, gate, angle, gradient
-    ):
+    def test_zero_variance_preserves_positive_shot_floor(self, min_shots, gate, angle, gradient):
         """Analytical zero-variance gradients retain the requested positive shot budget."""
+        import jax.numpy as jnp
 
         @qp.set_shots(100)
         @qp.qnode(
             qp.device("default.qubit", wires=1, seed=123),
-            interface=interface,
+            interface="jax",
             diff_method="parameter-shift",
         )
         def circuit(angle):
@@ -522,16 +488,14 @@ class TestNativeOptimization:
             return qp.expval(qp.Z(0))
 
         opt = qp.ShotAdaptiveOptimizer(min_shots=min_shots, stepsize=0.1)
-        value = self.tensor(angle, interface, "float64")
+        value = jnp.array(angle, dtype="float64")
 
         updated = opt.step(circuit, value)
 
         assert np.allclose(qp.math.toarray(updated), angle - 0.1 * gradient)
-        assert qp.math.get_interface(updated) == interface
+        assert qp.math.get_interface(updated) == "jax"
         assert qp.math.shape(updated) == ()
         assert updated.dtype == value.dtype
-        if interface == "torch":
-            assert updated.requires_grad and updated.is_leaf
         assert np.allclose(opt.chi[0] / (1 - opt.mu), gradient)
         assert opt.xi[0] == 0.0
         assert opt.s[0] == min_shots

@@ -33,7 +33,6 @@ def test_standard_validity():
 
 
 @pytest.mark.system
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestCorrectness:
     """Tests the correctness of a circuit which contains the template."""
 

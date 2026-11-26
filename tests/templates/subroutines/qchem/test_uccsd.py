@@ -307,41 +307,6 @@ class TestDecomposition:
         )
         assert_decomposable(op)
 
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-
-        weights = [0.1, 0.2]
-        dev = qp.device("default.qubit", wires=4)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k", "e"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.UCCSD(
-                weights,
-                wires=range(4),
-                s_wires=[[0, 1]],
-                d_wires=[[[0, 1], [2, 3]]],
-                init_state=np.array([0, 1, 0, 1]),
-            )
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.UCCSD(
-                weights,
-                wires=["z", "a", "k", "e"],
-                s_wires=[["z", "a"]],
-                d_wires=[[["z", "a"], ["k", "e"]]],
-                init_state=np.array([0, 1, 0, 1]),
-            )
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
-
 
 @pytest.mark.parametrize(
     ("weights", "s_wires", "d_wires", "init_state", "n_repeats", "msg_match"),

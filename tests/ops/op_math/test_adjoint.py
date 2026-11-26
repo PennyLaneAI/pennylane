@@ -104,7 +104,7 @@ class TestInitialization:
 
     def test_nonparametric_ops(self):
         """Test adjoint initialization for a non parameteric operation."""
-        base = qp.PauliX("a")
+        base = qp.PauliX(5)
 
         op = Adjoint(base)
 
@@ -116,12 +116,12 @@ class TestInitialization:
         assert op.parameters == []
         assert op.data == ()
 
-        assert op.wires == qp.wires.Wires("a")
+        assert op.wires == qp.wires.Wires(5)
 
     def test_parametric_ops(self):
         """Test adjoint initialization for a standard parametric operation."""
         params = [1.2345, 2.3456, 3.4567]
-        base = qp.Rot(*params, wires="b")
+        base = qp.Rot(*params, wires=7)
 
         op = Adjoint(base)
 
@@ -133,7 +133,7 @@ class TestInitialization:
         assert qp.math.allclose(params, op.parameters)
         assert qp.math.allclose(params, op.data)
 
-        assert op.wires == qp.wires.Wires("b")
+        assert op.wires == qp.wires.Wires(7)
 
     def test_template_base(self, seed):
         """Test adjoint initialization for a template."""
@@ -162,7 +162,7 @@ class TestProperties:
         """Test that Adjoint data is read-only."""
         x = np.array(1.234)
 
-        base = qp.RX(x, wires="a")
+        base = qp.RX(x, wires=5)
         adj = Adjoint(base)
 
         assert adj.data == (x,)
@@ -342,7 +342,7 @@ class TestMiscMethods:
 
     def test_label(self):
         """Test that the label method for the adjoint class adds a † to the end."""
-        base = qp.Rot(1.2345, 2.3456, 3.4567, wires="b")
+        base = qp.Rot(1.2345, 2.3456, 3.4567, wires=7)
         op = Adjoint(base)
         assert op.label(decimals=2) == "Rot\n(1.23,\n2.35,\n3.46)†"
 
@@ -429,8 +429,8 @@ class TestAdjointOperation:
         "base, basis",
         (
             (qp.RX(1.234, wires=0), "X"),
-            (qp.PauliY("a"), "Y"),
-            (qp.PhaseShift(4.56, wires="b"), "Z"),
+            (qp.PauliY(5), "Y"),
+            (qp.PhaseShift(4.56, wires=7), "Z"),
             (qp.SX(-1), "X"),
         ),
     )
@@ -443,8 +443,8 @@ class TestAdjointOperation:
 
     def test_control_wires(self):
         """Test the control_wires of an adjoint are the same as the base op."""
-        op = Adjoint(qp.CNOT(wires=("a", "b")))
-        assert op.control_wires == qp.wires.Wires("a")
+        op = Adjoint(qp.CNOT(wires=(5, 7)))
+        assert op.control_wires == qp.wires.Wires(5)
 
 
 class TestAdjointOperationDiffInfo:
@@ -483,7 +483,7 @@ class TestQueueing:
         """Test queuing and metadata when both Adjoint and base defined inside a recording context."""
 
         with qp.queuing.AnnotatedQueue() as q:
-            base = qp.Rot(1.2345, 2.3456, 3.4567, wires="b")
+            base = qp.Rot(1.2345, 2.3456, 3.4567, wires=7)
             _ = Adjoint(base)
 
         assert base not in q
@@ -492,7 +492,7 @@ class TestQueueing:
     def test_queuing_base_defined_outside(self):
         """Test that base isn't added to queue if it's defined outside the recording context."""
 
-        base = qp.Rot(1.2345, 2.3456, 3.4567, wires="b")
+        base = qp.Rot(1.2345, 2.3456, 3.4567, wires=7)
         with qp.queuing.AnnotatedQueue() as q:
             op = Adjoint(base)
 
@@ -504,7 +504,7 @@ class TestQueueing:
         base defined inside a recording context."""
 
         with qp.queuing.AnnotatedQueue() as q:
-            base = qp.Hermitian(np.eye(4), wires=[0, "x"])
+            base = qp.Hermitian(np.eye(4), wires=[0, 10])
             _ = Adjoint(base)
 
         assert base not in q
@@ -514,7 +514,7 @@ class TestQueueing:
         """Test that a Hermitian base isn't added to queue if it's
         defined outside the recording context."""
 
-        base = qp.Hermitian(np.eye(4), wires=[0, "x"])
+        base = qp.Hermitian(np.eye(4), wires=[0, 10])
         with qp.queuing.AnnotatedQueue() as q:
             op = Adjoint(base)
 
@@ -777,7 +777,7 @@ def test_error_on_None():
 class TestAdjointConstructorPreconstructedOp:
     """Test providing an already initialized operator to the transform."""
 
-    @pytest.mark.parametrize("base", (qp.IsingXX(1.23, wires=("c", "d")), qp.QFT(wires=(0, 1, 2))))
+    @pytest.mark.parametrize("base", (qp.IsingXX(1.23, wires=(8, 9)), qp.QFT(wires=(0, 1, 2))))
     def test_single_op(self, base):
         """Test passing a single preconstructed op in a queuing context."""
         with qp.queuing.AnnotatedQueue() as q:
@@ -817,12 +817,12 @@ class TestAdjointConstructorDifferentCallableTypes:
         """Test the adjoint transform on a single operation."""
 
         with qp.queuing.AnnotatedQueue() as q:
-            out = adjoint(qp.RX)(1.234, wires="a")
+            out = adjoint(qp.RX)(1.234, wires=5)
 
         tape = qp.tape.QuantumScript.from_queue(q)
         assert out is tape[0]
         assert isinstance(out, Adjoint)
-        qp.assert_equal(out.base, qp.RX(1.234, "a"))
+        qp.assert_equal(out.base, qp.RX(1.234, 5))
 
     def test_adjoint_template(self):
         """Test the adjoint transform on a template."""
@@ -865,7 +865,7 @@ class TestAdjointConstructorDifferentCallableTypes:
         """Test the adjoint transform on an adjoint transform."""
         x = 4.321
         with qp.queuing.AnnotatedQueue() as q:
-            out = adjoint(adjoint(qp.RX))(x, wires="b")
+            out = adjoint(adjoint(qp.RX))(x, wires=7)
 
         tape = qp.tape.QuantumScript.from_queue(q)
         assert out is tape[0]
@@ -873,7 +873,7 @@ class TestAdjointConstructorDifferentCallableTypes:
         assert isinstance(out.base, Adjoint)
         assert out.base.base.__class__ is qp.RX
         assert out.data == (x,)
-        assert out.wires == qp.wires.Wires("b")
+        assert out.wires == qp.wires.Wires(7)
 
 
 class TestAdjointConstructorOutsideofQueuing:
@@ -910,7 +910,7 @@ class TestAdjointConstructorOutsideofQueuing:
             qp.S(wire)
             qp.SX(wire)
 
-        wire = 1.234
+        wire = 11
         out = adjoint(func)(wire)
 
         assert len(out) == 2
