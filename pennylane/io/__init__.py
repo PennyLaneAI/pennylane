@@ -18,7 +18,6 @@ This module contains functions to import circuits and objects from external fram
 from .io import (
     from_qasm,
     from_qiskit,
-    from_qiskit_noise,
     from_qiskit_op,
     plugin_converters,
     from_qasm3,

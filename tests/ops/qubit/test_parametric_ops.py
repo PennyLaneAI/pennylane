@@ -108,7 +108,7 @@ BROADCASTED_OPERATIONS = [
         wires=[0, 1],
     ),
     qp.QubitUnitary(1j * np.array([[[1, 0], [0, -1]], [[0, 1], [1, 0]]]), wires=0),
-    qp.PSWAP(np.array([0.123, -0.63, 0.235]), wires=["a", -1]),
+    qp.PSWAP(np.array([0.123, -0.63, 0.235]), wires=[13, -1]),
     qp.DiagonalQubitUnitary(np.array([[1.0, 1.0j], [1.0j, 1.0j]]), wires=1),
 ]
 
@@ -867,17 +867,10 @@ class TestDecompositions:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("control_values", [[], [0], [1], [1, 1], [0, 1, 0]])
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     def test_controlled_phase_shift_with_work_wires_decomposable(
-        self, base_type, control_values, work_wire_type, request
+        self, base_type, control_values, work_wire_type
     ):
         """Tests that the decomposition rules of a controlled phase shift with work wires
         are valid."""
-        if control_values == [] and qp.capture.enabled():
-            request.applymarker(
-                pytest.mark.xfail(
-                    reason="Empty control registers are currently not supported [sc-137261]",
-                    strict=True,
-                )
-            )
         num_controls = len(control_values)
         op = qp.ctrl(
             base_type(0.3, 0),
@@ -1143,7 +1136,7 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
         assert np.allclose(qp.Identity().matrix(), np.identity(1), atol=tol, rtol=0)
         assert np.allclose(qp.Identity().matrix(wire_order=[0]), np.identity(2), atol=tol, rtol=0)
         assert np.allclose(
-            qp.Identity().matrix(wire_order=[0, "a"]), np.identity(4), atol=tol, rtol=0
+            qp.Identity().matrix(wire_order=[0, 13]), np.identity(4), atol=tol, rtol=0
         )
 
     def test_rx(self, tol):
@@ -3109,9 +3102,9 @@ class TestPauliRot:  # pylint: disable=too-many-public-methods
     def test_pauli_rot_generator(self):
         """Test that the generator of the PauliRot operation
         is correctly returned."""
-        op = qp.PauliRot(0.65, "ZY", wires=["a", 7])
+        op = qp.PauliRot(0.65, "ZY", wires=[13, 7])
         gen, coeff = qp.generator(op)
-        expected = qp.PauliZ("a") @ qp.PauliY(7)
+        expected = qp.PauliZ(13) @ qp.PauliY(7)
 
         assert coeff == -0.5
         assert gen == expected
@@ -4049,7 +4042,7 @@ pow_parametric_ops = (
     qp.IsingXX(-2.345, wires=(0, 1)),
     qp.IsingYY(3.1652, wires=(0, 1)),
     qp.IsingXY(-1.234, wires=(0, 1)),
-    qp.IsingZZ(1.789, wires=("a", "b")),
+    qp.IsingZZ(1.789, wires=(13, 14)),
     qp.GlobalPhase(0.123),
     # broadcasted ops
     qp.RX(np.array([1.234, 4.129]), wires=0),
@@ -4069,7 +4062,7 @@ pow_parametric_ops = (
     qp.U1(np.array([1.23, 0.241]), wires=0),
     qp.IsingXX(np.array([9.32, -2.345]), wires=(0, 1)),
     qp.IsingYY(np.array([3.1652]), wires=(0, 1)),
-    qp.IsingZZ(np.array([1.789, 2.52, 0.211]), wires=("a", "b")),
+    qp.IsingZZ(np.array([1.789, 2.52, 0.211]), wires=(13, 14)),
 )
 
 

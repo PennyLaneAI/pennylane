@@ -1968,7 +1968,6 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.Reflection(op, alpha, reflection_wires=reflection_wires))
 
-    @pytest.mark.xfail(reason="operators of operators not yet supported with Operator2")
     def test_quantum_phase_estimation(self):
         """Test the primitive bind call of QuantumPhaseEstimation."""
 
@@ -1976,36 +1975,22 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         op = qp.RX(np.pi / 2, 0) @ qp.Hadamard(1)
 
         def qfunc(op):
-            qp.QuantumPhaseEstimation(op, **kwargs)
+            return qp.QuantumPhaseEstimation(op, **kwargs).tracer
 
-        # Validate inputs
-        qfunc(op)
-
-        # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)(op)
 
-        assert len(jaxpr.eqns) == 4
+        [eqn] = jaxpr.eqns
+        assert_eqn_matches_op(eqn, qp.QuantumPhaseEstimation)
+        assert eqn.params["wire_lens"] == (2,)
+        assert [invar.val for invar in eqn.invars[:2]] == kwargs["estimation_wires"]
+        assert eqn.invars[2:] == jaxpr.jaxpr.invars
+        assert eqn.outvars == jaxpr.jaxpr.outvars
 
-        assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
-        assert_eqn_matches_op(jaxpr.eqns[1], qp.H)
-        assert jaxpr.eqns[2].primitive == qp.ops.op_math.Prod._primitive
+        [captured_op] = jax.core.eval_jaxpr(
+            jaxpr.jaxpr, jaxpr.consts, *jax.tree_util.tree_leaves(op)
+        )
+        qp.assert_equal(captured_op, qp.QuantumPhaseEstimation(op, **kwargs))
 
-        eqn = jaxpr.eqns[3]
-        assert eqn.primitive == qp.QuantumPhaseEstimation._primitive
-        assert eqn.invars == jaxpr.eqns[2].outvars
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, np.pi / 2)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.QuantumPhaseEstimation(op, **kwargs))
-
-    @pytest.mark.xfail(
-        reason="Select support under capture is out of scope by product-team decision."
-    )
     def test_select(self):
         """Test the primitive bind call of Select."""
 
@@ -2013,36 +1998,21 @@ class TestModifiedTemplates:  # pylint: disable=too-many-public-methods
         kwargs = {"control": [0, 1]}
 
         def qfunc(ops):
-            qp.Select(ops, **kwargs)
+            return qp.Select(ops, **kwargs).tracer
 
-        # Validate inputs
-        qfunc(ops)
-
-        # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)(ops)
 
-        assert len(jaxpr.eqns) == 5  # four operator-creating eqns and one for Select itself
+        [eqn] = jaxpr.eqns
+        assert_eqn_matches_op(eqn, qp.Select)
+        assert eqn.params["wire_lens"] == (2, 0)
+        assert [invar.val for invar in eqn.invars[:2]] == kwargs["control"]
+        assert eqn.invars[2:] == jaxpr.jaxpr.invars
+        assert eqn.outvars == jaxpr.jaxpr.outvars
 
-        op_eqns = jaxpr.eqns[:4]
-        op_types = [qp.X, qp.RX, qp.Y, qp.Z]
-        assert all(
-            eqn.primitive == op_type._primitive
-            for eqn, op_type in zip(op_eqns, op_types, strict=True)
+        [captured_op] = jax.core.eval_jaxpr(
+            jaxpr.jaxpr, jaxpr.consts, *jax.tree_util.tree_leaves(ops)
         )
-        eqn = jaxpr.eqns[4]
-        assert eqn.primitive == qp.Select._primitive
-        assert eqn.invars[:-2] == [eqn.outvars[0] for eqn in op_eqns]
-        assert [invar.val for invar in eqn.invars[-2:]] == [0, 1]
-        assert eqn.params == {"n_wires": 2}
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qp.queuing.AnnotatedQueue() as q:
-            # Need to pass in angle for RX as argument to jaxpr
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.2)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.Select(ops, **kwargs))
+        qp.assert_equal(captured_op, qp.Select(ops, **kwargs))
 
     def test_superposition(self):
         """Test the primitive bind call of Superposition."""

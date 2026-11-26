@@ -355,7 +355,7 @@ class QubitUnitary(Operator2):
 
         Args:
             U (array[complex]): square unitary matrix
-            wires (Iterable[Any] or Wires): the wire(s) the operation acts on
+            wires (Iterable[int] or Wires): the wire(s) the operation acts on
 
         Returns:
             list[Operator]: decomposition of the operator
@@ -574,8 +574,6 @@ class DiagonalQubitUnitary(Operator2):
 
     dynamic_argnames = ("D",)
 
-    wire_sizes = (None,)
-
     arg_specs = {"D": Complex[-1], "wires": Wire[-1]}
 
     num_params = 1
@@ -770,7 +768,7 @@ class BlockEncode(Operator2):
 
     Args:
         A (tensor_like): a general :math:`(n \times m)` matrix to be encoded
-        wires (Iterable[int, str], Wires): the wires the operation acts on
+        wires (Iterable[int] or Wires): the wires the operation acts on
 
     Raises:
         ValueError: if the number of wires doesn't fit the dimensions of the matrix
