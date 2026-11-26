@@ -224,6 +224,10 @@ like VQE to perform quantum chemistry simulations.
     :figure: _static/templates/subroutines/basis_rotation.jpeg
 
 .. gallery-item::
+    :description: :doc:`BasisRotationPair <../code/api/pennylane.BasisRotationPair>`
+    :figure: _static/templates/subroutines/basis_rotation_pair.jpeg
+
+.. gallery-item::
     :description: :doc:`GivensPair <../code/api/pennylane.GivensPair>`
     :figure: _static/templates/subroutines/givens_pair.jpeg
 
