@@ -21,7 +21,10 @@ import numpy as np
 
 from pennylane import capture, compiler, control_flow, math, ops
 from pennylane.capture.autograph import disable_autograph
-from pennylane.decomposition import add_decomps, register_resources, symbolic_decomposition
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.symbolic_decomposition import (
+    _adjoint_negate_angle as _adjoint_negate_angle_legacy,
+)
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -527,8 +530,7 @@ def pswap_to_ppr(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(PSWAP, pswap_to_swap_cnot_phaseshift_cnot, pswap_to_ppr)
-# pylint: disable-next=protected-access
-add_decomps("Adjoint(PSWAP)", symbolic_decomposition._adjoint_negate_angle)
+add_decomps("Adjoint(PSWAP)", _adjoint_negate_angle_legacy)
 
 
 @register_resources({ops.PauliX: 4, ops.PhaseShift: 3, ops.CNOT: 2}, name="to_x_phaseshift_cnot")

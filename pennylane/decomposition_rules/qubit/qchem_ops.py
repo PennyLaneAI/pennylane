@@ -18,7 +18,13 @@
 import numpy as np
 
 from pennylane import ops
-from pennylane.decomposition import add_decomps, register_resources, symbolic_decomposition
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.symbolic_decomposition import (
+    _adjoint_negate_angle as _adjoint_negate_angle_legacy,
+)
+from pennylane.decomposition.symbolic_decomposition import (
+    _pow_scale_angle as _pow_scale_angle_legacy,
+)
 from pennylane.ops.op_math.adjoint2 import _adjoint_negate_angle
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.pow2 import _pow_scale_angle
@@ -173,10 +179,8 @@ def single_excitation_minus_standard(phi, wires: WiresLike, **__):
 
 
 add_decomps(SingleExcitationMinus, single_excitation_minus_standard)
-# pylint: disable=protected-access
-add_decomps("Adjoint(SingleExcitationMinus)", symbolic_decomposition._adjoint_negate_angle)
-add_decomps("Pow(SingleExcitationMinus)", symbolic_decomposition._pow_scale_angle)
-# pylint: enable=protected-access
+add_decomps("Adjoint(SingleExcitationMinus)", _adjoint_negate_angle_legacy)
+add_decomps("Pow(SingleExcitationMinus)", _pow_scale_angle_legacy)
 
 
 @register_resources(
@@ -198,10 +202,8 @@ def single_excitation_plus_standard(phi, wires: WiresLike, **__):
 
 
 add_decomps(SingleExcitationPlus, single_excitation_plus_standard)
-# pylint: disable=protected-access
-add_decomps("Adjoint(SingleExcitationPlus)", symbolic_decomposition._adjoint_negate_angle)
-add_decomps("Pow(SingleExcitationPlus)", symbolic_decomposition._pow_scale_angle)
-# pylint: enable=protected-access
+add_decomps("Adjoint(SingleExcitationPlus)", _adjoint_negate_angle_legacy)
+add_decomps("Pow(SingleExcitationPlus)", _pow_scale_angle_legacy)
 
 
 @register_resources({ops.CNOT: 14, ops.Hadamard: 6, ops.RY: 8}, name="to_gates")
@@ -265,12 +267,10 @@ def double_excitation_to_ppr(phi: TensorLike, wires: WiresLike):
 add_decomps(DoubleExcitation, double_excitation_to_gates, double_excitation_to_ppr)
 add_decomps("Adjoint(DoubleExcitation)", _adjoint_negate_angle)
 add_decomps("Pow(DoubleExcitation)", _pow_scale_angle)
-# pylint: disable=protected-access
-add_decomps("Adjoint(DoubleExcitationPlus)", symbolic_decomposition._adjoint_negate_angle)
-add_decomps("Pow(DoubleExcitationPlus)", symbolic_decomposition._pow_scale_angle)
-add_decomps("Adjoint(DoubleExcitationMinus)", symbolic_decomposition._adjoint_negate_angle)
-add_decomps("Pow(DoubleExcitationMinus)", symbolic_decomposition._pow_scale_angle)
-# pylint: enable=protected-access
+add_decomps("Adjoint(DoubleExcitationPlus)", _adjoint_negate_angle_legacy)
+add_decomps("Pow(DoubleExcitationPlus)", _pow_scale_angle_legacy)
+add_decomps("Adjoint(DoubleExcitationMinus)", _adjoint_negate_angle_legacy)
+add_decomps("Pow(DoubleExcitationMinus)", _pow_scale_angle_legacy)
 
 
 @register_resources(
