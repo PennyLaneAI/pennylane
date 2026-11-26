@@ -2685,6 +2685,10 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* Fixed a bug where :class:`~.IQPEmbedding` and :class:`~.GQSP` could not be differentiated with
+  ``parameter-shift`` or ``finite-diff``.
+  `(#10605) <https://github.com/PennyLaneAI/pennylane/pull/10605>`__
+
 * Fixed :func:`~.ctrl` to return the original operator or callable when the control wires are empty.
   `(#10595) <https://github.com/PennyLaneAI/pennylane/pull/10595>`__
 
