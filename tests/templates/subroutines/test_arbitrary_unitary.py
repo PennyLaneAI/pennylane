@@ -165,29 +165,6 @@ class TestDecomposition:
             assert np.allclose(op.data[0], weights[..., i])
             assert op.hyperparameters["pauli_word"] == pauli_words[i]
 
-    def test_custom_wire_labels(self, tol):
-        """Test that template can deal with non-numeric, nonconsecutive wire labels."""
-
-        weights = np.random.random(size=(63,))
-        dev = qp.device("default.qubit", wires=3)
-        dev2 = qp.device("default.qubit", wires=["z", "a", "k"])
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.ArbitraryUnitary(weights, wires=range(3))
-            return qp.expval(qp.Identity(0)), qp.state()
-
-        @qp.qnode(dev2)
-        def circuit2():
-            qp.ArbitraryUnitary(weights, wires=["z", "a", "k"])
-            return qp.expval(qp.Identity("z")), qp.state()
-
-        res1, state1 = circuit()
-        res2, state2 = circuit2()
-
-        assert np.allclose(res1, res2, atol=tol, rtol=0)
-        assert np.allclose(state1, state2, atol=tol, rtol=0)
-
     DECOMP_PARAMS = [
         (np.arange(np.prod((15,)), dtype=float).reshape((15,)), range(2)),
         pytest.param(

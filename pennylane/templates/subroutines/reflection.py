@@ -47,7 +47,7 @@ class Reflection(Operation):
     Args:
         U (Operator): the operator that prepares the state :math:`|\Psi\rangle`
         alpha (float): the angle of the operator, default is :math:`\pi`
-        reflection_wires (Any or Iterable[Any]): subsystem of wires on which to reflect, the
+        reflection_wires (int or Iterable[int]): subsystem of wires on which to reflect, the
             default is ``None`` and the reflection will be applied on the ``U`` wires.
 
     **Example**
@@ -223,7 +223,7 @@ class Reflection(Operation):
         return decomp_ops
 
 
-def _reflection_decomposition_resources(base_rep, num_wires, num_reflection_wires=None) -> dict:
+def _reflection_standard_resources(base_rep, num_wires, num_reflection_wires=None) -> dict:
 
     num_wires = num_reflection_wires if num_reflection_wires is not None else num_wires
 
@@ -249,8 +249,8 @@ def _reflection_decomposition_resources(base_rep, num_wires, num_reflection_wire
     return resources
 
 
-@register_resources(_reflection_decomposition_resources)
-def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
+@register_resources(_reflection_standard_resources, name="prepare_phase_unprepare")
+def _reflection_standard(*parameters, wires=None, **hyperparameters):
     alpha = parameters[0]
     U = hyperparameters["base"]
     reflection_wires = hyperparameters["reflection_wires"]
@@ -279,7 +279,7 @@ def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
     apply(U)
 
 
-add_decomps(Reflection, _reflection_decomposition)
+add_decomps(Reflection, _reflection_standard)
 
 
 @Reflection._primitive.def_impl  # pylint: disable=protected-access

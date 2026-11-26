@@ -99,7 +99,7 @@ def _permutation_operator(basis1, basis2, wires, work_wire):
         basis1 (List): The initial basis state, represented as a list of binary digits.
         basis2 (List): The target basis state, represented as a list of binary digits.
         wires (Sequence[int]): The list of wires that the operator acts on.
-        work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation.
+        work_wire (Wires or int): The auxiliary wire used for the permutation.
 
     Returns:
         list: A list of operators that map :math:`|\text{basis1}\rangle` to :math:`|\text{basis2}\rangle`.
@@ -125,7 +125,7 @@ def _permutation_operator_qfunc(basis1, basis2, wires, work_wire):
         basis1 (List): The initial basis state, represented as a list of binary digits.
         basis2 (List): The target basis state, represented as a list of binary digits.
         wires (Sequence[int]): The list of wires that the operator acts on.
-        work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation.
+        work_wire (Wires or int): The auxiliary wire used for the permutation.
     """
 
     qp.MultiControlledX(concatenate_wires(wires, work_wire), control_values=basis1)
@@ -161,7 +161,7 @@ class Superposition(Operation):
         coeffs (tensor-like[float]): normalized coefficients of the superposition
         bases (tensor-like[int]): basis states of the superposition
         wires (Sequence[int]): wires that the operator acts on
-        work_wire (Union[Wires, int, str]): the auxiliary wire used for the permutation
+        work_wire (Wires or int): the auxiliary wire used for the permutation
 
     **Example**
 
@@ -306,7 +306,7 @@ class Superposition(Operation):
             coeffs (tensor-like[float]): normalized coefficients of the superposition
             bases (tensor-like[int]): basis states of the superposition
             wires (Sequence[int]): wires that the operator acts on
-            work_wire (Union[Wires, int, str]): the auxiliary wire used for the permutation
+            work_wire (Wires or int): the auxiliary wire used for the permutation
 
         Returns:
             list[.Operator]: Decomposition of the operator
@@ -378,7 +378,7 @@ class Superposition(Operation):
         )
 
 
-def _superposition_resources(num_wires, num_coeffs, bases):
+def _superposition_standard_resources(num_wires, num_coeffs, bases):
     perms = order_states(bases)
 
     resources = Counter()
@@ -399,9 +399,9 @@ def _superposition_resources(num_wires, num_coeffs, bases):
     return dict(resources)
 
 
-@register_resources(_superposition_resources)
+@register_resources(_superposition_standard_resources, name="state_prep_permutations")
 # pylint: disable-next=unused-argument
-def _superposition_decomposition(coeffs, bases, wires, target_wires, work_wire):
+def _superposition_standard(coeffs, bases, wires, target_wires, work_wire):
     dic_state = dict(zip(bases, coeffs, strict=True))
     perms = order_states(bases)
     new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
@@ -430,4 +430,4 @@ def _superposition_decomposition(coeffs, bases, wires, target_wires, work_wire):
     apply_permutations()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(Superposition, _superposition_decomposition)
+add_decomps(Superposition, _superposition_standard)

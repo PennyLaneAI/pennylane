@@ -40,6 +40,7 @@ from .ffft import FFFT, TwoWireFFT
 from .select import Multiplexer, Multiplexor, Select
 from .prepselprep import PrepSelPrep
 from .multix import MultiX
+from .rz_layer import RZLayer
 from .reflection import Reflection
 from .qubitization import Qubitization
 from .controlled_sequence import ControlledSequence
@@ -48,6 +49,8 @@ from .amplitude_amplification import AmplitudeAmplification
 from .qram import BBQRAM, HybridQRAM, SelectOnlyQRAM, FFQRAM
 from .iqp import IQP
 from .qrom import QROM
+from .qrom_load import QROMLoad
+from .select_swap import SelectSwap
 from .alias_sampling import AliasSampling, UniformPrep, alias_sampling_wires
 from .one_body_block_encoding import OneBodyBlockEncoding, one_body_block_encoding_wires
 from .alias_sampling_thc import AliasSamplingTHC, alias_sampling_thc_wires
@@ -124,12 +127,15 @@ __all__ = [
     "SelectOnlyQRAM",
     "PrepSelPrep",
     "MultiX",
+    "RZLayer",
     "Reflection",
     "Qubitization",
     "ControlledSequence",
     "AQFT",
     "AmplitudeAmplification",
     "QROM",
+    "QROMLoad",
+    "SelectSwap",
     "AliasSampling",
     "alias_sampling_wires",
     "AliasSamplingTHC",

@@ -1550,6 +1550,21 @@ def test_ctrl_non_boolean_control_values():
 class TestCtrl:
     """Tests for the ctrl transform."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("op", [TempOperation(wires=0), qp.RX(0.123, wires=0), qp.RX])
+    def test_empty_controls(self, op):
+        """Empty controls return the original operator or callable."""
+        assert qp.ctrl(op, control=[]) is op
+
+    def test_empty_controls_queueing(self):
+        """Empty controls apply the original operator exactly once."""
+        with qp.queuing.AnnotatedQueue() as queue:
+            base = qp.RX(0.123, wires=0)
+            op = qp.ctrl(base, control=[])
+
+        assert queue.queue == [op]
+        qp.assert_equal(op, base)
+
     def test_sparse_qubit_unitary(self):
         """Test that the controlled sparse QubitUnitary works correctly"""
         data = sp.sparse.eye(2)
@@ -1848,7 +1863,7 @@ class TestTapeExpansionWithControlled:
 
         tape = QuantumScript.from_queue(q_tape)
 
-        @register_resources({qp.RZ: 2, qp.RY: 1})
+        @register_resources({qp.RZ: 2, qp.RY: 1}, name="rot_to_rz_ry_rz")
         def _rot_to_rz_ry_rz(phi, theta, omega, wires, **__):
             qp.RZ(phi, wires=wires)
             qp.RY(theta, wires=wires)
