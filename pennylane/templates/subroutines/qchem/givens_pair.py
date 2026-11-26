@@ -28,7 +28,8 @@ from ..rz_layer import RZLayer
 
 
 class GivensPair(Operator2):
-    r"""Applies the same :class:`~.SingleExcitation` to two pairs of wires, for example to two spin channels.
+    r"""Applies the same :class:`~.SingleExcitation` to two pairs of wires, for example to two spin
+    channels.
 
     For the wires :math:`\{p_\uparrow , q_\uparrow , p_\downarrow, q_\downarrow\}`, this is
 
@@ -42,7 +43,8 @@ class GivensPair(Operator2):
 
     Args:
         phi (TensorLike): rotation angle :math:`\phi`
-        wires (WiresLike): the four wires :math:`\{p_\uparrow , q_\uparrow , p_\downarrow, q_\downarrow\}`
+        wires (WiresLike): the four wires
+            :math:`\{p_\uparrow , q_\uparrow , p_\downarrow, q_\downarrow\}`
         work_wires (WiresLike): zeroed auxiliary wires that decompositions may use.
 
     Raises:
@@ -133,9 +135,10 @@ def _givens_pair_rzlayer_resources(work_wires, **_):
 
 @register_resources(_givens_pair_rzlayer_resources, name="to_rz_layer")
 def _givens_pair_rzlayer(phi, wires, work_wires):
-    r"""In the frame of ``_single_excitation_ppr_rz``, a SingleExcitation on ``(p, q)`` is
-    :math:`RZ(\phi/2)_p RZ(-\phi/2)_q`. Conjugating ``q`` with ``PauliX`` flips the second angle,
-    so that both pairs together become four rotations by the same angle :math:`\phi/2`."""
+    r"""In the frame of the ``to_ppr_rz`` rule of SingleExcitation, a SingleExcitation on
+    ``(p, q)`` is :math:`RZ(\phi/2)_p RZ(-\phi/2)_q`. Conjugating ``q`` with ``PauliX`` flips the
+    second angle, so that both pairs together become four rotations by the same angle
+    :math:`\phi/2`."""
     change_op_basis(_GivensPairFrame(wires), RZLayer(phi / 2, wires, work_wires))
 
 
