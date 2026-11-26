@@ -14,7 +14,7 @@
 """Contains the ``TrotterVibronic`` template for vibronic Hamiltonian time evolution."""
 
 from collections import defaultdict
-from functools import reduce
+from functools import partial, reduce
 
 import numpy as np
 
@@ -186,16 +186,17 @@ class TrotterVibronic(Operator2):
 
             .. decomposition-rule:: vibronic_trotter_steps
                 :image: /_static/decomposition_thumbnails/trotter_vibronic_phase_gradient.svg
-                :where: :math:`P = 2Fr` position-fragment visits and :math:`K = M(M-1)/2` mode
-                    pairs, and :math:`[b > 1]` is 1 if :math:`b > 1` and 0 otherwise.
-                    All counts are upper bounds: terms with zero coefficients are
-                    skipped, and the :class:`~.Hadamard` and :class:`~.CNOT` counts also depend
-                    on each fragment's electronic diagonalization. The counts of the gates from
+                :where: :math:`P = 2(F-1)r + r + 1` position-fragment visits, of which
+                    :math:`D = 2(F-1)r` require an electronic diagonalization,
+                    :math:`K = M(M-1)/2` mode pairs, and :math:`[b > 1]` is 1 if :math:`b > 1`
+                    and 0 otherwise. All counts are upper bounds: terms with zero coefficients
+                    are skipped, and the :class:`~.CNOT` count also depends on each fragment's
+                    electronic diagonalization. The counts of the gates from
                     the half-signed multipliers assume :math:`k \leq b`, and :math:`2k \leq b`
                     if :math:`K > 0`
 
-                :class:`~.Hadamard` | :math:`2P` | 0
-                :class:`~.CNOT` | :math:`2P(n-1) + 3Pk(M(2b-k) + 4K(b-k))` | 6
+                :class:`~.Hadamard` | :math:`2D` | 0
+                :class:`~.CNOT` | :math:`2D(n-1) + 3Pk(M(2b-k) + 4K(b-k))` | 6
                 :class:`~.X` | :math:`P(M + K)(2b + 8)` | 20
                 :class:`~.X` with 1 control on :math:`|0\rangle` | :math:`4Pk(M + 2K)` | 8
                 :class:`~.MultiX` with 1 control on :math:`|0\rangle` | :math:`2Pk(M + 2K)\,[b > 1]` | 0
@@ -312,7 +313,11 @@ class TrotterVibronic(Operator2):
                             \Big(\prod_{i=F-1}^{0} e^{-i H_i \Delta t/2}\Big),
 
         so each position fragment is visited twice per step at :math:`\tau = \Delta t/2` and the
-        kinetic fragment once at :math:`\Delta t`. See the demo's `assembling the Trotter step
+        kinetic fragment once at :math:`\Delta t`. Each step starts and ends with
+        :math:`e^{-i H_0 \Delta t/2}`, so these factors of consecutive steps are merged into
+        :math:`e^{-i H_0 \Delta t}`. Fragment 0 is thus visited :math:`n_T + 1` times instead
+        of :math:`2n_T` times, at :math:`\tau = \Delta t/2` for the first and last visit and at
+        :math:`\tau = \Delta t` in between. See the demo's `assembling the Trotter step
         <https://pennylane.ai/demos/simulating_vibronic_dynamics#assembling-the-trotter-step>`__
         section for the fragment loop this unrolls into.
 
@@ -540,8 +545,11 @@ def _trotter_vibronic_standard_resources(  # pylint: disable=too-many-arguments,
     n_work = len(work_wires) if len(work_wires) > 0 else _required_work_size(n_elec, k, b)
     num_pairs = n_modes * (n_modes - 1) // 2
 
-    # Each Trotter step visits every position fragment twice (forward + backward).
-    position_visits = 2 * num_fragments * num_trotter_steps
+    # Each Trotter step visits every position fragment but fragment 0 twice (forward + backward).
+    # Fragment 0 needs no diagonalization and is visited once more than there are Trotter steps,
+    # because its half time steps are merged between consecutive Trotter steps.
+    diagonalized_visits = 2 * (num_fragments - 1) * num_trotter_steps
+    position_visits = diagonalized_visits + num_trotter_steps + 1
     num_constant = _num_applied_terms(branch_probs, "constant", position_visits)
     num_linear = _num_applied_terms(branch_probs, "linear", position_visits * n_modes)
     num_quadratic = _num_applied_terms(branch_probs, "quadratic", position_visits * n_modes)
@@ -599,8 +607,8 @@ def _trotter_vibronic_standard_resources(  # pylint: disable=too-many-arguments,
     resources = defaultdict(int)
 
     # -- Electronic diagonalization (forward + adjoint per visit) --
-    resources[Hadamard(wires=Wire[1])] += 2 * position_visits
-    resources[CNOT(wires=Wire[2])] += 2 * position_visits * max(n_elec - 1, 0)
+    resources[Hadamard(wires=Wire[1])] += 2 * diagonalized_visits
+    resources[CNOT(wires=Wire[2])] += 2 * diagonalized_visits * max(n_elec - 1, 0)
 
     # -- Data loading: each applied constant/linear/quadratic/bilinear term + final unload --
     resources[qrom] += num_constant + num_linear + num_quadratic + num_bilinear + position_visits
@@ -800,9 +808,10 @@ def _diagonalization_support(key, n_wires):
 
 def _diagonalize_probs(num_fragments, n):
     """Compute the probabilities for the outer loop and the CNOT loop in
-    ``_diagonalize_vibronic_circuit``."""
-    # at least a Hadamard is applied for all but the first fragment
-    apply_anything_prob = (num_fragments - 1) / num_fragments
+    ``_diagonalize_vibronic_circuit``, for fragment indices uniformly distributed over
+    ``range(1, num_fragments)``. Fragment 0 does not need to be diagonalized."""
+    # at least a Hadamard is applied for all fragments but the first one
+    apply_anything_prob = 1.0
     # CNOTs are applied whenever more than one bit is set in the fragment index, overall we compute
     # all set bits and subtract `num_fragments-1`, the number of "first set bits":
     num_cnots = np.sum(np.bitwise_count(np.arange(num_fragments))) - (num_fragments - 1)
@@ -832,7 +841,7 @@ def _diagonalize_vibronic_circuit(fragment_idx, wires, num_fragments, inverse=Fa
         inverse (bool): Apply the inverse gate sequence.
         num_fragments (int): total number of position fragments. The conditionals carry branch
             probability hints that assume ``fragment_idx`` to be uniformly distributed over
-            ``range(num_fragments)``.
+            ``range(1, num_fragments)``.
     """
     if num_fragments == 1:
         # Only have fragment_idx 0, which does not need a circuit.
@@ -1048,21 +1057,38 @@ def _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes):
     return (all_constant, all_linear, all_quadratic, all_bilinear), bilinear_indices
 
 
-def _applied_fraction(coeffs):
+def _applied_fraction(coeffs, num_trotter_steps=None):
     """Fraction of the terms, each given by a coefficient vector along the last axis of
     ``coeffs``, that are applied rather than skipped for vanishing coefficients.
+
+    If ``num_trotter_steps`` is given, the leading axis of ``coeffs`` enumerates the position
+    fragments, scaled to half a time step, and the fraction is taken over all their visits:
+    fragment 0 is visited for half a time step at the start and end of the evolution and for
+    ``num_trotter_steps - 1`` merged full time steps in between, all other fragments for two
+    half time steps per Trotter step.
 
     The tolerance must match the ``math.allclose(..., 0.0)`` skip conditions of the Trotter step.
     """
     applied = ~np.isclose(coeffs, 0.0).all(axis=-1)
-    return float(np.mean(applied)) if applied.size else None
+    if not applied.size:
+        return None
+    if num_trotter_steps is None:
+        return float(np.mean(applied))
+    applied_merged = ~np.isclose(2 * coeffs[0], 0.0).all(axis=-1)
+    num_applied = (
+        2 * num_trotter_steps * np.sum(applied[1:])
+        + 2 * np.sum(applied[0])
+        + (num_trotter_steps - 1) * np.sum(applied_merged)
+    )
+    num_visits = 2 * num_trotter_steps * (len(coeffs) - 1) + num_trotter_steps + 1
+    return float(num_applied / (num_visits * applied[0].size))
 
 
 def _branch_probs(hamiltonian, evolution_time, num_trotter_steps):
     """Probabilities for the terms of a Trotter step to be applied rather than skipped for
     vanishing coefficients, see the ``branch_probs`` argument of :class:`~.TrotterVibronic`.
 
-    The coefficients are scaled by the time steps as in :func:`_trotter_step_second_order`,
+    The coefficients are scaled by the time steps as in :func:`_trotter_fragments`,
     because the skip conditions compare the scaled coefficients against a fixed tolerance.
 
     Returns ``None`` if the Hamiltonian data or the evolution time are not concrete, or if the
@@ -1081,7 +1107,11 @@ def _branch_probs(hamiltonian, evolution_time, num_trotter_steps):
     time_step = float(evolution_time) / num_trotter_steps
     coeffs, _ = _preprocess_data(time_step, hamiltonian, n_elec, n_states, n_modes)
     kinetic = (_momentum_coefficients(hamiltonian.kinetic) * time_step)[:, None]
-    return {term: _applied_fraction(c) for term, c in zip(_BRANCH_TERMS, (*coeffs, kinetic))}
+    probs = {
+        term: _applied_fraction(c, num_trotter_steps) for term, c in zip(_BRANCH_TERMS, coeffs)
+    }
+    probs["kinetic"] = _applied_fraction(kinetic)
+    return probs
 
 
 # ---------------------------------------------------------------------------
@@ -1180,7 +1210,7 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
 # ---------------------------------------------------------------------------
 
 
-def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-statements
+def _trotter_fragments(  # pylint: disable=too-many-arguments,too-many-statements
     time,
     hamiltonian,
     registers,
@@ -1191,13 +1221,18 @@ def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-s
     n_elec,
     branch_probs,
 ):
-    r"""Emit a single symmetric second-order Trotter step.
+    r"""Return functions that emit the fragment evolutions of a symmetric second-order Trotter
+    step with time step ``time``.
 
-    The (first-Trotter-order) kinetic evolution is placed in the middle, wrapped by the
-    second-Trotter-order position-fragment evolutions (forward, then backward). Within each
-    position fragment we iterate over the linear, quadratic and bilinear terms; within each of
-    these we iterate over the modes (or mode pairs) using ``for_loop``\ s. The fragment loop
-    itself is also a ``for_loop``, so ``fragment_idx`` may be a traced value.
+    Returns ``(position_terms, position_fragment, kinetic_fragment)``:
+
+    * ``position_terms(i, scale=1.0)`` emits the diagonal evolution of position fragment ``i``
+      for ``scale`` times the first-order time step ``time / 2``, without the electronic
+      diagonalization. We iterate over the constant, linear, quadratic and bilinear terms; within
+      each of these we iterate over the modes (or mode pairs) using ``for_loop``\ s.
+    * ``position_fragment(i)`` wraps ``position_terms(i)`` into the electronic diagonalization of
+      position fragment ``i > 0``, which may be a traced value.
+    * ``kinetic_fragment()`` emits the kinetic evolution for the time step ``time``.
 
     ``branch_probs`` holds the ``branch-prob`` hints for applying each term, see
     :class:`~.TrotterVibronic`.
@@ -1212,19 +1247,12 @@ def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-s
     qrom_wires = _extract_registers(registers, mode_registers, "QROM")
     num_position_fragments = hamiltonian.num_fragments
 
-    def position_fragments(i):
+    def position_terms(i, scale=1.0):
         # pylint: disable=no-value-for-parameter
-        const_coeffs = all_constant[i]
-        linear_coeffs = all_linear[i]
-        quadratic_coeffs = all_quadratic[i]
-        bilinear_coeffs = all_bilinear[i]
-
-        _diagonalize_vibronic_circuit(
-            fragment_idx=i,
-            wires=registers["electronic"],
-            num_fragments=num_position_fragments,
-            inverse=True,
-        )
+        const_coeffs = all_constant[i] * scale
+        linear_coeffs = all_linear[i] * scale
+        quadratic_coeffs = all_quadratic[i] * scale
+        bilinear_coeffs = all_bilinear[i] * scale
 
         def constant_term(prev_bitstrings):
             def skip_fn():
@@ -1308,9 +1336,17 @@ def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-s
 
         # Finish up the coefficients register by unloading the last loaded coefficients
         QROM(prev_bitstrings, **qrom_wires)
-        _diagonalize_vibronic_circuit(
-            fragment_idx=i, wires=registers["electronic"], num_fragments=num_position_fragments
+
+    def position_fragment(i):
+        diagonalize = partial(
+            _diagonalize_vibronic_circuit,
+            fragment_idx=i,
+            wires=registers["electronic"],
+            num_fragments=num_position_fragments,
         )
+        diagonalize(inverse=True)
+        position_terms(i)
+        diagonalize()
 
     def kinetic_fragment():
         # use ``time``, not ``first_order_time_step`` because the kinetic fragment is the
@@ -1346,9 +1382,7 @@ def _trotter_step_second_order(  # pylint: disable=too-many-arguments,too-many-s
 
         kinetic_terms()  # pylint: disable=no-value-for-parameter
 
-    for_loop(num_position_fragments)(position_fragments)()
-    kinetic_fragment()
-    for_loop(num_position_fragments - 1, -1, -1)(position_fragments)()
+    return position_terms, position_fragment, kinetic_fragment
 
 
 def _run_trotter_vibronic(  # pylint: disable=too-many-arguments
@@ -1363,22 +1397,39 @@ def _run_trotter_vibronic(  # pylint: disable=too-many-arguments
     n_elec,
     branch_probs,
 ):
-    """Emit ``num_trotter_steps`` symmetric second-order Trotter steps."""
-    trotter_time_step = evolution_time / num_trotter_steps
+    """Emit ``num_trotter_steps`` symmetric second-order Trotter steps.
 
-    def _step(_step_idx, hamiltonian):
+    Each step starts and ends with half a time step of position fragment 0, so the half steps
+    of consecutive Trotter steps are merged into a single full time step of fragment 0.
+    """
+    trotter_time_step = evolution_time / num_trotter_steps
+    num_fragments = hamiltonian.num_fragments
+    fragments = partial(
+        _trotter_fragments,
+        trotter_time_step,
+        registers=registers,
+        mode_registers=mode_registers,
+        aqft_order=aqft_order,
+        n_states=n_states,
+        n_modes=n_modes,
+        n_elec=n_elec,
+        branch_probs=branch_probs,
+    )
+
+    position_terms, _, _ = fragments(hamiltonian)
+    position_terms(0)
+
+    def _step(step_idx, hamiltonian):
         # Carry ``hamiltonian`` through the loop for valid traced loop-body inputs.
-        _trotter_step_second_order(
-            trotter_time_step,
-            hamiltonian,
-            registers,
-            mode_registers,
-            aqft_order,
-            n_states,
-            n_modes,
-            n_elec,
-            branch_probs,
-        )
+        position_terms, position_fragment, kinetic_fragment = fragments(hamiltonian)
+        # Skip empty fragment loops: zero-iteration ``for_loop``s still trace under capture.
+        if num_fragments > 1:
+            for_loop(1, num_fragments)(position_fragment)()
+        kinetic_fragment()
+        if num_fragments > 1:
+            for_loop(num_fragments - 1, 0, -1)(position_fragment)()
+        # Merged full time step with the next Trotter step, or the final half time step
+        position_terms(0, math.where(step_idx == num_trotter_steps - 1, 1.0, 2.0))
         return hamiltonian
 
     for_loop(num_trotter_steps)(_step)(hamiltonian)

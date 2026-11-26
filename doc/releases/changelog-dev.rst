@@ -1057,6 +1057,12 @@ Improvements 🛠
   `(#10401) <https://github.com/PennyLaneAI/pennylane/pull/10401>`__
   `(#10445) <https://github.com/PennyLaneAI/pennylane/pull/10445>`__
 
+* The decomposition of :class:`~.TrotterVibronic` merges the half time steps of the position
+  fragment :math:`H_0` at the boundaries of consecutive second-order Trotter steps into a single
+  full time step. This reduces the number of applications of :math:`H_0` from :math:`2n_T` to
+  :math:`n_T+1` for :math:`n_T` Trotter steps.
+  `(#XXXX) <https://github.com/PennyLaneAI/pennylane/pull/XXXX>`__
+
 * Added ``pennylane.core.get_op_class_by_name``
   to retrieve built-in and user-defined ``Operator2`` classes by name. Operator classes are
   automatically registered when they are defined.
